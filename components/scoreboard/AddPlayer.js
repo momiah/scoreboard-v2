@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 
-const AddPlayer = () => {
+const AddPlayer = ({ onSelectPlayer }) => {
   const [selected, setSelected] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
@@ -36,7 +36,6 @@ const AddPlayer = () => {
     },
   };
 
-  // Convert players object to array format
   const playerArray = Object.keys(players).map((key) => ({
     key: key,
     value: key,
@@ -45,6 +44,7 @@ const AddPlayer = () => {
   const handleSelect = (value) => {
     setSelected(value);
     setDropdownVisible(false);
+    onSelectPlayer(value);
   };
 
   return (

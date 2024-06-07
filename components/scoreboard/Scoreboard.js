@@ -12,17 +12,15 @@ import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 
 // Define the calculateWin function
-const calculateWin = (teamAScore, teamBScore) => {
-  if (teamAScore >= 21 && (teamAScore - teamBScore >= 2 || teamAScore === 30)) {
-    return "Team 1";
-  }
-  if (teamBScore >= 21 && (teamBScore - teamAScore >= 2 || teamBScore === 30)) {
-    return "Team 2";
-  }
-  return "No winner";
-};
-
-
+// const calculateWin = (teamAScore, teamBScore) => {
+//   if (teamAScore >= 21 && (teamAScore - teamBScore >= 2 || teamAScore === 30)) {
+//     return "Team 1";
+//   }
+//   if (teamBScore >= 21 && (teamBScore - teamAScore >= 2 || teamBScore === 30)) {
+//     return "Team 2";
+//   }
+//   return "No winner";
+// };
 
 const players = {
   Mohsin: {
@@ -46,8 +44,6 @@ const players = {
     losses: 0,
   },
 };
-
-
 
 // Hardcoded games
 const initialGames = [
@@ -101,35 +97,63 @@ const initialGames = [
   },
 ];
 
+const calculateWin = (score1, score2) => {
+  return score1 > score2 ? "Team 1" : "Team 2";
+};
+
 // Define the Scoreboard component
 const Scoreboard = () => {
-  const [badmintonGames, setBadmintonGames] = useState(initialGames);
   const [modalVisible, setModalVisible] = useState(false);
-  const [newGame, setNewGame] = useState({
-    date: "",
-    team1: { player1: "", player2: "", score: 0 },
-    team2: { player1: "", player2: "", score: 0 },
+  const [selectedPlayers, setSelectedPlayers] = useState({
+    team1: ["", ""],
+    team2: ["", ""],
   });
-  const [newPlayerName, setNewPlayerName] = useState("");
-
-  const handleAddGame = () => {
-    setBadmintonGames([
-      ...badmintonGames,
-      {
-        ...newGame,
-        get winner() {
-          return calculateWin(this.team1.score, this.team2.score);
-        },
+  const [team1Score, setTeam1Score] = useState("");
+  const [team2Score, setTeam2Score] = useState("");
+  const [initialGames, setInitialGames] = useState([
+    {
+      date: "2024-06-01",
+      team1: { player1: "Person A", player2: "Person B", score: 21 },
+      team2: { player1: "Person B", player2: "Person C", score: 19 },
+      get winner() {
+        return calculateWin(this.team1.score, this.team2.score);
       },
-    ]);
-    setModalVisible(false);
+    },
+  ]);
+
+  const handleSelectPlayer = (team, index, player) => {
+    setSelectedPlayers((prev) => {
+      const newTeam = [...prev[team]];
+      newTeam[index] = player;
+      return { ...prev, [team]: newTeam };
+    });
   };
 
-  const handleRegisterPlayer = () => {
-    if (newPlayerName && !players[newPlayerName]) {
-      players[newPlayerName] = { wins: 0, losses: 0 };
-      setNewPlayerName("");
-    }
+  const handleAddGame = () => {
+    const newGame = {
+      date: 0,
+      team1: {
+        player1: selectedPlayers.team1[0],
+        player2: selectedPlayers.team1[1],
+        score: parseInt(team1Score) || 0,
+      },
+      team2: {
+        player1: selectedPlayers.team2[0],
+        player2: selectedPlayers.team2[1],
+        score: parseInt(team2Score) || 0,
+      },
+      get winner() {
+        return calculateWin(this.team1.score, this.team2.score);
+      },
+    };
+
+    setInitialGames((prevGames) => [...prevGames, newGame]);
+    console.log(newGame);
+    // Reset states
+    setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
+    setTeam1Score("");
+    setTeam2Score("");
+    setModalVisible(false);
   };
 
   return (
@@ -139,7 +163,7 @@ const Scoreboard = () => {
       </AddGameButton>
 
       <FlatList
-        data={badmintonGames}
+        data={initialGames}
         keyExtractor={(item) => item.date}
         renderItem={({ item }) => (
           <GameContainer>
@@ -176,22 +200,51 @@ const Scoreboard = () => {
               <ModalContent>
                 <GameContainer>
                   <TeamContainer>
-                    <AddPlayer />
-                    <AddPlayer />
+                    <AddPlayer
+                      onSelectPlayer={(player) =>
+                        handleSelectPlayer("team1", 0, player)
+                      }
+                    />
+                    <AddPlayer
+                      onSelectPlayer={(player) =>
+                        handleSelectPlayer("team1", 1, player)
+                      }
+                    />
                   </TeamContainer>
 
                   <ResultsContainer>
-                    <Date>25/12/2024</Date>
+                    <Date>4</Date>
                     <ScoreContainer>
-                      <Score>25 - </Score>
-                      <Score>21</Score>
+                      <ScoreInput
+                        keyboardType="numeric"
+                        placeholder="0"
+                        value={team1Score | 0}
+                        onChangeText={setTeam1Score}
+                      />
+                      <Text style={{ fontSize: 30 }}>-</Text>
+                      <ScoreInput
+                        keyboardType="numeric"
+                        placeholder="0"
+                        value={team2Score | 0}
+                        onChangeText={setTeam2Score}
+                      />
                     </ScoreContainer>
                   </ResultsContainer>
 
                   <TeamContainer>
-                    <AddPlayer />
-                    <AddPlayer />
+                    <AddPlayer
+                      onSelectPlayer={(player) =>
+                        handleSelectPlayer("team2", 0, player)
+                      }
+                    />
+                    <AddPlayer
+                      onSelectPlayer={(player) =>
+                        handleSelectPlayer("team2", 1, player)
+                      }
+                    />
                   </TeamContainer>
+
+                  <ScoreContainer></ScoreContainer>
                 </GameContainer>
 
                 <ButtonContainer>
@@ -201,7 +254,9 @@ const Scoreboard = () => {
                   <TouchableOpacity onPress={handleAddGame}>
                     <Text style={styles.button}>Submit</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={handleRegisterPlayer}>
+                  <TouchableOpacity
+                    onPress={() => console.log("Register Player")}
+                  >
                     <Text style={styles.button}>Register Player</Text>
                   </TouchableOpacity>
                 </ButtonContainer>
@@ -266,6 +321,12 @@ const ScoreContainer = styled.View({
 const Score = styled.Text({
   fontSize: 30,
   fontWeight: "bold",
+});
+const ScoreInput = styled.TextInput({
+  fontSize: 30,
+  fontWeight: "bold",
+  margin: "0 5px",
+  textAlign: "center",
 });
 
 const Date = styled.Text({
