@@ -1,39 +1,17 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-} from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
 import styled from "styled-components/native";
 
-const AddPlayer = ({ onSelectPlayer }) => {
+const AddPlayer = ({ onSelectPlayer, selectedPlayers }) => {
   const [selected, setSelected] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const players = {
-    Mohsin: {
-      wins: 0,
-      losses: 0,
-    },
-    Yasin: {
-      wins: 0,
-      losses: 0,
-    },
-    Rayyan: {
-      wins: 0,
-      losses: 0,
-    },
-    Saiful: {
-      wins: 0,
-      losses: 0,
-    },
-    Raqeeb: {
-      wins: 0,
-      losses: 0,
-    },
+    Mohsin: { wins: 0, losses: 0 },
+    Yasin: { wins: 0, losses: 0 },
+    Rayyan: { wins: 0, losses: 0 },
+    Saiful: { wins: 0, losses: 0 },
+    Raqeeb: { wins: 0, losses: 0 },
   };
 
   const playerArray = Object.keys(players).map((key) => ({
@@ -63,11 +41,21 @@ const AddPlayer = ({ onSelectPlayer }) => {
           <Dropdown>
             <FlatList
               data={playerArray}
-              renderItem={({ item }) => (
-                <PlayerDropDown onPress={() => handleSelect(item.value)}>
-                  <PlayerText>{item.value}</PlayerText>
-                </PlayerDropDown>
-              )}
+              renderItem={({ item }) => {
+                const isDisabled =
+                  selectedPlayers.team1.includes(item.value) ||
+                  selectedPlayers.team2.includes(item.value);
+
+                return (
+                  <PlayerDropDown
+                    onPress={() => !isDisabled && handleSelect(item.value)}
+                    disabled={isDisabled}
+                    style={{ backgroundColor: isDisabled ? "#ccc" : "#fff" }}
+                  >
+                    <PlayerText>{item.value}</PlayerText>
+                  </PlayerDropDown>
+                );
+              }}
               keyExtractor={(item) => item.key}
             />
           </Dropdown>

@@ -126,6 +126,12 @@ const Scoreboard = () => {
 
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
+      const isPlayerSelected = Object.values(prev).flat().includes(player);
+      if (isPlayerSelected) {
+        console.log(`${player} is already selected.`);
+        return prev;
+      }
+
       const newTeam = [...prev[team]];
       newTeam[index] = player;
       return { ...prev, [team]: newTeam };
@@ -207,11 +213,13 @@ const Scoreboard = () => {
                       onSelectPlayer={(player) =>
                         handleSelectPlayer("team1", 0, player)
                       }
+                      selectedPlayers={selectedPlayers}
                     />
                     <AddPlayer
                       onSelectPlayer={(player) =>
                         handleSelectPlayer("team1", 1, player)
                       }
+                      selectedPlayers={selectedPlayers}
                     />
                   </TeamContainer>
 
@@ -247,11 +255,13 @@ const Scoreboard = () => {
                       onSelectPlayer={(player) =>
                         handleSelectPlayer("team2", 0, player)
                       }
+                      selectedPlayers={selectedPlayers}
                     />
                     <AddPlayer
                       onSelectPlayer={(player) =>
                         handleSelectPlayer("team2", 1, player)
                       }
+                      selectedPlayers={selectedPlayers}
                     />
                   </TeamContainer>
 
