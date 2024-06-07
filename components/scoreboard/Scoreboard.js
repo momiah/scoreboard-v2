@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from "react-native";
 import styled from "styled-components/native";
-import AddPlayer from "./RegisterPlayer";
+import AddPlayer from "./AddPlayer";
 
 // Define the calculateWin function
 const calculateWin = (teamAScore, teamBScore) => {

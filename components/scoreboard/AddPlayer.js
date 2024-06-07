@@ -13,13 +13,34 @@ const AddPlayer = () => {
   const [selected, setSelected] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
-  const data = [
-    { key: "2", value: "Appliances" },
-    { key: "3", value: "Cameras" },
-    { key: "5", value: "Vegetables" },
-    { key: "6", value: "Dairy Products" },
-    { key: "7", value: "Drinks" },
-  ];
+  const players = {
+    Mohsin: {
+      wins: 0,
+      losses: 0,
+    },
+    Yasin: {
+      wins: 0,
+      losses: 0,
+    },
+    Rayyan: {
+      wins: 0,
+      losses: 0,
+    },
+    Saiful: {
+      wins: 0,
+      losses: 0,
+    },
+    Raqeeb: {
+      wins: 0,
+      losses: 0,
+    },
+  };
+
+  // Convert players object to array format
+  const playerArray = Object.keys(players).map((key) => ({
+    key: key,
+    value: key,
+  }));
 
   const handleSelect = (value) => {
     setSelected(value);
@@ -41,7 +62,7 @@ const AddPlayer = () => {
         <ModalBackground>
           <Dropdown>
             <FlatList
-              data={data}
+              data={playerArray}
               renderItem={({ item }) => (
                 <Item onPress={() => handleSelect(item.value)}>
                   <ItemText>{item.value}</ItemText>
