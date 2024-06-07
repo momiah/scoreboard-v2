@@ -82,7 +82,7 @@ const SelectPlayer = styled.Text({
   borderWidth: 1,
   borderColor: "#ccc",
   borderRadius: 20,
-  width: "100%",
+  width: 130, // Fixed width
 });
 
 const ModalBackground = styled.View({

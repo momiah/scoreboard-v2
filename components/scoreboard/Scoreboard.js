@@ -110,7 +110,7 @@ const Scoreboard = () => {
     team1: ["", ""],
     team2: ["", ""],
   });
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState("Select Date");
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [initialGames, setInitialGames] = useState([
@@ -225,7 +225,7 @@ const Scoreboard = () => {
                       setSelectedDate={setSelectedDate}
                       selectedDate={selectedDate}
                     />
-                    <ScoreContainer>
+                    <ScoreContainer style={{ width: 100 }}>
                       <ScoreInput
                         keyboardType="numeric"
                         placeholder="0"
@@ -327,6 +327,7 @@ const ResultsContainer = styled.View({
 const ScoreContainer = styled.View({
   display: "flex",
   flexDirection: "row",
+  justifyContent: "center",
 });
 
 const Score = styled.Text({
@@ -354,6 +355,7 @@ const Team = styled.Text({
   paddingLeft: 30,
   paddingRight: 30,
   borderRadius: 20,
+  width: 130,
 });
 
 const ModalContainer = styled.View({
