@@ -165,6 +165,13 @@ const Scoreboard = () => {
     setModalVisible(false);
   };
 
+  const handleScoreChange = (setScore) => (text) => {
+    const numericText = text.replace(/[^0-9]/g, ""); // Allow only numbers
+    if (numericText.length <= 2) {
+      setScore(numericText);
+    }
+  };
+
   return (
     <Container>
       <AddGameButton onPress={() => setModalVisible(true)}>
@@ -237,15 +244,15 @@ const Scoreboard = () => {
                       <ScoreInput
                         keyboardType="numeric"
                         placeholder="0"
-                        value={team1Score | 0}
-                        onChangeText={setTeam1Score}
+                        value={team1Score}
+                        onChangeText={handleScoreChange(setTeam1Score)}
                       />
                       <Text style={{ fontSize: 30 }}>-</Text>
                       <ScoreInput
                         keyboardType="numeric"
                         placeholder="0"
-                        value={team2Score | 0}
-                        onChangeText={setTeam2Score}
+                        value={team2Score}
+                        onChangeText={handleScoreChange(setTeam2Score)}
                       />
                     </ScoreContainer>
                   </ResultsContainer>
