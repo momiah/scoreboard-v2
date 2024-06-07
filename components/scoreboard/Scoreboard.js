@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
+import AddDate from "./AddDate";
 
 // Define the calculateWin function
 // const calculateWin = (teamAScore, teamBScore) => {
@@ -104,10 +105,12 @@ const calculateWin = (score1, score2) => {
 // Define the Scoreboard component
 const Scoreboard = () => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [showDateSelector, setShowDateSelector] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState({
     team1: ["", ""],
     team2: ["", ""],
   });
+  const [selectedDate, setSelectedDate] = useState("");
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [initialGames, setInitialGames] = useState([
@@ -131,7 +134,7 @@ const Scoreboard = () => {
 
   const handleAddGame = () => {
     const newGame = {
-      date: 0,
+      date: selectedDate,
       team1: {
         player1: selectedPlayers.team1[0],
         player2: selectedPlayers.team1[1],
@@ -213,7 +216,15 @@ const Scoreboard = () => {
                   </TeamContainer>
 
                   <ResultsContainer>
-                    <Date>4</Date>
+                    <Text onPress={() => setShowDateSelector(true)}>
+                      {selectedDate ?? "Add Date"}
+                    </Text>
+                    <AddDate
+                      showDateSelector={showDateSelector}
+                      setShowDateSelector={setShowDateSelector}
+                      setSelectedDate={setSelectedDate}
+                      selectedDate={selectedDate}
+                    />
                     <ScoreContainer>
                       <ScoreInput
                         keyboardType="numeric"

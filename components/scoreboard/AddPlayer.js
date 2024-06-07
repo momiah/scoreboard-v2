@@ -64,9 +64,9 @@ const AddPlayer = ({ onSelectPlayer }) => {
             <FlatList
               data={playerArray}
               renderItem={({ item }) => (
-                <Item onPress={() => handleSelect(item.value)}>
-                  <ItemText>{item.value}</ItemText>
-                </Item>
+                <PlayerDropDown onPress={() => handleSelect(item.value)}>
+                  <PlayerText>{item.value}</PlayerText>
+                </PlayerDropDown>
               )}
               keyExtractor={(item) => item.key}
             />
@@ -82,6 +82,7 @@ const SelectPlayer = styled.Text({
   borderWidth: 1,
   borderColor: "#ccc",
   borderRadius: 20,
+  width: "100%",
 });
 
 const ModalBackground = styled.View({
@@ -99,13 +100,13 @@ const Dropdown = styled.View({
   overflow: "hidden",
 });
 
-const Item = styled.TouchableOpacity({
+const PlayerDropDown = styled.TouchableOpacity({
   padding: 15,
   borderBottomWidth: 1,
   borderBottomColor: "#ccc",
 });
 
-const ItemText = styled.Text({
+const PlayerText = styled.Text({
   fontSize: 16,
 });
 
