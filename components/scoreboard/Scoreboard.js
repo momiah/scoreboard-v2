@@ -11,95 +11,36 @@ import {
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 import AddDate from "./AddDate";
+import { saveGame } from "../../services/saveGame";
 
-// Define the calculateWin function
-// const calculateWin = (teamAScore, teamBScore) => {
-//   if (teamAScore >= 21 && (teamAScore - teamBScore >= 2 || teamAScore === 30)) {
-//     return "Team 1";
-//   }
-//   if (teamBScore >= 21 && (teamBScore - teamAScore >= 2 || teamBScore === 30)) {
-//     return "Team 2";
-//   }
-//   return "No winner";
-// };
-
-const players = {
-  Mohsin: {
-    wins: 0,
-    losses: 0,
-  },
-  Yasin: {
-    wins: 0,
-    losses: 0,
-  },
-  Rayyan: {
-    wins: 0,
-    losses: 0,
-  },
-  Saiful: {
-    wins: 0,
-    losses: 0,
-  },
-  Raqeeb: {
-    wins: 0,
-    losses: 0,
-  },
-};
-
-// Hardcoded games
-const initialGames = [
-  {
-    date: "2024-06-01",
-    team1: { player1: "Person A", player2: "Person B", score: 21 },
-    team2: { player1: "Person B", player2: "Person C", score: 19 },
-    get winner() {
-      return calculateWin(this.team1.score, this.team2.score);
-    },
-  },
-  {
-    date: "2024-06-02",
-    team1: { player1: "Person D", player2: "Person E", score: 22 },
-    team2: { player1: "Person F", player2: "Person G", score: 20 },
-    get winner() {
-      return calculateWin(this.team1.score, this.team2.score);
-    },
-  },
-  {
-    date: "2024-06-03",
-    team1: { player1: "Person H", player2: "Person I", score: 30 },
-    team2: { player1: "Person J", player2: "Person K", score: 28 },
-    get winner() {
-      return calculateWin(this.team1.score, this.team2.score);
-    },
-  },
-  {
-    date: "2024-06-04",
-    team1: { player1: "Person L", player2: "Person M", score: 21 },
-    team2: { player1: "Person N", player2: "Person O", score: 23 },
-    get winner() {
-      return calculateWin(this.team1.score, this.team2.score);
-    },
-  },
-  {
-    date: "2024-06-05",
-    team1: { player1: "Person P", player2: "Person Q", score: 19 },
-    team2: { player1: "Person R", player2: "Person S", score: 21 },
-    get winner() {
-      return calculateWin(this.team1.score, this.team2.score);
-    },
-  },
-  {
-    date: "2024-06-06",
-    team1: { player1: "Person T", player2: "Person U", score: 25 },
-    team2: { player1: "Person V", player2: "Person W", score: 27 },
-    get winner() {
-      return calculateWin(this.team1.score, this.team2.score);
-    },
-  },
-];
-
-const calculateWin = (score1, score2) => {
-  return score1 > score2 ? "Team 1" : "Team 2";
+const calculateWin = (team1, team2) => {
+  if (team1.score > team2.score) {
+    return {
+      winner: {
+        team: "Team 1",
+        players: [team1.player1, team1.player2],
+        score: team1.score,
+      },
+      loser: {
+        team: "Team 2",
+        players: [team2.player1, team2.player2],
+        score: team2.score,
+      },
+    };
+  } else {
+    return {
+      winner: {
+        team: "Team 2",
+        players: [team2.player1, team2.player2],
+        score: team2.score,
+      },
+      loser: {
+        team: "Team 1",
+        players: [team1.player1, team1.player2],
+        score: team1.score,
+      },
+    };
+  }
 };
 
 // Define the Scoreboard component
@@ -151,8 +92,8 @@ const Scoreboard = () => {
         player2: selectedPlayers.team2[1],
         score: parseInt(team2Score) || 0,
       },
-      get winner() {
-        return calculateWin(this.team1.score, this.team2.score);
+      get result() {
+        return calculateWin(this.team1, this.team2);
       },
     };
 
@@ -163,6 +104,8 @@ const Scoreboard = () => {
     setTeam1Score("");
     setTeam2Score("");
     setModalVisible(false);
+
+    saveGame(newGame);
   };
 
   const handleScoreChange = (setScore) => (text) => {
