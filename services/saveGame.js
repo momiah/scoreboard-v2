@@ -2,12 +2,12 @@ import { setDoc, doc, collection } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { Alert } from "react-native";
 
-export const saveGame = async (newGame, selectedDate) => {
+export const saveGame = async (newGame, gameId) => {
   try {
     const scoreboardCollectionRef = collection(db, "scoreboard");
 
     // Generate a unique document ID to prevent overwriting (optional)
-    const gameDocRef = doc(scoreboardCollectionRef, "doc title");
+    const gameDocRef = doc(scoreboardCollectionRef, gameId);
 
     await setDoc(gameDocRef, newGame);
     Alert.alert("Success", "Game saved successfully!");

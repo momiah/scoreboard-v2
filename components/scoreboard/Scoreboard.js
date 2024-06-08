@@ -1,17 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   Modal,
-  TextInput,
+  RefreshControl,
   StyleSheet,
 } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 import AddDate from "./AddDate";
 import { saveGame } from "../../services/saveGame";
+import { retrieveGames } from "../../services/retrieveGame";
+import { generateUniqueGameId } from "../../services/generateUniqueId";
 
 const calculateWin = (team1, team2) => {
   if (team1.score > team2.score) {
@@ -45,6 +47,29 @@ const calculateWin = (team1, team2) => {
 
 // Define the Scoreboard component
 const Scoreboard = () => {
+  const [games, setGames] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const retrievedGames = await retrieveGames();
+      setGames(retrievedGames);
+    };
+
+    fetchData();
+  }, []);
+
+  const [refreshing, setRefreshing] = useState(false); // Refresh state
+
+  const handleRefresh = async () => {
+    setRefreshing(true); // Show the refresh indicator
+
+    // Simulate fetching new data (replace with your actual data fetching logic)
+    const retrievedGames = await retrieveGames();
+    setGames(retrievedGames);
+
+    setRefreshing(false); // Hide the refresh indicator
+  };
+
   const [modalVisible, setModalVisible] = useState(false);
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [selectedPlayers, setSelectedPlayers] = useState({
@@ -54,16 +79,6 @@ const Scoreboard = () => {
   const [selectedDate, setSelectedDate] = useState("Select Date");
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
-  const [initialGames, setInitialGames] = useState([
-    {
-      date: "2024-06-01",
-      team1: { player1: "Person A", player2: "Person B", score: 21 },
-      team2: { player1: "Person B", player2: "Person C", score: 19 },
-      get winner() {
-        return calculateWin(this.team1.score, this.team2.score);
-      },
-    },
-  ]);
 
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
@@ -79,8 +94,15 @@ const Scoreboard = () => {
     });
   };
 
-  const handleAddGame = () => {
+  const handleAddGame = async () => {
+    const transformedDate = selectedDate.replace(
+      /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
+      "$2-$1-$3"
+    );
+
+    const gameId = generateUniqueGameId(transformedDate, games);
     const newGame = {
+      gameId: gameId,
       date: selectedDate,
       team1: {
         player1: selectedPlayers.team1[0],
@@ -97,15 +119,18 @@ const Scoreboard = () => {
       },
     };
 
-    setInitialGames((prevGames) => [...prevGames, newGame]);
+    // Save the game to Firestore
+    await saveGame(newGame, gameId);
+
+    // Update games state directly (assuming setGames is a state setter function)
+    setGames([...games, newGame]);
+
     console.log(newGame);
     // Reset states
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
     setTeam2Score("");
     setModalVisible(false);
-
-    saveGame(newGame);
   };
 
   const handleScoreChange = (setScore) => (text) => {
@@ -122,8 +147,11 @@ const Scoreboard = () => {
       </AddGameButton>
 
       <FlatList
-        data={initialGames}
-        keyExtractor={(item) => item.date}
+        data={games}
+        keyExtractor={(item) => item.gameId}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
         renderItem={({ item }) => (
           <GameContainer>
             <TeamContainer>
@@ -351,3 +379,14 @@ const styles = StyleSheet.create({
 });
 
 export default Scoreboard;
+
+//  const [initialGames, setInitialGames] = useState([
+//   {
+//     date: "2024-06-01",
+//     team1: { player1: "Person A", player2: "Person B", score: 21 },
+//     team2: { player1: "Person B", player2: "Person C", score: 19 },
+//     get winner() {
+//       return calculateWin(this.team1.score, this.team2.score);
+//     },
+//   },
+// ]);
