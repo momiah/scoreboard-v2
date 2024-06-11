@@ -10,10 +10,10 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
-import AddDate from "./AddDate";
 import { saveGame } from "../../services/saveGame";
 import { retrieveGames } from "../../services/retrieveGame";
 import { generateUniqueGameId } from "../../services/generateUniqueId";
+import moment from "moment";
 
 const calculateWin = (team1, team2) => {
   if (team1.score > team2.score) {
@@ -71,12 +71,12 @@ const Scoreboard = () => {
   };
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [showDateSelector, setShowDateSelector] = useState(false);
+
   const [selectedPlayers, setSelectedPlayers] = useState({
     team1: ["", ""],
     team2: ["", ""],
   });
-  const [selectedDate, setSelectedDate] = useState("Select Date");
+
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
 
@@ -95,15 +95,10 @@ const Scoreboard = () => {
   };
 
   const handleAddGame = async () => {
-    const transformedDate = selectedDate.replace(
-      /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
-      "$2-$1-$3"
-    );
-
-    const gameId = generateUniqueGameId(transformedDate, games);
+    const gameId = generateUniqueGameId(games);
     const newGame = {
       gameId: gameId,
-      date: selectedDate,
+      date: moment().format("DD-MM-YYYY"),
       team1: {
         player1: selectedPlayers.team1[0],
         player2: selectedPlayers.team1[1],
@@ -125,7 +120,6 @@ const Scoreboard = () => {
     // Update games state directly (assuming setGames is a state setter function)
     setGames([...games, newGame]);
 
-    console.log(newGame);
     // Reset states
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
@@ -145,7 +139,9 @@ const Scoreboard = () => {
       <AddGameButton onPress={() => setModalVisible(true)}>
         <Text>Add Game</Text>
       </AddGameButton>
-
+      <TouchableOpacity onPress={() => consoleLogging()}>
+        <Text>Hello</Text>
+      </TouchableOpacity>
       <FlatList
         data={games}
         keyExtractor={(item) => item.gameId}
@@ -202,15 +198,7 @@ const Scoreboard = () => {
                   </TeamContainer>
 
                   <ResultsContainer>
-                    <Text onPress={() => setShowDateSelector(true)}>
-                      {selectedDate ?? "Add Date"}
-                    </Text>
-                    <AddDate
-                      showDateSelector={showDateSelector}
-                      setShowDateSelector={setShowDateSelector}
-                      setSelectedDate={setSelectedDate}
-                      selectedDate={selectedDate}
-                    />
+                    <Text>{moment().format("DD-MM-YYYY")}</Text>
                     <ScoreContainer style={{ width: 100 }}>
                       <ScoreInput
                         keyboardType="numeric"
