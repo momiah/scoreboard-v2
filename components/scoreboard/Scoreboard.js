@@ -7,12 +7,14 @@ import {
   Modal,
   RefreshControl,
   StyleSheet,
+  Alert,
 } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 import AddDate from "./AddDate";
 import { saveGame } from "../../services/saveGame";
 import { retrieveGames } from "../../services/retrieveGame";
+import { deleteGame } from "../../services/deleteGame";
 import { generateUniqueGameId } from "../../services/generateUniqueId";
 
 const calculateWin = (team1, team2) => {
@@ -79,6 +81,8 @@ const Scoreboard = () => {
   const [selectedDate, setSelectedDate] = useState("Select Date");
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
+  const [deleteGameContainer, setDeleteGameContainer] = useState(false);
+  const [deleteGameId, setDeleteGameId] = useState(null);
 
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
@@ -140,6 +144,16 @@ const Scoreboard = () => {
     }
   };
 
+  const openDeleteGameContainer = (gameId) => {
+    setDeleteGameId(gameId);
+    setDeleteGameContainer(true);
+  };
+
+  const closeDeleteGameContainer = () => {
+    setDeleteGameId(null);
+    setDeleteGameContainer(false);
+  };
+
   return (
     <Container>
       <AddGameButton onPress={() => setModalVisible(true)}>
@@ -153,7 +167,19 @@ const Scoreboard = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         renderItem={({ item }) => (
-          <GameContainer>
+          <GameContainer onPress={() => openDeleteGameContainer(item.gameId)}>
+            {deleteGameContainer && deleteGameId === item.gameId && (
+              <DeleteGameContainer>
+                <DeleteGameButton
+                  onPress={() => deleteGame(item.gameId, setGames)}
+                >
+                  <DeleteGameButtonText>Delete Game</DeleteGameButtonText>
+                </DeleteGameButton>
+                <DeleteGameButton onPress={closeDeleteGameContainer}>
+                  <DeleteGameButtonText>Cancel</DeleteGameButtonText>
+                </DeleteGameButton>
+              </DeleteGameContainer>
+            )}
             <TeamContainer>
               <Team>{item.team1.player1}</Team>
               <Team>{item.team1.player2}</Team>
@@ -288,13 +314,48 @@ const AddGameButton = styled.TouchableOpacity({
   border: "1px solid #ccc",
 });
 
-const GameContainer = styled.View({
+const GameContainer = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
   borderWidth: 1,
   borderColor: "#ccc",
   borderRadius: 8,
+});
+
+const DeleteGameContainer = styled.View({
+  flex: 1,
+  flexDirection: "row",
+  backgroundColor: "rgba(0, 0, 0, 0.4 )", // Slight transparency
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 2,
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "0 50px",
+});
+
+const DeleteGameButton = styled.TouchableOpacity({
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  fontSize: 24,
+  fontWeight: "bold",
+  marginBottom: 15,
+  marginTop: 15,
+  padding: 10,
+  width: 140,
+  backgroundColor: "#BBDCFF",
+  border: "1px solid #ccc",
+});
+
+const DeleteGameButtonText = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
 });
 
 const TeamContainer = styled.View({
