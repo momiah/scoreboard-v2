@@ -102,6 +102,7 @@ const Scoreboard = () => {
     setNewestGameId(gameId);
     const newGame = {
       gameId: gameId,
+      gamescore: `${team1Score} - ${team2Score}`,
       date: moment().format("DD-MM-YYYY"),
       team1: {
         player1: selectedPlayers.team1[0],
