@@ -12,6 +12,7 @@ import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 import { saveGame } from "../../services/saveGame";
 import { retrieveGames } from "../../services/retrieveGame";
+import { deleteGame } from "../../services/deleteGame";
 import { generateUniqueGameId } from "../../services/generateUniqueId";
 import moment from "moment";
 
@@ -63,7 +64,6 @@ const Scoreboard = () => {
   const handleRefresh = async () => {
     setRefreshing(true); // Show the refresh indicator
 
-    // Simulate fetching new data (replace with your actual data fetching logic)
     const retrievedGames = await retrieveGames();
     setGames(retrievedGames);
 
@@ -79,6 +79,9 @@ const Scoreboard = () => {
 
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
+  const [deleteGameContainer, setDeleteGameContainer] = useState(false);
+  const [deleteGameId, setDeleteGameId] = useState(null);
+  const [newestGameId, setNewestGameId] = useState("");
 
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
@@ -96,6 +99,7 @@ const Scoreboard = () => {
 
   const handleAddGame = async () => {
     const gameId = generateUniqueGameId(games);
+    setNewestGameId(gameId);
     const newGame = {
       gameId: gameId,
       date: moment().format("DD-MM-YYYY"),
@@ -114,13 +118,10 @@ const Scoreboard = () => {
       },
     };
 
-    // Save the game to Firestore
     await saveGame(newGame, gameId);
 
-    // Update games state directly (assuming setGames is a state setter function)
-    setGames([...games, newGame]);
+    setGames([newGame, ...games]);
 
-    // Reset states
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
     setTeam2Score("");
@@ -128,10 +129,20 @@ const Scoreboard = () => {
   };
 
   const handleScoreChange = (setScore) => (text) => {
-    const numericText = text.replace(/[^0-9]/g, ""); // Allow only numbers
+    const numericText = text.replace(/[^0-9]/g, "");
     if (numericText.length <= 2) {
       setScore(numericText);
     }
+  };
+
+  const openDeleteGameContainer = (gameId) => {
+    setDeleteGameId(gameId);
+    setDeleteGameContainer(true);
+  };
+
+  const closeDeleteGameContainer = () => {
+    setDeleteGameId(null);
+    setDeleteGameContainer(false);
   };
 
   return (
@@ -146,25 +157,63 @@ const Scoreboard = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         renderItem={({ item }) => (
-          <GameContainer>
-            <TeamContainer>
-              <Team>{item.team1.player1}</Team>
-              <Team>{item.team1.player2}</Team>
-            </TeamContainer>
+          <>
+            {newestGameId === item.gameId ? (
+              <GameContainer
+                onPress={() => openDeleteGameContainer(item.gameId)}
+              >
+                {deleteGameContainer && deleteGameId === item.gameId && (
+                  <DeleteGameContainer>
+                    <DeleteGameButton
+                      onPress={() => deleteGame(item.gameId, setGames)}
+                    >
+                      <DeleteGameButtonText>Delete Game</DeleteGameButtonText>
+                    </DeleteGameButton>
+                    <DeleteGameButton onPress={closeDeleteGameContainer}>
+                      <DeleteGameButtonText>Cancel</DeleteGameButtonText>
+                    </DeleteGameButton>
+                  </DeleteGameContainer>
+                )}
+                <TeamContainer>
+                  <Team>{item.team1.player1}</Team>
+                  <Team>{item.team1.player2}</Team>
+                </TeamContainer>
 
-            <ResultsContainer>
-              <Date>{item.date}</Date>
-              <ScoreContainer>
-                <Score>{item.team1.score} - </Score>
-                <Score>{item.team2.score}</Score>
-              </ScoreContainer>
-            </ResultsContainer>
+                <ResultsContainer>
+                  <Date>{item.date}</Date>
+                  <ScoreContainer>
+                    <Score>{item.team1.score} - </Score>
+                    <Score>{item.team2.score}</Score>
+                  </ScoreContainer>
+                </ResultsContainer>
 
-            <TeamContainer>
-              <Team>{item.team2.player1}</Team>
-              <Team>{item.team2.player2}</Team>
-            </TeamContainer>
-          </GameContainer>
+                <TeamContainer>
+                  <Team>{item.team2.player1}</Team>
+                  <Team>{item.team2.player2}</Team>
+                </TeamContainer>
+              </GameContainer>
+            ) : (
+              <NonDeletableGameContainer>
+                <TeamContainer>
+                  <Team>{item.team1.player1}</Team>
+                  <Team>{item.team1.player2}</Team>
+                </TeamContainer>
+
+                <ResultsContainer>
+                  <Date>{item.date}</Date>
+                  <ScoreContainer>
+                    <Score>{item.team1.score} - </Score>
+                    <Score>{item.team2.score}</Score>
+                  </ScoreContainer>
+                </ResultsContainer>
+
+                <TeamContainer>
+                  <Team>{item.team2.player1}</Team>
+                  <Team>{item.team2.player2}</Team>
+                </TeamContainer>
+              </NonDeletableGameContainer>
+            )}
+          </>
         )}
       />
 
@@ -273,13 +322,56 @@ const AddGameButton = styled.TouchableOpacity({
   border: "1px solid #ccc",
 });
 
-const GameContainer = styled.View({
+const GameContainer = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
   borderWidth: 1,
   borderColor: "#ccc",
   borderRadius: 8,
+});
+const NonDeletableGameContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginBottom: 16,
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 8,
+});
+
+const DeleteGameContainer = styled.View({
+  flex: 1,
+  flexDirection: "row",
+  backgroundColor: "rgba(0, 0, 0, 0.4 )",
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 2,
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "0 50px",
+});
+
+const DeleteGameButton = styled.TouchableOpacity({
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  fontSize: 24,
+  fontWeight: "bold",
+  marginBottom: 15,
+  marginTop: 15,
+  padding: 10,
+  width: 140,
+  backgroundColor: "#BBDCFF",
+  border: "1px solid #ccc",
+});
+
+const DeleteGameButtonText = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
 });
 
 const TeamContainer = styled.View({
@@ -342,11 +434,6 @@ const ModalContent = styled.View({
   backgroundColor: "#fff",
   padding: 20,
   borderRadius: 10,
-  // shadowColor: "#000",
-  // shadowOffset: { width: 0, height: 2 },
-  // shadowOpacity: 0.8,
-  // shadowRadius: 2,
-  // elevation: 5,
 });
 
 const ButtonContainer = styled.View({
@@ -364,14 +451,3 @@ const styles = StyleSheet.create({
 });
 
 export default Scoreboard;
-
-//  const [initialGames, setInitialGames] = useState([
-//   {
-//     date: "2024-06-01",
-//     team1: { player1: "Person A", player2: "Person B", score: 21 },
-//     team2: { player1: "Person B", player2: "Person C", score: 19 },
-//     get winner() {
-//       return calculateWin(this.team1.score, this.team2.score);
-//     },
-//   },
-// ]);
