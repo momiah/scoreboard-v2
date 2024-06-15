@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
-import AddDate from "./AddDate";
 import { saveGame } from "../../services/saveGame";
 import { retrieveGames } from "../../services/retrieveGame";
 import { deleteGame } from "../../services/deleteGame";
@@ -228,15 +227,6 @@ const Scoreboard = () => {
                   </TeamContainer>
 
                   <ResultsContainer>
-                    <Text onPress={() => setShowDateSelector(true)}>
-                      {selectedDate ?? "Add Date"}
-                    </Text>
-                    <AddDate
-                      showDateSelector={showDateSelector}
-                      setShowDateSelector={setShowDateSelector}
-                      setSelectedDate={setSelectedDate}
-                      selectedDate={selectedDate}
-                    />
                     <ScoreContainer style={{ width: 100 }}>
                       <ScoreInput
                         keyboardType="numeric"
