@@ -139,9 +139,6 @@ const Scoreboard = () => {
       <AddGameButton onPress={() => setModalVisible(true)}>
         <Text>Add Game</Text>
       </AddGameButton>
-      <TouchableOpacity onPress={() => consoleLogging()}>
-        <Text>Hello</Text>
-      </TouchableOpacity>
       <FlatList
         data={games}
         keyExtractor={(item) => item.gameId}
