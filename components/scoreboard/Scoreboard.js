@@ -11,7 +11,7 @@ import {
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 // import { retrieveGames } from "../../services/retrieveGame";
-import { generateUniqueGameId } from "../../services/generateUniqueId";
+import { generateUniqueGameId } from "../../functions/generateUniqueId";
 import moment from "moment";
 import Popup from "../popup/Popup";
 import { GameContext } from "../../context/GameContext";
