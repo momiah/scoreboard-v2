@@ -1,18 +1,23 @@
+// App.js
+import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StyleSheet } from "react-native";
 import Home from "./components/Home";
+import { GameProvider } from "./context/GameContext";
 
 export default function App() {
   return (
     <SafeAreaView style={styles.container}>
-      <Home />
+      <GameProvider>
+        <Home />
+      </GameProvider>
+      <StatusBar style="auto" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: "100%",
     flex: 1,
     backgroundColor: "#fff",
     alignItems: "center",

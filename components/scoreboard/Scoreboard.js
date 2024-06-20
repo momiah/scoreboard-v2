@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -10,11 +10,11 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
-import { saveGame } from "../../services/saveGame";
-import { retrieveGames } from "../../services/retrieveGame";
-import { deleteGame } from "../../services/deleteGame";
+// import { retrieveGames } from "../../services/retrieveGame";
 import { generateUniqueGameId } from "../../services/generateUniqueId";
 import moment from "moment";
+import Popup from "../popup/Popup";
+import { GameContext } from "../../context/GameContext";
 
 const calculateWin = (team1, team2) => {
   if (team1.score > team2.score) {
@@ -48,40 +48,51 @@ const calculateWin = (team1, team2) => {
 
 // Define the Scoreboard component
 const Scoreboard = () => {
-  const [games, setGames] = useState([]);
+  const {
+    games,
+    setGames,
+    addGame,
+    retrieveGames,
+    deleteGameById,
+    refreshing,
+    setRefreshing,
+    deleteGameContainer,
+    setDeleteGameContainer,
+    deleteGameId,
+    setDeleteGameId,
+  } = useContext(GameContext);
+
+  const [newestGameId, setNewestGameId] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
-      const retrievedGames = await retrieveGames();
-      setGames(retrievedGames);
-    };
-
-    fetchData();
-  }, []);
-
-  const [refreshing, setRefreshing] = useState(false); // Refresh state
-
-  const handleRefresh = async () => {
-    setRefreshing(true); // Show the refresh indicator
-
-    const retrievedGames = await retrieveGames();
-    setGames(retrievedGames);
-
-    setRefreshing(false); // Hide the refresh indicator
-  };
-
-  const [modalVisible, setModalVisible] = useState(false);
+    // Logic to fetch and set newestGameId
+    if (games.length > 0) {
+      setNewestGameId(games[0].gameId);
+    }
+  }, [games]);
 
   const [selectedPlayers, setSelectedPlayers] = useState({
     team1: ["", ""],
     team2: ["", ""],
   });
-
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
-  const [deleteGameContainer, setDeleteGameContainer] = useState(false);
-  const [deleteGameId, setDeleteGameId] = useState(null);
-  const [newestGameId, setNewestGameId] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+
+    try {
+      const retrievedGames = await retrieveGames();
+      setGames(retrievedGames);
+    } catch (error) {
+      console.error("Error refreshing games:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
@@ -97,9 +108,30 @@ const Scoreboard = () => {
     });
   };
 
+  const handleScoreChange = (setScore) => (text) => {
+    const numericText = text.replace(/[^0-9]/g, "");
+    if (numericText.length <= 2) {
+      setScore(numericText);
+    }
+  };
+
   const handleAddGame = async () => {
+    // Check if both teams have selected players
+    if (
+      selectedPlayers.team1.every((player) => player === "") ||
+      selectedPlayers.team2.every((player) => player === "")
+    ) {
+      handleShowPopup("Please select players for both teams.");
+      return;
+    }
+
+    // Check if both teams have entered scores
+    if (!team1Score || !team2Score) {
+      handleShowPopup("Please enter scores for both teams.");
+      return;
+    }
+
     const gameId = generateUniqueGameId(games);
-    setNewestGameId(gameId);
     const newGame = {
       gameId: gameId,
       gamescore: `${team1Score} - ${team2Score}`,
@@ -119,21 +151,11 @@ const Scoreboard = () => {
       },
     };
 
-    await saveGame(newGame, gameId);
-
-    setGames([newGame, ...games]);
-
+    await addGame(newGame, gameId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
     setTeam2Score("");
     setModalVisible(false);
-  };
-
-  const handleScoreChange = (setScore) => (text) => {
-    const numericText = text.replace(/[^0-9]/g, "");
-    if (numericText.length <= 2) {
-      setScore(numericText);
-    }
   };
 
   const openDeleteGameContainer = (gameId) => {
@@ -146,11 +168,22 @@ const Scoreboard = () => {
     setDeleteGameContainer(false);
   };
 
+  const handleShowPopup = (message) => {
+    setPopupMessage(message);
+    setShowPopup(true);
+  };
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setPopupMessage("");
+  };
+
   return (
     <Container>
       <AddGameButton onPress={() => setModalVisible(true)}>
         <Text>Add Game</Text>
       </AddGameButton>
+
       <FlatList
         data={games}
         keyExtractor={(item) => item.gameId}
@@ -166,7 +199,7 @@ const Scoreboard = () => {
                 {deleteGameContainer && deleteGameId === item.gameId && (
                   <DeleteGameContainer>
                     <DeleteGameButton
-                      onPress={() => deleteGame(item.gameId, setGames)}
+                      onPress={() => deleteGameById(item.gameId, setGames)}
                     >
                       <DeleteGameButtonText>Delete Game</DeleteGameButtonText>
                     </DeleteGameButton>
@@ -224,8 +257,18 @@ const Scoreboard = () => {
             animationType="slide"
             transparent={true}
             visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
+            onRequestClose={() => {
+              setModalVisible(false);
+              setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
+              setTeam1Score("");
+              setTeam2Score("");
+            }}
           >
+            <Popup
+              visible={showPopup}
+              message={popupMessage}
+              onClose={handleClosePopup}
+            />
             <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
               <ModalContent>
                 <GameContainer>
