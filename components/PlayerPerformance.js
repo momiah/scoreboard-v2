@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, Text } from "react-native";
+import { View, Text, FlatList } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../context/GameContext";
 import { calculatePlayerPerformance } from "../functions/calculatePlayerPerformance";
 
 const PlayerPerformance = () => {
   const { games, setGames, retrieveGames } = useContext(GameContext);
-  console.log("games in player performance", games);
   const [playerStats, setPlayerStats] = useState({});
   const [sortedPlayers, setSortedPlayers] = useState([]);
 
@@ -19,82 +18,106 @@ const PlayerPerformance = () => {
     fetchData();
   }, [setGames]);
 
-  // Use effect to update playerStats whenever games update
   useEffect(() => {
     if (games.length > 0) {
       const stats = calculatePlayerPerformance(games);
       setPlayerStats(stats);
 
-      // Optionally, sort players
-      const sorted = Object.keys(stats).sort(
-        (a, b) => stats[b].XP - stats[a].XP
-      );
+      // Sort players based on XP
+      const sorted = Object.keys(stats).sort((a, b) => {
+        const xpA = stats[a].XP + stats[a].totalPoints;
+        const xpB = stats[b].XP + stats[b].totalPoints;
+        return xpB - xpA;
+      });
       setSortedPlayers(sorted);
     }
   }, [games]);
 
+  const renderPlayer = ({ item: playerName, index }) => (
+    <TableRow key={playerName}>
+      <TableCell>
+        <Rank>
+          {index + 1}
+          {index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"}
+        </Rank>
+      </TableCell>
+      <PlayerNameCell>
+        <PlayerName>{playerName}</PlayerName>
+      </PlayerNameCell>
+      <TableCell>
+        <StatTitle>Wins</StatTitle>
+        <Stat>{playerStats[playerName].numberOfWins}</Stat>
+      </TableCell>
+      <TableCell>
+        <StatTitle>XP</StatTitle>
+        <Stat>{playerStats[playerName].XP}</Stat>
+      </TableCell>
+      <TableCell>
+        <TableText>
+          {playerStats[playerName].XP + playerStats[playerName].totalPoints}
+        </TableText>
+      </TableCell>
+    </TableRow>
+  );
+
   return (
     <TableContainer>
-      <Table>
-        <TableRow>
-          <TableHeader>
-            <TableText>Player</TableText>
-          </TableHeader>
-          <TableHeader>
-            <TableText>Wins</TableText>
-          </TableHeader>
-          <TableHeader>
-            <TableText>XP</TableText>
-          </TableHeader>
-        </TableRow>
-        {sortedPlayers.map((player) => (
-          <TableRow key={player}>
-            <TableCell>
-              <TableText>{player}</TableText>
-            </TableCell>
-            <TableCell>
-              <TableText>{playerStats[player].numberOfWins}</TableText>
-            </TableCell>
-            <TableCell>
-              <TableText>{playerStats[player].XP}</TableText>
-            </TableCell>
-          </TableRow>
-        ))}
-      </Table>
+      <FlatList
+        data={sortedPlayers}
+        renderItem={renderPlayer}
+        keyExtractor={(playerName) => playerName}
+      />
     </TableContainer>
   );
 };
 
-const TableContainer = styled.ScrollView({
-  padding: 16,
-});
-
-const Table = styled.View({
-  borderWidth: 1,
-  borderColor: "#000",
+const TableContainer = styled.View({
+  paddingTop: 20,
+  flex: 1,
 });
 
 const TableRow = styled.View({
   flexDirection: "row",
-});
 
-const TableHeader = styled.View({
-  flex: 1,
-  padding: 8,
-  backgroundColor: "#f1f1f1",
-  borderWidth: 1,
-  borderColor: "#000",
+  borderBottomColor: "#ccc",
 });
 
 const TableCell = styled.View({
   flex: 1,
-  padding: 8,
-  borderWidth: 1,
-  borderColor: "#000",
+  justifyContent: "center",
+  alignItems: "center",
+  paddingTop: 20,
+  paddingBottom: 20,
+  borderBottomWidth: 1,
+  borderColor: "#ccc",
+});
+const PlayerNameCell = styled.View({
+  flex: 1,
+  justifyContent: "center",
+
+  paddingTop: 20,
+  paddingBottom: 20,
+  borderBottomWidth: 1,
+  borderColor: "#ccc",
 });
 
 const TableText = styled.Text({
   fontSize: 14,
+});
+const PlayerName = styled.Text({
+  fontSize: 16,
+  fontWeight: "bold",
+});
+const Rank = styled.Text({
+  fontSize: 14,
+});
+const StatTitle = styled.Text({
+  fontSize: 14,
+  color: "#aaa",
+});
+const Stat = styled.Text({
+  fontSize: 16,
+  fontWeight: "bold",
 });
 
 export default PlayerPerformance;
