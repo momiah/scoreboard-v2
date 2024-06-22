@@ -51,7 +51,9 @@ const PlayerPerformance = () => {
       </TableCell>
       <TableCell>
         <StatTitle>XP</StatTitle>
-        <Stat>{playerStats[playerName].XP}</Stat>
+        <Stat>
+          {playerStats[playerName].XP + playerStats[playerName].totalPoints}
+        </Stat>
       </TableCell>
       <TableCell>
         <MedalDisplay
