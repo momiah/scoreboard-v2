@@ -3,6 +3,7 @@ import { View, Text, FlatList } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../context/GameContext";
 import { calculatePlayerPerformance } from "../functions/calculatePlayerPerformance";
+import MedalDisplay from "../functions/rankingBadges";
 
 const PlayerPerformance = () => {
   const { games, setGames, retrieveGames } = useContext(GameContext);
@@ -50,12 +51,14 @@ const PlayerPerformance = () => {
       </TableCell>
       <TableCell>
         <StatTitle>XP</StatTitle>
-        <Stat>{playerStats[playerName].XP}</Stat>
+        <Stat>
+          {playerStats[playerName].XP + playerStats[playerName].totalPoints}
+        </Stat>
       </TableCell>
       <TableCell>
-        <TableText>
-          {playerStats[playerName].XP + playerStats[playerName].totalPoints}
-        </TableText>
+        <MedalDisplay
+          xp={playerStats[playerName].XP + playerStats[playerName].totalPoints}
+        />
       </TableCell>
     </TableRow>
   );
