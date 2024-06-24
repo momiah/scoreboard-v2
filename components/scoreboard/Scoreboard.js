@@ -15,6 +15,7 @@ import { generateUniqueGameId } from "../../functions/generateUniqueId";
 import moment from "moment";
 import Popup from "../popup/Popup";
 import { GameContext } from "../../context/GameContext";
+import { AntDesign } from "@expo/vector-icons";
 
 const calculateWin = (team1, team2) => {
   if (team1.score > team2.score) {
@@ -199,6 +200,7 @@ const Scoreboard = () => {
                 {deleteGameContainer && deleteGameId === item.gameId && (
                   <DeleteGameContainer>
                     <DeleteGameButton
+                      style={{ backgroundColor: "red" }}
                       onPress={() => deleteGameById(item.gameId, setGames)}
                     >
                       <DeleteGameButtonText>Delete Game</DeleteGameButtonText>
@@ -209,8 +211,12 @@ const Scoreboard = () => {
                   </DeleteGameContainer>
                 )}
                 <TeamContainer>
-                  <Team>{item.team1.player1}</Team>
-                  <Team>{item.team1.player2}</Team>
+                  <TeamTextContainer style={{ borderTopLeftRadius: 8 }}>
+                    <Team>{item.team1.player1}</Team>
+                  </TeamTextContainer>
+                  <TeamTextContainer style={{ borderBottomLeftRadius: 8 }}>
+                    <Team>{item.team1.player2}</Team>
+                  </TeamTextContainer>
                 </TeamContainer>
 
                 <ResultsContainer>
@@ -222,15 +228,27 @@ const Scoreboard = () => {
                 </ResultsContainer>
 
                 <TeamContainer>
-                  <Team>{item.team2.player1}</Team>
-                  <Team>{item.team2.player2}</Team>
+                  <TeamTextContainer style={{ borderTopRightRadius: 8 }}>
+                    <Team style={{ textAlign: "right" }}>
+                      {item.team2.player1}
+                    </Team>
+                  </TeamTextContainer>
+                  <TeamTextContainer style={{ borderBottomRightRadius: 8 }}>
+                    <Team style={{ textAlign: "right" }}>
+                      {item.team2.player2}
+                    </Team>
+                  </TeamTextContainer>
                 </TeamContainer>
               </GameContainer>
             ) : (
               <NonDeletableGameContainer>
                 <TeamContainer>
-                  <Team>{item.team1.player1}</Team>
-                  <Team>{item.team1.player2}</Team>
+                  <TeamTextContainer style={{ borderTopLeftRadius: 8 }}>
+                    <Team>{item.team1.player1}</Team>
+                  </TeamTextContainer>
+                  <TeamTextContainer style={{ borderBottomLeftRadius: 8 }}>
+                    <Team>{item.team1.player2}</Team>
+                  </TeamTextContainer>
                 </TeamContainer>
 
                 <ResultsContainer>
@@ -242,8 +260,16 @@ const Scoreboard = () => {
                 </ResultsContainer>
 
                 <TeamContainer>
-                  <Team>{item.team2.player1}</Team>
-                  <Team>{item.team2.player2}</Team>
+                  <TeamTextContainer style={{ borderTopRightRadius: 8 }}>
+                    <Team style={{ textAlign: "right" }}>
+                      {item.team2.player1}
+                    </Team>
+                  </TeamTextContainer>
+                  <TeamTextContainer style={{ borderBottomRightRadius: 8 }}>
+                    <Team style={{ textAlign: "right" }}>
+                      {item.team2.player2}
+                    </Team>
+                  </TeamTextContainer>
                 </TeamContainer>
               </NonDeletableGameContainer>
             )}
@@ -288,7 +314,9 @@ const Scoreboard = () => {
                   </TeamContainer>
 
                   <ResultsContainer>
-                    <Text>{moment().format("DD-MM-YYYY")}</Text>
+                    <Text style={{ color: "white" }}>
+                      {moment().format("DD-MM-YYYY")}
+                    </Text>
                     <ScoreContainer style={{ width: 100 }}>
                       <ScoreInput
                         keyboardType="numeric"
@@ -296,7 +324,7 @@ const Scoreboard = () => {
                         value={team1Score}
                         onChangeText={handleScoreChange(setTeam1Score)}
                       />
-                      <Text style={{ fontSize: 30 }}>-</Text>
+                      <Text style={{ fontSize: 30, color: "#00A2FF" }}>-</Text>
                       <ScoreInput
                         keyboardType="numeric"
                         placeholder="0"
@@ -325,16 +353,40 @@ const Scoreboard = () => {
                 </GameContainer>
 
                 <ButtonContainer>
-                  <TouchableOpacity onPress={() => setModalVisible(false)}>
-                    <Text style={styles.button}>Close</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleAddGame}>
-                    <Text style={styles.button}>Submit</Text>
+                  <AntDesign
+                    onPress={() => setModalVisible(false)}
+                    name="closecircleo"
+                    size={30}
+                    color="red"
+                  />
+
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={handleAddGame}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        color: "white",
+                      }}
+                    >
+                      Submit
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    style={styles.button}
                     onPress={() => console.log("Register Player")}
                   >
-                    <Text style={styles.button}>Register Player</Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        color: "white",
+                      }}
+                    >
+                      Register Player
+                    </Text>
                   </TouchableOpacity>
                 </ButtonContainer>
               </ModalContent>
@@ -349,8 +401,8 @@ const Scoreboard = () => {
 // Define styles
 const Container = styled.View({
   flex: 1,
-  padding: 5,
-  backgroundColor: "#fff",
+  padding: 10,
+  backgroundColor: "#00152B",
 });
 
 const AddGameButton = styled.TouchableOpacity({
@@ -362,31 +414,35 @@ const AddGameButton = styled.TouchableOpacity({
   marginBottom: 15,
   marginTop: 15,
   padding: 10,
-  backgroundColor: "#BBDCFF",
-  border: "1px solid #ccc",
+  borderRadius: 8,
+  backgroundColor: "#00A2FF",
 });
 
 const GameContainer = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
-  borderWidth: 1,
-  borderColor: "#ccc",
+  border: "1px solid #262626",
+  // borderWidth: 2,
+  // borderColor: "#5A5A5A",
   borderRadius: 8,
+  backgroundColor: "#001123",
 });
 const NonDeletableGameContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
-  borderWidth: 1,
-  borderColor: "#ccc",
+  backgroundColor: "#001123",
+  border: "1px solid #262626",
+  // borderWidth: 2,
+  // borderColor: "#5A5A5A",
   borderRadius: 8,
 });
 
 const DeleteGameContainer = styled.View({
   flex: 1,
   flexDirection: "row",
-  backgroundColor: "rgba(0, 0, 0, 0.4 )",
+  backgroundColor: "rgba(0, 0, 0, 0.7 )",
   position: "absolute",
   top: 0,
   left: 0,
@@ -408,21 +464,14 @@ const DeleteGameButton = styled.TouchableOpacity({
   marginTop: 15,
   padding: 10,
   width: 140,
-  backgroundColor: "#BBDCFF",
-  border: "1px solid #ccc",
+  borderRadius: 8,
+  backgroundColor: "#00A2FF",
 });
 
 const DeleteGameButtonText = styled.Text({
   color: "white",
   fontSize: 18,
   fontWeight: "bold",
-});
-
-const TeamContainer = styled.View({
-  display: "flex",
-  justifyContent: "center",
-  flexDirection: "column",
-  borderRadius: 8,
 });
 
 const ResultsContainer = styled.View({
@@ -442,28 +491,41 @@ const ScoreContainer = styled.View({
 const Score = styled.Text({
   fontSize: 30,
   fontWeight: "bold",
+  color: "#00A2FF",
 });
 const ScoreInput = styled.TextInput({
   fontSize: 30,
   fontWeight: "bold",
   margin: "0 5px",
   textAlign: "center",
+  color: "#00A2FF",
 });
 
 const Date = styled.Text({
   fontSize: 10,
   fontWeight: "bold",
+  color: "white",
+});
+
+const TeamContainer = styled.View({
+  display: "flex",
+  justifyContent: "center",
+  flexDirection: "column",
+  borderRadius: 8,
 });
 
 const Team = styled.Text({
-  display: "flex",
-  border: "1px solid #ccc",
-  flexDirection: "column",
+  color: "white",
   fontSize: 16,
+});
+
+const TeamTextContainer = styled.View({
+  display: "flex",
+  // border: "1px solid #262626",
+  flexDirection: "column",
   padding: 15,
   paddingLeft: 30,
   paddingRight: 30,
-  borderRadius: 20,
   width: 130,
 });
 
@@ -471,11 +533,11 @@ const ModalContainer = styled.View({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  backgroundColor: "white",
+  backgroundColor: "#00152B",
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "#fff",
+  backgroundColor: "#00152B",
   padding: 20,
   borderRadius: 10,
 });
@@ -483,14 +545,38 @@ const ModalContent = styled.View({
 const ButtonContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-around",
+  alignItems: "center",
   marginTop: 20,
+});
+
+const CloseButton = styled.TouchableOpacity({
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 12,
+  borderRadius: "100%",
+
+  backgroundColor: "red",
 });
 
 const styles = StyleSheet.create({
   button: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 10,
-    backgroundColor: "#BBDCFF",
-    borderRadius: 5,
+    borderRadius: 8,
+    width: 130,
+    backgroundColor: "#00A2FF",
+  },
+  button: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 10,
+    borderRadius: 8,
+    width: 130,
+    backgroundColor: "#00A2FF",
   },
 });
 

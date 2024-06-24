@@ -76,13 +76,13 @@ const PlayerPerformance = () => {
 
 const TableContainer = styled.View({
   paddingTop: 20,
+
   flex: 1,
 });
 
 const TableRow = styled.View({
   flexDirection: "row",
-
-  borderBottomColor: "#ccc",
+  backgroundColor: "#001123",
 });
 
 const TableCell = styled.View({
@@ -91,8 +91,8 @@ const TableCell = styled.View({
   alignItems: "center",
   paddingTop: 20,
   paddingBottom: 20,
-  borderBottomWidth: 1,
-  borderColor: "#ccc",
+  borderTopWidth: 1,
+  borderColor: "#262626",
 });
 const PlayerNameCell = styled.View({
   flex: 1,
@@ -100,8 +100,8 @@ const PlayerNameCell = styled.View({
 
   paddingTop: 20,
   paddingBottom: 20,
-  borderBottomWidth: 1,
-  borderColor: "#ccc",
+  borderTopWidth: 1,
+  borderColor: "#262626",
 });
 
 const TableText = styled.Text({
@@ -110,9 +110,11 @@ const TableText = styled.Text({
 const PlayerName = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
+  color: "white",
 });
 const Rank = styled.Text({
   fontSize: 14,
+  color: "white",
 });
 const StatTitle = styled.Text({
   fontSize: 14,
@@ -121,6 +123,7 @@ const StatTitle = styled.Text({
 const Stat = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
+  color: "white",
 });
 
 export default PlayerPerformance;

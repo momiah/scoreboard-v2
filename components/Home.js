@@ -34,14 +34,16 @@ const Home = () => {
   };
   return (
     <HomeContainer>
-      <Overview></Overview>
+      <Overview>
+        <Text style={{ fontSize: 80 }}>🏸</Text>
+      </Overview>
       <Tabs>
         {tabs.map((tab) => (
           <Tab
             key={tab.component}
             onPress={() => setSelectedTab(tab.component)}
           >
-            <Text>{tab.component}</Text>
+            <Text style={{ color: "white" }}>{tab.component}</Text>
           </Tab>
         ))}
       </Tabs>
@@ -52,13 +54,15 @@ const Home = () => {
 
 const HomeContainer = styled.View({
   flex: 1,
-  padding: 10,
+  // padding: 10,
   width: "100%",
 });
 const Overview = styled.View({
-  border: "1px solid red",
+  // border: "1px solid red",
   height: "100px",
   width: "100%",
+  justifyContent: "center",
+  alignItems: "center",
 });
 const Tabs = styled.View({
   width: "100%",
@@ -66,12 +70,14 @@ const Tabs = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
+  padding: 10,
 });
 const Tab = styled.TouchableOpacity({
   border: "1px solid #ccc",
   padding: 10,
   borderRadius: 20,
   marginTop: 20,
+
   // height: "100px",
 });
 

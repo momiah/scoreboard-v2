@@ -67,8 +67,8 @@ const AddPlayer = ({ onSelectPlayer, selectedPlayers }) => {
 
 const SelectPlayer = styled.Text({
   padding: 20,
-  borderWidth: 1,
-  borderColor: "#ccc",
+  border: "1px solid #262626",
+  color: "white",
   borderRadius: 20,
   width: 130, // Fixed width
 });
