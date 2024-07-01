@@ -1,22 +1,17 @@
-import React, { useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
 import styled from "styled-components/native";
+import { GameContext } from "../../context/GameContext";
+import { AntDesign } from "@expo/vector-icons";
 
 const AddPlayer = ({ onSelectPlayer, selectedPlayers }) => {
   const [selected, setSelected] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const { players } = useContext(GameContext);
 
-  const players = {
-    Mohsin: { wins: 0, losses: 0 },
-    Yasin: { wins: 0, losses: 0 },
-    Rayyan: { wins: 0, losses: 0 },
-    Saiful: { wins: 0, losses: 0 },
-    Raqeeb: { wins: 0, losses: 0 },
-  };
-
-  const playerArray = Object.keys(players).map((key) => ({
-    key: key,
-    value: key,
+  const playerArray = players.map((player) => ({
+    key: player.id, // Assuming each player has a unique ID
+    value: player.id, // Adjust based on the structure of your player data
   }));
 
   const handleSelect = (value) => {
@@ -39,6 +34,14 @@ const AddPlayer = ({ onSelectPlayer, selectedPlayers }) => {
       >
         <ModalBackground>
           <Dropdown>
+            <CloseIconContainer>
+              <AntDesign
+                onPress={() => setDropdownVisible(false)}
+                name="closecircleo"
+                size={20}
+                color="red"
+              />
+            </CloseIconContainer>
             <FlatList
               data={playerArray}
               renderItem={({ item }) => {
@@ -78,6 +81,14 @@ const ModalBackground = styled.View({
   justifyContent: "center",
   alignItems: "center",
   backgroundColor: "rgba(0, 0, 0, 0.5)",
+});
+
+const CloseIconContainer = styled.View({
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  padding: 5,
+  backgroundColor: "#fff",
 });
 
 const Dropdown = styled.View({

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   RefreshControl,
+  TextInput,
   StyleSheet,
 } from "react-native";
 import styled from "styled-components/native";
@@ -53,6 +54,15 @@ const Scoreboard = () => {
     games,
     setGames,
     addGame,
+    showPopup,
+    setShowPopup,
+    handleShowPopup,
+    popupMessage,
+    setPopupMessage,
+    registerPlayer,
+    fetchPlayers,
+    player,
+    setPlayer,
     retrieveGames,
     deleteGameById,
     refreshing,
@@ -64,8 +74,6 @@ const Scoreboard = () => {
   } = useContext(GameContext);
 
   const [newestGameId, setNewestGameId] = useState("");
-  const [showPopup, setShowPopup] = useState(false);
-  const [popupMessage, setPopupMessage] = useState("");
 
   useEffect(() => {
     // Logic to fetch and set newestGameId
@@ -169,19 +177,23 @@ const Scoreboard = () => {
     setDeleteGameContainer(false);
   };
 
-  const handleShowPopup = (message) => {
-    setPopupMessage(message);
-    setShowPopup(true);
-  };
-
   const handleClosePopup = () => {
     setShowPopup(false);
     setPopupMessage("");
   };
 
+  const handleAddGameButton = () => {
+    fetchPlayers();
+    setModalVisible(true);
+  };
+
+  const settingPlayer = (newPlayer) => {
+    setPlayer(newPlayer);
+  };
+
   return (
     <Container>
-      <AddGameButton onPress={() => setModalVisible(true)}>
+      <AddGameButton onPress={() => handleAddGameButton()}>
         <Text>Add Game</Text>
       </AddGameButton>
 
@@ -352,32 +364,14 @@ const Scoreboard = () => {
                   <ScoreContainer></ScoreContainer>
                 </GameContainer>
 
-                <ButtonContainer>
-                  <AntDesign
-                    onPress={() => setModalVisible(false)}
-                    name="closecircleo"
-                    size={30}
-                    color="red"
+                <PlayerInputContainer>
+                  <PlayerInput
+                    onChangeText={(newPlayer) => settingPlayer(newPlayer)}
+                    value={player}
+                    placeholder="register player"
+                    placeholderTextColor="#00A2FF"
                   />
-
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={handleAddGame}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        color: "white",
-                      }}
-                    >
-                      Submit
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => console.log("Register Player")}
-                  >
+                  <RegisterPlayerButton onPress={() => registerPlayer(player)}>
                     <Text
                       style={{
                         fontSize: 14,
@@ -387,7 +381,28 @@ const Scoreboard = () => {
                     >
                       Register Player
                     </Text>
-                  </TouchableOpacity>
+                  </RegisterPlayerButton>
+                </PlayerInputContainer>
+
+                <ButtonContainer>
+                  <AntDesign
+                    onPress={() => setModalVisible(false)}
+                    name="closecircleo"
+                    size={30}
+                    color="red"
+                  />
+
+                  <SubmitButton onPress={handleAddGame}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        color: "white",
+                      }}
+                    >
+                      Submit
+                    </Text>
+                  </SubmitButton>
                 </ButtonContainer>
               </ModalContent>
             </ModalContainer>
@@ -399,12 +414,6 @@ const Scoreboard = () => {
 };
 
 // Define styles
-const Container = styled.View({
-  flex: 1,
-  padding: 10,
-  backgroundColor: "#00152B",
-});
-
 const AddGameButton = styled.TouchableOpacity({
   display: "flex",
   justifyContent: "center",
@@ -418,40 +427,25 @@ const AddGameButton = styled.TouchableOpacity({
   backgroundColor: "#00A2FF",
 });
 
-const GameContainer = styled.TouchableOpacity({
+const ButtonContainer = styled.View({
   flexDirection: "row",
-  justifyContent: "space-between",
-  marginBottom: 16,
-  border: "1px solid #262626",
-  // borderWidth: 2,
-  // borderColor: "#5A5A5A",
-  borderRadius: 8,
-  backgroundColor: "#001123",
-});
-const NonDeletableGameContainer = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginBottom: 16,
-  backgroundColor: "#001123",
-  border: "1px solid #262626",
-  // borderWidth: 2,
-  // borderColor: "#5A5A5A",
-  borderRadius: 8,
-});
-
-const DeleteGameContainer = styled.View({
-  flex: 1,
-  flexDirection: "row",
-  backgroundColor: "rgba(0, 0, 0, 0.7 )",
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  zIndex: 2,
   justifyContent: "space-between",
   alignItems: "center",
-  padding: "0 50px",
+  marginTop: 20,
+  paddingRight: 5,
+  paddingLeft: 5,
+});
+
+const Container = styled.View({
+  flex: 1,
+  padding: 10,
+  backgroundColor: "#00152B",
+});
+
+const Date = styled.Text({
+  fontSize: 10,
+  fontWeight: "bold",
+  color: "white",
 });
 
 const DeleteGameButton = styled.TouchableOpacity({
@@ -474,59 +468,28 @@ const DeleteGameButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const ResultsContainer = styled.View({
-  display: "flex",
+const DeleteGameContainer = styled.View({
+  flex: 1,
+  flexDirection: "row",
+  backgroundColor: "rgba(0, 0, 0, 0.7 )",
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 2,
   justifyContent: "space-between",
   alignItems: "center",
-  padding: 10,
-  paddingBottom: 30,
+  padding: "0 50px",
 });
 
-const ScoreContainer = styled.View({
-  display: "flex",
+const GameContainer = styled.TouchableOpacity({
   flexDirection: "row",
-  justifyContent: "center",
-});
-
-const Score = styled.Text({
-  fontSize: 30,
-  fontWeight: "bold",
-  color: "#00A2FF",
-});
-const ScoreInput = styled.TextInput({
-  fontSize: 30,
-  fontWeight: "bold",
-  margin: "0 5px",
-  textAlign: "center",
-  color: "#00A2FF",
-});
-
-const Date = styled.Text({
-  fontSize: 10,
-  fontWeight: "bold",
-  color: "white",
-});
-
-const TeamContainer = styled.View({
-  display: "flex",
-  justifyContent: "center",
-  flexDirection: "column",
+  justifyContent: "space-between",
+  marginBottom: 16,
+  border: "1px solid #262626",
   borderRadius: 8,
-});
-
-const Team = styled.Text({
-  color: "white",
-  fontSize: 16,
-});
-
-const TeamTextContainer = styled.View({
-  display: "flex",
-  // border: "1px solid #262626",
-  flexDirection: "column",
-  padding: 15,
-  paddingLeft: 30,
-  paddingRight: 30,
-  width: 130,
+  backgroundColor: "#001123",
 });
 
 const ModalContainer = styled.View({
@@ -542,42 +505,103 @@ const ModalContent = styled.View({
   borderRadius: 10,
 });
 
-const ButtonContainer = styled.View({
+const NonDeletableGameContainer = styled.View({
   flexDirection: "row",
-  justifyContent: "space-around",
-  alignItems: "center",
-  marginTop: 20,
+  justifyContent: "space-between",
+  marginBottom: 16,
+  backgroundColor: "#001123",
+  border: "1px solid #262626",
+  borderRadius: 8,
 });
 
-const CloseButton = styled.TouchableOpacity({
+const PlayerInput = styled.TextInput({
+  fontSize: 15,
+  padding: 15,
+  borderRadius: 8,
+  color: "#00A2FF",
+  backgroundColor: "#001123",
+  flex: 1,
+  borderTopLeftRadius: 8,
+  borderBottomLeftRadius: 8,
+});
+
+const PlayerInputContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#001123",
+  borderRadius: 8,
+  padding: 5,
+});
+
+const RegisterPlayerButton = styled.TouchableOpacity({
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 10,
+  borderRadius: 8,
+  width: 130,
+  backgroundColor: "#00A2FF",
+  marginLeft: 5,
+  borderTopRightRadius: 8,
+  borderBottomRightRadius: 8,
+});
+
+const ResultsContainer = styled.View({
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: 10,
+  paddingBottom: 30,
+});
+
+const Score = styled.Text({
+  fontSize: 30,
+  fontWeight: "bold",
+  color: "#00A2FF",
+});
+
+const ScoreContainer = styled.View({
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "center",
+});
+
+const ScoreInput = styled.TextInput({
+  fontSize: 30,
+  fontWeight: "bold",
+  margin: "0 5px",
+  textAlign: "center",
+  color: "#00A2FF",
+});
+
+const SubmitButton = styled.TouchableOpacity({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  padding: 12,
-  borderRadius: "100%",
-
-  backgroundColor: "red",
+  padding: 10,
+  borderRadius: 8,
+  width: 300,
+  backgroundColor: "#00A2FF",
 });
 
-const styles = StyleSheet.create({
-  button: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 10,
-    borderRadius: 8,
-    width: 130,
-    backgroundColor: "#00A2FF",
-  },
-  button: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 10,
-    borderRadius: 8,
-    width: 130,
-    backgroundColor: "#00A2FF",
-  },
+const Team = styled.Text({
+  color: "white",
+  fontSize: 16,
+});
+
+const TeamContainer = styled.View({
+  display: "flex",
+  justifyContent: "center",
+  flexDirection: "column",
+  borderRadius: 8,
+});
+
+const TeamTextContainer = styled.View({
+  display: "flex",
+  flexDirection: "column",
+  padding: 15,
+  paddingLeft: 20,
+  paddingRight: 20,
+  width: 140,
 });
 
 export default Scoreboard;
