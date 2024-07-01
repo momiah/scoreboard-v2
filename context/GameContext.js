@@ -1,7 +1,7 @@
 // GameContext.js
 import React, { createContext, useState, useEffect } from "react";
 // import { retrieveGames } from "../services/retrieveGame";
-import { Alert } from "react-native";
+import { Alert, Keyboard } from "react-native";
 import {
   deleteDoc,
   doc,
@@ -160,6 +160,7 @@ const GameProvider = ({ children }) => {
       await setDoc(playerDocRef, { newPlayer }); // Write the data directly
       handleShowPopup("Player saved successfully!");
       await fetchPlayers();
+      Keyboard.dismiss();
     } catch (error) {
       console.error("Error saving player data:", error);
       handleShowPopup("Error saving player data");
