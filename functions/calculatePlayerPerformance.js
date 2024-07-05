@@ -1,20 +1,3 @@
-const currentStreak = (resultLog) => {
-  if (resultLog.length === 0) return 0;
-
-  let currentStreakCount = 1;
-  let streakType = resultLog[resultLog.length - 1]; // Get the most recent result
-
-  for (let i = resultLog.length - 2; i >= 0; i--) {
-    if (resultLog[i] === streakType) {
-      currentStreakCount++;
-    } else {
-      break;
-    }
-  }
-
-  return streakType === "W" ? currentStreakCount : -currentStreakCount;
-};
-
 export const calculatePlayerPerformance = (games) => {
   const players = {};
 
@@ -35,6 +18,10 @@ export const calculatePlayerPerformance = (games) => {
           type: null, // "W" for win streak, "L" for loss streak
           count: 0,
         },
+        winStreak3: 0,
+        winStreak5: 0,
+        winStreak7: 0,
+        demonWin: 0,
       };
     }
   }
@@ -103,6 +90,11 @@ export const calculatePlayerPerformance = (games) => {
 
     players[player].highestWinStreak = highestWinStreak;
     players[player].highestLossStreak = highestLossStreak;
+
+    // Update the win streak counts
+    if (currentWinStreak >= 3) players[player].winStreak3++;
+    if (currentWinStreak >= 5) players[player].winStreak5++;
+    if (currentWinStreak >= 7) players[player].winStreak7++;
   }
 
   games.forEach((game) => {
@@ -139,6 +131,11 @@ export const calculatePlayerPerformance = (games) => {
         players[team1.player1].totalPointEfficiency += team1Efficiency;
         players[team1.player2].totalPointEfficiency += team1Efficiency;
 
+        if (team1.score - team2.score >= 10) {
+          players[team1.player1].demonWin += 1;
+          players[team1.player2].demonWin += 1;
+        }
+
         updateXP(team1.player1, "W");
         updateXP(team1.player2, "W");
         updateXP(team2.player1, "L");
@@ -161,6 +158,11 @@ export const calculatePlayerPerformance = (games) => {
 
         players[team2.player1].totalPointEfficiency += team2Efficiency;
         players[team2.player2].totalPointEfficiency += team2Efficiency;
+
+        if (team2.score - team1.score >= 10) {
+          players[team2.player1].demonWin += 1;
+          players[team2.player2].demonWin += 1;
+        }
 
         updateXP(team1.player1, "L");
         updateXP(team1.player2, "L");
@@ -204,6 +206,10 @@ export const calculatePlayerPerformance = (games) => {
       currentStreak: player.currentStreak,
       highestWinStreak: player.highestWinStreak,
       highestLossStreak: player.highestLossStreak,
+      winStreak3: player.winStreak3,
+      winStreak5: player.winStreak5,
+      winStreak7: player.winStreak7,
+      demonWin: player.demonWin,
     };
   });
 
