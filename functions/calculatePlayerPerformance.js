@@ -1,3 +1,20 @@
+const currentStreak = (resultLog) => {
+  if (resultLog.length === 0) return 0;
+
+  let currentStreakCount = 1;
+  let streakType = resultLog[resultLog.length - 1]; // Get the most recent result
+
+  for (let i = resultLog.length - 2; i >= 0; i--) {
+    if (resultLog[i] === streakType) {
+      currentStreakCount++;
+    } else {
+      break;
+    }
+  }
+
+  return streakType === "W" ? currentStreakCount : -currentStreakCount;
+};
+
 export const calculatePlayerPerformance = (games) => {
   const players = {};
 
@@ -9,7 +26,11 @@ export const calculatePlayerPerformance = (games) => {
         totalPoints: 0,
         numberOfGamesPlayed: 0,
         resultLog: [],
+        highestWinStreak: 0,
+        highestLossStreak: 0,
         XP: 0,
+        totalPointEfficiency: 0,
+        pointEfficiency: 0,
         currentStreak: {
           type: null, // "W" for win streak, "L" for loss streak
           count: 0,
@@ -53,6 +74,37 @@ export const calculatePlayerPerformance = (games) => {
     players[player].XP += calculateStreakXP(streak.type, streak.count);
   }
 
+  function calculatePointDifferencePercentage(winnerScore, loserScore) {
+    const pointDifference = winnerScore - loserScore;
+    return (pointDifference / winnerScore) * 100;
+  }
+
+  function updateHighestStreak(player) {
+    let currentWinStreak = 0;
+    let currentLossStreak = 0;
+    let highestWinStreak = 0;
+    let highestLossStreak = 0;
+
+    players[player].resultLog.forEach((result) => {
+      if (result === "W") {
+        currentWinStreak += 1;
+        currentLossStreak = 0;
+        if (currentWinStreak > highestWinStreak) {
+          highestWinStreak = currentWinStreak;
+        }
+      } else if (result === "L") {
+        currentLossStreak += 1;
+        currentWinStreak = 0;
+        if (currentLossStreak > highestLossStreak) {
+          highestLossStreak = currentLossStreak;
+        }
+      }
+    });
+
+    players[player].highestWinStreak = highestWinStreak;
+    players[player].highestLossStreak = highestLossStreak;
+  }
+
   games.forEach((game) => {
     const team1 = game.team1;
     const team2 = game.team2;
@@ -74,10 +126,18 @@ export const calculatePlayerPerformance = (games) => {
       players[team2.player2].numberOfGamesPlayed += 1;
 
       if (team1.score > team2.score) {
+        const team1Efficiency = calculatePointDifferencePercentage(
+          team1.score,
+          team2.score
+        );
+
         players[team1.player1].numberOfWins += 1;
         players[team1.player2].numberOfWins += 1;
         players[team2.player1].numberOfLosses += 1;
         players[team2.player2].numberOfLosses += 1;
+
+        players[team1.player1].totalPointEfficiency += team1Efficiency;
+        players[team1.player2].totalPointEfficiency += team1Efficiency;
 
         updateXP(team1.player1, "W");
         updateXP(team1.player2, "W");
@@ -89,10 +149,18 @@ export const calculatePlayerPerformance = (games) => {
         updateResultLog(team2.player1, "L");
         updateResultLog(team2.player2, "L");
       } else {
+        const team2Efficiency = calculatePointDifferencePercentage(
+          team2.score,
+          team1.score
+        );
+
         players[team1.player1].numberOfLosses += 1;
         players[team1.player2].numberOfLosses += 1;
         players[team2.player1].numberOfWins += 1;
         players[team2.player2].numberOfWins += 1;
+
+        players[team2.player1].totalPointEfficiency += team2Efficiency;
+        players[team2.player2].totalPointEfficiency += team2Efficiency;
 
         updateXP(team1.player1, "L");
         updateXP(team1.player2, "L");
@@ -107,10 +175,17 @@ export const calculatePlayerPerformance = (games) => {
     }
   });
 
-  const playersArray = Object.entries(players).map(([player, stats]) => ({
-    player,
-    ...stats,
-  }));
+  const playersArray = Object.entries(players).map(([player, stats]) => {
+    const averagePointEfficiency = stats.numberOfWins
+      ? stats.totalPointEfficiency / stats.numberOfWins
+      : 0;
+    updateHighestStreak(player);
+    return {
+      player,
+      ...stats,
+      pointEfficiency: averagePointEfficiency,
+    };
+  });
 
   // Sort the array by XP in descending order
   playersArray.sort((a, b) => b.XP - a.XP);
@@ -123,8 +198,12 @@ export const calculatePlayerPerformance = (games) => {
       numberOfGamesPlayed: player.numberOfGamesPlayed,
       numberOfLosses: player.numberOfLosses,
       numberOfWins: player.numberOfWins,
-      resultLog: player.resultLog,
+      resultLog: player.resultLog.reverse(),
       totalPoints: player.totalPoints,
+      pointEfficiency: player.pointEfficiency,
+      currentStreak: player.currentStreak,
+      highestWinStreak: player.highestWinStreak,
+      highestLossStreak: player.highestLossStreak,
     };
   });
 

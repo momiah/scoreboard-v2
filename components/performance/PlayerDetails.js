@@ -6,6 +6,24 @@ import MedalDisplay from "./MedalDisplay";
 import MedalProgress from "./MedalProgress";
 import { medalNames } from "../../functions/medalNames";
 
+// Function to calculate the current streak
+const currentStreak = (resultLog) => {
+  if (resultLog.length === 0) return 0;
+
+  let currentStreakCount = 1;
+  let streakType = resultLog[resultLog.length - 1]; // Get the most recent result
+
+  for (let i = resultLog.length - 2; i >= 0; i--) {
+    if (resultLog[i] === streakType) {
+      currentStreakCount++;
+    } else {
+      break;
+    }
+  }
+
+  return streakType === "W" ? currentStreakCount : -currentStreakCount;
+};
+
 const PlayerDetails = ({
   showPlayerDetails,
   setShowPlayerDetails,
@@ -13,6 +31,11 @@ const PlayerDetails = ({
   playerName,
 }) => {
   const winRatio = playerStats.numberOfWins / playerStats.numberOfLosses;
+
+  const currentStreakValue = currentStreak(playerStats.resultLog);
+
+  console.log("🚫current streak", playerStats.resultLog);
+
   return (
     <View>
       <Modal
@@ -64,15 +87,15 @@ const PlayerDetails = ({
               </TableCell>
               <TableCell>
                 <StatTitle>Point Efficiency</StatTitle>
-                <Stat>80%</Stat>
+                <Stat>{playerStats.pointEfficiency.toFixed(1)}%</Stat>
               </TableCell>
               <TableCell>
                 <StatTitle>Current Streak</StatTitle>
-                <Stat>{playerStats.numberOfWins}</Stat>
+                <Stat>{currentStreakValue}</Stat>
               </TableCell>
               <TableCell>
                 <StatTitle>Highest Streak</StatTitle>
-                <Stat>{playerStats.numberOfWins}</Stat>
+                <Stat>{playerStats.highestWinStreak}</Stat>
               </TableCell>
               <TableCell>
                 <StatTitle>Best Partner</StatTitle>

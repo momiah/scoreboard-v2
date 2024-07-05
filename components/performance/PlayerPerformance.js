@@ -23,6 +23,8 @@ const PlayerPerformance = () => {
     fetchData();
   }, [setGames]);
 
+  // console.log(JSON.stringify(games, null, 2));
+
   useEffect(() => {
     if (games.length > 0) {
       const stats = calculatePlayerPerformance(games);
@@ -38,7 +40,7 @@ const PlayerPerformance = () => {
     }
   }, [games]);
 
-  console.log("🔥sorted players", JSON.stringify(sortedPlayers, null, 2));
+  // console.log("🔥sorted players", JSON.stringify(sortedPlayers, null, 2));
   console.log("stats", JSON.stringify(playerStats, null, 2));
 
   const renderPlayer = ({ item: playerName, index }) => (
