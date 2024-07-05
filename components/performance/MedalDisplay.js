@@ -1,4 +1,4 @@
-import rankingMedals from "../rankingMedals";
+import rankingMedals from "../../rankingMedals";
 
 import React from "react";
 import { View, Image, Text } from "react-native";
@@ -45,16 +45,17 @@ const getMedalByXP = (xp) => {
   if (xp >= 400) return rankingMedals.private;
   if (xp >= 300) return rankingMedals.apprentice_G2;
   if (xp >= 200) return rankingMedals.apprentice;
+
   return rankingMedals.recruit; // Default to recruit for XP < 200
 };
 
-const MedalDisplay = ({ xp }) => {
+const MedalDisplay = ({ xp, size }) => {
   const medalSource = getMedalByXP(xp);
 
   return (
     <View>
       {medalSource ? (
-        <Image source={medalSource} style={{ width: 35, height: 35 }} />
+        <Image source={medalSource} style={{ width: size, height: size }} />
       ) : (
         <Text>No medal for this XP</Text>
       )}
