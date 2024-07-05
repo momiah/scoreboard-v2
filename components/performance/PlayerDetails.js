@@ -6,6 +6,7 @@ import MedalDisplay from "./MedalDisplay";
 import MedalProgress from "./MedalProgress";
 import { medalNames } from "../../functions/medalNames";
 import MatchMedals from "./MatchMedals";
+import AnimateNumber from "./AnimateNumber";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -40,35 +41,34 @@ const PlayerDetails = ({
   const statData = [
     {
       statTitle: "Wins",
-      stat: playerStats.numberOfWins,
+      stat: <AnimateNumber number={playerStats.numberOfWins} fontSize={25} />,
     },
     {
       statTitle: "Losses",
-      stat: playerStats.numberOfLosses,
+      stat: <AnimateNumber number={playerStats.numberOfLosses} fontSize={25} />,
     },
     {
       statTitle: "Win Ratio",
-      stat: winRatio.toFixed(1),
+      stat: <Stat>{winRatio.toFixed(2)}</Stat>,
     },
     {
       statTitle: "Point Efficiency",
-      stat: `${playerStats.pointEfficiency.toFixed(1)}%`,
+      stat: (
+        <AnimateNumber
+          number={`${playerStats.pointEfficiency.toFixed(1)}%`}
+          fontSize={25}
+        />
+      ),
     },
     {
       statTitle: "Current Streak",
-      stat: currentStreakValue,
+      stat: <AnimateNumber number={currentStreakValue} fontSize={25} />,
     },
     {
       statTitle: "Highest Streak",
-      stat: playerStats.highestWinStreak,
-    },
-    {
-      statTitle: "Best Partner",
-      stat: "Saiful",
-    },
-    {
-      statTitle: "Rival",
-      stat: "Mohsin",
+      stat: (
+        <AnimateNumber number={playerStats.highestWinStreak} fontSize={25} />
+      ),
     },
   ];
 
@@ -119,7 +119,7 @@ const PlayerDetails = ({
                 return (
                   <TableCell key={index}>
                     <StatTitle>{data.statTitle}</StatTitle>
-                    <Stat>{data.stat}</Stat>
+                    {data.stat}
                   </TableCell>
                 );
               })}
