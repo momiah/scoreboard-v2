@@ -5,6 +5,7 @@ import { AntDesign } from "@expo/vector-icons";
 import MedalDisplay from "./MedalDisplay";
 import MedalProgress from "./MedalProgress";
 import { medalNames } from "../../functions/medalNames";
+import MatchMedals from "./MatchMedals";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -71,6 +72,12 @@ const PlayerDetails = ({
               </MedalContainer>
             </PlayerDetail>
             <MedalProgress xp={playerStats.XP + playerStats.totalPoints} />
+            <MatchMedals
+              demonWin={playerStats.demonWin}
+              winStreak3={playerStats.winStreak3}
+              winStreak5={playerStats.winStreak5}
+              winStreak7={playerStats.winStreak7}
+            />
             {/* Player Stats */}
             <PlayerStat>
               <TableCell>
