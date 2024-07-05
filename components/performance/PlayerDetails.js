@@ -37,6 +37,41 @@ const PlayerDetails = ({
 
   console.log("🚫current streak", playerStats.resultLog);
 
+  const statData = [
+    {
+      statTitle: "Wins",
+      stat: playerStats.numberOfWins,
+    },
+    {
+      statTitle: "Losses",
+      stat: playerStats.numberOfLosses,
+    },
+    {
+      statTitle: "Win Ratio",
+      stat: winRatio.toFixed(1),
+    },
+    {
+      statTitle: "Point Efficiency",
+      stat: `${playerStats.pointEfficiency.toFixed(1)}%`,
+    },
+    {
+      statTitle: "Current Streak",
+      stat: currentStreakValue,
+    },
+    {
+      statTitle: "Highest Streak",
+      stat: playerStats.highestWinStreak,
+    },
+    {
+      statTitle: "Best Partner",
+      stat: "Saiful",
+    },
+    {
+      statTitle: "Rival",
+      stat: "Mohsin",
+    },
+  ];
+
   return (
     <View>
       <Modal
@@ -80,38 +115,14 @@ const PlayerDetails = ({
             />
             {/* Player Stats */}
             <PlayerStat>
-              <TableCell>
-                <StatTitle>Wins</StatTitle>
-                <Stat>{playerStats.numberOfWins}</Stat>
-              </TableCell>
-              <TableCell>
-                <StatTitle>Losses</StatTitle>
-                <Stat>{playerStats.numberOfLosses}</Stat>
-              </TableCell>
-              <TableCell>
-                <StatTitle>Win Ratio</StatTitle>
-                <Stat>{winRatio.toFixed(1)}</Stat>
-              </TableCell>
-              <TableCell>
-                <StatTitle>Point Efficiency</StatTitle>
-                <Stat>{playerStats.pointEfficiency.toFixed(1)}%</Stat>
-              </TableCell>
-              <TableCell>
-                <StatTitle>Current Streak</StatTitle>
-                <Stat>{currentStreakValue}</Stat>
-              </TableCell>
-              <TableCell>
-                <StatTitle>Highest Streak</StatTitle>
-                <Stat>{playerStats.highestWinStreak}</Stat>
-              </TableCell>
-              <TableCell>
-                <StatTitle>Best Partner</StatTitle>
-                <Stat>Saiful</Stat>
-              </TableCell>
-              <TableCell>
-                <StatTitle>Rival</StatTitle>
-                <Stat>Mohsin</Stat>
-              </TableCell>
+              {statData.map((data, index) => {
+                return (
+                  <TableCell key={index}>
+                    <StatTitle>{data.statTitle}</StatTitle>
+                    <Stat>{data.stat}</Stat>
+                  </TableCell>
+                );
+              })}
             </PlayerStat>
           </ModalContent>
         </ModalContainer>
