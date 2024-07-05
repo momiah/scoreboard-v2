@@ -1,7 +1,8 @@
 import React, { useContext, useState } from "react";
 import { View, Text, Touchable, TouchableOpacity } from "react-native";
 import Scoreboard from "./scoreboard/Scoreboard";
-import PlayerPerformance from "./PlayerPerformance";
+// import PlayerPerformance from "./performance/PlayerPerformance";
+import PlayerPerformance from "./performance/PlayerPerformance";
 import TeamPerformance from "./TeamPerformance";
 import styled from "styled-components/native";
 
