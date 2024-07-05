@@ -12,18 +12,22 @@ const MatchMedals = ({
   const Medals = [
     {
       medal: rankingMedals.demon_win,
+      title: "Demon Win",
       stat: demonWin,
     },
     {
       medal: rankingMedals.win_streak_3,
+      title: "3 Win Streak",
       stat: winStreak3,
     },
     {
       medal: rankingMedals.win_streak_5,
+      title: "5 Win Streak",
       stat: winStreak5,
     },
     {
       medal: rankingMedals.win_streak_7,
+      title: "7 Win Streak",
       stat: winStreak7,
     },
   ];
@@ -33,6 +37,7 @@ const MatchMedals = ({
         return (
           <MedalContainer key={index}>
             <Medal source={medal.medal} />
+            <MedalTitle>{medal.title}</MedalTitle>
             <MedalStat>{medal.stat}</MedalStat>
           </MedalContainer>
         );
@@ -59,6 +64,12 @@ const MedalContainer = styled.View({
   flexDirection: "column",
   alignItems: "center",
   gap: 10,
+});
+
+const MedalTitle = styled.Text({
+  color: "white",
+  fontSize: 10,
+  color: "#aaa",
 });
 
 const MedalStat = styled.Text({

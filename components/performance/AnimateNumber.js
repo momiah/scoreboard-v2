@@ -1,17 +1,28 @@
-import React, { useEffect, useState } from "react";
-import { Text, View, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Text, StyleSheet } from "react-native";
 
-const AnimateNumber = ({ xp, style }) => {
+const AnimateNumber = ({ number, fontSize = 12 }) => {
   const [displayValue, setDisplayValue] = useState(0);
+  const [isPercentage, setIsPercentage] = useState(false);
 
   useEffect(() => {
     const duration = 1000; // animation duration in ms
     const startTime = performance.now();
 
+    // Check if the number is a percentage
+    let parsedNumber;
+    if (typeof number === "string" && number.endsWith("%")) {
+      parsedNumber = parseFloat(number.replace("%", ""));
+      setIsPercentage(true);
+    } else {
+      parsedNumber = parseFloat(number);
+      setIsPercentage(false);
+    }
+
     const animate = (currentTime) => {
       const elapsedTime = currentTime - startTime;
       const progress = Math.min(elapsedTime / duration, 1);
-      const currentValue = Math.floor(progress * xp);
+      const currentValue = Math.floor(progress * parsedNumber);
 
       setDisplayValue(currentValue);
 
@@ -21,9 +32,14 @@ const AnimateNumber = ({ xp, style }) => {
     };
 
     requestAnimationFrame(animate);
-  }, [xp]);
+  }, [number]);
 
-  return <Text style={styles.number}>{displayValue}</Text>;
+  return (
+    <Text style={[styles.number, { fontSize: fontSize }]}>
+      {displayValue}
+      {isPercentage && "%"}
+    </Text>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -33,7 +49,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   number: {
-    fontSize: 12,
     fontWeight: "bold",
     color: "white",
   },

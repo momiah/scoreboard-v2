@@ -92,9 +92,7 @@ const MedalProgress = ({ xp }) => {
           ]}
         >
           <ProgressArrowContainer>
-            <AnimateNumber xp={xp} />
-
-            {/* <Text style={{ color: "white", fontWeight: "bold" }}>{xp}</Text> */}
+            <AnimateNumber number={xp} />
             <FontAwesome name="caret-down" size={16} color="white" />
           </ProgressArrowContainer>
         </Animated.View>

@@ -5,6 +5,7 @@ import { GameContext } from "../../context/GameContext";
 import { calculatePlayerPerformance } from "../../functions/calculatePlayerPerformance";
 import MedalDisplay from "../../components/performance/MedalDisplay";
 import PlayerDetails from "./PlayerDetails";
+import { AntDesign } from "@expo/vector-icons";
 
 const PlayerPerformance = () => {
   const { games, setGames, retrieveGames } = useContext(GameContext);
@@ -43,6 +44,15 @@ const PlayerPerformance = () => {
   // console.log("🔥sorted players", JSON.stringify(sortedPlayers, null, 2));
   console.log("stats", JSON.stringify(playerStats, null, 2));
 
+  const recentGameResult = (resultLog) => {
+    const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
+
+    const icon = lastResult === "W" ? "caretup" : "caretdown";
+    const color = lastResult === "W" ? "green" : "red";
+
+    return <AntDesign name={icon} size={10} color={color} />;
+  };
+
   const renderPlayer = ({ item: playerName, index }) => (
     <TableRow
       key={playerName}
@@ -60,7 +70,11 @@ const PlayerPerformance = () => {
       </TableCell>
       <PlayerNameCell>
         <PlayerName>{playerName}</PlayerName>
+        {recentGameResult(playerStats[playerName].resultLog)}
       </PlayerNameCell>
+      {/* <TableCell>
+        {recentGameResult(playerStats[playerName].resultLog)}
+      </TableCell> */}
       <TableCell>
         <StatTitle>Wins</StatTitle>
         <Stat>{playerStats[playerName].numberOfWins}</Stat>
@@ -121,10 +135,13 @@ const TableCell = styled.View({
 });
 
 const PlayerNameCell = styled.View({
-  justifyContent: "center",
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
   paddingTop: 20,
   paddingBottom: 20,
   paddingLeft: 10,
+  paddingRight: 20,
   borderTopWidth: 1,
   width: 150,
   borderColor: "#262626",
