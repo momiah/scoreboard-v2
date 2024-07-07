@@ -12,7 +12,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
-import Popup from "../components/popup/Popup";
+import moment from "moment";
 
 const GameContext = createContext();
 
@@ -134,6 +134,7 @@ const GameProvider = ({ children }) => {
     }
 
     const newPlayer = {
+      memberSince: moment().format("MMM YYYY"),
       numberOfWins: 0,
       numberOfLosses: 0,
       totalPoints: 0,

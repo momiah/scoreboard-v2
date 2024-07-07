@@ -31,12 +31,11 @@ const PlayerDetails = ({
   setShowPlayerDetails,
   playerStats,
   playerName,
+  memberSince,
 }) => {
   const winRatio = playerStats.numberOfWins / playerStats.numberOfLosses;
 
   const currentStreakValue = currentStreak(playerStats.resultLog);
-
-  console.log("🚫current streak", playerStats.resultLog);
 
   const statData = [
     {
@@ -93,7 +92,9 @@ const PlayerDetails = ({
             <PlayerDetail>
               <View>
                 <PlayerName>{playerName}</PlayerName>
-                <Text style={{ color: "white" }}>Member since 2024</Text>
+                <Text style={{ color: "white" }}>
+                  Member since {memberSince}
+                </Text>
               </View>
 
               <MedalContainer>

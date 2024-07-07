@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
-// import { retrieveGames } from "../../services/retrieveGame";
 import { generateUniqueGameId } from "../../functions/generateUniqueId";
 import moment from "moment";
 import Popup from "../popup/Popup";
@@ -48,7 +47,6 @@ const calculateWin = (team1, team2) => {
   }
 };
 
-// Define the Scoreboard component
 const Scoreboard = () => {
   const {
     games,

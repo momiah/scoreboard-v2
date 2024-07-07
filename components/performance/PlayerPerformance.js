@@ -8,23 +8,26 @@ import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
 
 const PlayerPerformance = () => {
-  const { games, setGames, retrieveGames } = useContext(GameContext);
+  const { games, setGames, retrieveGames, players, fetchPlayers } =
+    useContext(GameContext);
   const [playerStats, setPlayerStats] = useState({});
   const [sortedPlayers, setSortedPlayers] = useState([]);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
   const [playerName, setPlayerName] = useState("");
 
+  const player = players.find((player) => player.id === playerName);
+  const memberSince = player ? player.newPlayer.memberSince : null;
+
   useEffect(() => {
     const fetchData = async () => {
+      await fetchPlayers();
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
     };
 
     fetchData();
   }, [setGames]);
-
-  // console.log(JSON.stringify(games, null, 2));
 
   useEffect(() => {
     if (games.length > 0) {
@@ -40,9 +43,6 @@ const PlayerPerformance = () => {
       setSortedPlayers(sorted);
     }
   }, [games]);
-
-  // console.log("🔥sorted players", JSON.stringify(sortedPlayers, null, 2));
-  console.log("stats", JSON.stringify(playerStats, null, 2));
 
   const recentGameResult = (resultLog) => {
     const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
@@ -72,9 +72,6 @@ const PlayerPerformance = () => {
         <PlayerName>{playerName}</PlayerName>
         {recentGameResult(playerStats[playerName].resultLog)}
       </PlayerNameCell>
-      {/* <TableCell>
-        {recentGameResult(playerStats[playerName].resultLog)}
-      </TableCell> */}
       <TableCell>
         <StatTitle>Wins</StatTitle>
         <Stat>{playerStats[playerName].numberOfWins}</Stat>
@@ -108,6 +105,7 @@ const PlayerPerformance = () => {
           setShowPlayerDetails={setShowPlayerDetails}
           playerStats={selectedPlayerStats}
           playerName={playerName}
+          memberSince={memberSince}
         />
       )}
     </TableContainer>
