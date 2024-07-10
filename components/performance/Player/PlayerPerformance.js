@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext } from "react";
 import { View, FlatList } from "react-native";
 import styled from "styled-components/native";
-import { GameContext } from "../../context/GameContext";
-import { calculatePlayerPerformance } from "../../functions/calculatePlayerPerformance";
-import MedalDisplay from "../../components/performance/MedalDisplay";
+import { GameContext } from "../../../context/GameContext";
+import { calculatePlayerPerformance } from "../../../functions/calculatePlayerPerformance";
+import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
 
@@ -153,7 +153,8 @@ const PlayerName = styled.Text({
 
 const Rank = styled.Text({
   fontSize: 14,
-  color: "white",
+  color: "#00A2FF",
+  fontWeight: "bold",
 });
 
 const StatTitle = styled.Text({

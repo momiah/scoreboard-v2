@@ -1,9 +1,8 @@
 import React, { useContext, useState } from "react";
 import { View, Text, Touchable, TouchableOpacity } from "react-native";
 import Scoreboard from "./scoreboard/Scoreboard";
-// import PlayerPerformance from "./performance/PlayerPerformance";
-import PlayerPerformance from "./performance/PlayerPerformance";
-import TeamPerformance from "./TeamPerformance";
+import PlayerPerformance from "./performance/Player/PlayerPerformance";
+import TeamPerformance from "./performance/Team/TeamPerformance";
 import styled from "styled-components/native";
 
 const Home = () => {
@@ -36,7 +35,9 @@ const Home = () => {
   return (
     <HomeContainer>
       <Overview>
-        <Text style={{ fontSize: 80 }}>🏸</Text>
+        <Text style={{ fontSize: 30, color: "white", fontWeight: "bold" }}>
+          CourtChamp
+        </Text>
       </Overview>
       <Tabs>
         {tabs.map((tab) => (
