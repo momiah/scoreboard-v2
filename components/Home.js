@@ -1,9 +1,10 @@
 import React, { useContext, useState } from "react";
-import { View, Text, Touchable, TouchableOpacity } from "react-native";
+import { View, Text, Touchable, TouchableOpacity, Image } from "react-native";
 import Scoreboard from "./scoreboard/Scoreboard";
 import PlayerPerformance from "./performance/Player/PlayerPerformance";
 import TeamPerformance from "./performance/Team/TeamPerformance";
 import styled from "styled-components/native";
+import { CourtChampLogo } from "../assets";
 
 const Home = () => {
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
@@ -35,9 +36,10 @@ const Home = () => {
   return (
     <HomeContainer>
       <Overview>
-        <Text style={{ fontSize: 30, color: "white", fontWeight: "bold" }}>
-          CourtChamp
-        </Text>
+        <Image
+          source={CourtChampLogo}
+          style={{ width: 175, height: 175, resizeMode: "contain" }}
+        />
       </Overview>
       <Tabs>
         {tabs.map((tab) => (
@@ -65,6 +67,7 @@ const Overview = styled.View({
   width: "100%",
   justifyContent: "center",
   alignItems: "center",
+  paddingRight: 15,
 });
 const Tabs = styled.View({
   width: "100%",
@@ -78,7 +81,7 @@ const Tab = styled.TouchableOpacity({
   border: "1px solid #ccc",
   padding: 10,
   borderRadius: 20,
-  marginTop: 20,
+  marginTop: 10,
 
   // height: "100px",
 });
