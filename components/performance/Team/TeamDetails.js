@@ -8,35 +8,8 @@ import { medalNames } from "../../../functions/medalNames";
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
 
-// Function to calculate the current streak
-const currentStreak = (resultLog) => {
-  if (resultLog.length === 0) return 0;
-
-  let currentStreakCount = 1;
-  let streakType = resultLog[resultLog.length - 1]; // Get the most recent result
-
-  for (let i = resultLog.length - 2; i >= 0; i--) {
-    if (resultLog[i] === streakType) {
-      currentStreakCount++;
-    } else {
-      break;
-    }
-  }
-
-  return streakType === "W" ? currentStreakCount : -currentStreakCount;
-};
-
-const TeamDetails = ({
-  showTeamDetails,
-  setShowTeamDetails,
-  teamStats,
-  // playerStats,
-  // playerName,
-  // memberSince,
-}) => {
+const TeamDetails = ({ showTeamDetails, setShowTeamDetails, teamStats }) => {
   const winRatio = teamStats.numberOfWins / teamStats.numberOfLosses;
-
-  // const currentStreakValue = currentStreak(playerStats.resultLog);
 
   const statData = [
     {
