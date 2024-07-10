@@ -152,5 +152,16 @@ export const calculatTeamPerformance = (gameData) => {
     }
   });
 
-  return Object.values(teamPerformance);
+  // Convert to array and sort
+  const teamPerformanceArray = Object.values(teamPerformance);
+  teamPerformanceArray.sort((a, b) => {
+    if (b.numberOfWins !== a.numberOfWins) {
+      return b.numberOfWins - a.numberOfWins;
+    }
+    const winRatioA = a.numberOfWins / a.numberOfGamesPlayed;
+    const winRatioB = b.numberOfWins / b.numberOfGamesPlayed;
+    return winRatioB - winRatioA;
+  });
+
+  return teamPerformanceArray;
 };
