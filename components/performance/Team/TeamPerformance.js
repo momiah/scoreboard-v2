@@ -1,56 +1,34 @@
-import React from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { View, FlatList } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
+import { GameContext } from "../../../context/GameContext";
+import { calculatTeamPerformance } from "../../../functions/calculateTeamPerformance";
+import TeamDetails from "./TeamDetails";
 
 const TeamPerformance = () => {
-  const exampleTeamData = [
-    {
-      team: ["Mohsin", "Yasin"],
-      numberOfWins: 20,
-      numberOfLosses: 19,
-      resultLog: ["W", "W", "W", "W"],
-      numberOfGamesPlayed: 39,
-      winRatio: 2,
-      currentStreak: 2,
-      highestStreak: 3,
-      demonWins: 2,
-      winStreak3: 2,
-      winStreak5: 5,
-      winStreak7: 1,
-      pointEfficiency: 90,
-    },
-    {
-      team: ["Saiful", "Yasin"],
-      numberOfWins: 20,
-      numberOfLosses: 19,
-      resultLog: ["W", "W", "W", "L"],
-      numberOfGamesPlayed: 39,
-      winRatio: 2,
-      currentStreak: 2,
-      highestStreak: 3,
-      demonWins: 2,
-      winStreak3: 2,
-      winStreak5: 5,
-      winStreak7: 1,
-      pointEfficiency: 90,
-    },
-    {
-      team: ["Mohsin", "Saiful"],
-      numberOfWins: 20,
-      numberOfLosses: 19,
-      resultLog: ["W", "W", "W", "L"],
-      numberOfGamesPlayed: 39,
-      winRatio: 2,
-      currentStreak: 2,
-      highestStreak: 3,
-      demonWins: 2,
-      winStreak3: 2,
-      winStreak5: 5,
-      winStreak7: 1,
-      pointEfficiency: 90,
-    },
-  ];
+  const { games, setGames, retrieveGames, players, fetchPlayers } =
+    useContext(GameContext);
+  const [teamStats, setTeamStats] = useState([]);
+  const [showTeamDetails, setShowTeamDetails] = useState(false);
+  const [team, setTeam] = useState({});
+
+  useEffect(() => {
+    const stats = calculatTeamPerformance(games);
+    setTeamStats(stats);
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchPlayers();
+      const retrievedGames = await retrieveGames();
+      setGames(retrievedGames);
+    };
+
+    fetchData();
+  }, [setGames]);
+
+  console.log("games", JSON.stringify(teamStats, null, 2));
 
   const recentGameResult = (resultLog) => {
     const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
@@ -61,35 +39,30 @@ const TeamPerformance = () => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  const renderPlayer = ({ item: team, index }) => (
-    <TableRow>
+  const renderTeam = ({ item: team, index }) => (
+    <TableRow
+      onPress={() => {
+        setShowTeamDetails(true);
+        setTeam(team);
+      }}
+    >
       <TableCell>
         <Rank>
           {index + 1}
           {index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"}
         </Rank>
       </TableCell>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingRight: 40,
-          width: 150,
-          borderTopWidth: 1,
-          borderColor: "#262626",
-        }}
-      >
+      <TeamCell>
         <TeamNameCell>
           {team.team.map((player, idx) => (
             <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
           ))}
         </TeamNameCell>
         {recentGameResult(team.resultLog)}
-      </View>
+      </TeamCell>
       <TableCell>
         <StatTitle>Win Ratio</StatTitle>
-        <Stat>{team.winRatio}</Stat>
+        <Stat>{team.numberOfWins / team.numberOfLosses}</Stat>
       </TableCell>
       <TableCell>
         <StatTitle>Wins</StatTitle>
@@ -102,10 +75,17 @@ const TeamPerformance = () => {
   return (
     <TableContainer>
       <FlatList
-        data={exampleTeamData}
-        renderItem={renderPlayer}
+        data={teamStats}
+        renderItem={renderTeam}
         keyExtractor={(team, index) => team.team.join("-") + index}
       />
+      {showTeamDetails && (
+        <TeamDetails
+          showTeamDetails={showTeamDetails}
+          setShowTeamDetails={setShowTeamDetails}
+          teamStats={team}
+        />
+      )}
     </TableContainer>
   );
 };
@@ -130,24 +110,36 @@ const TableCell = styled.View({
   borderColor: "#262626",
 });
 
+const TeamCell = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingRight: 40,
+  width: 150,
+  borderTopWidth: 1,
+  borderColor: "#262626",
+});
+
 const TeamNameCell = styled.View({
   justifyContent: "flex-start",
   alignItems: "flex-start",
   paddingTop: 20,
   paddingBottom: 20,
   paddingRight: 20,
+  width: 110,
   gap: 20,
 });
 
 const PlayerName = styled.Text({
-  fontSize: 16,
+  fontSize: 15,
   fontWeight: "bold",
   color: "white",
 });
 
 const Rank = styled.Text({
   fontSize: 14,
-  color: "white",
+  color: "#00A2FF",
+  fontWeight: "bold",
 });
 
 const StatTitle = styled.Text({
