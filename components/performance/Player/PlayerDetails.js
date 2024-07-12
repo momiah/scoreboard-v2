@@ -7,6 +7,7 @@ import MedalProgress from "../MedalProgress";
 import { medalNames } from "../../../functions/medalNames";
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
+import { transformDate } from "../../../functions/dateTransform";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -92,8 +93,11 @@ const PlayerDetails = ({
             <PlayerDetail>
               <View>
                 <PlayerName>{playerName}</PlayerName>
-                <Text style={{ color: "white" }}>
+                <Text style={{ color: "#aaa" }}>
                   Member since {memberSince}
+                </Text>
+                <Text style={{ color: "#aaa" }}>
+                  Last Active {transformDate(playerStats.lastActive)}
                 </Text>
               </View>
 

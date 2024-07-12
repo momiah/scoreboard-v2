@@ -119,12 +119,12 @@ const MedalProgress = ({ xp }) => {
       </ProgressBar>
       <ProgressRanks>
         <RankContainer style={{ alignItems: "flex-start" }}>
-          <RankXpText>{currentRank.xp}</RankXpText>
+          <RankXpText>{currentRank.xp} XP</RankXpText>
           <MedalDisplay xp={currentRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{currentRank.name}</Text>
         </RankContainer>
         <RankContainer style={{ alignItems: "flex-end" }}>
-          <RankXpText>{nextRank.xp}</RankXpText>
+          <RankXpText>{nextRank.xp} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{nextRank.name}</Text>
         </RankContainer>

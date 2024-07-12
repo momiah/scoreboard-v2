@@ -28,8 +28,6 @@ const TeamPerformance = () => {
     fetchData();
   }, [setGames]);
 
-  console.log("games", JSON.stringify(teamStats, null, 2));
-
   const recentGameResult = (resultLog) => {
     const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
 

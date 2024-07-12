@@ -53,6 +53,7 @@ const PlayerPerformance = () => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
+  console.log("games", JSON.stringify(playerStats, null, 2));
   const renderPlayer = ({ item: playerName, index }) => (
     <TableRow
       key={playerName}

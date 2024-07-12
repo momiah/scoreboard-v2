@@ -4,6 +4,7 @@ export const calculatePlayerPerformance = (games) => {
   function initializePlayer(player) {
     if (!players[player]) {
       players[player] = {
+        lastActive: null,
         numberOfWins: 0,
         numberOfLosses: 0,
         totalPoints: 0,
@@ -100,12 +101,18 @@ export const calculatePlayerPerformance = (games) => {
   games.forEach((game) => {
     const team1 = game.team1;
     const team2 = game.team2;
+    const lastActiveDate = game.date;
 
     if (team1 && team2) {
       initializePlayer(team1.player1);
       initializePlayer(team1.player2);
       initializePlayer(team2.player1);
       initializePlayer(team2.player2);
+
+      players[team1.player1].lastActive = lastActiveDate;
+      players[team1.player2].lastActive = lastActiveDate;
+      players[team2.player1].lastActive = lastActiveDate;
+      players[team2.player2].lastActive = lastActiveDate;
 
       players[team1.player1].totalPoints += team1.score;
       players[team1.player2].totalPoints += team1.score;
@@ -196,6 +203,7 @@ export const calculatePlayerPerformance = (games) => {
   const sortedPlayers = {};
   playersArray.forEach((player) => {
     sortedPlayers[player.player] = {
+      lastActive: player.lastActive,
       XP: player.XP,
       numberOfGamesPlayed: player.numberOfGamesPlayed,
       numberOfLosses: player.numberOfLosses,
