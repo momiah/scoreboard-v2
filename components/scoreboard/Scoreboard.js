@@ -16,6 +16,7 @@ import moment from "moment";
 import Popup from "../popup/Popup";
 import { GameContext } from "../../context/GameContext";
 import { AntDesign } from "@expo/vector-icons";
+import { Dimensions } from "react-native";
 
 const calculateWin = (team1, team2) => {
   if (team1.score > team2.score) {
@@ -314,12 +315,14 @@ const Scoreboard = () => {
                         handleSelectPlayer("team1", 0, player)
                       }
                       selectedPlayers={selectedPlayers}
+                      borderType={"topLeft"}
                     />
                     <AddPlayer
                       onSelectPlayer={(player) =>
                         handleSelectPlayer("team1", 1, player)
                       }
                       selectedPlayers={selectedPlayers}
+                      borderType={"bottomLeft"}
                     />
                   </TeamContainer>
 
@@ -327,7 +330,9 @@ const Scoreboard = () => {
                     <Text style={{ color: "white" }}>
                       {moment().format("DD-MM-YYYY")}
                     </Text>
-                    <ScoreContainer style={{ width: 100 }}>
+                    <ScoreContainer
+                      style={{ width: screenWidth <= 400 ? 80 : 100 }}
+                    >
                       <ScoreInput
                         keyboardType="numeric"
                         placeholder="0"
@@ -350,16 +355,16 @@ const Scoreboard = () => {
                         handleSelectPlayer("team2", 0, player)
                       }
                       selectedPlayers={selectedPlayers}
+                      borderType={"topRight"}
                     />
                     <AddPlayer
                       onSelectPlayer={(player) =>
                         handleSelectPlayer("team2", 1, player)
                       }
                       selectedPlayers={selectedPlayers}
+                      borderType={"bottomRight"}
                     />
                   </TeamContainer>
-
-                  <ScoreContainer></ScoreContainer>
                 </GameContainer>
 
                 <PlayerInputContainer>
@@ -412,6 +417,8 @@ const Scoreboard = () => {
 };
 
 // Define styles
+const { width: screenWidth } = Dimensions.get("window");
+
 const AddGameButton = styled.TouchableOpacity({
   display: "flex",
   justifyContent: "center",
@@ -478,7 +485,8 @@ const DeleteGameContainer = styled.View({
   zIndex: 2,
   justifyContent: "space-between",
   alignItems: "center",
-  padding: "0 50px",
+  padding: screenWidth <= 400 ? "0 40px" : "0 50px",
+  gap: screenWidth <= 400 ? 10 : null,
 });
 
 const GameContainer = styled.TouchableOpacity({
@@ -487,6 +495,7 @@ const GameContainer = styled.TouchableOpacity({
   marginBottom: 16,
   border: "1px solid #262626",
   borderRadius: 8,
+  height: screenWidth <= 400 ? 100 : null,
   backgroundColor: "#001123",
 });
 
@@ -561,6 +570,7 @@ const ScoreContainer = styled.View({
   display: "flex",
   flexDirection: "row",
   justifyContent: "center",
+  marginTop: screenWidth <= 400 ? 20 : null,
 });
 
 const ScoreInput = styled.TextInput({
@@ -577,13 +587,13 @@ const SubmitButton = styled.TouchableOpacity({
   alignItems: "center",
   padding: 10,
   borderRadius: 8,
-  width: 300,
+  width: screenWidth <= 400 ? 250 : 300,
   backgroundColor: "#00A2FF",
 });
 
 const Team = styled.Text({
   color: "white",
-  fontSize: 16,
+  fontSize: screenWidth <= 400 ? 15 : 16,
 });
 
 const TeamContainer = styled.View({
@@ -599,7 +609,7 @@ const TeamTextContainer = styled.View({
   padding: 15,
   paddingLeft: 20,
   paddingRight: 20,
-  width: 140,
+  width: screenWidth <= 400 ? 125 : 140,
 });
 
 export default Scoreboard;

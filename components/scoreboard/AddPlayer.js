@@ -3,8 +3,9 @@ import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../context/GameContext";
 import { AntDesign } from "@expo/vector-icons";
+import { Dimensions } from "react-native";
 
-const AddPlayer = ({ onSelectPlayer, selectedPlayers }) => {
+const AddPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
   const [selected, setSelected] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { players } = useContext(GameContext);
@@ -20,11 +21,29 @@ const AddPlayer = ({ onSelectPlayer, selectedPlayers }) => {
     onSelectPlayer(value);
   };
 
+  const borderDirection = (borderType) => {
+    switch (borderType) {
+      case "topLeft":
+        return { borderTopLeftRadius: 8 };
+      case "topRight":
+        return { borderTopRightRadius: 8 };
+      case "bottomLeft":
+        return { borderBottomLeftRadius: 8 };
+      case "bottomRight":
+        return { borderBottomRightRadius: 8 };
+      default:
+        return {};
+    }
+  };
+
   return (
     <View>
-      <SelectPlayer onPress={() => setDropdownVisible(true)}>
-        <Text>{selected || "Select Player"}</Text>
-      </SelectPlayer>
+      <SelectPlayerContainer
+        onPress={() => setDropdownVisible(true)}
+        style={borderDirection(borderType)}
+      >
+        <SelectPlayer style={{}}>{selected || "Select Player"}</SelectPlayer>
+      </SelectPlayerContainer>
 
       <Modal
         transparent={true}
@@ -68,12 +87,17 @@ const AddPlayer = ({ onSelectPlayer, selectedPlayers }) => {
   );
 };
 
-const SelectPlayer = styled.Text({
-  padding: 20,
+const { width: screenWidth } = Dimensions.get("window");
+
+const SelectPlayerContainer = styled.View({
   border: "1px solid #262626",
+});
+
+const SelectPlayer = styled.Text({
+  fontSize: screenWidth <= 400 ? 12 : 14,
   color: "white",
-  borderRadius: 20,
-  width: 130, // Fixed width
+
+  padding: screenWidth <= 400 ? 17 : 20,
 });
 
 const ModalBackground = styled.View({

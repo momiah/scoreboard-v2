@@ -8,6 +8,7 @@ import { medalNames } from "../../../functions/medalNames";
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
 import { transformDate } from "../../../functions/dateTransform";
+import { Dimensions } from "react-native";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -27,6 +28,10 @@ const currentStreak = (resultLog) => {
   return streakType === "W" ? currentStreakCount : -currentStreakCount;
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
+const screenAdjustedMedalSize = screenWidth <= 400 ? 50 : 70;
+
 const PlayerDetails = ({
   showPlayerDetails,
   setShowPlayerDetails,
@@ -41,11 +46,21 @@ const PlayerDetails = ({
   const statData = [
     {
       statTitle: "Wins",
-      stat: <AnimateNumber number={playerStats.numberOfWins} fontSize={25} />,
+      stat: (
+        <AnimateNumber
+          number={playerStats.numberOfWins}
+          fontSize={screenAdjustedStatFontSize}
+        />
+      ),
     },
     {
       statTitle: "Losses",
-      stat: <AnimateNumber number={playerStats.numberOfLosses} fontSize={25} />,
+      stat: (
+        <AnimateNumber
+          number={playerStats.numberOfLosses}
+          fontSize={screenAdjustedStatFontSize}
+        />
+      ),
     },
     {
       statTitle: "Win Ratio",
@@ -56,18 +71,26 @@ const PlayerDetails = ({
       stat: (
         <AnimateNumber
           number={`${playerStats.pointEfficiency.toFixed(1)}%`}
-          fontSize={25}
+          fontSize={screenAdjustedStatFontSize}
         />
       ),
     },
     {
       statTitle: "Current Streak",
-      stat: <AnimateNumber number={currentStreakValue} fontSize={25} />,
+      stat: (
+        <AnimateNumber
+          number={currentStreakValue}
+          fontSize={screenAdjustedStatFontSize}
+        />
+      ),
     },
     {
       statTitle: "Highest Streak",
       stat: (
-        <AnimateNumber number={playerStats.highestWinStreak} fontSize={25} />
+        <AnimateNumber
+          number={playerStats.highestWinStreak}
+          fontSize={screenAdjustedStatFontSize}
+        />
       ),
     },
   ];
@@ -93,10 +116,18 @@ const PlayerDetails = ({
             <PlayerDetail>
               <View>
                 <PlayerName>{playerName}</PlayerName>
-                <Text style={{ color: "#aaa" }}>
+                <Text
+                  style={{
+                    color: "#aaa",
+                  }}
+                >
                   Member since {memberSince}
                 </Text>
-                <Text style={{ color: "#aaa" }}>
+                <Text
+                  style={{
+                    color: "#aaa",
+                  }}
+                >
                   Last Active {transformDate(playerStats.lastActive)}
                 </Text>
               </View>
@@ -104,7 +135,7 @@ const PlayerDetails = ({
               <MedalContainer>
                 <MedalDisplay
                   xp={playerStats.XP + playerStats.totalPoints}
-                  size={70}
+                  size={screenAdjustedMedalSize}
                 />
                 <Text style={{ color: "white", marginTop: 10 }}>
                   {medalNames(playerStats.XP + playerStats.totalPoints)}
@@ -189,19 +220,19 @@ const TableCell = styled.View({
   width: "50%", // Adjust this to fit two cells per row
   justifyContent: "center",
   alignItems: "center",
-  paddingTop: 20,
-  paddingBottom: 20,
+  paddingTop: screenWidth <= 400 ? 15 : 20,
+  paddingBottom: screenWidth <= 400 ? 15 : 20,
   borderTopWidth: 1,
   borderColor: "#262626",
 });
 
 const StatTitle = styled.Text({
-  fontSize: 14,
+  fontSize: screenWidth <= 400 ? 12 : 14,
   color: "#aaa",
 });
 
 const Stat = styled.Text({
-  fontSize: 25,
+  fontSize: screenAdjustedStatFontSize,
   fontWeight: "bold",
   color: "white",
 });

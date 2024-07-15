@@ -5,6 +5,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { GameContext } from "../../../context/GameContext";
 import { calculatTeamPerformance } from "../../../functions/calculateTeamPerformance";
 import TeamDetails from "./TeamDetails";
+import { Dimensions } from "react-native";
 
 const TeamPerformance = () => {
   const { games, setGames, retrieveGames, players, fetchPlayers } =
@@ -88,6 +89,8 @@ const TeamPerformance = () => {
   );
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+
 const TableContainer = styled.View({
   paddingTop: 20,
   flex: 1,
@@ -146,7 +149,7 @@ const StatTitle = styled.Text({
 });
 
 const Stat = styled.Text({
-  fontSize: 25,
+  fontSize: screenWidth <= 400 ? 20 : 25,
   fontWeight: "bold",
   color: "white",
 });

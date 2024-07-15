@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "scoreboard-v2",
-    "slug": "scoreboard-v2",
+    "name": "Court Champs",
+    "slug": "Court Champs",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon.png",

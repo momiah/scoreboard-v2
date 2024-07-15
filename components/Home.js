@@ -5,6 +5,7 @@ import PlayerPerformance from "./performance/Player/PlayerPerformance";
 import TeamPerformance from "./performance/Team/TeamPerformance";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../assets";
+import { Dimensions } from "react-native";
 
 const Home = () => {
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
@@ -46,8 +47,9 @@ const Home = () => {
           <Tab
             key={tab.component}
             onPress={() => setSelectedTab(tab.component)}
+            isSelected={selectedTab === tab.component}
           >
-            <Text style={{ color: "white" }}>{tab.component}</Text>
+            <TabText>{tab.component}</TabText>
           </Tab>
         ))}
       </Tabs>
@@ -55,6 +57,7 @@ const Home = () => {
     </HomeContainer>
   );
 };
+const { width: screenWidth } = Dimensions.get("window");
 
 const HomeContainer = styled.View({
   flex: 1,
@@ -77,13 +80,19 @@ const Tabs = styled.View({
   alignItems: "center",
   padding: 10,
 });
-const Tab = styled.TouchableOpacity({
+const Tab = styled.TouchableOpacity(({ isSelected }) => ({
   border: "1px solid #ccc",
   padding: 10,
   borderRadius: 20,
   marginTop: 10,
+  borderWidth: isSelected ? 2 : 1,
+  borderStyle: "solid",
+  borderColor: isSelected ? "#00A2FF" : "white",
+}));
 
-  // height: "100px",
+const TabText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 12 : 14,
 });
 
 export default Home;

@@ -2,6 +2,7 @@ import rankingMedals from "../../rankingMedals";
 import styled from "styled-components/native";
 import React from "react";
 import { View, Image, Text } from "react-native";
+import { Dimensions } from "react-native";
 
 const MatchMedals = ({
   demonWin = 0,
@@ -46,6 +47,8 @@ const MatchMedals = ({
   );
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+
 const Container = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
@@ -56,8 +59,8 @@ const Container = styled.View({
 });
 
 const Medal = styled.Image({
-  width: 50,
-  height: 50,
+  width: screenWidth <= 400 ? 45 : 50,
+  height: screenWidth <= 400 ? 45 : 50,
 });
 
 const MedalContainer = styled.View({
