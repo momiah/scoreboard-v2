@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Court Champs",
-    "slug": "Court Champs",
-    "version": "1.0.0",
+    "slug": "court-champs",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon.png",
     "userInterfaceStyle": "light",
@@ -12,7 +12,9 @@
       "backgroundColor": "#00152B"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "buildNumber": "3",
+      "bundleIdentifier": "com.courtchamp"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,6 +24,17 @@
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/43db0104-f8f3-44de-b831-a74cd535baee"
     }
   }
 }

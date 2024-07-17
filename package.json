@@ -1,5 +1,5 @@
 {
-  "name": "scoreboard-v2",
+  "name": "court-champs",
   "version": "1.0.0",
   "main": "expo/AppEntry.js",
   "scripts": {
@@ -22,7 +22,8 @@
     "react-native-animate-number": "^0.1.2",
     "react-native-date-picker": "^5.0.4",
     "react-native-web": "~0.19.10",
-    "styled-components": "^6.1.11"
+    "styled-components": "^6.1.11",
+    "expo-updates": "~0.25.20"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

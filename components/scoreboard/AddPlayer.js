@@ -89,7 +89,7 @@ const AddPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const SelectPlayerContainer = styled.View({
+const SelectPlayerContainer = styled.TouchableOpacity({
   border: "1px solid #262626",
 });
 
