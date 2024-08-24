@@ -55,7 +55,10 @@ const MedalDisplay = ({ xp, size }) => {
   return (
     <View>
       {medalSource ? (
-        <Image source={medalSource} style={{ width: size, height: size }} />
+        <Image
+          source={medalSource}
+          style={{ width: size, height: size, resizeMode: "contain" }}
+        />
       ) : (
         <Text>No medal for this XP</Text>
       )}
