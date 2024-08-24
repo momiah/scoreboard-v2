@@ -61,7 +61,7 @@ const TeamPerformance = () => {
       </TeamCell>
       <TableCell>
         <StatTitle>Win Ratio</StatTitle>
-        <Stat>{team.numberOfWins / team.numberOfLosses}</Stat>
+        <Stat>{(team.numberOfWins / team.numberOfLosses).toFixed(2)}</Stat>
       </TableCell>
       <TableCell>
         <StatTitle>Wins</StatTitle>
