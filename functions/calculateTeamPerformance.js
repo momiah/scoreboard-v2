@@ -62,8 +62,8 @@ export const calculatTeamPerformance = (gameData) => {
   }
 
   gameData.forEach((game) => {
-    const winnerTeamKey = game.result.winner.players.join("-");
-    const loserTeamKey = game.result.loser.players.join("-");
+    const winnerTeamKey = game.result.winner.players.sort().join("-");
+    const loserTeamKey = game.result.loser.players.sort().join("-");
 
     if (!teamPerformance[winnerTeamKey]) {
       teamPerformance[winnerTeamKey] = {
