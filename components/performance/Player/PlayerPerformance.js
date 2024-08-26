@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, FlatList } from "react-native";
+import { View, FlatList, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { calculatePlayerPerformance } from "../../../functions/calculatePlayerPerformance";
@@ -8,7 +8,7 @@ import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
 
 const PlayerPerformance = () => {
-  const { games, setGames, retrieveGames, players, fetchPlayers } =
+  const { games, setGames, retrieveGames, players, fetchPlayers, refreshing } =
     useContext(GameContext);
   const [playerStats, setPlayerStats] = useState({});
   const [sortedPlayers, setSortedPlayers] = useState([]);
@@ -28,6 +28,16 @@ const PlayerPerformance = () => {
 
     fetchData();
   }, [setGames]);
+
+  const handleRefresh = async () => {
+    const fetchData = async () => {
+      await fetchPlayers();
+      const retrievedGames = await retrieveGames();
+      setGames(retrievedGames);
+    };
+
+    fetchData();
+  };
 
   useEffect(() => {
     if (games.length > 0) {
@@ -53,7 +63,9 @@ const PlayerPerformance = () => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  console.log("games", JSON.stringify(playerStats, null, 2));
+  // console.log("playerstats", JSON.stringify(playerStats, null, 2));
+  console.log("games🫵", JSON.stringify(games[0], null, 2));
+
   const renderPlayer = ({ item: playerName, index }) => (
     <TableRow
       key={playerName}
@@ -98,6 +110,9 @@ const PlayerPerformance = () => {
         data={sortedPlayers}
         renderItem={renderPlayer}
         keyExtractor={(playerName) => playerName}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       />
 
       {showPlayerDetails && (
