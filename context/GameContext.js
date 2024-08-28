@@ -10,6 +10,7 @@ import {
   query,
   orderBy,
   getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import moment from "moment";
@@ -168,6 +169,35 @@ const GameProvider = ({ children }) => {
     }
   };
 
+  const updatePlayers = async (updatedPlayers) => {
+    // console.log("updatedPlayers", updatedPlayers);
+    try {
+      const scoreboardCollectionRef = collection(db, "scoreboard");
+      const playersCollectionRef = collection(
+        scoreboardCollectionRef,
+        "players",
+        "players"
+      );
+
+      // Iterate through each updated player and update their record in Firebase
+      for (const updatedPlayer of updatedPlayers) {
+        const { id, newPlayer } = updatedPlayer;
+
+        // Use the player name as the document ID
+        const playerDocRef = doc(playersCollectionRef, id);
+
+        // Update the player's document with the new data
+        await updateDoc(playerDocRef, { newPlayer });
+      }
+
+      handleShowPopup("Players updated successfully!");
+      await fetchPlayers(); // Fetch the updated list of players if needed
+    } catch (error) {
+      console.error("Error updating player data:", error);
+      handleShowPopup("Error updating player data");
+    }
+  };
+
   const addGame = async (newGame, gameId) => {
     try {
       const scoreboardCollectionRef = collection(db, "scoreboard");
@@ -185,6 +215,8 @@ const GameProvider = ({ children }) => {
   };
 
   const deleteGameById = async (gameId, setGames) => {
+    console.log("gameId", gameId);
+
     // 1. Confirm Deletion (Optional)
     Alert.alert("Delete Game", "Are you sure you want to delete this game?", [
       { text: "Cancel", onPress: () => {}, style: "cancel" },
@@ -222,6 +254,7 @@ const GameProvider = ({ children }) => {
         setPopupMessage,
         fetchPlayers,
         setPlayers,
+        updatePlayers,
         registerPlayer,
         retrievePlayers,
         setPlayer,

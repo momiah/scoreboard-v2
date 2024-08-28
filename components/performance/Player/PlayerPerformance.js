@@ -21,7 +21,7 @@ const PlayerPerformance = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      await fetchPlayers();
+      // await fetchPlayers();
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
     };
@@ -31,11 +31,12 @@ const PlayerPerformance = () => {
 
   const handleRefresh = async () => {
     const fetchData = async () => {
-      await fetchPlayers();
+      // await fetchPlayers();
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
     };
 
+    // console.log("playeddddrs ", JSON.stringify(players[0], null, 2));
     fetchData();
   };
 
@@ -64,7 +65,16 @@ const PlayerPerformance = () => {
   };
 
   // console.log("playerstats", JSON.stringify(playerStats, null, 2));
-  console.log("games🫵", JSON.stringify(games[0], null, 2));
+  // console.log("games🫵", JSON.stringify(games[0], null, 2));
+
+  const fetchPlayerToUpdate = async ({ game }) => {
+    const playerToUpdate = await players.find(
+      (player) => player.id === game.result.winner.players[0]
+    );
+    console.log("playerToUpdate", JSON.stringify(playerToUpdate, null, 2));
+
+    return player;
+  };
 
   const renderPlayer = ({ item: playerName, index }) => (
     <TableRow
