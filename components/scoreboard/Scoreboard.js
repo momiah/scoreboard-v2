@@ -75,7 +75,7 @@ const Scoreboard = () => {
   } = useContext(GameContext);
 
   const [newestGameId, setNewestGameId] = useState("");
-  const [previousPlayerRecord, setPreviousPlayerRecord] = useState(null);
+  const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
 
   useEffect(() => {
     // Logic to fetch and set newestGameId
@@ -84,6 +84,11 @@ const Scoreboard = () => {
     }
     fetchPlayers();
   }, [games]);
+
+  console.log(
+    "previousPlayerRecord",
+    JSON.stringify(previousPlayerRecord, null, 2)
+  );
 
   const [selectedPlayers, setSelectedPlayers] = useState({
     team1: ["", ""],
@@ -138,7 +143,7 @@ const Scoreboard = () => {
     );
 
     const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
-    setPreviousPlayerRecord(previousRecord);
+    setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
 
     // Function to update player stats
     const updatePlayerStats = (player, isWinner) => {

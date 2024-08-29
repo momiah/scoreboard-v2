@@ -35,8 +35,6 @@ const PlayerPerformance = () => {
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
     };
-
-    // console.log("playeddddrs ", JSON.stringify(players[0], null, 2));
     fetchData();
   };
 

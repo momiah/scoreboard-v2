@@ -215,7 +215,7 @@ const GameProvider = ({ children }) => {
   };
 
   const deleteGameById = async (gameId, setGames) => {
-    console.log("gameId", gameId);
+    // console.log("gameId", gameId);
 
     // 1. Confirm Deletion (Optional)
     Alert.alert("Delete Game", "Are you sure you want to delete this game?", [
