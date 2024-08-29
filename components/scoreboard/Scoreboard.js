@@ -90,6 +90,10 @@ const Scoreboard = () => {
     JSON.stringify(previousPlayerRecord, null, 2)
   );
 
+  //////////////////////////
+  //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
+  // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
+  //////////////////////////
   const [selectedPlayers, setSelectedPlayers] = useState({
     team1: ["", ""],
     team2: ["", ""],
@@ -253,7 +257,7 @@ const Scoreboard = () => {
   };
 
   const revertPreviousGamePlayerRecord = async (previousPlayerRecord) => {
-    await updatePlayers(previousPlayerRecord);
+    await updatePlayers(previousPlayerRecord[0]);
   };
 
   return (
