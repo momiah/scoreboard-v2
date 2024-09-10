@@ -170,7 +170,11 @@ const GameProvider = ({ children }) => {
   };
 
   const updatePlayers = async (updatedPlayers) => {
-    // console.log("updatedPlayers", updatedPlayers);
+    if (updatedPlayers.length === 0) {
+      handleShowPopup("No players to update!");
+      return;
+    }
+
     try {
       const scoreboardCollectionRef = collection(db, "scoreboard");
       const playersCollectionRef = collection(

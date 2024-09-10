@@ -17,6 +17,7 @@ import Popup from "../popup/Popup";
 import { GameContext } from "../../context/GameContext";
 import { AntDesign } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
+import { getPlayersToUpdate } from "../../functions/getPlayersToUpdate";
 
 const calculateWin = (team1, team2) => {
   if (team1.score > team2.score) {
@@ -85,10 +86,12 @@ const Scoreboard = () => {
     fetchPlayers();
   }, [games]);
 
-  console.log(
-    "previousPlayerRecord",
-    JSON.stringify(previousPlayerRecord, null, 2)
-  );
+  // console.log(
+  //   "previousPlayerRecord",
+  //   JSON.stringify(previousPlayerRecord, null, 2)
+  // );
+
+  // console.log("number of previous player records", previousPlayerRecord.length);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
@@ -136,55 +139,55 @@ const Scoreboard = () => {
     }
   };
 
-  const getPlayersToUpdate = async (game) => {
-    const allPlayers = await retrievePlayers(); // Fetch all players
+  // const getPlayersToUpdate = async (game) => {
+  //   const allPlayers = await retrievePlayers(); // Fetch all players
 
-    // Filter out players that are in the winning and losing teams
-    const playersToUpdate = allPlayers.filter((player) =>
-      game.result.winner.players
-        .concat(game.result.loser.players)
-        .includes(player.id)
-    );
+  //   // Filter out players that are in the winning and losing teams
+  //   const playersToUpdate = allPlayers.filter((player) =>
+  //     game.result.winner.players
+  //       .concat(game.result.loser.players)
+  //       .includes(player.id)
+  //   );
 
-    const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
-    setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
+  //   const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
+  //   setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
 
-    // Function to update player stats
-    const updatePlayerStats = (player, isWinner) => {
-      player.newPlayer.numberOfGamesPlayed += 1;
+  //   // Function to update player stats
+  //   const updatePlayerStats = (player, isWinner) => {
+  //     player.newPlayer.numberOfGamesPlayed += 1;
 
-      if (isWinner) {
-        player.newPlayer.numberOfWins += 1;
-      } else {
-        player.newPlayer.numberOfLosses += 1;
-      }
+  //     if (isWinner) {
+  //       player.newPlayer.numberOfWins += 1;
+  //     } else {
+  //       player.newPlayer.numberOfLosses += 1;
+  //     }
 
-      // Calculate win percentage if needed
-      player.newPlayer.winPercentage =
-        (player.newPlayer.numberOfWins / player.newPlayer.numberOfGamesPlayed) *
-        100;
+  //     // Calculate win percentage if needed
+  //     player.newPlayer.winPercentage =
+  //       (player.newPlayer.numberOfWins / player.newPlayer.numberOfGamesPlayed) *
+  //       100;
 
-      return player;
-    };
+  //     return player;
+  //   };
 
-    // Update stats for winning players
-    game.result.winner.players.forEach((winnerId) => {
-      const player = playersToUpdate.find((p) => p.id === winnerId);
-      if (player) {
-        updatePlayerStats(player, true); // true indicates the player is a winner
-      }
-    });
+  //   // Update stats for winning players
+  //   game.result.winner.players.forEach((winnerId) => {
+  //     const player = playersToUpdate.find((p) => p.id === winnerId);
+  //     if (player) {
+  //       updatePlayerStats(player, true); // true indicates the player is a winner
+  //     }
+  //   });
 
-    // Update stats for losing players
-    game.result.loser.players.forEach((loserId) => {
-      const player = playersToUpdate.find((p) => p.id === loserId);
-      if (player) {
-        updatePlayerStats(player, false);
-      }
-    });
+  //   // Update stats for losing players
+  //   game.result.loser.players.forEach((loserId) => {
+  //     const player = playersToUpdate.find((p) => p.id === loserId);
+  //     if (player) {
+  //       updatePlayerStats(player, false);
+  //     }
+  //   });
 
-    return playersToUpdate;
-  };
+  //   return playersToUpdate;
+  // };
 
   const handleAddGame = async () => {
     // Check if both teams have selected players
@@ -222,8 +225,13 @@ const Scoreboard = () => {
       },
     };
 
-    const updatedPlayersList = await getPlayersToUpdate(newGame);
-    await updatePlayers(updatedPlayersList);
+    const playersToUpdate = await getPlayersToUpdate(
+      newGame,
+      retrievePlayers,
+      setPreviousPlayerRecord,
+      previousPlayerRecord
+    );
+    await updatePlayers(playersToUpdate);
 
     await addGame(newGame, gameId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
@@ -256,9 +264,9 @@ const Scoreboard = () => {
     setPlayer(newPlayer);
   };
 
-  const revertPreviousGamePlayerRecord = async (previousPlayerRecord) => {
-    await updatePlayers(previousPlayerRecord[0]);
-  };
+  // const revertPreviousGamePlayerRecord = async (previousPlayerRecord) => {
+  //   await updatePlayers(previousPlayerRecord[0]);
+  // };
 
   return (
     <Container>
@@ -284,7 +292,7 @@ const Scoreboard = () => {
                       style={{ backgroundColor: "red" }}
                       onPress={() => {
                         deleteGameById(item.gameId, setGames);
-                        revertPreviousGamePlayerRecord(previousPlayerRecord);
+                        // revertPreviousGamePlayerRecord(previousPlayerRecord);
                       }}
                     >
                       <DeleteGameButtonText>Delete Game</DeleteGameButtonText>

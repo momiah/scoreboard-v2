@@ -5,19 +5,20 @@ export const calculatePlayerPerformance = (games) => {
     if (!players[player]) {
       players[player] = {
         lastActive: null,
-        numberOfWins: 0,
-        numberOfLosses: 0,
-        totalPoints: 0,
-        numberOfGamesPlayed: 0,
-        resultLog: [],
+        numberOfWins: 0, //Added to getPlayersToUpdate
+        numberOfLosses: 0, //Added to getPlayersToUpdate
+        totalPoints: 0, //Added to getPlayersToUpdate
+        numberOfGamesPlayed: 0, //Added to getPlayersToUpdate
+        resultLog: [], //Added to getPlayersToUpdate
         highestWinStreak: 0,
         highestLossStreak: 0,
         XP: 0,
         totalPointEfficiency: 0,
         pointEfficiency: 0,
         currentStreak: {
-          type: null, // "W" for win streak, "L" for loss streak
-          count: 0,
+          //Added to getPlayersToUpdate
+          type: null, // //Added to getPlayersToUpdate
+          count: 0, //Added to getPlayersToUpdate
         },
         winStreak3: 0,
         winStreak5: 0,
