@@ -12,6 +12,39 @@ export const getPlayersToUpdate = async (
       .includes(player.id)
   );
 
+  console.log("game", JSON.stringify(game, null, 2));
+
+  // Function to get player by ID
+  const getPlayerById = (id) =>
+    playersToUpdate.find((player) => player.id === id);
+
+  // Calculate combined XP for winners
+  const combinedWinnerXp = game.result.winner.players.reduce(
+    (totalXp, playerId) => {
+      const player = getPlayerById(playerId);
+      if (player) {
+        return totalXp + player.newPlayer.XP;
+      }
+      return totalXp;
+    },
+    0
+  );
+
+  // Calculate calculateCombined XP for losers
+  const combinedLoserXp = game.result.loser.players.reduce(
+    (totalXp, playerId) => {
+      const player = getPlayerById(playerId);
+      if (player) {
+        return totalXp + player.newPlayer.XP;
+      }
+      return totalXp;
+    },
+    0
+  );
+
+  console.log("calculateCombined Winner XP:", combinedWinnerXp); // Should output 570
+  console.log("calculateCombined Loser XP:", combinedLoserXp); // Should output -110
+
   const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
   setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
 
@@ -44,7 +77,6 @@ export const getPlayersToUpdate = async (
     const lastResult =
       resultLog.length > 1 ? resultLog[resultLog.length - 2] : null;
 
-    // Initialize the win/loss streak variables
     let winStreak3 = player.newPlayer.winStreak3 || 0;
     let winStreak5 = player.newPlayer.winStreak5 || 0;
     let winStreak7 = player.newPlayer.winStreak7 || 0;
@@ -52,16 +84,14 @@ export const getPlayersToUpdate = async (
     let highestWinStreak = player.newPlayer.highestWinStreak || 0;
     let highestLossStreak = player.newPlayer.highestLossStreak || 0;
 
-    // Update streak based on current result and last result
     if (currentResult === "W") {
       if (lastResult === "W") {
-        player.newPlayer.currentStreak.count += 1; // Continue winning streak
+        player.newPlayer.currentStreak.count += 1;
       } else {
-        player.newPlayer.currentStreak.type = "W"; // Reset to win streak
+        player.newPlayer.currentStreak.type = "W";
         player.newPlayer.currentStreak.count = 1;
       }
 
-      // Track specific win streaks
       if (player.newPlayer.currentStreak.count === 3) winStreak3 += 1;
       if (player.newPlayer.currentStreak.count === 5) winStreak5 += 1;
       if (player.newPlayer.currentStreak.count === 7) winStreak7 += 1;
@@ -73,9 +103,9 @@ export const getPlayersToUpdate = async (
       );
     } else {
       if (lastResult === "L") {
-        player.newPlayer.currentStreak.count -= 1; // Continue losing streak
+        player.newPlayer.currentStreak.count -= 1;
       } else {
-        player.newPlayer.currentStreak.type = "L"; // Reset to loss streak
+        player.newPlayer.currentStreak.type = "L";
         player.newPlayer.currentStreak.count = -1;
       }
 
@@ -88,13 +118,82 @@ export const getPlayersToUpdate = async (
 
     // Save back the calculated streaks
     player.newPlayer.highestWinStreak = highestWinStreak;
-    player.newPlayer.highestLossStreak = Math.abs(highestLossStreak); // Store as positive value
+    player.newPlayer.highestLossStreak = Math.abs(highestLossStreak);
     player.newPlayer.winStreak3 = winStreak3;
     player.newPlayer.winStreak5 = winStreak5;
     player.newPlayer.winStreak7 = winStreak7;
 
     return player;
   };
+
+  function updateXp(
+    player,
+    streakType,
+    streakCount,
+    combinedWinnerXp,
+    combinedLoserXp
+  ) {
+    const baseXP = streakType === "W" ? 20 : -10;
+
+    // Multiplier logic based on streak
+    const lossMultiplier =
+      streakCount <= -7
+        ? 3
+        : streakCount <= -5
+        ? 2.5
+        : streakCount <= -3
+        ? 2
+        : streakCount <= -2
+        ? 1.5
+        : 1;
+
+    const winMultiplier =
+      streakCount >= 7
+        ? 3
+        : streakCount >= 5
+        ? 2.5
+        : streakCount >= 3
+        ? 2
+        : streakCount > 1
+        ? 1.5
+        : 1;
+
+    // Determine the streak multiplier based on the current streak count
+    const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
+
+    // Calculate the base XP
+    const xp = baseXP * multiplier;
+
+    // Calculate rankedXp bonus/penalty
+    let rankedXp = 0;
+    const difference = combinedWinnerXp - combinedLoserXp;
+    const differencePercentage = (difference / combinedWinnerXp) * 100;
+
+    // Winners' bonus for defeating higher-ranked players
+    if (streakType === "W" && combinedWinnerXp < combinedLoserXp) {
+      const difference = combinedLoserXp - combinedWinnerXp;
+      rankedXp = (difference / combinedLoserXp) * 100; // Percentage bonus
+    }
+
+    // Losers' penalty for losing to lower-ranked players
+    if (streakType === "L" && combinedLoserXp > combinedWinnerXp) {
+      const difference = combinedLoserXp - combinedWinnerXp;
+      rankedXp = -(difference / combinedLoserXp) * 100; // Percentage penalty (negative)
+    }
+
+    // Log the rankedXp for debugging
+    console.log("Ranked XP:", rankedXp);
+
+    // Final XP calculation for winners and losers
+    const finalXp = xp + (xp * rankedXp) / 100;
+
+    console.log("Final XP:", finalXp);
+
+    // Apply the XP adjustment to the player's XP
+    player.newPlayer.XP += finalXp;
+
+    return player;
+  }
 
   const updatePlayerTotalPoints = (player, points) => {
     player.newPlayer.totalPoints += points;
@@ -108,6 +207,13 @@ export const getPlayersToUpdate = async (
       updatePlayerStats(player, true); // true indicates the player is a winner
       updatePlayerTotalPoints(player, game.result.winner.score);
       updatePlayerResultLogAndStreak(player, true);
+      updateXp(
+        player,
+        player.newPlayer.currentStreak.type,
+        player.newPlayer.currentStreak.count,
+        combinedWinnerXp,
+        combinedLoserXp
+      );
     }
   });
 
@@ -118,8 +224,17 @@ export const getPlayersToUpdate = async (
       updatePlayerStats(player, false);
       updatePlayerTotalPoints(player, game.result.loser.score);
       updatePlayerResultLogAndStreak(player, false);
+      updateXp(
+        player,
+        player.newPlayer.currentStreak.type,
+        player.newPlayer.currentStreak.count,
+        combinedWinnerXp,
+        combinedLoserXp
+      );
     }
   });
+
+  console.log(JSON.stringify(playersToUpdate, null, 2));
 
   return playersToUpdate;
 };
