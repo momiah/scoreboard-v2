@@ -4,7 +4,7 @@ export const getPlayersToUpdate = async (
   setPreviousPlayerRecord,
   previousPlayerRecord
 ) => {
-  const allPlayers = await retrievePlayers(); // Fetch all players
+  const allPlayers = await retrievePlayers();
 
   const playersToUpdate = allPlayers.filter((player) =>
     game.result.winner.players
@@ -18,7 +18,6 @@ export const getPlayersToUpdate = async (
   const getPlayerById = (id) =>
     playersToUpdate.find((player) => player.id === id);
 
-  // Calculate combined XP for winners
   const combinedWinnerXp = game.result.winner.players.reduce(
     (totalXp, playerId) => {
       const player = getPlayerById(playerId);
@@ -30,7 +29,6 @@ export const getPlayersToUpdate = async (
     0
   );
 
-  // Calculate calculateCombined XP for losers
   const combinedLoserXp = game.result.loser.players.reduce(
     (totalXp, playerId) => {
       const player = getPlayerById(playerId);
@@ -41,9 +39,6 @@ export const getPlayersToUpdate = async (
     },
     0
   );
-
-  console.log("calculateCombined Winner XP:", combinedWinnerXp); // Should output 570
-  console.log("calculateCombined Loser XP:", combinedLoserXp); // Should output -110
 
   const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
   setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
@@ -126,14 +121,22 @@ export const getPlayersToUpdate = async (
     return player;
   };
 
-  function updateXp(
+  const updateXp = (
     player,
     streakType,
     streakCount,
     combinedWinnerXp,
     combinedLoserXp
-  ) {
+  ) => {
     const baseXP = streakType === "W" ? 20 : -10;
+    const differenceMultiplier = combinedLoserXp / combinedWinnerXp;
+
+    const rankMultiplier =
+      differenceMultiplier < 1
+        ? 0
+        : differenceMultiplier > 10
+        ? 10
+        : differenceMultiplier;
 
     // Multiplier logic based on streak
     const lossMultiplier =
@@ -158,42 +161,16 @@ export const getPlayersToUpdate = async (
         ? 1.5
         : 1;
 
-    // Determine the streak multiplier based on the current streak count
     const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
 
-    // Calculate the base XP
     const xp = baseXP * multiplier;
+    const rankXp = xp * rankMultiplier;
 
-    // Calculate rankedXp bonus/penalty
-    let rankedXp = 0;
-    const difference = combinedWinnerXp - combinedLoserXp;
-    const differencePercentage = (difference / combinedWinnerXp) * 100;
-
-    // Winners' bonus for defeating higher-ranked players
-    if (streakType === "W" && combinedWinnerXp < combinedLoserXp) {
-      const difference = combinedLoserXp - combinedWinnerXp;
-      rankedXp = (difference / combinedLoserXp) * 100; // Percentage bonus
-    }
-
-    // Losers' penalty for losing to lower-ranked players
-    if (streakType === "L" && combinedLoserXp > combinedWinnerXp) {
-      const difference = combinedLoserXp - combinedWinnerXp;
-      rankedXp = -(difference / combinedLoserXp) * 100; // Percentage penalty (negative)
-    }
-
-    // Log the rankedXp for debugging
-    console.log("Ranked XP:", rankedXp);
-
-    // Final XP calculation for winners and losers
-    const finalXp = xp + (xp * rankedXp) / 100;
-
-    console.log("Final XP:", finalXp);
-
-    // Apply the XP adjustment to the player's XP
+    const finalXp = xp + rankXp;
     player.newPlayer.XP += finalXp;
 
     return player;
-  }
+  };
 
   const updatePlayerTotalPoints = (player, points) => {
     player.newPlayer.totalPoints += points;
@@ -204,7 +181,7 @@ export const getPlayersToUpdate = async (
   game.result.winner.players.forEach((winnerId) => {
     const player = playersToUpdate.find((p) => p.id === winnerId);
     if (player) {
-      updatePlayerStats(player, true); // true indicates the player is a winner
+      updatePlayerStats(player, true);
       updatePlayerTotalPoints(player, game.result.winner.score);
       updatePlayerResultLogAndStreak(player, true);
       updateXp(

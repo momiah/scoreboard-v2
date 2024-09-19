@@ -20,9 +20,9 @@ export const calculatePlayerPerformance = (games) => {
           type: null, // //Added to getPlayersToUpdate
           count: 0, //Added to getPlayersToUpdate
         },
-        winStreak3: 0,
-        winStreak5: 0,
-        winStreak7: 0,
+        winStreak3: 0, //Added to getPlayersToUpdate
+        winStreak5: 0, // //Added to getPlayersToUpdate
+        winStreak7: 0, //Added to getPlayersToUpdate
         demonWin: 0,
       };
     }
