@@ -227,7 +227,7 @@ const Scoreboard = () => {
 
     const playersToUpdate = await getPlayersToUpdate(
       newGame,
-      retrievePlayers,
+      // retrievePlayers,
       setPreviousPlayerRecord,
       previousPlayerRecord
     );

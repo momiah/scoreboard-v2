@@ -4,17 +4,17 @@ export const calculatePlayerPerformance = (games) => {
   function initializePlayer(player) {
     if (!players[player]) {
       players[player] = {
-        lastActive: null,
+        lastActive: null, //Added to getPlayersToUpdate
         numberOfWins: 0, //Added to getPlayersToUpdate
         numberOfLosses: 0, //Added to getPlayersToUpdate
         totalPoints: 0, //Added to getPlayersToUpdate
         numberOfGamesPlayed: 0, //Added to getPlayersToUpdate
         resultLog: [], //Added to getPlayersToUpdate
-        highestWinStreak: 0,
-        highestLossStreak: 0,
-        XP: 0,
-        totalPointEfficiency: 0,
-        pointEfficiency: 0,
+        highestWinStreak: 0, //Added to getPlayersToUpdate
+        highestLossStreak: 0, //Added to getPlayersToUpdate
+        XP: 0, //Added to getPlayersToUpdate
+        totalPointEfficiency: 0, //Added to getPlayersToUpdate
+        pointEfficiency: 0, //Added to getPlayersToUpdate
         currentStreak: {
           //Added to getPlayersToUpdate
           type: null, // //Added to getPlayersToUpdate
@@ -23,7 +23,7 @@ export const calculatePlayerPerformance = (games) => {
         winStreak3: 0, //Added to getPlayersToUpdate
         winStreak5: 0, // //Added to getPlayersToUpdate
         winStreak7: 0, //Added to getPlayersToUpdate
-        demonWin: 0,
+        demonWin: 0, //Added to getPlayersToUpdate
       };
     }
   }
@@ -158,6 +158,8 @@ export const calculatePlayerPerformance = (games) => {
           team2.score,
           team1.score
         );
+
+        console.log(team2Efficiency);
 
         players[team1.player1].numberOfLosses += 1;
         players[team1.player2].numberOfLosses += 1;

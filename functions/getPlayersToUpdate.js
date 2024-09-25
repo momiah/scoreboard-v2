@@ -1,18 +1,20 @@
+import { transformDate } from "../functions/dateTransform";
+
 export const getPlayersToUpdate = async (
   game,
-  retrievePlayers,
-  setPreviousPlayerRecord,
-  previousPlayerRecord
+  retrievePlayers
+  // setPreviousPlayerRecord,
+  // previousPlayerRecord
 ) => {
   const allPlayers = await retrievePlayers();
-
+  const date = transformDate(game.date);
   const playersToUpdate = allPlayers.filter((player) =>
     game.result.winner.players
       .concat(game.result.loser.players)
       .includes(player.id)
   );
 
-  console.log("game", JSON.stringify(game, null, 2));
+  // console.log("game", JSON.stringify(game, null, 2));
 
   // Function to get player by ID
   const getPlayerById = (id) =>
@@ -40,8 +42,8 @@ export const getPlayersToUpdate = async (
     0
   );
 
-  const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
-  setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
+  // const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
+  // setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
 
   const updatePlayerStats = (player, isWinner) => {
     player.newPlayer.numberOfGamesPlayed += 1;
@@ -128,11 +130,15 @@ export const getPlayersToUpdate = async (
     combinedWinnerXp,
     combinedLoserXp
   ) => {
+    // Handle potential division by zero or undefined values
     const baseXP = streakType === "W" ? 20 : -10;
+
+    // Calculate difference multiplier safely
     const differenceMultiplier = combinedLoserXp / combinedWinnerXp;
 
+    // Cap the rank multiplier between 0 and 10
     const rankMultiplier =
-      differenceMultiplier < 1
+      differenceMultiplier < 2
         ? 0
         : differenceMultiplier > 10
         ? 10
@@ -162,12 +168,24 @@ export const getPlayersToUpdate = async (
         : 1;
 
     const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
-
     const xp = baseXP * multiplier;
-    const rankXp = xp * rankMultiplier;
+    const rankXp = (xp * rankMultiplier) / 2;
 
     const finalXp = xp + rankXp;
+
+    // Update the player's XP
     player.newPlayer.XP += finalXp;
+    player.newPlayer.prevGameXP = finalXp;
+
+    // Ensure the player's XP doesn't drop below 1
+    if (player.newPlayer.XP < 10) {
+      player.newPlayer.XP = 10;
+    }
+
+    // Log for debugging
+    // console.log(
+    //   `Player: ${player.id}, Base XP: ${baseXP}, Multiplier: ${multiplier}, Rank Multiplier: ${rankMultiplier}, Final XP: ${finalXp}, Updated XP: ${player.newPlayer.XP}`
+    // );
 
     return player;
   };
@@ -175,6 +193,49 @@ export const getPlayersToUpdate = async (
   const updatePlayerTotalPoints = (player, points) => {
     player.newPlayer.totalPoints += points;
     return player;
+  };
+
+  const updateDemonWin = (player, winnerGameScore, loserGameScore) => {
+    let demonWin = player.newPlayer.demonWin || 0;
+
+    if (winnerGameScore - loserGameScore >= 10) {
+      demonWin += 1;
+      player.newPlayer.demonWin = demonWin;
+    }
+    return player;
+  };
+
+  const updateLastActive = (player, gameDate) => {
+    player.newPlayer.lastActive = gameDate;
+    return player;
+  };
+
+  const calculatePointDifferencePercentage = (
+    player,
+    winnerScore,
+    loserScore
+  ) => {
+    // Initialize totalPointEfficiency if not already present
+    let totalPointEfficiency = player.newPlayer.totalPointEfficiency || 0;
+
+    // Calculate the point difference and the percentage difference
+    const pointDifference = winnerScore - loserScore;
+    const pointEfficiency = (pointDifference / winnerScore) * 100;
+
+    // Accumulate the pointEfficiency to totalPointEfficiency
+    totalPointEfficiency += pointEfficiency;
+
+    // Update the player's totalPointEfficiency with the new value
+    player.newPlayer.totalPointEfficiency = totalPointEfficiency;
+
+    // Calculate point efficiency based on updated totalPointEfficiency
+    player.newPlayer.pointEfficiency =
+      totalPointEfficiency / player.newPlayer.numberOfGamesPlayed;
+
+    // Log for debugging
+    // console.log(
+    //   `Player: ${player.id}, Total Point Efficiency: ${totalPointEfficiency}, Point Efficiency: ${player.newPlayer.pointEfficiency}`
+    // );
   };
 
   // Update stats for winning players
@@ -190,6 +251,13 @@ export const getPlayersToUpdate = async (
         player.newPlayer.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp
+      );
+      updateDemonWin(player, game.result.winner.score, game.result.loser.score);
+      updateLastActive(player, date);
+      calculatePointDifferencePercentage(
+        player,
+        game.result.winner.score,
+        game.result.loser.score
       );
     }
   });
@@ -208,10 +276,11 @@ export const getPlayersToUpdate = async (
         combinedWinnerXp,
         combinedLoserXp
       );
+      updateLastActive(player, date);
     }
   });
 
-  console.log(JSON.stringify(playersToUpdate, null, 2));
+  // console.log(JSON.stringify(playersToUpdate, null, 2));
 
   return playersToUpdate;
 };

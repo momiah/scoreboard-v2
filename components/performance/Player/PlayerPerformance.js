@@ -1,15 +1,25 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, FlatList, RefreshControl } from "react-native";
+import { View, Text, FlatList, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { calculatePlayerPerformance } from "../../../functions/calculatePlayerPerformance";
 import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
+import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
 
 const PlayerPerformance = () => {
-  const { games, setGames, retrieveGames, players, fetchPlayers, refreshing } =
-    useContext(GameContext);
+  const {
+    games,
+    setGames,
+    retrieveGames,
+    retrievePlayers,
+    players,
+    updatePlayers,
+    resetAllPlayerStats,
+    resetPlayerStats,
+    refreshing,
+  } = useContext(GameContext);
   const [playerStats, setPlayerStats] = useState({});
   const [sortedPlayers, setSortedPlayers] = useState([]);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
@@ -21,7 +31,6 @@ const PlayerPerformance = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      // await fetchPlayers();
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
     };
@@ -62,17 +71,19 @@ const PlayerPerformance = () => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  // console.log("playerstats", JSON.stringify(playerStats, null, 2));
-  // console.log("games🫵", JSON.stringify(games[0], null, 2));
+  const runGetPlayersToUpdate = async () => {
+    // Reverse the array to process the last game first
+    const reversedGames = [...games].reverse();
 
-  const fetchPlayerToUpdate = async ({ game }) => {
-    const playerToUpdate = await players.find(
-      (player) => player.id === game.result.winner.players[0]
-    );
-    console.log("playerToUpdate", JSON.stringify(playerToUpdate, null, 2));
-
-    return player;
+    for (const game of reversedGames) {
+      const playersToUpdate = await getPlayersToUpdate(game, retrievePlayers);
+      await updatePlayers(playersToUpdate);
+    }
+    console.log("All players updated successfully");
   };
+
+  // console.log("playerstats", JSON.stringify(playerStats, null, 2));
+  // console.log("games🫵", JSON.stringify(games, null, 2));
 
   const renderPlayer = ({ item: playerName, index }) => (
     <TableRow
@@ -114,6 +125,15 @@ const PlayerPerformance = () => {
 
   return (
     <TableContainer>
+      <ResetPlayerStats onPress={() => resetPlayerStats()}>
+        <Text>Reset Player Stats</Text>
+      </ResetPlayerStats>
+      <ResetPlayerStats onPress={() => resetAllPlayerStats()}>
+        <Text>Reset All Players</Text>
+      </ResetPlayerStats>
+      <ResetPlayerStats onPress={() => runGetPlayersToUpdate()}>
+        <Text>Run New Algo</Text>
+      </ResetPlayerStats>
       <FlatList
         data={sortedPlayers}
         renderItem={renderPlayer}
@@ -135,6 +155,19 @@ const PlayerPerformance = () => {
     </TableContainer>
   );
 };
+
+const ResetPlayerStats = styled.TouchableOpacity({
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  fontSize: 24,
+  fontWeight: "bold",
+  marginBottom: 15,
+  marginTop: 15,
+  padding: 10,
+  borderRadius: 8,
+  backgroundColor: "#00A2FF",
+});
 
 const TableContainer = styled.View({
   paddingTop: 20,

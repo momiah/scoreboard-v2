@@ -116,6 +116,31 @@ const GameProvider = ({ children }) => {
     }
   };
 
+  const newPlayer = {
+    memberSince: moment().format("MMM YYYY"),
+    XP: 10,
+    prevGameXP: 0,
+    lastActive: "",
+    numberOfWins: 0,
+    numberOfLosses: 0,
+    numberOfGamesPlayed: 0,
+    winPercentage: 0,
+    resultLog: [],
+    pointEfficiency: 0,
+    totalPoints: 0,
+    totalPointEfficiency: 0,
+    winStreak5: 0,
+    winStreak7: 0,
+    winStreak3: 0,
+    demonWin: 0,
+    currentStreak: {
+      type: null,
+      count: 0,
+    },
+    highestLossStreak: 0,
+    highestWinStreak: 0,
+  };
+
   const registerPlayer = async (player) => {
     // Check if player already exists
     if (players.some((thePlayer) => thePlayer.id === player)) {
@@ -134,20 +159,6 @@ const GameProvider = ({ children }) => {
       return;
     }
 
-    const newPlayer = {
-      memberSince: moment().format("MMM YYYY"),
-      numberOfWins: 0,
-      numberOfLosses: 0,
-      totalPoints: 0,
-      numberOfGamesPlayed: 0,
-      resultLog: [],
-      XP: 0,
-      currentStreak: {
-        type: null, // "W" for win streak, "L" for loss streak
-        count: 0,
-      },
-    };
-
     try {
       const scoreboardCollectionRef = collection(db, "scoreboard");
       const playersCollectionRef = collection(
@@ -159,7 +170,7 @@ const GameProvider = ({ children }) => {
       // Use the player name as the document ID
       const playerDocRef = doc(playersCollectionRef, player);
 
-      await setDoc(playerDocRef, { newPlayer }); // Write the data directly
+      await setDoc(playerDocRef, newPlayer); // Write the data directly
       handleShowPopup("Player saved successfully!");
       await fetchPlayers();
       Keyboard.dismiss();
@@ -196,6 +207,59 @@ const GameProvider = ({ children }) => {
 
       handleShowPopup("Players updated successfully!");
       await fetchPlayers(); // Fetch the updated list of players if needed
+    } catch (error) {
+      console.error("Error updating player data:", error);
+      handleShowPopup("Error updating player data");
+    }
+  };
+
+  const resetAllPlayerStats = async () => {
+    try {
+      const allPlayers = await retrievePlayers();
+      const allPlayersIds = allPlayers.map((player) => player.id);
+
+      for (const playerId of allPlayersIds) {
+        try {
+          const scoreboardCollectionRef = collection(db, "scoreboard");
+          const playersCollectionRef = collection(
+            scoreboardCollectionRef,
+            "players",
+            "players"
+          );
+
+          const playerDocRef = doc(playersCollectionRef, playerId);
+
+          // Use setDoc with merge option to retain fields like `memberSince`
+          await setDoc(playerDocRef, { newPlayer });
+
+          console.log(`Player ${playerId} reset successfully!`);
+        } catch (error) {
+          console.error(`Error updating player ${playerId}:`, error);
+        }
+      }
+
+      handleShowPopup("All players reset successfully!");
+      await fetchPlayers(); // Fetch the updated list of players if needed
+    } catch (error) {
+      console.error("Error resetting all player stats:", error);
+      handleShowPopup("Error resetting all player stats");
+    }
+  };
+
+  const resetPlayerStats = async () => {
+    try {
+      const scoreboardCollectionRef = collection(db, "scoreboard");
+      const playersCollectionRef = collection(
+        scoreboardCollectionRef,
+        "players",
+        "players"
+      );
+
+      // Use the player name (or ID) as the document ID
+      const playerDocRef = doc(playersCollectionRef, "Abdul");
+      console.log("playerDocRef", playerDocRef);
+      await setDoc(playerDocRef, { newPlayer }); // Write the data directly
+      handleShowPopup("Player reset successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);
       handleShowPopup("Error updating player data");
@@ -265,6 +329,8 @@ const GameProvider = ({ children }) => {
         addGame,
         deleteGameById,
         refreshing,
+        resetPlayerStats,
+        resetAllPlayerStats,
         retrieveGames,
         setRefreshing,
         deleteGameContainer,
