@@ -196,13 +196,15 @@ const GameProvider = ({ children }) => {
 
       // Iterate through each updated player and update their record in Firebase
       for (const updatedPlayer of updatedPlayers) {
-        const { id, newPlayer } = updatedPlayer;
+        const { id } = updatedPlayer;
+
+        console.log("updatedPlayer", updatedPlayer);
 
         // Use the player name as the document ID
         const playerDocRef = doc(playersCollectionRef, id);
 
         // Update the player's document with the new data
-        await updateDoc(playerDocRef, { newPlayer });
+        await updateDoc(playerDocRef, updatedPlayer);
       }
 
       handleShowPopup("Players updated successfully!");
@@ -229,7 +231,11 @@ const GameProvider = ({ children }) => {
 
           const playerDocRef = doc(playersCollectionRef, playerId);
 
-          // Use setDoc with merge option to retain fields like `memberSince`
+          //remove {newPlayer} as an object into newPlayer - This breaks the live app as the
+          //player details rely on the player data contained in the object,
+          //specifically the memberSince key. Once this is fixed, the app will need
+          // to be republished to the app store as removing the object will changes
+          // the data structure on firestore
           await setDoc(playerDocRef, { newPlayer });
 
           console.log(`Player ${playerId} reset successfully!`);
@@ -258,7 +264,7 @@ const GameProvider = ({ children }) => {
       // Use the player name (or ID) as the document ID
       const playerDocRef = doc(playersCollectionRef, "Abdul");
       console.log("playerDocRef", playerDocRef);
-      await setDoc(playerDocRef, { newPlayer }); // Write the data directly
+      await setDoc(playerDocRef, newPlayer); // Write the data directly
       handleShowPopup("Player reset successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);

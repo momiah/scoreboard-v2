@@ -35,20 +35,21 @@ const screenAdjustedMedalSize = screenWidth <= 400 ? 50 : 70;
 const PlayerDetails = ({
   showPlayerDetails,
   setShowPlayerDetails,
-  playerStats,
   playerName,
   memberSince,
+  playersData,
+  selectedPlayer,
 }) => {
-  const winRatio = playerStats.numberOfWins / playerStats.numberOfLosses;
+  const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
 
-  const currentStreakValue = currentStreak(playerStats.resultLog);
+  // const currentStreakValue = currentStreak(selectedPlayer.resultLog);
 
   const statData = [
     {
       statTitle: "Wins",
       stat: (
         <AnimateNumber
-          number={playerStats.numberOfWins}
+          number={selectedPlayer.numberOfWins}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -57,7 +58,7 @@ const PlayerDetails = ({
       statTitle: "Losses",
       stat: (
         <AnimateNumber
-          number={playerStats.numberOfLosses}
+          number={selectedPlayer.numberOfLosses}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -70,7 +71,7 @@ const PlayerDetails = ({
       statTitle: "Point Efficiency",
       stat: (
         <AnimateNumber
-          number={`${playerStats.pointEfficiency.toFixed(1)}%`}
+          number={`${selectedPlayer.pointEfficiency.toFixed(1)}%`}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -88,7 +89,7 @@ const PlayerDetails = ({
       statTitle: "Highest Streak",
       stat: (
         <AnimateNumber
-          number={playerStats.highestWinStreak}
+          number={selectedPlayer.highestWinStreak}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -115,39 +116,41 @@ const PlayerDetails = ({
 
             <PlayerDetail>
               <View>
-                <PlayerName>{playerName}</PlayerName>
+                <PlayerName>{selectedPlayer.id}</PlayerName>
                 <Text
                   style={{
                     color: "#aaa",
                   }}
                 >
-                  Member since {memberSince}
+                  Member since {selectedPlayer.memberSince}
                 </Text>
                 <Text
                   style={{
                     color: "#aaa",
                   }}
                 >
-                  Last Active {transformDate(playerStats.lastActive)}
+                  Last Active {selectedPlayer.lastActive}
                 </Text>
               </View>
 
               <MedalContainer>
                 <MedalDisplay
-                  xp={playerStats.XP + playerStats.totalPoints}
+                  xp={selectedPlayer.XP + selectedPlayer.totalPoints}
                   size={screenAdjustedMedalSize}
                 />
                 <Text style={{ color: "white", marginTop: 10 }}>
-                  {medalNames(playerStats.XP + playerStats.totalPoints)}
+                  {medalNames(selectedPlayer.XP + selectedPlayer.totalPoints)}
                 </Text>
               </MedalContainer>
             </PlayerDetail>
-            <MedalProgress xp={playerStats.XP + playerStats.totalPoints} />
+            <MedalProgress
+              xp={selectedPlayer.XP + selectedPlayer.totalPoints}
+            />
             <MatchMedals
-              demonWin={playerStats.demonWin}
-              winStreak3={playerStats.winStreak3}
-              winStreak5={playerStats.winStreak5}
-              winStreak7={playerStats.winStreak7}
+              demonWin={selectedPlayer.demonWin}
+              winStreak3={selectedPlayer.winStreak3}
+              winStreak5={selectedPlayer.winStreak5}
+              winStreak7={selectedPlayer.winStreak7}
             />
             {/* Player Stats */}
             <PlayerStat>

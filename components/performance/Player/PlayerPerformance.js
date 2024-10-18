@@ -8,13 +8,17 @@ import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
 import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
 
+//UPDATE 25/09/2021 Current component is setup to retrieve the new player data from
+//firestore players list, so will not run until players list uses new data structure
+// - Need to restart all players and run the new algo to update the player stats
+
 const PlayerPerformance = () => {
   const {
     games,
     setGames,
     retrieveGames,
-    retrievePlayers,
     players,
+    retrievePlayers,
     updatePlayers,
     resetAllPlayerStats,
     resetPlayerStats,
@@ -26,8 +30,13 @@ const PlayerPerformance = () => {
   const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
   const [playerName, setPlayerName] = useState("");
 
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [playersData, setPlayersData] = useState([]);
+
+  // console.log("games", JSON.stringify(playerStats, null, 2));
+
   const player = players.find((player) => player.id === playerName);
-  const memberSince = player ? player.newPlayer.memberSince : null;
+  const memberSince = player ? player.memberSince : null;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +55,28 @@ const PlayerPerformance = () => {
     };
     fetchData();
   };
+
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      const retrievedPlayers = await retrievePlayers();
+
+      // Sort the players based on the sum of XP + totalPoints
+      const sortedPlayers = retrievedPlayers.sort((a, b) => {
+        const totalA = a.XP + a.totalPoints;
+        const totalB = b.XP + b.totalPoints;
+
+        // Sort in descending order
+        return totalB - totalA;
+      });
+
+      setPlayersData(sortedPlayers);
+    };
+
+    fetchPlayers();
+  }, [retrievePlayers]);
+
+  // console.log("playersData✅", JSON.stringify(playersData, null, 2));
+  // console.log("playersStats🙂", JSON.stringify(playerStats, null, 2));
 
   useEffect(() => {
     if (games.length > 0) {
@@ -71,57 +102,65 @@ const PlayerPerformance = () => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  const runGetPlayersToUpdate = async () => {
-    // Reverse the array to process the last game first
-    const reversedGames = [...games].reverse();
+  console.log("selectedPlayer🚫", JSON.stringify(selectedPlayer, null, 2));
 
-    for (const game of reversedGames) {
-      const playersToUpdate = await getPlayersToUpdate(game, retrievePlayers);
-      await updatePlayers(playersToUpdate);
-    }
-    console.log("All players updated successfully");
-  };
+  // const runGetPlayersToUpdate = async () => {
+  //   // Reverse the array to process the last game first
+  //   const reversedGames = [...games].reverse();
+
+  //   for (const game of reversedGames) {
+  //     const playersToUpdate = await getPlayersToUpdate(game, retrievePlayers);
+  //     await updatePlayers(playersToUpdate);
+  //   }
+  //   // console.log("All players updated successfully");
+  // };
 
   // console.log("playerstats", JSON.stringify(playerStats, null, 2));
   // console.log("games🫵", JSON.stringify(games, null, 2));
 
-  const renderPlayer = ({ item: playerName, index }) => (
-    <TableRow
-      key={playerName}
-      onPress={() => {
-        setSelectedPlayerStats(playerStats[playerName]);
-        setShowPlayerDetails(true);
-        setPlayerName(playerName);
-      }}
-    >
-      <TableCell>
-        <Rank>
-          {index + 1}
-          {index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"}
-        </Rank>
-      </TableCell>
-      <PlayerNameCell>
-        <PlayerName>{playerName}</PlayerName>
-        {recentGameResult(playerStats[playerName].resultLog)}
-      </PlayerNameCell>
-      <TableCell>
-        <StatTitle>Wins</StatTitle>
-        <Stat>{playerStats[playerName].numberOfWins}</Stat>
-      </TableCell>
-      <TableCell>
-        <StatTitle>XP</StatTitle>
-        <Stat>
-          {playerStats[playerName].XP + playerStats[playerName].totalPoints}
-        </Stat>
-      </TableCell>
-      <TableCell>
-        <MedalDisplay
-          xp={playerStats[playerName].XP + playerStats[playerName].totalPoints}
-          size={45}
-        />
-      </TableCell>
-    </TableRow>
-  );
+  const renderPlayer = ({ item: player, index }) => {
+    const totalPointsAndXP = player.XP + player.totalPoints;
+
+    return (
+      <TableRow
+        key={player}
+        onPress={() => {
+          // setSelectedPlayerStats(playerStats[playerName]);
+          // setShowPlayerDetails(true);
+          // setPlayerName(playerName);
+          setSelectedPlayer(player);
+        }}
+      >
+        <TableCell>
+          <Rank>
+            {index + 1}
+            {index === 0
+              ? "st"
+              : index === 1
+              ? "nd"
+              : index === 2
+              ? "rd"
+              : "th"}
+          </Rank>
+        </TableCell>
+        <PlayerNameCell>
+          <PlayerName>{player.id}</PlayerName>
+          {recentGameResult(player.resultLog)}
+        </PlayerNameCell>
+        <TableCell>
+          <StatTitle>Wins</StatTitle>
+          <Stat>{player.numberOfWins}</Stat>
+        </TableCell>
+        <TableCell>
+          <StatTitle>XP</StatTitle>
+          <Stat>{totalPointsAndXP.toFixed(0)}</Stat>
+        </TableCell>
+        <TableCell>
+          <MedalDisplay xp={totalPointsAndXP.toFixed(0)} size={45} />
+        </TableCell>
+      </TableRow>
+    );
+  };
 
   return (
     <TableContainer>
@@ -135,9 +174,9 @@ const PlayerPerformance = () => {
         <Text>Run New Algo</Text>
       </ResetPlayerStats>
       <FlatList
-        data={sortedPlayers}
+        data={playersData}
         renderItem={renderPlayer}
-        keyExtractor={(playerName) => playerName}
+        keyExtractor={(player) => player.id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
@@ -145,6 +184,8 @@ const PlayerPerformance = () => {
 
       {showPlayerDetails && (
         <PlayerDetails
+          playersData={playersData}
+          selectedPlayer={selectedPlayer}
           showPlayerDetails={showPlayerDetails}
           setShowPlayerDetails={setShowPlayerDetails}
           playerStats={selectedPlayerStats}

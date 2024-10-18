@@ -1,13 +1,9 @@
 import { transformDate } from "../functions/dateTransform";
 
-export const getPlayersToUpdate = async (
-  game,
-  retrievePlayers
-  // setPreviousPlayerRecord,
-  // previousPlayerRecord
-) => {
+export const getPlayersToUpdate = async (game, retrievePlayers) => {
   const allPlayers = await retrievePlayers();
   const date = transformDate(game.date);
+
   const playersToUpdate = allPlayers.filter((player) =>
     game.result.winner.players
       .concat(game.result.loser.players)
@@ -24,7 +20,7 @@ export const getPlayersToUpdate = async (
     (totalXp, playerId) => {
       const player = getPlayerById(playerId);
       if (player) {
-        return totalXp + player.newPlayer.XP;
+        return totalXp + player.XP;
       }
       return totalXp;
     },
@@ -35,90 +31,83 @@ export const getPlayersToUpdate = async (
     (totalXp, playerId) => {
       const player = getPlayerById(playerId);
       if (player) {
-        return totalXp + player.newPlayer.XP;
+        return totalXp + player.XP;
       }
       return totalXp;
     },
     0
   );
 
-  // const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
-  // setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
-
   const updatePlayerStats = (player, isWinner) => {
-    player.newPlayer.numberOfGamesPlayed += 1;
+    player.numberOfGamesPlayed += 1;
 
     if (isWinner) {
-      player.newPlayer.numberOfWins += 1;
+      player.numberOfWins += 1;
     } else {
-      player.newPlayer.numberOfLosses += 1;
+      player.numberOfLosses += 1;
     }
 
     // Calculate win percentage if needed
-    player.newPlayer.winPercentage =
-      (player.newPlayer.numberOfWins / player.newPlayer.numberOfGamesPlayed) *
-      100;
+    player.winPercentage =
+      (player.numberOfWins / player.numberOfGamesPlayed) * 100;
 
     return player;
   };
 
   const updatePlayerResultLogAndStreak = (player, isWinner) => {
     const currentResult = isWinner ? "W" : "L";
-    player.newPlayer.resultLog.push(currentResult);
+    player.resultLog.push(currentResult);
 
-    if (player.newPlayer.resultLog.length > 10) {
-      player.newPlayer.resultLog = player.newPlayer.resultLog.slice(-10);
+    if (player.resultLog.length > 10) {
+      player.resultLog = player.resultLog.slice(-10);
     }
 
-    const resultLog = player.newPlayer.resultLog;
+    const resultLog = player.resultLog;
     const lastResult =
       resultLog.length > 1 ? resultLog[resultLog.length - 2] : null;
 
-    let winStreak3 = player.newPlayer.winStreak3 || 0;
-    let winStreak5 = player.newPlayer.winStreak5 || 0;
-    let winStreak7 = player.newPlayer.winStreak7 || 0;
+    let winStreak3 = player.winStreak3 || 0;
+    let winStreak5 = player.winStreak5 || 0;
+    let winStreak7 = player.winStreak7 || 0;
 
-    let highestWinStreak = player.newPlayer.highestWinStreak || 0;
-    let highestLossStreak = player.newPlayer.highestLossStreak || 0;
+    let highestWinStreak = player.highestWinStreak || 0;
+    let highestLossStreak = player.highestLossStreak || 0;
 
     if (currentResult === "W") {
       if (lastResult === "W") {
-        player.newPlayer.currentStreak.count += 1;
+        player.currentStreak.count += 1;
       } else {
-        player.newPlayer.currentStreak.type = "W";
-        player.newPlayer.currentStreak.count = 1;
+        player.currentStreak.type = "W";
+        player.currentStreak.count = 1;
       }
 
-      if (player.newPlayer.currentStreak.count === 3) winStreak3 += 1;
-      if (player.newPlayer.currentStreak.count === 5) winStreak5 += 1;
-      if (player.newPlayer.currentStreak.count === 7) winStreak7 += 1;
+      if (player.currentStreak.count === 3) winStreak3 += 1;
+      if (player.currentStreak.count === 5) winStreak5 += 1;
+      if (player.currentStreak.count === 7) winStreak7 += 1;
 
       // Update the highest win streak if the current one exceeds the previous
-      highestWinStreak = Math.max(
-        highestWinStreak,
-        player.newPlayer.currentStreak.count
-      );
+      highestWinStreak = Math.max(highestWinStreak, player.currentStreak.count);
     } else {
       if (lastResult === "L") {
-        player.newPlayer.currentStreak.count -= 1;
+        player.currentStreak.count -= 1;
       } else {
-        player.newPlayer.currentStreak.type = "L";
-        player.newPlayer.currentStreak.count = -1;
+        player.currentStreak.type = "L";
+        player.currentStreak.count = -1;
       }
 
       // Update the highest loss streak
       highestLossStreak = Math.min(
         highestLossStreak,
-        player.newPlayer.currentStreak.count
+        player.currentStreak.count
       );
     }
 
     // Save back the calculated streaks
-    player.newPlayer.highestWinStreak = highestWinStreak;
-    player.newPlayer.highestLossStreak = Math.abs(highestLossStreak);
-    player.newPlayer.winStreak3 = winStreak3;
-    player.newPlayer.winStreak5 = winStreak5;
-    player.newPlayer.winStreak7 = winStreak7;
+    player.highestWinStreak = highestWinStreak;
+    player.highestLossStreak = Math.abs(highestLossStreak);
+    player.winStreak3 = winStreak3;
+    player.winStreak5 = winStreak5;
+    player.winStreak7 = winStreak7;
 
     return player;
   };
@@ -174,39 +163,39 @@ export const getPlayersToUpdate = async (
     const finalXp = xp + rankXp;
 
     // Update the player's XP
-    player.newPlayer.XP += finalXp;
-    player.newPlayer.prevGameXP = finalXp;
+    player.XP += finalXp;
+    player.prevGameXP = finalXp;
 
     // Ensure the player's XP doesn't drop below 1
-    if (player.newPlayer.XP < 10) {
-      player.newPlayer.XP = 10;
+    if (player.XP < 10) {
+      player.XP = 10;
     }
 
     // Log for debugging
     // console.log(
-    //   `Player: ${player.id}, Base XP: ${baseXP}, Multiplier: ${multiplier}, Rank Multiplier: ${rankMultiplier}, Final XP: ${finalXp}, Updated XP: ${player.newPlayer.XP}`
+    //   `Player: ${player.id}, Base XP: ${baseXP}, Multiplier: ${multiplier}, Rank Multiplier: ${rankMultiplier}, Final XP: ${finalXp}, Updated XP: ${player.XP}`
     // );
 
     return player;
   };
 
   const updatePlayerTotalPoints = (player, points) => {
-    player.newPlayer.totalPoints += points;
+    player.totalPoints += points;
     return player;
   };
 
   const updateDemonWin = (player, winnerGameScore, loserGameScore) => {
-    let demonWin = player.newPlayer.demonWin || 0;
+    let demonWin = player.demonWin || 0;
 
     if (winnerGameScore - loserGameScore >= 10) {
       demonWin += 1;
-      player.newPlayer.demonWin = demonWin;
+      player.demonWin = demonWin;
     }
     return player;
   };
 
   const updateLastActive = (player, gameDate) => {
-    player.newPlayer.lastActive = gameDate;
+    player.lastActive = gameDate;
     return player;
   };
 
@@ -216,7 +205,7 @@ export const getPlayersToUpdate = async (
     loserScore
   ) => {
     // Initialize totalPointEfficiency if not already present
-    let totalPointEfficiency = player.newPlayer.totalPointEfficiency || 0;
+    let totalPointEfficiency = player.totalPointEfficiency || 0;
 
     // Calculate the point difference and the percentage difference
     const pointDifference = winnerScore - loserScore;
@@ -226,15 +215,14 @@ export const getPlayersToUpdate = async (
     totalPointEfficiency += pointEfficiency;
 
     // Update the player's totalPointEfficiency with the new value
-    player.newPlayer.totalPointEfficiency = totalPointEfficiency;
+    player.totalPointEfficiency = totalPointEfficiency;
 
     // Calculate point efficiency based on updated totalPointEfficiency
-    player.newPlayer.pointEfficiency =
-      totalPointEfficiency / player.newPlayer.numberOfGamesPlayed;
+    player.pointEfficiency = totalPointEfficiency / player.numberOfGamesPlayed;
 
     // Log for debugging
     // console.log(
-    //   `Player: ${player.id}, Total Point Efficiency: ${totalPointEfficiency}, Point Efficiency: ${player.newPlayer.pointEfficiency}`
+    //   `Player: ${player.id}, Total Point Efficiency: ${totalPointEfficiency}, Point Efficiency: ${player.pointEfficiency}`
     // );
   };
 
@@ -247,8 +235,8 @@ export const getPlayersToUpdate = async (
       updatePlayerResultLogAndStreak(player, true);
       updateXp(
         player,
-        player.newPlayer.currentStreak.type,
-        player.newPlayer.currentStreak.count,
+        player.currentStreak.type,
+        player.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp
       );
@@ -271,8 +259,8 @@ export const getPlayersToUpdate = async (
       updatePlayerResultLogAndStreak(player, false);
       updateXp(
         player,
-        player.newPlayer.currentStreak.type,
-        player.newPlayer.currentStreak.count,
+        player.currentStreak.type,
+        player.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp
       );

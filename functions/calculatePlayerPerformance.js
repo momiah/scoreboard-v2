@@ -159,8 +159,6 @@ export const calculatePlayerPerformance = (games) => {
           team1.score
         );
 
-        console.log(team2Efficiency);
-
         players[team1.player1].numberOfLosses += 1;
         players[team1.player2].numberOfLosses += 1;
         players[team2.player1].numberOfWins += 1;

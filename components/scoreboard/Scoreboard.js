@@ -139,56 +139,6 @@ const Scoreboard = () => {
     }
   };
 
-  // const getPlayersToUpdate = async (game) => {
-  //   const allPlayers = await retrievePlayers(); // Fetch all players
-
-  //   // Filter out players that are in the winning and losing teams
-  //   const playersToUpdate = allPlayers.filter((player) =>
-  //     game.result.winner.players
-  //       .concat(game.result.loser.players)
-  //       .includes(player.id)
-  //   );
-
-  //   const previousRecord = JSON.parse(JSON.stringify(playersToUpdate));
-  //   setPreviousPlayerRecord([...previousPlayerRecord, previousRecord]);
-
-  //   // Function to update player stats
-  //   const updatePlayerStats = (player, isWinner) => {
-  //     player.newPlayer.numberOfGamesPlayed += 1;
-
-  //     if (isWinner) {
-  //       player.newPlayer.numberOfWins += 1;
-  //     } else {
-  //       player.newPlayer.numberOfLosses += 1;
-  //     }
-
-  //     // Calculate win percentage if needed
-  //     player.newPlayer.winPercentage =
-  //       (player.newPlayer.numberOfWins / player.newPlayer.numberOfGamesPlayed) *
-  //       100;
-
-  //     return player;
-  //   };
-
-  //   // Update stats for winning players
-  //   game.result.winner.players.forEach((winnerId) => {
-  //     const player = playersToUpdate.find((p) => p.id === winnerId);
-  //     if (player) {
-  //       updatePlayerStats(player, true); // true indicates the player is a winner
-  //     }
-  //   });
-
-  //   // Update stats for losing players
-  //   game.result.loser.players.forEach((loserId) => {
-  //     const player = playersToUpdate.find((p) => p.id === loserId);
-  //     if (player) {
-  //       updatePlayerStats(player, false);
-  //     }
-  //   });
-
-  //   return playersToUpdate;
-  // };
-
   const handleAddGame = async () => {
     // Check if both teams have selected players
     if (
@@ -227,7 +177,7 @@ const Scoreboard = () => {
 
     const playersToUpdate = await getPlayersToUpdate(
       newGame,
-      // retrievePlayers,
+      retrievePlayers,
       setPreviousPlayerRecord,
       previousPlayerRecord
     );
