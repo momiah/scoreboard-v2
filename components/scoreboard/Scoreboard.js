@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  RefreshControl,
-  TextInput,
-  StyleSheet,
-} from "react-native";
+import { View, Text, FlatList, Modal, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 import { generateUniqueGameId } from "../../functions/generateUniqueId";
@@ -17,6 +8,7 @@ import Popup from "../popup/Popup";
 import { GameContext } from "../../context/GameContext";
 import { AntDesign } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
+import { getPlayersToUpdate } from "../../functions/getPlayersToUpdate";
 
 const calculateWin = (team1, team2) => {
   if (team1.score > team2.score) {
@@ -61,7 +53,9 @@ const Scoreboard = () => {
     registerPlayer,
     fetchPlayers,
     player,
+    retrievePlayers,
     setPlayer,
+    updatePlayers,
     retrieveGames,
     deleteGameById,
     refreshing,
@@ -73,14 +67,19 @@ const Scoreboard = () => {
   } = useContext(GameContext);
 
   const [newestGameId, setNewestGameId] = useState("");
+  const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
 
   useEffect(() => {
-    // Logic to fetch and set newestGameId
     if (games.length > 0) {
       setNewestGameId(games[0].gameId);
     }
+    fetchPlayers();
   }, [games]);
 
+  //////////////////////////
+  //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
+  // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
+  //////////////////////////
   const [selectedPlayers, setSelectedPlayers] = useState({
     team1: ["", ""],
     team2: ["", ""],
@@ -159,6 +158,14 @@ const Scoreboard = () => {
       },
     };
 
+    const playersToUpdate = await getPlayersToUpdate(
+      newGame,
+      retrievePlayers,
+      setPreviousPlayerRecord,
+      previousPlayerRecord
+    );
+    await updatePlayers(playersToUpdate);
+
     await addGame(newGame, gameId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
@@ -190,6 +197,10 @@ const Scoreboard = () => {
     setPlayer(newPlayer);
   };
 
+  // const revertPreviousGamePlayerRecord = async (previousPlayerRecord) => {
+  //   await updatePlayers(previousPlayerRecord[0]);
+  // };
+
   return (
     <Container>
       <AddGameButton onPress={() => handleAddGameButton()}>
@@ -212,7 +223,10 @@ const Scoreboard = () => {
                   <DeleteGameContainer>
                     <DeleteGameButton
                       style={{ backgroundColor: "red" }}
-                      onPress={() => deleteGameById(item.gameId, setGames)}
+                      onPress={() => {
+                        deleteGameById(item.gameId, setGames);
+                        // revertPreviousGamePlayerRecord(previousPlayerRecord);
+                      }}
                     >
                       <DeleteGameButtonText>Delete Game</DeleteGameButtonText>
                     </DeleteGameButton>
