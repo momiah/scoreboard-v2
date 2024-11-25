@@ -10,8 +10,6 @@ export const getPlayersToUpdate = async (game, retrievePlayers) => {
       .includes(player.id)
   );
 
-  // console.log("game", JSON.stringify(game, null, 2));
-
   // Function to get player by ID
   const getPlayerById = (id) =>
     playersToUpdate.find((player) => player.id === id);
@@ -171,11 +169,6 @@ export const getPlayersToUpdate = async (game, retrievePlayers) => {
       player.XP = 10;
     }
 
-    // Log for debugging
-    // console.log(
-    //   `Player: ${player.id}, Base XP: ${baseXP}, Multiplier: ${multiplier}, Rank Multiplier: ${rankMultiplier}, Final XP: ${finalXp}, Updated XP: ${player.XP}`
-    // );
-
     return player;
   };
 
@@ -267,8 +260,6 @@ export const getPlayersToUpdate = async (game, retrievePlayers) => {
       updateLastActive(player, date);
     }
   });
-
-  // console.log(JSON.stringify(playersToUpdate, null, 2));
 
   return playersToUpdate;
 };

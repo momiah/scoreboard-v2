@@ -1,42 +1,19 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, Text, FlatList, RefreshControl } from "react-native";
+import { FlatList, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
-import { calculatePlayerPerformance } from "../../../functions/calculatePlayerPerformance";
 import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
-import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
-
-//UPDATE 25/09/2021 Current component is setup to retrieve the new player data from
-//firestore players list, so will not run until players list uses new data structure
-// - Need to restart all players and run the new algo to update the player stats
 
 const PlayerPerformance = () => {
-  const {
-    games,
-    setGames,
-    retrieveGames,
-    players,
-    retrievePlayers,
-    updatePlayers,
-    resetAllPlayerStats,
-    resetPlayerStats,
-    refreshing,
-  } = useContext(GameContext);
-  const [playerStats, setPlayerStats] = useState({});
-  const [sortedPlayers, setSortedPlayers] = useState([]);
+  const { setGames, retrieveGames, retrievePlayers, refreshing } =
+    useContext(GameContext);
+
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
-  const [selectedPlayerStats, setSelectedPlayerStats] = useState(null);
-  const [playerName, setPlayerName] = useState("");
 
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersData, setPlayersData] = useState([]);
-
-  // console.log("games", JSON.stringify(playerStats, null, 2));
-
-  const player = players.find((player) => player.id === playerName);
-  const memberSince = player ? player.memberSince : null;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,7 +26,6 @@ const PlayerPerformance = () => {
 
   const handleRefresh = async () => {
     const fetchData = async () => {
-      // await fetchPlayers();
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
     };
@@ -75,24 +51,6 @@ const PlayerPerformance = () => {
     fetchPlayers();
   }, [retrievePlayers]);
 
-  // console.log("playersData✅", JSON.stringify(playersData, null, 2));
-  // console.log("playersStats🙂", JSON.stringify(playerStats, null, 2));
-
-  useEffect(() => {
-    if (games.length > 0) {
-      const stats = calculatePlayerPerformance(games);
-      setPlayerStats(stats);
-
-      // Sort players based on XP
-      const sorted = Object.keys(stats).sort((a, b) => {
-        const xpA = stats[a].XP + stats[a].totalPoints;
-        const xpB = stats[b].XP + stats[b].totalPoints;
-        return xpB - xpA;
-      });
-      setSortedPlayers(sorted);
-    }
-  }, [games]);
-
   const recentGameResult = (resultLog) => {
     const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
 
@@ -102,8 +60,6 @@ const PlayerPerformance = () => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  console.log("selectedPlayer🚫", JSON.stringify(selectedPlayer, null, 2));
-
   // const runGetPlayersToUpdate = async () => {
   //   // Reverse the array to process the last game first
   //   const reversedGames = [...games].reverse();
@@ -112,11 +68,7 @@ const PlayerPerformance = () => {
   //     const playersToUpdate = await getPlayersToUpdate(game, retrievePlayers);
   //     await updatePlayers(playersToUpdate);
   //   }
-  //   // console.log("All players updated successfully");
   // };
-
-  // console.log("playerstats", JSON.stringify(playerStats, null, 2));
-  // console.log("games🫵", JSON.stringify(games, null, 2));
 
   const renderPlayer = ({ item: player, index }) => {
     const totalPointsAndXP = player.XP + player.totalPoints;
@@ -125,9 +77,7 @@ const PlayerPerformance = () => {
       <TableRow
         key={player}
         onPress={() => {
-          // setSelectedPlayerStats(playerStats[playerName]);
-          // setShowPlayerDetails(true);
-          // setPlayerName(playerName);
+          setShowPlayerDetails(true);
           setSelectedPlayer(player);
         }}
       >
@@ -164,7 +114,7 @@ const PlayerPerformance = () => {
 
   return (
     <TableContainer>
-      <ResetPlayerStats onPress={() => resetPlayerStats()}>
+      {/* <ResetPlayerStats onPress={() => resetPlayerStats()}>
         <Text>Reset Player Stats</Text>
       </ResetPlayerStats>
       <ResetPlayerStats onPress={() => resetAllPlayerStats()}>
@@ -172,7 +122,7 @@ const PlayerPerformance = () => {
       </ResetPlayerStats>
       <ResetPlayerStats onPress={() => runGetPlayersToUpdate()}>
         <Text>Run New Algo</Text>
-      </ResetPlayerStats>
+      </ResetPlayerStats> */}
       <FlatList
         data={playersData}
         renderItem={renderPlayer}
@@ -188,27 +138,24 @@ const PlayerPerformance = () => {
           selectedPlayer={selectedPlayer}
           showPlayerDetails={showPlayerDetails}
           setShowPlayerDetails={setShowPlayerDetails}
-          playerStats={selectedPlayerStats}
-          playerName={playerName}
-          memberSince={memberSince}
         />
       )}
     </TableContainer>
   );
 };
 
-const ResetPlayerStats = styled.TouchableOpacity({
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontSize: 24,
-  fontWeight: "bold",
-  marginBottom: 15,
-  marginTop: 15,
-  padding: 10,
-  borderRadius: 8,
-  backgroundColor: "#00A2FF",
-});
+// const ResetPlayerStats = styled.TouchableOpacity({
+//   display: "flex",
+//   justifyContent: "center",
+//   alignItems: "center",
+//   fontSize: 24,
+//   fontWeight: "bold",
+//   marginBottom: 15,
+//   marginTop: 15,
+//   padding: 10,
+//   borderRadius: 8,
+//   backgroundColor: "#00A2FF",
+// });
 
 const TableContainer = styled.View({
   paddingTop: 20,

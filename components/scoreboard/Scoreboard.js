@@ -1,14 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  RefreshControl,
-  TextInput,
-  StyleSheet,
-} from "react-native";
+import { View, Text, FlatList, Modal, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import AddPlayer from "./AddPlayer";
 import { generateUniqueGameId } from "../../functions/generateUniqueId";
@@ -79,19 +70,11 @@ const Scoreboard = () => {
   const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
 
   useEffect(() => {
-    // Logic to fetch and set newestGameId
     if (games.length > 0) {
       setNewestGameId(games[0].gameId);
     }
     fetchPlayers();
   }, [games]);
-
-  // console.log(
-  //   "previousPlayerRecord",
-  //   JSON.stringify(previousPlayerRecord, null, 2)
-  // );
-
-  // console.log("number of previous player records", previousPlayerRecord.length);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL

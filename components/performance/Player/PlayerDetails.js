@@ -7,7 +7,6 @@ import MedalProgress from "../MedalProgress";
 import { medalNames } from "../../../functions/medalNames";
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
-import { transformDate } from "../../../functions/dateTransform";
 import { Dimensions } from "react-native";
 
 // Function to calculate the current streak
@@ -35,14 +34,11 @@ const screenAdjustedMedalSize = screenWidth <= 400 ? 50 : 70;
 const PlayerDetails = ({
   showPlayerDetails,
   setShowPlayerDetails,
-  playerName,
-  memberSince,
-  playersData,
   selectedPlayer,
 }) => {
   const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
 
-  // const currentStreakValue = currentStreak(selectedPlayer.resultLog);
+  const currentStreakValue = currentStreak(selectedPlayer.resultLog);
 
   const statData = [
     {

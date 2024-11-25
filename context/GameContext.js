@@ -231,12 +231,14 @@ const GameProvider = ({ children }) => {
 
           const playerDocRef = doc(playersCollectionRef, playerId);
 
+          // 24-11-2024 adding {newPlayer} on line 241 will revert tp old player stats
+
           //remove {newPlayer} as an object into newPlayer - This breaks the live app as the
           //player details rely on the player data contained in the object,
           //specifically the memberSince key. Once this is fixed, the app will need
           // to be republished to the app store as removing the object will changes
           // the data structure on firestore
-          await setDoc(playerDocRef, { newPlayer });
+          await setDoc(playerDocRef, newPlayer);
 
           console.log(`Player ${playerId} reset successfully!`);
         } catch (error) {
