@@ -1,0 +1,18 @@
+export const tournaments = [
+  { id: 1, name: "Tournament 1" },
+  { id: 2, name: "Tournament 2" },
+  { id: 3, name: "Tournament 3" },
+  { id: 4, name: "Tournament 4" },
+  { id: 5, name: "Tournament 5" },
+  { id: 6, name: "Tournament 6" },
+  { id: 7, name: "Tournament 7" },
+  { id: 8, name: "Tournament 8" },
+  { id: 9, name: "Tournament 9" },
+  { id: 10, name: "Tournament 10" },
+  { id: 11, name: "Tournament 11" },
+  { id: 12, name: "Tournament 12" },
+  { id: 13, name: "Tournament 13" },
+  { id: 14, name: "Tournament 14" },
+  { id: 15, name: "Tournament 15" },
+  { id: 16, name: "Tournament 16" },
+];
