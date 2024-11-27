@@ -23,11 +23,13 @@ const Container = styled.View({
   flexWrap: "wrap",
   justifyContent: "space-evenly", // Ensures items are evenly spaced
   alignItems: "center",
+  // borderWidth: 1,
+  // borderColor: "#ccc",
 });
 
 const TournamentContainer = styled.TouchableOpacity({
   flexBasis: "42%",
-  marginBottom: 30,
+  // marginBottom: 30,
 });
 
 const Tournament = styled.View({
@@ -36,7 +38,7 @@ const Tournament = styled.View({
   alignItems: "center",
   borderWidth: 1,
   borderColor: "#ccc",
-
+  marginBottom: 30,
   borderTopEndRadius: 20,
   borderTopStartRadius: 20,
   backgroundColor: "#f9f9f9", // Optional: Adds a background color

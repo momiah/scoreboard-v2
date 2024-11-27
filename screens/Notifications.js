@@ -4,8 +4,8 @@ import { View, Text } from "react-native";
 const Notifications = () => {
   return (
     <View>
-      <Text style={{ fontSize: 24, fontWeight: "bold" }}>Profile</Text>
-      <Text>This is the profile screen.</Text>
+      <Text style={{ fontSize: 24, fontWeight: "bold" }}>Notifications</Text>
+      <Text>This is the Notifications screen.</Text>
     </View>
   );
 };

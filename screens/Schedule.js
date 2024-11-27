@@ -4,8 +4,8 @@ import { View, Text } from "react-native";
 const Schedule = () => {
   return (
     <View>
-      <Text style={{ fontSize: 24, fontWeight: "bold" }}>Profile</Text>
-      <Text>This is the profile screen.</Text>
+      <Text style={{ fontSize: 24, fontWeight: "bold" }}>Schedhule</Text>
+      <Text>This is the Schedule screen.</Text>
     </View>
   );
 };

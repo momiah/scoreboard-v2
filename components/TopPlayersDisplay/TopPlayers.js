@@ -17,7 +17,8 @@ const TopPlayers = ({ topPlayers }) => {
 // Styled components
 const Container = styled.View({
   flex: 1,
-  padding: 20,
+  paddingLeft: 20,
+  paddingRight: 20,
 });
 
 const PlayerContainer = styled.TouchableOpacity({
