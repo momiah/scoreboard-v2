@@ -7,19 +7,15 @@ import {
   TouchableOpacity,
   ImageBackground,
 } from "react-native";
-import { leagues } from "../../components/Leagues/leagueMocks";
+import { leagues } from "../../../components/Leagues/leagueMocks";
 import styled from "styled-components/native";
-import { CourtChampLogo } from "../../assets";
-import SubHeader from "../../components/SubHeader";
-import VerticalLeagueCarousel from "../../components/Leagues/VerticalLeagueCarousel";
+import { CourtChampLogo } from "../../../assets";
+import SubHeader from "../../../components/SubHeader";
+import VerticalLeagueCarousel from "../../../components/Leagues/VerticalLeagueCarousel";
 
 const Leagues = () => {
   const handleIconPress = () => {
     console.log("Icon Pressed!");
-  };
-
-  const handleLeaguePress = (league) => {
-    console.log("League Selected:", league.name);
   };
 
   return (
@@ -30,17 +26,9 @@ const Leagues = () => {
           style={{ width: 175, height: 175, resizeMode: "contain" }}
         />
       </Overview>
-      <SubHeader
-        title="Leagues"
-        onIconPress={handleIconPress}
-        showIcon
-        navigationRoute={"Leagues"}
-      />
+      <SubHeader title="Leagues" onIconPress={handleIconPress} showIcon />
 
-      <VerticalLeagueCarousel
-        leagues={leagues}
-        onItemPress={handleLeaguePress}
-      />
+      <VerticalLeagueCarousel leagues={leagues} navigationRoute={"League"} />
     </View>
   );
 };
