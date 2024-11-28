@@ -201,6 +201,7 @@ const Scoreboard = () => {
   //   await updatePlayers(previousPlayerRecord[0]);
   // };
 
+  console.log("games", JSON.stringify(games, null, 2));
   return (
     <Container>
       <AddGameButton onPress={() => handleAddGameButton()}>

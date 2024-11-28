@@ -1,13 +1,57 @@
 import React from "react";
-import { View, Text } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  ImageBackground,
+} from "react-native";
+import { leagues } from "../../components/Leagues/leagueMocks";
+import styled from "styled-components/native";
+import { CourtChampLogo } from "../../assets";
+import SubHeader from "../../components/SubHeader";
+import VerticalLeagueCarousel from "../../components/Leagues/VerticalLeagueCarousel";
 
 const Leagues = () => {
+  const handleIconPress = () => {
+    console.log("Icon Pressed!");
+  };
+
+  const handleLeaguePress = (league) => {
+    console.log("League Selected:", league.name);
+  };
+
   return (
-    <View>
-      <Text style={{ fontSize: 24, fontWeight: "bold" }}>Leagues</Text>
-      <Text>This is the Leagues screen.</Text>
+    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+      <Overview>
+        <Image
+          source={CourtChampLogo}
+          style={{ width: 175, height: 175, resizeMode: "contain" }}
+        />
+      </Overview>
+      <SubHeader
+        title="Leagues"
+        onIconPress={handleIconPress}
+        showIcon
+        navigationRoute={"Leagues"}
+      />
+
+      <VerticalLeagueCarousel
+        leagues={leagues}
+        onItemPress={handleLeaguePress}
+      />
     </View>
   );
 };
+
+const Overview = styled.View({
+  flexDirection: "row",
+  height: 100,
+  width: "100%",
+  justifyContent: "center",
+  alignItems: "center",
+  paddingRight: 15,
+});
 
 export default Leagues;
