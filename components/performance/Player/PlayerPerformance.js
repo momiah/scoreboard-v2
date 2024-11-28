@@ -61,7 +61,7 @@ const PlayerPerformance = () => {
   };
 
   // const runGetPlayersToUpdate = async () => {
-  //   // Reverse the array to process the last game first
+  // Reverse the array to process the last game first
   //   const reversedGames = [...games].reverse();
 
   //   for (const game of reversedGames) {

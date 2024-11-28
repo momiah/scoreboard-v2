@@ -4,7 +4,7 @@ import { Image, SafeAreaView } from "react-native";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
 import { Dimensions } from "react-native";
-import LeagueCarousel from "../../components/Leagues/LeagueCarousel";
+import HorizontalLeagueCarousel from "../../components/Leagues/HorizontalLeagueCarousel";
 import TournamentGrid from "../../components/Tournaments/TournamentGrid";
 import { leagues } from "../../components/Leagues/leagueMocks";
 import { tournaments } from "../../components/Tournaments/tournamentMocks";
@@ -34,7 +34,7 @@ const Home = () => {
           showIcon
           navigationRoute={"Leagues"}
         />
-        <LeagueCarousel leagues={leagues} />
+        <HorizontalLeagueCarousel leagues={leagues} direction="horizontal" />
 
         <SubHeader
           title="Top Players"

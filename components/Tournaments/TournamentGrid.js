@@ -21,15 +21,12 @@ const TournamentGrid = ({ tournaments }) => {
 const Container = styled.View({
   flexDirection: "row",
   flexWrap: "wrap",
-  justifyContent: "space-evenly", // Ensures items are evenly spaced
+  justifyContent: "space-evenly",
   alignItems: "center",
-  // borderWidth: 1,
-  // borderColor: "#ccc",
 });
 
 const TournamentContainer = styled.TouchableOpacity({
   flexBasis: "42%",
-  // marginBottom: 30,
 });
 
 const Tournament = styled.View({

@@ -4,10 +4,11 @@ import styled from "styled-components/native";
 
 const { width } = Dimensions.get("window");
 
-const LeagueCarousel = ({ leagues }) => {
+const HorizontalLeagueCarousel = ({ leagues, direction }) => {
   return (
     <CarouselContainer
-      horizontal
+      horizontal={direction === "horizontal"}
+      vertical={direction === "vertical"}
       pagingEnabled
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{
@@ -49,4 +50,4 @@ const LeagueName = styled.Text({
   fontWeight: "bold",
 });
 
-export default LeagueCarousel;
+export default HorizontalLeagueCarousel;
