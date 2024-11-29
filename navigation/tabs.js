@@ -2,7 +2,8 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
-import Leagues from "../screens/Home/Leagues";
+import Leagues from "../screens/Home/Leagues/Leagues";
+import League from "../screens/Home/Leagues/League";
 import Profile from "../screens/Profile";
 import Notifications from "../screens/Notifications";
 import Schedule from "../screens/Schedule";
@@ -17,6 +18,7 @@ const HomeStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
+      <Stack.Screen name="League" component={League} />
     </Stack.Navigator>
   );
 };

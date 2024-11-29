@@ -7,12 +7,20 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
 
-const VerticalLeagueCarousel = ({ leagues, onItemPress }) => {
+const VerticalLeagueCarousel = ({ leagues, navigationRoute }) => {
+  const navigation = useNavigation();
+
+  const navigateTo = (leagueId) => {
+    // Pass leagueId to the target league page
+    navigation.navigate(navigationRoute, { leagueId });
+  };
+
   return (
     <CarouselContainer>
       {leagues.map((league, index) => (
-        <CarouselItem key={index} onPress={() => onItemPress(league)}>
+        <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
           <ImageWrapper>
             <LeagueImage source={league.image}>
               <GradientOverlay
