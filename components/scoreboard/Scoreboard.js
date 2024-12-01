@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, Text, FlatList, Modal, RefreshControl } from "react-native";
+import { Text, FlatList, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../context/GameContext";
 
@@ -192,15 +192,6 @@ const AddGameButton = styled.TouchableOpacity({
   backgroundColor: "#00A2FF",
 });
 
-const ButtonContainer = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginTop: 20,
-  paddingRight: 5,
-  paddingLeft: 5,
-});
-
 const Container = styled.View({
   flex: 1,
   padding: 10,
@@ -259,19 +250,6 @@ const GameContainer = styled.TouchableOpacity({
   backgroundColor: "#001123",
 });
 
-const ModalContainer = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "#00152B",
-});
-
-const ModalContent = styled.View({
-  backgroundColor: "#00152B",
-  padding: 20,
-  borderRadius: 10,
-});
-
 const NonDeletableGameContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
@@ -279,37 +257,6 @@ const NonDeletableGameContainer = styled.View({
   backgroundColor: "#001123",
   border: "1px solid #262626",
   borderRadius: 8,
-});
-
-const PlayerInput = styled.TextInput({
-  fontSize: 15,
-  padding: 15,
-  borderRadius: 8,
-  color: "#00A2FF",
-  backgroundColor: "#001123",
-  flex: 1,
-  borderTopLeftRadius: 8,
-  borderBottomLeftRadius: 8,
-});
-
-const PlayerInputContainer = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#001123",
-  borderRadius: 8,
-  padding: 5,
-});
-
-const RegisterPlayerButton = styled.TouchableOpacity({
-  justifyContent: "center",
-  alignItems: "center",
-  padding: 10,
-  borderRadius: 8,
-  width: 130,
-  backgroundColor: "#00A2FF",
-  marginLeft: 5,
-  borderTopRightRadius: 8,
-  borderBottomRightRadius: 8,
 });
 
 const ResultsContainer = styled.View({
@@ -331,24 +278,6 @@ const ScoreContainer = styled.View({
   flexDirection: "row",
   justifyContent: "center",
   marginTop: screenWidth <= 400 ? 20 : null,
-});
-
-const ScoreInput = styled.TextInput({
-  fontSize: 30,
-  fontWeight: "bold",
-  margin: "0 5px",
-  textAlign: "center",
-  color: "#00A2FF",
-});
-
-const SubmitButton = styled.TouchableOpacity({
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  padding: 10,
-  borderRadius: 8,
-  width: screenWidth <= 400 ? 250 : 300,
-  backgroundColor: "#00A2FF",
 });
 
 const Team = styled.Text({

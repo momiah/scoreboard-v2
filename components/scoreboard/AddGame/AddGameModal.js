@@ -13,7 +13,6 @@ import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
 const AddGameModal = ({ modalVisible, setModalVisible }) => {
   const {
     games,
-
     addGame,
     showPopup,
     setShowPopup,
@@ -22,10 +21,8 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
     popupMessage,
     setPlayer,
     registerPlayer,
-
     player,
     retrievePlayers,
-
     updatePlayers,
   } = useContext(GameContext);
   const [team1Score, setTeam1Score] = useState("");
