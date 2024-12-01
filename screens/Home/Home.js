@@ -11,10 +11,24 @@ import { tournaments } from "../../components/Tournaments/tournamentMocks";
 import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";
 import { topPlayers } from "../../components/TopPlayersDisplay/topPlayerMocks";
 import SubHeader from "../../components/SubHeader";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 
 const Home = () => {
+  const navigation = useNavigation();
+ 
   const handleIconPress = () => {
     console.log("Icon Pressed!");
+  };
+
+  const navigateTo = (route) => {
+    if (route) {
+      navigation.navigate(route);
+    }
+  };
+  const checkUserToken = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+    navigateTo(token ? "Leagues" : "Login")
   };
 
   return (
@@ -33,6 +47,7 @@ const Home = () => {
           actionText="Browse Leagues"
           showIcon
           navigationRoute={"Leagues"}
+          checkUserToken={checkUserToken}
         />
         <HorizontalLeagueCarousel leagues={leagues} direction="horizontal" />
 

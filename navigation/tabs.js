@@ -8,6 +8,7 @@ import Profile from "../screens/Profile";
 import Notifications from "../screens/Notifications";
 import Schedule from "../screens/Schedule";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Login from "../screens/Authentication/Login";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -19,6 +20,7 @@ const HomeStack = () => {
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Login" component={Login} />
     </Stack.Navigator>
   );
 };

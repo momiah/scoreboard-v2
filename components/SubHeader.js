@@ -11,6 +11,7 @@ const SubHeader = ({
   onIconPress,
   actionText,
   navigationRoute,
+  checkUserToken
 }) => {
   const navigation = useNavigation();
 
@@ -25,7 +26,7 @@ const SubHeader = ({
       <LeftContainer>
         <TitleText>{title}</TitleText>
         {showIcon && (
-          <TouchableOpacity onPress={onIconPress}>
+          <TouchableOpacity onPress={checkUserToken}>
             <Ionicons name={iconName} size={25} color={"white"} />
           </TouchableOpacity>
         )}
