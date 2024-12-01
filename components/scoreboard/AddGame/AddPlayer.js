@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
 import styled from "styled-components/native";
-import { GameContext } from "../../context/GameContext";
+import { GameContext } from "../../../context/GameContext";
 import { AntDesign } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
 

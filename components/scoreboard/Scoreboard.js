@@ -1,61 +1,17 @@
 import React, { useState, useEffect, useContext } from "react";
 import { View, Text, FlatList, Modal, RefreshControl } from "react-native";
 import styled from "styled-components/native";
-import AddPlayer from "./AddPlayer";
-import { generateUniqueGameId } from "../../functions/generateUniqueId";
-import moment from "moment";
-import Popup from "../popup/Popup";
 import { GameContext } from "../../context/GameContext";
-import { AntDesign } from "@expo/vector-icons";
-import { Dimensions } from "react-native";
-import { getPlayersToUpdate } from "../../functions/getPlayersToUpdate";
 
-const calculateWin = (team1, team2) => {
-  if (team1.score > team2.score) {
-    return {
-      winner: {
-        team: "Team 1",
-        players: [team1.player1, team1.player2],
-        score: team1.score,
-      },
-      loser: {
-        team: "Team 2",
-        players: [team2.player1, team2.player2],
-        score: team2.score,
-      },
-    };
-  } else {
-    return {
-      winner: {
-        team: "Team 2",
-        players: [team2.player1, team2.player2],
-        score: team2.score,
-      },
-      loser: {
-        team: "Team 1",
-        players: [team1.player1, team1.player2],
-        score: team1.score,
-      },
-    };
-  }
-};
+import { Dimensions } from "react-native";
+
+import AddGameModal from "./AddGame/AddGameModal";
 
 const Scoreboard = () => {
   const {
     games,
     setGames,
-    addGame,
-    showPopup,
-    setShowPopup,
-    handleShowPopup,
-    popupMessage,
-    setPopupMessage,
-    registerPlayer,
     fetchPlayers,
-    player,
-    retrievePlayers,
-    setPlayer,
-    updatePlayers,
     retrieveGames,
     deleteGameById,
     refreshing,
@@ -67,7 +23,7 @@ const Scoreboard = () => {
   } = useContext(GameContext);
 
   const [newestGameId, setNewestGameId] = useState("");
-  const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
+  // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
 
   useEffect(() => {
     if (games.length > 0) {
@@ -80,12 +36,7 @@ const Scoreboard = () => {
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
   // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
   //////////////////////////
-  const [selectedPlayers, setSelectedPlayers] = useState({
-    team1: ["", ""],
-    team2: ["", ""],
-  });
-  const [team1Score, setTeam1Score] = useState("");
-  const [team2Score, setTeam2Score] = useState("");
+
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleRefresh = async () => {
@@ -101,78 +52,6 @@ const Scoreboard = () => {
     }
   };
 
-  const handleSelectPlayer = (team, index, player) => {
-    setSelectedPlayers((prev) => {
-      const isPlayerSelected = Object.values(prev).flat().includes(player);
-      if (isPlayerSelected) {
-        console.log(`${player} is already selected.`);
-        return prev;
-      }
-
-      const newTeam = [...prev[team]];
-      newTeam[index] = player;
-      return { ...prev, [team]: newTeam };
-    });
-  };
-
-  const handleScoreChange = (setScore) => (text) => {
-    const numericText = text.replace(/[^0-9]/g, "");
-    if (numericText.length <= 2) {
-      setScore(numericText);
-    }
-  };
-
-  const handleAddGame = async () => {
-    // Check if both teams have selected players
-    if (
-      selectedPlayers.team1.every((player) => player === "") ||
-      selectedPlayers.team2.every((player) => player === "")
-    ) {
-      handleShowPopup("Please select players for both teams.");
-      return;
-    }
-
-    // Check if both teams have entered scores
-    if (!team1Score || !team2Score) {
-      handleShowPopup("Please enter scores for both teams.");
-      return;
-    }
-
-    const gameId = generateUniqueGameId(games);
-    const newGame = {
-      gameId: gameId,
-      gamescore: `${team1Score} - ${team2Score}`,
-      date: moment().format("DD-MM-YYYY"),
-      team1: {
-        player1: selectedPlayers.team1[0],
-        player2: selectedPlayers.team1[1],
-        score: parseInt(team1Score) || 0,
-      },
-      team2: {
-        player1: selectedPlayers.team2[0],
-        player2: selectedPlayers.team2[1],
-        score: parseInt(team2Score) || 0,
-      },
-      get result() {
-        return calculateWin(this.team1, this.team2);
-      },
-    };
-
-    const playersToUpdate = await getPlayersToUpdate(
-      newGame,
-      retrievePlayers,
-      setPreviousPlayerRecord,
-      previousPlayerRecord
-    );
-    await updatePlayers(playersToUpdate);
-
-    await addGame(newGame, gameId);
-    setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
-    setTeam1Score("");
-    setTeam2Score("");
-    setModalVisible(false);
-  };
-
   const openDeleteGameContainer = (gameId) => {
     setDeleteGameId(gameId);
     setDeleteGameContainer(true);
@@ -183,25 +62,11 @@ const Scoreboard = () => {
     setDeleteGameContainer(false);
   };
 
-  const handleClosePopup = () => {
-    setShowPopup(false);
-    setPopupMessage("");
-  };
-
   const handleAddGameButton = () => {
     fetchPlayers();
     setModalVisible(true);
   };
 
-  const settingPlayer = (newPlayer) => {
-    setPlayer(newPlayer);
-  };
-
-  // const revertPreviousGamePlayerRecord = async (previousPlayerRecord) => {
-  //   await updatePlayers(previousPlayerRecord[0]);
-  // };
-
-  console.log("games", JSON.stringify(games, null, 2));
   return (
     <Container>
       <AddGameButton onPress={() => handleAddGameButton()}>
@@ -236,6 +101,7 @@ const Scoreboard = () => {
                     </DeleteGameButton>
                   </DeleteGameContainer>
                 )}
+
                 <TeamContainer>
                   <TeamTextContainer style={{ borderTopLeftRadius: 8 }}>
                     <Team>{item.team1.player1}</Team>
@@ -304,128 +170,7 @@ const Scoreboard = () => {
       />
 
       {modalVisible && (
-        <View>
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => {
-              setModalVisible(false);
-              setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
-              setTeam1Score("");
-              setTeam2Score("");
-            }}
-          >
-            <Popup
-              visible={showPopup}
-              message={popupMessage}
-              onClose={handleClosePopup}
-            />
-            <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-              <ModalContent>
-                <GameContainer>
-                  <TeamContainer>
-                    <AddPlayer
-                      onSelectPlayer={(player) =>
-                        handleSelectPlayer("team1", 0, player)
-                      }
-                      selectedPlayers={selectedPlayers}
-                      borderType={"topLeft"}
-                    />
-                    <AddPlayer
-                      onSelectPlayer={(player) =>
-                        handleSelectPlayer("team1", 1, player)
-                      }
-                      selectedPlayers={selectedPlayers}
-                      borderType={"bottomLeft"}
-                    />
-                  </TeamContainer>
-
-                  <ResultsContainer>
-                    <Text style={{ color: "white" }}>
-                      {moment().format("DD-MM-YYYY")}
-                    </Text>
-                    <ScoreContainer
-                      style={{ width: screenWidth <= 400 ? 80 : 100 }}
-                    >
-                      <ScoreInput
-                        keyboardType="numeric"
-                        placeholder="0"
-                        value={team1Score}
-                        onChangeText={handleScoreChange(setTeam1Score)}
-                      />
-                      <Text style={{ fontSize: 30, color: "#00A2FF" }}>-</Text>
-                      <ScoreInput
-                        keyboardType="numeric"
-                        placeholder="0"
-                        value={team2Score}
-                        onChangeText={handleScoreChange(setTeam2Score)}
-                      />
-                    </ScoreContainer>
-                  </ResultsContainer>
-
-                  <TeamContainer>
-                    <AddPlayer
-                      onSelectPlayer={(player) =>
-                        handleSelectPlayer("team2", 0, player)
-                      }
-                      selectedPlayers={selectedPlayers}
-                      borderType={"topRight"}
-                    />
-                    <AddPlayer
-                      onSelectPlayer={(player) =>
-                        handleSelectPlayer("team2", 1, player)
-                      }
-                      selectedPlayers={selectedPlayers}
-                      borderType={"bottomRight"}
-                    />
-                  </TeamContainer>
-                </GameContainer>
-
-                <PlayerInputContainer>
-                  <PlayerInput
-                    onChangeText={(newPlayer) => settingPlayer(newPlayer)}
-                    value={player}
-                    placeholder="register player"
-                    placeholderTextColor="#00A2FF"
-                  />
-                  <RegisterPlayerButton onPress={() => registerPlayer(player)}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        color: "white",
-                      }}
-                    >
-                      Register Player
-                    </Text>
-                  </RegisterPlayerButton>
-                </PlayerInputContainer>
-
-                <ButtonContainer>
-                  <AntDesign
-                    onPress={() => setModalVisible(false)}
-                    name="closecircleo"
-                    size={30}
-                    color="red"
-                  />
-
-                  <SubmitButton onPress={handleAddGame}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        color: "white",
-                      }}
-                    >
-                      Submit
-                    </Text>
-                  </SubmitButton>
-                </ButtonContainer>
-              </ModalContent>
-            </ModalContainer>
-          </Modal>
-        </View>
+        <AddGameModal modalVisible setModalVisible={setModalVisible} />
       )}
     </Container>
   );
