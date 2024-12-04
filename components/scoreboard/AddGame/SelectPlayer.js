@@ -1,11 +1,11 @@
 import React, { useContext, useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, Modal } from "react-native";
+import { View, FlatList, Modal } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { AntDesign } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
 
-const AddPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
+const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
   const [selected, setSelected] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { players } = useContext(GameContext);
@@ -35,15 +35,31 @@ const AddPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
         return {};
     }
   };
+  const textDirection = (borderType) => {
+    switch (borderType) {
+      case "topLeft":
+        return { textAlign: "left" };
+      case "topRight":
+        return { textAlign: "right" };
+      case "bottomLeft":
+        return { textAlign: "left" };
+      case "bottomRight":
+        return { textAlign: "right" };
+      default:
+        return {};
+    }
+  };
 
   return (
     <View>
-      <SelectPlayerContainer
+      <PlayerSelectContainer
         onPress={() => setDropdownVisible(true)}
         style={borderDirection(borderType)}
       >
-        <SelectPlayer style={{}}>{selected || "Select Player"}</SelectPlayer>
-      </SelectPlayerContainer>
+        <PlayerSelect style={textDirection(borderType)}>
+          {selected || "Select Player"}
+        </PlayerSelect>
+      </PlayerSelectContainer>
 
       <Modal
         transparent={true}
@@ -88,15 +104,15 @@ const AddPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
-
-const SelectPlayerContainer = styled.TouchableOpacity({
+console.log("screenWidth", screenWidth);
+const PlayerSelectContainer = styled.TouchableOpacity({
   border: "1px solid #262626",
 });
 
-const SelectPlayer = styled.Text({
+const PlayerSelect = styled.Text({
   fontSize: screenWidth <= 400 ? 12 : 14,
   color: "white",
-
+  width: 110,
   padding: screenWidth <= 400 ? 17 : 20,
 });
 
@@ -133,4 +149,4 @@ const PlayerText = styled.Text({
   fontSize: 16,
 });
 
-export default AddPlayer;
+export default SelectPlayer;
