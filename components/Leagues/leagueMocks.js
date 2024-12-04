@@ -1,8 +1,37 @@
 import * as mockImages from "../../mockImages";
+import moment from "moment";
 
 export const leagues = [
   {
     id: 1,
+    leagueAdmins: ["Rayyan", "Hussain"],
+    leageueParticipants: [
+      {
+        id: "Rayyan",
+        memberSince: moment().format("MMM YYYY"),
+        XP: 10,
+        prevGameXP: 0,
+        lastActive: "",
+        numberOfWins: 0,
+        numberOfLosses: 0,
+        numberOfGamesPlayed: 0,
+        winPercentage: 0,
+        resultLog: [],
+        pointEfficiency: 0,
+        totalPoints: 0,
+        totalPointEfficiency: 0,
+        winStreak5: 0,
+        winStreak7: 0,
+        winStreak3: 0,
+        demonWin: 0,
+        currentStreak: {
+          type: null,
+          count: 0,
+        },
+        highestLossStreak: 0,
+        highestWinStreak: 0,
+      },
+    ],
     name: "Laura Trotter Badminton League",
     location: "Cheshunt",
     country: "England",

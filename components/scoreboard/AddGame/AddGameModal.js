@@ -4,11 +4,12 @@ import { GameContext } from "../../../context/GameContext";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import Popup from "../../popup/Popup";
-import AddPlayer from "./AddPlayer";
+import SelectPlayer from "./SelectPlayer";
 import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../../functions/generateUniqueId";
 import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
+import RegisterPlayer from "./RegisterPlayer";
 
 const AddGameModal = ({ modalVisible, setModalVisible }) => {
   const {
@@ -19,9 +20,6 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
     setPopupMessage,
     handleShowPopup,
     popupMessage,
-    setPlayer,
-    registerPlayer,
-    player,
     retrievePlayers,
     updatePlayers,
   } = useContext(GameContext);
@@ -35,10 +33,6 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
   const handleClosePopup = () => {
     setShowPopup(false);
     setPopupMessage("");
-  };
-
-  const settingPlayer = (newPlayer) => {
-    setPlayer(newPlayer);
   };
 
   const calculateWin = (team1, team2) => {
@@ -168,14 +162,14 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
           <ModalContent>
             <GameContainer>
               <TeamContainer>
-                <AddPlayer
+                <SelectPlayer
                   onSelectPlayer={(player) =>
                     handleSelectPlayer("team1", 0, player)
                   }
                   selectedPlayers={selectedPlayers}
                   borderType={"topLeft"}
                 />
-                <AddPlayer
+                <SelectPlayer
                   onSelectPlayer={(player) =>
                     handleSelectPlayer("team1", 1, player)
                   }
@@ -208,14 +202,14 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
               </ResultsContainer>
 
               <TeamContainer>
-                <AddPlayer
+                <SelectPlayer
                   onSelectPlayer={(player) =>
                     handleSelectPlayer("team2", 0, player)
                   }
                   selectedPlayers={selectedPlayers}
                   borderType={"topRight"}
                 />
-                <AddPlayer
+                <SelectPlayer
                   onSelectPlayer={(player) =>
                     handleSelectPlayer("team2", 1, player)
                   }
@@ -225,25 +219,7 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
               </TeamContainer>
             </GameContainer>
 
-            <PlayerInputContainer>
-              <PlayerInput
-                onChangeText={(newPlayer) => settingPlayer(newPlayer)}
-                value={player}
-                placeholder="register player"
-                placeholderTextColor="#00A2FF"
-              />
-              <RegisterPlayerButton onPress={() => registerPlayer(player)}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "bold",
-                    color: "white",
-                  }}
-                >
-                  Register Player
-                </Text>
-              </RegisterPlayerButton>
-            </PlayerInputContainer>
+            <RegisterPlayer />
 
             <ButtonContainer>
               <AntDesign
@@ -285,6 +261,7 @@ const ModalContent = styled.View({
   backgroundColor: "#00152B",
   padding: 20,
   borderRadius: 10,
+  width: screenWidth - 20,
 });
 
 const ButtonContainer = styled.View({
@@ -304,37 +281,6 @@ const SubmitButton = styled.TouchableOpacity({
   borderRadius: 8,
   width: screenWidth <= 400 ? 250 : 300,
   backgroundColor: "#00A2FF",
-});
-
-const PlayerInputContainer = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#001123",
-  borderRadius: 8,
-  padding: 5,
-});
-
-const PlayerInput = styled.TextInput({
-  fontSize: 15,
-  padding: 15,
-  borderRadius: 8,
-  color: "#00A2FF",
-  backgroundColor: "#001123",
-  flex: 1,
-  borderTopLeftRadius: 8,
-  borderBottomLeftRadius: 8,
-});
-
-const RegisterPlayerButton = styled.TouchableOpacity({
-  justifyContent: "center",
-  alignItems: "center",
-  padding: 10,
-  borderRadius: 8,
-  width: 130,
-  backgroundColor: "#00A2FF",
-  marginLeft: 5,
-  borderTopRightRadius: 8,
-  borderBottomRightRadius: 8,
 });
 
 const GameContainer = styled.TouchableOpacity({
