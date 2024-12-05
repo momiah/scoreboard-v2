@@ -114,201 +114,6 @@ export const sampleLeagues = [
       },
     ],
   },
-  {
-    id: 2,
-    name: "Manchester Elite Badminton League",
-    location: "Manchester",
-    country: "England",
-    startDate: "10/01/2024",
-    endDate: "20/01/2024",
-    image: mockImages.court2,
-    games: [
-      {
-        id: "10-01-2024-game-1",
-        team1: {
-          player1: "Alice",
-          score: 18,
-          player2: "Bob",
-        },
-        gameId: "10-01-2024-game-1",
-        result: {
-          loser: {
-            team: "Team 2",
-            score: 15,
-            players: ["Chris", "Derek"],
-          },
-          winner: {
-            score: 18,
-            players: ["Alice", "Bob"],
-            team: "Team 1",
-          },
-        },
-        team2: {
-          score: 15,
-          player2: "Derek",
-          player1: "Chris",
-        },
-        date: "10-01-2024",
-        gamescore: "18 - 15",
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: "Birmingham International League",
-    location: "Birmingham",
-    country: "England",
-    startDate: "05/02/2024",
-    endDate: "15/02/2024",
-    image: mockImages.court3,
-    games: [
-      {
-        id: "05-02-2024-game-3",
-        team1: {
-          player1: "Ethan",
-          score: 25,
-          player2: "Emma",
-        },
-        gameId: "05-02-2024-game-3",
-        result: {
-          loser: {
-            team: "Team 2",
-            score: 22,
-            players: ["Frank", "Grace"],
-          },
-          winner: {
-            score: 25,
-            players: ["Ethan", "Emma"],
-            team: "Team 1",
-          },
-        },
-        team2: {
-          score: 22,
-          player2: "Grace",
-          player1: "Frank",
-        },
-        date: "05-02-2024",
-        gamescore: "25 - 22",
-      },
-    ],
-  },
-  {
-    id: 4,
-    name: "Oxford Badminton Championship",
-    location: "Oxford",
-    country: "England",
-    startDate: "15/03/2024",
-    endDate: "25/03/2024",
-    image: mockImages.court4,
-    games: [
-      {
-        id: "15-03-2024-game-4",
-        team1: {
-          player1: "George",
-          score: 21,
-          player2: "Helen",
-        },
-        gameId: "15-03-2024-game-4",
-        result: {
-          loser: {
-            team: "Team 2",
-            score: 12,
-            players: ["Ivy", "Jack"],
-          },
-          winner: {
-            score: 21,
-            players: ["George", "Helen"],
-            team: "Team 1",
-          },
-        },
-        team2: {
-          score: 12,
-          player2: "Jack",
-          player1: "Ivy",
-        },
-        date: "15-03-2024",
-        gamescore: "21 - 12",
-      },
-    ],
-  },
-  {
-    id: 5,
-    name: "Leeds Open Badminton Tournament",
-    location: "Leeds",
-    country: "England",
-    startDate: "01/04/2024",
-    endDate: "10/04/2024",
-    image: mockImages.court1,
-    games: [
-      {
-        id: "01-04-2024-game-5",
-        team1: {
-          player1: "Kevin",
-          score: 23,
-          player2: "Lucy",
-        },
-        gameId: "01-04-2024-game-5",
-        result: {
-          loser: {
-            team: "Team 2",
-            score: 19,
-            players: ["Mason", "Nancy"],
-          },
-          winner: {
-            score: 23,
-            players: ["Kevin", "Lucy"],
-            team: "Team 1",
-          },
-        },
-        team2: {
-          score: 19,
-          player2: "Nancy",
-          player1: "Mason",
-        },
-        date: "01-04-2024",
-        gamescore: "23 - 19",
-      },
-    ],
-  },
-  {
-    id: 6,
-    name: "Cambridge Badminton League",
-    location: "Cambridge",
-    country: "England",
-    startDate: "20/05/2024",
-    endDate: "30/05/2024",
-    image: mockImages.court2,
-    games: [
-      {
-        id: "20-05-2024-game-6",
-        team1: {
-          player1: "Oliver",
-          score: 17,
-          player2: "Sophia",
-        },
-        gameId: "20-05-2024-game-6",
-        result: {
-          loser: {
-            team: "Team 2",
-            score: 15,
-            players: ["Quinn", "Riley"],
-          },
-          winner: {
-            score: 17,
-            players: ["Oliver", "Sophia"],
-            team: "Team 1",
-          },
-        },
-        team2: {
-          score: 15,
-          player2: "Riley",
-          player1: "Quinn",
-        },
-        date: "20-05-2024",
-        gamescore: "17 - 15",
-      },
-    ],
-  },
 ];
 
 // Utility function to select a random item from an array
@@ -325,19 +130,22 @@ const generateUsernames = (num) => {
   const animals = ["Tiger", "Falcon", "Wolf", "Lion", "Eagle"];
 
   for (let i = 0; i < num; i++) {
-    usernames.push(
-      `${randomItem(adjectives)}${randomItem(animals)}${Math.floor(
-        Math.random() * 100
-      )}`
-    );
+    // Generate a random username and shorten it to 10 characters
+    const username = `${randomItem(adjectives)}${randomItem(
+      animals
+    )}${Math.floor(Math.random() * 100)}`;
+    usernames.push(username.slice(0, 10)); // Ensure the username is no longer than 10 characters
   }
+
   return usernames;
 };
 
 // Generate random league participants
 const generateParticipants = (num) => {
-  return Array.from({ length: num }, (_, i) => ({
-    id: `user-${i + 1}`,
+  const usernames = generateUsernames(num);
+
+  return usernames.map((username) => ({
+    id: username,
     memberSince: moment()
       .subtract(Math.floor(Math.random() * 12), "months")
       .format("MMM YYYY"),
@@ -368,37 +176,55 @@ const generateParticipants = (num) => {
 };
 
 // Generate random games
-const generateGames = (numGames) => {
-  return Array.from({ length: numGames }, (_, i) => ({
-    id: `${moment().format("DD-MM-YYYY")}-game-${i + 1}`,
-    team1: {
-      player1: `Player${Math.floor(Math.random() * 10) + 1}`,
-      player2: `Player${Math.floor(Math.random() * 10) + 1}`,
-      score: Math.floor(Math.random() * 21),
-    },
-    gameId: `${moment().format("DD-MM-YYYY")}-game-${i + 1}`,
-    result: {
-      loser: {
-        team: "Team 2",
+const generateGames = (numGames, leagueParticipants) => {
+  return Array.from({ length: numGames }, (_, i) => {
+    // Randomly select 4 unique players for the game (2 players per team)
+    const selectedPlayers = [];
+    while (selectedPlayers.length < 4) {
+      const randomPlayer =
+        leagueParticipants[
+          Math.floor(Math.random() * leagueParticipants.length)
+        ];
+      if (!selectedPlayers.includes(randomPlayer)) {
+        selectedPlayers.push(randomPlayer);
+      }
+    }
+
+    // Split the selected players into two teams
+    const team1 = selectedPlayers.slice(0, 2);
+    const team2 = selectedPlayers.slice(2, 4);
+
+    return {
+      id: `${moment().format("DD-MM-YYYY")}-game-${i + 1}`,
+      team1: {
+        player1: team1[0].id,
+        player2: team1[1].id,
         score: Math.floor(Math.random() * 21),
-        players: ["Player3", "Player4"],
       },
-      winner: {
-        score: 21,
-        players: ["Player1", "Player2"],
-        team: "Team 1",
+      gameId: `${moment().format("DD-MM-YYYY")}-game-${i + 1}`,
+      result: {
+        loser: {
+          team: "Team 2",
+          score: Math.floor(Math.random() * 21),
+          players: team2.map((player) => player.id),
+        },
+        winner: {
+          score: 21,
+          players: team1.map((player) => player.id),
+          team: "Team 1",
+        },
       },
-    },
-    team2: {
-      player1: `Player${Math.floor(Math.random() * 10) + 1}`,
-      player2: `Player${Math.floor(Math.random() * 10) + 1}`,
-      score: Math.floor(Math.random() * 21),
-    },
-    date: moment().format("DD-MM-YYYY"),
-    gamescore: `${Math.floor(Math.random() * 21)} - ${Math.floor(
-      Math.random() * 21
-    )}`,
-  }));
+      team2: {
+        player1: team2[0].id,
+        player2: team2[1].id,
+        score: Math.floor(Math.random() * 21),
+      },
+      date: moment().format("DD-MM-YYYY"),
+      gamescore: `${Math.floor(Math.random() * 21)} - ${Math.floor(
+        Math.random() * 21
+      )}`,
+    };
+  });
 };
 
 // Generate random playing times for up to 7 days
@@ -428,10 +254,15 @@ const generateLeagues = ({
   numGames = 5,
   numDays = 3,
 } = {}) => {
+  const participants = generateParticipants(numParticipants);
+  const leagueAdmins = participants
+    .slice(0, numAdmins)
+    .map((participant) => participant.id);
+
   return Array.from({ length: numLeagues }, (_, i) => ({
     id: i + 1,
-    leagueAdmins: generateUsernames(numAdmins),
-    leagueParticipants: generateParticipants(numParticipants),
+    leagueAdmins: leagueAdmins,
+    leagueParticipants: participants,
     maxPlayers: randomItem(maxPlayers),
     privacy: randomItem(privacyTypes),
     name: `League ${i + 1} - ${randomItem(leagueTypes)}`,
@@ -446,7 +277,7 @@ const generateLeagues = ({
     entryFee: Math.floor(Math.random() * 100) + 1,
     currencyType: randomItem(currencyTypes),
     image: randomItem(Object.values(mockImages)),
-    games: generateGames(numGames),
+    games: generateGames(numGames, participants),
   }));
 };
 
