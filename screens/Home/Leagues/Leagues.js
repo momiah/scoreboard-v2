@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ImageBackground,
 } from "react-native";
-import { leagues } from "../../../components/Leagues/leagueMocks";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../../assets";
 import SubHeader from "../../../components/SubHeader";
@@ -28,7 +27,7 @@ const Leagues = () => {
       </Overview>
       <SubHeader title="Leagues" onIconPress={handleIconPress} showIcon />
 
-      <VerticalLeagueCarousel leagues={leagues} navigationRoute={"League"} />
+      <VerticalLeagueCarousel navigationRoute={"League"} />
     </View>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Image, ActivityIndicator } from "react-native";
 import { useRoute } from "@react-navigation/native";
-import { leagues } from "../../../components/Leagues/leagueMocks";
+import { generatedLeagues } from "../../../components/Leagues/leagueMocks";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../../assets";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";
@@ -9,6 +9,9 @@ import Scoreboard from "../../../components/scoreboard/Scoreboard";
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params; // Access the leagueId from the route params
+
+  console.log("route🙂", route);
+  console.log("leagueId🙂", leagueId);
 
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [loading, setLoading] = useState(true); // Track loading state
@@ -18,10 +21,19 @@ const League = () => {
   }, [leagueId]);
 
   const fetchLeagueDetails = (id) => {
-    const fetchedDetails = leagues.find((league) => league.id === id);
+    const fetchedDetails = generatedLeagues.find((league) => league.id === id);
     setLeagueDetails(fetchedDetails);
     setLoading(false); // Set loading to false once data is fetched
   };
+
+  useEffect(() => {
+    if (leagueDetails) {
+      console.log(
+        "leagueDetails🙂",
+        JSON.stringify(leagueDetails.games, null, 2)
+      );
+    }
+  }, [leagueDetails]);
 
   if (loading) {
     return (
@@ -42,21 +54,19 @@ const League = () => {
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
         <Image
-          source={CourtChampLogo}
-          style={{ width: 175, height: 175, resizeMode: "contain" }}
+          source={leagueDetails.image}
+          style={{ width: "100%", height: "100%", resizeMode: "cover" }}
         />
       </Overview>
-      <Text style={{ color: "white", fontSize: 20, fontWeight: "bold" }}>
-        {leagueDetails.name}
-      </Text>
-      <Scoreboard />
+
+      <Scoreboard mockgames={leagueDetails.games} />
     </View>
   );
 };
 
 const Overview = styled.View({
   flexDirection: "row",
-  height: 100,
+  height: 175,
   width: "100%",
   justifyContent: "center",
   alignItems: "center",

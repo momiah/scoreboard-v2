@@ -8,8 +8,9 @@ import {
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
+import { generatedLeagues } from "./leagueMocks";
 
-const VerticalLeagueCarousel = ({ leagues, navigationRoute }) => {
+const VerticalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
 
   const navigateTo = (leagueId) => {
@@ -19,7 +20,7 @@ const VerticalLeagueCarousel = ({ leagues, navigationRoute }) => {
 
   return (
     <CarouselContainer>
-      {leagues.map((league, index) => (
+      {generatedLeagues.map((league, index) => (
         <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
           <ImageWrapper>
             <LeagueImage source={league.image}>
@@ -63,7 +64,7 @@ const ImageWrapper = styled.View({
   overflow: "hidden", // Ensures image respects border radius
 });
 
-const LeagueImage = styled(ImageBackground)({
+const LeagueImage = styled.ImageBackground({
   width: "100%",
   height: "100%",
   justifyContent: "flex-end", // Positions text at the bottom

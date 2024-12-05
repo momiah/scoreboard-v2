@@ -6,7 +6,6 @@ import { CourtChampLogo } from "../../assets";
 import { Dimensions } from "react-native";
 import HorizontalLeagueCarousel from "../../components/Leagues/HorizontalLeagueCarousel";
 import TournamentGrid from "../../components/Tournaments/TournamentGrid";
-import { leagues } from "../../components/Leagues/leagueMocks";
 import { tournaments } from "../../components/Tournaments/tournamentMocks";
 import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";
 import { topPlayers } from "../../components/TopPlayersDisplay/topPlayerMocks";
@@ -16,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 
 const Home = () => {
   const navigation = useNavigation();
- 
+
   const handleIconPress = () => {
     console.log("Icon Pressed!");
   };
@@ -28,7 +27,7 @@ const Home = () => {
   };
   const checkUserToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
-    navigateTo(token ? "Leagues" : "Login")
+    navigateTo(token ? "Leagues" : "Login");
   };
 
   return (
@@ -49,7 +48,7 @@ const Home = () => {
           navigationRoute={"Leagues"}
           checkUserToken={checkUserToken}
         />
-        <HorizontalLeagueCarousel leagues={leagues} direction="horizontal" />
+        <HorizontalLeagueCarousel navigationRoute={"League"} />
 
         <SubHeader
           title="Top Players"
