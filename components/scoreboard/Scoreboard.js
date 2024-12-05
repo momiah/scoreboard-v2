@@ -7,7 +7,7 @@ import { Dimensions } from "react-native";
 
 import AddGameModal from "./AddGame/AddGameModal";
 
-const Scoreboard = () => {
+const Scoreboard = ({ mockgames }) => {
   const {
     games,
     setGames,
@@ -67,6 +67,8 @@ const Scoreboard = () => {
     setModalVisible(true);
   };
 
+  // console.log("games", JSON.stringify(games, null, 2));
+
   return (
     <Container>
       <AddGameButton onPress={() => handleAddGameButton()}>
@@ -74,7 +76,7 @@ const Scoreboard = () => {
       </AddGameButton>
 
       <FlatList
-        data={games}
+        data={mockgames}
         keyExtractor={(item) => item.gameId}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
