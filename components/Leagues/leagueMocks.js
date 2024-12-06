@@ -6,10 +6,22 @@ const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 const leagueTypes = ["Mixed Doubles", "Fixed Doubles", "Singles"];
 const privacyTypes = ["Public", "Private"];
 const maxPlayers = [8, 16, 32, 64, 128, 256, 512];
+const locations = [
+  "Milton Keynes",
+  "London",
+  "Birmingham",
+  "Manchester",
+  "York",
+  "Nottingham",
+  "Bath",
+  "Glasgow",
+  "Edinburgh",
+  "Leeds",
+];
 const leagueStatus = [
-  { status: "enlisting", color: "#FF5733" },
-  { status: "full", color: "#33FF57" },
-  { status: "completed", color: "#3357FF" },
+  { status: "enlisting", color: "#FAB234" },
+  { status: "full", color: "#286EFA" },
+  { status: "completed", color: "#167500" },
 ];
 const daysOfWeek = [
   "Monday",
@@ -246,6 +258,30 @@ const generatePlayingTimes = (numDays) => {
   return playingTimes;
 };
 
+const generateBadmintonCenters = (numCenters) => {
+  const descriptors = [
+    "Sports Center",
+    "Leisure Center",
+    "Badminton Academy",
+    "Arena",
+    "Training Village",
+    "Fitness Hub",
+    "Community Hall",
+    "Sports Complex",
+    "Recreation Center",
+    "Activity Zone",
+  ];
+
+  // Ensure we don't exceed the number of predefined locations or descriptors
+  const totalCenters = Math.min(numCenters, locations.length);
+
+  return Array.from({ length: totalCenters }, (_, i) => {
+    const location = locations[i % locations.length];
+    const descriptor = descriptors[i % descriptors.length];
+    return `${location} ${descriptor}`;
+  });
+};
+
 // Generate leagues with destructured arguments
 const generateLeagues = ({
   numLeagues = 1,
@@ -268,7 +304,8 @@ const generateLeagues = ({
     name: `League ${i + 1} - ${randomItem(leagueTypes)}`,
     playingTime: generatePlayingTimes(numDays),
     leagueStatus: randomItem(leagueStatus),
-    location: "Cheshunt",
+    location: randomItem(locations),
+    centerName: randomItem(generateBadmintonCenters(numLeagues)),
     country: "England",
     startDate: moment().add(i, "days").format("DD/MM/YYYY"),
     endDate: "",
