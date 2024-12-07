@@ -26,6 +26,7 @@
     "react-native": "0.76.3",
     "react-native-animate-number": "^0.1.2",
     "react-native-date-picker": "^5.0.4",
+    "react-native-datepicker": "^1.7.2",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-reanimated": "~3.16.1",

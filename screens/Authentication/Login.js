@@ -14,6 +14,13 @@ import {
   FacebookLogo,
   GoogleLogo,
 } from "../../assets"; // Your image imports
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from '../../services/firebase.config';
+// import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -22,6 +29,8 @@ export default function Login() {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [iconScale] = useState(new Animated.Value(1));
+
+  const navigation = useNavigation();
 
   // Validation for Email
   const validateEmail = () => {
@@ -63,13 +72,56 @@ export default function Login() {
   };
 
   // Handle Login Button
-  const handleLogin = () => {
+  const handleLogin = async () => {
     validateEmail();
     validatePassword();
     if (!emailError && !passwordError && email && password) {
-      console.log("Logged In");
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("Logged in successfully");
+        // setFirebaseError("");
+        const user = userCredential.user;
+        const token = await user.getIdToken(); // Get the Firebase Auth ID token
+        
+        // Save the token to AsyncStorage
+        console.log(token,'token')
+        await AsyncStorage.setItem("userToken", token);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
+        }); // Adjust to your home screen
+      } catch (error) {
+        // setFirebaseError(error.message || "Login failed.");
+      }
     }
   };
+
+  // Configure Google Sign-In
+  // React.useEffect(() => {
+  //   GoogleSignin.configure({
+  //     webClientId: "215867687150-gqh2v2j67ul3jtjce1vn4omkpmd0r0m6.apps.googleusercontent.com", // Get from Firebase console
+  //   });
+  // }, []);
+
+  // Google Sign-In Handler
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     await GoogleSignin.hasPlayServices();
+  //     const userInfo = await GoogleSignin.signIn();
+  //     const googleCredential = GoogleAuthProvider.credential(userInfo.idToken);
+  //     const userCredential = await signInWithCredential(auth, googleCredential);
+  //     const token = await userCredential.user.getIdToken();
+
+  //     // Save the token in AsyncStorage
+  //     await AsyncStorage.setItem("userToken", token);
+  //     navigation.reset({
+  //       index: 0,
+  //       routes: [{ name: "Home" }], // Adjust to your home screen
+  //     });
+  //   } catch (error) {
+  //     console.error("Google Login Error: ", error.message);
+  //   }
+  // };
 
   return (
     <>
@@ -135,7 +187,8 @@ export default function Login() {
 
         {/* Social Media Buttons */}
         <View style={styles.socialContainer}>
-          <TouchableOpacity>
+        {/* onPress={handleGoogleLogin} */}
+          <TouchableOpacity >
             <Image source={GoogleLogo} style={styles.socialIcon} />
           </TouchableOpacity>
           <TouchableOpacity>
@@ -149,7 +202,7 @@ export default function Login() {
         {/* Register Section */}
 
         <TouchableOpacity>
-          <Text style={styles.registerText}>Register</Text>
+          <Text onPress={()=>{navigation.navigate('Signup')}} style={styles.registerText}>Register</Text>
         </TouchableOpacity>
       </View>
     </>
