@@ -95,17 +95,20 @@ const ButtonText = styled.Text({
   fontSize: 16,
 });
 
-const Signup = () => {
+const Signup = (route) => {
+
+  const { userName, userEmail,userId } = route.params || ''
   const [formData, setFormData] = useState({
-    firstName: '',
+    firstName:userName || '',
     lastName: '',
     username: '',
-    email: '',
+    email:userEmail || '',
     dob: '',
     location: '',
     handPreference: 'Both',
     password: '',
   });
+
 
   const navigation = useNavigation();
   const [errors, setErrors] = useState({});
@@ -116,12 +119,13 @@ const Signup = () => {
   };
 
   const validateForm = () => {
+
     const newErrors = {};
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.username.trim()) newErrors.username = 'Username is required';
-    if (!formData.password.trim()) newErrors.username = 'Password is required';
-    if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email))
+    if (!formData.password.trim() && !userName) newErrors.username = 'Password is required';
+    if ((!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email) && !userName ))
       newErrors.email = 'Valid email is required';
     if (!formData.dob.trim()) newErrors.dob = 'Date of birth is required';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
@@ -132,7 +136,7 @@ const Signup = () => {
   };
 
   const handleSubmit = async () => {
-    if (validateForm()) {
+    if (validateForm() && !userId) {
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         const userId = userCredential.user.uid;
@@ -147,14 +151,39 @@ const Signup = () => {
           location: formData.location,
           handPreference: formData.handPreference,
           userId:userId,
+          provider:'email_password'
           
         });
-        navigation.navigate("Login");
-
         Alert.alert('Account Created', 'Your account has been created successfully');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
+        });
+
+    
       } catch (error) {
         Alert.alert('Error', error.message);
       }
+    }else{
+      await setDoc(doc(db, 'users', userId), {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+        email: formData.email,
+        dob: formData.dob,
+        location: formData.location,
+        handPreference: formData.handPreference,
+        userId:userId,
+        provider:'gmail'
+        
+      });
+      Alert.alert('Account Created', 'Your account has been created successfully');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
+      });
+
+      // Alert.alert('Account Created', 'Your account has been created successfully');
     }
   };
 
@@ -194,6 +223,7 @@ const Signup = () => {
         {errors.username && <ErrorText>{errors.username}</ErrorText>}
 
         {/* Email */}
+        {!userName && <>
         <Label>Email</Label>
         <Input
           placeholder="Email"
@@ -203,6 +233,7 @@ const Signup = () => {
           onChangeText={(text) => handleChange('email', text)}
         />
         {errors.email && <ErrorText>{errors.email}</ErrorText>}
+      
 
         {/* Password */}
         <Label>Password</Label>
@@ -214,6 +245,7 @@ const Signup = () => {
           onChangeText={(text) => handleChange('password', text)}
         />
         {errors.password && <ErrorText>{errors.password}</ErrorText>}
+        </>}
 
         {/* Date of Birth */}
         <Label>Date of Birth</Label>
