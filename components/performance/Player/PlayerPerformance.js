@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
-import { FlatList, RefreshControl } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import MedalDisplay from "../MedalDisplay";
@@ -14,6 +19,7 @@ const PlayerPerformance = () => {
 
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersData, setPlayersData] = useState([]);
+  const [loading, setLoading] = useState(true); // Track loading state
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,12 +50,27 @@ const PlayerPerformance = () => {
         // Sort in descending order
         return totalB - totalA;
       });
-
       setPlayersData(sortedPlayers);
+      setLoading(false); // Set loading to false once data is fetched
     };
 
     fetchPlayers();
   }, [retrievePlayers]);
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#00152B",
+        }}
+      >
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
 
   const recentGameResult = (resultLog) => {
     const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
@@ -106,7 +127,7 @@ const PlayerPerformance = () => {
           <Stat>{totalPointsAndXP.toFixed(0)}</Stat>
         </TableCell>
         <TableCell>
-          <MedalDisplay xp={totalPointsAndXP.toFixed(0)} size={45} />
+          <MedalDisplay xp={totalPointsAndXP.toFixed(0)} size={40} />
         </TableCell>
       </TableRow>
     );
