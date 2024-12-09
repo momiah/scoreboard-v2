@@ -26,6 +26,7 @@ const GameProvider = ({ children }) => {
   const [players, setPlayers] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
+  const [leagues, setLeagues] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +35,43 @@ const GameProvider = ({ children }) => {
     };
 
     fetchData();
+  }, []);
+
+  //add leages
+
+  // Assuming you have initialized your Firebase db here
+
+  const addLeagues = async (leagueData) => {
+    try {
+      await setDoc(doc(db, "leagues", "uniqueLeagueId2"), {
+        leagueData,
+      });
+      console.log("League added successfully!");
+    } catch (error) {
+      console.error("Error adding league: ", error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchLeagues = async () => {
+      try {
+        // Reference the `leagues` collection in Firestore
+        const querySnapshot = await getDocs(collection(db, "leagues"));
+
+        // Map through the documents and store data
+        const leaguesData = querySnapshot.docs.map((doc) => ({
+          id: doc.id, // Include document ID
+          ...doc.data(), // Include the rest of the document fields
+        }));
+        console.log("leaguesData🙂", leaguesData);
+
+        setLeagues(leaguesData);
+      } catch (error) {
+        console.error("Error fetching leagues:", error);
+      }
+    };
+
+    fetchLeagues();
   }, []);
 
   const sortGamesByNewest = (games) => {
@@ -345,6 +383,8 @@ const GameProvider = ({ children }) => {
         setDeleteGameContainer,
         deleteGameId,
         setDeleteGameId,
+        addLeagues,
+        leagues,
       }}
     >
       {children}

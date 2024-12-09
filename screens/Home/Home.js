@@ -1,4 +1,5 @@
 import React from "react";
+import  { useState } from "react";
 import { Image, SafeAreaView } from "react-native";
 
 import styled from "styled-components/native";
@@ -12,9 +13,11 @@ import { topPlayers } from "../../components/TopPlayersDisplay/topPlayerMocks";
 import SubHeader from "../../components/SubHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import AddLeagueModel from "../../components/scoreboard/AddLeague/AddLeagueModel";
 
 const Home = () => {
   const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const handleIconPress = () => {
     console.log("Icon Pressed!");
@@ -27,7 +30,14 @@ const Home = () => {
   };
   const checkUserToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
-    navigateTo(token ? "Leagues" : "Login");
+
+    if (token) {
+      setModalVisible(true)
+    } else {
+      navigateTo( "Login");
+      // setModalVisible(true)
+    }
+   
   };
 
   return (
@@ -64,6 +74,10 @@ const Home = () => {
           showIcon
         />
         <TournamentGrid tournaments={tournaments} />
+
+        {modalVisible && (
+        <AddLeagueModel modalVisible setModalVisible={setModalVisible} />
+      )}
       </HomeContainer>
     </SafeAreaView>
   );
