@@ -21,6 +21,20 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
 
+  // if (loading) {
+  //   return (
+  //     <View
+  //       style={{
+  //         flex: 1,
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //         backgroundColor: "#00152B",
+  //       }}
+  //     >
+  //       <ActivityIndicator size="large" color="#ffffff" />
+  //     </View>
+  //   );
+  // }
   return (
     <CarouselContainer>
       {generatedLeagues.map((league, index) => (

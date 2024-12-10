@@ -274,6 +274,8 @@ const GameProvider = ({ children }) => {
     }
   };
 
+  //Retrieve Leagues
+
   const addGame = async (newGame, gameId) => {
     try {
       const scoreboardCollectionRef = collection(db, "scoreboard");
