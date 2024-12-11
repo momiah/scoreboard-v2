@@ -1,5 +1,6 @@
+
 import React from "react";
-import { ScrollView, Dimensions } from "react-native";
+import { Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { generatedLeagues } from "./leagueMocks";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,20 +12,18 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
 
   const navigateTo = (leagueId) => {
-    // Pass leagueId to the target league page
     navigation.navigate(navigationRoute, { leagueId });
   };
+
   return (
     <CarouselContainer
       horizontal
       pagingEnabled
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{
-        paddingHorizontal: 20, // Adjust padding for partial display
-      }}
+      contentContainerStyle={{ paddingHorizontal: 20 }}
     >
-      {generatedLeagues.map((league, index) => (
-        <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
+      {generatedLeagues.map((league) => (
+        <CarouselItem key={league.id} onPress={() => navigateTo(league.id)}>
           <ImageWrapper>
             <LeagueImage source={league.image}>
               <GradientOverlay
