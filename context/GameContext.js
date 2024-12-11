@@ -43,8 +43,8 @@ const GameProvider = ({ children }) => {
 
   const addLeagues = async (leagueData) => {
     try {
-      await setDoc(doc(db, "leagues", "uniqueLeagueId2"), {
-        leagueData,
+      await setDoc(doc(db, "leagues", "uniqueLeagueId3"), {
+        ...leagueData, // Spread the properties directly into the document
       });
       console.log("League added successfully!");
     } catch (error) {

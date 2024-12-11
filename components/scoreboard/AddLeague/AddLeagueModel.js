@@ -3,7 +3,7 @@ import { Modal, Text, View } from "react-native";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import { GameContext } from "../../../context/GameContext";
-import { sampleLeagues } from "../../Leagues/leagueMocks";
+import { sampleLeagues2 } from "../../Leagues/leagueMocks";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [leagueDetails, setLeagueDetails] = useState({
@@ -22,7 +22,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
   const handleCreate = () => {
     // addLeagues(leagueDetails); // Pass league details to the context function
-    addLeagues(sampleLeagues); // Pass league details to the context function
+    addLeagues(sampleLeagues2); // Pass league details to the context function
     setModalVisible(false); // Close modal after action
   };
 

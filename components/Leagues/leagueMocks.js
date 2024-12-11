@@ -115,6 +115,100 @@ export const sampleLeagues = [
     ],
   },
 ];
+export const sampleLeagues2 = 
+  {
+    id: 1,
+    leagueAdmins: ["Rayyan", "Hussain"],
+    leageueParticipants: [
+      {
+        id: "Rayyan",
+        memberSince: moment().format("MMM YYYY"),
+        XP: 10,
+        prevGameXP: 0,
+        lastActive: "",
+        numberOfWins: 0,
+        numberOfLosses: 0,
+        numberOfGamesPlayed: 0,
+        winPercentage: 0,
+        resultLog: [],
+        pointEfficiency: 0,
+        totalPoints: 0,
+        totalPointEfficiency: 0,
+        winStreak5: 0,
+        winStreak7: 0,
+        winStreak3: 0,
+        demonWin: 0,
+        currentStreak: {
+          type: null,
+          count: 0,
+        },
+        highestLossStreak: 0,
+        highestWinStreak: 0,
+      },
+    ],
+    maxPlayers: maxPlayers[0],
+    privacy: privacyTypes[0],
+    name: "Laura Trotter Badminton League",
+    playingTime: [
+      {
+        day: "Monday",
+        startTime: "6:00 PM",
+        endTime: "8:00 PM",
+      },
+      {
+        day: "Wednesday",
+        startTime: "6:00 PM",
+        endTime: "8:00 PM",
+      },
+      {
+        day: "Friday",
+        time: "6:00 PM",
+        endTime: "8:00 PM",
+      },
+    ],
+    leagueStatus: leagueStatus[0],
+    location: "Cheshunt",
+    country: "England",
+    startDate: "24/12/2023",
+    endDate: "",
+
+    leagueType: leagueTypes[0],
+    prizeType: prizeTypes[0],
+    entryFee: 10,
+    currencyType: currencyTypes[0],
+    image: mockImages.court1,
+    games: [
+      {
+        id: "15-08-2024-game-2",
+        team1: {
+          player1: "Rayyan",
+          score: 21,
+          player2: "Hussain",
+        },
+        gameId: "15-08-2024-game-2",
+        result: {
+          loser: {
+            team: "Team 2",
+            score: 10,
+            players: ["Yasin", "Abdul"],
+          },
+          winner: {
+            score: 21,
+            players: ["Rayyan", "Hussain"],
+            team: "Team 1",
+          },
+        },
+        team2: {
+          score: 10,
+          player2: "Abdul",
+          player1: "Yasin",
+        },
+        date: "15-08-2024",
+        gamescore: "21 - 10",
+      },
+    ],
+  }
+
 
 // Utility function to select a random item from an array
 const randomItem = (array) => array[Math.floor(Math.random() * array.length)];
