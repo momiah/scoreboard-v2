@@ -95,14 +95,13 @@ const ButtonText = styled.Text({
   fontSize: 16,
 });
 
-const Signup = (route) => {
-
-  const { userName, userEmail,userId } = route.params || ''
+const Signup = ({ route }) => {
+  const { userName, userEmail, userId } = route.params || '';
   const [formData, setFormData] = useState({
-    firstName:userName || '',
+    firstName: userName || '',
     lastName: '',
     username: '',
-    email:userEmail || '',
+    email: userEmail || '',
     dob: '',
     location: '',
     handPreference: 'Both',
@@ -125,7 +124,7 @@ const Signup = (route) => {
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.username.trim()) newErrors.username = 'Username is required';
     if (!formData.password.trim() && !userName) newErrors.username = 'Password is required';
-    if ((!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email) && !userName ))
+    if ((!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email) && !userName))
       newErrors.email = 'Valid email is required';
     if (!formData.dob.trim()) newErrors.dob = 'Date of birth is required';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
@@ -150,9 +149,8 @@ const Signup = (route) => {
           dob: formData.dob,
           location: formData.location,
           handPreference: formData.handPreference,
-          userId:userId,
-          provider:'email_password'
-          
+          userId: userId,
+          provider: 'email_password'
         });
         Alert.alert('Account Created', 'Your account has been created successfully');
         navigation.reset({
@@ -160,11 +158,11 @@ const Signup = (route) => {
           routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
         });
 
-    
+
       } catch (error) {
         Alert.alert('Error', error.message);
       }
-    }else{
+    } else {
       await setDoc(doc(db, 'users', userId), {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -173,9 +171,9 @@ const Signup = (route) => {
         dob: formData.dob,
         location: formData.location,
         handPreference: formData.handPreference,
-        userId:userId,
-        provider:'gmail'
-        
+        userId: userId,
+        provider: 'gmail'
+
       });
       Alert.alert('Account Created', 'Your account has been created successfully');
       navigation.reset({
@@ -224,27 +222,27 @@ const Signup = (route) => {
 
         {/* Email */}
         {!userName && <>
-        <Label>Email</Label>
-        <Input
-          placeholder="Email"
-          placeholderTextColor="#aaa"
-          keyboardType="email-address"
-          value={formData.email}
-          onChangeText={(text) => handleChange('email', text)}
-        />
-        {errors.email && <ErrorText>{errors.email}</ErrorText>}
-      
+          <Label>Email</Label>
+          <Input
+            placeholder="Email"
+            placeholderTextColor="#aaa"
+            keyboardType="email-address"
+            value={formData.email}
+            onChangeText={(text) => handleChange('email', text)}
+          />
+          {errors.email && <ErrorText>{errors.email}</ErrorText>}
 
-        {/* Password */}
-        <Label>Password</Label>
-        <Input
-          placeholder="Password"
-          placeholderTextColor="#aaa"
-          secureTextEntry
-          value={formData.password}
-          onChangeText={(text) => handleChange('password', text)}
-        />
-        {errors.password && <ErrorText>{errors.password}</ErrorText>}
+
+          {/* Password */}
+          <Label>Password</Label>
+          <Input
+            placeholder="Password"
+            placeholderTextColor="#aaa"
+            secureTextEntry
+            value={formData.password}
+            onChangeText={(text) => handleChange('password', text)}
+          />
+          {errors.password && <ErrorText>{errors.password}</ErrorText>}
         </>}
 
         {/* Date of Birth */}
