@@ -8,6 +8,7 @@ import { medalNames } from "../../../functions/medalNames";
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
 import { Dimensions } from "react-native";
+import ResultLog from "../ResultLog";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -141,13 +142,17 @@ const PlayerDetails = ({
             </PlayerDetail>
             <MedalProgress
               xp={selectedPlayer.XP + selectedPlayer.totalPoints}
+              prevGameXp={selectedPlayer.prevGameXP}
             />
+            <Divider />
+            <ResultLog resultLog={selectedPlayer.resultLog} />
             <MatchMedals
               demonWin={selectedPlayer.demonWin}
               winStreak3={selectedPlayer.winStreak3}
               winStreak5={selectedPlayer.winStreak5}
               winStreak7={selectedPlayer.winStreak7}
             />
+
             {/* Player Stats */}
             <PlayerStat>
               {statData.map((data, index) => {
@@ -165,6 +170,11 @@ const PlayerDetails = ({
     </View>
   );
 };
+
+const Divider = styled.View({
+  borderBottomColor: "#262626",
+  borderBottomWidth: 1,
+});
 
 const ModalContainer = styled.View({
   flex: 1,
