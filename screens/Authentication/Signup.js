@@ -12,6 +12,7 @@ import { auth, db } from "../../services/firebase.config"; // import firebase co
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
+import { newPlayer } from "../../components/Leagues/leagueMocks";
 
 const Container = styled.View({
   flex: 1,
@@ -172,6 +173,7 @@ const Signup = ({ route }) => {
           handPreference: formData.handPreference,
           userId: userId,
           provider: "email_password",
+          profile_detail: newPlayer,
         });
         Alert.alert(
           "Account Created",
@@ -195,6 +197,7 @@ const Signup = ({ route }) => {
         handPreference: formData.handPreference,
         userId: userId,
         provider: "gmail",
+        profile_detail: newPlayer,
       });
       Alert.alert(
         "Account Created",

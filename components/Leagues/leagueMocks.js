@@ -209,6 +209,31 @@ export const sampleLeagues2 =
     ],
   }
 
+  export const newPlayer = {
+    memberSince: moment().format("MMM YYYY"),
+    XP: 10,
+    prevGameXP: 0,
+    lastActive: "",
+    numberOfWins: 0,
+    numberOfLosses: 0,
+    numberOfGamesPlayed: 0,
+    winPercentage: 0,
+    resultLog: [],
+    pointEfficiency: 0,
+    totalPoints: 0,
+    totalPointEfficiency: 0,
+    winStreak5: 0,
+    winStreak7: 0,
+    winStreak3: 0,
+    demonWin: 0,
+    currentStreak: {
+      type: null,
+      count: 0,
+    },
+    highestLossStreak: 0,
+    highestWinStreak: 0,
+  };
+
 
 // Utility function to select a random item from an array
 const randomItem = (array) => array[Math.floor(Math.random() * array.length)];
