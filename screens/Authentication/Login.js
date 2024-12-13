@@ -23,9 +23,10 @@ import {
   getDocs,
   query,
 } from "firebase/firestore";
-import { GoogleAuthProvider, signInWithCredential, signInWithEmailAndPassword } from "firebase/auth";
+import {  signInWithCredential, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from '../../services/firebase.config';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+// import { GoogleSignin } from '@react-native-google-signin/google-signin';
+// GoogleAuthProvider
 
 
 export default function Login() {
@@ -103,80 +104,80 @@ export default function Login() {
   };
 
   // Configure Google Sign-In
-  React.useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: "215867687150-gqh2v2j67ul3jtjce1vn4omkpmd0r0m6.apps.googleusercontent.com", // Get from Firebase console
-    });
-  }, []);
+  // React.useEffect(() => {
+  //   GoogleSignin.configure({
+  //     webClientId: "215867687150-gqh2v2j67ul3jtjce1vn4omkpmd0r0m6.apps.googleusercontent.com", // Get from Firebase console
+  //   });
+  // }, []);
 
   // Google Sign-In Handler
-  const handleGoogleLogin = async () => {
-    try {
-      await GoogleSignin.hasPlayServices();
-      await GoogleSignin.signOut();
-      const userInfo = await GoogleSignin.signIn();
-      const googleCredential = GoogleAuthProvider.credential(userInfo.data.idToken);
-      const userCredential = await signInWithCredential(auth, googleCredential);
-      const token = await userCredential.user.getIdToken();
-      // const methods = await auth.fetchSignInMethodsForEmail(userEmail);
-      const userId = userCredential.user.uid;
-      const userData = userInfo.data.user;
-      // Save the token in AsyncStorage
-      await AsyncStorage.setItem("userToken", token);
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     await GoogleSignin.hasPlayServices();
+  //     await GoogleSignin.signOut();
+  //     const userInfo = await GoogleSignin.signIn();
+  //     const googleCredential = GoogleAuthProvider.credential(userInfo.data.idToken);
+  //     const userCredential = await signInWithCredential(auth, googleCredential);
+  //     const token = await userCredential.user.getIdToken();
+  //     // const methods = await auth.fetchSignInMethodsForEmail(userEmail);
+  //     const userId = userCredential.user.uid;
+  //     const userData = userInfo.data.user;
+  //     // Save the token in AsyncStorage
+  //     await AsyncStorage.setItem("userToken", token);
 
-      try {
-        const usersRef = collection(db, 'users');
-        const userQuery = query(
-          usersRef,
-          // where("provider", "==", "gmail"),
-          where("email", "==", userData.email)
-        );
+  //     try {
+  //       const usersRef = collection(db, 'users');
+  //       const userQuery = query(
+  //         usersRef,
+  //         // where("provider", "==", "gmail"),
+  //         where("email", "==", userData.email)
+  //       );
 
-        const querySnapshot = await getDocs(userQuery);
+  //       const querySnapshot = await getDocs(userQuery);
 
-        if (!querySnapshot.empty) {
-          const doc = querySnapshot.docs[0];
-          const user = {
-            id: doc.id,
-            ...doc.data(),
-          };
+  //       if (!querySnapshot.empty) {
+  //         const doc = querySnapshot.docs[0];
+  //         const user = {
+  //           id: doc.id,
+  //           ...doc.data(),
+  //         };
 
-          if (user.provider == 'gmail') {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
-            });
-          } else {
-            Alert.alert("Error", "Error in login");
-          }
-        } else {
-          navigation.reset({
-            index: 0,
-            routes: [
-              {
-                name: "Signup",
-                params: {
-                  userName: userData.name,
-                  userEmail: userData.email,
-                  userId: userId,
-                },
-              },
-            ],
-          });
-        }
-      } catch (error) {
-        console.error('Error updating documents: ', error);
-      }
-    } catch (error) {
-      console.error("Google Login Error: ", error.message);
-    }
-  };
+  //         if (user.provider == 'gmail') {
+  //           navigation.reset({
+  //             index: 0,
+  //             routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
+  //           });
+  //         } else {
+  //           Alert.alert("Error", "Error in login");
+  //         }
+  //       } else {
+  //         navigation.reset({
+  //           index: 0,
+  //           routes: [
+  //             {
+  //               name: "Signup",
+  //               params: {
+  //                 userName: userData.name,
+  //                 userEmail: userData.email,
+  //                 userId: userId,
+  //               },
+  //             },
+  //           ],
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.error('Error updating documents: ', error);
+  //     }
+  //   } catch (error) {
+  //     console.error("Google Login Error: ", error.message);
+  //   }
+  // };
 
-  const onSocialLogin = (type) => {
-    if (type === 'google') {
-      handleGoogleLogin();
-    }
-  }
+  // const onSocialLogin = (type) => {
+  //   if (type === 'google') {
+  //     handleGoogleLogin();
+  //   }
+  // }
 
   return (
     <>
@@ -243,9 +244,9 @@ export default function Login() {
         {/* Social Media Buttons */}
         <View style={styles.socialContainer}>
 
-          <TouchableOpacity onPress={() => { onSocialLogin('google') }}>
+          {/* <TouchableOpacity onPress={() => { onSocialLogin('google') }}>
             <Image source={GoogleLogo} style={styles.socialIcon} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <TouchableOpacity>
             <Image source={FacebookLogo} style={styles.socialIcon} />
           </TouchableOpacity>
