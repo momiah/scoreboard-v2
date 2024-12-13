@@ -1,19 +1,23 @@
 
-import React from "react";
+import React, { useContext } from "react";
 import { Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { generatedLeagues } from "./leagueMocks";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
+import { GameContext } from "../../context/GameContext";
 
 const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
+  const { leagues } = useContext(GameContext);
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
+
+  console.log('generatedLeagues',generatedLeagues)
 
   return (
     <CarouselContainer
@@ -22,7 +26,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 20 }}
     >
-      {generatedLeagues.map((league) => (
+      {leagues.map((league) => (
         <CarouselItem key={league.id} onPress={() => navigateTo(league.id)}>
           <ImageWrapper>
             <LeagueImage source={league.image}>

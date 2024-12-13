@@ -1,11 +1,13 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useContext } from "react";
 import { FlatList, TouchableOpacity, Text, View } from "react-native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { generatedLeagues } from "./leagueMocks";
+import { GameContext } from "../../context/GameContext";
 
 const VerticalLeagueCarousel = ({ navigationRoute }) => {
+  const { leagues } = useContext(GameContext);
   const navigation = useNavigation();
 
   // Memoize navigation handler to prevent re-renders
@@ -36,7 +38,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
 
   return (
     <FlatList
-      data={generatedLeagues}
+      data={leagues}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderLeagueItem}
       contentContainerStyle={{ paddingHorizontal: 15 }}
