@@ -181,7 +181,7 @@ const Signup = ({ route }) => {
         );
         navigation.reset({
           index: 0,
-          routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
+          routes: [{ name: "Login" }], // Navigate to the main screen (Tabs)
         });
       } catch (error) {
         Alert.alert("Error", error.message);
