@@ -7,9 +7,9 @@ import { Dimensions } from "react-native";
 
 import AddGameModal from "./AddGame/AddGameModal";
 
-const Scoreboard = ({ mockgames }) => {
+const Scoreboard = ({ leagueGames }) => {
   const {
-    games,
+    // games, from the previous version of the component
     setGames,
     fetchPlayers,
     retrieveGames,
@@ -24,13 +24,15 @@ const Scoreboard = ({ mockgames }) => {
 
   const [newestGameId, setNewestGameId] = useState("");
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
+  // console.log("games from context🤔", JSON.stringify(games, null, 2));
+  console.log("leagueGames from props🤔", JSON.stringify(leagueGames, null, 2));
 
   useEffect(() => {
-    if (games.length > 0) {
-      setNewestGameId(games[0].gameId);
+    if (leagueGames.length > 0) {
+      setNewestGameId(leagueGames[0].gameId);
     }
     fetchPlayers();
-  }, [games]);
+  }, [leagueGames]);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
@@ -76,7 +78,7 @@ const Scoreboard = ({ mockgames }) => {
       </AddGameButton>
 
       <FlatList
-        data={mockgames}
+        data={leagueGames}
         keyExtractor={(item) => item.gameId}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />

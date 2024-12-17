@@ -1,11 +1,12 @@
-
 import React, { useContext } from "react";
-import { Dimensions } from "react-native";
+import { ScrollView, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { generatedLeagues } from "./leagueMocks";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
+import Tag from "../Tag";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const { width } = Dimensions.get("window");
 
@@ -17,24 +18,61 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
 
-  console.log('generatedLeagues',generatedLeagues)
-
+  const itemWidth = width - 80; // Width of each item (adjusted for partial display)
+  const spacing = 20; // Space between items
   return (
     <CarouselContainer
       horizontal
       pagingEnabled
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 20 }}
+      snapToInterval={itemWidth + spacing} // Snap to item width + spacing
+      snapToAlignment="start" // Align items to the start
+      decelerationRate="fast" // Faster snapping
+      contentContainerStyle={{
+        paddingHorizontal: 20, // Adjust padding for partial display
+      }}
     >
-      {leagues.map((league) => (
-        <CarouselItem key={league.id} onPress={() => navigateTo(league.id)}>
+      {leagues.map((league, index) => (
+        <CarouselItem
+          key={index}
+          onPress={() => navigateTo(league.id)}
+          style={{ width: itemWidth, marginRight: spacing }}
+        >
           <ImageWrapper>
             <LeagueImage source={league.image}>
               <GradientOverlay
                 colors={["rgba(0, 0, 0, 0.01)", "rgba(0, 0, 0, 0.7)"]}
                 locations={[0.1, 1]}
               />
-              <LeagueName>{league.name}</LeagueName>
+              <LeagueDetailsContainer>
+                <TagContainer>
+                  <Tag
+                    name={league.leagueStatus.status}
+                    color={league.leagueStatus.color}
+                  />
+                </TagContainer>
+                <LeagueName>{league.name}</LeagueName>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <LeagueLocation>{league.centerName}</LeagueLocation>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <LeagueLocation>{league.location}</LeagueLocation>
+                    <Ionicons
+                      name={"location"}
+                      size={15}
+                      color={"#286EFA"}
+                      backgroundColor={"rgba(0, 0, 0, 0.3)"}
+                      padding={5}
+                      borderRadius={15}
+                    />
+                  </View>
+                </View>
+              </LeagueDetailsContainer>
             </LeagueImage>
           </ImageWrapper>
         </CarouselItem>
@@ -50,13 +88,10 @@ const CarouselContainer = styled.ScrollView({
 });
 
 const CarouselItem = styled.TouchableOpacity({
-  width: width - 80, // Reduce width for partial display
-  marginHorizontal: 10, // Space between items
   justifyContent: "center",
   alignItems: "center",
   backgroundColor: "#fff",
   borderRadius: 10,
-
   shadowColor: "#000",
   shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.8,
@@ -91,11 +126,29 @@ const LeagueName = styled.Text({
   fontSize: 18,
   fontWeight: "bold",
   color: "white",
-  marginBottom: 15, // Adds spacing between text and the bottom
-  zIndex: 2, // Ensures text appears above the gradient
-  textShadowColor: "rgba(0, 0, 0, 0.75)",
-  textShadowOffset: { width: -1, height: 1 },
-  textShadowRadius: 10,
 });
 
+const LeagueLocation = styled.Text({
+  fontSize: 13,
+  color: "white",
+  borderRadius: 5,
+});
+
+const LeagueDetailsContainer = styled.View({
+  width: "100%",
+  height: "100%",
+  borderRadius: 10,
+  overflow: "hidden",
+  justifyContent: "flex-end",
+  padding: 10,
+  borderWidth: 1,
+  borderColor: "#192336",
+});
+
+const TagContainer = styled.View({
+  position: "absolute",
+  top: 10,
+  right: 10,
+  zIndex: 2, // Ensures the tag appears above other elements
+});
 export default HorizontalLeagueCarousel;

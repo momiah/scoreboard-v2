@@ -51,7 +51,7 @@ const ranks = [
   { name: "General IV", xp: 4100 },
 ];
 
-const getNextRank = (xp) => {
+const getNextRank = (xp, prevGameXp) => {
   for (let i = 0; i < ranks.length; i++) {
     if (xp < ranks[i].xp) {
       return ranks[i];
@@ -60,10 +60,11 @@ const getNextRank = (xp) => {
   return ranks[ranks.length - 1]; // Return the last rank if xp is very high
 };
 
-const MedalProgress = ({ xp }) => {
-  const currentRank = ranks.reduce((prev, curr) =>
-    curr.xp <= xp ? curr : prev
+const MedalProgress = ({ xp, prevGameXp }) => {
+  const currentRank = ranks.reduce((prev, current) =>
+    current.xp <= xp ? current : prev
   );
+
   const nextRank = getNextRank(xp);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -123,6 +124,16 @@ const MedalProgress = ({ xp }) => {
           <MedalDisplay xp={currentRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{currentRank.name}</Text>
         </RankContainer>
+
+        <PreviousGameXpContainer>
+          <PreviousGameXp prevGameXp={prevGameXp}>
+            {prevGameXp < 0 ? `${prevGameXp} XP` : `+${prevGameXp} XP`}
+          </PreviousGameXp>
+          <Text style={{ color: "#aaa", fontSize: 11, paddingLeft: 6 }}>
+            Last Match
+          </Text>
+        </PreviousGameXpContainer>
+
         <RankContainer style={{ alignItems: "flex-end" }}>
           <RankXpText>{nextRank.xp} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
@@ -142,6 +153,7 @@ const RankContainer = styled.View({
 const ProgressRanks = styled.View({
   justifyContent: "space-between",
   flexDirection: "row",
+  alignItems: "center",
 });
 const RankXpText = styled.Text({
   color: "white",
@@ -165,6 +177,18 @@ const ProgressArrowContainer = styled.View({
   alignItems: "flex-end",
   position: "relative",
   left: 5,
+});
+
+const PreviousGameXp = styled.Text`
+  color: ${(props) => (props.prevGameXp < 0 ? "red" : "green")};
+  font-size: 20px;
+  font-weight: bold;
+`;
+
+const PreviousGameXpContainer = styled.View({
+  flexDirection: "column",
+  justifyContent: "center",
+  alignItems: "center",
 });
 
 const styles = StyleSheet.create({

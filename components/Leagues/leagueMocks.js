@@ -6,10 +6,22 @@ const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 const leagueTypes = ["Mixed Doubles", "Fixed Doubles", "Singles"];
 const privacyTypes = ["Public", "Private"];
 const maxPlayers = [8, 16, 32, 64, 128, 256, 512];
-const leagueStatus = [
-  { status: "enlisting", color: "#FF5733" },
-  { status: "full", color: "#33FF57" },
-  { status: "completed", color: "#3357FF" },
+const locations = [
+  "Milton Keynes",
+  "London",
+  "Birmingham",
+  "Manchester",
+  "York",
+  "Nottingham",
+  "Bath",
+  "Glasgow",
+  "Edinburgh",
+  "Leeds",
+];
+export const leagueStatus = [
+  { status: "enlisting", color: "#FAB234" },
+  { status: "full", color: "#286EFA" },
+  { status: "completed", color: "#167500" },
 ];
 const daysOfWeek = [
   "Monday",
@@ -21,100 +33,99 @@ const daysOfWeek = [
   "Sunday",
 ];
 
-export const sampleLeagues = [
-  {
-    id: 1,
-    leagueAdmins: ["Rayyan", "Hussain"],
-    leageueParticipants: [
-      {
-        id: "Rayyan",
-        memberSince: moment().format("MMM YYYY"),
-        XP: 10,
-        prevGameXP: 0,
-        lastActive: "",
-        numberOfWins: 0,
-        numberOfLosses: 0,
-        numberOfGamesPlayed: 0,
-        winPercentage: 0,
-        resultLog: [],
-        pointEfficiency: 0,
-        totalPoints: 0,
-        totalPointEfficiency: 0,
-        winStreak5: 0,
-        winStreak7: 0,
-        winStreak3: 0,
-        demonWin: 0,
-        currentStreak: {
-          type: null,
-          count: 0,
-        },
-        highestLossStreak: 0,
-        highestWinStreak: 0,
+export const sampleLeagues = {
+  id: 1,
+  leagueAdmins: ["Rayyan", "Hussain"],
+  leageueParticipants: [
+    {
+      id: "Rayyan",
+      memberSince: moment().format("MMM YYYY"),
+      XP: 10,
+      prevGameXP: 0,
+      lastActive: "",
+      numberOfWins: 0,
+      numberOfLosses: 0,
+      numberOfGamesPlayed: 0,
+      winPercentage: 0,
+      resultLog: [],
+      pointEfficiency: 0,
+      totalPoints: 0,
+      totalPointEfficiency: 0,
+      winStreak5: 0,
+      winStreak7: 0,
+      winStreak3: 0,
+      demonWin: 0,
+      currentStreak: {
+        type: null,
+        count: 0,
       },
-    ],
-    maxPlayers: maxPlayers[0],
-    privacy: privacyTypes[0],
-    name: "Laura Trotter Badminton League",
-    playingTime: [
-      {
-        day: "Monday",
-        startTime: "6:00 PM",
-        endTime: "8:00 PM",
+      highestLossStreak: 0,
+      highestWinStreak: 0,
+    },
+  ],
+  maxPlayers: maxPlayers[0],
+  privacy: privacyTypes[0],
+  name: "Laura Trotter Badminton League",
+  playingTime: [
+    {
+      day: "Monday",
+      startTime: "6:00 PM",
+      endTime: "8:00 PM",
+    },
+    {
+      day: "Wednesday",
+      startTime: "6:00 PM",
+      endTime: "8:00 PM",
+    },
+    {
+      day: "Friday",
+      time: "6:00 PM",
+      endTime: "8:00 PM",
+    },
+  ],
+  leagueStatus: leagueStatus[0],
+  location: "Cheshunt",
+  centerName: "Cheshunt Sports Center",
+  country: "England",
+  startDate: "24/12/2023",
+  endDate: "",
+  leagueType: leagueTypes[0],
+  prizeType: prizeTypes[0],
+  entryFee: 10,
+  currencyType: currencyTypes[0],
+  image: mockImages.court1,
+  games: [
+    {
+      id: "15-08-2024-game-2",
+      team1: {
+        player1: "Rayyan",
+        score: 21,
+        player2: "Hussain",
       },
-      {
-        day: "Wednesday",
-        startTime: "6:00 PM",
-        endTime: "8:00 PM",
-      },
-      {
-        day: "Friday",
-        time: "6:00 PM",
-        endTime: "8:00 PM",
-      },
-    ],
-    leagueStatus: leagueStatus[0],
-    location: "Cheshunt",
-    country: "England",
-    startDate: "24/12/2023",
-    endDate: "",
-
-    leagueType: leagueTypes[0],
-    prizeType: prizeTypes[0],
-    entryFee: 10,
-    currencyType: currencyTypes[0],
-    image: mockImages.court1,
-    games: [
-      {
-        id: "15-08-2024-game-2",
-        team1: {
-          player1: "Rayyan",
-          score: 21,
-          player2: "Hussain",
-        },
-        gameId: "15-08-2024-game-2",
-        result: {
-          loser: {
-            team: "Team 2",
-            score: 10,
-            players: ["Yasin", "Abdul"],
-          },
-          winner: {
-            score: 21,
-            players: ["Rayyan", "Hussain"],
-            team: "Team 1",
-          },
-        },
-        team2: {
+      gameId: "15-08-2024-game-2",
+      result: {
+        loser: {
+          team: "Team 2",
           score: 10,
-          player2: "Abdul",
-          player1: "Yasin",
+          players: ["Yasin", "Abdul"],
         },
-        date: "15-08-2024",
-        gamescore: "21 - 10",
+        winner: {
+          score: 21,
+          players: ["Rayyan", "Hussain"],
+          team: "Team 1",
+        },
       },
-    ],
-  },
-];
+      team2: {
+        score: 10,
+        player2: "Abdul",
+        player1: "Yasin",
+      },
+      date: "15-08-2024",
+      gamescore: "21 - 10",
+    },
+  ],
+};
+
 export const sampleLeagues2 = {
   id: 1,
   leagueAdmins: ["BraveFalco", "LoyalTiger", "SwiftFalco"],
@@ -270,6 +281,7 @@ export const sampleLeagues2 = {
     color: "#33FF57",
   },
   location: "Cheshunt",
+  centerName: "Cheshunt Sports Center",
   country: "England",
   startDate: "14/12/2024",
   endDate: "",
@@ -553,6 +565,30 @@ const generatePlayingTimes = (numDays) => {
   return playingTimes;
 };
 
+const generateBadmintonCenters = (numCenters) => {
+  const descriptors = [
+    "Sports Center",
+    "Leisure Center",
+    "Badminton Academy",
+    "Arena",
+    "Training Village",
+    "Fitness Hub",
+    "Community Hall",
+    "Sports Complex",
+    "Recreation Center",
+    "Activity Zone",
+  ];
+
+  // Ensure we don't exceed the number of predefined locations or descriptors
+  const totalCenters = Math.min(numCenters, locations.length);
+
+  return Array.from({ length: totalCenters }, (_, i) => {
+    const location = locations[i % locations.length];
+    const descriptor = descriptors[i % descriptors.length];
+    return `${location} ${descriptor}`;
+  });
+};
+
 // Generate leagues with destructured arguments
 const generateLeagues = ({
   numLeagues = 1,
@@ -575,7 +611,8 @@ const generateLeagues = ({
     name: `League ${i + 1} - ${randomItem(leagueTypes)}`,
     playingTime: generatePlayingTimes(numDays),
     leagueStatus: randomItem(leagueStatus),
-    location: "Cheshunt",
+    location: randomItem(locations),
+    centerName: randomItem(generateBadmintonCenters(numLeagues)),
     country: "England",
     startDate: moment().add(i, "days").format("DD/MM/YYYY"),
     endDate: "",
@@ -596,4 +633,3 @@ export const generatedLeagues = generateLeagues({
   numGames: 4,
   numDays: 3,
 });
-console.log(generatedLeagues);

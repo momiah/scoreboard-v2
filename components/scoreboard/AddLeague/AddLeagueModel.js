@@ -3,12 +3,18 @@ import { Modal, Text, View } from "react-native";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import { GameContext } from "../../../context/GameContext";
-import { sampleLeagues2 } from "../../Leagues/leagueMocks";
+import { sampleLeagues2, sampleLeagues } from "../../Leagues/leagueMocks";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [leagueDetails, setLeagueDetails] = useState({
     leagueName: "",
     location: "",
+    centerName: "",
+    startDate: "",
+    endDate: "",
+    image: "",
+    maxPlayers: 0,
+    privacy: "",
   });
 
   const { addLeagues } = useContext(GameContext);
@@ -22,7 +28,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
   const handleCreate = () => {
     // addLeagues(leagueDetails); // Pass league details to the context function
-    addLeagues(sampleLeagues2); // Pass league details to the context function
+    addLeagues(sampleLeagues); // Pass league details to the context function
     setModalVisible(false); // Close modal after action
   };
 
@@ -52,6 +58,41 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               placeholderTextColor="#ccc"
               value={leagueDetails.location}
               onChangeText={(value) => handleChange("location", value)}
+            />
+            <Label>Center Name</Label>
+            <Input
+              placeholder="Enter center name"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.centerName}
+              onChangeText={(value) => handleChange("centerName", value)}
+            />
+            <Label>Start Date</Label>
+            <Input
+              placeholder="Enter start date"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.startDate}
+              onChangeText={(value) => handleChange("startDate", value)}
+            />
+            <Label>End Date</Label>
+            <Input
+              placeholder="Enter end date"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.endDate}
+              onChangeText={(value) => handleChange("endDate", value)}
+            />
+            <Label>Max Players</Label>
+            <Input
+              placeholder="Enter max players"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.maxPlayers}
+              onChangeText={(value) => handleChange("maxPlayers", value)}
+            />
+            <Label>Privacy</Label>
+            <Input
+              placeholder="Enter privacy"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.privacy}
+              onChangeText={(value) => handleChange("privacy", value)}
             />
 
             <ButtonContainer>

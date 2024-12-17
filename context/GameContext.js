@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import moment from "moment";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const GameContext = createContext();
 
@@ -45,13 +45,14 @@ const GameProvider = ({ children }) => {
   const Logout = async () => {
     try {
       await AsyncStorage.clear();
-      console.log('Async Storage cleared successfully.');
+      console.log("Async Storage cleared successfully.");
     } catch (error) {
-      console.error('Error clearing Async Storage:', error);
+      console.error("Error clearing Async Storage:", error);
     }
   };
 
   const addLeagues = async (leagueData) => {
+    const leagueName = leagueData.leagueName;
     try {
       await setDoc(doc(db, "leagues", "uniqueLeagueId4"), {
         ...leagueData, // Spread the properties directly into the document
@@ -322,6 +323,8 @@ const GameProvider = ({ children }) => {
     }
   };
 
+  //Retrieve Leagues
+
   const addGame = async (newGame, gameId) => {
     try {
       const scoreboardCollectionRef = collection(db, "scoreboard");
@@ -403,4 +406,4 @@ const GameProvider = ({ children }) => {
   );
 };
 
-export { GameContext, GameProvider};
+export { GameContext, GameProvider };

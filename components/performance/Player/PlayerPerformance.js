@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
-import { FlatList, RefreshControl } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  View,
+} from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import MedalDisplay from "../MedalDisplay";
@@ -14,6 +19,7 @@ const PlayerPerformance = () => {
 
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersData, setPlayersData] = useState([]);
+  const [loading, setLoading] = useState(true); // Track loading state
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,27 +31,37 @@ const PlayerPerformance = () => {
   }, [setGames]);
 
   const handleRefresh = async () => {
-    const fetchData = async () => {
+    setLoading(true); // Set loading to true before fetching data
+    try {
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
-    };
-    fetchData();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setLoading(false); // Ensure loading is set to false once complete
+    }
   };
 
   useEffect(() => {
     const fetchPlayers = async () => {
-      const retrievedPlayers = await retrievePlayers();
+      setLoading(true); // Set loading to true while fetching
+      try {
+        const retrievedPlayers = await retrievePlayers();
 
-      // Sort the players based on the sum of XP + totalPoints
-      const sortedPlayers = retrievedPlayers.sort((a, b) => {
-        const totalA = a.XP + a.totalPoints;
-        const totalB = b.XP + b.totalPoints;
+        // Sort the players based on the sum of XP + totalPoints
+        const sortedPlayers = retrievedPlayers.sort((a, b) => {
+          const totalA = a.XP + a.totalPoints;
+          const totalB = b.XP + b.totalPoints;
 
-        // Sort in descending order
-        return totalB - totalA;
-      });
+          return totalB - totalA; // Sort in descending order
+        });
 
-      setPlayersData(sortedPlayers);
+        setPlayersData(sortedPlayers);
+      } catch (error) {
+        console.error("Error fetching players:", error);
+      } finally {
+        setLoading(false); // Ensure loading is set to false once complete
+      }
     };
 
     fetchPlayers();
@@ -69,6 +85,21 @@ const PlayerPerformance = () => {
   //     await updatePlayers(playersToUpdate);
   //   }
   // };
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#00152B",
+        }}
+      >
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
 
   const renderPlayer = ({ item: player, index }) => {
     const totalPointsAndXP = player.XP + player.totalPoints;
