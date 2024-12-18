@@ -1,7 +1,5 @@
-import React from "react";
-import  { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Image, SafeAreaView } from "react-native";
-
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
 import { Dimensions } from "react-native";
@@ -18,6 +16,17 @@ import AddLeagueModel from "../../components/scoreboard/AddLeague/AddLeagueModel
 const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
+  const [userToken, setUserToken] = useState(null);
+
+  useEffect(() => {
+    const fetchUserToken = async () => {
+      const token = await AsyncStorage.getItem("userToken");
+      setUserToken(token);
+      console.log("token", token);
+    };
+
+    fetchUserToken();
+  }, []);
 
   const handleIconPress = () => {
     console.log("Icon Pressed!");
@@ -28,16 +37,15 @@ const Home = () => {
       navigation.navigate(route);
     }
   };
+
   const checkUserToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
-
+    console.log("token", token);
     if (token) {
-      setModalVisible(true)
+      setModalVisible(true);
     } else {
-      navigateTo( "Login");
-      // setModalVisible(true)
+      navigateTo("Login");
     }
-   
   };
 
   return (
@@ -76,12 +84,16 @@ const Home = () => {
         <TournamentGrid tournaments={tournaments} />
 
         {modalVisible && (
-        <AddLeagueModel modalVisible setModalVisible={setModalVisible} />
-      )}
+          <AddLeagueModel
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+          />
+        )}
       </HomeContainer>
     </SafeAreaView>
   );
 };
+
 const { width: screenWidth } = Dimensions.get("window");
 
 const HomeContainer = styled.ScrollView({

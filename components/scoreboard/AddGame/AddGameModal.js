@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Modal, TextInput, Button, View, Text } from "react-native";
 import { GameContext } from "../../../context/GameContext";
+import { UserContext } from "../../../context/UserContext";
+import { PopupContext } from "../../../context/PopupContext";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import Popup from "../../popup/Popup";
@@ -12,17 +14,15 @@ import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
 import RegisterPlayer from "./RegisterPlayer";
 
 const AddGameModal = ({ modalVisible, setModalVisible }) => {
+  const { games, addGame } = useContext(GameContext);
   const {
-    games,
-    addGame,
-    showPopup,
-    setShowPopup,
-    setPopupMessage,
     handleShowPopup,
+    setPopupMessage,
     popupMessage,
-    retrievePlayers,
-    updatePlayers,
-  } = useContext(GameContext);
+    setShowPopup,
+    showPopup,
+  } = useContext(PopupContext);
+  const { retrievePlayers, updatePlayers } = useContext(UserContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState({
@@ -33,6 +33,8 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
   const handleClosePopup = () => {
     setShowPopup(false);
     setPopupMessage("");
+
+    setModalVisible(false);
   };
 
   const calculateWin = (team1, team2) => {
@@ -135,7 +137,8 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
     setTeam2Score("");
-    setModalVisible(false);
+
+    handleShowPopup("Game added and players updated successfully!");
     console.log("Closing modal", modalVisible);
     console.log("Game added successfully.");
   };

@@ -1,10 +1,10 @@
 import React, { useContext } from "react";
 import { Text } from "react-native";
-import { GameContext } from "../../../context/GameContext";
+import { UserContext } from "../../../context/UserContext";
 import styled from "styled-components/native";
 
 const RegisterPlayer = ({}) => {
-  const { setPlayer, registerPlayer, player } = useContext(GameContext);
+  const { setPlayer, registerPlayer, player } = useContext(UserContext);
 
   const settingPlayer = (newPlayer) => {
     setPlayer(newPlayer);

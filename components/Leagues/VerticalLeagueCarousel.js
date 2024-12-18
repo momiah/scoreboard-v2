@@ -91,10 +91,6 @@ const CarouselContainer = styled.ScrollView({
   paddingHorizontal: 15,
 });
 
-// const CarouselItem = styled.TouchableOpacity({
-//   marginHorizontal: 10,
-// })
-
 const CarouselItem = styled(TouchableOpacity)({
   marginVertical: 10,
   justifyContent: "center",

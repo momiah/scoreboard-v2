@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Text, FlatList, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../context/GameContext";
+import { UserContext } from "../../context/UserContext";
 
 import { Dimensions } from "react-native";
 
@@ -11,7 +12,7 @@ const Scoreboard = ({ leagueGames }) => {
   const {
     // games, from the previous version of the component
     setGames,
-    fetchPlayers,
+
     retrieveGames,
     deleteGameById,
     refreshing,
@@ -21,6 +22,7 @@ const Scoreboard = ({ leagueGames }) => {
     deleteGameId,
     setDeleteGameId,
   } = useContext(GameContext);
+  const { fetchPlayers } = useContext(UserContext);
 
   const [newestGameId, setNewestGameId] = useState("");
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
