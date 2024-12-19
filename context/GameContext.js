@@ -11,6 +11,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { PopupContext } from "./PopupContext";
+import { generatedLeagues } from "../components/Leagues/leagueMocks";
 
 import { db } from "../services/firebase.config";
 import moment from "moment";
@@ -19,18 +20,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const GameContext = createContext();
 
 const GameProvider = ({ children }) => {
-  const {
-    showPopup,
-    setShowPopup,
-    popupMessage,
-    setPopupMessage,
-    handleShowPopup,
-  } = useContext(PopupContext);
+  const { handleShowPopup } = useContext(PopupContext);
   const [games, setGames] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [deleteGameContainer, setDeleteGameContainer] = useState(false);
   const [deleteGameId, setDeleteGameId] = useState(null);
   const [leagues, setLeagues] = useState([]);
+  const [showMockData, setShowMockData] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,18 +37,31 @@ const GameProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  //add leages
+  useEffect(() => {
+    const fetchLeagues = async () => {
+      try {
+        // Reference the `leagues` collection in Firestore
+        const querySnapshot = await getDocs(collection(db, "leagues"));
 
-  // Assuming you have initialized your Firebase db here
+        // Map through the documents and store data
+        const leaguesData = querySnapshot.docs.map((doc) => ({
+          id: doc.id, // Include document ID
+          ...doc.data(), // Include the rest of the document fields
+        }));
+        console.log("leaguesData🙂", leaguesData);
 
-  const Logout = async () => {
-    try {
-      await AsyncStorage.clear();
-      console.log("Async Storage cleared successfully.");
-    } catch (error) {
-      console.error("Error clearing Async Storage:", error);
+        setLeagues(leaguesData);
+      } catch (error) {
+        console.error("Error fetching leagues:", error);
+      }
+    };
+
+    if (showMockData) {
+      setLeagues(generatedLeagues); // Use mock data if `showMockData` is true
+    } else {
+      fetchLeagues(); // Fetch real data if `showMockData` is false
     }
-  };
+  }, [showMockData]);
 
   const addLeagues = async (leagueData) => {
     const leagueName = leagueData.leagueName;
@@ -158,28 +167,6 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    const fetchLeagues = async () => {
-      try {
-        // Reference the `leagues` collection in Firestore
-        const querySnapshot = await getDocs(collection(db, "leagues"));
-
-        // Map through the documents and store data
-        const leaguesData = querySnapshot.docs.map((doc) => ({
-          id: doc.id, // Include document ID
-          ...doc.data(), // Include the rest of the document fields
-        }));
-        console.log("leaguesData🙂", leaguesData);
-
-        setLeagues(leaguesData);
-      } catch (error) {
-        console.error("Error fetching leagues:", error);
-      }
-    };
-
-    fetchLeagues();
-  }, []);
-
   const sortGamesByNewest = (games) => {
     return games.sort((a, b) => {
       const [dateA, gameNumberA] = a.gameId.split("-game-");
@@ -222,8 +209,6 @@ const GameProvider = ({ children }) => {
       return []; // Return an empty array in case of errors
     }
   };
-
-  //Retrieve Leagues
 
   const addGame = async (newGame, gameId) => {
     try {
@@ -280,6 +265,8 @@ const GameProvider = ({ children }) => {
         setDeleteGameId,
         addLeagues,
         retrieveGames,
+        setShowMockData,
+        showMockData,
         leagues,
 
         refreshing,

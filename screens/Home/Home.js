@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Image, SafeAreaView } from "react-native";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
@@ -12,11 +12,13 @@ import SubHeader from "../../components/SubHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import AddLeagueModel from "../../components/scoreboard/AddLeague/AddLeagueModel";
+import { GameContext } from "../../context/GameContext";
 
 const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
+  const { setShowMockData, showMockData } = useContext(GameContext);
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -27,10 +29,6 @@ const Home = () => {
 
     fetchUserToken();
   }, []);
-
-  const handleIconPress = () => {
-    console.log("Icon Pressed!");
-  };
 
   const navigateTo = (route) => {
     if (route) {
@@ -58,26 +56,33 @@ const Home = () => {
           />
         </Overview>
 
+        {/* Set mocks */}
+        <SubHeader
+          title="Set Mocks"
+          onIconPress={() => setShowMockData(!showMockData)}
+          showIcon
+          iconName="settings"
+        />
+
         <SubHeader
           title="Leagues"
-          onIconPress={handleIconPress}
+          onIconPress={checkUserToken}
           actionText="Browse Leagues"
           showIcon
           navigationRoute={"Leagues"}
-          checkUserToken={checkUserToken}
         />
         <HorizontalLeagueCarousel navigationRoute={"League"} />
 
         <SubHeader
           title="Top Players"
-          onIconPress={handleIconPress}
+          onIconPress={() => navigateTo("Players")}
           actionText="See All Players"
         />
         <TopPlayers topPlayers={topPlayers} />
 
         <SubHeader
           title="Tournaments"
-          onIconPress={handleIconPress}
+          onIconPress={() => navigateTo("Players")}
           actionText="Browse Tournaments"
           showIcon
         />
