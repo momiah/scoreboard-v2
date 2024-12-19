@@ -1,7 +1,6 @@
 // GameContext.js
-import React, { createContext, useState, useEffect } from "react";
-// import { retrieveGames } from "../services/retrieveGame";
-import { Alert, Keyboard } from "react-native";
+import React, { createContext, useState, useEffect, useContext } from "react";
+import { Alert } from "react-native";
 import {
   deleteDoc,
   doc,
@@ -10,22 +9,24 @@ import {
   query,
   orderBy,
   getDocs,
-  updateDoc,
 } from "firebase/firestore";
+import { PopupContext } from "./PopupContext";
+import { generatedLeagues } from "../components/Leagues/leagueMocks";
+
 import { db } from "../services/firebase.config";
 import moment from "moment";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const GameContext = createContext();
 
 const GameProvider = ({ children }) => {
+  const { handleShowPopup } = useContext(PopupContext);
   const [games, setGames] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [deleteGameContainer, setDeleteGameContainer] = useState(false);
   const [deleteGameId, setDeleteGameId] = useState(null);
-  const [player, setPlayer] = useState("");
-  const [players, setPlayers] = useState([]);
-  const [showPopup, setShowPopup] = useState(false);
-  const [popupMessage, setPopupMessage] = useState("");
+  const [leagues, setLeagues] = useState([]);
+  const [showMockData, setShowMockData] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +36,136 @@ const GameProvider = ({ children }) => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchLeagues = async () => {
+      try {
+        // Reference the `leagues` collection in Firestore
+        const querySnapshot = await getDocs(collection(db, "leagues"));
+
+        // Map through the documents and store data
+        const leaguesData = querySnapshot.docs.map((doc) => ({
+          id: doc.id, // Include document ID
+          ...doc.data(), // Include the rest of the document fields
+        }));
+        console.log("leaguesData🙂", leaguesData);
+
+        setLeagues(leaguesData);
+      } catch (error) {
+        console.error("Error fetching leagues:", error);
+      }
+    };
+
+    if (showMockData) {
+      setLeagues(generatedLeagues); // Use mock data if `showMockData` is true
+    } else {
+      fetchLeagues(); // Fetch real data if `showMockData` is false
+    }
+  }, [showMockData]);
+
+  const addLeagues = async (leagueData) => {
+    const leagueName = leagueData.leagueName;
+    const leagueEntry = {
+      id: 1,
+      leagueAdmins: ["Rayyan", "Hussain"],
+      leageueParticipants: [
+        {
+          id: "Rayyan",
+          memberSince: moment().format("MMM YYYY"),
+          XP: 10,
+          prevGameXP: 0,
+          lastActive: "",
+          numberOfWins: 0,
+          numberOfLosses: 0,
+          numberOfGamesPlayed: 0,
+          winPercentage: 0,
+          resultLog: [],
+          pointEfficiency: 0,
+          totalPoints: 0,
+          totalPointEfficiency: 0,
+          winStreak5: 0,
+          winStreak7: 0,
+          winStreak3: 0,
+          demonWin: 0,
+          currentStreak: {
+            type: null,
+            count: 0,
+          },
+          highestLossStreak: 0,
+          highestWinStreak: 0,
+        },
+      ],
+      maxPlayers: maxPlayers[0],
+      privacy: privacyTypes[0],
+      name: "Laura Trotter Badminton League",
+      playingTime: [
+        {
+          day: "Monday",
+          startTime: "6:00 PM",
+          endTime: "8:00 PM",
+        },
+        {
+          day: "Wednesday",
+          startTime: "6:00 PM",
+          endTime: "8:00 PM",
+        },
+        {
+          day: "Friday",
+          time: "6:00 PM",
+          endTime: "8:00 PM",
+        },
+      ],
+      leagueStatus: leagueStatus[0],
+      location: "Cheshunt",
+      centerName: "Cheshunt Sports Center",
+      country: "England",
+      startDate: "24/12/2023",
+      endDate: "",
+      leagueType: leagueTypes[0],
+      prizeType: prizeTypes[0],
+      entryFee: 10,
+      currencyType: currencyTypes[0],
+      image: mockImages.court1,
+      games: [
+        {
+          id: "15-08-2024-game-2",
+          team1: {
+            player1: "Rayyan",
+            score: 21,
+            player2: "Hussain",
+          },
+          gameId: "15-08-2024-game-2",
+          result: {
+            loser: {
+              team: "Team 2",
+              score: 10,
+              players: ["Yasin", "Abdul"],
+            },
+            winner: {
+              score: 21,
+              players: ["Rayyan", "Hussain"],
+              team: "Team 1",
+            },
+          },
+          team2: {
+            score: 10,
+            player2: "Abdul",
+            player1: "Yasin",
+          },
+          date: "15-08-2024",
+          gamescore: "21 - 10",
+        },
+      ],
+    };
+    try {
+      await setDoc(doc(db, "leagues", "uniqueLeagueId4"), {
+        ...leagueData,
+      });
+      console.log("League added successfully!");
+    } catch (error) {
+      console.error("Error adding league: ", error);
+    }
+  };
 
   const sortGamesByNewest = (games) => {
     return games.sort((a, b) => {
@@ -79,203 +210,6 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  const handleShowPopup = (message) => {
-    setPopupMessage(message);
-    setShowPopup(true);
-  };
-
-  const retrievePlayers = async () => {
-    try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
-
-      const querySnapshot = await getDocs(playersCollectionRef);
-
-      const players = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      return players;
-    } catch (error) {
-      console.error("Error retrieving games:", error);
-      return [];
-    }
-  };
-
-  const fetchPlayers = async () => {
-    try {
-      const players = await retrievePlayers();
-      setPlayers(players); // Set the retrieved players in the state
-    } catch (error) {
-      console.error("Error logging players:", error);
-    }
-  };
-
-  const newPlayer = {
-    memberSince: moment().format("MMM YYYY"),
-    XP: 10,
-    prevGameXP: 0,
-    lastActive: "",
-    numberOfWins: 0,
-    numberOfLosses: 0,
-    numberOfGamesPlayed: 0,
-    winPercentage: 0,
-    resultLog: [],
-    pointEfficiency: 0,
-    totalPoints: 0,
-    totalPointEfficiency: 0,
-    winStreak5: 0,
-    winStreak7: 0,
-    winStreak3: 0,
-    demonWin: 0,
-    currentStreak: {
-      type: null,
-      count: 0,
-    },
-    highestLossStreak: 0,
-    highestWinStreak: 0,
-  };
-
-  const registerPlayer = async (player) => {
-    // Check if player already exists
-    if (players.some((thePlayer) => thePlayer.id === player)) {
-      handleShowPopup("Player already exists!");
-      return;
-    }
-
-    // Check if player name is more than 10 characters
-    if (player.length > 10) {
-      handleShowPopup("Player name cannot be more than 10 characters!");
-      return;
-    }
-
-    if (player.length < 3) {
-      handleShowPopup("Player name must be more than 3 characters!");
-      return;
-    }
-
-    try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
-
-      // Use the player name as the document ID
-      const playerDocRef = doc(playersCollectionRef, player);
-
-      await setDoc(playerDocRef, newPlayer); // Write the data directly
-      handleShowPopup("Player saved successfully!");
-      await fetchPlayers();
-      Keyboard.dismiss();
-    } catch (error) {
-      console.error("Error saving player data:", error);
-      handleShowPopup("Error saving player data");
-    }
-  };
-
-  const updatePlayers = async (updatedPlayers) => {
-    if (updatedPlayers.length === 0) {
-      handleShowPopup("No players to update!");
-      return;
-    }
-
-    try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
-
-      // Iterate through each updated player and update their record in Firebase
-      for (const updatedPlayer of updatedPlayers) {
-        const { id } = updatedPlayer;
-
-        console.log("updatedPlayer", updatedPlayer);
-
-        // Use the player name as the document ID
-        const playerDocRef = doc(playersCollectionRef, id);
-
-        // Update the player's document with the new data
-        await updateDoc(playerDocRef, updatedPlayer);
-      }
-
-      handleShowPopup("Players updated successfully!");
-      await fetchPlayers(); // Fetch the updated list of players if needed
-    } catch (error) {
-      console.error("Error updating player data:", error);
-      handleShowPopup("Error updating player data");
-    }
-  };
-
-  const resetAllPlayerStats = async () => {
-    try {
-      const allPlayers = await retrievePlayers();
-      const allPlayersIds = allPlayers.map((player) => player.id);
-
-      for (const playerId of allPlayersIds) {
-        try {
-          const scoreboardCollectionRef = collection(db, "scoreboard");
-          const playersCollectionRef = collection(
-            scoreboardCollectionRef,
-            "players",
-            "players"
-          );
-
-          const playerDocRef = doc(playersCollectionRef, playerId);
-
-          // 24-11-2024 adding {newPlayer} on line 241 will revert tp old player stats
-
-          //remove {newPlayer} as an object into newPlayer - This breaks the live app as the
-          //player details rely on the player data contained in the object,
-          //specifically the memberSince key. Once this is fixed, the app will need
-          // to be republished to the app store as removing the object will changes
-          // the data structure on firestore
-          await setDoc(playerDocRef, newPlayer);
-
-          console.log(`Player ${playerId} reset successfully!`);
-        } catch (error) {
-          console.error(`Error updating player ${playerId}:`, error);
-        }
-      }
-
-      handleShowPopup("All players reset successfully!");
-      await fetchPlayers(); // Fetch the updated list of players if needed
-    } catch (error) {
-      console.error("Error resetting all player stats:", error);
-      handleShowPopup("Error resetting all player stats");
-    }
-  };
-
-  const resetPlayerStats = async () => {
-    try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
-
-      // Use the player name (or ID) as the document ID
-      const playerDocRef = doc(playersCollectionRef, "Abdul");
-      console.log("playerDocRef", playerDocRef);
-      await setDoc(playerDocRef, newPlayer); // Write the data directly
-      handleShowPopup("Player reset successfully!");
-    } catch (error) {
-      console.error("Error updating player data:", error);
-      handleShowPopup("Error updating player data");
-    }
-  };
-
-  //Retrieve Leagues
-
   const addGame = async (newGame, gameId) => {
     try {
       const scoreboardCollectionRef = collection(db, "scoreboard");
@@ -284,7 +218,7 @@ const GameProvider = ({ children }) => {
       const gameDocRef = doc(scoreboardCollectionRef, gameId);
 
       await setDoc(gameDocRef, newGame);
-      Alert.alert("Success", "Game saved successfully!");
+      handleShowPopup("Game added and players updated successfully!");
       setGames((prevGames) => [newGame, ...prevGames]);
     } catch (error) {
       console.error("Error saving game:", error);
@@ -323,30 +257,20 @@ const GameProvider = ({ children }) => {
       value={{
         games,
         setGames,
-        player,
-        players,
-        showPopup,
-        setShowPopup,
-        handleShowPopup,
-        popupMessage,
-        setPopupMessage,
-        fetchPlayers,
-        setPlayers,
-        updatePlayers,
-        registerPlayer,
-        retrievePlayers,
-        setPlayer,
         addGame,
         deleteGameById,
-        refreshing,
-        resetPlayerStats,
-        resetAllPlayerStats,
-        retrieveGames,
-        setRefreshing,
         deleteGameContainer,
         setDeleteGameContainer,
         deleteGameId,
         setDeleteGameId,
+        addLeagues,
+        retrieveGames,
+        setShowMockData,
+        showMockData,
+        leagues,
+
+        refreshing,
+        setRefreshing,
       }}
     >
       {children}

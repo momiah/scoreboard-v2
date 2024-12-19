@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import { ScrollView, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { generatedLeagues } from "./leagueMocks";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
+import { GameContext } from "../../context/GameContext";
 import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -11,9 +12,9 @@ const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
+  const { leagues } = useContext(GameContext);
 
   const navigateTo = (leagueId) => {
-    // Pass leagueId to the target league page
     navigation.navigate(navigationRoute, { leagueId });
   };
 
@@ -31,7 +32,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
         paddingHorizontal: 20, // Adjust padding for partial display
       }}
     >
-      {generatedLeagues.map((league, index) => (
+      {leagues.map((league, index) => (
         <CarouselItem
           key={index}
           onPress={() => navigateTo(league.id)}

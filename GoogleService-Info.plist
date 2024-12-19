@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBBcgl7KBNluSB4b2_j6MiS3QpcX_ZSPRk</string>
+	<key>GCM_SENDER_ID</key>
+	<string>215867687150</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.courtchamp</string>
+	<key>PROJECT_ID</key>
+	<string>scoreboard-app-29148</string>
+	<key>STORAGE_BUCKET</key>
+	<string>scoreboard-app-29148.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:215867687150:ios:6c21cae6e2321ce52133ff</string>
+</dict>
+</plist>

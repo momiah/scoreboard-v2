@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useCallback, useContext } from "react";
 import {
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Text,
   View,
+  ScrollView,
   ImageBackground,
 } from "react-native";
 import styled from "styled-components/native";
@@ -12,32 +13,24 @@ import { useNavigation } from "@react-navigation/native";
 import { generatedLeagues } from "./leagueMocks";
 import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { GameContext } from "../../context/GameContext";
 
 const VerticalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
+  const { leagues } = useContext(GameContext);
 
-  const navigateTo = (leagueId) => {
-    // Pass leagueId to the target league page
-    navigation.navigate(navigationRoute, { leagueId });
-  };
+  // Memoize navigation handler to prevent re-renders
+  const navigateTo = useCallback(
+    (leagueId) => {
+      navigation.navigate(navigationRoute, { leagueId });
+    },
+    [navigation, navigationRoute]
+  );
 
-  // if (loading) {
-  //   return (
-  //     <View
-  //       style={{
-  //         flex: 1,
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         backgroundColor: "#00152B",
-  //       }}
-  //     >
-  //       <ActivityIndicator size="large" color="#ffffff" />
-  //     </View>
-  //   );
-  // }
-  return (
-    <CarouselContainer>
-      {generatedLeagues.map((league, index) => (
+  // Render individual league items
+  const renderLeagueItem = useCallback(
+    ({ item: league, index }) => (
+      <CarouselContainer>
         <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
           <ImageWrapper>
             <LeagueImage source={league.image}>
@@ -77,8 +70,19 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
             </LeagueImage>
           </ImageWrapper>
         </CarouselItem>
-      ))}
-    </CarouselContainer>
+      </CarouselContainer>
+    ),
+    [navigateTo]
+  );
+
+  return (
+    <FlatList
+      data={leagues}
+      keyExtractor={(item) => item.id.toString()}
+      renderItem={renderLeagueItem}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      showsVerticalScrollIndicator={false}
+    />
   );
 };
 
@@ -87,22 +91,21 @@ const CarouselContainer = styled.ScrollView({
   paddingHorizontal: 15,
 });
 
-const CarouselItem = styled.TouchableOpacity({
-  marginHorizontal: 10,
+const CarouselItem = styled(TouchableOpacity)({
+  marginVertical: 10,
   justifyContent: "center",
   alignItems: "center",
   backgroundColor: "#00152B",
   borderRadius: 10,
   shadowColor: "#000",
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.6,
-  shadowRadius: 10,
-  elevation: 5,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.3,
+  shadowRadius: 5,
+  elevation: 3,
   height: 200,
-  marginBottom: 30,
 });
 
-const ImageWrapper = styled.View({
+const ImageWrapper = styled(View)({
   width: "100%",
   height: "100%",
   borderRadius: 10,

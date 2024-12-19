@@ -1,14 +1,14 @@
 import React, { useContext, useState, useEffect } from "react";
 import { View, FlatList, Modal } from "react-native";
 import styled from "styled-components/native";
-import { GameContext } from "../../../context/GameContext";
+import { UserContext } from "../../../context/UserContext";
 import { AntDesign } from "@expo/vector-icons";
 import { Dimensions } from "react-native";
 
 const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
   const [selected, setSelected] = useState("");
   const [dropdownVisible, setDropdownVisible] = useState(false);
-  const { players } = useContext(GameContext);
+  const { players } = useContext(UserContext);
 
   const playerArray = players.map((player) => ({
     key: player.id, // Assuming each player has a unique ID
@@ -104,7 +104,6 @@ const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
-console.log("screenWidth", screenWidth);
 const PlayerSelectContainer = styled.TouchableOpacity({
   border: "1px solid #262626",
 });

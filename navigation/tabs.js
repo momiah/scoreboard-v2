@@ -9,6 +9,8 @@ import Notifications from "../screens/Notifications";
 import Schedule from "../screens/Schedule";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
+import Signup from "../screens/Authentication/Signup";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -16,11 +18,17 @@ const Stack = createStackNavigator();
 // Home Stack
 const HomeStack = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="HomeMain">
+
+   
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
       <Stack.Screen name="League" component={League} />
+
+
       <Stack.Screen name="Login" component={Login} />
+       <Stack.Screen name="Signup" component={Signup} />
+      
     </Stack.Navigator>
   );
 };
@@ -39,7 +47,7 @@ const Tabs = () => {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Profile") {
+          } else if (route.name === "Profile" ) {
             iconName = focused ? "person" : "person-outline";
           } else if (route.name === "Notifications") {
             iconName = focused ? "notifications" : "notifications-outline";

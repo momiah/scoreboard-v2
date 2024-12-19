@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { View, Text, Image, ActivityIndicator } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import { generatedLeagues } from "../../../components/Leagues/leagueMocks";
@@ -11,10 +11,16 @@ import TeamPerformance from "../../../components/performance/Team/TeamPerformanc
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../../../components/Tag";
 import { Dimensions } from "react-native";
+import { GameContext } from "../../../context/GameContext";
 
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
+  const { leagues } = useContext(GameContext);
+  console.log("league id✅", leagueId);
+
+  // console.log("leagues games", JSON.stringify(leagues, null, 2));
+  // console.log("mock🔥 ", JSON.stringify(leagueDetails, null, 2));
 
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [loading, setLoading] = useState(true); // Track loading state
@@ -35,7 +41,7 @@ const League = () => {
   const renderComponent = () => {
     switch (selectedTab) {
       case "Scoreboard":
-        return <Scoreboard mockgames={leagueDetails.games} />;
+        return <Scoreboard leagueGames={leagueDetails.games} />;
       case "Player Performance":
         return <PlayerPerformance />;
       case "Team Performance":
@@ -47,22 +53,21 @@ const League = () => {
 
   useEffect(() => {
     fetchLeagueDetails(leagueId);
+    // console.log(
+    //   "leagueDetails🔥",
+    //   JSON.stringify(leagueDetails.games, null, 2)
+    // );
   }, [leagueId]);
 
   const fetchLeagueDetails = (id) => {
-    const fetchedDetails = generatedLeagues.find((league) => league.id === id);
+    const fetchedDetails = leagues.find((league) => league.id === id);
+    // console.log(
+    //   "fetchedDetails🔥",
+    //   JSON.stringify(fetchedDetails.games, null, 2)
+    // );
     setLeagueDetails(fetchedDetails);
     setLoading(false); // Set loading to false once data is fetched
   };
-
-  useEffect(() => {
-    if (leagueDetails) {
-      console.log(
-        "leagueDetails🙂",
-        JSON.stringify(leagueDetails.leagueStatus.status, null, 2)
-      );
-    }
-  }, [leagueDetails]);
 
   if (loading) {
     return (

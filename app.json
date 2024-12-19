@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/court-champ-logo.png",
       "resizeMode": "contain",
@@ -14,17 +15,43 @@
     "ios": {
       "supportsTablet": true,
       "buildNumber": "3",
-      "bundleIdentifier": "com.courtchamp"
+      "bundleIdentifier": "com.courtchamp",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
+            ]
+          }
+        ],
+        "LSMinimumSystemVersion": "13.0"
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/court-champ-logo-icon.png",
         "backgroundColor": "#00152B"
-      }
+      },
+      "package": "com.courtchamp"
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon.png"
     },
+    "plugins": [
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"

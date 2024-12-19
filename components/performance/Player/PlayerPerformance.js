@@ -7,13 +7,14 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
+import { UserContext } from "../../../context/UserContext";
 import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
 
 const PlayerPerformance = () => {
-  const { setGames, retrieveGames, retrievePlayers, refreshing } =
-    useContext(GameContext);
+  const { setGames, retrieveGames, refreshing } = useContext(GameContext);
+  const { retrievePlayers } = useContext(UserContext);
 
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
 
@@ -43,7 +44,7 @@ const PlayerPerformance = () => {
   };
 
   useEffect(() => {
-    const fetchPlayers = async () => {
+    const fetchPlayersToSort = async () => {
       setLoading(true); // Set loading to true while fetching
       try {
         const retrievedPlayers = await retrievePlayers();
@@ -64,7 +65,7 @@ const PlayerPerformance = () => {
       }
     };
 
-    fetchPlayers();
+    fetchPlayersToSort();
   }, [retrievePlayers]);
 
   const recentGameResult = (resultLog) => {

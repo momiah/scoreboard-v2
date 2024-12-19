@@ -8,8 +8,7 @@ import TeamDetails from "./TeamDetails";
 import { Dimensions } from "react-native";
 
 const TeamPerformance = () => {
-  const { games, setGames, retrieveGames, players, fetchPlayers } =
-    useContext(GameContext);
+  const { games, setGames, retrieveGames } = useContext(GameContext);
   const [teamStats, setTeamStats] = useState([]);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [team, setTeam] = useState({});
@@ -21,7 +20,6 @@ const TeamPerformance = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      await fetchPlayers();
       const retrievedGames = await retrieveGames();
       setGames(retrievedGames);
     };

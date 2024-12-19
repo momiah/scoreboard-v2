@@ -2,16 +2,17 @@ import React, { useState, useEffect, useContext } from "react";
 import { Text, FlatList, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../context/GameContext";
+import { UserContext } from "../../context/UserContext";
 
 import { Dimensions } from "react-native";
 
 import AddGameModal from "./AddGame/AddGameModal";
 
-const Scoreboard = ({ mockgames }) => {
+const Scoreboard = ({ leagueGames }) => {
   const {
-    games,
+    // games, from the previous version of the component
     setGames,
-    fetchPlayers,
+
     retrieveGames,
     deleteGameById,
     refreshing,
@@ -21,16 +22,19 @@ const Scoreboard = ({ mockgames }) => {
     deleteGameId,
     setDeleteGameId,
   } = useContext(GameContext);
+  const { fetchPlayers } = useContext(UserContext);
 
   const [newestGameId, setNewestGameId] = useState("");
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
+  // console.log("games from context🤔", JSON.stringify(games, null, 2));
+  console.log("leagueGames from props🤔", JSON.stringify(leagueGames, null, 2));
 
   useEffect(() => {
-    if (games.length > 0) {
-      setNewestGameId(games[0].gameId);
+    if (leagueGames.length > 0) {
+      setNewestGameId(leagueGames[0].gameId);
     }
     fetchPlayers();
-  }, [games]);
+  }, [leagueGames]);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
@@ -76,7 +80,7 @@ const Scoreboard = ({ mockgames }) => {
       </AddGameButton>
 
       <FlatList
-        data={mockgames}
+        data={leagueGames}
         keyExtractor={(item) => item.gameId}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
