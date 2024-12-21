@@ -126,36 +126,7 @@ const GameProvider = ({ children }) => {
       entryFee: 10,
       currencyType: currencyTypes[0],
       image: mockImages.court1,
-      games: [
-        {
-          id: "15-08-2024-game-2",
-          team1: {
-            player1: "Rayyan",
-            score: 21,
-            player2: "Hussain",
-          },
-          gameId: "15-08-2024-game-2",
-          result: {
-            loser: {
-              team: "Team 2",
-              score: 10,
-              players: ["Yasin", "Abdul"],
-            },
-            winner: {
-              score: 21,
-              players: ["Rayyan", "Hussain"],
-              team: "Team 1",
-            },
-          },
-          team2: {
-            score: 10,
-            player2: "Abdul",
-            player1: "Yasin",
-          },
-          date: "15-08-2024",
-          gamescore: "21 - 10",
-        },
-      ],
+      games: [],
     };
     try {
       await setDoc(doc(db, "leagues", "uniqueLeagueId4"), {

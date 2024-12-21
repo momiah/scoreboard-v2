@@ -5,51 +5,52 @@ import MedalDisplay from "./MedalDisplay";
 import { LinearGradient } from "expo-linear-gradient";
 import { FontAwesome } from "@expo/vector-icons";
 import AnimateNumber from "./AnimateNumber";
+import { ranks } from "../../rankingMedals/ranking/ranks";
 
-const ranks = [
-  { name: "Recruit", xp: 0 },
+// const ranks = [
+//   { name: "Recruit", xp: 0 },
 
-  { name: "Apprentice", xp: 200 },
-  { name: "Apprentice II", xp: 300 },
-  { name: "Private", xp: 400 },
-  { name: "Private II", xp: 500 },
-  { name: "Corporal", xp: 600 },
-  { name: "Corporal II", xp: 700 },
-  { name: "Sergeant", xp: 800 },
-  { name: "Sergeant II", xp: 900 },
-  { name: "Sergeant III", xp: 1000 },
-  { name: "Gunnery Sergeant", xp: 1100 },
-  { name: "Gunnery Sergeant II", xp: 1200 },
-  { name: "Gunnery Sergeant III", xp: 1300 },
-  { name: "Gunnery Sergeant IV", xp: 1400 },
-  { name: "Lieutenant", xp: 1500 },
-  { name: "Lieutenant II", xp: 1600 },
-  { name: "Lieutenant III", xp: 1700 },
-  { name: "Captain", xp: 1800 },
-  { name: "Captain II", xp: 1900 },
-  { name: "Captain III", xp: 2000 },
-  { name: "Captain IV", xp: 2100 },
-  { name: "Major", xp: 2200 },
-  { name: "Major II", xp: 2300 },
-  { name: "Major III", xp: 2400 },
-  { name: "Major IV", xp: 2500 },
-  { name: "Commander", xp: 2600 },
-  { name: "Commander II", xp: 2700 },
-  { name: "Commander III", xp: 2800 },
-  { name: "Commander IV", xp: 2900 },
-  { name: "Colonel", xp: 3000 },
-  { name: "Colonel II", xp: 3100 },
-  { name: "Colonel III", xp: 3200 },
-  { name: "Colonel IV", xp: 3300 },
-  { name: "Brigadier", xp: 3400 },
-  { name: "Brigadier II", xp: 3500 },
-  { name: "Brigadier III", xp: 3600 },
-  { name: "Brigadier IV", xp: 3700 },
-  { name: "General", xp: 3800 },
-  { name: "General II", xp: 3900 },
-  { name: "General III", xp: 4000 },
-  { name: "General IV", xp: 4100 },
-];
+//   { name: "Apprentice", xp: 200 },
+//   { name: "Apprentice II", xp: 300 },
+//   { name: "Private", xp: 400 },
+//   { name: "Private II", xp: 500 },
+//   { name: "Corporal", xp: 600 },
+//   { name: "Corporal II", xp: 700 },
+//   { name: "Sergeant", xp: 800 },
+//   { name: "Sergeant II", xp: 900 },
+//   { name: "Sergeant III", xp: 1000 },
+//   { name: "Gunnery Sergeant", xp: 1100 },
+//   { name: "Gunnery Sergeant II", xp: 1200 },
+//   { name: "Gunnery Sergeant III", xp: 1300 },
+//   { name: "Gunnery Sergeant IV", xp: 1400 },
+//   { name: "Lieutenant", xp: 1500 },
+//   { name: "Lieutenant II", xp: 1600 },
+//   { name: "Lieutenant III", xp: 1700 },
+//   { name: "Captain", xp: 1800 },
+//   { name: "Captain II", xp: 1900 },
+//   { name: "Captain III", xp: 2000 },
+//   { name: "Captain IV", xp: 2100 },
+//   { name: "Major", xp: 2200 },
+//   { name: "Major II", xp: 2300 },
+//   { name: "Major III", xp: 2400 },
+//   { name: "Major IV", xp: 2500 },
+//   { name: "Commander", xp: 2600 },
+//   { name: "Commander II", xp: 2700 },
+//   { name: "Commander III", xp: 2800 },
+//   { name: "Commander IV", xp: 2900 },
+//   { name: "Colonel", xp: 3000 },
+//   { name: "Colonel II", xp: 3100 },
+//   { name: "Colonel III", xp: 3200 },
+//   { name: "Colonel IV", xp: 3300 },
+//   { name: "Brigadier", xp: 3400 },
+//   { name: "Brigadier II", xp: 3500 },
+//   { name: "Brigadier III", xp: 3600 },
+//   { name: "Brigadier IV", xp: 3700 },
+//   { name: "General", xp: 3800 },
+//   { name: "General II", xp: 3900 },
+//   { name: "General III", xp: 4000 },
+//   { name: "General IV", xp: 4100 },
+// ];
 
 const getNextRank = (xp, prevGameXp) => {
   for (let i = 0; i < ranks.length; i++) {
@@ -64,6 +65,8 @@ const MedalProgress = ({ xp, prevGameXp }) => {
   const currentRank = ranks.reduce((prev, current) =>
     current.xp <= xp ? current : prev
   );
+
+  const previousGameXp = prevGameXp.toFixed(0);
 
   const nextRank = getNextRank(xp);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -93,7 +96,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           ]}
         >
           <ProgressArrowContainer>
-            <AnimateNumber number={xp} />
+            <AnimateNumber number={xp} progressBar />
             <FontAwesome name="caret-down" size={16} color="white" />
           </ProgressArrowContainer>
         </Animated.View>
@@ -126,8 +129,10 @@ const MedalProgress = ({ xp, prevGameXp }) => {
         </RankContainer>
 
         <PreviousGameXpContainer>
-          <PreviousGameXp prevGameXp={prevGameXp}>
-            {prevGameXp < 0 ? `${prevGameXp} XP` : `+${prevGameXp} XP`}
+          <PreviousGameXp prevGameXp={previousGameXp}>
+            {previousGameXp < 0
+              ? `${previousGameXp} XP`
+              : `+${previousGameXp} XP`}
           </PreviousGameXp>
           <Text style={{ color: "#aaa", fontSize: 11, paddingLeft: 6 }}>
             Last Match
@@ -147,14 +152,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
 const Container = styled.View({
   marginVertical: 20,
 });
-const RankContainer = styled.View({
-  flexDirection: "column",
-});
-const ProgressRanks = styled.View({
-  justifyContent: "space-between",
-  flexDirection: "row",
-  alignItems: "center",
-});
+
 const RankXpText = styled.Text({
   color: "white",
   fontWeight: "bold",
@@ -184,6 +182,17 @@ const PreviousGameXp = styled.Text`
   font-size: 20px;
   font-weight: bold;
 `;
+
+const ProgressRanks = styled.View({
+  justifyContent: "space-between",
+  flexDirection: "row",
+  alignItems: "center",
+});
+
+const RankContainer = styled.View({
+  flexDirection: "column",
+  width: "40%",
+});
 
 const PreviousGameXpContainer = styled.View({
   flexDirection: "column",
