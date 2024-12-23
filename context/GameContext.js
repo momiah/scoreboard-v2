@@ -16,6 +16,7 @@ import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { db } from "../services/firebase.config";
 import moment from "moment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ranks } from "../rankingMedals/ranking/ranks";
 
 const GameContext = createContext();
 
@@ -126,36 +127,7 @@ const GameProvider = ({ children }) => {
       entryFee: 10,
       currencyType: currencyTypes[0],
       image: mockImages.court1,
-      games: [
-        {
-          id: "15-08-2024-game-2",
-          team1: {
-            player1: "Rayyan",
-            score: 21,
-            player2: "Hussain",
-          },
-          gameId: "15-08-2024-game-2",
-          result: {
-            loser: {
-              team: "Team 2",
-              score: 10,
-              players: ["Yasin", "Abdul"],
-            },
-            winner: {
-              score: 21,
-              players: ["Rayyan", "Hussain"],
-              team: "Team 1",
-            },
-          },
-          team2: {
-            score: 10,
-            player2: "Abdul",
-            player1: "Yasin",
-          },
-          date: "15-08-2024",
-          gamescore: "21 - 10",
-        },
-      ],
+      games: [],
     };
     try {
       await setDoc(doc(db, "leagues", "uniqueLeagueId4"), {
@@ -165,6 +137,27 @@ const GameProvider = ({ children }) => {
     } catch (error) {
       console.error("Error adding league: ", error);
     }
+  };
+
+  const medalNames = (xp) => {
+    const rank = ranks.find((rank, index) => {
+      const nextRank = ranks[index + 1];
+      if (nextRank) {
+        return xp >= rank.xp && xp < nextRank.xp;
+      } else {
+        // If there's no next rank, assume xp is greater than the last rank's xp
+        return xp >= rank.xp;
+      }
+    });
+    return rank ? rank.name : "Recruit";
+  };
+
+  const findRankIndex = (xp) => {
+    const index = ranks.findIndex((rank, i) => {
+      return xp < (ranks[i + 1]?.xp || Infinity);
+    });
+
+    return index !== -1 ? index : ranks.length - 1;
   };
 
   const sortGamesByNewest = (games) => {
@@ -181,6 +174,14 @@ const GameProvider = ({ children }) => {
 
       return new Date(formattedDateB) - new Date(formattedDateA); // Newest date first
     });
+  };
+
+  const getRankByXP = (xp) => {
+    const rank = ranks
+      .slice()
+      .reverse()
+      .find((rank) => xp >= rank.xp);
+    return rank || ranks[0]; // Default to the first rank if no match is found
   };
 
   const retrieveGames = async () => {
@@ -268,6 +269,11 @@ const GameProvider = ({ children }) => {
         setShowMockData,
         showMockData,
         leagues,
+
+        medalNames,
+        ranks,
+        findRankIndex,
+        getRankByXP,
 
         refreshing,
         setRefreshing,

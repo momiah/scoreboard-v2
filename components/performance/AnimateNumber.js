@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Text, StyleSheet } from "react-native";
 
-const AnimateNumber = ({ number, fontSize = 12 }) => {
+const AnimateNumber = ({ number, fontSize = 12, progressBar = false }) => {
   const [displayValue, setDisplayValue] = useState(0);
   const [isPercentage, setIsPercentage] = useState(false);
 
@@ -35,7 +35,12 @@ const AnimateNumber = ({ number, fontSize = 12 }) => {
   }, [number]);
 
   return (
-    <Text style={[styles.number, { fontSize: fontSize }]}>
+    <Text
+      style={[
+        styles.number,
+        { fontSize: fontSize, width: progressBar ? 50 : "auto" },
+      ]}
+    >
       {displayValue}
       {isPercentage && "%"}
     </Text>
@@ -51,6 +56,8 @@ const styles = StyleSheet.create({
   number: {
     fontWeight: "bold",
     color: "white",
+
+    textAlign: "right",
   },
 });
 

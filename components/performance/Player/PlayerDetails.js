@@ -1,15 +1,14 @@
-import React from "react";
+import React, { useContext } from "react";
 import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import MedalDisplay from "../MedalDisplay";
 import MedalProgress from "../MedalProgress";
-import { medalNames } from "../../../functions/medalNames";
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
 import { Dimensions } from "react-native";
 import ResultLog from "../ResultLog";
-
+import { GameContext } from "../../../context/GameContext";
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
   if (resultLog.length === 0) return 0;
@@ -30,13 +29,14 @@ const currentStreak = (resultLog) => {
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
-const screenAdjustedMedalSize = screenWidth <= 400 ? 50 : 70;
+const screenAdjustedMedalSize = screenWidth <= 400 ? 60 : 70;
 
 const PlayerDetails = ({
   showPlayerDetails,
   setShowPlayerDetails,
   selectedPlayer,
 }) => {
+  const { medalNames } = useContext(GameContext);
   const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
 
   const currentStreakValue = currentStreak(selectedPlayer.resultLog);
@@ -117,6 +117,7 @@ const PlayerDetails = ({
                 <Text
                   style={{
                     color: "#aaa",
+                    fontSize: screenWidth <= 400 ? 12 : 14,
                   }}
                 >
                   Member since {selectedPlayer.memberSince}
@@ -124,6 +125,7 @@ const PlayerDetails = ({
                 <Text
                   style={{
                     color: "#aaa",
+                    fontSize: screenWidth <= 400 ? 12 : 14,
                   }}
                 >
                   Last Active {selectedPlayer.lastActive}
@@ -135,7 +137,7 @@ const PlayerDetails = ({
                   xp={selectedPlayer.XP + selectedPlayer.totalPoints}
                   size={screenAdjustedMedalSize}
                 />
-                <Text style={{ color: "white", marginTop: 10 }}>
+                <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
                   {medalNames(selectedPlayer.XP + selectedPlayer.totalPoints)}
                 </Text>
               </MedalContainer>
@@ -187,8 +189,8 @@ const ModalContent = styled.View({
   backgroundColor: "#00152B",
   margin: 10,
   padding: 20,
-  paddingLeft: 30,
-  paddingRight: 30,
+  paddingLeft: 25,
+  paddingRight: 25,
   borderRadius: 10,
 });
 
@@ -201,7 +203,7 @@ const CloseIconContainer = styled.View({
 });
 
 const PlayerName = styled.Text({
-  fontSize: 30,
+  fontSize: 25,
   color: "white",
   fontWeight: "bold",
 });
