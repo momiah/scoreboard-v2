@@ -1,15 +1,14 @@
-import React from "react";
+import React, { useContext } from "react";
 import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import MedalDisplay from "../MedalDisplay";
 import MedalProgress from "../MedalProgress";
-import { medalNames } from "../../../functions/medalNames";
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
 import { Dimensions } from "react-native";
 import ResultLog from "../ResultLog";
-
+import { GameContext } from "../../../context/GameContext";
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
   if (resultLog.length === 0) return 0;
@@ -37,6 +36,7 @@ const PlayerDetails = ({
   setShowPlayerDetails,
   selectedPlayer,
 }) => {
+  const { medalNames } = useContext(GameContext);
   const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
 
   const currentStreakValue = currentStreak(selectedPlayer.resultLog);

@@ -4,7 +4,9 @@ import {
   RefreshControl,
   ActivityIndicator,
   View,
+  Text,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
@@ -13,7 +15,8 @@ import PlayerDetails from "./PlayerDetails";
 import { AntDesign } from "@expo/vector-icons";
 
 const PlayerPerformance = () => {
-  const { setGames, retrieveGames, refreshing } = useContext(GameContext);
+  const { setGames, retrieveGames, refreshing, findRankIndex } =
+    useContext(GameContext);
   const { retrievePlayers } = useContext(UserContext);
 
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
@@ -104,6 +107,10 @@ const PlayerPerformance = () => {
 
   const renderPlayer = ({ item: player, index }) => {
     const totalPointsAndXP = player.XP + player.totalPoints;
+    console.log("totalPointsAndXP", totalPointsAndXP);
+    const rankLevel = findRankIndex(totalPointsAndXP) + 1;
+
+    console.log("rankLevel", rankLevel);
 
     return (
       <TableRow
@@ -113,6 +120,11 @@ const PlayerPerformance = () => {
           setSelectedPlayer(player);
         }}
       >
+        <GradientOverlay
+          colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.6)"]}
+          end={{ x: 0.8, y: 3 }}
+          locations={[0.1, 0.4]}
+        />
         <TableCell>
           <Rank>
             {index + 1}
@@ -139,6 +151,9 @@ const PlayerPerformance = () => {
         </TableCell>
         <TableCell>
           <MedalDisplay xp={totalPointsAndXP.toFixed(0)} size={45} />
+          {/* </TableCell>
+        <TableCell> */}
+          <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
         </TableCell>
       </TableRow>
     );
@@ -189,6 +204,14 @@ const PlayerPerformance = () => {
 //   backgroundColor: "#00A2FF",
 // });
 
+const GradientOverlay = styled(LinearGradient)({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+});
+
 const TableContainer = styled.View({
   paddingTop: 20,
   flex: 1,
@@ -203,8 +226,8 @@ const TableCell = styled.View({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingTop: 20,
-  paddingBottom: 20,
+  paddingTop: 15,
+  paddingBottom: 15,
   borderTopWidth: 1,
   borderColor: "#262626",
 });
@@ -213,17 +236,17 @@ const PlayerNameCell = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  paddingTop: 20,
-  paddingBottom: 20,
+  paddingTop: 15,
+  paddingBottom: 15,
   paddingLeft: 10,
   paddingRight: 20,
   borderTopWidth: 1,
-  width: 150,
+  width: 130,
   borderColor: "#262626",
 });
 
 const PlayerName = styled.Text({
-  fontSize: 16,
+  fontSize: 14,
   fontWeight: "bold",
   color: "white",
 });
@@ -235,12 +258,12 @@ const Rank = styled.Text({
 });
 
 const StatTitle = styled.Text({
-  fontSize: 14,
+  fontSize: 12,
   color: "#aaa",
 });
 
 const Stat = styled.Text({
-  fontSize: 16,
+  fontSize: 14,
   fontWeight: "bold",
   color: "white",
 });

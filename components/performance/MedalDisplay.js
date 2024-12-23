@@ -1,8 +1,9 @@
 import rankingMedals from "../../rankingMedals";
 import { ranks } from "../../rankingMedals/ranking/ranks";
 
-import React from "react";
+import React, { useContext } from "react";
 import { View, Image, Text } from "react-native";
+import { GameContext } from "../../context/GameContext";
 
 // Function to map XP to medal image // Halo 3 ranks
 // const getMedalByXP = (xp) => {
@@ -50,15 +51,8 @@ import { View, Image, Text } from "react-native";
 //   return rankingMedals.recruit; // Default to recruit for XP < 200
 // };
 
-const getRankByXP = (xp) => {
-  const rank = ranks
-    .slice()
-    .reverse()
-    .find((rank) => xp >= rank.xp);
-  return rank || ranks[0]; // Default to the first rank if no match is found
-};
-
 const MedalDisplay = ({ xp, size }) => {
+  const { getRankByXP } = useContext(GameContext);
   // const medalSource = getMedalByXP(xp); Halo 3 ranks
 
   const newRanks = getRankByXP(xp);

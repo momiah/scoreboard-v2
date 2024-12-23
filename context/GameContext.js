@@ -16,6 +16,7 @@ import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { db } from "../services/firebase.config";
 import moment from "moment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ranks } from "../rankingMedals/ranking/ranks";
 
 const GameContext = createContext();
 
@@ -138,6 +139,27 @@ const GameProvider = ({ children }) => {
     }
   };
 
+  const medalNames = (xp) => {
+    const rank = ranks.find((rank, index) => {
+      const nextRank = ranks[index + 1];
+      if (nextRank) {
+        return xp >= rank.xp && xp < nextRank.xp;
+      } else {
+        // If there's no next rank, assume xp is greater than the last rank's xp
+        return xp >= rank.xp;
+      }
+    });
+    return rank ? rank.name : "Recruit";
+  };
+
+  const findRankIndex = (xp) => {
+    const index = ranks.findIndex((rank, i) => {
+      return xp < (ranks[i + 1]?.xp || Infinity);
+    });
+
+    return index !== -1 ? index : ranks.length - 1;
+  };
+
   const sortGamesByNewest = (games) => {
     return games.sort((a, b) => {
       const [dateA, gameNumberA] = a.gameId.split("-game-");
@@ -152,6 +174,14 @@ const GameProvider = ({ children }) => {
 
       return new Date(formattedDateB) - new Date(formattedDateA); // Newest date first
     });
+  };
+
+  const getRankByXP = (xp) => {
+    const rank = ranks
+      .slice()
+      .reverse()
+      .find((rank) => xp >= rank.xp);
+    return rank || ranks[0]; // Default to the first rank if no match is found
   };
 
   const retrieveGames = async () => {
@@ -239,6 +269,11 @@ const GameProvider = ({ children }) => {
         setShowMockData,
         showMockData,
         leagues,
+
+        medalNames,
+        ranks,
+        findRankIndex,
+        getRankByXP,
 
         refreshing,
         setRefreshing,

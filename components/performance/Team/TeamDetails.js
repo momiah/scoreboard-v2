@@ -2,9 +2,7 @@ import React from "react";
 import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
-import MedalDisplay from "../MedalDisplay";
-import MedalProgress from "../MedalProgress";
-import { medalNames } from "../../../functions/medalNames";
+
 import MatchMedals from "../MatchMedals";
 import AnimateNumber from "../AnimateNumber";
 import ResultLog from "../ResultLog";

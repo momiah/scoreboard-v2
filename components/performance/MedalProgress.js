@@ -52,7 +52,7 @@ import { ranks } from "../../rankingMedals/ranking/ranks";
 //   { name: "General IV", xp: 4100 },
 // ];
 
-const getNextRank = (xp, prevGameXp) => {
+const getNextRank = (xp) => {
   for (let i = 0; i < ranks.length; i++) {
     if (xp < ranks[i].xp) {
       return ranks[i];
