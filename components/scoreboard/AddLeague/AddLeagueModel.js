@@ -13,6 +13,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     startDate: "",
     endDate: "",
     image: "",
+    leagueType: "",
     maxPlayers: 0,
     privacy: "",
   });
@@ -27,9 +28,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   };
 
   const handleCreate = () => {
-    // addLeagues(leagueDetails); // Pass league details to the context function
-    addLeagues(sampleLeagues); // Pass league details to the context function
-    setModalVisible(false); // Close modal after action
+    // console.log("Creating league with details:", leagueDetails);
+    addLeagues(leagueDetails);
+    setModalVisible(false);
   };
 
   return (
@@ -87,6 +88,13 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               value={leagueDetails.maxPlayers}
               onChangeText={(value) => handleChange("maxPlayers", value)}
             />
+            <Label>League Type</Label>
+            <Input
+              placeholder="Enter League Type"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.leagueType}
+              onChangeText={(value) => handleChange("leagueType", value)}
+            />
             <Label>Privacy</Label>
             <Input
               placeholder="Enter privacy"
@@ -100,7 +108,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 <CancelText>Cancel</CancelText>
               </CancelButton>
               <CreateButton onPress={handleCreate}>
-                <CreateText>Create</CreateText>
+                <CreateText>Createw</CreateText>
               </CreateButton>
             </ButtonContainer>
           </ModalContent>

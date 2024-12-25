@@ -36,9 +36,9 @@ const daysOfWeek = [
 export const sampleLeagues = {
   id: 1,
   leagueAdmins: ["Rayyan", "Hussain"],
-  leageueParticipants: [
+  leagueParticipants: [
     {
-      id: "Rayyan",
+      id: "Rayyan2",
       memberSince: moment().format("MMM YYYY"),
       XP: 10,
       prevGameXP: 0,
@@ -127,7 +127,7 @@ export const sampleLeagues = {
 };
 
 export const sampleLeagues2 = {
-  id: 1,
+  id: 10,
   leagueAdmins: ["BraveFalco", "LoyalTiger", "SwiftFalco"],
   leagueParticipants: [
     {

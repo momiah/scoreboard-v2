@@ -12,73 +12,24 @@ import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
 import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "./PlayerDetails";
-import { AntDesign } from "@expo/vector-icons";
 
-const PlayerPerformance = () => {
-  const { setGames, retrieveGames, refreshing, findRankIndex } =
+const PlayerPerformance = ({ playersData }) => {
+  const { refreshing, findRankIndex, recentGameResult } =
     useContext(GameContext);
-  const { retrievePlayers } = useContext(UserContext);
+  const { fetchPlayersToSort, loading, setLoading } = useContext(UserContext);
 
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
 
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [playersData, setPlayersData] = useState([]);
-  const [loading, setLoading] = useState(true); // Track loading state
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const retrievedGames = await retrieveGames();
-      setGames(retrievedGames);
-    };
-
-    fetchData();
-  }, [setGames]);
 
   const handleRefresh = async () => {
-    setLoading(true); // Set loading to true before fetching data
-    try {
-      const retrievedGames = await retrieveGames();
-      setGames(retrievedGames);
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-    } finally {
-      setLoading(false); // Ensure loading is set to false once complete
-    }
+    setLoading(true);
+    await fetchPlayersToSort();
   };
 
   useEffect(() => {
-    const fetchPlayersToSort = async () => {
-      setLoading(true); // Set loading to true while fetching
-      try {
-        const retrievedPlayers = await retrievePlayers();
-
-        // Sort the players based on the sum of XP + totalPoints
-        const sortedPlayers = retrievedPlayers.sort((a, b) => {
-          const totalA = a.XP + a.totalPoints;
-          const totalB = b.XP + b.totalPoints;
-
-          return totalB - totalA; // Sort in descending order
-        });
-
-        setPlayersData(sortedPlayers);
-      } catch (error) {
-        console.error("Error fetching players:", error);
-      } finally {
-        setLoading(false); // Ensure loading is set to false once complete
-      }
-    };
-
     fetchPlayersToSort();
-  }, [retrievePlayers]);
-
-  const recentGameResult = (resultLog) => {
-    const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
-
-    const icon = lastResult === "W" ? "caretup" : "caretdown";
-    const color = lastResult === "W" ? "green" : "red";
-
-    return <AntDesign name={icon} size={10} color={color} />;
-  };
+  }, []);
 
   // const runGetPlayersToUpdate = async () => {
   // Reverse the array to process the last game first
@@ -107,10 +58,7 @@ const PlayerPerformance = () => {
 
   const renderPlayer = ({ item: player, index }) => {
     const totalPointsAndXP = player.XP + player.totalPoints;
-    console.log("totalPointsAndXP", totalPointsAndXP);
     const rankLevel = findRankIndex(totalPointsAndXP) + 1;
-
-    console.log("rankLevel", rankLevel);
 
     return (
       <TableRow
@@ -121,7 +69,7 @@ const PlayerPerformance = () => {
         }}
       >
         <GradientOverlay
-          colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.6)"]}
+          colors={["rgba(0, 0, 0, 0.6)", "rgba(0, 0, 0, 0.1)"]}
           end={{ x: 0.8, y: 3 }}
           locations={[0.1, 0.4]}
         />

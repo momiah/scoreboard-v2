@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { PopupContext } from "./PopupContext";
 import { generatedLeagues } from "../components/Leagues/leagueMocks";
+import { AntDesign } from "@expo/vector-icons";
 
 import { db } from "../services/firebase.config";
 import moment from "moment";
@@ -49,7 +50,6 @@ const GameProvider = ({ children }) => {
           id: doc.id, // Include document ID
           ...doc.data(), // Include the rest of the document fields
         }));
-        console.log("leaguesData🙂", leaguesData);
 
         setLeagues(leaguesData);
       } catch (error) {
@@ -66,10 +66,13 @@ const GameProvider = ({ children }) => {
 
   const addLeagues = async (leagueData) => {
     const leagueName = leagueData.leagueName;
+    const leagueStatus = leagueParticipants < maxPlayers ? "ENLISTING" : "FULL";
     const leagueEntry = {
-      id: 1,
+      id: `${leagueName}-${leagueData.location}-${
+        leagueData.startDate
+      }-${Math.random()}`,
       leagueAdmins: ["Rayyan", "Hussain"],
-      leageueParticipants: [
+      leagueParticipants: [
         {
           id: "Rayyan",
           memberSince: moment().format("MMM YYYY"),
@@ -96,9 +99,9 @@ const GameProvider = ({ children }) => {
           highestWinStreak: 0,
         },
       ],
-      maxPlayers: maxPlayers[0],
-      privacy: privacyTypes[0],
-      name: "Laura Trotter Badminton League",
+      maxPlayers: leagueData.maxPlayers,
+      privacy: leagueData.privacy,
+      name: leagueName,
       playingTime: [
         {
           day: "Monday",
@@ -116,22 +119,25 @@ const GameProvider = ({ children }) => {
           endTime: "8:00 PM",
         },
       ],
-      leagueStatus: leagueStatus[0],
-      location: "Cheshunt",
-      centerName: "Cheshunt Sports Center",
+      leagueStatus: leagueStatus,
+      location: leagueData.location,
+      centerName: leagueData.centerName,
       country: "England",
-      startDate: "24/12/2023",
-      endDate: "",
-      leagueType: leagueTypes[0],
-      prizeType: prizeTypes[0],
-      entryFee: 10,
-      currencyType: currencyTypes[0],
+      startDate: leagueData.startDate,
+      endDate: leagueData.endDate,
+      leagueType: leagueData.leagueType,
+      prizeType: "Trophy",
+      entryFee: 0,
+      currencyType: "GBP",
       image: mockImages.court1,
       games: [],
     };
+
+    console.log("League Entry:", leagueEntry);
+
     try {
-      await setDoc(doc(db, "leagues", "uniqueLeagueId4"), {
-        ...leagueData,
+      await setDoc(doc(db, "leagues", "hello"), {
+        leagueData,
       });
       console.log("League added successfully!");
     } catch (error) {
@@ -174,6 +180,15 @@ const GameProvider = ({ children }) => {
 
       return new Date(formattedDateB) - new Date(formattedDateA); // Newest date first
     });
+  };
+
+  const recentGameResult = (resultLog) => {
+    const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
+
+    const icon = lastResult === "W" ? "caretup" : "caretdown";
+    const color = lastResult === "W" ? "green" : "red";
+
+    return <AntDesign name={icon} size={10} color={color} />;
   };
 
   const getRankByXP = (xp) => {
@@ -264,16 +279,18 @@ const GameProvider = ({ children }) => {
         setDeleteGameContainer,
         deleteGameId,
         setDeleteGameId,
-        addLeagues,
         retrieveGames,
         setShowMockData,
         showMockData,
+
+        addLeagues,
         leagues,
 
         medalNames,
         ranks,
         findRankIndex,
         getRankByXP,
+        recentGameResult,
 
         refreshing,
         setRefreshing,

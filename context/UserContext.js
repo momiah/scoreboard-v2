@@ -94,6 +94,30 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const [loading, setLoading] = useState(true); // Track loading state
+  const [playersData, setPlayersData] = useState([]);
+
+  const fetchPlayersToSort = async () => {
+    setLoading(true); // Set loading to true while fetching
+    try {
+      const retrievedPlayers = await retrievePlayers();
+
+      // Sort the players based on the sum of XP + totalPoints
+      const sortedPlayers = retrievedPlayers.sort((a, b) => {
+        const totalA = a.XP + a.totalPoints;
+        const totalB = b.XP + b.totalPoints;
+
+        return totalB - totalA; // Sort in descending order
+      });
+
+      setPlayersData(sortedPlayers);
+    } catch (error) {
+      console.error("Error fetching players:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const registerPlayer = async (player) => {
     if (players.some((thePlayer) => thePlayer.id === player)) {
       handleShowPopup("Player already exists!");
@@ -211,6 +235,13 @@ const UserProvider = ({ children }) => {
       value={{
         showPopup,
         popupMessage,
+
+        retrievePlayers,
+        fetchPlayersToSort,
+        loading,
+        setLoading,
+        playersData,
+        setPlayersData,
 
         Logout,
         resetPlayerStats,

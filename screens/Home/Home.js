@@ -24,7 +24,6 @@ const Home = () => {
     const fetchUserToken = async () => {
       const token = await AsyncStorage.getItem("userToken");
       setUserToken(token);
-      console.log("token", token);
     };
 
     fetchUserToken();
@@ -38,7 +37,7 @@ const Home = () => {
 
   const checkUserToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
-    console.log("token", token);
+
     if (token) {
       setModalVisible(true);
     } else {
@@ -71,7 +70,7 @@ const Home = () => {
           showIcon
           navigationRoute={"Leagues"}
         />
-        <HorizontalLeagueCarousel navigationRoute={"League"} />
+        {/* <HorizontalLeagueCarousel navigationRoute={"League"} /> */}
 
         <SubHeader
           title="Top Players"
