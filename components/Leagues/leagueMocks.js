@@ -494,6 +494,36 @@ const generateParticipants = (num) => {
   }));
 };
 
+const generateEmptyParticipants = (num) => {
+  const usernames = generateUsernames(num);
+
+  return usernames.map((username) => ({
+    id: username,
+    memberSince: "",
+    XP: 10,
+    prevGameXP: 0,
+    lastActive: "",
+    numberOfWins: 0,
+    numberOfLosses: 0,
+    numberOfGamesPlayed: 0,
+    winPercentage: 0,
+    resultLog: [],
+    pointEfficiency: 0,
+    totalPoints: 0,
+    totalPointEfficiency: 0,
+    winStreak5: 0,
+    winStreak7: 0,
+    winStreak3: 0,
+    demonWin: 0,
+    currentStreak: {
+      type: null,
+      count: 0,
+    },
+    highestLossStreak: 0,
+    highestWinStreak: 0,
+  }));
+};
+
 // Generate random games
 const generateGames = (numGames, leagueParticipants) => {
   return Array.from({ length: numGames }, (_, i) => {
@@ -624,6 +654,9 @@ const generateLeagues = ({
     games: generateGames(numGames, participants),
   }));
 };
+
+export const mockedParticipants = generateParticipants(4);
+export const mockedEmptyParticipants = generateEmptyParticipants(4);
 
 // Example usage
 export const generatedLeagues = generateLeagues({

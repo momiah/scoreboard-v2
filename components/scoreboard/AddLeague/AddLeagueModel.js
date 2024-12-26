@@ -4,9 +4,21 @@ import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import { GameContext } from "../../../context/GameContext";
 import { sampleLeagues2, sampleLeagues } from "../../Leagues/leagueMocks";
+import {
+  mockedParticipants,
+  mockedEmptyParticipants,
+} from "../../Leagues/leagueMocks";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [leagueDetails, setLeagueDetails] = useState({
+    leagueParticipants: [...mockedEmptyParticipants],
+    leagueAdmins: [],
+    games: [],
+    leagueType: "",
+    prizeType: "",
+    entryFee: 0,
+    currencyType: "",
+    image: "",
     leagueName: "",
     location: "",
     centerName: "",
@@ -16,6 +28,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     leagueType: "",
     maxPlayers: 0,
     privacy: "",
+    playingTime: [],
+    leagueStatus: "FULL",
   });
 
   const { addLeagues } = useContext(GameContext);
@@ -29,6 +43,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
   const handleCreate = () => {
     // console.log("Creating league with details:", leagueDetails);
+
     addLeagues(leagueDetails);
     setModalVisible(false);
   };

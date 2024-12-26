@@ -13,7 +13,7 @@ import { generateUniqueGameId } from "../../../functions/generateUniqueId";
 import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
 import RegisterPlayer from "./RegisterPlayer";
 
-const AddGameModal = ({ modalVisible, setModalVisible }) => {
+const AddGameModal = ({ modalVisible, setModalVisible, leagueId }) => {
   const { games, addGame } = useContext(GameContext);
   const {
     handleShowPopup,
@@ -127,13 +127,14 @@ const AddGameModal = ({ modalVisible, setModalVisible }) => {
 
     const playersToUpdate = await getPlayersToUpdate(
       newGame,
-      retrievePlayers
+      retrievePlayers,
+      leagueId
       // setPreviousPlayerRecord,
       // previousPlayerRecord
     );
-    await updatePlayers(playersToUpdate);
+    await updatePlayers(playersToUpdate, leagueId);
 
-    await addGame(newGame, gameId);
+    await addGame(newGame, gameId, leagueId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
     setTeam2Score("");

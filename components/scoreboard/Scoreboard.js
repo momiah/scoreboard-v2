@@ -8,7 +8,7 @@ import { Dimensions } from "react-native";
 
 import AddGameModal from "./AddGame/AddGameModal";
 
-const Scoreboard = ({ leagueGames }) => {
+const Scoreboard = ({ leagueGames, leagueId }) => {
   const {
     // games, from the previous version of the component
     setGames,
@@ -32,7 +32,7 @@ const Scoreboard = ({ leagueGames }) => {
     if (leagueGames.length > 0) {
       setNewestGameId(leagueGames[0].gameId);
     }
-    fetchPlayers();
+    fetchPlayers(leagueId);
   }, [leagueGames]);
 
   //////////////////////////
@@ -66,7 +66,7 @@ const Scoreboard = ({ leagueGames }) => {
   };
 
   const handleAddGameButton = () => {
-    fetchPlayers();
+    fetchPlayers(leagueId);
     setModalVisible(true);
   };
 
@@ -175,7 +175,11 @@ const Scoreboard = ({ leagueGames }) => {
       />
 
       {modalVisible && (
-        <AddGameModal modalVisible setModalVisible={setModalVisible} />
+        <AddGameModal
+          modalVisible
+          setModalVisible={setModalVisible}
+          leagueId={leagueId}
+        />
       )}
     </Container>
   );

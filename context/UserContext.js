@@ -5,6 +5,7 @@ import {
   setDoc,
   collection,
   getDocs,
+  getDoc,
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
@@ -62,32 +63,48 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const retrievePlayers = async () => {
+  const retrievePlayers = async (leagueId) => {
     try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueId);
 
-      const querySnapshot = await getDocs(playersCollectionRef);
+      // Get the existing league document
+      const leagueDoc = await getDoc(leagueDocRef);
+      const leagueParticipants = leagueDoc.data().leagueParticipants;
 
-      const players = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      return players;
+      return leagueParticipants;
     } catch (error) {
       console.error("Error retrieving players:", error);
       return [];
     }
   };
 
-  const fetchPlayers = async () => {
+  // const retrievePlayers = async () => {
+  //   try {
+  //     const scoreboardCollectionRef = collection(db, "scoreboard");
+  //     const playersCollectionRef = collection(
+  //       scoreboardCollectionRef,
+  //       "players",
+  //       "players"
+  //     );
+
+  //     const querySnapshot = await getDocs(playersCollectionRef);
+
+  //     const players = querySnapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...doc.data(),
+  //     }));
+
+  //     return players;
+  //   } catch (error) {
+  //     console.error("Error retrieving players:", error);
+  //     return [];
+  //   }
+  // };
+
+  const fetchPlayers = async (leagueId) => {
     try {
-      const players = await retrievePlayers();
+      const players = await retrievePlayers(leagueId);
       setPlayers(players); // Set the retrieved players in the state
     } catch (error) {
       console.error("Error fetching players:", error);
@@ -97,10 +114,10 @@ const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true); // Track loading state
   const [playersData, setPlayersData] = useState([]);
 
-  const fetchPlayersToSort = async () => {
+  const fetchPlayersToSort = async (leagueId) => {
     setLoading(true); // Set loading to true while fetching
     try {
-      const retrievedPlayers = await retrievePlayers();
+      const retrievedPlayers = await retrievePlayers(leagueId);
 
       // Sort the players based on the sum of XP + totalPoints
       const sortedPlayers = retrievedPlayers.sort((a, b) => {
@@ -154,32 +171,73 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const updatePlayers = async (updatedPlayers) => {
+  const updatePlayers = async (updatedPlayers, leagueId) => {
+    console.log("updatedPlayers", JSON.stringify(updatedPlayers, null, 2));
     if (updatedPlayers.length === 0) {
       handleShowPopup("No players to update!");
       return;
     }
 
     try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
+      const leagueDocRef = doc(db, "leagues", leagueId); // Reference to the league document
 
-      for (const updatedPlayer of updatedPlayers) {
-        const { id } = updatedPlayer;
+      // Fetch the current league document
+      const leagueDoc = await getDoc(leagueDocRef);
 
-        const playerDocRef = doc(playersCollectionRef, id);
-        await updateDoc(playerDocRef, updatedPlayer);
+      if (!leagueDoc.exists()) {
+        handleShowPopup("League not found!");
+        return;
       }
+
+      const leagueData = leagueDoc.data();
+      const existingPlayers = leagueData.leagueParticipants || [];
+
+      // Update the existing players array with updated data
+      const updatedParticipants = existingPlayers.map((player) => {
+        const updatedPlayer = updatedPlayers.find((p) => p.id === player.id);
+        return updatedPlayer ? { ...player, ...updatedPlayer } : player;
+      });
+
+      // Update the leagueParticipants field in Firestore
+      await updateDoc(leagueDocRef, {
+        leagueParticipants: updatedParticipants,
+      });
+
+      // Optionally fetch the updated players to refresh the UI
       await fetchPlayers();
+      handleShowPopup("Players updated successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);
       handleShowPopup("Error updating player data");
     }
   };
+
+  // const updatePlayers = async (updatedPlayers) => {
+  //   if (updatedPlayers.length === 0) {
+  //     handleShowPopup("No players to update!");
+  //     return;
+  //   }
+
+  //   try {
+  //     const scoreboardCollectionRef = collection(db, "scoreboard");
+  //     const playersCollectionRef = collection(
+  //       scoreboardCollectionRef,
+  //       "players",
+  //       "players"
+  //     );
+
+  //     for (const updatedPlayer of updatedPlayers) {
+  //       const { id } = updatedPlayer;
+
+  //       const playerDocRef = doc(playersCollectionRef, id);
+  //       await updateDoc(playerDocRef, updatedPlayer);
+  //     }
+  //     await fetchPlayers();
+  //   } catch (error) {
+  //     console.error("Error updating player data:", error);
+  //     handleShowPopup("Error updating player data");
+  //   }
+  // };
 
   const resetAllPlayerStats = async () => {
     try {
@@ -226,9 +284,9 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    fetchPlayers();
-  }, []);
+  // useEffect(() => {
+  //   fetchPlayers(leagueId);
+  // }, []);
 
   return (
     <UserContext.Provider
@@ -250,7 +308,6 @@ const UserProvider = ({ children }) => {
         setPlayers,
         updatePlayers,
         registerPlayer,
-        retrievePlayers,
         setPlayer,
         players,
         player,

@@ -3,11 +3,13 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import { Alert } from "react-native";
 import {
   deleteDoc,
+  getDoc,
   doc,
   setDoc,
   collection,
   query,
   orderBy,
+  updateDoc,
   getDocs,
 } from "firebase/firestore";
 import { PopupContext } from "./PopupContext";
@@ -65,79 +67,11 @@ const GameProvider = ({ children }) => {
   }, [showMockData]);
 
   const addLeagues = async (leagueData) => {
-    const leagueName = leagueData.leagueName;
-    const leagueStatus = leagueParticipants < maxPlayers ? "ENLISTING" : "FULL";
-    const leagueEntry = {
-      id: `${leagueName}-${leagueData.location}-${
-        leagueData.startDate
-      }-${Math.random()}`,
-      leagueAdmins: ["Rayyan", "Hussain"],
-      leagueParticipants: [
-        {
-          id: "Rayyan",
-          memberSince: moment().format("MMM YYYY"),
-          XP: 10,
-          prevGameXP: 0,
-          lastActive: "",
-          numberOfWins: 0,
-          numberOfLosses: 0,
-          numberOfGamesPlayed: 0,
-          winPercentage: 0,
-          resultLog: [],
-          pointEfficiency: 0,
-          totalPoints: 0,
-          totalPointEfficiency: 0,
-          winStreak5: 0,
-          winStreak7: 0,
-          winStreak3: 0,
-          demonWin: 0,
-          currentStreak: {
-            type: null,
-            count: 0,
-          },
-          highestLossStreak: 0,
-          highestWinStreak: 0,
-        },
-      ],
-      maxPlayers: leagueData.maxPlayers,
-      privacy: leagueData.privacy,
-      name: leagueName,
-      playingTime: [
-        {
-          day: "Monday",
-          startTime: "6:00 PM",
-          endTime: "8:00 PM",
-        },
-        {
-          day: "Wednesday",
-          startTime: "6:00 PM",
-          endTime: "8:00 PM",
-        },
-        {
-          day: "Friday",
-          time: "6:00 PM",
-          endTime: "8:00 PM",
-        },
-      ],
-      leagueStatus: leagueStatus,
-      location: leagueData.location,
-      centerName: leagueData.centerName,
-      country: "England",
-      startDate: leagueData.startDate,
-      endDate: leagueData.endDate,
-      leagueType: leagueData.leagueType,
-      prizeType: "Trophy",
-      entryFee: 0,
-      currencyType: "GBP",
-      image: mockImages.court1,
-      games: [],
-    };
-
-    console.log("League Entry:", leagueEntry);
+    // console.log("League Entry:", leagueData);
 
     try {
-      await setDoc(doc(db, "leagues", "hello"), {
-        leagueData,
+      await setDoc(doc(db, "leagues", leagueData.leagueName), {
+        ...leagueData,
       });
       console.log("League added successfully!");
     } catch (error) {
@@ -226,21 +160,51 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  const addGame = async (newGame, gameId) => {
+  const addGame = async (newGame, gameId, leagueId) => {
     try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueId);
 
-      // Generate a unique document ID to prevent overwriting (optional)
-      const gameDocRef = doc(scoreboardCollectionRef, gameId);
+      // Get the existing league document
+      const leagueDoc = await getDoc(leagueDocRef);
 
-      await setDoc(gameDocRef, newGame);
-      handleShowPopup("Game added and players updated successfully!");
-      setGames((prevGames) => [newGame, ...prevGames]);
+      if (leagueDoc.exists()) {
+        // Get the current games array from the league document
+        const currentGames = leagueDoc.data().games || [];
+
+        // Update the games array with the new game
+        const updatedGames = [...currentGames, newGame];
+
+        // Update the league document with the updated games array
+        await updateDoc(leagueDocRef, { games: updatedGames });
+
+        handleShowPopup("Game added and players updated successfully!");
+        setGames((prevGames) => [newGame, ...prevGames]);
+      } else {
+        console.error("League document not found.");
+        Alert.alert("Error", "League not found.");
+      }
     } catch (error) {
       console.error("Error saving game:", error);
       Alert.alert("Error", "Error saving game data");
     }
   };
+
+  // const addGame = async (newGame, gameId) => {
+  //   try {
+  //     const scoreboardCollectionRef = collection(db, "scoreboard");
+
+  //     // Generate a unique document ID to prevent overwriting (optional)
+  //     const gameDocRef = doc(scoreboardCollectionRef, gameId);
+
+  //     await setDoc(gameDocRef, newGame);
+  //     handleShowPopup("Game added and players updated successfully!");
+  //     setGames((prevGames) => [newGame, ...prevGames]);
+  //   } catch (error) {
+  //     console.error("Error saving game:", error);
+  //     Alert.alert("Error", "Error saving game data");
+  //   }
+  // };
 
   const deleteGameById = async (gameId, setGames) => {
     // console.log("gameId", gameId);

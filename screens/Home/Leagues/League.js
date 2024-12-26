@@ -39,9 +39,13 @@ const League = () => {
   const renderComponent = () => {
     switch (selectedTab) {
       case "Scoreboard":
-        return <Scoreboard leagueGames={leagueDetails.games} />;
+        return (
+          <Scoreboard leagueGames={leagueDetails.games} leagueId={leagueId} />
+        );
       case "Player Performance":
-        return <PlayerPerformance playersData={playersData} />;
+        return (
+          <PlayerPerformance playersData={playersData} leagueId={leagueId} />
+        );
       case "Team Performance":
         return <TeamPerformance />;
       default:

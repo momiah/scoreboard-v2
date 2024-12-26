@@ -45,7 +45,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
                     color={league.leagueStatus.color}
                   />
                 </TagContainer>
-                <LeagueName>{league.name}</LeagueName>
+                <LeagueName>{league.leagueName}</LeagueName>
                 <View
                   style={{
                     flexDirection: "row",

@@ -4,10 +4,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
 const Tag = ({ name, color = "#2F2F30", icon }) => {
+  const tagName = name ? name.toUpperCase() : "NO TAG NAME";
   return (
     <TagContainer backgroundColor={color}>
       {icon && <TagIcon name={icon} size={24} color="white" />}
-      <TagText>{name.toUpperCase()}</TagText>
+      <TagText>{tagName}</TagText>
     </TagContainer>
   );
 };

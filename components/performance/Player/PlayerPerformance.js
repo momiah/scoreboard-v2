@@ -13,7 +13,7 @@ import { UserContext } from "../../../context/UserContext";
 import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "./PlayerDetails";
 
-const PlayerPerformance = ({ playersData }) => {
+const PlayerPerformance = ({ playersData, leagueId }) => {
   const { refreshing, findRankIndex, recentGameResult } =
     useContext(GameContext);
   const { fetchPlayersToSort, loading, setLoading } = useContext(UserContext);
@@ -24,11 +24,11 @@ const PlayerPerformance = ({ playersData }) => {
 
   const handleRefresh = async () => {
     setLoading(true);
-    await fetchPlayersToSort();
+    await fetchPlayersToSort(leagueId);
   };
 
   useEffect(() => {
-    fetchPlayersToSort();
+    fetchPlayersToSort(leagueId);
   }, []);
 
   // const runGetPlayersToUpdate = async () => {
