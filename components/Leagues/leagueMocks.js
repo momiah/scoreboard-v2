@@ -495,7 +495,7 @@ const generateParticipants = (num) => {
 };
 
 const generateEmptyParticipants = (num) => {
-  const usernames = generateUsernames(num);
+  const usernames = ["Rayyan", "Hussain", "Yasin", "Abdul"];
 
   return usernames.map((username) => ({
     id: username,

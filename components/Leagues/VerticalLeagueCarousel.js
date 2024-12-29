@@ -1,4 +1,4 @@
-import React, { useCallback, useContext } from "react";
+import React, { useCallback, useContext, useEffect } from "react";
 import {
   FlatList,
   TouchableOpacity,
@@ -17,7 +17,7 @@ import { GameContext } from "../../context/GameContext";
 
 const VerticalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues } = useContext(GameContext);
+  const { leagues, fetchLeagues } = useContext(GameContext);
 
   // Memoize navigation handler to prevent re-renders
   const navigateTo = useCallback(
@@ -26,6 +26,10 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
     },
     [navigation, navigationRoute]
   );
+
+  useEffect(() => {
+    fetchLeagues();
+  }, []);
 
   // Render individual league items
   const renderLeagueItem = useCallback(

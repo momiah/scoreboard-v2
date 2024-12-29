@@ -13,7 +13,12 @@ import { generateUniqueGameId } from "../../../functions/generateUniqueId";
 import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
 import RegisterPlayer from "./RegisterPlayer";
 
-const AddGameModal = ({ modalVisible, setModalVisible, leagueId }) => {
+const AddGameModal = ({
+  modalVisible,
+  setModalVisible,
+  leagueId,
+  leagueGames,
+}) => {
   const { games, addGame } = useContext(GameContext);
   const {
     handleShowPopup,
@@ -105,7 +110,7 @@ const AddGameModal = ({ modalVisible, setModalVisible, leagueId }) => {
       return;
     }
 
-    const gameId = generateUniqueGameId(games);
+    const gameId = generateUniqueGameId(leagueGames);
     const newGame = {
       gameId: gameId,
       gamescore: `${team1Score} - ${team2Score}`,

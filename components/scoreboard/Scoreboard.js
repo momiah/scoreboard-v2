@@ -179,6 +179,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
           modalVisible
           setModalVisible={setModalVisible}
           leagueId={leagueId}
+          leagueGames={leagueGames}
         />
       )}
     </Container>

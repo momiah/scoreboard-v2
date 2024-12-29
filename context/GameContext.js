@@ -42,29 +42,29 @@ const GameProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const fetchLeagues = async () => {
-      try {
-        // Reference the `leagues` collection in Firestore
-        const querySnapshot = await getDocs(collection(db, "leagues"));
-
-        // Map through the documents and store data
-        const leaguesData = querySnapshot.docs.map((doc) => ({
-          id: doc.id, // Include document ID
-          ...doc.data(), // Include the rest of the document fields
-        }));
-
-        setLeagues(leaguesData);
-      } catch (error) {
-        console.error("Error fetching leagues:", error);
-      }
-    };
-
     if (showMockData) {
       setLeagues(generatedLeagues); // Use mock data if `showMockData` is true
     } else {
       fetchLeagues(); // Fetch real data if `showMockData` is false
     }
   }, [showMockData]);
+
+  const fetchLeagues = async () => {
+    try {
+      // Reference the `leagues` collection in Firestore
+      const querySnapshot = await getDocs(collection(db, "leagues"));
+
+      // Map through the documents and store data
+      const leaguesData = querySnapshot.docs.map((doc) => ({
+        id: doc.id, // Include document ID
+        ...doc.data(), // Include the rest of the document fields
+      }));
+
+      setLeagues(leaguesData);
+    } catch (error) {
+      console.error("Error fetching leagues:", error);
+    }
+  };
 
   const addLeagues = async (leagueData) => {
     // console.log("League Entry:", leagueData);
@@ -249,6 +249,7 @@ const GameProvider = ({ children }) => {
 
         addLeagues,
         leagues,
+        fetchLeagues,
 
         medalNames,
         ranks,
