@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect} from "react";
 import { Modal, Text, View } from "react-native";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
@@ -9,11 +9,15 @@ import {
   mockedParticipants,
   mockedEmptyParticipants,
 } from "../../Leagues/leagueMocks";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserContext } from "../../../context/UserContext";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
+  const { addLeagues } = useContext(LeagueContext);
+  const { getUserById } = useContext(UserContext);
   const [leagueDetails, setLeagueDetails] = useState({
     leagueParticipants: [...mockedEmptyParticipants],
-    leagueAdmins: [],
+    leagueAdmins: {},
     games: [],
     leagueType: "",
     prizeType: "",
@@ -33,15 +37,40 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     leagueStatus: "FULL",
   });
 
-  const { addLeagues } = useContext(LeagueContext);
 
+  
+  useEffect(() => {
+    getAdminInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const getAdminInfo = async () => {
+    try {
+      const userId = await AsyncStorage.getItem("userId"); // Retrieve userId from AsyncStorage
+      if (!userId) {
+        console.log("No userId found in AsyncStorage.");
+        return;
+      }
+  
+      const userInfo = await getUserById(userId);
+      setLeagueDetails((prevDetails) => ({
+        ...prevDetails, // Spread the existing state
+        leagueAdmins: userInfo, // Add new admin to the array
+      }));
+     // Await the resolved value of the promise
+      // console.log(userInfo, "=================>"); // Logs the actual user data
+    } catch (error) {
+      console.error("Error retrieving admin info:", error);
+    }
+  };
+  // console.log(getAdminInfo(), "leagueDetails===>");
   const handleChange = (field, value) => {
     setLeagueDetails((prevDetails) => ({
       ...prevDetails,
       [field]: value,
     }));
   };
-
+console.log('leagueDetails===>',leagueDetails)
   const handleCreate = () => {
     // console.log("Creating league with details:", leagueDetails);
 

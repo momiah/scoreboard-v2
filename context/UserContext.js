@@ -11,6 +11,7 @@ import {
 import { db } from "../services/firebase.config";
 import moment from "moment";
 import { PopupContext } from "./PopupContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const UserContext = createContext();
 
@@ -54,6 +55,7 @@ const UserProvider = ({ children }) => {
   const Logout = async () => {
     try {
       // Perform any cleanup or reset actions necessary
+      await AsyncStorage.clear();
       setCurrentUser(null); // Clear the logged-in user
       setPlayers([]); // Clear player data
       handleShowPopup("Successfully logged out!");
@@ -239,6 +241,30 @@ const UserProvider = ({ children }) => {
   //   }
   // };
 
+  const getUserById = async (userId) => {
+    try {
+      if (!userId) {
+        console.error("User ID is required to fetch details.");
+        return null;
+      }
+  
+      // Reference the document in the 'users' collection by ID
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
+        console.log("User details:", userDoc.data());
+        return userDoc.data() ; // Include the document ID
+      } else {
+        console.error("No user found with the given ID.");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching user by ID:", error);
+      return null;
+    }
+  };
+
   const resetAllPlayerStats = async () => {
     try {
       const allPlayers = await retrievePlayers();
@@ -311,6 +337,7 @@ const UserProvider = ({ children }) => {
         setPlayer,
         players,
         player,
+        getUserById,
       }}
     >
       {children}

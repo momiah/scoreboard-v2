@@ -80,7 +80,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
 
       <FlatList
         data={leagueGames}
-        keyExtractor={(item) => item.gameId}
+        keyExtractor={(item,index) => index}
         // refreshControl={
         //   <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         // }
