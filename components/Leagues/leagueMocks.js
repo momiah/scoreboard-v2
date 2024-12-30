@@ -638,7 +638,7 @@ const generateLeagues = ({
     leagueParticipants: participants,
     maxPlayers: randomItem(maxPlayers),
     privacy: randomItem(privacyTypes),
-    name: `League ${i + 1} - ${randomItem(leagueTypes)}`,
+    leagueName: `League ${i + 1} - ${randomItem(leagueTypes)}`,
     playingTime: generatePlayingTimes(numDays),
     leagueStatus: randomItem(leagueStatus),
     location: randomItem(locations),

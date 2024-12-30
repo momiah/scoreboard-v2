@@ -3,6 +3,7 @@ import { Modal, Text, View } from "react-native";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import { GameContext } from "../../../context/GameContext";
+import { LeagueContext } from "../../../context/LeagueContext";
 import { sampleLeagues2, sampleLeagues } from "../../Leagues/leagueMocks";
 import {
   mockedParticipants,
@@ -32,7 +33,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     leagueStatus: "FULL",
   });
 
-  const { addLeagues } = useContext(GameContext);
+  const { addLeagues } = useContext(LeagueContext);
 
   const handleChange = (field, value) => {
     setLeagueDetails((prevDetails) => ({

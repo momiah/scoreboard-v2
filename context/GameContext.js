@@ -13,12 +13,10 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { PopupContext } from "./PopupContext";
-import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { AntDesign } from "@expo/vector-icons";
 
 import { db } from "../services/firebase.config";
-import moment from "moment";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { ranks } from "../rankingMedals/ranking/ranks";
 
 const GameContext = createContext();
@@ -29,8 +27,6 @@ const GameProvider = ({ children }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteGameContainer, setDeleteGameContainer] = useState(false);
   const [deleteGameId, setDeleteGameId] = useState(null);
-  const [leagues, setLeagues] = useState([]);
-  const [showMockData, setShowMockData] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,51 +37,12 @@ const GameProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (showMockData) {
-      setLeagues(generatedLeagues); // Use mock data if `showMockData` is true
-    } else {
-      fetchLeagues(); // Fetch real data if `showMockData` is false
-    }
-  }, [showMockData]);
-
-  const fetchLeagues = async () => {
-    try {
-      // Reference the `leagues` collection in Firestore
-      const querySnapshot = await getDocs(collection(db, "leagues"));
-
-      // Map through the documents and store data
-      const leaguesData = querySnapshot.docs.map((doc) => ({
-        id: doc.id, // Include document ID
-        ...doc.data(), // Include the rest of the document fields
-      }));
-
-      setLeagues(leaguesData);
-    } catch (error) {
-      console.error("Error fetching leagues:", error);
-    }
-  };
-
-  const addLeagues = async (leagueData) => {
-    // console.log("League Entry:", leagueData);
-
-    try {
-      await setDoc(doc(db, "leagues", leagueData.leagueName), {
-        ...leagueData,
-      });
-      console.log("League added successfully!");
-    } catch (error) {
-      console.error("Error adding league: ", error);
-    }
-  };
-
   const medalNames = (xp) => {
     const rank = ranks.find((rank, index) => {
       const nextRank = ranks[index + 1];
       if (nextRank) {
         return xp >= rank.xp && xp < nextRank.xp;
       } else {
-        // If there's no next rank, assume xp is greater than the last rank's xp
         return xp >= rank.xp;
       }
     });
@@ -190,22 +147,6 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  // const addGame = async (newGame, gameId) => {
-  //   try {
-  //     const scoreboardCollectionRef = collection(db, "scoreboard");
-
-  //     // Generate a unique document ID to prevent overwriting (optional)
-  //     const gameDocRef = doc(scoreboardCollectionRef, gameId);
-
-  //     await setDoc(gameDocRef, newGame);
-  //     handleShowPopup("Game added and players updated successfully!");
-  //     setGames((prevGames) => [newGame, ...prevGames]);
-  //   } catch (error) {
-  //     console.error("Error saving game:", error);
-  //     Alert.alert("Error", "Error saving game data");
-  //   }
-  // };
-
   const deleteGameById = async (gameId, setGames) => {
     // console.log("gameId", gameId);
 
@@ -244,12 +185,6 @@ const GameProvider = ({ children }) => {
         deleteGameId,
         setDeleteGameId,
         retrieveGames,
-        setShowMockData,
-        showMockData,
-
-        addLeagues,
-        leagues,
-        fetchLeagues,
 
         medalNames,
         ranks,

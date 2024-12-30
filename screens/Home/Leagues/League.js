@@ -11,12 +11,12 @@ import TeamPerformance from "../../../components/performance/Team/TeamPerformanc
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../../../components/Tag";
 import { Dimensions } from "react-native";
-import { GameContext } from "../../../context/GameContext";
+import { LeagueContext } from "../../../context/LeagueContext";
 
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
-  const { leagues } = useContext(GameContext);
+  const { leagues } = useContext(LeagueContext);
 
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [loading, setLoading] = useState(true); // Track loading state
