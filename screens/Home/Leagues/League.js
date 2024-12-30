@@ -86,7 +86,7 @@ const League = () => {
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
-            <LeagueName>{leagueDetails.name}</LeagueName>
+            <LeagueName>{leagueDetails.leagueName}</LeagueName>
             <View
               style={{
                 flexDirection: "row",
