@@ -11,16 +11,12 @@ import TeamPerformance from "../../../components/performance/Team/TeamPerformanc
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../../../components/Tag";
 import { Dimensions } from "react-native";
-import { GameContext } from "../../../context/GameContext";
+import { LeagueContext } from "../../../context/LeagueContext";
 
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
-  const { leagues } = useContext(GameContext);
-  console.log("league id✅", leagueId);
-
-  // console.log("leagues games", JSON.stringify(leagues, null, 2));
-  // console.log("mock🔥 ", JSON.stringify(leagueDetails, null, 2));
+  const { leagues } = useContext(LeagueContext);
 
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [loading, setLoading] = useState(true); // Track loading state
@@ -38,12 +34,17 @@ const League = () => {
     },
   ];
 
+  const playersData = leagueDetails?.leagueParticipants;
+  const leagueGames = leagueDetails?.games;
+
   const renderComponent = () => {
     switch (selectedTab) {
       case "Scoreboard":
-        return <Scoreboard leagueGames={leagueDetails.games} />;
+        return <Scoreboard leagueGames={leagueGames} leagueId={leagueId} />;
       case "Player Performance":
-        return <PlayerPerformance />;
+        return (
+          <PlayerPerformance playersData={playersData} leagueId={leagueId} />
+        );
       case "Team Performance":
         return <TeamPerformance />;
       default:
@@ -53,18 +54,10 @@ const League = () => {
 
   useEffect(() => {
     fetchLeagueDetails(leagueId);
-    // console.log(
-    //   "leagueDetails🔥",
-    //   JSON.stringify(leagueDetails.games, null, 2)
-    // );
   }, [leagueId]);
 
   const fetchLeagueDetails = (id) => {
     const fetchedDetails = leagues.find((league) => league.id === id);
-    // console.log(
-    //   "fetchedDetails🔥",
-    //   JSON.stringify(fetchedDetails.games, null, 2)
-    // );
     setLeagueDetails(fetchedDetails);
     setLoading(false); // Set loading to false once data is fetched
   };

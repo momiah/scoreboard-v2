@@ -1,23 +1,17 @@
-import React, { useCallback, useContext } from "react";
-import {
-  FlatList,
-  TouchableOpacity,
-  Text,
-  View,
-  ScrollView,
-  ImageBackground,
-} from "react-native";
+import React, { useCallback, useContext, useEffect } from "react";
+import { FlatList, TouchableOpacity, View } from "react-native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { generatedLeagues } from "./leagueMocks";
+
 import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { GameContext } from "../../context/GameContext";
+
+import { LeagueContext } from "../../context/LeagueContext";
 
 const VerticalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues } = useContext(GameContext);
+  const { leagues, fetchLeagues } = useContext(LeagueContext);
 
   // Memoize navigation handler to prevent re-renders
   const navigateTo = useCallback(
@@ -26,6 +20,10 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
     },
     [navigation, navigationRoute]
   );
+
+  // useEffect(() => {
+  //   fetchLeagues();
+  // }, []);
 
   // Render individual league items
   const renderLeagueItem = useCallback(
@@ -45,7 +43,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
                     color={league.leagueStatus.color}
                   />
                 </TagContainer>
-                <LeagueName>{league.name}</LeagueName>
+                <LeagueName>{league.leagueName}</LeagueName>
                 <View
                   style={{
                     flexDirection: "row",

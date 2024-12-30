@@ -1,7 +1,8 @@
 import { transformDate } from "../functions/dateTransform";
 
-export const getPlayersToUpdate = async (game, retrievePlayers) => {
-  const allPlayers = await retrievePlayers();
+export const getPlayersToUpdate = async (game, retrievePlayers, leagueId) => {
+  const allPlayers = await retrievePlayers(leagueId);
+
   const date = transformDate(game.date);
 
   const playersToUpdate = allPlayers.filter((player) =>
@@ -115,7 +116,8 @@ export const getPlayersToUpdate = async (game, retrievePlayers) => {
     streakType,
     streakCount,
     combinedWinnerXp,
-    combinedLoserXp
+    combinedLoserXp,
+    points
   ) => {
     // Handle potential division by zero or undefined values
     const baseXP = streakType === "W" ? 20 : -10;
@@ -160,9 +162,11 @@ export const getPlayersToUpdate = async (game, retrievePlayers) => {
 
     const finalXp = xp + rankXp;
 
+    const prevWinGameXp = streakType === "W" ? points : 0;
+
     // Update the player's XP
     player.XP += finalXp;
-    player.prevGameXP = finalXp;
+    player.prevGameXP = streakType === "W" ? prevWinGameXp + finalXp : finalXp;
 
     // Ensure the player's XP doesn't drop below 1
     if (player.XP < 10) {
@@ -231,7 +235,8 @@ export const getPlayersToUpdate = async (game, retrievePlayers) => {
         player.currentStreak.type,
         player.currentStreak.count,
         combinedWinnerXp,
-        combinedLoserXp
+        combinedLoserXp,
+        game.result.winner.score
       );
       updateDemonWin(player, game.result.winner.score, game.result.loser.score);
       updateLastActive(player, date);

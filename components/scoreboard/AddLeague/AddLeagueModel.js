@@ -3,21 +3,37 @@ import { Modal, Text, View } from "react-native";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import { GameContext } from "../../../context/GameContext";
+import { LeagueContext } from "../../../context/LeagueContext";
 import { sampleLeagues2, sampleLeagues } from "../../Leagues/leagueMocks";
+import {
+  mockedParticipants,
+  mockedEmptyParticipants,
+} from "../../Leagues/leagueMocks";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [leagueDetails, setLeagueDetails] = useState({
+    leagueParticipants: [...mockedEmptyParticipants],
+    leagueAdmins: [],
+    games: [],
+    leagueType: "",
+    prizeType: "",
+    entryFee: 0,
+    currencyType: "",
+    image: "",
     leagueName: "",
     location: "",
     centerName: "",
     startDate: "",
     endDate: "",
     image: "",
+    leagueType: "",
     maxPlayers: 0,
     privacy: "",
+    playingTime: [],
+    leagueStatus: "FULL",
   });
 
-  const { addLeagues } = useContext(GameContext);
+  const { addLeagues } = useContext(LeagueContext);
 
   const handleChange = (field, value) => {
     setLeagueDetails((prevDetails) => ({
@@ -27,9 +43,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   };
 
   const handleCreate = () => {
-    // addLeagues(leagueDetails); // Pass league details to the context function
-    addLeagues(sampleLeagues); // Pass league details to the context function
-    setModalVisible(false); // Close modal after action
+    // console.log("Creating league with details:", leagueDetails);
+
+    addLeagues(leagueDetails);
+    setModalVisible(false);
   };
 
   return (
@@ -87,6 +104,13 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               value={leagueDetails.maxPlayers}
               onChangeText={(value) => handleChange("maxPlayers", value)}
             />
+            <Label>League Type</Label>
+            <Input
+              placeholder="Enter League Type"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.leagueType}
+              onChangeText={(value) => handleChange("leagueType", value)}
+            />
             <Label>Privacy</Label>
             <Input
               placeholder="Enter privacy"
@@ -100,7 +124,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 <CancelText>Cancel</CancelText>
               </CancelButton>
               <CreateButton onPress={handleCreate}>
-                <CreateText>Create</CreateText>
+                <CreateText>Createw</CreateText>
               </CreateButton>
             </ButtonContainer>
           </ModalContent>

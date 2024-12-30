@@ -62,7 +62,7 @@ const PlayerDetails = ({
     },
     {
       statTitle: "Win Ratio",
-      stat: <Stat>{winRatio.toFixed(2)}</Stat>,
+      stat: <Stat>{isNaN(winRatio) ? 0 : winRatio.toFixed(2)}</Stat>,
     },
     {
       statTitle: "Point Efficiency",

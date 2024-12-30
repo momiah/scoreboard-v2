@@ -8,7 +8,7 @@ import { Dimensions } from "react-native";
 
 import AddGameModal from "./AddGame/AddGameModal";
 
-const Scoreboard = ({ leagueGames }) => {
+const Scoreboard = ({ leagueGames, leagueId }) => {
   const {
     // games, from the previous version of the component
     setGames,
@@ -27,13 +27,12 @@ const Scoreboard = ({ leagueGames }) => {
   const [newestGameId, setNewestGameId] = useState("");
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
   // console.log("games from context🤔", JSON.stringify(games, null, 2));
-  console.log("leagueGames from props🤔", JSON.stringify(leagueGames, null, 2));
 
   useEffect(() => {
     if (leagueGames.length > 0) {
       setNewestGameId(leagueGames[0].gameId);
     }
-    fetchPlayers();
+    fetchPlayers(leagueId);
   }, [leagueGames]);
 
   //////////////////////////
@@ -43,18 +42,18 @@ const Scoreboard = ({ leagueGames }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
+  // const handleRefresh = async () => {
+  //   setRefreshing(true);
 
-    try {
-      const retrievedGames = await retrieveGames();
-      setGames(retrievedGames);
-    } catch (error) {
-      console.error("Error refreshing games:", error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  //   try {
+  //     const retrievedGames = await retrieveGames();
+  //     setGames(retrievedGames);
+  //   } catch (error) {
+  //     console.error("Error refreshing games:", error);
+  //   } finally {
+  //     setRefreshing(false);
+  //   }
+  // };
 
   const openDeleteGameContainer = (gameId) => {
     setDeleteGameId(gameId);
@@ -67,7 +66,7 @@ const Scoreboard = ({ leagueGames }) => {
   };
 
   const handleAddGameButton = () => {
-    fetchPlayers();
+    fetchPlayers(leagueId);
     setModalVisible(true);
   };
 
@@ -82,9 +81,9 @@ const Scoreboard = ({ leagueGames }) => {
       <FlatList
         data={leagueGames}
         keyExtractor={(item) => item.gameId}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        // refreshControl={
+        //   <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        // }
         renderItem={({ item }) => (
           <>
             {newestGameId === item.gameId ? (
@@ -176,7 +175,12 @@ const Scoreboard = ({ leagueGames }) => {
       />
 
       {modalVisible && (
-        <AddGameModal modalVisible setModalVisible={setModalVisible} />
+        <AddGameModal
+          modalVisible
+          setModalVisible={setModalVisible}
+          leagueId={leagueId}
+          leagueGames={leagueGames}
+        />
       )}
     </Container>
   );

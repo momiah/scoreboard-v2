@@ -4,7 +4,8 @@ import styled from "styled-components/native";
 import { generatedLeagues } from "./leagueMocks";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { GameContext } from "../../context/GameContext";
+
+import { LeagueContext } from "../../context/LeagueContext";
 import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -12,7 +13,7 @@ const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues } = useContext(GameContext);
+  const { leagues } = useContext(LeagueContext);
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
@@ -51,7 +52,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
                     color={league.leagueStatus.color}
                   />
                 </TagContainer>
-                <LeagueName>{league.name}</LeagueName>
+                <LeagueName>{league.leagueName}</LeagueName>
                 <View
                   style={{
                     flexDirection: "row",

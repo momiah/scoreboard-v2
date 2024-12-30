@@ -3,19 +3,20 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import { Alert } from "react-native";
 import {
   deleteDoc,
+  getDoc,
   doc,
   setDoc,
   collection,
   query,
   orderBy,
+  updateDoc,
   getDocs,
 } from "firebase/firestore";
 import { PopupContext } from "./PopupContext";
-import { generatedLeagues } from "../components/Leagues/leagueMocks";
+import { AntDesign } from "@expo/vector-icons";
 
 import { db } from "../services/firebase.config";
-import moment from "moment";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { ranks } from "../rankingMedals/ranking/ranks";
 
 const GameContext = createContext();
@@ -26,8 +27,6 @@ const GameProvider = ({ children }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteGameContainer, setDeleteGameContainer] = useState(false);
   const [deleteGameId, setDeleteGameId] = useState(null);
-  const [leagues, setLeagues] = useState([]);
-  const [showMockData, setShowMockData] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,114 +37,12 @@ const GameProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const fetchLeagues = async () => {
-      try {
-        // Reference the `leagues` collection in Firestore
-        const querySnapshot = await getDocs(collection(db, "leagues"));
-
-        // Map through the documents and store data
-        const leaguesData = querySnapshot.docs.map((doc) => ({
-          id: doc.id, // Include document ID
-          ...doc.data(), // Include the rest of the document fields
-        }));
-        console.log("leaguesData🙂", leaguesData);
-
-        setLeagues(leaguesData);
-      } catch (error) {
-        console.error("Error fetching leagues:", error);
-      }
-    };
-
-    if (showMockData) {
-      setLeagues(generatedLeagues); // Use mock data if `showMockData` is true
-    } else {
-      fetchLeagues(); // Fetch real data if `showMockData` is false
-    }
-  }, [showMockData]);
-
-  const addLeagues = async (leagueData) => {
-    const leagueName = leagueData.leagueName;
-    const leagueEntry = {
-      id: 1,
-      leagueAdmins: ["Rayyan", "Hussain"],
-      leageueParticipants: [
-        {
-          id: "Rayyan",
-          memberSince: moment().format("MMM YYYY"),
-          XP: 10,
-          prevGameXP: 0,
-          lastActive: "",
-          numberOfWins: 0,
-          numberOfLosses: 0,
-          numberOfGamesPlayed: 0,
-          winPercentage: 0,
-          resultLog: [],
-          pointEfficiency: 0,
-          totalPoints: 0,
-          totalPointEfficiency: 0,
-          winStreak5: 0,
-          winStreak7: 0,
-          winStreak3: 0,
-          demonWin: 0,
-          currentStreak: {
-            type: null,
-            count: 0,
-          },
-          highestLossStreak: 0,
-          highestWinStreak: 0,
-        },
-      ],
-      maxPlayers: maxPlayers[0],
-      privacy: privacyTypes[0],
-      name: "Laura Trotter Badminton League",
-      playingTime: [
-        {
-          day: "Monday",
-          startTime: "6:00 PM",
-          endTime: "8:00 PM",
-        },
-        {
-          day: "Wednesday",
-          startTime: "6:00 PM",
-          endTime: "8:00 PM",
-        },
-        {
-          day: "Friday",
-          time: "6:00 PM",
-          endTime: "8:00 PM",
-        },
-      ],
-      leagueStatus: leagueStatus[0],
-      location: "Cheshunt",
-      centerName: "Cheshunt Sports Center",
-      country: "England",
-      startDate: "24/12/2023",
-      endDate: "",
-      leagueType: leagueTypes[0],
-      prizeType: prizeTypes[0],
-      entryFee: 10,
-      currencyType: currencyTypes[0],
-      image: mockImages.court1,
-      games: [],
-    };
-    try {
-      await setDoc(doc(db, "leagues", "uniqueLeagueId4"), {
-        ...leagueData,
-      });
-      console.log("League added successfully!");
-    } catch (error) {
-      console.error("Error adding league: ", error);
-    }
-  };
-
   const medalNames = (xp) => {
     const rank = ranks.find((rank, index) => {
       const nextRank = ranks[index + 1];
       if (nextRank) {
         return xp >= rank.xp && xp < nextRank.xp;
       } else {
-        // If there's no next rank, assume xp is greater than the last rank's xp
         return xp >= rank.xp;
       }
     });
@@ -174,6 +71,15 @@ const GameProvider = ({ children }) => {
 
       return new Date(formattedDateB) - new Date(formattedDateA); // Newest date first
     });
+  };
+
+  const recentGameResult = (resultLog) => {
+    const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
+
+    const icon = lastResult === "W" ? "caretup" : "caretdown";
+    const color = lastResult === "W" ? "green" : "red";
+
+    return <AntDesign name={icon} size={10} color={color} />;
   };
 
   const getRankByXP = (xp) => {
@@ -211,16 +117,30 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  const addGame = async (newGame, gameId) => {
+  const addGame = async (newGame, gameId, leagueId) => {
     try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueId);
 
-      // Generate a unique document ID to prevent overwriting (optional)
-      const gameDocRef = doc(scoreboardCollectionRef, gameId);
+      // Get the existing league document
+      const leagueDoc = await getDoc(leagueDocRef);
 
-      await setDoc(gameDocRef, newGame);
-      handleShowPopup("Game added and players updated successfully!");
-      setGames((prevGames) => [newGame, ...prevGames]);
+      if (leagueDoc.exists()) {
+        // Get the current games array from the league document
+        const currentGames = leagueDoc.data().games || [];
+
+        // Update the games array with the new game
+        const updatedGames = [...currentGames, newGame];
+
+        // Update the league document with the updated games array
+        await updateDoc(leagueDocRef, { games: updatedGames });
+
+        handleShowPopup("Game added and players updated successfully!");
+        setGames((prevGames) => [newGame, ...prevGames]);
+      } else {
+        console.error("League document not found.");
+        Alert.alert("Error", "League not found.");
+      }
     } catch (error) {
       console.error("Error saving game:", error);
       Alert.alert("Error", "Error saving game data");
@@ -264,16 +184,13 @@ const GameProvider = ({ children }) => {
         setDeleteGameContainer,
         deleteGameId,
         setDeleteGameId,
-        addLeagues,
         retrieveGames,
-        setShowMockData,
-        showMockData,
-        leagues,
 
         medalNames,
         ranks,
         findRankIndex,
         getRankByXP,
+        recentGameResult,
 
         refreshing,
         setRefreshing,

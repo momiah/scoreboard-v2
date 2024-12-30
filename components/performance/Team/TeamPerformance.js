@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useContext } from "react";
 import { View, FlatList } from "react-native";
 import styled from "styled-components/native";
-import { AntDesign } from "@expo/vector-icons";
+
 import { GameContext } from "../../../context/GameContext";
 import { calculatTeamPerformance } from "../../../functions/calculateTeamPerformance";
 import TeamDetails from "./TeamDetails";
 import { Dimensions } from "react-native";
 
 const TeamPerformance = () => {
-  const { games, setGames, retrieveGames } = useContext(GameContext);
+  const { games, recentGameResult } = useContext(GameContext);
   const [teamStats, setTeamStats] = useState([]);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [team, setTeam] = useState({});
@@ -17,24 +17,6 @@ const TeamPerformance = () => {
     const stats = calculatTeamPerformance(games);
     setTeamStats(stats);
   }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const retrievedGames = await retrieveGames();
-      setGames(retrievedGames);
-    };
-
-    fetchData();
-  }, [setGames]);
-
-  const recentGameResult = (resultLog) => {
-    const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
-
-    const icon = lastResult === "W" ? "caretup" : "caretdown";
-    const color = lastResult === "W" ? "green" : "red";
-
-    return <AntDesign name={icon} size={10} color={color} />;
-  };
 
   const renderTeam = ({ item: team, index }) => (
     <TableRow
