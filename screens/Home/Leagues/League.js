@@ -119,6 +119,7 @@ const League = () => {
               {/* Should be changed to Action button for users
                   If part of the league = "Participant"
                   If not part of the league = "Request to Join"
+                  If league admin = "Invite Players"
               */}
               <Tag name={leagueDetails.leagueType} />
             </View>
