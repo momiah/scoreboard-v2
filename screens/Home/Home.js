@@ -28,7 +28,7 @@ const Home = () => {
       const token = await AsyncStorage.getItem("userToken");
       setUserToken(token);
     };
-    Logout()
+    // Logout()
 
     fetchUserToken();
   }, []);
