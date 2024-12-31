@@ -11,7 +11,7 @@ const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
   const { players } = useContext(UserContext);
 
   const playerArray = players.map((player) => ({
-    key: player.id, // Assuming each player has a unique ID
+    key: player.userId, // Assuming each player has a unique ID
     value: player.id, // Adjust based on the structure of your player data
   }));
 

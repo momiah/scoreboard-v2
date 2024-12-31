@@ -89,16 +89,19 @@ export default function Login() {
         // setFirebaseError("");
         const user = userCredential.user;
         const token = await user.getIdToken(); // Get the Firebase Auth ID token
+        const userId = user.uid;
 
         // Save the token to AsyncStorage
-        console.log(token, 'token')
+     
         await AsyncStorage.setItem("userToken", token);
+        await AsyncStorage.setItem("userId", userId);
         navigation.reset({
           index: 0,
           routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
         }); // Adjust to your home screen
       } catch (error) {
         // setFirebaseError(error.message || "Login failed.");
+        Alert.alert("Error","Login failed.");
       }
     }
   };
@@ -124,6 +127,7 @@ export default function Login() {
   //     const userData = userInfo.data.user;
   //     // Save the token in AsyncStorage
   //     await AsyncStorage.setItem("userToken", token);
+  // await AsyncStorage.setItem("userId", userId);
 
   //     try {
   //       const usersRef = collection(db, 'users');
