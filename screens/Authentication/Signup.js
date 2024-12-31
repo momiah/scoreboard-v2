@@ -164,9 +164,9 @@ const Signup = ({ route }) => {
 
         // Store additional user data in Firestore
         await setDoc(doc(db, "users", userId), {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          username: formData.username,
+          firstName: formData.firstName.toLowerCase(),
+          lastName: formData.lastName.toLowerCase(),
+          username: formData.username.toLowerCase(),
           email: formData.email,
           dob: formData.dob,
           location: formData.location,
