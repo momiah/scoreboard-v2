@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Modal, TextInput, Button, View, Text } from "react-native";
+import {
+  Modal,
+  TextInput,
+  Button,
+  View,
+  Text,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
 import { PopupContext } from "../../../context/PopupContext";
 import styled from "styled-components/native";
-import { Dimensions } from "react-native";
 import Popup from "../../popup/Popup";
 import SelectPlayer from "./SelectPlayer";
 import moment from "moment";
@@ -12,6 +19,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../../functions/generateUniqueId";
 import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
 import RegisterPlayer from "./RegisterPlayer";
+import AddGame from "./AddGame";
 
 const AddGameModal = ({
   modalVisible,
@@ -169,75 +177,29 @@ const AddGameModal = ({
         />
         <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <ModalContent>
-            <GameContainer>
-              <TeamContainer>
-                <SelectPlayer
-                  onSelectPlayer={(player) =>
-                    handleSelectPlayer("team1", 0, player)
-                  }
-                  selectedPlayers={selectedPlayers}
-                  borderType={"topLeft"}
-                />
-                <SelectPlayer
-                  onSelectPlayer={(player) =>
-                    handleSelectPlayer("team1", 1, player)
-                  }
-                  selectedPlayers={selectedPlayers}
-                  borderType={"bottomLeft"}
-                />
-              </TeamContainer>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={{
+                alignSelf: "flex-end",
+                position: "absolute",
+                top: 10,
+                right: 10,
+                zIndex: 10,
+              }}
+            >
+              <AntDesign name="closecircleo" size={30} color="red" />
+            </TouchableOpacity>
 
-              <ResultsContainer>
-                <Text style={{ color: "white" }}>
-                  {moment().format("DD-MM-YYYY")}
-                </Text>
-                <ScoreContainer
-                  style={{ width: screenWidth <= 400 ? 80 : 100 }}
-                >
-                  <ScoreInput
-                    keyboardType="numeric"
-                    placeholder="0"
-                    value={team1Score}
-                    onChangeText={handleScoreChange(setTeam1Score)}
-                  />
-                  <Text style={{ fontSize: 30, color: "#00A2FF" }}>-</Text>
-                  <ScoreInput
-                    keyboardType="numeric"
-                    placeholder="0"
-                    value={team2Score}
-                    onChangeText={handleScoreChange(setTeam2Score)}
-                  />
-                </ScoreContainer>
-              </ResultsContainer>
-
-              <TeamContainer>
-                <SelectPlayer
-                  onSelectPlayer={(player) =>
-                    handleSelectPlayer("team2", 0, player)
-                  }
-                  selectedPlayers={selectedPlayers}
-                  borderType={"topRight"}
-                />
-                <SelectPlayer
-                  onSelectPlayer={(player) =>
-                    handleSelectPlayer("team2", 1, player)
-                  }
-                  selectedPlayers={selectedPlayers}
-                  borderType={"bottomRight"}
-                />
-              </TeamContainer>
-            </GameContainer>
-
-            <RegisterPlayer />
+            <AddGame
+              team1Score={team1Score}
+              setTeam1Score={setTeam1Score}
+              team2Score={team2Score}
+              setTeam2Score={setTeam2Score}
+              selectedPlayers={selectedPlayers}
+              handleSelectPlayer={handleSelectPlayer}
+            />
 
             <ButtonContainer>
-              <AntDesign
-                onPress={() => setModalVisible(false)}
-                name="closecircleo"
-                size={30}
-                color="red"
-              />
-
               <SubmitButton onPress={handleAddGame}>
                 <Text
                   style={{
@@ -274,10 +236,9 @@ const ModalContent = styled.View({
 });
 
 const ButtonContainer = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
   alignItems: "center",
   marginTop: 20,
+  marginBottom: 20,
   paddingRight: 5,
   paddingLeft: 5,
 });

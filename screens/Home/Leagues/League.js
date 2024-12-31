@@ -12,6 +12,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../../../components/Tag";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../../context/LeagueContext";
+import InvitePlayerModel from "../../../components/Models/InvitePlayerModel";
 
 const League = () => {
   const route = useRoute();
@@ -21,6 +22,7 @@ const League = () => {
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [loading, setLoading] = useState(true); // Track loading state
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
+  const [modalVisible, setModalVisible] = useState(false);
 
   const tabs = [
     {
@@ -60,6 +62,18 @@ const League = () => {
     const fetchedDetails = leagues.find((league) => league.id === id);
     setLeagueDetails(fetchedDetails);
     setLoading(false); // Set loading to false once data is fetched
+  };
+
+  const leaguePrompt = async () => {
+    setModalVisible(true);
+    console.log("Invite players");
+    // const token = await AsyncStorage.getItem("userToken");
+
+    // if (token) {
+    //   setModalVisible(true);
+    // } else {
+    //   navigateTo("Login");
+    // }
   };
 
   if (loading) {
@@ -118,10 +132,24 @@ const League = () => {
               </View>
               {/* Should be changed to Action button for users
                   If part of the league = "Participant"
-                  If not part of the league = "Request to Join"
                   If league admin = "Invite Players"
               */}
-              <Tag name={leagueDetails.leagueType} />
+              {/* <Tag
+                name={"Participant"}
+                color="#16181B"
+                iconColor="green"
+                iconSize={15}
+                icon={"checkmark-circle-outline"}
+                iconPosition={"right"}
+                bold
+              /> */}
+              <Tag
+                name={"Invite Players"}
+                color="#00A2FF"
+                icon={"paper-plane-sharp"}
+                onPress={leaguePrompt}
+                bold
+              />
             </View>
           </LeagueDetailsContainer>
         </LeagueImage>
@@ -138,6 +166,13 @@ const League = () => {
         ))}
       </Tabs>
       {renderComponent()}
+      {modalVisible && (
+        <InvitePlayerModel
+          modalVisible={modalVisible}
+          setModalVisible={setModalVisible}
+          leagueDetails={leagueDetails}
+        />
+      )}
 
       {/* <Scoreboard mockgames={leagueDetails.games} /> */}
     </View>

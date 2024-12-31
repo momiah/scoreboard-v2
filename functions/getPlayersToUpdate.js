@@ -120,6 +120,7 @@ export const getPlayersToUpdate = async (game, retrievePlayers, leagueId) => {
     points
   ) => {
     // Handle potential division by zero or undefined values
+
     const baseXP = streakType === "W" ? 20 : -10;
 
     // Calculate difference multiplier safely
