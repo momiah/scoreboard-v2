@@ -7,6 +7,7 @@ import { UserContext } from "../../context/UserContext";
 import { Dimensions } from "react-native";
 
 import AddGameModal from "./AddGame/AddGameModal";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const Scoreboard = ({ leagueGames, leagueId }) => {
   const {
@@ -23,6 +24,8 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     setDeleteGameId,
   } = useContext(GameContext);
   const { fetchPlayers } = useContext(UserContext);
+  const { fetchLeagueById,leagueById } = useContext(LeagueContext);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const [newestGameId, setNewestGameId] = useState("");
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
@@ -34,13 +37,19 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     }
     fetchPlayers(leagueId);
   }, [leagueGames]);
+  useEffect(() => {
+    if (leagueId) {
+      fetchLeagueById(leagueId)
+    }
+    
+  }, [leagueId,modalVisible]);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
   // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
   //////////////////////////
 
-  const [modalVisible, setModalVisible] = useState(false);
+ 
 
   // const handleRefresh = async () => {
   //   setRefreshing(true);
@@ -79,7 +88,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
       </AddGameButton>
 
       <FlatList
-        data={leagueGames}
+        data={leagueById ? leagueById.games.reverse() : []}
         keyExtractor={(item,index) => index}
         // refreshControl={
         //   <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
