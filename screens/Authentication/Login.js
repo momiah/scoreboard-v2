@@ -127,6 +127,7 @@ export default function Login() {
   //     const userData = userInfo.data.user;
   //     // Save the token in AsyncStorage
   //     await AsyncStorage.setItem("userToken", token);
+  // await AsyncStorage.setItem("userId", userId);
 
   //     try {
   //       const usersRef = collection(db, 'users');
