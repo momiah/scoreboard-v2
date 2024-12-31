@@ -105,14 +105,17 @@ const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
 
 const { width: screenWidth } = Dimensions.get("window");
 const PlayerSelectContainer = styled.TouchableOpacity({
+  width: screenWidth <= 400 ? 110 : 110,
+  alignItems: "center",
   border: "1px solid #262626",
 });
 
 const PlayerSelect = styled.Text({
-  fontSize: screenWidth <= 400 ? 12 : 14,
-  color: "white",
-  width: 110,
+  fontSize: 12,
+  color: "#999",
+  width: screenWidth <= 400 ? 110 : 130,
   padding: screenWidth <= 400 ? 17 : 20,
+  textAlign: "center",
 });
 
 const ModalBackground = styled.View({
