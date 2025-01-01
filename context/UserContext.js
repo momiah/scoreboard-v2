@@ -111,8 +111,8 @@ const UserProvider = ({ children }) => {
         const userId = await AsyncStorage.getItem('userId');
 
         if (!userId) {
-            console.error('User ID not found in AsyncStorage');
-            return "invite user";
+            // console.error('User ID not found in AsyncStorage');
+            return "hide";
         }
 
         // If no admins and no participants, return invite user
@@ -136,8 +136,8 @@ const UserProvider = ({ children }) => {
         // If no match, return invite user
         return "invite user";
     } catch (error) {
-        console.error('Error checking user role:', error);
-        return "invite user";
+        // console.error('Error checking user role:', error);
+        return "hide";
     }
 }
 
