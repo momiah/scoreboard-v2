@@ -104,6 +104,43 @@ const UserProvider = ({ children }) => {
   //   }
   // };
 
+
+  async function checkUserRole(leagueData) {
+    try {
+        // Retrieve userId from AsyncStorage
+        const userId = await AsyncStorage.getItem('userId');
+
+        if (!userId) {
+            console.error('User ID not found in AsyncStorage');
+            return "invite user";
+        }
+
+        // If no admins and no participants, return invite user
+        if (leagueData.leagueAdmins.length === 0 && leagueData.leagueParticipants.length === 0) {
+            console.log('No admins or participants in the league');
+            return "invite user";
+        }
+
+        // Check if the userId matches any league admin
+        const isAdmin = leagueData.leagueAdmins.some(admin => admin.userId === userId);
+        if (isAdmin) {
+            return "admin";
+        }
+
+        // Check if the userId matches any league participant
+        const isParticipant = leagueData.leagueParticipants.some(participant => participant.userId === userId);
+        if (isParticipant) {
+            return "participant";
+        }
+
+        // If no match, return invite user
+        return "invite user";
+    } catch (error) {
+        console.error('Error checking user role:', error);
+        return "invite user";
+    }
+}
+
   const fetchPlayers = async (leagueId) => {
     try {
       const players = await retrievePlayers(leagueId);
@@ -338,6 +375,7 @@ const UserProvider = ({ children }) => {
         players,
         player,
         getUserById,
+        checkUserRole,
       }}
     >
       {children}
