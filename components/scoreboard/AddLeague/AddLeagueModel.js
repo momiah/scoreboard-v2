@@ -72,7 +72,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       const rearrangedData = {
         id: userInfo.username, // Rename firstName + lastName to id
         userId: userInfo.userId,
-        ...userInfo.profile_detail, // Merge profile details
+        ...userInfo.profileDetail, // Merge profile details
       };
       setLeagueDetails((prevDetails) => ({
         ...prevDetails, // Spread the existing state
@@ -114,8 +114,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         // Query Firestore to search for matching firstName or lastName
         const q = query(
           collection(db, "users"), // Your Firestore collection name
-          where("firstName", ">=", value.toLowerCase()),
-          where("firstName", "<=", value.toLowerCase() + "\uf8ff") // Range query for partial matching
+          where("username", ">=", value.toLowerCase()),
+          where("username", "<=", value.toLowerCase() + "\uf8ff") // Range query for partial matching
         );
   
         // Get matching documents
@@ -147,7 +147,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     const rearrangedData = {
       id: user.username, // Rename firstName + lastName to id
       userId: user.userId,
-      ...user.profile_detail, // Merge profile details
+      ...user.profileDetail, // Merge profile details
     };
     // Add user to selected users
     setLeagueDetails((prevState) => ({
@@ -238,7 +238,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                   renderItem={({ item }) => (
                     <DropdownItem onPress={() => handleSelectUser(item)}>
                       <DropdownText>
-                        {item.firstName} {item.lastName}
+                        {item.username}
                       </DropdownText>
                     </DropdownItem>
                   )}

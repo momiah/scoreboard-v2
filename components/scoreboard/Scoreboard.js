@@ -95,7 +95,7 @@ if (leagueById && leagueById?.leagueAdmins) {
 
   return (
     <Container>
-      {userRole !== 'hide' &&
+      {userRole !== 'hide' && userRole !== 'invite user' &&
         <AddGameButton onPress={() => handleAddGameButton()}>
           <Text>Add Game</Text>
         </AddGameButton>}

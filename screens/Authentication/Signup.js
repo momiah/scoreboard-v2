@@ -173,7 +173,7 @@ const Signup = ({ route }) => {
           handPreference: formData.handPreference,
           userId: userId,
           provider: "email_password",
-          profile_detail: newPlayer,
+          profileDetail: newPlayer,
         });
         Alert.alert(
           "Account Created",
@@ -197,7 +197,7 @@ const Signup = ({ route }) => {
         handPreference: formData.handPreference,
         userId: userId,
         provider: "gmail",
-        profile_detail: newPlayer,
+        profileDetail: newPlayer,
       });
       Alert.alert(
         "Account Created",
