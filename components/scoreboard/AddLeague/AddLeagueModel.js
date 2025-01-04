@@ -251,12 +251,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 data={leagueDetails?.leagueParticipants}
                 keyExtractor={(item, index) => item.email || index.toString()}
                 renderItem={({ item }) => (
-                  <TouchableOpacity onPress={() => handleRemoveUser(item)}>
-                    <Text>
-                      {item.id} 
-                    </Text>
-                    <RemoveText>✖</RemoveText>
-                  </TouchableOpacity>
+                  <UserItem>
+                        <UserName>{item.id}</UserName>
+                        <RemoveButton onPress={() => handleRemoveUser(item)}>
+                          <RemoveText>✖</RemoveText>
+                        </RemoveButton>
+                      </UserItem>
                 )}
               />
             )}
@@ -364,31 +364,54 @@ const CreateText = styled.Text({
   color: "white",
 });
 const DropdownContainer = styled.View({
-  backgroundColor: "#444",
-  borderRadius: 8,
-  maxHeight: 200,
-  overflow: "hidden", // Ensures rounded corners are maintained if content overflows
+  backgroundColor: "#2D3748", // Dark gray to match the input field
+  borderRadius: 20, // Rounded corners
+  padding: 10, // Padding inside the container
+  marginTop: 5, // Spacing from the input field
+  maxHeight: "200px",
+  width: '100%'
 });
 
 const DropdownItem = styled.TouchableOpacity({
-  padding: 10,
-  backgroundColor: "#333",
-  borderRadius: 8,
-  marginBottom: 5,
+  backgroundColor: "#4A5568", // Slightly lighter gray for contrast
+  borderRadius: 15, // Consistent rounding
+  padding: 10, // Spacing inside the item
+  marginVertical: 5, // Space between items
 });
 
 const DropdownText = styled.Text({
-  color: "white",
+  color: "#FFFFFF", // White text for visibility
+  fontSize: 16, // Readable font size
+  fontWeight: "500", // Slightly bold for emphasis
 });
-const UserItemContainer = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 10,
+
+const UserItem = styled.View({
+  flexDirection: "row", // Align items horizontally
+  justifyContent: "space-between", // Push name to the left and cross to the right
+  alignItems: "center", // Center items vertically
+  padding: 10, // Add spacing inside the item
+  marginVertical: 5, // Space between items
+  backgroundColor: "#4A5568", // Background color
+  borderRadius: 15, // Rounded corners
+  maxWidth:'100%'
+});
+
+const UserName = styled.Text({
+  fontSize: 16, // Set a readable font size
+  color: "#FFFFFF", // White text color
+  fontWeight: "500", // Slightly bold text
+});
+
+const RemoveButton = styled.TouchableOpacity({
+  padding: 5, // Add padding for better touch area
+  borderRadius: 5, // Slightly rounded corners
+  backgroundColor: "#E53E3E", // Red background for the remove button
 });
 
 const RemoveText = styled.Text({
-  color: "red",
-  marginLeft: 10,
+  color: "#FFFFFF", // White text color
+  fontWeight: "bold", // Bold text for emphasis
 });
+
 
 export default AddLeagueModal;
