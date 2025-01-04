@@ -36,7 +36,8 @@
     "react-native-screens": "~4.1.0",
     "react-native-web": "~0.19.13",
     "styled-components": "^6.1.11",
-    "undefined": "..."
+    "undefined": "...",
+    "@react-native-community/datetimepicker": "8.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, use } from "react";
 import {
   Modal,
   Text,
@@ -10,7 +10,6 @@ import {
 
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
-import { GameContext } from "../../../context/GameContext";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { sampleLeagues2, sampleLeagues } from "../../Leagues/leagueMocks";
 import {
@@ -21,6 +20,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserContext } from "../../../context/UserContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
+import DatePicker from "./DatePicker";
+import MaxPlayersPicker from "./MaxPlayersPicker";
+import LeagueType from "./LeagueType";
+import PrivacyType from "./PrivacyType";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const { addLeagues } = useContext(LeagueContext);
@@ -66,7 +69,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       const userInfo = await getUserById(userId);
       setLeagueDetails((prevDetails) => ({
         ...prevDetails, // Spread the existing state
-        leagueAdmins: [...prevDetails.leagueAdmins, userInfo] // Add new admin to the array immutably
+        leagueAdmins: [...prevDetails.leagueAdmins, userInfo], // Add new admin to the array immutably
       }));
 
       const rearrangedData = {
@@ -76,7 +79,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       };
       setLeagueDetails((prevDetails) => ({
         ...prevDetails, // Spread the existing state
-        leagueParticipants: [...prevDetails.leagueParticipants, rearrangedData] // Add new admin to the array immutably
+        leagueParticipants: [...prevDetails.leagueParticipants, rearrangedData], // Add new admin to the array immutably
       }));
       // Await the resolved value of the promise
       // console.log(userInfo, "=================>"); // Logs the actual user data
@@ -91,46 +94,53 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       [field]: value,
     }));
   };
-  console.log("leagueDetails===>", leagueDetails);
+
+  // console.log("leagueDetails===>", leagueDetails);
+
+  //Creating League
   const handleCreate = () => {
     // console.log("Creating league with details:", leagueDetails);
 
     addLeagues(leagueDetails);
     setModalVisible(false);
   };
+
+  //User
   const handleSearch = async (value) => {
     setSearchUser(value);
-  
+
     if (value.length > 0) {
       try {
         // Retrieve the logged-in user ID from AsyncStorage
-        const currentUserId = await AsyncStorage.getItem('userId');
-        
+        const currentUserId = await AsyncStorage.getItem("userId");
+
         if (!currentUserId) {
           console.error("No user ID found in AsyncStorage");
           return; // Handle if no user is logged in
         }
-  
+
         // Query Firestore to search for matching firstName or lastName
         const q = query(
           collection(db, "users"), // Your Firestore collection name
           where("firstName", ">=", value.toLowerCase()),
           where("firstName", "<=", value.toLowerCase() + "\uf8ff") // Range query for partial matching
         );
-  
+
         // Get matching documents
         const querySnapshot = await getDocs(q);
-  
+
         // Map the result into an array
         const users = querySnapshot.docs.map((doc) => doc.data());
-  
+
         // Filter out the logged-in user and already selected users
         const filteredUsers = users.filter(
           (user) =>
             user.userId !== currentUserId && // Exclude the logged-in user based on userId
-            !leagueDetails.leagueParticipants.some((selectedUser) => selectedUser.userId === user.userId) // Exclude already selected users
+            !leagueDetails.leagueParticipants.some(
+              (selectedUser) => selectedUser.userId === user.userId
+            ) // Exclude already selected users
         );
-  
+
         setSuggestions(filteredUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -140,10 +150,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }
   };
 
-  console.log(suggestions, "suggestionssuggestions");
-
   const handleSelectUser = (user) => {
-
     const rearrangedData = {
       id: user.username, // Rename firstName + lastName to id
       userId: user.userId,
@@ -152,7 +159,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     // Add user to selected users
     setLeagueDetails((prevState) => ({
       ...prevState,
-      leagueParticipants: [...prevState.leagueParticipants, rearrangedData]
+      leagueParticipants: [...prevState.leagueParticipants, rearrangedData],
     }));
     setSearchUser(""); // Clear the input after selection
     setSuggestions([]); // Clear the suggestions
@@ -164,7 +171,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       ...prevState,
       leagueParticipants: prevState.leagueParticipants.filter(
         (participant) => participant.userId !== userToRemove.userId
-      )
+      ),
     }));
   };
 
@@ -202,30 +209,17 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               value={leagueDetails.centerName}
               onChangeText={(value) => handleChange("centerName", value)}
             />
-            <Label>Start Date</Label>
-            <Input
-              placeholder="Enter start date"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.startDate}
-              onChangeText={(value) => handleChange("startDate", value)}
+
+            <DatePicker
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
             />
-            <Label>End Date</Label>
+
+            <MaxPlayersPicker />
+
+            {/* <Label>Add League participant</Label>
             <Input
-              placeholder="Enter end date"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.endDate}
-              onChangeText={(value) => handleChange("endDate", value)}
-            />
-            <Label>Max Players</Label>
-            <Input
-              placeholder="Enter max players"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.maxPlayers}
-              onChangeText={(value) => handleChange("maxPlayers", value)}
-            />
-            <Label>Add League participant</Label>
-            <Input
-              placeholder="Enter max players"
+              placeholder="Enter participant name"
               placeholderTextColor="#ccc"
               value={searchUser}
               onChangeText={handleSearch}
@@ -252,31 +246,29 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 keyExtractor={(item, index) => item.email || index.toString()}
                 renderItem={({ item }) => (
                   <TouchableOpacity onPress={() => handleRemoveUser(item)}>
-                    <Text>
-                      {item.id} 
-                    </Text>
+                    <Text>{item.id}</Text>
                     <RemoveText>✖</RemoveText>
                   </TouchableOpacity>
                 )}
               />
-            )}
+            )} */}
 
-            {/* Display search results */}
-
-            <Label>League Type</Label>
+            <LeagueType />
+            <PrivacyType />
+            {/* <Label>League Type</Label>
             <Input
               placeholder="Enter League Type"
               placeholderTextColor="#ccc"
               value={leagueDetails.leagueType}
               onChangeText={(value) => handleChange("leagueType", value)}
-            />
-            <Label>Privacy</Label>
+            /> */}
+            {/* <Label>Privacy</Label>
             <Input
               placeholder="Enter privacy"
               placeholderTextColor="#ccc"
               value={leagueDetails.privacy}
               onChangeText={(value) => handleChange("privacy", value)}
-            />
+            /> */}
 
             <ButtonContainer>
               <CancelButton onPress={() => setModalVisible(false)}>
@@ -286,6 +278,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 <CreateText>Create</CreateText>
               </CreateButton>
             </ButtonContainer>
+
+            {/* // <View>
+              //   <Text style={{ zIndex: 10 }}>DatePicker goes here</Text>
+              // </View> */}
           </ModalContent>
         </ModalContainer>
       </Modal>

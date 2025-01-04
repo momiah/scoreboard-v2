@@ -84,7 +84,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
 
 // Styled components
 const CarouselContainer = styled.ScrollView({
-  height: 175,
+  height: 200,
   marginBottom: 20,
 });
 

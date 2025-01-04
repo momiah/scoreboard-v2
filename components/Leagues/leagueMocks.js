@@ -3,9 +3,9 @@ import moment from "moment";
 
 const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
 const currencyTypes = ["GBP", "USD", "EUR", "INR"];
-const leagueTypes = ["Mixed Doubles", "Fixed Doubles", "Singles"];
-const privacyTypes = ["Public", "Private"];
-const maxPlayers = [8, 16, 32, 64, 128, 256, 512];
+export const leagueTypes = ["Mixed Doubles", "Fixed Doubles", "Singles"];
+export const privacyTypes = ["Public", "Private"];
+export const maxPlayers = [8, 16, 32, 64];
 const locations = [
   "Milton Keynes",
   "London",
