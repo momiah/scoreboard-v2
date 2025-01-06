@@ -1,11 +1,16 @@
 import * as mockImages from "../../mockImages";
 import moment from "moment";
 
-const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
-const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 export const leagueTypes = ["Mixed Doubles", "Fixed Doubles", "Singles"];
 export const privacyTypes = ["Public", "Private"];
 export const maxPlayers = [8, 16, 32, 64];
+export const leagueStatus = [
+  { status: "enlisting", color: "#FAB234" },
+  { status: "full", color: "#286EFA" },
+  { status: "completed", color: "#167500" },
+];
+const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
+const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 const locations = [
   "Milton Keynes",
   "London",
@@ -17,11 +22,6 @@ const locations = [
   "Glasgow",
   "Edinburgh",
   "Leeds",
-];
-export const leagueStatus = [
-  { status: "enlisting", color: "#FAB234" },
-  { status: "full", color: "#286EFA" },
-  { status: "completed", color: "#167500" },
 ];
 const daysOfWeek = [
   "Monday",

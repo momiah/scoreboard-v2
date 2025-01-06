@@ -3,8 +3,16 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const LeagueType = () => {
+const LeagueType = ({ setLeagueDetails }) => {
   const [leagueType, setLeagueType] = useState(null);
+
+  const handleSelectLeagueType = (type) => {
+    setLeagueType(type);
+    setLeagueDetails((prevDetails) => ({
+      ...prevDetails,
+      leagueType: type,
+    }));
+  };
 
   return (
     <Container>
@@ -13,7 +21,7 @@ const LeagueType = () => {
         {leagueTypes.map((type, index) => (
           <LeagueTypeButton
             key={index}
-            onPress={() => setLeagueType(type)}
+            onPress={() => handleSelectLeagueType(type)}
             isSelected={leagueType === type}
           >
             <LeagueTypeText isSelected={leagueType === type}>

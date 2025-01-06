@@ -3,8 +3,16 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const MaxPlayersPicker = () => {
-  const [selectedPlayers, setSelectedPlayers] = useState(null);
+const MaxPlayersPicker = ({ setLeagueDetails }) => {
+  const [maximumPlayers, setMaximumPlayers] = useState(null);
+
+  const handleSelectPlayers = (players) => {
+    setMaximumPlayers(players);
+    setLeagueDetails((prevDetails) => ({
+      ...prevDetails,
+      maxPlayers: players,
+    }));
+  };
 
   return (
     <Container>
@@ -13,10 +21,10 @@ const MaxPlayersPicker = () => {
         {maxPlayers.map((players, index) => (
           <PlayerButton
             key={index}
-            onPress={() => setSelectedPlayers(players)}
-            isSelected={selectedPlayers === players}
+            onPress={() => handleSelectPlayers(players)}
+            isSelected={maximumPlayers === players}
           >
-            <MaxPlayerNumber isSelected={selectedPlayers === players}>
+            <MaxPlayerNumber isSelected={maximumPlayers === players}>
               {players}
             </MaxPlayerNumber>
           </PlayerButton>

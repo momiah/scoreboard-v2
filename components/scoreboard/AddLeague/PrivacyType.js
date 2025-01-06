@@ -3,8 +3,16 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const PrivacyType = () => {
+const PrivacyType = ({ setLeagueDetails }) => {
   const [privacy, setPrivacy] = useState(null);
+
+  const handleSelectPrivacyType = (privacyType) => {
+    setPrivacy(privacyType);
+    setLeagueDetails((prevDetails) => ({
+      ...prevDetails,
+      privacy: privacyType,
+    }));
+  };
 
   return (
     <Container>
@@ -13,7 +21,7 @@ const PrivacyType = () => {
         {privacyTypes.map((privacyType, index) => (
           <PrivacyButton
             key={index}
-            onPress={() => setPrivacy(privacyType)}
+            onPress={() => handleSelectPrivacyType(privacyType)}
             isSelected={privacy === privacyType}
           >
             <PrivacyTypeText isSelected={privacy === privacyType}>
