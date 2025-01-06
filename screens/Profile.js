@@ -4,9 +4,9 @@ import { LeagueContext } from "../context/LeagueContext";
 
 const Profile = () => {
   
-  const { calculateParticipantTotals,getAllUsers } = useContext(LeagueContext);
+  const { calculateParticipantTotals } = useContext(LeagueContext);
   calculateParticipantTotals()
-  getAllUsers()
+
   return (
     <View>
       <Text style={{ fontSize: 24, fontWeight: "bold" }}>Profile</Text>

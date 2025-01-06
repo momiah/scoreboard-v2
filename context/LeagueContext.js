@@ -98,53 +98,6 @@ const LeagueProvider = ({ children }) => {
   
       // Initialize a totals object
       const totals = {
-        numberOfLosses: 0,
-        XP: 0,
-        winStreak5: 0,
-        winStreak7: 0,
-        numberOfGamesPlayed: 0,
-        prevGameXP: 0,
-        totalPoints: 0,
-        demonWin: 0,
-        winStreak3: 0,
-        highestLossStreak: 0,
-        numberOfWins: 0,
-        highestWinStreak: 0,
-        winPercentage: 0,
-        totalPointEfficiency: 0,
-      };
-  
-      // Iterate over each league and add values for the matching participant
-      userLeagues.forEach((league) => {
-        const participant = league.leagueParticipants.find((p) => p.userId === userId);
-        if (participant) {
-          Object.keys(totals).forEach((key) => {
-            if (participant[key] !== undefined) {
-              totals[key] += participant[key];
-            }
-          });
-            const calculateParticipantTotals = async () => {
-    try {
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId) {
-        console.error("No user ID found");
-        return;
-      }
-  
-      const leaguesRef = collection(db, "leagues");
-      const querySnapshot = await getDocs(leaguesRef);
-  
-      // Filter leagues where the user is a participant
-      const userLeagues = querySnapshot.docs
-        .map((doc) => doc.data())
-        .filter((league) =>
-          league.leagueParticipants.some((participant) => participant.userId === userId)
-        );
-
-        console.log(userLeagues,'userLeagues')
-  
-      // Initialize a totals object
-      const totals = {
         userId: userId,
         numberOfLosses: 0,
         XP: 0,
@@ -171,20 +124,6 @@ const LeagueProvider = ({ children }) => {
               totals[key] += participant[key];
             }
           });
-        }
-      });
-  
-      // Adjust fields if needed (e.g., winPercentage might be better as an average)
-      // if (userLeagues.length > 0) {
-      //   totals.winPercentage /= userLeagues.length;
-      // }
-  
-      console.log("Totals:", totals);
-      return totals;
-    } catch (error) {
-      console.error("Error calculating totals:", error);
-    }
-  };
         }
       });
   
