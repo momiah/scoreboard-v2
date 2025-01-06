@@ -40,8 +40,3 @@ export const transformDate = (dateString) => {
   // Construct and return the formatted date string
   return `${day}${ordinalSuffix} ${monthName} ${year}`;
 };
-
-export const capitalizeFirstLetter = (str) => {
-  if (!str) return ''; // Handle empty or null strings
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
