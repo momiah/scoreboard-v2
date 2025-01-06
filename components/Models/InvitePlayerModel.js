@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../../services/firebase.config";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { FlatList } from "react-native";
+import { capitalizeFirstLetter } from "../../functions/dateTransform";
 
 
 const InvitePlayerModel = ({
@@ -62,7 +63,10 @@ const InvitePlayerModel = ({
             user.userId !== currentUserId && // Exclude the logged-in user
             !leagueDetails.leagueParticipants.some(
               (selectedUser) => selectedUser.userId === user.userId
-            ) // Exclude already selected users
+            ) && // Exclude already selected users
+            !inviteUsers.some(
+              (invitedUser) => invitedUser.userId === user.userId
+            ) // Exclude already invited users
           );
         });
   
@@ -74,6 +78,7 @@ const InvitePlayerModel = ({
       setSuggestions([]); // Clear suggestions if input is empty
     }
   };
+  
   
 
   const handleSelectUser = (user) => {
@@ -157,7 +162,7 @@ const InvitePlayerModel = ({
                       renderItem={({ item }) => (
                         <DropdownItem onPress={() => handleSelectUser(item)}>
                           <DropdownText>
-                            {item.username}
+                            {capitalizeFirstLetter(item.username)}
                           </DropdownText>
                         </DropdownItem>
                       )}
@@ -170,7 +175,7 @@ const InvitePlayerModel = ({
                     keyExtractor={(item, index) => item.email || index.toString()}
                     renderItem={({ item }) => (
                       <UserItem>
-                        <UserName>{item.username}</UserName>
+                        <UserName>{capitalizeFirstLetter(item.username)}</UserName>
                         <RemoveButton onPress={() => handleRemoveUser(item)}>
                           <RemoveText>✖</RemoveText>
                         </RemoveButton>
