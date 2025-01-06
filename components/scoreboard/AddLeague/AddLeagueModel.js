@@ -21,7 +21,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserContext } from "../../../context/UserContext";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
-import { capitalizeFirstLetter } from "../../../functions/dateTransform";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const { addLeagues } = useContext(LeagueContext);
@@ -239,7 +238,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                   renderItem={({ item }) => (
                     <DropdownItem onPress={() => handleSelectUser(item)}>
                       <DropdownText>
-                        {capitalizeFirstLetter(item.username)}
+                        {item.username}
                       </DropdownText>
                     </DropdownItem>
                   )}
@@ -253,7 +252,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 keyExtractor={(item, index) => item.email || index.toString()}
                 renderItem={({ item }) => (
                   <UserItem>
-                        <UserName>{capitalizeFirstLetter(item.id)}</UserName>
+                        <UserName>{item.id}</UserName>
                         <RemoveButton onPress={() => handleRemoveUser(item)}>
                           <RemoveText>✖</RemoveText>
                         </RemoveButton>
