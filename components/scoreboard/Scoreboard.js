@@ -2,11 +2,9 @@ import React, { useState, useEffect, useContext } from "react";
 import { Text, FlatList, RefreshControl } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../context/GameContext";
-import { UserContext } from "../../context/UserContext";
 
 import { Dimensions } from "react-native";
 
-import AddGameModal from "./AddGame/AddGameModal";
 import { LeagueContext } from "../../context/LeagueContext";
 
 const Scoreboard = ({ leagueGames, leagueId }) => {
@@ -14,7 +12,6 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     // games, from the previous version of the component
     setGames,
 
-    retrieveGames,
     deleteGameById,
     refreshing,
     setRefreshing,
@@ -23,13 +20,11 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     deleteGameId,
     setDeleteGameId,
   } = useContext(GameContext);
-  const { fetchPlayers } = useContext(UserContext);
-  const { fetchLeagueById,leagueById } = useContext(LeagueContext);
-  const [modalVisible, setModalVisible] = useState(false);
+
+  const { fetchLeagueById, leagueById } = useContext(LeagueContext);
 
   const [newestGameId, setNewestGameId] = useState("");
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
-  // console.log("games from context🤔", JSON.stringify(games, null, 2));
 
   useEffect(() => {
     if (leagueGames.length > 0) {
@@ -37,19 +32,17 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     }
     fetchPlayers(leagueId);
   }, [leagueGames]);
+
   useEffect(() => {
     if (leagueId) {
-      fetchLeagueById(leagueId)
+      fetchLeagueById(leagueId);
     }
-    
-  }, [leagueId,modalVisible]);
+  }, [leagueId, modalVisible]);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
   // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
   //////////////////////////
-
- 
 
   // const handleRefresh = async () => {
   //   setRefreshing(true);
@@ -74,22 +67,11 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     setDeleteGameContainer(false);
   };
 
-  const handleAddGameButton = () => {
-    fetchPlayers(leagueId);
-    setModalVisible(true);
-  };
-
-  // console.log("games", JSON.stringify(games, null, 2));
-
   return (
     <Container>
-      <AddGameButton onPress={() => handleAddGameButton()}>
-        <Text>Add Game</Text>
-      </AddGameButton>
-
       <FlatList
         data={leagueById ? leagueById.games.reverse() : []}
-        keyExtractor={(item,index) => index}
+        keyExtractor={(item, index) => index}
         // refreshControl={
         //   <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         // }
@@ -182,34 +164,12 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
           </>
         )}
       />
-
-      {modalVisible && (
-        <AddGameModal
-          modalVisible
-          setModalVisible={setModalVisible}
-          leagueId={leagueId}
-          leagueGames={leagueGames}
-        />
-      )}
     </Container>
   );
 };
 
 // Define styles
 const { width: screenWidth } = Dimensions.get("window");
-
-const AddGameButton = styled.TouchableOpacity({
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontSize: 24,
-  fontWeight: "bold",
-  marginBottom: 15,
-  marginTop: 15,
-  padding: 10,
-  borderRadius: 8,
-  backgroundColor: "#00A2FF",
-});
 
 const Container = styled.View({
   flex: 1,

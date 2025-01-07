@@ -13,16 +13,20 @@ import Tag from "../../../components/Tag";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import InvitePlayerModel from "../../../components/Models/InvitePlayerModel";
+import { UserContext } from "../../../context/UserContext";
+import AddGameModal from "../../../components/scoreboard/AddGame/AddGameModal";
 
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
   const { leagues } = useContext(LeagueContext);
+  const { fetchPlayers } = useContext(UserContext);
 
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [loading, setLoading] = useState(true); // Track loading state
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
   const [modalVisible, setModalVisible] = useState(false);
+  const [addGameModalVisible, setAddGameModalVisible] = useState(false);
 
   const tabs = [
     {
@@ -39,16 +43,72 @@ const League = () => {
   const playersData = leagueDetails?.leagueParticipants;
   const leagueGames = leagueDetails?.games;
 
+  // const renderComponent = () => {
+  //   if (selectedTab === "Scoreboard") {
+  //     if (!leagueGames || leagueGames.length === 0) {
+  //       return <FallbackMessage>Add a game to see scores</FallbackMessage>;
+  //     }
+  //     return <Scoreboard leagueGames={leagueGames} leagueId={leagueId} />;
+  //   }
+
+  //   if (selectedTab === "Player Performance") {
+  //     if (!playersData || playersData.length === 0) {
+  //       return <FallbackMessage>Add a game to see performance</FallbackMessage>;
+  //     }
+  //     return (
+  //       <PlayerPerformance playersData={playersData} leagueId={leagueId} />
+  //     );
+  //   }
+
+  //   if (selectedTab === "Team Performance") {
+  //     if (!playersData || playersData.length === 0) {
+  //       return <FallbackMessage>Add a game to see performance</FallbackMessage>;
+  //     }
+  //     return <TeamPerformance />;
+  //   }
+
+  //   return null;
+  // };
+
+  const handleAddGameButton = () => {
+    fetchPlayers(leagueId);
+    setAddGameModalVisible(true);
+  };
+
   const renderComponent = () => {
     switch (selectedTab) {
       case "Scoreboard":
-        return <Scoreboard leagueGames={leagueGames} leagueId={leagueId} />;
-      case "Player Performance":
         return (
+          <>
+            {leagueGames && leagueGames.length > 0 ? (
+              <>
+                <AddGameButton onPress={() => handleAddGameButton()}>
+                  <Text>Add Game</Text>
+                </AddGameButton>
+                <Scoreboard leagueGames={leagueGames} leagueId={leagueId} />
+              </>
+            ) : (
+              <>
+                <AddGameButton onPress={() => handleAddGameButton()}>
+                  <Text>Add Game</Text>
+                </AddGameButton>
+                <FallbackMessage>Add a game to see scores 🚀</FallbackMessage>
+              </>
+            )}
+          </>
+        );
+      case "Player Performance":
+        return playersData && playersData.length > 0 ? (
           <PlayerPerformance playersData={playersData} leagueId={leagueId} />
+        ) : (
+          <FallbackMessage>Add a game to see performance 📈</FallbackMessage>
         );
       case "Team Performance":
-        return <TeamPerformance />;
+        return playersData && playersData.length > 0 ? (
+          <TeamPerformance />
+        ) : (
+          <FallbackMessage>Add a game to see performance 📈</FallbackMessage>
+        );
       default:
         return null;
     }
@@ -173,6 +233,14 @@ const League = () => {
           leagueDetails={leagueDetails}
         />
       )}
+      {addGameModalVisible && (
+        <AddGameModal
+          addGameModalVisible
+          setModalVisible={setAddGameModalVisible}
+          leagueId={leagueId}
+          leagueGames={leagueGames}
+        />
+      )}
 
       {/* <Scoreboard mockgames={leagueDetails.games} /> */}
     </View>
@@ -253,6 +321,28 @@ const Tab = styled.TouchableOpacity(({ isSelected }) => ({
 const TabText = styled.Text({
   color: "white",
   fontSize: screenWidth <= 400 ? 12 : 14,
+});
+
+const FallbackMessage = styled.Text({
+  color: "#696969",
+  fontStyle: "italic",
+  fontSize: 16,
+  textAlign: "center",
+  marginTop: 50,
+});
+
+const AddGameButton = styled.TouchableOpacity({
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  fontSize: 24,
+  fontWeight: "bold",
+  marginBottom: 15,
+  marginTop: 15,
+  padding: 10,
+  marginHorizontal: 10,
+  borderRadius: 8,
+  backgroundColor: "#00A2FF",
 });
 
 export default League;
