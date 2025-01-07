@@ -10,25 +10,28 @@ import {
 
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
-import { GameContext } from "../../../context/GameContext";
 import { LeagueContext } from "../../../context/LeagueContext";
-import { sampleLeagues2, sampleLeagues } from "../../Leagues/leagueMocks";
-import {
-  mockedParticipants,
-  mockedEmptyParticipants,
-} from "../../Leagues/leagueMocks";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserContext } from "../../../context/UserContext";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../../services/firebase.config";
-import { capitalizeFirstLetter } from "../../../functions/dateTransform";
+
+import DatePicker from "./DatePicker";
+import MaxPlayersPicker from "./MaxPlayersPicker";
+import LeagueType from "./LeagueType";
+import PrivacyType from "./PrivacyType";
+import { PopupContext } from "../../../context/PopupContext";
+import Popup from "../../popup/Popup";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const { addLeagues } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
-  const [suggestions, setSuggestions] = useState([]);
-  const [searchUser, setSearchUser] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const {
+    handleShowPopup,
+    setPopupMessage,
+    popupMessage,
+    setShowPopup,
+    showPopup,
+  } = useContext(PopupContext);
   const [leagueDetails, setLeagueDetails] = useState({
     leagueParticipants: [],
     leagueAdmins: [],
@@ -51,6 +54,13 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     leagueStatus: "FULL",
   });
 
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setPopupMessage("");
+
+    // setModalVisible(false);
+  };
+
   useEffect(() => {
     getAdminInfo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,7 +77,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       const userInfo = await getUserById(userId);
       setLeagueDetails((prevDetails) => ({
         ...prevDetails, // Spread the existing state
-        leagueAdmins: [...prevDetails.leagueAdmins, userInfo] // Add new admin to the array immutably
+        leagueAdmins: [...prevDetails.leagueAdmins, userInfo], // Add new admin to the array immutably
       }));
 
       const rearrangedData = {
@@ -77,7 +87,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       };
       setLeagueDetails((prevDetails) => ({
         ...prevDetails, // Spread the existing state
-        leagueParticipants: [...prevDetails.leagueParticipants, rearrangedData] // Add new admin to the array immutably
+        leagueParticipants: [...prevDetails.leagueParticipants, rearrangedData], // Add new admin to the array immutably
       }));
       // Await the resolved value of the promise
       // console.log(userInfo, "=================>"); // Logs the actual user data
@@ -85,88 +95,50 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       console.error("Error retrieving admin info:", error);
     }
   };
-  // console.log(getAdminInfo(), "leagueDetails===>");
+
   const handleChange = (field, value) => {
     setLeagueDetails((prevDetails) => ({
       ...prevDetails,
       [field]: value,
     }));
   };
-  console.log("leagueDetails===>", leagueDetails);
-  const handleCreate = () => {
-    // console.log("Creating league with details:", leagueDetails);
 
+  // console.log("leagueDetails===>", leagueDetails);
+
+  //Creating League
+  const handleCreate = () => {
+    const requiredFields = [
+      "leagueName",
+      "location",
+      "centerName",
+      "startDate",
+      "endDate",
+      "leagueType",
+      "maxPlayers",
+      "privacy",
+    ];
+
+    // Find the first missing field in order
+    const firstMissingField = requiredFields.find(
+      (field) => !leagueDetails[field]
+    );
+
+    if (firstMissingField) {
+      // Convert the field name to a human-readable format
+      const formattedField = firstMissingField
+        .replace(/([A-Z])/g, " $1")
+        .toLowerCase()
+        .replace(/^./, (str) => str.toUpperCase());
+
+      // Trigger the popup with the first missing field
+      handleShowPopup(`Please fill in the ${formattedField}.`);
+      return;
+    }
+
+    // If all fields are filled, proceed to create the league
     addLeagues(leagueDetails);
     setModalVisible(false);
-  };
-  const handleSearch = async (value) => {
-    setSearchUser(value);
-  
-    if (value.length > 0) {
-      try {
-        // Retrieve the logged-in user ID from AsyncStorage
-        const currentUserId = await AsyncStorage.getItem('userId');
-        
-        if (!currentUserId) {
-          console.error("No user ID found in AsyncStorage");
-          return; // Handle if no user is logged in
-        }
-  
-        // Query Firestore to search for matching firstName or lastName
-        const q = query(
-          collection(db, "users"), // Your Firestore collection name
-          where("username", ">=", value.toLowerCase()),
-          where("username", "<=", value.toLowerCase() + "\uf8ff") // Range query for partial matching
-        );
-  
-        // Get matching documents
-        const querySnapshot = await getDocs(q);
-  
-        // Map the result into an array
-        const users = querySnapshot.docs.map((doc) => doc.data());
-  
-        // Filter out the logged-in user and already selected users
-        const filteredUsers = users.filter(
-          (user) =>
-            user.userId !== currentUserId && // Exclude the logged-in user based on userId
-            !leagueDetails.leagueParticipants.some((selectedUser) => selectedUser.userId === user.userId) // Exclude already selected users
-        );
-  
-        setSuggestions(filteredUsers);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    } else {
-      setSuggestions([]);
-    }
-  };
-
-  console.log(suggestions, "suggestionssuggestions");
-
-  const handleSelectUser = (user) => {
-
-    const rearrangedData = {
-      id: user.username, // Rename firstName + lastName to id
-      userId: user.userId,
-      ...user.profileDetail, // Merge profile details
-    };
-    // Add user to selected users
-    setLeagueDetails((prevState) => ({
-      ...prevState,
-      leagueParticipants: [...prevState.leagueParticipants, rearrangedData]
-    }));
-    setSearchUser(""); // Clear the input after selection
-    setSuggestions([]); // Clear the suggestions
-  };
-
-  const handleRemoveUser = (userToRemove) => {
-    // Remove user from selected users
-    setLeagueDetails((prevState) => ({
-      ...prevState,
-      leagueParticipants: prevState.leagueParticipants.filter(
-        (participant) => participant.userId !== userToRemove.userId
-      )
-    }));
+    handleShowPopup("League created successfully!");
   };
 
   return (
@@ -177,6 +149,11 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
+        <Popup
+          visible={showPopup}
+          message={popupMessage}
+          onClose={handleClosePopup}
+        />
         <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <ModalContent>
             <ModalTitle>Create League</ModalTitle>
@@ -203,81 +180,17 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               value={leagueDetails.centerName}
               onChangeText={(value) => handleChange("centerName", value)}
             />
-            <Label>Start Date</Label>
-            <Input
-              placeholder="Enter start date"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.startDate}
-              onChangeText={(value) => handleChange("startDate", value)}
-            />
-            <Label>End Date</Label>
-            <Input
-              placeholder="Enter end date"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.endDate}
-              onChangeText={(value) => handleChange("endDate", value)}
-            />
-            <Label>Max Players</Label>
-            <Input
-              placeholder="Enter max players"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.maxPlayers}
-              onChangeText={(value) => handleChange("maxPlayers", value)}
-            />
-            <Label>Add League participant</Label>
-            <Input
-              placeholder="Enter max players"
-              placeholderTextColor="#ccc"
-              value={searchUser}
-              onChangeText={handleSearch}
-            />
-            {suggestions.length > 0 && (
-              <DropdownContainer>
-                <FlatList
-                  data={suggestions}
-                  keyExtractor={(item) => item.email || item.id} // Use unique key for each user
-                  renderItem={({ item }) => (
-                    <DropdownItem onPress={() => handleSelectUser(item)}>
-                      <DropdownText>
-                        {capitalizeFirstLetter(item.username)}
-                      </DropdownText>
-                    </DropdownItem>
-                  )}
-                />
-              </DropdownContainer>
-            )}
 
-            {leagueDetails?.leagueParticipants?.length > 0 && (
-              <FlatList
-                data={leagueDetails?.leagueParticipants}
-                keyExtractor={(item, index) => item.email || index.toString()}
-                renderItem={({ item }) => (
-                  <UserItem>
-                        <UserName>{capitalizeFirstLetter(item.id)}</UserName>
-                        <RemoveButton onPress={() => handleRemoveUser(item)}>
-                          <RemoveText>✖</RemoveText>
-                        </RemoveButton>
-                      </UserItem>
-                )}
-              />
-            )}
-
-            {/* Display search results */}
-
-            <Label>League Type</Label>
-            <Input
-              placeholder="Enter League Type"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.leagueType}
-              onChangeText={(value) => handleChange("leagueType", value)}
+            <DatePicker
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
             />
-            <Label>Privacy</Label>
-            <Input
-              placeholder="Enter privacy"
-              placeholderTextColor="#ccc"
-              value={leagueDetails.privacy}
-              onChangeText={(value) => handleChange("privacy", value)}
-            />
+
+            <MaxPlayersPicker setLeagueDetails={setLeagueDetails} />
+
+            <LeagueType setLeagueDetails={setLeagueDetails} />
+
+            <PrivacyType setLeagueDetails={setLeagueDetails} />
 
             <ButtonContainer>
               <CancelButton onPress={() => setModalVisible(false)}>
@@ -365,12 +278,10 @@ const CreateText = styled.Text({
   color: "white",
 });
 const DropdownContainer = styled.View({
-  backgroundColor: "#2D3748", // Dark gray to match the input field
-  borderRadius: 20, // Rounded corners
-  padding: 10, // Padding inside the container
-  marginTop: 5, // Spacing from the input field
-  maxHeight: "200px",
-  width: '100%'
+  backgroundColor: "#444",
+  borderRadius: 8,
+  maxHeight: 200,
+  overflow: "hidden", // Ensures rounded corners are maintained if content overflows
 });
 
 const DropdownItem = styled.TouchableOpacity({
@@ -385,34 +296,15 @@ const DropdownText = styled.Text({
   fontSize: 16, // Readable font size
   fontWeight: "500", // Slightly bold for emphasis
 });
-
-const UserItem = styled.View({
-  flexDirection: "row", // Align items horizontally
-  justifyContent: "space-between", // Push name to the left and cross to the right
-  alignItems: "center", // Center items vertically
-  padding: 10, // Add spacing inside the item
-  marginVertical: 5, // Space between items
-  backgroundColor: "#4A5568", // Background color
-  borderRadius: 15, // Rounded corners
-  maxWidth:'100%'
-});
-
-const UserName = styled.Text({
-  fontSize: 16, // Set a readable font size
-  color: "#FFFFFF", // White text color
-  fontWeight: "500", // Slightly bold text
-});
-
-const RemoveButton = styled.TouchableOpacity({
-  padding: 5, // Add padding for better touch area
-  borderRadius: 5, // Slightly rounded corners
-  backgroundColor: "#E53E3E", // Red background for the remove button
+const UserItemContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 10,
 });
 
 const RemoveText = styled.Text({
   color: "#FFFFFF", // White text color
   fontWeight: "bold", // Bold text for emphasis
 });
-
 
 export default AddLeagueModal;
