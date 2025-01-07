@@ -48,6 +48,7 @@ const LeagueProvider = ({ children }) => {
         ...leagueData,
       });
       console.log("League added successfully!");
+      fetchLeagues()
     } catch (error) {
       console.error("Error adding league: ", error);
     }
@@ -80,7 +81,7 @@ const LeagueProvider = ({ children }) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) {
-        console.error("No user ID found");
+
         return;
       }
   
