@@ -91,8 +91,13 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
 if (leagueById && leagueById?.leagueAdmins) {
   getUserRole();
 } 
-  
 
+let reversedGames = [];
+for (let i = leagueById.games.length - 1; i >= 0; i--) {
+  reversedGames.push(leagueById.games[i]);
+}
+  
+// const reverseGames =leagueById.games.reverse()
   return (
     <Container>
       {userRole !== 'hide' && userRole !== 'invite user' &&
@@ -108,7 +113,7 @@ if (leagueById && leagueById?.leagueAdmins) {
       )}
 
       <FlatList
-        data={leagueById ? leagueById.games.reverse() : []}
+        data={reversedGames}
         keyExtractor={(item, index) => index}
         // refreshControl={
         //   <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
