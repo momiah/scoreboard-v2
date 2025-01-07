@@ -23,11 +23,13 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     deleteGameId,
     setDeleteGameId,
   } = useContext(GameContext);
-  const { fetchPlayers } = useContext(UserContext);
-  const { fetchLeagueById,leagueById } = useContext(LeagueContext);
+  const { fetchPlayers, checkUserRole } = useContext(UserContext);
+  const { fetchLeagueById, leagueById } = useContext(LeagueContext);
   const [modalVisible, setModalVisible] = useState(false);
+  const [requestSend, setRequestSend] = useState(false);
 
   const [newestGameId, setNewestGameId] = useState("");
+  const [userRole, setUserRole] = useState(null);
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
   // console.log("games from context🤔", JSON.stringify(games, null, 2));
 
@@ -41,15 +43,15 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     if (leagueId) {
       fetchLeagueById(leagueId)
     }
-    
-  }, [leagueId,modalVisible]);
+
+  }, [leagueId, modalVisible]);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
   // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
   //////////////////////////
 
- 
+
 
   // const handleRefresh = async () => {
   //   setRefreshing(true);
@@ -81,15 +83,33 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
 
   // console.log("games", JSON.stringify(games, null, 2));
 
+  async function getUserRole() {
+    const role = await checkUserRole(leagueById);
+
+    setUserRole(role)// Outputs "admin", "participant", or "invite user"
+  }
+if (leagueById && leagueById?.leagueAdmins) {
+  getUserRole();
+} 
+  
+
   return (
     <Container>
-      <AddGameButton onPress={() => handleAddGameButton()}>
-        <Text>Add Game</Text>
-      </AddGameButton>
+      {userRole !== 'hide' && userRole !== 'invite user' &&
+        <AddGameButton onPress={() => handleAddGameButton()}>
+          <Text>Add Game</Text>
+        </AddGameButton>}
+      {userRole === 'invite user' && (
+        <AddGameButton  disabled={requestSend} style={{backgroundColor:requestSend ?'gray' :  "#00A2FF"}} onPress={() =>{ setRequestSend(true)}}>
+          <Text>
+            {requestSend ? 'Request sent successfully' : 'Join League'}
+          </Text>
+        </AddGameButton>
+      )}
 
       <FlatList
         data={leagueById ? leagueById.games.reverse() : []}
-        keyExtractor={(item,index) => index}
+        keyExtractor={(item, index) => index}
         // refreshControl={
         //   <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         // }

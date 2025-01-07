@@ -13,16 +13,19 @@ import Tag from "../../../components/Tag";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import InvitePlayerModel from "../../../components/Models/InvitePlayerModel";
+import { UserContext } from "../../../context/UserContext";
 
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
   const { leagues } = useContext(LeagueContext);
+  const { checkUserRole } = useContext(UserContext);
 
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [loading, setLoading] = useState(true); // Track loading state
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
   const [modalVisible, setModalVisible] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   const tabs = [
     {
@@ -91,6 +94,19 @@ const League = () => {
     );
   }
 
+
+  console.log(leagueDetails,'leagueDetails')
+
+  async function getUserRole() {
+    const role = await checkUserRole(leagueDetails);
+    console.log('User Role:', role); 
+    setUserRole(role)// Outputs "admin", "participant", or "invite user"
+}
+
+getUserRole();
+
+  // console.log(userRole,'userRoleuserRole')
+
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
@@ -134,7 +150,8 @@ const League = () => {
                   If part of the league = "Participant"
                   If league admin = "Invite Players"
               */}
-              {/* <Tag
+              {userRole === 'participant' &&
+              <Tag
                 name={"Participant"}
                 color="#16181B"
                 iconColor="green"
@@ -142,14 +159,15 @@ const League = () => {
                 icon={"checkmark-circle-outline"}
                 iconPosition={"right"}
                 bold
-              /> */}
+              />}
+               {userRole === 'admin' &&
               <Tag
                 name={"Invite Players"}
                 color="#00A2FF"
                 icon={"paper-plane-sharp"}
                 onPress={leaguePrompt}
                 bold
-              />
+              />}
             </View>
           </LeagueDetailsContainer>
         </LeagueImage>

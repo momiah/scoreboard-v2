@@ -83,7 +83,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       const rearrangedData = {
         id: userInfo.username, // Rename firstName + lastName to id
         userId: userInfo.userId,
-        ...userInfo.profile_detail, // Merge profile details
+        ...userInfo.profileDetail, // Merge profile details
       };
       setLeagueDetails((prevDetails) => ({
         ...prevDetails, // Spread the existing state
@@ -285,14 +285,16 @@ const DropdownContainer = styled.View({
 });
 
 const DropdownItem = styled.TouchableOpacity({
-  padding: 10,
-  backgroundColor: "#333",
-  borderRadius: 8,
-  marginBottom: 5,
+  backgroundColor: "#4A5568", // Slightly lighter gray for contrast
+  borderRadius: 15, // Consistent rounding
+  padding: 10, // Spacing inside the item
+  marginVertical: 5, // Space between items
 });
 
 const DropdownText = styled.Text({
-  color: "white",
+  color: "#FFFFFF", // White text for visibility
+  fontSize: 16, // Readable font size
+  fontWeight: "500", // Slightly bold for emphasis
 });
 const UserItemContainer = styled.View({
   flexDirection: "row",
@@ -301,8 +303,8 @@ const UserItemContainer = styled.View({
 });
 
 const RemoveText = styled.Text({
-  color: "red",
-  marginLeft: 10,
+  color: "#FFFFFF", // White text color
+  fontWeight: "bold", // Bold text for emphasis
 });
 
 export default AddLeagueModal;

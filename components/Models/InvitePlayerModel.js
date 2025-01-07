@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import {
   Modal,
   Text,
@@ -11,15 +11,83 @@ import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import Tag from "../Tag";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db } from "../../services/firebase.config";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { FlatList } from "react-native";
+
 
 const InvitePlayerModel = ({
   modalVisible,
   setModalVisible,
   leagueDetails,
 }) => {
+  const [searchUser, setSearchUser] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [inviteUsers, setInviteUsers] = useState([]);
   const handleSendInvite = () => {
-    console.log("Creating league with details:", leagueDetails);
+    setModalVisible(false)
+
+    console.log("invited user:", inviteUsers);
   };
+
+  const handleSearch = async (value) => {
+    setSearchUser(value);
+  
+    if (value.trim().length > 0) {
+      try {
+        // Retrieve the logged-in user ID from AsyncStorage
+        const currentUserId = await AsyncStorage.getItem("userId");
+  
+        if (!currentUserId) {
+          return; // Handle if no user is logged in
+        }
+  
+        // Split the search value into individual words
+        const searchWords = value.toLowerCase().split(/\s+/); // Split by spaces
+  
+        // Query Firestore for matching usernames
+        const q = query(collection(db, "users")); // Base query
+  
+        const querySnapshot = await getDocs(q);
+  
+        // Map the result into an array and filter the users by search words
+        const users = querySnapshot.docs.map((doc) => doc.data());
+  
+        // Filter based on search words
+        const filteredUsers = users.filter((user) => {
+          const username = user.username.toLowerCase(); // Convert username to lowercase
+          return (
+            searchWords.some((word) => username.includes(word)) && // Match any word
+            user.userId !== currentUserId && // Exclude the logged-in user
+            !leagueDetails.leagueParticipants.some(
+              (selectedUser) => selectedUser.userId === user.userId
+            ) // Exclude already selected users
+          );
+        });
+  
+        setSuggestions(filteredUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    } else {
+      setSuggestions([]); // Clear suggestions if input is empty
+    }
+  };
+  
+
+  const handleSelectUser = (user) => {
+    setInviteUsers((prevUsers) => [...prevUsers, user]); // Directly add the user to the array
+    setSearchUser(""); // Clear the input after selection
+    setSuggestions([]); // Clear the suggestions
+  };
+
+  const handleRemoveUser = (userToRemove) => {
+    setInviteUsers((prevUsers) =>
+      prevUsers.filter((user) => user.userId !== userToRemove.userId) // Remove user based on userId
+    );
+  };
+
 
   return (
     <View>
@@ -78,7 +146,38 @@ const InvitePlayerModel = ({
                 <Input
                   placeholder="Start typing to search players"
                   placeholderTextColor="#999"
+                  value={searchUser}
+                  onChangeText={handleSearch}
                 />
+                {suggestions.length > 0 && (
+                  <DropdownContainer>
+                    <FlatList
+                      data={suggestions}
+                      keyExtractor={(item) => item.email || item.id}
+                      renderItem={({ item }) => (
+                        <DropdownItem onPress={() => handleSelectUser(item)}>
+                          <DropdownText>
+                            {item.username}
+                          </DropdownText>
+                        </DropdownItem>
+                      )}
+                    />
+                  </DropdownContainer>
+                )}
+                {inviteUsers?.length > 0 && (
+                  <FlatList
+                    data={inviteUsers}
+                    keyExtractor={(item, index) => item.email || index.toString()}
+                    renderItem={({ item }) => (
+                      <UserItem>
+                        <UserName>{item.username}</UserName>
+                        <RemoveButton onPress={() => handleRemoveUser(item)}>
+                          <RemoveText>✖</RemoveText>
+                        </RemoveButton>
+                      </UserItem>
+                    )}
+                  />
+                )}
 
                 <DisclaimerText>
                   Please ensure you have arranged court reservation directly
@@ -192,5 +291,55 @@ const LeagueDetailsContainer = styled.View({
 const CreateText = styled.Text({
   color: "white",
 });
+const DropdownContainer = styled.View({
+  backgroundColor: "#2D3748", // Dark gray to match the input field
+  borderRadius: 20, // Rounded corners
+  padding: 10, // Padding inside the container
+  marginTop: 5, // Spacing from the input field
+  maxHeight: "200px",
+  width: '100%'
+});
+
+const DropdownItem = styled.TouchableOpacity({
+  backgroundColor: "#4A5568", // Slightly lighter gray for contrast
+  borderRadius: 15, // Consistent rounding
+  padding: 10, // Spacing inside the item
+  marginVertical: 5, // Space between items
+});
+
+const DropdownText = styled.Text({
+  color: "#FFFFFF", // White text for visibility
+  fontSize: 16, // Readable font size
+  fontWeight: "500", // Slightly bold for emphasis
+});
+
+const UserItem = styled.View({
+  flexDirection: "row", // Align items horizontally
+  justifyContent: "space-between", // Push name to the left and cross to the right
+  alignItems: "center", // Center items vertically
+  padding: 10, // Add spacing inside the item
+  marginVertical: 5, // Space between items
+  backgroundColor: "#4A5568", // Background color
+  borderRadius: 15, // Rounded corners
+  width:'100%'
+});
+
+const UserName = styled.Text({
+  fontSize: 16, // Set a readable font size
+  color: "#FFFFFF", // White text color
+  fontWeight: "500", // Slightly bold text
+});
+
+const RemoveButton = styled.TouchableOpacity({
+  padding: 5, // Add padding for better touch area
+  borderRadius: 5, // Slightly rounded corners
+  backgroundColor: "#E53E3E", // Red background for the remove button
+});
+
+const RemoveText = styled.Text({
+  color: "#FFFFFF", // White text color
+  fontWeight: "bold", // Bold text for emphasis
+});
+
 
 export default InvitePlayerModel;
