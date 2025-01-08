@@ -137,8 +137,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
     // If all fields are filled, proceed to create the league
     addLeagues(leagueDetails);
-    // setModalVisible(false);
-    handleShowPopup("League created successfully!");
+    setModalVisible(false);
+    // handleShowPopup("League created successfully!");
   };
 
   return (

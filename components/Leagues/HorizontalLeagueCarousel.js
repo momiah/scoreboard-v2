@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext,useEffect} from "react";
 import { ScrollView, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { generatedLeagues } from "./leagueMocks";
@@ -13,11 +13,21 @@ const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues } = useContext(LeagueContext);
+  const { leagues,leagueIdForDeatil} = useContext(LeagueContext);
 
   const navigateTo = (leagueId) => {
+ 
     navigation.navigate(navigationRoute, { leagueId });
   };
+
+   useEffect(() => {
+    if (leagueIdForDeatil !== '') {
+      navigateTo(leagueIdForDeatil);
+     
+    }
+  
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [leagueIdForDeatil]);
 
   const itemWidth = width - 80; // Width of each item (adjusted for partial display)
   const spacing = 20; // Space between items
