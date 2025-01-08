@@ -41,30 +41,14 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   }, [leagueGames]);
   useEffect(() => {
     if (leagueId) {
-      fetchLeagueById(leagueId)
+      fetchLeagueById(leagueId);
     }
-
   }, [leagueId, modalVisible]);
 
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
   // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
   //////////////////////////
-
-
-
-  // const handleRefresh = async () => {
-  //   setRefreshing(true);
-
-  //   try {
-  //     const retrievedGames = await retrieveGames();
-  //     setGames(retrievedGames);
-  //   } catch (error) {
-  //     console.error("Error refreshing games:", error);
-  //   } finally {
-  //     setRefreshing(false);
-  //   }
-  // };
 
   const openDeleteGameContainer = (gameId) => {
     setDeleteGameId(gameId);
@@ -86,30 +70,43 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   async function getUserRole() {
     const role = await checkUserRole(leagueById);
 
-    setUserRole(role)// Outputs "admin", "participant", or "invite user"
+    setUserRole(role); // Outputs "admin", "participant", or "invite user"
   }
-if (leagueById && leagueById?.leagueAdmins) {
-  getUserRole();
-} 
+  if (leagueById && leagueById?.leagueAdmins) {
+    getUserRole();
+  }
 
-let reversedGames = [];
-for (let i = leagueById.games.length - 1; i >= 0; i--) {
-  reversedGames.push(leagueById.games[i]);
-}
-  
-// const reverseGames =leagueById.games.reverse()
+  let reversedGames = [];
+  if (leagueById && leagueById.games?.length > 0) {
+    for (let i = leagueById.games.length - 1; i >= 0; i--) {
+      reversedGames.push(leagueById.games[i]);
+    }
+  }
+
+  // const reverseGames =leagueById.games.reverse()
   return (
     <Container>
-      {userRole !== 'hide' && userRole !== 'invite user' &&
+      {userRole !== "hide" && userRole !== "invite user" && (
         <AddGameButton onPress={() => handleAddGameButton()}>
           <Text>Add Game</Text>
-        </AddGameButton>}
-      {userRole === 'invite user' && (
-        <AddGameButton  disabled={requestSend} style={{backgroundColor:requestSend ?'gray' :  "#00A2FF"}} onPress={() =>{ setRequestSend(true)}}>
+        </AddGameButton>
+      )}
+      {userRole === "invite user" && (
+        <AddGameButton
+          disabled={requestSend}
+          style={{ backgroundColor: requestSend ? "gray" : "#00A2FF" }}
+          onPress={() => {
+            setRequestSend(true);
+          }}
+        >
           <Text>
-            {requestSend ? 'Request sent successfully' : 'Join League'}
+            {requestSend ? "Request sent successfully" : "Join League"}
           </Text>
         </AddGameButton>
+      )}
+
+      {reversedGames.length === 0 && (
+        <FallbackMessage>Add a game to see scores 🚀</FallbackMessage>
       )}
 
       <FlatList
@@ -343,6 +340,14 @@ const TeamTextContainer = styled.View({
   paddingLeft: 20,
   paddingRight: 20,
   width: screenWidth <= 400 ? 125 : 140,
+});
+
+const FallbackMessage = styled.Text({
+  color: "#696969",
+  fontStyle: "italic",
+  fontSize: 16,
+  textAlign: "center",
+  marginTop: 50,
 });
 
 export default Scoreboard;
