@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useContext } from "react";
-import { View, Text, Image, ActivityIndicator } from "react-native";
+import { View, Text, Image, ActivityIndicator, ScrollView } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import { generatedLeagues } from "../../../components/Leagues/leagueMocks";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../../assets";
 import { LinearGradient } from "expo-linear-gradient";
+import LeagueSummary from "../../../components/Summary/LeagueSummary";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
@@ -14,6 +15,7 @@ import { Dimensions } from "react-native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import { UserContext } from "../../../context/UserContext";
+import { court2 } from "../../../mockImages";
 
 const League = () => {
   const route = useRoute();
@@ -28,6 +30,9 @@ const League = () => {
   const [userRole, setUserRole] = useState(null);
 
   const tabs = [
+    {
+      component: "Summary",
+    },
     {
       component: "Scoreboard",
     },
@@ -44,6 +49,14 @@ const League = () => {
 
   const renderComponent = () => {
     switch (selectedTab) {
+      case "Summary":
+        return (
+          <LeagueSummary
+            leagueDetails={leagueDetails}
+            setLeagueDetails={setLeagueDetails}
+            userRole={userRole}
+          />
+        );
       case "Scoreboard":
         return (
           <Scoreboard leagueGames={leagueDetails?.games} leagueId={leagueId} />
@@ -102,8 +115,6 @@ const League = () => {
     );
   }
 
-  console.log(leagueDetails, "leagueDetails");
-
   async function getUserRole() {
     const role = await checkUserRole(leagueDetails);
     console.log("User Role:", role);
@@ -112,12 +123,10 @@ const League = () => {
 
   getUserRole();
 
-  // console.log(userRole,'userRoleuserRole')
-
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage source={leagueDetails?.image}>
+        <LeagueImage source={court2}>
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.9)"]}
             locations={[0.1, 1]}
@@ -181,18 +190,31 @@ const League = () => {
           </LeagueDetailsContainer>
         </LeagueImage>
       </Overview>
-      <Tabs>
-        {tabs.map((tab) => (
-          <Tab
-            key={tab.component}
-            onPress={() => setSelectedTab(tab.component)}
-            isSelected={selectedTab === tab.component}
-          >
-            <TabText>{tab.component}</TabText>
-          </Tab>
-        ))}
-      </Tabs>
+      <TabsContainer>
+        <GradientOverlay
+          colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
+          locations={[0.1, 1]}
+          style={{ bottom: -560 }}
+        />
+        <ScrollView
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 10 }}
+        >
+          {tabs.map((tab) => (
+            <Tab
+              key={tab.component}
+              onPress={() => setSelectedTab(tab.component)}
+              isSelected={selectedTab === tab.component}
+            >
+              <TabText>{tab.component}</TabText>
+            </Tab>
+          ))}
+        </ScrollView>
+      </TabsContainer>
+
       {renderComponent()}
+
       {modalVisible && (
         <InvitePlayerModel
           modalVisible={modalVisible}
@@ -210,7 +232,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const Overview = styled.View({
   flexDirection: "row",
-  height: 175,
+  height: 180,
   width: "100%",
   justifyContent: "center",
   alignItems: "center",
@@ -218,7 +240,7 @@ const Overview = styled.View({
 
 const LeagueImage = styled.ImageBackground({
   width: "100%",
-  height: "100%",
+  height: "110%",
   justifyContent: "flex-end", // Positions text at the bottom
   alignItems: "flex-start",
 });
@@ -228,7 +250,7 @@ const GradientOverlay = styled(LinearGradient)({
   top: 0,
   left: 0,
   right: 0,
-  bottom: 0,
+  bottom: -60,
 });
 
 const LeagueName = styled.Text({
@@ -256,24 +278,24 @@ const LeagueDetailsContainer = styled.View({
   overflow: "hidden", // Ensures image respects border radius
   paddingLeft: 15,
   paddingRight: 15,
-  paddingTop: 35,
+  paddingTop: 45,
 });
 
-const Tabs = styled.View({
+const TabsContainer = styled.View({
   width: "100%",
-  display: "flex",
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: 10,
+  backgroundColor: "#00152B",
+  borderTopLeftRadius: 30,
+  borderTopRightRadius: 30,
+  paddingTop: 25,
+  paddingBottom: 10,
 });
+
 const Tab = styled.TouchableOpacity(({ isSelected }) => ({
-  border: "1px solid #ccc",
-  padding: 10,
+  marginHorizontal: 5, // Add spacing between tabs
+  paddingHorizontal: 20, // Add padding inside the tabs
+  paddingVertical: 10,
   borderRadius: 20,
-  marginTop: 10,
   borderWidth: isSelected ? 2 : 1,
-  borderStyle: "solid",
   borderColor: isSelected ? "#00A2FF" : "white",
 }));
 

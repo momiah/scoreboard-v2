@@ -11,7 +11,7 @@ import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
 import MedalDisplay from "../MedalDisplay";
-import PlayerDetails from "./PlayerDetails";
+import PlayerDetails from "../../Modals/PlayerDetailsModal";
 
 const PlayerPerformance = ({ playersData, leagueId }) => {
   const { refreshing, findRankIndex, recentGameResult } =
@@ -68,11 +68,11 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
           setSelectedPlayer(player);
         }}
       >
-        <GradientOverlay
+        {/* <GradientOverlay
           colors={["rgba(0, 0, 0, 0.6)", "rgba(0, 0, 0, 0.1)"]}
           end={{ x: 0.8, y: 3 }}
           locations={[0.1, 0.4]}
-        />
+        /> */}
         <TableCell>
           <Rank>
             {index + 1}
@@ -167,7 +167,7 @@ const TableContainer = styled.View({
 
 const TableRow = styled.TouchableOpacity({
   flexDirection: "row",
-  backgroundColor: "#001123",
+  // backgroundColor: "#001123",
 });
 
 const TableCell = styled.View({
@@ -177,7 +177,7 @@ const TableCell = styled.View({
   paddingTop: 15,
   paddingBottom: 15,
   borderTopWidth: 1,
-  borderColor: "#262626",
+  borderColor: "1px solid rgb(9, 33, 62)",
 });
 
 const PlayerNameCell = styled.View({
@@ -190,7 +190,7 @@ const PlayerNameCell = styled.View({
   paddingRight: 20,
   borderTopWidth: 1,
   width: 130,
-  borderColor: "#262626",
+  borderColor: "1px solid rgb(9, 33, 62)",
 });
 
 const PlayerName = styled.Text({
