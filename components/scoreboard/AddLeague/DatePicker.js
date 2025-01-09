@@ -118,7 +118,7 @@ const DatePicker = ({ setLeagueDetails, leagueDetails }) => {
             top: "110%",
             left: "-3%",
             width: "110%",
-            backgroundColor: "#00152B",
+            backgroundColor: "rgba(2, 13, 24, 1)",
             borderRadius: 10,
             padding: 30,
             zIndex: 1000,
@@ -185,7 +185,7 @@ const ButtonContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   width: "100%",
-  marginTop: 20,
+  marginTop: 15,
 });
 
 const CancelButton = styled.TouchableOpacity({
