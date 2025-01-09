@@ -18,7 +18,7 @@ import { UserContext } from "../../../context/UserContext";
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
-  const { leagues } = useContext(LeagueContext);
+  const { leagues,fetchLeagueById} = useContext(LeagueContext);
   const { checkUserRole } = useContext(UserContext);
 
   const [leagueDetails, setLeagueDetails] = useState(null);
@@ -45,10 +45,10 @@ const League = () => {
   const renderComponent = () => {
     switch (selectedTab) {
       case "Scoreboard":
-        return <Scoreboard leagueGames={leagueGames} leagueId={leagueId} />;
+        return <Scoreboard leagueGames={leagueDetails?.games} leagueId={leagueId} />;
       case "Player Performance":
         return (
-          <PlayerPerformance playersData={playersData} leagueId={leagueId} />
+          <PlayerPerformance playersData={leagueDetails?.leagueParticipants} leagueId={leagueId} />
         );
       case "Team Performance":
         return <TeamPerformance />;
@@ -58,11 +58,16 @@ const League = () => {
   };
 
   useEffect(() => {
-    fetchLeagueDetails(leagueId);
+    if (leagueId) {
+      fetchLeagueDetails(leagueId);
+    }
+    
   }, [leagueId]);
 
-  const fetchLeagueDetails = (id) => {
-    const fetchedDetails = leagues.find((league) => league.id === id);
+  const fetchLeagueDetails =async (id) => {
+
+   const fetchedDetails = await fetchLeagueById(id)
+    // const fetchedDetails = leagues.find((league) => league.id === id);
     setLeagueDetails(fetchedDetails);
     setLoading(false); // Set loading to false once data is fetched
   };
@@ -110,13 +115,13 @@ getUserRole();
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage source={leagueDetails.image}>
+        <LeagueImage source={leagueDetails?.image}>
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.9)"]}
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
-            <LeagueName>{leagueDetails.leagueName}</LeagueName>
+            <LeagueName>{leagueDetails?.leagueName}</LeagueName>
             <View
               style={{
                 flexDirection: "row",
@@ -124,7 +129,7 @@ getUserRole();
               }}
             >
               <LeagueLocation>
-                {leagueDetails.centerName}, {leagueDetails.location}
+                {leagueDetails?.centerName}, {leagueDetails?.location}
               </LeagueLocation>
               <Ionicons
                 name={"location"}
@@ -136,15 +141,15 @@ getUserRole();
               />
             </View>
             <Tag
-              name={leagueDetails.leagueStatus.status}
-              color={leagueDetails.leagueStatus.color}
+              name={leagueDetails?.leagueStatus.status}
+              color={leagueDetails?.leagueStatus.color}
             />
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
               <View style={{ flexDirection: "row" }}>
-                <Tag name={leagueDetails.leagueType} />
-                <Tag name={leagueDetails.prizeType} />
+                <Tag name={leagueDetails?.leagueType} />
+                <Tag name={leagueDetails?.prizeType} />
               </View>
               {/* Should be changed to Action button for users
                   If part of the league = "Participant"

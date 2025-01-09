@@ -34,7 +34,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   // console.log("games from context🤔", JSON.stringify(games, null, 2));
 
   useEffect(() => {
-    if (leagueGames.length > 0) {
+    if (leagueGames?.length > 0) {
       setNewestGameId(leagueGames[0].gameId);
     }
     fetchPlayers(leagueId);
@@ -77,7 +77,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   }
 
   let reversedGames = [];
-  if (leagueById && leagueById.games?.length > 0) {
+  if (leagueById &&leagueById.games &&  leagueById.games?.length > 0) {
     for (let i = leagueById.games.length - 1; i >= 0; i--) {
       reversedGames.push(leagueById.games[i]);
     }

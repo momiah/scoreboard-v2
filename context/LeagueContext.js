@@ -12,6 +12,7 @@ const LeagueContext = createContext();
 const LeagueProvider = ({ children }) => {
   const [leagues, setLeagues] = useState([]);
   const [showMockData, setShowMockData] = useState(false);
+  const [leagueIdForDeatil, setLeagueIdForDeatil] = useState('');
   const [leagueById, setLeagueById] = useState();
 
   useEffect(() => {
@@ -47,8 +48,14 @@ const LeagueProvider = ({ children }) => {
       await setDoc(doc(db, "leagues", leagueData.leagueName), {
         ...leagueData,
       });
+     
       console.log("League added successfully!");
       fetchLeagues()
+      setLeagueIdForDeatil(leagueData.leagueName)
+      setTimeout(() => {
+        
+        setLeagueIdForDeatil('')
+      }, 2000);
     } catch (error) {
       console.error("Error adding league: ", error);
     }
@@ -70,6 +77,7 @@ const LeagueProvider = ({ children }) => {
 
         // Optionally, update state with the fetched league data
         setLeagueById(leagueData);
+        return leagueData
       } else {
         console.log("No league found with the given ID");
       }
@@ -215,6 +223,8 @@ const LeagueProvider = ({ children }) => {
         addLeagues,
         leagues,
         fetchLeagues,
+        setLeagueIdForDeatil,
+        leagueIdForDeatil,
       }}
     >
       {children}
