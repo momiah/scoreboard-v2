@@ -15,45 +15,46 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../../services/firebase.config";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { FlatList } from "react-native";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 
-
-const InvitePlayerModel = ({
+const InvitePlayerModal = ({
   modalVisible,
   setModalVisible,
   leagueDetails,
 }) => {
-  const [searchUser, setSearchUser] = useState('');
+  const [searchUser, setSearchUser] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [inviteUsers, setInviteUsers] = useState([]);
   const handleSendInvite = () => {
-    setModalVisible(false)
+    setModalVisible(false);
 
     console.log("invited user:", inviteUsers);
   };
 
   const handleSearch = async (value) => {
     setSearchUser(value);
-  
+
     if (value.trim().length > 0) {
       try {
         // Retrieve the logged-in user ID from AsyncStorage
         const currentUserId = await AsyncStorage.getItem("userId");
-  
+
         if (!currentUserId) {
           return; // Handle if no user is logged in
         }
-  
+
         // Split the search value into individual words
         const searchWords = value.toLowerCase().split(/\s+/); // Split by spaces
-  
+
         // Query Firestore for matching usernames
         const q = query(collection(db, "users")); // Base query
-  
+
         const querySnapshot = await getDocs(q);
-  
+
         // Map the result into an array and filter the users by search words
         const users = querySnapshot.docs.map((doc) => doc.data());
-  
+
         // Filter based on search words
         const filteredUsers = users.filter((user) => {
           const username = user.username.toLowerCase(); // Convert username to lowercase
@@ -65,7 +66,7 @@ const InvitePlayerModel = ({
             ) // Exclude already selected users
           );
         });
-  
+
         setSuggestions(filteredUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -74,7 +75,6 @@ const InvitePlayerModel = ({
       setSuggestions([]); // Clear suggestions if input is empty
     }
   };
-  
 
   const handleSelectUser = (user) => {
     setInviteUsers((prevUsers) => [...prevUsers, user]); // Directly add the user to the array
@@ -83,11 +83,11 @@ const InvitePlayerModel = ({
   };
 
   const handleRemoveUser = (userToRemove) => {
-    setInviteUsers((prevUsers) =>
-      prevUsers.filter((user) => user.userId !== userToRemove.userId) // Remove user based on userId
+    setInviteUsers(
+      (prevUsers) =>
+        prevUsers.filter((user) => user.userId !== userToRemove.userId) // Remove user based on userId
     );
   };
-
 
   return (
     <View>
@@ -98,8 +98,8 @@ const InvitePlayerModel = ({
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <ModalBackground>
-            <ModalContainer>
+          <ModalContainer>
+            <GradientOverlay colors={["#191b37", "#001d2e"]}>
               <ModalContent>
                 <TouchableOpacity
                   onPress={() => setModalVisible(false)}
@@ -156,9 +156,7 @@ const InvitePlayerModel = ({
                       keyExtractor={(item) => item.email || item.id}
                       renderItem={({ item }) => (
                         <DropdownItem onPress={() => handleSelectUser(item)}>
-                          <DropdownText>
-                            {item.username}
-                          </DropdownText>
+                          <DropdownText>{item.username}</DropdownText>
                         </DropdownItem>
                       )}
                     />
@@ -167,7 +165,9 @@ const InvitePlayerModel = ({
                 {inviteUsers?.length > 0 && (
                   <FlatList
                     data={inviteUsers}
-                    keyExtractor={(item, index) => item.email || index.toString()}
+                    keyExtractor={(item, index) =>
+                      item.email || index.toString()
+                    }
                     renderItem={({ item }) => (
                       <UserItem>
                         <UserName>{item.username}</UserName>
@@ -191,8 +191,8 @@ const InvitePlayerModel = ({
                   </CreateButton>
                 </ButtonContainer>
               </ModalContent>
-            </ModalContainer>
-          </ModalBackground>
+            </GradientOverlay>
+          </ModalContainer>
         </TouchableWithoutFeedback>
       </Modal>
     </View>
@@ -201,24 +201,32 @@ const InvitePlayerModel = ({
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const ModalBackground = styled.View({
+const ModalContainer = styled(BlurView).attrs({
+  intensity: 50,
+  tint: "dark",
+})({
   flex: 1,
-  backgroundColor: "rgba(0, 0, 0, 0.8)",
-  justifyContent: "center",
-  alignItems: "center",
-});
-
-const ModalContainer = styled.View({
   justifyContent: "center",
   alignItems: "center",
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "#00152B",
+  backgroundColor: "rgba(2, 13, 24, 1)", // Translucent dark blue
   padding: 20,
   borderRadius: 10,
   width: screenWidth - 40,
-  alignItems: "flex-start",
+  alignItems: "center",
+
+  // border: "1px solid #191b37",
+});
+const GradientOverlay = styled(LinearGradient)({
+  padding: 2, // Creates a border-like effect
+  borderRadius: 12, // Rounded corners
+  shadowColor: "#00A2FF", // Glow color
+  shadowOffset: { width: 0, height: 10 },
+  shadowOpacity: 0.4,
+  shadowRadius: 20, // Soft glow effect
+  opacity: 0.9,
 });
 
 const DisclaimerText = styled.Text({
@@ -297,7 +305,7 @@ const DropdownContainer = styled.View({
   padding: 10, // Padding inside the container
   marginTop: 5, // Spacing from the input field
   maxHeight: "200px",
-  width: '100%'
+  width: "100%",
 });
 
 const DropdownItem = styled.TouchableOpacity({
@@ -321,7 +329,7 @@ const UserItem = styled.View({
   marginVertical: 5, // Space between items
   backgroundColor: "#4A5568", // Background color
   borderRadius: 15, // Rounded corners
-  width:'100%'
+  width: "100%",
 });
 
 const UserName = styled.Text({
@@ -341,5 +349,4 @@ const RemoveText = styled.Text({
   fontWeight: "bold", // Bold text for emphasis
 });
 
-
-export default InvitePlayerModel;
+export default InvitePlayerModal;

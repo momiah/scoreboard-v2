@@ -6,7 +6,7 @@ import { UserContext } from "../../context/UserContext";
 
 import { Dimensions } from "react-native";
 
-import AddGameModal from "./AddGame/AddGameModal";
+import AddGameModal from "../Modals/AddGameModal";
 import { LeagueContext } from "../../context/LeagueContext";
 
 const Scoreboard = ({ leagueGames, leagueId }) => {
@@ -77,7 +77,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   }
 
   let reversedGames = [];
-  if (leagueById &&leagueById.games &&  leagueById.games?.length > 0) {
+  if (leagueById && leagueById.games && leagueById.games?.length > 0) {
     for (let i = leagueById.games.length - 1; i >= 0; i--) {
       reversedGames.push(leagueById.games[i]);
     }

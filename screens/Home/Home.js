@@ -11,7 +11,7 @@ import { topPlayers } from "../../components/TopPlayersDisplay/topPlayerMocks";
 import SubHeader from "../../components/SubHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import AddLeagueModel from "../../components/scoreboard/AddLeague/AddLeagueModel";
+import AddLeagueModel from "../../components/Modals/AddLeagueModal";
 import { LeagueContext } from "../../context/LeagueContext";
 import { Switch } from "react-native";
 import { UserContext } from "../../context/UserContext";
@@ -21,7 +21,7 @@ const Home = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
   const { setShowMockData, showMockData } = useContext(LeagueContext);
-  const {  Logout } = useContext(UserContext);
+  const { Logout } = useContext(UserContext);
 
   useEffect(() => {
     const fetchUserToken = async () => {

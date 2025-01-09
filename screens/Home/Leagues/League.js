@@ -12,13 +12,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../../../components/Tag";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../../context/LeagueContext";
-import InvitePlayerModel from "../../../components/Models/InvitePlayerModel";
+import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import { UserContext } from "../../../context/UserContext";
 
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
-  const { leagues,fetchLeagueById} = useContext(LeagueContext);
+  const { leagues, fetchLeagueById } = useContext(LeagueContext);
   const { checkUserRole } = useContext(UserContext);
 
   const [leagueDetails, setLeagueDetails] = useState(null);
@@ -45,10 +45,15 @@ const League = () => {
   const renderComponent = () => {
     switch (selectedTab) {
       case "Scoreboard":
-        return <Scoreboard leagueGames={leagueDetails?.games} leagueId={leagueId} />;
+        return (
+          <Scoreboard leagueGames={leagueDetails?.games} leagueId={leagueId} />
+        );
       case "Player Performance":
         return (
-          <PlayerPerformance playersData={leagueDetails?.leagueParticipants} leagueId={leagueId} />
+          <PlayerPerformance
+            playersData={leagueDetails?.leagueParticipants}
+            leagueId={leagueId}
+          />
         );
       case "Team Performance":
         return <TeamPerformance />;
@@ -61,12 +66,10 @@ const League = () => {
     if (leagueId) {
       fetchLeagueDetails(leagueId);
     }
-    
   }, [leagueId]);
 
-  const fetchLeagueDetails =async (id) => {
-
-   const fetchedDetails = await fetchLeagueById(id)
+  const fetchLeagueDetails = async (id) => {
+    const fetchedDetails = await fetchLeagueById(id);
     // const fetchedDetails = leagues.find((league) => league.id === id);
     setLeagueDetails(fetchedDetails);
     setLoading(false); // Set loading to false once data is fetched
@@ -99,16 +102,15 @@ const League = () => {
     );
   }
 
-
-  console.log(leagueDetails,'leagueDetails')
+  console.log(leagueDetails, "leagueDetails");
 
   async function getUserRole() {
     const role = await checkUserRole(leagueDetails);
-    console.log('User Role:', role); 
-    setUserRole(role)// Outputs "admin", "participant", or "invite user"
-}
+    console.log("User Role:", role);
+    setUserRole(role); // Outputs "admin", "participant", or "invite user"
+  }
 
-getUserRole();
+  getUserRole();
 
   // console.log(userRole,'userRoleuserRole')
 
@@ -155,24 +157,26 @@ getUserRole();
                   If part of the league = "Participant"
                   If league admin = "Invite Players"
               */}
-              {userRole === 'participant' &&
-              <Tag
-                name={"Participant"}
-                color="#16181B"
-                iconColor="green"
-                iconSize={15}
-                icon={"checkmark-circle-outline"}
-                iconPosition={"right"}
-                bold
-              />}
-               {userRole === 'admin' &&
-              <Tag
-                name={"Invite Players"}
-                color="#00A2FF"
-                icon={"paper-plane-sharp"}
-                onPress={leaguePrompt}
-                bold
-              />}
+              {userRole === "participant" && (
+                <Tag
+                  name={"Participant"}
+                  color="#16181B"
+                  iconColor="green"
+                  iconSize={15}
+                  icon={"checkmark-circle-outline"}
+                  iconPosition={"right"}
+                  bold
+                />
+              )}
+              {userRole === "admin" && (
+                <Tag
+                  name={"Invite Players"}
+                  color="#00A2FF"
+                  icon={"paper-plane-sharp"}
+                  onPress={leaguePrompt}
+                  bold
+                />
+              )}
             </View>
           </LeagueDetailsContainer>
         </LeagueImage>

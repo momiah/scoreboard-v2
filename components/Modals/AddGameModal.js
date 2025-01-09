@@ -8,18 +8,21 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
-import { GameContext } from "../../../context/GameContext";
-import { UserContext } from "../../../context/UserContext";
-import { PopupContext } from "../../../context/PopupContext";
+import { GameContext } from "../../context/GameContext";
+import { UserContext } from "../../context/UserContext";
+import { PopupContext } from "../../context/PopupContext";
 import styled from "styled-components/native";
-import Popup from "../../popup/Popup";
-import SelectPlayer from "./SelectPlayer";
+import Popup from "../popup/Popup";
+import SelectPlayer from "../scoreboard/AddGame/SelectPlayer";
 import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
-import { generateUniqueGameId } from "../../../functions/generateUniqueId";
-import { getPlayersToUpdate } from "../../../functions/getPlayersToUpdate";
-import RegisterPlayer from "./RegisterPlayer";
-import AddGame from "./AddGame";
+import { generateUniqueGameId } from "../../functions/generateUniqueId";
+import { getPlayersToUpdate } from "../../functions/getPlayersToUpdate";
+import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
+import AddGame from "../scoreboard/AddGame/AddGame";
+
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 
 const AddGameModal = ({
   modalVisible,
@@ -176,43 +179,45 @@ const AddGameModal = ({
           onClose={handleClosePopup}
         />
         <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <ModalContent>
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              style={{
-                alignSelf: "flex-end",
-                position: "absolute",
-                top: 10,
-                right: 10,
-                zIndex: 10,
-              }}
-            >
-              <AntDesign name="closecircleo" size={30} color="red" />
-            </TouchableOpacity>
+          <GradientOverlay colors={["#191b37", "#001d2e"]}>
+            <ModalContent>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={{
+                  alignSelf: "flex-end",
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  zIndex: 10,
+                }}
+              >
+                <AntDesign name="closecircleo" size={30} color="red" />
+              </TouchableOpacity>
 
-            <AddGame
-              team1Score={team1Score}
-              setTeam1Score={setTeam1Score}
-              team2Score={team2Score}
-              setTeam2Score={setTeam2Score}
-              selectedPlayers={selectedPlayers}
-              handleSelectPlayer={handleSelectPlayer}
-            />
+              <AddGame
+                team1Score={team1Score}
+                setTeam1Score={setTeam1Score}
+                team2Score={team2Score}
+                setTeam2Score={setTeam2Score}
+                selectedPlayers={selectedPlayers}
+                handleSelectPlayer={handleSelectPlayer}
+              />
 
-            <ButtonContainer>
-              <SubmitButton onPress={handleAddGame}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "bold",
-                    color: "white",
-                  }}
-                >
-                  Submit
-                </Text>
-              </SubmitButton>
-            </ButtonContainer>
-          </ModalContent>
+              <ButtonContainer>
+                <SubmitButton onPress={handleAddGame}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                  >
+                    Submit
+                  </Text>
+                </SubmitButton>
+              </ButtonContainer>
+            </ModalContent>
+          </GradientOverlay>
         </ModalContainer>
       </Modal>
     </View>
@@ -221,18 +226,30 @@ const AddGameModal = ({
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const ModalContainer = styled.View({
+const ModalContainer = styled(BlurView).attrs({
+  intensity: 50,
+  tint: "dark",
+})({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  backgroundColor: "#00152B",
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "#00152B",
+  backgroundColor: "rgba(2, 13, 24, 1)", // Translucent dark blue
   padding: 20,
   borderRadius: 10,
-  width: screenWidth - 20,
+  width: screenWidth - 40,
+  alignItems: "center",
+});
+const GradientOverlay = styled(LinearGradient)({
+  padding: 2,
+  borderRadius: 12,
+  // shadowColor: "#00A2FF",
+  // shadowOffset: { width: 0, height: 10 },
+  // shadowOpacity: 0.4,
+  // shadowRadius: 20,
+  opacity: 0.9,
 });
 
 const ButtonContainer = styled.View({
