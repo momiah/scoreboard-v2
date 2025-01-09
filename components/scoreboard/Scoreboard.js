@@ -220,6 +220,11 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
 // Define styles
 const { width: screenWidth } = Dimensions.get("window");
 
+const Container = styled.View({
+  flex: 1,
+  padding: 10,
+  // backgroundColor: "#00152B",
+});
 const AddGameButton = styled.TouchableOpacity({
   display: "flex",
   justifyContent: "center",
@@ -227,16 +232,10 @@ const AddGameButton = styled.TouchableOpacity({
   fontSize: 24,
   fontWeight: "bold",
   marginBottom: 15,
-  marginTop: 15,
+
   padding: 10,
   borderRadius: 8,
   backgroundColor: "#00A2FF",
-});
-
-const Container = styled.View({
-  flex: 1,
-  padding: 10,
-  backgroundColor: "#00152B",
 });
 
 const Date = styled.Text({
@@ -285,7 +284,7 @@ const GameContainer = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
-  border: "1px solid #262626",
+  // border: "1px solid red",
   borderRadius: 8,
   height: screenWidth <= 400 ? 100 : null,
   backgroundColor: "#001123",
@@ -296,7 +295,7 @@ const NonDeletableGameContainer = styled.View({
   justifyContent: "space-between",
   marginBottom: 16,
   backgroundColor: "#001123",
-  border: "1px solid #262626",
+  border: "1px solid rgb(9, 33, 62)",
   borderRadius: 8,
 });
 

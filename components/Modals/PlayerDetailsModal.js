@@ -2,13 +2,15 @@ import React, { useContext } from "react";
 import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
-import MedalDisplay from "../MedalDisplay";
-import MedalProgress from "../MedalProgress";
-import MatchMedals from "../MatchMedals";
-import AnimateNumber from "../AnimateNumber";
+import MedalDisplay from "../performance/MedalDisplay";
+import MedalProgress from "../performance/MedalProgress";
+import MatchMedals from "../performance/MatchMedals";
+import AnimateNumber from "../performance/AnimateNumber";
 import { Dimensions } from "react-native";
-import ResultLog from "../ResultLog";
-import { GameContext } from "../../../context/GameContext";
+import ResultLog from "../performance/ResultLog";
+import { GameContext } from "../../context/GameContext";
+import { BlurView } from "expo-blur";
+
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
   if (resultLog.length === 0) return 0;
@@ -178,20 +180,22 @@ const Divider = styled.View({
   borderBottomWidth: 1,
 });
 
-const ModalContainer = styled.View({
+const ModalContainer = styled(BlurView).attrs({
+  intensity: 80,
+  tint: "dark",
+})({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  backgroundColor: "rgba(0,0,0,0.5)",
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "#00152B",
+  backgroundColor: "rgba(2, 13, 24, 0.7)", // Translucent dark blue
   margin: 10,
   padding: 20,
   paddingLeft: 25,
   paddingRight: 25,
-  borderRadius: 10,
+  borderRadius: 20,
 });
 
 const CloseIconContainer = styled.View({

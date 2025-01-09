@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
@@ -157,54 +156,52 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
           onClose={handleClosePopup}
         />
         <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <GradientOverlay colors={["#191b37", "#001d2e"]}>
-            <ModalContent>
-              <ModalTitle>Create League</ModalTitle>
+          <ModalContent>
+            <ModalTitle>Create League</ModalTitle>
 
-              <Label>League Name</Label>
-              <Input
-                placeholder="Enter league name"
-                placeholderTextColor="#ccc"
-                value={leagueDetails.leagueName}
-                onChangeText={(value) => handleChange("leagueName", value)}
-              />
+            <Label>League Name</Label>
+            <Input
+              placeholder="Enter league name"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.leagueName}
+              onChangeText={(value) => handleChange("leagueName", value)}
+            />
 
-              <Label>Location</Label>
-              <Input
-                placeholder="Enter location"
-                placeholderTextColor="#ccc"
-                value={leagueDetails.location}
-                onChangeText={(value) => handleChange("location", value)}
-              />
-              <Label>Center Name</Label>
-              <Input
-                placeholder="Enter center name"
-                placeholderTextColor="#ccc"
-                value={leagueDetails.centerName}
-                onChangeText={(value) => handleChange("centerName", value)}
-              />
+            <Label>Location</Label>
+            <Input
+              placeholder="Enter location"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.location}
+              onChangeText={(value) => handleChange("location", value)}
+            />
+            <Label>Center Name</Label>
+            <Input
+              placeholder="Enter center name"
+              placeholderTextColor="#ccc"
+              value={leagueDetails.centerName}
+              onChangeText={(value) => handleChange("centerName", value)}
+            />
 
-              <DatePicker
-                setLeagueDetails={setLeagueDetails}
-                leagueDetails={leagueDetails}
-              />
+            <DatePicker
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
+            />
 
-              <MaxPlayersPicker setLeagueDetails={setLeagueDetails} />
+            <MaxPlayersPicker setLeagueDetails={setLeagueDetails} />
 
-              <LeagueType setLeagueDetails={setLeagueDetails} />
+            <LeagueType setLeagueDetails={setLeagueDetails} />
 
-              <PrivacyType setLeagueDetails={setLeagueDetails} />
+            <PrivacyType setLeagueDetails={setLeagueDetails} />
 
-              <ButtonContainer>
-                <CancelButton onPress={() => setModalVisible(false)}>
-                  <CancelText>Cancel</CancelText>
-                </CancelButton>
-                <CreateButton onPress={handleCreate}>
-                  <CreateText>Create</CreateText>
-                </CreateButton>
-              </ButtonContainer>
-            </ModalContent>
-          </GradientOverlay>
+            <ButtonContainer>
+              <CancelButton onPress={() => setModalVisible(false)}>
+                <CancelText>Cancel</CancelText>
+              </CancelButton>
+              <CreateButton onPress={handleCreate}>
+                <CreateText>Create</CreateText>
+              </CreateButton>
+            </ButtonContainer>
+          </ModalContent>
         </ModalContainer>
       </Modal>
     </View>
@@ -214,7 +211,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 const { width: screenWidth } = Dimensions.get("window");
 
 const ModalContainer = styled(BlurView).attrs({
-  intensity: 50,
+  intensity: 80,
   tint: "dark",
 })({
   flex: 1,
@@ -223,22 +220,13 @@ const ModalContainer = styled(BlurView).attrs({
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "rgba(2, 13, 24, 1)", // Translucent dark blue
+  backgroundColor: "rgba(2, 13, 24, 0.8)", // Translucent dark blue
   padding: 20,
   borderRadius: 10,
   width: screenWidth - 40,
   alignItems: "center",
-
+  borderRadius: 20,
   // border: "1px solid #191b37",
-});
-const GradientOverlay = styled(LinearGradient)({
-  padding: 2, // Creates a border-like effect
-  borderRadius: 12, // Rounded corners
-  shadowColor: "#00A2FF", // Glow color
-  shadowOffset: { width: 0, height: 10 },
-  shadowOpacity: 0.4,
-  shadowRadius: 20, // Soft glow effect
-  opacity: 0.9,
 });
 
 const ModalTitle = styled.Text({
