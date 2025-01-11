@@ -104,42 +104,48 @@ const UserProvider = ({ children }) => {
   //   }
   // };
 
-
   async function checkUserRole(leagueData) {
     try {
-        // Retrieve userId from AsyncStorage
-        const userId = await AsyncStorage.getItem('userId');
+      // Retrieve userId from AsyncStorage
+      const userId = await AsyncStorage.getItem("userId");
 
-        if (!userId) {
-            // console.error('User ID not found in AsyncStorage');
-            return "hide";
-        }
-
-        // If no admins and no participants, return invite user
-        if (leagueData.leagueAdmins.length === 0 && leagueData.leagueParticipants.length === 0) {
-            console.log('No admins or participants in the league');
-            return "invite user";
-        }
-
-        // Check if the userId matches any league admin
-        const isAdmin = leagueData.leagueAdmins.some(admin => admin.userId === userId);
-        if (isAdmin) {
-            return "admin";
-        }
-
-        // Check if the userId matches any league participant
-        const isParticipant = leagueData.leagueParticipants.some(participant => participant.userId === userId);
-        if (isParticipant) {
-            return "participant";
-        }
-
-        // If no match, return invite user
-        return "invite user";
-    } catch (error) {
-        // console.error('Error checking user role:', error);
+      if (!userId) {
+        // console.error('User ID not found in AsyncStorage');
         return "hide";
+      }
+
+      // If no admins and no participants, return invite user
+      if (
+        leagueData.leagueAdmins.length === 0 &&
+        leagueData.leagueParticipants.length === 0
+      ) {
+        console.log("No admins or participants in the league");
+        return "invite user";
+      }
+
+      // Check if the userId matches any league admin
+      const isAdmin = leagueData.leagueAdmins.some(
+        (admin) => admin.userId === userId
+      );
+      if (isAdmin) {
+        return "admin";
+      }
+
+      // Check if the userId matches any league participant
+      const isParticipant = leagueData.leagueParticipants.some(
+        (participant) => participant.userId === userId
+      );
+      if (isParticipant) {
+        return "participant";
+      }
+
+      // If no match, return invite user
+      return "invite user";
+    } catch (error) {
+      // console.error('Error checking user role:', error);
+      return "hide";
     }
-}
+  }
 
   const fetchPlayers = async (leagueId) => {
     try {
@@ -211,7 +217,6 @@ const UserProvider = ({ children }) => {
   };
 
   const updatePlayers = async (updatedPlayers, leagueId) => {
-    console.log("updatedPlayers", JSON.stringify(updatedPlayers, null, 2));
     if (updatedPlayers.length === 0) {
       handleShowPopup("No players to update!");
       return;
@@ -284,14 +289,13 @@ const UserProvider = ({ children }) => {
         console.error("User ID is required to fetch details.");
         return null;
       }
-  
+
       // Reference the document in the 'users' collection by ID
       const userDocRef = doc(db, "users", userId);
       const userDoc = await getDoc(userDocRef);
-  
+
       if (userDoc.exists()) {
-        console.log("User details:", userDoc.data());
-        return userDoc.data() ; // Include the document ID
+        return userDoc.data(); // Include the document ID
       } else {
         console.error("No user found with the given ID.");
         return null;

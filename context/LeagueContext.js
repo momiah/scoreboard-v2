@@ -1,6 +1,15 @@
 // LeagueContext.js
 import React, { createContext, useState, useEffect } from "react";
-import { doc, setDoc, collection, getDocs, getDoc, query, where, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  collection,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  updateDoc,
+} from "firebase/firestore";
 
 import { generatedLeagues } from "../components/Leagues/leagueMocks";
 
@@ -12,7 +21,7 @@ const LeagueContext = createContext();
 const LeagueProvider = ({ children }) => {
   const [leagues, setLeagues] = useState([]);
   const [showMockData, setShowMockData] = useState(false);
-  const [leagueIdForDeatil, setLeagueIdForDeatil] = useState('');
+  const [leagueIdForDeatil, setLeagueIdForDeatil] = useState("");
   const [leagueById, setLeagueById] = useState();
 
   useEffect(() => {
@@ -33,7 +42,6 @@ const LeagueProvider = ({ children }) => {
         id: doc.id, // Include document ID
         ...doc.data(), // Include the rest of the document fields
       }));
-      console.log("leaguesDataleaguesDataleaguesData===>", leaguesData);
 
       setLeagues(leaguesData);
     } catch (error) {
@@ -48,13 +56,12 @@ const LeagueProvider = ({ children }) => {
       await setDoc(doc(db, "leagues", leagueData.leagueName), {
         ...leagueData,
       });
-     
+
       console.log("League added successfully!");
-      fetchLeagues()
-      setLeagueIdForDeatil(leagueData.leagueName)
+      fetchLeagues();
+      setLeagueIdForDeatil(leagueData.leagueName);
       setTimeout(() => {
-        
-        setLeagueIdForDeatil('')
+        setLeagueIdForDeatil("");
       }, 2000);
     } catch (error) {
       console.error("Error adding league: ", error);
@@ -73,11 +80,10 @@ const LeagueProvider = ({ children }) => {
           id: leagueDoc.id, // Include document ID
           ...leagueDoc.data(), // Include the rest of the document fields
         };
-        console.log("League Data:", leagueData);
 
         // Optionally, update state with the fetched league data
         setLeagueById(leagueData);
-        return leagueData
+        return leagueData;
       } else {
         console.log("No league found with the given ID");
       }
@@ -89,22 +95,21 @@ const LeagueProvider = ({ children }) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) {
-
         return;
       }
-  
+
       const leaguesRef = collection(db, "leagues");
       const querySnapshot = await getDocs(leaguesRef);
-  
+
       // Filter leagues where the user is a participant
       const userLeagues = querySnapshot.docs
         .map((doc) => doc.data())
         .filter((league) =>
-          league.leagueParticipants.some((participant) => participant.userId === userId)
+          league.leagueParticipants.some(
+            (participant) => participant.userId === userId
+          )
         );
 
-        console.log(userLeagues,'userLeagues')
-  
       // Initialize a totals object
       const totals = {
         userId: userId,
@@ -123,10 +128,12 @@ const LeagueProvider = ({ children }) => {
         winPercentage: 0,
         totalPointEfficiency: 0,
       };
-  
+
       // Iterate over each league and add values for the matching participant
       userLeagues.forEach((league) => {
-        const participant = league.leagueParticipants.find((p) => p.userId === userId);
+        const participant = league.leagueParticipants.find(
+          (p) => p.userId === userId
+        );
         if (participant) {
           Object.keys(totals).forEach((key) => {
             if (participant[key] !== undefined) {
@@ -135,30 +142,25 @@ const LeagueProvider = ({ children }) => {
           });
         }
       });
-  
+
       // Adjust fields if needed (e.g., winPercentage might be better as an average)
       // if (userLeagues.length > 0) {
       //   totals.winPercentage /= userLeagues.length;
       // }
-  
-      console.log("Totals:", totals);
+
+      console.log("Totals:", JSON.stringify(totals, null, 2));
       return totals;
     } catch (error) {
       console.error("Error calculating totals:", error);
     }
   };
-  
-
-
-
-
 
   const getAllUsers = async () => {
     try {
       // Reference the 'users' collection
       const usersRef = collection(db, "users");
       const querySnapshot = await getDocs(usersRef);
-  
+
       // Default profileDetail object
       const defaultProfileDetail = {
         winStreak3: 0,
@@ -184,20 +186,19 @@ const LeagueProvider = ({ children }) => {
         winStreak5: 0,
         memberSince: "Dec 2024",
       };
-  
+
       // Iterate over all users
       for (const docSnapshot of querySnapshot.docs) {
         const userData = docSnapshot.data();
         const userRef = doc(db, "users", docSnapshot.id);
-  
+
         // Check if profile_detail exists and rename to profileDetail
         if (userData.profile_detail) {
           await updateDoc(userRef, {
             profileDetail: userData.profile_detail, // Rename field
           });
-         
         }
-  
+
         // If profileDetail doesn't exist, add the default profileDetail object
         if (!userData.profileDetail && !userData.profile_detail) {
           await updateDoc(userRef, {
@@ -205,12 +206,12 @@ const LeagueProvider = ({ children }) => {
           });
         }
       }
-  
+
       console.log("Users collection updated successfully.");
     } catch (error) {
       console.error("Error updating users collection:", error);
     }
-  }
+  };
   return (
     <LeagueContext.Provider
       value={{

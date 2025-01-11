@@ -43,9 +43,11 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     currencyType: "",
     image: "",
     leagueName: "",
+    leageDescription: "",
     location: "",
     centerName: "",
     startDate: "",
+    leagueLengthInMonths: "",
     endDate: "",
     image: "",
     leagueType: "",
@@ -90,8 +92,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         ...prevDetails, // Spread the existing state
         leagueParticipants: [...prevDetails.leagueParticipants, rearrangedData], // Add new admin to the array immutably
       }));
-      // Await the resolved value of the promise
-      // console.log(userInfo, "=================>"); // Logs the actual user data
     } catch (error) {
       console.error("Error retrieving admin info:", error);
     }
@@ -104,8 +104,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }));
   };
 
-  // console.log("leagueDetails===>", leagueDetails);
-
   //Creating League
   const handleCreate = () => {
     const requiredFields = [
@@ -113,7 +111,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       "location",
       "centerName",
       "startDate",
-      "endDate",
+      "leagueLengthInMonths",
       "leagueType",
       "maxPlayers",
       "privacy",
@@ -125,13 +123,11 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     );
 
     if (firstMissingField) {
-      // Convert the field name to a human-readable format
       const formattedField = firstMissingField
         .replace(/([A-Z])/g, " $1")
         .toLowerCase()
         .replace(/^./, (str) => str.toUpperCase());
 
-      // Trigger the popup with the first missing field
       handleShowPopup(`Please fill in the ${formattedField}.`);
       return;
     }
@@ -139,7 +135,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     // If all fields are filled, proceed to create the league
     addLeagues(leagueDetails);
     setModalVisible(false);
-    // handleShowPopup("League created successfully!");
   };
 
   return (
@@ -155,7 +150,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
           message={popupMessage}
           onClose={handleClosePopup}
         />
-        <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <ModalContainer>
           <ModalContent>
             <ModalTitle>Create League</ModalTitle>
 
@@ -165,6 +160,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               placeholderTextColor="#ccc"
               value={leagueDetails.leagueName}
               onChangeText={(value) => handleChange("leagueName", value)}
+              style={{ backgroundColor: "#243237" }}
             />
 
             <Label>Location</Label>
@@ -173,6 +169,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               placeholderTextColor="#ccc"
               value={leagueDetails.location}
               onChangeText={(value) => handleChange("location", value)}
+              style={{ backgroundColor: "#243237" }}
             />
             <Label>Center Name</Label>
             <Input
@@ -180,6 +177,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               placeholderTextColor="#ccc"
               value={leagueDetails.centerName}
               onChangeText={(value) => handleChange("centerName", value)}
+              style={{ backgroundColor: "#243237" }}
             />
 
             <DatePicker
@@ -188,9 +186,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             />
 
             <MaxPlayersPicker setLeagueDetails={setLeagueDetails} />
-
             <LeagueType setLeagueDetails={setLeagueDetails} />
-
             <PrivacyType setLeagueDetails={setLeagueDetails} />
 
             <ButtonContainer>
@@ -220,13 +216,12 @@ const ModalContainer = styled(BlurView).attrs({
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "rgba(2, 13, 24, 0.8)", // Translucent dark blue
+  backgroundColor: "rgba(2, 13, 24, 0.7)", // Translucent dark blue
   padding: 20,
   borderRadius: 10,
   width: screenWidth - 40,
   alignItems: "center",
   borderRadius: 20,
-  // border: "1px solid #191b37",
 });
 
 const ModalTitle = styled.Text({
@@ -282,35 +277,6 @@ const CancelText = styled.Text({
 
 const CreateText = styled.Text({
   color: "white",
-});
-const DropdownContainer = styled.View({
-  backgroundColor: "#444",
-  borderRadius: 8,
-  maxHeight: 200,
-  overflow: "hidden", // Ensures rounded corners are maintained if content overflows
-});
-
-const DropdownItem = styled.TouchableOpacity({
-  backgroundColor: "#4A5568", // Slightly lighter gray for contrast
-  borderRadius: 15, // Consistent rounding
-  padding: 10, // Spacing inside the item
-  marginVertical: 5, // Space between items
-});
-
-const DropdownText = styled.Text({
-  color: "#FFFFFF", // White text for visibility
-  fontSize: 16, // Readable font size
-  fontWeight: "500", // Slightly bold for emphasis
-});
-const UserItemContainer = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  marginBottom: 10,
-});
-
-const RemoveText = styled.Text({
-  color: "#FFFFFF", // White text color
-  fontWeight: "bold", // Bold text for emphasis
 });
 
 export default AddLeagueModal;

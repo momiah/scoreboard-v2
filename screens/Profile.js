@@ -3,9 +3,10 @@ import { View, Text } from "react-native";
 import { LeagueContext } from "../context/LeagueContext";
 
 const Profile = () => {
-  
   const { calculateParticipantTotals } = useContext(LeagueContext);
-  calculateParticipantTotals()
+  calculateParticipantTotals();
+
+  console.log("Profile screen rendered");
 
   return (
     <View>

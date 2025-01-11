@@ -9,6 +9,7 @@ export const leagueStatus = [
   { status: "full", color: "#286EFA" },
   { status: "completed", color: "#167500" },
 ];
+
 const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
 const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 const locations = [
