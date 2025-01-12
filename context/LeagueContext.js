@@ -15,6 +15,7 @@ import { generatedLeagues } from "../components/Leagues/leagueMocks";
 
 import { db } from "../services/firebase.config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { generateLeagueId } from "../functions/generateLeagueId";
 
 const LeagueContext = createContext();
 
@@ -51,15 +52,15 @@ const LeagueProvider = ({ children }) => {
 
   const addLeagues = async (leagueData) => {
     // console.log("League Entry:", leagueData);
-
+    const leagueId =generateLeagueId(leagueData)
     try {
-      await setDoc(doc(db, "leagues", leagueData.leagueName), {
+      await setDoc(doc(db, "leagues", leagueId), {
         ...leagueData,
       });
 
       console.log("League added successfully!");
       fetchLeagues();
-      setLeagueIdForDeatil(leagueData.leagueName);
+      setLeagueIdForDeatil(leagueId);
       setTimeout(() => {
         setLeagueIdForDeatil("");
       }, 2000);
