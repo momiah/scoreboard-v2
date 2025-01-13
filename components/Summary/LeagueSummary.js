@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, ScrollView } from "react-native";
 import styled from "styled-components/native";
+import { trophies } from "../../mockImages/index";
+import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 
 const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
   const [description, setDescription] = useState(
@@ -15,28 +17,24 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
     }));
   };
 
+  console.log("leagueDetails", leagueDetails.maxPlayers);
+
   return (
     <LeagueSummaryContainer>
-      {/* Prize Distribution */}
+      {/* /* Prize Distribution */}
       <Section>
         <SectionTitle>Prize Distribution</SectionTitle>
         <PrizeRow>
-          <PrizeView>
-            <PrizeText>1st Place</PrizeText>
-            <PrizeAmount>{leagueDetails?.prizes?.first || "N/A"}</PrizeAmount>
-          </PrizeView>
-          <PrizeView>
-            <PrizeText>2nd Place</PrizeText>
-            <PrizeAmount>{leagueDetails?.prizes?.second || "N/A"}</PrizeAmount>
-          </PrizeView>
-          <PrizeView>
-            <PrizeText>3rd Place</PrizeText>
-            <PrizeAmount>{leagueDetails?.prizes?.third || "N/A"}</PrizeAmount>
-          </PrizeView>
+          {trophies.map((trophy, index) => (
+            <PrizeView key={index}>
+              <PrizeImage source={trophy} />
+              <PrizeText>200 XP</PrizeText>
+            </PrizeView>
+          ))}
         </PrizeRow>
       </Section>
-
-      {/* Start and End Dates */}
+      {/* 
+    /* Start and End Dates */}
       <Section>
         <SectionTitle>League Dates</SectionTitle>
         <DateRow>
@@ -50,7 +48,6 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
           </DateView>
         </DateRow>
       </Section>
-
       {/* Participants */}
       <Section>
         <SectionTitle>Participants</SectionTitle>
@@ -58,7 +55,7 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
           <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
             {leagueDetails.leagueParticipants.map((participant, index) => (
               <ParticipantView key={index}>
-                <Avatar source={{ uri: participant.avatar }} />
+                <Avatar source={CourtChampsLogo} />
                 <ParticipantName>{participant.id}</ParticipantName>
               </ParticipantView>
             ))}
@@ -67,7 +64,6 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
           <DescriptionText>No participants added yet.</DescriptionText>
         )}
       </Section>
-
       {/* League Description */}
       <Section>
         <SectionTitle>League Description</SectionTitle>
@@ -128,10 +124,17 @@ const PrizeRow = styled.View({
 
 const PrizeView = styled.View({
   width: "30%",
-  backgroundColor: "#1E1E1E",
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
   padding: 10,
   borderRadius: 8,
   alignItems: "center",
+});
+
+const PrizeImage = styled.Image({
+  width: 60,
+  height: 60,
+
+  marginBottom: 5,
 });
 
 const PrizeText = styled.Text({
