@@ -3,6 +3,7 @@
     "name": "Court Champs",
     "slug": "court-champs",
     "version": "1.0.2",
+    "runtimeVersion": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon.png",
     "userInterfaceStyle": "light",
@@ -56,9 +57,6 @@
       "eas": {
         "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"
       }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/43db0104-f8f3-44de-b831-a74cd535baee"
