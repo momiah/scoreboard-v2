@@ -1,6 +1,15 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import styled from "styled-components/native";
+
+import PrizeDistribution from "./PrizeDistribution";
+import ParticipantCarousel from "./ParticipantCarousel";
 
 const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
   const [description, setDescription] = useState(
@@ -15,26 +24,17 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
     }));
   };
 
+  const maxPlayers = leagueDetails.maxPlayers;
+  const numberOfGamesPlayed = leagueDetails.games.length;
+  const totalGamePointsWon = leagueDetails.games.reduce((acc, game) => {
+    return acc + game.result.winner.score;
+  }, 0);
+
+  const prizePool = maxPlayers * numberOfGamesPlayed + totalGamePointsWon;
+
   return (
     <LeagueSummaryContainer>
-      {/* Prize Distribution */}
-      <Section>
-        <SectionTitle>Prize Distribution</SectionTitle>
-        <PrizeRow>
-          <PrizeView>
-            <PrizeText>1st Place</PrizeText>
-            <PrizeAmount>{leagueDetails?.prizes?.first || "N/A"}</PrizeAmount>
-          </PrizeView>
-          <PrizeView>
-            <PrizeText>2nd Place</PrizeText>
-            <PrizeAmount>{leagueDetails?.prizes?.second || "N/A"}</PrizeAmount>
-          </PrizeView>
-          <PrizeView>
-            <PrizeText>3rd Place</PrizeText>
-            <PrizeAmount>{leagueDetails?.prizes?.third || "N/A"}</PrizeAmount>
-          </PrizeView>
-        </PrizeRow>
-      </Section>
+      <PrizeDistribution prizePool={prizePool} />
 
       {/* Start and End Dates */}
       <Section>
@@ -52,21 +52,9 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
       </Section>
 
       {/* Participants */}
-      <Section>
-        <SectionTitle>Participants</SectionTitle>
-        {leagueDetails?.leagueParticipants?.length > 0 ? (
-          <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-            {leagueDetails.leagueParticipants.map((participant, index) => (
-              <ParticipantView key={index}>
-                <Avatar source={{ uri: participant.avatar }} />
-                <ParticipantName>{participant.id}</ParticipantName>
-              </ParticipantView>
-            ))}
-          </ScrollView>
-        ) : (
-          <DescriptionText>No participants added yet.</DescriptionText>
-        )}
-      </Section>
+      <ParticipantCarousel
+        leagueParticipants={leagueDetails?.leagueParticipants}
+      />
 
       {/* League Description */}
       <Section>
@@ -90,7 +78,6 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
 
 const LeagueSummaryContainer = styled.ScrollView({
   padding: 20,
-  //   backgroundColor: "#00152B",
   borderRadius: 12,
   marginBottom: 20,
 });
@@ -103,7 +90,6 @@ const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   color: "#ffffff",
-  marginBottom: 10,
 });
 
 const DescriptionInput = styled.TextInput({
@@ -119,31 +105,6 @@ const DescriptionInput = styled.TextInput({
 const DescriptionText = styled.Text({
   color: "#ccc",
   fontSize: 14,
-});
-
-const PrizeRow = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
-});
-
-const PrizeView = styled.View({
-  width: "30%",
-  backgroundColor: "#1E1E1E",
-  padding: 10,
-  borderRadius: 8,
-  alignItems: "center",
-});
-
-const PrizeText = styled.Text({
-  color: "#ccc",
-  fontSize: 14,
-  fontWeight: "bold",
-});
-
-const PrizeAmount = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
 });
 
 const DateRow = styled.View({
@@ -164,26 +125,6 @@ const DateLabel = styled.Text({
 const DateValue = styled.Text({
   color: "#ffffff",
   fontSize: 14,
-});
-
-const ParticipantView = styled.TouchableOpacity({
-  alignItems: "center",
-  marginRight: 15,
-});
-
-const Avatar = styled.Image({
-  width: 60,
-  height: 60,
-  borderRadius: 30,
-  borderWidth: 2,
-  borderColor: "#00A2FF",
-  marginBottom: 5,
-});
-
-const ParticipantName = styled.Text({
-  color: "#ffffff",
-  fontSize: 12,
-  textAlign: "center",
 });
 
 export default LeagueSummary;
