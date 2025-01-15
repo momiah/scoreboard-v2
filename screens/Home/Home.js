@@ -21,7 +21,29 @@ const Home = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
   const { setShowMockData, showMockData } = useContext(LeagueContext);
-  const { Logout } = useContext(UserContext);
+  const { Logout, getUserById } = useContext(UserContext);
+  const [userName, setUserName] = useState("");
+
+  const getAdminInfo = async () => {
+    try {
+      const userId = await AsyncStorage.getItem("userId"); // Retrieve userId from AsyncStorage
+      if (!userId) {
+        console.log("No userId found in AsyncStorage.");
+        return;
+      }
+
+      const userInfo = await getUserById(userId);
+      setUserName(userInfo.firstName);
+      console.log("Admin Info:", userInfo.firstName, userInfo.lastName);
+      return userInfo;
+    } catch (error) {
+      console.error("Error retrieving admin info:", error);
+    }
+  };
+
+  useEffect(() => {
+    getAdminInfo();
+  });
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -79,6 +101,9 @@ const Home = () => {
             }}
           />
         </View>
+        <Text style={{ color: "white", marginLeft: 30 }}>
+          Hello, {userName}{" "}
+        </Text>
 
         <SubHeader
           title="Leagues"
