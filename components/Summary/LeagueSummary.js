@@ -10,11 +10,13 @@ import styled from "styled-components/native";
 
 import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
+import PlayTime from "./PlayTime";
 
 const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
   const [description, setDescription] = useState(
     leagueDetails?.description || ""
   );
+  const [playTimes, setPlayTimes] = useState(leagueDetails?.playTimes || []);
 
   const handleDescriptionChange = (text) => {
     setDescription(text);
@@ -50,6 +52,20 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
           </DateView>
         </DateRow>
       </Section>
+      <PlayTime playTimes={playTimes} setPlayTimes={setPlayTimes} />
+      {/* <Section>
+        <SectionTitle>Play Time</SectionTitle>
+        <DateRow>
+          <DateView>
+            <DateLabel>Start Date</DateLabel>
+            <DateValue>{leagueDetails?.startDate || "N/A"}</DateValue>
+          </DateView>
+          <DateView>
+            <DateLabel>End Date</DateLabel>
+            <DateValue>{leagueDetails?.endDate || "N/A"}</DateValue>
+          </DateView>
+        </DateRow>
+      </Section> */}
 
       {/* Participants */}
       <ParticipantCarousel
@@ -83,13 +99,14 @@ const LeagueSummaryContainer = styled.ScrollView({
 });
 
 const Section = styled.View({
-  marginBottom: 20,
+  marginBottom: 30,
 });
 
 const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   color: "#ffffff",
+  marginBottom: 10,
 });
 
 const DescriptionInput = styled.TextInput({

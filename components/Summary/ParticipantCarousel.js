@@ -33,7 +33,7 @@ const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   color: "#ffffff",
-  // marginBottom: 10,
+  marginBottom: 10,
 });
 
 const ParticipantView = styled.TouchableOpacity({
