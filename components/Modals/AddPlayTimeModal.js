@@ -1,15 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { TouchableOpacity, Modal, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import Popup from "../popup/Popup";
+import { PopupContext } from "../../context/PopupContext";
 
 const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("00:00");
+  const {
+    handleShowPopup,
+    setPopupMessage,
+    popupMessage,
+    setShowPopup,
+    showPopup,
+  } = useContext(PopupContext);
 
-  const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setPopupMessage("");
+  };
 
   const handleTimeChange = (time, setter, increment) => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -29,6 +52,23 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
   };
 
   const handleConfirm = () => {
+    if (!selectedDay) {
+      alert("Please select a day."); // Alert if no day is selected
+      return;
+    }
+
+    const [startHours, startMinutes] = startTime.split(":").map(Number);
+    const [endHours, endMinutes] = endTime.split(":").map(Number);
+
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
+
+    if (endTotalMinutes <= startTotalMinutes) {
+      handleShowPopup("End time must be after the start time.");
+      //   alert("End time must be after the start time."); // Alert if end time is not after start time
+      return;
+    }
+
     onConfirm(selectedDay, startTime, endTime);
     setSelectedDay(null);
     setStartTime("00:00");
@@ -37,7 +77,12 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
 
   return (
     <Modal animationType="slide" transparent={true} visible={isVisible}>
-      <PopupModal>
+      <Popup
+        visible={showPopup}
+        message={popupMessage}
+        onClose={handleClosePopup}
+      />
+      <ModalContainer>
         <GradientOverlay colors={["#191b37", "#001d2e"]}>
           <ModalContent>
             <CloseIconWrapper>
@@ -48,15 +93,18 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
 
             {/* Days */}
             <DaysRow>
-              {daysOfWeek.map((day, index) => (
-                <DayButton
-                  key={index}
-                  selected={selectedDay === day}
-                  onPress={() => setSelectedDay(day)}
-                >
-                  <DayButtonText>{day}</DayButtonText>
-                </DayButton>
-              ))}
+              {daysOfWeek.map((day, index) => {
+                const shortHandDay = day.slice(0, 3);
+                return (
+                  <DayButton
+                    key={index}
+                    selected={selectedDay === day}
+                    onPress={() => setSelectedDay(day)}
+                  >
+                    <DayButtonText>{shortHandDay}</DayButtonText>
+                  </DayButton>
+                );
+              })}
             </DaysRow>
 
             {/* Time Adjustment */}
@@ -92,24 +140,31 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
 
             {/* Confirm Button */}
             <ButtonContainer>
-              <SubmitButton onPress={handleConfirm}>
-                <SubmitButtonText>Confirm</SubmitButtonText>
+              <SubmitButton
+                onPress={handleConfirm}
+                disabled={!selectedDay} // Disable if no day is selected
+              >
+                <SubmitButtonText disabled={!selectedDay}>
+                  Confirm
+                </SubmitButtonText>
               </SubmitButton>
             </ButtonContainer>
           </ModalContent>
         </GradientOverlay>
-      </PopupModal>
+      </ModalContainer>
     </Modal>
   );
 };
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const PopupModal = styled.View({
+const ModalContainer = styled(BlurView).attrs({
+  intensity: 50,
+  tint: "dark",
+})({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  backgroundColor: "rgba(0, 0, 0, 0.8)",
 });
 
 const GradientOverlay = styled(LinearGradient)({
@@ -180,21 +235,21 @@ const ButtonContainer = styled.View({
   marginBottom: 20,
 });
 
-const SubmitButton = styled.TouchableOpacity({
+const SubmitButton = styled.TouchableOpacity(({ disabled }) => ({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
   padding: 10,
   borderRadius: 8,
   width: screenWidth <= 400 ? 250 : 300,
-  backgroundColor: "#00A2FF",
-});
+  backgroundColor: disabled ? "#444" : "#00A2FF", // Greyed out when disabled
+}));
 
-const SubmitButtonText = styled.Text({
+const SubmitButtonText = styled.Text(({ disabled }) => ({
   fontSize: 16,
   fontWeight: "bold",
-  color: "white",
-});
+  color: disabled ? "#888" : "white", // Adjust color when disabled
+}));
 
 const TimeText = styled.Text({
   color: "#FFFFFF",

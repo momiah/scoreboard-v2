@@ -23,10 +23,11 @@ const Container = styled.View({
   flexWrap: "wrap",
   justifyContent: "space-evenly",
   alignItems: "center",
+  gap: 10,
 });
 
 const TournamentContainer = styled.TouchableOpacity({
-  flexBasis: "42%",
+  flexBasis: "47%",
 });
 
 const Tournament = styled.View({

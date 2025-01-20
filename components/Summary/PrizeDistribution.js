@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
 import Tooltip from "../Tooltip"; // Import the Tooltip component
 import { trophies } from "../../mockImages/index";
 import styled from "styled-components/native";
@@ -36,6 +36,8 @@ const PrizeDistribution = ({ prizePool }) => {
   );
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+
 const PrizeDistributionContainer = styled.View({
   marginBottom: 20,
 });
@@ -63,7 +65,8 @@ const PrizeRow = styled.View({
 const PrizeView = styled.View({
   // width: "25%",
   backgroundColor: "rgba(0, 0, 0, 0.3)",
-  padding: 10,
+  border: "1px solid rgb(26, 28, 54)",
+  padding: screenWidth <= 400 ? 10 : 15,
   borderRadius: 8,
   alignItems: "center",
   // marginHorizontal: 5,

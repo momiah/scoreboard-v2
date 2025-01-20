@@ -40,32 +40,19 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
 
       {/* Start and End Dates */}
       <Section>
-        <SectionTitle>League Dates</SectionTitle>
+        {/* <SectionTitle>League Dates</SectionTitle> */}
         <DateRow>
           <DateView>
-            <DateLabel>Start Date</DateLabel>
+            <SectionTitle>Start Date</SectionTitle>
             <DateValue>{leagueDetails?.startDate || "N/A"}</DateValue>
           </DateView>
           <DateView>
-            <DateLabel>End Date</DateLabel>
+            <SectionTitle>End Date</SectionTitle>
             <DateValue>{leagueDetails?.endDate || "N/A"}</DateValue>
           </DateView>
         </DateRow>
       </Section>
       <PlayTime playTimes={playTimes} setPlayTimes={setPlayTimes} />
-      {/* <Section>
-        <SectionTitle>Play Time</SectionTitle>
-        <DateRow>
-          <DateView>
-            <DateLabel>Start Date</DateLabel>
-            <DateValue>{leagueDetails?.startDate || "N/A"}</DateValue>
-          </DateView>
-          <DateView>
-            <DateLabel>End Date</DateLabel>
-            <DateValue>{leagueDetails?.endDate || "N/A"}</DateValue>
-          </DateView>
-        </DateRow>
-      </Section> */}
 
       {/* Participants */}
       <ParticipantCarousel
@@ -99,7 +86,7 @@ const LeagueSummaryContainer = styled.ScrollView({
 });
 
 const Section = styled.View({
-  marginBottom: 30,
+  marginTop: 10,
 });
 
 const SectionTitle = styled.Text({

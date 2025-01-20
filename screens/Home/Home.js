@@ -86,7 +86,7 @@ const Home = () => {
           style={{
             flexDirection: "row",
             alignItems: "center",
-            paddingLeft: 27,
+            // paddingLeft: 27,
           }}
         >
           <Text style={{ color: "white" }}>Set Mock Data </Text>
@@ -101,9 +101,7 @@ const Home = () => {
             }}
           />
         </View>
-        <Text style={{ color: "white", marginLeft: 30 }}>
-          Hello, {userName}{" "}
-        </Text>
+        <Text style={{ color: "white" }}>Hello, {userName} </Text>
 
         <SubHeader
           title="Leagues"
@@ -147,6 +145,7 @@ const HomeContainer = styled.ScrollView({
   flex: 1,
   backgroundColor: "#00152B",
   width: "100%",
+  paddingHorizontal: 20,
 });
 const Overview = styled.View({
   flexDirection: "row",

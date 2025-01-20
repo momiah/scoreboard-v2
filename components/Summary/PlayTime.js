@@ -3,6 +3,7 @@ import { Text, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import AddPlayTimeModal from "../Modals/AddPlayTimeModal"; // Import the new modal component
+import SubHeader from "../SubHeader";
 
 const PlayTime = () => {
   const [playTimes, setPlayTimes] = useState([]);
@@ -10,6 +11,7 @@ const PlayTime = () => {
 
   const handleAddPlayTime = () => {
     setIsModalVisible(true);
+    console.log("Add Play Time");
   };
 
   const handleConfirmPlayTime = (day, startTime, endTime) => {
@@ -19,7 +21,7 @@ const PlayTime = () => {
 
   return (
     <PlayTimeContainer>
-      <SectionTitle>Playtime</SectionTitle>
+      <SubHeader title="Play Time" onIconPress={handleAddPlayTime} showIcon />
 
       {/* Rows for PlayTimes */}
       {playTimes.map((playTime, index) => (
@@ -30,15 +32,9 @@ const PlayTime = () => {
         </Row>
       ))}
 
-      {/* Default Plus Row */}
-      <Row>
-        <DisabledText>Add Playtime</DisabledText>
-        <IconWrapper>
-          <IconButton onPress={handleAddPlayTime}>
-            <AntDesign name="plus" size={24} color="#6C63FF" />
-          </IconButton>
-        </IconWrapper>
-      </Row>
+      {playTimes.length === 0 && (
+        <DisabledText>Please add play times to activate league</DisabledText>
+      )}
 
       {/* Modal */}
       <AddPlayTimeModal
@@ -52,26 +48,24 @@ const PlayTime = () => {
 
 const PlayTimeContainer = styled.View({
   marginBottom: 30,
-});
-
-const SectionTitle = styled.Text({
-  fontSize: 16,
-  fontWeight: "bold",
-  color: "#ffffff",
-  marginBottom: 10,
+  //   border: "1px solid #ffffff",
 });
 
 const Row = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  marginBottom: 15,
+  marginBottom: 5,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  padding: 10,
+  borderRadius: 5,
+  border: "1px solid rgb(26, 28, 54)",
 });
 
 const DayText = styled.Text(({ flex }) => ({
   flex,
   color: "#FFFFFF",
-  textAlign: "center",
+  //   textAlign: "center",
   fontSize: 16,
 }));
 
@@ -81,16 +75,6 @@ const TimeText = styled.Text(({ flex }) => ({
   textAlign: "center",
   fontSize: 16,
 }));
-
-const IconWrapper = styled.View({
-  width: 60,
-  flexDirection: "row",
-  justifyContent: "space-between",
-});
-
-const IconButton = styled.TouchableOpacity({
-  padding: 5,
-});
 
 const DisabledText = styled.Text({
   flex: 1,

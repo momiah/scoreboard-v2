@@ -245,10 +245,6 @@ const ModalContent = styled.View({
 const GradientOverlay = styled(LinearGradient)({
   padding: 2,
   borderRadius: 12,
-  // shadowColor: "#00A2FF",
-  // shadowOffset: { width: 0, height: 10 },
-  // shadowOpacity: 0.4,
-  // shadowRadius: 20,
   opacity: 0.9,
 });
 
