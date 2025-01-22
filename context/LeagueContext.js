@@ -50,9 +50,40 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const addPlaytime = async (playtime) => {
+    console.log("league id", leagueById);
+    try {
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+
+      // Get the existing league document
+      const leagueDoc = await getDoc(leagueDocRef);
+
+      if (leagueDoc.exists()) {
+        // Get the current games array from the league document
+        const currentPlaytime = leagueDoc.data().playingTime || [];
+
+        // Update the games array with the new game
+        const updatedPlaytime = [...currentPlaytime, ...playtime];
+
+        // Update the league document with the updated games array
+        await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
+
+        // handleShowPopup("Playtime updated successfully!");
+        // setGames((prevGames) => [newGame, ...prevGames]);
+      } else {
+        console.error("League document not found.");
+        Alert.alert("Error", "League not found.");
+      }
+    } catch (error) {
+      console.error("Error saving game:", error);
+      Alert.alert("Error", "Error saving game data");
+    }
+  };
+
   const addLeagues = async (leagueData) => {
     // console.log("League Entry:", leagueData);
-    const leagueId =generateLeagueId(leagueData)
+    const leagueId = generateLeagueId(leagueData);
     try {
       await setDoc(doc(db, "leagues", leagueId), {
         ...leagueData,
@@ -216,6 +247,7 @@ const LeagueProvider = ({ children }) => {
   return (
     <LeagueContext.Provider
       value={{
+        addPlaytime,
         setShowMockData,
         showMockData,
         fetchLeagueById,

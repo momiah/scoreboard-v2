@@ -1,13 +1,23 @@
-import React, { useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Text, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import AddPlayTimeModal from "../Modals/AddPlayTimeModal"; // Import the new modal component
 import SubHeader from "../SubHeader";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const PlayTime = () => {
   const [playTimes, setPlayTimes] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const { addPlaytime, leagueById } = useContext(LeagueContext);
+
+  useEffect(() => {
+    if (leagueById?.playingTime) {
+      setPlayTimes(leagueById.playingTime);
+    }
+  }, [leagueById]);
+
+  console.log("PlayTimes", playTimes);
 
   const handleAddPlayTime = () => {
     setIsModalVisible(true);
@@ -15,7 +25,11 @@ const PlayTime = () => {
   };
 
   const handleConfirmPlayTime = (day, startTime, endTime) => {
-    setPlayTimes((prevTimes) => [...prevTimes, { day, startTime, endTime }]);
+    const newPlayTime = { day, startTime, endTime };
+    setPlayTimes((prevTimes) => [...prevTimes, newPlayTime]);
+
+    addPlaytime([newPlayTime]);
+
     setIsModalVisible(false);
   };
 
