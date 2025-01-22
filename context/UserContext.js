@@ -114,13 +114,13 @@ const UserProvider = ({ children }) => {
         return "hide";
       }
 
-      // If no admins and no participants, return invite user
+      // If user is not an admin or participant, return user
       if (
         leagueData.leagueAdmins.length === 0 &&
         leagueData.leagueParticipants.length === 0
       ) {
         console.log("No admins or participants in the league");
-        return "invite user";
+        return "user";
       }
 
       // Check if the userId matches any league admin
@@ -139,8 +139,8 @@ const UserProvider = ({ children }) => {
         return "participant";
       }
 
-      // If no match, return invite user
-      return "invite user";
+      // If no match, return user
+      return "user";
     } catch (error) {
       // console.error('Error checking user role:', error);
       return "hide";

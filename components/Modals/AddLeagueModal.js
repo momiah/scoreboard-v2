@@ -43,7 +43,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     currencyType: "",
     image: "",
     leagueName: "",
-    leageDescription: "",
+    leagueDescription: "",
     location: "",
     centerName: "",
     startDate: "",

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { TouchableOpacity, Modal, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
@@ -7,10 +7,11 @@ import { BlurView } from "expo-blur";
 import Popup from "../popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
 
-const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
+const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("00:00");
+
   const {
     handleShowPopup,
     setPopupMessage,
@@ -20,19 +21,32 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
   } = useContext(PopupContext);
 
   const daysOfWeek = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    "Mondays",
+    "Tuesdays",
+    "Wednesdays",
+    "Thursdays",
+    "Fridays",
+    "Saturdays",
+    "Sundays",
   ];
 
   const handleClosePopup = () => {
     setShowPopup(false);
     setPopupMessage("");
   };
+
+  // Apply default values when modal is opened
+  useEffect(() => {
+    if (defaultValues) {
+      setSelectedDay(defaultValues.day || null);
+      setStartTime(defaultValues.startTime || "00:00");
+      setEndTime(defaultValues.endTime || "00:00");
+    } else {
+      setSelectedDay(null);
+      setStartTime("00:00");
+      setEndTime("00:00");
+    }
+  }, [defaultValues, isVisible]);
 
   const handleTimeChange = (time, setter, increment) => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -65,7 +79,6 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm }) => {
 
     if (endTotalMinutes <= startTotalMinutes) {
       handleShowPopup("End time must be after the start time.");
-      //   alert("End time must be after the start time."); // Alert if end time is not after start time
       return;
     }
 

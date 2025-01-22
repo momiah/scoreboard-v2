@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Image, SafeAreaView, View, Text } from "react-native";
+import {
+  Image,
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
 import { Dimensions } from "react-native";
@@ -24,7 +30,7 @@ const Home = () => {
   const { Logout, getUserById } = useContext(UserContext);
   const [userName, setUserName] = useState("");
 
-  const getAdminInfo = async () => {
+  const getUserInfo = async () => {
     try {
       const userId = await AsyncStorage.getItem("userId"); // Retrieve userId from AsyncStorage
       if (!userId) {
@@ -34,15 +40,15 @@ const Home = () => {
 
       const userInfo = await getUserById(userId);
       setUserName(userInfo.firstName);
-      console.log("Admin Info:", userInfo.firstName, userInfo.lastName);
+      console.log("User", userInfo.firstName, userInfo.lastName);
       return userInfo;
     } catch (error) {
-      console.error("Error retrieving admin info:", error);
+      console.error("Error retrieving user info:", error);
     }
   };
 
   useEffect(() => {
-    getAdminInfo();
+    getUserInfo();
   });
 
   useEffect(() => {
@@ -101,7 +107,13 @@ const Home = () => {
             }}
           />
         </View>
-        <Text style={{ color: "white" }}>Hello, {userName} </Text>
+        {userName ? (
+          <Text style={{ color: "white" }}>Hello, {userName} </Text>
+        ) : (
+          <TouchableOpacity onPress={() => navigateTo("Login")}>
+            <Text style={{ color: "white" }}>Sign In</Text>
+          </TouchableOpacity>
+        )}
 
         <SubHeader
           title="Leagues"

@@ -118,7 +118,7 @@ const League = () => {
   async function getUserRole() {
     const role = await checkUserRole(leagueDetails);
     console.log("User Role:", role);
-    setUserRole(role); // Outputs "admin", "participant", or "invite user"
+    setUserRole(role); // Outputs "admin", "participant", or "user"
   }
 
   getUserRole();

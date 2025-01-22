@@ -6,6 +6,7 @@ import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 
 const ParticipantCarousel = ({ leagueParticipants }) => {
+  console.log("League Participants", leagueParticipants);
   return (
     <ParticipantContainer>
       <SectionTitle>Participants</SectionTitle>
@@ -24,6 +25,11 @@ const ParticipantCarousel = ({ leagueParticipants }) => {
     </ParticipantContainer>
   );
 };
+
+const DescriptionText = styled.Text({
+  color: "#888",
+  fontSize: 14,
+});
 
 const ParticipantContainer = styled.View({
   marginBottom: 20,
