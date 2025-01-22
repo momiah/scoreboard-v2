@@ -1,4 +1,4 @@
-import React, { useContext,useEffect} from "react";
+import React, { useContext, useEffect } from "react";
 import { ScrollView, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { generatedLeagues } from "./leagueMocks";
@@ -13,21 +13,19 @@ const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues,leagueIdForDeatil} = useContext(LeagueContext);
+  const { leagues, leagueIdForDeatil } = useContext(LeagueContext);
 
   const navigateTo = (leagueId) => {
- 
     navigation.navigate(navigationRoute, { leagueId });
   };
 
-   useEffect(() => {
-    if (leagueIdForDeatil !== '') {
+  useEffect(() => {
+    if (leagueIdForDeatil !== "") {
       navigateTo(leagueIdForDeatil);
-     
     }
-  
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [leagueIdForDeatil]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagueIdForDeatil]);
 
   const itemWidth = width - 80; // Width of each item (adjusted for partial display)
   const spacing = 20; // Space between items
@@ -39,9 +37,9 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
       snapToInterval={itemWidth + spacing} // Snap to item width + spacing
       snapToAlignment="start" // Align items to the start
       decelerationRate="fast" // Faster snapping
-      contentContainerStyle={{
-        paddingHorizontal: 20, // Adjust padding for partial display
-      }}
+      // contentContainerStyle={{
+      //   paddingHorizontal: 20, // Adjust padding for partial display
+      // }}
     >
       {leagues.map((league, index) => (
         <CarouselItem

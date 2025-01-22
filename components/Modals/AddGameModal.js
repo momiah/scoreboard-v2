@@ -245,10 +245,6 @@ const ModalContent = styled.View({
 const GradientOverlay = styled(LinearGradient)({
   padding: 2,
   borderRadius: 12,
-  // shadowColor: "#00A2FF",
-  // shadowOffset: { width: 0, height: 10 },
-  // shadowOpacity: 0.4,
-  // shadowRadius: 20,
   opacity: 0.9,
 });
 
@@ -268,46 +264,6 @@ const SubmitButton = styled.TouchableOpacity({
   borderRadius: 8,
   width: screenWidth <= 400 ? 250 : 300,
   backgroundColor: "#00A2FF",
-});
-
-const GameContainer = styled.TouchableOpacity({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginBottom: 16,
-  border: "1px solid #262626",
-  borderRadius: 8,
-  height: screenWidth <= 400 ? 100 : null,
-  backgroundColor: "#001123",
-});
-
-const TeamContainer = styled.View({
-  display: "flex",
-  justifyContent: "center",
-  flexDirection: "column",
-  borderRadius: 8,
-});
-
-const ResultsContainer = styled.View({
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: 10,
-  paddingBottom: 30,
-});
-
-const ScoreContainer = styled.View({
-  display: "flex",
-  flexDirection: "row",
-  justifyContent: "center",
-  marginTop: screenWidth <= 400 ? 20 : null,
-});
-
-const ScoreInput = styled.TextInput({
-  fontSize: 30,
-  fontWeight: "bold",
-  margin: "0 5px",
-  textAlign: "center",
-  color: "#00A2FF",
 });
 
 export default AddGameModal;

@@ -50,9 +50,112 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const addPlaytime = async (playtime, existingPlaytime = null) => {
+    console.log("league id", leagueById);
+    try {
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+
+      // Get the existing league document
+      const leagueDoc = await getDoc(leagueDocRef);
+
+      if (leagueDoc.exists()) {
+        // Get the current playtime array from the league document
+        const currentPlaytime = leagueDoc.data().playingTime || [];
+
+        let updatedPlaytime;
+
+        if (existingPlaytime) {
+          // Update existing playtime
+          updatedPlaytime = currentPlaytime.map((time) =>
+            time.day === existingPlaytime.day &&
+            time.startTime === existingPlaytime.startTime &&
+            time.endTime === existingPlaytime.endTime
+              ? playtime[0] // Replace with the updated playtime
+              : time
+          );
+        } else {
+          // Add new playtime
+          updatedPlaytime = [...currentPlaytime, ...playtime];
+        }
+
+        // Update the league document with the updated playtime array
+        await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
+
+        console.log("Playtime updated successfully!");
+      } else {
+        console.error("League document not found.");
+        Alert.alert("Error", "League not found.");
+      }
+    } catch (error) {
+      console.error("Error saving playtime:", error);
+      Alert.alert("Error", "Error saving playtime data");
+    }
+  };
+
+  const deletePlaytime = async (playtimeToDelete) => {
+    console.log("Deleting playtime:", playtimeToDelete);
+
+    try {
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+
+      // Get the existing league document
+      const leagueDoc = await getDoc(leagueDocRef);
+
+      if (leagueDoc.exists()) {
+        const currentPlaytime = leagueDoc.data().playingTime || [];
+
+        // Filter out the playtime to be deleted
+        const updatedPlaytime = currentPlaytime.filter(
+          (playtime) =>
+            !(
+              playtime.day === playtimeToDelete.day &&
+              playtime.startTime === playtimeToDelete.startTime &&
+              playtime.endTime === playtimeToDelete.endTime
+            )
+        );
+
+        // Update Firebase with the updated playtime array
+        await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
+
+        console.log("Playtime deleted successfully!");
+      } else {
+        console.error("League document not found.");
+        Alert.alert("Error", "League not found.");
+      }
+    } catch (error) {
+      console.error("Error deleting playtime:", error);
+      Alert.alert("Error", "Error deleting playtime");
+    }
+  };
+
+  const handleLeagueDescription = async (newDescription) => {
+    console.log("Updating league description:", newDescription);
+
+    try {
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+
+      // Update the leagueDescription field in Firebase
+      await updateDoc(leagueDocRef, { leagueDescription: newDescription });
+
+      // Update the context state with the new description
+      setLeagueById((prev) => ({
+        ...prev,
+        leagueDescription: newDescription,
+      }));
+
+      console.log("League description updated successfully!");
+    } catch (error) {
+      console.error("Error updating league description:", error);
+      Alert.alert("Error", "Unable to update the league description.");
+    }
+  };
+
   const addLeagues = async (leagueData) => {
     // console.log("League Entry:", leagueData);
-    const leagueId =generateLeagueId(leagueData)
+    const leagueId = generateLeagueId(leagueData);
     try {
       await setDoc(doc(db, "leagues", leagueId), {
         ...leagueData,
@@ -92,6 +195,7 @@ const LeagueProvider = ({ children }) => {
       console.error("Error fetching league:", error);
     }
   };
+
   const calculateParticipantTotals = async () => {
     try {
       const userId = await AsyncStorage.getItem("userId");
@@ -216,6 +320,7 @@ const LeagueProvider = ({ children }) => {
   return (
     <LeagueContext.Provider
       value={{
+        addPlaytime,
         setShowMockData,
         showMockData,
         fetchLeagueById,
@@ -226,7 +331,9 @@ const LeagueProvider = ({ children }) => {
         leagues,
         fetchLeagues,
         setLeagueIdForDeatil,
+        handleLeagueDescription,
         leagueIdForDeatil,
+        deletePlaytime,
       }}
     >
       {children}

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
 import Tooltip from "../Tooltip"; // Import the Tooltip component
 import { trophies } from "../../mockImages/index";
 import styled from "styled-components/native";
@@ -7,7 +7,7 @@ import styled from "styled-components/native";
 const PrizeDistribution = ({ prizePool }) => {
   console.log("prize pool", prizePool);
   const prizeDistribution = (prizePool) => {
-    const distribution = [0.5, 0.3, 0.2]; // Percentage splits for 1st, 2nd, and 3rd
+    const distribution = [0.4, 0.3, 0.2, 0.1]; // Percentage splits for 1st, 2nd, and 3rd
 
     return distribution.map((percentage, index) => {
       return {
@@ -22,11 +22,7 @@ const PrizeDistribution = ({ prizePool }) => {
     <PrizeDistributionContainer>
       <SectionTitleContainer>
         <SectionTitle>Prize Distribution</SectionTitle>
-        <Tooltip
-          message="Prize Distribution is calculated 3 days before league end date. 
-          
-          It considers total number of games played, max players of the league and total number of winning points accumulated in the league"
-        />
+        <Tooltip message="Prize Distribution is calculated by the total number of games played, max players of the league and total number of winning points accumulated in the league" />
       </SectionTitleContainer>
       <PrizeRow>
         {prizes.map((prize, index) => (
@@ -39,6 +35,8 @@ const PrizeDistribution = ({ prizePool }) => {
     </PrizeDistributionContainer>
   );
 };
+
+const { width: screenWidth } = Dimensions.get("window");
 
 const PrizeDistributionContainer = styled.View({
   marginBottom: 20,
@@ -65,11 +63,13 @@ const PrizeRow = styled.View({
 });
 
 const PrizeView = styled.View({
-  width: "30%",
+  // width: "25%",
   backgroundColor: "rgba(0, 0, 0, 0.3)",
-  padding: 10,
+  border: "1px solid rgb(26, 28, 54)",
+  padding: screenWidth <= 400 ? 10 : 15,
   borderRadius: 8,
   alignItems: "center",
+  // marginHorizontal: 5,
 });
 
 const PrizeImage = styled.Image({

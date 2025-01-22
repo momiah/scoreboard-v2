@@ -8,16 +8,13 @@ import { Dimensions } from "react-native";
 
 import AddGameModal from "../Modals/AddGameModal";
 import { LeagueContext } from "../../context/LeagueContext";
+import moment from "moment";
 
 const Scoreboard = ({ leagueGames, leagueId }) => {
   const {
     // games, from the previous version of the component
     setGames,
-
-    retrieveGames,
     deleteGameById,
-    refreshing,
-    setRefreshing,
     deleteGameContainer,
     setDeleteGameContainer,
     deleteGameId,
@@ -39,6 +36,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     }
     fetchPlayers(leagueId);
   }, [leagueGames]);
+
   useEffect(() => {
     if (leagueId) {
       fetchLeagueById(leagueId);
@@ -70,7 +68,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   async function getUserRole() {
     const role = await checkUserRole(leagueById);
 
-    setUserRole(role); // Outputs "admin", "participant", or "invite user"
+    setUserRole(role); // Outputs "admin", "participant", or "user"
   }
   if (leagueById && leagueById?.leagueAdmins) {
     getUserRole();
@@ -83,32 +81,54 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     }
   }
 
+  const startDate = moment(leagueById.startDate, "DD-MM-YYYY");
+  const todaysDate = moment();
+
+  const hasLeagueStarted = todaysDate.isSameOrAfter(startDate);
+
   // const reverseGames =leagueById.games.reverse()
   return (
     <Container>
-      {userRole !== "hide" && userRole !== "invite user" && (
-        <AddGameButton onPress={() => handleAddGameButton()}>
-          <Text>Add Game</Text>
-        </AddGameButton>
+      {/* Participant or Admin Actions */}
+      {userRole !== "user" && userRole !== "hide" && (
+        <>
+          {!hasLeagueStarted ? (
+            <AddGameButton
+              style={{
+                backgroundColor: !hasLeagueStarted ? "gray" : "#00A2FF",
+              }}
+            >
+              <Text>League has not started yet</Text>
+            </AddGameButton>
+          ) : (
+            <AddGameButton onPress={handleAddGameButton}>
+              <Text>Add Game</Text>
+            </AddGameButton>
+          )}
+        </>
       )}
-      {userRole === "invite user" && (
+
+      {/* Regular User Actions */}
+      {userRole === "user" && (
         <AddGameButton
           disabled={requestSend}
           style={{ backgroundColor: requestSend ? "gray" : "#00A2FF" }}
-          onPress={() => {
-            setRequestSend(true);
-          }}
+          onPress={() => setRequestSend(true)}
         >
           <Text>
             {requestSend ? "Request sent successfully" : "Join League"}
           </Text>
         </AddGameButton>
       )}
+      {hasLeagueStarted &&
+        userRole !== "user" &&
+        reversedGames.length === 0 && (
+          <FallbackMessage>Add a game to see scores 🚀</FallbackMessage>
+        )}
 
-      {reversedGames.length === 0 && (
-        <FallbackMessage>Add a game to see scores 🚀</FallbackMessage>
+      {!hasLeagueStarted && reversedGames.length === 0 && (
+        <FallbackMessage>League has not started yet</FallbackMessage>
       )}
-
       <FlatList
         data={reversedGames}
         keyExtractor={(item, index) => index}
@@ -204,7 +224,6 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
           </>
         )}
       />
-
       {modalVisible && (
         <AddGameModal
           modalVisible

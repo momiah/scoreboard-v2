@@ -44,7 +44,7 @@ const SubHeaderContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  paddingHorizontal: 30,
+  // paddingHorizontal: 30,
   paddingTop: 35,
   paddingBottom: 20,
 });
