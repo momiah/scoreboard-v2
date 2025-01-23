@@ -428,6 +428,18 @@ export const newPlayer = {
   winStreak7: 0,
   winStreak3: 0,
   demonWin: 0,
+  leagueStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
+  tournamentStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
   currentStreak: {
     type: null,
     count: 0,

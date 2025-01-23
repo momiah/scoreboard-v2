@@ -18,7 +18,7 @@ import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../functions/generateUniqueId";
 import { getPlayersToUpdate } from "../../functions/getPlayersToUpdate";
-import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
+// import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
 import AddGame from "../scoreboard/AddGame/AddGame";
 
 import { BlurView } from "expo-blur";

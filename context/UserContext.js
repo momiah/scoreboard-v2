@@ -180,41 +180,41 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const registerPlayer = async (player) => {
-    if (players.some((thePlayer) => thePlayer.id === player)) {
-      handleShowPopup("Player already exists!");
-      return;
-    }
+  // const registerPlayer = async (player) => {
+  //   if (players.some((thePlayer) => thePlayer.id === player)) {
+  //     handleShowPopup("Player already exists!");
+  //     return;
+  //   }
 
-    if (player.length > 10) {
-      handleShowPopup("Player name cannot be more than 10 characters!");
-      return;
-    }
+  //   if (player.length > 10) {
+  //     handleShowPopup("Player name cannot be more than 10 characters!");
+  //     return;
+  //   }
 
-    if (player.length < 3) {
-      handleShowPopup("Player name must be more than 3 characters!");
-      return;
-    }
+  //   if (player.length < 3) {
+  //     handleShowPopup("Player name must be more than 3 characters!");
+  //     return;
+  //   }
 
-    try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
+  //   try {
+  //     const scoreboardCollectionRef = collection(db, "scoreboard");
+  //     const playersCollectionRef = collection(
+  //       scoreboardCollectionRef,
+  //       "players",
+  //       "players"
+  //     );
 
-      const playerDocRef = doc(playersCollectionRef, player);
-      await setDoc(playerDocRef, newPlayer); // Write the data directly
+  //     const playerDocRef = doc(playersCollectionRef, player);
+  //     await setDoc(playerDocRef, newPlayer); // Write the data directly
 
-      handleShowPopup("Player saved successfully!");
-      await fetchPlayers();
-      Keyboard.dismiss();
-    } catch (error) {
-      console.error("Error saving player data:", error);
-      handleShowPopup("Error saving player data");
-    }
-  };
+  //     handleShowPopup("Player saved successfully!");
+  //     await fetchPlayers();
+  //     Keyboard.dismiss();
+  //   } catch (error) {
+  //     console.error("Error saving player data:", error);
+  //     handleShowPopup("Error saving player data");
+  //   }
+  // };
 
   const updatePlayers = async (updatedPlayers, leagueId) => {
     if (updatedPlayers.length === 0) {
@@ -351,9 +351,55 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // useEffect(() => {
-  //   fetchPlayers(leagueId);
-  // }, []);
+  const updatePlacementStats = async (userId, prizeXP, placement) => {
+    try {
+      // Fetch the user's document
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists()) {
+        console.error(`User with ID ${userId} not found.`);
+        return;
+      }
+
+      const userData = userDoc.data();
+
+      // Ensure profileDetail exists
+      const profileDetail = userData.profileDetail || {};
+
+      // Update XP inside profileDetail
+      const updatedXP = (profileDetail.XP || 0) + prizeXP;
+
+      // Update leagueStats inside profileDetail
+      const updatedLeagueStats = {
+        first: profileDetail.leagueStats?.first || 0,
+        second: profileDetail.leagueStats?.second || 0,
+        third: profileDetail.leagueStats?.third || 0,
+        fourth: profileDetail.leagueStats?.fourth || 0,
+      };
+
+      // Increment the corresponding placement stat
+      if (placement === "1st") updatedLeagueStats.first += 1;
+      if (placement === "2nd") updatedLeagueStats.second += 1;
+      if (placement === "3rd") updatedLeagueStats.third += 1;
+      if (placement === "4th") updatedLeagueStats.fourth += 1;
+
+      // Update the user's document in Firebase
+      await updateDoc(userDocRef, {
+        profileDetail: {
+          ...profileDetail,
+          XP: updatedXP, // Update XP
+          leagueStats: updatedLeagueStats, // Update leagueStats
+        },
+      });
+
+      console.log(
+        `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
+      );
+    } catch (error) {
+      console.error(`Error updating stats for user ${userId}:`, error);
+    }
+  };
 
   return (
     <UserContext.Provider
@@ -368,13 +414,14 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        updatePlacementStats,
         Logout,
         resetPlayerStats,
         resetAllPlayerStats,
         fetchPlayers,
         setPlayers,
         updatePlayers,
-        registerPlayer,
+        // registerPlayer,
         setPlayer,
         players,
         player,

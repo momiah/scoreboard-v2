@@ -16,6 +16,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import { UserContext } from "../../../context/UserContext";
 import { court2 } from "../../../mockImages";
+import moment from "moment";
 
 const League = () => {
   const route = useRoute();
@@ -44,8 +45,45 @@ const League = () => {
     },
   ];
 
-  const playersData = leagueDetails?.leagueParticipants;
+  const leagueParticipants = leagueDetails?.leagueParticipants;
   const leagueGames = leagueDetails?.games;
+  const privacy = leagueDetails?.privacy;
+  const endDate = leagueDetails?.endDate;
+  const todaysDate = moment().format("DD-MM-YYYY");
+
+  const calculateleagueStatus = (maxPlayers, leagueParticipants) => {
+    if (privacy === "Private") {
+      return {
+        status: "Private",
+        color: "#FF4757",
+      };
+    }
+
+    if (todaysDate === endDate) {
+      return {
+        status: "ENDED",
+        color: "#FF4757",
+      };
+    }
+
+    if (!leagueParticipants || leagueParticipants.length < maxPlayers) {
+      return {
+        status: "ELISTING",
+        color: "#FAB234",
+      };
+    }
+
+    return {
+      status: "FULL",
+      color: "#286EFA",
+    };
+  };
+
+  const leagueStatus = calculateleagueStatus(
+    leagueDetails?.maxPlayers,
+    leagueParticipants
+  );
+  console.log("League Status:", leagueStatus);
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -151,21 +189,14 @@ const League = () => {
                 borderRadius={15}
               />
             </View>
-            <Tag
-              name={leagueDetails?.leagueStatus.status}
-              color={leagueDetails?.leagueStatus.color}
-            />
+            <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
               <View style={{ flexDirection: "row" }}>
                 <Tag name={leagueDetails?.leagueType} />
-                <Tag name={leagueDetails?.prizeType} />
+                <Tag name="TROPHY" />
               </View>
-              {/* Should be changed to Action button for users
-                  If part of the league = "Participant"
-                  If league admin = "Invite Players"
-              */}
               {userRole === "participant" && (
                 <Tag
                   name={"Participant"}
