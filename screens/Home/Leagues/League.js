@@ -16,7 +16,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import { UserContext } from "../../../context/UserContext";
 import { court2 } from "../../../mockImages";
-import moment from "moment";
+import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus";
 
 const League = () => {
   const route = useRoute();
@@ -44,46 +44,9 @@ const League = () => {
       component: "Team Performance",
     },
   ];
-
-  const leagueParticipants = leagueDetails?.leagueParticipants;
   const leagueGames = leagueDetails?.games;
-  const privacy = leagueDetails?.privacy;
-  const endDate = leagueDetails?.endDate;
-  const todaysDate = moment().format("DD-MM-YYYY");
 
-  const calculateleagueStatus = (maxPlayers, leagueParticipants) => {
-    if (privacy === "Private") {
-      return {
-        status: "Private",
-        color: "#FF4757",
-      };
-    }
-
-    if (todaysDate === endDate) {
-      return {
-        status: "ENDED",
-        color: "#FF4757",
-      };
-    }
-
-    if (!leagueParticipants || leagueParticipants.length < maxPlayers) {
-      return {
-        status: "ELISTING",
-        color: "#FAB234",
-      };
-    }
-
-    return {
-      status: "FULL",
-      color: "#286EFA",
-    };
-  };
-
-  const leagueStatus = calculateleagueStatus(
-    leagueDetails?.maxPlayers,
-    leagueParticipants
-  );
-  console.log("League Status:", leagueStatus);
+  const leagueStatus = calculateLeagueStatus(leagueDetails);
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -121,21 +84,13 @@ const League = () => {
 
   const fetchLeagueDetails = async (id) => {
     const fetchedDetails = await fetchLeagueById(id);
-    // const fetchedDetails = leagues.find((league) => league.id === id);
     setLeagueDetails(fetchedDetails);
-    setLoading(false); // Set loading to false once data is fetched
+    setLoading(false);
   };
 
   const leaguePrompt = async () => {
     setModalVisible(true);
     console.log("Invite players");
-    // const token = await AsyncStorage.getItem("userToken");
-
-    // if (token) {
-    //   setModalVisible(true);
-    // } else {
-    //   navigateTo("Login");
-    // }
   };
 
   if (loading) {
@@ -156,7 +111,7 @@ const League = () => {
   async function getUserRole() {
     const role = await checkUserRole(leagueDetails);
     console.log("User Role:", role);
-    setUserRole(role); // Outputs "admin", "participant", or "user"
+    setUserRole(role);
   }
 
   getUserRole();
