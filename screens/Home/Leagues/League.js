@@ -16,6 +16,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import { UserContext } from "../../../context/UserContext";
 import { court2 } from "../../../mockImages";
+import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus";
 
 const League = () => {
   const route = useRoute();
@@ -43,9 +44,11 @@ const League = () => {
       component: "Team Performance",
     },
   ];
-
-  const playersData = leagueDetails?.leagueParticipants;
   const leagueGames = leagueDetails?.games;
+  const maxPlayers = leagueDetails?.maxPlayers;
+  const leagueParticipantsLength = leagueDetails?.leagueParticipants.length;
+
+  const leagueStatus = calculateLeagueStatus(leagueDetails);
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -83,21 +86,13 @@ const League = () => {
 
   const fetchLeagueDetails = async (id) => {
     const fetchedDetails = await fetchLeagueById(id);
-    // const fetchedDetails = leagues.find((league) => league.id === id);
     setLeagueDetails(fetchedDetails);
-    setLoading(false); // Set loading to false once data is fetched
+    setLoading(false);
   };
 
   const leaguePrompt = async () => {
     setModalVisible(true);
     console.log("Invite players");
-    // const token = await AsyncStorage.getItem("userToken");
-
-    // if (token) {
-    //   setModalVisible(true);
-    // } else {
-    //   navigateTo("Login");
-    // }
   };
 
   if (loading) {
@@ -118,7 +113,7 @@ const League = () => {
   async function getUserRole() {
     const role = await checkUserRole(leagueDetails);
     console.log("User Role:", role);
-    setUserRole(role); // Outputs "admin", "participant", or "user"
+    setUserRole(role);
   }
 
   getUserRole();
@@ -132,6 +127,29 @@ const League = () => {
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
+            <View
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                padding: 5,
+                borderRadius: 5,
+                position: "absolute",
+                right: 15,
+                top: 15,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 12,
+                }}
+              >
+                {leagueParticipantsLength} / {maxPlayers}
+              </Text>
+              <Ionicons name="person" size={15} color={"#00A2FF"} />
+            </View>
             <LeagueName>{leagueDetails?.leagueName}</LeagueName>
             <View
               style={{
@@ -151,21 +169,14 @@ const League = () => {
                 borderRadius={15}
               />
             </View>
-            <Tag
-              name={leagueDetails?.leagueStatus.status}
-              color={leagueDetails?.leagueStatus.color}
-            />
+            <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
               <View style={{ flexDirection: "row" }}>
                 <Tag name={leagueDetails?.leagueType} />
-                <Tag name={leagueDetails?.prizeType} />
+                <Tag name="TROPHY" />
               </View>
-              {/* Should be changed to Action button for users
-                  If part of the league = "Participant"
-                  If league admin = "Invite Players"
-              */}
               {userRole === "participant" && (
                 <Tag
                   name={"Participant"}

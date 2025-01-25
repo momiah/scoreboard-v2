@@ -43,7 +43,11 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
 
   return (
     <LeagueSummaryContainer>
-      <PrizeDistribution prizePool={prizePool} />
+      <PrizeDistribution
+        prizePool={prizePool}
+        endDate={leagueDetails?.endDate}
+        leagueParticipants={leagueDetails?.leagueParticipants}
+      />
 
       {/* Start and End Dates */}
       <Section>

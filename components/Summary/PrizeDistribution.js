@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useEffect, useContext } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import Tooltip from "../Tooltip"; // Import the Tooltip component
 import { trophies } from "../../mockImages/index";
 import styled from "styled-components/native";
+import moment from "moment";
+import { calculatePrizeAllocation } from "../../functions/calculatePrizeAllocation";
+import { UserContext } from "../../context/UserContext";
 
-const PrizeDistribution = ({ prizePool }) => {
-  console.log("prize pool", prizePool);
+const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
+  const { updatePlacementStats } = useContext(UserContext);
+  const distribution = [0.4, 0.3, 0.2, 0.1]; // Percentage splits for 1st, 2nd, and 3rd
+
   const prizeDistribution = (prizePool) => {
-    const distribution = [0.4, 0.3, 0.2, 0.1]; // Percentage splits for 1st, 2nd, and 3rd
-
     return distribution.map((percentage, index) => {
       return {
         xp: Math.floor(prizePool * percentage),
@@ -16,6 +19,18 @@ const PrizeDistribution = ({ prizePool }) => {
       };
     });
   };
+
+  useEffect(() => {
+    const todaysDate = moment().format("DD-MM-YYYY");
+    if (todaysDate === endDate) {
+      calculatePrizeAllocation(
+        leagueParticipants,
+        prizePool,
+        updatePlacementStats,
+        distribution
+      );
+    }
+  }, [endDate]);
 
   const prizes = prizeDistribution(prizePool);
   return (

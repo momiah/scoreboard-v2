@@ -1,7 +1,7 @@
 import * as mockImages from "../../mockImages";
 import moment from "moment";
 
-export const leagueTypes = ["Mixed Doubles", "Fixed Doubles", "Singles"];
+export const leagueTypes = ["Doubles", "Singles"];
 export const privacyTypes = ["Public", "Private"];
 export const maxPlayers = [8, 16, 32, 64];
 export const leagueStatus = [
@@ -428,6 +428,18 @@ export const newPlayer = {
   winStreak7: 0,
   winStreak3: 0,
   demonWin: 0,
+  leagueStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
+  tournamentStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
   currentStreak: {
     type: null,
     count: 0,
