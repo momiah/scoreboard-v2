@@ -1,7 +1,7 @@
 import * as mockImages from "../../mockImages";
 import moment from "moment";
 
-export const leagueTypes = ["Mixed Doubles", "Fixed Doubles", "Singles"];
+export const leagueTypes = ["Doubles", "Singles"];
 export const privacyTypes = ["Public", "Private"];
 export const maxPlayers = [8, 16, 32, 64];
 export const leagueStatus = [
