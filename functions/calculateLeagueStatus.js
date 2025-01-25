@@ -14,7 +14,7 @@ export const calculateLeagueStatus = (leagueDetails) => {
     };
   }
 
-  if (todaysDate === endDate) {
+  if (todaysDate >= endDate) {
     return {
       status: "ENDED",
       color: "#FF4757",

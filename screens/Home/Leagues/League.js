@@ -45,6 +45,8 @@ const League = () => {
     },
   ];
   const leagueGames = leagueDetails?.games;
+  const maxPlayers = leagueDetails?.maxPlayers;
+  const leagueParticipantsLength = leagueDetails?.leagueParticipants.length;
 
   const leagueStatus = calculateLeagueStatus(leagueDetails);
 
@@ -125,6 +127,29 @@ const League = () => {
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
+            <View
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                padding: 5,
+                borderRadius: 5,
+                position: "absolute",
+                right: 15,
+                top: 15,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 12,
+                }}
+              >
+                {leagueParticipantsLength} / {maxPlayers}
+              </Text>
+              <Ionicons name="person" size={15} color={"#00A2FF"} />
+            </View>
             <LeagueName>{leagueDetails?.leagueName}</LeagueName>
             <View
               style={{
