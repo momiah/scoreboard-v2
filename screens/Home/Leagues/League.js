@@ -40,10 +40,15 @@ const League = () => {
     {
       component: "Player Performance",
     },
-    {
-      component: "Team Performance",
-    },
+    ...(leagueDetails?.leagueType !== "Singles"
+      ? [
+          {
+            component: "Team Performance",
+          },
+        ]
+      : []),
   ];
+
   const leagueGames = leagueDetails?.games;
   const maxPlayers = leagueDetails?.maxPlayers;
   const leagueParticipantsLength = leagueDetails?.leagueParticipants.length;

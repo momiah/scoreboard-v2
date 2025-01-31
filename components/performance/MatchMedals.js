@@ -13,7 +13,7 @@ const MatchMedals = ({
   const Medals = [
     {
       medal: rankingMedals.demon_win,
-      title: "Demon Win",
+      title: "Assassin",
       stat: demonWin,
     },
     {
@@ -67,6 +67,7 @@ const MedalContainer = styled.View({
   flexDirection: "column",
   alignItems: "center",
   gap: 10,
+  flex: 1,
 });
 
 const MedalTitle = styled.Text({

@@ -2,10 +2,10 @@ import React from "react";
 import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
-
-import MatchMedals from "../MatchMedals";
-import AnimateNumber from "../AnimateNumber";
-import ResultLog from "../ResultLog";
+import { BlurView } from "expo-blur";
+import MatchMedals from "../performance/MatchMedals";
+import AnimateNumber from "../performance/AnimateNumber";
+import ResultLog from "../performance/ResultLog";
 
 const TeamDetails = ({ showTeamDetails, setShowTeamDetails, teamStats }) => {
   const winRatio = teamStats.numberOfWins / teamStats.numberOfLosses;
@@ -105,20 +105,22 @@ const Divider = styled.View({
   borderBottomWidth: 1,
 });
 
-const ModalContainer = styled.View({
+const ModalContainer = styled(BlurView).attrs({
+  intensity: 80,
+  tint: "dark",
+})({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  backgroundColor: "rgba(0,0,0,0.5)",
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "#00152B",
+  backgroundColor: "rgba(2, 13, 24, 0.7)", // Translucent dark blue
   margin: 10,
   padding: 20,
-  paddingLeft: 30,
-  paddingRight: 30,
-  borderRadius: 10,
+  paddingLeft: 25,
+  paddingRight: 25,
+  borderRadius: 20,
 });
 
 const CloseIconContainer = styled.View({

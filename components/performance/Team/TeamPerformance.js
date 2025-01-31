@@ -4,7 +4,7 @@ import styled from "styled-components/native";
 
 import { GameContext } from "../../../context/GameContext";
 import { calculatTeamPerformance } from "../../../functions/calculateTeamPerformance";
-import TeamDetails from "./TeamDetails";
+import TeamDetails from "../../Modals/TeamDetailsModal";
 import { Dimensions } from "react-native";
 
 const TeamPerformance = () => {

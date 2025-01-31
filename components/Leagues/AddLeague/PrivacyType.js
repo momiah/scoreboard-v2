@@ -1,4 +1,4 @@
-import { privacyTypes } from "../../Leagues/leagueMocks";
+import { privacyTypes } from "../leagueMocks";
 import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
