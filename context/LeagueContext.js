@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 
 import { generatedLeagues } from "../components/Leagues/leagueMocks";
+import { ccDefaultImage } from "../mockImages";
 
 import { db } from "../services/firebase.config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,27 +23,29 @@ const LeagueContext = createContext();
 const LeagueProvider = ({ children }) => {
   const [leagues, setLeagues] = useState([]);
   const [showMockData, setShowMockData] = useState(false);
-  const [leagueIdForDeatil, setLeagueIdForDeatil] = useState("");
+  const [leagueIdForDetail, setLeagueIdForDetail] = useState("");
   const [leagueById, setLeagueById] = useState();
 
   useEffect(() => {
     if (showMockData) {
-      setLeagues(generatedLeagues); // Use mock data if `showMockData` is true
+      setLeagues(generatedLeagues);
     } else {
-      fetchLeagues(); // Fetch real data if `showMockData` is false
+      fetchLeagues();
     }
   }, [showMockData]);
 
   const fetchLeagues = async () => {
     try {
-      // Reference the `leagues` collection in Firestore
       const querySnapshot = await getDocs(collection(db, "leagues"));
 
-      // Map through the documents and store data
-      const leaguesData = querySnapshot.docs.map((doc) => ({
-        id: doc.id, // Include document ID
-        ...doc.data(), // Include the rest of the document fields
-      }));
+      const leaguesData = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          image: data.image || ccDefaultImage, // Set default image if none exists
+        };
+      });
 
       setLeagues(leaguesData);
     } catch (error) {
@@ -51,7 +54,6 @@ const LeagueProvider = ({ children }) => {
   };
 
   const addPlaytime = async (playtime, existingPlaytime = null) => {
-    console.log("league id", leagueById);
     try {
       const leagueCollectionRef = collection(db, "leagues");
       const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
@@ -163,9 +165,9 @@ const LeagueProvider = ({ children }) => {
 
       console.log("League added successfully!");
       fetchLeagues();
-      setLeagueIdForDeatil(leagueId);
+      setLeagueIdForDetail(leagueId);
       setTimeout(() => {
-        setLeagueIdForDeatil("");
+        setLeagueIdForDetail("");
       }, 2000);
     } catch (error) {
       console.error("Error adding league: ", error);
@@ -330,9 +332,9 @@ const LeagueProvider = ({ children }) => {
         addLeagues,
         leagues,
         fetchLeagues,
-        setLeagueIdForDeatil,
+        setLeagueIdForDetail,
         handleLeagueDescription,
-        leagueIdForDeatil,
+        leagueIdForDetail,
         deletePlaytime,
       }}
     >

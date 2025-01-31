@@ -18,7 +18,7 @@ const Leagues = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <LeagueContainer>
       <Overview>
         <Image
           source={CourtChampLogo}
@@ -28,9 +28,16 @@ const Leagues = () => {
       <SubHeader title="Leagues" onIconPress={handleIconPress} showIcon />
 
       <VerticalLeagueCarousel navigationRoute={"League"} />
-    </View>
+    </LeagueContainer>
   );
 };
+
+const LeagueContainer = styled.View({
+  flex: 1,
+  backgroundColor: "#00152B",
+  width: "100%",
+  paddingHorizontal: 20,
+});
 
 const Overview = styled.View({
   flexDirection: "row",

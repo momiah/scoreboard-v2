@@ -6,7 +6,8 @@ import trophy1 from "./trophy1.png";
 import trophy2 from "./trophy-ruby.png";
 import trophy3 from "./trophy-silver.png";
 import trophy4 from "./trophy-bronze.png";
+import ccDefaultImage from "./cc-default-bg-image.jpg";
 
 export const trophies = [trophy1, trophy2, trophy3, trophy4]; // Change to an array
 
-export { court1, court2, court3, court4 };
+export { court1, court2, court3, court4, ccDefaultImage };

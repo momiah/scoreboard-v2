@@ -132,19 +132,7 @@ const League = () => {
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
-            <View
-              style={{
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                padding: 5,
-                borderRadius: 5,
-                position: "absolute",
-                right: 15,
-                top: 15,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 5,
-              }}
-            >
+            <NumberOfPlayers>
               <Text
                 style={{
                   color: "white",
@@ -154,12 +142,14 @@ const League = () => {
                 {leagueParticipantsLength} / {maxPlayers}
               </Text>
               <Ionicons name="person" size={15} color={"#00A2FF"} />
-            </View>
+            </NumberOfPlayers>
+
             <LeagueName>{leagueDetails?.leagueName}</LeagueName>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
+                marginBottom: 10,
               }}
             >
               <LeagueLocation>
@@ -176,12 +166,18 @@ const League = () => {
             </View>
             <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
             <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 10,
+              }}
             >
-              <View style={{ flexDirection: "row" }}>
+              <View style={{ flexDirection: "row", gap: 5 }}>
                 <Tag name={leagueDetails?.leagueType} />
                 <Tag name="TROPHY" />
               </View>
+
               {userRole === "participant" && (
                 <Tag
                   name={"Participant"}
@@ -252,6 +248,17 @@ const Overview = styled.View({
   width: "100%",
   justifyContent: "center",
   alignItems: "center",
+});
+const NumberOfPlayers = styled.View({
+  backgroundColor: "rgba(0, 0, 0, 0.7)",
+  padding: 5,
+  borderRadius: 5,
+  position: "absolute",
+  right: 15,
+  top: 15,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
 });
 
 const LeagueImage = styled.ImageBackground({

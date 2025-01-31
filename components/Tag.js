@@ -42,7 +42,7 @@ const TagContainer = styled.View(({ backgroundColor, flexDirection }) => ({
   alignItems: "center",
   padding: 6,
   borderRadius: 6,
-  margin: 4,
+  // margin: 4,
   backgroundColor,
   alignSelf: "flex-start",
 }));
@@ -54,7 +54,7 @@ const InteractiveTagContainer = styled.TouchableOpacity(
     alignItems: "center",
     padding: 6,
     borderRadius: 6,
-    margin: 4,
+    // margin: 4,
     backgroundColor,
     alignSelf: "flex-start",
   })
