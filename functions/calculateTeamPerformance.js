@@ -1,167 +1,460 @@
-export const calculatTeamPerformance = (gameData) => {
-  const teamPerformance = {};
+export const calculateTeamPerformance = async (
+  game,
+  retrieveTeams,
+  leagueId
+) => {
+  // Helper function to normalize team keys
+  const allTeams = await retrieveTeams(leagueId);
 
-  function calculatePointDifferencePercentage(winnerScore, loserScore) {
-    const pointDifference = winnerScore - loserScore;
-    return (pointDifference / winnerScore) * 100;
-  }
+  const normalizeTeamKey = (key) => {
+    return key.join("-").split("-").sort().join("-");
+  };
 
-  function updateStreaks(team) {
-    let currentStreakCount = 0;
-    let highestWinStreak = 0;
-    let highestLossStreak = 0;
-    let isCurrentStreakWin = null;
+  // Retrieve all teams for the given league
 
-    team.resultLog.forEach((result) => {
-      if (result === "W") {
-        if (isCurrentStreakWin === true || isCurrentStreakWin === null) {
-          currentStreakCount += 1;
-        } else {
-          currentStreakCount = 1;
-        }
-        isCurrentStreakWin = true;
-        if (currentStreakCount > highestWinStreak) {
-          highestWinStreak = currentStreakCount;
-        }
-      } else if (result === "L") {
-        if (isCurrentStreakWin === false || isCurrentStreakWin === null) {
-          currentStreakCount -= 1;
-        } else {
-          currentStreakCount = -1;
-        }
-        isCurrentStreakWin = false;
-        if (Math.abs(currentStreakCount) > highestLossStreak) {
-          highestLossStreak = Math.abs(currentStreakCount);
-        }
-      }
-    });
+  const { result } = game;
 
-    team.currentStreak = currentStreakCount;
-    team.highestWinStreak = highestWinStreak;
-    team.highestLossStreak = highestLossStreak;
+  console.log("normalised test", normalizeTeamKey(["player1", "player2"]));
 
-    // Update the win streak counts
-    if (currentStreakCount >= 3) team.winStreak3++;
-    if (currentStreakCount >= 5) team.winStreak5++;
-    if (currentStreakCount >= 7) team.winStreak7++;
-  }
+  // Generate normalized keys from the result data
+  const winnerTeamKey = normalizeTeamKey(result.winner.players);
+  const loserTeamKey = normalizeTeamKey(result.loser.players);
 
-  function updateRival(team, opponentKey, opponentPlayers) {
-    if (!team.lossesTo[opponentKey]) {
-      team.lossesTo[opponentKey] = 0;
-    }
-    team.lossesTo[opponentKey] += 1;
-    const maxLosses = Math.max(...Object.values(team.lossesTo));
-    const rivalKey = Object.keys(team.lossesTo).find(
-      (key) => team.lossesTo[key] === maxLosses
+  const getTeamsByKeys = (teams, winnerKey, loserKey) => {
+    const winnerTeam = teams.find(
+      (team) => normalizeTeamKey(team.team) === winnerKey
     );
-    team.rival = {
-      rivalKey: rivalKey,
-      rivalPlayers: opponentPlayers,
-    };
-  }
-
-  gameData.forEach((game) => {
-    const winnerTeamKey = game.result.winner.players.sort().join("-");
-    const loserTeamKey = game.result.loser.players.sort().join("-");
-
-    if (!teamPerformance[winnerTeamKey]) {
-      teamPerformance[winnerTeamKey] = {
-        teamKey: winnerTeamKey,
-        team: game.result.winner.players,
-        numberOfWins: 0,
-        numberOfLosses: 0,
-        numberOfGamesPlayed: 0,
-        resultLog: [],
-        pointEfficiency: 0,
-        currentStreak: 0,
-        highestWinStreak: 0,
-        highestLossStreak: 0,
-        winStreak3: 0,
-        winStreak5: 0,
-        winStreak7: 0,
-        demonWin: 0,
-        lossesTo: {},
-        rival: null,
-      };
-    }
-
-    if (!teamPerformance[loserTeamKey]) {
-      teamPerformance[loserTeamKey] = {
-        teamKey: loserTeamKey,
-        team: game.result.loser.players,
-        numberOfWins: 0,
-        numberOfLosses: 0,
-        numberOfGamesPlayed: 0,
-        resultLog: [],
-        pointEfficiency: 0,
-        currentStreak: 0,
-        highestWinStreak: 0,
-        highestLossStreak: 0,
-        winStreak3: 0,
-        winStreak5: 0,
-        winStreak7: 0,
-        demonWin: 0,
-        lossesTo: {},
-        rival: null,
-      };
-    }
-
-    // Update performance data for the winning team
-    teamPerformance[winnerTeamKey].numberOfWins += 1;
-    teamPerformance[winnerTeamKey].numberOfGamesPlayed += 1;
-    teamPerformance[winnerTeamKey].resultLog.push("W");
-    teamPerformance[winnerTeamKey].resultLog =
-      teamPerformance[winnerTeamKey].resultLog.slice(-10);
-
-    // Update point efficiency for the winning team
-    const pointEfficiency = calculatePointDifferencePercentage(
-      game.result.winner.score,
-      game.result.loser.score
+    const loserTeam = teams.find(
+      (team) => normalizeTeamKey(team.team) === loserKey
     );
-    teamPerformance[winnerTeamKey].pointEfficiency += pointEfficiency;
+    return [winnerTeam, loserTeam];
+  };
 
-    // Check for demon win
-    if (game.result.winner.score - game.result.loser.score >= 10) {
-      teamPerformance[winnerTeamKey].demonWin += 1;
-    }
+  const [winnerTeam, loserTeam] = getTeamsByKeys(
+    allTeams,
+    winnerTeamKey,
+    loserTeamKey
+  );
 
-    // Update performance data for the losing team
-    teamPerformance[loserTeamKey].numberOfLosses += 1;
-    teamPerformance[loserTeamKey].numberOfGamesPlayed += 1;
-    teamPerformance[loserTeamKey].resultLog.push("L");
-    teamPerformance[loserTeamKey].resultLog =
-      teamPerformance[loserTeamKey].resultLog.slice(-10);
+  console.log("winTeam", JSON.stringify(winnerTeam, null, 2));
+  console.log("loseTeam", JSON.stringify(loserTeam, null, 2));
 
-    // Update streaks for both teams
-    updateStreaks(teamPerformance[winnerTeamKey]);
-    updateStreaks(teamPerformance[loserTeamKey]);
+  // Normalize existing teams for quick lookup
+  const existingTeamsMap = allTeams.reduce((map, team) => {
+    const normalizedKey = normalizeTeamKey(team.team);
+    map[normalizedKey] = team;
+    return map;
+  }, {});
 
-    // Update rival information for the losing team
-    updateRival(
-      teamPerformance[loserTeamKey],
-      winnerTeamKey,
-      game.result.winner.players
-    );
-  });
+  // console.log("Winner Team Key:", winnerTeamKey);
+  // console.log("Loser Team Key:", loserTeamKey);
+  // console.log(
+  //   "Existing Teams Map Keys:",
+  //   JSON.stringify(existingTeamsMap, null, 2)
+  // );
+  // console.log("Loser Team Retrieved:", existingTeamsMap[loserTeamKey]);
 
-  // Calculate the average point efficiency for each team
-  Object.values(teamPerformance).forEach((team) => {
-    if (team.numberOfWins > 0) {
-      team.pointEfficiency = team.pointEfficiency / team.numberOfWins;
-    }
-  });
+  // Initialize or retrieve teams to update
+  // let winnerTeam = existingTeamsMap[winnerTeamKey] || {
+  //   teamKey: winnerTeamKey,
+  //   team: result.winner.players,
+  //   numberOfWins: 0,
+  //   numberOfLosses: 0,
+  //   numberOfGamesPlayed: 0,
+  //   resultLog: [],
+  //   pointEfficiency: 0,
+  //   currentStreak: 0,
+  //   highestWinStreak: 0,
+  //   highestLossStreak: 0,
+  //   winStreak3: 0,
+  //   winStreak5: 0,
+  //   winStreak7: 0,
+  //   demonWin: 0,
+  //   lossesTo: {},
+  //   rival: null,
+  // };
 
-  // Convert to array and sort
-  const teamPerformanceArray = Object.values(teamPerformance);
-  teamPerformanceArray.sort((a, b) => {
-    if (b.numberOfWins !== a.numberOfWins) {
-      return b.numberOfWins - a.numberOfWins;
-    }
-    const winRatioA = a.numberOfWins / a.numberOfGamesPlayed;
-    const winRatioB = b.numberOfWins / b.numberOfGamesPlayed;
-    return winRatioB - winRatioA;
-  });
+  // let loserTeam = existingTeamsMap[loserTeamKey] || {
+  //   teamKey: loserTeamKey,
+  //   team: result.loser.players,
+  //   numberOfWins: 0,
+  //   numberOfLosses: 0,
+  //   numberOfGamesPlayed: 0,
+  //   resultLog: [],
+  //   pointEfficiency: 0,
+  //   currentStreak: 0,
+  //   highestWinStreak: 0,
+  //   highestLossStreak: 0,
+  //   winStreak3: 0,
+  //   winStreak5: 0,
+  //   winStreak7: 0,
+  //   demonWin: 0,
+  //   lossesTo: {},
+  //   rival: null,
+  // };
 
-  return teamPerformanceArray;
+  // Update winning team stats
+  winnerTeam.numberOfWins += 1;
+  winnerTeam.numberOfGamesPlayed += 1;
+  winnerTeam.resultLog.push("W");
+  winnerTeam.pointEfficiency +=
+    ((result.winner.score - result.loser.score) / result.winner.score) * 100;
+  if (result.winner.score - result.loser.score >= 10) winnerTeam.demonWin += 1;
+
+  // Update losing team stats
+  loserTeam.numberOfLosses += 1;
+  loserTeam.numberOfGamesPlayed += 1;
+  loserTeam.resultLog.push("L");
+  if (!loserTeam.lossesTo[winnerTeamKey]) loserTeam.lossesTo[winnerTeamKey] = 0;
+  loserTeam.lossesTo[winnerTeamKey] += 1;
+
+  // Update rival info
+  const maxLosses = Math.max(...Object.values(loserTeam.lossesTo));
+  const rivalKey = Object.keys(loserTeam.lossesTo).find(
+    (key) => loserTeam.lossesTo[key] === maxLosses
+  );
+  loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
+
+  // Update streaks for both teams
+  updateWinStreaks(winnerTeam);
+  updateWinStreaks(loserTeam);
+
+  // Return the updated teams
+  return [winnerTeam, loserTeam];
 };
+
+// Helper function to update win streaks
+function updateWinStreaks(team) {
+  let currentStreakCount = 0;
+  let highestWinStreak = 0;
+  let highestLossStreak = 0;
+  let isCurrentStreakWin = null;
+
+  team.resultLog.forEach((result) => {
+    if (result === "W") {
+      if (isCurrentStreakWin === true || isCurrentStreakWin === null) {
+        currentStreakCount += 1;
+      } else {
+        currentStreakCount = 1;
+      }
+      isCurrentStreakWin = true;
+      highestWinStreak = Math.max(highestWinStreak, currentStreakCount);
+    } else if (result === "L") {
+      if (isCurrentStreakWin === false || isCurrentStreakWin === null) {
+        currentStreakCount -= 1;
+      } else {
+        currentStreakCount = -1;
+      }
+      isCurrentStreakWin = false;
+      highestLossStreak = Math.max(
+        highestLossStreak,
+        Math.abs(currentStreakCount)
+      );
+    }
+  });
+
+  team.currentStreak = currentStreakCount;
+  team.highestWinStreak = highestWinStreak;
+  team.highestLossStreak = highestLossStreak;
+
+  // Update the win streak counts
+  if (currentStreakCount >= 3) team.winStreak3++;
+  if (currentStreakCount >= 5) team.winStreak5++;
+  if (currentStreakCount >= 7) team.winStreak7++;
+}
+
+// export const calculateTeamPerformance = (newGame, teamPerformance) => {
+
+//   function calculatePointDifferencePercentage(winnerScore, loserScore) {
+//     const pointDifference = winnerScore - loserScore;
+//     return (pointDifference / winnerScore) * 100;
+//   }
+
+//   function updateStreaks(team) {
+//     let currentStreakCount = 0;
+//     let highestWinStreak = 0;
+//     let highestLossStreak = 0;
+//     let isCurrentStreakWin = null;
+
+//     team.resultLog.forEach((result) => {
+//       if (result === "W") {
+//         currentStreakCount = isCurrentStreakWin === true || isCurrentStreakWin === null ? currentStreakCount + 1 : 1;
+//         isCurrentStreakWin = true;
+//         highestWinStreak = Math.max(highestWinStreak, currentStreakCount);
+//       } else if (result === "L") {
+//         currentStreakCount = isCurrentStreakWin === false || isCurrentStreakWin === null ? currentStreakCount - 1 : -1;
+//         isCurrentStreakWin = false;
+//         highestLossStreak = Math.max(highestLossStreak, Math.abs(currentStreakCount));
+//       }
+//     });
+
+//     team.currentStreak = currentStreakCount;
+//     team.highestWinStreak = highestWinStreak;
+//     team.highestLossStreak = highestLossStreak;
+
+//     if (currentStreakCount >= 3) team.winStreak3++;
+//     if (currentStreakCount >= 5) team.winStreak5++;
+//     if (currentStreakCount >= 7) team.winStreak7++;
+//   }
+
+//   function updateRival(team, opponentKey, opponentPlayers) {
+//     if (!team.lossesTo[opponentKey]) {
+//       team.lossesTo[opponentKey] = 0;
+//     }
+//     team.lossesTo[opponentKey] += 1;
+//     const maxLosses = Math.max(...Object.values(team.lossesTo));
+//     const rivalKey = Object.keys(team.lossesTo).find(key => team.lossesTo[key] === maxLosses);
+//     team.rival = { rivalKey, rivalPlayers: opponentPlayers };
+//   }
+
+//   const winnerTeamKey = [newGame.team1.player1, newGame.team1.player2].sort().join("-");
+//   const loserTeamKey = [newGame.team2.player1, newGame.team2.player2].sort().join("-");
+
+//   // Initialize team data if not present
+//   if (!teamPerformance[winnerTeamKey]) {
+//     teamPerformance[winnerTeamKey] = {
+//       teamKey: winnerTeamKey,
+//       team: [newGame.team1.player1, newGame.team1.player2],
+//       numberOfWins: 0,
+//       numberOfLosses: 0,
+//       numberOfGamesPlayed: 0,
+//       resultLog: [],
+//       pointEfficiency: 0,
+//       currentStreak: 0,
+//       highestWinStreak: 0,
+//       highestLossStreak: 0,
+//       winStreak3: 0,
+//       winStreak5: 0,
+//       winStreak7: 0,
+//       demonWin: 0,
+//       lossesTo: {},
+//       rival: null,
+//     };
+//   }
+
+//   if (!teamPerformance[loserTeamKey]) {
+//     teamPerformance[loserTeamKey] = {
+//       teamKey: loserTeamKey,
+//       team: [newGame.team2.player1, newGame.team2.player2],
+//       numberOfWins: 0,
+//       numberOfLosses: 0,
+//       numberOfGamesPlayed: 0,
+//       resultLog: [],
+//       pointEfficiency: 0,
+//       currentStreak: 0,
+//       highestWinStreak: 0,
+//       highestLossStreak: 0,
+//       winStreak3: 0,
+//       winStreak5: 0,
+//       winStreak7: 0,
+//       demonWin: 0,
+//       lossesTo: {},
+//       rival: null,
+//     };
+//   }
+
+//   // Update performance data
+//   const winner = newGame.result.winner;
+//   const loser = newGame.result.loser;
+
+//   teamPerformance[winnerTeamKey].numberOfWins += 1;
+//   teamPerformance[winnerTeamKey].numberOfGamesPlayed += 1;
+//   teamPerformance[winnerTeamKey].resultLog.push("W");
+//   teamPerformance[winnerTeamKey].resultLog = teamPerformance[winnerTeamKey].resultLog.slice(-10);
+
+//   // Update point efficiency
+//   const pointEfficiency = calculatePointDifferencePercentage(winner.score, loser.score);
+//   teamPerformance[winnerTeamKey].pointEfficiency += pointEfficiency;
+
+//   // Check for demon win
+//   if (winner.score - loser.score >= 10) {
+//     teamPerformance[winnerTeamKey].demonWin += 1;
+//   }
+
+//   teamPerformance[loserTeamKey].numberOfLosses += 1;
+//   teamPerformance[loserTeamKey].numberOfGamesPlayed += 1;
+//   teamPerformance[loserTeamKey].resultLog.push("L");
+//   teamPerformance[loserTeamKey].resultLog = teamPerformance[loserTeamKey].resultLog.slice(-10);
+
+//   // Update streaks
+//   updateStreaks(teamPerformance[winnerTeamKey]);
+//   updateStreaks(teamPerformance[loserTeamKey]);
+
+//   // Update rival
+//   updateRival(teamPerformance[loserTeamKey], winnerTeamKey, [newGame.team1.player1, newGame.team1.player2]);
+
+//   // Calculate the average point efficiency for the winner
+//   if (teamPerformance[winnerTeamKey].numberOfWins > 0) {
+//     teamPerformance[winnerTeamKey].pointEfficiency /= teamPerformance[winnerTeamKey].numberOfWins;
+//   }
+
+//   return [teamPerformance[winnerTeamKey], teamPerformance[loserTeamKey]];
+// };
+
+// export const calculatTeamPerformance = (gameData) => {
+//   const teamPerformance = {};
+
+//   function calculatePointDifferencePercentage(winnerScore, loserScore) {
+//     const pointDifference = winnerScore - loserScore;
+//     return (pointDifference / winnerScore) * 100;
+//   }
+
+//   function updateStreaks(team) {
+//     let currentStreakCount = 0;
+//     let highestWinStreak = 0;
+//     let highestLossStreak = 0;
+//     let isCurrentStreakWin = null;
+
+//     team.resultLog.forEach((result) => {
+//       if (result === "W") {
+//         if (isCurrentStreakWin === true || isCurrentStreakWin === null) {
+//           currentStreakCount += 1;
+//         } else {
+//           currentStreakCount = 1;
+//         }
+//         isCurrentStreakWin = true;
+//         if (currentStreakCount > highestWinStreak) {
+//           highestWinStreak = currentStreakCount;
+//         }
+//       } else if (result === "L") {
+//         if (isCurrentStreakWin === false || isCurrentStreakWin === null) {
+//           currentStreakCount -= 1;
+//         } else {
+//           currentStreakCount = -1;
+//         }
+//         isCurrentStreakWin = false;
+//         if (Math.abs(currentStreakCount) > highestLossStreak) {
+//           highestLossStreak = Math.abs(currentStreakCount);
+//         }
+//       }
+//     });
+
+//     team.currentStreak = currentStreakCount;
+//     team.highestWinStreak = highestWinStreak;
+//     team.highestLossStreak = highestLossStreak;
+
+//     // Update the win streak counts
+//     if (currentStreakCount >= 3) team.winStreak3++;
+//     if (currentStreakCount >= 5) team.winStreak5++;
+//     if (currentStreakCount >= 7) team.winStreak7++;
+//   }
+
+//   function updateRival(team, opponentKey, opponentPlayers) {
+//     if (!team.lossesTo[opponentKey]) {
+//       team.lossesTo[opponentKey] = 0;
+//     }
+//     team.lossesTo[opponentKey] += 1;
+//     const maxLosses = Math.max(...Object.values(team.lossesTo));
+//     const rivalKey = Object.keys(team.lossesTo).find(
+//       (key) => team.lossesTo[key] === maxLosses
+//     );
+//     team.rival = {
+//       rivalKey: rivalKey,
+//       rivalPlayers: opponentPlayers,
+//     };
+//   }
+
+//   gameData.forEach((game) => {
+//     const winnerTeamKey = game.result.winner.players.sort().join("-");
+//     const loserTeamKey = game.result.loser.players.sort().join("-");
+
+//     if (!teamPerformance[winnerTeamKey]) {
+//       teamPerformance[winnerTeamKey] = {
+//         teamKey: winnerTeamKey,
+//         team: game.result.winner.players,
+//         numberOfWins: 0,
+//         numberOfLosses: 0,
+//         numberOfGamesPlayed: 0,
+//         resultLog: [],
+//         pointEfficiency: 0,
+//         currentStreak: 0,
+//         highestWinStreak: 0,
+//         highestLossStreak: 0,
+//         winStreak3: 0,
+//         winStreak5: 0,
+//         winStreak7: 0,
+//         demonWin: 0,
+//         lossesTo: {},
+//         rival: null,
+//       };
+//     }
+
+//     if (!teamPerformance[loserTeamKey]) {
+//       teamPerformance[loserTeamKey] = {
+//         teamKey: loserTeamKey,
+//         team: game.result.loser.players,
+//         numberOfWins: 0,
+//         numberOfLosses: 0,
+//         numberOfGamesPlayed: 0,
+//         resultLog: [],
+//         pointEfficiency: 0,
+//         currentStreak: 0,
+//         highestWinStreak: 0,
+//         highestLossStreak: 0,
+//         winStreak3: 0,
+//         winStreak5: 0,
+//         winStreak7: 0,
+//         demonWin: 0,
+//         lossesTo: {},
+//         rival: null,
+//       };
+//     }
+
+//     // Update performance data for the winning team
+//     teamPerformance[winnerTeamKey].numberOfWins += 1;
+//     teamPerformance[winnerTeamKey].numberOfGamesPlayed += 1;
+//     teamPerformance[winnerTeamKey].resultLog.push("W");
+//     teamPerformance[winnerTeamKey].resultLog =
+//       teamPerformance[winnerTeamKey].resultLog.slice(-10);
+
+//     // Update point efficiency for the winning team
+//     const pointEfficiency = calculatePointDifferencePercentage(
+//       game.result.winner.score,
+//       game.result.loser.score
+//     );
+//     teamPerformance[winnerTeamKey].pointEfficiency += pointEfficiency;
+
+//     // Check for demon win
+//     if (game.result.winner.score - game.result.loser.score >= 10) {
+//       teamPerformance[winnerTeamKey].demonWin += 1;
+//     }
+
+//     // Update performance data for the losing team
+//     teamPerformance[loserTeamKey].numberOfLosses += 1;
+//     teamPerformance[loserTeamKey].numberOfGamesPlayed += 1;
+//     teamPerformance[loserTeamKey].resultLog.push("L");
+//     teamPerformance[loserTeamKey].resultLog =
+//       teamPerformance[loserTeamKey].resultLog.slice(-10);
+
+//     // Update streaks for both teams
+//     updateStreaks(teamPerformance[winnerTeamKey]);
+//     updateStreaks(teamPerformance[loserTeamKey]);
+
+//     // Update rival information for the losing team
+//     updateRival(
+//       teamPerformance[loserTeamKey],
+//       winnerTeamKey,
+//       game.result.winner.players
+//     );
+//   });
+
+//   // Calculate the average point efficiency for each team
+//   Object.values(teamPerformance).forEach((team) => {
+//     if (team.numberOfWins > 0) {
+//       team.pointEfficiency = team.pointEfficiency / team.numberOfWins;
+//     }
+//   });
+
+//   // Convert to array and sort
+//   const teamPerformanceArray = Object.values(teamPerformance);
+//   teamPerformanceArray.sort((a, b) => {
+//     if (b.numberOfWins !== a.numberOfWins) {
+//       return b.numberOfWins - a.numberOfWins;
+//     }
+//     const winRatioA = a.numberOfWins / a.numberOfGamesPlayed;
+//     const winRatioB = b.numberOfWins / b.numberOfGamesPlayed;
+//     return winRatioB - winRatioA;
+//   });
+
+//   return teamPerformanceArray;
+// };

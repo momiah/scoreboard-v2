@@ -127,24 +127,37 @@ const Signup = ({ route }) => {
 
   const validateForm = () => {
     const newErrors = {};
+
     if (!formData.firstName.trim())
       newErrors.firstName = "First name is required";
     if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
-    if (!formData.username.trim()) newErrors.username = "Username is required";
+
+    // Username validation: required and no whitespace allowed
+    if (!formData.username.trim()) {
+      newErrors.username = "Username is required";
+    } else if (/\s/.test(formData.username)) {
+      newErrors.username = "Username cannot contain spaces";
+    }
+
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
     } else if (formData.password.trim().length < 8) {
       newErrors.password = "Password must be at least 8 characters long";
     }
+
     if (formData.password !== formData.confirmPassword && !userName)
       newErrors.confirmPassword = "Passwords do not match";
+
     if (
       !formData.email.trim() ||
       (!/\S+@\S+\.\S+/.test(formData.email) && !userName)
     )
       newErrors.email = "Valid email is required";
+
     if (!formData.dob.trim()) newErrors.dob = "Date of birth is required";
+
     if (!formData.location.trim()) newErrors.location = "Location is required";
+
     if (!formData.handPreference)
       newErrors.handPreference = "Hand preference is required";
 

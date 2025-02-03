@@ -40,7 +40,6 @@ const Home = () => {
 
       const userInfo = await getUserById(userId);
       setUserName(userInfo.firstName);
-      console.log("User", userInfo.firstName, userInfo.lastName);
       return userInfo;
     } catch (error) {
       console.error("Error retrieving user info:", error);

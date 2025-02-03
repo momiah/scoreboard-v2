@@ -80,6 +80,21 @@ const UserProvider = ({ children }) => {
       return [];
     }
   };
+  const retrieveTeams = async (leagueId) => {
+    try {
+      const leagueCollectionRef = collection(db, "leagues");
+      const leagueDocRef = doc(leagueCollectionRef, leagueId);
+
+      // Get the existing league document
+      const leagueDoc = await getDoc(leagueDocRef);
+      const leagueParticipants = leagueDoc.data().leagueTeams;
+
+      return leagueParticipants;
+    } catch (error) {
+      console.error("Error retrieving players:", error);
+      return [];
+    }
+  };
 
   // const retrievePlayers = async () => {
   //   try {
@@ -119,7 +134,6 @@ const UserProvider = ({ children }) => {
         leagueData.leagueAdmins.length === 0 &&
         leagueData.leagueParticipants.length === 0
       ) {
-        console.log("No admins or participants in the league");
         return "user";
       }
 
@@ -256,32 +270,54 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // const updatePlayers = async (updatedPlayers) => {
-  //   if (updatedPlayers.length === 0) {
-  //     handleShowPopup("No players to update!");
-  //     return;
-  //   }
+  const updateTeams = async (updatedTeams, leagueId) => {
+    if (updatedTeams.length === 0) {
+      console.error("No teams to update!");
+      return;
+    }
 
-  //   try {
-  //     const scoreboardCollectionRef = collection(db, "scoreboard");
-  //     const playersCollectionRef = collection(
-  //       scoreboardCollectionRef,
-  //       "players",
-  //       "players"
-  //     );
+    console.log("updatedTeams", JSON.stringify(updatedTeams, null, 2));
 
-  //     for (const updatedPlayer of updatedPlayers) {
-  //       const { id } = updatedPlayer;
+    try {
+      const leagueDocRef = doc(db, "leagues", leagueId);
 
-  //       const playerDocRef = doc(playersCollectionRef, id);
-  //       await updateDoc(playerDocRef, updatedPlayer);
-  //     }
-  //     await fetchPlayers();
-  //   } catch (error) {
-  //     console.error("Error updating player data:", error);
-  //     handleShowPopup("Error updating player data");
-  //   }
-  // };
+      // Fetch the current league document
+      const leagueDoc = await getDoc(leagueDocRef);
+      if (!leagueDoc.exists()) {
+        console.error("League not found!");
+        return;
+      }
+
+      const leagueData = leagueDoc.data();
+      const existingTeams = leagueData.leagueTeams || [];
+
+      // Merge the updated teams into the existing ones
+      const updatedTeamsArray = existingTeams.map((team) => {
+        const updatedTeam = updatedTeams.find(
+          (t) => t.teamKey === team.teamKey
+        );
+        return updatedTeam ? { ...team, ...updatedTeam } : team;
+      });
+
+      // Add any new teams that weren't already in existingTeams
+      const newTeams = updatedTeams.filter(
+        (updatedTeam) =>
+          !existingTeams.some((team) => team.teamKey === updatedTeam.teamKey)
+      );
+
+      // Final teams list to update in Firestore
+      const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
+
+      // console.log("finalTeamsArray", finalTeamsArray);
+
+      // Update Firestore with the new teams array
+      await updateDoc(leagueDocRef, { leagueTeams: finalTeamsArray });
+
+      console.log("Teams updated successfully!");
+    } catch (error) {
+      console.error("Error updating team data:", error);
+    }
+  };
 
   const getUserById = async (userId) => {
     try {
@@ -414,6 +450,8 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        retrieveTeams,
+        updateTeams,
         updatePlacementStats,
         Logout,
         resetPlayerStats,

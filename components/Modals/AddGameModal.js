@@ -20,6 +20,7 @@ import { generateUniqueGameId } from "../../functions/generateUniqueId";
 import { getPlayersToUpdate } from "../../functions/getPlayersToUpdate";
 // import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
 import AddGame from "../scoreboard/AddGame/AddGame";
+import { calculateTeamPerformance } from "../../functions/calculateTeamPerformance";
 
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -38,7 +39,8 @@ const AddGameModal = ({
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
-  const { retrievePlayers, updatePlayers } = useContext(UserContext);
+  const { retrievePlayers, updatePlayers, updateTeams, retrieveTeams } =
+    useContext(UserContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState({
@@ -141,6 +143,8 @@ const AddGameModal = ({
       },
     };
 
+    console.log("New Game", JSON.stringify(newGame, null, 2));
+
     const playersToUpdate = await getPlayersToUpdate(
       newGame,
       retrievePlayers,
@@ -149,6 +153,15 @@ const AddGameModal = ({
       // previousPlayerRecord
     );
     await updatePlayers(playersToUpdate, leagueId);
+
+    const teamsToUpdate = await calculateTeamPerformance(
+      newGame,
+      retrieveTeams,
+      leagueId
+    );
+    console.log("Teams to update", JSON.stringify(teamsToUpdate, null, 2));
+
+    await updateTeams(teamsToUpdate, leagueId);
 
     await addGame(newGame, gameId, leagueId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });

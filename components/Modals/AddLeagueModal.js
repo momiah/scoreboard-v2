@@ -35,6 +35,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   } = useContext(PopupContext);
   const [leagueDetails, setLeagueDetails] = useState({
     leagueParticipants: [],
+    leagueTeams: [],
     leagueAdmins: [],
     games: [],
     leagueType: "",

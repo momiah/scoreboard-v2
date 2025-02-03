@@ -16,6 +16,7 @@ const TeamPerformance = () => {
   useEffect(() => {
     const stats = calculatTeamPerformance(games);
     setTeamStats(stats);
+    console.log("Team Stats", JSON.stringify(stats, null, 2));
   }, []);
 
   const renderTeam = ({ item: team, index }) => (

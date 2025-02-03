@@ -117,7 +117,6 @@ const League = () => {
 
   async function getUserRole() {
     const role = await checkUserRole(leagueDetails);
-    console.log("User Role:", role);
     setUserRole(role);
   }
 
