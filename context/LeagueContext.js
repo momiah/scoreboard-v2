@@ -83,8 +83,6 @@ const LeagueProvider = ({ children }) => {
 
         // Update the league document with the updated playtime array
         await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
-
-        console.log("Playtime updated successfully!");
       } else {
         console.error("League document not found.");
         Alert.alert("Error", "League not found.");
@@ -96,8 +94,6 @@ const LeagueProvider = ({ children }) => {
   };
 
   const deletePlaytime = async (playtimeToDelete) => {
-    console.log("Deleting playtime:", playtimeToDelete);
-
     try {
       const leagueCollectionRef = collection(db, "leagues");
       const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
@@ -120,8 +116,6 @@ const LeagueProvider = ({ children }) => {
 
         // Update Firebase with the updated playtime array
         await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
-
-        console.log("Playtime deleted successfully!");
       } else {
         console.error("League document not found.");
         Alert.alert("Error", "League not found.");
@@ -133,8 +127,6 @@ const LeagueProvider = ({ children }) => {
   };
 
   const handleLeagueDescription = async (newDescription) => {
-    console.log("Updating league description:", newDescription);
-
     try {
       const leagueCollectionRef = collection(db, "leagues");
       const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
@@ -255,7 +247,7 @@ const LeagueProvider = ({ children }) => {
       //   totals.winPercentage /= userLeagues.length;
       // }
 
-      console.log("Totals:", JSON.stringify(totals, null, 2));
+      // console.log("Totals:", JSON.stringify(totals, null, 2));
       return totals;
     } catch (error) {
       console.error("Error calculating totals:", error);

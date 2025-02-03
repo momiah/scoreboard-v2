@@ -52,6 +52,10 @@ const League = () => {
   const leagueGames = leagueDetails?.games;
   const maxPlayers = leagueDetails?.maxPlayers;
   const leagueParticipantsLength = leagueDetails?.leagueParticipants.length;
+  const teams = leagueDetails?.leagueTeams;
+
+  // console.log("teams on League level", JSON.stringify(teams, null, 2));
+  // console.log("leagye teams length", teams.length);
 
   const leagueStatus = calculateLeagueStatus(leagueDetails);
 
@@ -77,7 +81,7 @@ const League = () => {
           />
         );
       case "Team Performance":
-        return <TeamPerformance />;
+        return <TeamPerformance leagueId={leagueId} leagueTeams={teams} />;
       default:
         return null;
     }
@@ -97,7 +101,6 @@ const League = () => {
 
   const leaguePrompt = async () => {
     setModalVisible(true);
-    console.log("Invite players");
   };
 
   if (loading) {
@@ -215,7 +218,10 @@ const League = () => {
           {tabs.map((tab) => (
             <Tab
               key={tab.component}
-              onPress={() => setSelectedTab(tab.component)}
+              onPress={() => {
+                setSelectedTab(tab.component);
+                fetchLeagueDetails(leagueId);
+              }}
               isSelected={selectedTab === tab.component}
             >
               <TabText>{tab.component}</TabText>

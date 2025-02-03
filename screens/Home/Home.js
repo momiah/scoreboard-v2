@@ -34,7 +34,6 @@ const Home = () => {
     try {
       const userId = await AsyncStorage.getItem("userId"); // Retrieve userId from AsyncStorage
       if (!userId) {
-        console.log("No userId found in AsyncStorage.");
         return;
       }
 

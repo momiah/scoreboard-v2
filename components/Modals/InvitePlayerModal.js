@@ -28,8 +28,6 @@ const InvitePlayerModal = ({
   const [inviteUsers, setInviteUsers] = useState([]);
   const handleSendInvite = () => {
     setModalVisible(false);
-
-    console.log("invited user:", inviteUsers);
   };
 
   const handleSearch = async (value) => {

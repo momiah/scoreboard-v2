@@ -87,11 +87,14 @@ const UserProvider = ({ children }) => {
 
       // Get the existing league document
       const leagueDoc = await getDoc(leagueDocRef);
-      const leagueParticipants = leagueDoc.data().leagueTeams;
+      const leagueTeams = leagueDoc.data().leagueTeams;
 
-      return leagueParticipants;
+      console.log("League Data:", leagueDoc.data());
+      console.log("leagueTeams", leagueTeams);
+
+      return leagueTeams;
     } catch (error) {
-      console.error("Error retrieving players:", error);
+      console.error("Error retrieving teams:", error);
       return [];
     }
   };

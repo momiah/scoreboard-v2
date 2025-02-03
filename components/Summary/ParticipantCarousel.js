@@ -6,7 +6,6 @@ import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 
 const ParticipantCarousel = ({ leagueParticipants }) => {
-  console.log("League Participants", leagueParticipants);
   return (
     <ParticipantContainer>
       <SectionTitle>Participants</SectionTitle>

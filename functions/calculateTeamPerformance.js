@@ -3,23 +3,20 @@ export const calculateTeamPerformance = async (
   retrieveTeams,
   leagueId
 ) => {
-  // Helper function to normalize team keys
   const allTeams = await retrieveTeams(leagueId);
 
+  // Helper function to normalize team keys
   const normalizeTeamKey = (key) => {
     return key.join("-").split("-").sort().join("-");
   };
 
-  // Retrieve all teams for the given league
-
   const { result } = game;
-
-  console.log("normalised test", normalizeTeamKey(["player1", "player2"]));
 
   // Generate normalized keys from the result data
   const winnerTeamKey = normalizeTeamKey(result.winner.players);
   const loserTeamKey = normalizeTeamKey(result.loser.players);
 
+  // Helper function to retrieve teams by normalized keys
   const getTeamsByKeys = (teams, winnerKey, loserKey) => {
     const winnerTeam = teams.find(
       (team) => normalizeTeamKey(team.team) === winnerKey
@@ -36,75 +33,11 @@ export const calculateTeamPerformance = async (
     loserTeamKey
   );
 
-  console.log("winTeam", JSON.stringify(winnerTeam, null, 2));
-  console.log("loseTeam", JSON.stringify(loserTeam, null, 2));
-
-  // Normalize existing teams for quick lookup
-  const existingTeamsMap = allTeams.reduce((map, team) => {
-    const normalizedKey = normalizeTeamKey(team.team);
-    map[normalizedKey] = team;
-    return map;
-  }, {});
-
-  // console.log("Winner Team Key:", winnerTeamKey);
-  // console.log("Loser Team Key:", loserTeamKey);
-  // console.log(
-  //   "Existing Teams Map Keys:",
-  //   JSON.stringify(existingTeamsMap, null, 2)
-  // );
-  // console.log("Loser Team Retrieved:", existingTeamsMap[loserTeamKey]);
-
-  // Initialize or retrieve teams to update
-  // let winnerTeam = existingTeamsMap[winnerTeamKey] || {
-  //   teamKey: winnerTeamKey,
-  //   team: result.winner.players,
-  //   numberOfWins: 0,
-  //   numberOfLosses: 0,
-  //   numberOfGamesPlayed: 0,
-  //   resultLog: [],
-  //   pointEfficiency: 0,
-  //   currentStreak: 0,
-  //   highestWinStreak: 0,
-  //   highestLossStreak: 0,
-  //   winStreak3: 0,
-  //   winStreak5: 0,
-  //   winStreak7: 0,
-  //   demonWin: 0,
-  //   lossesTo: {},
-  //   rival: null,
-  // };
-
-  // let loserTeam = existingTeamsMap[loserTeamKey] || {
-  //   teamKey: loserTeamKey,
-  //   team: result.loser.players,
-  //   numberOfWins: 0,
-  //   numberOfLosses: 0,
-  //   numberOfGamesPlayed: 0,
-  //   resultLog: [],
-  //   pointEfficiency: 0,
-  //   currentStreak: 0,
-  //   highestWinStreak: 0,
-  //   highestLossStreak: 0,
-  //   winStreak3: 0,
-  //   winStreak5: 0,
-  //   winStreak7: 0,
-  //   demonWin: 0,
-  //   lossesTo: {},
-  //   rival: null,
-  // };
-
   // Update winning team stats
-  winnerTeam.numberOfWins += 1;
-  winnerTeam.numberOfGamesPlayed += 1;
-  winnerTeam.resultLog.push("W");
-  winnerTeam.pointEfficiency +=
-    ((result.winner.score - result.loser.score) / result.winner.score) * 100;
-  if (result.winner.score - result.loser.score >= 10) winnerTeam.demonWin += 1;
+  updateTeamStats(winnerTeam, "W", result.winner.score, result.loser.score);
 
   // Update losing team stats
-  loserTeam.numberOfLosses += 1;
-  loserTeam.numberOfGamesPlayed += 1;
-  loserTeam.resultLog.push("L");
+  updateTeamStats(loserTeam, "L", result.winner.score, result.loser.score);
   if (!loserTeam.lossesTo[winnerTeamKey]) loserTeam.lossesTo[winnerTeamKey] = 0;
   loserTeam.lossesTo[winnerTeamKey] += 1;
 
@@ -115,15 +48,35 @@ export const calculateTeamPerformance = async (
   );
   loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
 
-  // Update streaks for both teams
-  updateWinStreaks(winnerTeam);
-  updateWinStreaks(loserTeam);
-
   // Return the updated teams
   return [winnerTeam, loserTeam];
 };
 
-// Helper function to update win streaks
+// Helper function to update team stats and streaks
+function updateTeamStats(team, result, winnerScore, loserScore) {
+  // Update basic stats
+  if (result === "W") {
+    team.numberOfWins += 1;
+  } else {
+    team.numberOfLosses += 1;
+  }
+
+  team.numberOfGamesPlayed += 1;
+
+  // Update result log (limit to last 10 entries)
+  team.resultLog.push(result);
+  team.resultLog = team.resultLog.slice(-10);
+
+  // Update point efficiency if the team won
+  if (result === "W") {
+    team.pointEfficiency += ((winnerScore - loserScore) / winnerScore) * 100;
+  }
+
+  // Update streaks
+  updateWinStreaks(team);
+}
+
+// Helper function to update win/loss streaks
 function updateWinStreaks(team) {
   let currentStreakCount = 0;
   let highestWinStreak = 0;
@@ -157,7 +110,7 @@ function updateWinStreaks(team) {
   team.highestWinStreak = highestWinStreak;
   team.highestLossStreak = highestLossStreak;
 
-  // Update the win streak counts
+  // Update win streak milestones
   if (currentStreakCount >= 3) team.winStreak3++;
   if (currentStreakCount >= 5) team.winStreak5++;
   if (currentStreakCount >= 7) team.winStreak7++;

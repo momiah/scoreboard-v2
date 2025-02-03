@@ -24,7 +24,8 @@ const TeamDetails = ({ showTeamDetails, setShowTeamDetails, teamStats }) => {
       stat: <Stat>{winRatio.toFixed(2)}</Stat>,
     },
     {
-      statTitle: "Point Efficiency",
+      // Need to find the average point difference of the last 10 games
+      statTitle: "Avg Point Difference",
       stat: (
         <AnimateNumber
           number={`${teamStats.pointEfficiency.toFixed(1)}%`}

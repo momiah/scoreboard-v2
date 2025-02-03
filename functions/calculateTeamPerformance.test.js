@@ -61,9 +61,6 @@ describe("calculateTeamPerformance with win streaks", () => {
       "league123"
     );
 
-    console.log("Winner Team TEST", JSON.stringify(winnerTeam, null, 2));
-    console.log("Loser Team TEST", JSON.stringify(loserTeam, null, 2));
-
     // Verify winner team stats
     expect(winnerTeam.numberOfWins).toBe(7);
     expect(winnerTeam.numberOfGamesPlayed).toBe(8);

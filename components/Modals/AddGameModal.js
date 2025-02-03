@@ -31,7 +31,7 @@ const AddGameModal = ({
   leagueId,
   leagueGames,
 }) => {
-  const { games, addGame } = useContext(GameContext);
+  const { addGame } = useContext(GameContext);
   const {
     handleShowPopup,
     setPopupMessage,
@@ -142,9 +142,6 @@ const AddGameModal = ({
         return calculateWin(this.team1, this.team2);
       },
     };
-
-    console.log("New Game", JSON.stringify(newGame, null, 2));
-
     const playersToUpdate = await getPlayersToUpdate(
       newGame,
       retrievePlayers,
@@ -159,7 +156,6 @@ const AddGameModal = ({
       retrieveTeams,
       leagueId
     );
-    console.log("Teams to update", JSON.stringify(teamsToUpdate, null, 2));
 
     await updateTeams(teamsToUpdate, leagueId);
 
@@ -169,7 +165,7 @@ const AddGameModal = ({
     setTeam2Score("");
 
     handleShowPopup("Game added and players updated successfully!");
-    console.log("Closing modal", modalVisible);
+
     console.log("Game added successfully.");
   };
 
