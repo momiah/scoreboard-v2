@@ -1,22 +1,18 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, FlatList } from "react-native";
+import { View, FlatList, Text } from "react-native";
 import styled from "styled-components/native";
 
 import { GameContext } from "../../../context/GameContext";
 import { calculatTeamPerformance } from "../../../functions/calculateTeamPerformance";
-import TeamDetails from "./TeamDetails";
+import TeamDetails from "../../Modals/TeamDetailsModal";
 import { Dimensions } from "react-native";
+import { UserContext } from "../../../context/UserContext";
 
-const TeamPerformance = () => {
-  const { games, recentGameResult } = useContext(GameContext);
-  const [teamStats, setTeamStats] = useState([]);
+const TeamPerformance = ({ leagueTeams }) => {
+  const { recentGameResult } = useContext(GameContext);
+
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [team, setTeam] = useState({});
-
-  useEffect(() => {
-    const stats = calculatTeamPerformance(games);
-    setTeamStats(stats);
-  }, []);
 
   const renderTeam = ({ item: team, index }) => (
     <TableRow
@@ -54,7 +50,7 @@ const TeamPerformance = () => {
   return (
     <TableContainer>
       <FlatList
-        data={teamStats}
+        data={leagueTeams}
         renderItem={renderTeam}
         keyExtractor={(team, index) => team.team.join("-") + index}
       />

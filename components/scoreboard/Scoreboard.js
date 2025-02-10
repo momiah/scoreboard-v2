@@ -90,7 +90,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   return (
     <Container>
       {/* Participant or Admin Actions */}
-      {userRole !== "user" && userRole !== "hide" && (
+      {/* {userRole !== "user" && userRole !== "hide" && (
         <>
           {!hasLeagueStarted ? (
             <AddGameButton
@@ -100,13 +100,13 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
             >
               <Text>League has not started yet</Text>
             </AddGameButton>
-          ) : (
-            <AddGameButton onPress={handleAddGameButton}>
-              <Text>Add Game</Text>
-            </AddGameButton>
-          )}
+          ) : ( */}
+      <AddGameButton onPress={handleAddGameButton}>
+        <Text>Add Game</Text>
+      </AddGameButton>
+      {/* )}
         </>
-      )}
+      )} */}
 
       {/* Regular User Actions */}
       {userRole === "user" && (

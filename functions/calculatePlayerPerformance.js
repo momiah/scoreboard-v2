@@ -1,226 +1,328 @@
-export const calculatePlayerPerformance = (games) => {
-  const players = {};
+import { transformDate } from "./dateTransform";
 
-  function initializePlayer(player) {
-    if (!players[player]) {
-      players[player] = {
-        lastActive: null, //Added to getPlayersToUpdate
-        numberOfWins: 0, //Added to getPlayersToUpdate
-        numberOfLosses: 0, //Added to getPlayersToUpdate
-        totalPoints: 0, //Added to getPlayersToUpdate
-        numberOfGamesPlayed: 0, //Added to getPlayersToUpdate
-        resultLog: [], //Added to getPlayersToUpdate
-        highestWinStreak: 0, //Added to getPlayersToUpdate
-        highestLossStreak: 0, //Added to getPlayersToUpdate
-        XP: 0, //Added to getPlayersToUpdate
-        totalPointEfficiency: 0, //Added to getPlayersToUpdate
-        pointEfficiency: 0, //Added to getPlayersToUpdate
-        currentStreak: {
-          //Added to getPlayersToUpdate
-          type: null, // //Added to getPlayersToUpdate
-          count: 0, //Added to getPlayersToUpdate
-        },
-        winStreak3: 0, //Added to getPlayersToUpdate
-        winStreak5: 0, // //Added to getPlayersToUpdate
-        winStreak7: 0, //Added to getPlayersToUpdate
-        demonWin: 0, //Added to getPlayersToUpdate
-      };
+export const calculatePlayerPerformance = (game, playersToUpdate) => {
+  // const allPlayers = await retrievePlayers(leagueId);
+
+  const date = transformDate(game.date);
+
+  // const playersToUpdate = allPlayers.filter((player) =>
+  //   game.result.winner.players
+  //     .concat(game.result.loser.players)
+  //     .includes(player.id)
+  // );
+
+  // Function to get player by ID
+  const getPlayerById = (id) =>
+    playersToUpdate.find((player) => player.id === id);
+
+  const winnerScore = game.result.winner.score;
+  const loserScore = game.result.loser.score;
+
+  const combinedWinnerXp = game.result.winner.players.reduce(
+    (totalXp, playerId) => {
+      const player = getPlayerById(playerId);
+      if (player) {
+        return totalXp + player.XP;
+      }
+      return totalXp;
+    },
+    0
+  );
+
+  const combinedLoserXp = game.result.loser.players.reduce(
+    (totalXp, playerId) => {
+      const player = getPlayerById(playerId);
+      if (player) {
+        return totalXp + player.XP;
+      }
+      return totalXp;
+    },
+    0
+  );
+
+  const updatePlayerStats = (player, isWinner) => {
+    player.numberOfGamesPlayed += 1;
+
+    if (isWinner) {
+      player.numberOfWins += 1;
+    } else {
+      player.numberOfLosses += 1;
     }
-  }
 
-  function updateResultLog(player, result) {
-    players[player].resultLog.push(result);
-    if (players[player].resultLog.length > 10) {
-      players[player].resultLog.shift();
+    // Calculate win percentage if needed
+    player.winPercentage =
+      (player.numberOfWins / player.numberOfGamesPlayed) * 100;
+
+    return player;
+  };
+
+  const updatePlayerResultLogAndStreak = (player, isWinner) => {
+    const currentResult = isWinner ? "W" : "L";
+    player.resultLog.push(currentResult);
+
+    if (player.resultLog.length > 10) {
+      player.resultLog = player.resultLog.slice(-10);
     }
-  }
 
-  function calculateStreakXP(streakType, streakCount) {
-    const baseXP = streakType === "W" ? 20 : -10;
-    const multiplier =
-      streakCount >= 10
+    const resultLog = player.resultLog;
+    const lastResult =
+      resultLog.length > 1 ? resultLog[resultLog.length - 2] : null;
+
+    let winStreak3 = player.winStreak3 || 0;
+    let winStreak5 = player.winStreak5 || 0;
+    let winStreak7 = player.winStreak7 || 0;
+
+    let highestWinStreak = player.highestWinStreak || 0;
+    let highestLossStreak = player.highestLossStreak || 0;
+
+    if (currentResult === "W") {
+      if (lastResult === "W") {
+        player.currentStreak.count += 1;
+      } else {
+        player.currentStreak.type = "W";
+        player.currentStreak.count = 1;
+      }
+
+      if (player.currentStreak.count === 3) winStreak3 += 1;
+      if (player.currentStreak.count === 5) winStreak5 += 1;
+      if (player.currentStreak.count === 7) winStreak7 += 1;
+
+      // Update the highest win streak if the current one exceeds the previous
+      highestWinStreak = Math.max(highestWinStreak, player.currentStreak.count);
+    } else {
+      if (lastResult === "L") {
+        player.currentStreak.count -= 1;
+      } else {
+        player.currentStreak.type = "L";
+        player.currentStreak.count = -1;
+      }
+
+      // Update the highest loss streak
+      highestLossStreak = Math.min(
+        highestLossStreak,
+        player.currentStreak.count
+      );
+    }
+
+    // Save back the calculated streaks
+    player.highestWinStreak = highestWinStreak;
+    player.highestLossStreak = Math.abs(highestLossStreak);
+    player.winStreak3 = winStreak3;
+    player.winStreak5 = winStreak5;
+    player.winStreak7 = winStreak7;
+
+    return player;
+  };
+
+  const updateXp = (
+    player,
+    streakType,
+    streakCount,
+    combinedWinnerXp,
+    combinedLoserXp,
+    winnerScore,
+    loserScore
+  ) => {
+    const baseXP = streakType === "W" ? 20 : -15;
+
+    // Calculate the difference in scores
+    const scoreDifference = winnerScore - loserScore;
+
+    // Calculate difference multiplier safely
+    const differenceMultiplier = combinedLoserXp / combinedWinnerXp;
+    console.log("differenceMultiplier", differenceMultiplier);
+
+    // Cap the rank multiplier between 0 and 10
+    const rankMultiplier =
+      differenceMultiplier < 2
+        ? 0
+        : differenceMultiplier > 10
+        ? 10
+        : differenceMultiplier;
+
+    // Multiplier logic based on streak
+    const lossMultiplier =
+      streakCount <= -7
         ? 3
-        : streakCount >= 7
+        : streakCount <= -5
         ? 2.5
-        : streakCount >= 5
+        : streakCount <= -3
         ? 2
-        : streakCount >= 3
+        : streakCount <= -2
         ? 1.5
         : 1;
-    return baseXP * multiplier;
-  }
 
-  function updateXP(player, result) {
-    const streak = players[player].currentStreak;
+    const winMultiplier =
+      streakCount >= 7
+        ? 3
+        : streakCount >= 5
+        ? 2.5
+        : streakCount >= 3
+        ? 2
+        : streakCount > 1
+        ? 1.5
+        : 1;
 
-    if (streak.type === result) {
-      streak.count += 1;
-    } else {
-      streak.type = result;
-      streak.count = 1;
+    const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
+    const xp = baseXP * multiplier;
+    const demonWin = xp * 2;
+
+    console.log("demons", demonWin);
+
+    // **Apply demon multiplier only if the score difference is 10 or more**
+    // const demonMultiplier = scoreDifference >= 10 ? (xp * 2) / 2 : 0;
+
+    const rankXp = (xp * rankMultiplier + demonWin) / 2;
+
+    // console.log("Winner Score:", winnerScore, "Loser Score:", loserScore);
+    // console.log("Score Difference:", scoreDifference);
+    // console.log("Demon Multiplier Applied:", demonMultiplier);
+    // console.log("Demon Penalty Applied:", demonPenalty);
+
+    // Final XP calculation
+    const finalXp = xp + rankXp;
+    console.log("Final XP:", finalXp);
+
+    // Update the player's XP
+    player.XP += finalXp;
+    player.prevGameXP = finalXp;
+
+    // Ensure the player's XP doesn't drop below 10
+    if (player.XP < 10) {
+      player.XP = 10;
     }
 
-    players[player].XP += calculateStreakXP(streak.type, streak.count);
-  }
+    return player;
+  };
 
-  function calculatePointDifferencePercentage(winnerScore, loserScore) {
+  const updatePlayerTotalPoints = (player, points) => {
+    player.totalPoints += points;
+    return player;
+  };
+
+  const updateDemonWin = (player, winnerGameScore, loserGameScore) => {
+    let demonWin = player.demonWin || 0;
+
+    if (winnerGameScore - loserGameScore >= 10) {
+      demonWin += 1;
+      player.demonWin = demonWin;
+    }
+    return player;
+  };
+
+  const updateLastActive = (player, gameDate) => {
+    player.lastActive = gameDate;
+    return player;
+  };
+
+  const calculatePointDifference = (
+    player,
+    winnerScore,
+    loserScore,
+    isWinner
+  ) => {
+    // Initialize totalPointEfficiency if not already present
+    // let totalPointEfficiency = player.totalPointEfficiency || 0;
+
+    // Calculate the point difference and the percentage difference
     const pointDifference = winnerScore - loserScore;
-    return (pointDifference / winnerScore) * 100;
-  }
 
-  function updateHighestStreak(player) {
-    let currentWinStreak = 0;
-    let currentLossStreak = 0;
-    let highestWinStreak = 0;
-    let highestLossStreak = 0;
+    // Make the point difference negative for losing players
+    const adjustedPointDifference = isWinner
+      ? pointDifference
+      : -pointDifference;
 
-    players[player].resultLog.forEach((result) => {
-      if (result === "W") {
-        currentWinStreak += 1;
-        currentLossStreak = 0;
-        if (currentWinStreak > highestWinStreak) {
-          highestWinStreak = currentWinStreak;
-        }
-      } else if (result === "L") {
-        currentLossStreak += 1;
-        currentWinStreak = 0;
-        if (currentLossStreak > highestLossStreak) {
-          highestLossStreak = currentLossStreak;
-        }
-      }
-    });
+    // Initialize pointDifferenceLog if not already present
+    if (!player.pointDifferenceLog) {
+      player.pointDifferenceLog = [];
+    }
 
-    players[player].highestWinStreak = highestWinStreak;
-    players[player].highestLossStreak = highestLossStreak;
+    // Add the adjusted point difference to the log
+    player.pointDifferenceLog.push(adjustedPointDifference);
 
-    // Update the win streak counts
-    if (currentWinStreak >= 3) players[player].winStreak3++;
-    if (currentWinStreak >= 5) players[player].winStreak5++;
-    if (currentWinStreak >= 7) players[player].winStreak7++;
-  }
+    // Limit the log to the last 10 entries
+    player.pointDifferenceLog = player.pointDifferenceLog.slice(-10);
 
-  games.forEach((game) => {
-    const team1 = game.team1;
-    const team2 = game.team2;
-    const lastActiveDate = game.date;
+    // Calculate average point difference from the log
+    const totalPointDifference = player.pointDifferenceLog.reduce(
+      (sum, pd) => sum + pd,
+      0
+    );
+    const averagePointDifference = Math.round(
+      totalPointDifference / player.pointDifferenceLog.length
+    );
 
-    if (team1 && team2) {
-      initializePlayer(team1.player1);
-      initializePlayer(team1.player2);
-      initializePlayer(team2.player1);
-      initializePlayer(team2.player2);
+    player.averagePointDifference = averagePointDifference;
 
-      players[team1.player1].lastActive = lastActiveDate;
-      players[team1.player2].lastActive = lastActiveDate;
-      players[team2.player1].lastActive = lastActiveDate;
-      players[team2.player2].lastActive = lastActiveDate;
+    // const pointEfficiency = (pointDifference / winnerScore) * 100;
 
-      players[team1.player1].totalPoints += team1.score;
-      players[team1.player2].totalPoints += team1.score;
-      players[team2.player1].totalPoints += team2.score;
-      players[team2.player2].totalPoints += team2.score;
+    // // Accumulate the pointEfficiency to totalPointEfficiency
+    // totalPointEfficiency += pointEfficiency;
 
-      players[team1.player1].numberOfGamesPlayed += 1;
-      players[team1.player2].numberOfGamesPlayed += 1;
-      players[team2.player1].numberOfGamesPlayed += 1;
-      players[team2.player2].numberOfGamesPlayed += 1;
+    // // Update the player's totalPointEfficiency with the new value
+    // player.totalPointEfficiency = totalPointEfficiency;
 
-      if (team1.score > team2.score) {
-        const team1Efficiency = calculatePointDifferencePercentage(
-          team1.score,
-          team2.score
-        );
+    // // Calculate point efficiency based on updated totalPointEfficiency
+    // player.pointEfficiency = totalPointEfficiency / player.numberOfGamesPlayed;
 
-        players[team1.player1].numberOfWins += 1;
-        players[team1.player2].numberOfWins += 1;
-        players[team2.player1].numberOfLosses += 1;
-        players[team2.player2].numberOfLosses += 1;
+    // Log for debugging
+    // console.log(
+    //   `Player: ${player.id}, Total Point Efficiency: ${totalPointEfficiency}, Point Efficiency: ${player.pointEfficiency}`
+    // );
+  };
 
-        players[team1.player1].totalPointEfficiency += team1Efficiency;
-        players[team1.player2].totalPointEfficiency += team1Efficiency;
-
-        if (team1.score - team2.score >= 10) {
-          players[team1.player1].demonWin += 1;
-          players[team1.player2].demonWin += 1;
-        }
-
-        updateXP(team1.player1, "W");
-        updateXP(team1.player2, "W");
-        updateXP(team2.player1, "L");
-        updateXP(team2.player2, "L");
-
-        updateResultLog(team1.player1, "W");
-        updateResultLog(team1.player2, "W");
-        updateResultLog(team2.player1, "L");
-        updateResultLog(team2.player2, "L");
-      } else {
-        const team2Efficiency = calculatePointDifferencePercentage(
-          team2.score,
-          team1.score
-        );
-
-        players[team1.player1].numberOfLosses += 1;
-        players[team1.player2].numberOfLosses += 1;
-        players[team2.player1].numberOfWins += 1;
-        players[team2.player2].numberOfWins += 1;
-
-        players[team2.player1].totalPointEfficiency += team2Efficiency;
-        players[team2.player2].totalPointEfficiency += team2Efficiency;
-
-        if (team2.score - team1.score >= 10) {
-          players[team2.player1].demonWin += 1;
-          players[team2.player2].demonWin += 1;
-        }
-
-        updateXP(team1.player1, "L");
-        updateXP(team1.player2, "L");
-        updateXP(team2.player1, "W");
-        updateXP(team2.player2, "W");
-
-        updateResultLog(team1.player1, "L");
-        updateResultLog(team1.player2, "L");
-        updateResultLog(team2.player1, "W");
-        updateResultLog(team2.player2, "W");
-      }
+  // Update stats for winning players
+  game.result.winner.players.forEach((winnerId) => {
+    const player = playersToUpdate.find((p) => p.id === winnerId);
+    if (player) {
+      updatePlayerStats(player, true);
+      updatePlayerTotalPoints(player, game.result.winner.score);
+      updatePlayerResultLogAndStreak(player, true);
+      updateXp(
+        player,
+        player.currentStreak.type,
+        player.currentStreak.count,
+        combinedWinnerXp,
+        combinedLoserXp,
+        game.result.winner.score,
+        winnerScore,
+        loserScore
+      );
+      updateDemonWin(player, game.result.winner.score, game.result.loser.score);
+      updateLastActive(player, date);
+      calculatePointDifference(
+        player,
+        game.result.winner.score,
+        game.result.loser.score,
+        true
+      );
     }
   });
 
-  const playersArray = Object.entries(players).map(([player, stats]) => {
-    const averagePointEfficiency = stats.numberOfWins
-      ? stats.totalPointEfficiency / stats.numberOfWins
-      : 0;
-    updateHighestStreak(player);
-    return {
-      player,
-      ...stats,
-      pointEfficiency: averagePointEfficiency,
-    };
+  // Update stats for losing players
+  game.result.loser.players.forEach((loserId) => {
+    const player = playersToUpdate.find((p) => p.id === loserId);
+    if (player) {
+      updatePlayerStats(player, false);
+      updatePlayerTotalPoints(player, game.result.loser.score);
+      updatePlayerResultLogAndStreak(player, false);
+      updateXp(
+        player,
+        player.currentStreak.type,
+        player.currentStreak.count,
+        combinedWinnerXp,
+        combinedLoserXp,
+        winnerScore,
+        loserScore
+      );
+      updateLastActive(player, date);
+      calculatePointDifference(
+        player,
+        game.result.winner.score,
+        game.result.loser.score
+      );
+    }
   });
 
-  // Sort the array by XP in descending order
-  playersArray.sort((a, b) => b.XP - a.XP);
-
-  // Convert the sorted array back into an object
-  const sortedPlayers = {};
-  playersArray.forEach((player) => {
-    sortedPlayers[player.player] = {
-      lastActive: player.lastActive,
-      XP: player.XP,
-      numberOfGamesPlayed: player.numberOfGamesPlayed,
-      numberOfLosses: player.numberOfLosses,
-      numberOfWins: player.numberOfWins,
-      resultLog: player.resultLog.reverse(),
-      totalPoints: player.totalPoints,
-      pointEfficiency: player.pointEfficiency,
-      currentStreak: player.currentStreak,
-      highestWinStreak: player.highestWinStreak,
-      highestLossStreak: player.highestLossStreak,
-      winStreak3: player.winStreak3,
-      winStreak5: player.winStreak5,
-      winStreak7: player.winStreak7,
-      demonWin: player.demonWin,
-    };
-  });
-
-  return sortedPlayers;
+  return playersToUpdate;
 };

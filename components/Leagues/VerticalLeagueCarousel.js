@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from "react";
-import { FlatList, TouchableOpacity, View } from "react-native";
+import { FlatList, TouchableOpacity, View, Text } from "react-native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
@@ -8,6 +8,7 @@ import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LeagueContext } from "../../context/LeagueContext";
+import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
 
 const VerticalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
@@ -27,49 +28,71 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
 
   // Render individual league items
   const renderLeagueItem = useCallback(
-    ({ item: league, index }) => (
-      <CarouselContainer>
-        <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
-          <ImageWrapper>
-            <LeagueImage source={league.image}>
-              <GradientOverlay
-                colors={["rgba(0, 0, 0, 0.01)", "rgba(0, 0, 0, 0.8)"]}
-                locations={[0.1, 1]}
-              />
-              <LeagueDetailsContainer>
-                <TagContainer>
-                  <Tag
-                    name={league.leagueStatus.status}
-                    color={league.leagueStatus.color}
-                  />
-                </TagContainer>
-                <LeagueName>{league.leagueName}</LeagueName>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <LeagueLocation>{league.centerName}</LeagueLocation>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <LeagueLocation>{league.location}</LeagueLocation>
-                    <Ionicons
-                      name={"location"}
-                      size={15}
-                      color={"#286EFA"}
-                      backgroundColor={"rgba(0, 0, 0, 0.3)"}
-                      padding={5}
-                      borderRadius={15}
+    ({ item: league, index }) => {
+      const leagueStatus = calculateLeagueStatus(league);
+      const leagueParticipantsLength = league.leagueParticipants.length;
+      const maxPlayers = league.maxPlayers;
+      return (
+        <CarouselContainer>
+          <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
+            <ImageWrapper>
+              <LeagueImage source={league.image}>
+                <GradientOverlay
+                  colors={["rgba(0, 0, 0, 0.01)", "rgba(0, 0, 0, 0.8)"]}
+                  locations={[0.1, 1]}
+                />
+                <LeagueDetailsContainer>
+                  <TagContainer>
+                    <Tag name={league.leagueType} />
+                    <Tag
+                      name={leagueStatus?.status}
+                      color={leagueStatus?.color}
                     />
+                  </TagContainer>
+
+                  <NumberOfPlayers>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontSize: 12,
+                      }}
+                    >
+                      {leagueParticipantsLength} / {maxPlayers}
+                    </Text>
+                    <Ionicons name="person" size={15} color={"#00A2FF"} />
+                  </NumberOfPlayers>
+
+                  <LeagueName>{league.leagueName}</LeagueName>
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <LeagueLocation>{league.centerName}</LeagueLocation>
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
+                      <LeagueLocation>{league.location}</LeagueLocation>
+                      <Ionicons
+                        name={"location"}
+                        size={15}
+                        color={"#286EFA"}
+                        backgroundColor={"rgba(0, 0, 0, 0.3)"}
+                        padding={5}
+                        borderRadius={15}
+                      />
+                    </View>
                   </View>
-                </View>
-              </LeagueDetailsContainer>
-            </LeagueImage>
-          </ImageWrapper>
-        </CarouselItem>
-      </CarouselContainer>
-    ),
+                </LeagueDetailsContainer>
+              </LeagueImage>
+            </ImageWrapper>
+          </CarouselItem>
+        </CarouselContainer>
+      );
+    },
     [navigateTo]
   );
 
@@ -78,7 +101,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
       data={leagues}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderLeagueItem}
-      contentContainerStyle={{ paddingHorizontal: 15 }}
+      // contentContainerStyle={{ paddingHorizontal: 15 }}
       showsVerticalScrollIndicator={false}
     />
   );
@@ -86,7 +109,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
 
 const CarouselContainer = styled.ScrollView({
   marginBottom: 20,
-  paddingHorizontal: 15,
+  // paddingHorizontal: 15,
 });
 
 const CarouselItem = styled(TouchableOpacity)({
@@ -154,6 +177,16 @@ const TagContainer = styled.View({
   top: 10,
   right: 10,
   zIndex: 2, // Ensures the tag appears above other elements
+  flexDirection: "row",
+  gap: 5,
+});
+
+const NumberOfPlayers = styled.View({
+  paddingBottom: 10,
+  borderRadius: 5,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
 });
 
 export default VerticalLeagueCarousel;

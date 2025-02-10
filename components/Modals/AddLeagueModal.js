@@ -16,10 +16,10 @@ import { LeagueContext } from "../../context/LeagueContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserContext } from "../../context/UserContext";
 
-import DatePicker from "../scoreboard/AddLeague/DatePicker";
-import MaxPlayersPicker from "../scoreboard/AddLeague/MaxPlayersPicker";
-import LeagueType from "../scoreboard/AddLeague/LeagueType";
-import PrivacyType from "../scoreboard/AddLeague/PrivacyType";
+import DatePicker from "../Leagues/AddLeague/DatePicker";
+import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
+import LeagueType from "../Leagues/AddLeague/LeagueType";
+import PrivacyType from "../Leagues/AddLeague/PrivacyType";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../popup/Popup";
 
@@ -35,6 +35,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   } = useContext(PopupContext);
   const [leagueDetails, setLeagueDetails] = useState({
     leagueParticipants: [],
+    leagueTeams: [],
     leagueAdmins: [],
     games: [],
     leagueType: "",

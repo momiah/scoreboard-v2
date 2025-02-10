@@ -17,9 +17,10 @@ import SelectPlayer from "../scoreboard/AddGame/SelectPlayer";
 import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../functions/generateUniqueId";
-import { getPlayersToUpdate } from "../../functions/getPlayersToUpdate";
+import { calculatePlayerPerformance } from "../../functions/calculatePlayerPerformance";
 // import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
 import AddGame from "../scoreboard/AddGame/AddGame";
+import { calculateTeamPerformance } from "../../functions/calculateTeamPerformance";
 
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,7 +31,7 @@ const AddGameModal = ({
   leagueId,
   leagueGames,
 }) => {
-  const { games, addGame } = useContext(GameContext);
+  const { addGame } = useContext(GameContext);
   const {
     handleShowPopup,
     setPopupMessage,
@@ -38,7 +39,8 @@ const AddGameModal = ({
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
-  const { retrievePlayers, updatePlayers } = useContext(UserContext);
+  const { retrievePlayers, updatePlayers, updateTeams, retrieveTeams } =
+    useContext(UserContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState({
@@ -140,15 +142,47 @@ const AddGameModal = ({
         return calculateWin(this.team1, this.team2);
       },
     };
+    // console.log("New game: ", JSON.stringify(newGame, null, 2));
 
-    const playersToUpdate = await getPlayersToUpdate(
+    const allPlayers = await retrievePlayers(leagueId);
+    // try {
+    //   console.log("Checking game results for player:", "test1");
+    //   console.log("Winner players:", newGame.result.winner.players);
+    //   console.log("Loser players:", newGame.result.loser.players);
+    //   console.log(
+    //     "new game results",
+    //     newGame.result.winner.players
+    //       .concat(newGame.result.loser.players)
+    //       .includes("test1")
+    //   );
+    // } catch (error) {
+    //   console.error("Error while checking game results:", error);
+    // }
+
+    const playersToUpdate = allPlayers.filter((player) =>
+      newGame.result.winner.players
+        .concat(newGame.result.loser.players)
+        .includes(player.id)
+    );
+
+    // console.log("Players to update: ", playersToUpdate);
+
+    const playerPerformance = calculatePlayerPerformance(
       newGame,
-      retrievePlayers,
-      leagueId
+      playersToUpdate
       // setPreviousPlayerRecord,
       // previousPlayerRecord
     );
-    await updatePlayers(playersToUpdate, leagueId);
+
+    await updatePlayers(playerPerformance, leagueId);
+
+    const teamsToUpdate = await calculateTeamPerformance(
+      newGame,
+      retrieveTeams,
+      leagueId
+    );
+
+    await updateTeams(teamsToUpdate, leagueId);
 
     await addGame(newGame, gameId, leagueId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
@@ -156,7 +190,7 @@ const AddGameModal = ({
     setTeam2Score("");
 
     handleShowPopup("Game added and players updated successfully!");
-    console.log("Closing modal", modalVisible);
+
     console.log("Game added successfully.");
   };
 

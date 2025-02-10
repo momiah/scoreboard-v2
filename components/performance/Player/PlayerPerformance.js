@@ -31,12 +31,12 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
     fetchPlayersToSort(leagueId);
   }, []);
 
-  // const runGetPlayersToUpdate = async () => {
+  // const runcalculatePlayerPerformance = async () => {
   // Reverse the array to process the last game first
   //   const reversedGames = [...games].reverse();
 
   //   for (const game of reversedGames) {
-  //     const playersToUpdate = await getPlayersToUpdate(game, retrievePlayers);
+  //     const playersToUpdate = await calculatePlayerPerformance(game, retrievePlayers);
   //     await updatePlayers(playersToUpdate);
   //   }
   // };
@@ -115,7 +115,7 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
       <ResetPlayerStats onPress={() => resetAllPlayerStats()}>
         <Text>Reset All Players</Text>
       </ResetPlayerStats>
-      <ResetPlayerStats onPress={() => runGetPlayersToUpdate()}>
+      <ResetPlayerStats onPress={() => runcalculatePlayerPerformance()}>
         <Text>Run New Algo</Text>
       </ResetPlayerStats> */}
       <FlatList

@@ -1,4 +1,4 @@
-import { leagueTypes } from "../../Leagues/leagueMocks";
+import { leagueTypes } from "../leagueMocks";
 import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
@@ -50,11 +50,10 @@ const LeagueTypeContainer = styled.View({
 });
 
 const LeagueTypeButton = styled.TouchableOpacity(({ isSelected }) => ({
-  flex: 1, // Ensures equal size for all buttons
-  marginHorizontal: 5, // Add spacing between buttons
-  paddingVertical: 10, // Vertical padding for better UI
-  paddingHorizontal: 15, // Horizontal padding for text content
-  minHeight: 50,
+  flex: 1,
+  marginHorizontal: 5,
+  paddingVertical: 10,
+  paddingHorizontal: 15,
   backgroundColor: isSelected ? "#00284b" : "#00152B", // Highlight for selected
   borderWidth: 1,
   borderColor: isSelected ? "#004eb4" : "#414141",

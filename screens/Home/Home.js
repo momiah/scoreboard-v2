@@ -34,13 +34,11 @@ const Home = () => {
     try {
       const userId = await AsyncStorage.getItem("userId"); // Retrieve userId from AsyncStorage
       if (!userId) {
-        console.log("No userId found in AsyncStorage.");
         return;
       }
 
       const userInfo = await getUserById(userId);
       setUserName(userInfo.firstName);
-      console.log("User", userInfo.firstName, userInfo.lastName);
       return userInfo;
     } catch (error) {
       console.error("Error retrieving user info:", error);
