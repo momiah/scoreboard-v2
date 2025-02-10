@@ -28,7 +28,7 @@ const TeamDetails = ({ showTeamDetails, setShowTeamDetails, teamStats }) => {
       statTitle: "Avg Point Difference",
       stat: (
         <AnimateNumber
-          number={`${teamStats.pointEfficiency.toFixed(1)}%`}
+          number={teamStats.averagePointDifference.toFixed(0)}
           fontSize={25}
         />
       ),

@@ -33,11 +33,14 @@ export const calculateTeamPerformance = async (
     loserTeamKey
   );
 
-  // Update winning team stats
-  updateTeamStats(winnerTeam, "W", result.winner.score, result.loser.score);
+  // Calculate point difference for this game
+  const pointDifference = result.winner.score - result.loser.score;
 
-  // Update losing team stats
-  updateTeamStats(loserTeam, "L", result.winner.score, result.loser.score);
+  // Update team stats and point difference logs
+  updateTeamStats(winnerTeam, "W", pointDifference);
+  updateTeamStats(loserTeam, "L", -pointDifference);
+
+  // Update losing team rivalry stats
   if (!loserTeam.lossesTo[winnerTeamKey]) loserTeam.lossesTo[winnerTeamKey] = 0;
   loserTeam.lossesTo[winnerTeamKey] += 1;
 
@@ -52,8 +55,8 @@ export const calculateTeamPerformance = async (
   return [winnerTeam, loserTeam];
 };
 
-// Helper function to update team stats and streaks
-function updateTeamStats(team, result, winnerScore, loserScore) {
+// Helper function to update team stats and point difference logs
+function updateTeamStats(team, result, pointDifference) {
   // Update basic stats
   if (result === "W") {
     team.numberOfWins += 1;
@@ -67,10 +70,20 @@ function updateTeamStats(team, result, winnerScore, loserScore) {
   team.resultLog.push(result);
   team.resultLog = team.resultLog.slice(-10);
 
-  // Update point efficiency if the team won
-  if (result === "W") {
-    team.pointEfficiency += ((winnerScore - loserScore) / winnerScore) * 100;
+  // Update point difference log
+  if (!team.pointDifferenceLog) {
+    team.pointDifferenceLog = [];
   }
+  team.pointDifferenceLog.push(pointDifference);
+  team.pointDifferenceLog = team.pointDifferenceLog.slice(-10);
+
+  // Calculate average point difference
+  const totalPointDifference = team.pointDifferenceLog.reduce(
+    (sum, pd) => sum + pd,
+    0
+  );
+  team.averagePointDifference =
+    totalPointDifference / team.pointDifferenceLog.length;
 
   // Update streaks
   updateWinStreaks(team);

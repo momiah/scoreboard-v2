@@ -32,9 +32,11 @@ const UserProvider = ({ children }) => {
     numberOfGamesPlayed: 0,
     winPercentage: 0,
     resultLog: [],
-    pointEfficiency: 0,
+    pointDifferenceLog: [],
+    averagePointDifference: 0,
+
     totalPoints: 0,
-    totalPointEfficiency: 0,
+
     winStreak5: 0,
     winStreak7: 0,
     winStreak3: 0,
@@ -88,9 +90,6 @@ const UserProvider = ({ children }) => {
       // Get the existing league document
       const leagueDoc = await getDoc(leagueDocRef);
       const leagueTeams = leagueDoc.data().leagueTeams;
-
-      console.log("League Data:", leagueDoc.data());
-      console.log("leagueTeams", leagueTeams);
 
       return leagueTeams;
     } catch (error) {

@@ -24,6 +24,8 @@ describe("calculateTeamPerformance with win streaks", () => {
       numberOfGamesPlayed: 7,
       resultLog: ["L", "L", "L"],
       currentStreak: -3,
+      pointDifferenceLog: [-10, -8, -5],
+      averagePointDifference: -7.67,
       highestLossStreak: 4,
       highestWinStreak: 2,
       pointEfficiency: 0.42,
@@ -41,6 +43,8 @@ describe("calculateTeamPerformance with win streaks", () => {
       numberOfGamesPlayed: 7,
       resultLog: ["W", "W", "L"],
       currentStreak: 2,
+      pointDifferenceLog: [10, 12, 7],
+      averagePointDifference: 9.67,
       highestLossStreak: 1,
       highestWinStreak: 3,
       pointEfficiency: 0.85,
@@ -69,6 +73,8 @@ describe("calculateTeamPerformance with win streaks", () => {
     expect(winnerTeam.highestWinStreak).toBe(2);
     expect(winnerTeam.winStreak3).toBe(1);
     expect(winnerTeam.pointEfficiency).toBeGreaterThan(0);
+    expect(winnerTeam.pointDifferenceLog).toEqual([10, 12, 7, 20]);
+    expect(winnerTeam.averagePointDifference).toBeCloseTo(12.25, 2);
 
     // Verify loser team stats
     expect(loserTeam.numberOfLosses).toBe(5);
@@ -78,6 +84,8 @@ describe("calculateTeamPerformance with win streaks", () => {
     expect(loserTeam.highestLossStreak).toBe(4);
     expect(loserTeam.rival.rivalKey).toBe(winnerTeam.teamKey);
     expect(loserTeam.lossesTo[winnerTeam.teamKey]).toBe(1);
+    expect(loserTeam.pointDifferenceLog).toEqual([-10, -8, -5, -20]);
+    expect(loserTeam.averagePointDifference).toBeCloseTo(-10.75, 2);
 
     // Verify team keys are normalized and consistent
     expect(winnerTeam.teamKey).toBe("player3-player4");

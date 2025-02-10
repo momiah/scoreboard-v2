@@ -67,10 +67,10 @@ const PlayerDetails = ({
       stat: <Stat>{isNaN(winRatio) ? 0 : winRatio.toFixed(2)}</Stat>,
     },
     {
-      statTitle: "Point Efficiency",
+      statTitle: "Avg Point Difference",
       stat: (
         <AnimateNumber
-          number={`${selectedPlayer.pointEfficiency.toFixed(1)}%`}
+          number={selectedPlayer.averagePointDifference.toFixed(0)}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
