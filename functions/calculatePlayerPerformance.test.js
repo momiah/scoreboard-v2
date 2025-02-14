@@ -148,6 +148,108 @@ describe("calculatePlayerPerformance function", () => {
     await expect(updatedLoser1.highestLossStreak).toBe(4);
   });
 
+  const mockGame2 = {
+    date: "01-02-2025",
+    gameId: "01-02-2025-game-1",
+    gamescore: "21 - 1",
+    result: {
+      winner: { players: ["player3", "player4"], score: 21, team: "Team 2" },
+      loser: { players: ["player1", "player2"], score: 1, team: "Team 1" },
+    },
+  };
+
+  const mockPlayers2 = [
+    {
+      id: "player1",
+      XP: 1000,
+      prevGameXp: 200,
+      numberOfWins: 10,
+      numberOfLosses: 0,
+      numberOfGamesPlayed: 10,
+      resultLog: ["W", "W", "W", "W", "W", "W", "W", "W", "W", "W"],
+      currentStreak: { type: "W", count: 10 },
+      highestWinStreak: 10,
+      highestLossStreak: 0,
+      pointDifferenceLog: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20],
+      averagePointDifference: 20,
+      totalPoints: 200,
+      demonWin: 10,
+      winStreak3: 1,
+      winStreak5: 1,
+      winStreak7: 1,
+    },
+    {
+      id: "player2",
+      XP: 1000,
+      prevGameXp: 200,
+      numberOfWins: 10,
+      numberOfLosses: 0,
+      numberOfGamesPlayed: 10,
+      resultLog: ["W", "W", "W", "W", "W", "W", "W", "W", "W", "W"],
+      currentStreak: { type: "W", count: 10 },
+      highestWinStreak: 10,
+      highestLossStreak: 0,
+      pointDifferenceLog: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20],
+      averagePointDifference: 20,
+      totalPoints: 200,
+      demonWin: 10,
+      winStreak3: 1,
+      winStreak5: 1,
+      winStreak7: 1,
+    },
+    {
+      id: "player3",
+      XP: 100,
+      prevGameXp: -200,
+      numberOfWins: 0,
+      numberOfLosses: 10,
+      numberOfGamesPlayed: 3,
+      resultLog: ["L", "L", "L", "L", "L", "L", "L", "L", "L", "L"],
+      currentStreak: { type: "L", count: -10 },
+      highestWinStreak: 0,
+      highestLossStreak: 10,
+      pointDifferenceLog: [-20, -20, -20, -20, -20, -20, -20, -20, -20, -20],
+      averagePointDifference: -20,
+      totalPoints: 10,
+      demonWin: 0,
+      winStreak3: 0,
+      winStreak5: 0,
+      winStreak7: 0,
+    },
+    {
+      id: "player4",
+      XP: 100,
+      prevGameXp: -200,
+      numberOfWins: 0,
+      numberOfLosses: 10,
+      numberOfGamesPlayed: 3,
+      resultLog: ["L", "L", "L", "L", "L", "L", "L", "L", "L", "L"],
+      currentStreak: { type: "L", count: -10 },
+      highestWinStreak: 0,
+      highestLossStreak: 10,
+      pointDifferenceLog: [-20, -20, -20, -20, -20, -20, -20, -20, -20, -20],
+      averagePointDifference: -20,
+      totalPoints: 10,
+      demonWin: 0,
+      winStreak3: 0,
+      winStreak5: 0,
+      winStreak7: 0,
+    },
+  ];
+
+  it("should update XP for streaks and demonWin", async () => {
+    const playersCopy = JSON.parse(JSON.stringify(mockPlayers2));
+    const updatedPlayers = calculatePlayerPerformance(
+      mockGame2,
+      playersCopy,
+      "league123"
+    );
+
+    const updatedWinner1 = updatedPlayers.find((p) => p.id === "player3");
+
+    await expect(updatedWinner1.XP).toBe(240);
+  });
+
   //   it("should handle point difference log trimming to the last 10 entries", async () => {
   //     // Simulate a player with a full point difference log
   //     const playerWithFullLog = {

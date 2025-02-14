@@ -57,8 +57,8 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
   }
 
   const renderPlayer = ({ item: player, index }) => {
-    const totalPointsAndXP = player.XP + player.totalPoints;
-    const rankLevel = findRankIndex(totalPointsAndXP) + 1;
+    const playerXp = player.XP;
+    const rankLevel = findRankIndex(playerXp) + 1;
 
     return (
       <TableRow
@@ -95,10 +95,10 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
         </TableCell>
         <TableCell>
           <StatTitle>XP</StatTitle>
-          <Stat>{totalPointsAndXP.toFixed(0)}</Stat>
+          <Stat>{playerXp.toFixed(0)}</Stat>
         </TableCell>
         <TableCell>
-          <MedalDisplay xp={totalPointsAndXP.toFixed(0)} size={45} />
+          <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
           {/* </TableCell>
         <TableCell> */}
           <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
