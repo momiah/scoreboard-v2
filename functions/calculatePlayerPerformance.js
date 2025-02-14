@@ -1,17 +1,8 @@
 import { transformDate } from "./dateTransform";
 
 export const calculatePlayerPerformance = (game, playersToUpdate) => {
-  // const allPlayers = await retrievePlayers(leagueId);
-
   const date = transformDate(game.date);
 
-  // const playersToUpdate = allPlayers.filter((player) =>
-  //   game.result.winner.players
-  //     .concat(game.result.loser.players)
-  //     .includes(player.id)
-  // );
-
-  // Function to get player by ID
   const getPlayerById = (id) =>
     playersToUpdate.find((player) => player.id === id);
 
@@ -167,17 +158,7 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
     const xp = baseXP * multiplier;
     const demonWin = xp * 2;
 
-    console.log("demons", demonWin);
-
-    // **Apply demon multiplier only if the score difference is 10 or more**
-    // const demonMultiplier = scoreDifference >= 10 ? (xp * 2) / 2 : 0;
-
     const rankXp = (xp * rankMultiplier + demonWin) / 2;
-
-    // console.log("Winner Score:", winnerScore, "Loser Score:", loserScore);
-    // console.log("Score Difference:", scoreDifference);
-    // console.log("Demon Multiplier Applied:", demonMultiplier);
-    // console.log("Demon Penalty Applied:", demonPenalty);
 
     // Final XP calculation
     const finalXp = xp + rankXp;
@@ -221,29 +202,20 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
     loserScore,
     isWinner
   ) => {
-    // Initialize totalPointEfficiency if not already present
-    // let totalPointEfficiency = player.totalPointEfficiency || 0;
-
-    // Calculate the point difference and the percentage difference
     const pointDifference = winnerScore - loserScore;
 
-    // Make the point difference negative for losing players
     const adjustedPointDifference = isWinner
       ? pointDifference
       : -pointDifference;
 
-    // Initialize pointDifferenceLog if not already present
     if (!player.pointDifferenceLog) {
       player.pointDifferenceLog = [];
     }
 
-    // Add the adjusted point difference to the log
     player.pointDifferenceLog.push(adjustedPointDifference);
 
-    // Limit the log to the last 10 entries
     player.pointDifferenceLog = player.pointDifferenceLog.slice(-10);
 
-    // Calculate average point difference from the log
     const totalPointDifference = player.pointDifferenceLog.reduce(
       (sum, pd) => sum + pd,
       0
@@ -253,22 +225,6 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
     );
 
     player.averagePointDifference = averagePointDifference;
-
-    // const pointEfficiency = (pointDifference / winnerScore) * 100;
-
-    // // Accumulate the pointEfficiency to totalPointEfficiency
-    // totalPointEfficiency += pointEfficiency;
-
-    // // Update the player's totalPointEfficiency with the new value
-    // player.totalPointEfficiency = totalPointEfficiency;
-
-    // // Calculate point efficiency based on updated totalPointEfficiency
-    // player.pointEfficiency = totalPointEfficiency / player.numberOfGamesPlayed;
-
-    // Log for debugging
-    // console.log(
-    //   `Player: ${player.id}, Total Point Efficiency: ${totalPointEfficiency}, Point Efficiency: ${player.pointEfficiency}`
-    // );
   };
 
   // Update stats for winning players

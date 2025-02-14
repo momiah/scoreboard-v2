@@ -310,9 +310,6 @@ const UserProvider = ({ children }) => {
       // Final teams list to update in Firestore
       const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
 
-      // console.log("finalTeamsArray", finalTeamsArray);
-
-      // Update Firestore with the new teams array
       await updateDoc(leagueDocRef, { leagueTeams: finalTeamsArray });
 
       console.log("Teams updated successfully!");

@@ -5,6 +5,8 @@ export const calculateTeamPerformance = async (
 ) => {
   const allTeams = await retrieveTeams(leagueId);
 
+  // console.log("allTeams", JSON.stringify(allTeams, null, 2));
+
   // Helper function to normalize team keys
   const normalizeTeamKey = (key) => {
     return key.join("-").split("-").sort().join("-");
@@ -18,20 +20,63 @@ export const calculateTeamPerformance = async (
 
   // Helper function to retrieve teams by normalized keys
   const getTeamsByKeys = (teams, winnerKey, loserKey) => {
-    const winnerTeam = teams.find(
+    let winnerTeam = teams.find(
       (team) => normalizeTeamKey(team.team) === winnerKey
     );
-    const loserTeam = teams.find(
+    let loserTeam = teams.find(
       (team) => normalizeTeamKey(team.team) === loserKey
     );
     return [winnerTeam, loserTeam];
   };
 
-  const [winnerTeam, loserTeam] = getTeamsByKeys(
+  let [winnerTeam, loserTeam] = getTeamsByKeys(
     allTeams,
     winnerTeamKey,
     loserTeamKey
   );
+
+  if (!winnerTeam) {
+    winnerTeam = {
+      team: result.winner.players.slice().sort(), // Store sorted player IDs
+      teamKey: winnerTeamKey,
+      numberOfWins: 0,
+      numberOfLosses: 0,
+      numberOfGamesPlayed: 0,
+      resultLog: [],
+      pointDifferenceLog: [],
+      averagePointDifference: 0,
+      currentStreak: 0,
+      highestWinStreak: 0,
+      highestLossStreak: 0,
+      winStreak3: 0,
+      winStreak5: 0,
+      winStreak7: 0,
+      lossesTo: {},
+      rival: null,
+    };
+  }
+
+  // Create loser team if it doesn't exist
+  if (!loserTeam) {
+    loserTeam = {
+      team: result.loser.players.slice().sort(), // Store sorted player IDs
+      teamKey: loserTeamKey,
+      numberOfWins: 0,
+      numberOfLosses: 0,
+      numberOfGamesPlayed: 0,
+      resultLog: [],
+      pointDifferenceLog: [],
+      averagePointDifference: 0,
+      currentStreak: 0,
+      highestWinStreak: 0,
+      highestLossStreak: 0,
+      winStreak3: 0,
+      winStreak5: 0,
+      winStreak7: 0,
+      lossesTo: {},
+      rival: null,
+    };
+  }
 
   // Calculate point difference for this game
   const pointDifference = result.winner.score - result.loser.score;
@@ -50,6 +95,9 @@ export const calculateTeamPerformance = async (
     (key) => loserTeam.lossesTo[key] === maxLosses
   );
   loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
+
+  console.log("winnerTeam", JSON.stringify(winnerTeam, null, 2));
+  console.log("loserTeam", JSON.stringify(loserTeam, null, 2));
 
   // Return the updated teams
   return [winnerTeam, loserTeam];

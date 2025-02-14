@@ -142,22 +142,8 @@ const AddGameModal = ({
         return calculateWin(this.team1, this.team2);
       },
     };
-    // console.log("New game: ", JSON.stringify(newGame, null, 2));
 
     const allPlayers = await retrievePlayers(leagueId);
-    // try {
-    //   console.log("Checking game results for player:", "test1");
-    //   console.log("Winner players:", newGame.result.winner.players);
-    //   console.log("Loser players:", newGame.result.loser.players);
-    //   console.log(
-    //     "new game results",
-    //     newGame.result.winner.players
-    //       .concat(newGame.result.loser.players)
-    //       .includes("test1")
-    //   );
-    // } catch (error) {
-    //   console.error("Error while checking game results:", error);
-    // }
 
     const playersToUpdate = allPlayers.filter((player) =>
       newGame.result.winner.players
@@ -165,22 +151,22 @@ const AddGameModal = ({
         .includes(player.id)
     );
 
-    // console.log("Players to update: ", playersToUpdate);
-
     const playerPerformance = calculatePlayerPerformance(
       newGame,
       playersToUpdate
-      // setPreviousPlayerRecord,
-      // previousPlayerRecord
     );
 
     await updatePlayers(playerPerformance, leagueId);
+
+    // const allTeams = await retrieveTeams(leagueId);
 
     const teamsToUpdate = await calculateTeamPerformance(
       newGame,
       retrieveTeams,
       leagueId
     );
+
+    console.log("teamsToUpdate☎️", JSON.stringify(teamsToUpdate, null, 2));
 
     await updateTeams(teamsToUpdate, leagueId);
 

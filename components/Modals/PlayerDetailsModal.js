@@ -136,16 +136,16 @@ const PlayerDetails = ({
 
               <MedalContainer>
                 <MedalDisplay
-                  xp={selectedPlayer.XP + selectedPlayer.totalPoints}
+                  xp={selectedPlayer.XP}
                   size={screenAdjustedMedalSize}
                 />
                 <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
-                  {medalNames(selectedPlayer.XP + selectedPlayer.totalPoints)}
+                  {medalNames(selectedPlayer.XP)}
                 </Text>
               </MedalContainer>
             </PlayerDetail>
             <MedalProgress
-              xp={selectedPlayer.XP + selectedPlayer.totalPoints}
+              xp={selectedPlayer.XP}
               prevGameXp={selectedPlayer.prevGameXP}
             />
             <Divider />
