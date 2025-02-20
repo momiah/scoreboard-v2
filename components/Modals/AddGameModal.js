@@ -89,7 +89,6 @@ const AddGameModal = ({
     setSelectedPlayers((prev) => {
       const isPlayerSelected = Object.values(prev).flat().includes(player);
       if (isPlayerSelected) {
-        console.log(`${player} is already selected.`);
         return prev;
       }
 
@@ -107,7 +106,6 @@ const AddGameModal = ({
   };
 
   const handleAddGame = async () => {
-    console.log("Adding game...");
     // Check if both teams have selected players
     if (
       selectedPlayers.team1.every((player) => player === "") ||
@@ -165,8 +163,6 @@ const AddGameModal = ({
       retrieveTeams,
       leagueId
     );
-
-    console.log("teamsToUpdate☎️", JSON.stringify(teamsToUpdate, null, 2));
 
     await updateTeams(teamsToUpdate, leagueId);
 

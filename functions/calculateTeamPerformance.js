@@ -5,8 +5,6 @@ export const calculateTeamPerformance = async (
 ) => {
   const allTeams = await retrieveTeams(leagueId);
 
-  // console.log("allTeams", JSON.stringify(allTeams, null, 2));
-
   // Helper function to normalize team keys
   const normalizeTeamKey = (key) => {
     return key.join("-").split("-").sort().join("-");
@@ -95,9 +93,6 @@ export const calculateTeamPerformance = async (
     (key) => loserTeam.lossesTo[key] === maxLosses
   );
   loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
-
-  console.log("winnerTeam", JSON.stringify(winnerTeam, null, 2));
-  console.log("loserTeam", JSON.stringify(loserTeam, null, 2));
 
   // Return the updated teams
   return [winnerTeam, loserTeam];

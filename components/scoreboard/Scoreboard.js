@@ -28,7 +28,6 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
   const [newestGameId, setNewestGameId] = useState("");
   const [userRole, setUserRole] = useState(null);
   // const [previousPlayerRecord, setPreviousPlayerRecord] = useState([]);
-  // console.log("games from context🤔", JSON.stringify(games, null, 2));
 
   useEffect(() => {
     if (leagueGames?.length > 0) {
@@ -62,8 +61,6 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     fetchPlayers(leagueId);
     setModalVisible(true);
   };
-
-  // console.log("games", JSON.stringify(games, null, 2));
 
   async function getUserRole() {
     const role = await checkUserRole(leagueById);

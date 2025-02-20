@@ -54,9 +54,6 @@ const League = () => {
   const leagueParticipantsLength = leagueDetails?.leagueParticipants.length;
   const teams = leagueDetails?.leagueTeams;
 
-  // console.log("teams on League level", JSON.stringify(teams, null, 2));
-  // console.log("leagye teams length", teams.length);
-
   const leagueStatus = calculateLeagueStatus(leagueDetails);
 
   const renderComponent = () => {

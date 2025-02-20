@@ -98,29 +98,6 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // const retrievePlayers = async () => {
-  //   try {
-  //     const scoreboardCollectionRef = collection(db, "scoreboard");
-  //     const playersCollectionRef = collection(
-  //       scoreboardCollectionRef,
-  //       "players",
-  //       "players"
-  //     );
-
-  //     const querySnapshot = await getDocs(playersCollectionRef);
-
-  //     const players = querySnapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       ...doc.data(),
-  //     }));
-
-  //     return players;
-  //   } catch (error) {
-  //     console.error("Error retrieving players:", error);
-  //     return [];
-  //   }
-  // };
-
   async function checkUserRole(leagueData) {
     try {
       // Retrieve userId from AsyncStorage
@@ -196,41 +173,63 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // const registerPlayer = async (player) => {
-  //   if (players.some((thePlayer) => thePlayer.id === player)) {
-  //     handleShowPopup("Player already exists!");
-  //     return;
-  //   }
+  const updateUserProfileDetail = async (participant) => {
+    try {
+      const userRef = doc(db, "users", participant.userId);
+      const userDoc = await getDoc(userRef);
+      // if (!userDoc.exists()) {
+      //   console.log(`User doc for ${participant.userId} not found.`);
+      //   return;
+      // }
+      const userData = userDoc.data();
+      const currentProfile = userData.profileDetail || {};
 
-  //   if (player.length > 10) {
-  //     handleShowPopup("Player name cannot be more than 10 characters!");
-  //     return;
-  //   }
+      const updatedProfile = {
+        // For highestLossStreak and highestWinStreak, only update if new value is higher
+        highestLossStreak: Math.max(
+          currentProfile.highestLossStreak || 0,
+          participant.highestLossStreak || 0
+        ),
+        highestWinStreak: Math.max(
+          currentProfile.highestWinStreak || 0,
+          participant.highestWinStreak || 0
+        ),
+        // For lastActive, replace with the new value
+        lastActive: participant.lastActive || currentProfile.lastActive || "",
+        // For numeric values, add the new result to the existing value
+        totalPoints:
+          (currentProfile.totalPoints || 0) + (participant.totalPoints || 0),
+        winStreak3:
+          (currentProfile.winStreak3 || 0) + (participant.winStreak3 || 0),
+        numberOfWins:
+          (currentProfile.numberOfWins || 0) + (participant.numberOfWins || 0),
+        winStreak5:
+          (currentProfile.winStreak5 || 0) + (participant.winStreak5 || 0),
+        winStreak7:
+          (currentProfile.winStreak7 || 0) + (participant.winStreak7 || 0),
+        XP: (currentProfile.XP || 0) + (participant.XP || 0),
+        numberOfGamesPlayed:
+          (currentProfile.numberOfGamesPlayed || 0) +
+          (participant.numberOfGamesPlayed || 0),
+        winPercentage:
+          (currentProfile.winPercentage || 0) +
+          (participant.winPercentage || 0),
+        demonWin: (currentProfile.demonWin || 0) + (participant.demonWin || 0),
+      };
 
-  //   if (player.length < 3) {
-  //     handleShowPopup("Player name must be more than 3 characters!");
-  //     return;
-  //   }
+      // console.log(
+      //   `Updating profileDetail for user ${participant.userId}:`,
+      //   JSON.stringify(updatedProfile, null, 2)
+      // );
 
-  //   try {
-  //     const scoreboardCollectionRef = collection(db, "scoreboard");
-  //     const playersCollectionRef = collection(
-  //       scoreboardCollectionRef,
-  //       "players",
-  //       "players"
-  //     );
-
-  //     const playerDocRef = doc(playersCollectionRef, player);
-  //     await setDoc(playerDocRef, newPlayer); // Write the data directly
-
-  //     handleShowPopup("Player saved successfully!");
-  //     await fetchPlayers();
-  //     Keyboard.dismiss();
-  //   } catch (error) {
-  //     console.error("Error saving player data:", error);
-  //     handleShowPopup("Error saving player data");
-  //   }
-  // };
+      await updateDoc(userRef, { profileDetail: updatedProfile });
+    } catch (error) {
+      console.error(
+        `Error updating profileDetail for user ${participant.userId}:`,
+        error
+      );
+    }
+  };
 
   const updatePlayers = async (updatedPlayers, leagueId) => {
     if (updatedPlayers.length === 0) {
@@ -263,6 +262,12 @@ const UserProvider = ({ children }) => {
         leagueParticipants: updatedParticipants,
       });
 
+      await Promise.all(
+        updatedParticipants.map((participant) =>
+          updateUserProfileDetail(participant)
+        )
+      );
+
       // Optionally fetch the updated players to refresh the UI
       await fetchPlayers(leagueId);
       handleShowPopup("Players updated successfully!");
@@ -277,8 +282,6 @@ const UserProvider = ({ children }) => {
       console.error("No teams to update!");
       return;
     }
-
-    console.log("updatedTeams", JSON.stringify(updatedTeams, null, 2));
 
     try {
       const leagueDocRef = doc(db, "leagues", leagueId);
@@ -311,8 +314,6 @@ const UserProvider = ({ children }) => {
       const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
 
       await updateDoc(leagueDocRef, { leagueTeams: finalTeamsArray });
-
-      console.log("Teams updated successfully!");
     } catch (error) {
       console.error("Error updating team data:", error);
     }
@@ -377,7 +378,6 @@ const UserProvider = ({ children }) => {
 
       // Use the player name (or ID) as the document ID
       const playerDocRef = doc(playersCollectionRef, "Abdul");
-      console.log("playerDocRef", playerDocRef);
       await setDoc(playerDocRef, newPlayer); // Write the data directly
       handleShowPopup("Player reset successfully!");
     } catch (error) {
@@ -428,11 +428,68 @@ const UserProvider = ({ children }) => {
         },
       });
 
-      console.log(
-        `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
-      );
+      // console.log(
+      //   `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
+      // );
     } catch (error) {
       console.error(`Error updating stats for user ${userId}:`, error);
+    }
+  };
+
+  const calculateParticipantTotals = async () => {
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) {
+        return;
+      }
+
+      const leaguesRef = collection(db, "leagues");
+      const querySnapshot = await getDocs(leaguesRef);
+
+      const userLeagues = querySnapshot.docs
+        .map((doc) => doc.data())
+        .filter((league) =>
+          league.leagueParticipants.some(
+            (participant) => participant.userId === userId
+          )
+        );
+
+      const totals = {
+        userId: userId,
+        numberOfLosses: 0,
+        XP: 0,
+        winStreak5: 0,
+        winStreak7: 0,
+        numberOfGamesPlayed: 0,
+        // prevGameXP: 0,
+        totalPoints: 0,
+        demonWin: 0,
+        winStreak3: 0,
+        highestLossStreak: 0,
+        numberOfWins: 0,
+        highestWinStreak: 0,
+        winPercentage: 0,
+        // totalPointEfficiency: 0,
+      };
+
+      userLeagues.forEach((league) => {
+        const participant = league.leagueParticipants.find(
+          (p) => p.userId === userId
+        );
+
+        if (participant) {
+          Object.keys(totals).forEach((key) => {
+            if (key === "userId") return;
+            if (participant[key] !== undefined) {
+              totals[key] += participant[key];
+            }
+          });
+        }
+      });
+
+      return totals;
+    } catch (error) {
+      console.error("Error calculating totals:", error);
     }
   };
 
@@ -449,6 +506,7 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        calculateParticipantTotals,
         retrieveTeams,
         updateTeams,
         updatePlacementStats,

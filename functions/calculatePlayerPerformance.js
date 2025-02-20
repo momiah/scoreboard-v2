@@ -121,7 +121,6 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
 
     // Calculate difference multiplier safely
     const differenceMultiplier = combinedLoserXp / combinedWinnerXp;
-    console.log("differenceMultiplier", differenceMultiplier);
 
     // Cap the rank multiplier between 0 and 10
     const rankMultiplier =
@@ -162,7 +161,6 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
 
     // Final XP calculation
     const finalXp = xp + rankXp;
-    console.log("Final XP:", finalXp);
 
     // Update the player's XP
     player.XP += finalXp;
@@ -230,6 +228,19 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
   // Update stats for winning players
   game.result.winner.players.forEach((winnerId) => {
     const player = playersToUpdate.find((p) => p.id === winnerId);
+    const winnerXp = updateXp(
+      player,
+      player.currentStreak.type,
+      player.currentStreak.count,
+      combinedWinnerXp,
+      combinedLoserXp,
+      game.result.winner.score,
+      winnerScore,
+      loserScore
+    );
+
+    console.log("winnerXp😄", JSON.stringify(winnerXp, null, 2));
+
     if (player) {
       updatePlayerStats(player, true);
       updatePlayerTotalPoints(player, game.result.winner.score);
@@ -258,6 +269,19 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
   // Update stats for losing players
   game.result.loser.players.forEach((loserId) => {
     const player = playersToUpdate.find((p) => p.id === loserId);
+    const loserXp = updateXp(
+      player,
+      player.currentStreak.type,
+      player.currentStreak.count,
+      combinedWinnerXp,
+      combinedLoserXp,
+      game.result.winner.score,
+      winnerScore,
+      loserScore
+    );
+
+    console.log("Loser XP🤨:", JSON.stringify(loserXp, null, 2));
+
     if (player) {
       updatePlayerStats(player, false);
       updatePlayerTotalPoints(player, game.result.loser.score);

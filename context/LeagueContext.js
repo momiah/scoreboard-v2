@@ -139,8 +139,6 @@ const LeagueProvider = ({ children }) => {
         ...prev,
         leagueDescription: newDescription,
       }));
-
-      console.log("League description updated successfully!");
     } catch (error) {
       console.error("Error updating league description:", error);
       Alert.alert("Error", "Unable to update the league description.");
@@ -148,14 +146,12 @@ const LeagueProvider = ({ children }) => {
   };
 
   const addLeagues = async (leagueData) => {
-    // console.log("League Entry:", leagueData);
     const leagueId = generateLeagueId(leagueData);
     try {
       await setDoc(doc(db, "leagues", leagueId), {
         ...leagueData,
       });
 
-      console.log("League added successfully!");
       fetchLeagues();
       setLeagueIdForDetail(leagueId);
       setTimeout(() => {
@@ -187,70 +183,6 @@ const LeagueProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error fetching league:", error);
-    }
-  };
-
-  const calculateParticipantTotals = async () => {
-    try {
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId) {
-        return;
-      }
-
-      const leaguesRef = collection(db, "leagues");
-      const querySnapshot = await getDocs(leaguesRef);
-
-      // Filter leagues where the user is a participant
-      const userLeagues = querySnapshot.docs
-        .map((doc) => doc.data())
-        .filter((league) =>
-          league.leagueParticipants.some(
-            (participant) => participant.userId === userId
-          )
-        );
-
-      // Initialize a totals object
-      const totals = {
-        userId: userId,
-        numberOfLosses: 0,
-        XP: 0,
-        winStreak5: 0,
-        winStreak7: 0,
-        numberOfGamesPlayed: 0,
-        prevGameXP: 0,
-        totalPoints: 0,
-        demonWin: 0,
-        winStreak3: 0,
-        highestLossStreak: 0,
-        numberOfWins: 0,
-        highestWinStreak: 0,
-        winPercentage: 0,
-        totalPointEfficiency: 0,
-      };
-
-      // Iterate over each league and add values for the matching participant
-      userLeagues.forEach((league) => {
-        const participant = league.leagueParticipants.find(
-          (p) => p.userId === userId
-        );
-        if (participant) {
-          Object.keys(totals).forEach((key) => {
-            if (participant[key] !== undefined) {
-              totals[key] += participant[key];
-            }
-          });
-        }
-      });
-
-      // Adjust fields if needed (e.g., winPercentage might be better as an average)
-      // if (userLeagues.length > 0) {
-      //   totals.winPercentage /= userLeagues.length;
-      // }
-
-      // console.log("Totals:", JSON.stringify(totals, null, 2));
-      return totals;
-    } catch (error) {
-      console.error("Error calculating totals:", error);
     }
   };
 
@@ -305,8 +237,6 @@ const LeagueProvider = ({ children }) => {
           });
         }
       }
-
-      console.log("Users collection updated successfully.");
     } catch (error) {
       console.error("Error updating users collection:", error);
     }
@@ -319,7 +249,6 @@ const LeagueProvider = ({ children }) => {
         showMockData,
         fetchLeagueById,
         leagueById,
-        calculateParticipantTotals,
         getAllUsers,
         addLeagues,
         leagues,

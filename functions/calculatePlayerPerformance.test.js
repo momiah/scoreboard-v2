@@ -115,8 +115,6 @@ describe("calculatePlayerPerformance function", () => {
       "league123"
     );
 
-    console.log("updatedPlayers test", JSON.stringify(updatedPlayers, null, 2));
-
     const updatedLoser1 = updatedPlayers.find((p) => p.id === "player3");
 
     await expect(updatedLoser1.numberOfLosses).toBe(4);

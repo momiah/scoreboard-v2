@@ -13,9 +13,7 @@ import SubHeader from "../../../components/SubHeader";
 import VerticalLeagueCarousel from "../../../components/Leagues/VerticalLeagueCarousel";
 
 const Leagues = () => {
-  const handleIconPress = () => {
-    console.log("Icon Pressed!");
-  };
+  const handleIconPress = () => {};
 
   return (
     <LeagueContainer>
