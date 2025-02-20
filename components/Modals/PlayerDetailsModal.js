@@ -132,6 +132,15 @@ const PlayerDetails = ({
                 >
                   Last Active {selectedPlayer.lastActive}
                 </Text>
+                <Text
+                  style={{
+                    color: "#aaa",
+                    fontSize: screenWidth <= 400 ? 12 : 14,
+                    marginTop: 5,
+                  }}
+                >
+                  Go to profile
+                </Text>
               </View>
 
               <MedalContainer>
