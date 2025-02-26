@@ -173,61 +173,35 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const updateUserProfileDetail = async (participant) => {
+  const getAllUsers = async () => {
     try {
-      const userRef = doc(db, "users", participant.userId);
-      const userDoc = await getDoc(userRef);
-      // if (!userDoc.exists()) {
-      //   console.log(`User doc for ${participant.userId} not found.`);
-      //   return;
-      // }
-      const userData = userDoc.data();
-      const currentProfile = userData.profileDetail || {};
-
-      const updatedProfile = {
-        // For highestLossStreak and highestWinStreak, only update if new value is higher
-        highestLossStreak: Math.max(
-          currentProfile.highestLossStreak || 0,
-          participant.highestLossStreak || 0
-        ),
-        highestWinStreak: Math.max(
-          currentProfile.highestWinStreak || 0,
-          participant.highestWinStreak || 0
-        ),
-        // For lastActive, replace with the new value
-        lastActive: participant.lastActive || currentProfile.lastActive || "",
-        // For numeric values, add the new result to the existing value
-        totalPoints:
-          (currentProfile.totalPoints || 0) + (participant.totalPoints || 0),
-        winStreak3:
-          (currentProfile.winStreak3 || 0) + (participant.winStreak3 || 0),
-        numberOfWins:
-          (currentProfile.numberOfWins || 0) + (participant.numberOfWins || 0),
-        winStreak5:
-          (currentProfile.winStreak5 || 0) + (participant.winStreak5 || 0),
-        winStreak7:
-          (currentProfile.winStreak7 || 0) + (participant.winStreak7 || 0),
-        XP: (currentProfile.XP || 0) + (participant.XP || 0),
-        numberOfGamesPlayed:
-          (currentProfile.numberOfGamesPlayed || 0) +
-          (participant.numberOfGamesPlayed || 0),
-        winPercentage:
-          (currentProfile.winPercentage || 0) +
-          (participant.winPercentage || 0),
-        demonWin: (currentProfile.demonWin || 0) + (participant.demonWin || 0),
-      };
-
-      // console.log(
-      //   `Updating profileDetail for user ${participant.userId}:`,
-      //   JSON.stringify(updatedProfile, null, 2)
-      // );
-
-      await updateDoc(userRef, { profileDetail: updatedProfile });
+      const usersRef = collection(db, "users");
+      const querySnapshot = await getDocs(usersRef);
+      const users = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return users;
     } catch (error) {
-      console.error(
-        `Error updating profileDetail for user ${participant.userId}:`,
-        error
-      );
+      console.error("Error fetching users:", error);
+      return [];
+    }
+  };
+
+  const updateUsers = async (usersToUpdate) => {
+    try {
+      const updatePromises = usersToUpdate.map(async (user) => {
+        const userRef = doc(db, "users", user.id);
+
+        await updateDoc(userRef, {
+          profileDetail: user.profileDetail,
+        });
+      });
+
+      await Promise.all(updatePromises);
+      console.log("All users updated successfully.");
+    } catch (error) {
+      console.error("Error updating users:", error);
     }
   };
 
@@ -261,12 +235,6 @@ const UserProvider = ({ children }) => {
       await updateDoc(leagueDocRef, {
         leagueParticipants: updatedParticipants,
       });
-
-      await Promise.all(
-        updatedParticipants.map((participant) =>
-          updateUserProfileDetail(participant)
-        )
-      );
 
       // Optionally fetch the updated players to refresh the UI
       await fetchPlayers(leagueId);
@@ -436,62 +404,62 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const calculateParticipantTotals = async () => {
-    try {
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId) {
-        return;
-      }
+  // const calculateParticipantTotals = async () => {
+  //   try {
+  //     const userId = await AsyncStorage.getItem("userId");
+  //     if (!userId) {
+  //       return;
+  //     }
 
-      const leaguesRef = collection(db, "leagues");
-      const querySnapshot = await getDocs(leaguesRef);
+  //     const leaguesRef = collection(db, "leagues");
+  //     const querySnapshot = await getDocs(leaguesRef);
 
-      const userLeagues = querySnapshot.docs
-        .map((doc) => doc.data())
-        .filter((league) =>
-          league.leagueParticipants.some(
-            (participant) => participant.userId === userId
-          )
-        );
+  //     const userLeagues = querySnapshot.docs
+  //       .map((doc) => doc.data())
+  //       .filter((league) =>
+  //         league.leagueParticipants.some(
+  //           (participant) => participant.userId === userId
+  //         )
+  //       );
 
-      const totals = {
-        userId: userId,
-        numberOfLosses: 0,
-        XP: 0,
-        winStreak5: 0,
-        winStreak7: 0,
-        numberOfGamesPlayed: 0,
-        // prevGameXP: 0,
-        totalPoints: 0,
-        demonWin: 0,
-        winStreak3: 0,
-        highestLossStreak: 0,
-        numberOfWins: 0,
-        highestWinStreak: 0,
-        winPercentage: 0,
-        // totalPointEfficiency: 0,
-      };
+  //     const totals = {
+  //       userId: userId,
+  //       numberOfLosses: 0,
+  //       XP: 0,
+  //       winStreak5: 0,
+  //       winStreak7: 0,
+  //       numberOfGamesPlayed: 0,
+  //       // prevGameXP: 0,
+  //       totalPoints: 0,
+  //       demonWin: 0,
+  //       winStreak3: 0,
+  //       highestLossStreak: 0,
+  //       numberOfWins: 0,
+  //       highestWinStreak: 0,
+  //       winPercentage: 0,
+  //       // totalPointEfficiency: 0,
+  //     };
 
-      userLeagues.forEach((league) => {
-        const participant = league.leagueParticipants.find(
-          (p) => p.userId === userId
-        );
+  //     userLeagues.forEach((league) => {
+  //       const participant = league.leagueParticipants.find(
+  //         (p) => p.userId === userId
+  //       );
 
-        if (participant) {
-          Object.keys(totals).forEach((key) => {
-            if (key === "userId") return;
-            if (participant[key] !== undefined) {
-              totals[key] += participant[key];
-            }
-          });
-        }
-      });
+  //       if (participant) {
+  //         Object.keys(totals).forEach((key) => {
+  //           if (key === "userId") return;
+  //           if (participant[key] !== undefined) {
+  //             totals[key] += participant[key];
+  //           }
+  //         });
+  //       }
+  //     });
 
-      return totals;
-    } catch (error) {
-      console.error("Error calculating totals:", error);
-    }
-  };
+  //     return totals;
+  //   } catch (error) {
+  //     console.error("Error calculating totals:", error);
+  //   }
+  // };
 
   return (
     <UserContext.Provider
@@ -506,7 +474,9 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
-        calculateParticipantTotals,
+        updateUsers,
+        getAllUsers,
+        // calculateParticipantTotals,
         retrieveTeams,
         updateTeams,
         updatePlacementStats,

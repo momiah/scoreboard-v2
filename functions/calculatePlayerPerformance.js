@@ -1,6 +1,11 @@
+import { use } from "react";
 import { transformDate } from "./dateTransform";
 
-export const calculatePlayerPerformance = (game, playersToUpdate) => {
+export const calculatePlayerPerformance = (
+  game,
+  playersToUpdate,
+  usersToUpdate
+) => {
   const date = transformDate(game.date);
 
   const getPlayerById = (id) =>
@@ -31,23 +36,27 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
     0
   );
 
-  const updatePlayerStats = (player, isWinner) => {
+  const updatePlayerStats = (player, isWinner, user) => {
     player.numberOfGamesPlayed += 1;
+    user.numberOfGamesPlayed += 1;
 
     if (isWinner) {
       player.numberOfWins += 1;
+      user.numberOfWins += 1;
     } else {
       player.numberOfLosses += 1;
+      user.numberOfLosses += 1;
     }
 
     // Calculate win percentage if needed
     player.winPercentage =
       (player.numberOfWins / player.numberOfGamesPlayed) * 100;
+    user.winPercentage = (user.numberOfWins / user.numberOfGamesPlayed) * 100;
 
-    return player;
+    return { player, user };
   };
 
-  const updatePlayerResultLogAndStreak = (player, isWinner) => {
+  const updatePlayerResultLogAndStreak = (player, isWinner, user) => {
     const currentResult = isWinner ? "W" : "L";
     player.resultLog.push(currentResult);
 
@@ -102,11 +111,19 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
     player.winStreak5 = winStreak5;
     player.winStreak7 = winStreak7;
 
-    return player;
+    // Update the user's stats
+    user.highestWinStreak = highestWinStreak;
+    user.highestLossStreak = Math.abs(highestLossStreak);
+    user.winStreak3 = winStreak3;
+    user.winStreak5 = winStreak5;
+    user.winStreak7 = winStreak7;
+
+    return { player, user };
   };
 
   const updateXp = (
     player,
+    user,
     streakType,
     streakCount,
     combinedWinnerXp,
@@ -164,6 +181,7 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
 
     // Update the player's XP
     player.XP += finalXp;
+    user.XP += finalXp;
     player.prevGameXP = finalXp;
 
     // Ensure the player's XP doesn't drop below 10
@@ -171,34 +189,45 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
       player.XP = 10;
     }
 
-    return player;
+    if (user.XP < 10) {
+      user.XP = 10;
+    }
+
+    return { player, user };
   };
 
-  const updatePlayerTotalPoints = (player, points) => {
+  const updatePlayerTotalPoints = (player, points, user) => {
     player.totalPoints += points;
-    return player;
+    user.totalPoints += points;
+    return { player, user };
   };
 
-  const updateDemonWin = (player, winnerGameScore, loserGameScore) => {
+  const updateDemonWin = (player, winnerGameScore, loserGameScore, user) => {
     let demonWin = player.demonWin || 0;
+    let userDemonWin = user.demonWin || 0;
 
     if (winnerGameScore - loserGameScore >= 10) {
       demonWin += 1;
+      userDemonWin += 1;
       player.demonWin = demonWin;
+      user.demonWin = userDemonWin;
     }
-    return player;
+    return { player, user };
   };
 
-  const updateLastActive = (player, gameDate) => {
+  const updateLastActive = (player, gameDate, user) => {
     player.lastActive = gameDate;
-    return player;
+    user.lastActive = gameDate;
+
+    return { player, user };
   };
 
   const calculatePointDifference = (
     player,
     winnerScore,
     loserScore,
-    isWinner
+    isWinner,
+    user
   ) => {
     const pointDifference = winnerScore - loserScore;
 
@@ -210,16 +239,29 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
       player.pointDifferenceLog = [];
     }
 
+    console.log("user in calculatePointDifference", user);
+
+    if (!player.totalPointDifference) {
+      player.totalPointDifference = 0;
+    }
+
+    if (!user.totalPointDifference) {
+      user.totalPointDifference = 0;
+    }
+
+    player.totalPointDifference += adjustedPointDifference;
+    user.totalPointDifference += adjustedPointDifference;
+
     player.pointDifferenceLog.push(adjustedPointDifference);
 
     player.pointDifferenceLog = player.pointDifferenceLog.slice(-10);
 
-    const totalPointDifference = player.pointDifferenceLog.reduce(
+    const tenGamesPointDifference = player.pointDifferenceLog.reduce(
       (sum, pd) => sum + pd,
       0
     );
     const averagePointDifference = Math.round(
-      totalPointDifference / player.pointDifferenceLog.length
+      tenGamesPointDifference / player.pointDifferenceLog.length
     );
 
     player.averagePointDifference = averagePointDifference;
@@ -228,25 +270,21 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
   // Update stats for winning players
   game.result.winner.players.forEach((winnerId) => {
     const player = playersToUpdate.find((p) => p.id === winnerId);
-    const winnerXp = updateXp(
-      player,
-      player.currentStreak.type,
-      player.currentStreak.count,
-      combinedWinnerXp,
-      combinedLoserXp,
-      game.result.winner.score,
-      winnerScore,
-      loserScore
-    );
+    const user = usersToUpdate.find((u) => u.userId === player.userId);
 
-    console.log("winnerXp😄", JSON.stringify(winnerXp, null, 2));
+    // console.log("user to be updated for a win", user);
 
-    if (player) {
-      updatePlayerStats(player, true);
-      updatePlayerTotalPoints(player, game.result.winner.score);
-      updatePlayerResultLogAndStreak(player, true);
+    if (player && user) {
+      updatePlayerStats(player, true, user.profileDetail);
+      updatePlayerTotalPoints(
+        player,
+        game.result.winner.score,
+        user.profileDetail
+      );
+      updatePlayerResultLogAndStreak(player, true, user.profileDetail);
       updateXp(
         player,
+        user.profileDetail,
         player.currentStreak.type,
         player.currentStreak.count,
         combinedWinnerXp,
@@ -255,13 +293,19 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
         winnerScore,
         loserScore
       );
-      updateDemonWin(player, game.result.winner.score, game.result.loser.score);
-      updateLastActive(player, date);
+      updateDemonWin(
+        player,
+        game.result.winner.score,
+        game.result.loser.score,
+        user.profileDetail
+      );
+      updateLastActive(player, date, user.profileDetail);
       calculatePointDifference(
         player,
         game.result.winner.score,
         game.result.loser.score,
-        true
+        true,
+        user.profileDetail
       );
     }
   });
@@ -269,25 +313,21 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
   // Update stats for losing players
   game.result.loser.players.forEach((loserId) => {
     const player = playersToUpdate.find((p) => p.id === loserId);
-    const loserXp = updateXp(
-      player,
-      player.currentStreak.type,
-      player.currentStreak.count,
-      combinedWinnerXp,
-      combinedLoserXp,
-      game.result.winner.score,
-      winnerScore,
-      loserScore
-    );
+    const user = usersToUpdate.find((u) => u.userId === player.userId);
 
-    console.log("Loser XP🤨:", JSON.stringify(loserXp, null, 2));
+    // console.log("user to be updated for a loss", user);
 
-    if (player) {
-      updatePlayerStats(player, false);
-      updatePlayerTotalPoints(player, game.result.loser.score);
-      updatePlayerResultLogAndStreak(player, false);
+    if (player && user) {
+      updatePlayerStats(player, false, user.profileDetail);
+      updatePlayerTotalPoints(
+        player,
+        game.result.loser.score,
+        user.profileDetail
+      );
+      updatePlayerResultLogAndStreak(player, false, user.profileDetail);
       updateXp(
         player,
+        user.profileDetail,
         player.currentStreak.type,
         player.currentStreak.count,
         combinedWinnerXp,
@@ -295,14 +335,15 @@ export const calculatePlayerPerformance = (game, playersToUpdate) => {
         winnerScore,
         loserScore
       );
-      updateLastActive(player, date);
+      updateLastActive(player, date, user.profileDetail);
       calculatePointDifference(
         player,
         game.result.winner.score,
-        game.result.loser.score
+        game.result.loser.score,
+        false,
+        user.profileDetail
       );
     }
   });
-
-  return playersToUpdate;
+  return { playersToUpdate, usersToUpdate };
 };

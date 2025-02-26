@@ -39,8 +39,14 @@ const AddGameModal = ({
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
-  const { retrievePlayers, updatePlayers, updateTeams, retrieveTeams } =
-    useContext(UserContext);
+  const {
+    retrievePlayers,
+    updatePlayers,
+    updateTeams,
+    retrieveTeams,
+    getAllUsers,
+    updateUsers,
+  } = useContext(UserContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState({
@@ -142,6 +148,9 @@ const AddGameModal = ({
     };
 
     const allPlayers = await retrievePlayers(leagueId);
+    const allUsers = await getAllUsers();
+
+    // console.log("allUsers", JSON.stringify(allUsers, null, 2));
 
     const playersToUpdate = allPlayers.filter((player) =>
       newGame.result.winner.players
@@ -149,12 +158,29 @@ const AddGameModal = ({
         .includes(player.id)
     );
 
-    const playerPerformance = calculatePlayerPerformance(
-      newGame,
+    // console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
+
+    const getUsersFromPlayersToUpdate = (allUsers, playersToUpdate) => {
+      // Extract the userIds from the playersToUpdate array
+      const playerUserIds = playersToUpdate.map((player) => player.userId);
+
+      // Filter allUsers to include only those users whose userId is in the playersToUpdate list
+      return allUsers.filter((user) => playerUserIds.includes(user.userId));
+    };
+
+    const usersToUpdate = getUsersFromPlayersToUpdate(
+      allUsers,
       playersToUpdate
     );
 
-    await updatePlayers(playerPerformance, leagueId);
+    const playerPerformance = calculatePlayerPerformance(
+      newGame,
+      playersToUpdate,
+      usersToUpdate
+    );
+
+    await updatePlayers(playerPerformance.playersToUpdate, leagueId);
+    await updateUsers(playerPerformance.usersToUpdate);
 
     // const allTeams = await retrieveTeams(leagueId);
 
