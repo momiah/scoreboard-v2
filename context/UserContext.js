@@ -7,6 +7,9 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  query,
+  where,
+  getCountFromServer,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import moment from "moment";
@@ -404,6 +407,24 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const getGlobalRank = async (userId) => {
+    // Fetch the current user's profile to get their XP
+    const userProfile = await getUserById(userId);
+    const currentXP = userProfile?.profileDetail?.XP || 0;
+
+    // Create a query to count all users with XP greater than currentXP
+    const q = query(
+      collection(db, "users"),
+      where("profileDetail.XP", ">", currentXP)
+    );
+
+    const snapshot = await getCountFromServer(q);
+    const count = snapshot.data().count;
+
+    // The rank is count + 1 (if 5 users have higher XP, then rank is 6)
+    return count + 1;
+  };
+
   // const calculateParticipantTotals = async () => {
   //   try {
   //     const userId = await AsyncStorage.getItem("userId");
@@ -474,6 +495,7 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        getGlobalRank,
         updateUsers,
         getAllUsers,
         // calculateParticipantTotals,

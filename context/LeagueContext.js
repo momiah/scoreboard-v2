@@ -186,61 +186,6 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const getAllUsers = async () => {
-    try {
-      // Reference the 'users' collection
-      const usersRef = collection(db, "users");
-      const querySnapshot = await getDocs(usersRef);
-
-      // Default profileDetail object
-      const defaultProfileDetail = {
-        winStreak3: 0,
-        highestLossStreak: 0,
-        pointEfficiency: 0,
-        XP: 10,
-        winStreak7: 0,
-        numberOfLosses: 0,
-        demonWin: 0,
-        totalPoints: 0,
-        winPercentage: 0,
-        currentStreak: {
-          type: null,
-          count: 0,
-        },
-        lastActive: "",
-        totalPointEfficiency: 0,
-        resultLog: [],
-        numberOfWins: 0,
-        numberOfGamesPlayed: 0,
-        highestWinStreak: 0,
-        prevGameXP: 0,
-        winStreak5: 0,
-        memberSince: "Dec 2024",
-      };
-
-      // Iterate over all users
-      for (const docSnapshot of querySnapshot.docs) {
-        const userData = docSnapshot.data();
-        const userRef = doc(db, "users", docSnapshot.id);
-
-        // Check if profile_detail exists and rename to profileDetail
-        if (userData.profile_detail) {
-          await updateDoc(userRef, {
-            profileDetail: userData.profile_detail, // Rename field
-          });
-        }
-
-        // If profileDetail doesn't exist, add the default profileDetail object
-        if (!userData.profileDetail && !userData.profile_detail) {
-          await updateDoc(userRef, {
-            profileDetail: defaultProfileDetail,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error updating users collection:", error);
-    }
-  };
   return (
     <LeagueContext.Provider
       value={{
@@ -249,7 +194,6 @@ const LeagueProvider = ({ children }) => {
         showMockData,
         fetchLeagueById,
         leagueById,
-        getAllUsers,
         addLeagues,
         leagues,
         fetchLeagues,

@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { View, Text, Modal } from "react-native";
+import { View, Text, Modal, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import MedalDisplay from "../performance/MedalDisplay";
@@ -10,6 +10,8 @@ import { Dimensions } from "react-native";
 import ResultLog from "../performance/ResultLog";
 import { GameContext } from "../../context/GameContext";
 import { BlurView } from "expo-blur";
+import { useNavigation } from "@react-navigation/native";
+import PerformanceStats from "../performance/PerformanceStats";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -38,6 +40,7 @@ const PlayerDetails = ({
   setShowPlayerDetails,
   selectedPlayer,
 }) => {
+  const navigation = useNavigation();
   const { medalNames } = useContext(GameContext);
   const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
 
@@ -132,15 +135,25 @@ const PlayerDetails = ({
                 >
                   Last Active {selectedPlayer.lastActive}
                 </Text>
-                <Text
-                  style={{
-                    color: "#aaa",
-                    fontSize: screenWidth <= 400 ? 12 : 14,
-                    marginTop: 5,
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowPlayerDetails(false); // Close the modal
+                    // Navigate to the Profile tab, passing the selected user's ID
+                    navigation.navigate("Profile", {
+                      userId: selectedPlayer.userId,
+                    });
                   }}
                 >
-                  Go to profile
-                </Text>
+                  <Text
+                    style={{
+                      color: "#aaa",
+                      fontSize: screenWidth <= 400 ? 12 : 14,
+                      marginTop: 5,
+                    }}
+                  >
+                    Go to profile
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <MedalContainer>
@@ -166,17 +179,10 @@ const PlayerDetails = ({
               winStreak7={selectedPlayer.winStreak7}
             />
 
-            {/* Player Stats */}
-            <PlayerStat>
-              {statData.map((data, index) => {
-                return (
-                  <TableCell key={index}>
-                    <StatTitle>{data.statTitle}</StatTitle>
-                    {data.stat}
-                  </TableCell>
-                );
-              })}
-            </PlayerStat>
+            <PerformanceStats
+              statData={statData}
+              selectedPlayer={selectedPlayer}
+            />
           </ModalContent>
         </ModalContainer>
       </Modal>

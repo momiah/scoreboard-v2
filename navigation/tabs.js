@@ -18,17 +18,17 @@ const Stack = createStackNavigator();
 // Home Stack
 const HomeStack = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="HomeMain">
-
-   
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName="HomeMain"
+    >
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
       <Stack.Screen name="League" component={League} />
-
+      <Stack.Screen name="Profile" component={Profile} />
 
       <Stack.Screen name="Login" component={Login} />
-       <Stack.Screen name="Signup" component={Signup} />
-      
+      <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
   );
 };
@@ -47,7 +47,7 @@ const Tabs = () => {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Profile" ) {
+          } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
           } else if (route.name === "Notifications") {
             iconName = focused ? "notifications" : "notifications-outline";

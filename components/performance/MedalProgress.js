@@ -66,7 +66,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
     current.xp <= xp ? current : prev
   );
 
-  const previousGameXp = prevGameXp.toFixed(0);
+  const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
 
   const nextRank = getNextRank(xp);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -127,18 +127,18 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           <MedalDisplay xp={currentRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{currentRank.name}</Text>
         </RankContainer>
-
-        <PreviousGameXpContainer>
-          <PreviousGameXp prevGameXp={previousGameXp}>
-            {previousGameXp < 0
-              ? `${previousGameXp} XP`
-              : `+${previousGameXp} XP`}
-          </PreviousGameXp>
-          <Text style={{ color: "#aaa", fontSize: 11, paddingLeft: 6 }}>
-            Last Match
-          </Text>
-        </PreviousGameXpContainer>
-
+        {previousGameXp !== null && (
+          <PreviousGameXpContainer>
+            <PreviousGameXp prevGameXp={previousGameXp}>
+              {previousGameXp < 0
+                ? `${previousGameXp} XP`
+                : `+${previousGameXp} XP`}
+            </PreviousGameXp>
+            <Text style={{ color: "#aaa", fontSize: 11, paddingLeft: 6 }}>
+              Last Match
+            </Text>
+          </PreviousGameXpContainer>
+        )}
         <RankContainer style={{ alignItems: "flex-end" }}>
           <RankXpText>{nextRank.xp} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
