@@ -425,6 +425,36 @@ const UserProvider = ({ children }) => {
     return count + 1;
   };
 
+  const getLeaguesForUser = async (userId) => {
+    try {
+      // Get all leagues from the "leagues" collection
+      const leaguesRef = collection(db, "leagues");
+      const querySnapshot = await getDocs(leaguesRef);
+
+      // Filter the leagues where the user is a participant
+      const userLeagues = querySnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((league) => {
+          // Check if leagueParticipants exists and is an array
+          if (
+            !league.leagueParticipants ||
+            !Array.isArray(league.leagueParticipants)
+          ) {
+            return false;
+          }
+          // Return true if at least one participant has a matching userId
+          return league.leagueParticipants.some(
+            (participant) => participant.userId === userId
+          );
+        });
+
+      return userLeagues;
+    } catch (error) {
+      console.error("Error fetching leagues for user:", error);
+      return [];
+    }
+  };
+
   // const calculateParticipantTotals = async () => {
   //   try {
   //     const userId = await AsyncStorage.getItem("userId");
@@ -495,6 +525,7 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        getLeaguesForUser,
         getGlobalRank,
         updateUsers,
         getAllUsers,

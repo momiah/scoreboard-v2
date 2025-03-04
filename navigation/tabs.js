@@ -32,6 +32,20 @@ const HomeStack = () => {
     </Stack.Navigator>
   );
 };
+const ProfileStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName="Profile"
+    >
+      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="League" component={League} />
+
+      {/* <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Signup" component={Signup} /> */}
+    </Stack.Navigator>
+  );
+};
 
 // Tabs Navigator
 const Tabs = () => {
@@ -77,7 +91,7 @@ const Tabs = () => {
       <Tab.Screen i name="Home" component={HomeStack} />
       <Tab.Screen name="Notifications" component={Notifications} />
       <Tab.Screen name="Schedule" component={Schedule} />
-      <Tab.Screen name="Profile" component={Profile} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 };
