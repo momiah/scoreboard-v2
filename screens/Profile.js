@@ -600,6 +600,7 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     paddingBottom: 40,
+    paddingHorizontal: 5,
   },
 });
 
