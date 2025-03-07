@@ -32,7 +32,7 @@ const Leagues = () => {
 
 const LeagueContainer = styled.View({
   flex: 1,
-  backgroundColor: "#00152B",
+  backgroundColor: " rgb(3, 16, 31)",
   width: "100%",
   paddingHorizontal: 20,
 });

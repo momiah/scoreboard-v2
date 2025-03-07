@@ -4,7 +4,9 @@ import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
-import Profile from "../screens/Profile";
+import Profile from "../screens/Profile/Profile";
+import ProfileMenu from "../screens/Profile/ProfileMenu";
+import EditProfile from "../screens/Profile/EditProfile";
 import Notifications from "../screens/Notifications";
 import Schedule from "../screens/Schedule";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -40,6 +42,8 @@ const ProfileStack = () => {
     >
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
 
       {/* <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} /> */}
@@ -52,8 +56,8 @@ const Tabs = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarActiveBackgroundColor: "#00152B",
-        tabBarInactiveBackgroundColor: "#00152B",
+        tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
+        tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
         tabBarActiveTintColor: "#FFD700",
         tabBarInactiveTintColor: "#A9A9A9",
         tabBarIcon: ({ focused, color, size }) => {
@@ -90,7 +94,7 @@ const Tabs = () => {
       {/* Replace Home component with HomeStack */}
       <Tab.Screen i name="Home" component={HomeStack} />
       <Tab.Screen name="Notifications" component={Notifications} />
-      <Tab.Screen name="Schedule" component={Schedule} />
+      {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );

@@ -14,27 +14,29 @@ import {
   FlatList,
   Dimensions,
   StyleSheet,
+  TouchableOpacity,
 } from "react-native";
-import { UserContext } from "../context/UserContext";
+import { UserContext } from "../../context/UserContext";
 import styled from "styled-components/native";
-import CourtChampsLogo from "../assets/court-champ-logo-icon.png";
+import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useRoute } from "@react-navigation/native";
-import { GameContext } from "../context/GameContext";
+import { GameContext } from "../../context/GameContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AnimateNumber from "../components/performance/AnimateNumber";
-import PerformanceStats from "../components/performance/PerformanceStats";
-import MedalProgress from "../components/performance/MedalProgress";
-import ResultLog from "../components/performance/ResultLog";
-import MatchMedals from "../components/performance/MatchMedals";
-import MedalDisplay from "../components/performance/MedalDisplay";
-import { trophies } from "../mockImages";
-import LeagueStatsDisplay from "../components/performance/LeagueStatDisplay";
-import { sortLeaguesByEndDate } from "../functions/sortedLeaguesByEndDate";
-import { getPlayerRankInLeague } from "../functions/getPlayerRankInLeague";
-import Tag from "../components/Tag";
-import { calculateLeagueStatus } from "../functions/calculateLeagueStatus";
+import AnimateNumber from "../../components/performance/AnimateNumber";
+import PerformanceStats from "../../components/performance/PerformanceStats";
+import MedalProgress from "../../components/performance/MedalProgress";
+import ResultLog from "../../components/performance/ResultLog";
+import MatchMedals from "../../components/performance/MatchMedals";
+import MedalDisplay from "../../components/performance/MedalDisplay";
+import { trophies } from "../../mockImages";
+import LeagueStatsDisplay from "../../components/performance/LeagueStatDisplay";
+import { sortLeaguesByEndDate } from "../../functions/sortedLeaguesByEndDate";
+import { getPlayerRankInLeague } from "../../functions/getPlayerRankInLeague";
+import Tag from "../../components/Tag";
+import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
 import { useNavigation } from "@react-navigation/native";
-import RankSuffix from "../components/RankSuffix";
+import RankSuffix from "../../components/RankSuffix";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
@@ -378,6 +380,17 @@ const Profile = () => {
 
   return (
     <Container>
+      <TouchableOpacity
+        style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
+        onPress={() => navigation.navigate("ProfileMenu")}
+      >
+        <Ionicons
+          // style={{ paddingTop: 5 }}
+          name={"menu"}
+          size={30}
+          color={"#aaa"}
+        />
+      </TouchableOpacity>
       <Overview>
         <PlayerDetail>
           <Avatar source={CourtChampsLogo} />

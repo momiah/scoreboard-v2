@@ -153,7 +153,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const HomeContainer = styled.ScrollView({
   flex: 1,
-  backgroundColor: "#00152B",
+  backgroundColor: " rgb(3, 16, 31)",
   width: "100%",
   paddingHorizontal: 20,
 });
