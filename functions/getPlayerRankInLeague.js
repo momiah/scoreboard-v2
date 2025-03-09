@@ -5,8 +5,8 @@ export const getPlayerRankInLeague = (league, userId) => {
 
   // Create a shallow copy of the participants array and sort it
   const sortedParticipants = league.leagueParticipants.slice().sort((a, b) => {
-    const totalA = a.XP + a.totalPoints;
-    const totalB = b.XP + b.totalPoints;
+    const totalA = a.XP;
+    const totalB = b.XP;
     return totalB - totalA; // descending order
   });
 

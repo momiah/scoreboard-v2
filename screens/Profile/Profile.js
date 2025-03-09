@@ -10,8 +10,6 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
-  InteractionManager,
-  FlatList,
   Dimensions,
   StyleSheet,
   TouchableOpacity,
@@ -22,85 +20,54 @@ import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useRoute } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AnimateNumber from "../../components/performance/AnimateNumber";
-import PerformanceStats from "../../components/performance/PerformanceStats";
-import MedalProgress from "../../components/performance/MedalProgress";
-import ResultLog from "../../components/performance/ResultLog";
-import MatchMedals from "../../components/performance/MatchMedals";
 import MedalDisplay from "../../components/performance/MedalDisplay";
-import { trophies } from "../../mockImages";
-import LeagueStatsDisplay from "../../components/performance/LeagueStatDisplay";
-import { sortLeaguesByEndDate } from "../../functions/sortedLeaguesByEndDate";
-import { getPlayerRankInLeague } from "../../functions/getPlayerRankInLeague";
-import Tag from "../../components/Tag";
-import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
+
 import { useNavigation } from "@react-navigation/native";
-import RankSuffix from "../../components/RankSuffix";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import ProfileActivity from "../../components/Profiles/ProfileActivity";
+import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
 
 const { width: screenWidth } = Dimensions.get("window");
-const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
 
 const Profile = () => {
   const route = useRoute();
-  const { getUserById, getGlobalRank, getLeaguesForUser } =
-    useContext(UserContext);
+  const { getUserById, getGlobalRank, currentUser } = useContext(UserContext);
   const { medalNames } = useContext(GameContext);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("Profile");
   const [globalRank, setGlobalRank] = useState(null);
-  const [userLeagues, setUserLeagues] = useState([]);
-  const [rankData, setRankData] = useState([]);
-  const [rankLoading, setRankLoading] = useState(true);
-  const [userId, setUserId] = useState(null);
+
   const navigation = useNavigation();
 
-  const navigateTo = (leagueId) => {
-    navigation.navigate("League", { leagueId });
-  };
-
-  // User ID management
   useEffect(() => {
-    const fetchUserId = async () => {
+    const loadProfile = async () => {
       try {
-        const id =
-          route.params?.userId || (await AsyncStorage.getItem("userId"));
-        setUserId(id);
-      } catch (error) {
-        console.error("Error fetching user ID:", error);
-        setLoading(false);
-      }
-    };
-
-    fetchUserId();
-  }, [route.params]);
-
-  // Profile data fetching with cleanup
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    const fetchProfile = async () => {
-      if (!userId) return;
-
-      try {
-        const userProfile = await getUserById(userId, {
-          signal: abortController.signal,
-        });
-        setProfile(userProfile);
-      } catch (error) {
-        if (!abortController.signal.aborted) {
-          console.error("Error fetching profile:", error);
+        // 1. Check if viewing another user's profile
+        if (route.params?.userId) {
+          const userProfile = await getUserById(route.params.userId);
+          setProfile(userProfile);
         }
+        // 2. Use currentUser data for own profile
+        else if (currentUser) {
+          setProfile(currentUser);
+        }
+        // 3. Fallback (shouldn't normally happen)
+        else {
+          const userId = await AsyncStorage.getItem("userId");
+          const userProfile = await getUserById(userId);
+          setProfile(userProfile);
+        }
+      } catch (error) {
+        console.error("Profile load error:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
-    return () => abortController.abort();
-  }, [userId, getUserById]);
+    loadProfile();
+  }, [route.params?.userId, currentUser]); // currentUser as dependency
 
   // Global rank fetching
   useEffect(() => {
@@ -118,94 +85,7 @@ const Profile = () => {
     fetchRank();
   }, [profile, getGlobalRank]);
 
-  // Leagues data fetching
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    const fetchLeagues = async () => {
-      if (!userId) return;
-
-      try {
-        const leagues = await getLeaguesForUser(userId, {
-          signal: abortController.signal,
-        });
-        setUserLeagues(leagues);
-      } catch (error) {
-        if (!abortController.signal.aborted) {
-          console.error("Error fetching leagues:", error);
-        }
-      }
-    };
-
-    fetchLeagues();
-    return () => abortController.abort();
-  }, [userId, getLeaguesForUser]);
-
-  // Process league rankings
-  useEffect(() => {
-    if (sortedLeagues.length > 0 && profile) {
-      setRankLoading(true);
-      const task = InteractionManager.runAfterInteractions(() => {
-        const processed = sortedLeagues.map((league) => {
-          const rank = getPlayerRankInLeague(league, profile.userId);
-          const participant = league.leagueParticipants?.find(
-            (p) => p.userId === profile.userId
-          );
-          const wins = participant ? participant.numberOfWins : 0;
-          return { ...league, userRank: rank, wins };
-        });
-        setRankData(processed);
-        setRankLoading(false);
-      });
-      return () => task.cancel();
-    }
-  }, [sortedLeagues, profile]);
-
-  const sortedLeagues = useMemo(
-    () => sortLeaguesByEndDate(userLeagues),
-    [userLeagues]
-  );
-
   const profileDetail = profile?.profileDetail;
-  const leagueStats = profileDetail?.leagueStats;
-
-  const statData = useMemo(() => {
-    const wins = profileDetail?.numberOfWins || 0;
-    const losses = profileDetail?.numberOfLosses || 0;
-
-    return [
-      {
-        statTitle: "Wins",
-        stat: (
-          <AnimateNumber number={wins} fontSize={screenAdjustedStatFontSize} />
-        ),
-      },
-      {
-        statTitle: "Losses",
-        stat: (
-          <AnimateNumber
-            number={losses}
-            fontSize={screenAdjustedStatFontSize}
-          />
-        ),
-      },
-      {
-        statTitle: "Win Ratio",
-        stat: (
-          <Stat>{losses ? (wins / losses).toFixed(2) : wins.toFixed(2)}</Stat>
-        ),
-      },
-      {
-        statTitle: "Highest Streak",
-        stat: (
-          <AnimateNumber
-            number={profileDetail?.highestWinStreak || 0}
-            fontSize={screenAdjustedStatFontSize}
-          />
-        ),
-      },
-    ];
-  }, [profileDetail]);
 
   const tabs = useMemo(
     () => [
@@ -215,49 +95,6 @@ const Profile = () => {
     ],
     []
   );
-
-  const renderLeagueItem = useCallback(({ item }) => {
-    const leagueStatus = calculateLeagueStatus(item);
-    return (
-      <LeagueItem key={item.id} onPress={() => navigateTo(item.id)}>
-        <View
-          style={{
-            padding: 5,
-
-            width: "60%",
-          }}
-        >
-          <Text style={styles.leagueName}>{item.leagueName}</Text>
-          <Text style={styles.leagueDates}>{item.location}</Text>
-
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
-            <Tag name={item.leagueType} />
-          </View>
-        </View>
-
-        <TableCell>
-          <StatTitle>Wins</StatTitle>
-          <Stat>{item.wins}</Stat>
-        </TableCell>
-        <TableCell>
-          <StatTitle>Rank</StatTitle>
-          <Stat>
-            <RankSuffix
-              number={item.userRank}
-              numberStyle={{
-                fontSize: screenAdjustedStatFontSize,
-                color: "white",
-              }}
-              suffixStyle={{
-                color: "rgba(255,255,255,0.7)",
-              }}
-            />
-          </Stat>
-        </TableCell>
-      </LeagueItem>
-    );
-  }, []);
 
   const renderProfileContent = useCallback(
     () => (
@@ -294,48 +131,6 @@ const Profile = () => {
     [profile, profileDetail]
   );
 
-  const renderPerformanceContent = useCallback(
-    () => (
-      <>
-        <MedalProgress
-          xp={profileDetail?.XP}
-          prevGameXp={profileDetail?.prevGameXP}
-        />
-        <MatchMedals
-          demonWin={profileDetail?.demonWin}
-          winStreak3={profileDetail?.winStreak3}
-          winStreak5={profileDetail?.winStreak5}
-          winStreak7={profileDetail?.winStreak7}
-        />
-        <Divider />
-        <LeagueStatsDisplay leagueStats={leagueStats} />
-        <PerformanceStats statData={statData} selectedPlayer={profileDetail} />
-      </>
-    ),
-    [profileDetail, leagueStats, statData]
-  );
-
-  const renderActivityContent = useMemo(() => {
-    if (rankLoading) {
-      return <ActivityIndicator color="#fff" size="large" />;
-    }
-
-    return (
-      <FlatList
-        data={rankData}
-        renderItem={renderLeagueItem}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No leagues found.</Text>
-        }
-        initialNumToRender={8}
-        maxToRenderPerBatch={6}
-        windowSize={10}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
-    );
-  }, [rankLoading, rankData, renderLeagueItem]);
-
   const renderComponent = useCallback(() => {
     switch (selectedTab) {
       case "Profile":
@@ -345,22 +140,13 @@ const Profile = () => {
           </ScrollView>
         );
       case "Performance":
-        return (
-          <ScrollView contentContainerStyle={styles.tabContent}>
-            {renderPerformanceContent()}
-          </ScrollView>
-        );
+        return <ProfilePerformance profile={profile} />;
       case "Activity":
-        return renderActivityContent;
+        return <ProfileActivity profile={profile} />;
       default:
         return null;
     }
-  }, [
-    selectedTab,
-    renderProfileContent,
-    renderPerformanceContent,
-    renderActivityContent,
-  ]);
+  }, [selectedTab, renderProfileContent]);
 
   if (loading) {
     return (
@@ -547,66 +333,8 @@ const SectionContent = styled.Text`
   font-size: 14px;
 `;
 
-const LeagueItem = styled.TouchableOpacity`
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgb(26, 28, 54);
-  padding: ${screenWidth <= 400 ? 10 : 15}px;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  flex-direction: row;
-  justify-content: space-between;
-`;
-
-const Stat = styled.Text`
-  font-size: ${screenAdjustedStatFontSize}px;
-  font-weight: bold;
-  color: white;
-`;
-
-const StatTitle = styled.Text({
-  fontSize: 12,
-  color: "#aaa",
-});
-
-const TableCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  paddingTop: 15,
-  paddingBottom: 15,
-});
-
 // StyleSheet for optimized rendering
 const styles = StyleSheet.create({
-  leagueName: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  leagueDates: {
-    color: "#ccc",
-    fontSize: 12,
-    marginBottom: 15,
-  },
-  leagueStatus: {
-    color: "#0f0",
-    fontSize: 12,
-    marginVertical: 4,
-  },
-  leagueWins: {
-    color: "white",
-    fontSize: 14,
-  },
-  leagueRank: {
-    color: "gold",
-    fontSize: 14,
-  },
-  emptyText: {
-    color: "white",
-    textAlign: "center",
-    marginTop: 20,
-  },
   errorText: {
     color: "white",
     fontSize: 18,

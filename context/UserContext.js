@@ -25,6 +25,24 @@ const UserProvider = ({ children }) => {
   const [player, setPlayer] = useState("");
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
 
+  useEffect(() => {
+    const loadInitialUser = async () => {
+      try {
+        const userId = await AsyncStorage.getItem("userId");
+        if (userId) {
+          const userData = await getUserById(userId);
+          setCurrentUser(userData);
+        }
+      } catch (error) {
+        console.error("Initial user load failed:", error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    loadInitialUser();
+  }, []);
+
   const newPlayer = {
     memberSince: moment().format("MMM YYYY"),
     XP: 10,
@@ -455,6 +473,27 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  // Add this in your UserProvider component
+  // UserContext.js - Final optimized version
+  const updateUserProfile = async (updatedFields) => {
+    console.log("Updating user profile with:", updatedFields);
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) throw new Error("User not authenticated");
+
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, updatedFields); // Surgical update
+
+      setCurrentUser((prev) => ({
+        ...prev,
+        ...updatedFields,
+      }));
+      return true; // Keep for success confirmation
+    } catch (error) {
+      console.error("Profile update failed:", error);
+      throw error;
+    }
+  };
   // const calculateParticipantTotals = async () => {
   //   try {
   //     const userId = await AsyncStorage.getItem("userId");
@@ -525,6 +564,8 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        currentUser,
+        updateUserProfile,
         getLeaguesForUser,
         getGlobalRank,
         updateUsers,
