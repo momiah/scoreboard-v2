@@ -30,7 +30,7 @@ import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
 
-const Profile = () => {
+const UserProfile = () => {
   const route = useRoute();
   const { getUserById, getGlobalRank, currentUser } = useContext(UserContext);
   const { medalNames } = useContext(GameContext);
@@ -96,39 +96,49 @@ const Profile = () => {
     []
   );
 
+  const sections = useMemo(
+    () => [
+      {
+        title: "Name",
+        getValue: () => `${profile?.firstName} ${profile?.lastName}`.trim(),
+        fallback: "",
+      },
+      { title: "Location", key: "location", fallback: "Location not provided" },
+      {
+        title: "Hand Preference",
+        key: "handPreference",
+        fallback: "Not provided",
+      },
+      { title: "Bio", key: "bio", fallback: "Bio not provided" },
+      { title: "Contact", key: "email", fallback: "Email not provided" },
+      {
+        title: "Member Since",
+        getValue: () => profileDetail?.memberSince,
+        fallback: "Date not available",
+      },
+    ],
+    [profile, profileDetail]
+  );
+
   const renderProfileContent = useCallback(
     () => (
       <View style={{ gap: 5, paddingTop: 10 }}>
-        <SectionTitle>Name</SectionTitle>
-        <SectionContent>
-          {profile?.firstName} {profile?.lastName}
-        </SectionContent>
-        <Divider />
-        <SectionTitle>Location</SectionTitle>
-        <SectionContent>
-          {profile?.location || "Location not provided"}
-        </SectionContent>
-        <Divider />
-        <SectionTitle>Hand Preference</SectionTitle>
-        <SectionContent>
-          {profile?.handPreference || "Not provided"}
-        </SectionContent>
-        <Divider />
-        <SectionTitle>Bio</SectionTitle>
-        <SectionContent>{profile?.bio || "Bio not provided"}</SectionContent>
-        <Divider />
-        <SectionTitle>Contact</SectionTitle>
-        <SectionContent>
-          {profile?.email || "Email not provided"}
-        </SectionContent>
-        <Divider />
-        <SectionTitle>Member Since</SectionTitle>
-        <SectionContent>
-          {profileDetail?.memberSince || "Date not available"}
-        </SectionContent>
+        {sections.map((section, index) => {
+          const content = section.getValue
+            ? section.getValue() || section.fallback
+            : profile?.[section.key] || section.fallback;
+
+          return (
+            <React.Fragment key={section.title}>
+              <SectionTitle>{section.title}</SectionTitle>
+              <SectionContent>{content}</SectionContent>
+              {index !== sections.length - 1 && <Divider />}
+            </React.Fragment>
+          );
+        })}
       </View>
     ),
-    [profile, profileDetail]
+    [sections, profile]
   );
 
   const renderComponent = useCallback(() => {
@@ -164,19 +174,19 @@ const Profile = () => {
     );
   }
 
+  const isOwnProfile =
+    !route.params?.userId || route.params?.userId === currentUser?.userId;
+
   return (
     <Container>
-      <TouchableOpacity
-        style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
-        onPress={() => navigation.navigate("ProfileMenu")}
-      >
-        <Ionicons
-          // style={{ paddingTop: 5 }}
-          name={"menu"}
-          size={30}
-          color={"#aaa"}
-        />
-      </TouchableOpacity>
+      {isOwnProfile && (
+        <TouchableOpacity
+          style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
+          onPress={() => navigation.navigate("ProfileMenu")}
+        >
+          <Ionicons name="menu" size={30} color="#aaa" />
+        </TouchableOpacity>
+      )}
       <Overview>
         <PlayerDetail>
           <Avatar source={CourtChampsLogo} />
@@ -345,4 +355,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(Profile);
+export default React.memo(UserProfile);

@@ -139,16 +139,21 @@ const PlayerDetails = ({
                   onPress={() => {
                     setShowPlayerDetails(false); // Close the modal
                     // Navigate to the Profile tab, passing the selected user's ID
-                    navigation.navigate("Profile", {
+                    navigation.navigate("UserProfile", {
                       userId: selectedPlayer.userId,
                     });
                   }}
                 >
                   <Text
                     style={{
-                      color: "#aaa",
+                      color: "white",
                       fontSize: screenWidth <= 400 ? 12 : 14,
-                      marginTop: 5,
+                      marginTop: 15,
+                      fontWeight: "bold",
+                      backgroundColor: "#00A2FF",
+                      padding: 5,
+                      borderRadius: 5,
+                      alignSelf: "flex-start",
                     }}
                   >
                     Go to profile

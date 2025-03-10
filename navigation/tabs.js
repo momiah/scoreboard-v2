@@ -4,7 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
-import Profile from "../screens/Profile/Profile";
+import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
 import Notifications from "../screens/Notifications";
@@ -27,7 +27,7 @@ const HomeStack = () => {
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
       <Stack.Screen name="League" component={League} />
-      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="UserProfile" component={UserProfile} />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -38,9 +38,9 @@ const ProfileStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="Profile"
+      initialRouteName="UserProfile"
     >
-      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
@@ -65,7 +65,7 @@ const Tabs = () => {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "Profile") {
+          } else if (route.name === "UserProfile") {
             iconName = focused ? "person" : "person-outline";
           } else if (route.name === "Notifications") {
             iconName = focused ? "notifications" : "notifications-outline";
@@ -95,7 +95,7 @@ const Tabs = () => {
       <Tab.Screen i name="Home" component={HomeStack} />
       <Tab.Screen name="Notifications" component={Notifications} />
       {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
-      <Tab.Screen name="Profile" component={ProfileStack} />
+      <Tab.Screen name="UserProfile" component={ProfileStack} />
     </Tab.Navigator>
   );
 };
