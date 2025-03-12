@@ -96,7 +96,9 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
         </TableCell>
         <TableCell>
           <StatTitle>PD</StatTitle>
-          <Stat>{pointDifference}</Stat>
+          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+            {pointDifference}
+          </Stat>
         </TableCell>
         <TableCell>
           <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
