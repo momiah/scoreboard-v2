@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,10 +10,30 @@ import {
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../../assets";
 import SubHeader from "../../../components/SubHeader";
+import AddLeagueModel from "../../../components/Modals/AddLeagueModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import VerticalLeagueCarousel from "../../../components/Leagues/VerticalLeagueCarousel";
+import { useNavigation } from "@react-navigation/native";
 
 const Leagues = () => {
-  const handleIconPress = () => {};
+  const [modalVisible, setModalVisible] = useState(false);
+  const navigation = useNavigation();
+
+  const addLeague = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+
+    if (token) {
+      setModalVisible(true);
+    } else {
+      navigateTo("Login");
+    }
+  };
+
+  const navigateTo = (route) => {
+    if (route) {
+      navigation.navigate(route);
+    }
+  };
 
   return (
     <LeagueContainer>
@@ -23,9 +43,15 @@ const Leagues = () => {
           style={{ width: 175, height: 175, resizeMode: "contain" }}
         />
       </Overview>
-      <SubHeader title="Leagues" onIconPress={handleIconPress} showIcon />
+      <SubHeader title="Leagues" onIconPress={addLeague} showIcon />
 
       <VerticalLeagueCarousel navigationRoute={"League"} />
+      {modalVisible && (
+        <AddLeagueModel
+          modalVisible={modalVisible}
+          setModalVisible={setModalVisible}
+        />
+      )}
     </LeagueContainer>
   );
 };

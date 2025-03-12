@@ -65,7 +65,7 @@ const Home = () => {
     }
   };
 
-  const checkUserToken = async () => {
+  const addLeague = async () => {
     const token = await AsyncStorage.getItem("userToken");
 
     if (token) {
@@ -115,7 +115,7 @@ const Home = () => {
 
         <SubHeader
           title="Leagues"
-          onIconPress={checkUserToken}
+          onIconPress={addLeague}
           actionText="Browse Leagues"
           showIcon
           navigationRoute={"Leagues"}

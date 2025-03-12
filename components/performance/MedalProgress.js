@@ -143,7 +143,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           </PreviousGameXpContainer>
         )}
         <RankContainer style={{ alignItems: "flex-end" }}>
-          <RankXpText>{formatNumber(currentRank.xp)} XP</RankXpText>
+          <RankXpText>{formatNumber(nextRank.xp)} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{nextRank.name}</Text>
         </RankContainer>
