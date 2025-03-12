@@ -510,8 +510,6 @@ const UserProvider = ({ children }) => {
       await updateDoc(userRef, {
         profileViews: currentViews + 1,
       });
-
-      console.log("Profile view counted for:", profileUserId);
     } catch (error) {
       console.error("Error updating profile view count:", error);
     }

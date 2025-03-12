@@ -37,7 +37,7 @@ const UserProfile = () => {
   const route = useRoute();
   const { getUserById, getGlobalRank, currentUser, profileViewCount } =
     useContext(UserContext);
-  const { medalNames } = useContext(GameContext);
+  const { medalNames, findRankIndex } = useContext(GameContext);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("Profile");
@@ -207,6 +207,9 @@ const UserProfile = () => {
   const isOwnProfile =
     !route.params?.userId || route.params?.userId === currentUser?.userId;
 
+  const profileXp = formatNumber(profileDetail.XP.toFixed(0));
+  const rankLevel = findRankIndex(profileXp) + 1;
+
   return (
     <Container>
       {isOwnProfile && (
@@ -223,35 +226,39 @@ const UserProfile = () => {
           <DetailColumn>
             <PlayerName>{profile?.username}</PlayerName>
 
-            <XpBadge>
-              <XpText>CC Rank</XpText>
-              <RankSuffix
-                number={globalRank}
-                numberStyle={{
-                  fontSize: screenAdjustedStatFontSize,
-                  color: "white",
-                }}
-                suffixStyle={{
-                  color: "rgba(255,255,255,0.7)",
-                }}
-              />
-            </XpBadge>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
-            >
-              <Ionicons name="eye" size={15} color="#aaa" />
-              <DetailText>
-                {formatNumber(profile?.profileViews ?? 0)}
-              </DetailText>
-            </View>
+            <DetailText>{profileXp ?? 0} XP</DetailText>
+
+            <DetailText>
+              {formatNumber(profile?.totalPointDifference ?? 0)} PD
+            </DetailText>
           </DetailColumn>
         </PlayerDetail>
         <MedalContainer>
           <MedalDisplay xp={profileDetail?.XP} size={screenAdjustedMedalSize} />
           <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
+          <MedalName style={{ fontWeight: "bold" }}>{rankLevel}</MedalName>
         </MedalContainer>
       </Overview>
+      <ProfileSummary>
+        <CCRankContainer>
+          <XpText>CC Rank</XpText>
+          <RankSuffix
+            number={globalRank}
+            numberStyle={{
+              fontSize: screenAdjustedStatFontSize,
+              color: "white",
+            }}
+            suffixStyle={{
+              color: "rgba(255,255,255,0.7)",
+            }}
+          />
+        </CCRankContainer>
 
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+          <DetailText>{formatNumber(profile?.profileViews ?? 0)}</DetailText>
+          <Ionicons name="eye" size={15} color="#aaa" />
+        </View>
+      </ProfileSummary>
       <TabsContainer>
         {tabs.map((tab) => (
           <Tab
@@ -270,6 +277,18 @@ const UserProfile = () => {
 };
 
 // Styled components
+const ProfileSummary = styled.View({
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  border: "1px solid rgb(26, 28, 54)",
+  padding: 10, // you can adjust based on screen size if needed
+  borderRadius: 8,
+  alignItems: "center",
+  flexDirection: "row",
+  // alignSelf: "flex-start",
+  justifyContent: "space-between",
+  marginHorizontal: 15,
+});
+
 const Container = styled.View`
   flex: 1;
   background-color: rgb(3, 16, 31);
@@ -321,7 +340,7 @@ const DetailText = styled.Text`
   flex-direction: row;
 `;
 
-const XpBadge = styled.View({
+const CCRankContainer = styled.View({
   // backgroundColor: "rgba(0, 0, 0, 0.3)",
   // border: "1px solid rgb(26, 28, 54)",
   // padding: 10, // you can adjust based on screen size if needed

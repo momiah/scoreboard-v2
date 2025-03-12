@@ -6,7 +6,11 @@ const numberFormatter = new Intl.NumberFormat("en-US");
  * @returns {string} The formatted number.
  */
 export const formatNumber = (value) => {
-  if (typeof value !== "number") {
+  console.log("value", value);
+  if (typeof value === "string") {
+    value = parseFloat(value);
+  }
+  if (typeof value !== "number" || isNaN(value)) {
     throw new Error("Value must be a number");
   }
   return numberFormatter.format(value);

@@ -99,7 +99,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           ]}
         >
           <ProgressArrowContainer>
-            <AnimateNumber number={xpFormmated} progressBar />
+            <AnimateNumber number={xp} progressBar />
             <FontAwesome name="caret-down" size={16} color="white" />
           </ProgressArrowContainer>
         </Animated.View>
@@ -178,6 +178,8 @@ const ProgressArrowContainer = styled.View({
   alignItems: "flex-end",
   position: "relative",
   left: 5,
+  padding: 5,
+  bottom: 5,
 });
 
 const PreviousGameXp = styled.Text`
