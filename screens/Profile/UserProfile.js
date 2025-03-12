@@ -26,13 +26,17 @@ import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import ProfileActivity from "../../components/Profiles/ProfileActivity";
 import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
+import RankSuffix from "../../components/RankSuffix";
+import { formatNumber } from "../../functions/formatNumber";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
+const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
 
 const UserProfile = () => {
   const route = useRoute();
-  const { getUserById, getGlobalRank, currentUser } = useContext(UserContext);
+  const { getUserById, getGlobalRank, currentUser, profileViewCount } =
+    useContext(UserContext);
   const { medalNames } = useContext(GameContext);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +72,27 @@ const UserProfile = () => {
 
     loadProfile();
   }, [route.params?.userId, currentUser]); // currentUser as dependency
+
+  useEffect(() => {
+    const trackProfileView = async () => {
+      try {
+        // Only track if viewing another user's profile
+        if (
+          route.params?.userId &&
+          route.params.userId !== currentUser?.userId
+        ) {
+          await profileViewCount(route.params.userId);
+        }
+      } catch (error) {
+        console.error("Profile view tracking failed:", error);
+      }
+    };
+
+    // Only track after profile is loaded
+    if (profile && !loading) {
+      trackProfileView();
+    }
+  }, [profile, loading, currentUser?.userId, route.params?.userId]);
 
   // Global rank fetching
   useEffect(() => {
@@ -116,6 +141,11 @@ const UserProfile = () => {
         getValue: () => profileDetail?.memberSince,
         fallback: "Date not available",
       },
+      {
+        title: "Last Active",
+        getValue: () => profileDetail?.lastActive,
+        fallback: "Date not available",
+      },
     ],
     [profile, profileDetail]
   );
@@ -150,7 +180,7 @@ const UserProfile = () => {
           </ScrollView>
         );
       case "Performance":
-        return <ProfilePerformance profile={profile} />;
+        return <ProfilePerformance profile={profile} globalRank={globalRank} />;
       case "Activity":
         return <ProfileActivity profile={profile} />;
       default:
@@ -192,12 +222,28 @@ const UserProfile = () => {
           <Avatar source={CourtChampsLogo} />
           <DetailColumn>
             <PlayerName>{profile?.username}</PlayerName>
-            <DetailText>Member since June</DetailText>
-            <DetailText>Last Active Today</DetailText>
-            <DetailText>Global Rank: #{globalRank}</DetailText>
+
             <XpBadge>
-              <XpText>{profileDetail?.XP?.toFixed(0)} XP</XpText>
+              <XpText>CC Rank</XpText>
+              <RankSuffix
+                number={globalRank}
+                numberStyle={{
+                  fontSize: screenAdjustedStatFontSize,
+                  color: "white",
+                }}
+                suffixStyle={{
+                  color: "rgba(255,255,255,0.7)",
+                }}
+              />
             </XpBadge>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <Ionicons name="eye" size={15} color="#aaa" />
+              <DetailText>
+                {formatNumber(profile?.profileViews ?? 0)}
+              </DetailText>
+            </View>
           </DetailColumn>
         </PlayerDetail>
         <MedalContainer>
@@ -271,16 +317,20 @@ const PlayerName = styled.Text`
 const DetailText = styled.Text`
   color: #aaa;
   font-size: ${screenWidth <= 400 ? 12 : 14}px;
+  align-items: center;
+  flex-direction: row;
 `;
 
-const XpBadge = styled.View`
-  padding: 5px;
-  background-color: rgb(40, 40, 40);
-  border-radius: 5px;
-  border: 1px solid white;
-  align-self: flex-start;
-  margin-top: 5px;
-`;
+const XpBadge = styled.View({
+  // backgroundColor: "rgba(0, 0, 0, 0.3)",
+  // border: "1px solid rgb(26, 28, 54)",
+  // padding: 10, // you can adjust based on screen size if needed
+  // borderRadius: 8,
+  gap: 5,
+  alignItems: "center",
+  flexDirection: "row",
+  alignSelf: "flex-start",
+});
 
 const XpText = styled.Text`
   color: #aaa;

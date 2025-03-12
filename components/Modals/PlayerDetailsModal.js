@@ -73,7 +73,7 @@ const PlayerDetails = ({
       statTitle: "Avg Point Difference",
       stat: (
         <AnimateNumber
-          number={selectedPlayer.averagePointDifference.toFixed(0)}
+          number={selectedPlayer.averagePointDifference?.toFixed(0) || 0}
           fontSize={screenAdjustedStatFontSize}
         />
       ),

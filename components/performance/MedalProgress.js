@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { FontAwesome } from "@expo/vector-icons";
 import AnimateNumber from "./AnimateNumber";
 import { ranks } from "../../rankingMedals/ranking/ranks";
+import { formatNumber } from "../../functions/formatNumber";
 
 // const ranks = [
 //   { name: "Recruit", xp: 0 },
@@ -66,6 +67,8 @@ const MedalProgress = ({ xp, prevGameXp }) => {
     current.xp <= xp ? current : prev
   );
 
+  const xpFormmated = formatNumber(xp);
+
   const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
 
   const nextRank = getNextRank(xp);
@@ -96,7 +99,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           ]}
         >
           <ProgressArrowContainer>
-            <AnimateNumber number={xp} progressBar />
+            <AnimateNumber number={xpFormmated} progressBar />
             <FontAwesome name="caret-down" size={16} color="white" />
           </ProgressArrowContainer>
         </Animated.View>
@@ -123,7 +126,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
       </ProgressBar>
       <ProgressRanks>
         <RankContainer style={{ alignItems: "flex-start" }}>
-          <RankXpText>{currentRank.xp} XP</RankXpText>
+          <RankXpText>{formatNumber(currentRank.xp)} XP</RankXpText>
           <MedalDisplay xp={currentRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{currentRank.name}</Text>
         </RankContainer>
@@ -140,7 +143,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           </PreviousGameXpContainer>
         )}
         <RankContainer style={{ alignItems: "flex-end" }}>
-          <RankXpText>{nextRank.xp} XP</RankXpText>
+          <RankXpText>{formatNumber(currentRank.xp)} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{nextRank.name}</Text>
         </RankContainer>

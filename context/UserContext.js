@@ -494,6 +494,29 @@ const UserProvider = ({ children }) => {
       throw error;
     }
   };
+
+  const profileViewCount = async (profileUserId) => {
+    try {
+      const viewerId = await AsyncStorage.getItem("userId");
+
+      // Don't count if user is viewing their own profile
+      if (viewerId === profileUserId) return;
+
+      const userRef = doc(db, "users", profileUserId);
+
+      const userDoc = await getDoc(userRef);
+      const currentViews = userDoc.data().profileViews || 0;
+
+      await updateDoc(userRef, {
+        profileViews: currentViews + 1,
+      });
+
+      console.log("Profile view counted for:", profileUserId);
+    } catch (error) {
+      console.error("Error updating profile view count:", error);
+    }
+  };
+
   // const calculateParticipantTotals = async () => {
   //   try {
   //     const userId = await AsyncStorage.getItem("userId");
@@ -564,6 +587,7 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        profileViewCount,
         currentUser,
         updateUserProfile,
         getLeaguesForUser,
