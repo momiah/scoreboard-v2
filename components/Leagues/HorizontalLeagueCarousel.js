@@ -16,8 +16,6 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
   const { leagues, leagueIdForDetail } = useContext(LeagueContext);
 
-  // console.log("leagues", leagues);
-
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
@@ -40,9 +38,6 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
       snapToInterval={itemWidth + spacing} // Snap to item width + spacing
       snapToAlignment="start" // Align items to the start
       decelerationRate="fast" // Faster snapping
-      // contentContainerStyle={{
-      //   paddingHorizontal: 20, // Adjust padding for partial display
-      // }}
     >
       {leagues.map((league, index) => {
         const leagueStatus = calculateLeagueStatus(league);

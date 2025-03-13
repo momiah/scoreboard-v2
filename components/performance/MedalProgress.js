@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { FontAwesome } from "@expo/vector-icons";
 import AnimateNumber from "./AnimateNumber";
 import { ranks } from "../../rankingMedals/ranking/ranks";
+import { formatNumber } from "../../functions/formatNumber";
 
 // const ranks = [
 //   { name: "Recruit", xp: 0 },
@@ -66,7 +67,9 @@ const MedalProgress = ({ xp, prevGameXp }) => {
     current.xp <= xp ? current : prev
   );
 
-  const previousGameXp = prevGameXp.toFixed(0);
+  const xpFormmated = formatNumber(xp);
+
+  const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
 
   const nextRank = getNextRank(xp);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -123,24 +126,24 @@ const MedalProgress = ({ xp, prevGameXp }) => {
       </ProgressBar>
       <ProgressRanks>
         <RankContainer style={{ alignItems: "flex-start" }}>
-          <RankXpText>{currentRank.xp} XP</RankXpText>
+          <RankXpText>{formatNumber(currentRank.xp)} XP</RankXpText>
           <MedalDisplay xp={currentRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{currentRank.name}</Text>
         </RankContainer>
-
-        <PreviousGameXpContainer>
-          <PreviousGameXp prevGameXp={previousGameXp}>
-            {previousGameXp < 0
-              ? `${previousGameXp} XP`
-              : `+${previousGameXp} XP`}
-          </PreviousGameXp>
-          <Text style={{ color: "#aaa", fontSize: 11, paddingLeft: 6 }}>
-            Last Match
-          </Text>
-        </PreviousGameXpContainer>
-
+        {previousGameXp !== null && (
+          <PreviousGameXpContainer>
+            <PreviousGameXp prevGameXp={previousGameXp}>
+              {previousGameXp < 0
+                ? `${previousGameXp} XP`
+                : `+${previousGameXp} XP`}
+            </PreviousGameXp>
+            <Text style={{ color: "#aaa", fontSize: 11, paddingLeft: 6 }}>
+              Last Match
+            </Text>
+          </PreviousGameXpContainer>
+        )}
         <RankContainer style={{ alignItems: "flex-end" }}>
-          <RankXpText>{nextRank.xp} XP</RankXpText>
+          <RankXpText>{formatNumber(nextRank.xp)} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
           <Text style={{ color: "#aaa" }}>{nextRank.name}</Text>
         </RankContainer>
@@ -175,6 +178,8 @@ const ProgressArrowContainer = styled.View({
   alignItems: "flex-end",
   position: "relative",
   left: 5,
+  padding: 5,
+  bottom: 5,
 });
 
 const PreviousGameXp = styled.Text`

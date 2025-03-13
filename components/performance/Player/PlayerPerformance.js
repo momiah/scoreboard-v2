@@ -58,6 +58,7 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
 
   const renderPlayer = ({ item: player, index }) => {
     const playerXp = player.XP;
+    const pointDifference = player.totalPointDifference || 0;
     const rankLevel = findRankIndex(playerXp) + 1;
 
     return (
@@ -94,8 +95,10 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
           <Stat>{player.numberOfWins}</Stat>
         </TableCell>
         <TableCell>
-          <StatTitle>XP</StatTitle>
-          <Stat>{playerXp.toFixed(0)}</Stat>
+          <StatTitle>PD</StatTitle>
+          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+            {pointDifference}
+          </Stat>
         </TableCell>
         <TableCell>
           <MedalDisplay xp={playerXp.toFixed(0)} size={45} />

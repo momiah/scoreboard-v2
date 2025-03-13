@@ -17,7 +17,9 @@ export default function App() {
         <LeagueProvider>
           <GameProvider>
             <NavigationContainer>
-              <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
+              <SafeAreaView
+                style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
+              >
                 <Stack.Navigator
                   screenOptions={{
                     headerShown: false,

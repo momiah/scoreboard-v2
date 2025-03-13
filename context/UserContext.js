@@ -7,6 +7,9 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  query,
+  where,
+  getCountFromServer,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import moment from "moment";
@@ -21,6 +24,24 @@ const UserProvider = ({ children }) => {
   const [players, setPlayers] = useState([]);
   const [player, setPlayer] = useState("");
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
+
+  useEffect(() => {
+    const loadInitialUser = async () => {
+      try {
+        const userId = await AsyncStorage.getItem("userId");
+        if (userId) {
+          const userData = await getUserById(userId);
+          setCurrentUser(userData);
+        }
+      } catch (error) {
+        console.error("Initial user load failed:", error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    loadInitialUser();
+  }, []);
 
   const newPlayer = {
     memberSince: moment().format("MMM YYYY"),
@@ -98,29 +119,6 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // const retrievePlayers = async () => {
-  //   try {
-  //     const scoreboardCollectionRef = collection(db, "scoreboard");
-  //     const playersCollectionRef = collection(
-  //       scoreboardCollectionRef,
-  //       "players",
-  //       "players"
-  //     );
-
-  //     const querySnapshot = await getDocs(playersCollectionRef);
-
-  //     const players = querySnapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       ...doc.data(),
-  //     }));
-
-  //     return players;
-  //   } catch (error) {
-  //     console.error("Error retrieving players:", error);
-  //     return [];
-  //   }
-  // };
-
   async function checkUserRole(leagueData) {
     try {
       // Retrieve userId from AsyncStorage
@@ -196,41 +194,37 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // const registerPlayer = async (player) => {
-  //   if (players.some((thePlayer) => thePlayer.id === player)) {
-  //     handleShowPopup("Player already exists!");
-  //     return;
-  //   }
+  const getAllUsers = async () => {
+    try {
+      const usersRef = collection(db, "users");
+      const querySnapshot = await getDocs(usersRef);
+      const users = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return users;
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      return [];
+    }
+  };
 
-  //   if (player.length > 10) {
-  //     handleShowPopup("Player name cannot be more than 10 characters!");
-  //     return;
-  //   }
+  const updateUsers = async (usersToUpdate) => {
+    try {
+      const updatePromises = usersToUpdate.map(async (user) => {
+        const userRef = doc(db, "users", user.id);
 
-  //   if (player.length < 3) {
-  //     handleShowPopup("Player name must be more than 3 characters!");
-  //     return;
-  //   }
+        await updateDoc(userRef, {
+          profileDetail: user.profileDetail,
+        });
+      });
 
-  //   try {
-  //     const scoreboardCollectionRef = collection(db, "scoreboard");
-  //     const playersCollectionRef = collection(
-  //       scoreboardCollectionRef,
-  //       "players",
-  //       "players"
-  //     );
-
-  //     const playerDocRef = doc(playersCollectionRef, player);
-  //     await setDoc(playerDocRef, newPlayer); // Write the data directly
-
-  //     handleShowPopup("Player saved successfully!");
-  //     await fetchPlayers();
-  //     Keyboard.dismiss();
-  //   } catch (error) {
-  //     console.error("Error saving player data:", error);
-  //     handleShowPopup("Error saving player data");
-  //   }
-  // };
+      await Promise.all(updatePromises);
+      console.log("All users updated successfully.");
+    } catch (error) {
+      console.error("Error updating users:", error);
+    }
+  };
 
   const updatePlayers = async (updatedPlayers, leagueId) => {
     if (updatedPlayers.length === 0) {
@@ -278,8 +272,6 @@ const UserProvider = ({ children }) => {
       return;
     }
 
-    console.log("updatedTeams", JSON.stringify(updatedTeams, null, 2));
-
     try {
       const leagueDocRef = doc(db, "leagues", leagueId);
 
@@ -311,8 +303,6 @@ const UserProvider = ({ children }) => {
       const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
 
       await updateDoc(leagueDocRef, { leagueTeams: finalTeamsArray });
-
-      console.log("Teams updated successfully!");
     } catch (error) {
       console.error("Error updating team data:", error);
     }
@@ -377,7 +367,6 @@ const UserProvider = ({ children }) => {
 
       // Use the player name (or ID) as the document ID
       const playerDocRef = doc(playersCollectionRef, "Abdul");
-      console.log("playerDocRef", playerDocRef);
       await setDoc(playerDocRef, newPlayer); // Write the data directly
       handleShowPopup("Player reset successfully!");
     } catch (error) {
@@ -428,13 +417,160 @@ const UserProvider = ({ children }) => {
         },
       });
 
-      console.log(
-        `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
-      );
+      // console.log(
+      //   `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
+      // );
     } catch (error) {
       console.error(`Error updating stats for user ${userId}:`, error);
     }
   };
+
+  const getGlobalRank = async (userId) => {
+    // Fetch the current user's profile to get their XP
+    const userProfile = await getUserById(userId);
+    const currentXP = userProfile?.profileDetail?.XP || 0;
+
+    // Create a query to count all users with XP greater than currentXP
+    const q = query(
+      collection(db, "users"),
+      where("profileDetail.XP", ">", currentXP)
+    );
+
+    const snapshot = await getCountFromServer(q);
+    const count = snapshot.data().count;
+
+    // The rank is count + 1 (if 5 users have higher XP, then rank is 6)
+    return count + 1;
+  };
+
+  const getLeaguesForUser = async (userId) => {
+    try {
+      // Get all leagues from the "leagues" collection
+      const leaguesRef = collection(db, "leagues");
+      const querySnapshot = await getDocs(leaguesRef);
+
+      // Filter the leagues where the user is a participant
+      const userLeagues = querySnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((league) => {
+          // Check if leagueParticipants exists and is an array
+          if (
+            !league.leagueParticipants ||
+            !Array.isArray(league.leagueParticipants)
+          ) {
+            return false;
+          }
+          // Return true if at least one participant has a matching userId
+          return league.leagueParticipants.some(
+            (participant) => participant.userId === userId
+          );
+        });
+
+      return userLeagues;
+    } catch (error) {
+      console.error("Error fetching leagues for user:", error);
+      return [];
+    }
+  };
+
+  // Add this in your UserProvider component
+  // UserContext.js - Final optimized version
+  const updateUserProfile = async (updatedFields) => {
+    console.log("Updating user profile with:", updatedFields);
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) throw new Error("User not authenticated");
+
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, updatedFields); // Surgical update
+
+      setCurrentUser((prev) => ({
+        ...prev,
+        ...updatedFields,
+      }));
+      return true; // Keep for success confirmation
+    } catch (error) {
+      console.error("Profile update failed:", error);
+      throw error;
+    }
+  };
+
+  const profileViewCount = async (profileUserId) => {
+    try {
+      const viewerId = await AsyncStorage.getItem("userId");
+
+      // Don't count if user is viewing their own profile
+      if (viewerId === profileUserId) return;
+
+      const userRef = doc(db, "users", profileUserId);
+
+      const userDoc = await getDoc(userRef);
+      const currentViews = userDoc.data().profileViews || 0;
+
+      await updateDoc(userRef, {
+        profileViews: currentViews + 1,
+      });
+    } catch (error) {
+      console.error("Error updating profile view count:", error);
+    }
+  };
+
+  // const calculateParticipantTotals = async () => {
+  //   try {
+  //     const userId = await AsyncStorage.getItem("userId");
+  //     if (!userId) {
+  //       return;
+  //     }
+
+  //     const leaguesRef = collection(db, "leagues");
+  //     const querySnapshot = await getDocs(leaguesRef);
+
+  //     const userLeagues = querySnapshot.docs
+  //       .map((doc) => doc.data())
+  //       .filter((league) =>
+  //         league.leagueParticipants.some(
+  //           (participant) => participant.userId === userId
+  //         )
+  //       );
+
+  //     const totals = {
+  //       userId: userId,
+  //       numberOfLosses: 0,
+  //       XP: 0,
+  //       winStreak5: 0,
+  //       winStreak7: 0,
+  //       numberOfGamesPlayed: 0,
+  //       // prevGameXP: 0,
+  //       totalPoints: 0,
+  //       demonWin: 0,
+  //       winStreak3: 0,
+  //       highestLossStreak: 0,
+  //       numberOfWins: 0,
+  //       highestWinStreak: 0,
+  //       winPercentage: 0,
+  //       // totalPointEfficiency: 0,
+  //     };
+
+  //     userLeagues.forEach((league) => {
+  //       const participant = league.leagueParticipants.find(
+  //         (p) => p.userId === userId
+  //       );
+
+  //       if (participant) {
+  //         Object.keys(totals).forEach((key) => {
+  //           if (key === "userId") return;
+  //           if (participant[key] !== undefined) {
+  //             totals[key] += participant[key];
+  //           }
+  //         });
+  //       }
+  //     });
+
+  //     return totals;
+  //   } catch (error) {
+  //     console.error("Error calculating totals:", error);
+  //   }
+  // };
 
   return (
     <UserContext.Provider
@@ -449,6 +585,14 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        profileViewCount,
+        currentUser,
+        updateUserProfile,
+        getLeaguesForUser,
+        getGlobalRank,
+        updateUsers,
+        getAllUsers,
+        // calculateParticipantTotals,
         retrieveTeams,
         updateTeams,
         updatePlacementStats,

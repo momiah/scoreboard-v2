@@ -65,7 +65,7 @@ const Home = () => {
     }
   };
 
-  const checkUserToken = async () => {
+  const addLeague = async () => {
     const token = await AsyncStorage.getItem("userToken");
 
     if (token) {
@@ -115,7 +115,7 @@ const Home = () => {
 
         <SubHeader
           title="Leagues"
-          onIconPress={checkUserToken}
+          onIconPress={addLeague}
           actionText="Browse Leagues"
           showIcon
           navigationRoute={"Leagues"}
@@ -153,7 +153,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const HomeContainer = styled.ScrollView({
   flex: 1,
-  backgroundColor: "#00152B",
+  backgroundColor: " rgb(3, 16, 31)",
   width: "100%",
   paddingHorizontal: 20,
 });

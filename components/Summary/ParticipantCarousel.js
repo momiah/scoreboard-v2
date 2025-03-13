@@ -4,15 +4,25 @@ import Tooltip from "../Tooltip"; // Import the Tooltip component
 import { trophies } from "../../mockImages/index";
 import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
+import { useNavigation } from "@react-navigation/native";
 
 const ParticipantCarousel = ({ leagueParticipants }) => {
+  const navigation = useNavigation();
+
   return (
     <ParticipantContainer>
       <SectionTitle>Participants</SectionTitle>
       {leagueParticipants?.length > 0 ? (
         <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
           {leagueParticipants.map((participant, index) => (
-            <ParticipantView key={index}>
+            <ParticipantView
+              key={index}
+              onPress={() => {
+                navigation.navigate("UserProfile", {
+                  userId: participant.userId,
+                });
+              }}
+            >
               <Avatar source={CourtChampsLogo} />
               <ParticipantName>{participant.id}</ParticipantName>
             </ParticipantView>

@@ -1,22 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { Text, StyleSheet } from "react-native";
+import { formatNumber } from "../../functions/formatNumber";
 
 const AnimateNumber = ({ number, fontSize = 12, progressBar = false }) => {
   const [displayValue, setDisplayValue] = useState(0);
   const [isPercentage, setIsPercentage] = useState(false);
 
   useEffect(() => {
+    if (number === undefined || number === null) {
+      setDisplayValue(0);
+      return;
+    }
+
     const duration = 1000; // animation duration in ms
     const startTime = performance.now();
 
     // Check if the number is a percentage
-    let parsedNumber;
-    if (typeof number === "string" && number.endsWith("%")) {
-      parsedNumber = parseFloat(number.replace("%", ""));
-      setIsPercentage(true);
-    } else {
-      parsedNumber = parseFloat(number);
-      setIsPercentage(false);
+    let parsedNumber = 0;
+    if (typeof number === "string") {
+      if (number.endsWith("%")) {
+        parsedNumber = parseFloat(number.replace("%", ""));
+        setIsPercentage(true);
+      } else {
+        parsedNumber = parseFloat(number.replace(/,/g, "")); // Remove commas before parsing
+        setIsPercentage(false);
+      }
+    } else if (typeof number === "number") {
+      parsedNumber = number;
     }
 
     const animate = (currentTime) => {
@@ -41,7 +51,7 @@ const AnimateNumber = ({ number, fontSize = 12, progressBar = false }) => {
         { fontSize: fontSize, width: progressBar ? 50 : "auto" },
       ]}
     >
-      {displayValue}
+      {formatNumber(displayValue)}
       {isPercentage && "%"}
     </Text>
   );

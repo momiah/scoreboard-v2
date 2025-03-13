@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { View, Text, Modal } from "react-native";
+import { View, Text, Modal, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import MedalDisplay from "../performance/MedalDisplay";
@@ -10,6 +10,8 @@ import { Dimensions } from "react-native";
 import ResultLog from "../performance/ResultLog";
 import { GameContext } from "../../context/GameContext";
 import { BlurView } from "expo-blur";
+import { useNavigation } from "@react-navigation/native";
+import PerformanceStats from "../performance/PerformanceStats";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -38,6 +40,7 @@ const PlayerDetails = ({
   setShowPlayerDetails,
   selectedPlayer,
 }) => {
+  const navigation = useNavigation();
   const { medalNames } = useContext(GameContext);
   const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
 
@@ -70,7 +73,7 @@ const PlayerDetails = ({
       statTitle: "Avg Point Difference",
       stat: (
         <AnimateNumber
-          number={selectedPlayer.averagePointDifference.toFixed(0)}
+          number={selectedPlayer.averagePointDifference?.toFixed(0) || 0}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -132,6 +135,30 @@ const PlayerDetails = ({
                 >
                   Last Active {selectedPlayer.lastActive}
                 </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowPlayerDetails(false); // Close the modal
+                    // Navigate to the Profile tab, passing the selected user's ID
+                    navigation.navigate("UserProfile", {
+                      userId: selectedPlayer.userId,
+                    });
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: screenWidth <= 400 ? 12 : 14,
+                      marginTop: 15,
+                      fontWeight: "bold",
+                      backgroundColor: "#00A2FF",
+                      padding: 5,
+                      borderRadius: 5,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    Go to profile
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <MedalContainer>
@@ -157,17 +184,10 @@ const PlayerDetails = ({
               winStreak7={selectedPlayer.winStreak7}
             />
 
-            {/* Player Stats */}
-            <PlayerStat>
-              {statData.map((data, index) => {
-                return (
-                  <TableCell key={index}>
-                    <StatTitle>{data.statTitle}</StatTitle>
-                    {data.stat}
-                  </TableCell>
-                );
-              })}
-            </PlayerStat>
+            <PerformanceStats
+              statData={statData}
+              selectedPlayer={selectedPlayer}
+            />
           </ModalContent>
         </ModalContainer>
       </Modal>
