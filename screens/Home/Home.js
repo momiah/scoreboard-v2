@@ -86,7 +86,7 @@ const Home = () => {
         </Overview>
 
         {/* Set mocks */}
-        <View
+        {/* <View
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -104,7 +104,7 @@ const Home = () => {
               transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
             }}
           />
-        </View>
+        </View> */}
         {userName ? (
           <Text style={{ color: "white" }}>Hello, {userName} </Text>
         ) : (
