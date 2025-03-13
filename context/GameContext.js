@@ -1,5 +1,11 @@
 // GameContext.js
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import { Alert } from "react-native";
 import {
   deleteDoc,
@@ -82,13 +88,22 @@ const GameProvider = ({ children }) => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  const getRankByXP = (xp) => {
-    const rank = ranks
-      .slice()
-      .reverse()
-      .find((rank) => xp >= rank.xp);
-    return rank || ranks[0]; // Default to the first rank if no match is found
-  };
+  const getRankByXP = useCallback((xp) => {
+    let low = 0;
+    let high = ranks.length - 1;
+    let result = ranks[0]; // Default to lowest rank
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      if (ranks[mid].xp <= xp) {
+        result = ranks[mid];
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return result;
+  }, []);
 
   const retrieveGames = async () => {
     try {
