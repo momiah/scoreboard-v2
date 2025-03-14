@@ -9,6 +9,7 @@ import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
 import Notifications from "../screens/Notifications";
 import Schedule from "../screens/Schedule";
+import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
 import Signup from "../screens/Authentication/Signup";
@@ -28,6 +29,7 @@ const HomeStack = () => {
       <Stack.Screen name="Leagues" component={Leagues} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="AllPlayers" component={AllPlayers} />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />

@@ -16,24 +16,11 @@ import { sortTopPlayers } from "../../functions/sortTopPlayers";
 
 const iconSize = 45;
 
-const TopPlayers = () => {
-  const { getAllUsers } = useContext(UserContext);
+const TopPlayers = ({ topPlayers, fetchUsers }) => {
+  // const { getAllUsers } = useContext(UserContext);
   const { findRankIndex } = useContext(GameContext);
-  const [sortedUsers, setSortedUsers] = useState([]);
+  // const [sortedUsers, setSortedUsers] = useState([]);
   const navigation = useNavigation();
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const users = await getAllUsers();
-        setSortedUsers(sortTopPlayers(users));
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
-      }
-    };
-
-    fetchUsers();
-  }, [getAllUsers]);
 
   const renderPlayer = useCallback(
     ({ item: player, index }) => {
@@ -42,7 +29,7 @@ const TopPlayers = () => {
       const rankLevel = findRankIndex(playerXp) + 1;
 
       return (
-        <PlayerContainer
+        <PlayerRow
           key={player.id}
           onPress={() => {
             navigation.navigate("UserProfile", {
@@ -80,13 +67,13 @@ const TopPlayers = () => {
             <MedalDisplay xp={playerXp.toFixed(0)} size={iconSize} />
             <RankLevel>{rankLevel}</RankLevel>
           </TableCell>
-        </PlayerContainer>
+        </PlayerRow>
       );
     },
     [findRankIndex]
   );
 
-  const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
+  // const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
 
   return (
     <FlatList
@@ -97,6 +84,13 @@ const TopPlayers = () => {
       maxToRenderPerBatch={5}
       windowSize={5}
       scrollEnabled={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={false}
+          onRefresh={fetchUsers}
+          tintColor="white"
+        />
+      }
     />
   );
 };
@@ -106,7 +100,7 @@ const Container = styled.ScrollView({
   width: "100%",
 });
 
-const PlayerContainer = styled.TouchableOpacity({
+const PlayerRow = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
