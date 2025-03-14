@@ -220,7 +220,7 @@ const UserProvider = ({ children }) => {
       });
 
       await Promise.all(updatePromises);
-      console.log("All users updated successfully.");
+      // console.log("All users updated successfully.");
     } catch (error) {
       console.error("Error updating users:", error);
     }
@@ -476,7 +476,6 @@ const UserProvider = ({ children }) => {
   // Add this in your UserProvider component
   // UserContext.js - Final optimized version
   const updateUserProfile = async (updatedFields) => {
-    console.log("Updating user profile with:", updatedFields);
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
