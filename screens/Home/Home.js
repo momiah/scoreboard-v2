@@ -23,14 +23,13 @@ import AddLeagueModel from "../../components/Modals/AddLeagueModal";
 import { LeagueContext } from "../../context/LeagueContext";
 import { Switch } from "react-native";
 import { UserContext } from "../../context/UserContext";
-import { sortTopPlayers } from "../../functions/sortTopPlayers";
 
 const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
   const { setShowMockData, showMockData } = useContext(LeagueContext);
-  const { getUserById, getAllUsers } = useContext(UserContext);
+  const { getUserById, getAllUsers, rankSorting } = useContext(UserContext);
   const [userName, setUserName] = useState("");
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -67,7 +66,11 @@ const Home = () => {
     try {
       if (!refreshing) setLoading(true); // ✅ Show loading indicator only if not pulling to refresh
       const users = await getAllUsers();
-      setSortedUsers(sortTopPlayers(users));
+      const sorted = rankSorting(users).map((user, index) => ({
+        ...user,
+        globalRank: index + 1,
+      }));
+      setSortedUsers(sorted);
     } catch (error) {
       console.error("Failed to fetch users:", error);
     } finally {

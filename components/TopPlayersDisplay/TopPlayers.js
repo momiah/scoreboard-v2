@@ -12,7 +12,6 @@ import MedalDisplay from "../../components/performance/MedalDisplay";
 import { FlatList, RefreshControl } from "react-native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
-import { sortTopPlayers } from "../../functions/sortTopPlayers";
 
 const iconSize = 45;
 
