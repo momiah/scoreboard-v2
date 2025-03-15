@@ -184,7 +184,7 @@ const SearchInput = styled.TextInput({
   color: "white",
   borderRadius: 8,
   borderWidth: 1,
-  borderColor: "1px solid rgb(9, 33, 62)",
+  borderColor: "1px solid rgb(15, 53, 99)",
 });
 
 const PlayerRow = styled.TouchableOpacity({
