@@ -30,6 +30,7 @@ const AddGameModal = ({
   setModalVisible,
   leagueId,
   leagueGames,
+  leagueType = "Singles",
 }) => {
   const { addGame } = useContext(GameContext);
   const {
@@ -50,9 +51,16 @@ const AddGameModal = ({
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState({
-    team1: ["", ""],
-    team2: ["", ""],
+    team1: leagueType === "Singles" ? [""] : ["", ""],
+    team2: leagueType === "Singles" ? [""] : ["", ""],
   });
+
+  // useEffect(() => {
+  //   setSelectedPlayers({
+  //     team1: leagueType === "Singles" ? [""] : ["", ""],
+  //     team2: leagueType === "Singles" ? [""] : ["", ""],
+  //   });
+  // }, [leagueType]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -66,12 +74,18 @@ const AddGameModal = ({
       return {
         winner: {
           team: "Team 1",
-          players: [team1.player1, team1.player2],
+          players:
+            leagueType === "Singles"
+              ? [team1.player1]
+              : [team1.player1, team1.player2],
           score: team1.score,
         },
         loser: {
           team: "Team 2",
-          players: [team2.player1, team2.player2],
+          players:
+            leagueType === "Singles"
+              ? [team2.player1]
+              : [team2.player1, team2.player2],
           score: team2.score,
         },
       };
@@ -79,12 +93,18 @@ const AddGameModal = ({
       return {
         winner: {
           team: "Team 2",
-          players: [team2.player1, team2.player2],
+          players:
+            leagueType === "Singles"
+              ? [team2.player1]
+              : [team2.player1, team2.player2],
           score: team2.score,
         },
         loser: {
           team: "Team 1",
-          players: [team1.player1, team1.player2],
+          players:
+            leagueType === "Singles"
+              ? [team1.player1]
+              : [team1.player1, team1.player2],
           score: team1.score,
         },
       };
@@ -94,21 +114,13 @@ const AddGameModal = ({
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
       const isPlayerSelected = Object.values(prev).flat().includes(player);
-      if (isPlayerSelected) {
-        return prev;
-      }
+      if (isPlayerSelected) return prev;
 
       const newTeam = [...prev[team]];
+      if (index >= newTeam.length) return prev; // Prevent index overflow
       newTeam[index] = player;
       return { ...prev, [team]: newTeam };
     });
-  };
-
-  const handleScoreChange = (setScore) => (text) => {
-    const numericText = text.replace(/[^0-9]/g, "");
-    if (numericText.length <= 2) {
-      setScore(numericText);
-    }
   };
 
   const handleAddGame = async () => {
@@ -128,24 +140,27 @@ const AddGameModal = ({
     }
 
     const gameId = generateUniqueGameId(leagueGames);
+
     const newGame = {
-      gameId: gameId,
+      gameId,
       gamescore: `${team1Score} - ${team2Score}`,
       date: moment().format("DD-MM-YYYY"),
       team1: {
         player1: selectedPlayers.team1[0],
-        player2: selectedPlayers.team1[1],
+        player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
         score: parseInt(team1Score) || 0,
       },
       team2: {
         player1: selectedPlayers.team2[0],
-        player2: selectedPlayers.team2[1],
+        player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
         score: parseInt(team2Score) || 0,
       },
       get result() {
-        return calculateWin(this.team1, this.team2);
+        return calculateWin(this.team1, this.team2, this.leagueType);
       },
     };
+
+    console.log("newGame", JSON.stringify(newGame, null, 2));
 
     const allPlayers = await retrievePlayers(leagueId);
     const allUsers = await getAllUsers();
@@ -157,6 +172,8 @@ const AddGameModal = ({
         .concat(newGame.result.loser.players)
         .includes(player.id)
     );
+
+    console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
     // console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
@@ -173,6 +190,8 @@ const AddGameModal = ({
       allUsers,
       playersToUpdate
     );
+
+    console.log("usersToUpdate", JSON.stringify(usersToUpdate, null, 2));
 
     const playerPerformance = calculatePlayerPerformance(
       newGame,

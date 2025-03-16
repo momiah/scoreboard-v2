@@ -42,6 +42,8 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
     }
   }, [leagueId, modalVisible]);
 
+  const leagueType = leagueById?.leagueType;
+
   //////////////////////////
   //UPDATE - CURRENTLY ABLE TO DELETE A GAME AND REVERT PLAYER STATS BACK TO PREVIOUS STATE BUT WILL
   // NEED TO ADD FUNCTIONALITY TO DELETE FURTHER BACK THAN JUST THE PREVIOUS GAME AND UPDATE PLAYER STATS ACCORDINGLY
@@ -138,7 +140,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
               <GameContainer
                 onPress={() => openDeleteGameContainer(item.gameId)}
               >
-                {deleteGameContainer && deleteGameId === item.gameId && (
+                {/* {deleteGameContainer && deleteGameId === item.gameId && (
                   <DeleteGameContainer>
                     <DeleteGameButton
                       style={{ backgroundColor: "red" }}
@@ -153,7 +155,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
                       <DeleteGameButtonText>Cancel</DeleteGameButtonText>
                     </DeleteGameButton>
                   </DeleteGameContainer>
-                )}
+                )} */}
 
                 <TeamContainer>
                   <TeamTextContainer style={{ borderTopLeftRadius: 8 }}>
@@ -227,6 +229,7 @@ const Scoreboard = ({ leagueGames, leagueId }) => {
           setModalVisible={setModalVisible}
           leagueId={leagueId}
           leagueGames={leagueGames}
+          gameType={leagueType}
         />
       )}
     </Container>

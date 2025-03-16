@@ -239,8 +239,6 @@ export const calculatePlayerPerformance = (
       player.pointDifferenceLog = [];
     }
 
-    console.log("user in calculatePointDifference", user);
-
     if (!player.totalPointDifference) {
       player.totalPointDifference = 0;
     }
