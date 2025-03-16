@@ -160,6 +160,7 @@ const AddGameModal = ({
 
     // console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
+    //TODO - Instead of using allUsers, use the usersToUpdate array to update only the users that need to be updated
     const getUsersFromPlayersToUpdate = (allUsers, playersToUpdate) => {
       // Extract the userIds from the playersToUpdate array
       const playerUserIds = playersToUpdate.map((player) => player.userId);

@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import {
   Image,
   SafeAreaView,
   View,
   Text,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
@@ -27,8 +29,11 @@ const Home = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
   const { setShowMockData, showMockData } = useContext(LeagueContext);
-  const { Logout, getUserById } = useContext(UserContext);
+  const { getUserById, getAllUsers, rankSorting } = useContext(UserContext);
   const [userName, setUserName] = useState("");
+  const [sortedUsers, setSortedUsers] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const getUserInfo = async () => {
     try {
@@ -54,9 +59,28 @@ const Home = () => {
       const token = await AsyncStorage.getItem("userToken");
       setUserToken(token);
     };
-    // Logout()
-
     fetchUserToken();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      if (!refreshing) setLoading(true); // ✅ Show loading indicator only if not pulling to refresh
+      const users = await getAllUsers();
+      const sorted = rankSorting(users).map((user, index) => ({
+        ...user,
+        globalRank: index + 1,
+      }));
+      setSortedUsers(sorted);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setRefreshing(false);
+      setLoading(false); // ✅ Hide loading indicator when done
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
   const navigateTo = (route) => {
@@ -75,9 +99,20 @@ const Home = () => {
     }
   };
 
+  const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
-      <HomeContainer>
+      {loading && (
+        <LoadingContainer>
+          <ActivityIndicator size="large" color="#00A2FF" />
+        </LoadingContainer>
+      )}
+      <HomeContainer
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={fetchUsers} />
+        }
+      >
         <Overview>
           <Image
             source={CourtChampLogo}
@@ -85,26 +120,6 @@ const Home = () => {
           />
         </Overview>
 
-        {/* Set mocks */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            // paddingLeft: 27,
-          }}
-        >
-          <Text style={{ color: "white" }}>Set Mock Data </Text>
-          <Switch
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={showMockData ? "#00152B" : "#f4f3f4"}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={() => setShowMockData(!showMockData)}
-            value={showMockData}
-            style={{
-              transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
-            }}
-          />
-        </View>
         {userName ? (
           <Text style={{ color: "white" }}>Hello, {userName} </Text>
         ) : (
@@ -125,10 +140,11 @@ const Home = () => {
 
         <SubHeader
           title="Top Players"
-          onIconPress={() => navigateTo("Players")}
+          // onIconPress={() => navigateTo("AllPlayers")}
           actionText="See All Players"
+          navigationRoute={"AllPlayers"}
         />
-        <TopPlayers topPlayers={topPlayers} />
+        <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
 
         <SubHeader
           title="Tournaments"
@@ -166,4 +182,38 @@ const Overview = styled.View({
   paddingRight: 15,
 });
 
+const LoadingContainer = styled.View({
+  position: "absolute",
+  top: 10, // Adjusts position near the top
+  left: 0,
+  right: 0,
+  alignItems: "center",
+  zIndex: 10, // Keeps it above other elements
+});
+
 export default Home;
+
+{
+  /* Set mocks */
+}
+{
+  /* <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            // paddingLeft: 27,
+          }}
+        >
+          <Text style={{ color: "white" }}>Set Mock Data </Text>
+          <Switch
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={showMockData ? "#00152B" : "#f4f3f4"}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={() => setShowMockData(!showMockData)}
+            value={showMockData}
+            style={{
+              transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
+            }}
+          />
+        </View> */
+}

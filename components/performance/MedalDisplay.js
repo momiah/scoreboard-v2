@@ -1,9 +1,22 @@
-import rankingMedals from "../../rankingMedals";
-import { ranks } from "../../rankingMedals/ranking/ranks";
-
+// MedalDisplay.js
 import React, { useContext } from "react";
-import { View, Image, Text } from "react-native";
+import { Image } from "react-native";
 import { GameContext } from "../../context/GameContext";
+
+const MedalDisplay = ({ xp, size }) => {
+  const { getRankByXP } = useContext(GameContext);
+  const rank = getRankByXP(xp);
+
+  return (
+    <Image
+      source={rank.icon}
+      style={{ width: size, height: size, resizeMode: "contain" }}
+    />
+  );
+};
+
+// Move memo() to the export
+export default React.memo(MedalDisplay);
 
 // Function to map XP to medal image // Halo 3 ranks
 // const getMedalByXP = (xp) => {
@@ -50,25 +63,3 @@ import { GameContext } from "../../context/GameContext";
 
 //   return rankingMedals.recruit; // Default to recruit for XP < 200
 // };
-
-const MedalDisplay = ({ xp, size }) => {
-  const { getRankByXP } = useContext(GameContext);
-  // const medalSource = getMedalByXP(xp); Halo 3 ranks
-
-  const newRanks = getRankByXP(xp);
-
-  return (
-    <View>
-      {newRanks ? (
-        <Image
-          source={newRanks.icon}
-          style={{ width: size, height: size, resizeMode: "contain" }}
-        />
-      ) : (
-        <Text>No medal for this XP</Text>
-      )}
-    </View>
-  );
-};
-
-export default MedalDisplay;

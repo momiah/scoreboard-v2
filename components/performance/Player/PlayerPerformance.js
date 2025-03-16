@@ -69,11 +69,6 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
           setSelectedPlayer(player);
         }}
       >
-        {/* <GradientOverlay
-          colors={["rgba(0, 0, 0, 0.6)", "rgba(0, 0, 0, 0.1)"]}
-          end={{ x: 0.8, y: 3 }}
-          locations={[0.1, 0.4]}
-        /> */}
         <TableCell>
           <Rank>
             {index + 1}
@@ -154,14 +149,6 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
 //   borderRadius: 8,
 //   backgroundColor: "#00A2FF",
 // });
-
-const GradientOverlay = styled(LinearGradient)({
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-});
 
 const TableContainer = styled.View({
   paddingTop: 20,

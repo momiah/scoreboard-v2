@@ -8,8 +8,9 @@ import {
   getDoc,
   updateDoc,
   query,
-  where,
-  getCountFromServer,
+  orderBy,
+  startAt,
+  endAt,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import moment from "moment";
@@ -220,7 +221,7 @@ const UserProvider = ({ children }) => {
       });
 
       await Promise.all(updatePromises);
-      console.log("All users updated successfully.");
+      // console.log("All users updated successfully.");
     } catch (error) {
       console.error("Error updating users:", error);
     }
@@ -425,23 +426,62 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const getGlobalRank = async (userId) => {
-    // Fetch the current user's profile to get their XP
-    const userProfile = await getUserById(userId);
-    const currentXP = userProfile?.profileDetail?.XP || 0;
+  const rankSorting = (users) => {
+    // Create a copy to avoid mutating original array
+    return [...users].sort((a, b) => {
+      // Add null safety checks
+      const aDetail = a.profileDetail || {};
+      const bDetail = b.profileDetail || {};
 
-    // Create a query to count all users with XP greater than currentXP
-    const q = query(
-      collection(db, "users"),
-      where("profileDetail.XP", ">", currentXP)
-    );
+      if (bDetail.XP !== aDetail.XP) return bDetail.XP - aDetail.XP;
+      if (bDetail.numberOfWins !== aDetail.numberOfWins)
+        return bDetail.numberOfWins - aDetail.numberOfWins;
+      if (bDetail.winPercentage !== aDetail.winPercentage)
+        return bDetail.winPercentage - aDetail.winPercentage;
+      if (bDetail.totalPointDifference !== aDetail.totalPointDifference)
+        return bDetail.totalPointDifference - aDetail.totalPointDifference;
 
-    const snapshot = await getCountFromServer(q);
-    const count = snapshot.data().count;
-
-    // The rank is count + 1 (if 5 users have higher XP, then rank is 6)
-    return count + 1;
+      // Fallback to username comparison
+      return (a.username || "").localeCompare(b.username || "");
+    });
   };
+
+  const getGlobalRank = async (userId) => {
+    try {
+      // 1. Get all users using existing fetch logic
+      const allUsers = await getAllUsers();
+
+      // 2. Use the EXACT SAME sorting as AllPlayers
+      const sorted = rankSorting(allUsers);
+
+      // 3. Find index of the target user
+      const userIndex = sorted.findIndex((user) => user.userId === userId);
+
+      // 4. Return rank (index + 1)
+      return userIndex >= 0 ? userIndex + 1 : null;
+    } catch (error) {
+      console.error("Rank check failed:", error);
+      return null;
+    }
+  };
+
+  // const getGlobalRank = async (userId) => {
+  //   // Fetch the current user's profile to get their XP
+  //   const userProfile = await getUserById(userId);
+  //   const currentXP = userProfile?.profileDetail?.XP || 0;
+
+  //   // Create a query to count all users with XP greater than currentXP
+  //   const q = query(
+  //     collection(db, "users"),
+  //     where("profileDetail.XP", ">", currentXP)
+  //   );
+
+  //   const snapshot = await getCountFromServer(q);
+  //   const count = snapshot.data().count;
+
+  //   // The rank is count + 1 (if 5 users have higher XP, then rank is 6)
+  //   return count + 1;
+  // };
 
   const getLeaguesForUser = async (userId) => {
     try {
@@ -476,7 +516,6 @@ const UserProvider = ({ children }) => {
   // Add this in your UserProvider component
   // UserContext.js - Final optimized version
   const updateUserProfile = async (updatedFields) => {
-    console.log("Updating user profile with:", updatedFields);
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
@@ -512,6 +551,24 @@ const UserProvider = ({ children }) => {
       });
     } catch (error) {
       console.error("Error updating profile view count:", error);
+    }
+  };
+
+  const searchUsers = async (searchTerm) => {
+    try {
+      const usersRef = collection(db, "users");
+      const q = query(
+        usersRef,
+        orderBy("username"), // Now properly imported
+        startAt(searchTerm.toLowerCase()),
+        endAt(searchTerm.toLowerCase() + "\uf8ff")
+      );
+
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error("Error searching users:", error);
+      return [];
     }
   };
 
@@ -585,6 +642,8 @@ const UserProvider = ({ children }) => {
         playersData,
         setPlayersData,
 
+        rankSorting,
+        searchUsers,
         profileViewCount,
         currentUser,
         updateUserProfile,

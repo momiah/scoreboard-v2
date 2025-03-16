@@ -6,7 +6,6 @@ const numberFormatter = new Intl.NumberFormat("en-US");
  * @returns {string} The formatted number.
  */
 export const formatNumber = (value) => {
-  console.log("value", value);
   if (typeof value === "string") {
     value = parseFloat(value);
   }
