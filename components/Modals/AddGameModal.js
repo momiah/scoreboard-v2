@@ -24,6 +24,7 @@ import { calculateTeamPerformance } from "../../functions/calculateTeamPerforman
 
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const AddGameModal = ({
   modalVisible,
@@ -33,6 +34,7 @@ const AddGameModal = ({
   leagueType = "Singles",
 }) => {
   const { addGame } = useContext(GameContext);
+  const { fetchLeagueById } = useContext(LeagueContext);
   const {
     handleShowPopup,
     setPopupMessage,
@@ -54,13 +56,6 @@ const AddGameModal = ({
     team1: leagueType === "Singles" ? [""] : ["", ""],
     team2: leagueType === "Singles" ? [""] : ["", ""],
   });
-
-  // useEffect(() => {
-  //   setSelectedPlayers({
-  //     team1: leagueType === "Singles" ? [""] : ["", ""],
-  //     team2: leagueType === "Singles" ? [""] : ["", ""],
-  //   });
-  // }, [leagueType]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -218,6 +213,7 @@ const AddGameModal = ({
     setTeam2Score("");
 
     handleShowPopup("Game added and players updated successfully!");
+    await fetchLeagueById(leagueId);
 
     console.log("Game added successfully.");
   };

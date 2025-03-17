@@ -21,10 +21,10 @@ import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus"
 const League = () => {
   const route = useRoute();
   const { leagueId } = route.params;
-  const { leagues, fetchLeagueById } = useContext(LeagueContext);
+  const { fetchLeagueById, leagueById } = useContext(LeagueContext);
   const { checkUserRole } = useContext(UserContext);
 
-  const [leagueDetails, setLeagueDetails] = useState(null);
+  // const [leagueDetails, setLeagueDetails] = useState(leagueById);
   const [loading, setLoading] = useState(true); // Track loading state
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
   const [modalVisible, setModalVisible] = useState(false);
@@ -40,7 +40,7 @@ const League = () => {
     {
       component: "Player Performance",
     },
-    ...(leagueDetails?.leagueType !== "Singles"
+    ...(leagueById?.leagueType !== "Singles"
       ? [
           {
             component: "Team Performance",
@@ -49,36 +49,46 @@ const League = () => {
       : []),
   ];
 
-  const leagueGames = leagueDetails?.games;
-  const maxPlayers = leagueDetails?.maxPlayers;
-  const leagueParticipantsLength = leagueDetails?.leagueParticipants.length;
-  const teams = leagueDetails?.leagueTeams;
+  const leagueGames = leagueById?.games;
+  const leagueType = leagueById?.leagueType;
+  const startDate = leagueById?.startDate;
+  const endDate = leagueById?.endDate;
 
-  const leagueStatus = calculateLeagueStatus(leagueDetails);
+  console.log("startDate update", startDate);
+
+  const maxPlayers = leagueById?.maxPlayers;
+  const leagueParticipantsLength = leagueById?.leagueParticipants.length;
+  const participants = leagueById?.leagueParticipants;
+  const teams = leagueById?.leagueTeams;
+
+  const leagueStatus = calculateLeagueStatus(leagueById);
 
   const renderComponent = () => {
     switch (selectedTab) {
       case "Summary":
         return (
           <LeagueSummary
-            leagueDetails={leagueDetails}
-            setLeagueDetails={setLeagueDetails}
+            leagueDetails={leagueById}
+            // setLeagueDetails={setLeagueDetails}
             userRole={userRole}
+            startDate={startDate}
+            endDate={endDate}
           />
         );
       case "Scoreboard":
         return (
-          <Scoreboard leagueGames={leagueDetails?.games} leagueId={leagueId} />
-        );
-      case "Player Performance":
-        return (
-          <PlayerPerformance
-            playersData={leagueDetails?.leagueParticipants}
+          <Scoreboard
+            leagueGames={leagueGames}
+            leagueType={leagueType}
             leagueId={leagueId}
+            userRole={userRole}
+            startDate={startDate}
           />
         );
+      case "Player Performance":
+        return <PlayerPerformance playersData={participants} />;
       case "Team Performance":
-        return <TeamPerformance leagueId={leagueId} leagueTeams={teams} />;
+        return <TeamPerformance leagueTeams={teams} />;
       default:
         return null;
     }
@@ -92,7 +102,7 @@ const League = () => {
 
   const fetchLeagueDetails = async (id) => {
     const fetchedDetails = await fetchLeagueById(id);
-    setLeagueDetails(fetchedDetails);
+    // setLeagueDetails(fetchedDetails);
     setLoading(false);
   };
 
@@ -116,7 +126,7 @@ const League = () => {
   }
 
   async function getUserRole() {
-    const role = await checkUserRole(leagueDetails);
+    const role = await checkUserRole(leagueById);
     setUserRole(role);
   }
 
@@ -143,7 +153,7 @@ const League = () => {
               <Ionicons name="person" size={15} color={"#00A2FF"} />
             </NumberOfPlayers>
 
-            <LeagueName>{leagueDetails?.leagueName}</LeagueName>
+            <LeagueName>{leagueById?.leagueName}</LeagueName>
             <View
               style={{
                 flexDirection: "row",
@@ -152,7 +162,7 @@ const League = () => {
               }}
             >
               <LeagueLocation>
-                {leagueDetails?.centerName}, {leagueDetails?.location}
+                {leagueById?.centerName}, {leagueById?.location}
               </LeagueLocation>
               <Ionicons
                 name={"location"}
@@ -173,7 +183,7 @@ const League = () => {
               }}
             >
               <View style={{ flexDirection: "row", gap: 5 }}>
-                <Tag name={leagueDetails?.leagueType} />
+                <Tag name={leagueType} />
                 <Tag name="TROPHY" />
               </View>
 
@@ -233,11 +243,11 @@ const League = () => {
         <InvitePlayerModel
           modalVisible={modalVisible}
           setModalVisible={setModalVisible}
-          leagueDetails={leagueDetails}
+          leagueById={leagueById}
         />
       )}
 
-      {/* <Scoreboard mockgames={leagueDetails.games} /> */}
+      {/* <Scoreboard mockgames={leagueById.games} /> */}
     </View>
   );
 };

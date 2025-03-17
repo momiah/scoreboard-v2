@@ -23,7 +23,7 @@ const UserProvider = ({ children }) => {
   const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
     useContext(PopupContext);
   const [players, setPlayers] = useState([]);
-  const [player, setPlayer] = useState("");
+
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
 
   useEffect(() => {
@@ -172,28 +172,6 @@ const UserProvider = ({ children }) => {
   };
 
   const [loading, setLoading] = useState(true); // Track loading state
-  const [playersData, setPlayersData] = useState([]);
-
-  const fetchPlayersToSort = async (leagueId) => {
-    setLoading(true); // Set loading to true while fetching
-    try {
-      const retrievedPlayers = await retrievePlayers(leagueId);
-
-      // Sort the players based on the sum of XP + totalPoints
-      const sortedPlayers = retrievedPlayers.sort((a, b) => {
-        const totalA = a.XP + a.totalPoints;
-        const totalB = b.XP + b.totalPoints;
-
-        return totalB - totalA; // Sort in descending order
-      });
-
-      setPlayersData(sortedPlayers);
-    } catch (error) {
-      console.error("Error fetching players:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getAllUsers = async () => {
     try {
@@ -465,24 +443,6 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // const getGlobalRank = async (userId) => {
-  //   // Fetch the current user's profile to get their XP
-  //   const userProfile = await getUserById(userId);
-  //   const currentXP = userProfile?.profileDetail?.XP || 0;
-
-  //   // Create a query to count all users with XP greater than currentXP
-  //   const q = query(
-  //     collection(db, "users"),
-  //     where("profileDetail.XP", ">", currentXP)
-  //   );
-
-  //   const snapshot = await getCountFromServer(q);
-  //   const count = snapshot.data().count;
-
-  //   // The rank is count + 1 (if 5 users have higher XP, then rank is 6)
-  //   return count + 1;
-  // };
-
   const getLeaguesForUser = async (userId) => {
     try {
       // Get all leagues from the "leagues" collection
@@ -572,63 +532,6 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // const calculateParticipantTotals = async () => {
-  //   try {
-  //     const userId = await AsyncStorage.getItem("userId");
-  //     if (!userId) {
-  //       return;
-  //     }
-
-  //     const leaguesRef = collection(db, "leagues");
-  //     const querySnapshot = await getDocs(leaguesRef);
-
-  //     const userLeagues = querySnapshot.docs
-  //       .map((doc) => doc.data())
-  //       .filter((league) =>
-  //         league.leagueParticipants.some(
-  //           (participant) => participant.userId === userId
-  //         )
-  //       );
-
-  //     const totals = {
-  //       userId: userId,
-  //       numberOfLosses: 0,
-  //       XP: 0,
-  //       winStreak5: 0,
-  //       winStreak7: 0,
-  //       numberOfGamesPlayed: 0,
-  //       // prevGameXP: 0,
-  //       totalPoints: 0,
-  //       demonWin: 0,
-  //       winStreak3: 0,
-  //       highestLossStreak: 0,
-  //       numberOfWins: 0,
-  //       highestWinStreak: 0,
-  //       winPercentage: 0,
-  //       // totalPointEfficiency: 0,
-  //     };
-
-  //     userLeagues.forEach((league) => {
-  //       const participant = league.leagueParticipants.find(
-  //         (p) => p.userId === userId
-  //       );
-
-  //       if (participant) {
-  //         Object.keys(totals).forEach((key) => {
-  //           if (key === "userId") return;
-  //           if (participant[key] !== undefined) {
-  //             totals[key] += participant[key];
-  //           }
-  //         });
-  //       }
-  //     });
-
-  //     return totals;
-  //   } catch (error) {
-  //     console.error("Error calculating totals:", error);
-  //   }
-  // };
-
   return (
     <UserContext.Provider
       value={{
@@ -636,11 +539,8 @@ const UserProvider = ({ children }) => {
         popupMessage,
 
         retrievePlayers,
-        fetchPlayersToSort,
         loading,
         setLoading,
-        playersData,
-        setPlayersData,
 
         rankSorting,
         searchUsers,
@@ -651,7 +551,6 @@ const UserProvider = ({ children }) => {
         getGlobalRank,
         updateUsers,
         getAllUsers,
-        // calculateParticipantTotals,
         retrieveTeams,
         updateTeams,
         updatePlacementStats,
@@ -661,10 +560,7 @@ const UserProvider = ({ children }) => {
         fetchPlayers,
         setPlayers,
         updatePlayers,
-        // registerPlayer,
-        setPlayer,
         players,
-        player,
         getUserById,
         checkUserRole,
       }}
