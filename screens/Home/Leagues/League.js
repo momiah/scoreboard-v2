@@ -54,8 +54,6 @@ const League = () => {
   const startDate = leagueById?.startDate;
   const endDate = leagueById?.endDate;
 
-  console.log("startDate update", startDate);
-
   const maxPlayers = leagueById?.maxPlayers;
   const leagueParticipantsLength = leagueById?.leagueParticipants.length;
   const participants = leagueById?.leagueParticipants;

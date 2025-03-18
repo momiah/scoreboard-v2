@@ -6,7 +6,7 @@ import { UserContext } from "../../context/UserContext";
 import { Dimensions } from "react-native";
 
 import AddGameModal from "../Modals/AddGameModal";
-import { LeagueContext } from "../../context/LeagueContext";
+
 import moment from "moment";
 
 const Scoreboard = ({
@@ -17,17 +17,8 @@ const Scoreboard = ({
   leagueStartDate,
 }) => {
   const { fetchPlayers } = useContext(UserContext);
-  const { fetchLeagueById, leagueById } = useContext(LeagueContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
-
-  // useEffect(() => {
-  //   if (leagueId) {
-  //     fetchLeagueById(leagueId);
-  //   }
-  // }, [leagueId, modalVisible]);
-
-  // const leagueType = leagueById?.leagueType;
 
   const handleAddGameButton = () => {
     fetchPlayers(leagueId);
@@ -46,9 +37,6 @@ const Scoreboard = ({
 
   const hasLeagueStarted = todaysDate.isSameOrAfter(startDate);
 
-  console.log("user role", userRole);
-
-  // const reverseGames =leagueById.games.reverse()
   return (
     <Container>
       {/* Participant or Admin Actions */}
@@ -101,9 +89,11 @@ const Scoreboard = ({
                 <TeamTextContainer style={{ borderTopLeftRadius: 8 }}>
                   <Team>{item.team1.player1}</Team>
                 </TeamTextContainer>
-                <TeamTextContainer style={{ borderBottomLeftRadius: 8 }}>
-                  <Team>{item.team1.player2}</Team>
-                </TeamTextContainer>
+                {leagueType === "Doubles" && (
+                  <TeamTextContainer style={{ borderBottomLeftRadius: 8 }}>
+                    <Team>{item.team1.player2}</Team>
+                  </TeamTextContainer>
+                )}
               </TeamContainer>
 
               <ResultsContainer>
@@ -120,11 +110,13 @@ const Scoreboard = ({
                     {item.team2.player1}
                   </Team>
                 </TeamTextContainer>
-                <TeamTextContainer style={{ borderBottomRightRadius: 8 }}>
-                  <Team style={{ textAlign: "right" }}>
-                    {item.team2.player2}
-                  </Team>
-                </TeamTextContainer>
+                {leagueType === "Doubles" && (
+                  <TeamTextContainer style={{ borderBottomRightRadius: 8 }}>
+                    <Team style={{ textAlign: "right" }}>
+                      {item.team2.player2}
+                    </Team>
+                  </TeamTextContainer>
+                )}
               </TeamContainer>
             </GameContainer>
           </>

@@ -6,6 +6,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  ActivityIndicator,
   Dimensions,
 } from "react-native";
 import { GameContext } from "../../context/GameContext";
@@ -50,6 +51,7 @@ const AddGameModal = ({
     getAllUsers,
     updateUsers,
   } = useContext(UserContext);
+  const [loading, setLoading] = useState(false);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState({
@@ -119,6 +121,7 @@ const AddGameModal = ({
   };
 
   const handleAddGame = async () => {
+    setLoading(true);
     // Check if both teams have selected players
     if (
       selectedPlayers.team1.every((player) => player === "") ||
@@ -214,7 +217,7 @@ const AddGameModal = ({
 
     handleShowPopup("Game added and players updated successfully!");
     await fetchLeagueById(leagueId);
-
+    setLoading(false);
     console.log("Game added successfully.");
   };
 
@@ -263,15 +266,19 @@ const AddGameModal = ({
 
               <ButtonContainer>
                 <SubmitButton onPress={handleAddGame}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "bold",
-                      color: "white",
-                    }}
-                  >
-                    Submit
-                  </Text>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "bold",
+                        color: "white",
+                      }}
+                    >
+                      Submit
+                    </Text>
+                  )}
                 </SubmitButton>
               </ButtonContainer>
             </ModalContent>

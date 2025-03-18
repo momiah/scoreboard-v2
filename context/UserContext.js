@@ -238,7 +238,7 @@ const UserProvider = ({ children }) => {
 
       // Optionally fetch the updated players to refresh the UI
       await fetchPlayers(leagueId);
-      handleShowPopup("Players updated successfully!");
+      // handleShowPopup("Players updated successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);
       handleShowPopup("Error updating player data");
