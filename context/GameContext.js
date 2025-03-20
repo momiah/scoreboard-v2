@@ -147,9 +147,6 @@ const GameProvider = ({ children }) => {
 
         // Update the league document with the updated games array
         await updateDoc(leagueDocRef, { games: updatedGames });
-
-        handleShowPopup("Game added and players updated successfully!");
-        setGames((prevGames) => [newGame, ...prevGames]);
       } else {
         console.error("League document not found.");
         Alert.alert("Error", "League not found.");
