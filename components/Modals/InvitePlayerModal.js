@@ -26,7 +26,12 @@ const InvitePlayerModal = ({
   const [searchUser, setSearchUser] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [inviteUsers, setInviteUsers] = useState([]);
+  const [errorText, setErrorText] = useState("");
   const handleSendInvite = () => {
+    if (inviteUsers.length === 0) {
+      setErrorText("Please select at least one player to invite");
+      return;
+    }
     setModalVisible(false);
   };
 
@@ -61,6 +66,9 @@ const InvitePlayerModal = ({
             user.userId !== currentUserId && // Exclude the logged-in user
             !leagueDetails.leagueParticipants.some(
               (selectedUser) => selectedUser.userId === user.userId
+            ) &&
+            !inviteUsers.some(
+              (invitedUser) => invitedUser.userId === user.userId
             ) // Exclude already selected users
           );
         });
@@ -124,20 +132,16 @@ const InvitePlayerModal = ({
                       {leagueDetails.centerName}, {leagueDetails.location}
                     </LeagueLocation>
                   </View>
-                  <Tag
-                    name={leagueDetails.leagueStatus.status}
-                    color={leagueDetails.leagueStatus.color}
-                  />
+
                   <View
                     style={{
                       flexDirection: "row",
-                      justifyContent: "space-between",
+                      gap: 5,
+                      marginTop: 10,
                     }}
                   >
-                    <View style={{ flexDirection: "row" }}>
-                      <Tag name={leagueDetails.leagueType} />
-                      <Tag name={leagueDetails.prizeType} />
-                    </View>
+                    <Tag name={leagueDetails.leagueType} />
+                    <Tag name={leagueDetails.prizeType} />
                   </View>
                 </LeagueDetailsContainer>
                 <Label>Search Players</Label>
@@ -151,12 +155,32 @@ const InvitePlayerModal = ({
                   <DropdownContainer>
                     <FlatList
                       data={suggestions}
-                      keyExtractor={(item) => item.email || item.id}
-                      renderItem={({ item }) => (
-                        <DropdownItem onPress={() => handleSelectUser(item)}>
-                          <DropdownText>{item.username}</DropdownText>
-                        </DropdownItem>
-                      )}
+                      keyExtractor={(item) => item.userId} // Use userId instead of email
+                      renderItem={({ item }) => {
+                        const isAlreadySelected = inviteUsers.some(
+                          (invitedUser) => invitedUser.userId === item.userId
+                        );
+
+                        return (
+                          <DropdownItem
+                            onPress={() =>
+                              !isAlreadySelected && handleSelectUser(item)
+                            }
+                            disabled={isAlreadySelected}
+                            style={{
+                              backgroundColor: isAlreadySelected
+                                ? "#444"
+                                : "rgb(5, 34, 64)",
+                              opacity: isAlreadySelected ? 0.6 : 1,
+                            }}
+                          >
+                            <DropdownText>
+                              {item.username}
+                              {isAlreadySelected && " (selected)"}
+                            </DropdownText>
+                          </DropdownItem>
+                        );
+                      }}
                     />
                   </DropdownContainer>
                 )}
@@ -169,9 +193,15 @@ const InvitePlayerModal = ({
                     renderItem={({ item }) => (
                       <UserItem>
                         <UserName>{item.username}</UserName>
-                        <RemoveButton onPress={() => handleRemoveUser(item)}>
+                        <AntDesign
+                          name="closecircleo"
+                          size={20}
+                          color="red"
+                          onPress={() => handleRemoveUser(item)}
+                        />
+                        {/* <RemoveButton onPress={() => handleRemoveUser(item)}>
                           <RemoveText>✖</RemoveText>
-                        </RemoveButton>
+                        </RemoveButton> */}
                       </UserItem>
                     )}
                   />
@@ -182,6 +212,9 @@ const InvitePlayerModal = ({
                   with the venue. Court Champs does not reserve any courts when
                   you post a game
                 </DisclaimerText>
+                <View style={{ width: "100%" }}>
+                  {errorText && <ErrorText>{errorText}</ErrorText>}
+                </View>
 
                 <ButtonContainer>
                   <CreateButton onPress={handleSendInvite}>
@@ -298,17 +331,17 @@ const CreateText = styled.Text({
   color: "white",
 });
 const DropdownContainer = styled.View({
-  backgroundColor: "#2D3748", // Dark gray to match the input field
-  borderRadius: 20, // Rounded corners
+  backgroundColor: "rgb(4, 26, 49)", // Translucent dark blue
+  borderRadius: 5, // Rounded corners
   padding: 10, // Padding inside the container
-  marginTop: 5, // Spacing from the input field
+  marginVertical: 5, // Spacing from the input field
   maxHeight: "200px",
   width: "100%",
 });
 
 const DropdownItem = styled.TouchableOpacity({
-  backgroundColor: "#4A5568", // Slightly lighter gray for contrast
-  borderRadius: 15, // Consistent rounding
+  backgroundColor: "rgb(5, 34, 64)", // Translucent dark blue
+  borderRadius: 5, // Consistent rounding
   padding: 10, // Spacing inside the item
   marginVertical: 5, // Space between items
 });
@@ -325,8 +358,8 @@ const UserItem = styled.View({
   alignItems: "center", // Center items vertically
   padding: 10, // Add spacing inside the item
   marginVertical: 5, // Space between items
-  backgroundColor: "#4A5568", // Background color
-  borderRadius: 15, // Rounded corners
+  backgroundColor: "rgb(5, 34, 64)", // Translucent dark blue
+  borderRadius: 5, // Rounded corners
   width: "100%",
 });
 
@@ -345,6 +378,14 @@ const RemoveButton = styled.TouchableOpacity({
 const RemoveText = styled.Text({
   color: "#FFFFFF", // White text color
   fontWeight: "bold", // Bold text for emphasis
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
+  textAlign: "left",
+  marginVertical: 10,
 });
 
 export default InvitePlayerModal;
