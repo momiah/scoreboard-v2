@@ -241,11 +241,9 @@ const League = () => {
         <InvitePlayerModel
           modalVisible={modalVisible}
           setModalVisible={setModalVisible}
-          leagueById={leagueById}
+          leagueDetails={leagueById}
         />
       )}
-
-      {/* <Scoreboard mockgames={leagueById.games} /> */}
     </View>
   );
 };
