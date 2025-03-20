@@ -51,6 +51,7 @@ const AddGameModal = ({
     getAllUsers,
     updateUsers,
   } = useContext(UserContext);
+  const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
@@ -127,13 +128,17 @@ const AddGameModal = ({
       selectedPlayers.team1.every((player) => player === "") ||
       selectedPlayers.team2.every((player) => player === "")
     ) {
-      handleShowPopup("Please select players for both teams.");
+      setErrorText("Please select players for both teams.");
+      setLoading(false);
+      // handleShowPopup("Please select players for both teams.");
       return;
     }
 
     // Check if both teams have entered scores
     if (!team1Score || !team2Score) {
-      handleShowPopup("Please enter scores for both teams.");
+      setErrorText("Please enter scores for both teams.");
+      setLoading(false);
+      // handleShowPopup("Please enter scores for both teams.");
       return;
     }
 
@@ -188,8 +193,6 @@ const AddGameModal = ({
       allUsers,
       playersToUpdate
     );
-
-    console.log("usersToUpdate", JSON.stringify(usersToUpdate, null, 2));
 
     const playerPerformance = calculatePlayerPerformance(
       newGame,
@@ -263,24 +266,23 @@ const AddGameModal = ({
                 selectedPlayers={selectedPlayers}
                 handleSelectPlayer={handleSelectPlayer}
               />
+              {errorText && <ErrorText>{errorText}</ErrorText>}
 
-              <ButtonContainer>
-                <SubmitButton onPress={handleAddGame}>
-                  {loading ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "bold",
-                        color: "white",
-                      }}
-                    >
-                      Submit
-                    </Text>
-                  )}
-                </SubmitButton>
-              </ButtonContainer>
+              <SubmitButton onPress={handleAddGame}>
+                {loading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                  >
+                    Submit
+                  </Text>
+                )}
+              </SubmitButton>
             </ModalContent>
           </GradientOverlay>
         </ModalContainer>
@@ -313,22 +315,21 @@ const GradientOverlay = styled(LinearGradient)({
   opacity: 0.9,
 });
 
-const ButtonContainer = styled.View({
-  alignItems: "center",
-  marginTop: 20,
-  marginBottom: 20,
-  paddingRight: 5,
-  paddingLeft: 5,
-});
-
 const SubmitButton = styled.TouchableOpacity({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
   padding: 10,
+  marginTop: 20,
   borderRadius: 8,
   width: screenWidth <= 400 ? 250 : 300,
   backgroundColor: "#00A2FF",
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
 });
 
 export default AddGameModal;
