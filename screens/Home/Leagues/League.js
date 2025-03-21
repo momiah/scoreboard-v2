@@ -59,6 +59,8 @@ const League = () => {
   const participants = leagueById?.leagueParticipants;
   const teams = leagueById?.leagueTeams;
 
+  console.log("participants", participants);
+
   const leagueStatus = calculateLeagueStatus(leagueById);
 
   const renderComponent = () => {
@@ -80,7 +82,7 @@ const League = () => {
             leagueType={leagueType}
             leagueId={leagueId}
             userRole={userRole}
-            startDate={startDate}
+            leagueStartDate={startDate}
           />
         );
       case "Player Performance":

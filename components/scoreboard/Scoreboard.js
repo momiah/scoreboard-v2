@@ -32,10 +32,12 @@ const Scoreboard = ({
     }
   }
 
-  const startDate = moment(leagueStartDate, "DD-MM-YYYY");
-  const todaysDate = moment();
+  // const startDate = moment(leagueStartDate, "DD-MM-YYYY");
+  const todaysDate = moment().format("DD-MM-YYYY");
 
-  const hasLeagueStarted = todaysDate.isSameOrAfter(startDate);
+  const hasLeagueStarted = moment(todaysDate, "DD-MM-YYYY").isSameOrAfter(
+    moment(leagueStartDate, "DD-MM-YYYY")
+  );
 
   return (
     <Container>

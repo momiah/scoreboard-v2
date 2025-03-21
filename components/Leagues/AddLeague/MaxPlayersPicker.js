@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const MaxPlayersPicker = ({ setLeagueDetails }) => {
+const MaxPlayersPicker = ({ setLeagueDetails, errorText }) => {
   const [maximumPlayers, setMaximumPlayers] = useState(null);
 
   const handleSelectPlayers = (players) => {
@@ -16,7 +16,10 @@ const MaxPlayersPicker = ({ setLeagueDetails }) => {
 
   return (
     <Container>
-      <Label>Max Players</Label>
+      <LabelContainer>
+        <Label>Max Players</Label>
+        {errorText && <ErrorText>{errorText}</ErrorText>}
+      </LabelContainer>
       <MaxPlayersPickerContainer>
         {maxPlayers.map((players, index) => (
           <PlayerButton
@@ -70,8 +73,21 @@ const MaxPlayerNumber = styled.Text(({ isSelected }) => ({
 const Label = styled.Text({
   color: "#ccc",
   alignSelf: "flex-start",
-  marginBottom: 5,
   fontSize: 14,
+});
+
+const LabelContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  marginBottom: 5,
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
 });
 
 export default MaxPlayersPicker;
