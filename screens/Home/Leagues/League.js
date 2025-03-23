@@ -59,8 +59,6 @@ const League = () => {
   const participants = leagueById?.leagueParticipants;
   const teams = leagueById?.leagueTeams;
 
-  console.log("participants", participants);
-
   const leagueStatus = calculateLeagueStatus(leagueById);
 
   const renderComponent = () => {

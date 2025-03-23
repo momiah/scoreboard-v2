@@ -163,8 +163,6 @@ const AddGameModal = ({
       },
     };
 
-    console.log("newGame", JSON.stringify(newGame, null, 2));
-
     const allPlayers = await retrievePlayers(leagueId);
     const allUsers = await getAllUsers();
 
@@ -175,8 +173,6 @@ const AddGameModal = ({
         .concat(newGame.result.loser.players)
         .includes(player.id)
     );
-
-    console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
     // console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 

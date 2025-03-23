@@ -64,7 +64,7 @@ const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
 
       <Modal
         transparent={true}
-        animationType="none"
+        animationType="fade"
         visible={dropdownVisible}
         onRequestClose={() => setDropdownVisible(false)}
       >
