@@ -8,7 +8,13 @@ import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PlayTime from "./PlayTime";
 
-const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
+const LeagueSummary = ({
+  leagueDetails,
+  setLeagueDetails,
+  userRole,
+  startDate,
+  endDate,
+}) => {
   const { handleLeagueDescription } = useContext(LeagueContext); // Get the function from context
   const [description, setDescription] = useState(
     leagueDetails?.description || ""
@@ -19,14 +25,14 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
     setDescription(text);
   };
 
-  const handleConfirmDescription = () => {
-    handleLeagueDescription(description); // Update Firebase
-    setLeagueDetails((prevDetails) => ({
-      ...prevDetails,
-      description,
-    }));
-    setIsEditing(false); // Exit editing mode
-  };
+  // const handleConfirmDescription = () => {
+  //   handleLeagueDescription(description); // Update Firebase
+  //   setLeagueDetails((prevDetails) => ({
+  //     ...prevDetails,
+  //     description,
+  //   }));
+  //   setIsEditing(false); // Exit editing mode
+  // };
 
   const handleCancelDescription = () => {
     setDescription(leagueDetails.description || ""); // Reset to original description
@@ -45,7 +51,7 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
     <LeagueSummaryContainer>
       <PrizeDistribution
         prizePool={prizePool}
-        endDate={leagueDetails?.endDate}
+        endDate={endDate}
         leagueParticipants={leagueDetails?.leagueParticipants}
       />
 
@@ -54,11 +60,11 @@ const LeagueSummary = ({ leagueDetails, setLeagueDetails, userRole }) => {
         <DateRow>
           <DateView>
             <SectionTitle>Start Date</SectionTitle>
-            <DateValue>{leagueDetails?.startDate || "N/A"}</DateValue>
+            <DateValue>{startDate || "N/A"}</DateValue>
           </DateView>
           <DateView>
             <SectionTitle>End Date</SectionTitle>
-            <DateValue>{leagueDetails?.endDate || "N/A"}</DateValue>
+            <DateValue>{endDate || "N/A"}</DateValue>
           </DateView>
         </DateRow>
       </Section>

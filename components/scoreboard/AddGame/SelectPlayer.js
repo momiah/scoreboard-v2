@@ -55,6 +55,7 @@ const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
       <PlayerSelectContainer
         onPress={() => setDropdownVisible(true)}
         style={borderDirection(borderType)}
+        hasBorder={borderType === "none" ? false : true}
       >
         <PlayerSelect style={textDirection(borderType)}>
           {selected || "Select Player"}
@@ -104,11 +105,11 @@ const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
-const PlayerSelectContainer = styled.TouchableOpacity({
+const PlayerSelectContainer = styled.TouchableOpacity(({ hasBorder }) => ({
   width: screenWidth <= 400 ? 110 : 110,
   alignItems: "center",
-  border: "1px solid #262626",
-});
+  border: hasBorder ? "1px solid #262626" : "none",
+}));
 
 const PlayerSelect = styled.Text({
   fontSize: 12,

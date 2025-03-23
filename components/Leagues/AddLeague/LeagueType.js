@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const LeagueType = ({ setLeagueDetails }) => {
+const LeagueType = ({ setLeagueDetails, errorText }) => {
   const [leagueType, setLeagueType] = useState(null);
 
   const handleSelectLeagueType = (type) => {
@@ -16,7 +16,10 @@ const LeagueType = ({ setLeagueDetails }) => {
 
   return (
     <Container>
-      <Label>League Type</Label>
+      <LabelContainer>
+        <Label>League Type</Label>
+        {errorText && <ErrorText>{errorText}</ErrorText>}
+      </LabelContainer>
       <LeagueTypeContainer>
         {leagueTypes.map((type, index) => (
           <LeagueTypeButton
@@ -72,8 +75,21 @@ const LeagueTypeText = styled.Text(({ isSelected }) => ({
 const Label = styled.Text({
   color: "#ccc",
   alignSelf: "flex-start",
-  marginBottom: 5,
   fontSize: 14,
+});
+
+const LabelContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  marginBottom: 5,
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
 });
 
 export default LeagueType;

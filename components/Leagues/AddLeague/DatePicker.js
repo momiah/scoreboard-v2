@@ -7,7 +7,7 @@ import { calculateEndDate } from "../../../functions/calculateEndDate";
 import { formatDateForDisplay } from "../../../functions/formatDateForDisplay";
 import { formatDateForStorage } from "../../../functions/formatDateForStorage";
 
-const DatePicker = ({ setLeagueDetails, leagueDetails }) => {
+const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [leagueLengths, setLeagueLength] = useState(null);
   const [tempDate, setTempDate] = useState(null);
@@ -82,7 +82,10 @@ const DatePicker = ({ setLeagueDetails, leagueDetails }) => {
     <DatePickerContainer>
       {/* Start Date Picker */}
       <DatePickerContent>
-        <Label>Start Date</Label>
+        <LabelContainer>
+          <Label>Start Date</Label>
+          {errorText && <ErrorText>{errorText}</ErrorText>}
+        </LabelContainer>
         <DatePickerButton
           isVisible={datePickerVisible}
           onPress={showDatePicker}
@@ -194,6 +197,13 @@ const LengthContainer = styled.View({
 
 const Label = styled.Text({
   color: "#ccc",
+});
+
+const LabelContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
   marginBottom: 5,
 });
 
@@ -252,5 +262,11 @@ const LeagueLengthText = styled.Text(({ isSelected }) => ({
   textAlign: "center",
   color: isSelected ? "white" : "#7b7b7b",
 }));
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
+});
 
 export default DatePicker;

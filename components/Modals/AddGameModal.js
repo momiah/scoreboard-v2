@@ -6,6 +6,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  ActivityIndicator,
   Dimensions,
 } from "react-native";
 import { GameContext } from "../../context/GameContext";
@@ -24,14 +25,17 @@ import { calculateTeamPerformance } from "../../functions/calculateTeamPerforman
 
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const AddGameModal = ({
   modalVisible,
   setModalVisible,
   leagueId,
   leagueGames,
+  leagueType = "Singles",
 }) => {
   const { addGame } = useContext(GameContext);
+  const { fetchLeagueById } = useContext(LeagueContext);
   const {
     handleShowPopup,
     setPopupMessage,
@@ -47,11 +51,13 @@ const AddGameModal = ({
     getAllUsers,
     updateUsers,
   } = useContext(UserContext);
+  const [errorText, setErrorText] = useState("");
+  const [loading, setLoading] = useState(false);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState({
-    team1: ["", ""],
-    team2: ["", ""],
+    team1: leagueType === "Singles" ? [""] : ["", ""],
+    team2: leagueType === "Singles" ? [""] : ["", ""],
   });
 
   const handleClosePopup = () => {
@@ -66,12 +72,18 @@ const AddGameModal = ({
       return {
         winner: {
           team: "Team 1",
-          players: [team1.player1, team1.player2],
+          players:
+            leagueType === "Singles"
+              ? [team1.player1]
+              : [team1.player1, team1.player2],
           score: team1.score,
         },
         loser: {
           team: "Team 2",
-          players: [team2.player1, team2.player2],
+          players:
+            leagueType === "Singles"
+              ? [team2.player1]
+              : [team2.player1, team2.player2],
           score: team2.score,
         },
       };
@@ -79,12 +91,18 @@ const AddGameModal = ({
       return {
         winner: {
           team: "Team 2",
-          players: [team2.player1, team2.player2],
+          players:
+            leagueType === "Singles"
+              ? [team2.player1]
+              : [team2.player1, team2.player2],
           score: team2.score,
         },
         loser: {
           team: "Team 1",
-          players: [team1.player1, team1.player2],
+          players:
+            leagueType === "Singles"
+              ? [team1.player1]
+              : [team1.player1, team1.player2],
           score: team1.score,
         },
       };
@@ -94,58 +112,58 @@ const AddGameModal = ({
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
       const isPlayerSelected = Object.values(prev).flat().includes(player);
-      if (isPlayerSelected) {
-        return prev;
-      }
+      if (isPlayerSelected) return prev;
 
       const newTeam = [...prev[team]];
+      if (index >= newTeam.length) return prev; // Prevent index overflow
       newTeam[index] = player;
       return { ...prev, [team]: newTeam };
     });
   };
 
-  const handleScoreChange = (setScore) => (text) => {
-    const numericText = text.replace(/[^0-9]/g, "");
-    if (numericText.length <= 2) {
-      setScore(numericText);
-    }
-  };
-
   const handleAddGame = async () => {
+    setLoading(true);
     // Check if both teams have selected players
     if (
       selectedPlayers.team1.every((player) => player === "") ||
       selectedPlayers.team2.every((player) => player === "")
     ) {
-      handleShowPopup("Please select players for both teams.");
+      setErrorText("Please select players for both teams.");
+      setLoading(false);
+      // handleShowPopup("Please select players for both teams.");
       return;
     }
 
     // Check if both teams have entered scores
     if (!team1Score || !team2Score) {
-      handleShowPopup("Please enter scores for both teams.");
+      setErrorText("Please enter scores for both teams.");
+      setLoading(false);
+      // handleShowPopup("Please enter scores for both teams.");
       return;
     }
 
     const gameId = generateUniqueGameId(leagueGames);
+
     const newGame = {
-      gameId: gameId,
+      gameId,
       gamescore: `${team1Score} - ${team2Score}`,
       date: moment().format("DD-MM-YYYY"),
       team1: {
         player1: selectedPlayers.team1[0],
-        player2: selectedPlayers.team1[1],
+        player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
         score: parseInt(team1Score) || 0,
       },
       team2: {
         player1: selectedPlayers.team2[0],
-        player2: selectedPlayers.team2[1],
+        player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
         score: parseInt(team2Score) || 0,
       },
       get result() {
-        return calculateWin(this.team1, this.team2);
+        return calculateWin(this.team1, this.team2, this.leagueType);
       },
     };
+
+    console.log("newGame", JSON.stringify(newGame, null, 2));
 
     const allPlayers = await retrievePlayers(leagueId);
     const allUsers = await getAllUsers();
@@ -157,6 +175,8 @@ const AddGameModal = ({
         .concat(newGame.result.loser.players)
         .includes(player.id)
     );
+
+    console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
     // console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
@@ -199,7 +219,8 @@ const AddGameModal = ({
     setTeam2Score("");
 
     handleShowPopup("Game added and players updated successfully!");
-
+    await fetchLeagueById(leagueId);
+    setLoading(false);
     console.log("Game added successfully.");
   };
 
@@ -245,9 +266,12 @@ const AddGameModal = ({
                 selectedPlayers={selectedPlayers}
                 handleSelectPlayer={handleSelectPlayer}
               />
+              {errorText && <ErrorText>{errorText}</ErrorText>}
 
-              <ButtonContainer>
-                <SubmitButton onPress={handleAddGame}>
+              <SubmitButton onPress={handleAddGame}>
+                {loading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
                   <Text
                     style={{
                       fontSize: 14,
@@ -257,8 +281,8 @@ const AddGameModal = ({
                   >
                     Submit
                   </Text>
-                </SubmitButton>
-              </ButtonContainer>
+                )}
+              </SubmitButton>
             </ModalContent>
           </GradientOverlay>
         </ModalContainer>
@@ -291,22 +315,21 @@ const GradientOverlay = styled(LinearGradient)({
   opacity: 0.9,
 });
 
-const ButtonContainer = styled.View({
-  alignItems: "center",
-  marginTop: 20,
-  marginBottom: 20,
-  paddingRight: 5,
-  paddingLeft: 5,
-});
-
 const SubmitButton = styled.TouchableOpacity({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
   padding: 10,
+  marginTop: 20,
   borderRadius: 8,
   width: screenWidth <= 400 ? 250 : 300,
   backgroundColor: "#00A2FF",
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
 });
 
 export default AddGameModal;

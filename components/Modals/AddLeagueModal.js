@@ -26,13 +26,17 @@ import Popup from "../popup/Popup";
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const { addLeagues } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
-  const {
-    handleShowPopup,
-    setPopupMessage,
-    popupMessage,
-    setShowPopup,
-    showPopup,
-  } = useContext(PopupContext);
+  const [errorText, setErrorText] = useState({
+    leagueName: "",
+    location: "",
+    centerName: "",
+    startDate: "",
+    leagueLengthInMonths: "",
+    leagueType: "",
+    maxPlayers: "",
+    privacy: "",
+  });
+
   const [leagueDetails, setLeagueDetails] = useState({
     leagueParticipants: [],
     leagueTeams: [],
@@ -58,43 +62,65 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     leagueStatus: "FULL",
   });
 
-  const handleClosePopup = () => {
-    setShowPopup(false);
-    setPopupMessage("");
-
-    // setModalVisible(false);
-  };
-
   useEffect(() => {
-    getAdminInfo();
+    assignLeagueAdmin();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getAdminInfo = async () => {
+  const assignLeagueAdmin = async () => {
     try {
-      const userId = await AsyncStorage.getItem("userId"); // Retrieve userId from AsyncStorage
+      const userId = await AsyncStorage.getItem("userId");
       if (!userId) {
         console.log("No userId found in AsyncStorage.");
         return;
       }
 
       const userInfo = await getUserById(userId);
-      setLeagueDetails((prevDetails) => ({
-        ...prevDetails, // Spread the existing state
-        leagueAdmins: [...prevDetails.leagueAdmins, userInfo], // Add new admin to the array immutably
-      }));
 
-      const rearrangedData = {
-        id: userInfo.username, // Rename firstName + lastName to id
+      // Create fresh profile details with only XP preserved
+      const initialProfileDetail = {
+        XP: userInfo.profileDetail?.XP || 0, // Only keep XP
+        averagePointDifference: 0,
+        currentStreak: { count: 0, type: null },
+        demonWin: 0,
+        highestLossStreak: 0,
+        highestWinStreak: 0,
+        id: userInfo.username,
+        lastActive: "",
+        memberSince: userInfo.profileDetail?.memberSince || "",
+        numberOfGamesPlayed: 0,
+        numberOfLosses: 0,
+        numberOfWins: 0,
+        pointEfficiency: 0,
+        prevGameXP: 0,
+        resultLog: [],
+        totalPointDifference: 0,
+        totalPointEfficiency: 0,
+        totalPoints: 0,
         userId: userInfo.userId,
-        ...userInfo.profileDetail, // Merge profile details
+        winPercentage: 0,
+        winStreak3: 0,
+        winStreak5: 0,
+        winStreak7: 0,
       };
+
       setLeagueDetails((prevDetails) => ({
-        ...prevDetails, // Spread the existing state
-        leagueParticipants: [...prevDetails.leagueParticipants, rearrangedData], // Add new admin to the array immutably
+        ...prevDetails,
+        leagueAdmins: [
+          ...prevDetails.leagueAdmins,
+          { userId: userInfo.userId, username: userInfo.username },
+        ],
+        leagueParticipants: [
+          ...prevDetails.leagueParticipants,
+          {
+            id: userInfo.username,
+            userId: userInfo.userId,
+            ...initialProfileDetail,
+          },
+        ],
       }));
     } catch (error) {
-      console.error("Error retrieving admin info:", error);
+      console.error("Error assigning league admin:", error);
     }
   };
 
@@ -118,18 +144,18 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       "privacy",
     ];
 
-    // Find the first missing field in order
-    const firstMissingField = requiredFields.find(
-      (field) => !leagueDetails[field]
-    );
+    // Create error object
+    const newErrors = {};
+    requiredFields.forEach((field) => {
+      if (!leagueDetails[field]) {
+        newErrors[field] = "required";
+      }
+    });
 
-    if (firstMissingField) {
-      const formattedField = firstMissingField
-        .replace(/([A-Z])/g, " $1")
-        .toLowerCase()
-        .replace(/^./, (str) => str.toUpperCase());
+    setErrorText(newErrors);
 
-      handleShowPopup(`Please fill in the ${formattedField}.`);
+    // Check if any errors exist
+    if (Object.values(newErrors).some((error) => error)) {
       return;
     }
 
@@ -146,16 +172,14 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Popup
-          visible={showPopup}
-          message={popupMessage}
-          onClose={handleClosePopup}
-        />
         <ModalContainer>
           <ModalContent>
             <ModalTitle>Create League</ModalTitle>
 
-            <Label>League Name</Label>
+            <LabelContainer>
+              <Label>League Name </Label>
+              {errorText && <ErrorText>{errorText.leagueName}</ErrorText>}
+            </LabelContainer>
             <Input
               placeholder="Enter league name"
               placeholderTextColor="#ccc"
@@ -163,8 +187,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               onChangeText={(value) => handleChange("leagueName", value)}
               style={{ backgroundColor: "#243237" }}
             />
-
-            <Label>Location</Label>
+            <LabelContainer>
+              <Label>Location </Label>
+              {errorText && <ErrorText>{errorText.location}</ErrorText>}
+            </LabelContainer>
             <Input
               placeholder="Enter location"
               placeholderTextColor="#ccc"
@@ -172,7 +198,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               onChangeText={(value) => handleChange("location", value)}
               style={{ backgroundColor: "#243237" }}
             />
-            <Label>Center Name</Label>
+            <LabelContainer>
+              <Label>Center Name </Label>
+              {errorText && <ErrorText>{errorText.centerName}</ErrorText>}
+            </LabelContainer>
             <Input
               placeholder="Enter center name"
               placeholderTextColor="#ccc"
@@ -184,11 +213,21 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             <DatePicker
               setLeagueDetails={setLeagueDetails}
               leagueDetails={leagueDetails}
+              errorText={errorText.startDate}
             />
 
-            <MaxPlayersPicker setLeagueDetails={setLeagueDetails} />
-            <LeagueType setLeagueDetails={setLeagueDetails} />
-            <PrivacyType setLeagueDetails={setLeagueDetails} />
+            <MaxPlayersPicker
+              setLeagueDetails={setLeagueDetails}
+              errorText={errorText.maxPlayers}
+            />
+            <LeagueType
+              setLeagueDetails={setLeagueDetails}
+              errorText={errorText.leagueType}
+            />
+            <PrivacyType
+              setLeagueDetails={setLeagueDetails}
+              errorText={errorText.privacy}
+            />
 
             <ButtonContainer>
               <CancelButton onPress={() => setModalVisible(false)}>
@@ -235,9 +274,17 @@ const ModalTitle = styled.Text({
 const Label = styled.Text({
   color: "#ccc",
   alignSelf: "flex-start",
-  marginBottom: 5,
+
   marginLeft: 5,
   fontSize: 14,
+});
+
+const LabelContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  marginBottom: 5,
 });
 
 const Input = styled.TextInput({
@@ -278,6 +325,13 @@ const CancelText = styled.Text({
 
 const CreateText = styled.Text({
   color: "white",
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
+  alignSelf: "flex-end",
 });
 
 export default AddLeagueModal;

@@ -31,8 +31,6 @@ const GameProvider = ({ children }) => {
   const { handleShowPopup } = useContext(PopupContext);
   const [games, setGames] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [deleteGameContainer, setDeleteGameContainer] = useState(false);
-  const [deleteGameId, setDeleteGameId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -149,9 +147,6 @@ const GameProvider = ({ children }) => {
 
         // Update the league document with the updated games array
         await updateDoc(leagueDocRef, { games: updatedGames });
-
-        handleShowPopup("Game added and players updated successfully!");
-        setGames((prevGames) => [newGame, ...prevGames]);
       } else {
         console.error("League document not found.");
         Alert.alert("Error", "League not found.");
@@ -162,41 +157,12 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  const deleteGameById = async (gameId, setGames) => {
-    // 1. Confirm Deletion (Optional)
-    Alert.alert("Delete Game", "Are you sure you want to delete this game?", [
-      { text: "Cancel", onPress: () => {}, style: "cancel" },
-      {
-        text: "Delete",
-        onPress: async () => {
-          // 2. Remove Game from State
-          setGames((prevGames) =>
-            prevGames.filter((game) => game.gameId !== gameId)
-          );
-
-          // 3. Remove game from Firebase
-          try {
-            const gameDocRef = doc(db, "scoreboard", gameId);
-            await deleteDoc(gameDocRef);
-          } catch (error) {
-            console.error("Error deleting game from Firebase:", error);
-          }
-        },
-      },
-    ]);
-  };
-
   return (
     <GameContext.Provider
       value={{
         games,
         setGames,
         addGame,
-        deleteGameById,
-        deleteGameContainer,
-        setDeleteGameContainer,
-        deleteGameId,
-        setDeleteGameId,
         retrieveGames,
 
         medalNames,

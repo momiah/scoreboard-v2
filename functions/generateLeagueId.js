@@ -1,8 +1,10 @@
 export function generateLeagueId(leagueData) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const uniqueId = Array.from({ length: 5 }, () =>
+    chars.charAt(Math.floor(Math.random() * chars.length))
+  ).join("");
 
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const uniquePart = Array.from({ length: 5 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join("");
+  const formattedLeagueName = leagueData.leagueName.replace(/\s+/g, "-");
 
-
-    return `${uniquePart}-${leagueData.startDate}-${leagueData.leagueName}`;
+  return `${formattedLeagueName}-${leagueData.startDate}-${uniqueId}`;
 }

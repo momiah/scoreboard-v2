@@ -11,6 +11,7 @@ const AddGame = ({
   setTeam2Score,
   selectedPlayers,
   handleSelectPlayer,
+  leagueType = "Singles",
 }) => {
   const handleScoreChange = (setScore) => (text) => {
     const numericText = text.replace(/[^0-9]/g, "");
@@ -25,13 +26,15 @@ const AddGame = ({
         <SelectPlayer
           onSelectPlayer={(player) => handleSelectPlayer("team1", 0, player)}
           selectedPlayers={selectedPlayers}
-          borderType={"topLeft"}
+          borderType={leagueType === "Singles" ? "none" : "topLeft"}
         />
-        <SelectPlayer
-          onSelectPlayer={(player) => handleSelectPlayer("team1", 1, player)}
-          selectedPlayers={selectedPlayers}
-          borderType={"bottomLeft"}
-        />
+        {leagueType === "Doubles" && (
+          <SelectPlayer
+            onSelectPlayer={(player) => handleSelectPlayer("team1", 1, player)}
+            selectedPlayers={selectedPlayers}
+            borderType={"bottomLeft"}
+          />
+        )}
       </TeamContainer>
 
       <ResultsContainer>
@@ -57,13 +60,15 @@ const AddGame = ({
         <SelectPlayer
           onSelectPlayer={(player) => handleSelectPlayer("team2", 0, player)}
           selectedPlayers={selectedPlayers}
-          borderType={"topRight"}
+          borderType={leagueType === "Singles" ? "none" : "topRight"}
         />
-        <SelectPlayer
-          onSelectPlayer={(player) => handleSelectPlayer("team2", 1, player)}
-          selectedPlayers={selectedPlayers}
-          borderType={"bottomRight"}
-        />
+        {leagueType === "Doubles" && (
+          <SelectPlayer
+            onSelectPlayer={(player) => handleSelectPlayer("team2", 1, player)}
+            selectedPlayers={selectedPlayers}
+            borderType={"bottomRight"}
+          />
+        )}
       </TeamContainer>
     </GameContainer>
   );
@@ -71,16 +76,17 @@ const AddGame = ({
 
 const screenWidth = Dimensions.get("window").width;
 
-const GameContainer = styled.TouchableOpacity`
-  flex-direction: row;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  margin-top: 40px;
-  border: 1px solid #262626;
-  border-radius: 8px;
-  height: ${screenWidth <= 400 ? "100px" : "auto"};
-  background-color: #001123;
-`;
+const GameContainer = styled.TouchableOpacity({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginBottom: 16,
+  marginTop: 40,
+  borderWidth: 1,
+  borderColor: "#262626",
+  borderRadius: 8,
+  height: screenWidth <= 400 ? 100 : "auto",
+  backgroundColor: "#001123",
+});
 
 const TeamContainer = styled.View({
   display: "flex",
@@ -98,12 +104,12 @@ const ResultsContainer = styled.View({
   width: screenWidth <= 400 ? 110 : 140,
 });
 
-const ScoreContainer = styled.View`
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  margin-top: ${screenWidth <= 400 ? "20px" : "0"};
-`;
+const ScoreContainer = styled.View({
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "center",
+  marginTop: screenWidth <= 400 ? 20 : 0,
+});
 
 const ScoreInput = styled.TextInput({
   fontSize: 25,

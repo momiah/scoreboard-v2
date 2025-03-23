@@ -13,23 +13,13 @@ import { UserContext } from "../../../context/UserContext";
 import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "../../Modals/PlayerDetailsModal";
 
-const PlayerPerformance = ({ playersData, leagueId }) => {
-  const { refreshing, findRankIndex, recentGameResult } =
-    useContext(GameContext);
-  const { fetchPlayersToSort, loading, setLoading } = useContext(UserContext);
+const PlayerPerformance = ({ playersData }) => {
+  const { findRankIndex, recentGameResult } = useContext(GameContext);
+  const { loading, setLoading } = useContext(UserContext);
 
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
 
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-
-  const handleRefresh = async () => {
-    setLoading(true);
-    await fetchPlayersToSort(leagueId);
-  };
-
-  useEffect(() => {
-    fetchPlayersToSort(leagueId);
-  }, []);
 
   // const runcalculatePlayerPerformance = async () => {
   // Reverse the array to process the last game first
@@ -40,6 +30,12 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
   //     await updatePlayers(playersToUpdate);
   //   }
   // };
+
+  useEffect(() => {
+    if (playersData.length > 0) {
+      setLoading(false);
+    }
+  }, [playersData]);
 
   if (loading) {
     return (
@@ -120,9 +116,6 @@ const PlayerPerformance = ({ playersData, leagueId }) => {
         data={playersData}
         renderItem={renderPlayer}
         keyExtractor={(player) => player.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
       />
 
       {showPlayerDetails && (

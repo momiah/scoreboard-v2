@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const PrivacyType = ({ setLeagueDetails }) => {
+const PrivacyType = ({ setLeagueDetails, errorText }) => {
   const [privacy, setPrivacy] = useState(null);
 
   const handleSelectPrivacyType = (privacyType) => {
@@ -16,7 +16,10 @@ const PrivacyType = ({ setLeagueDetails }) => {
 
   return (
     <Container>
-      <Label>Privacy</Label>
+      <LabelContainer>
+        <Label>Privacy</Label>
+        {errorText && <ErrorText>{errorText}</ErrorText>}
+      </LabelContainer>
       <PrivacyTypeContainer>
         {privacyTypes.map((privacyType, index) => (
           <PrivacyButton
@@ -72,8 +75,22 @@ const PrivacyTypeText = styled.Text(({ isSelected }) => ({
 const Label = styled.Text({
   color: "#ccc",
   alignSelf: "flex-start",
-  marginBottom: 5,
+
   fontSize: 14,
+});
+
+const LabelContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  marginBottom: 5,
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
 });
 
 export default PrivacyType;
