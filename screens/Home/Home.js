@@ -28,7 +28,7 @@ const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
-  const { setShowMockData, showMockData } = useContext(LeagueContext);
+  const { fetchLeagues } = useContext(LeagueContext);
   const { getUserById, getAllUsers, rankSorting } = useContext(UserContext);
   const [userName, setUserName] = useState("");
   const [sortedUsers, setSortedUsers] = useState([]);
@@ -90,9 +90,7 @@ const Home = () => {
   };
 
   const addLeague = async () => {
-    const token = await AsyncStorage.getItem("userToken");
-
-    if (token) {
+    if (userToken) {
       setModalVisible(true);
     } else {
       navigateTo("Login");
@@ -110,7 +108,16 @@ const Home = () => {
       )}
       <HomeContainer
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={fetchUsers} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              fetchUsers();
+              fetchLeagues();
+            }}
+            tintColor="white" // iOS
+            colors={["white"]} // Android
+            progressBackgroundColor="#00A2FF"
+          />
         }
       >
         <Overview>
@@ -140,7 +147,6 @@ const Home = () => {
 
         <SubHeader
           title="Top Players"
-          // onIconPress={() => navigateTo("AllPlayers")}
           actionText="See All Players"
           navigationRoute={"AllPlayers"}
         />

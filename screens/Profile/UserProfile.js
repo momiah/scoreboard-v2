@@ -42,40 +42,40 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("Profile");
   const [globalRank, setGlobalRank] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        // 1. Check if viewing another user's profile
-        if (route.params?.userId) {
-          const userProfile = await getUserById(route.params.userId);
-          setProfile(userProfile);
-        }
-        // 2. Use currentUser data for own profile
-        else if (currentUser) {
-          setProfile(currentUser);
-        }
-        // 3. Fallback (shouldn't normally happen)
-        else {
-          const userId = await AsyncStorage.getItem("userId");
-          if (userId) {
-            const userProfile = await getUserById(userId);
-            setProfile(userProfile);
-          } else {
-            setProfile(null); // Trigger redirect fallback
-          }
-        }
-      } catch (error) {
-        console.error("Profile load error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadProfile = async () => {
+    try {
+      setRefreshing(true);
 
+      if (route.params?.userId) {
+        const userProfile = await getUserById(route.params.userId);
+        setProfile(userProfile);
+      } else if (currentUser) {
+        const personalProfile = await getUserById(currentUser.userId);
+        setProfile(personalProfile);
+      } else {
+        const userId = await AsyncStorage.getItem("userId");
+        if (userId) {
+          const personalProfile = await getUserById(userId);
+          setProfile(personalProfile);
+        } else {
+          setProfile(null); // Trigger redirect fallback
+        }
+      }
+    } catch (error) {
+      console.error("Profile load error:", error);
+    } finally {
+      setRefreshing(false); // Stop refreshing
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadProfile();
-  }, [route.params?.userId, currentUser]); // currentUser as dependency
+  }, [route.params?.userId, currentUser]);
 
   useEffect(() => {
     const trackProfileView = async () => {
@@ -220,12 +220,25 @@ const UserProfile = () => {
   return (
     <Container>
       {isOwnProfile && (
-        <TouchableOpacity
-          style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
-          onPress={() => navigation.navigate("ProfileMenu")}
-        >
-          <Ionicons name="menu" size={30} color="#aaa" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <TouchableOpacity
+            style={{ alignSelf: "flex-start", paddingHorizontal: 20 }}
+            onPress={() => loadProfile()}
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <ActivityIndicator color="#aaa" size="small" />
+            ) : (
+              <Ionicons name="refresh-circle-outline" size={30} color="#aaa" />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
+            onPress={() => navigation.navigate("ProfileMenu")}
+          >
+            <Ionicons name="menu" size={30} color="#aaa" />
+          </TouchableOpacity>
+        </View>
       )}
       <Overview>
         <PlayerDetail>
@@ -296,56 +309,56 @@ const ProfileSummary = styled.View({
   marginHorizontal: 15,
 });
 
-const Container = styled.View`
-  flex: 1;
-  background-color: rgb(3, 16, 31);
-`;
+const Container = styled.View({
+  flex: 1,
+  backgroundColor: "rgb(3, 16, 31)",
+});
 
-const LoadingContainer = styled.View`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
-  background-color: rgb(3, 16, 31);
-`;
+const LoadingContainer = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgb(3, 16, 31)",
+});
 
-const Overview = styled.View`
-  padding: 20px;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-`;
+const Overview = styled.View({
+  padding: 20,
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+});
 
-const PlayerDetail = styled.View`
-  flex-direction: row;
-  gap: 20px;
-  flex: 1;
-`;
+const PlayerDetail = styled.View({
+  flexDirection: "row",
+  gap: 20,
+  flex: 1,
+});
 
-const DetailColumn = styled.View`
-  flex: 1;
-  gap: 2px;
-`;
+const DetailColumn = styled.View({
+  flex: 1,
+  gap: 2,
+});
 
-const Avatar = styled.Image`
-  width: 70px;
-  height: 70px;
-  border-radius: 35px;
-  border-width: 2px;
-  border-color: #00a2ff;
-`;
+const Avatar = styled.Image({
+  width: 70,
+  height: 70,
+  borderRadius: 35,
+  borderWidth: 2,
+  borderColor: "#00a2ff",
+});
 
-const PlayerName = styled.Text`
-  font-size: 25px;
-  color: white;
-  font-weight: bold;
-`;
+const PlayerName = styled.Text({
+  fontSize: 25,
+  color: "white",
+  fontWeight: "bold",
+});
 
-const DetailText = styled.Text`
-  color: #aaa;
-  font-size: ${screenWidth <= 400 ? 12 : 14}px;
-  align-items: center;
-  flex-direction: row;
-`;
+const DetailText = styled.Text({
+  color: "#aaa",
+  fontSize: screenWidth <= 400 ? 12 : 14,
+  alignItems: "center",
+  flexDirection: "row",
+});
 
 const CCRankContainer = styled.View({
   // backgroundColor: "rgba(0, 0, 0, 0.3)",
@@ -358,66 +371,66 @@ const CCRankContainer = styled.View({
   alignSelf: "flex-start",
 });
 
-const XpText = styled.Text`
-  color: #aaa;
-  font-size: ${screenWidth <= 400 ? 12 : 14}px;
-`;
+const XpText = styled.Text({
+  color: "#aaa",
+  fontSize: screenWidth <= 400 ? 12 : 14,
+});
 
-const MedalContainer = styled.View`
-  align-items: center;
-`;
+const MedalContainer = styled.View({
+  alignItems: "center",
+});
 
-const MedalName = styled.Text`
-  color: white;
-  margin-top: 10px;
-  font-size: 12px;
-`;
+const MedalName = styled.Text({
+  color: "white",
+  marginTop: 10,
+  fontSize: 12,
+});
 
-const TabsContainer = styled.View`
-  flex-direction: row;
-  padding: 10px;
-  border-top-left-radius: 30px;
-  border-top-right-radius: 30px;
-`;
+const TabsContainer = styled.View({
+  flexDirection: "row",
+  padding: 10,
+  borderTopLeftRadius: 30,
+  borderTopRightRadius: 30,
+});
 
-const Tab = styled.TouchableOpacity`
-  flex: 1;
-  padding: 10px;
-  border-radius: 20px;
-  border-width: ${({ isSelected }) => (isSelected ? 2 : 1)}px;
-  border-color: ${({ isSelected }) => (isSelected ? "#00A2FF" : "white")};
-  margin-horizontal: 5px;
-  align-items: center;
-  justify-content: center;
-`;
+const Tab = styled.TouchableOpacity(({ isSelected }) => ({
+  flex: 1,
+  padding: 10,
+  borderRadius: 20,
+  borderWidth: isSelected ? 2 : 1,
+  borderColor: isSelected ? "#00A2FF" : "white",
+  marginHorizontal: 5,
+  alignItems: "center",
+  justifyContent: "center",
+}));
 
-const TabText = styled.Text`
-  color: white;
-  font-size: ${screenWidth <= 400 ? 12 : 14}px;
-`;
+const TabText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 12 : 14,
+});
 
-const ProfileContent = styled.View`
-  flex: 1;
-  padding-horizontal: 20px;
-`;
+const ProfileContent = styled.View({
+  flex: 1,
+  paddingHorizontal: 20,
+});
 
-const Divider = styled.View`
-  height: 1px;
-  background-color: #262626;
-  margin-vertical: 10px;
-`;
+const Divider = styled.View({
+  height: 1,
+  backgroundColor: "#262626",
+  marginVertical: 10,
+});
 
-const SectionTitle = styled.Text`
-  color: white;
-  font-weight: bold;
-  font-size: 16px;
-  margin-bottom: 5px;
-`;
+const SectionTitle = styled.Text({
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 16,
+  marginBottom: 5,
+});
 
-const SectionContent = styled.Text`
-  color: white;
-  font-size: 14px;
-`;
+const SectionContent = styled.Text({
+  color: "white",
+  fontSize: 14,
+});
 
 // StyleSheet for optimized rendering
 const styles = StyleSheet.create({
