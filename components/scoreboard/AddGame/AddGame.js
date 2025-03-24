@@ -11,7 +11,7 @@ const AddGame = ({
   setTeam2Score,
   selectedPlayers,
   handleSelectPlayer,
-  leagueType = "Singles",
+  leagueType,
 }) => {
   const handleScoreChange = (setScore) => (text) => {
     const numericText = text.replace(/[^0-9]/g, "");
@@ -19,6 +19,8 @@ const AddGame = ({
       setScore(numericText);
     }
   };
+
+  console.log("leagueType", leagueType);
 
   return (
     <GameContainer>
@@ -38,7 +40,9 @@ const AddGame = ({
       </TeamContainer>
 
       <ResultsContainer>
-        <Text style={{ color: "white" }}>{moment().format("DD-MM-YYYY")}</Text>
+        <Text style={{ color: "white", fontSize: 12 }}>
+          {moment().format("DD-MM-YYYY")}
+        </Text>
         <ScoreContainer>
           <ScoreInput
             keyboardType="numeric"

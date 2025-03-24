@@ -48,8 +48,8 @@ const ProfileStack = () => {
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
 
-      {/* <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} /> */}
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
   );
 };

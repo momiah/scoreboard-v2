@@ -1,6 +1,7 @@
 import React from "react";
 import { TouchableOpacity, View, Text } from "react-native";
 import styled from "styled-components/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const Popup = ({ visible, message, onClose }) => {
   if (!visible) return null;
@@ -8,6 +9,11 @@ const Popup = ({ visible, message, onClose }) => {
   return (
     <PopupContainer>
       <PopupContent>
+        <Ionicons
+          name={"checkmark-circle-outline"}
+          size={75}
+          color={"#00A2FF"}
+        />
         <MessageText>{message}</MessageText>
         <CloseButton onPress={onClose}>
           <ButtonText>Close</ButtonText>
@@ -33,9 +39,9 @@ const PopupContainer = styled.View({
 });
 
 const PopupContent = styled.View({
-  backgroundColor: "#fff",
-  padding: 20,
-  width: 300,
+  backgroundColor: "rgba(2, 13, 24, 1)",
+  padding: 30,
+  width: 350,
   borderRadius: 10,
   alignItems: "center",
 });
@@ -44,6 +50,7 @@ const MessageText = styled.Text({
   fontSize: 18,
   marginBottom: 10,
   textAlign: "center",
+  color: "#fff",
 });
 
 const CloseButton = styled.TouchableOpacity({

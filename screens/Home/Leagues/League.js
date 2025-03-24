@@ -24,11 +24,51 @@ const League = () => {
   const { fetchLeagueById, leagueById } = useContext(LeagueContext);
   const { checkUserRole } = useContext(UserContext);
 
-  // const [leagueDetails, setLeagueDetails] = useState(leagueById);
   const [loading, setLoading] = useState(true); // Track loading state
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (leagueId) {
+        try {
+          const fetchedDetails = await fetchLeagueById(leagueId);
+          await getUserRole(fetchedDetails);
+        } catch (error) {
+          console.error("Error fetching league data:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+  }, [leagueId]);
+
+  const getUserRole = async (leagueData) => {
+    try {
+      const role = await checkUserRole(leagueData);
+      setUserRole(role);
+    } catch (error) {
+      console.error("Error getting user role:", error);
+      setUserRole("hide");
+    }
+  };
+
+  const leaguePrompt = async () => {
+    setModalVisible(true);
+  };
+
+  const handleTabPress = async (tabName) => {
+    setSelectedTab(tabName);
+    try {
+      const freshData = await fetchLeagueById(leagueId);
+      await getUserRole(freshData);
+    } catch (error) {
+      console.error("Tab refresh error:", error);
+    }
+  };
 
   const tabs = [
     {
@@ -67,7 +107,6 @@ const League = () => {
         return (
           <LeagueSummary
             leagueDetails={leagueById}
-            // setLeagueDetails={setLeagueDetails}
             userRole={userRole}
             startDate={startDate}
             endDate={endDate}
@@ -76,11 +115,12 @@ const League = () => {
       case "Scoreboard":
         return (
           <Scoreboard
-            leagueGames={leagueGames}
+            leagueGames={leagueGames || []}
             leagueType={leagueType}
             leagueId={leagueId}
             userRole={userRole}
             leagueStartDate={startDate}
+            leagueEndDate={endDate}
           />
         );
       case "Player Performance":
@@ -90,22 +130,6 @@ const League = () => {
       default:
         return null;
     }
-  };
-
-  useEffect(() => {
-    if (leagueId) {
-      fetchLeagueDetails(leagueId);
-    }
-  }, [leagueId]);
-
-  const fetchLeagueDetails = async (id) => {
-    const fetchedDetails = await fetchLeagueById(id);
-    // setLeagueDetails(fetchedDetails);
-    setLoading(false);
-  };
-
-  const leaguePrompt = async () => {
-    setModalVisible(true);
   };
 
   if (loading) {
@@ -122,13 +146,6 @@ const League = () => {
       </View>
     );
   }
-
-  async function getUserRole() {
-    const role = await checkUserRole(leagueById);
-    setUserRole(role);
-  }
-
-  getUserRole();
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
@@ -171,13 +188,32 @@ const League = () => {
                 borderRadius={15}
               />
             </View>
-            <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
+              {userRole === "admin" && (
+                <Tag
+                  name={"Admin"}
+                  color="#16181B"
+                  iconColor="#00A2FF"
+                  iconSize={15}
+                  icon={"checkmark-circle-outline"}
+                  iconPosition={"right"}
+                  bold
+                />
+              )}
+            </View>
             <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginTop: 10,
+                marginTop: 5,
               }}
             >
               <View style={{ flexDirection: "row", gap: 5 }}>
@@ -223,10 +259,7 @@ const League = () => {
           {tabs.map((tab) => (
             <Tab
               key={tab.component}
-              onPress={() => {
-                setSelectedTab(tab.component);
-                fetchLeagueDetails(leagueId);
-              }}
+              onPress={() => handleTabPress(tab.component)}
               isSelected={selectedTab === tab.component}
             >
               <TabText>{tab.component}</TabText>
@@ -336,3 +369,24 @@ const TabText = styled.Text({
 });
 
 export default League;
+
+{
+  /* <View style={{ flexDirection: "column", gap: 5 }}>
+<Tag
+  name={"Admin"}
+  color="#16181B"
+  iconColor="#00A2FF"
+  iconSize={15}
+  icon={"checkmark-circle-outline"}
+  iconPosition={"right"}
+  bold
+/>
+<Tag
+  name={"Invite Players"}
+  color="#00A2FF"
+  icon={"paper-plane-sharp"}
+  onPress={leaguePrompt}
+  bold
+/>
+</View> */
+}

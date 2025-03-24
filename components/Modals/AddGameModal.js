@@ -32,7 +32,7 @@ const AddGameModal = ({
   setModalVisible,
   leagueId,
   leagueGames,
-  leagueType = "Singles",
+  leagueType,
 }) => {
   const { addGame } = useContext(GameContext);
   const { fetchLeagueById } = useContext(LeagueContext);
@@ -261,6 +261,7 @@ const AddGameModal = ({
                 setTeam2Score={setTeam2Score}
                 selectedPlayers={selectedPlayers}
                 handleSelectPlayer={handleSelectPlayer}
+                leagueType={leagueType}
               />
               {errorText && <ErrorText>{errorText}</ErrorText>}
 

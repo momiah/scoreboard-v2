@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useMemo,
+  useCallback,
+} from "react";
 import { Text, FlatList } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
@@ -6,137 +12,134 @@ import { UserContext } from "../../context/UserContext";
 import { Dimensions } from "react-native";
 
 import AddGameModal from "../Modals/AddGameModal";
+import { getButtonConfig, getFallbackMessage } from "./scoreboardConfig";
 
 import moment from "moment";
 
 const Scoreboard = ({
-  leagueGames,
+  leagueGames = [],
   leagueId,
-  userRole,
+  userRole = "user",
   leagueType,
   leagueStartDate,
+  leagueEndDate,
 }) => {
   const { fetchPlayers } = useContext(UserContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
 
-  const handleAddGameButton = () => {
+  // Date calculations with validation
+  const currentDate = moment();
+  const leagueStart = moment(leagueStartDate, "DD-MM-YYYY");
+  const leagueEnd = moment(leagueEndDate, "DD-MM-YYYY");
+
+  const hasLeagueStarted = currentDate.isSameOrAfter(leagueStart);
+  const hasLeagueEnded = currentDate.isAfter(leagueEnd);
+  const leagueState = hasLeagueEnded
+    ? "ended"
+    : hasLeagueStarted
+    ? "started"
+    : "not_started";
+
+  // Memoized game data with null check
+  const reversedGames = useMemo(
+    () => (leagueGames || []).filter(Boolean).reverse(),
+    [leagueGames]
+  );
+
+  const gamesExist = reversedGames.length > 0;
+
+  // Button click handlers
+  const handleAddGame = useCallback(() => {
     fetchPlayers(leagueId);
     setModalVisible(true);
-  };
+  }, [fetchPlayers, leagueId]);
 
-  let reversedGames = [];
-  if (leagueGames.length > 0) {
-    for (let i = leagueGames.length - 1; i >= 0; i--) {
-      reversedGames.push(leagueGames[i]);
-    }
-  }
+  const buttonConfig = useMemo(
+    () => getButtonConfig(userRole, leagueState, requestSend, handleAddGame),
+    [userRole, leagueState, requestSend, handleAddGame]
+  );
 
-  // const startDate = moment(leagueStartDate, "DD-MM-YYYY");
-  const todaysDate = moment().format("DD-MM-YYYY");
-
-  const hasLeagueStarted = moment(todaysDate, "DD-MM-YYYY").isSameOrAfter(
-    moment(leagueStartDate, "DD-MM-YYYY")
+  const fallbackMessage = useMemo(
+    () => getFallbackMessage(leagueState, gamesExist, userRole),
+    [leagueState, gamesExist, userRole]
   );
 
   return (
     <Container>
-      {/* Participant or Admin Actions */}
-      {/* {userRole !== "user" && userRole !== "hide" && (
-        <>
-          {!hasLeagueStarted ? (
-            <AddGameButton
-              style={{
-                backgroundColor: !hasLeagueStarted ? "gray" : "#00A2FF",
-              }}
-            >
-              <Text>League has not started yet</Text>
-            </AddGameButton>
-          ) : ( */}
-      <AddGameButton onPress={handleAddGameButton}>
-        <Text>Add Game</Text>
+      <AddGameButton
+        disabled={buttonConfig.disabled}
+        onPress={buttonConfig.action}
+        style={{ backgroundColor: buttonConfig.disabled ? "gray" : "#00A2FF" }}
+      >
+        <ButtonText>{buttonConfig.text}</ButtonText>
       </AddGameButton>
-      {/* )}
-        </>
-      )} */}
 
-      {/* Regular User Actions */}
-      {userRole === "user" && (
-        <AddGameButton
-          disabled={requestSend}
-          style={{ backgroundColor: requestSend ? "gray" : "#00A2FF" }}
-          onPress={() => setRequestSend(true)}
-        >
-          <Text>
-            {requestSend ? "Request sent successfully" : "Join League"}
-          </Text>
-        </AddGameButton>
+      {!gamesExist && fallbackMessage && (
+        <FallbackMessage>{fallbackMessage}</FallbackMessage>
       )}
-      {hasLeagueStarted &&
-        userRole !== "user" &&
-        reversedGames.length === 0 && (
-          <FallbackMessage>Add a game to see scores 🚀</FallbackMessage>
-        )}
 
-      {!hasLeagueStarted && reversedGames.length === 0 && (
-        <FallbackMessage>League has not started yet</FallbackMessage>
-      )}
       <FlatList
         data={reversedGames}
-        keyExtractor={(item, index) => index}
+        keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <>
-            <GameContainer>
-              <TeamContainer>
-                <TeamTextContainer style={{ borderTopLeftRadius: 8 }}>
-                  <Team>{item.team1.player1}</Team>
-                </TeamTextContainer>
-                {leagueType === "Doubles" && (
-                  <TeamTextContainer style={{ borderBottomLeftRadius: 8 }}>
-                    <Team>{item.team1.player2}</Team>
-                  </TeamTextContainer>
-                )}
-              </TeamContainer>
-
-              <ResultsContainer>
-                <Date>{item.date}</Date>
-                <ScoreContainer>
-                  <Score>{item.team1.score} - </Score>
-                  <Score>{item.team2.score}</Score>
-                </ScoreContainer>
-              </ResultsContainer>
-
-              <TeamContainer>
-                <TeamTextContainer style={{ borderTopRightRadius: 8 }}>
-                  <Team style={{ textAlign: "right" }}>
-                    {item.team2.player1}
-                  </Team>
-                </TeamTextContainer>
-                {leagueType === "Doubles" && (
-                  <TeamTextContainer style={{ borderBottomRightRadius: 8 }}>
-                    <Team style={{ textAlign: "right" }}>
-                      {item.team2.player2}
-                    </Team>
-                  </TeamTextContainer>
-                )}
-              </TeamContainer>
-            </GameContainer>
-          </>
+          <GameContainer>
+            <TeamColumn
+              team="left"
+              players={item.team1}
+              leagueType={leagueType}
+            />
+            <ScoreDisplay
+              date={item.date}
+              team1={item.team1.score}
+              team2={item.team2.score}
+            />
+            <TeamColumn
+              team="right"
+              players={item.team2}
+              leagueType={leagueType}
+            />
+          </GameContainer>
         )}
       />
-      {modalVisible && (
-        <AddGameModal
-          modalVisible
-          setModalVisible={setModalVisible}
-          leagueId={leagueId}
-          leagueGames={leagueGames}
-          gameType={leagueType}
-        />
-      )}
+
+      <AddGameModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        leagueId={leagueId}
+        leagueGames={leagueGames}
+        leagueType={leagueType}
+      />
     </Container>
   );
 };
 
+// Sub-components for better readability
+const TeamColumn = ({ team, players = {}, leagueType }) => (
+  <TeamContainer>
+    <PlayerCell position={team} player={players?.player1} />
+    {leagueType === "Doubles" && (
+      <PlayerCell position={team} player={players?.player2} />
+    )}
+  </TeamContainer>
+);
+
+const PlayerCell = ({ position, player }) => (
+  <TeamTextContainer position={position}>
+    <TeamText position={position}>{player}</TeamText>
+  </TeamTextContainer>
+);
+
+const ScoreDisplay = ({ date, team1, team2 }) => (
+  <ResultsContainer>
+    <DateText>{date}</DateText>
+    <ScoreContainer>
+      <Score>
+        {team1} - {team2}
+      </Score>
+    </ScoreContainer>
+  </ResultsContainer>
+);
 // Define styles
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -181,7 +184,7 @@ const ResultsContainer = styled.View({
 });
 
 const Score = styled.Text({
-  fontSize: 30,
+  fontSize: 28,
   fontWeight: "bold",
   color: "#00A2FF",
 });
@@ -193,9 +196,10 @@ const ScoreContainer = styled.View({
   marginTop: screenWidth <= 400 ? 20 : null,
 });
 
-const Team = styled.Text({
+const TeamText = styled.Text({
   color: "white",
   fontSize: screenWidth <= 400 ? 15 : 16,
+  textAlign: (props) => (props.position === "right" ? "right" : "left"),
 });
 
 const TeamContainer = styled.View({
@@ -222,4 +226,15 @@ const FallbackMessage = styled.Text({
   marginTop: 50,
 });
 
-export default Scoreboard;
+const ButtonText = styled.Text({
+  color: "white",
+  fontSize: 16,
+});
+
+const DateText = styled.Text({
+  fontSize: 10,
+  fontWeight: "bold",
+  color: "white",
+});
+
+export default React.memo(Scoreboard);

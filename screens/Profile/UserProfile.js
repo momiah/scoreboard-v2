@@ -60,8 +60,12 @@ const UserProfile = () => {
         // 3. Fallback (shouldn't normally happen)
         else {
           const userId = await AsyncStorage.getItem("userId");
-          const userProfile = await getUserById(userId);
-          setProfile(userProfile);
+          if (userId) {
+            const userProfile = await getUserById(userId);
+            setProfile(userProfile);
+          } else {
+            setProfile(null); // Trigger redirect fallback
+          }
         }
       } catch (error) {
         console.error("Profile load error:", error);
@@ -109,6 +113,15 @@ const UserProfile = () => {
 
     fetchRank();
   }, [profile, getGlobalRank]);
+
+  useEffect(() => {
+    if (!route.params?.userId && !profile && !loading) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    }
+  }, [profile, loading]);
 
   const profileDetail = profile?.profileDetail;
 
@@ -188,18 +201,10 @@ const UserProfile = () => {
     }
   }, [selectedTab, renderProfileContent]);
 
-  if (loading) {
+  if (loading || (!route.params?.userId && !profile)) {
     return (
       <LoadingContainer>
         <ActivityIndicator color="#fff" size="large" />
-      </LoadingContainer>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <LoadingContainer>
-        <Text style={styles.errorText}>Profile not found.</Text>
       </LoadingContainer>
     );
   }
@@ -209,6 +214,8 @@ const UserProfile = () => {
 
   const profileXp = formatNumber(profileDetail.XP.toFixed(0));
   const rankLevel = findRankIndex(profileXp) + 1;
+
+  console.log("point different", profileDetail?.totalPointDifference);
 
   return (
     <Container>
@@ -229,7 +236,7 @@ const UserProfile = () => {
             <DetailText>{profileXp ?? 0} XP</DetailText>
 
             <DetailText>
-              {formatNumber(profile?.totalPointDifference ?? 0)} PD
+              {formatNumber(profileDetail?.totalPointDifference ?? 0)} PD
             </DetailText>
           </DetailColumn>
         </PlayerDetail>

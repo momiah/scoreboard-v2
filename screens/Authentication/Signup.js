@@ -16,7 +16,7 @@ import { newPlayer } from "../../components/Leagues/leagueMocks";
 
 const Container = styled.View({
   flex: 1,
-  backgroundColor: "#1a1a2e",
+  backgroundColor: " rgb(3, 16, 31)",
 });
 
 const ScrollContainer = styled.ScrollView({
