@@ -5,11 +5,8 @@ export const calculateLeagueStatus = (leagueDetails) => {
   const privacy = leagueDetails?.privacy;
   const endDate = leagueDetails?.endDate;
   const maxPlayers = leagueDetails?.maxPlayers;
-  const today = moment(); // current date as moment object
-  const end = moment(endDate, "DD-MM-YYYY"); // parse endDate as moment
-
-  console.log("endDate", end.format("DD-MM-YYYY"));
-  console.log("todaysDate", today.format("DD-MM-YYYY"));
+  const today = moment();
+  const end = moment(endDate, "DD-MM-YYYY");
 
   if (privacy === "Private") {
     return {
