@@ -36,19 +36,20 @@ const HomeStack = () => {
     </Stack.Navigator>
   );
 };
+
 const ProfileStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="UserProfile"
+      initialRouteName="UserProfileScreen"
     >
-      <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="UserProfileScreen" component={UserProfile} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
 
-      {/* <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} /> */}
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
   );
 };

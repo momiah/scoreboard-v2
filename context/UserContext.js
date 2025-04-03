@@ -122,42 +122,30 @@ const UserProvider = ({ children }) => {
 
   async function checkUserRole(leagueData) {
     try {
-      // Retrieve userId from AsyncStorage
       const userId = await AsyncStorage.getItem("userId");
+      if (!userId) return "hide";
 
-      if (!userId) {
-        // console.error('User ID not found in AsyncStorage');
+      // Check if leagueData is valid
+      if (
+        !leagueData ||
+        !leagueData.leagueAdmins ||
+        !leagueData.leagueParticipants
+      ) {
+        console.error("Invalid league data:", leagueData);
         return "hide";
       }
 
-      // If user is not an admin or participant, return user
-      if (
-        leagueData.leagueAdmins.length === 0 &&
-        leagueData.leagueParticipants.length === 0
-      ) {
-        return "user";
-      }
-
-      // Check if the userId matches any league admin
       const isAdmin = leagueData.leagueAdmins.some(
         (admin) => admin.userId === userId
       );
-      if (isAdmin) {
-        return "admin";
-      }
+      if (isAdmin) return "admin";
 
-      // Check if the userId matches any league participant
       const isParticipant = leagueData.leagueParticipants.some(
         (participant) => participant.userId === userId
       );
-      if (isParticipant) {
-        return "participant";
-      }
-
-      // If no match, return user
-      return "user";
+      return isParticipant ? "participant" : "user";
     } catch (error) {
-      // console.error('Error checking user role:', error);
+      console.error("Error checking user role:", error);
       return "hide";
     }
   }

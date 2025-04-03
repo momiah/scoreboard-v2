@@ -49,11 +49,15 @@ const TeamPerformance = ({ leagueTeams }) => {
 
   return (
     <TableContainer>
-      <FlatList
-        data={leagueTeams}
-        renderItem={renderTeam}
-        keyExtractor={(team, index) => team.team.join("-") + index}
-      />
+      {leagueTeams.length === 0 ? (
+        <FallbackMessage>Add a game to see Team Performance 📈</FallbackMessage>
+      ) : (
+        <FlatList
+          data={leagueTeams}
+          renderItem={renderTeam}
+          keyExtractor={(team, index) => team.team.join("-") + index}
+        />
+      )}
       {showTeamDetails && (
         <TeamDetails
           showTeamDetails={showTeamDetails}
@@ -128,6 +132,14 @@ const Stat = styled.Text({
   fontSize: screenWidth <= 400 ? 20 : 25,
   fontWeight: "bold",
   color: "white",
+});
+
+const FallbackMessage = styled.Text({
+  color: "#696969",
+  fontStyle: "italic",
+  fontSize: 16,
+  textAlign: "center",
+  marginTop: 50,
 });
 
 export default TeamPerformance;

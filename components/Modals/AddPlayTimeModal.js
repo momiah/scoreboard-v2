@@ -94,6 +94,7 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
         visible={showPopup}
         message={popupMessage}
         onClose={handleClosePopup}
+        type="error"
       />
       <ModalContainer>
         <GradientOverlay colors={["#191b37", "#001d2e"]}>

@@ -20,8 +20,6 @@ import DatePicker from "../Leagues/AddLeague/DatePicker";
 import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
 import LeagueType from "../Leagues/AddLeague/LeagueType";
 import PrivacyType from "../Leagues/AddLeague/PrivacyType";
-import { PopupContext } from "../../context/PopupContext";
-import Popup from "../popup/Popup";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const { addLeagues } = useContext(LeagueContext);

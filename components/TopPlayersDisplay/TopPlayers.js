@@ -9,7 +9,7 @@ import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import { GameContext } from "../../context/GameContext";
 import MedalDisplay from "../../components/performance/MedalDisplay";
-import { FlatList, RefreshControl } from "react-native";
+import { FlatList } from "react-native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
 
@@ -83,13 +83,6 @@ const TopPlayers = ({ topPlayers, fetchUsers }) => {
       maxToRenderPerBatch={5}
       windowSize={5}
       scrollEnabled={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={false}
-          onRefresh={fetchUsers}
-          tintColor="white"
-        />
-      }
     />
   );
 };

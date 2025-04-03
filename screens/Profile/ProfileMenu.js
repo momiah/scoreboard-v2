@@ -12,10 +12,15 @@ const ProfileMenu = ({ navigation }) => {
     { label: "Log out", icon: "log-out-outline", action: "logout" },
   ];
 
-  const handlePress = (action) => {
+  const handlePress = async (action) => {
     if (action === "logout") {
-      Logout();
+      await Logout();
       console.log("Logging out...");
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
     } else {
       navigation.navigate(action);
     }

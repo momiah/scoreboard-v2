@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import {
-  FlatList,
-  RefreshControl,
-  ActivityIndicator,
-  View,
-  Text,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { FlatList, ActivityIndicator, View, Text } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";

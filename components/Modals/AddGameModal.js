@@ -32,7 +32,7 @@ const AddGameModal = ({
   setModalVisible,
   leagueId,
   leagueGames,
-  leagueType = "Singles",
+  leagueType,
 }) => {
   const { addGame } = useContext(GameContext);
   const { fetchLeagueById } = useContext(LeagueContext);
@@ -163,8 +163,6 @@ const AddGameModal = ({
       },
     };
 
-    console.log("newGame", JSON.stringify(newGame, null, 2));
-
     const allPlayers = await retrievePlayers(leagueId);
     const allUsers = await getAllUsers();
 
@@ -175,8 +173,6 @@ const AddGameModal = ({
         .concat(newGame.result.loser.players)
         .includes(player.id)
     );
-
-    console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
     // console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
@@ -241,6 +237,7 @@ const AddGameModal = ({
           visible={showPopup}
           message={popupMessage}
           onClose={handleClosePopup}
+          type="success"
         />
         <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <GradientOverlay colors={["#191b37", "#001d2e"]}>
@@ -265,6 +262,7 @@ const AddGameModal = ({
                 setTeam2Score={setTeam2Score}
                 selectedPlayers={selectedPlayers}
                 handleSelectPlayer={handleSelectPlayer}
+                leagueType={leagueType}
               />
               {errorText && <ErrorText>{errorText}</ErrorText>}
 

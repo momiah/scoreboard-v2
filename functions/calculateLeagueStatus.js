@@ -5,7 +5,8 @@ export const calculateLeagueStatus = (leagueDetails) => {
   const privacy = leagueDetails?.privacy;
   const endDate = leagueDetails?.endDate;
   const maxPlayers = leagueDetails?.maxPlayers;
-  const todaysDate = moment().format("DD-MM-YYYY");
+  const today = moment();
+  const end = moment(endDate, "DD-MM-YYYY");
 
   if (privacy === "Private") {
     return {
@@ -14,7 +15,7 @@ export const calculateLeagueStatus = (leagueDetails) => {
     };
   }
 
-  if (todaysDate >= endDate) {
+  if (today.isSameOrAfter(end)) {
     return {
       status: "ENDED",
       color: "#FF4757",
@@ -33,3 +34,5 @@ export const calculateLeagueStatus = (leagueDetails) => {
     color: "#286EFA",
   };
 };
+
+// console.log("todaysDate >= endDate", todaysDate >= endDate);

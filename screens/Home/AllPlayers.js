@@ -27,23 +27,42 @@ const AllPlayers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [originalUsers, setOriginalUsers] = useState([]);
   const [sortedUsers, setSortedUsers] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
 
   const fetchUsers = async () => {
     try {
       const users = await getAllUsers();
+      setTotalUsers(users.length);
       const sorted = rankSorting(users).map((user, index) => ({
         ...user,
         globalRank: index + 1,
       }));
-      setOriginalUsers(sorted); // Keep pristine copy
+      setOriginalUsers(sorted);
       setSortedUsers(sorted);
-      setLoading(false);
     } catch (error) {
       console.error("Failed to fetch users:", error);
+      Alert.alert("Refresh failed", "Could not update player list");
+    } finally {
       setLoading(false);
-      // Consider adding error state display
     }
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchUsers();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      await fetchUsers();
+    };
+    loadInitialData();
+  }, [getAllUsers]);
 
   // Ordinal suffix function
   const getRankSuffix = (rank) => {
@@ -79,10 +98,6 @@ const AllPlayers = () => {
       // Consider showing error to user
     }
   };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [getAllUsers]);
 
   const renderPlayer = useCallback(
     ({ item: player }) => {
@@ -136,6 +151,18 @@ const AllPlayers = () => {
           <ActivityIndicator size="large" color="#00A2FF" />
         </LoadingContainer>
       )}
+      <Text
+        style={{
+          color: "white",
+          fontSize: 10,
+          alignSelf: "flex-end",
+          paddingRight: 20,
+          fontWeight: "bold",
+          fontStyle: "italic",
+        }}
+      >
+        {totalUsers} players
+      </Text>
       <SearchInput
         placeholder="Search players..."
         placeholderTextColor="#888"
@@ -152,7 +179,13 @@ const AllPlayers = () => {
         windowSize={5}
         removeClippedSubviews={true}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={fetchUsers} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="white" // iOS
+            colors={["white"]} // Android
+            progressBackgroundColor="#00A2FF"
+          />
         }
       />
     </TableContainer>

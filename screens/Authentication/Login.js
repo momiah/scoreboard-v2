@@ -17,17 +17,14 @@ import {
 } from "../../assets"; // Your image imports
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { collection, where, getDocs, query } from "firebase/firestore";
 import {
-  collection,
-  where,
-  getDocs,
-  query,
-} from "firebase/firestore";
-import {  signInWithCredential, signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from '../../services/firebase.config';
+  signInWithCredential,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { auth, db } from "../../services/firebase.config";
 // import { GoogleSignin } from '@react-native-google-signin/google-signin';
 // GoogleAuthProvider
-
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -84,7 +81,11 @@ export default function Login() {
     validatePassword();
     if (!emailError && !passwordError && email && password) {
       try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
         console.log("Logged in successfully");
         // setFirebaseError("");
         const user = userCredential.user;
@@ -92,7 +93,7 @@ export default function Login() {
         const userId = user.uid;
 
         // Save the token to AsyncStorage
-     
+
         await AsyncStorage.setItem("userToken", token);
         await AsyncStorage.setItem("userId", userId);
         navigation.reset({
@@ -101,7 +102,7 @@ export default function Login() {
         }); // Adjust to your home screen
       } catch (error) {
         // setFirebaseError(error.message || "Login failed.");
-        Alert.alert("Error","Login failed.");
+        Alert.alert("Error", "Login failed.");
       }
     }
   };
@@ -247,7 +248,6 @@ export default function Login() {
 
         {/* Social Media Buttons */}
         <View style={styles.socialContainer}>
-
           {/* <TouchableOpacity onPress={() => { onSocialLogin('google') }}>
             <Image source={GoogleLogo} style={styles.socialIcon} />
           </TouchableOpacity> */}
@@ -262,7 +262,14 @@ export default function Login() {
         {/* Register Section */}
 
         <TouchableOpacity>
-          <Text onPress={() => { navigation.navigate('Signup') }} style={styles.registerText}>Register</Text>
+          <Text
+            onPress={() => {
+              navigation.navigate("Signup");
+            }}
+            style={styles.registerText}
+          >
+            Register
+          </Text>
         </TouchableOpacity>
       </View>
     </>
@@ -272,7 +279,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#00152B", // Dark blue background
+    backgroundColor: " rgb(3, 16, 31)",
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
