@@ -3,20 +3,26 @@ import { TouchableOpacity, View, Text } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-const Popup = ({ visible, message, onClose }) => {
+const Popup = ({ visible, message, onClose, type, buttonText = "Close" }) => {
   if (!visible) return null;
+
+  const iconName =
+    type === "success"
+      ? "checkmark-circle-outline"
+      : type === "error"
+      ? "alert-circle-outline"
+      : "information-circle-outline";
+
+  const iconColor =
+    type === "success" ? "#00A2FF" : type === "error" ? "#FF0000" : "#FFA500";
 
   return (
     <PopupContainer>
       <PopupContent>
-        <Ionicons
-          name={"checkmark-circle-outline"}
-          size={75}
-          color={"#00A2FF"}
-        />
+        <Ionicons name={iconName} size={75} color={iconColor} />
         <MessageText>{message}</MessageText>
         <CloseButton onPress={onClose}>
-          <ButtonText>Close</ButtonText>
+          <ButtonText>{buttonText}</ButtonText>
         </CloseButton>
       </PopupContent>
     </PopupContainer>
@@ -32,7 +38,7 @@ const PopupContainer = styled.View({
   right: 0,
   bottom: 0,
 
-  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  // backgroundColor: "rgba(0, 0, 0, 0.5)",
   justifyContent: "center",
   alignItems: "center",
   zIndex: 60,

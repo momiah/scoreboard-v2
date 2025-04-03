@@ -237,6 +237,7 @@ const AddGameModal = ({
           visible={showPopup}
           message={popupMessage}
           onClose={handleClosePopup}
+          type="success"
         />
         <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <GradientOverlay colors={["#191b37", "#001d2e"]}>
