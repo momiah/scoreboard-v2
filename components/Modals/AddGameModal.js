@@ -130,7 +130,6 @@ const AddGameModal = ({
     ) {
       setErrorText("Please select players for both teams.");
       setLoading(false);
-      // handleShowPopup("Please select players for both teams.");
       return;
     }
 
@@ -138,7 +137,6 @@ const AddGameModal = ({
     if (!team1Score || !team2Score) {
       setErrorText("Please enter scores for both teams.");
       setLoading(false);
-      // handleShowPopup("Please enter scores for both teams.");
       return;
     }
 
@@ -166,15 +164,11 @@ const AddGameModal = ({
     const allPlayers = await retrievePlayers(leagueId);
     const allUsers = await getAllUsers();
 
-    // console.log("allUsers", JSON.stringify(allUsers, null, 2));
-
     const playersToUpdate = allPlayers.filter((player) =>
       newGame.result.winner.players
         .concat(newGame.result.loser.players)
         .includes(player.id)
     );
-
-    // console.log("playersToUpdate", JSON.stringify(playersToUpdate, null, 2));
 
     //TODO - Instead of using allUsers, use the usersToUpdate array to update only the users that need to be updated
     const getUsersFromPlayersToUpdate = (allUsers, playersToUpdate) => {
