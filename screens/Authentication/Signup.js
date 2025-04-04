@@ -13,9 +13,9 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
-import { newPlayer } from "../../components/Leagues/leagueMocks";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
+import { userProfileSchema, profileDetailSchema } from "../../schemas/schema";
 
 const Signup = ({ route }) => {
   const { userId, userName, userEmail } = route.params || {};
@@ -106,7 +106,7 @@ const Signup = ({ route }) => {
       handPreference: data.handPreference,
       userId: uid,
       provider,
-      profileDetail: newPlayer,
+      profileDetail: profileDetailSchema,
     });
   };
 

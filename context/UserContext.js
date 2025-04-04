@@ -16,6 +16,7 @@ import { db } from "../services/firebase.config";
 import moment from "moment";
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { profileDetailSchema } from "../schemas/schema";
 
 const UserContext = createContext();
 
@@ -44,33 +45,6 @@ const UserProvider = ({ children }) => {
     loadInitialUser();
   }, []);
 
-  const newPlayer = {
-    memberSince: moment().format("MMM YYYY"),
-    XP: 10,
-    prevGameXP: 0,
-    lastActive: "",
-    numberOfWins: 0,
-    numberOfLosses: 0,
-    numberOfGamesPlayed: 0,
-    winPercentage: 0,
-    resultLog: [],
-    pointDifferenceLog: [],
-    averagePointDifference: 0,
-
-    totalPoints: 0,
-
-    winStreak5: 0,
-    winStreak7: 0,
-    winStreak3: 0,
-    demonWin: 0,
-    currentStreak: {
-      type: null,
-      count: 0,
-    },
-    highestLossStreak: 0,
-    highestWinStreak: 0,
-  };
-
   const handleShowPopup = (message) => {
     setPopupMessage(message);
     setShowPopup(true);
@@ -78,10 +52,9 @@ const UserProvider = ({ children }) => {
 
   const Logout = async () => {
     try {
-      // Perform any cleanup or reset actions necessary
       await AsyncStorage.clear();
-      setCurrentUser(null); // Clear the logged-in user
-      setPlayers([]); // Clear player data
+      setCurrentUser(null);
+      setPlayers([]);
       handleShowPopup("Successfully logged out!");
     } catch (error) {
       console.error("Error during logout:", error);
@@ -312,7 +285,7 @@ const UserProvider = ({ children }) => {
         );
 
         const playerDocRef = doc(playersCollectionRef, playerId);
-        await updateDoc(playerDocRef, newPlayer);
+        await updateDoc(playerDocRef, profileDetailSchema);
       }
 
       handleShowPopup("All player stats reset successfully!");
@@ -334,7 +307,7 @@ const UserProvider = ({ children }) => {
 
       // Use the player name (or ID) as the document ID
       const playerDocRef = doc(playersCollectionRef, "Abdul");
-      await setDoc(playerDocRef, newPlayer); // Write the data directly
+      await setDoc(playerDocRef, profileDetailSchema); // Write the data directly
       handleShowPopup("Player reset successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);

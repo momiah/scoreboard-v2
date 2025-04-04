@@ -20,6 +20,7 @@ import DatePicker from "../Leagues/AddLeague/DatePicker";
 import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
 import LeagueType from "../Leagues/AddLeague/LeagueType";
 import PrivacyType from "../Leagues/AddLeague/PrivacyType";
+import { leagueSchema, profileDetailSchema } from "../../schemas/schema";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const { addLeagues } = useContext(LeagueContext);
@@ -35,71 +36,27 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     privacy: "",
   });
 
-  const [leagueDetails, setLeagueDetails] = useState({
-    leagueParticipants: [],
-    leagueTeams: [],
-    leagueAdmins: [],
-    games: [],
-    leagueType: "",
-    prizeType: "",
-    entryFee: 0,
-    currencyType: "",
-    image: "",
-    leagueName: "",
-    leagueDescription: "",
-    location: "",
-    centerName: "",
-    startDate: "",
-    leagueLengthInMonths: "",
-    endDate: "",
-    image: "",
-    leagueType: "",
-    maxPlayers: 0,
-    privacy: "",
-    playingTime: [],
-    leagueStatus: "FULL",
-  });
-
-  useEffect(() => {
-    assignLeagueAdmin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [leagueDetails, setLeagueDetails] = useState(leagueSchema);
 
   const assignLeagueAdmin = async () => {
     try {
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId) {
+      const currentUserId = await AsyncStorage.getItem("userId");
+      if (!currentUserId) {
         console.log("No userId found in AsyncStorage.");
         return;
       }
 
-      const userInfo = await getUserById(userId);
+      const userInfo = await getUserById(currentUserId);
 
-      // Create fresh profile details with only XP preserved
+      const { XP, id, userId, memberSince, ...restProfileDetail } =
+        profileDetailSchema;
+
       const initialProfileDetail = {
-        XP: userInfo.profileDetail?.XP || 0, // Only keep XP
-        averagePointDifference: 0,
-        currentStreak: { count: 0, type: null },
-        demonWin: 0,
-        highestLossStreak: 0,
-        highestWinStreak: 0,
+        ...restProfileDetail,
+        XP: userInfo.profileDetail?.XP || 0,
         id: userInfo.username,
-        lastActive: "",
-        memberSince: userInfo.profileDetail?.memberSince || "",
-        numberOfGamesPlayed: 0,
-        numberOfLosses: 0,
-        numberOfWins: 0,
-        pointEfficiency: 0,
-        prevGameXP: 0,
-        resultLog: [],
-        totalPointDifference: 0,
-        totalPointEfficiency: 0,
-        totalPoints: 0,
         userId: userInfo.userId,
-        winPercentage: 0,
-        winStreak3: 0,
-        winStreak5: 0,
-        winStreak7: 0,
+        memberSince: userInfo.profileDetail?.memberSince || "",
       };
 
       setLeagueDetails((prevDetails) => ({
@@ -130,7 +87,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   };
 
   //Creating League
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const requiredFields = [
       "leagueName",
       "location",
@@ -157,9 +114,15 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       return;
     }
 
-    // If all fields are filled, proceed to create the league
-    addLeagues(leagueDetails);
-    setModalVisible(false);
+    try {
+      await assignLeagueAdmin();
+
+      addLeagues(leagueDetails);
+      setModalVisible(false);
+    } catch (error) {
+      console.error("Error creating league:", error);
+      // optionally show feedback to user here
+    }
   };
 
   return (

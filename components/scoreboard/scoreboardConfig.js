@@ -22,12 +22,12 @@ export const getButtonConfig = (
       not_started: {
         text: requestSend ? "Request sent successfully" : "Request To Join",
         disabled: requestSend,
-        action: () => setRequestSend(true),
+        action: () => requestSend(true),
       },
       started: {
         text: requestSend ? "Request sent successfully" : "Request To Join",
         disabled: requestSend,
-        action: () => setRequestSend(true),
+        action: () => requestSend(true),
       },
       ended: { text: "League has ended", disabled: true, action: null },
     },
