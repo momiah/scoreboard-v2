@@ -118,7 +118,7 @@ const PlayerDetails = ({
 
             <PlayerDetail>
               <View>
-                <PlayerName>{selectedPlayer.id}</PlayerName>
+                <PlayerName>{selectedPlayer.username}</PlayerName>
                 <Text
                   style={{
                     color: "#aaa",

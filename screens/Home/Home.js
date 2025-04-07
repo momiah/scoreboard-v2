@@ -15,7 +15,6 @@ import HorizontalLeagueCarousel from "../../components/Leagues/HorizontalLeagueC
 import TournamentGrid from "../../components/Tournaments/TournamentGrid";
 import { tournaments } from "../../components/Tournaments/tournamentMocks";
 import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";
-import { topPlayers } from "../../components/TopPlayersDisplay/topPlayerMocks";
 import SubHeader from "../../components/SubHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";

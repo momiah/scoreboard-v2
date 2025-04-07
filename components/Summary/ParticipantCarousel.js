@@ -24,7 +24,7 @@ const ParticipantCarousel = ({ leagueParticipants }) => {
               }}
             >
               <Avatar source={CourtChampsLogo} />
-              <ParticipantName>{participant.id}</ParticipantName>
+              <ParticipantName>{participant.username}</ParticipantName>
             </ParticipantView>
           ))}
         </ScrollView>

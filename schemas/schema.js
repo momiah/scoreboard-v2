@@ -1,5 +1,6 @@
-export const profileDetailSchema = {
-  XP: 0,
+import moment from "moment";
+
+export const scoreboardProfileSchema = {
   prevGameXP: 0,
   highestLossStreak: 0,
   highestWinStreak: 0,
@@ -20,9 +21,26 @@ export const profileDetailSchema = {
   },
   lastActive: "",
   winPercentage: 0,
-  memberSince: "",
   numberOfLosses: 0,
   numberOfGamesPlayed: 0,
+};
+
+export const profileDetailSchema = {
+  ...scoreboardProfileSchema,
+  XP: 0,
+  memberSince: moment().format("DD-MM-YYYY"),
+  leagueStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
+  tournamentStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
 };
 
 export const userProfileSchema = {

@@ -20,8 +20,6 @@ const AddGame = ({
     }
   };
 
-  console.log("leagueType", leagueType);
-
   return (
     <GameContainer>
       <TeamContainer>

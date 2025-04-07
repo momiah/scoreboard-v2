@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  use,
+} from "react";
 import { Keyboard } from "react-native";
 import {
   doc,
@@ -62,7 +68,7 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const retrievePlayers = async (leagueId) => {
+  const retrievePlayersFromLeague = async (leagueId) => {
     try {
       const leagueCollectionRef = collection(db, "leagues");
       const leagueDocRef = doc(leagueCollectionRef, leagueId);
@@ -125,7 +131,7 @@ const UserProvider = ({ children }) => {
 
   const fetchPlayers = async (leagueId) => {
     try {
-      const players = await retrievePlayers(leagueId);
+      const players = await retrievePlayersFromLeague(leagueId);
       setPlayers(players); // Set the retrieved players in the state
     } catch (error) {
       console.error("Error fetching players:", error);
@@ -139,7 +145,7 @@ const UserProvider = ({ children }) => {
       const usersRef = collection(db, "users");
       const querySnapshot = await getDocs(usersRef);
       const users = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
+        // id: doc.id,
         ...doc.data(),
       }));
       return users;
@@ -152,7 +158,7 @@ const UserProvider = ({ children }) => {
   const updateUsers = async (usersToUpdate) => {
     try {
       const updatePromises = usersToUpdate.map(async (user) => {
-        const userRef = doc(db, "users", user.id);
+        const userRef = doc(db, "users", user.userId);
 
         await updateDoc(userRef, {
           profileDetail: user.profileDetail,
@@ -188,7 +194,9 @@ const UserProvider = ({ children }) => {
 
       // Update the existing players array with updated data
       const updatedParticipants = existingPlayers.map((player) => {
-        const updatedPlayer = updatedPlayers.find((p) => p.id === player.id);
+        const updatedPlayer = updatedPlayers.find(
+          (p) => p.username === player.username
+        );
         return updatedPlayer ? { ...player, ...updatedPlayer } : player;
       });
 
@@ -273,8 +281,8 @@ const UserProvider = ({ children }) => {
 
   const resetAllPlayerStats = async () => {
     try {
-      const allPlayers = await retrievePlayers();
-      const allPlayersIds = allPlayers.map((player) => player.id);
+      const allPlayers = await retrievePlayersFromLeague();
+      const allPlayersIds = allPlayers.map((player) => player.username);
 
       for (const playerId of allPlayersIds) {
         const scoreboardCollectionRef = collection(db, "scoreboard");
@@ -475,36 +483,17 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const searchUsers = async (searchTerm) => {
-    try {
-      const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        orderBy("username"), // Now properly imported
-        startAt(searchTerm.toLowerCase()),
-        endAt(searchTerm.toLowerCase() + "\uf8ff")
-      );
-
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-      console.error("Error searching users:", error);
-      return [];
-    }
-  };
-
   return (
     <UserContext.Provider
       value={{
         showPopup,
         popupMessage,
 
-        retrievePlayers,
+        retrievePlayersFromLeague,
         loading,
         setLoading,
 
         rankSorting,
-        searchUsers,
         profileViewCount,
         currentUser,
         updateUserProfile,

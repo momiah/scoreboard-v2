@@ -44,7 +44,7 @@ const AddGameModal = ({
     showPopup,
   } = useContext(PopupContext);
   const {
-    retrievePlayers,
+    retrievePlayersFromLeague,
     updatePlayers,
     updateTeams,
     retrieveTeams,
@@ -161,13 +161,13 @@ const AddGameModal = ({
       },
     };
 
-    const allPlayers = await retrievePlayers(leagueId);
+    const allPlayersInLeague = await retrievePlayersFromLeague(leagueId);
     const allUsers = await getAllUsers();
 
-    const playersToUpdate = allPlayers.filter((player) =>
+    const playersToUpdate = allPlayersInLeague.filter((player) =>
       newGame.result.winner.players
         .concat(newGame.result.loser.players)
-        .includes(player.id)
+        .includes(player.username)
     );
 
     //TODO - Instead of using allUsers, use the usersToUpdate array to update only the users that need to be updated

@@ -20,7 +20,7 @@ import DatePicker from "../Leagues/AddLeague/DatePicker";
 import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
 import LeagueType from "../Leagues/AddLeague/LeagueType";
 import PrivacyType from "../Leagues/AddLeague/PrivacyType";
-import { leagueSchema, profileDetailSchema } from "../../schemas/schema";
+import { leagueSchema, scoreboardProfileSchema } from "../../schemas/schema";
 
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const { addLeagues } = useContext(LeagueContext);
@@ -39,44 +39,28 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [leagueDetails, setLeagueDetails] = useState(leagueSchema);
 
   const assignLeagueAdmin = async () => {
-    try {
-      const currentUserId = await AsyncStorage.getItem("userId");
-      if (!currentUserId) {
-        console.log("No userId found in AsyncStorage.");
-        return;
-      }
-
-      const userInfo = await getUserById(currentUserId);
-
-      const { XP, id, userId, memberSince, ...restProfileDetail } =
-        profileDetailSchema;
-
-      const initialProfileDetail = {
-        ...restProfileDetail,
-        XP: userInfo.profileDetail?.XP || 0,
-        id: userInfo.username,
-        userId: userInfo.userId,
-        memberSince: userInfo.profileDetail?.memberSince || "",
-      };
-
-      setLeagueDetails((prevDetails) => ({
-        ...prevDetails,
-        leagueAdmins: [
-          ...prevDetails.leagueAdmins,
-          { userId: userInfo.userId, username: userInfo.username },
-        ],
-        leagueParticipants: [
-          ...prevDetails.leagueParticipants,
-          {
-            id: userInfo.username,
-            userId: userInfo.userId,
-            ...initialProfileDetail,
-          },
-        ],
-      }));
-    } catch (error) {
-      console.error("Error assigning league admin:", error);
+    const currentUserId = await AsyncStorage.getItem("userId");
+    if (!currentUserId) {
+      console.log("No userId found in AsyncStorage.");
+      return null;
     }
+
+    const userInfo = await getUserById(currentUserId);
+
+    const leagueCreatorProfile = {
+      ...scoreboardProfileSchema,
+      // XP: userInfo.profileDetail?.XP || 0,
+      username: userInfo.username,
+      userId: userInfo.userId,
+      memberSince: userInfo.profileDetail?.memberSince || "",
+    };
+
+    return {
+      leagueAdmin: { userId: userInfo.userId, username: userInfo.username },
+      leagueParticipant: {
+        ...leagueCreatorProfile,
+      },
+    };
   };
 
   const handleChange = (field, value) => {
@@ -86,7 +70,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }));
   };
 
-  //Creating League
   const handleCreate = async () => {
     const requiredFields = [
       "leagueName",
@@ -99,7 +82,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       "privacy",
     ];
 
-    // Create error object
     const newErrors = {};
     requiredFields.forEach((field) => {
       if (!leagueDetails[field]) {
@@ -108,20 +90,22 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     });
 
     setErrorText(newErrors);
-
-    // Check if any errors exist
-    if (Object.values(newErrors).some((error) => error)) {
-      return;
-    }
+    if (Object.values(newErrors).some((e) => e)) return;
 
     try {
-      await assignLeagueAdmin();
+      const adminData = await assignLeagueAdmin();
+      if (!adminData) return;
 
-      addLeagues(leagueDetails);
+      const newLeague = {
+        ...leagueDetails,
+        leagueAdmins: [adminData.leagueAdmin],
+        leagueParticipants: [adminData.leagueParticipant],
+      };
+
+      addLeagues(newLeague);
       setModalVisible(false);
-    } catch (error) {
-      console.error("Error creating league:", error);
-      // optionally show feedback to user here
+    } catch (err) {
+      console.error("Error creating league:", err);
     }
   };
 

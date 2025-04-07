@@ -12,7 +12,7 @@ const SelectPlayer = ({ onSelectPlayer, selectedPlayers, borderType }) => {
 
   const playerArray = players.map((player) => ({
     key: player.userId, // Assuming each player has a unique ID
-    value: player.id, // Adjust based on the structure of your player data
+    value: player.username, // Adjust based on the structure of your player data
   }));
 
   const handleSelect = (value) => {
