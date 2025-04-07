@@ -67,7 +67,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
     current.xp <= xp ? current : prev
   );
 
-  const xpFormmated = formatNumber(xp);
+  // const xpFormmated = formatNumber(xp);
 
   const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
 

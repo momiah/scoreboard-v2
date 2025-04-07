@@ -8,21 +8,31 @@ import PlayerDetails from "../../Modals/PlayerDetailsModal";
 
 const PlayerPerformance = ({ playersData }) => {
   const { findRankIndex, recentGameResult } = useContext(GameContext);
-  const { loading, setLoading } = useContext(UserContext);
-
+  const { loading, setLoading, getUserById } = useContext(UserContext);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
-
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [playersWithUserData, setPlayersWithUserData] = useState([]);
 
-  // const runcalculatePlayerPerformance = async () => {
-  // Reverse the array to process the last game first
-  //   const reversedGames = [...games].reverse();
+  useEffect(() => {
+    const enrichPlayers = async () => {
+      const enriched = await Promise.all(
+        playersData.map(async (player) => {
+          const user = await getUserById(player.userId);
+          const XP = user.profileDetail.XP;
+          return {
+            ...player,
+            XP,
+          };
+        })
+      );
+      setPlayersWithUserData(enriched);
+      setLoading(false);
+    };
 
-  //   for (const game of reversedGames) {
-  //     const playersToUpdate = await calculatePlayerPerformance(game, retrievePlayers);
-  //     await updatePlayers(playersToUpdate);
-  //   }
-  // };
+    if (playersData.length > 0) {
+      enrichPlayers();
+    }
+  }, [playersData]);
 
   useEffect(() => {
     if (playersData.length > 0) {
@@ -46,13 +56,13 @@ const PlayerPerformance = ({ playersData }) => {
   }
 
   const renderPlayer = ({ item: player, index }) => {
-    const playerXp = player.XP;
+    const playerXp = player.XP || 0;
     const pointDifference = player.totalPointDifference || 0;
     const rankLevel = findRankIndex(playerXp) + 1;
 
     return (
       <TableRow
-        key={player}
+        key={player.userId}
         onPress={() => {
           setShowPlayerDetails(true);
           setSelectedPlayer(player);
@@ -71,7 +81,7 @@ const PlayerPerformance = ({ playersData }) => {
           </Rank>
         </TableCell>
         <PlayerNameCell>
-          <PlayerName>{player.id}</PlayerName>
+          <PlayerName>{player.username}</PlayerName>
           {recentGameResult(player.resultLog)}
         </PlayerNameCell>
         <TableCell>
@@ -86,8 +96,6 @@ const PlayerPerformance = ({ playersData }) => {
         </TableCell>
         <TableCell>
           <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
-          {/* </TableCell>
-        <TableCell> */}
           <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
         </TableCell>
       </TableRow>
@@ -96,24 +104,15 @@ const PlayerPerformance = ({ playersData }) => {
 
   return (
     <TableContainer>
-      {/* <ResetPlayerStats onPress={() => resetPlayerStats()}>
-        <Text>Reset Player Stats</Text>
-      </ResetPlayerStats>
-      <ResetPlayerStats onPress={() => resetAllPlayerStats()}>
-        <Text>Reset All Players</Text>
-      </ResetPlayerStats>
-      <ResetPlayerStats onPress={() => runcalculatePlayerPerformance()}>
-        <Text>Run New Algo</Text>
-      </ResetPlayerStats> */}
       <FlatList
-        data={playersData}
+        data={playersWithUserData}
         renderItem={renderPlayer}
-        keyExtractor={(player) => player.id}
+        keyExtractor={(player) => player.userId}
       />
 
       {showPlayerDetails && (
         <PlayerDetails
-          playersData={playersData}
+          // playersData={playersWithUserData}
           selectedPlayer={selectedPlayer}
           showPlayerDetails={showPlayerDetails}
           setShowPlayerDetails={setShowPlayerDetails}
@@ -122,19 +121,6 @@ const PlayerPerformance = ({ playersData }) => {
     </TableContainer>
   );
 };
-
-// const ResetPlayerStats = styled.TouchableOpacity({
-//   display: "flex",
-//   justifyContent: "center",
-//   alignItems: "center",
-//   fontSize: 24,
-//   fontWeight: "bold",
-//   marginBottom: 15,
-//   marginTop: 15,
-//   padding: 10,
-//   borderRadius: 8,
-//   backgroundColor: "#00A2FF",
-// });
 
 const TableContainer = styled.View({
   paddingTop: 20,
@@ -193,3 +179,38 @@ const Stat = styled.Text({
 });
 
 export default PlayerPerformance;
+
+// const runcalculatePlayerPerformance = async () => {
+// Reverse the array to process the last game first
+//   const reversedGames = [...games].reverse();
+
+//   for (const game of reversedGames) {
+//     const playersToUpdate = await calculatePlayerPerformance(game, retrievePlayersFromLeague);
+//     await updatePlayers(playersToUpdate);
+//   }
+// };
+
+{
+  /* <ResetPlayerStats onPress={() => resetPlayerStats()}>
+  <Text>Reset Player Stats</Text>
+  </ResetPlayerStats>
+  <ResetPlayerStats onPress={() => resetAllPlayerStats()}>
+  <Text>Reset All Players</Text>
+  </ResetPlayerStats>
+  <ResetPlayerStats onPress={() => runcalculatePlayerPerformance()}>
+  <Text>Run New Algo</Text>
+  </ResetPlayerStats> */
+}
+
+// const ResetPlayerStats = styled.TouchableOpacity({
+//   display: "flex",
+//   justifyContent: "center",
+//   alignItems: "center",
+//   fontSize: 24,
+//   fontWeight: "bold",
+//   marginBottom: 15,
+//   marginTop: 15,
+//   padding: 10,
+//   borderRadius: 8,
+//   backgroundColor: "#00A2FF",
+// });

@@ -1,10 +1,4 @@
-import React, {
-  useContext,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useContext, useCallback } from "react";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import { GameContext } from "../../context/GameContext";
@@ -15,10 +9,8 @@ import { useNavigation } from "@react-navigation/native";
 
 const iconSize = 45;
 
-const TopPlayers = ({ topPlayers, fetchUsers }) => {
-  // const { getAllUsers } = useContext(UserContext);
+const TopPlayers = ({ topPlayers }) => {
   const { findRankIndex } = useContext(GameContext);
-  // const [sortedUsers, setSortedUsers] = useState([]);
   const navigation = useNavigation();
 
   const renderPlayer = useCallback(
@@ -27,9 +19,11 @@ const TopPlayers = ({ topPlayers, fetchUsers }) => {
       const pointDifference = player.profileDetail.totalPointDifference || 0;
       const rankLevel = findRankIndex(playerXp) + 1;
 
+      console.log("topPlayers", JSON.stringify(topPlayers, null, 2));
+
       return (
         <PlayerRow
-          key={player.id}
+          key={player.userId}
           onPress={() => {
             navigation.navigate("UserProfile", {
               userId: player.userId,
@@ -72,13 +66,11 @@ const TopPlayers = ({ topPlayers, fetchUsers }) => {
     [findRankIndex]
   );
 
-  // const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
-
   return (
     <FlatList
       data={topPlayers}
       renderItem={renderPlayer}
-      keyExtractor={(player) => player.id}
+      keyExtractor={(player) => player.userId}
       initialNumToRender={5}
       maxToRenderPerBatch={5}
       windowSize={5}

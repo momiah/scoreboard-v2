@@ -15,7 +15,7 @@ describe("calculatePlayerPerformance function", () => {
 
   const mockPlayers = [
     {
-      id: "player1",
+      username: "player1",
       XP: 100,
       numberOfWins: 2,
       numberOfLosses: 1,
@@ -33,7 +33,7 @@ describe("calculatePlayerPerformance function", () => {
       winStreak7: 0,
     },
     {
-      id: "player2",
+      username: "player2",
       XP: 120,
       numberOfWins: 2,
       numberOfLosses: 1,
@@ -51,7 +51,7 @@ describe("calculatePlayerPerformance function", () => {
       winStreak7: 0,
     },
     {
-      id: "player3",
+      username: "player3",
       XP: 90,
       numberOfWins: 0,
       numberOfLosses: 3,
@@ -69,7 +69,7 @@ describe("calculatePlayerPerformance function", () => {
       winStreak7: 0,
     },
     {
-      id: "player4",
+      username: "player4",
       XP: 110,
       numberOfWins: 1,
       numberOfLosses: 2,
@@ -96,7 +96,7 @@ describe("calculatePlayerPerformance function", () => {
       "league123"
     );
 
-    const updatedWinner1 = updatedPlayers.find((p) => p.id === "player1");
+    const updatedWinner1 = updatedPlayers.find((p) => p.username === "player1");
 
     await expect(updatedWinner1.numberOfWins).toBe(3);
     await expect(updatedWinner1.numberOfGamesPlayed).toBe(4);
@@ -115,7 +115,7 @@ describe("calculatePlayerPerformance function", () => {
       "league123"
     );
 
-    const updatedLoser1 = updatedPlayers.find((p) => p.id === "player3");
+    const updatedLoser1 = updatedPlayers.find((p) => p.username === "player3");
 
     await expect(updatedLoser1.numberOfLosses).toBe(4);
     await expect(updatedLoser1.numberOfGamesPlayed).toBe(4);
@@ -136,12 +136,12 @@ describe("calculatePlayerPerformance function", () => {
       "league123"
     );
 
-    const updatedWinner1 = updatedPlayers.find((p) => p.id === "player1");
+    const updatedWinner1 = updatedPlayers.find((p) => p.username === "player1");
 
     await await expect(updatedWinner1.winStreak3).toBe(0);
     await expect(updatedWinner1.highestWinStreak).toBe(2);
 
-    const updatedLoser1 = updatedPlayers.find((p) => p.id === "player3");
+    const updatedLoser1 = updatedPlayers.find((p) => p.username === "player3");
 
     await expect(updatedLoser1.highestLossStreak).toBe(4);
   });
@@ -158,7 +158,7 @@ describe("calculatePlayerPerformance function", () => {
 
   const mockPlayers2 = [
     {
-      id: "player1",
+      username: "player1",
       XP: 1000,
       prevGameXp: 200,
       numberOfWins: 10,
@@ -177,7 +177,7 @@ describe("calculatePlayerPerformance function", () => {
       winStreak7: 1,
     },
     {
-      id: "player2",
+      username: "player2",
       XP: 1000,
       prevGameXp: 200,
       numberOfWins: 10,
@@ -196,7 +196,7 @@ describe("calculatePlayerPerformance function", () => {
       winStreak7: 1,
     },
     {
-      id: "player3",
+      username: "player3",
       XP: 100,
       prevGameXp: -200,
       numberOfWins: 0,
@@ -215,7 +215,7 @@ describe("calculatePlayerPerformance function", () => {
       winStreak7: 0,
     },
     {
-      id: "player4",
+      username: "player4",
       XP: 100,
       prevGameXp: -200,
       numberOfWins: 0,
@@ -243,7 +243,7 @@ describe("calculatePlayerPerformance function", () => {
       "league123"
     );
 
-    const updatedWinner1 = updatedPlayers.find((p) => p.id === "player3");
+    const updatedWinner1 = updatedPlayers.find((p) => p.username === "player3");
 
     await expect(updatedWinner1.XP).toBe(240);
   });
@@ -266,7 +266,7 @@ describe("calculatePlayerPerformance function", () => {
   //       "league123"
   //     );
 
-  //     const updatedPlayer = updatedPlayers.find((p) => p.id === "player1");
+  //     const updatedPlayer = updatedPlayers.find((p) => p.username === "player1");
 
   //     // The log should contain the last 10 entries including the new point difference
   //     await expect(updatedPlayer.pointDifferenceLog).toEqual([
@@ -283,7 +283,7 @@ describe("calculatePlayerPerformance function", () => {
   //     );
 
   //     const unaffectedPlayer = updatedPlayers.find(
-  //       (p) => p.id === "unrelatedPlayer"
+  //       (p) => p.username === "unrelatedPlayer"
   //     );
 
   //     await expect(unaffectedPlayer).toBeUndefined(); // Player not updated

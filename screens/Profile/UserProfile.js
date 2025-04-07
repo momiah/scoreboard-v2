@@ -215,8 +215,6 @@ const UserProfile = () => {
   const profileXp = formatNumber(profileDetail.XP.toFixed(0));
   const rankLevel = findRankIndex(profileXp) + 1;
 
-  console.log("point different", profileDetail?.totalPointDifference);
-
   return (
     <Container>
       {isOwnProfile && (
