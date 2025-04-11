@@ -19,8 +19,6 @@ const TopPlayers = ({ topPlayers }) => {
       const pointDifference = player.profileDetail.totalPointDifference || 0;
       const rankLevel = findRankIndex(playerXp) + 1;
 
-      console.log("topPlayers", JSON.stringify(topPlayers, null, 2));
-
       return (
         <PlayerRow
           key={player.userId}

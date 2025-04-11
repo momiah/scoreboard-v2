@@ -1,5 +1,11 @@
-import React, { useContext, useState } from "react";
-import { Alert, ScrollView } from "react-native";
+import React, { useContext, useState, useEffect } from "react";
+import {
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  FlatList,
+} from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import styled from "styled-components/native";
 import { auth, db } from "../../services/firebase.config";
@@ -15,13 +21,49 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
-import { userProfileSchema, profileDetailSchema } from "../../schemas/schema";
+import { profileDetailSchema } from "../../schemas/schema";
+import { Country, City } from "country-state-city";
+import SearchableDropdown from "../../components/Location/SearchableDropdown";
 
 const Signup = ({ route }) => {
   const { userId, userName, userEmail } = route.params || {};
   const isSocialSignup = !!userId;
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
+
+  /////
+
+  // Inside your Signup component:
+  const [countries, setCountries] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedCountryCode, setSelectedCountryCode] = useState(null);
+
+  // Load countries on mount
+  useEffect(() => {
+    const allCountries = Country.getAllCountries().map((country) => ({
+      key: country.isoCode,
+      value: country.name,
+    }));
+    setCountries(allCountries);
+  }, []);
+
+  // Load cities when country changes
+  useEffect(() => {
+    if (selectedCountryCode) {
+      const countryCities = City.getCitiesOfCountry(selectedCountryCode).map(
+        (city) => ({
+          key: city.name,
+          value: city.name,
+        })
+      );
+      setCities(countryCities);
+    } else {
+      setCities([]);
+    }
+  }, [selectedCountryCode]);
+
+  /////
+
   const navigation = useNavigation();
   const {
     handleShowPopup,
@@ -35,13 +77,17 @@ const Signup = ({ route }) => {
     handleSubmit,
     formState: { errors, isSubmitting },
     getValues,
+    setValue,
+    setError,
+    clearErrors,
   } = useForm({
     defaultValues: {
       firstName: userName || "",
       lastName: "",
       username: "",
       email: userEmail || "",
-      location: "",
+      country: "", // Add these fields
+      city: "",
       handPreference: "Both",
       password: "",
       confirmPassword: "",
@@ -60,6 +106,7 @@ const Signup = ({ route }) => {
     }
   };
 
+  // Then in your onSubmit:
   const onSubmit = async (data) => {
     try {
       if (isSocialSignup) {
@@ -199,151 +246,202 @@ const Signup = ({ route }) => {
 
   return (
     <Container>
-      <ScrollContainer>
-        <Title>Create Account</Title>
-
-        <Popup
-          visible={showPopup}
-          message={popupMessage}
-          onClose={handleClosePopup}
-          type={popupIcon}
-          buttonText={popupButtonText}
-        />
-
-        <Controller
-          control={control}
-          name="firstName"
-          rules={{ required: "First name is required" }}
-          render={({ field }) => (
-            <InputWrapper
-              label="First Name"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.firstName?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="lastName"
-          rules={{ required: "Last name is required" }}
-          render={({ field }) => (
-            <InputWrapper
-              label="Last Name"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.lastName?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="username"
-          rules={usernameValidation}
-          render={({ field }) => (
-            <InputWrapper
-              label="Username"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.username?.message}
-            />
-          )}
-        />
-
-        {!isSocialSignup && (
-          <>
-            <Controller
-              control={control}
-              name="email"
-              rules={emailValidation}
-              render={({ field }) => (
-                <InputWrapper
-                  label="Email"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  keyboardType="email-address"
-                  error={errors.email?.message}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <FlatList
+          data={[1]} // dummy item, we just want to render a scrollable container
+          keyExtractor={() => "signup-form"}
+          renderItem={() => (
+            <>
+              <Title>Create Account</Title>
+              <Popup
+                visible={showPopup}
+                message={popupMessage}
+                onClose={handleClosePopup}
+                type={popupIcon}
+                buttonText={popupButtonText}
+              />
+              <Controller
+                control={control}
+                name="firstName"
+                rules={{ required: "First name is required" }}
+                render={({ field }) => (
+                  <InputWrapper
+                    label="First Name"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    error={errors.firstName?.message}
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name="lastName"
+                rules={{ required: "Last name is required" }}
+                render={({ field }) => (
+                  <InputWrapper
+                    label="Last Name"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    error={errors.lastName?.message}
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name="username"
+                rules={usernameValidation}
+                render={({ field }) => (
+                  <InputWrapper
+                    label="Username"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    error={errors.username?.message}
+                  />
+                )}
+              />
+              {!isSocialSignup && (
+                <SocialControllers
+                  control={control}
+                  getValues={getValues}
+                  errors={errors}
+                  emailValidation={emailValidation}
+                  passwordValidation={passwordValidation}
                 />
               )}
-            />
 
-            <Controller
-              control={control}
-              name="password"
-              rules={passwordValidation}
-              render={({ field }) => (
-                <InputWrapper
-                  label="Password"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  secureTextEntry
-                  error={errors.password?.message}
-                />
-              )}
-            />
+              <SearchableDropdown
+                control={control}
+                name="country"
+                label="Country"
+                rules={{ required: "Country is required" }}
+                placeholder="Select country"
+                searchPlaceholder="Search country..."
+                data={countries}
+                setSelected={(val) => {
+                  const code = countries.find((c) => c.value === val)?.key;
+                  setSelectedCountryCode(code);
+                  clearErrors("city");
+                  setValue("city", "");
+                }}
+                error={errors.country}
+              />
+              <SearchableDropdown
+                control={control}
+                name="city"
+                label="City"
+                rules={{
+                  required: "City is required",
+                  validate: () =>
+                    selectedCountryCode || "Please select country first",
+                }}
+                placeholder={
+                  selectedCountryCode ? "Select city" : "Select country first"
+                }
+                searchPlaceholder="Search city..."
+                data={cities}
+                disabled={!selectedCountryCode}
+                error={errors.city}
+              />
 
-            <Controller
-              control={control}
-              name="confirmPassword"
-              rules={{
-                required: "Confirm password is required",
-                validate: (value) =>
-                  value === getValues("password") || "Passwords do not match",
-              }}
-              render={({ field }) => (
-                <InputWrapper
-                  label="Confirm Password"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  secureTextEntry
-                  error={errors.confirmPassword?.message}
-                />
-              )}
-            />
-          </>
-        )}
+              <HandPreference control={control} />
 
-        <Controller
-          control={control}
-          name="location"
-          rules={{ required: "Location is required" }}
-          render={({ field }) => (
-            <InputWrapper
-              label="Location"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.location?.message}
-            />
+              <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
+                <ButtonText>
+                  {isSubmitting ? "Creating Account..." : "Create Account"}
+                </ButtonText>
+              </Button>
+            </>
           )}
+          contentContainerStyle={{ padding: 20 }}
         />
-
-        <Controller
-          control={control}
-          name="handPreference"
-          render={({ field }) => (
-            <RadioGroup>
-              {["Right Hand", "Left Hand", "Both"].map((option) => (
-                <RadioButtonWrapper
-                  key={option}
-                  onPress={() => field.onChange(option)}
-                >
-                  <RadioCircle selected={field.value === option} />
-                  <RadioText>{option}</RadioText>
-                </RadioButtonWrapper>
-              ))}
-            </RadioGroup>
-          )}
-        />
-
-        <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
-          <ButtonText>
-            {isSubmitting ? "Creating Account..." : "Create Account"}
-          </ButtonText>
-        </Button>
-      </ScrollContainer>
+      </KeyboardAvoidingView>
     </Container>
+  );
+};
+
+const HandPreference = ({ control }) => {
+  return (
+    <Controller
+      control={control}
+      name="handPreference"
+      render={({ field }) => (
+        <RadioGroup>
+          {["Right Hand", "Left Hand", "Both"].map((option) => (
+            <RadioButtonWrapper
+              key={option}
+              onPress={() => field.onChange(option)}
+            >
+              <RadioCircle selected={field.value === option} />
+              <RadioText>{option}</RadioText>
+            </RadioButtonWrapper>
+          ))}
+        </RadioGroup>
+      )}
+    />
+  );
+};
+
+const SocialControllers = ({
+  control,
+  getValues,
+  errors,
+  emailValidation,
+  passwordValidation,
+}) => {
+  return (
+    <>
+      <Controller
+        control={control}
+        name="email"
+        rules={emailValidation}
+        render={({ field }) => (
+          <InputWrapper
+            label="Email"
+            value={field.value}
+            onChangeText={field.onChange}
+            keyboardType="email-address"
+            error={errors.email?.message}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="password"
+        rules={passwordValidation}
+        render={({ field }) => (
+          <InputWrapper
+            label="Password"
+            value={field.value}
+            onChangeText={field.onChange}
+            secureTextEntry
+            error={errors.password?.message}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="confirmPassword"
+        rules={{
+          required: "Confirm password is required",
+          validate: (value) =>
+            value === getValues("password") || "Passwords do not match",
+        }}
+        render={({ field }) => (
+          <InputWrapper
+            label="Confirm Password"
+            value={field.value}
+            onChangeText={field.onChange}
+            secureTextEntry
+            error={errors.confirmPassword?.message}
+          />
+        )}
+      />
+    </>
   );
 };
 
@@ -381,12 +479,11 @@ const Label = styled.Text({
 });
 
 const Input = styled.TextInput({
-  backgroundColor: "#2f3640",
-  color: "#fff",
-  borderRadius: 10,
   padding: 10,
   marginBottom: 10,
-  fontSize: 16,
+  backgroundColor: "#262626",
+  color: "#fff",
+  borderRadius: 5,
 });
 
 const ErrorText = styled.Text({
