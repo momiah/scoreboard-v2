@@ -50,26 +50,46 @@ const Signup = ({ route }) => {
   const [cities, setCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
 
-  // Optimized city loading
+  useEffect(() => {
+    if (selectedCountryCode) {
+      // Verify country code format (important!)
+      console.log("Selected country code:", selectedCountryCode);
+    }
+  }, [selectedCountryCode]);
+
   const handleCityDropdownOpen = useCallback(async () => {
-    if (!selectedCountryCode || cities.length > 0) return;
+    if (!selectedCountryCode) {
+      setCities([]);
+      return;
+    }
 
     setLoadingCities(true);
     try {
       const allCities = City.getCitiesOfCountry(selectedCountryCode) || [];
+      console.log("Raw cities data:", allCities); // Debug log
 
-      // More efficient unique filtering
-      const uniqueCities = Array.from(
-        new Set(allCities.map((c) => c.name))
-      ).map((name) => ({ key: name, value: name }));
+      // More reliable unique city filtering
+      const cityMap = new Map();
+      allCities.forEach((city) => {
+        if (city.name && !cityMap.has(city.name)) {
+          cityMap.set(city.name, city);
+        }
+      });
 
+      const uniqueCities = Array.from(cityMap.values()).map((city) => ({
+        key: city.name + "-" + (city.latitude || "") + (city.longitude || ""),
+        value: city.name,
+      }));
+
+      console.log("Processed cities:", uniqueCities);
       setCities(uniqueCities);
     } catch (error) {
-      console.error("City loading failed:", error);
+      console.error("City loading error:", error);
+      setCities([]);
     } finally {
       setLoadingCities(false);
     }
-  }, [selectedCountryCode, cities.length]);
+  }, [selectedCountryCode]);
 
   // useEffect(() => {
   //   if (selectedCountryCode) {
@@ -388,10 +408,15 @@ const Signup = ({ route }) => {
                 searchPlaceholder="Search country..."
                 data={countries}
                 setSelected={(val) => {
-                  const code = countries.find((c) => c.value === val)?.key;
-                  setSelectedCountryCode(code);
-                  clearErrors("city");
+                  // Get country code using ISO code from the country object
+                  const selectedCountry = countries.find(
+                    (c) => c.value === val
+                  );
+                  const countryCode = selectedCountry?.key;
+                  console.log("Selected country:", val, "Code:", countryCode);
+                  setSelectedCountryCode(countryCode);
                   setValue("city", ""); // Clear city when country changes
+                  setCities([]); // Clear previous cities
                 }}
                 error={errors.country}
               />
