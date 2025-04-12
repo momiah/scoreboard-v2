@@ -1,5 +1,5 @@
 // Now, let's update the Signup component to fix the city selection bug and add loading state
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
 import {
   Alert,
   ScrollView,
@@ -31,11 +31,11 @@ const Signup = ({ route }) => {
   const isSocialSignup = !!userId;
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
-  const [loadingCities, setLoadingCities] = useState(false);
+  // const [loadingCities, setLoadingCities] = useState(false);
 
   // Inside your Signup component:
   const [countries, setCountries] = useState([]);
-  const [cities, setCities] = useState([]);
+  // const [cities, setCities] = useState([]);
   const [selectedCountryCode, setSelectedCountryCode] = useState(null);
 
   // Load countries on mount
@@ -47,41 +47,65 @@ const Signup = ({ route }) => {
     setCountries(allCountries);
   }, []);
 
-  useEffect(() => {
-    if (selectedCountryCode) {
-      setLoadingCities(true);
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
 
-      // Simulate network delay to show loading state
-      const timer = setTimeout(() => {
-        // Get cities and remove duplicates
-        const allCities = City.getCitiesOfCountry(selectedCountryCode);
+  // Optimized city loading
+  const handleCityDropdownOpen = useCallback(async () => {
+    if (!selectedCountryCode || cities.length > 0) return;
 
-        // Use a Set to track unique city names and remove duplicates
-        const uniqueCityNames = new Set();
-        const uniqueCities = allCities
-          .filter((city) => {
-            // If we haven't seen this city name before, keep it
-            if (!uniqueCityNames.has(city.name)) {
-              uniqueCityNames.add(city.name);
-              return true;
-            }
-            return false;
-          })
-          .map((city) => ({
-            key: city.name,
-            value: city.name,
-          }));
+    setLoadingCities(true);
+    try {
+      const allCities = City.getCitiesOfCountry(selectedCountryCode) || [];
 
-        console.log("Unique cities:", uniqueCities.length);
-        setCities(uniqueCities);
-        setLoadingCities(false);
-      }, 800);
+      // More efficient unique filtering
+      const uniqueCities = Array.from(
+        new Set(allCities.map((c) => c.name))
+      ).map((name) => ({ key: name, value: name }));
 
-      return () => clearTimeout(timer);
-    } else {
-      setCities([]);
+      setCities(uniqueCities);
+    } catch (error) {
+      console.error("City loading failed:", error);
+    } finally {
+      setLoadingCities(false);
     }
-  }, [selectedCountryCode]);
+  }, [selectedCountryCode, cities.length]);
+
+  // useEffect(() => {
+  //   if (selectedCountryCode) {
+  //     setLoadingCities(true);
+
+  //     // Simulate network delay to show loading state
+  //     const timer = setTimeout(() => {
+  //       // Get cities and remove duplicates
+  //       const allCities = City.getCitiesOfCountry(selectedCountryCode);
+
+  //       // Use a Set to track unique city names and remove duplicates
+  //       const uniqueCityNames = new Set();
+  //       const uniqueCities = allCities
+  //         .filter((city) => {
+  //           // If we haven't seen this city name before, keep it
+  //           if (!uniqueCityNames.has(city.name)) {
+  //             uniqueCityNames.add(city.name);
+  //             return true;
+  //           }
+  //           return false;
+  //         })
+  //         .map((city) => ({
+  //           key: city.name,
+  //           value: city.name,
+  //         }));
+
+  //       console.log("Unique cities:", uniqueCities.length);
+  //       setCities(uniqueCities);
+  //       setLoadingCities(false);
+  //     }, 800);
+
+  //     return () => clearTimeout(timer);
+  //   } else {
+  //     setCities([]);
+  //   }
+  // }, [selectedCountryCode]);
 
   // console.log("countries", countries.length);
   // console.log("cities", cities.length);
@@ -117,12 +141,12 @@ const Signup = ({ route }) => {
     },
   });
 
-  // Watch city value to debug
-  const cityValue = watch("city");
+  // // Watch city value to debug
+  // const cityValue = watch("city");
 
-  useEffect(() => {
-    console.log("City value changed:", cityValue);
-  }, [cityValue]);
+  // useEffect(() => {
+  //   console.log("City value changed:", cityValue);
+  // }, [cityValue]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -380,13 +404,14 @@ const Signup = ({ route }) => {
                   selectedCountryCode
                     ? loadingCities
                       ? "Loading cities..."
-                      : "Select city"
+                      : "Search cities..."
                     : "Select country first"
                 }
-                searchPlaceholder="Search city..."
+                searchPlaceholder="Start typing..."
                 data={cities}
-                disabled={!selectedCountryCode || loadingCities}
+                disabled={!selectedCountryCode}
                 loading={loadingCities}
+                onDropdownOpen={handleCityDropdownOpen}
                 error={errors.city}
               />
 

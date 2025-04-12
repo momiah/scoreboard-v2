@@ -3,6 +3,8 @@ import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import styled from "styled-components/native";
 import { Controller } from "react-hook-form";
+import ListDropdown from "../ListDropdown/ListDropdown";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const SearchableDropdown = ({
   control,
@@ -16,22 +18,9 @@ const SearchableDropdown = ({
   label,
   loading = false,
   disabled,
-  onSearch, // Our custom search handler
+  onDropdownOpen, // Add this prop
   ...props
 }) => {
-  const [searchText, setSearchText] = useState("");
-
-  // This effect will trigger the search when text changes
-  useEffect(() => {
-    if (onSearch) {
-      const timer = setTimeout(() => {
-        onSearch(searchText);
-      }, 300); // Small delay to avoid searching on every keystroke
-
-      return () => clearTimeout(timer);
-    }
-  }, [searchText]);
-
   return (
     <View style={styles.container}>
       <Label>{label}</Label>
@@ -40,48 +29,36 @@ const SearchableDropdown = ({
         control={control}
         rules={rules}
         render={({ field: { onChange, value } }) => (
-          <>
-            <SelectList
-              setSelected={(val) => {
-                onChange(val);
-                setSelected?.(val);
-              }}
-              data={data}
-              save="value"
-              placeholder={placeholder}
-              searchPlaceholder={searchPlaceholder}
-              defaultOption={value ? { key: value, value } : null}
-              boxStyles={[
-                styles.box,
-                error ? styles.errorBox : null,
-                disabled ? styles.disabledBox : null,
-              ]}
-              inputStyles={styles.input}
-              dropdownStyles={styles.dropdown}
-              dropdownTextStyles={styles.dropdownText}
-              arrowicon={
-                loading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : undefined
-              }
-              search={!loading}
-              onChangeText={(text) => {
-                setSearchText(text);
-                onSearch?.(text);
-                if (!text) {
-                  onChange("");
-                  setSelected?.("");
-                }
-              }}
-              {...props}
-            />
-          </>
+          <ListDropdown
+            setSelected={(val) => {
+              onChange(val);
+              setSelected?.(val);
+            }}
+            data={data}
+            save="value"
+            placeholder={placeholder}
+            searchPlaceholder={searchPlaceholder}
+            defaultOption={value ? { key: value, value } : null}
+            boxStyles={[
+              styles.box,
+              error ? styles.errorBox : null,
+              disabled ? styles.disabledBox : null,
+            ]}
+            inputStyles={styles.input}
+            dropdownStyles={styles.dropdown}
+            dropdownTextStyles={styles.dropdownText}
+            loading={loading}
+            onDropdownOpen={onDropdownOpen} // Pass through
+            disabled={disabled}
+            {...props}
+          />
         )}
       />
       {error && <ErrorText>{error.message}</ErrorText>}
     </View>
   );
 };
+
 const Label = styled.Text({
   color: "#fff",
   fontWeight: "bold",
