@@ -1,3 +1,4 @@
+// Now, let's update the Signup component to fix the city selection bug and add loading state
 import React, { useContext, useState, useEffect } from "react";
 import {
   Alert,
@@ -30,8 +31,7 @@ const Signup = ({ route }) => {
   const isSocialSignup = !!userId;
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
-
-  /////
+  const [loadingCities, setLoadingCities] = useState(false);
 
   // Inside your Signup component:
   const [countries, setCountries] = useState([]);
@@ -47,22 +47,44 @@ const Signup = ({ route }) => {
     setCountries(allCountries);
   }, []);
 
-  // Load cities when country changes
   useEffect(() => {
     if (selectedCountryCode) {
-      const countryCities = City.getCitiesOfCountry(selectedCountryCode).map(
-        (city) => ({
-          key: city.name,
-          value: city.name,
-        })
-      );
-      setCities(countryCities);
+      setLoadingCities(true);
+
+      // Simulate network delay to show loading state
+      const timer = setTimeout(() => {
+        // Get cities and remove duplicates
+        const allCities = City.getCitiesOfCountry(selectedCountryCode);
+
+        // Use a Set to track unique city names and remove duplicates
+        const uniqueCityNames = new Set();
+        const uniqueCities = allCities
+          .filter((city) => {
+            // If we haven't seen this city name before, keep it
+            if (!uniqueCityNames.has(city.name)) {
+              uniqueCityNames.add(city.name);
+              return true;
+            }
+            return false;
+          })
+          .map((city) => ({
+            key: city.name,
+            value: city.name,
+          }));
+
+        console.log("Unique cities:", uniqueCities.length);
+        setCities(uniqueCities);
+        setLoadingCities(false);
+      }, 800);
+
+      return () => clearTimeout(timer);
     } else {
       setCities([]);
     }
   }, [selectedCountryCode]);
 
-  /////
+  // console.log("countries", countries.length);
+  // console.log("cities", cities.length);
 
   const navigation = useNavigation();
   const {
@@ -80,19 +102,27 @@ const Signup = ({ route }) => {
     setValue,
     setError,
     clearErrors,
+    watch,
   } = useForm({
     defaultValues: {
       firstName: userName || "",
       lastName: "",
       username: "",
       email: userEmail || "",
-      country: "", // Add these fields
+      country: "",
       city: "",
       handPreference: "Both",
       password: "",
       confirmPassword: "",
     },
   });
+
+  // Watch city value to debug
+  const cityValue = watch("city");
+
+  useEffect(() => {
+    console.log("City value changed:", cityValue);
+  }, [cityValue]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -109,8 +139,20 @@ const Signup = ({ route }) => {
   // Then in your onSubmit:
   const onSubmit = async (data) => {
     try {
+      // Make sure to include location data in the user document
+      const locationData = {
+        country: data.country,
+        city: data.city,
+      };
+
+      // Add location to the data object
+      const dataWithLocation = {
+        ...data,
+        location: locationData,
+      };
+
       if (isSocialSignup) {
-        await createSocialUser(data);
+        await createSocialUser(dataWithLocation);
       } else {
         // Check email uniqueness in Firestore first
         const emailExists = await checkEmailExists(data.email);
@@ -121,7 +163,7 @@ const Signup = ({ route }) => {
           return;
         }
 
-        await createEmailUser(data);
+        await createEmailUser(dataWithLocation);
       }
 
       setPopupIcon("success");
@@ -139,6 +181,7 @@ const Signup = ({ route }) => {
       };
 
       setPopupIcon("error");
+      setPopupButtonText("Close");
       handleShowPopup(errorMessages[error.code] || error.message);
     }
   };
@@ -149,7 +192,7 @@ const Signup = ({ route }) => {
       lastName: data.lastName.toLowerCase(),
       username: data.username.toLowerCase(),
       email: data.email,
-      location: data.location,
+      location: data.location, // This now contains country and city
       handPreference: data.handPreference,
       userId: uid,
       provider,
@@ -324,7 +367,7 @@ const Signup = ({ route }) => {
                   const code = countries.find((c) => c.value === val)?.key;
                   setSelectedCountryCode(code);
                   clearErrors("city");
-                  setValue("city", "");
+                  setValue("city", ""); // Clear city when country changes
                 }}
                 error={errors.country}
               />
@@ -332,17 +375,18 @@ const Signup = ({ route }) => {
                 control={control}
                 name="city"
                 label="City"
-                rules={{
-                  required: "City is required",
-                  validate: () =>
-                    selectedCountryCode || "Please select country first",
-                }}
+                rules={{ required: "City is required" }}
                 placeholder={
-                  selectedCountryCode ? "Select city" : "Select country first"
+                  selectedCountryCode
+                    ? loadingCities
+                      ? "Loading cities..."
+                      : "Select city"
+                    : "Select country first"
                 }
                 searchPlaceholder="Search city..."
                 data={cities}
-                disabled={!selectedCountryCode}
+                disabled={!selectedCountryCode || loadingCities}
+                loading={loadingCities}
                 error={errors.city}
               />
 

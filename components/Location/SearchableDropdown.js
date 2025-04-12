@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { SelectList } from "react-native-dropdown-select-list";
 import styled from "styled-components/native";
 import { Controller } from "react-hook-form";
@@ -14,8 +14,24 @@ const SearchableDropdown = ({
   setSelected,
   error,
   label,
+  loading = false,
+  disabled,
+  onSearch, // Our custom search handler
   ...props
 }) => {
+  const [searchText, setSearchText] = useState("");
+
+  // This effect will trigger the search when text changes
+  useEffect(() => {
+    if (onSearch) {
+      const timer = setTimeout(() => {
+        onSearch(searchText);
+      }, 300); // Small delay to avoid searching on every keystroke
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchText]);
+
   return (
     <View style={styles.container}>
       <Label>{label}</Label>
@@ -24,34 +40,57 @@ const SearchableDropdown = ({
         control={control}
         rules={rules}
         render={({ field: { onChange, value } }) => (
-          <SelectList
-            setSelected={(val) => {
-              onChange(val);
-              setSelected?.(val);
-            }}
-            data={data}
-            save="value"
-            placeholder={placeholder}
-            searchPlaceholder={searchPlaceholder}
-            defaultOption={value ? { key: value, value } : null}
-            boxStyles={[styles.box, error ? styles.errorBox : null]}
-            inputStyles={styles.input}
-            dropdownStyles={styles.dropdown}
-            dropdownTextStyles={styles.dropdownText}
-            {...props}
-          />
+          <>
+            <SelectList
+              setSelected={(val) => {
+                onChange(val);
+                setSelected?.(val);
+              }}
+              data={data}
+              save="value"
+              placeholder={placeholder}
+              searchPlaceholder={searchPlaceholder}
+              defaultOption={value ? { key: value, value } : null}
+              boxStyles={[
+                styles.box,
+                error ? styles.errorBox : null,
+                disabled ? styles.disabledBox : null,
+              ]}
+              inputStyles={styles.input}
+              dropdownStyles={styles.dropdown}
+              dropdownTextStyles={styles.dropdownText}
+              arrowicon={
+                loading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : undefined
+              }
+              search={!loading}
+              onChangeText={(text) => {
+                setSearchText(text);
+                onSearch?.(text);
+                if (!text) {
+                  onChange("");
+                  setSelected?.("");
+                }
+              }}
+              {...props}
+            />
+          </>
         )}
       />
       {error && <ErrorText>{error.message}</ErrorText>}
     </View>
   );
 };
-
 const Label = styled.Text({
   color: "#fff",
   fontWeight: "bold",
   fontSize: 14,
   marginBottom: 5,
+});
+
+const LoadingText = styled.Text({
+  color: "#fff",
 });
 
 const styles = StyleSheet.create({
@@ -64,13 +103,18 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: 5,
     paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   errorBox: {
     borderWidth: 1,
     borderColor: "#ff7675",
   },
+  disabledBox: {
+    opacity: 0.6,
+  },
   input: {
     color: "#fff",
+    paddingRight: 10,
   },
   dropdown: {
     backgroundColor: "#262626",
@@ -79,6 +123,12 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     color: "#fff",
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
   },
 });
 
