@@ -1,30 +1,38 @@
 import React, { useEffect, useState, useContext } from "react";
-import { View, Text, Image, ActivityIndicator, ScrollView } from "react-native";
-import { useRoute } from "@react-navigation/native";
-import { generatedLeagues } from "../../../components/Leagues/leagueMocks";
+import {
+  View,
+  Text,
+  Image,
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
-import { CourtChampLogo } from "../../../assets";
 import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 import LeagueSummary from "../../../components/Summary/LeagueSummary";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../../../components/Tag";
-import { Dimensions } from "react-native";
-import { LeagueContext } from "../../../context/LeagueContext";
 import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
+
+import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
-import { court2 } from "../../../mockImages";
 import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus";
+import { court2 } from "../../../mockImages";
 
 const League = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const { leagueId } = route.params;
   const { fetchLeagueById, leagueById } = useContext(LeagueContext);
   const { checkUserRole } = useContext(UserContext);
 
-  const [loading, setLoading] = useState(true); // Track loading state
+  const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
@@ -56,7 +64,11 @@ const League = () => {
     }
   };
 
-  const leaguePrompt = async () => {
+  const handleEditClick = () => {
+    navigation.navigate("EditLeague", { leagueId });
+  };
+
+  const leaguePrompt = () => {
     setModalVisible(true);
   };
 
@@ -71,35 +83,28 @@ const League = () => {
   };
 
   const tabs = [
-    {
-      component: "Summary",
-    },
-    {
-      component: "Scoreboard",
-    },
-    {
-      component: "Player Performance",
-    },
+    { component: "Summary" },
+    { component: "Scoreboard" },
+    { component: "Player Performance" },
     ...(leagueById?.leagueType !== "Singles"
-      ? [
-          {
-            component: "Team Performance",
-          },
-        ]
+      ? [{ component: "Team Performance" }]
       : []),
   ];
 
-  const leagueGames = leagueById?.games;
-  const leagueType = leagueById?.leagueType;
-  const startDate = leagueById?.startDate;
-  const endDate = leagueById?.endDate;
-
-  const maxPlayers = leagueById?.maxPlayers;
-  const leagueParticipantsLength = leagueById?.leagueParticipants.length;
-  const participants = leagueById?.leagueParticipants;
-  const teams = leagueById?.leagueTeams;
-
   const leagueStatus = calculateLeagueStatus(leagueById);
+  const {
+    leagueParticipants,
+    leagueTeams,
+    leagueName,
+    image,
+    centerName,
+    location,
+    startDate,
+    endDate,
+    leagueType,
+    maxPlayers,
+    games,
+  } = leagueById || {};
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -115,7 +120,7 @@ const League = () => {
       case "Scoreboard":
         return (
           <Scoreboard
-            leagueGames={leagueGames || []}
+            leagueGames={games || []}
             leagueType={leagueType}
             leagueId={leagueId}
             userRole={userRole}
@@ -124,9 +129,9 @@ const League = () => {
           />
         );
       case "Player Performance":
-        return <PlayerPerformance playersData={participants} />;
+        return <PlayerPerformance playersData={leagueParticipants} />;
       case "Team Performance":
-        return <TeamPerformance leagueTeams={teams} />;
+        return <TeamPerformance leagueTeams={leagueTeams} />;
       default:
         return null;
     }
@@ -150,25 +155,21 @@ const League = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage source={court2}>
+        <LeagueImage source={{ uri: image } || court2}>
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.9)"]}
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
             <NumberOfPlayers>
-              <Text
-                style={{
-                  color: "white",
-                  fontSize: 12,
-                }}
-              >
-                {leagueParticipantsLength} / {maxPlayers}
+              <Text style={{ color: "white", fontSize: 12 }}>
+                {leagueParticipants?.length} / {maxPlayers}
               </Text>
               <Ionicons name="person" size={15} color={"#00A2FF"} />
             </NumberOfPlayers>
 
-            <LeagueName>{leagueById?.leagueName}</LeagueName>
+            <LeagueName>{leagueName}</LeagueName>
+
             <View
               style={{
                 flexDirection: "row",
@@ -177,22 +178,21 @@ const League = () => {
               }}
             >
               <LeagueLocation>
-                {leagueById?.centerName}, {leagueById?.location}
+                {centerName}, {location}
               </LeagueLocation>
               <Ionicons
                 name={"location"}
                 size={15}
                 color={"#286EFA"}
-                backgroundColor={"rgba(0, 0, 0, 0.3)"}
-                padding={5}
-                borderRadius={15}
+                style={{ marginLeft: 5 }}
               />
             </View>
+
             <View
               style={{
                 flexDirection: "row",
-                alignItems: "center",
                 justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
               <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
@@ -208,6 +208,7 @@ const League = () => {
                 />
               )}
             </View>
+
             <View
               style={{
                 flexDirection: "row",
@@ -242,9 +243,17 @@ const League = () => {
                 />
               )}
             </View>
+
+            {/* Hamburger Menu Button */}
+            {userRole === "admin" && (
+              <EditButton onPress={handleEditClick}>
+                <Ionicons name="menu" size={22} color="white" />
+              </EditButton>
+            )}
           </LeagueDetailsContainer>
         </LeagueImage>
       </Overview>
+
       <TabsContainer>
         <GradientOverlay
           colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
@@ -252,7 +261,7 @@ const League = () => {
           style={{ bottom: -560 }}
         />
         <ScrollView
-          horizontal={true}
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 10 }}
         >
@@ -288,24 +297,14 @@ const Overview = styled.View({
   height: 180,
   width: "100%",
   justifyContent: "center",
-  alignItems: "center",
-});
-const NumberOfPlayers = styled.View({
-  backgroundColor: "rgba(0, 0, 0, 0.7)",
-  padding: 5,
-  borderRadius: 5,
-  position: "absolute",
-  right: 15,
-  top: 15,
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 5,
+  alignItems: "flex-start",
+  position: "relative",
 });
 
 const LeagueImage = styled.ImageBackground({
   width: "100%",
   height: "110%",
-  justifyContent: "flex-end", // Positions text at the bottom
+  justifyContent: "flex-end",
   alignItems: "flex-start",
 });
 
@@ -315,6 +314,27 @@ const GradientOverlay = styled(LinearGradient)({
   left: 0,
   right: 0,
   bottom: -60,
+});
+
+const LeagueDetailsContainer = styled.View({
+  width: "100%",
+  height: "100%",
+  paddingLeft: 15,
+  paddingRight: 15,
+  paddingTop: 45,
+  position: "relative",
+});
+
+const NumberOfPlayers = styled.View({
+  backgroundColor: "rgba(0, 0, 0, 0.7)",
+  padding: 5,
+  borderRadius: 5,
+  position: "absolute",
+  left: 15,
+  top: 15,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
 });
 
 const LeagueName = styled.Text({
@@ -335,14 +355,13 @@ const LeagueLocation = styled.Text({
   borderRadius: 5,
 });
 
-const LeagueDetailsContainer = styled.View({
-  width: "100%",
-  height: "100%",
-  borderRadius: 10,
-  overflow: "hidden", // Ensures image respects border radius
-  paddingLeft: 15,
-  paddingRight: 15,
-  paddingTop: 45,
+const EditButton = styled.TouchableOpacity({
+  
+  padding: 10,
+  borderRadius: 5,
+  position: "absolute",
+  top: 15,
+  right: 15,
 });
 
 const TabsContainer = styled.View({
@@ -355,8 +374,8 @@ const TabsContainer = styled.View({
 });
 
 const Tab = styled.TouchableOpacity(({ isSelected }) => ({
-  marginHorizontal: 5, // Add spacing between tabs
-  paddingHorizontal: 20, // Add padding inside the tabs
+  marginHorizontal: 5,
+  paddingHorizontal: 20,
   paddingVertical: 10,
   borderRadius: 20,
   borderWidth: isSelected ? 2 : 1,
@@ -369,24 +388,3 @@ const TabText = styled.Text({
 });
 
 export default League;
-
-{
-  /* <View style={{ flexDirection: "column", gap: 5 }}>
-<Tag
-  name={"Admin"}
-  color="#16181B"
-  iconColor="#00A2FF"
-  iconSize={15}
-  icon={"checkmark-circle-outline"}
-  iconPosition={"right"}
-  bold
-/>
-<Tag
-  name={"Invite Players"}
-  color="#00A2FF"
-  icon={"paper-plane-sharp"}
-  onPress={leaguePrompt}
-  bold
-/>
-</View> */
-}

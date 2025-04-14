@@ -13,16 +13,17 @@ import {
   Dimensions,
   StyleSheet,
   TouchableOpacity,
+  Modal,
+  Pressable,
+  Image,
 } from "react-native";
 import { UserContext } from "../../context/UserContext";
 import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, useNavigation } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import MedalDisplay from "../../components/performance/MedalDisplay";
-
-import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import ProfileActivity from "../../components/Profiles/ProfileActivity";
 import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
@@ -35,21 +36,21 @@ const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
 
 const UserProfile = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const { getUserById, getGlobalRank, currentUser, profileViewCount } =
     useContext(UserContext);
   const { medalNames, findRankIndex } = useContext(GameContext);
+
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("Profile");
   const [globalRank, setGlobalRank] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-
-  const navigation = useNavigation();
+  const [previewVisible, setPreviewVisible] = useState(false);
 
   const loadProfile = async () => {
     try {
       setRefreshing(true);
-
       if (route.params?.userId) {
         const userProfile = await getUserById(route.params.userId);
         setProfile(userProfile);
@@ -62,13 +63,13 @@ const UserProfile = () => {
           const personalProfile = await getUserById(userId);
           setProfile(personalProfile);
         } else {
-          setProfile(null); // Trigger redirect fallback
+          setProfile(null);
         }
       }
     } catch (error) {
       console.error("Profile load error:", error);
     } finally {
-      setRefreshing(false); // Stop refreshing
+      setRefreshing(false);
       setLoading(false);
     }
   };
@@ -78,27 +79,18 @@ const UserProfile = () => {
   }, [route.params?.userId, currentUser]);
 
   useEffect(() => {
-    const trackProfileView = async () => {
-      try {
-        // Only track if viewing another user's profile
-        if (
-          route.params?.userId &&
-          route.params.userId !== currentUser?.userId
-        ) {
-          await profileViewCount(route.params.userId);
-        }
-      } catch (error) {
-        console.error("Profile view tracking failed:", error);
-      }
-    };
-
-    // Only track after profile is loaded
-    if (profile && !loading) {
-      trackProfileView();
+    if (
+      profile &&
+      !loading &&
+      route.params?.userId &&
+      route.params.userId !== currentUser?.userId
+    ) {
+      profileViewCount(route.params.userId).catch((err) =>
+        console.error("Profile view tracking failed:", err)
+      );
     }
-  }, [profile, loading, currentUser?.userId, route.params?.userId]);
+  }, [profile, loading]);
 
-  // Global rank fetching
   useEffect(() => {
     const fetchRank = async () => {
       if (profile?.userId) {
@@ -110,16 +102,12 @@ const UserProfile = () => {
         }
       }
     };
-
     fetchRank();
   }, [profile, getGlobalRank]);
 
   useEffect(() => {
     if (!route.params?.userId && !profile && !loading) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
     }
   }, [profile, loading]);
 
@@ -238,25 +226,36 @@ const UserProfile = () => {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Avatar & Modal */}
       <Overview>
         <PlayerDetail>
-          <Avatar source={CourtChampsLogo} />
+          <Pressable onLongPress={() => setPreviewVisible(true)}>
+            <Avatar
+              source={
+                profile?.profileImage
+                  ? { uri: profile.profileImage }
+                  : CourtChampsLogo
+              }
+            />
+          </Pressable>
+
           <DetailColumn>
             <PlayerName>{profile?.username}</PlayerName>
-
             <DetailText>{profileXp ?? 0} XP</DetailText>
-
             <DetailText>
               {formatNumber(profileDetail?.totalPointDifference ?? 0)} PD
             </DetailText>
           </DetailColumn>
         </PlayerDetail>
+
         <MedalContainer>
           <MedalDisplay xp={profileDetail?.XP} size={screenAdjustedMedalSize} />
           <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
           <MedalName style={{ fontWeight: "bold" }}>{rankLevel}</MedalName>
         </MedalContainer>
       </Overview>
+
       <ProfileSummary>
         <CCRankContainer>
           <XpText>CC Rank</XpText>
@@ -266,9 +265,7 @@ const UserProfile = () => {
               fontSize: screenAdjustedStatFontSize,
               color: "white",
             }}
-            suffixStyle={{
-              color: "rgba(255,255,255,0.7)",
-            }}
+            suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
           />
         </CCRankContainer>
 
@@ -277,6 +274,7 @@ const UserProfile = () => {
           <Ionicons name="eye" size={15} color="#aaa" />
         </View>
       </ProfileSummary>
+
       <TabsContainer>
         {tabs.map((tab) => (
           <Tab
@@ -290,23 +288,29 @@ const UserProfile = () => {
       </TabsContainer>
 
       <ProfileContent>{renderComponent()}</ProfileContent>
+
+      {/* Image Preview Modal */}
+      <Modal visible={previewVisible} transparent animationType="fade">
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setPreviewVisible(false)}
+        >
+          <Image
+            source={
+              profile?.profileImage
+                ? { uri: profile.profileImage }
+                : CourtChampsLogo
+            }
+            style={styles.fullImage}
+            resizeMode="contain"
+          />
+        </Pressable>
+      </Modal>
     </Container>
   );
 };
 
 // Styled components
-const ProfileSummary = styled.View({
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
-  border: "1px solid rgb(26, 28, 54)",
-  padding: 10, // you can adjust based on screen size if needed
-  borderRadius: 8,
-  alignItems: "center",
-  flexDirection: "row",
-  // alignSelf: "flex-start",
-  justifyContent: "space-between",
-  marginHorizontal: 15,
-});
-
 const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
@@ -354,15 +358,19 @@ const PlayerName = styled.Text({
 const DetailText = styled.Text({
   color: "#aaa",
   fontSize: screenWidth <= 400 ? 12 : 14,
+});
+
+const ProfileSummary = styled.View({
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  padding: 10,
+  borderRadius: 8,
   alignItems: "center",
   flexDirection: "row",
+  justifyContent: "space-between",
+  marginHorizontal: 15,
 });
 
 const CCRankContainer = styled.View({
-  // backgroundColor: "rgba(0, 0, 0, 0.3)",
-  // border: "1px solid rgb(26, 28, 54)",
-  // padding: 10, // you can adjust based on screen size if needed
-  // borderRadius: 8,
   gap: 5,
   alignItems: "center",
   flexDirection: "row",
@@ -430,15 +438,21 @@ const SectionContent = styled.Text({
   fontSize: 14,
 });
 
-// StyleSheet for optimized rendering
 const styles = StyleSheet.create({
-  errorText: {
-    color: "white",
-    fontSize: 18,
-  },
   tabContent: {
     paddingBottom: 40,
     paddingHorizontal: 5,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullImage: {
+    width: "90%",
+    height: "70%",
+    borderRadius: 10,
   },
 });
 

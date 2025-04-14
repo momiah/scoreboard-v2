@@ -1,4 +1,3 @@
-// LeagueContext.js
 import React, { createContext, useState, useEffect } from "react";
 import {
   doc,
@@ -6,14 +5,11 @@ import {
   collection,
   getDocs,
   getDoc,
-  query,
-  where,
   updateDoc,
 } from "firebase/firestore";
 
 import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { ccDefaultImage } from "../mockImages";
-
 import { db } from "../services/firebase.config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generateLeagueId } from "../functions/generateLeagueId";
@@ -24,8 +20,9 @@ const LeagueProvider = ({ children }) => {
   const [leagues, setLeagues] = useState([]);
   const [showMockData, setShowMockData] = useState(false);
   const [leagueIdForDetail, setLeagueIdForDetail] = useState("");
-  const [leagueById, setLeagueById] = useState();
+  const [leagueById, setLeagueById] = useState(null);
 
+  // Fetch leagues data based on mock or real data
   useEffect(() => {
     if (showMockData) {
       setLeagues(generatedLeagues);
@@ -62,26 +59,22 @@ const LeagueProvider = ({ children }) => {
       const leagueDoc = await getDoc(leagueDocRef);
 
       if (leagueDoc.exists()) {
-        // Get the current playtime array from the league document
         const currentPlaytime = leagueDoc.data().playingTime || [];
-
         let updatedPlaytime;
 
         if (existingPlaytime) {
-          // Update existing playtime
           updatedPlaytime = currentPlaytime.map((time) =>
             time.day === existingPlaytime.day &&
             time.startTime === existingPlaytime.startTime &&
             time.endTime === existingPlaytime.endTime
-              ? playtime[0] // Replace with the updated playtime
+              ? playtime[0] // Replace with updated playtime
               : time
           );
         } else {
-          // Add new playtime
           updatedPlaytime = [...currentPlaytime, ...playtime];
         }
 
-        // Update the league document with the updated playtime array
+        // Update the league document with updated playtime array
         await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
       } else {
         console.error("League document not found.");
@@ -98,7 +91,6 @@ const LeagueProvider = ({ children }) => {
       const leagueCollectionRef = collection(db, "leagues");
       const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
 
-      // Get the existing league document
       const leagueDoc = await getDoc(leagueDocRef);
 
       if (leagueDoc.exists()) {
@@ -114,7 +106,7 @@ const LeagueProvider = ({ children }) => {
             )
         );
 
-        // Update Firebase with the updated playtime array
+        // Update Firebase with updated playtime array
         await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
       } else {
         console.error("League document not found.");
@@ -134,7 +126,7 @@ const LeagueProvider = ({ children }) => {
       // Update the leagueDescription field in Firebase
       await updateDoc(leagueDocRef, { leagueDescription: newDescription });
 
-      // Update the context state with the new description
+      // Update the context state with new description
       setLeagueById((prev) => ({
         ...prev,
         leagueDescription: newDescription,
@@ -152,8 +144,10 @@ const LeagueProvider = ({ children }) => {
         ...leagueData,
       });
 
-      fetchLeagues();
+      fetchLeagues(); // Re-fetch leagues to update the list
       setLeagueIdForDetail(leagueId);
+
+      // Reset the league detail state after a short delay
       setTimeout(() => {
         setLeagueIdForDetail("");
       }, 2000);
@@ -164,18 +158,14 @@ const LeagueProvider = ({ children }) => {
 
   const fetchLeagueById = async (leagueId) => {
     try {
-      // Reference the specific league document in the 'leagues' collection
       const leagueDoc = await getDoc(doc(db, "leagues", leagueId));
 
-      // Check if the league exists
       if (leagueDoc.exists()) {
-        // Store the data along with the document ID
         const leagueData = {
-          id: leagueDoc.id, // Include document ID
-          ...leagueDoc.data(), // Include the rest of the document fields
+          id: leagueDoc.id,
+          ...leagueDoc.data(),
         };
 
-        // Optionally, update state with the fetched league data
         setLeagueById(leagueData);
         return leagueData;
       } else {
@@ -183,6 +173,26 @@ const LeagueProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error fetching league:", error);
+    }
+  };
+
+  // Function to update a league
+  const updateLeague = async (updatedLeague) => {
+    try {
+      const leagueDocRef = doc(db, "leagues", updatedLeague.id);
+      
+      // Update the league document in Firebase
+      await updateDoc(leagueDocRef, updatedLeague);
+
+      // Update the state in the context
+      setLeagues((prevLeagues) =>
+        prevLeagues.map((league) =>
+          league.id === updatedLeague.id ? updatedLeague : league
+        )
+      );
+    } catch (error) {
+      console.error("Error updating league:", error);
+      Alert.alert("Error", "Unable to update the league.");
     }
   };
 
@@ -201,6 +211,7 @@ const LeagueProvider = ({ children }) => {
         handleLeagueDescription,
         leagueIdForDetail,
         deletePlaytime,
+        updateLeague,  // Exposing the updateLeague function
       }}
     >
       {children}

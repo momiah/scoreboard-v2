@@ -448,10 +448,12 @@ const UserProvider = ({ children }) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
-
+  
+      console.log("Updating Fields:", updatedFields); // Debug log
+  
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, updatedFields); // Surgical update
-
+  
       setCurrentUser((prev) => ({
         ...prev,
         ...updatedFields,

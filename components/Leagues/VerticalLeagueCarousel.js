@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useEffect } from "react";
 import { FlatList, TouchableOpacity, View, Text } from "react-native";
 import styled from "styled-components/native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 
 import Tag from "../Tag";
@@ -22,10 +21,6 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
     [navigation, navigationRoute]
   );
 
-  // useEffect(() => {
-  //   fetchLeagues();
-  // }, []);
-
   // Render individual league items
   const renderLeagueItem = useCallback(
     ({ item: league, index }) => {
@@ -36,11 +31,9 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
         <CarouselContainer>
           <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
             <ImageWrapper>
-              <LeagueImage source={league.image}>
-                <GradientOverlay
-                  colors={["rgba(0, 0, 0, 0.01)", "rgba(0, 0, 0, 0.8)"]}
-                  locations={[0.1, 1]}
-                />
+              <LeagueImage source={typeof league.image === "string" ? { uri: league.image } : league.image}>
+                {/* Remove GradientOverlay, replacing it with a simple overlay */}
+                <Overlay />
                 <LeagueDetailsContainer>
                   <TagContainer>
                     <Tag name={league.leagueType} />
@@ -101,7 +94,6 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
       data={leagues}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderLeagueItem}
-      // contentContainerStyle={{ paddingHorizontal: 15 }}
       showsVerticalScrollIndicator={false}
     />
   );
@@ -109,7 +101,6 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
 
 const CarouselContainer = styled.ScrollView({
   marginBottom: 20,
-  // paddingHorizontal: 15,
 });
 
 const CarouselItem = styled(TouchableOpacity)({
@@ -140,12 +131,14 @@ const LeagueImage = styled.ImageBackground({
   alignItems: "center",
 });
 
-const GradientOverlay = styled(LinearGradient)({
+// Remove the gradient overlay
+const Overlay = styled(View)({
   position: "absolute",
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.5)",  // A simple semi-transparent overlay
   borderRadius: 10,
 });
 

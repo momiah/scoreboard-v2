@@ -7,6 +7,9 @@ import { LeagueProvider } from "./context/LeagueContext";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import Tabs from "./navigation/tabs";
+import { ModalProvider } from "./context/ModalContext";
+import EditLeagueScreen from "./screens/Home/EditLeagueScreen"; // Add any missing screens
+import LeagueScreen from './screens/Home/Leagues/League'; // Example screen if you want to add more
 
 const Stack = createStackNavigator();
 
@@ -14,23 +17,28 @@ export default function App() {
   return (
     <PopupProvider>
       <UserProvider>
-        <LeagueProvider>
-          <GameProvider>
-            <NavigationContainer>
-              <SafeAreaView
-                style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
-              >
-                <Stack.Navigator
-                  screenOptions={{
-                    headerShown: false,
-                  }}
-                >
-                  <Stack.Screen name="Tabs" component={Tabs} />
-                </Stack.Navigator>
-              </SafeAreaView>
-            </NavigationContainer>
-          </GameProvider>
-        </LeagueProvider>
+        <ModalProvider>
+          <LeagueProvider>
+            <GameProvider>
+              <NavigationContainer>
+                <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
+                  <Stack.Navigator
+                    screenOptions={{
+                      headerShown: false,
+                    }}
+                  >
+                    {/* Tab Navigation */}
+                    <Stack.Screen name="Tabs" component={Tabs} />
+
+                    {/* Add any other screens you'd like here */}
+                    <Stack.Screen name="EditLeague" component={EditLeagueScreen} />
+                    <Stack.Screen name="LeagueScreen" component={LeagueScreen} />
+                  </Stack.Navigator>
+                </SafeAreaView>
+              </NavigationContainer>
+            </GameProvider>
+          </LeagueProvider>
+        </ModalProvider>
       </UserProvider>
     </PopupProvider>
   );

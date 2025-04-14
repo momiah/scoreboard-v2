@@ -20,8 +20,13 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsInWebContent": true,
+          "NSAllowsLocalNetworking": true
         },
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
