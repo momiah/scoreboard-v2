@@ -23,10 +23,9 @@ import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
 import LeagueType from "../Leagues/AddLeague/LeagueType";
 import PrivacyType from "../Leagues/AddLeague/PrivacyType";
 import { leagueSchema, scoreboardProfileSchema } from "../../schemas/schema";
-
-// Firebase imports
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { firebaseApp } from '../../services/firebase.config'; // Your Firebase app initialization
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { firebaseApp } from "../../services/firebase.config";
+import { AntDesign } from "@expo/vector-icons";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -37,56 +36,33 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [leagueDetails, setLeagueDetails] = useState(leagueSchema);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Function to fetch image as blob using XMLHttpRequest
   const fetchImageBlob = (uri) => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.onload = function() {
-        resolve(xhr.response);
-      };
-      xhr.onerror = function() {
-        reject(new TypeError('Network request failed'));
-      };
-      xhr.responseType = 'blob';
-      xhr.open('GET', uri, true);
+      xhr.onload = () => resolve(xhr.response);
+      xhr.onerror = () => reject(new TypeError("Network request failed"));
+      xhr.responseType = "blob";
+      xhr.open("GET", uri, true);
       xhr.send(null);
     });
   };
 
-  // Function to upload league image to Firebase
   const uploadLeagueImage = async (uri, leagueId) => {
     try {
-      console.log("🟡 Starting league image upload...");
-
-      // Fetch the image as a blob using XMLHttpRequest
       const blob = await fetchImageBlob(uri);
-      if (!blob) {
-        throw new Error("⚠️ Failed to fetch image blob.");
-      }
+      if (!blob) throw new Error("Failed to fetch image blob.");
 
-      const filePath = `LigueImages/${leagueId}_${new Date().getTime()}.jpg`;
-      console.log(`⬆️ Uploading to: ${filePath} (type: image/jpeg)`);
-
-      // Initialize storage using the Firebase app
-      const storage = getStorage(firebaseApp); // Use getStorage to access Firebase storage
-      const storageRef = ref(storage, filePath); // Create reference for the file path
-
-      // Upload blob to Firebase storage
+      const filePath = `LigueImages/${leagueId}_${Date.now()}.jpg`;
+      const storage = getStorage(firebaseApp);
+      const storageRef = ref(storage, filePath);
       const uploadTaskSnapshot = await uploadBytes(storageRef, blob);
-
-      // Once uploaded, get the download URL
-      const downloadURL = await getDownloadURL(uploadTaskSnapshot.ref);
-      console.log(`Upload success! File available at: ${downloadURL}`);
-
-      // Return the download URL
-      return downloadURL;
+      return await getDownloadURL(uploadTaskSnapshot.ref);
     } catch (error) {
-      console.error("🔥 Error during league image upload:", error);
-      throw new Error("⚠️ Failed to upload image. Please try again.");
+      console.error("Image upload failed:", error);
+      throw new Error("Failed to upload image. Try again.");
     }
   };
 
-  // Function to assign the league admin
   const assignLeagueAdmin = async () => {
     const currentUserId = await AsyncStorage.getItem("userId");
     if (!currentUserId) return null;
@@ -105,12 +81,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     };
   };
 
-  // Handle form field change
   const handleChange = (field, value) => {
     setLeagueDetails((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Handle image picker from the gallery
   const handleImagePick = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
@@ -128,7 +102,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }
   };
 
-  // Handle creating the league
   const handleCreate = async () => {
     const requiredFields = [
       "leagueName", "location", "centerName", "startDate",
@@ -147,7 +120,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       const adminData = await assignLeagueAdmin();
       if (!adminData) return;
 
-      // Upload league image to Firebase and get the download URL
       let imageDownloadUrl = null;
       if (selectedImage) {
         imageDownloadUrl = await uploadLeagueImage(selectedImage, leagueDetails.leagueId);
@@ -157,7 +129,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         ...leagueDetails,
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
-        image: imageDownloadUrl || null,  // Assign image URL or null if no image selected
+        image: imageDownloadUrl || null,
       };
 
       addLeagues(newLeague);
@@ -167,7 +139,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }
   };
 
-  // Render input fields
   const renderInput = (label, key, isTextArea = false) => (
     <>
       <LabelContainer>
@@ -200,26 +171,28 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
           <ScrollContainer contentContainerStyle={{ paddingBottom: 60 }}>
             <ModalTitle>Create League</ModalTitle>
 
-            <TouchableOpacity onPress={handleImagePick}>
+            <ImagePickerContainer onPress={handleImagePick}>
               {selectedImage ? (
-                <LeagueImage source={{ uri: selectedImage }} />
+                <>
+                  <LeagueImage source={{ uri: selectedImage }} />
+                  <OverlayIcon>
+                    <AntDesign name="pluscircleo" size={32} color="#fff" />
+                  </OverlayIcon>
+                </>
               ) : (
                 <ImagePlaceholder>
-                  <Text style={{ color: "#ccc" }}>Tap to add image</Text>
+                  <AntDesign name="pluscircleo" size={32} color="#ccc" />
+                  <Text style={{ color: "#ccc", marginTop: 6 }}>Add Image</Text>
                 </ImagePlaceholder>
               )}
-            </TouchableOpacity>
+            </ImagePickerContainer>
 
             {renderInput("League Name", "leagueName")}
             {renderInput("Location", "location")}
             {renderInput("Center Name", "centerName")}
             {renderInput("Description", "description", true)}
 
-            <DatePicker
-              setLeagueDetails={setLeagueDetails}
-              leagueDetails={leagueDetails}
-              errorText={errorText.startDate}
-            />
+            <DatePicker setLeagueDetails={setLeagueDetails} leagueDetails={leagueDetails} errorText={errorText.startDate} />
             <MaxPlayersPicker setLeagueDetails={setLeagueDetails} errorText={errorText.maxPlayers} />
             <LeagueType setLeagueDetails={setLeagueDetails} errorText={errorText.leagueType} />
             <PrivacyType setLeagueDetails={setLeagueDetails} errorText={errorText.privacy} />
@@ -335,11 +308,24 @@ const CreateText = styled.Text`
   font-size: 16px;
 `;
 
+const ImagePickerContainer = styled.TouchableOpacity`
+  position: relative;
+  margin-bottom: 20px;
+`;
+
 const LeagueImage = styled.Image`
   width: 100%;
   height: 200px;
-  margin-bottom: 20px;
   border-radius: 8px;
+`;
+
+const OverlayIcon = styled.View`
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 16px;
+  padding: 2px;
 `;
 
 const ImagePlaceholder = styled.View`
