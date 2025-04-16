@@ -40,6 +40,7 @@ const UserProvider = ({ children }) => {
         if (userId) {
           const userData = await getUserById(userId);
           setCurrentUser(userData);
+          console.log("Current User:", userData);
         }
       } catch (error) {
         console.error("Initial user load failed:", error);

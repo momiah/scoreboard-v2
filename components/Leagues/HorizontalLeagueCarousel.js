@@ -14,8 +14,7 @@ const { width } = Dimensions.get("window");
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
   const { leagues, leagueIdForDetail } = useContext(LeagueContext);
-  const { setModalVisible, setSelectedLeague } = useContext(ModalContext);
-  const { currentUser } = useContext(UserContext);
+
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
@@ -51,7 +50,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
             style={{ width: itemWidth, marginRight: spacing }}
           >
             <ImageWrapper>
-              <LeagueImage source={typeof league.image === "string" ? { uri: league.image } : league.image}>
+              <LeagueImage source={{ uri: league.leagueImage }}>
                 <LeagueDetailsContainer>
                   <TagContainer>
                     <Tag name={league.leagueType} />

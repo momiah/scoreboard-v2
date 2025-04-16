@@ -20,6 +20,7 @@ import { uploadProfileImage } from "../../utils/ProfileImageUploadToFirebase";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
+  console.log("Current User:", currentUser);
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
 

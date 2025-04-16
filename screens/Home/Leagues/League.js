@@ -96,7 +96,7 @@ const League = () => {
     leagueParticipants,
     leagueTeams,
     leagueName,
-    image,
+    leagueImage,
     centerName,
     location,
     startDate,
@@ -155,7 +155,7 @@ const League = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage source={{ uri: image } || court2}>
+        <LeagueImage source={{ uri: leagueImage } || court2}>
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.9)"]}
             locations={[0.1, 1]}
