@@ -3,7 +3,7 @@ import { ScrollView, Dimensions, View, Text } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
-import { ModalContext } from "../../context/ModalContext";
+
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
 import Tag from "../Tag";

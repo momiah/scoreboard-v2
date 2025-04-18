@@ -7,7 +7,7 @@ import { LeagueProvider } from "./context/LeagueContext";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import Tabs from "./navigation/tabs";
-import { ModalProvider } from "./context/ModalContext";
+
 import EditLeagueScreen from "./screens/Home/EditLeagueScreen"; // Add any missing screens
 import LeagueScreen from './screens/Home/Leagues/League'; // Example screen if you want to add more
 
@@ -17,7 +17,7 @@ export default function App() {
   return (
     <PopupProvider>
       <UserProvider>
-        <ModalProvider>
+        
           <LeagueProvider>
             <GameProvider>
               <NavigationContainer>
@@ -38,7 +38,7 @@ export default function App() {
               </NavigationContainer>
             </GameProvider>
           </LeagueProvider>
-        </ModalProvider>
+        
       </UserProvider>
     </PopupProvider>
   );
