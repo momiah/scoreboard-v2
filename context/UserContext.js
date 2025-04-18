@@ -40,6 +40,7 @@ const UserProvider = ({ children }) => {
         if (userId) {
           const userData = await getUserById(userId);
           setCurrentUser(userData);
+          console.log("Current User:", userData);
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
@@ -448,10 +449,12 @@ const UserProvider = ({ children }) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
-
+  
+      console.log("Updating Fields:", updatedFields); // Debug log
+  
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, updatedFields); // Surgical update
-
+  
       setCurrentUser((prev) => ({
         ...prev,
         ...updatedFields,

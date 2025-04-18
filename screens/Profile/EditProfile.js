@@ -1,4 +1,3 @@
-// EditProfile.js
 import React, { useContext, useState, useEffect } from "react";
 import {
   View,
@@ -7,20 +6,30 @@ import {
   Alert,
   Text,
   TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Modal,
+  Pressable,
 } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
-// import Button from "../components/Button"; // Assume you have a Button component
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
+import { uploadProfileImage } from "../../utils/ProfileImageUploadToFirebase";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
+  console.log("Current User:", currentUser);
   const [loading, setLoading] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
+
   const [formData, setFormData] = useState({
     location: "",
     handPreference: "",
     bio: "",
     email: "",
+    profileImage: "",
   });
 
   useEffect(() => {
@@ -30,18 +39,55 @@ const EditProfile = ({ navigation }) => {
         handPreference: currentUser.handPreference || "",
         bio: currentUser.bio || "",
         email: currentUser.email || "",
+        profileImage: currentUser.profileImage || "",
       });
     }
   }, [currentUser]);
 
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("Permission Required", "You need to allow access to your media library.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const pickedUri = result.assets[0].uri;
+        const manipulated = await ImageManipulator.manipulateAsync(
+          pickedUri,
+          [{ resize: { width: 300, height: 300 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        setFormData((prev) => ({ ...prev, profileImage: manipulated.uri }));
+      }
+    } catch (err) {
+      console.error("Image pick error:", err);
+      Alert.alert("Error", "Unable to pick image.");
+    }
+  };
+
   const handleUpdate = async () => {
     try {
       setLoading(true);
-      await updateUserProfile(formData);
-      Alert.alert("Success", "Profile updated successfully");
+      let imageUrl = formData.profileImage;
+
+      if (imageUrl && !imageUrl.startsWith("https://")) {
+        imageUrl = await uploadProfileImage(imageUrl, currentUser.userId);
+      }
+
+      await updateUserProfile({ ...formData, profileImage: imageUrl });
+      Alert.alert("Success", "Profile updated!");
       navigation.goBack();
-    } catch (error) {
-      Alert.alert("Error", error.message);
+    } catch (err) {
+      console.error("Update failed:", err);
+      Alert.alert("Error", err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -58,13 +104,35 @@ const EditProfile = ({ navigation }) => {
       </Header>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <ImageSection>
+          <TouchableOpacity
+            onPress={pickImage}
+            onLongPress={() => setPreviewVisible(true)}
+            accessibilityLabel="Tap to pick a profile image"
+          >
+            <ImageContainer>
+              {formData.profileImage ? (
+                <ProfileImage source={{ uri: formData.profileImage }} />
+              ) : (
+                <PlaceholderImage>
+                  <Ionicons name="camera" size={30} color="#ccc" />
+                </PlaceholderImage>
+              )}
+              <PlusIcon>
+                <Ionicons name="add-circle" size={28} color="#00a2ff" />
+              </PlusIcon>
+            </ImageContainer>
+          </TouchableOpacity>
+          <ImageHintText>
+            {formData.profileImage ? "Tap to change photo" : "Tap to upload photo"}
+          </ImageHintText>
+        </ImageSection>
+
         <Section>
           <SectionTitle>Location</SectionTitle>
           <Input
             value={formData.location}
-            onChangeText={(text) =>
-              setFormData({ ...formData, location: text })
-            }
+            onChangeText={(text) => setFormData({ ...formData, location: text })}
             placeholder="Enter your location"
             placeholderTextColor={"#aaa"}
           />
@@ -77,9 +145,7 @@ const EditProfile = ({ navigation }) => {
               <PreferenceButton
                 key={pref}
                 selected={formData.handPreference === pref}
-                onPress={() =>
-                  setFormData({ ...formData, handPreference: pref })
-                }
+                onPress={() => setFormData({ ...formData, handPreference: pref })}
               >
                 <PreferenceText selected={formData.handPreference === pref}>
                   {pref}
@@ -114,34 +180,45 @@ const EditProfile = ({ navigation }) => {
         </Section>
 
         <ButtonWrapper>
-          <ConfirmButton onPress={handleUpdate}>
-            <Text>Update Profile</Text>
+          <ConfirmButton onPress={handleUpdate} disabled={loading}>
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={{ color: "white", fontWeight: "bold" }}>
+                Update Profile
+              </Text>
+            )}
           </ConfirmButton>
         </ButtonWrapper>
       </ScrollView>
+
+      {/* Fullscreen Image Preview Modal */}
+      <Modal visible={previewVisible} transparent animationType="fade">
+        <ModalBackground>
+          <PreviewImage source={{ uri: formData.profileImage }} resizeMode="contain" />
+          <Pressable onPress={() => setPreviewVisible(false)}>
+            <CloseText>Close Preview</CloseText>
+          </Pressable>
+        </ModalBackground>
+      </Modal>
     </Container>
   );
 };
 
-// Styled components
 const Container = styled.View`
   flex: 1;
   background-color: rgb(3, 16, 31);
   padding: 20px;
 `;
 
-const ConfirmButton = styled.TouchableOpacity({
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontSize: 24,
-  fontWeight: "bold",
-  marginBottom: 15,
-
-  padding: 10,
-  borderRadius: 8,
-  backgroundColor: "#00A2FF",
-});
+const ConfirmButton = styled.TouchableOpacity`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #00a2ff;
+`;
 
 const Header = styled.View`
   flex-direction: row;
@@ -177,8 +254,8 @@ const Input = styled.TextInput`
 
 const PreferenceContainer = styled.View`
   flex-direction: row;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 10px;
 `;
 
 const PreferenceButton = styled.TouchableOpacity`
@@ -196,6 +273,67 @@ const PreferenceText = styled.Text`
 const ButtonWrapper = styled.View`
   margin-top: 30px;
   margin-bottom: 50px;
+`;
+
+const ImageSection = styled.View`
+  align-items: center;
+  margin-bottom: 30px;
+`;
+
+const ImageContainer = styled.View`
+  position: relative;
+  width: 120px;
+  height: 120px;
+`;
+
+const ProfileImage = styled.Image`
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  border: 3px solid #00a2ff;
+`;
+
+const PlaceholderImage = styled.View`
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  background-color: #001e3c;
+  justify-content: center;
+  align-items: center;
+  border: 2px dashed #555;
+`;
+
+const PlusIcon = styled.View`
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background-color: rgb(3, 16, 31);
+  border-radius: 14px;
+`;
+
+const ImageHintText = styled.Text`
+  color: #aaa;
+  margin-top: 10px;
+  font-size: 14px;
+`;
+
+const ModalBackground = styled.View`
+  flex: 1;
+  background-color: rgba(0, 0, 0, 0.9);
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+`;
+
+const PreviewImage = styled.Image`
+  width: 100%;
+  height: 70%;
+`;
+
+const CloseText = styled.Text`
+  color: white;
+  font-size: 16px;
+  margin-top: 20px;
 `;
 
 const styles = {
