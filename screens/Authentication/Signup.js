@@ -1,5 +1,12 @@
-import React, { useContext, useState } from "react";
-import { Alert, ScrollView } from "react-native";
+// Now, let's update the Signup component to fix the city selection bug and add loading state
+import React, { useContext, useState, useEffect, useCallback } from "react";
+import {
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  FlatList,
+} from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import styled from "styled-components/native";
 import { auth, db } from "../../services/firebase.config";
@@ -15,13 +22,114 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
-import { userProfileSchema, profileDetailSchema } from "../../schemas/schema";
+import { profileDetailSchema } from "../../schemas/schema";
+import { Country, City } from "country-state-city";
+import SearchableDropdown from "../../components/Location/SearchableDropdown";
 
 const Signup = ({ route }) => {
   const { userId, userName, userEmail } = route.params || {};
   const isSocialSignup = !!userId;
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
+  // const [loadingCities, setLoadingCities] = useState(false);
+
+  // Inside your Signup component:
+  const [countries, setCountries] = useState([]);
+  // const [cities, setCities] = useState([]);
+  const [selectedCountryCode, setSelectedCountryCode] = useState(null);
+
+  // Load countries on mount
+  useEffect(() => {
+    const allCountries = Country.getAllCountries().map((country) => ({
+      key: country.isoCode,
+      value: country.name,
+    }));
+    setCountries(allCountries);
+  }, []);
+
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+
+  useEffect(() => {
+    if (selectedCountryCode) {
+      // Verify country code format (important!)
+      console.log("Selected country code:", selectedCountryCode);
+    }
+  }, [selectedCountryCode]);
+
+  const handleCityDropdownOpen = useCallback(async () => {
+    if (!selectedCountryCode) {
+      setCities([]);
+      return;
+    }
+
+    setLoadingCities(true);
+    try {
+      const allCities = City.getCitiesOfCountry(selectedCountryCode) || [];
+      console.log("Raw cities data:", allCities); // Debug log
+
+      // More reliable unique city filtering
+      const cityMap = new Map();
+      allCities.forEach((city) => {
+        if (city.name && !cityMap.has(city.name)) {
+          cityMap.set(city.name, city);
+        }
+      });
+
+      const uniqueCities = Array.from(cityMap.values()).map((city) => ({
+        key: city.name + "-" + (city.latitude || "") + (city.longitude || ""),
+        value: city.name,
+      }));
+
+      console.log("Processed cities:", uniqueCities);
+      setCities(uniqueCities);
+    } catch (error) {
+      console.error("City loading error:", error);
+      setCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  }, [selectedCountryCode]);
+
+  // useEffect(() => {
+  //   if (selectedCountryCode) {
+  //     setLoadingCities(true);
+
+  //     // Simulate network delay to show loading state
+  //     const timer = setTimeout(() => {
+  //       // Get cities and remove duplicates
+  //       const allCities = City.getCitiesOfCountry(selectedCountryCode);
+
+  //       // Use a Set to track unique city names and remove duplicates
+  //       const uniqueCityNames = new Set();
+  //       const uniqueCities = allCities
+  //         .filter((city) => {
+  //           // If we haven't seen this city name before, keep it
+  //           if (!uniqueCityNames.has(city.name)) {
+  //             uniqueCityNames.add(city.name);
+  //             return true;
+  //           }
+  //           return false;
+  //         })
+  //         .map((city) => ({
+  //           key: city.name,
+  //           value: city.name,
+  //         }));
+
+  //       console.log("Unique cities:", uniqueCities.length);
+  //       setCities(uniqueCities);
+  //       setLoadingCities(false);
+  //     }, 800);
+
+  //     return () => clearTimeout(timer);
+  //   } else {
+  //     setCities([]);
+  //   }
+  // }, [selectedCountryCode]);
+
+  // console.log("countries", countries.length);
+  // console.log("cities", cities.length);
+
   const navigation = useNavigation();
   const {
     handleShowPopup,
@@ -35,18 +143,30 @@ const Signup = ({ route }) => {
     handleSubmit,
     formState: { errors, isSubmitting },
     getValues,
+    setValue,
+    setError,
+    clearErrors,
+    watch,
   } = useForm({
     defaultValues: {
       firstName: userName || "",
       lastName: "",
       username: "",
       email: userEmail || "",
-      location: "",
+      country: "",
+      city: "",
       handPreference: "Both",
       password: "",
       confirmPassword: "",
     },
   });
+
+  // // Watch city value to debug
+  // const cityValue = watch("city");
+
+  // useEffect(() => {
+  //   console.log("City value changed:", cityValue);
+  // }, [cityValue]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -60,10 +180,23 @@ const Signup = ({ route }) => {
     }
   };
 
+  // Then in your onSubmit:
   const onSubmit = async (data) => {
     try {
+      // Make sure to include location data in the user document
+      const locationData = {
+        country: data.country,
+        city: data.city,
+      };
+
+      // Add location to the data object
+      const dataWithLocation = {
+        ...data,
+        location: locationData,
+      };
+
       if (isSocialSignup) {
-        await createSocialUser(data);
+        await createSocialUser(dataWithLocation);
       } else {
         // Check email uniqueness in Firestore first
         const emailExists = await checkEmailExists(data.email);
@@ -74,7 +207,7 @@ const Signup = ({ route }) => {
           return;
         }
 
-        await createEmailUser(data);
+        await createEmailUser(dataWithLocation);
       }
 
       setPopupIcon("success");
@@ -92,6 +225,7 @@ const Signup = ({ route }) => {
       };
 
       setPopupIcon("error");
+      setPopupButtonText("Close");
       handleShowPopup(errorMessages[error.code] || error.message);
     }
   };
@@ -102,7 +236,7 @@ const Signup = ({ route }) => {
       lastName: data.lastName.toLowerCase(),
       username: data.username.toLowerCase(),
       email: data.email,
-      location: data.location,
+      location: data.location, // This now contains country and city
       handPreference: data.handPreference,
       userId: uid,
       provider,
@@ -199,151 +333,209 @@ const Signup = ({ route }) => {
 
   return (
     <Container>
-      <ScrollContainer>
-        <Title>Create Account</Title>
-
-        <Popup
-          visible={showPopup}
-          message={popupMessage}
-          onClose={handleClosePopup}
-          type={popupIcon}
-          buttonText={popupButtonText}
-        />
-
-        <Controller
-          control={control}
-          name="firstName"
-          rules={{ required: "First name is required" }}
-          render={({ field }) => (
-            <InputWrapper
-              label="First Name"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.firstName?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="lastName"
-          rules={{ required: "Last name is required" }}
-          render={({ field }) => (
-            <InputWrapper
-              label="Last Name"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.lastName?.message}
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="username"
-          rules={usernameValidation}
-          render={({ field }) => (
-            <InputWrapper
-              label="Username"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.username?.message}
-            />
-          )}
-        />
-
-        {!isSocialSignup && (
-          <>
-            <Controller
-              control={control}
-              name="email"
-              rules={emailValidation}
-              render={({ field }) => (
-                <InputWrapper
-                  label="Email"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  keyboardType="email-address"
-                  error={errors.email?.message}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <FlatList
+          data={[1]} // dummy item, we just want to render a scrollable container
+          keyExtractor={() => "signup-form"}
+          renderItem={() => (
+            <>
+              <Title>Create Account</Title>
+              <Popup
+                visible={showPopup}
+                message={popupMessage}
+                onClose={handleClosePopup}
+                type={popupIcon}
+                buttonText={popupButtonText}
+              />
+              <Controller
+                control={control}
+                name="firstName"
+                rules={{ required: "First name is required" }}
+                render={({ field }) => (
+                  <InputWrapper
+                    label="First Name"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    error={errors.firstName?.message}
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name="lastName"
+                rules={{ required: "Last name is required" }}
+                render={({ field }) => (
+                  <InputWrapper
+                    label="Last Name"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    error={errors.lastName?.message}
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name="username"
+                rules={usernameValidation}
+                render={({ field }) => (
+                  <InputWrapper
+                    label="Username"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    error={errors.username?.message}
+                  />
+                )}
+              />
+              {!isSocialSignup && (
+                <SocialControllers
+                  control={control}
+                  getValues={getValues}
+                  errors={errors}
+                  emailValidation={emailValidation}
+                  passwordValidation={passwordValidation}
                 />
               )}
-            />
 
-            <Controller
-              control={control}
-              name="password"
-              rules={passwordValidation}
-              render={({ field }) => (
-                <InputWrapper
-                  label="Password"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  secureTextEntry
-                  error={errors.password?.message}
-                />
-              )}
-            />
+              <SearchableDropdown
+                control={control}
+                name="country"
+                label="Country"
+                rules={{ required: "Country is required" }}
+                placeholder="Select country"
+                searchPlaceholder="Search country..."
+                data={countries}
+                setSelected={(val) => {
+                  // Get country code using ISO code from the country object
+                  const selectedCountry = countries.find(
+                    (c) => c.value === val
+                  );
+                  const countryCode = selectedCountry?.key;
+                  console.log("Selected country:", val, "Code:", countryCode);
+                  setSelectedCountryCode(countryCode);
+                  setValue("city", ""); // Clear city when country changes
+                  setCities([]); // Clear previous cities
+                }}
+                error={errors.country}
+              />
+              <SearchableDropdown
+                control={control}
+                name="city"
+                label="City"
+                rules={{ required: "City is required" }}
+                placeholder={
+                  selectedCountryCode
+                    ? loadingCities
+                      ? "Loading cities..."
+                      : "Search cities..."
+                    : "Select country first"
+                }
+                searchPlaceholder="Start typing..."
+                data={cities}
+                disabled={!selectedCountryCode}
+                loading={loadingCities}
+                onDropdownOpen={handleCityDropdownOpen}
+                error={errors.city}
+              />
 
-            <Controller
-              control={control}
-              name="confirmPassword"
-              rules={{
-                required: "Confirm password is required",
-                validate: (value) =>
-                  value === getValues("password") || "Passwords do not match",
-              }}
-              render={({ field }) => (
-                <InputWrapper
-                  label="Confirm Password"
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  secureTextEntry
-                  error={errors.confirmPassword?.message}
-                />
-              )}
-            />
-          </>
-        )}
+              <HandPreference control={control} />
 
-        <Controller
-          control={control}
-          name="location"
-          rules={{ required: "Location is required" }}
-          render={({ field }) => (
-            <InputWrapper
-              label="Location"
-              value={field.value}
-              onChangeText={field.onChange}
-              error={errors.location?.message}
-            />
+              <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
+                <ButtonText>
+                  {isSubmitting ? "Creating Account..." : "Create Account"}
+                </ButtonText>
+              </Button>
+            </>
           )}
+          contentContainerStyle={{ padding: 20 }}
         />
-
-        <Controller
-          control={control}
-          name="handPreference"
-          render={({ field }) => (
-            <RadioGroup>
-              {["Right Hand", "Left Hand", "Both"].map((option) => (
-                <RadioButtonWrapper
-                  key={option}
-                  onPress={() => field.onChange(option)}
-                >
-                  <RadioCircle selected={field.value === option} />
-                  <RadioText>{option}</RadioText>
-                </RadioButtonWrapper>
-              ))}
-            </RadioGroup>
-          )}
-        />
-
-        <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
-          <ButtonText>
-            {isSubmitting ? "Creating Account..." : "Create Account"}
-          </ButtonText>
-        </Button>
-      </ScrollContainer>
+      </KeyboardAvoidingView>
     </Container>
+  );
+};
+
+const HandPreference = ({ control }) => {
+  return (
+    <Controller
+      control={control}
+      name="handPreference"
+      render={({ field }) => (
+        <RadioGroup>
+          {["Right Hand", "Left Hand", "Both"].map((option) => (
+            <RadioButtonWrapper
+              key={option}
+              onPress={() => field.onChange(option)}
+            >
+              <RadioCircle selected={field.value === option} />
+              <RadioText>{option}</RadioText>
+            </RadioButtonWrapper>
+          ))}
+        </RadioGroup>
+      )}
+    />
+  );
+};
+
+const SocialControllers = ({
+  control,
+  getValues,
+  errors,
+  emailValidation,
+  passwordValidation,
+}) => {
+  return (
+    <>
+      <Controller
+        control={control}
+        name="email"
+        rules={emailValidation}
+        render={({ field }) => (
+          <InputWrapper
+            label="Email"
+            value={field.value}
+            onChangeText={field.onChange}
+            keyboardType="email-address"
+            error={errors.email?.message}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="password"
+        rules={passwordValidation}
+        render={({ field }) => (
+          <InputWrapper
+            label="Password"
+            value={field.value}
+            onChangeText={field.onChange}
+            secureTextEntry
+            error={errors.password?.message}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="confirmPassword"
+        rules={{
+          required: "Confirm password is required",
+          validate: (value) =>
+            value === getValues("password") || "Passwords do not match",
+        }}
+        render={({ field }) => (
+          <InputWrapper
+            label="Confirm Password"
+            value={field.value}
+            onChangeText={field.onChange}
+            secureTextEntry
+            error={errors.confirmPassword?.message}
+          />
+        )}
+      />
+    </>
   );
 };
 
@@ -381,12 +573,11 @@ const Label = styled.Text({
 });
 
 const Input = styled.TextInput({
-  backgroundColor: "#2f3640",
-  color: "#fff",
-  borderRadius: 10,
   padding: 10,
   marginBottom: 10,
-  fontSize: 16,
+  backgroundColor: "#262626",
+  color: "#fff",
+  borderRadius: 5,
 });
 
 const ErrorText = styled.Text({
