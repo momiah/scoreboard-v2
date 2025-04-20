@@ -13,7 +13,7 @@ import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
 import Signup from "../screens/Authentication/Signup";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import EditLeague from "../screens/Home/Leagues/EditLeague";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -27,6 +27,7 @@ const HomeStack = () => {
     >
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
+      <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
@@ -47,7 +48,6 @@ const ProfileStack = () => {
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
-
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>

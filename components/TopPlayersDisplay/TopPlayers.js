@@ -28,7 +28,11 @@ const TopPlayers = ({ topPlayers }) => {
             });
           }}
         >
-          <Avatar source={CourtChampsLogo} />
+          <Avatar source={
+                  player?.profileImage
+                  ? { uri: player.profileImage }
+                  : CourtChampsLogo
+                  } />
           <TableCell>
             <Rank>
               {index + 1}
