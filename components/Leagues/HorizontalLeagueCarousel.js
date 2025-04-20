@@ -8,6 +8,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
 import Tag from "../Tag";
 import { UserContext } from "../../context/UserContext";
+import {ccDefaultImage} from "../../mockImages/index";
 
 const { width } = Dimensions.get("window");
 
@@ -50,7 +51,14 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
             style={{ width: itemWidth, marginRight: spacing }}
           >
             <ImageWrapper>
-              <LeagueImage source={{ uri: league.leagueImage }}>
+            <LeagueImage
+            source={
+            league.leagueImage
+            ? { uri: league.leagueImage }
+            : ccDefaultImage
+           }
+          > 
+
                 <LeagueDetailsContainer>
                   <TagContainer>
                     <Tag name={league.leagueType} />
@@ -105,9 +113,13 @@ const ImageWrapper = styled.View({
   overflow: "hidden",
 });
 
-const LeagueImage = styled.ImageBackground({
+const LeagueImage = styled.ImageBackground.attrs({
+  imageStyle: {
+    resizeMode: "cover",
+  },
+})({
   width: "100%",
-  height: "100%",
+  height: "100%", // or any fixed height
   justifyContent: "flex-end",
   alignItems: "center",
 });

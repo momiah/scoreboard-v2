@@ -23,7 +23,8 @@ import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus";
-import { court2 } from "../../../mockImages";
+
+import {ccDefaultImage} from "../../../mockImages/index";
 
 const League = () => {
   const route = useRoute();
@@ -155,7 +156,11 @@ const League = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage source={{ uri: leagueImage } || court2}>
+        <LeagueImage source={
+                    leagueImage
+                    ? { uri: leagueImage }
+                    : ccDefaultImage
+                   }>
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.9)"]}
             locations={[0.1, 1]}
@@ -301,11 +306,15 @@ const Overview = styled.View({
   position: "relative",
 });
 
-const LeagueImage = styled.ImageBackground({
+const LeagueImage = styled.ImageBackground.attrs({
+  imageStyle: {
+    resizeMode: "cover",
+  },
+})({
   width: "100%",
-  height: "110%",
+  height: "100%", // or any fixed height
   justifyContent: "flex-end",
-  alignItems: "flex-start",
+  alignItems: "center",
 });
 
 const GradientOverlay = styled(LinearGradient)({
