@@ -129,7 +129,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         ...leagueDetails,
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
-        image: imageDownloadUrl || null,
+        leagueImage: imageDownloadUrl || null,
       };
 
       addLeagues(newLeague);
