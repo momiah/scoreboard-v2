@@ -21,20 +21,20 @@ export default function App() {
           <LeagueProvider>
             <GameProvider>
               <NavigationContainer>
-                <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
-                  <Stack.Navigator
-                    screenOptions={{
-                      headerShown: false,
-                    }}
-                  >
-                    {/* Tab Navigation */}
-                    <Stack.Screen name="Tabs" component={Tabs} />
+              <SafeAreaView
+                style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
+              >
+                <Stack.Navigator
+                  screenOptions={{
+                    headerShown: false,
+                  }}
+                >
+                  <Stack.Screen name="Tabs" component={Tabs} />
 
-                    {/* Add any other screens you'd like here */}
-                    <Stack.Screen name="EditLeague" component={EditLeagueScreen} />
-                    <Stack.Screen name="LeagueScreen" component={LeagueScreen} />
-                  </Stack.Navigator>
-                </SafeAreaView>
+                  <Stack.Screen name="EditLeague" component={EditLeagueScreen} />
+                  <Stack.Screen name="LeagueScreen" component={LeagueScreen} />
+                </Stack.Navigator>
+              </SafeAreaView>
               </NavigationContainer>
             </GameProvider>
           </LeagueProvider>
