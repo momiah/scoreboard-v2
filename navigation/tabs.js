@@ -13,8 +13,7 @@ import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
 import Signup from "../screens/Authentication/Signup";
-
-
+import EditLeague from "../screens/Home/Leagues/EditLeague";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -28,6 +27,7 @@ const HomeStack = () => {
     >
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
+      <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />

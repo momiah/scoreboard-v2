@@ -8,11 +8,11 @@ import {
   Dimensions,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { LeagueContext } from "../../context/LeagueContext";
+import { LeagueContext } from "../../../context/LeagueContext";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { firebaseApp } from "../../services/firebase.config";
+import { firebaseApp } from "../../../services/firebase.config";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 
@@ -85,14 +85,18 @@ const EditLeagueScreen = () => {
 
   const handleUpdate = async () => {
     const newErrors = {};
-    if (!leagueDetails.description) newErrors.description = "Description is required";
+    if (!leagueDetails.description)
+      newErrors.description = "Description is required";
     setErrorText(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
 
     try {
       let updatedImage = selectedImage;
       if (selectedImage && selectedImage !== leagueDetails.leagueImage) {
-        updatedImage = await uploadLeagueImage(selectedImage, leagueDetails.leagueId);
+        updatedImage = await uploadLeagueImage(
+          selectedImage,
+          leagueDetails.leagueId
+        );
       }
 
       const updatedLeague = {
@@ -132,7 +136,9 @@ const EditLeagueScreen = () => {
         <View>
           <LabelContainer>
             <Label>Description</Label>
-            {errorText.description && <ErrorText>{errorText.description}</ErrorText>}
+            {errorText.description && (
+              <ErrorText>{errorText.description}</ErrorText>
+            )}
           </LabelContainer>
           <TextAreaInput
             value={leagueDetails.description}

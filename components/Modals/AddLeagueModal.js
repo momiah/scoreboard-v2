@@ -104,8 +104,14 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
   const handleCreate = async () => {
     const requiredFields = [
-      "leagueName", "location", "centerName", "startDate",
-      "leagueLengthInMonths", "leagueType", "maxPlayers", "privacy"
+      "leagueName",
+      "location",
+      "centerName",
+      "startDate",
+      "leagueLengthInMonths",
+      "leagueType",
+      "maxPlayers",
+      "privacy",
     ];
 
     const newErrors = {};
@@ -122,7 +128,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
       let imageDownloadUrl = null;
       if (selectedImage) {
-        imageDownloadUrl = await uploadLeagueImage(selectedImage, leagueDetails.leagueId);
+        imageDownloadUrl = await uploadLeagueImage(
+          selectedImage,
+          leagueDetails.leagueId
+        );
       }
 
       const newLeague = {
@@ -165,7 +174,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   );
 
   return (
-    <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+    <Modal
+      animationType="slide"
+      transparent
+      visible={modalVisible}
+      onRequestClose={() => setModalVisible(false)}
+    >
       <ModalContainer>
         <SafeAreaWrapper>
           <ScrollContainer contentContainerStyle={{ paddingBottom: 60 }}>
@@ -192,10 +206,23 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             {renderInput("Center Name", "centerName")}
             {renderInput("Description", "description", true)}
 
-            <DatePicker setLeagueDetails={setLeagueDetails} leagueDetails={leagueDetails} errorText={errorText.startDate} />
-            <MaxPlayersPicker setLeagueDetails={setLeagueDetails} errorText={errorText.maxPlayers} />
-            <LeagueType setLeagueDetails={setLeagueDetails} errorText={errorText.leagueType} />
-            <PrivacyType setLeagueDetails={setLeagueDetails} errorText={errorText.privacy} />
+            <DatePicker
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
+              errorText={errorText.startDate}
+            />
+            <MaxPlayersPicker
+              setLeagueDetails={setLeagueDetails}
+              errorText={errorText.maxPlayers}
+            />
+            <LeagueType
+              setLeagueDetails={setLeagueDetails}
+              errorText={errorText.leagueType}
+            />
+            <PrivacyType
+              setLeagueDetails={setLeagueDetails}
+              errorText={errorText.privacy}
+            />
 
             <ButtonContainer>
               <CancelButton onPress={() => setModalVisible(false)}>
