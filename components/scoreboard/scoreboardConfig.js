@@ -1,20 +1,23 @@
+//
+
 export const getButtonConfig = (
   userRole,
   leagueState,
   requestSend,
-  handleAddGame
+  handleAddGame,
+  handleLogin
 ) => {
   const baseConfig = {
     hide: {
       not_started: {
         text: "Login to join league",
         disabled: false,
-        action: () => console.log("Login"),
+        action: () => handleLogin(),
       },
       started: {
         text: "Login to join league",
         disabled: false,
-        action: () => console.log("Login"),
+        action: () => handleLogin(),
       },
       ended: { text: "League has ended", disabled: true, action: null },
     },

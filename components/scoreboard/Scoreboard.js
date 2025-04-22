@@ -8,6 +8,7 @@ import React, {
 import { Text, FlatList } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
+import { useNavigation } from "@react-navigation/native";
 
 import { Dimensions } from "react-native";
 
@@ -27,6 +28,7 @@ const Scoreboard = ({
   const { fetchPlayers } = useContext(UserContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
+  const navigation = useNavigation();
 
   // Date calculations with validation
   const currentDate = moment();
@@ -55,9 +57,20 @@ const Scoreboard = ({
     setModalVisible(true);
   }, [fetchPlayers, leagueId]);
 
+  const handleLogin = useCallback(() => {
+    navigation.navigate("Login");
+  }, [navigation]);
+
   const buttonConfig = useMemo(
-    () => getButtonConfig(userRole, leagueState, requestSend, handleAddGame),
-    [userRole, leagueState, requestSend, handleAddGame]
+    () =>
+      getButtonConfig(
+        userRole,
+        leagueState,
+        requestSend,
+        handleAddGame,
+        handleLogin
+      ),
+    [userRole, leagueState, requestSend, handleAddGame, handleLogin]
   );
 
   const fallbackMessage = useMemo(

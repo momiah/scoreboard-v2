@@ -8,14 +8,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
 import Tag from "../Tag";
 import { UserContext } from "../../context/UserContext";
-import {ccDefaultImage} from "../../mockImages/index";
+import { ccDefaultImage } from "../../mockImages/index";
 
 const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
   const { leagues, leagueIdForDetail } = useContext(LeagueContext);
-
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
@@ -51,18 +50,21 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
             style={{ width: itemWidth, marginRight: spacing }}
           >
             <ImageWrapper>
-            <LeagueImage
-            source={
-            league.leagueImage
-            ? { uri: league.leagueImage }
-            : ccDefaultImage
-           }
-          > 
-
+              <LeagueImage
+                source={
+                  league.leagueImage
+                    ? { uri: league.leagueImage }
+                    : ccDefaultImage
+                }
+              >
+                <Overlay />
                 <LeagueDetailsContainer>
                   <TagContainer>
                     <Tag name={league.leagueType} />
-                    <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
+                    <Tag
+                      name={leagueStatus?.status}
+                      color={leagueStatus?.color}
+                    />
                   </TagContainer>
                   <NumberOfPlayers>
                     <Text style={{ color: "white", fontSize: 12 }}>
@@ -72,11 +74,24 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
                   </NumberOfPlayers>
 
                   <LeagueName>{league.leagueName}</LeagueName>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                     <LeagueLocation>{league.centerName}</LeagueLocation>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <View
+                      style={{ flexDirection: "row", alignItems: "center" }}
+                    >
                       <LeagueLocation>{league.location}</LeagueLocation>
-                      <Ionicons name={"location"} size={15} color={"#286EFA"} style={{ marginLeft: 5 }} />
+                      <Ionicons
+                        name={"location"}
+                        size={15}
+                        color={"#286EFA"}
+                        style={{ marginLeft: 5 }}
+                      />
                     </View>
                   </View>
                 </LeagueDetailsContainer>
@@ -162,6 +177,16 @@ const LeagueLocation = styled.Text({
   fontSize: 13,
   color: "white",
   borderRadius: 5,
+});
+
+const Overlay = styled(View)({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.2)", // A simple semi-transparent overlay
+  borderRadius: 10,
 });
 
 export default HorizontalLeagueCarousel;
