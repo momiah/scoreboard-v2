@@ -23,6 +23,8 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth, db } from "../../services/firebase.config";
+import { UserContext } from "../../context/UserContext";
+import { useContext } from "react";
 // import { GoogleSignin } from '@react-native-google-signin/google-signin';
 // GoogleAuthProvider
 
@@ -33,6 +35,8 @@ export default function Login() {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [iconScale] = useState(new Animated.Value(1));
+
+  const { getUserById, setCurrentUser } = useContext(UserContext);
 
   const navigation = useNavigation();
 
@@ -92,17 +96,24 @@ export default function Login() {
         const token = await user.getIdToken(); // Get the Firebase Auth ID token
         const userId = user.uid;
 
-        // Save the token to AsyncStorage
-
         await AsyncStorage.setItem("userToken", token);
         await AsyncStorage.setItem("userId", userId);
+
+        const profile = await getUserById(userId);
+        if (profile) {
+          setCurrentUser(profile);
+        } else {
+          <Text>Unable to sign in...</Text>;
+        }
+
         navigation.reset({
           index: 0,
-          routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
-        }); // Adjust to your home screen
+          routes: [{ name: "Home" }],
+        });
       } catch (error) {
         // setFirebaseError(error.message || "Login failed.");
         Alert.alert("Error", "Login failed.");
+        console.error("Login Error: ", error.message);
       }
     }
   };

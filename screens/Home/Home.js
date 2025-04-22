@@ -28,30 +28,11 @@ const Home = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
   const { fetchLeagues } = useContext(LeagueContext);
-  const { getUserById, getAllUsers, rankSorting } = useContext(UserContext);
-  const [userName, setUserName] = useState("");
+  const { getAllUsers, rankSorting, currentUser } = useContext(UserContext);
+
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const getUserInfo = async () => {
-    try {
-      const userId = await AsyncStorage.getItem("userId"); // Retrieve userId from AsyncStorage
-      if (!userId) {
-        return;
-      }
-
-      const userInfo = await getUserById(userId);
-      setUserName(userInfo.firstName);
-      return userInfo;
-    } catch (error) {
-      console.error("Error retrieving user info:", error);
-    }
-  };
-
-  useEffect(() => {
-    getUserInfo();
-  });
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -63,7 +44,7 @@ const Home = () => {
 
   const fetchUsers = async () => {
     try {
-      if (!refreshing) setLoading(true); // ✅ Show loading indicator only if not pulling to refresh
+      if (!refreshing) setLoading(true);
       const users = await getAllUsers();
       const sorted = rankSorting(users).map((user, index) => ({
         ...user,
@@ -74,7 +55,7 @@ const Home = () => {
       console.error("Failed to fetch users:", error);
     } finally {
       setRefreshing(false);
-      setLoading(false); // ✅ Hide loading indicator when done
+      setLoading(false);
     }
   };
 
@@ -89,7 +70,7 @@ const Home = () => {
   };
 
   const addLeague = async () => {
-    if (userToken) {
+    if (userToken && currentUser) {
       setModalVisible(true);
     } else {
       navigateTo("Login");
@@ -126,8 +107,10 @@ const Home = () => {
           />
         </Overview>
 
-        {userName ? (
-          <Text style={{ color: "white" }}>Hello, {userName} </Text>
+        {currentUser ? (
+          <Text style={{ color: "white" }}>
+            Hello, {currentUser.firstName}{" "}
+          </Text>
         ) : (
           <TouchableOpacity onPress={() => navigateTo("Login")}>
             <Text style={{ color: "white" }}>Sign In</Text>

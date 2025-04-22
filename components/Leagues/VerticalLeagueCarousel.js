@@ -8,6 +8,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LeagueContext } from "../../context/LeagueContext";
 import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
+import { ccDefaultImage } from "../../mockImages/index";
 
 const VerticalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
@@ -27,11 +28,20 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
       const leagueStatus = calculateLeagueStatus(league);
       const leagueParticipantsLength = league.leagueParticipants.length;
       const maxPlayers = league.maxPlayers;
+
+      console.log("image", league.image);
+      console.log("league", JSON.stringify(league, null, 2));
       return (
         <CarouselContainer>
           <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
             <ImageWrapper>
-              <LeagueImage source={typeof league.image === "string" ? { uri: league.image } : league.image}>
+              <LeagueImage
+                source={
+                  league.leagueImage
+                    ? { uri: league.leagueImage }
+                    : ccDefaultImage
+                }
+              >
                 {/* Remove GradientOverlay, replacing it with a simple overlay */}
                 <Overlay />
                 <LeagueDetailsContainer>
@@ -138,7 +148,7 @@ const Overlay = styled(View)({
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.5)",  // A simple semi-transparent overlay
+  backgroundColor: "rgba(0, 0, 0, 0.2)", // A simple semi-transparent overlay
   borderRadius: 10,
 });
 

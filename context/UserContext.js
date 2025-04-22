@@ -27,11 +27,11 @@ import { profileDetailSchema } from "../schemas/schema";
 const UserContext = createContext();
 
 const UserProvider = ({ children }) => {
-  const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
-    useContext(PopupContext);
+  const { showPopup, popupMessage, handleShowPopup } = useContext(PopupContext);
   const [players, setPlayers] = useState([]);
 
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
 
   useEffect(() => {
     const loadInitialUser = async () => {
@@ -52,20 +52,21 @@ const UserProvider = ({ children }) => {
     loadInitialUser();
   }, []);
 
-  const handleShowPopup = (message) => {
-    setPopupMessage(message);
-    setShowPopup(true);
-  };
-
   const Logout = async () => {
     try {
+      setIsLoggingOut(true); // Set logging out state
+      await AsyncStorage.removeItem("userId");
+
       await AsyncStorage.clear();
-      setCurrentUser(null);
-      setPlayers([]);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second
       handleShowPopup("Successfully logged out!");
+      setIsLoggingOut(false); // Set logging out state to false
+
+      return true;
     } catch (error) {
       console.error("Error during logout:", error);
-      handleShowPopup("Error during logout");
+      return false;
     }
   };
 
@@ -449,12 +450,12 @@ const UserProvider = ({ children }) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
-  
+
       console.log("Updating Fields:", updatedFields); // Debug log
-  
+
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, updatedFields); // Surgical update
-  
+
       setCurrentUser((prev) => ({
         ...prev,
         ...updatedFields,
@@ -489,33 +490,47 @@ const UserProvider = ({ children }) => {
   return (
     <UserContext.Provider
       value={{
+        // Popup and UI-related state
         showPopup,
         popupMessage,
 
-        retrievePlayersFromLeague,
-        loading,
-        setLoading,
-
-        rankSorting,
-        profileViewCount,
+        // Authentication and user management
         currentUser,
+        setCurrentUser,
+        Logout,
+        isLoggingOut,
+        setIsLoggingOut,
         updateUserProfile,
-        getLeaguesForUser,
-        getGlobalRank,
-        updateUsers,
-        getAllUsers,
+        getUserById,
+
+        // League-related operations
+        retrievePlayersFromLeague,
         retrieveTeams,
         updateTeams,
-        updatePlacementStats,
-        Logout,
+        fetchPlayers,
+        updatePlayers,
+        getLeaguesForUser,
+        checkUserRole,
+
+        // Player and stats management
         resetPlayerStats,
         resetAllPlayerStats,
-        fetchPlayers,
-        setPlayers,
-        updatePlayers,
+        updatePlacementStats,
+
+        // Ranking and sorting
+        rankSorting,
+        getGlobalRank,
+
+        // Profile-related operations
+        profileViewCount,
+
+        // General utilities
+        loading,
+        setLoading,
+        getAllUsers,
+        updateUsers,
         players,
-        getUserById,
-        checkUserRole,
+        setPlayers,
       }}
     >
       {children}
