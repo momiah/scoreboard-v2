@@ -42,9 +42,9 @@ const ProfileStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="UserProfileScreen"
+      initialRouteName="UserProfile"
     >
-      <Stack.Screen name="UserProfileScreen" component={UserProfile} />
+      <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
@@ -68,7 +68,7 @@ const Tabs = () => {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
-          } else if (route.name === "UserProfile") {
+          } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
           } else if (route.name === "Notifications") {
             iconName = focused ? "notifications" : "notifications-outline";
@@ -98,7 +98,7 @@ const Tabs = () => {
       <Tab.Screen i name="Home" component={HomeStack} />
       <Tab.Screen name="Notifications" component={Notifications} />
       {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
-      <Tab.Screen name="UserProfile" component={ProfileStack} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 };

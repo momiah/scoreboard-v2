@@ -12,6 +12,7 @@ import { GameContext } from "../../context/GameContext";
 import { BlurView } from "expo-blur";
 import { useNavigation } from "@react-navigation/native";
 import PerformanceStats from "../performance/PerformanceStats";
+import { UserContext } from "../../context/UserContext";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -43,6 +44,20 @@ const PlayerDetails = ({
   const navigation = useNavigation();
   const { medalNames } = useContext(GameContext);
   const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
+
+  const { currentUser } = useContext(UserContext);
+
+  const goToProfile = () => {
+    setShowPlayerDetails(false);
+
+    if (!currentUser) {
+      navigation.navigate("Login");
+      return;
+    }
+    navigation.navigate("UserProfile", {
+      userId: selectedPlayer.userId,
+    });
+  };
 
   const currentStreakValue = currentStreak(selectedPlayer.resultLog);
 
@@ -135,15 +150,7 @@ const PlayerDetails = ({
                 >
                   Last Active {selectedPlayer.lastActive}
                 </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowPlayerDetails(false); // Close the modal
-                    // Navigate to the Profile tab, passing the selected user's ID
-                    navigation.navigate("UserProfile", {
-                      userId: selectedPlayer.userId,
-                    });
-                  }}
-                >
+                <TouchableOpacity onPress={goToProfile}>
                   <Text
                     style={{
                       color: "white",
