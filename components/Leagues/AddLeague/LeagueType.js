@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const LeagueType = ({ setLeagueDetails, errorText }) => {
-  const [leagueType, setLeagueType] = useState(null);
+const LeagueType = ({ setLeagueDetails, leagueDetails, errorText }) => {
+  const [leagueType, setLeagueType] = useState(leagueDetails.leagueType);
 
   const handleSelectLeagueType = (type) => {
     setLeagueType(type);

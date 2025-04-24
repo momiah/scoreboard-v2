@@ -24,7 +24,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus";
 
-import {ccDefaultImage} from "../../../mockImages/index";
+import { ccDefaultImage } from "../../../mockImages/index";
 
 const League = () => {
   const route = useRoute();
@@ -42,8 +42,8 @@ const League = () => {
     const fetchData = async () => {
       if (leagueId) {
         try {
-          const fetchedDetails = await fetchLeagueById(leagueId);
-          await getUserRole(fetchedDetails);
+          const fetchedLeague = await fetchLeagueById(leagueId);
+          await getUserRole(fetchedLeague);
         } catch (error) {
           console.error("Error fetching league data:", error);
         } finally {
@@ -153,25 +153,33 @@ const League = () => {
     );
   }
 
+  const numberOfPlayers = `${leagueParticipants?.length} / ${maxPlayers}`;
+
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage source={
-                    leagueImage
-                    ? { uri: leagueImage }
-                    : ccDefaultImage
-                   }>
+        <LeagueImage
+          source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
+        >
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.9)"]}
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
-            <NumberOfPlayers>
-              <Text style={{ color: "white", fontSize: 12 }}>
-                {leagueParticipants?.length} / {maxPlayers}
-              </Text>
-              <Ionicons name="person" size={15} color={"#00A2FF"} />
-            </NumberOfPlayers>
+            {/* <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+
+            </View> */}
+            {userRole === "admin" && (
+              <EditButton onPress={handleEditClick}>
+                <Ionicons name="menu" size={25} color="white" />
+              </EditButton>
+            )}
 
             <LeagueName>{leagueName}</LeagueName>
 
@@ -200,7 +208,18 @@ const League = () => {
                 alignItems: "center",
               }}
             >
-              <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
+              <View style={{ flexDirection: "row", gap: 5 }}>
+                <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
+                <Tag
+                  name={numberOfPlayers}
+                  color={"rgba(0, 0, 0, 0.7)"}
+                  iconColor={"#00A2FF"}
+                  iconSize={15}
+                  icon={"person"}
+                  iconPosition={"right"}
+                  bold
+                />
+              </View>
               {userRole === "admin" && (
                 <Tag
                   name={"Admin"}
@@ -250,11 +269,11 @@ const League = () => {
             </View>
 
             {/* Hamburger Menu Button */}
-            {userRole === "admin" && (
+            {/* {userRole === "admin" && (
               <EditButton onPress={handleEditClick}>
                 <Ionicons name="menu" size={22} color="white" />
               </EditButton>
-            )}
+            )} */}
           </LeagueDetailsContainer>
         </LeagueImage>
       </Overview>
@@ -299,7 +318,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const Overview = styled.View({
   flexDirection: "row",
-  height: 180,
+  height: 200,
   width: "100%",
   justifyContent: "center",
   alignItems: "flex-start",
@@ -330,20 +349,18 @@ const LeagueDetailsContainer = styled.View({
   height: "100%",
   paddingLeft: 15,
   paddingRight: 15,
-  paddingTop: 45,
-  position: "relative",
+  // paddingTop: 45,
+  // position: "relative",
 });
 
 const NumberOfPlayers = styled.View({
   backgroundColor: "rgba(0, 0, 0, 0.7)",
-  padding: 5,
+  // paddingVertical: 2,
+  // paddingHorizontal: 4,
+  padding: "0px 5px",
   borderRadius: 5,
-  position: "absolute",
-  left: 15,
-  top: 15,
   flexDirection: "row",
   alignItems: "center",
-  gap: 5,
 });
 
 const LeagueName = styled.Text({
@@ -365,12 +382,9 @@ const LeagueLocation = styled.Text({
 });
 
 const EditButton = styled.TouchableOpacity({
-  
   padding: 10,
   borderRadius: 5,
-  position: "absolute",
-  top: 15,
-  right: 15,
+  alignSelf: "flex-end",
 });
 
 const TabsContainer = styled.View({

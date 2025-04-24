@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const PrivacyType = ({ setLeagueDetails, errorText }) => {
-  const [privacy, setPrivacy] = useState(null);
+const PrivacyType = ({ leagueDetails, setLeagueDetails, errorText }) => {
+  const [privacy, setPrivacy] = useState(leagueDetails.privacy);
 
   const handleSelectPrivacyType = (privacyType) => {
     setPrivacy(privacyType);

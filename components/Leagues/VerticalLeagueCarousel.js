@@ -29,8 +29,6 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
       const leagueParticipantsLength = league.leagueParticipants.length;
       const maxPlayers = league.maxPlayers;
 
-      console.log("image", league.image);
-      console.log("league", JSON.stringify(league, null, 2));
       return (
         <CarouselContainer>
           <CarouselItem key={index} onPress={() => navigateTo(league.id)}>

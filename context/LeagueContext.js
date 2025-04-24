@@ -180,7 +180,7 @@ const LeagueProvider = ({ children }) => {
   const updateLeague = async (updatedLeague) => {
     try {
       const leagueDocRef = doc(db, "leagues", updatedLeague.id);
-      
+
       // Update the league document in Firebase
       await updateDoc(leagueDocRef, updatedLeague);
 
@@ -199,19 +199,28 @@ const LeagueProvider = ({ children }) => {
   return (
     <LeagueContext.Provider
       value={{
+        // Playtime Management
         addPlaytime,
+        deletePlaytime,
+
+        // League Data Management
+        addLeagues,
+        updateLeague, // Exposing the updateLeague function
+        fetchLeagues,
+        fetchLeagueById,
+
+        // League State Management
+        leagues,
+        leagueById,
+        leagueIdForDetail,
+        setLeagueIdForDetail,
+
+        // Mock Data Management
         setShowMockData,
         showMockData,
-        fetchLeagueById,
-        leagueById,
-        addLeagues,
-        leagues,
-        fetchLeagues,
-        setLeagueIdForDetail,
+
+        // League Description Management
         handleLeagueDescription,
-        leagueIdForDetail,
-        deletePlaytime,
-        updateLeague,  // Exposing the updateLeague function
       }}
     >
       {children}

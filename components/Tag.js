@@ -13,7 +13,7 @@ const Tag = ({
   bold,
   iconPosition,
 }) => {
-  const tagName = name ? name.toUpperCase() : "NO TAG NAME";
+  const tagName = name ? name.toUpperCase() : "";
   const TagComponent = onPress ? InteractiveTagContainer : TagContainer;
   const flexDirection = iconPosition === "left" ? "row" : "row-reverse";
 
@@ -44,7 +44,7 @@ const TagContainer = styled.View(({ backgroundColor, flexDirection }) => ({
   borderRadius: 6,
   // margin: 4,
   backgroundColor,
-  alignSelf: "flex-start",
+  // alignSelf: "flex-start",
 }));
 
 const InteractiveTagContainer = styled.TouchableOpacity(
@@ -56,7 +56,7 @@ const InteractiveTagContainer = styled.TouchableOpacity(
     borderRadius: 6,
     // margin: 4,
     backgroundColor,
-    alignSelf: "flex-start",
+    // alignSelf: "flex-start",
   })
 );
 

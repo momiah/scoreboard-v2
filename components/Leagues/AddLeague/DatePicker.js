@@ -9,7 +9,9 @@ import { formatDateForStorage } from "../../../functions/formatDateForStorage";
 
 const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [leagueLengths, setLeagueLength] = useState(null);
+  const [leagueLengths, setLeagueLength] = useState(
+    leagueDetails.leagueLengthInMonths
+  );
   const [tempDate, setTempDate] = useState(null);
 
   const handleTempDateChange = (selectedDate) => {

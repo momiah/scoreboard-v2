@@ -3,8 +3,10 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const MaxPlayersPicker = ({ setLeagueDetails, errorText }) => {
-  const [maximumPlayers, setMaximumPlayers] = useState(null);
+const MaxPlayersPicker = ({ setLeagueDetails, errorText, leagueDetails }) => {
+  const [maximumPlayers, setMaximumPlayers] = useState(
+    leagueDetails.maxPlayers
+  );
 
   const handleSelectPlayers = (players) => {
     setMaximumPlayers(players);
