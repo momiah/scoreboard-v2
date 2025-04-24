@@ -9,6 +9,7 @@ import {
   Image,
   Dimensions,
   SafeAreaView,
+  ActivityIndicator,
   Platform,
 } from "react-native";
 import { BlurView } from "expo-blur";
@@ -23,9 +24,9 @@ import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
 import LeagueType from "../Leagues/AddLeague/LeagueType";
 import PrivacyType from "../Leagues/AddLeague/PrivacyType";
 import { leagueSchema, scoreboardProfileSchema } from "../../schemas/schema";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { firebaseApp } from "../../services/firebase.config";
+
 import { AntDesign } from "@expo/vector-icons";
+import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -35,33 +36,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [errorText, setErrorText] = useState({});
   const [leagueDetails, setLeagueDetails] = useState(leagueSchema);
   const [selectedImage, setSelectedImage] = useState(null);
-
-  const fetchImageBlob = (uri) => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.onload = () => resolve(xhr.response);
-      xhr.onerror = () => reject(new TypeError("Network request failed"));
-      xhr.responseType = "blob";
-      xhr.open("GET", uri, true);
-      xhr.send(null);
-    });
-  };
-
-  const uploadLeagueImage = async (uri, leagueId) => {
-    try {
-      const blob = await fetchImageBlob(uri);
-      if (!blob) throw new Error("Failed to fetch image blob.");
-
-      const filePath = `LigueImages/${leagueId}_${Date.now()}.jpg`;
-      const storage = getStorage(firebaseApp);
-      const storageRef = ref(storage, filePath);
-      const uploadTaskSnapshot = await uploadBytes(storageRef, blob);
-      return await getDownloadURL(uploadTaskSnapshot.ref);
-    } catch (error) {
-      console.error("Image upload failed:", error);
-      throw new Error("Failed to upload image. Try again.");
-    }
-  };
+  const [showNextModal, setShowNextModal] = useState(false);
+  const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
 
   const assignLeagueAdmin = async () => {
     const currentUserId = await AsyncStorage.getItem("userId");
@@ -122,6 +98,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     setErrorText(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
 
+    setLeagueCreationLoading(true);
+
     try {
       const adminData = await assignLeagueAdmin();
       if (!adminData) return;
@@ -142,6 +120,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       };
 
       addLeagues(newLeague);
+      setLeagueCreationLoading(false);
       setModalVisible(false);
     } catch (err) {
       console.error("Error creating league:", err);
@@ -204,34 +183,48 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             {renderInput("League Name", "leagueName")}
             {renderInput("Location", "location")}
             {renderInput("Center Name", "centerName")}
-            {renderInput("Description", "description", true)}
-
-            <DatePicker
-              setLeagueDetails={setLeagueDetails}
-              leagueDetails={leagueDetails}
-              errorText={errorText.startDate}
-            />
-            <MaxPlayersPicker
-              setLeagueDetails={setLeagueDetails}
-              errorText={errorText.maxPlayers}
-            />
-            <LeagueType
-              setLeagueDetails={setLeagueDetails}
-              errorText={errorText.leagueType}
-            />
-            <PrivacyType
-              setLeagueDetails={setLeagueDetails}
-              errorText={errorText.privacy}
-            />
+            {renderInput("Description", "leagueDescription", true)}
 
             <ButtonContainer>
               <CancelButton onPress={() => setModalVisible(false)}>
                 <CancelText>Cancel</CancelText>
               </CancelButton>
-              <CreateButton onPress={handleCreate}>
-                <CreateText>Create</CreateText>
+
+              <CreateButton
+                disabled={
+                  !(
+                    leagueDetails.leagueName?.trim() &&
+                    leagueDetails.location?.trim() &&
+                    leagueDetails.centerName?.trim()
+                  )
+                }
+                onPress={() => setShowNextModal(true)}
+              >
+                <CreateText>Next</CreateText>
               </CreateButton>
             </ButtonContainer>
+
+            <ConfirmLeagueSettingsModal
+              visible={showNextModal}
+              leagueCreationLoading={leagueCreationLoading}
+              onBack={() => {
+                setShowNextModal(false);
+                setModalVisible(true);
+              }}
+              onConfirm={handleCreate}
+              confirmDisabled={
+                !(
+                  leagueDetails.startDate &&
+                  leagueDetails.maxPlayers &&
+                  leagueDetails.leagueType &&
+                  leagueDetails.leagueLengthInMonths &&
+                  leagueDetails.privacy
+                )
+              }
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
+              errorText={errorText}
+            />
           </ScrollContainer>
         </SafeAreaWrapper>
       </ModalContainer>
@@ -239,129 +232,639 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   );
 };
 
+const ConfirmLeagueSettingsModal = ({
+  visible,
+  onBack,
+  leagueCreationLoading,
+  onConfirm,
+  confirmDisabled,
+  setLeagueDetails,
+  leagueDetails,
+  errorText,
+}) => {
+  return (
+    <Modal animationType="slide" transparent visible={visible}>
+      <ModalContainer>
+        <LeagueDetailsWrapper>
+          <LeagueDetailsScrollContainer>
+            <ModalTitle>Confirm League Settings</ModalTitle>
+            <DatePicker
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
+              errorText={errorText.startDate}
+            />
+            <MaxPlayersPicker
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
+              errorText={errorText.maxPlayers}
+            />
+            <LeagueType
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
+              errorText={errorText.leagueType}
+            />
+            <PrivacyType
+              setLeagueDetails={setLeagueDetails}
+              leagueDetails={leagueDetails}
+              errorText={errorText.privacy}
+            />
+
+            <ButtonContainer>
+              <CancelButton onPress={onBack}>
+                <CancelText>Back</CancelText>
+              </CancelButton>
+              <CreateButton disabled={confirmDisabled} onPress={onConfirm}>
+                {leagueCreationLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <CreateText>Create</CreateText>
+                )}
+              </CreateButton>
+            </ButtonContainer>
+          </LeagueDetailsScrollContainer>
+        </LeagueDetailsWrapper>
+      </ModalContainer>
+    </Modal>
+  );
+};
+
 // Styled Components
-const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
-`;
+const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+});
 
-const SafeAreaWrapper = styled(SafeAreaView)`
-  flex: 1;
-  width: ${screenWidth - 40}px;
-  margin: 20px;
-  border-radius: 20px;
-  overflow: hidden;
-  background-color: rgba(2, 13, 24, 0.7);
-`;
+const SafeAreaWrapper = styled(SafeAreaView)({
+  flex: 1,
+  width: screenWidth - 40,
+  margin: 20,
+  borderRadius: 20,
+  overflow: "hidden",
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
+});
 
-const ScrollContainer = styled.ScrollView`
-  padding: 20px;
-`;
+const ScrollContainer = styled.ScrollView({
+  padding: 20,
+});
 
-const ModalTitle = styled.Text`
-  font-size: 20px;
-  color: #fff;
-  font-weight: bold;
-  margin-bottom: 20px;
-  text-align: center;
-`;
+const LeagueDetailsWrapper = styled(SafeAreaView)({
+  // flex: 1,
+  width: screenWidth - 40,
+  margin: 20,
+  borderRadius: 20,
+  overflow: "hidden",
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
+});
 
-const Label = styled.Text`
-  color: #ccc;
-  align-self: flex-start;
-  font-size: 12px;
-  margin-left: 4px;
-  margin-bottom: 6px;
-`;
+const LeagueDetailsScrollContainer = styled.ScrollView({
+  padding: "40px 20px",
+});
 
-const ErrorText = styled.Text`
-  color: red;
-  font-size: 12px;
-  margin-top: 4px;
-`;
+const ModalTitle = styled.Text({
+  fontSize: 20,
+  color: "#fff",
+  fontWeight: "bold",
+  marginBottom: 20,
+  textAlign: "center",
+});
 
-const Input = styled.TextInput`
-  height: 40px;
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  padding-left: 12px;
-  margin-bottom: 16px;
-`;
+const Label = styled.Text({
+  color: "#ccc",
+  alignSelf: "flex-start",
+  fontSize: 12,
+  marginLeft: 4,
+  marginBottom: 6,
+});
 
-const TextAreaInput = styled.TextInput`
-  height: 100px;
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  padding-left: 12px;
-  margin-bottom: 16px;
-`;
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 12,
+  marginTop: 4,
+});
 
-const LabelContainer = styled.View`
-  margin-bottom: 4px;
-`;
+const Input = styled.TextInput({
+  height: 40,
+  borderRadius: 6,
+  backgroundColor: "rgba(255, 255, 255, 0.2)",
+  color: "white",
+  paddingLeft: 12,
+  marginBottom: 16,
+});
 
-const ButtonContainer = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  margin-top: 20px;
-`;
+const TextAreaInput = styled.TextInput({
+  height: 100,
+  borderRadius: 6,
+  backgroundColor: "rgba(255, 255, 255, 0.2)",
+  color: "white",
+  paddingLeft: 12,
+  marginBottom: 16,
+});
 
-const CancelButton = styled.TouchableOpacity`
-  width: 45%;
-  padding: 12px;
-  background-color: #9e9e9e;
-  border-radius: 6px;
-`;
+const LabelContainer = styled.View({
+  marginBottom: 4,
+});
 
-const CancelText = styled.Text`
-  text-align: center;
-  color: white;
-  font-size: 16px;
-`;
+const ButtonContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 20,
+});
 
-const CreateButton = styled.TouchableOpacity`
-  width: 45%;
-  padding: 12px;
-  background-color: #4caf50;
-  border-radius: 6px;
-`;
+const CancelButton = styled.TouchableOpacity({
+  width: "45%",
+  padding: 12,
+  backgroundColor: "#9e9e9e",
+  borderRadius: 6,
+});
 
-const CreateText = styled.Text`
-  text-align: center;
-  color: white;
-  font-size: 16px;
-`;
+const CancelText = styled.Text({
+  textAlign: "center",
+  color: "white",
+  fontSize: 16,
+});
 
-const ImagePickerContainer = styled.TouchableOpacity`
-  position: relative;
-  margin-bottom: 20px;
-`;
+const CreateButton = styled.TouchableOpacity(({ disabled }) => ({
+  width: "45%",
+  padding: 12,
+  borderRadius: 6,
+  backgroundColor: disabled ? "#9e9e9e" : "#00A2FF",
+  opacity: disabled ? 0.6 : 1,
+}));
 
-const LeagueImage = styled.Image`
-  width: 100%;
-  height: 200px;
-  border-radius: 8px;
-`;
+const CreateText = styled.Text({
+  textAlign: "center",
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 16,
+});
 
-const OverlayIcon = styled.View`
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 16px;
-  padding: 2px;
-`;
+const ImagePickerContainer = styled.TouchableOpacity({
+  position: "relative",
+  marginBottom: 20,
+});
 
-const ImagePlaceholder = styled.View`
-  width: 100%;
-  height: 200px;
-  background-color: #f2f2f2;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
-`;
+const LeagueImage = styled.Image({
+  width: "100%",
+  height: 200,
+  borderRadius: 8,
+});
+
+const OverlayIcon = styled.View({
+  position: "absolute",
+  right: 10,
+  bottom: 10,
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  borderRadius: 16,
+  padding: 2,
+});
+
+const ImagePlaceholder = styled.View({
+  width: "100%",
+  height: 200,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: 8,
+  borderWidth: 1,
+  borderStyle: "dashed",
+  borderColor: "#ccc",
+});
 
 export default AddLeagueModal;
+
+// import React, { useState, useContext, useRef } from "react";
+// import {
+//   Modal,
+//   Text,
+//   View,
+//   ScrollView,
+//   TouchableOpacity,
+//   TextInput,
+//   Image,
+//   Dimensions,
+//   SafeAreaView,
+//   Animated,
+// } from "react-native";
+// import { BlurView } from "expo-blur";
+// import styled from "styled-components/native";
+// import * as ImagePicker from "expo-image-picker";
+// import * as ImageManipulator from "expo-image-manipulator";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { LeagueContext } from "../../context/LeagueContext";
+// import { UserContext } from "../../context/UserContext";
+// import DatePicker from "../Leagues/AddLeague/DatePicker";
+// import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
+// import LeagueType from "../Leagues/AddLeague/LeagueType";
+// import PrivacyType from "../Leagues/AddLeague/PrivacyType";
+// import { leagueSchema, scoreboardProfileSchema } from "../../schemas/schema";
+// import { AntDesign } from "@expo/vector-icons";
+// import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
+
+// const { width: screenWidth } = Dimensions.get("window");
+
+// const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
+//   const { addLeagues } = useContext(LeagueContext);
+//   const { getUserById } = useContext(UserContext);
+//   const [errorText, setErrorText] = useState({});
+//   const [leagueDetails, setLeagueDetails] = useState(leagueSchema);
+//   const [selectedImage, setSelectedImage] = useState(null);
+//   const slideAnim = useRef(new Animated.Value(0)).current;
+
+//   const requiredStep1Fields = ["leagueName", "location", "centerName"];
+//   const requiredStep2Fields = [
+//     "startDate",
+//     "leagueLengthInMonths",
+//     "leagueType",
+//     "maxPlayers",
+//     "privacy",
+//   ];
+
+//   const assignLeagueAdmin = async () => {
+//     const currentUserId = await AsyncStorage.getItem("userId");
+//     if (!currentUserId) return null;
+
+//     const userInfo = await getUserById(currentUserId);
+//     return {
+//       leagueAdmin: { userId: userInfo.userId, username: userInfo.username },
+//       leagueParticipant: {
+//         ...scoreboardProfileSchema,
+//         username: userInfo.username,
+//         userId: userInfo.userId,
+//         memberSince: userInfo.profileDetail?.memberSince || "",
+//       },
+//     };
+//   };
+
+//   const validateFields = (fields) => {
+//     const errors = {};
+//     fields.forEach((field) => {
+//       if (!leagueDetails[field]) errors[field] = "Required";
+//     });
+//     setErrorText(errors);
+//     return Object.keys(errors).length === 0;
+//   };
+
+//   const handleImagePick = async () => {
+//     const result = await ImagePicker.launchImageLibraryAsync({
+//       allowsEditing: true,
+//       quality: 1,
+//       aspect: [1, 1],
+//     });
+
+//     if (!result.canceled) {
+//       const cropped = await ImageManipulator.manipulateAsync(
+//         result.assets[0].uri,
+//         [{ resize: { width: 600 } }],
+//         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+//       );
+//       setSelectedImage(cropped.uri);
+//     }
+//   };
+
+//   const handleNext = () => {
+//     if (!validateFields(requiredStep1Fields)) return;
+//     Animated.timing(slideAnim, {
+//       toValue: 1,
+//       duration: 300,
+//       useNativeDriver: true,
+//     }).start();
+//   };
+
+//   const handleBack = () => {
+//     Animated.timing(slideAnim, {
+//       toValue: 0,
+//       duration: 300,
+//       useNativeDriver: true,
+//     }).start();
+//   };
+
+//   const handleCreate = async () => {
+//     if (!validateFields(requiredStep2Fields)) return;
+
+//     try {
+//       const adminData = await assignLeagueAdmin();
+//       if (!adminData) return;
+
+//       const imageDownloadUrl = selectedImage
+//         ? await uploadLeagueImage(selectedImage, leagueDetails.leagueId)
+//         : null;
+
+//       addLeagues({
+//         ...leagueDetails,
+//         leagueAdmins: [adminData.leagueAdmin],
+//         leagueParticipants: [adminData.leagueParticipant],
+//         leagueImage: imageDownloadUrl,
+//       });
+
+//       setModalVisible(false);
+//       // Reset form state
+//       slideAnim.setValue(0);
+//       setLeagueDetails(leagueSchema);
+//       setSelectedImage(null);
+//       setErrorText({});
+//     } catch (err) {
+//       console.error("Error creating league:", err);
+//     }
+//   };
+
+//   const renderInput = (label, key, isTextArea = false) => (
+//     <View>
+//       <LabelContainer>
+//         <Label>{label}</Label>
+//         {errorText[key] && <ErrorText>{errorText[key]}</ErrorText>}
+//       </LabelContainer>
+//       {isTextArea ? (
+//         <TextAreaInput
+//           placeholder={`Enter ${label.toLowerCase()}`}
+//           value={leagueDetails[key]}
+//           onChangeText={(v) => setLeagueDetails((p) => ({ ...p, [key]: v }))}
+//         />
+//       ) : (
+//         <Input
+//           placeholder={`Enter ${label.toLowerCase()}`}
+//           value={leagueDetails[key]}
+//           onChangeText={(v) => setLeagueDetails((p) => ({ ...p, [key]: v }))}
+//         />
+//       )}
+//     </View>
+//   );
+
+//   const step1Valid = requiredStep1Fields.every((f) => leagueDetails[f]?.trim());
+
+//   return (
+//     <Modal
+//       visible={modalVisible}
+//       transparent
+//       animationType="slide"
+//       onRequestClose={() => setModalVisible(false)}
+//     >
+//       <ModalContainer intensity={80} tint="dark">
+//         <SafeAreaWrapper>
+//           <Animated.View
+//             style={{
+//               width: screenWidth * 2,
+//               flexDirection: "row",
+//               transform: [
+//                 {
+//                   translateX: slideAnim.interpolate({
+//                     inputRange: [0, 1],
+//                     outputRange: [0, -screenWidth],
+//                   }),
+//                 },
+//               ],
+//             }}
+//           >
+//             {/* Step 1 */}
+//             <LeagueDetailsWrapper>
+//               <LeagueDetailsScrollContainer>
+//                 <ModalTitle>Create League</ModalTitle>
+
+//                 <ImagePickerContainer onPress={handleImagePick}>
+//                   {selectedImage ? (
+//                     <>
+//                       <LeagueImage source={{ uri: selectedImage }} />
+//                       <OverlayIcon>
+//                         <AntDesign name="pluscircleo" size={24} color="#fff" />
+//                       </OverlayIcon>
+//                     </>
+//                   ) : (
+//                     <ImagePlaceholder>
+//                       <AntDesign name="pluscircleo" size={32} color="#ccc" />
+//                       <Text style={{ color: "#ccc", marginTop: 6 }}>
+//                         Add Image
+//                       </Text>
+//                     </ImagePlaceholder>
+//                   )}
+//                 </ImagePickerContainer>
+
+//                 {renderInput("League Name", "leagueName")}
+//                 {renderInput("Location", "location")}
+//                 {renderInput("Center Name", "centerName")}
+//                 {renderInput("Description", "description", true)}
+
+//                 <ButtonContainer>
+//                   <CancelButton onPress={() => setModalVisible(false)}>
+//                     <CancelText>Cancel</CancelText>
+//                   </CancelButton>
+//                   <NextButton
+//                     onPress={handleNext}
+//                     disabled={!step1Valid}
+//                     style={{ opacity: step1Valid ? 1 : 0.6 }}
+//                   >
+//                     <Text>Next</Text>
+//                   </NextButton>
+//                 </ButtonContainer>
+//               </LeagueDetailsScrollContainer>
+//             </LeagueDetailsWrapper>
+
+//             {/* Step 2 */}
+//             <LeagueSettingsWrapper>
+//               <LeagueSettingsScrollContainer>
+//                 <ModalTitle>League Settings</ModalTitle>
+
+//                 <DatePicker
+//                   setLeagueDetails={setLeagueDetails}
+//                   leagueDetails={leagueDetails}
+//                   errorText={errorText.startDate}
+//                 />
+//                 <MaxPlayersPicker
+//                   setLeagueDetails={setLeagueDetails}
+//                   errorText={errorText.maxPlayers}
+//                 />
+//                 <LeagueType
+//                   setLeagueDetails={setLeagueDetails}
+//                   errorText={errorText.leagueType}
+//                 />
+//                 <PrivacyType
+//                   setLeagueDetails={setLeagueDetails}
+//                   errorText={errorText.privacy}
+//                 />
+
+//                 <ButtonContainer>
+//                   <BackButton onPress={handleBack}>
+//                     <Text>Back</Text>
+//                   </BackButton>
+//                   <CreateButton onPress={handleCreate}>
+//                     <CreateText>Create</CreateText>
+//                   </CreateButton>
+//                 </ButtonContainer>
+//               </LeagueSettingsScrollContainer>
+//             </LeagueSettingsWrapper>
+//           </Animated.View>
+//         </SafeAreaWrapper>
+//       </ModalContainer>
+//     </Modal>
+//   );
+// };
+
+// // Styled Components (keep previous styles, add these new ones)
+// const NextButton = styled(TouchableOpacity)`
+//   width: 45%;
+//   padding: 12px;
+//   background-color: #4caf50;
+//   border-radius: 6px;
+//   ${({ disabled }) => disabled && "opacity: 0.6;"}
+// `;
+
+// const BackButton = styled(TouchableOpacity)`
+//   width: 45%;
+//   padding: 12px;
+//   background-color: #666;
+//   border-radius: 6px;
+// `;
+
+// // Styled Components
+// const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
+//   flex: 1,
+//   justifyContent: "center",
+//   alignItems: "center",
+// });
+
+// const SafeAreaWrapper = styled(SafeAreaView)({
+//   // flex: 1,
+//   width: screenWidth - 40,
+//   margin: 20,
+//   borderRadius: 20,
+//   overflow: "hidden",
+//   backgroundColor: "rgba(2, 13, 24, 0.7)",
+// });
+
+// const ScrollContainer = styled.ScrollView({
+//   padding: 20,
+// });
+
+// const LeagueSettingsWrapper = styled(SafeAreaView)({
+//   // flex: 1,
+//   width: screenWidth - 40,
+//   margin: 20,
+//   borderRadius: 20,
+//   overflow: "hidden",
+//   backgroundColor: "rgba(2, 13, 24, 0.7)",
+// });
+
+// const LeagueSettingsScrollContainer = styled.ScrollView({
+//   padding: 40,
+// });
+// const LeagueDetailsWrapper = styled(SafeAreaView)({
+//   // flex: 1,
+//   width: screenWidth - 40,
+//   // margin: 20,
+//   borderRadius: 20,
+//   overflow: "hidden",
+//   backgroundColor: "rgba(2, 13, 24, 0.7)",
+// });
+
+// const LeagueDetailsScrollContainer = styled.ScrollView({
+//   padding: 20,
+// });
+
+// const ModalTitle = styled.Text({
+//   fontSize: 20,
+//   color: "#fff",
+//   fontWeight: "bold",
+//   marginBottom: 20,
+//   textAlign: "center",
+// });
+
+// const Label = styled.Text({
+//   color: "#ccc",
+//   alignSelf: "flex-start",
+//   fontSize: 12,
+//   marginLeft: 4,
+//   marginBottom: 6,
+// });
+
+// const ErrorText = styled.Text({
+//   color: "red",
+//   fontSize: 12,
+//   marginTop: 4,
+// });
+
+// const Input = styled.TextInput({
+//   height: 40,
+//   borderRadius: 6,
+//   backgroundColor: "rgba(255, 255, 255, 0.2)",
+//   color: "white",
+//   paddingLeft: 12,
+//   marginBottom: 16,
+// });
+
+// const TextAreaInput = styled.TextInput({
+//   height: 100,
+//   borderRadius: 6,
+//   backgroundColor: "rgba(255, 255, 255, 0.2)",
+//   color: "white",
+//   paddingLeft: 12,
+//   marginBottom: 16,
+// });
+
+// const LabelContainer = styled.View({
+//   marginBottom: 4,
+// });
+
+// const ButtonContainer = styled.View({
+//   flexDirection: "row",
+//   justifyContent: "space-between",
+//   marginTop: 20,
+// });
+
+// const CancelButton = styled.TouchableOpacity({
+//   width: "45%",
+//   padding: 12,
+//   backgroundColor: "#9e9e9e",
+//   borderRadius: 6,
+// });
+
+// const CancelText = styled.Text({
+//   textAlign: "center",
+//   color: "white",
+//   fontSize: 16,
+// });
+
+// const CreateButton = styled.TouchableOpacity({
+//   width: "45%",
+//   padding: 12,
+//   backgroundColor: "#4caf50",
+//   borderRadius: 6,
+// });
+
+// const CreateText = styled.Text({
+//   textAlign: "center",
+//   color: "white",
+//   fontSize: 16,
+// });
+
+// const ImagePickerContainer = styled.TouchableOpacity({
+//   position: "relative",
+//   marginBottom: 20,
+// });
+
+// const LeagueImage = styled.Image({
+//   width: "100%",
+//   height: 200,
+//   borderRadius: 8,
+// });
+
+// const OverlayIcon = styled.View({
+//   position: "absolute",
+//   right: 10,
+//   bottom: 10,
+//   backgroundColor: "rgba(0, 0, 0, 0.5)",
+//   borderRadius: 16,
+//   padding: 2,
+// });
+
+// const ImagePlaceholder = styled.View({
+//   width: "100%",
+//   height: 200,
+//   backgroundColor: "rgba(255, 255, 255, 0.1)",
+//   justifyContent: "center",
+//   alignItems: "center",
+//   borderRadius: 8,
+//   borderWidth: 1,
+//   borderStyle: "dashed",
+//   borderColor: "#ccc",
+// });
+
+// export default AddLeagueModal;

@@ -20,7 +20,7 @@ import { uploadProfileImage } from "../../utils/ProfileImageUploadToFirebase";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
-  console.log("Current User:", currentUser);
+
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
 
@@ -46,9 +46,13 @@ const EditProfile = ({ navigation }) => {
 
   const pickImage = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert("Permission Required", "You need to allow access to your media library.");
+        Alert.alert(
+          "Permission Required",
+          "You need to allow access to your media library."
+        );
         return;
       }
 
@@ -124,7 +128,9 @@ const EditProfile = ({ navigation }) => {
             </ImageContainer>
           </TouchableOpacity>
           <ImageHintText>
-            {formData.profileImage ? "Tap to change photo" : "Tap to upload photo"}
+            {formData.profileImage
+              ? "Tap to change photo"
+              : "Tap to upload photo"}
           </ImageHintText>
         </ImageSection>
 
@@ -132,7 +138,9 @@ const EditProfile = ({ navigation }) => {
           <SectionTitle>Location</SectionTitle>
           <Input
             value={formData.location}
-            onChangeText={(text) => setFormData({ ...formData, location: text })}
+            onChangeText={(text) =>
+              setFormData({ ...formData, location: text })
+            }
             placeholder="Enter your location"
             placeholderTextColor={"#aaa"}
           />
@@ -145,7 +153,9 @@ const EditProfile = ({ navigation }) => {
               <PreferenceButton
                 key={pref}
                 selected={formData.handPreference === pref}
-                onPress={() => setFormData({ ...formData, handPreference: pref })}
+                onPress={() =>
+                  setFormData({ ...formData, handPreference: pref })
+                }
               >
                 <PreferenceText selected={formData.handPreference === pref}>
                   {pref}
@@ -195,7 +205,10 @@ const EditProfile = ({ navigation }) => {
       {/* Fullscreen Image Preview Modal */}
       <Modal visible={previewVisible} transparent animationType="fade">
         <ModalBackground>
-          <PreviewImage source={{ uri: formData.profileImage }} resizeMode="contain" />
+          <PreviewImage
+            source={{ uri: formData.profileImage }}
+            resizeMode="contain"
+          />
           <Pressable onPress={() => setPreviewVisible(false)}>
             <CloseText>Close Preview</CloseText>
           </Pressable>
@@ -205,136 +218,143 @@ const EditProfile = ({ navigation }) => {
   );
 };
 
-const Container = styled.View`
-  flex: 1;
-  background-color: rgb(3, 16, 31);
-  padding: 20px;
-`;
+// Object-style styled components
+const Container = styled.View({
+  flex: 1,
+  backgroundColor: "rgb(3, 16, 31)",
+  padding: 20,
+});
 
-const ConfirmButton = styled.TouchableOpacity`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px;
-  border-radius: 8px;
-  background-color: #00a2ff;
-`;
+const ConfirmButton = styled.TouchableOpacity({
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 12,
+  borderRadius: 8,
+  backgroundColor: "#00a2ff",
+});
 
-const Header = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-`;
+const Header = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 30,
+});
 
-const HeaderTitle = styled.Text`
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-`;
+const HeaderTitle = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
+});
 
-const Section = styled.View`
-  margin-bottom: 25px;
-`;
+const Section = styled.View({
+  marginBottom: 25,
+});
 
-const SectionTitle = styled.Text`
-  color: white;
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 10px;
-`;
+const SectionTitle = styled.Text({
+  color: "white",
+  fontSize: 16,
+  fontWeight: "500",
+  marginBottom: 10,
+});
 
-const Input = styled.TextInput`
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 12px 15px;
-  border-radius: 8px;
-  font-size: 16px;
-`;
+const Input = styled.TextInput({
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  color: "white",
+  paddingVertical: 12,
+  paddingHorizontal: 15,
+  borderRadius: 8,
+  fontSize: 16,
+});
 
-const PreferenceContainer = styled.View`
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 10px;
-`;
+const PreferenceContainer = styled.View({
+  flexDirection: "row",
+  flexWrap: "wrap",
+  // gap isn’t supported in RN—add margin on children instead
+});
 
-const PreferenceButton = styled.TouchableOpacity`
-  padding: 10px 20px;
-  border-radius: 5px;
-  background-color: ${({ selected }) => (selected ? "#00284b" : "#00152B")};
-  border: 1px solid ${({ selected }) => (selected ? "#004eb4" : "#414141")};
-`;
+const PreferenceButton = styled.TouchableOpacity(({ selected }) => ({
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 5,
+  backgroundColor: selected ? "#00284b" : "#00152B",
+  borderWidth: 1,
+  borderColor: selected ? "#004eb4" : "#414141",
+}));
 
-const PreferenceText = styled.Text`
-  color: ${({ selected }) => (selected ? "white" : "#aaa")};
-  font-size: 14px;
-`;
+const PreferenceText = styled.Text(({ selected }) => ({
+  color: selected ? "white" : "#aaa",
+  fontSize: 14,
+}));
 
-const ButtonWrapper = styled.View`
-  margin-top: 30px;
-  margin-bottom: 50px;
-`;
+const ButtonWrapper = styled.View({
+  marginTop: 30,
+  marginBottom: 50,
+});
 
-const ImageSection = styled.View`
-  align-items: center;
-  margin-bottom: 30px;
-`;
+const ImageSection = styled.View({
+  alignItems: "center",
+  marginBottom: 30,
+});
 
-const ImageContainer = styled.View`
-  position: relative;
-  width: 120px;
-  height: 120px;
-`;
+const ImageContainer = styled.View({
+  position: "relative",
+  width: 120,
+  height: 120,
+});
 
-const ProfileImage = styled.Image`
-  width: 120px;
-  height: 120px;
-  border-radius: 60px;
-  border: 3px solid #00a2ff;
-`;
+const ProfileImage = styled.Image({
+  width: 120,
+  height: 120,
+  borderRadius: 60,
+  borderWidth: 3,
+  borderColor: "#00a2ff",
+});
 
-const PlaceholderImage = styled.View`
-  width: 120px;
-  height: 120px;
-  border-radius: 60px;
-  background-color: #001e3c;
-  justify-content: center;
-  align-items: center;
-  border: 2px dashed #555;
-`;
+const PlaceholderImage = styled.View({
+  width: 120,
+  height: 120,
+  borderRadius: 60,
+  backgroundColor: "#001e3c",
+  justifyContent: "center",
+  alignItems: "center",
+  borderWidth: 2,
+  borderStyle: "dashed",
+  borderColor: "#555",
+});
 
-const PlusIcon = styled.View`
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  background-color: rgb(3, 16, 31);
-  border-radius: 14px;
-`;
+const PlusIcon = styled.View({
+  position: "absolute",
+  bottom: -2,
+  right: -2,
+  backgroundColor: "rgb(3, 16, 31)",
+  borderRadius: 14,
+});
 
-const ImageHintText = styled.Text`
-  color: #aaa;
-  margin-top: 10px;
-  font-size: 14px;
-`;
+const ImageHintText = styled.Text({
+  color: "#aaa",
+  marginTop: 10,
+  fontSize: 14,
+});
 
-const ModalBackground = styled.View`
-  flex: 1;
-  background-color: rgba(0, 0, 0, 0.9);
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-`;
+const ModalBackground = styled.View({
+  flex: 1,
+  backgroundColor: "rgba(0, 0, 0, 0.9)",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 20,
+});
 
-const PreviewImage = styled.Image`
-  width: 100%;
-  height: 70%;
-`;
+const PreviewImage = styled.Image({
+  width: "100%",
+  height: "70%",
+});
 
-const CloseText = styled.Text`
-  color: white;
-  font-size: 16px;
-  margin-top: 20px;
-`;
+const CloseText = styled.Text({
+  color: "white",
+  fontSize: 16,
+  marginTop: 20,
+});
 
 const styles = {
   content: {

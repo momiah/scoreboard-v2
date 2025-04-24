@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,118 +7,99 @@ import {
   SafeAreaView,
   Dimensions,
 } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { firebaseApp } from "../../../services/firebase.config";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
-
-const { width: screenWidth } = Dimensions.get("window");
+import { useForm, Controller } from "react-hook-form";
+import { uploadLeagueImage } from "../../../utils/UploadLeagueImageToFirebase";
 
 const EditLeagueScreen = () => {
-  const { leagues, updateLeague } = useContext(LeagueContext);
-  const route = useRoute();
+  const { updateLeague, leagueById } = useContext(LeagueContext);
   const navigation = useNavigation();
-  const leagueId = route?.params?.leagueId;
 
-  const [leagueDetails, setLeagueDetails] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [errorText, setErrorText] = useState({});
+  const [selectedImage, setSelectedImage] = useState(
+    leagueById.leagueImage || null
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const league = leagues.find((l) => l.id === leagueId);
-    if (league) {
-      setLeagueDetails(league);
-      setSelectedImage(league.leagueImage || null);
-    }
-  }, [leagueId, leagues]);
+  // Setup React Hook Form
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isDirty },
+    watch,
+  } = useForm({
+    defaultValues: {
+      leagueImage: leagueById.leagueImage || "",
+      leagueDescription: leagueById.leagueDescription || "",
+    },
+  });
 
-  const fetchImageBlob = (uri) => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.onload = () => resolve(xhr.response);
-      xhr.onerror = () => reject(new TypeError("Network request failed"));
-      xhr.responseType = "blob";
-      xhr.open("GET", uri, true);
-      xhr.send(null);
-    });
-  };
+  // Watch form values for change detection
+  const formValues = watch();
 
-  const uploadLeagueImage = async (uri, leagueId) => {
-    try {
-      const blob = await fetchImageBlob(uri);
-      const filePath = `LeagueImages/${leagueId}_${Date.now()}.jpg`;
-      const storage = getStorage(firebaseApp);
-      const storageRef = ref(storage, filePath);
-      const uploadTask = await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(uploadTask.ref);
-      return downloadURL;
-    } catch (error) {
-      console.error("Image upload error:", error);
-      return null;
-    }
-  };
+  const hasChanges = useMemo(() => {
+    const imageChanged = selectedImage !== leagueById.leagueImage;
+    const descriptionChanged =
+      formValues.leagueDescription !== leagueById.leagueDescription;
+    return imageChanged || descriptionChanged || isDirty;
+  }, [selectedImage, leagueById, formValues, isDirty]);
 
   const handleImagePick = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      quality: 1,
-      aspect: [1, 1],
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        quality: 1,
+        aspect: [1, 1],
+      });
 
-    if (!result.canceled) {
-      const cropped = await ImageManipulator.manipulateAsync(
-        result.assets[0].uri,
-        [{ resize: { width: 600 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      setSelectedImage(cropped.uri);
+      if (!result.canceled) {
+        const cropped = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 600 } }],
+          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        setSelectedImage(cropped.uri);
+      }
+    } catch (error) {
+      console.error("Image picker error:", error);
     }
   };
 
-  const handleChange = (field, value) => {
-    setLeagueDetails((prev) => ({ ...prev, [field]: value }));
-  };
+  const onSubmit = async (data) => {
+    if (!hasChanges) return;
 
-  const handleUpdate = async () => {
-    const newErrors = {};
-    if (!leagueDetails.description)
-      newErrors.description = "Description is required";
-    setErrorText(newErrors);
-    if (Object.values(newErrors).some(Boolean)) return;
-
+    setIsSubmitting(true);
     try {
       let updatedImage = selectedImage;
-      if (selectedImage && selectedImage !== leagueDetails.leagueImage) {
-        updatedImage = await uploadLeagueImage(
-          selectedImage,
-          leagueDetails.leagueId
-        );
+      if (selectedImage && selectedImage !== leagueById.leagueImage) {
+        updatedImage = await uploadLeagueImage(selectedImage, leagueById.id);
       }
 
       const updatedLeague = {
-        ...leagueDetails,
-        leagueImage: updatedImage || leagueDetails.leagueImage,
+        ...leagueById,
+        leagueDescription: data.leagueDescription,
+        leagueImage: updatedImage || leagueById.leagueImage,
       };
 
-      updateLeague(updatedLeague);
+      await updateLeague(updatedLeague);
       navigation.goBack();
     } catch (err) {
       console.error("Update error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (!leagueDetails) return null;
-
   return (
     <SafeAreaWrapper>
-      <ScrollContainer>
+      <ScrollContainer showsVerticalScrollIndicator={false}>
         <Title>Edit League</Title>
 
-        <TouchableOpacity onPress={handleImagePick}>
+        <TouchableOpacity onPress={handleImagePick} disabled={isSubmitting}>
           <ImageWrapper>
             {selectedImage ? (
               <LeagueImage source={{ uri: selectedImage }} />
@@ -136,26 +117,47 @@ const EditLeagueScreen = () => {
         <View>
           <LabelContainer>
             <Label>Description</Label>
-            {errorText.description && (
-              <ErrorText>{errorText.description}</ErrorText>
+            {errors.leagueDescription && (
+              <ErrorText>{errors.leagueDescription.message}</ErrorText>
             )}
           </LabelContainer>
-          <TextAreaInput
-            value={leagueDetails.description}
-            placeholder="Enter description"
-            placeholderTextColor="#ccc"
-            onChangeText={(v) => handleChange("description", v)}
-            multiline
-            numberOfLines={4}
+          <Controller
+            control={control}
+            name="leagueDescription"
+            rules={{
+              minLength: {
+                value: 10,
+                message: "Description must be at least 10 characters",
+              },
+            }}
+            render={({ field: { onChange, value, onBlur } }) => (
+              <TextAreaInput
+                value={value}
+                placeholder="Enter description"
+                placeholderTextColor="#ccc"
+                onChangeText={onChange}
+                onBlur={onBlur}
+                multiline
+                numberOfLines={4}
+                editable={!isSubmitting}
+              />
+            )}
           />
         </View>
 
         <ButtonContainer>
-          <CancelButton onPress={() => navigation.goBack()}>
+          <CancelButton
+            onPress={() => navigation.goBack()}
+            disabled={isSubmitting}
+          >
             <CancelText>Cancel</CancelText>
           </CancelButton>
-          <CreateButton onPress={handleUpdate}>
-            <CreateText>Update</CreateText>
+          <CreateButton
+            onPress={handleSubmit(onSubmit)}
+            disabled={!hasChanges || isSubmitting}
+            style={{ opacity: !hasChanges || isSubmitting ? 0.5 : 1 }}
+          >
+            <CreateText>{isSubmitting ? "Updating..." : "Update"}</CreateText>
           </CreateButton>
         </ButtonContainer>
       </ScrollContainer>
@@ -166,107 +168,110 @@ const EditLeagueScreen = () => {
 export default EditLeagueScreen;
 
 // --- Styled Components ---
-const SafeAreaWrapper = styled(SafeAreaView)`
-  flex: 1;
-  background-color: rgb(3, 16, 31);
-`;
+// --- Styled Components (Object Style) ---
+const SafeAreaWrapper = styled(SafeAreaView)({
+  flex: 1,
+  backgroundColor: "rgb(3, 16, 31)",
+});
 
-const ScrollContainer = styled.ScrollView`
-  padding: 20px;
-`;
+const ScrollContainer = styled.ScrollView({
+  padding: 20,
+});
 
-const Title = styled.Text`
-  font-size: 20px;
-  color: #fff;
-  font-weight: bold;
-  margin-bottom: 20px;
-  text-align: center;
-`;
+const Title = styled.Text({
+  fontSize: 20,
+  color: "#fff",
+  fontWeight: "bold",
+  marginBottom: 20,
+  textAlign: "center",
+});
 
-const LabelContainer = styled.View`
-  margin-bottom: 4px;
-`;
+const LabelContainer = styled.View({
+  marginBottom: 4,
+});
 
-const Label = styled.Text`
-  color: #ccc;
-  font-size: 12px;
-  margin-left: 4px;
-`;
+const Label = styled.Text({
+  color: "#ccc",
+  fontSize: 12,
+  marginLeft: 4,
+});
 
-const ErrorText = styled.Text`
-  color: red;
-  font-size: 12px;
-`;
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 12,
+});
 
-const TextAreaInput = styled.TextInput`
-  height: 100px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  padding-left: 12px;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  text-align-vertical: top;
-`;
+const TextAreaInput = styled.TextInput({
+  height: 100,
+  backgroundColor: "rgba(255, 255, 255, 0.2)",
+  color: "white",
+  paddingLeft: 12,
+  borderRadius: 6,
+  marginBottom: 16,
+  textAlignVertical: "top",
+});
 
-const ImageWrapper = styled.View`
-  position: relative;
-  width: 100%;
-  height: 200px;
-  margin-bottom: 20px;
-`;
+const ImageWrapper = styled.View({
+  position: "relative",
+  width: "100%",
+  height: 200,
+  marginBottom: 20,
+});
 
-const LeagueImage = styled.Image`
-  width: 100%;
-  height: 100%;
-  border-radius: 8px;
-`;
+const LeagueImage = styled.Image({
+  width: "100%",
+  height: "100%",
+  borderRadius: 8,
+});
 
-const ImagePlaceholder = styled.View`
-  width: 100%;
-  height: 100%;
-  background-color: #001e3c;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
-  border: 2px dashed #555;
-`;
+const ImagePlaceholder = styled.View({
+  width: "100%",
+  height: "100%",
+  backgroundColor: "#001e3c",
+  justifyContent: "center",
+  alignItems: "center",
+  borderRadius: 8,
+  borderWidth: 2,
+  borderStyle: "dashed",
+  borderColor: "#555",
+});
 
-const PlusIconWrapper = styled.View`
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background-color: white;
-  border-radius: 16px;
-`;
+const PlusIconWrapper = styled.View({
+  position: "absolute",
+  bottom: 10,
+  right: 10,
+  backgroundColor: "white",
+  borderRadius: 16,
+});
 
-const ButtonContainer = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  margin-top: 20px;
-`;
+const ButtonContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 20,
+});
 
-const CancelButton = styled.TouchableOpacity`
-  width: 45%;
-  padding: 12px;
-  background-color: #9e9e9e;
-  border-radius: 6px;
-`;
+const CancelButton = styled.TouchableOpacity({
+  width: "45%",
+  padding: 12,
+  backgroundColor: "#9e9e9e",
+  borderRadius: 6,
+});
 
-const CancelText = styled.Text`
-  text-align: center;
-  color: white;
-  font-size: 16px;
-`;
+const CancelText = styled.Text({
+  textAlign: "center",
+  color: "white",
+  fontSize: 16,
+});
 
-const CreateButton = styled.TouchableOpacity`
-  width: 45%;
-  padding: 12px;
-  background-color: #2196f3;
-  border-radius: 6px;
-`;
+const CreateButton = styled.TouchableOpacity({
+  width: "45%",
+  padding: 12,
+  backgroundColor: "#2196f3",
+  borderRadius: 6,
+});
 
-const CreateText = styled.Text`
-  text-align: center;
-  color: white;
-  font-size: 16px;
-`;
+const CreateText = styled.Text({
+  textAlign: "center",
+  color: "white",
+  fontSize: 16,
+});
