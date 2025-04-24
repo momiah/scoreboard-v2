@@ -134,13 +134,13 @@ const Home = () => {
         />
         <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
 
-        <SubHeader
+        {/* <SubHeader
           title="Tournaments"
           onIconPress={() => navigateTo("Players")}
           actionText="Browse Tournaments"
           showIcon
         />
-        <TournamentGrid tournaments={tournaments} />
+        <TournamentGrid tournaments={tournaments} /> */}
 
         {modalVisible && (
           <AddLeagueModel
