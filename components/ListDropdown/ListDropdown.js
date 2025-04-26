@@ -16,6 +16,7 @@ import {
   Keyboard,
   ActivityIndicator,
 } from "react-native";
+import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 const MemoizedListItem = React.memo(
@@ -37,20 +38,18 @@ const ListDropdown = ({
   boxStyles,
   inputStyles,
   dropdownStyles,
-  dropdownTextStyles = {},
   maxHeight = 200,
   data,
   defaultOption,
-  search = true,
   searchPlaceholder = "Search...",
   notFoundText = "No data found",
-  disabledItemStyles,
-  disabledTextStyles,
   onSelect = () => {},
   save = "key",
   fontFamily,
   loading = false,
   onDropdownOpen,
+  label,
+  disabled = false,
 }) => {
   const [dropdown, setDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,8 +96,8 @@ const ListDropdown = ({
   const handleToggle = useCallback(() => {
     if (dropdown) {
       slideUp();
-    } else {
       Keyboard.dismiss();
+    } else {
       onDropdownOpen?.();
       slideDown();
       setTimeout(() => inputRef.current?.focus(), 150);
@@ -125,29 +124,43 @@ const ListDropdown = ({
   );
 
   return (
-    <View>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        style={[styles.inputContainer, boxStyles]}
-        onPress={handleToggle}
-      >
-        <TextInput
-          ref={inputRef}
-          style={[styles.input, inputStyles]}
-          value={dropdown ? searchQuery : defaultOption?.value || ""}
-          placeholder={dropdown ? searchPlaceholder : placeholder}
-          placeholderTextColor="#888"
-          editable={dropdown}
-          onChangeText={setSearchQuery}
-          pointerEvents={dropdown ? "auto" : "none"}
-        />
-        <Ionicons
-          name={dropdown ? "chevron-up" : "chevron-down"}
-          size={20}
-          color="white"
-          style={styles.chevron}
-        />
-      </TouchableOpacity>
+    <View style={{ marginBottom: 10 }}>
+      <Label>{label}</Label>
+      {disabled ? (
+        <View style={[styles.inputContainer, boxStyles]}>
+          <Text style={[styles.input, { color: "#888" }]}>
+            {defaultOption?.value || placeholder}
+          </Text>
+        </View>
+      ) : (
+        <TouchableOpacity activeOpacity={0.8} onPress={handleToggle}>
+          {loading ? (
+            <View style={styles.inputContainer}>
+              <Text style={{ color: "white" }}>Loading...</Text>
+              <ActivityIndicator size="small" color="#666" />
+            </View>
+          ) : (
+            <View style={styles.inputContainer}>
+              <TextInput
+                ref={inputRef}
+                style={[styles.input, inputStyles]}
+                value={dropdown ? searchQuery : defaultOption?.value || ""}
+                placeholder={dropdown ? searchPlaceholder : placeholder}
+                placeholderTextColor="#888"
+                editable={dropdown}
+                onChangeText={setSearchQuery}
+                pointerEvents={dropdown ? "auto" : "none"}
+              />
+              <Ionicons
+                name={dropdown ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="white"
+                style={styles.chevron}
+              />
+            </View>
+          )}
+        </TouchableOpacity>
+      )}
 
       {dropdown && (
         <Animated.View
@@ -157,52 +170,51 @@ const ListDropdown = ({
             { maxHeight: animatedValue },
           ]}
         >
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#666" />
-              <Text style={styles.loadingText}>Loading cities...</Text>
-            </View>
-          ) : (
-            <FlatList
-              ref={flatListRef}
-              data={filteredData}
-              renderItem={renderItem}
-              keyExtractor={(item) => item.key || item.value}
-              initialNumToRender={20}
-              maxToRenderPerBatch={30}
-              windowSize={10}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>{notFoundText}</Text>
-                </View>
-              }
-              getItemLayout={(data, index) => ({
-                length: 40,
-                offset: 40 * index,
-                index,
-              })}
-              keyboardDismissMode="on-drag"
-              keyboardShouldPersistTaps="handled"
-              scrollEnabled={true}
-              removeClippedSubviews={true}
-            />
-          )}
+          <FlatList
+            ref={flatListRef}
+            data={filteredData}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.key || item.value}
+            initialNumToRender={20}
+            maxToRenderPerBatch={30}
+            windowSize={10}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{notFoundText}</Text>
+              </View>
+            }
+            getItemLayout={(data, index) => ({
+              length: 40,
+              offset: 40 * index,
+              index,
+            })}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            scrollEnabled={true}
+            removeClippedSubviews={true}
+          />
         </Animated.View>
       )}
     </View>
   );
 };
 
+const Label = styled.Text({
+  color: "#fff",
+  fontWeight: "bold",
+  fontSize: 14,
+  marginBottom: 5,
+});
+
 const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
+    justifyContent: "space-between",
     borderRadius: 8,
     borderColor: "#555",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#2a2a2a",
+    padding: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
   },
   input: {
     flex: 1,
@@ -218,7 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: "#555",
     marginTop: 8,
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     overflow: "hidden",
   },
   option: {

@@ -49,7 +49,6 @@ const SearchableDropdown = ({
             dropdownTextStyles={styles.dropdownText}
             loading={loading}
             onDropdownOpen={onDropdownOpen} // Pass through
-            disabled={disabled}
             {...props}
           />
         )}

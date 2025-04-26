@@ -162,19 +162,10 @@ const League = () => {
           source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
         >
           <GradientOverlay
-            colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.9)"]}
+            colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
             locations={[0.1, 1]}
           />
           <LeagueDetailsContainer>
-            {/* <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-
-            </View> */}
             {userRole === "admin" && (
               <EditButton onPress={handleEditClick}>
                 <Ionicons name="menu" size={25} color="white" />
@@ -267,13 +258,6 @@ const League = () => {
                 />
               )}
             </View>
-
-            {/* Hamburger Menu Button */}
-            {/* {userRole === "admin" && (
-              <EditButton onPress={handleEditClick}>
-                <Ionicons name="menu" size={22} color="white" />
-              </EditButton>
-            )} */}
           </LeagueDetailsContainer>
         </LeagueImage>
       </Overview>
@@ -349,18 +333,7 @@ const LeagueDetailsContainer = styled.View({
   height: "100%",
   paddingLeft: 15,
   paddingRight: 15,
-  // paddingTop: 45,
-  // position: "relative",
-});
-
-const NumberOfPlayers = styled.View({
-  backgroundColor: "rgba(0, 0, 0, 0.7)",
-  // paddingVertical: 2,
-  // paddingHorizontal: 4,
-  padding: "0px 5px",
-  borderRadius: 5,
-  flexDirection: "row",
-  alignItems: "center",
+  justifyContent: "center",
 });
 
 const LeagueName = styled.Text({
@@ -382,7 +355,6 @@ const LeagueLocation = styled.Text({
 });
 
 const EditButton = styled.TouchableOpacity({
-  padding: 10,
   borderRadius: 5,
   alignSelf: "flex-end",
 });

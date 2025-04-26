@@ -6,7 +6,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
+  StyleSheet,
 } from "react-native";
+import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { useForm, Controller } from "react-hook-form";
 import styled from "styled-components/native";
 import { auth, db } from "../../services/firebase.config";
@@ -24,38 +26,64 @@ import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
 import { profileDetailSchema } from "../../schemas/schema";
 import { Country, City } from "country-state-city";
+import { userProfileSchema } from "../../schemas/schema";
 import SearchableDropdown from "../../components/Location/SearchableDropdown";
+import { loadCountries, loadCities } from "../../utils/locationData";
 
 const Signup = ({ route }) => {
-  const { userId, userName, userEmail } = route.params || {};
-  const isSocialSignup = !!userId;
+  const { userId: socialId, userName, userEmail } = route.params || {};
+  const isSocialSignup = !!socialId;
+
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
-  // const [loadingCities, setLoadingCities] = useState(false);
 
-  // Inside your Signup component:
   const [countries, setCountries] = useState([]);
-  // const [cities, setCities] = useState([]);
   const [selectedCountryCode, setSelectedCountryCode] = useState(null);
-
-  // Load countries on mount
-  useEffect(() => {
-    const allCountries = Country.getAllCountries().map((country) => ({
-      key: country.isoCode,
-      value: country.name,
-    }));
-    setCountries(allCountries);
-  }, []);
 
   const [cities, setCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingCountries, setLoadingCountries] = useState(false);
+
+  const navigation = useNavigation();
+
+  const {
+    handleShowPopup,
+    setPopupMessage,
+    popupMessage,
+    setShowPopup,
+    showPopup,
+  } = useContext(PopupContext);
+
+  const defaults = {
+    ...userProfileSchema,
+    password: "",
+    confirmPassword: "",
+    firstName: userName || "",
+    email: userEmail || "",
+    handPreference: "Both",
+  };
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    getValues,
+    setValue,
+  } = useForm({ defaultValues: defaults });
 
   useEffect(() => {
-    if (selectedCountryCode) {
-      // Verify country code format (important!)
-      console.log("Selected country code:", selectedCountryCode);
-    }
-  }, [selectedCountryCode]);
+    if (countries.length) return;
+
+    setLoadingCountries(true);
+    setTimeout(() => {
+      try {
+        const all = loadCountries();
+        setCountries(all);
+      } finally {
+        setLoadingCountries(false);
+      }
+    }, 0);
+  }, [countries]);
 
   const handleCityDropdownOpen = useCallback(async () => {
     if (!selectedCountryCode) {
@@ -65,110 +93,17 @@ const Signup = ({ route }) => {
 
     setLoadingCities(true);
     try {
-      const allCities = City.getCitiesOfCountry(selectedCountryCode) || [];
-      console.log("Raw cities data:", allCities); // Debug log
-
-      // More reliable unique city filtering
-      const cityMap = new Map();
-      allCities.forEach((city) => {
-        if (city.name && !cityMap.has(city.name)) {
-          cityMap.set(city.name, city);
-        }
-      });
-
-      const uniqueCities = Array.from(cityMap.values()).map((city) => ({
-        key: city.name + "-" + (city.latitude || "") + (city.longitude || ""),
-        value: city.name,
-      }));
-
-      console.log("Processed cities:", uniqueCities);
-      setCities(uniqueCities);
-    } catch (error) {
-      console.error("City loading error:", error);
+      const list = loadCities(selectedCountryCode);
+      setCities(list);
+    } catch (e) {
+      console.error(e);
       setCities([]);
     } finally {
       setLoadingCities(false);
     }
   }, [selectedCountryCode]);
 
-  // useEffect(() => {
-  //   if (selectedCountryCode) {
-  //     setLoadingCities(true);
-
-  //     // Simulate network delay to show loading state
-  //     const timer = setTimeout(() => {
-  //       // Get cities and remove duplicates
-  //       const allCities = City.getCitiesOfCountry(selectedCountryCode);
-
-  //       // Use a Set to track unique city names and remove duplicates
-  //       const uniqueCityNames = new Set();
-  //       const uniqueCities = allCities
-  //         .filter((city) => {
-  //           // If we haven't seen this city name before, keep it
-  //           if (!uniqueCityNames.has(city.name)) {
-  //             uniqueCityNames.add(city.name);
-  //             return true;
-  //           }
-  //           return false;
-  //         })
-  //         .map((city) => ({
-  //           key: city.name,
-  //           value: city.name,
-  //         }));
-
-  //       console.log("Unique cities:", uniqueCities.length);
-  //       setCities(uniqueCities);
-  //       setLoadingCities(false);
-  //     }, 800);
-
-  //     return () => clearTimeout(timer);
-  //   } else {
-  //     setCities([]);
-  //   }
-  // }, [selectedCountryCode]);
-
-  // console.log("countries", countries.length);
-  // console.log("cities", cities.length);
-
-  const navigation = useNavigation();
-  const {
-    handleShowPopup,
-    setPopupMessage,
-    popupMessage,
-    setShowPopup,
-    showPopup,
-  } = useContext(PopupContext);
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    getValues,
-    setValue,
-    setError,
-    clearErrors,
-    watch,
-  } = useForm({
-    defaultValues: {
-      firstName: userName || "",
-      lastName: "",
-      username: "",
-      email: userEmail || "",
-      country: "",
-      city: "",
-      handPreference: "Both",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  // // Watch city value to debug
-  // const cityValue = watch("city");
-
-  // useEffect(() => {
-  //   console.log("City value changed:", cityValue);
-  // }, [cityValue]);
-
-  const handleClosePopup = () => {
+  const handleCloseSignUpConfirmationPopup = () => {
     setShowPopup(false);
     setPopupMessage("");
 
@@ -180,81 +115,58 @@ const Signup = ({ route }) => {
     }
   };
 
-  // Then in your onSubmit:
   const onSubmit = async (data) => {
     try {
-      // Make sure to include location data in the user document
-      const locationData = {
-        country: data.country,
-        city: data.city,
-      };
+      const {
+        password,
+        confirmPassword,
+        city: formCity,
+        country: formCountry,
+        ...profileFields
+      } = data;
 
-      // Add location to the data object
-      const dataWithLocation = {
-        ...data,
-        location: locationData,
-      };
-
-      if (isSocialSignup) {
-        await createSocialUser(dataWithLocation);
-      } else {
-        // Check email uniqueness in Firestore first
-        const emailExists = await checkEmailExists(data.email);
-        if (emailExists) {
-          handleShowPopup("Email already registered");
-          setPopupIcon("error");
-          setPopupButtonText("Close");
-          return;
-        }
-
-        await createEmailUser(dataWithLocation);
+      // 2) Create the Auth user if needed
+      let uid = socialId;
+      if (!isSocialSignup) {
+        const { user } = await createUserWithEmailAndPassword(
+          auth,
+          data.email,
+          password
+        );
+        uid = user.uid;
       }
 
+      const profileToSave = {
+        ...userProfileSchema,
+        ...profileFields,
+        location: {
+          country: formCountry,
+          city: formCity,
+          countryCode: selectedCountryCode,
+        },
+        userId: uid,
+        provider: isSocialSignup ? "gmail" : "email_password",
+        profileDetail: profileDetailSchema,
+      };
+
+      // 4) Write it once
+      await setDoc(doc(db, "users", uid), profileToSave);
+
+      // 5) Success UI…
       setPopupIcon("success");
       setPopupButtonText("Login");
       handleShowPopup("Account created successfully, please login to continue");
     } catch (error) {
-      // console.error("Signup Error:", error);
-
-      // Handle Firebase Auth errors
-      const errorMessages = {
+      // catch both Auth and Firestore errors here
+      const messages = {
         "auth/email-already-in-use": "Email already registered",
         "auth/weak-password": "Password is too weak",
         "auth/invalid-email": "Invalid email address",
-        "auth/username-already-exists": "Username already registered",
       };
-
       setPopupIcon("error");
       setPopupButtonText("Close");
-      handleShowPopup(errorMessages[error.code] || error.message);
+      handleShowPopup(messages[error.code] || error.message);
     }
-  };
-
-  const createUserDocument = async (uid, provider, data) => {
-    await setDoc(doc(db, "users", uid), {
-      firstName: data.firstName.toLowerCase(),
-      lastName: data.lastName.toLowerCase(),
-      username: data.username.toLowerCase(),
-      email: data.email,
-      location: data.location, // This now contains country and city
-      handPreference: data.handPreference,
-      userId: uid,
-      provider,
-      profileDetail: profileDetailSchema,
-    });
-  };
-
-  const createEmailUser = async (data) => {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      data.email,
-      data.password
-    );
-    await createUserDocument(userCredential.user.uid, "email_password", data);
-  };
-
-  const createSocialUser = async (data) => {
-    await createUserDocument(userId, "gmail", data);
   };
 
   // Updated password validation rules
@@ -270,28 +182,12 @@ const Signup = ({ route }) => {
     },
   };
 
-  const checkEmailExists = async (email) => {
-    try {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("email", "==", email));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
-    } catch (error) {
-      console.error("Error checking email:", error);
-      return true;
-    }
-  };
-
   // Add to email validation rules
   const emailValidation = {
     required: "Email is required",
     pattern: {
       value: /\S+@\S+\.\S+/,
       message: "Invalid email format",
-    },
-    validate: {
-      uniqueEmail: async (value) =>
-        !(await checkEmailExists(value)) || "Email already registered",
     },
   };
 
@@ -346,7 +242,7 @@ const Signup = ({ route }) => {
               <Popup
                 visible={showPopup}
                 message={popupMessage}
-                onClose={handleClosePopup}
+                onClose={handleCloseSignUpConfirmationPopup}
                 type={popupIcon}
                 buttonText={popupButtonText}
               />
@@ -399,49 +295,83 @@ const Signup = ({ route }) => {
                 />
               )}
 
-              <SearchableDropdown
+              <Controller
+                name={"country"}
                 control={control}
-                name="country"
                 label="Country"
                 rules={{ required: "Country is required" }}
-                placeholder="Select country"
-                searchPlaceholder="Search country..."
-                data={countries}
-                setSelected={(val) => {
-                  // Get country code using ISO code from the country object
-                  const selectedCountry = countries.find(
-                    (c) => c.value === val
-                  );
-                  const countryCode = selectedCountry?.key;
-                  console.log("Selected country:", val, "Code:", countryCode);
-                  setSelectedCountryCode(countryCode);
-                  setValue("city", ""); // Clear city when country changes
-                  setCities([]); // Clear previous cities
-                }}
-                error={errors.country}
+                render={({ field: { onChange, value } }) => (
+                  <ListDropdown
+                    label="Country"
+                    setSelected={(val) => {
+                      onChange(val);
+
+                      const selectedCountry = countries.find(
+                        (c) => c.value === val
+                      );
+                      const countryCode = selectedCountry?.key;
+
+                      setSelectedCountryCode(countryCode);
+                      setValue("city", "");
+                      setCities([]);
+                    }}
+                    data={countries}
+                    save="value"
+                    placeholder={
+                      loadingCountries
+                        ? "Loading countries..."
+                        : "Select country"
+                    }
+                    defaultOption={value ? { key: value, value } : null}
+                    boxStyles={[
+                      styles.box,
+                      errors.country ? styles.errorBox : null,
+                    ]}
+                    inputStyles={styles.input}
+                    dropdownStyles={styles.dropdown}
+                    dropdownTextStyles={styles.dropdownText}
+                    loading={loadingCountries}
+                  />
+                )}
               />
-              <SearchableDropdown
+
+              <Controller
                 control={control}
-                name="city"
+                name={"city"}
                 label="City"
                 rules={{ required: "City is required" }}
-                placeholder={
-                  selectedCountryCode
-                    ? loadingCities
-                      ? "Loading cities..."
-                      : "Search cities..."
-                    : "Select country first"
-                }
-                searchPlaceholder="Start typing..."
-                data={cities}
-                disabled={!selectedCountryCode}
-                loading={loadingCities}
-                onDropdownOpen={handleCityDropdownOpen}
-                error={errors.city}
+                render={({ field: { onChange, value } }) => (
+                  <ListDropdown
+                    label="City"
+                    setSelected={(val) => {
+                      onChange(val);
+                      // setSelected?.(val);
+                    }}
+                    data={cities}
+                    save="value"
+                    placeholder={
+                      selectedCountryCode
+                        ? "Search cities..."
+                        : "Select country first"
+                    }
+                    searchPlaceholder="Start typing..."
+                    defaultOption={value ? { key: value, value } : null}
+                    boxStyles={[
+                      styles.box,
+                      errors.country ? styles.errorBox : null,
+                      !selectedCountryCode ? styles.disabledBox : null,
+                    ]}
+                    inputStyles={styles.input}
+                    dropdownStyles={styles.dropdown}
+                    dropdownTextStyles={styles.dropdownText}
+                    loading={loadingCities}
+                    onDropdownOpen={handleCityDropdownOpen}
+                    disabled={!selectedCountryCode}
+                  />
+                )}
               />
 
               <HandPreference control={control} />
-
               <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
                 <ButtonText>
                   {isSubmitting ? "Creating Account..." : "Create Account"}
@@ -575,7 +505,7 @@ const Label = styled.Text({
 const Input = styled.TextInput({
   padding: 10,
   marginBottom: 10,
-  backgroundColor: "#262626",
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
   color: "#fff",
   borderRadius: 5,
 });
@@ -639,6 +569,46 @@ const CheckingText = styled.Text({
   color: "#fff",
   fontSize: 12,
   marginTop: 5,
+});
+
+//
+const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    marginBottom: 15,
+  },
+  box: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 0,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  errorBox: {
+    borderWidth: 1,
+    borderColor: "#ff7675",
+  },
+  disabledBox: {
+    opacity: 0.6,
+  },
+  input: {
+    color: "#fff",
+    paddingRight: 10,
+  },
+  dropdown: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 0,
+    marginTop: 5,
+  },
+  dropdownText: {
+    color: "#fff",
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
 });
 
 export default Signup;

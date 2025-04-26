@@ -129,7 +129,18 @@ const UserProfile = () => {
         getValue: () => `${profile?.firstName} ${profile?.lastName}`.trim(),
         fallback: "",
       },
-      { title: "Location", key: "location", fallback: "Location not provided" },
+      {
+        title: "Location",
+        getValue: () => {
+          const loc = profile?.location;
+          if (!loc) return ""; // will fall back below
+          const { city, country } = loc;
+          if (city && country) return `${city}, ${country}`;
+          return city || country || "";
+        },
+        fallback: "Location not provided",
+      },
+
       {
         title: "Hand Preference",
         key: "handPreference",

@@ -111,9 +111,20 @@ export default function Login() {
           routes: [{ name: "Home" }],
         });
       } catch (error) {
+        const messages = {
+          "auth/email-already-in-use": "Email already registered",
+          "auth/weak-password": "Password is too weak",
+          "auth/invalid-email": "Invalid email address",
+          "auth/invalid-credential": "Invalid credentials",
+          "auth/user-not-found": "User not found",
+          "auth/wrong-password": "Incorrect password",
+          "auth/user-disabled": "User account is disabled",
+        };
+        const errorMessage = messages[error.code] || "Login failed.";
+        Alert.alert("Error", errorMessage);
         // setFirebaseError(error.message || "Login failed.");
-        Alert.alert("Error", "Login failed.");
-        console.error("Login Error: ", error.message);
+        // Alert.alert(`Error", "Login failed. ${error.message}`);
+        console.log("Login Error: ", error.message);
       }
     }
   };

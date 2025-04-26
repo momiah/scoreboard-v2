@@ -1,3 +1,4 @@
+import { count } from "firebase/firestore";
 import moment from "moment";
 
 export const scoreboardProfileSchema = {
@@ -55,7 +56,11 @@ export const userProfileSchema = {
   profileImage: "",
   bio: "",
   profileViews: 0,
-  location: "",
+  location: {
+    city: "",
+    country: "",
+    countryCode: "",
+  },
   email: "",
 };
 
