@@ -87,3 +87,22 @@ export const leagueSchema = {
   privacy: "",
   playingTime: [],
 };
+
+export const courtSchema = {
+  courtName: "",
+  courtDescription: "",
+  courtImage: "",
+  location: {
+    city: "",
+    country: "",
+    countryCode: "",
+  },
+  postCode: "",
+  address: "",
+  numberOfLeagues: 0,
+  numberOfCourts: 0,
+  numberOfTeams: 0,
+  numberOfPlayers: 0,
+  numberOfGames: 0,
+  numberOfTournaments: 0,
+};

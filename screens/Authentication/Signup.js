@@ -236,6 +236,7 @@ const Signup = ({ route }) => {
         <FlatList
           data={[1]} // dummy item, we just want to render a scrollable container
           keyExtractor={() => "signup-form"}
+          contentContainerStyle={{ padding: 20 }}
           renderItem={() => (
             <>
               <Title>Create Account</Title>
@@ -322,7 +323,7 @@ const Signup = ({ route }) => {
                         ? "Loading countries..."
                         : "Select country"
                     }
-                    defaultOption={value ? { key: value, value } : null}
+                    selectedOption={value ? { key: value, value } : null}
                     boxStyles={[
                       styles.box,
                       errors.country ? styles.errorBox : null,
@@ -355,7 +356,7 @@ const Signup = ({ route }) => {
                         : "Select country first"
                     }
                     searchPlaceholder="Start typing..."
-                    defaultOption={value ? { key: value, value } : null}
+                    selectedOption={value ? { key: value, value } : null}
                     boxStyles={[
                       styles.box,
                       errors.country ? styles.errorBox : null,
@@ -379,7 +380,6 @@ const Signup = ({ route }) => {
               </Button>
             </>
           )}
-          contentContainerStyle={{ padding: 20 }}
         />
       </KeyboardAvoidingView>
     </Container>

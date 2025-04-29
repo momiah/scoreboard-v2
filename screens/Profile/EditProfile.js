@@ -248,7 +248,7 @@ const EditProfile = ({ navigation }) => {
                 placeholder={
                   loadingCountries ? "Loading countries..." : "Select country"
                 }
-                defaultOption={
+                selectedOption={
                   formData.location.country
                     ? {
                         key: formData.location.country,
@@ -279,7 +279,7 @@ const EditProfile = ({ navigation }) => {
                     : "Select country first"
                 }
                 searchPlaceholder="Start typing..."
-                defaultOption={
+                selectedOption={
                   formData.location.city
                     ? {
                         key: formData.location.city,

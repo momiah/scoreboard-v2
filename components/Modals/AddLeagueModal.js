@@ -1,16 +1,14 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Modal,
   Text,
   View,
-  ScrollView,
   TouchableOpacity,
-  TextInput,
   Image,
   Dimensions,
   SafeAreaView,
   ActivityIndicator,
-  Platform,
+  StyleSheet,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
@@ -23,22 +21,83 @@ import DatePicker from "../Leagues/AddLeague/DatePicker";
 import MaxPlayersPicker from "../Leagues/AddLeague/MaxPlayersPicker";
 import LeagueType from "../Leagues/AddLeague/LeagueType";
 import PrivacyType from "../Leagues/AddLeague/PrivacyType";
-import { leagueSchema, scoreboardProfileSchema } from "../../schemas/schema";
-
+import {
+  leagueSchema,
+  scoreboardProfileSchema,
+  courtSchema,
+} from "../../schemas/schema";
+import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
+import { useForm, Controller, Form } from "react-hook-form";
 
 const { width: screenWidth } = Dimensions.get("window");
 
+// Main component
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
-  const { addLeagues } = useContext(LeagueContext);
+  // Context
+  const { addLeagues, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
-  const [errorText, setErrorText] = useState({});
-  const [leagueDetails, setLeagueDetails] = useState(leagueSchema);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [showNextModal, setShowNextModal] = useState(false);
-  const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
 
+  // State
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showLeagueSettingsModal, setShowLeagueSettingsModal] = useState(false);
+  const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
+  const [courts, setCourts] = useState([]);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [courtDetails, setCourtDetails] = useState(courtSchema);
+
+  // React Hook Form setup
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm({
+    defaultValues: leagueSchema,
+  });
+
+  // Watch form values for validation
+  const leagueName = watch("leagueName");
+  const location = watch("location");
+  const centerName = watch("centerName");
+  const startDate = watch("startDate");
+  const maxPlayers = watch("maxPlayers");
+  const leagueType = watch("leagueType");
+  const leagueLengthInMonths = watch("leagueLengthInMonths");
+  const privacy = watch("privacy");
+
+  // Load courts on component mount
+  useEffect(() => {
+    const loadCourts = async () => {
+      const courtData = await getCourts();
+      setCourts(
+        courtData.map(
+          (court) => (
+            console.log("court", court),
+            {
+              key: court.id,
+              value: court.courtName.trim(),
+              description: ` ${court.location?.city}, ${court.location?.country}`,
+              countryCode: court.location?.countryCode,
+            }
+          )
+        )
+      );
+    };
+    loadCourts();
+  }, []);
+
+  const handleCourtSelect = (key) => {
+    if (key === "add-new-court") {
+      setLocationModalVisible(true);
+    } else {
+      // Update form value
+      setValue("location", key);
+    }
+  };
+  // Get league admin information
   const assignLeagueAdmin = async () => {
     const currentUserId = await AsyncStorage.getItem("userId");
     if (!currentUserId) return null;
@@ -57,10 +116,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     };
   };
 
-  const handleChange = (field, value) => {
-    setLeagueDetails((prev) => ({ ...prev, [field]: value }));
-  };
-
+  // Handle image selection
   const handleImagePick = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
@@ -78,26 +134,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }
   };
 
-  const handleCreate = async () => {
-    const requiredFields = [
-      "leagueName",
-      "location",
-      "centerName",
-      "startDate",
-      "leagueLengthInMonths",
-      "leagueType",
-      "maxPlayers",
-      "privacy",
-    ];
-
-    const newErrors = {};
-    requiredFields.forEach((f) => {
-      if (!leagueDetails[f]) newErrors[f] = "required";
-    });
-
-    setErrorText(newErrors);
-    if (Object.values(newErrors).some(Boolean)) return;
-
+  // Handle league creation
+  const onSubmit = async (data) => {
     setLeagueCreationLoading(true);
 
     try {
@@ -108,48 +146,41 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       if (selectedImage) {
         imageDownloadUrl = await uploadLeagueImage(
           selectedImage,
-          leagueDetails.leagueId
+          data.leagueId
         );
       }
 
       const newLeague = {
-        ...leagueDetails,
+        ...data,
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
         leagueImage: imageDownloadUrl || null,
       };
 
-      addLeagues(newLeague);
+      await addLeagues(newLeague);
       setLeagueCreationLoading(false);
       setModalVisible(false);
     } catch (err) {
       console.error("Error creating league:", err);
+      setLeagueCreationLoading(false);
     }
   };
 
-  const renderInput = (label, key, isTextArea = false) => (
-    <>
-      <LabelContainer>
-        <Label>{label}</Label>
-        {errorText[key] && <ErrorText>{errorText[key]}</ErrorText>}
-      </LabelContainer>
-      {isTextArea ? (
-        <TextAreaInput
-          placeholder={`Enter ${label.toLowerCase()}`}
-          placeholderTextColor="#ccc"
-          multiline
-          value={leagueDetails[key]}
-          onChangeText={(v) => handleChange(key, v)}
-        />
-      ) : (
-        <Input
-          placeholder={`Enter ${label.toLowerCase()}`}
-          placeholderTextColor="#ccc"
-          value={leagueDetails[key]}
-          onChangeText={(v) => handleChange(key, v)}
-        />
-      )}
-    </>
+  // Step 1 validation check
+  const canProceedToNext =
+    leagueName?.trim() && location?.trim() && centerName?.trim();
+
+  // Step 2 validation check
+  const confirmDisabled = !(
+    startDate &&
+    maxPlayers &&
+    leagueType &&
+    leagueLengthInMonths &&
+    privacy
+  );
+
+  const locationCurrentOption = courts.find(
+    (court) => court.value === location
   );
 
   return (
@@ -161,112 +192,217 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     >
       <ModalContainer>
         <SafeAreaWrapper>
-          <ScrollContainer contentContainerStyle={{ paddingBottom: 60 }}>
-            <ModalTitle>Create League</ModalTitle>
+          <ScrollContainer
+            data={[1]} // Dummy single item
+            keyExtractor={() => "main"}
+            // keyboardShouldPersistTaps="handled"
+            renderItem={() => (
+              <>
+                <ModalTitle>Create League</ModalTitle>
 
-            <ImagePickerContainer onPress={handleImagePick}>
-              {selectedImage ? (
-                <>
-                  <LeagueImage source={{ uri: selectedImage }} />
-                  <OverlayIcon>
-                    <AntDesign name="pluscircleo" size={32} color="#fff" />
-                  </OverlayIcon>
-                </>
-              ) : (
-                <ImagePlaceholder>
-                  <AntDesign name="pluscircleo" size={32} color="#ccc" />
-                  <Text style={{ color: "#ccc", marginTop: 6 }}>Add Image</Text>
-                </ImagePlaceholder>
-              )}
-            </ImagePickerContainer>
+                <ImagePickerContainer onPress={handleImagePick}>
+                  {selectedImage ? (
+                    <>
+                      <LeagueImage source={{ uri: selectedImage }} />
+                      <OverlayIcon>
+                        <AntDesign name="pluscircleo" size={32} color="#fff" />
+                      </OverlayIcon>
+                    </>
+                  ) : (
+                    <ImagePlaceholder>
+                      <AntDesign name="pluscircleo" size={32} color="#ccc" />
+                      <Text style={{ color: "#ccc", marginTop: 6 }}>
+                        Add Image
+                      </Text>
+                    </ImagePlaceholder>
+                  )}
+                </ImagePickerContainer>
 
-            {renderInput("League Name", "leagueName")}
-            {renderInput("Location", "location")}
-            {renderInput("Center Name", "centerName")}
-            {renderInput("Description", "leagueDescription", true)}
+                <FormField
+                  label="League Name"
+                  name="leagueName"
+                  control={control}
+                  error={errors.leagueName}
+                  required
+                />
 
-            <ButtonContainer>
-              <CancelButton onPress={() => setModalVisible(false)}>
-                <CancelText>Cancel</CancelText>
-              </CancelButton>
+                <ListDropdown
+                  label="Location"
+                  data={courts}
+                  selectedOption={locationCurrentOption || {}}
+                  boxStyles={[
+                    styles.box,
+                    errors.location ? styles.errorBox : null,
+                  ]}
+                  dropdownStyles={styles.dropdown}
+                  dropdownTextStyles={styles.dropdownText}
+                  placeholder="Select or Add Court"
+                  setSelected={(key) => handleCourtSelect(key)}
+                  notFoundText="Add court location..."
+                  notFoundTextFunction={() => setLocationModalVisible(true)}
+                  onDropdownOpen={() => [
+                    setCourtDetails(courtSchema),
+                    getCourts(),
+                  ]}
+                  save="value"
+                />
+                {errors.location && (
+                  <ErrorText>{errors.location.message}</ErrorText>
+                )}
 
-              <CreateButton
-                disabled={
-                  !(
-                    leagueDetails.leagueName?.trim() &&
-                    leagueDetails.location?.trim() &&
-                    leagueDetails.centerName?.trim()
-                  )
-                }
-                onPress={() => setShowNextModal(true)}
-              >
-                <CreateText>Next</CreateText>
-              </CreateButton>
-            </ButtonContainer>
+                <FormField
+                  label="Center Name"
+                  name="centerName"
+                  control={control}
+                  error={errors.centerName}
+                  required
+                />
 
-            <ConfirmLeagueSettingsModal
-              visible={showNextModal}
-              leagueCreationLoading={leagueCreationLoading}
-              onBack={() => {
-                setShowNextModal(false);
-                setModalVisible(true);
+                <FormField
+                  label="Description"
+                  name="leagueDescription"
+                  control={control}
+                  error={errors.leagueDescription}
+                  multiline
+                />
+
+                <ButtonContainer>
+                  <CancelButton onPress={() => setModalVisible(false)}>
+                    <CancelText>Cancel</CancelText>
+                  </CancelButton>
+
+                  <CreateButton
+                    disabled={!canProceedToNext}
+                    onPress={() => setShowLeagueSettingsModal(true)}
+                  >
+                    <CreateText>Next</CreateText>
+                  </CreateButton>
+                </ButtonContainer>
+              </>
+            )}
+          />
+
+          <ConfirmLeagueSettingsModal
+            visible={showLeagueSettingsModal}
+            leagueCreationLoading={leagueCreationLoading}
+            onBack={() => setShowLeagueSettingsModal(false)}
+            onConfirm={handleSubmit(onSubmit)}
+            confirmDisabled={confirmDisabled}
+            control={control}
+            errors={errors}
+            setValue={setValue}
+          />
+
+          {locationModalVisible && (
+            <CourtModal
+              visible={locationModalVisible}
+              courtDetails={courtDetails}
+              setCourtDetails={setCourtDetails}
+              onClose={() => setLocationModalVisible(false)}
+              addCourt={addCourt}
+              onCourtAdded={async (newCourtId) => {
+                // Refresh courts list
+                const courtData = await getCourts();
+
+                setCourts(
+                  courtData.map((court) => ({
+                    key: court.id,
+                    value: `${court.courtName.trim()}`,
+                    description: ` ${court.location?.city}`,
+                  }))
+                );
+
+                // Wait for state updates
+
+                setValue("location", newCourtId);
+
+                handleCourtSelect(newCourtId);
               }}
-              onConfirm={handleCreate}
-              confirmDisabled={
-                !(
-                  leagueDetails.startDate &&
-                  leagueDetails.maxPlayers &&
-                  leagueDetails.leagueType &&
-                  leagueDetails.leagueLengthInMonths &&
-                  leagueDetails.privacy
-                )
-              }
-              setLeagueDetails={setLeagueDetails}
-              leagueDetails={leagueDetails}
-              errorText={errorText}
             />
-          </ScrollContainer>
+          )}
         </SafeAreaWrapper>
       </ModalContainer>
     </Modal>
   );
 };
 
+// Form Field Component for reuse
+const FormField = ({
+  label,
+  name,
+  control,
+  error,
+  multiline = false,
+  required = false,
+}) => (
+  <>
+    <LabelContainer>
+      <Label>
+        {label}
+        {required && <ErrorText>*</ErrorText>}
+      </Label>
+      {error && <ErrorText>{error.message}</ErrorText>}
+    </LabelContainer>
+    <Controller
+      control={control}
+      name={name}
+      rules={{ required: required ? `${label} is required` : false }}
+      render={({ field: { onChange, onBlur, value } }) =>
+        multiline ? (
+          <TextAreaInput
+            placeholder={`Enter ${label.toLowerCase()}`}
+            placeholderTextColor="#ccc"
+            multiline
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+          />
+        ) : (
+          <Input
+            placeholder={`Enter ${label.toLowerCase()}`}
+            placeholderTextColor="#ccc"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+          />
+        )
+      }
+    />
+  </>
+);
+
+// Settings Modal Component
 const ConfirmLeagueSettingsModal = ({
   visible,
   onBack,
   leagueCreationLoading,
   onConfirm,
   confirmDisabled,
-  setLeagueDetails,
-  leagueDetails,
-  errorText,
+  control,
+  errors,
+  setValue,
 }) => {
   return (
     <Modal animationType="slide" transparent visible={visible}>
       <ModalContainer>
-        <LeagueDetailsWrapper>
-          <LeagueDetailsScrollContainer>
+        <LeagueSettingsWrapper>
+          <SupportModalScrollContainer>
             <ModalTitle>Confirm League Settings</ModalTitle>
             <DatePicker
-              setLeagueDetails={setLeagueDetails}
-              leagueDetails={leagueDetails}
-              errorText={errorText.startDate}
+              setLeagueDetails={(field, value) => setValue(field, value)}
+              errorText={errors.startDate?.message}
             />
             <MaxPlayersPicker
-              setLeagueDetails={setLeagueDetails}
-              leagueDetails={leagueDetails}
-              errorText={errorText.maxPlayers}
+              setLeagueDetails={(field, value) => setValue(field, value)}
+              errorText={errors.maxPlayers?.message}
             />
             <LeagueType
-              setLeagueDetails={setLeagueDetails}
-              leagueDetails={leagueDetails}
-              errorText={errorText.leagueType}
+              setLeagueDetails={(field, value) => setValue(field, value)}
+              errorText={errors.leagueType?.message}
             />
             <PrivacyType
-              setLeagueDetails={setLeagueDetails}
-              leagueDetails={leagueDetails}
-              errorText={errorText.privacy}
+              setLeagueDetails={(field, value) => setValue(field, value)}
+              errorText={errors.privacy?.message}
             />
 
             <ButtonContainer>
@@ -281,18 +417,113 @@ const ConfirmLeagueSettingsModal = ({
                 )}
               </CreateButton>
             </ButtonContainer>
-          </LeagueDetailsScrollContainer>
-        </LeagueDetailsWrapper>
+          </SupportModalScrollContainer>
+        </LeagueSettingsWrapper>
       </ModalContainer>
     </Modal>
   );
 };
 
-// Styled Components
+// Court Modal Component
+const CourtModal = ({
+  visible,
+  onClose,
+  courtDetails,
+  setCourtDetails,
+  addCourt,
+  onCourtAdded,
+}) => {
+  const handleChange = (key, value) => {
+    setCourtDetails((prev) => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <ModalContainer>
+        <CourtLocationWrapper>
+          <SupportModalScrollContainer>
+            <ModalTitle>Add Court Details</ModalTitle>
+
+            <Label>Court Name</Label>
+            <Input
+              label="Court Name"
+              value={courtDetails.courtName}
+              onChangeText={(v) => handleChange("courtName", v)}
+            />
+            <Label>City</Label>
+            <Input
+              label="City"
+              value={courtDetails.location.city}
+              onChangeText={(v) =>
+                handleChange("location", { ...courtDetails.location, city: v })
+              }
+            />
+            <Label>Country</Label>
+            <Input
+              label="Country"
+              value={courtDetails.location.country}
+              onChangeText={(v) =>
+                handleChange("location", {
+                  ...courtDetails.location,
+                  country: v,
+                })
+              }
+            />
+            <Label>Post Code/ ZIP Code</Label>
+            <Input
+              label="Post Code"
+              value={courtDetails.postCode}
+              onChangeText={(v) => handleChange("postCode", v)}
+            />
+            <Label>Address</Label>
+            <Input
+              label="Address"
+              value={courtDetails.address}
+              onChangeText={(v) => handleChange("address", v)}
+            />
+
+            <DisclaimerText>
+              Adding a new court will help other users to find this location so
+              please ensure the details are correct!
+            </DisclaimerText>
+            <ButtonContainer>
+              <CancelButton onPress={onClose}>
+                <CancelText>Cancel</CancelText>
+              </CancelButton>
+              <CreateButton
+                onPress={async () => {
+                  try {
+                    const newCourtId = await addCourt(courtDetails);
+                    if (newCourtId) {
+                      onCourtAdded(newCourtId);
+
+                      onClose();
+                    }
+                  } catch (error) {
+                    console.error("Court creation failed:", error);
+                    // Show error message to user
+                  }
+                }}
+              >
+                <CreateText>Add Court</CreateText>
+              </CreateButton>
+            </ButtonContainer>
+          </SupportModalScrollContainer>
+        </CourtLocationWrapper>
+      </ModalContainer>
+    </Modal>
+  );
+};
+
+// Styled Components - keeping original styles
 const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+});
+
+const ScrollContainer = styled.FlatList({
+  padding: 20,
 });
 
 const SafeAreaWrapper = styled(SafeAreaView)({
@@ -304,12 +535,7 @@ const SafeAreaWrapper = styled(SafeAreaView)({
   backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
-const ScrollContainer = styled.ScrollView({
-  padding: 20,
-});
-
-const LeagueDetailsWrapper = styled(SafeAreaView)({
-  // flex: 1,
+const LeagueSettingsWrapper = styled(SafeAreaView)({
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,
@@ -317,7 +543,15 @@ const LeagueDetailsWrapper = styled(SafeAreaView)({
   backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
-const LeagueDetailsScrollContainer = styled.ScrollView({
+const CourtLocationWrapper = styled(SafeAreaView)({
+  width: screenWidth - 40,
+  margin: 20,
+  borderRadius: 20,
+  overflow: "hidden",
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
+});
+
+const SupportModalScrollContainer = styled.ScrollView({
   padding: "40px 20px",
 });
 
@@ -332,8 +566,8 @@ const ModalTitle = styled.Text({
 const Label = styled.Text({
   color: "#ccc",
   alignSelf: "flex-start",
-  fontSize: 12,
-  marginLeft: 4,
+  fontSize: 14,
+  fontWeight: "bold",
   marginBottom: 6,
 });
 
@@ -399,6 +633,12 @@ const CreateText = styled.Text({
   fontSize: 16,
 });
 
+const DisclaimerText = styled.Text({
+  color: "white",
+  fontStyle: "italic",
+  fontSize: 12,
+});
+
 const ImagePickerContainer = styled.TouchableOpacity({
   position: "relative",
   marginBottom: 20,
@@ -429,6 +669,42 @@ const ImagePlaceholder = styled.View({
   borderWidth: 1,
   borderStyle: "dashed",
   borderColor: "#ccc",
+});
+
+const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    marginBottom: 15,
+  },
+  box: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 0,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  errorBox: {
+    borderWidth: 1,
+    borderColor: "#ff7675",
+  },
+  disabledBox: {
+    opacity: 0.6,
+  },
+
+  dropdown: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderWidth: 0,
+    marginTop: 5,
+  },
+  dropdownText: {
+    color: "#fff",
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
 });
 
 export default AddLeagueModal;

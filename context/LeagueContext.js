@@ -13,6 +13,7 @@ import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generateLeagueId } from "../functions/generateLeagueId";
+import { generateCourtId } from "../functions/generateCourtId";
 
 const LeagueContext = createContext();
 
@@ -196,6 +197,24 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const getCourts = async () => {
+    const snapshot = await getDocs(collection(db, "courts"));
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  };
+
+  const addCourt = async (courtData) => {
+    try {
+      const courtId = generateCourtId(courtData);
+      await setDoc(doc(db, "courts", courtId), {
+        ...courtData,
+      });
+      return courtId;
+    } catch (error) {
+      console.error("Error adding court: ", error);
+      throw error; // Optional: Re-throw for error handling in components
+    }
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -208,6 +227,8 @@ const LeagueProvider = ({ children }) => {
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
         fetchLeagueById,
+        getCourts,
+        addCourt,
 
         // League State Management
         leagues,
