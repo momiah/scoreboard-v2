@@ -52,7 +52,7 @@ const ListDropdown = ({
   const filteredData = useMemo(() => {
     if (!searchQuery) return data;
     const query = searchQuery.toLowerCase();
-    return data.filter((item) => item.value.toLowerCase().includes(query));
+    return data.filter((item) => item.value.toLowerCase().startsWith(query));
   }, [data, searchQuery]);
 
   const slideDown = useCallback(() => {
