@@ -115,6 +115,12 @@ const ListDropdown = ({
     [handleSelect, fontFamily]
   );
 
+  const handleNotFoundText = () => {
+    notFoundTextFunction();
+    setSearchQuery("");
+    handleToggle();
+  };
+
   return (
     <View style={{ marginBottom: 10 }}>
       <Label>{label}</Label>
@@ -174,7 +180,7 @@ const ListDropdown = ({
             ListEmptyComponent={
               <TouchableOpacity
                 style={styles.emptyContainer}
-                onPress={notFoundTextFunction}
+                onPress={handleNotFoundText}
                 disabled={!notFoundTextFunction}
                 activeOpacity={notFoundTextFunction ? 0.6 : 1}
               >
@@ -282,7 +288,6 @@ const styles = StyleSheet.create({
   dropdownTextStyles: {
     color: "white",
     fontSize: 14,
-    paddingLeft: 3,
   },
 });
 

@@ -46,6 +46,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [courts, setCourts] = useState([]);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState(courtSchema);
+  const [locationCurrentOption, setLocationCurrentOption] = useState({});
 
   // React Hook Form setup
   const {
@@ -68,28 +69,27 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const leagueLengthInMonths = watch("leagueLengthInMonths");
   const privacy = watch("privacy");
 
+  const formatCourtDetailsForList = (courts) =>
+    courts.map((court) => ({
+      key: court.id,
+      value: court.courtName.trim(),
+      description: `${court.location?.city}, ${court.location?.country}`,
+      countryCode: court.location?.countryCode,
+    }));
+
   // Load courts on component mount
   useEffect(() => {
     const loadCourts = async () => {
       const courtData = await getCourts();
-      setCourts(
-        courtData.map(
-          (court) => (
-            console.log("court", court),
-            {
-              key: court.id,
-              value: court.courtName.trim(),
-              description: ` ${court.location?.city}, ${court.location?.country}`,
-              countryCode: court.location?.countryCode,
-            }
-          )
-        )
-      );
+      const formattedCourts = formatCourtDetailsForList(courtData);
+
+      setCourts(formattedCourts);
     };
     loadCourts();
   }, []);
 
   const handleCourtSelect = (key) => {
+    console.log("Selected court key:", key);
     if (key === "add-new-court") {
       setLocationModalVisible(true);
     } else {
@@ -179,9 +179,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     privacy
   );
 
-  const locationCurrentOption = courts.find(
-    (court) => court.value === location
-  );
+  useEffect(() => {
+    const updatedOption = courts.find((court) => court.value === location);
+    setLocationCurrentOption(updatedOption || {});
+  }, [location, courts]);
 
   return (
     <Modal
@@ -300,23 +301,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               setCourtDetails={setCourtDetails}
               onClose={() => setLocationModalVisible(false)}
               addCourt={addCourt}
-              onCourtAdded={async (newCourtId) => {
+              onCourtAdded={async (courtDetails) => {
                 // Refresh courts list
                 const courtData = await getCourts();
-
-                setCourts(
-                  courtData.map((court) => ({
-                    key: court.id,
-                    value: `${court.courtName.trim()}`,
-                    description: ` ${court.location?.city}`,
-                  }))
-                );
-
-                // Wait for state updates
-
-                setValue("location", newCourtId);
-
-                handleCourtSelect(newCourtId);
+                const formattedCourts = formatCourtDetailsForList(courtData);
+                setCourts(formattedCourts);
+                handleCourtSelect(courtDetails.courtName);
               }}
             />
           )}
@@ -495,8 +485,7 @@ const CourtModal = ({
                   try {
                     const newCourtId = await addCourt(courtDetails);
                     if (newCourtId) {
-                      onCourtAdded(newCourtId);
-
+                      onCourtAdded(courtDetails);
                       onClose();
                     }
                   } catch (error) {
