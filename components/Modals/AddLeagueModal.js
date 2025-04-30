@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useMemo } from "react";
 import {
   Modal,
   Text,
@@ -46,7 +46,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [courts, setCourts] = useState([]);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState(courtSchema);
-  const [locationCurrentOption, setLocationCurrentOption] = useState({});
+  const [selectedLocation, setSelectedLocation] = useState(
+    courtDetails.location
+  );
 
   // React Hook Form setup
   const {
@@ -62,7 +64,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   // Watch form values for validation
   const leagueName = watch("leagueName");
   const location = watch("location");
-  const centerName = watch("centerName");
   const startDate = watch("startDate");
   const maxPlayers = watch("maxPlayers");
   const leagueType = watch("leagueType");
@@ -150,11 +151,18 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         );
       }
 
+      const location = {
+        ...courtDetails.location,
+        courtName: courtDetails.courtName,
+        courtId: selectedLocation.key,
+      };
+
       const newLeague = {
         ...data,
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
         leagueImage: imageDownloadUrl || null,
+        location: location,
       };
 
       await addLeagues(newLeague);
@@ -166,9 +174,13 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }
   };
 
+  console.log("locati");
+
   // Step 1 validation check
   const canProceedToNext =
-    leagueName?.trim() && location?.trim() && centerName?.trim();
+    leagueName?.trim() &&
+    selectedLocation &&
+    Object.values(selectedLocation).some((value) => value.trim() !== "");
 
   // Step 2 validation check
   const confirmDisabled = !(
@@ -181,7 +193,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
   useEffect(() => {
     const updatedOption = courts.find((court) => court.value === location);
-    setLocationCurrentOption(updatedOption || {});
+    setSelectedLocation(updatedOption || {});
   }, [location, courts]);
 
   return (
@@ -230,7 +242,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 <ListDropdown
                   label="Location"
                   data={courts}
-                  selectedOption={locationCurrentOption || {}}
+                  selectedOption={selectedLocation || {}}
                   boxStyles={[
                     styles.box,
                     errors.location ? styles.errorBox : null,
@@ -250,14 +262,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 {errors.location && (
                   <ErrorText>{errors.location.message}</ErrorText>
                 )}
-
-                <FormField
-                  label="Center Name"
-                  name="centerName"
-                  control={control}
-                  error={errors.centerName}
-                  required
-                />
 
                 <FormField
                   label="Description"
@@ -290,6 +294,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             onConfirm={handleSubmit(onSubmit)}
             confirmDisabled={confirmDisabled}
             control={control}
+            watch={watch}
             errors={errors}
             setValue={setValue}
           />
@@ -369,6 +374,7 @@ const ConfirmLeagueSettingsModal = ({
   onConfirm,
   confirmDisabled,
   control,
+  watch,
   errors,
   setValue,
 }) => {
@@ -379,19 +385,26 @@ const ConfirmLeagueSettingsModal = ({
           <SupportModalScrollContainer>
             <ModalTitle>Confirm League Settings</ModalTitle>
             <DatePicker
-              setLeagueDetails={(field, value) => setValue(field, value)}
+              setValue={setValue}
+              watch={watch}
               errorText={errors.startDate?.message}
             />
+
             <MaxPlayersPicker
-              setLeagueDetails={(field, value) => setValue(field, value)}
+              setValue={setValue}
+              watch={watch}
               errorText={errors.maxPlayers?.message}
             />
+
             <LeagueType
-              setLeagueDetails={(field, value) => setValue(field, value)}
+              setValue={setValue}
+              watch={watch}
               errorText={errors.leagueType?.message}
             />
+
             <PrivacyType
-              setLeagueDetails={(field, value) => setValue(field, value)}
+              setValue={setValue}
+              watch={watch}
               errorText={errors.privacy?.message}
             />
 
@@ -423,8 +436,34 @@ const CourtModal = ({
   addCourt,
   onCourtAdded,
 }) => {
+  const [courtCreationLoading, setCourtCreationLoading] = useState(false);
   const handleChange = (key, value) => {
     setCourtDetails((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const allFieldsFilled = useMemo(() => {
+    return (
+      courtDetails.courtName?.trim() &&
+      courtDetails.location.city?.trim() &&
+      courtDetails.location.country?.trim() &&
+      courtDetails.postCode?.trim() &&
+      courtDetails.address?.trim()
+    );
+  }, [courtDetails]);
+
+  const handleAddCourt = async () => {
+    try {
+      setCourtCreationLoading(true);
+      const newCourtId = await addCourt(courtDetails);
+      if (newCourtId) {
+        onCourtAdded(courtDetails, newCourtId);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Court creation failed:", error);
+    } finally {
+      setCourtCreationLoading(false);
+    }
   };
 
   return (
@@ -436,13 +475,11 @@ const CourtModal = ({
 
             <Label>Court Name</Label>
             <Input
-              label="Court Name"
               value={courtDetails.courtName}
               onChangeText={(v) => handleChange("courtName", v)}
             />
             <Label>City</Label>
             <Input
-              label="City"
               value={courtDetails.location.city}
               onChangeText={(v) =>
                 handleChange("location", { ...courtDetails.location, city: v })
@@ -450,7 +487,6 @@ const CourtModal = ({
             />
             <Label>Country</Label>
             <Input
-              label="Country"
               value={courtDetails.location.country}
               onChangeText={(v) =>
                 handleChange("location", {
@@ -461,13 +497,11 @@ const CourtModal = ({
             />
             <Label>Post Code/ ZIP Code</Label>
             <Input
-              label="Post Code"
               value={courtDetails.postCode}
               onChangeText={(v) => handleChange("postCode", v)}
             />
             <Label>Address</Label>
             <Input
-              label="Address"
               value={courtDetails.address}
               onChangeText={(v) => handleChange("address", v)}
             />
@@ -481,20 +515,14 @@ const CourtModal = ({
                 <CancelText>Cancel</CancelText>
               </CancelButton>
               <CreateButton
-                onPress={async () => {
-                  try {
-                    const newCourtId = await addCourt(courtDetails);
-                    if (newCourtId) {
-                      onCourtAdded(courtDetails);
-                      onClose();
-                    }
-                  } catch (error) {
-                    console.error("Court creation failed:", error);
-                    // Show error message to user
-                  }
-                }}
+                disabled={!allFieldsFilled}
+                onPress={handleAddCourt}
               >
-                <CreateText>Add Court</CreateText>
+                {courtCreationLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <CreateText>Add Court</CreateText>
+                )}
               </CreateButton>
             </ButtonContainer>
           </SupportModalScrollContainer>
@@ -528,7 +556,7 @@ const LeagueSettingsWrapper = styled(SafeAreaView)({
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,
-  overflow: "hidden",
+  // overflow: "hidden",
   backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 

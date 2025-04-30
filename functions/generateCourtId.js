@@ -5,6 +5,8 @@ export function generateCourtId(courtData) {
   ).join("");
 
   const formattedCourtName = courtData.courtName.replace(/\s+/g, "-");
+  const formattedCountryName = courtData.location.country.replace(/\s+/g, "-");
+  const formattedCityName = courtData.location.city.replace(/\s+/g, "-");
 
-  return `${formattedCourtName}-${courtData.location.city}-${courtData.location.country}-${uniqueId}`;
+  return `${formattedCourtName}-${formattedCityName}-${formattedCountryName}-${uniqueId}`;
 }

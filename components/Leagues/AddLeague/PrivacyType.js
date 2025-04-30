@@ -1,17 +1,13 @@
-import { privacyTypes } from "../leagueMocks";
+import { privacyTypes } from "../../../schemas/schema";
 import React, { useState } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity } from "react-native";
 
-const PrivacyType = ({ leagueDetails, setLeagueDetails, errorText }) => {
-  const [privacy, setPrivacy] = useState(leagueDetails.privacy);
+const PrivacyType = ({ setValue, watch, errorText }) => {
+  const selectedPrivacy = watch("privacy");
 
   const handleSelectPrivacyType = (privacyType) => {
-    setPrivacy(privacyType);
-    setLeagueDetails((prevDetails) => ({
-      ...prevDetails,
-      privacy: privacyType,
-    }));
+    setValue("privacy", privacyType);
   };
 
   return (
@@ -25,9 +21,9 @@ const PrivacyType = ({ leagueDetails, setLeagueDetails, errorText }) => {
           <PrivacyButton
             key={index}
             onPress={() => handleSelectPrivacyType(privacyType)}
-            isSelected={privacy === privacyType}
+            isSelected={selectedPrivacy === privacyType}
           >
-            <PrivacyTypeText isSelected={privacy === privacyType}>
+            <PrivacyTypeText isSelected={selectedPrivacy === privacyType}>
               {privacyType}
             </PrivacyTypeText>
           </PrivacyButton>
@@ -36,7 +32,6 @@ const PrivacyType = ({ leagueDetails, setLeagueDetails, errorText }) => {
     </Container>
   );
 };
-
 const Container = styled.View({
   padding: 5,
 
