@@ -30,7 +30,8 @@ const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { leagueId } = route.params;
-  const { fetchLeagueById, leagueById } = useContext(LeagueContext);
+  const { fetchLeagueById, leagueById, generateNewLeagueParticipants } =
+    useContext(LeagueContext);
   const { checkUserRole } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
@@ -173,6 +174,11 @@ const League = () => {
             )}
 
             <LeagueName>{leagueName}</LeagueName>
+            <TouchableOpacity
+              onPress={() => generateNewLeagueParticipants(4, leagueId)}
+            >
+              <LeagueLocation>Generate Participant</LeagueLocation>
+            </TouchableOpacity>
 
             <View
               style={{
