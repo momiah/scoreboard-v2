@@ -182,7 +182,7 @@ const League = () => {
               }}
             >
               <LeagueLocation>
-                {centerName}, {location}
+                {location.courtName}, {location.city}
               </LeagueLocation>
               <Ionicons
                 name={"location"}

@@ -30,6 +30,7 @@ import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller, Form } from "react-hook-form";
+import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -43,7 +44,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showLeagueSettingsModal, setShowLeagueSettingsModal] = useState(false);
   const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
-  const [courts, setCourts] = useState([]);
+  const [courtsList, setCourtsList] = useState([]);
+  const [courtData, setCourtData] = useState([]);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState(courtSchema);
   const [selectedLocation, setSelectedLocation] = useState(
@@ -70,8 +72,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const leagueLengthInMonths = watch("leagueLengthInMonths");
   const privacy = watch("privacy");
 
-  const formatCourtDetailsForList = (courts) =>
-    courts.map((court) => ({
+  const formatCourtDetailsForList = (courtsList) =>
+    courtsList.map((court) => ({
       key: court.id,
       value: court.courtName.trim(),
       description: `${court.location?.city}, ${court.location?.country}`,
@@ -82,9 +84,11 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   useEffect(() => {
     const loadCourts = async () => {
       const courtData = await getCourts();
+
       const formattedCourts = formatCourtDetailsForList(courtData);
 
-      setCourts(formattedCourts);
+      setCourtData(courtData);
+      setCourtsList(formattedCourts);
     };
     loadCourts();
   }, []);
@@ -151,18 +155,14 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         );
       }
 
-      const location = {
-        ...courtDetails.location,
-        courtName: courtDetails.courtName,
-        courtId: selectedLocation.key,
-      };
+      const location = getLeagueLocationDetails(courtData, selectedLocation);
 
       const newLeague = {
         ...data,
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
         leagueImage: imageDownloadUrl || null,
-        location: location,
+        location,
       };
 
       await addLeagues(newLeague);
@@ -173,8 +173,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       setLeagueCreationLoading(false);
     }
   };
-
-  console.log("locati");
 
   // Step 1 validation check
   const canProceedToNext =
@@ -192,9 +190,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   );
 
   useEffect(() => {
-    const updatedOption = courts.find((court) => court.value === location);
+    const updatedOption = courtsList.find((court) => court.value === location);
     setSelectedLocation(updatedOption || {});
-  }, [location, courts]);
+  }, [location, courtsList]);
 
   return (
     <Modal
@@ -241,7 +239,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
                 <ListDropdown
                   label="Location"
-                  data={courts}
+                  data={courtsList}
                   selectedOption={selectedLocation || {}}
                   boxStyles={[
                     styles.box,
@@ -310,7 +308,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 // Refresh courts list
                 const courtData = await getCourts();
                 const formattedCourts = formatCourtDetailsForList(courtData);
-                setCourts(formattedCourts);
+                setCourtsList(formattedCourts);
+                setCourtData(courtData);
                 handleCourtSelect(courtDetails.courtName);
               }}
             />
@@ -446,8 +445,8 @@ const CourtModal = ({
       courtDetails.courtName?.trim() &&
       courtDetails.location.city?.trim() &&
       courtDetails.location.country?.trim() &&
-      courtDetails.postCode?.trim() &&
-      courtDetails.address?.trim()
+      courtDetails.location.postCode?.trim() &&
+      courtDetails.location.address?.trim()
     );
   }, [courtDetails]);
 
@@ -455,6 +454,7 @@ const CourtModal = ({
     try {
       setCourtCreationLoading(true);
       const newCourtId = await addCourt(courtDetails);
+      console.log("courtDetails", JSON.stringify(courtDetails, null, 2));
       if (newCourtId) {
         onCourtAdded(courtDetails, newCourtId);
         onClose();
@@ -497,13 +497,23 @@ const CourtModal = ({
             />
             <Label>Post Code/ ZIP Code</Label>
             <Input
-              value={courtDetails.postCode}
-              onChangeText={(v) => handleChange("postCode", v)}
+              value={courtDetails.location.postCode}
+              onChangeText={(v) =>
+                handleChange("location", {
+                  ...courtDetails.location,
+                  postCode: v,
+                })
+              }
             />
             <Label>Address</Label>
             <Input
-              value={courtDetails.address}
-              onChangeText={(v) => handleChange("address", v)}
+              value={courtDetails.location.address}
+              onChangeText={(v) =>
+                handleChange("location", {
+                  ...courtDetails.location,
+                  address: v,
+                })
+              }
             />
 
             <DisclaimerText>

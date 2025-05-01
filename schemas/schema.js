@@ -130,8 +130,6 @@ export const courtSchema = {
   courtDescription: "",
   courtImage: "",
   location: locationSchema,
-  postCode: "",
-  address: "",
   numberOfLeagues: 0,
   numberOfCourts: 0,
   numberOfTeams: 0,

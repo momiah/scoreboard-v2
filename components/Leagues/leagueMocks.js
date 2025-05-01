@@ -1,9 +1,7 @@
 import * as mockImages from "../../mockImages";
 import moment from "moment";
+import { maxPlayers, privacyTypes, leagueTypes } from "../../schemas/schema";
 
-export const leagueTypes = ["Doubles", "Singles"];
-export const privacyTypes = ["Public", "Private"];
-export const maxPlayers = [8, 16, 32, 64];
 export const leagueStatus = [
   { status: "enlisting", color: "#FAB234" },
   { status: "full", color: "#286EFA" },

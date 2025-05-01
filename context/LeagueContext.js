@@ -205,6 +205,7 @@ const LeagueProvider = ({ children }) => {
   const addCourt = async (courtData) => {
     try {
       const courtId = generateCourtId(courtData);
+      console.log("court", courtData);
       await setDoc(doc(db, "courts", courtId), {
         ...courtData,
       });
