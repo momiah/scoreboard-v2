@@ -38,7 +38,7 @@ const SearchableDropdown = ({
             save="value"
             placeholder={placeholder}
             searchPlaceholder={searchPlaceholder}
-            defaultOption={value ? { key: value, value } : null}
+            selectedOption={value ? { key: value, value } : null}
             boxStyles={[
               styles.box,
               error ? styles.errorBox : null,
@@ -49,7 +49,6 @@ const SearchableDropdown = ({
             dropdownTextStyles={styles.dropdownText}
             loading={loading}
             onDropdownOpen={onDropdownOpen} // Pass through
-            disabled={disabled}
             {...props}
           />
         )}

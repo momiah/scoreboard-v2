@@ -5,7 +5,7 @@ import React, {
   useContext,
   use,
 } from "react";
-import { Keyboard } from "react-native";
+
 import {
   doc,
   setDoc,
@@ -13,13 +13,9 @@ import {
   getDocs,
   getDoc,
   updateDoc,
-  query,
-  orderBy,
-  startAt,
-  endAt,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
-import moment from "moment";
+
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { profileDetailSchema } from "../schemas/schema";
@@ -40,7 +36,6 @@ const UserProvider = ({ children }) => {
         if (userId) {
           const userData = await getUserById(userId);
           setCurrentUser(userData);
-          console.log("Current User:", userData);
         }
       } catch (error) {
         console.error("Initial user load failed:", error);

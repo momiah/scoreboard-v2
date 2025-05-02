@@ -1,4 +1,46 @@
+import { count } from "firebase/firestore";
 import moment from "moment";
+
+export const leagueTypes = ["Doubles", "Singles"];
+export const privacyTypes = ["Public", "Private"];
+export const maxPlayers = [8, 16, 32, 64];
+export const leagueStatus = [
+  { status: "enlisting", color: "#FAB234" },
+  { status: "full", color: "#286EFA" },
+  { status: "completed", color: "#167500" },
+];
+
+const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
+const currencyTypes = ["GBP", "USD", "EUR", "INR"];
+const locations = [
+  "Milton Keynes",
+  "London",
+  "Birmingham",
+  "Manchester",
+  "York",
+  "Nottingham",
+  "Bath",
+  "Glasgow",
+  "Edinburgh",
+  "Leeds",
+];
+export const daysOfWeek = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+export const locationSchema = {
+  city: "",
+  country: "",
+  countryCode: "",
+  postCode: "",
+  address: "",
+};
 
 export const scoreboardProfileSchema = {
   prevGameXP: 0,
@@ -55,7 +97,7 @@ export const userProfileSchema = {
   profileImage: "",
   bio: "",
   profileViews: 0,
-  location: "",
+  location: locationSchema,
   email: "",
 };
 
@@ -71,7 +113,7 @@ export const leagueSchema = {
   leagueImage: "",
   leagueName: "",
   leagueDescription: "",
-  location: "",
+  location: locationSchema,
   centerName: "",
   startDate: "",
   leagueLengthInMonths: "",
@@ -81,4 +123,17 @@ export const leagueSchema = {
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
+};
+
+export const courtSchema = {
+  courtName: "",
+  courtDescription: "",
+  courtImage: "",
+  location: locationSchema,
+  numberOfLeagues: 0,
+  numberOfCourts: 0,
+  numberOfTeams: 0,
+  numberOfPlayers: 0,
+  numberOfGames: 0,
+  numberOfTournaments: 0,
 };

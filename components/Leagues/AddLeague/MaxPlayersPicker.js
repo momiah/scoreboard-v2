@@ -1,19 +1,12 @@
-import { maxPlayers } from "../../Leagues/leagueMocks";
-import React, { useState } from "react";
+import { maxPlayers } from "../../../schemas/schema";
+import React from "react";
 import styled from "styled-components/native";
-import { TouchableOpacity } from "react-native";
 
-const MaxPlayersPicker = ({ setLeagueDetails, errorText, leagueDetails }) => {
-  const [maximumPlayers, setMaximumPlayers] = useState(
-    leagueDetails.maxPlayers
-  );
+const MaxPlayersPicker = ({ setValue, watch, errorText }) => {
+  const selectedMaxPlayers = watch("maxPlayers");
 
   const handleSelectPlayers = (players) => {
-    setMaximumPlayers(players);
-    setLeagueDetails((prevDetails) => ({
-      ...prevDetails,
-      maxPlayers: players,
-    }));
+    setValue("maxPlayers", players);
   };
 
   return (
@@ -27,9 +20,9 @@ const MaxPlayersPicker = ({ setLeagueDetails, errorText, leagueDetails }) => {
           <PlayerButton
             key={index}
             onPress={() => handleSelectPlayers(players)}
-            isSelected={maximumPlayers === players}
+            isSelected={selectedMaxPlayers === players}
           >
-            <MaxPlayerNumber isSelected={maximumPlayers === players}>
+            <MaxPlayerNumber isSelected={selectedMaxPlayers === players}>
               {players}
             </MaxPlayerNumber>
           </PlayerButton>

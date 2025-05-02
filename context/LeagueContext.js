@@ -7,12 +7,20 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
+import moment from "moment";
 
 import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generateLeagueId } from "../functions/generateLeagueId";
+import { generateCourtId } from "../functions/generateCourtId";
+import { generateUniqueUserId } from "../functions/generateUniqueUserId";
+import {
+  userProfileSchema,
+  scoreboardProfileSchema,
+  profileDetailSchema,
+} from "../schemas/schema";
 
 const LeagueContext = createContext();
 
@@ -196,6 +204,85 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const getCourts = async () => {
+    const snapshot = await getDocs(collection(db, "courts"));
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  };
+
+  const addCourt = async (courtData) => {
+    try {
+      const courtId = generateCourtId(courtData);
+      console.log("court", courtData);
+      await setDoc(doc(db, "courts", courtId), {
+        ...courtData,
+      });
+      return courtId;
+    } catch (error) {
+      console.error("Error adding court: ", error);
+      throw error; // Optional: Re-throw for error handling in components
+    }
+  };
+
+  const generateNewLeagueParticipants = async (number, leagueId) => {
+    const newPlayers = Array.from({ length: number }, (_, i) => {
+      const userId = generateUniqueUserId();
+      const username = `player${i + 1}`;
+      const memberSince = moment().format("MMM YYYY");
+
+      return {
+        username,
+        userId,
+        memberSince,
+        ...JSON.parse(JSON.stringify(scoreboardProfileSchema)),
+      };
+    });
+
+    try {
+      // Add each player to 'users' collection
+      for (const player of newPlayers) {
+        const userDoc = {
+          ...userProfileSchema,
+          userId: player.userId,
+          username: player.username,
+          firstName: `First${player.username}`,
+          lastName: `Last${player.username}`,
+          email: `${player.username}@example.com`,
+          profileDetail: {
+            ...profileDetailSchema,
+            lastActive: player.memberSince,
+          },
+        };
+
+        await setDoc(doc(db, "users", player.userId), userDoc);
+      }
+
+      console.log(
+        "newPlayers added to users collection:",
+        JSON.stringify(newPlayers, null, 2)
+      );
+
+      // Add newPlayers to league
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueSnap = await getDoc(leagueRef);
+
+      if (!leagueSnap.exists()) {
+        throw new Error("League does not exist!");
+      }
+
+      const existingParticipants = leagueSnap.data().leagueParticipants || [];
+
+      await updateDoc(leagueRef, {
+        leagueParticipants: [...existingParticipants, ...newPlayers],
+      });
+
+      console.log(
+        `✅ Added ${number} players to league '${leagueId}' and users collection.`
+      );
+    } catch (err) {
+      console.error("❌ Error writing to Firestore:", err);
+    }
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -208,6 +295,8 @@ const LeagueProvider = ({ children }) => {
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
         fetchLeagueById,
+        getCourts,
+        addCourt,
 
         // League State Management
         leagues,
@@ -218,6 +307,7 @@ const LeagueProvider = ({ children }) => {
         // Mock Data Management
         setShowMockData,
         showMockData,
+        generateNewLeagueParticipants,
 
         // League Description Management
         handleLeagueDescription,

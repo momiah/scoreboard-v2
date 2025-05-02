@@ -93,7 +93,7 @@ const ProfileActivity = ({ profile }) => {
           }}
         >
           <Text style={styles.leagueName}>{item.leagueName}</Text>
-          <Text style={styles.leagueDates}>{item.location}</Text>
+          <Text style={styles.leagueDates}>{item.location.courtName}</Text>
 
           <View style={{ flexDirection: "row", gap: 10 }}>
             <Tag name={leagueStatus?.status} color={leagueStatus?.color} />

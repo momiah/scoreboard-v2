@@ -1,17 +1,12 @@
-import { leagueTypes } from "../leagueMocks";
-import React, { useState } from "react";
+import { leagueTypes } from "../../../schemas/schema";
+import React from "react";
 import styled from "styled-components/native";
-import { TouchableOpacity } from "react-native";
 
-const LeagueType = ({ setLeagueDetails, leagueDetails, errorText }) => {
-  const [leagueType, setLeagueType] = useState(leagueDetails.leagueType);
+const LeagueType = ({ setValue, watch, errorText }) => {
+  const selectedType = watch("leagueType");
 
   const handleSelectLeagueType = (type) => {
-    setLeagueType(type);
-    setLeagueDetails((prevDetails) => ({
-      ...prevDetails,
-      leagueType: type,
-    }));
+    setValue("leagueType", type);
   };
 
   return (
@@ -25,9 +20,9 @@ const LeagueType = ({ setLeagueDetails, leagueDetails, errorText }) => {
           <LeagueTypeButton
             key={index}
             onPress={() => handleSelectLeagueType(type)}
-            isSelected={leagueType === type}
+            isSelected={selectedType === type}
           >
-            <LeagueTypeText isSelected={leagueType === type}>
+            <LeagueTypeText isSelected={selectedType === type}>
               {type}
             </LeagueTypeText>
           </LeagueTypeButton>

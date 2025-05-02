@@ -29,6 +29,8 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
       const leagueParticipantsLength = league.leagueParticipants.length;
       const maxPlayers = league.maxPlayers;
 
+      const location = `${league.location.city}, ${league.location.country}`;
+
       return (
         <CarouselContainer>
           <CarouselItem key={index} onPress={() => navigateTo(league.id)}>
@@ -72,11 +74,13 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
                       alignItems: "center",
                     }}
                   >
-                    <LeagueLocation>{league.centerName}</LeagueLocation>
+                    <LeagueLocation>
+                      {league.location.courtName || ""}
+                    </LeagueLocation>
                     <View
                       style={{ flexDirection: "row", alignItems: "center" }}
                     >
-                      <LeagueLocation>{league.location}</LeagueLocation>
+                      <LeagueLocation>{location || ""}</LeagueLocation>
                       <Ionicons
                         name={"location"}
                         size={15}

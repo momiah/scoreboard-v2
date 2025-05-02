@@ -4,38 +4,14 @@ import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import Popup from "../popup/Popup";
-import { PopupContext } from "../../context/PopupContext";
+import { daysOfWeek } from "../../schemas/schema";
 
 const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [startTime, setStartTime] = useState("00:00");
   const [endTime, setEndTime] = useState("00:00");
+  const [errorText, setErrorText] = useState("");
 
-  const {
-    handleShowPopup,
-    setPopupMessage,
-    popupMessage,
-    setShowPopup,
-    showPopup,
-  } = useContext(PopupContext);
-
-  const daysOfWeek = [
-    "Mondays",
-    "Tuesdays",
-    "Wednesdays",
-    "Thursdays",
-    "Fridays",
-    "Saturdays",
-    "Sundays",
-  ];
-
-  const handleClosePopup = () => {
-    setShowPopup(false);
-    setPopupMessage("");
-  };
-
-  // Apply default values when modal is opened
   useEffect(() => {
     if (defaultValues) {
       setSelectedDay(defaultValues.day || null);
@@ -49,28 +25,28 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
   }, [defaultValues, isVisible]);
 
   const handleTimeChange = (time, setter, increment) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    let newMinutes = minutes + increment;
+    let [hours, minutes] = time.split(":").map(Number);
+    let totalMinutes = hours * 60 + minutes + increment;
 
-    if (newMinutes >= 60) {
-      setter(`${(hours + 1).toString().padStart(2, "0")}:00`);
-    } else if (newMinutes < 0) {
-      setter(`${(hours - 1).toString().padStart(2, "0")}:45`);
-    } else {
-      setter(
-        `${hours.toString().padStart(2, "0")}:${newMinutes
-          .toString()
-          .padStart(2, "0")}`
-      );
+    // Wrap around like a 24-hour clock
+    const MINUTES_IN_DAY = 24 * 60;
+    if (totalMinutes < 0) {
+      totalMinutes = MINUTES_IN_DAY + totalMinutes;
+    } else if (totalMinutes >= MINUTES_IN_DAY) {
+      totalMinutes = totalMinutes % MINUTES_IN_DAY;
     }
+
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+
+    const formattedTime = `${newHours.toString().padStart(2, "0")}:${newMinutes
+      .toString()
+      .padStart(2, "0")}`;
+
+    setter(formattedTime);
   };
 
   const handleConfirm = () => {
-    if (!selectedDay) {
-      alert("Please select a day."); // Alert if no day is selected
-      return;
-    }
-
     const [startHours, startMinutes] = startTime.split(":").map(Number);
     const [endHours, endMinutes] = endTime.split(":").map(Number);
 
@@ -78,7 +54,7 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
     const endTotalMinutes = endHours * 60 + endMinutes;
 
     if (endTotalMinutes <= startTotalMinutes) {
-      handleShowPopup("End time must be after the start time.");
+      setErrorText("End time must be after the start time.");
       return;
     }
 
@@ -90,12 +66,6 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
 
   return (
     <Modal animationType="slide" transparent={true} visible={isVisible}>
-      <Popup
-        visible={showPopup}
-        message={popupMessage}
-        onClose={handleClosePopup}
-        type="error"
-      />
       <ModalContainer>
         <GradientOverlay colors={["#191b37", "#001d2e"]}>
           <ModalContent>
@@ -151,6 +121,8 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
                 </TouchableOpacity>
               </TimePicker>
             </TimeAdjustmentRow>
+
+            {errorText && <ErrorText>{errorText}</ErrorText>}
 
             {/* Confirm Button */}
             <ButtonContainer>
@@ -268,6 +240,12 @@ const SubmitButtonText = styled.Text(({ disabled }) => ({
 const TimeText = styled.Text({
   color: "#FFFFFF",
   fontSize: 16,
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 10,
+  fontStyle: "italic",
 });
 
 export default AddPlayTimeModal;

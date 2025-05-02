@@ -8,17 +8,17 @@ export const calculatePlayerPerformance = (
 ) => {
   const date = transformDate(game.date);
 
-  const getPlayerByUsername = (username) =>
-    playersToUpdate.find((player) => player.username === username);
+  const getUserByUsername = (username) =>
+    usersToUpdate.find((user) => user.username === username);
 
   const winnerScore = game.result.winner.score;
   const loserScore = game.result.loser.score;
 
   const combinedWinnerXp = game.result.winner.players.reduce(
     (totalXp, playerUsername) => {
-      const player = getPlayerByUsername(playerUsername);
-      if (player) {
-        return totalXp + player.XP;
+      const user = getUserByUsername(playerUsername);
+      if (user) {
+        return totalXp + user.profileDetail.XP;
       }
       return totalXp;
     },
@@ -27,9 +27,9 @@ export const calculatePlayerPerformance = (
 
   const combinedLoserXp = game.result.loser.players.reduce(
     (totalXp, playerUsername) => {
-      const player = getPlayerByUsername(playerUsername);
-      if (player) {
-        return totalXp + player.XP;
+      const user = getUserByUsername(playerUsername);
+      if (user) {
+        return totalXp + user.profileDetail.XP;
       }
       return totalXp;
     },
@@ -180,14 +180,14 @@ export const calculatePlayerPerformance = (
     const finalXp = xp + rankXp;
 
     // Update the player's XP
-    player.XP += finalXp;
+    // player.XP += finalXp;
     user.XP += finalXp;
     player.prevGameXP = finalXp;
 
     // Ensure the player's XP doesn't drop below 10
-    if (player.XP < 10) {
-      player.XP = 10;
-    }
+    // if (player.XP < 10) {
+    //   player.XP = 10;
+    // }
 
     if (user.XP < 10) {
       user.XP = 10;

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
@@ -7,12 +7,12 @@ import { calculateEndDate } from "../../../functions/calculateEndDate";
 import { formatDateForDisplay } from "../../../functions/formatDateForDisplay";
 import { formatDateForStorage } from "../../../functions/formatDateForStorage";
 
-const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
+const DatePicker = ({ setValue, watch, errorText }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [leagueLengths, setLeagueLength] = useState(
-    leagueDetails.leagueLengthInMonths
-  );
   const [tempDate, setTempDate] = useState(null);
+
+  const startDate = watch("startDate");
+  const leagueLengthInMonths = watch("leagueLengthInMonths");
 
   const handleTempDateChange = (selectedDate) => {
     if (selectedDate) {
@@ -23,66 +23,40 @@ const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
   const confirmDateChange = () => {
     if (tempDate) {
       const formattedStartDate = formatDateForStorage(tempDate);
+      const endDate = calculateEndDate(
+        formattedStartDate,
+        leagueLengthInMonths
+      );
 
-      // Update leagueDetails with start date
-      setLeagueDetails((prevDetails) => {
-        // Calculate end date based on league length
-        const lengthInMonths = prevDetails.leagueLengthInMonths || 1;
-        const endDate = calculateEndDate(formattedStartDate, lengthInMonths);
-
-        return {
-          ...prevDetails,
-          startDate: formattedStartDate,
-          endDate,
-        };
-      });
+      setValue("startDate", formattedStartDate);
+      setValue("endDate", endDate);
 
       setDatePickerVisible(false);
       setTempDate(null);
     }
   };
 
-  // Show the date picker
   const showDatePicker = () => {
-    const currentValue = leagueDetails.startDate;
-
-    // Convert the "DD-MM-YYYY" format back to a Date object
-    if (currentValue) {
-      const [day, month, year] = currentValue.split("-").map(Number);
+    if (startDate) {
+      const [day, month, year] = startDate.split("-").map(Number);
       setTempDate(new Date(year, month - 1, day));
     } else {
       setTempDate(new Date());
     }
-
     setDatePickerVisible(true);
   };
 
-  // Handle league length selection
   const handleSelectLeagueLength = (length) => {
-    setLeagueLength(length);
+    setValue("leagueLengthInMonths", length);
 
-    setLeagueDetails((prevDetails) => {
-      // Recalculate the end date if start date is already selected
-      if (prevDetails.startDate) {
-        const endDate = calculateEndDate(prevDetails.startDate, length);
-
-        return {
-          ...prevDetails,
-          leagueLengthInMonths: length,
-          endDate,
-        };
-      } else {
-        return {
-          ...prevDetails,
-          leagueLengthInMonths: length,
-        };
-      }
-    });
+    if (startDate) {
+      const endDate = calculateEndDate(startDate, length);
+      setValue("endDate", endDate);
+    }
   };
 
   return (
     <DatePickerContainer>
-      {/* Start Date Picker */}
       <DatePickerContent>
         <LabelContainer>
           <Label>Start Date</Label>
@@ -93,18 +67,15 @@ const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
           onPress={showDatePicker}
         >
           <Text style={{ color: "white", textAlign: "center" }}>
-            {leagueDetails.startDate
+            {startDate
               ? formatDateForDisplay(
-                  new Date(
-                    leagueDetails.startDate.split("-").reverse().join("-")
-                  )
+                  new Date(startDate.split("-").reverse().join("-"))
                 )
               : "Select Date"}
           </Text>
         </DatePickerButton>
       </DatePickerContent>
 
-      {/* Length Selector */}
       <LengthContainer>
         <Label>Length (Months)</Label>
         <LeagueLengthContainer>
@@ -112,9 +83,9 @@ const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
             <LeagueLengthButton
               key={length}
               onPress={() => handleSelectLeagueLength(length)}
-              isSelected={leagueLengths === length}
+              isSelected={leagueLengthInMonths === length}
             >
-              <LeagueLengthText isSelected={leagueLengths === length}>
+              <LeagueLengthText isSelected={leagueLengthInMonths === length}>
                 {length}
               </LeagueLengthText>
             </LeagueLengthButton>
@@ -122,7 +93,6 @@ const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
         </LeagueLengthContainer>
       </LengthContainer>
 
-      {/* Centered DateTimePicker */}
       {datePickerVisible && (
         <DatePickerModal>
           <DateTimePicker
@@ -140,10 +110,8 @@ const DatePicker = ({ setLeagueDetails, leagueDetails, errorText }) => {
           />
 
           <ButtonContainer>
-            <CancelButton>
-              <CancelText onPress={() => setDatePickerVisible(false)}>
-                Cancel
-              </CancelText>
+            <CancelButton onPress={() => setDatePickerVisible(false)}>
+              <CancelText>Cancel</CancelText>
             </CancelButton>
             <ConfirmButton onPress={confirmDateChange}>
               <CreateText>Confirm Date</CreateText>
