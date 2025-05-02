@@ -6,9 +6,11 @@ import {
   Dimensions,
   SafeAreaView,
   ActivityIndicator,
+  View,
 } from "react-native";
 import { loadCountries, loadCities } from "../../utils/locationData";
 import ListDropdown from "../ListDropdown/ListDropdown";
+import { Ionicons } from "@expo/vector-icons";
 
 const AddCourtModal = ({
   visible,
@@ -89,8 +91,6 @@ const AddCourtModal = ({
       setCourtCreationLoading(false);
     }
   };
-
-  console.log("Court Details:", courtDetails);
 
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -189,10 +189,24 @@ const AddCourtModal = ({
                   }
                 />
 
-                <DisclaimerText>
-                  Adding a new court will help other users to find this location
-                  so please ensure the details are correct!
-                </DisclaimerText>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 3,
+                  }}
+                >
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={20}
+                    color={"#00A2FF"}
+                  />
+
+                  <DisclaimerText>
+                    Adding a new court will help other users to find this
+                    location so please ensure the details are correct!
+                  </DisclaimerText>
+                </View>
                 <ButtonContainer>
                   <CancelButton onPress={onClose}>
                     <CancelText>Cancel</CancelText>

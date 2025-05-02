@@ -35,9 +35,8 @@ import {
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
-import { useForm, Controller, Form } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
-import { loadCountries, loadCities } from "../../utils/locationData";
 import AddCourtModal from "./AddCourtModal";
 
 const { width: screenWidth } = Dimensions.get("window");
