@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState, useMemo } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   Modal,
   Text,
@@ -31,6 +37,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller, Form } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
+import { loadCountries, loadCities } from "../../utils/locationData";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -42,11 +49,16 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
   // State
   const [selectedImage, setSelectedImage] = useState(null);
+
+  // Modal state
   const [showLeagueSettingsModal, setShowLeagueSettingsModal] = useState(false);
+  const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+
   const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
+
+  // Court state
   const [courtsList, setCourtsList] = useState([]);
   const [courtData, setCourtData] = useState([]);
-  const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState(courtSchema);
   const [selectedLocation, setSelectedLocation] = useState(
     courtDetails.location
@@ -96,7 +108,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const handleCourtSelect = (key) => {
     console.log("Selected court key:", key);
     if (key === "add-new-court") {
-      setLocationModalVisible(true);
+      setShowAddCourtModal(true);
     } else {
       // Update form value
       setValue("location", key);
@@ -250,7 +262,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                   placeholder="Select or Add Court"
                   setSelected={(key) => handleCourtSelect(key)}
                   notFoundText="Add court location..."
-                  notFoundTextFunction={() => setLocationModalVisible(true)}
+                  notFoundTextFunction={() => setShowAddCourtModal(true)}
                   onDropdownOpen={() => [
                     setCourtDetails(courtSchema),
                     getCourts(),
@@ -297,12 +309,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             setValue={setValue}
           />
 
-          {locationModalVisible && (
-            <CourtModal
-              visible={locationModalVisible}
+          {showAddCourtModal && (
+            <AddCourtModal
+              visible={showAddCourtModal}
               courtDetails={courtDetails}
               setCourtDetails={setCourtDetails}
-              onClose={() => setLocationModalVisible(false)}
+              onClose={() => setShowAddCourtModal(false)}
               addCourt={addCourt}
               onCourtAdded={async (courtDetails) => {
                 // Refresh courts list
@@ -427,7 +439,7 @@ const ConfirmLeagueSettingsModal = ({
 };
 
 // Court Modal Component
-const CourtModal = ({
+const AddCourtModal = ({
   visible,
   onClose,
   courtDetails,
@@ -436,6 +448,47 @@ const CourtModal = ({
   onCourtAdded,
 }) => {
   const [courtCreationLoading, setCourtCreationLoading] = useState(false);
+
+  // Coutry and city state
+  const [countries, setCountries] = useState([]);
+  const [selectedCountryCode, setSelectedCountryCode] = useState(null);
+
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingCountries, setLoadingCountries] = useState(false);
+
+  useEffect(() => {
+    if (countries.length) return;
+
+    setLoadingCountries(true);
+    setTimeout(() => {
+      try {
+        const all = loadCountries();
+        setCountries(all);
+      } finally {
+        setLoadingCountries(false);
+      }
+    }, 0);
+  }, [countries]);
+
+  const handleCityDropdownOpen = useCallback(async () => {
+    if (!selectedCountryCode) {
+      setCities([]);
+      return;
+    }
+
+    setLoadingCities(true);
+    try {
+      const list = loadCities(selectedCountryCode);
+      setCities(list);
+    } catch (e) {
+      console.error(e);
+      setCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  }, [selectedCountryCode]);
+
   const handleChange = (key, value) => {
     setCourtDetails((prev) => ({ ...prev, [key]: value }));
   };
@@ -466,6 +519,8 @@ const CourtModal = ({
     }
   };
 
+  console.log("Court Details:", courtDetails);
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <ModalContainer>
@@ -478,22 +533,63 @@ const CourtModal = ({
               value={courtDetails.courtName}
               onChangeText={(v) => handleChange("courtName", v)}
             />
-            <Label>City</Label>
-            <Input
-              value={courtDetails.location.city}
-              onChangeText={(v) =>
-                handleChange("location", { ...courtDetails.location, city: v })
-              }
-            />
-            <Label>Country</Label>
-            <Input
-              value={courtDetails.location.country}
-              onChangeText={(v) =>
+            <ListDropdown
+              label="Country"
+              setSelected={(val) => {
+                const selectedCountry = countries.find((c) => c.value === val);
                 handleChange("location", {
                   ...courtDetails.location,
-                  country: v,
-                })
+                  country: val,
+                  countryCode: selectedCountry?.key,
+                });
+
+                setSelectedCountryCode(selectedCountry?.key);
+                setCities([]);
+              }}
+              data={countries}
+              save="value"
+              placeholder={
+                loadingCountries ? "Loading countries..." : "Select country"
               }
+              selectedOption={
+                courtDetails.location.country
+                  ? {
+                      key: courtDetails.location.countryCode,
+                      value: courtDetails.location.country,
+                    }
+                  : null
+              }
+              loading={loadingCountries}
+            />
+
+            {/* City Dropdown */}
+            <ListDropdown
+              label="City"
+              setSelected={(val) => {
+                handleChange("location", {
+                  ...courtDetails.location,
+                  city: val,
+                });
+              }}
+              data={cities}
+              save="value"
+              placeholder={
+                selectedCountryCode
+                  ? "Search cities..."
+                  : "Select country first"
+              }
+              searchPlaceholder="Start typing..."
+              selectedOption={
+                courtDetails.location.city
+                  ? {
+                      key: courtDetails.location.city,
+                      value: courtDetails.location.city,
+                    }
+                  : null
+              }
+              loading={loadingCities}
+              onDropdownOpen={handleCityDropdownOpen}
+              disabled={loadingCountries}
             />
             <Label>Post Code/ ZIP Code</Label>
             <Input

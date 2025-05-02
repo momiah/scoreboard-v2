@@ -21,13 +21,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 const ListDropdown = ({
   setSelected,
+  selectedOption = {},
   placeholder,
   boxStyles,
   inputStyles,
   dropdownStyles,
   maxHeight = 270,
   data,
-  selectedOption = {},
   searchPlaceholder = "Search...",
   notFoundText = "No data found",
   notFoundTextFunction,
