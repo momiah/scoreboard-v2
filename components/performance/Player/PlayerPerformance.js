@@ -25,6 +25,17 @@ const PlayerPerformance = ({ playersData }) => {
           };
         })
       );
+
+      enriched.sort((a, b) => {
+        if (b.numberOfWins !== a.numberOfWins) {
+          return b.numberOfWins - a.numberOfWins;
+        }
+        if (b.totalPointDifference !== a.totalPointDifference) {
+          return b.totalPointDifference - a.totalPointDifference;
+        }
+        return (b.XP || 0) - (a.XP || 0); // fallback: highest XP wins
+      });
+
       setPlayersWithUserData(enriched);
       setLoading(false);
     };
@@ -33,6 +44,11 @@ const PlayerPerformance = ({ playersData }) => {
       enrichPlayers();
     }
   }, [playersData]);
+
+  console.log(
+    "playersWithUserData",
+    JSON.stringify(playersWithUserData, null, 2)
+  );
 
   useEffect(() => {
     if (playersData.length > 0) {
