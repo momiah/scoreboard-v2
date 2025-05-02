@@ -38,6 +38,7 @@ import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller, Form } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
 import { loadCountries, loadCities } from "../../utils/locationData";
+import AddCourtModal from "./AddCourtModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -384,7 +385,6 @@ const ConfirmLeagueSettingsModal = ({
   leagueCreationLoading,
   onConfirm,
   confirmDisabled,
-  control,
   watch,
   errors,
   setValue,
@@ -438,207 +438,6 @@ const ConfirmLeagueSettingsModal = ({
   );
 };
 
-// Court Modal Component
-const AddCourtModal = ({
-  visible,
-  onClose,
-  courtDetails,
-  setCourtDetails,
-  addCourt,
-  onCourtAdded,
-}) => {
-  const [courtCreationLoading, setCourtCreationLoading] = useState(false);
-
-  // Coutry and city state
-  const [countries, setCountries] = useState([]);
-  const [selectedCountryCode, setSelectedCountryCode] = useState(null);
-
-  const [cities, setCities] = useState([]);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [loadingCountries, setLoadingCountries] = useState(false);
-
-  useEffect(() => {
-    if (countries.length) return;
-
-    setLoadingCountries(true);
-    setTimeout(() => {
-      try {
-        const all = loadCountries();
-        setCountries(all);
-      } finally {
-        setLoadingCountries(false);
-      }
-    }, 0);
-  }, [countries]);
-
-  const handleCityDropdownOpen = useCallback(async () => {
-    if (!selectedCountryCode) {
-      setCities([]);
-      return;
-    }
-
-    setLoadingCities(true);
-    try {
-      const list = loadCities(selectedCountryCode);
-      setCities(list);
-    } catch (e) {
-      console.error(e);
-      setCities([]);
-    } finally {
-      setLoadingCities(false);
-    }
-  }, [selectedCountryCode]);
-
-  const handleChange = (key, value) => {
-    setCourtDetails((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const allFieldsFilled = useMemo(() => {
-    return (
-      courtDetails.courtName?.trim() &&
-      courtDetails.location.city?.trim() &&
-      courtDetails.location.country?.trim() &&
-      courtDetails.location.postCode?.trim() &&
-      courtDetails.location.address?.trim()
-    );
-  }, [courtDetails]);
-
-  const handleAddCourt = async () => {
-    try {
-      setCourtCreationLoading(true);
-      const newCourtId = await addCourt(courtDetails);
-      console.log("courtDetails", JSON.stringify(courtDetails, null, 2));
-      if (newCourtId) {
-        onCourtAdded(courtDetails, newCourtId);
-        onClose();
-      }
-    } catch (error) {
-      console.error("Court creation failed:", error);
-    } finally {
-      setCourtCreationLoading(false);
-    }
-  };
-
-  console.log("Court Details:", courtDetails);
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <ModalContainer>
-        <CourtLocationWrapper>
-          <SupportModalScrollContainer>
-            <ModalTitle>Add Court Details</ModalTitle>
-
-            <Label>Court Name</Label>
-            <Input
-              value={courtDetails.courtName}
-              onChangeText={(v) => handleChange("courtName", v)}
-            />
-            <ListDropdown
-              label="Country"
-              setSelected={(val) => {
-                const selectedCountry = countries.find((c) => c.value === val);
-                handleChange("location", {
-                  ...courtDetails.location,
-                  country: val,
-                  countryCode: selectedCountry?.key,
-                });
-
-                setSelectedCountryCode(selectedCountry?.key);
-                setCities([]);
-              }}
-              data={countries}
-              save="value"
-              placeholder={
-                loadingCountries ? "Loading countries..." : "Select country"
-              }
-              selectedOption={
-                courtDetails.location.country
-                  ? {
-                      key: courtDetails.location.countryCode,
-                      value: courtDetails.location.country,
-                    }
-                  : null
-              }
-              loading={loadingCountries}
-            />
-
-            {/* City Dropdown */}
-            <ListDropdown
-              label="City"
-              setSelected={(val) => {
-                handleChange("location", {
-                  ...courtDetails.location,
-                  city: val,
-                });
-              }}
-              data={cities}
-              save="value"
-              placeholder={
-                selectedCountryCode
-                  ? "Search cities..."
-                  : "Select country first"
-              }
-              searchPlaceholder="Start typing..."
-              selectedOption={
-                courtDetails.location.city
-                  ? {
-                      key: courtDetails.location.city,
-                      value: courtDetails.location.city,
-                    }
-                  : null
-              }
-              loading={loadingCities}
-              onDropdownOpen={handleCityDropdownOpen}
-              disabled={loadingCountries}
-            />
-            <Label>Post Code/ ZIP Code</Label>
-            <Input
-              value={courtDetails.location.postCode}
-              onChangeText={(v) =>
-                handleChange("location", {
-                  ...courtDetails.location,
-                  postCode: v,
-                })
-              }
-            />
-            <Label>Address</Label>
-            <Input
-              value={courtDetails.location.address}
-              onChangeText={(v) =>
-                handleChange("location", {
-                  ...courtDetails.location,
-                  address: v,
-                })
-              }
-            />
-
-            <DisclaimerText>
-              Adding a new court will help other users to find this location so
-              please ensure the details are correct!
-            </DisclaimerText>
-            <ButtonContainer>
-              <CancelButton onPress={onClose}>
-                <CancelText>Cancel</CancelText>
-              </CancelButton>
-              <CreateButton
-                disabled={!allFieldsFilled}
-                onPress={handleAddCourt}
-              >
-                {courtCreationLoading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <CreateText>Add Court</CreateText>
-                )}
-              </CreateButton>
-            </ButtonContainer>
-          </SupportModalScrollContainer>
-        </CourtLocationWrapper>
-      </ModalContainer>
-    </Modal>
-  );
-};
-
-// Styled Components - keeping original styles
 const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
@@ -662,15 +461,6 @@ const LeagueSettingsWrapper = styled(SafeAreaView)({
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,
-  // overflow: "hidden",
-  backgroundColor: "rgba(2, 13, 24, 0.7)",
-});
-
-const CourtLocationWrapper = styled(SafeAreaView)({
-  width: screenWidth - 40,
-  margin: 20,
-  borderRadius: 20,
-  overflow: "hidden",
   backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
@@ -756,12 +546,6 @@ const CreateText = styled.Text({
   fontSize: 16,
 });
 
-const DisclaimerText = styled.Text({
-  color: "white",
-  fontStyle: "italic",
-  fontSize: 12,
-});
-
 const ImagePickerContainer = styled.TouchableOpacity({
   position: "relative",
   marginBottom: 20,
@@ -795,10 +579,6 @@ const ImagePlaceholder = styled.View({
 });
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    marginBottom: 15,
-  },
   box: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 0,
@@ -810,10 +590,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ff7675",
   },
-  disabledBox: {
-    opacity: 0.6,
-  },
-
   dropdown: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 0,
@@ -821,12 +597,6 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     color: "#fff",
-  },
-  dropdownButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
   },
 });
 
