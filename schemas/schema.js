@@ -24,7 +24,7 @@ const locations = [
   "Edinburgh",
   "Leeds",
 ];
-const daysOfWeek = [
+export const daysOfWeek = [
   "Monday",
   "Tuesday",
   "Wednesday",
