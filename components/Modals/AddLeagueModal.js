@@ -281,6 +281,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                   multiline
                 />
 
+                <DisclaimerText>
+                  Please ensure you have arranged court reservation directly
+                  with the venue. Court Champs does not reserve any courts when
+                  you post a game or add a league.
+                </DisclaimerText>
+
                 <ButtonContainer>
                   <CancelButton onPress={() => setModalVisible(false)}>
                     <CancelText>Cancel</CancelText>
@@ -563,6 +569,12 @@ const OverlayIcon = styled.View({
   backgroundColor: "rgba(0, 0, 0, 0.5)",
   borderRadius: 16,
   padding: 2,
+});
+
+const DisclaimerText = styled.Text({
+  color: "white",
+  fontStyle: "italic",
+  fontSize: 12,
 });
 
 const ImagePlaceholder = styled.View({
