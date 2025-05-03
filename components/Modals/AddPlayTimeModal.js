@@ -1,10 +1,11 @@
 import React, { useState, useContext, useEffect } from "react";
-import { TouchableOpacity, Modal, Dimensions } from "react-native";
+import { TouchableOpacity, Modal, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { daysOfWeek } from "../../schemas/schema";
+import { Ionicons } from "@expo/vector-icons";
 
 const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
   const [selectedDay, setSelectedDay] = useState(null);
@@ -62,6 +63,13 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
     setSelectedDay(null);
     setStartTime("00:00");
     setEndTime("00:00");
+    setErrorText("");
+    onClose();
+  };
+
+  const closeModal = () => {
+    setErrorText("");
+    onClose();
   };
 
   return (
@@ -70,7 +78,7 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
         <GradientOverlay colors={["#191b37", "#001d2e"]}>
           <ModalContent>
             <CloseIconWrapper>
-              <TouchableOpacity onPress={onClose}>
+              <TouchableOpacity onPress={closeModal}>
                 <AntDesign name="closecircleo" size={30} color="red" />
               </TouchableOpacity>
             </CloseIconWrapper>
@@ -122,6 +130,25 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
               </TimePicker>
             </TimeAdjustmentRow>
 
+            {!errorText && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 3,
+                }}
+              >
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color={"#00A2FF"}
+                />
+
+                <DisclaimerText>
+                  Let players know when the league is active
+                </DisclaimerText>
+              </View>
+            )}
             {errorText && <ErrorText>{errorText}</ErrorText>}
 
             {/* Confirm Button */}
@@ -246,6 +273,12 @@ const ErrorText = styled.Text({
   color: "red",
   fontSize: 10,
   fontStyle: "italic",
+});
+
+const DisclaimerText = styled.Text({
+  color: "white",
+  fontStyle: "italic",
+  fontSize: 12,
 });
 
 export default AddPlayTimeModal;

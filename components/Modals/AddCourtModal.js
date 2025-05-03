@@ -203,7 +203,7 @@ const AddCourtModal = ({
                   />
 
                   <DisclaimerText>
-                    Adding a new court will help other users to find this
+                    Adding a new court will help other players find this
                     location so please ensure the details are correct!
                   </DisclaimerText>
                 </View>
