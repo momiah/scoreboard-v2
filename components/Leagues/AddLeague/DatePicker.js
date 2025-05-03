@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, Modal } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { calculateEndDate } from "../../../functions/calculateEndDate";
 import { formatDateForDisplay } from "../../../functions/formatDateForDisplay";
 import { formatDateForStorage } from "../../../functions/formatDateForStorage";
+import { Ionicons } from "@expo/vector-icons";
 
 const DatePicker = ({ setValue, watch, errorText }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -93,32 +94,52 @@ const DatePicker = ({ setValue, watch, errorText }) => {
         </LeagueLengthContainer>
       </LengthContainer>
 
-      {datePickerVisible && (
-        <DatePickerModal>
-          <DateTimePicker
-            value={tempDate || new Date()}
-            mode="date"
-            display="spinner"
-            themeVariant="dark"
-            onChange={(event, selectedDate) => {
-              handleTempDateChange(selectedDate);
-            }}
-            minimumDate={new Date()}
-            maximumDate={
-              new Date(new Date().setMonth(new Date().getMonth() + 3))
-            }
-          />
+      <Modal animationType="fade" transparent visible={datePickerVisible}>
+        <ModalContainer>
+          <DatePickerModalContent>
+            <DateTimePicker
+              value={tempDate || new Date()}
+              mode="date"
+              dateFormat="dayofweek day month"
+              display="spinner"
+              themeVariant="dark"
+              onChange={(event, selectedDate) => {
+                handleTempDateChange(selectedDate);
+              }}
+              minimumDate={new Date()}
+              maximumDate={
+                new Date(new Date().setMonth(new Date().getMonth() + 3))
+              }
+            />
 
-          <ButtonContainer>
-            <CancelButton onPress={() => setDatePickerVisible(false)}>
-              <CancelText>Cancel</CancelText>
-            </CancelButton>
-            <ConfirmButton onPress={confirmDateChange}>
-              <CreateText>Confirm Date</CreateText>
-            </ConfirmButton>
-          </ButtonContainer>
-        </DatePickerModal>
-      )}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 3,
+              }}
+            >
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={"#00A2FF"}
+              />
+              <DisclaimerText>
+                Please select a date within the next 3 months.
+              </DisclaimerText>
+            </View>
+
+            <ButtonContainer>
+              <CancelButton onPress={() => setDatePickerVisible(false)}>
+                <CancelText>Cancel</CancelText>
+              </CancelButton>
+              <ConfirmButton onPress={confirmDateChange}>
+                <CreateText>Confirm Date</CreateText>
+              </ConfirmButton>
+            </ButtonContainer>
+          </DatePickerModalContent>
+        </ModalContainer>
+      </Modal>
     </DatePickerContainer>
   );
 };
@@ -132,19 +153,17 @@ const DatePickerContainer = styled.View({
   alignItems: "center",
 });
 
-const DatePickerModal = styled(BlurView).attrs({
-  intensity: 80,
-  tint: "dark",
-})({
-  position: "absolute",
-  top: "110%",
-  left: "-3%",
-  width: "110%",
-  backgroundColor: "rgba(6, 6, 22, 0.7)",
-  borderRadius: 50,
-  padding: 25,
-  zIndex: 1000,
+const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
+  flex: 1,
   justifyContent: "center",
+  alignItems: "center",
+});
+
+const DatePickerModalContent = styled.View({
+  width: "90%",
+  padding: 20,
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
+  borderRadius: 20,
   alignItems: "center",
 });
 
@@ -237,6 +256,12 @@ const ErrorText = styled.Text({
   color: "red",
   fontSize: 10,
   fontStyle: "italic",
+});
+
+const DisclaimerText = styled.Text({
+  color: "white",
+  fontStyle: "italic",
+  fontSize: 12,
 });
 
 export default DatePicker;

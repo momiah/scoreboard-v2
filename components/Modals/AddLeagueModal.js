@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState, useMemo } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   Modal,
   Text,
@@ -29,8 +35,9 @@ import {
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
-import { useForm, Controller, Form } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
+import AddCourtModal from "./AddCourtModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -42,11 +49,16 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
   // State
   const [selectedImage, setSelectedImage] = useState(null);
+
+  // Modal state
   const [showLeagueSettingsModal, setShowLeagueSettingsModal] = useState(false);
+  const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+
   const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
+
+  // Court state
   const [courtsList, setCourtsList] = useState([]);
   const [courtData, setCourtData] = useState([]);
-  const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState(courtSchema);
   const [selectedLocation, setSelectedLocation] = useState(
     courtDetails.location
@@ -96,7 +108,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const handleCourtSelect = (key) => {
     console.log("Selected court key:", key);
     if (key === "add-new-court") {
-      setLocationModalVisible(true);
+      setShowAddCourtModal(true);
     } else {
       // Update form value
       setValue("location", key);
@@ -250,7 +262,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                   placeholder="Select or Add Court"
                   setSelected={(key) => handleCourtSelect(key)}
                   notFoundText="Add court location..."
-                  notFoundTextFunction={() => setLocationModalVisible(true)}
+                  notFoundTextFunction={() => setShowAddCourtModal(true)}
                   onDropdownOpen={() => [
                     setCourtDetails(courtSchema),
                     getCourts(),
@@ -297,12 +309,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             setValue={setValue}
           />
 
-          {locationModalVisible && (
-            <CourtModal
-              visible={locationModalVisible}
+          {showAddCourtModal && (
+            <AddCourtModal
+              visible={showAddCourtModal}
               courtDetails={courtDetails}
               setCourtDetails={setCourtDetails}
-              onClose={() => setLocationModalVisible(false)}
+              onClose={() => setShowAddCourtModal(false)}
               addCourt={addCourt}
               onCourtAdded={async (courtDetails) => {
                 // Refresh courts list
@@ -372,7 +384,6 @@ const ConfirmLeagueSettingsModal = ({
   leagueCreationLoading,
   onConfirm,
   confirmDisabled,
-  control,
   watch,
   errors,
   setValue,
@@ -426,123 +437,6 @@ const ConfirmLeagueSettingsModal = ({
   );
 };
 
-// Court Modal Component
-const CourtModal = ({
-  visible,
-  onClose,
-  courtDetails,
-  setCourtDetails,
-  addCourt,
-  onCourtAdded,
-}) => {
-  const [courtCreationLoading, setCourtCreationLoading] = useState(false);
-  const handleChange = (key, value) => {
-    setCourtDetails((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const allFieldsFilled = useMemo(() => {
-    return (
-      courtDetails.courtName?.trim() &&
-      courtDetails.location.city?.trim() &&
-      courtDetails.location.country?.trim() &&
-      courtDetails.location.postCode?.trim() &&
-      courtDetails.location.address?.trim()
-    );
-  }, [courtDetails]);
-
-  const handleAddCourt = async () => {
-    try {
-      setCourtCreationLoading(true);
-      const newCourtId = await addCourt(courtDetails);
-      console.log("courtDetails", JSON.stringify(courtDetails, null, 2));
-      if (newCourtId) {
-        onCourtAdded(courtDetails, newCourtId);
-        onClose();
-      }
-    } catch (error) {
-      console.error("Court creation failed:", error);
-    } finally {
-      setCourtCreationLoading(false);
-    }
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <ModalContainer>
-        <CourtLocationWrapper>
-          <SupportModalScrollContainer>
-            <ModalTitle>Add Court Details</ModalTitle>
-
-            <Label>Court Name</Label>
-            <Input
-              value={courtDetails.courtName}
-              onChangeText={(v) => handleChange("courtName", v)}
-            />
-            <Label>City</Label>
-            <Input
-              value={courtDetails.location.city}
-              onChangeText={(v) =>
-                handleChange("location", { ...courtDetails.location, city: v })
-              }
-            />
-            <Label>Country</Label>
-            <Input
-              value={courtDetails.location.country}
-              onChangeText={(v) =>
-                handleChange("location", {
-                  ...courtDetails.location,
-                  country: v,
-                })
-              }
-            />
-            <Label>Post Code/ ZIP Code</Label>
-            <Input
-              value={courtDetails.location.postCode}
-              onChangeText={(v) =>
-                handleChange("location", {
-                  ...courtDetails.location,
-                  postCode: v,
-                })
-              }
-            />
-            <Label>Address</Label>
-            <Input
-              value={courtDetails.location.address}
-              onChangeText={(v) =>
-                handleChange("location", {
-                  ...courtDetails.location,
-                  address: v,
-                })
-              }
-            />
-
-            <DisclaimerText>
-              Adding a new court will help other users to find this location so
-              please ensure the details are correct!
-            </DisclaimerText>
-            <ButtonContainer>
-              <CancelButton onPress={onClose}>
-                <CancelText>Cancel</CancelText>
-              </CancelButton>
-              <CreateButton
-                disabled={!allFieldsFilled}
-                onPress={handleAddCourt}
-              >
-                {courtCreationLoading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <CreateText>Add Court</CreateText>
-                )}
-              </CreateButton>
-            </ButtonContainer>
-          </SupportModalScrollContainer>
-        </CourtLocationWrapper>
-      </ModalContainer>
-    </Modal>
-  );
-};
-
-// Styled Components - keeping original styles
 const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
@@ -566,15 +460,6 @@ const LeagueSettingsWrapper = styled(SafeAreaView)({
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,
-  // overflow: "hidden",
-  backgroundColor: "rgba(2, 13, 24, 0.7)",
-});
-
-const CourtLocationWrapper = styled(SafeAreaView)({
-  width: screenWidth - 40,
-  margin: 20,
-  borderRadius: 20,
-  overflow: "hidden",
   backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
@@ -660,12 +545,6 @@ const CreateText = styled.Text({
   fontSize: 16,
 });
 
-const DisclaimerText = styled.Text({
-  color: "white",
-  fontStyle: "italic",
-  fontSize: 12,
-});
-
 const ImagePickerContainer = styled.TouchableOpacity({
   position: "relative",
   marginBottom: 20,
@@ -699,10 +578,6 @@ const ImagePlaceholder = styled.View({
 });
 
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    marginBottom: 15,
-  },
   box: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 0,
@@ -714,10 +589,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ff7675",
   },
-  disabledBox: {
-    opacity: 0.6,
-  },
-
   dropdown: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 0,
@@ -725,12 +596,6 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     color: "#fff",
-  },
-  dropdownButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
   },
 });
 

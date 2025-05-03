@@ -29,7 +29,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
       const leagueParticipantsLength = league.leagueParticipants.length;
       const maxPlayers = league.maxPlayers;
 
-      const location = `${league.location.city}, ${league.location.country}`;
+      const location = `${league.location.city}, ${league.location.countryCode}`;
 
       return (
         <CarouselContainer>

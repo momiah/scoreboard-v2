@@ -1,8 +1,6 @@
 // Now, let's update the Signup component to fix the city selection bug and add loading state
 import React, { useContext, useState, useEffect, useCallback } from "react";
 import {
-  Alert,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   FlatList,
@@ -25,9 +23,7 @@ import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
 import { profileDetailSchema } from "../../schemas/schema";
-import { Country, City } from "country-state-city";
 import { userProfileSchema } from "../../schemas/schema";
-import SearchableDropdown from "../../components/Location/SearchableDropdown";
 import { loadCountries, loadCities } from "../../utils/locationData";
 
 const Signup = ({ route }) => {
