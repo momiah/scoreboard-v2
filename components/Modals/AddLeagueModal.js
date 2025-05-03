@@ -38,6 +38,7 @@ import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
 import AddCourtModal from "./AddCourtModal";
+import { prizeTypes } from "../../schemas/schema";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -174,6 +175,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
         leagueImage: imageDownloadUrl || null,
+        prizeType: prizeTypes[0],
         location,
       };
 

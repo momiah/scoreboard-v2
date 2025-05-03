@@ -10,7 +10,7 @@ export const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
-const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
+export const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
 const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 const locations = [
   "Milton Keynes",
@@ -99,6 +99,8 @@ export const userProfileSchema = {
   profileViews: 0,
   location: locationSchema,
   email: "",
+  notifications: [],
+  phoneNumber: "",
 };
 
 export const leagueSchema = {
@@ -120,6 +122,9 @@ export const leagueSchema = {
   endDate: "",
   image: "",
   leagueType: "",
+  prizeType: "",
+  currencyType: "",
+  entryFee: 0,
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
