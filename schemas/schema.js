@@ -144,22 +144,20 @@ export const courtSchema = {
 };
 
 export const notificationTypes = [
-  "League Invite",
-  "League Request",
-  "League Join",
-  "League Update",
-  "Game Invite",
-  "Game Update",
-  "Game Reminder",
+  "league invite",
+  "information",
+  "league join request",
+  "league update",
+  "game update",
+  "game reminder",
 ];
 
 export const notificationSchema = {
   notificationId: "",
   type: "",
   message: "",
-  createdAt: moment().format("DD-MM-YYYY HH:mm:ss"),
+  createdAt: new Date(),
   isRead: false,
   senderId: "",
-  gameId: "",
-  leagueId: "",
+  recipientId: "",
 };

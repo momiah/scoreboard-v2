@@ -51,9 +51,9 @@ const UserProvider = ({ children }) => {
     const setupListener = async () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
+        const userUid = currentUser?.userId;
 
-        if (!userId) {
-          console.error("No userId found in AsyncStorage");
+        if (!userId || !currentUser) {
           return;
         }
 
@@ -61,7 +61,7 @@ const UserProvider = ({ children }) => {
         const notificationsRef = collection(
           db,
           "users",
-          userId,
+          userUid,
           "notifications"
         );
 
@@ -107,6 +107,8 @@ const UserProvider = ({ children }) => {
       await AsyncStorage.removeItem("userId");
 
       await AsyncStorage.clear();
+      setCurrentUser(null); // Clear current user state
+      setNotifications([]); // Clear notifications state
 
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second
       handleShowPopup("Successfully logged out!");
@@ -310,7 +312,6 @@ const UserProvider = ({ children }) => {
   const getUserById = async (userId) => {
     try {
       if (!userId) {
-        console.error("User ID is required to fetch details.");
         return null;
       }
 
@@ -551,7 +552,7 @@ const UserProvider = ({ children }) => {
         type,
         senderId,
         isRead: false,
-        createdAt: "new",
+        createdAt: new Date(),
         ...data,
       };
 

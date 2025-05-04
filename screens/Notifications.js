@@ -102,7 +102,7 @@ const Notifications = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
 
-  console.log("Notifications: ", JSON.stringify(notifications, null, 2));
+  console.log("Notifications array: ", JSON.stringify(notifications, null, 2));
 
   // Fetch notifications when the component mounts
 
@@ -126,16 +126,19 @@ const Notifications = () => {
       </LoadingContainer>
     );
   }
+
   const renderNotification = ({ item }) => {
     const hasButtons = item.buttons && item.buttons.length > 0;
+
+    const receivedAt = item.createdAt?.seconds
+      ? new Date(item.createdAt.seconds * 1000)
+      : new Date(); // Fallback
 
     return (
       <NotificationRow>
         <NotificationTextContainer $fullWidth={!hasButtons}>
           <NotificationText>{item.message}</NotificationText>
-          <NotificationTimestamp>
-            {timeAgo(item.receivedAt)}
-          </NotificationTimestamp>
+          <NotificationTimestamp>{timeAgo(receivedAt)}</NotificationTimestamp>
         </NotificationTextContainer>
 
         {hasButtons && (
@@ -159,7 +162,7 @@ const Notifications = () => {
     <HomeContainer>
       <Header>Notifications</Header>
       <FlatList
-        data={mockNotifications}
+        data={notifications}
         renderItem={renderNotification}
         keyExtractor={(item) => item.id.toString()}
       />

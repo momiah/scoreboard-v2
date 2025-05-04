@@ -18,6 +18,7 @@ import { FlatList } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { UserContext } from "../../context/UserContext";
+import { notificationSchema, notificationTypes } from "../../schemas/schema";
 
 const InvitePlayerModal = ({
   modalVisible,
@@ -40,10 +41,11 @@ const InvitePlayerModal = ({
 
     for (const user of inviteUsers) {
       await sendNotification({
+        notificationId: `${leagueDetails.id}-${user.userId}`,
         recipientId: user.userId,
         senderId: currentUserId,
         message: `You've been invited to join ${leagueDetails.leagueName}`,
-        type: "invite",
+        type: notificationTypes[0],
 
         data: {
           leagueId: leagueDetails.id,

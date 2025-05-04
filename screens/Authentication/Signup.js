@@ -26,6 +26,7 @@ import { PopupContext } from "../../context/PopupContext";
 import { profileDetailSchema } from "../../schemas/schema";
 import { userProfileSchema } from "../../schemas/schema";
 import { loadCountries, loadCities } from "../../utils/locationData";
+import { notificationSchema, notificationTypes } from "../../schemas/schema";
 
 const Signup = ({ route }) => {
   const { userId: socialId, userName, userEmail } = route.params || {};
@@ -150,10 +151,11 @@ const Signup = ({ route }) => {
 
       // 2. Add a welcome notification as a document in the subcollection
       const welcomeNotification = {
+        ...notificationSchema,
         message: "Welcome to Court Champs! 🎉",
         type: "information",
         isRead: false,
-        createdAt: new Date(), // or serverTimestamp() if preferred
+        typeId: notificationTypes[1],
       };
 
       await addDoc(
