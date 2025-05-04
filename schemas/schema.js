@@ -1,3 +1,4 @@
+import { createdAt } from "expo-updates";
 import { count } from "firebase/firestore";
 import moment from "moment";
 
@@ -99,7 +100,6 @@ export const userProfileSchema = {
   profileViews: 0,
   location: locationSchema,
   email: "",
-  notifications: [],
   phoneNumber: "",
 };
 
@@ -141,4 +141,25 @@ export const courtSchema = {
   numberOfPlayers: 0,
   numberOfGames: 0,
   numberOfTournaments: 0,
+};
+
+export const notificationTypes = [
+  "League Invite",
+  "League Request",
+  "League Join",
+  "League Update",
+  "Game Invite",
+  "Game Update",
+  "Game Reminder",
+];
+
+export const notificationSchema = {
+  notificationId: "",
+  type: "",
+  message: "",
+  createdAt: moment().format("DD-MM-YYYY HH:mm:ss"),
+  isRead: false,
+  senderId: "",
+  gameId: "",
+  leagueId: "",
 };

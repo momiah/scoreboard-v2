@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   Modal,
   Text,
@@ -17,6 +17,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { FlatList } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { UserContext } from "../../context/UserContext";
 
 const InvitePlayerModal = ({
   modalVisible,
@@ -27,11 +28,30 @@ const InvitePlayerModal = ({
   const [suggestions, setSuggestions] = useState([]);
   const [inviteUsers, setInviteUsers] = useState([]);
   const [errorText, setErrorText] = useState("");
-  const handleSendInvite = () => {
+  const { sendNotification } = useContext(UserContext);
+
+  const handleSendInvite = async () => {
     if (inviteUsers.length === 0) {
       setErrorText("Please select at least one player to invite");
       return;
     }
+
+    const currentUserId = await AsyncStorage.getItem("userId");
+
+    for (const user of inviteUsers) {
+      await sendNotification({
+        recipientId: user.userId,
+        senderId: currentUserId,
+        message: `You've been invited to join ${leagueDetails.leagueName}`,
+        type: "invite",
+
+        data: {
+          leagueId: leagueDetails.id,
+          leagueName: leagueDetails.leagueName,
+        },
+      });
+    }
+
     setModalVisible(false);
   };
 
@@ -42,7 +62,6 @@ const InvitePlayerModal = ({
       try {
         // Retrieve the logged-in user ID from AsyncStorage
         const currentUserId = await AsyncStorage.getItem("userId");
-
         if (!currentUserId) {
           return; // Handle if no user is logged in
         }
@@ -129,7 +148,8 @@ const InvitePlayerModal = ({
                     }}
                   >
                     <LeagueLocation>
-                      {leagueDetails.centerName}, {leagueDetails.location}
+                      {leagueDetails.location.courtName},{" "}
+                      {leagueDetails.location.city}
                     </LeagueLocation>
                   </View>
 

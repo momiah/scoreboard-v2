@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-  use,
-} from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
 import {
   doc,
@@ -13,6 +7,8 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  addDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 
@@ -28,6 +24,8 @@ const UserProvider = ({ children }) => {
 
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
+
+  const [notifications, setNotifications] = useState([]); // Optional: Track notifications
 
   useEffect(() => {
     const loadInitialUser = async () => {
@@ -45,6 +43,62 @@ const UserProvider = ({ children }) => {
     };
 
     loadInitialUser();
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe;
+
+    const setupListener = async () => {
+      try {
+        const userId = await AsyncStorage.getItem("userId");
+
+        if (!userId) {
+          console.error("No userId found in AsyncStorage");
+          return;
+        }
+
+        // Create a reference to the user's notifications collection
+        const notificationsRef = collection(
+          db,
+          "users",
+          userId,
+          "notifications"
+        );
+
+        // Set up the snapshot listener
+        unsubscribe = onSnapshot(
+          notificationsRef,
+          (snapshot) => {
+            const notificationsData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+
+            // Sort by createdAt timestamp (newest first)
+            notificationsData.sort(
+              (a, b) =>
+                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+            );
+
+            setNotifications(notificationsData);
+          },
+          (error) => {
+            console.error("Error in notifications listener:", error);
+          }
+        );
+      } catch (error) {
+        console.error("Failed to set up notifications listener:", error);
+      }
+    };
+
+    setupListener();
+
+    // Clean up the listener when component unmounts
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const Logout = async () => {
@@ -482,6 +536,69 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const sendNotification = async ({
+    recipientId,
+    senderId,
+    message,
+    type = "invite",
+    leagueId,
+    leagueName,
+    data = {},
+  }) => {
+    try {
+      const notification = {
+        message,
+        type,
+        senderId,
+        isRead: false,
+        createdAt: "new",
+        ...data,
+      };
+
+      // 🔥 Get the subcollection reference under the user
+      const notifRef = collection(db, "users", recipientId, "notifications");
+
+      // ➕ Add the notification as a new document
+      await addDoc(notifRef, notification);
+
+      console.log("✅ Notification saved to subcollection!");
+    } catch (error) {
+      console.error("❌ Failed to send notification:", error);
+    }
+  };
+
+  // const sendNotification = async ({
+  //   recipientId,
+  //   senderId,
+  //   message,
+  //   type = "invite",
+  //   leagueId,
+  //   leagueName,
+  //   data = {},
+  // }) => {
+  //   try {
+  //     const notification = {
+  //       message,
+  //       type,
+  //       senderId,
+  //       isRead: false,
+
+  //       ...data,
+  //     };
+
+  //     const userRef = doc(db, "users", recipientId);
+
+  //     const userDoc = await getDoc(userRef);
+  //     const userNotifications = userDoc.data().notifications || [];
+
+  //     await updateDoc(userRef, {
+  //       notifications: [...userNotifications, notification],
+  //     });
+  //   } catch (error) {
+  //     console.error("Failed to send notification:", error);
+  //   }
+  // };
+
   return (
     <UserContext.Provider
       value={{
@@ -497,6 +614,10 @@ const UserProvider = ({ children }) => {
         setIsLoggingOut,
         updateUserProfile,
         getUserById,
+
+        //Notification
+        sendNotification,
+        notifications,
 
         // League-related operations
         retrievePlayersFromLeague,
@@ -534,3 +655,21 @@ const UserProvider = ({ children }) => {
 };
 
 export { UserContext, UserProvider };
+
+// const getNotifications = async (userId) => {
+//   try {
+//     const userRef = doc(db, "users", userId);
+//     const userDoc = await getDoc(userRef);
+
+//     if (userDoc.exists()) {
+//       const notifications = userDoc.data().notifications || [];
+//       return notifications;
+//     } else {
+//       console.error("No such document!");
+//       return [];
+//     }
+//   } catch (error) {
+//     console.error("Error fetching notifications:", error);
+//     return [];
+//   }
+// }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
@@ -14,6 +14,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
 import Signup from "../screens/Authentication/Signup";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
+import { UserContext } from "../context/UserContext";
+import { View } from "react-native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -69,8 +71,48 @@ const NotificationsStack = () => {
   );
 };
 
+const TabIcon = ({ focused, name, color, size, hasNotification }) => {
+  return (
+    <View
+      style={{
+        width: 24,
+        height: 24,
+        marginTop: 5,
+      }}
+    >
+      <Ionicons
+        //  style={{ padding: 5 }}
+        name={name}
+        size={size}
+        color={color}
+      />
+      {hasNotification && (
+        <View
+          style={{
+            position: "absolute",
+            right: -6,
+            top: 0,
+            backgroundColor: "red",
+            borderRadius: 6,
+            width: 12,
+            height: 12,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        />
+      )}
+    </View>
+  );
+};
+
 // Tabs Navigator
 const Tabs = () => {
+  const { notifications } = useContext(UserContext);
+
+  const unreadNotifications = notifications.filter(
+    (notification) => notification.isRead === false
+  ).length;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -83,23 +125,45 @@ const Tabs = () => {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
+            return (
+              <TabIcon
+                name={iconName}
+                color={color}
+                size={size}
+                hasNotification={false}
+              />
+            );
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
+            return (
+              <TabIcon
+                name={iconName}
+                color={color}
+                size={size}
+                hasNotification={false}
+              />
+            );
           } else if (route.name === "Notifications") {
             iconName = focused ? "notifications" : "notifications-outline";
+            return (
+              <TabIcon
+                name={iconName}
+                color={color}
+                size={size}
+                hasNotification={unreadNotifications > 0}
+              />
+            );
           } else if (route.name === "Schedule") {
             iconName = focused ? "calendar" : "calendar-outline";
+            return (
+              <TabIcon
+                name={iconName}
+                color={color}
+                size={size}
+                hasNotification={false}
+              />
+            );
           }
-
-          // Return the appropriate icon
-          return (
-            <Ionicons
-              style={{ paddingTop: 5 }}
-              name={iconName}
-              size={size}
-              color={color}
-            />
-          );
         },
         tabBarStyle: {
           borderTopWidth: 1,
@@ -110,8 +174,18 @@ const Tabs = () => {
       })}
     >
       {/* Replace Home component with HomeStack */}
-      <Tab.Screen i name="Home" component={HomeStack} />
-      <Tab.Screen name="Notifications" component={NotificationsStack} />
+      <Tab.Screen name="Home" component={HomeStack} />
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsStack}
+        options={{
+          tabBarBadge: unreadNotifications > 0 ? unreadNotifications : null,
+          tabBarBadgeStyle: {
+            backgroundColor: "red",
+            color: "white",
+          },
+        }}
+      />
       {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
       <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>

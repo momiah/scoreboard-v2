@@ -98,9 +98,13 @@ const mockNotifications = [
   },
 ];
 const Notifications = () => {
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, notifications } = useContext(UserContext);
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
+
+  console.log("Notifications: ", JSON.stringify(notifications, null, 2));
+
+  // Fetch notifications when the component mounts
 
   useEffect(() => {
     // Simulate a slight delay while Firebase resolves auth state
