@@ -128,7 +128,7 @@ const Notifications = () => {
   }
 
   const renderNotification = ({ item }) => {
-    const hasButtons = item.buttons && item.buttons.length > 0;
+    const hasButtons = item.type === "request" || item.type === "invite";
 
     const receivedAt = item.createdAt?.seconds
       ? new Date(item.createdAt.seconds * 1000)

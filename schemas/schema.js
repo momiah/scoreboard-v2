@@ -11,7 +11,11 @@ export const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
-export const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
+export const prizeTypes = {
+  TROPHY: "Trophy",
+  MEDAL: "Medal",
+  CASH_PRIZE: "Cash Prize",
+};
 const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 const locations = [
   "Milton Keynes",
@@ -143,15 +147,17 @@ export const courtSchema = {
   numberOfTournaments: 0,
 };
 
-export const notificationTypes = [
-  "league invite",
-  "information",
-  "league join request",
-  "league update",
-  "game update",
-  "game reminder",
-];
-
+export const notificationTypes = {
+  INFORMATION: {
+    GENERAL: "general",
+    REMINDER: "reminder",
+  },
+  ACTION: {
+    INVITE: "invite",
+    REQUEST: "request",
+    ADD_GAME: "add game",
+  },
+};
 export const notificationSchema = {
   notificationId: "",
   type: "",

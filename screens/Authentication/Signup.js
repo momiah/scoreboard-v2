@@ -155,7 +155,7 @@ const Signup = ({ route }) => {
         message: "Welcome to Court Champs! 🎉",
         type: "information",
         isRead: false,
-        typeId: notificationTypes[1],
+        typeId: notificationTypes.INFORMATION.GENERAL,
       };
 
       await addDoc(

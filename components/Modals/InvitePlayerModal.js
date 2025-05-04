@@ -45,7 +45,7 @@ const InvitePlayerModal = ({
         recipientId: user.userId,
         senderId: currentUserId,
         message: `You've been invited to join ${leagueDetails.leagueName}`,
-        type: notificationTypes[0],
+        type: notificationTypes.ACTION.INVITE,
 
         data: {
           leagueId: leagueDetails.id,
