@@ -148,22 +148,42 @@ export const courtSchema = {
 };
 
 export const notificationTypes = {
+  // Shows information modal
   INFORMATION: {
+    APP: "app",
     GENERAL: "general",
     REMINDER: "reminder",
   },
   ACTION: {
-    INVITE: "invite",
-    REQUEST: "request",
-    ADD_GAME: "add game",
+    // Shows League/Tournament modal
+    INVITE: {
+      LEAGUE: "invite-league",
+      TOURNAMENT: "invite-tournament",
+    },
+    // Shows player card
+    JOIN_REQUEST: {
+      LEAGUE: "join-league-request",
+      TOURNAMENT: "join-tournament-request",
+    },
+    // Shows game modal
+    ADD_GAME: {
+      LEAGUE: "add-league-game",
+      TOURNAMENT: "add-tournament-game",
+    },
+  },
+  RESPONSE: {
+    ACCEPT: "accepted",
+    DECLINE: "declined",
   },
 };
+
 export const notificationSchema = {
-  notificationId: "",
+  createdAt: new Date(),
   type: "",
   message: "",
-  createdAt: new Date(),
   isRead: false,
   senderId: "",
   recipientId: "",
+  data: {},
+  response: "",
 };

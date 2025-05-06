@@ -9,10 +9,10 @@ import {
 } from "firebase/firestore";
 import moment from "moment";
 
-import { generatedLeagues } from "../components/Leagues/leagueMocks";
+// import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { generateLeagueId } from "../functions/generateLeagueId";
 import { generateCourtId } from "../functions/generateCourtId";
 import { generateUniqueUserId } from "../functions/generateUniqueUserId";
@@ -32,12 +32,8 @@ const LeagueProvider = ({ children }) => {
 
   // Fetch leagues data based on mock or real data
   useEffect(() => {
-    if (showMockData) {
-      setLeagues(generatedLeagues);
-    } else {
-      fetchLeagues();
-    }
-  }, [showMockData]);
+    fetchLeagues();
+  }, []);
 
   const fetchLeagues = async () => {
     try {

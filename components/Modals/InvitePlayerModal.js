@@ -19,6 +19,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { UserContext } from "../../context/UserContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
+import { createdAt } from "expo-updates";
 
 const InvitePlayerModal = ({
   modalVisible,
@@ -40,18 +41,20 @@ const InvitePlayerModal = ({
     const currentUserId = await AsyncStorage.getItem("userId");
 
     for (const user of inviteUsers) {
-      await sendNotification({
-        notificationId: `${leagueDetails.id}-${user.userId}`,
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
         recipientId: user.userId,
         senderId: currentUserId,
         message: `You've been invited to join ${leagueDetails.leagueName}`,
-        type: notificationTypes.ACTION.INVITE,
+        type: notificationTypes.ACTION.INVITE.LEAGUE,
 
         data: {
           leagueId: leagueDetails.id,
-          leagueName: leagueDetails.leagueName,
         },
-      });
+      };
+
+      await sendNotification(payload);
     }
 
     setModalVisible(false);

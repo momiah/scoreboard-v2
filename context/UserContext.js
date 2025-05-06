@@ -14,7 +14,12 @@ import { db } from "../services/firebase.config";
 
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { profileDetailSchema } from "../schemas/schema";
+import {
+  profileDetailSchema,
+  scoreboardProfileSchema,
+  notificationSchema,
+  notificationTypes,
+} from "../schemas/schema";
 
 const UserContext = createContext();
 
@@ -50,10 +55,10 @@ const UserProvider = ({ children }) => {
 
     const setupListener = async () => {
       try {
-        const userId = await AsyncStorage.getItem("userId");
+        // const userId = await AsyncStorage.getItem("userId");
         const userUid = currentUser?.userId;
 
-        if (!userId || !currentUser) {
+        if (!currentUser) {
           return;
         }
 
@@ -99,7 +104,7 @@ const UserProvider = ({ children }) => {
         unsubscribe();
       }
     };
-  }, []);
+  }, [currentUser?.userId]);
 
   const Logout = async () => {
     try {
@@ -537,24 +542,18 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const sendNotification = async ({
-    recipientId,
-    senderId,
-    message,
-    type = "invite",
-    leagueId,
-    leagueName,
-    data = {},
-  }) => {
+  const sendNotification = async (notification) => {
     try {
-      const notification = {
-        message,
-        type,
-        senderId,
-        isRead: false,
-        createdAt: new Date(),
-        ...data,
-      };
+      // const notification = {
+      //   message,
+      //   type,
+      //   senderId,
+      //   isRead: false,
+      //   createdAt: new Date(),
+      //   data,
+      // };
+
+      const recipientId = notification.recipientId;
 
       // 🔥 Get the subcollection reference under the user
       const notifRef = collection(db, "users", recipientId, "notifications");
@@ -567,6 +566,68 @@ const UserProvider = ({ children }) => {
       console.error("❌ Failed to send notification:", error);
     }
   };
+
+  const acceptLeagueInvite = async (userId, leagueId, notificationId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+      const leagueParticipants = leagueData.leagueParticipants || [];
+
+      const newParticipant = await getUserById(userId);
+
+      const newParticipantProfile = {
+        ...scoreboardProfileSchema,
+        username: newParticipant.username,
+        userId: newParticipant.userId,
+        memberSince: newParticipant.profileDetail?.memberSince || "",
+      };
+
+      await updateDoc(leagueRef, {
+        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+      });
+
+      const userRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userRef);
+      // update isRead to true in notification subcollection
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.ACCEPT,
+      });
+
+      console.log("League invite accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting league invite:", error);
+    }
+  };
+
+  const declineLeagueInvite = async (leagueId) => {
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) throw new Error("User not authenticated");
+
+      const userRef = doc(db, "users", userId);
+      const leagueRef = doc(db, "leagues", leagueId);
+
+      // Update the user's document to remove the league ID from their leagues
+      await updateDoc(userRef, {
+        leagues: arrayRemove(leagueId),
+      });
+
+      // Update the league document to remove the user ID from its participants
+      await updateDoc(leagueRef, {
+        leagueParticipants: arrayRemove({ userId }),
+      });
+
+      console.log("League invite declined successfully!");
+    } catch (error) {
+      console.error("Error declining league invite:", error);
+    }
+  };
+  // Uncomment this if you want to use the old notification method
 
   // const sendNotification = async ({
   //   recipientId,
@@ -619,6 +680,8 @@ const UserProvider = ({ children }) => {
         //Notification
         sendNotification,
         notifications,
+        acceptLeagueInvite,
+        declineLeagueInvite,
 
         // League-related operations
         retrievePlayersFromLeague,

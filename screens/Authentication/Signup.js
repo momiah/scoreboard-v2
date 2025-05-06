@@ -152,10 +152,12 @@ const Signup = ({ route }) => {
       // 2. Add a welcome notification as a document in the subcollection
       const welcomeNotification = {
         ...notificationSchema,
+        createdAt: new Date(),
+
         message: "Welcome to Court Champs! 🎉",
-        type: "information",
-        isRead: false,
-        typeId: notificationTypes.INFORMATION.GENERAL,
+        type: notificationTypes.INFORMATION.GENERAL,
+        senderId: notificationTypes.INFORMATION.APP,
+        recipientId: profileToSave.userId,
       };
 
       await addDoc(

@@ -6,6 +6,10 @@ import { UserContext } from "../context/UserContext";
 import { useContext, useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import { set } from "lodash";
+import { notificationTypes, notificationSchema } from "../schemas/schema";
+import { createdAt } from "expo-updates";
+import InviteActionModal from "../components/Modals/InviteActionModal";
+import Tag from "../components/Tag";
 
 const timeAgo = (date) => {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -31,91 +35,73 @@ const timeAgo = (date) => {
 
 const mockNotifications = [
   {
-    id: 1,
-    type: "request",
-    message: "PlayerA has requested to join London League!",
-    receivedAt: new Date(Date.now() - 60 * 1000), // 1 minute ago
-    buttons: [
-      { label: "View", onPress: () => console.log("Accepted PlayerA") },
-      { label: "Reject", onPress: () => console.log("Rejected PlayerA") },
-    ],
+    id: "1",
+    type: "invite-league",
+    message: "You've been invited to join Laura Trott League!",
+    senderId: "PlayerA",
+    isRead: false,
+    createdAt: new Date(Date.now() - 60 * 1000), // 1 minute ago
+    data: {
+      id: "Laura-Trott-League-03-05-2025-3SYCN",
+    },
   },
   {
-    id: 2,
-    type: "invite",
-    message: "Manchester League has invited you to join!",
-    receivedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    buttons: [
-      { label: "View", onPress: () => console.log("Accepted League Invite") },
-      { label: "Reject", onPress: () => console.log("Rejected League Invite") },
-    ],
+    id: "2",
+    type: "add-tournament-game",
+    message: "PlayerB just added a new game in Birmingham League.",
+    senderId: "PlayerB",
+    isRead: false,
+    createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 mins ago
+    data: {
+      id: "Birmingham-Tourney-03-05-2025-3SYCN",
+    },
   },
   {
-    id: 3,
-    type: "game",
-    message: "New game added in Birmingham League!",
-    receivedAt: new Date(Date.now() - 19 * 24 * 60 * 60 * 1000), // 18 days ago
-    buttons: [
-      { label: "View", onPress: () => console.log("Accepted Game") },
-      { label: "Reject", onPress: () => console.log("Rejected Game") },
-    ],
+    id: "3",
+    type: "general",
+    message: "Welcome to Court Champs! 🎉",
+    senderId: "System",
+    isRead: false,
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
+    data: {
+      description: "Welcome to Court Champs! 🎉",
+    },
   },
   {
-    id: 4,
-    type: "information",
-    message: "PlayerB has rejected your score for London League!",
-    receivedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), // 18 days ago
-    buttons: null,
-  },
-  {
-    id: 5,
-    type: "information",
-    message: "PlayerA has rejected your invitation to join London League!",
-    receivedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000), // 18 days ago
-    buttons: null,
-  },
-  {
-    id: 6,
-    type: "information",
-    message: "PlayerC has rejected your request to join Birmingham League!",
-    receivedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000), // 18 days ago
-    buttons: null,
-  },
-  {
-    id: 7,
-    type: "information",
-    message: "PlayerD has accepted your request to join Manchester League!",
-    receivedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 18 days ago
-    buttons: null,
-  },
-  {
-    id: 8,
-    type: "information",
-    message:
-      "Your partner, PlayerE has just added a game in Manchester League!",
-    receivedAt: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000), // 18 days ago
-    buttons: null,
+    id: "4",
+    type: "reminder",
+    message: "Don't forget to approve your match result vs PlayerC.",
+    senderId: "System",
+    isRead: false,
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+    data: {
+      description: "Don't forget to approve your match result vs PlayerC.",
+    },
   },
 ];
+const isActionType = (type) =>
+  Object.values(notificationTypes.ACTION.INVITE).includes(type.toLowerCase());
+
 const Notifications = () => {
   const { currentUser, notifications } = useContext(UserContext);
+  const [notificationId, setNotificationId] = useState(null);
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
 
-  console.log("Notifications array: ", JSON.stringify(notifications, null, 2));
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
+  const [selectedInviteType, setSelectedInviteType] = useState(null);
 
-  // Fetch notifications when the component mounts
+  console.log("Notifications:", JSON.stringify(notifications, null, 2));
 
   useEffect(() => {
-    // Simulate a slight delay while Firebase resolves auth state
     const timeout = setTimeout(() => {
       if (!currentUser) {
         navigation.reset({ index: 0, routes: [{ name: "Login" }] });
       } else {
         setLoading(false);
       }
-    }, 200); // Adjust if needed
-
+    }, 200);
     return () => clearTimeout(timeout);
   }, [currentUser]);
 
@@ -127,31 +113,72 @@ const Notifications = () => {
     );
   }
 
-  const renderNotification = ({ item }) => {
-    const hasButtons = item.type === "request" || item.type === "invite";
+  const NotificationAction = ({ item }) => {
+    const isRead = item.isRead;
+    const responseText = item.response
+      ? item.response.charAt(0).toUpperCase() + item.response.slice(1)
+      : null;
 
-    const receivedAt = item.createdAt?.seconds
+    if (isRead) {
+      return (
+        <Tag
+          name={responseText}
+          color="#16181B"
+          iconColor="green"
+          iconSize={15}
+          icon={"checkmark-circle-outline"}
+          iconPosition={"right"}
+          bold
+        />
+      );
+    } else {
+      return (
+        <NotificationButton
+          onPress={() => {
+            setSelectedLeagueId(item.data.leagueId); // could be league OR tournament
+            setInviteModalVisible(true);
+            setSelectedInviteType(item.type);
+            setNotificationId(item.id);
+          }}
+          $type="View"
+        >
+          <NotificationButtonText>View</NotificationButtonText>
+        </NotificationButton>
+      );
+    }
+  };
+
+  const renderNotification = ({ item }) => {
+    const showButton = isActionType(item.type);
+    const createdAt = item.createdAt?.seconds
       ? new Date(item.createdAt.seconds * 1000)
-      : new Date(); // Fallback
+      : new Date();
+
+    const isInviteNotification =
+      item.type === notificationTypes.ACTION.INVITE.LEAGUE ||
+      item.type === notificationTypes.ACTION.INVITE.TOURNAMENT;
+
+    const NotificationRow = item.isRead ? ReadNotification : UnreadNotification;
+
+    const isRead = item.isRead;
 
     return (
       <NotificationRow>
-        <NotificationTextContainer $fullWidth={!hasButtons}>
-          <NotificationText>{item.message}</NotificationText>
-          <NotificationTimestamp>{timeAgo(receivedAt)}</NotificationTimestamp>
+        <NotificationTextContainer $fullWidth={!showButton}>
+          <NotificationText
+            style={{
+              fontWeight: !isRead ? "bold" : "",
+              opacity: isRead ? 0.8 : 1,
+            }}
+          >
+            {item.message}
+          </NotificationText>
+          <NotificationTimestamp>{timeAgo(createdAt)}</NotificationTimestamp>
         </NotificationTextContainer>
 
-        {hasButtons && (
+        {showButton && isInviteNotification && (
           <NotificationButtonContainer>
-            {item.buttons.map((btn, index) => (
-              <NotificationButton
-                key={index}
-                onPress={btn.onPress}
-                $type={btn.label}
-              >
-                <NotificationButtonText>{btn.label}</NotificationButtonText>
-              </NotificationButton>
-            ))}
+            <NotificationAction item={item} />
           </NotificationButtonContainer>
         )}
       </NotificationRow>
@@ -165,6 +192,15 @@ const Notifications = () => {
         data={notifications}
         renderItem={renderNotification}
         keyExtractor={(item) => item.id.toString()}
+      />
+
+      <InviteActionModal
+        visible={inviteModalVisible}
+        onClose={() => setInviteModalVisible(false)}
+        inviteId={selectedLeagueId}
+        inviteType={selectedInviteType}
+        userId={currentUser.userId || ""}
+        notificationId={notificationId}
       />
     </HomeContainer>
   );
@@ -183,7 +219,7 @@ const HomeContainer = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   width: "100%",
-  paddingHorizontal: 20,
+  // paddingHorizontal: 20,
 });
 
 const Header = styled.Text({
@@ -192,22 +228,36 @@ const Header = styled.Text({
   marginTop: 20,
   marginBottom: 10,
   color: "white",
+  paddingHorizontal: 20,
 });
 
-const NotificationRow = styled.TouchableOpacity({
+const ReadNotification = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
   paddingVertical: 20,
-  paddingHorizontal: 10,
+  paddingHorizontal: 20,
   borderTopWidth: 1,
   borderColor: "rgb(9, 33, 62)",
+  width: "100%",
+  // opacity: 0.8,
+});
+
+const UnreadNotification = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingVertical: 20,
+  paddingHorizontal: 20,
+
+  backgroundColor: "rgba(0, 65, 134, 0.5)",
+
   width: "100%",
 });
 
 const NotificationTextContainer = styled.View`
   padding-right: 10px;
-  width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "55%")};
+  width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "70%")};
 `;
 
 const NotificationText = styled.Text({
@@ -218,14 +268,12 @@ const NotificationText = styled.Text({
 const NotificationButtonContainer = styled.View({
   flexDirection: "row",
   justifyContent: "flex-end",
-  gap: 10,
 });
 
 const NotificationButton = styled.TouchableOpacity.attrs(() => ({
   activeOpacity: 0.8,
 }))`
-  background-color: ${({ $type }) =>
-    $type === "Reject" ? "red" : "rgb(0, 162, 255)"};
+  background-color: rgb(0, 162, 255);
   padding: 4px 10px;
   border-radius: 6px;
   margin-left: 6px;
