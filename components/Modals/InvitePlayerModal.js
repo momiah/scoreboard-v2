@@ -20,6 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { UserContext } from "../../context/UserContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
 import { createdAt } from "expo-updates";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const InvitePlayerModal = ({
   modalVisible,
@@ -31,6 +32,7 @@ const InvitePlayerModal = ({
   const [inviteUsers, setInviteUsers] = useState([]);
   const [errorText, setErrorText] = useState("");
   const { sendNotification } = useContext(UserContext);
+  const { updatePendingInvites } = useContext(LeagueContext);
 
   const handleSendInvite = async () => {
     if (inviteUsers.length === 0) {
@@ -55,6 +57,7 @@ const InvitePlayerModal = ({
       };
 
       await sendNotification(payload);
+      await updatePendingInvites(leagueDetails.id, user.userId);
     }
 
     setModalVisible(false);

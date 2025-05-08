@@ -1,4 +1,4 @@
-export const formatDateForDisplay = (date) => {
+export const formatDateForDatePicker = (date) => {
   const day = date.getDate();
   const month = date.toLocaleString("default", { month: "short" });
   const year = date.getFullYear();

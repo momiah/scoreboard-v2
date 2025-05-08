@@ -27,6 +27,7 @@ import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus"
 import { ccDefaultImage } from "../../../mockImages/index";
 import moment from "moment";
 import { copyLocationAddress } from "../../../functions/copyLocationAddress";
+import { formatDate } from "../../../functions/formatDate";
 
 const League = () => {
   const route = useRoute();
@@ -106,15 +107,15 @@ const League = () => {
     leagueImage,
     centerName,
     location,
-    // startDate,
-    // endDate,
+    startDate,
+    endDate,
     leagueType,
     maxPlayers,
     games,
   } = leagueById || {};
 
-  const startDate = moment(leagueById?.startDate).format("ddd Do MMM");
-  const endDate = moment(leagueById?.endDate).format("ddd Do MMM");
+  // const startDate = formatDate(leagueById?.startDate);
+  // const endDate = formatDate(leagueById?.endDate);
 
   const renderComponent = () => {
     switch (selectedTab) {

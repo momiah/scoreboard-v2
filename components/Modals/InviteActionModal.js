@@ -19,6 +19,7 @@ import { UserContext } from "../../context/UserContext";
 import { useRef } from "react";
 import moment from "moment";
 import { copyLocationAddress } from "../../functions/copyLocationAddress";
+import { useNavigation } from "@react-navigation/native";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -34,7 +35,12 @@ const InviteActionModal = ({
   const [inviteDetails, setInviteDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
+  const navigation = useNavigation();
   const timeoutRef = useRef(null);
+
+  const navigateTo = (leagueId) => {
+    navigation.navigate("League", { leagueId });
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -79,10 +85,18 @@ const InviteActionModal = ({
     }
   };
 
+  const handleLinkPress = () => {
+    if (inviteDetails) {
+      onClose();
+      navigateTo(inviteDetails.id);
+    }
+  };
+
   const numberOfPlayers = `${inviteDetails?.leagueParticipants.length} / ${inviteDetails?.maxPlayers}`;
 
-  const startDate = moment(inviteDetails?.startDate).format("ddd Do MMM");
-  const endDate = moment(inviteDetails?.endDate).format("ddd Do MMM");
+  // console.log("Invite Details:", inviteDetails?.startDate);
+  // const startDate = moment(inviteDetails?.startDate).format("ddd Do MMM");
+  // const endDate = moment(inviteDetails?.endDate).format("ddd Do MMM");
   const location = inviteDetails?.location;
 
   return (
@@ -112,7 +126,10 @@ const InviteActionModal = ({
               <LeagueDetailsContainer>
                 <Title>League Invite</Title>
                 <Message>
-                  You’ve been invited to join {inviteDetails?.leagueName}
+                  You’ve been invited to join{" "}
+                  <LinkText onPress={handleLinkPress}>
+                    {inviteDetails?.leagueName}
+                  </LinkText>
                 </Message>
 
                 <View
@@ -128,11 +145,9 @@ const InviteActionModal = ({
                     {inviteDetails?.location.postCode}
                   </LeagueLocation>
                   <TouchableOpacity
-                    onPress={copyLocationAddress(
-                      location,
-                      timeoutRef,
-                      setIsCopied
-                    )}
+                    onPress={() =>
+                      copyLocationAddress(location, timeoutRef, setIsCopied)
+                    }
                     style={{ marginLeft: 5 }}
                   >
                     <Ionicons
@@ -155,7 +170,7 @@ const InviteActionModal = ({
                   }}
                 >
                   <Tag
-                    name={`Start Date - ${startDate}`}
+                    name={`Start Date - ${inviteDetails?.startDate}`}
                     color="rgba(0, 0, 0, 0.7)"
                     iconColor="rgb(0, 133, 40)"
                     iconSize={15}
@@ -164,7 +179,7 @@ const InviteActionModal = ({
                     bold
                   />
                   <Tag
-                    name={`End Date - ${endDate}`}
+                    name={`End Date - ${inviteDetails?.endDate}`}
                     color="rgba(0, 0, 0, 0.7)"
                     iconColor="rgb(190, 0, 0)"
                     iconSize={15}
@@ -285,6 +300,12 @@ const Button = styled.TouchableOpacity({
 });
 const AcceptButtonText = styled.Text({
   color: "white",
+  fontWeight: "bold",
+});
+
+const LinkText = styled.Text({
+  color: "#00A2FF",
+  textDecorationLine: "underline",
   fontWeight: "bold",
 });
 

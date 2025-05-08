@@ -197,9 +197,9 @@ const Notifications = () => {
       <InviteActionModal
         visible={inviteModalVisible}
         onClose={() => setInviteModalVisible(false)}
-        inviteId={selectedLeagueId}
+        inviteId={selectedLeagueId || ""}
         inviteType={selectedInviteType}
-        userId={currentUser.userId || ""}
+        userId={currentUser?.userId || ""}
         notificationId={notificationId}
       />
     </HomeContainer>

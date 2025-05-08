@@ -132,6 +132,8 @@ export const leagueSchema = {
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
+  pendingInvites: [],
+  pendingRequests: [],
 };
 
 export const courtSchema = {

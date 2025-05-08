@@ -116,7 +116,7 @@ const UserProvider = ({ children }) => {
       setNotifications([]); // Clear notifications state
 
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second
-      handleShowPopup("Successfully logged out!");
+      // handleShowPopup("Successfully logged out!");
       setIsLoggingOut(false); // Set logging out state to false
 
       return true;
@@ -162,25 +162,30 @@ const UserProvider = ({ children }) => {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) return "hide";
 
-      // Check if leagueData is valid
       if (
         !leagueData ||
         !leagueData.leagueAdmins ||
-        !leagueData.leagueParticipants
+        !leagueData.leagueParticipants ||
+        !leagueData.pendingInvites
       ) {
         console.error("Invalid league data:", leagueData);
         return "hide";
       }
 
-      const isAdmin = leagueData.leagueAdmins.some(
-        (admin) => admin.userId === userId
-      );
-      if (isAdmin) return "admin";
+      if (leagueData.leagueAdmins.some((a) => a.userId === userId)) {
+        return "admin";
+      }
 
-      const isParticipant = leagueData.leagueParticipants.some(
-        (participant) => participant.userId === userId
-      );
-      return isParticipant ? "participant" : "user";
+      if (leagueData.leagueParticipants.some((p) => p.userId === userId)) {
+        return "participant";
+      }
+
+      // ★ NEW: pending invite
+      if (leagueData.pendingInvites.some((inv) => inv.userId === userId)) {
+        return "pending";
+      }
+
+      return "user";
     } catch (error) {
       console.error("Error checking user role:", error);
       return "hide";
@@ -544,15 +549,6 @@ const UserProvider = ({ children }) => {
 
   const sendNotification = async (notification) => {
     try {
-      // const notification = {
-      //   message,
-      //   type,
-      //   senderId,
-      //   isRead: false,
-      //   createdAt: new Date(),
-      //   data,
-      // };
-
       const recipientId = notification.recipientId;
 
       // 🔥 Get the subcollection reference under the user
@@ -573,6 +569,11 @@ const UserProvider = ({ children }) => {
       const leagueDoc = await getDoc(leagueRef);
       const leagueData = leagueDoc.data();
       const leagueParticipants = leagueData.leagueParticipants || [];
+      const pendingInvites = leagueData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv) => inv.userId !== userId
+      );
 
       const newParticipant = await getUserById(userId);
 
@@ -585,11 +586,9 @@ const UserProvider = ({ children }) => {
 
       await updateDoc(leagueRef, {
         leagueParticipants: [...leagueParticipants, newParticipantProfile],
+        pendingInvites: updatedPending,
       });
 
-      const userRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userRef);
-      // update isRead to true in notification subcollection
       const notificationsRef = collection(db, "users", userId, "notifications");
 
       const notificationDocRef = doc(notificationsRef, notificationId);
@@ -604,62 +603,35 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const declineLeagueInvite = async (leagueId) => {
+  const declineLeagueInvite = async (userId, leagueId, notificationId) => {
     try {
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId) throw new Error("User not authenticated");
-
-      const userRef = doc(db, "users", userId);
       const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
 
-      // Update the user's document to remove the league ID from their leagues
-      await updateDoc(userRef, {
-        leagues: arrayRemove(leagueId),
+      const pendingInvites = leagueData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv) => inv.userId !== userId
+      );
+
+      await updateDoc(leagueRef, {
+        pendingInvites: updatedPending,
       });
 
-      // Update the league document to remove the user ID from its participants
-      await updateDoc(leagueRef, {
-        leagueParticipants: arrayRemove({ userId }),
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
       });
 
       console.log("League invite declined successfully!");
     } catch (error) {
-      console.error("Error declining league invite:", error);
+      console.error("Error accepting league invite:", error);
     }
   };
-  // Uncomment this if you want to use the old notification method
-
-  // const sendNotification = async ({
-  //   recipientId,
-  //   senderId,
-  //   message,
-  //   type = "invite",
-  //   leagueId,
-  //   leagueName,
-  //   data = {},
-  // }) => {
-  //   try {
-  //     const notification = {
-  //       message,
-  //       type,
-  //       senderId,
-  //       isRead: false,
-
-  //       ...data,
-  //     };
-
-  //     const userRef = doc(db, "users", recipientId);
-
-  //     const userDoc = await getDoc(userRef);
-  //     const userNotifications = userDoc.data().notifications || [];
-
-  //     await updateDoc(userRef, {
-  //       notifications: [...userNotifications, notification],
-  //     });
-  //   } catch (error) {
-  //     console.error("Failed to send notification:", error);
-  //   }
-  // };
 
   return (
     <UserContext.Provider

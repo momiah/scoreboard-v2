@@ -219,6 +219,32 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const updatePendingInvites = async (leagueId, userId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueSnap = await getDoc(leagueRef);
+
+      if (leagueSnap.exists()) {
+        const leagueData = leagueSnap.data();
+        const pendingInvites = leagueData.pendingInvites || [];
+
+        // Add user to pending invites if not already present
+        await updateDoc(leagueRef, {
+          pendingInvites: [...pendingInvites, { userId }],
+        });
+
+        return true;
+      } else {
+        console.log("League does not exist");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error checking pending invites:", error);
+      return false;
+    }
+  };
+
+  // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
       const userId = generateUniqueUserId();
@@ -293,6 +319,7 @@ const LeagueProvider = ({ children }) => {
         fetchLeagueById,
         getCourts,
         addCourt,
+        updatePendingInvites,
 
         // League State Management
         leagues,
