@@ -75,7 +75,7 @@ export const scoreboardProfileSchema = {
 export const profileDetailSchema = {
   ...scoreboardProfileSchema,
   XP: 0,
-  memberSince: moment().format("DD-MM-YYYY"),
+  memberSince: moment().format("MMM YYYY"),
   leagueStats: {
     first: 0,
     second: 0,
