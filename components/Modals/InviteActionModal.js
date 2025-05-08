@@ -1,4 +1,13 @@
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  Clipboard,
+} from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
@@ -7,6 +16,8 @@ import { useEffect, useState, useContext } from "react";
 import Tag from "../Tag";
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
+import { useRef } from "react";
+import moment from "moment";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -20,8 +31,12 @@ const InviteActionModal = ({
   const { fetchLeagueById } = useContext(LeagueContext);
   const { currentUser, acceptLeagueInvite } = useContext(UserContext);
   const [inviteDetails, setInviteDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isCopied, setIsCopied] = useState(false);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
+    setLoading(true);
     const fetchDetails = async () => {
       if (inviteType === "invite-league") {
         try {
@@ -34,7 +49,19 @@ const InviteActionModal = ({
     };
 
     fetchDetails();
+    setLoading(false);
   }, [inviteId, inviteType]);
+
+  const copyAddress = () => {
+    if (!inviteDetails?.location) return;
+    const address = `${inviteDetails.location.courtName}, ${inviteDetails.location.city}, ${inviteDetails.location.postCode}`;
+    Clipboard.setString(address);
+    setIsCopied(true);
+
+    // Clear existing timeout and reset after 1.5 seconds
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setIsCopied(false), 1500);
+  };
 
   const handleAcceptInvite = async () => {
     try {
@@ -48,88 +75,127 @@ const InviteActionModal = ({
       onClose(); // Close the modal after accepting
     } catch (error) {
       console.error("Error accepting invite:", error);
-      // Handle error (e.g., show a message to the user)
     }
   };
 
   const numberOfPlayers = `${inviteDetails?.leagueParticipants.length} / ${inviteDetails?.maxPlayers}`;
 
-  //   console.log("Current User:", JSON.stringify(currentUser, null, 2));
-  //   console.log("Invite Details:", JSON.stringify(inviteDetails, null, 2));
-
-  // Since we are using generic data, we need to start looking at changing the schema from leagueDetails, leagueName, to details, name etc
+  const startDate = moment(inviteDetails?.startDate).format("ddd Do MMM");
+  const endDate = moment(inviteDetails?.endDate).format("ddd Do MMM");
 
   return (
     <Modal transparent visible={visible} animationType="slide">
       <ModalContainer>
         <ModalContent>
-          <TouchableOpacity
-            onPress={() => onClose()}
-            style={{
-              alignSelf: "flex-end",
-              position: "absolute",
-              top: 10,
-              right: 10,
-              zIndex: 10,
-            }}
-          >
-            <AntDesign name="closecircleo" size={30} color="red" />
-          </TouchableOpacity>
+          {/* close button always present */}
+          {loading ? (
+            <>
+              <ActivityIndicator size="large" color="#fff" />
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={onClose}
+                style={{
+                  alignSelf: "flex-end",
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  zIndex: 10,
+                }}
+              >
+                <AntDesign name="closecircleo" size={30} color="red" />
+              </TouchableOpacity>
 
-          <LeagueDetailsContainer>
-            <Title>League Invite</Title>
+              <LeagueDetailsContainer>
+                <Title>League Invite</Title>
+                <Message>
+                  You’ve been invited to join {inviteDetails?.leagueName}
+                </Message>
 
-            <Message>
-              You’ve been invited to join {inviteDetails?.leagueName}
-            </Message>
-            {/* <LeagueName>{leagueDetails.leagueName}</LeagueName> */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <LeagueLocation>
-                {inviteDetails?.location.courtName},{" "}
-                {inviteDetails?.location.city},{" "}
-                {inviteDetails?.location.postCode}
-              </LeagueLocation>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 5,
-                marginTop: 20,
-              }}
-            >
-              <Tag
-                name={numberOfPlayers}
-                color={"rgba(0, 0, 0, 0.7)"}
-                iconColor={"#00A2FF"}
-                iconSize={15}
-                icon={"person"}
-                iconPosition={"right"}
-                bold
-              />
-              <Tag name={inviteDetails?.leagueType} />
-              <Tag name={inviteDetails?.prizeType} />
-            </View>
-          </LeagueDetailsContainer>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginTop: 15,
+                  }}
+                >
+                  <LeagueLocation>
+                    {inviteDetails?.location.courtName},{" "}
+                    {inviteDetails?.location.city},{" "}
+                    {inviteDetails?.location.postCode}
+                  </LeagueLocation>
+                  <TouchableOpacity
+                    onPress={copyAddress}
+                    style={{ marginLeft: 5 }}
+                  >
+                    <Ionicons
+                      name={isCopied ? "check" : "copy-outline"}
+                      size={16}
+                      color={isCopied ? "#00FF00" : "white"}
+                    />
+                  </TouchableOpacity>
+                </View>
 
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 15,
-              marginTop: 10,
-            }}
-          >
-            <Button style={{ backgroundColor: "red" }} onPress={onClose}>
-              <CloseButtonText>Decline</CloseButtonText>
-            </Button>
-            <Button onPress={handleAcceptInvite}>
-              <AcceptButtonText>Accept</AcceptButtonText>
-            </Button>
-          </View>
+                <View
+                  style={{
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    marginTop: 10,
+                    gap: 5,
+                  }}
+                >
+                  <Tag
+                    name={`Start Date - ${startDate}`}
+                    color="rgba(0, 0, 0, 0.7)"
+                    iconColor="rgb(0, 133, 40)"
+                    iconSize={15}
+                    icon="calendar-outline"
+                    iconPosition="left"
+                    bold
+                  />
+                  <Tag
+                    name={`End Date - ${endDate}`}
+                    color="rgba(0, 0, 0, 0.7)"
+                    iconColor="rgb(190, 0, 0)"
+                    iconSize={15}
+                    icon="calendar-outline"
+                    iconPosition="left"
+                    bold
+                  />
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 5,
+                    marginTop: 20,
+                  }}
+                >
+                  <Tag
+                    name={numberOfPlayers}
+                    color="rgba(0, 0, 0, 0.7)"
+                    iconColor="#00A2FF"
+                    iconSize={15}
+                    icon="person"
+                    iconPosition="right"
+                    bold
+                  />
+                  <Tag name={inviteDetails?.leagueType} />
+                  <Tag name={inviteDetails?.prizeType} />
+                </View>
+              </LeagueDetailsContainer>
+
+              <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
+                <Button style={{ backgroundColor: "red" }} onPress={onClose}>
+                  <CloseButtonText>Decline</CloseButtonText>
+                </Button>
+                <Button onPress={handleAcceptInvite}>
+                  <AcceptButtonText>Accept</AcceptButtonText>
+                </Button>
+              </View>
+            </>
+          )}
         </ModalContent>
       </ModalContainer>
     </Modal>
@@ -151,6 +217,8 @@ const ModalContent = styled.View({
   borderRadius: 10,
   width: screenWidth - 40,
   alignItems: "center",
+  minHeight: 300,
+  justifyContent: "center",
 });
 
 const Title = styled.Text({
@@ -162,7 +230,7 @@ const Title = styled.Text({
 
 const Message = styled.Text({
   fontSize: 14,
-  color: "#ccc",
+  color: "white",
   marginBottom: 8,
   //   textAlign: "center",
 });
@@ -179,7 +247,7 @@ const LeagueName = styled.Text({
 });
 
 const LeagueLocation = styled.Text({
-  fontSize: 12,
+  fontSize: 14,
   //   padding: 5,
   color: "white",
   backgroundColor: "rgba(0, 0, 0, 0.3)",
