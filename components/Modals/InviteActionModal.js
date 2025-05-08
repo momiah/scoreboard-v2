@@ -18,6 +18,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
 import { useRef } from "react";
 import moment from "moment";
+import { copyLocationAddress } from "../../functions/copyLocationAddress";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -52,16 +53,16 @@ const InviteActionModal = ({
     setLoading(false);
   }, [inviteId, inviteType]);
 
-  const copyAddress = () => {
-    if (!inviteDetails?.location) return;
-    const address = `${inviteDetails.location.courtName}, ${inviteDetails.location.city}, ${inviteDetails.location.postCode}`;
-    Clipboard.setString(address);
-    setIsCopied(true);
+  // const copyAddress = () => {
+  //   if (!inviteDetails?.location) return;
+  //   const address = `${inviteDetails.location.courtName}, ${inviteDetails.location.city}, ${inviteDetails.location.postCode}`;
+  //   Clipboard.setString(address);
+  //   setIsCopied(true);
 
-    // Clear existing timeout and reset after 1.5 seconds
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setIsCopied(false), 1500);
-  };
+  //   // Clear existing timeout and reset after 1.5 seconds
+  //   if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  //   timeoutRef.current = setTimeout(() => setIsCopied(false), 1500);
+  // };
 
   const handleAcceptInvite = async () => {
     try {
@@ -82,6 +83,7 @@ const InviteActionModal = ({
 
   const startDate = moment(inviteDetails?.startDate).format("ddd Do MMM");
   const endDate = moment(inviteDetails?.endDate).format("ddd Do MMM");
+  const location = inviteDetails?.location;
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -126,13 +128,20 @@ const InviteActionModal = ({
                     {inviteDetails?.location.postCode}
                   </LeagueLocation>
                   <TouchableOpacity
-                    onPress={copyAddress}
+                    onPress={copyLocationAddress(
+                      location,
+                      timeoutRef,
+                      setIsCopied
+                    )}
                     style={{ marginLeft: 5 }}
                   >
                     <Ionicons
-                      name={isCopied ? "check" : "copy-outline"}
+                      // name={"checkmark-circle-outline"}
+                      name={
+                        isCopied ? "checkmark-circle-outline" : "copy-outline"
+                      }
                       size={16}
-                      color={isCopied ? "#00FF00" : "white"}
+                      color={isCopied ? "green" : "white"}
                     />
                   </TouchableOpacity>
                 </View>

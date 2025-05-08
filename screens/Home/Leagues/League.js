@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ import { UserContext } from "../../../context/UserContext";
 import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus";
 
 import { ccDefaultImage } from "../../../mockImages/index";
+import moment from "moment";
+import { copyLocationAddress } from "../../../functions/copyLocationAddress";
 
 const League = () => {
   const route = useRoute();
@@ -38,6 +40,9 @@ const League = () => {
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
+
+  const [isCopied, setIsCopied] = useState(false);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -101,12 +106,15 @@ const League = () => {
     leagueImage,
     centerName,
     location,
-    startDate,
-    endDate,
+    // startDate,
+    // endDate,
     leagueType,
     maxPlayers,
     games,
   } = leagueById || {};
+
+  const startDate = moment(leagueById?.startDate).format("ddd Do MMM");
+  const endDate = moment(leagueById?.endDate).format("ddd Do MMM");
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -174,11 +182,11 @@ const League = () => {
             )}
 
             <LeagueName>{leagueName}</LeagueName>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => generateNewLeagueParticipants(4, leagueId)}
             >
               <LeagueLocation>Generate Participant</LeagueLocation>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <View
               style={{
@@ -190,12 +198,18 @@ const League = () => {
               <LeagueLocation>
                 {location.courtName}, {location.city}
               </LeagueLocation>
-              <Ionicons
-                name={"location"}
-                size={15}
-                color={"#286EFA"}
+              <TouchableOpacity
+                onPress={() =>
+                  copyLocationAddress(location, timeoutRef, setIsCopied)
+                }
                 style={{ marginLeft: 5 }}
-              />
+              >
+                <Ionicons
+                  name={isCopied ? "checkmark-circle-outline" : "copy-outline"}
+                  size={16}
+                  color={isCopied ? "green" : "white"}
+                />
+              </TouchableOpacity>
             </View>
 
             <View
@@ -358,6 +372,7 @@ const LeagueLocation = styled.Text({
   color: "white",
   backgroundColor: "rgba(0, 0, 0, 0.3)",
   borderRadius: 5,
+  alignItems: "center",
 });
 
 const EditButton = styled.TouchableOpacity({
