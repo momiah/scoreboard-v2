@@ -128,9 +128,20 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       memberSince: userInfo.profileDetail?.memberSince || "",
     };
 
+    const leagueOwner = {
+      userId: userInfo.userId,
+      username: userInfo.username,
+      firstName: userInfo.firstName,
+      lastName: userInfo.lastName,
+      location: userInfo.location,
+    };
+
+    console.log("League Owner:", leagueOwner);
+
     return {
       leagueAdmin: { userId: userInfo.userId, username: userInfo.username },
       leagueParticipant: leagueCreatorProfile,
+      leagueOwner,
     };
   };
 
@@ -177,6 +188,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         leagueImage: imageDownloadUrl || null,
         prizeType: prizeTypes.TROPHY,
         location,
+        leagueOwner: adminData.leagueOwner,
       };
 
       await addLeagues(newLeague);

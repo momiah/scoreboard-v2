@@ -111,6 +111,13 @@ export const leagueSchema = {
   leagueParticipants: [],
   leagueTeams: [],
   leagueAdmins: [],
+  leagueOwner: {
+    userId: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    location: locationSchema,
+  },
   games: [],
   leagueType: "",
   prizeType: "",
