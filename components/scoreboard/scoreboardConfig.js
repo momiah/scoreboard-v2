@@ -48,6 +48,23 @@ export const getButtonConfig = (
       started: { text: "Add Game", disabled: false, action: handleAddGame },
       ended: { text: "League has ended", disabled: true, action: null },
     },
+    pending: {
+      not_started: {
+        text: "Invitation Pending",
+        disabled: true,
+        action: null,
+      },
+      started: {
+        text: "Invitation Pending",
+        disabled: true,
+        action: null,
+      },
+      ended: {
+        text: "League has ended",
+        disabled: true,
+        action: null,
+      },
+    },
   };
 
   return baseConfig[userRole]?.[leagueState] || {};

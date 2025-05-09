@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   Modal,
   Text,
@@ -17,6 +17,10 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { FlatList } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { UserContext } from "../../context/UserContext";
+import { notificationSchema, notificationTypes } from "../../schemas/schema";
+import { createdAt } from "expo-updates";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const InvitePlayerModal = ({
   modalVisible,
@@ -27,11 +31,35 @@ const InvitePlayerModal = ({
   const [suggestions, setSuggestions] = useState([]);
   const [inviteUsers, setInviteUsers] = useState([]);
   const [errorText, setErrorText] = useState("");
-  const handleSendInvite = () => {
+  const { sendNotification } = useContext(UserContext);
+  const { updatePendingInvites } = useContext(LeagueContext);
+
+  const handleSendInvite = async () => {
     if (inviteUsers.length === 0) {
       setErrorText("Please select at least one player to invite");
       return;
     }
+
+    const currentUserId = await AsyncStorage.getItem("userId");
+
+    for (const user of inviteUsers) {
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: user.userId,
+        senderId: currentUserId,
+        message: `You've been invited to join ${leagueDetails.leagueName}`,
+        type: notificationTypes.ACTION.INVITE.LEAGUE,
+
+        data: {
+          leagueId: leagueDetails.id,
+        },
+      };
+
+      await sendNotification(payload);
+      await updatePendingInvites(leagueDetails.id, user.userId);
+    }
+
     setModalVisible(false);
   };
 
@@ -42,7 +70,6 @@ const InvitePlayerModal = ({
       try {
         // Retrieve the logged-in user ID from AsyncStorage
         const currentUserId = await AsyncStorage.getItem("userId");
-
         if (!currentUserId) {
           return; // Handle if no user is logged in
         }
@@ -129,7 +156,8 @@ const InvitePlayerModal = ({
                     }}
                   >
                     <LeagueLocation>
-                      {leagueDetails.centerName}, {leagueDetails.location}
+                      {leagueDetails.location.courtName},{" "}
+                      {leagueDetails.location.city}
                     </LeagueLocation>
                   </View>
 

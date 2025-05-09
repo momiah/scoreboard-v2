@@ -38,6 +38,7 @@ import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
 import AddCourtModal from "./AddCourtModal";
+import { prizeTypes } from "../../schemas/schema";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -174,6 +175,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
         leagueImage: imageDownloadUrl || null,
+        prizeType: prizeTypes.TROPHY,
         location,
       };
 
@@ -280,6 +282,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                   error={errors.leagueDescription}
                   multiline
                 />
+
+                <DisclaimerText>
+                  Please ensure you have arranged court reservation directly
+                  with the venue. Court Champs does not reserve any courts when
+                  you post a game or add a league.
+                </DisclaimerText>
 
                 <ButtonContainer>
                   <CancelButton onPress={() => setModalVisible(false)}>
@@ -563,6 +571,12 @@ const OverlayIcon = styled.View({
   backgroundColor: "rgba(0, 0, 0, 0.5)",
   borderRadius: 16,
   padding: 2,
+});
+
+const DisclaimerText = styled.Text({
+  color: "white",
+  fontStyle: "italic",
+  fontSize: 12,
 });
 
 const ImagePlaceholder = styled.View({

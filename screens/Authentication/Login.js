@@ -269,17 +269,21 @@ export default function Login() {
         </View>
 
         {/* Social Media Buttons */}
-        <View style={styles.socialContainer}>
-          {/* <TouchableOpacity onPress={() => { onSocialLogin('google') }}>
+        {/* <View style={styles.socialContainer}>
+          <TouchableOpacity
+            onPress={() => {
+              onSocialLogin("google");
+            }}
+          >
             <Image source={GoogleLogo} style={styles.socialIcon} />
-          </TouchableOpacity> */}
+          </TouchableOpacity>
           <TouchableOpacity>
             <Image source={FacebookLogo} style={styles.socialIcon} />
           </TouchableOpacity>
           <TouchableOpacity>
             <Image source={AppleLogo} style={styles.socialIconApple} />
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Register Section */}
 
@@ -290,7 +294,7 @@ export default function Login() {
             }}
             style={styles.registerText}
           >
-            Register
+            Register for free
           </Text>
         </TouchableOpacity>
       </View>
@@ -387,7 +391,7 @@ const styles = StyleSheet.create({
   button: {
     width: "272px",
     height: 50,
-    backgroundColor: "#2563EB",
+    backgroundColor: "#00A2FF",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
@@ -423,7 +427,7 @@ const styles = StyleSheet.create({
   registerText: {
     color: "#fff",
     fontSize: 16,
-
-    justifyContent: "flex-start",
+    fontWeight: "bold",
+    marginTop: 50,
   },
 });

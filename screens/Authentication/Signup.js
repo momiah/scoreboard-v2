@@ -18,6 +18,7 @@ import {
   query,
   where,
   getDocs,
+  addDoc,
 } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
@@ -25,6 +26,7 @@ import { PopupContext } from "../../context/PopupContext";
 import { profileDetailSchema } from "../../schemas/schema";
 import { userProfileSchema } from "../../schemas/schema";
 import { loadCountries, loadCities } from "../../utils/locationData";
+import { notificationSchema, notificationTypes } from "../../schemas/schema";
 
 const Signup = ({ route }) => {
   const { userId: socialId, userName, userEmail } = route.params || {};
@@ -121,7 +123,6 @@ const Signup = ({ route }) => {
         ...profileFields
       } = data;
 
-      // 2) Create the Auth user if needed
       let uid = socialId;
       if (!isSocialSignup) {
         const { user } = await createUserWithEmailAndPassword(
@@ -145,15 +146,30 @@ const Signup = ({ route }) => {
         profileDetail: profileDetailSchema,
       };
 
-      // 4) Write it once
+      // 1. Create the user document
       await setDoc(doc(db, "users", uid), profileToSave);
 
-      // 5) Success UI…
+      // 2. Add a welcome notification as a document in the subcollection
+      const welcomeNotification = {
+        ...notificationSchema,
+        createdAt: new Date(),
+
+        message: "Welcome to Court Champs! 🎉",
+        type: notificationTypes.INFORMATION.GENERAL,
+        senderId: notificationTypes.INFORMATION.APP,
+        recipientId: profileToSave.userId,
+      };
+
+      await addDoc(
+        collection(db, "users", uid, "notifications"),
+        welcomeNotification
+      );
+
+      // 3. Show success UI
       setPopupIcon("success");
       setPopupButtonText("Login");
       handleShowPopup("Account created successfully, please login to continue");
     } catch (error) {
-      // catch both Auth and Firestore errors here
       const messages = {
         "auth/email-already-in-use": "Email already registered",
         "auth/weak-password": "Password is too weak",

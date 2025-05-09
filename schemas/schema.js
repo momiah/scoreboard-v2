@@ -1,3 +1,4 @@
+import { createdAt } from "expo-updates";
 import { count } from "firebase/firestore";
 import moment from "moment";
 
@@ -10,7 +11,11 @@ export const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
-const prizeTypes = ["Trophy", "Medal", "Cash Prize"];
+export const prizeTypes = {
+  TROPHY: "Trophy",
+  MEDAL: "Medal",
+  CASH_PRIZE: "Cash Prize",
+};
 const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 const locations = [
   "Milton Keynes",
@@ -70,7 +75,7 @@ export const scoreboardProfileSchema = {
 export const profileDetailSchema = {
   ...scoreboardProfileSchema,
   XP: 0,
-  memberSince: moment().format("DD-MM-YYYY"),
+  memberSince: moment().format("MMM YYYY"),
   leagueStats: {
     first: 0,
     second: 0,
@@ -99,6 +104,7 @@ export const userProfileSchema = {
   profileViews: 0,
   location: locationSchema,
   email: "",
+  phoneNumber: "",
 };
 
 export const leagueSchema = {
@@ -120,9 +126,14 @@ export const leagueSchema = {
   endDate: "",
   image: "",
   leagueType: "",
+  prizeType: "",
+  currencyType: "",
+  entryFee: 0,
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
+  pendingInvites: [],
+  pendingRequests: [],
 };
 
 export const courtSchema = {
@@ -136,4 +147,45 @@ export const courtSchema = {
   numberOfPlayers: 0,
   numberOfGames: 0,
   numberOfTournaments: 0,
+};
+
+export const notificationTypes = {
+  // Shows information modal
+  INFORMATION: {
+    APP: "app",
+    GENERAL: "general",
+    REMINDER: "reminder",
+  },
+  ACTION: {
+    // Shows League/Tournament modal
+    INVITE: {
+      LEAGUE: "invite-league",
+      TOURNAMENT: "invite-tournament",
+    },
+    // Shows player card
+    JOIN_REQUEST: {
+      LEAGUE: "join-league-request",
+      TOURNAMENT: "join-tournament-request",
+    },
+    // Shows game modal
+    ADD_GAME: {
+      LEAGUE: "add-league-game",
+      TOURNAMENT: "add-tournament-game",
+    },
+  },
+  RESPONSE: {
+    ACCEPT: "accepted",
+    DECLINE: "declined",
+  },
+};
+
+export const notificationSchema = {
+  createdAt: new Date(),
+  type: "",
+  message: "",
+  isRead: false,
+  senderId: "",
+  recipientId: "",
+  data: {},
+  response: "",
 };

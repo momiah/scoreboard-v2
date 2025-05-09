@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-  use,
-} from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
 import {
   doc,
@@ -13,12 +7,19 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  addDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { profileDetailSchema } from "../schemas/schema";
+import {
+  profileDetailSchema,
+  scoreboardProfileSchema,
+  notificationSchema,
+  notificationTypes,
+} from "../schemas/schema";
 
 const UserContext = createContext();
 
@@ -28,6 +29,8 @@ const UserProvider = ({ children }) => {
 
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
+
+  const [notifications, setNotifications] = useState([]); // Optional: Track notifications
 
   useEffect(() => {
     const loadInitialUser = async () => {
@@ -47,15 +50,73 @@ const UserProvider = ({ children }) => {
     loadInitialUser();
   }, []);
 
+  useEffect(() => {
+    let unsubscribe;
+
+    const setupListener = async () => {
+      try {
+        // const userId = await AsyncStorage.getItem("userId");
+        const userUid = currentUser?.userId;
+
+        if (!currentUser) {
+          return;
+        }
+
+        // Create a reference to the user's notifications collection
+        const notificationsRef = collection(
+          db,
+          "users",
+          userUid,
+          "notifications"
+        );
+
+        // Set up the snapshot listener
+        unsubscribe = onSnapshot(
+          notificationsRef,
+          (snapshot) => {
+            const notificationsData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+
+            // Sort by createdAt timestamp (newest first)
+            notificationsData.sort(
+              (a, b) =>
+                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+            );
+
+            setNotifications(notificationsData);
+          },
+          (error) => {
+            console.error("Error in notifications listener:", error);
+          }
+        );
+      } catch (error) {
+        console.error("Failed to set up notifications listener:", error);
+      }
+    };
+
+    setupListener();
+
+    // Clean up the listener when component unmounts
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [currentUser?.userId]);
+
   const Logout = async () => {
     try {
       setIsLoggingOut(true); // Set logging out state
       await AsyncStorage.removeItem("userId");
 
       await AsyncStorage.clear();
+      setCurrentUser(null); // Clear current user state
+      setNotifications([]); // Clear notifications state
 
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for 1 second
-      handleShowPopup("Successfully logged out!");
+      // handleShowPopup("Successfully logged out!");
       setIsLoggingOut(false); // Set logging out state to false
 
       return true;
@@ -101,25 +162,30 @@ const UserProvider = ({ children }) => {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) return "hide";
 
-      // Check if leagueData is valid
       if (
         !leagueData ||
         !leagueData.leagueAdmins ||
-        !leagueData.leagueParticipants
+        !leagueData.leagueParticipants ||
+        !leagueData.pendingInvites
       ) {
         console.error("Invalid league data:", leagueData);
         return "hide";
       }
 
-      const isAdmin = leagueData.leagueAdmins.some(
-        (admin) => admin.userId === userId
-      );
-      if (isAdmin) return "admin";
+      if (leagueData.leagueAdmins.some((a) => a.userId === userId)) {
+        return "admin";
+      }
 
-      const isParticipant = leagueData.leagueParticipants.some(
-        (participant) => participant.userId === userId
-      );
-      return isParticipant ? "participant" : "user";
+      if (leagueData.leagueParticipants.some((p) => p.userId === userId)) {
+        return "participant";
+      }
+
+      // ★ NEW: pending invite
+      if (leagueData.pendingInvites.some((inv) => inv.userId === userId)) {
+        return "pending";
+      }
+
+      return "user";
     } catch (error) {
       console.error("Error checking user role:", error);
       return "hide";
@@ -256,7 +322,6 @@ const UserProvider = ({ children }) => {
   const getUserById = async (userId) => {
     try {
       if (!userId) {
-        console.error("User ID is required to fetch details.");
         return null;
       }
 
@@ -482,6 +547,92 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const sendNotification = async (notification) => {
+    try {
+      const recipientId = notification.recipientId;
+
+      // 🔥 Get the subcollection reference under the user
+      const notifRef = collection(db, "users", recipientId, "notifications");
+
+      // ➕ Add the notification as a new document
+      await addDoc(notifRef, notification);
+
+      console.log("✅ Notification saved to subcollection!");
+    } catch (error) {
+      console.error("❌ Failed to send notification:", error);
+    }
+  };
+
+  const acceptLeagueInvite = async (userId, leagueId, notificationId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+      const leagueParticipants = leagueData.leagueParticipants || [];
+      const pendingInvites = leagueData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv) => inv.userId !== userId
+      );
+
+      const newParticipant = await getUserById(userId);
+
+      const newParticipantProfile = {
+        ...scoreboardProfileSchema,
+        username: newParticipant.username,
+        userId: newParticipant.userId,
+        memberSince: newParticipant.profileDetail?.memberSince || "",
+      };
+
+      await updateDoc(leagueRef, {
+        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+        pendingInvites: updatedPending,
+      });
+
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.ACCEPT,
+      });
+
+      console.log("League invite accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting league invite:", error);
+    }
+  };
+
+  const declineLeagueInvite = async (userId, leagueId, notificationId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+
+      const pendingInvites = leagueData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv) => inv.userId !== userId
+      );
+
+      await updateDoc(leagueRef, {
+        pendingInvites: updatedPending,
+      });
+
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
+      });
+
+      console.log("League invite declined successfully!");
+    } catch (error) {
+      console.error("Error accepting league invite:", error);
+    }
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -497,6 +648,12 @@ const UserProvider = ({ children }) => {
         setIsLoggingOut,
         updateUserProfile,
         getUserById,
+
+        //Notification
+        sendNotification,
+        notifications,
+        acceptLeagueInvite,
+        declineLeagueInvite,
 
         // League-related operations
         retrievePlayersFromLeague,
@@ -534,3 +691,21 @@ const UserProvider = ({ children }) => {
 };
 
 export { UserContext, UserProvider };
+
+// const getNotifications = async (userId) => {
+//   try {
+//     const userRef = doc(db, "users", userId);
+//     const userDoc = await getDoc(userRef);
+
+//     if (userDoc.exists()) {
+//       const notifications = userDoc.data().notifications || [];
+//       return notifications;
+//     } else {
+//       console.error("No such document!");
+//       return [];
+//     }
+//   } catch (error) {
+//     console.error("Error fetching notifications:", error);
+//     return [];
+//   }
+// }

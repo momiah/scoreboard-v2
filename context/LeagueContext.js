@@ -9,10 +9,10 @@ import {
 } from "firebase/firestore";
 import moment from "moment";
 
-import { generatedLeagues } from "../components/Leagues/leagueMocks";
+// import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { generateLeagueId } from "../functions/generateLeagueId";
 import { generateCourtId } from "../functions/generateCourtId";
 import { generateUniqueUserId } from "../functions/generateUniqueUserId";
@@ -32,12 +32,8 @@ const LeagueProvider = ({ children }) => {
 
   // Fetch leagues data based on mock or real data
   useEffect(() => {
-    if (showMockData) {
-      setLeagues(generatedLeagues);
-    } else {
-      fetchLeagues();
-    }
-  }, [showMockData]);
+    fetchLeagues();
+  }, []);
 
   const fetchLeagues = async () => {
     try {
@@ -223,6 +219,32 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const updatePendingInvites = async (leagueId, userId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueSnap = await getDoc(leagueRef);
+
+      if (leagueSnap.exists()) {
+        const leagueData = leagueSnap.data();
+        const pendingInvites = leagueData.pendingInvites || [];
+
+        // Add user to pending invites if not already present
+        await updateDoc(leagueRef, {
+          pendingInvites: [...pendingInvites, { userId }],
+        });
+
+        return true;
+      } else {
+        console.log("League does not exist");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error checking pending invites:", error);
+      return false;
+    }
+  };
+
+  // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
       const userId = generateUniqueUserId();
@@ -297,6 +319,7 @@ const LeagueProvider = ({ children }) => {
         fetchLeagueById,
         getCourts,
         addCourt,
+        updatePendingInvites,
 
         // League State Management
         leagues,
