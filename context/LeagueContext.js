@@ -257,6 +257,7 @@ const LeagueProvider = ({ children }) => {
       const leagueParticipants = leagueData.leagueParticipants || [];
       const pendingInvites = leagueData.pendingInvites || [];
 
+      // Add user to league and remove from pending invites
       const updatedPending = pendingInvites.filter(
         (inv) => inv.userId !== userId
       );
@@ -275,6 +276,7 @@ const LeagueProvider = ({ children }) => {
         pendingInvites: updatedPending,
       });
 
+      //Update users notification
       const notificationsRef = collection(db, "users", userId, "notifications");
 
       const notificationDocRef = doc(notificationsRef, notificationId);
@@ -297,6 +299,7 @@ const LeagueProvider = ({ children }) => {
 
       const pendingInvites = leagueData.pendingInvites || [];
 
+      // Remove user from pending invites
       const updatedPending = pendingInvites.filter(
         (inv) => inv.userId !== userId
       );
@@ -305,6 +308,7 @@ const LeagueProvider = ({ children }) => {
         pendingInvites: updatedPending,
       });
 
+      //Update users notification
       const notificationsRef = collection(db, "users", userId, "notifications");
 
       const notificationDocRef = doc(notificationsRef, notificationId);
@@ -372,6 +376,7 @@ const LeagueProvider = ({ children }) => {
       const leagueParticipants = leagueData.leagueParticipants || [];
       const pendingRequests = leagueData.pendingRequests || [];
 
+      // Add senderId to league and remove from pending requests
       const updatedPending = pendingRequests.filter(
         (pen) => pen.userId !== senderId
       );
@@ -390,6 +395,7 @@ const LeagueProvider = ({ children }) => {
         pendingRequests: updatedPending,
       });
 
+      // Update league owners notification
       const notificationsRef = collection(db, "users", userId, "notifications");
 
       const notificationDocRef = doc(notificationsRef, notificationId);
@@ -415,6 +421,7 @@ const LeagueProvider = ({ children }) => {
       const leagueDoc = await getDoc(leagueRef);
       const leagueData = leagueDoc.data();
 
+      // Remove senderId from pending requests
       const pendingRequests = leagueData.pendingRequests || [];
 
       const updatedPending = pendingRequests.filter(
@@ -425,6 +432,7 @@ const LeagueProvider = ({ children }) => {
         pendingRequests: updatedPending,
       });
 
+      // Update league owners notification
       const notificationsRef = collection(db, "users", userId, "notifications");
 
       const notificationDocRef = doc(notificationsRef, notificationId);
