@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 import {
   doc,
   setDoc,
@@ -21,11 +21,16 @@ import {
   scoreboardProfileSchema,
   profileDetailSchema,
 } from "../schemas/schema";
+import { UserContext } from "./UserContext";
+import { notificationTypes } from "../schemas/schema";
+import { locationSchema } from "../schemas/schema";
+import { notificationSchema } from "../schemas/schema";
 
 const LeagueContext = createContext();
 
 const LeagueProvider = ({ children }) => {
   const [leagues, setLeagues] = useState([]);
+  const { sendNotification, getUserById } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
   const [leagueIdForDetail, setLeagueIdForDetail] = useState("");
   const [leagueById, setLeagueById] = useState(null);
@@ -244,6 +249,196 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const acceptLeagueInvite = async (userId, leagueId, notificationId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+      const leagueParticipants = leagueData.leagueParticipants || [];
+      const pendingInvites = leagueData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv) => inv.userId !== userId
+      );
+
+      const newParticipant = await getUserById(userId);
+
+      const newParticipantProfile = {
+        ...scoreboardProfileSchema,
+        username: newParticipant.username,
+        userId: newParticipant.userId,
+        memberSince: newParticipant.profileDetail?.memberSince || "",
+      };
+
+      await updateDoc(leagueRef, {
+        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+        pendingInvites: updatedPending,
+      });
+
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.ACCEPT,
+      });
+
+      console.log("League invite accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting league invite:", error);
+    }
+  };
+
+  const declineLeagueInvite = async (userId, leagueId, notificationId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+
+      const pendingInvites = leagueData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv) => inv.userId !== userId
+      );
+
+      await updateDoc(leagueRef, {
+        pendingInvites: updatedPending,
+      });
+
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
+      });
+
+      console.log("League invite declined successfully!");
+    } catch (error) {
+      console.error("Error accepting league invite:", error);
+    }
+  };
+
+  const requestToJoinLeague = async (leagueId, userId, ownerId, username) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueSnap = await getDoc(leagueRef);
+
+      if (leagueSnap.exists()) {
+        const leagueData = leagueSnap.data();
+        const pendingRequests = leagueData.pendingRequests || [];
+
+        // Add user to pending invites if not already present
+        await updateDoc(leagueRef, {
+          pendingRequests: [...pendingRequests, { userId }],
+        });
+
+        const payload = {
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: ownerId,
+          senderId: userId,
+          message: `${username} has requested to join your league!`,
+          type: notificationTypes.ACTION.JOIN_REQUEST.LEAGUE,
+
+          data: {
+            leagueId,
+          },
+        };
+
+        await sendNotification(payload);
+
+        return true;
+      } else {
+        console.log("League does not exist");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error checking pending invites:", error);
+      return false;
+    }
+  };
+
+  const acceptLeagueJoinRequest = async (
+    senderId,
+    leagueId,
+    notificationId,
+    userId
+  ) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+      const leagueParticipants = leagueData.leagueParticipants || [];
+      const pendingRequests = leagueData.pendingRequests || [];
+
+      const updatedPending = pendingRequests.filter(
+        (pen) => pen.userId !== senderId
+      );
+
+      const newParticipant = await getUserById(senderId);
+
+      const newParticipantProfile = {
+        ...scoreboardProfileSchema,
+        username: newParticipant.username,
+        userId: newParticipant.userId,
+        memberSince: newParticipant.profileDetail?.memberSince || "",
+      };
+
+      await updateDoc(leagueRef, {
+        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+        pendingRequests: updatedPending,
+      });
+
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.ACCEPT,
+      });
+
+      console.log("League join request accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting league join request:", error);
+    }
+  };
+
+  const declineLeagueJoinRequest = async (
+    senderId,
+    leagueId,
+    notificationId,
+    userId
+  ) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+
+      const pendingRequests = leagueData.pendingRequests || [];
+
+      const updatedPending = pendingRequests.filter(
+        (pen) => pen.userId !== senderId
+      );
+
+      await updateDoc(leagueRef, {
+        pendingRequests: updatedPending,
+      });
+
+      const notificationsRef = collection(db, "users", userId, "notifications");
+
+      const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
+      });
+
+      console.log("League join request declined successfully!");
+    } catch (error) {
+      console.error("Error accepting league join request:", error);
+    }
+  };
+
   // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
@@ -326,6 +521,11 @@ const LeagueProvider = ({ children }) => {
         leagueById,
         leagueIdForDetail,
         setLeagueIdForDetail,
+        acceptLeagueInvite,
+        declineLeagueInvite,
+        requestToJoinLeague,
+        acceptLeagueJoinRequest,
+        declineLeagueJoinRequest,
 
         // Mock Data Management
         setShowMockData,

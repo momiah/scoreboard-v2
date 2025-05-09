@@ -136,8 +136,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       location: userInfo.location,
     };
 
-    console.log("League Owner:", leagueOwner);
-
     return {
       leagueAdmin: { userId: userInfo.userId, username: userInfo.username },
       leagueParticipant: leagueCreatorProfile,
