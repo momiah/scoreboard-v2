@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Text, StyleSheet } from "react-native";
-import { formatNumber } from "../../functions/formatNumber";
+import { formatNumber } from "../../helpers/formatNumber";
 
 const AnimateNumber = ({ number, fontSize = 12, progressBar = false }) => {
   const [displayValue, setDisplayValue] = useState(0);

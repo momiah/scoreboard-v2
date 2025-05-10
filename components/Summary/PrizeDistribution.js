@@ -4,7 +4,7 @@ import Tooltip from "../Tooltip"; // Import the Tooltip component
 import { trophies } from "../../mockImages/index";
 import styled from "styled-components/native";
 import moment from "moment";
-import { calculatePrizeAllocation } from "../../functions/calculatePrizeAllocation";
+import { calculatePrizeAllocation } from "../../helpers/calculatePrizeAllocation";
 import { UserContext } from "../../context/UserContext";
 
 const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {

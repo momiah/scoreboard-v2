@@ -19,7 +19,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
 import { useRef } from "react";
 import moment from "moment";
-import { copyLocationAddress } from "../../functions/copyLocationAddress";
+import { copyLocationAddress } from "../../helpers/copyLocationAddress";
 import { useNavigation } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";

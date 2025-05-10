@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
+import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
 import Tag from "../Tag";
 import { UserContext } from "../../context/UserContext";
 import { ccDefaultImage } from "../../mockImages/index";

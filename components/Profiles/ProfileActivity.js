@@ -13,9 +13,9 @@ import {
   InteractionManager,
   Dimensions,
 } from "react-native";
-import { processLeagues } from "../../functions/processedProfileLeagues";
-import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
-import { sortLeaguesByEndDate } from "../../functions/sortedLeaguesByEndDate";
+import { processLeagues } from "../../helpers/processedProfileLeagues";
+import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
+import { sortLeaguesByEndDate } from "../../helpers/sortedLeaguesByEndDate";
 import Tag from "../Tag";
 import RankSuffix from "../RankSuffix";
 import { UserContext } from "../../context/UserContext";

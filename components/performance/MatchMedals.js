@@ -3,7 +3,7 @@ import styled from "styled-components/native";
 import React from "react";
 import { View, Image, Text } from "react-native";
 import { Dimensions } from "react-native";
-import { formatNumber } from "../../functions/formatNumber";
+import { formatNumber } from "../../helpers/formatNumber";
 
 const MatchMedals = ({
   demonWin = 0,

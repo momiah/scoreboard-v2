@@ -17,11 +17,11 @@ import Popup from "../popup/Popup";
 import SelectPlayer from "../scoreboard/AddGame/SelectPlayer";
 import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
-import { generateUniqueGameId } from "../../functions/generateUniqueId";
-import { calculatePlayerPerformance } from "../../functions/calculatePlayerPerformance";
+import { generateUniqueGameId } from "../../helpers/generateUniqueId";
+import { calculatePlayerPerformance } from "../../helpers/calculatePlayerPerformance";
 // import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
 import AddGame from "../scoreboard/AddGame/AddGame";
-import { calculateTeamPerformance } from "../../functions/calculateTeamPerformance";
+import { calculateTeamPerformance } from "../../helpers/calculateTeamPerformance";
 
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";

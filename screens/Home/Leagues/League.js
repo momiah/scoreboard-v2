@@ -22,12 +22,12 @@ import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
-import { calculateLeagueStatus } from "../../../functions/calculateLeagueStatus";
+import { calculateLeagueStatus } from "../../../helpers/calculateLeagueStatus";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import moment from "moment";
-import { copyLocationAddress } from "../../../functions/copyLocationAddress";
-import { formatDate } from "../../../functions/formatDate";
+import { copyLocationAddress } from "../../../helpers/copyLocationAddress";
+import { formatDate } from "../../../helpers/formatDate";
 
 const League = () => {
   const route = useRoute();
