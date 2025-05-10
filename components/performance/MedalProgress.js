@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { FontAwesome } from "@expo/vector-icons";
 import AnimateNumber from "./AnimateNumber";
 import { ranks } from "../../rankingMedals/ranking/ranks";
-import { formatNumber } from "../../functions/formatNumber";
+import { formatNumber } from "../../helpers/formatNumber";
 
 // const ranks = [
 //   { name: "Recruit", xp: 0 },

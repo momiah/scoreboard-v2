@@ -7,7 +7,7 @@ import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LeagueContext } from "../../context/LeagueContext";
-import { calculateLeagueStatus } from "../../functions/calculateLeagueStatus";
+import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
 import { ccDefaultImage } from "../../mockImages/index";
 
 const VerticalLeagueCarousel = ({ navigationRoute }) => {

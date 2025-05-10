@@ -3,9 +3,9 @@ import { View, Text, Modal } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
-import { calculateEndDate } from "../../../functions/calculateEndDate";
-import { formatDateForDatePicker } from "../../../functions/formatDateForDatePicker";
-import { formatDateForStorage } from "../../../functions/formatDateForStorage";
+import { calculateEndDate } from "../../../helpers/calculateEndDate";
+import { formatDateForDatePicker } from "../../../helpers/formatDateForDatePicker";
+import { formatDateForStorage } from "../../../helpers/formatDateForStorage";
 import { Ionicons } from "@expo/vector-icons";
 
 const DatePicker = ({ setValue, watch, errorText }) => {

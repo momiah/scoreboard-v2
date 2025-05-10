@@ -28,7 +28,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import ProfileActivity from "../../components/Profiles/ProfileActivity";
 import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
 import RankSuffix from "../../components/RankSuffix";
-import { formatNumber } from "../../functions/formatNumber";
+import { formatNumber } from "../../helpers/formatNumber";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;

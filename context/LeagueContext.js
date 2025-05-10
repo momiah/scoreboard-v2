@@ -13,9 +13,9 @@ import moment from "moment";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
 
-import { generateLeagueId } from "../functions/generateLeagueId";
-import { generateCourtId } from "../functions/generateCourtId";
-import { generateUniqueUserId } from "../functions/generateUniqueUserId";
+import { generateLeagueId } from "../helpers/generateLeagueId";
+import { generateCourtId } from "../helpers/generateCourtId";
+import { generateUniqueUserId } from "../helpers/generateUniqueUserId";
 import {
   userProfileSchema,
   scoreboardProfileSchema,

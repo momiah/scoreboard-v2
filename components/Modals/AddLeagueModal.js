@@ -36,7 +36,7 @@ import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
-import { getLeagueLocationDetails } from "../../functions/getLeagueLocationDetails";
+import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails";
 import AddCourtModal from "./AddCourtModal";
 import { prizeTypes } from "../../schemas/schema";
 
