@@ -16,16 +16,19 @@ import AddGameModal from "../Modals/AddGameModal";
 import { getButtonConfig, getFallbackMessage } from "./scoreboardConfig";
 
 import moment from "moment";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const Scoreboard = ({
   leagueGames = [],
   leagueId,
   userRole = "user",
   leagueType,
+  leagueOwner,
   leagueStartDate,
   leagueEndDate,
 }) => {
-  const { fetchPlayers } = useContext(UserContext);
+  const { fetchPlayers, currentUser } = useContext(UserContext);
+  const { requestToJoinLeague } = useContext(LeagueContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
   const navigation = useNavigation();
@@ -61,16 +64,34 @@ const Scoreboard = ({
     navigation.navigate("Login");
   }, [navigation]);
 
+  const handleRequestSend = useCallback(() => {
+    setRequestSend(true);
+    requestToJoinLeague(
+      leagueId,
+      currentUser.userId,
+      leagueOwner.userId,
+      currentUser.username
+    );
+  }, [requestToJoinLeague, leagueId, currentUser, leagueOwner]);
+
   const buttonConfig = useMemo(
     () =>
       getButtonConfig(
         userRole,
         leagueState,
         requestSend,
+        handleRequestSend,
         handleAddGame,
         handleLogin
       ),
-    [userRole, leagueState, requestSend, handleAddGame, handleLogin]
+    [
+      userRole,
+      leagueState,
+      requestSend,
+      handleRequestSend,
+      handleAddGame,
+      handleLogin,
+    ]
   );
 
   const fallbackMessage = useMemo(

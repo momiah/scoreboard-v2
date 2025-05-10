@@ -4,6 +4,7 @@ export const getButtonConfig = (
   userRole,
   leagueState,
   requestSend,
+  handleRequestSend,
   handleAddGame,
   handleLogin
 ) => {
@@ -25,12 +26,12 @@ export const getButtonConfig = (
       not_started: {
         text: requestSend ? "Request sent successfully" : "Request To Join",
         disabled: requestSend,
-        action: () => requestSend(true),
+        action: () => handleRequestSend(),
       },
       started: {
         text: requestSend ? "Request sent successfully" : "Request To Join",
         disabled: requestSend,
-        action: () => requestSend(true),
+        action: () => handleRequestSend(),
       },
       ended: { text: "League has ended", disabled: true, action: null },
     },
@@ -48,7 +49,24 @@ export const getButtonConfig = (
       started: { text: "Add Game", disabled: false, action: handleAddGame },
       ended: { text: "League has ended", disabled: true, action: null },
     },
-    pending: {
+    requestPending: {
+      not_started: {
+        text: "Request Pending",
+        disabled: true,
+        action: null,
+      },
+      started: {
+        text: "Request Pending",
+        disabled: true,
+        action: null,
+      },
+      ended: {
+        text: "League has ended",
+        disabled: true,
+        action: null,
+      },
+    },
+    invitationPending: {
       not_started: {
         text: "Invitation Pending",
         disabled: true,

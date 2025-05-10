@@ -30,8 +30,9 @@ const InviteActionModal = ({
   inviteType,
   notificationId,
 }) => {
-  const { fetchLeagueById } = useContext(LeagueContext);
-  const { currentUser, acceptLeagueInvite } = useContext(UserContext);
+  const { fetchLeagueById, acceptLeagueInvite, declineLeagueInvite } =
+    useContext(LeagueContext);
+  const { currentUser } = useContext(UserContext);
   const [inviteDetails, setInviteDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
@@ -59,17 +60,6 @@ const InviteActionModal = ({
     setLoading(false);
   }, [inviteId, inviteType]);
 
-  // const copyAddress = () => {
-  //   if (!inviteDetails?.location) return;
-  //   const address = `${inviteDetails.location.courtName}, ${inviteDetails.location.city}, ${inviteDetails.location.postCode}`;
-  //   Clipboard.setString(address);
-  //   setIsCopied(true);
-
-  //   // Clear existing timeout and reset after 1.5 seconds
-  //   if (timeoutRef.current) clearTimeout(timeoutRef.current);
-  //   timeoutRef.current = setTimeout(() => setIsCopied(false), 1500);
-  // };
-
   const handleAcceptInvite = async () => {
     try {
       await acceptLeagueInvite(
@@ -92,11 +82,22 @@ const InviteActionModal = ({
     }
   };
 
+  const handleDeclineInvite = async () => {
+    try {
+      await declineLeagueInvite(
+        currentUser.userId,
+        inviteDetails.id,
+        notificationId
+      );
+      console.log("Invite declined successfully");
+      onClose(); // Close the modal after declining
+    } catch (error) {
+      console.error("Error declining invite:", error);
+    }
+  };
+
   const numberOfPlayers = `${inviteDetails?.leagueParticipants.length} / ${inviteDetails?.maxPlayers}`;
 
-  // console.log("Invite Details:", inviteDetails?.startDate);
-  // const startDate = moment(inviteDetails?.startDate).format("ddd Do MMM");
-  // const endDate = moment(inviteDetails?.endDate).format("ddd Do MMM");
   const location = inviteDetails?.location;
 
   return (
@@ -211,7 +212,10 @@ const InviteActionModal = ({
               </LeagueDetailsContainer>
 
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
-                <Button style={{ backgroundColor: "red" }} onPress={onClose}>
+                <Button
+                  style={{ backgroundColor: "red" }}
+                  onPress={handleDeclineInvite}
+                >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button onPress={handleAcceptInvite}>
@@ -240,7 +244,7 @@ const ModalContent = styled.View({
   padding: 20,
   borderRadius: 10,
   width: screenWidth - 40,
-  alignItems: "center",
+  alignItems: "flex-start",
   minHeight: 300,
   justifyContent: "center",
 });

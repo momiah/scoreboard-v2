@@ -106,6 +106,7 @@ const League = () => {
     leagueName,
     leagueImage,
     centerName,
+    leagueOwner,
     location,
     startDate,
     endDate,
@@ -137,6 +138,7 @@ const League = () => {
             userRole={userRole}
             leagueStartDate={startDate}
             leagueEndDate={endDate}
+            leagueOwner={leagueOwner}
           />
         );
       case "Player Performance":

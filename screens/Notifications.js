@@ -9,6 +9,7 @@ import { set } from "lodash";
 import { notificationTypes, notificationSchema } from "../schemas/schema";
 import { createdAt } from "expo-updates";
 import InviteActionModal from "../components/Modals/InviteActionModal";
+import JoinRequestModal from "../components/Modals/JoinRequestModal";
 import Tag from "../components/Tag";
 
 const timeAgo = (date) => {
@@ -33,54 +34,11 @@ const timeAgo = (date) => {
   return "just now";
 };
 
-const mockNotifications = [
-  {
-    id: "1",
-    type: "invite-league",
-    message: "You've been invited to join Laura Trott League!",
-    senderId: "PlayerA",
-    isRead: false,
-    createdAt: new Date(Date.now() - 60 * 1000), // 1 minute ago
-    data: {
-      id: "Laura-Trott-League-03-05-2025-3SYCN",
-    },
-  },
-  {
-    id: "2",
-    type: "add-tournament-game",
-    message: "PlayerB just added a new game in Birmingham League.",
-    senderId: "PlayerB",
-    isRead: false,
-    createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 mins ago
-    data: {
-      id: "Birmingham-Tourney-03-05-2025-3SYCN",
-    },
-  },
-  {
-    id: "3",
-    type: "general",
-    message: "Welcome to Court Champs! 🎉",
-    senderId: "System",
-    isRead: false,
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-    data: {
-      description: "Welcome to Court Champs! 🎉",
-    },
-  },
-  {
-    id: "4",
-    type: "reminder",
-    message: "Don't forget to approve your match result vs PlayerC.",
-    senderId: "System",
-    isRead: false,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    data: {
-      description: "Don't forget to approve your match result vs PlayerC.",
-    },
-  },
-];
-const isActionType = (type) =>
-  Object.values(notificationTypes.ACTION.INVITE).includes(type.toLowerCase());
+const actionTypes = Object.values(notificationTypes.ACTION)
+  .flatMap(Object.values)
+  .map((t) => t.toLowerCase());
+
+const isActionType = (type) => actionTypes.includes(type.toLowerCase());
 
 const Notifications = () => {
   const { currentUser, notifications } = useContext(UserContext);
@@ -88,7 +46,12 @@ const Notifications = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
 
+  // Invite modal state
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
+
+  // Join request modal state
+  const [joinRequestModalVisible, setJoinRequestModalVisible] = useState(false);
+  const [senderId, setSenderId] = useState(null);
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
   const [selectedInviteType, setSelectedInviteType] = useState(null);
 
@@ -113,35 +76,65 @@ const Notifications = () => {
     );
   }
 
+  const openInviteActionModal = (item) => {
+    setSelectedLeagueId(item.data.leagueId); // could be league OR tournament
+    setInviteModalVisible(true);
+    setSelectedInviteType(item.type);
+    setNotificationId(item.id);
+  };
+  const openJoinRequestModal = (item) => {
+    setSelectedLeagueId(item.data.leagueId); // could be league OR tournament
+    setJoinRequestModalVisible(true);
+    setSelectedInviteType(item.type);
+    setNotificationId(item.id);
+    setSenderId(item.senderId);
+  };
+
+  const inviteActions = Object.values(notificationTypes.ACTION.INVITE);
+  const joinRequestActions = Object.values(
+    notificationTypes.ACTION.JOIN_REQUEST
+  );
+
   const NotificationAction = ({ item }) => {
     const isRead = item.isRead;
     const responseText = item.response
       ? item.response.charAt(0).toUpperCase() + item.response.slice(1)
       : null;
 
+    const responseIcon = item.response
+      ? item.response === notificationTypes.RESPONSE.ACCEPT
+        ? "checkmark-circle-outline"
+        : "close-circle-outline"
+      : null;
+    const responseColor = item.response
+      ? item.response === notificationTypes.RESPONSE.ACCEPT
+        ? "green"
+        : "red"
+      : null;
+
+    const handlePress = () => {
+      if (inviteActions.includes(item.type)) {
+        openInviteActionModal(item);
+      } else if (joinRequestActions.includes(item.type)) {
+        openJoinRequestModal(item);
+      }
+    };
+
     if (isRead) {
       return (
         <Tag
           name={responseText}
           color="#16181B"
-          iconColor="green"
+          iconColor={responseColor}
           iconSize={15}
-          icon={"checkmark-circle-outline"}
+          icon={responseIcon}
           iconPosition={"right"}
           bold
         />
       );
     } else {
       return (
-        <NotificationButton
-          onPress={() => {
-            setSelectedLeagueId(item.data.leagueId); // could be league OR tournament
-            setInviteModalVisible(true);
-            setSelectedInviteType(item.type);
-            setNotificationId(item.id);
-          }}
-          $type="View"
-        >
+        <NotificationButton onPress={handlePress} $type="View">
           <NotificationButtonText>View</NotificationButtonText>
         </NotificationButton>
       );
@@ -176,7 +169,7 @@ const Notifications = () => {
           <NotificationTimestamp>{timeAgo(createdAt)}</NotificationTimestamp>
         </NotificationTextContainer>
 
-        {showButton && isInviteNotification && (
+        {showButton && (
           <NotificationButtonContainer>
             <NotificationAction item={item} />
           </NotificationButtonContainer>
@@ -201,6 +194,16 @@ const Notifications = () => {
         inviteType={selectedInviteType}
         userId={currentUser?.userId || ""}
         notificationId={notificationId}
+      />
+
+      <JoinRequestModal
+        visible={joinRequestModalVisible}
+        onClose={() => setJoinRequestModalVisible(false)}
+        requestId={selectedLeagueId || ""}
+        requestType={selectedInviteType}
+        userId={currentUser?.userId || ""}
+        notificationId={notificationId}
+        senderId={senderId}
       />
     </HomeContainer>
   );

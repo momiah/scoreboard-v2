@@ -164,27 +164,37 @@ const UserProvider = ({ children }) => {
 
       if (
         !leagueData ||
+        !leagueData.leagueOwner ||
         !leagueData.leagueAdmins ||
         !leagueData.leagueParticipants ||
-        !leagueData.pendingInvites
+        !leagueData.pendingInvites ||
+        !leagueData.pendingRequests
       ) {
         console.error("Invalid league data:", leagueData);
         return "hide";
       }
 
+      // 1) League owner
+      if (leagueData.leagueOwner === userId) {
+        return "owner";
+      }
+      // 2) Admin
       if (leagueData.leagueAdmins.some((a) => a.userId === userId)) {
         return "admin";
       }
-
+      // 3) Participant
       if (leagueData.leagueParticipants.some((p) => p.userId === userId)) {
         return "participant";
       }
-
-      // ★ NEW: pending invite
+      // 4) Pending invite (you’ve been invited)
       if (leagueData.pendingInvites.some((inv) => inv.userId === userId)) {
-        return "pending";
+        return "invitationPending";
       }
-
+      // 5) Pending request (you’ve asked to join)
+      if (leagueData.pendingRequests.some((req) => req.userId === userId)) {
+        return "requestPending";
+      }
+      // 6) Default
       return "user";
     } catch (error) {
       console.error("Error checking user role:", error);
@@ -548,6 +558,7 @@ const UserProvider = ({ children }) => {
   };
 
   const sendNotification = async (notification) => {
+    console.log("Sending Notification:", JSON.stringify(notification, null, 2));
     try {
       const recipientId = notification.recipientId;
 
@@ -560,76 +571,6 @@ const UserProvider = ({ children }) => {
       console.log("✅ Notification saved to subcollection!");
     } catch (error) {
       console.error("❌ Failed to send notification:", error);
-    }
-  };
-
-  const acceptLeagueInvite = async (userId, leagueId, notificationId) => {
-    try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-      const leagueParticipants = leagueData.leagueParticipants || [];
-      const pendingInvites = leagueData.pendingInvites || [];
-
-      const updatedPending = pendingInvites.filter(
-        (inv) => inv.userId !== userId
-      );
-
-      const newParticipant = await getUserById(userId);
-
-      const newParticipantProfile = {
-        ...scoreboardProfileSchema,
-        username: newParticipant.username,
-        userId: newParticipant.userId,
-        memberSince: newParticipant.profileDetail?.memberSince || "",
-      };
-
-      await updateDoc(leagueRef, {
-        leagueParticipants: [...leagueParticipants, newParticipantProfile],
-        pendingInvites: updatedPending,
-      });
-
-      const notificationsRef = collection(db, "users", userId, "notifications");
-
-      const notificationDocRef = doc(notificationsRef, notificationId);
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.ACCEPT,
-      });
-
-      console.log("League invite accepted successfully!");
-    } catch (error) {
-      console.error("Error accepting league invite:", error);
-    }
-  };
-
-  const declineLeagueInvite = async (userId, leagueId, notificationId) => {
-    try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-
-      const pendingInvites = leagueData.pendingInvites || [];
-
-      const updatedPending = pendingInvites.filter(
-        (inv) => inv.userId !== userId
-      );
-
-      await updateDoc(leagueRef, {
-        pendingInvites: updatedPending,
-      });
-
-      const notificationsRef = collection(db, "users", userId, "notifications");
-
-      const notificationDocRef = doc(notificationsRef, notificationId);
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.DECLINE,
-      });
-
-      console.log("League invite declined successfully!");
-    } catch (error) {
-      console.error("Error accepting league invite:", error);
     }
   };
 
@@ -652,8 +593,6 @@ const UserProvider = ({ children }) => {
         //Notification
         sendNotification,
         notifications,
-        acceptLeagueInvite,
-        declineLeagueInvite,
 
         // League-related operations
         retrievePlayersFromLeague,
