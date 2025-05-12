@@ -6,8 +6,9 @@ import MedalDisplay from "../../components/performance/MedalDisplay";
 import { FlatList } from "react-native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
+import Icon from "react-native-ico-flags";
 
-const iconSize = 45;
+const iconSize = 40;
 
 const TopPlayers = ({ topPlayers }) => {
   const { findRankIndex } = useContext(GameContext);
@@ -28,11 +29,13 @@ const TopPlayers = ({ topPlayers }) => {
             });
           }}
         >
-          <Avatar source={
-                  player?.profileImage
-                  ? { uri: player.profileImage }
-                  : CourtChampsLogo
-                  } />
+          <Avatar
+            source={
+              player?.profileImage
+                ? { uri: player.profileImage }
+                : CourtChampsLogo
+            }
+          />
           <TableCell>
             <Rank>
               {index + 1}
@@ -49,14 +52,15 @@ const TopPlayers = ({ topPlayers }) => {
             <PlayerName>{player.username}</PlayerName>
           </PlayerNameCell>
           <TableCell>
-            <StatTitle>Wins</StatTitle>
-            <Stat>{player.profileDetail.numberOfWins}</Stat>
-          </TableCell>
-          <TableCell>
-            <StatTitle>PD</StatTitle>
+            <Icon name={player.location.countryCode} height="20" width="20" />
+            {/* <StatTitle>PD</StatTitle>
             <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
               {pointDifference}
-            </Stat>
+            </Stat> */}
+          </TableCell>
+          <TableCell>
+            <StatTitle>Wins</StatTitle>
+            <Stat>{player.profileDetail.numberOfWins}</Stat>
           </TableCell>
           <TableCell>
             <MedalDisplay xp={playerXp.toFixed(0)} size={iconSize} />
@@ -117,7 +121,7 @@ const PlayerNameCell = styled.View({
   justifyContent: "space-between",
   paddingTop: 15,
   paddingBottom: 15,
-  width: 110,
+  width: 100,
 });
 
 const PlayerName = styled.Text({

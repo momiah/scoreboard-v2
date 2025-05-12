@@ -15,8 +15,9 @@ import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { GameContext } from "../../context/GameContext";
 import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
+import Icon from "react-native-ico-flags";
 
-const iconSize = 45;
+const iconSize = 40;
 
 const AllPlayers = () => {
   const { findRankIndex } = useContext(GameContext);
@@ -125,15 +126,13 @@ const AllPlayers = () => {
             <PlayerName>{player.username}</PlayerName>
           </PlayerNameCell>
           <TableCell>
+            <Icon name={player.location.countryCode} height="20" width="20" />
+          </TableCell>
+          <TableCell>
             <StatTitle>Wins</StatTitle>
             <Stat>{player.profileDetail.numberOfWins}</Stat>
           </TableCell>
-          <TableCell>
-            <StatTitle>PD</StatTitle>
-            <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
-              {pointDifference}
-            </Stat>
-          </TableCell>
+
           <TableCell>
             <MedalDisplay xp={playerXp.toFixed(0)} size={iconSize} />
             <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>

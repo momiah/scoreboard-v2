@@ -225,6 +225,10 @@ const UserProfile = () => {
 
   const profileXp = formatNumber(profileDetail.XP.toFixed(0));
   const rankLevel = findRankIndex(profileXp) + 1;
+  const pointDifference = profileDetail?.totalPointDifference || 0;
+  const pointDifferenceMetric = pointDifference > 0 ? "+" : "";
+
+  console.log(("pointDifference", pointDifference));
 
   return (
     <Container>
@@ -268,8 +272,14 @@ const UserProfile = () => {
               <DetailColumn>
                 <PlayerName>{profile?.username}</PlayerName>
                 <DetailText>{profileXp ?? 0} XP</DetailText>
-                <DetailText>
-                  {formatNumber(profileDetail?.totalPointDifference ?? 0)} PD
+                <DetailText
+                  style={{
+                    fontWeight: "bold",
+                    color: pointDifference < 0 ? "red" : "green",
+                  }}
+                >
+                  {pointDifferenceMetric}
+                  {formatNumber(pointDifference)} PD
                 </DetailText>
               </DetailColumn>
             </PlayerDetail>
@@ -296,8 +306,14 @@ const UserProfile = () => {
               <DetailColumn>
                 <PlayerName>{profile?.username}</PlayerName>
                 <DetailText>{profileXp ?? 0} XP</DetailText>
-                <DetailText>
-                  {formatNumber(profileDetail?.totalPointDifference ?? 0)} PD
+                <DetailText
+                  style={{
+                    fontWeight: "bold",
+                    color: pointDifference < 0 ? "red" : "green",
+                  }}
+                >
+                  {pointDifferenceMetric}
+                  {formatNumber(pointDifference)} PD
                 </DetailText>
               </DetailColumn>
             </PlayerDetail>
