@@ -26,6 +26,7 @@ import { calculateTeamPerformance } from "../../helpers/calculateTeamPerformance
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
+import { notificationSchema, notificationTypes } from "../../schemas/schema";
 
 const AddGameModal = ({
   modalVisible,
@@ -50,6 +51,7 @@ const AddGameModal = ({
     retrieveTeams,
     getAllUsers,
     updateUsers,
+    sendNotification,
   } = useContext(UserContext);
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -192,8 +194,6 @@ const AddGameModal = ({
 
     await updatePlayers(playerPerformance.playersToUpdate, leagueId);
     await updateUsers(playerPerformance.usersToUpdate);
-
-    // const allTeams = await retrieveTeams(leagueId);
 
     const teamsToUpdate = await calculateTeamPerformance(
       newGame,
