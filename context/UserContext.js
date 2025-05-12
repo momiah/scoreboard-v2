@@ -484,6 +484,30 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const getCountryRank = async (userId, countryCode) => {
+    try {
+      // 1. Get all users using existing fetch logic
+      const allUsers = await getAllUsers();
+
+      // Filter users by country code
+      const filteredUsers = allUsers.filter(
+        (user) => user.location?.countryCode === countryCode
+      );
+
+      // 2. Use the EXACT SAME sorting as AllPlayers
+      const sorted = rankSorting(filteredUsers);
+
+      // 3. Find index of the target user
+      const userIndex = sorted.findIndex((user) => user.userId === userId);
+
+      // 4. Return rank (index + 1)
+      return userIndex >= 0 ? userIndex + 1 : null;
+    } catch (error) {
+      console.error("Rank check failed:", error);
+      return null;
+    }
+  };
+
   const getLeaguesForUser = async (userId) => {
     try {
       // Get all leagues from the "leagues" collection
@@ -611,6 +635,7 @@ const UserProvider = ({ children }) => {
         // Ranking and sorting
         rankSorting,
         getGlobalRank,
+        getCountryRank,
 
         // Profile-related operations
         profileViewCount,

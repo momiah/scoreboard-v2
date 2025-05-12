@@ -29,6 +29,7 @@ import ProfileActivity from "../../components/Profiles/ProfileActivity";
 import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
 import RankSuffix from "../../components/RankSuffix";
 import { formatNumber } from "../../helpers/formatNumber";
+import Icon from "react-native-ico-flags";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
@@ -37,14 +38,20 @@ const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
 const UserProfile = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { getUserById, getGlobalRank, currentUser, profileViewCount } =
-    useContext(UserContext);
+  const {
+    getUserById,
+    getGlobalRank,
+    currentUser,
+    profileViewCount,
+    getCountryRank,
+  } = useContext(UserContext);
   const { medalNames, findRankIndex } = useContext(GameContext);
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("Profile");
   const [globalRank, setGlobalRank] = useState(null);
+  const [countryRank, setCountryRank] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
 
@@ -96,6 +103,11 @@ const UserProfile = () => {
       if (profile?.userId) {
         try {
           const rank = await getGlobalRank(profile.userId);
+          const countryRank = await getCountryRank(
+            profile.userId,
+            profile.location?.countryCode
+          );
+          setCountryRank(countryRank);
           setGlobalRank(rank);
         } catch (error) {
           console.error("Error fetching global rank:", error);
@@ -240,26 +252,59 @@ const UserProfile = () => {
 
       {/* Avatar & Modal */}
       <Overview>
-        <PlayerDetail>
-          <Pressable onLongPress={() => setPreviewVisible(true)}>
-            <Avatar
-              source={
-                profile?.profileImage
-                  ? { uri: profile.profileImage }
-                  : CourtChampsLogo
-              }
-            />
-          </Pressable>
+        {profile?.headline ? (
+          <View style={{ flex: 1 }}>
+            <PlayerDetail>
+              <Pressable onLongPress={() => setPreviewVisible(true)}>
+                <Avatar
+                  source={
+                    profile?.profileImage
+                      ? { uri: profile.profileImage }
+                      : CourtChampsLogo
+                  }
+                />
+              </Pressable>
 
-          <DetailColumn>
-            <PlayerName>{profile?.username}</PlayerName>
-            <DetailText>{profileXp ?? 0} XP</DetailText>
-            <DetailText>
-              {formatNumber(profileDetail?.totalPointDifference ?? 0)} PD
-            </DetailText>
-          </DetailColumn>
-        </PlayerDetail>
+              <DetailColumn>
+                <PlayerName>{profile?.username}</PlayerName>
+                <DetailText>{profileXp ?? 0} XP</DetailText>
+                <DetailText>
+                  {formatNumber(profileDetail?.totalPointDifference ?? 0)} PD
+                </DetailText>
+              </DetailColumn>
+            </PlayerDetail>
 
+            <Headline>
+              <Text style={{ color: "#fff", fontSize: 14 }}>
+                {profile.headline}
+              </Text>
+            </Headline>
+          </View>
+        ) : (
+          <>
+            <PlayerDetail>
+              <Pressable onLongPress={() => setPreviewVisible(true)}>
+                <Avatar
+                  source={
+                    profile?.profileImage
+                      ? { uri: profile.profileImage }
+                      : CourtChampsLogo
+                  }
+                />
+              </Pressable>
+
+              <DetailColumn>
+                <PlayerName>{profile?.username}</PlayerName>
+                <DetailText>{profileXp ?? 0} XP</DetailText>
+                <DetailText>
+                  {formatNumber(profileDetail?.totalPointDifference ?? 0)} PD
+                </DetailText>
+              </DetailColumn>
+            </PlayerDetail>
+          </>
+        )}
+
+        {/* Medal display stays on the right */}
         <MedalContainer>
           <MedalDisplay xp={profileDetail?.XP} size={screenAdjustedMedalSize} />
           <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
@@ -269,9 +314,22 @@ const UserProfile = () => {
 
       <ProfileSummary>
         <CCRankContainer>
-          <XpText>CC Rank</XpText>
+          <Ionicons name="globe-outline" size={20} color="#aaa" />
+
           <RankSuffix
             number={globalRank}
+            numberStyle={{
+              fontSize: screenAdjustedStatFontSize,
+              color: "white",
+            }}
+            suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
+          />
+        </CCRankContainer>
+        <CCRankContainer>
+          {/* <XpText>🌍</XpText> */}
+          <Icon name={profile.location.countryCode} height="20" width="20" />
+          <RankSuffix
+            number={countryRank}
             numberStyle={{
               fontSize: screenAdjustedStatFontSize,
               color: "white",
@@ -282,7 +340,7 @@ const UserProfile = () => {
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
           <DetailText>{formatNumber(profile?.profileViews ?? 0)}</DetailText>
-          <Ionicons name="eye" size={15} color="#aaa" />
+          <Ionicons name="eye" size={20} color="#aaa" />
         </View>
       </ProfileSummary>
 
@@ -335,7 +393,10 @@ const LoadingContainer = styled.View({
 });
 
 const Overview = styled.View({
-  padding: 20,
+  paddingTop: 20,
+  paddingRight: 20,
+  paddingBottom: 20,
+  paddingLeft: 20,
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
@@ -381,6 +442,14 @@ const ProfileSummary = styled.View({
   marginHorizontal: 15,
 });
 
+const Headline = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  marginTop: 10,
+  marginRight: 20,
+  gap: 6,
+});
+
 const CCRankContainer = styled.View({
   gap: 5,
   alignItems: "center",
@@ -390,7 +459,7 @@ const CCRankContainer = styled.View({
 
 const XpText = styled.Text({
   color: "#aaa",
-  fontSize: screenWidth <= 400 ? 12 : 14,
+  fontSize: screenWidth <= 400 ? 13 : 15,
 });
 
 const MedalContainer = styled.View({

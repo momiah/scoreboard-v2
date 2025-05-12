@@ -46,6 +46,7 @@ const EditProfile = ({ navigation }) => {
     bio: "",
     email: "",
     profileImage: "",
+    headline: "",
   });
 
   useEffect(() => {
@@ -60,6 +61,7 @@ const EditProfile = ({ navigation }) => {
         bio: currentUser.bio || "",
         email: currentUser.email || "",
         profileImage: currentUser.profileImage || "",
+        headline: currentUser.headline || "",
       });
 
       // Initialize selected country code
@@ -173,7 +175,8 @@ const EditProfile = ({ navigation }) => {
       formData.handPreference !== (currentUser.handPreference || "") ||
       formData.bio !== (currentUser.bio || "") ||
       formData.email !== (currentUser.email || "") ||
-      formData.profileImage !== (currentUser.profileImage || "")
+      formData.profileImage !== (currentUser.profileImage || "") ||
+      formData.headline !== (currentUser.headline || "")
     );
   }, [currentUser, formData]);
 
@@ -217,6 +220,24 @@ const EditProfile = ({ navigation }) => {
                   : "Tap to upload photo"}
               </ImageHintText>
             </ImageSection>
+
+            <Section>
+              <SectionTitle>Headline</SectionTitle>
+              <Input
+                value={formData.headline}
+                onChangeText={(text) =>
+                  setFormData({ ...formData, headline: text.slice(0, 100) })
+                }
+                placeholder="Write a short headline for your profile"
+                placeholderTextColor={"#aaa"}
+                maxLength={80}
+              />
+              <View style={{ alignItems: "flex-end", marginTop: 5 }}>
+                <Text style={{ color: "#aaa", fontSize: 12 }}>
+                  {formData.headline.length}/80
+                </Text>
+              </View>
+            </Section>
 
             <Section>
               {/* Country Dropdown */}

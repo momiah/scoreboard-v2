@@ -101,6 +101,7 @@ export const userProfileSchema = {
   profileDetail: profileDetailSchema,
   profileImage: "",
   bio: "",
+  headline: "",
   profileViews: 0,
   location: locationSchema,
   email: "",
