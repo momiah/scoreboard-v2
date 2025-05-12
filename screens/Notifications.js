@@ -10,6 +10,7 @@ import { notificationTypes, notificationSchema } from "../schemas/schema";
 import { createdAt } from "expo-updates";
 import InviteActionModal from "../components/Modals/InviteActionModal";
 import JoinRequestModal from "../components/Modals/JoinRequestModal";
+import GameApprovalModal from "../components/Modals/GameApprovalModal";
 import Tag from "../components/Tag";
 
 const timeAgo = (date) => {
@@ -51,9 +52,17 @@ const Notifications = () => {
 
   // Join request modal state
   const [joinRequestModalVisible, setJoinRequestModalVisible] = useState(false);
+
+  // Game approval modal state
+  const [gameId, setGameId] = useState(null);
+  const [playersToUpdate, setPlayersToUpdate] = useState(null);
+  const [usersToUpdate, setUsersToUpdate] = useState(null);
+  const [gameApprovalModalVisible, setGameApprovalModalVisible] =
+    useState(false);
+
   const [senderId, setSenderId] = useState(null);
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
-  const [selectedInviteType, setSelectedInviteType] = useState(null);
+  const [notificationType, setNotificationType] = useState(null);
 
   console.log("Notifications:", JSON.stringify(notifications, null, 2));
 
@@ -79,15 +88,27 @@ const Notifications = () => {
   const openInviteActionModal = (item) => {
     setSelectedLeagueId(item.data.leagueId); // could be league OR tournament
     setInviteModalVisible(true);
-    setSelectedInviteType(item.type);
+    setNotificationType(item.type);
     setNotificationId(item.id);
   };
   const openJoinRequestModal = (item) => {
     setSelectedLeagueId(item.data.leagueId); // could be league OR tournament
     setJoinRequestModalVisible(true);
-    setSelectedInviteType(item.type);
+    setNotificationType(item.type);
     setNotificationId(item.id);
     setSenderId(item.senderId);
+  };
+
+  const openGameApprovalModal = (item) => {
+    setSelectedLeagueId(item.data.leagueId); // could be league OR tournament
+    setGameApprovalModalVisible(true);
+    setNotificationId(item.id);
+    setSenderId(item.senderId);
+    setNotificationType(item.type);
+    setSelectedLeagueId(item.data.leagueId);
+    setGameId(item.data.gameId);
+    setPlayersToUpdate(item.data.playersToUpdate);
+    setUsersToUpdate(item.data.usersToUpdate);
   };
 
   const inviteActions = Object.values(notificationTypes.ACTION.INVITE);
@@ -117,6 +138,11 @@ const Notifications = () => {
         openInviteActionModal(item);
       } else if (joinRequestActions.includes(item.type)) {
         openJoinRequestModal(item);
+      } else if (
+        item.type === notificationTypes.ACTION.ADD_GAME.LEAGUE ||
+        item.type === notificationTypes.ACTION.ADD_GAME.TOURNAMENT
+      ) {
+        openGameApprovalModal(item);
       }
     };
 
@@ -146,10 +172,6 @@ const Notifications = () => {
     const createdAt = item.createdAt?.seconds
       ? new Date(item.createdAt.seconds * 1000)
       : new Date();
-
-    const isInviteNotification =
-      item.type === notificationTypes.ACTION.INVITE.LEAGUE ||
-      item.type === notificationTypes.ACTION.INVITE.TOURNAMENT;
 
     const NotificationRow = item.isRead ? ReadNotification : UnreadNotification;
 
@@ -191,8 +213,8 @@ const Notifications = () => {
         visible={inviteModalVisible}
         onClose={() => setInviteModalVisible(false)}
         inviteId={selectedLeagueId || ""}
-        inviteType={selectedInviteType}
-        userId={currentUser?.userId || ""}
+        inviteType={notificationType}
+        // userId={currentUser?.userId || ""}
         notificationId={notificationId}
       />
 
@@ -200,10 +222,22 @@ const Notifications = () => {
         visible={joinRequestModalVisible}
         onClose={() => setJoinRequestModalVisible(false)}
         requestId={selectedLeagueId || ""}
-        requestType={selectedInviteType}
-        userId={currentUser?.userId || ""}
+        requestType={notificationType}
+        // userId={currentUser?.userId || ""}
         notificationId={notificationId}
         senderId={senderId}
+      />
+
+      <GameApprovalModal
+        visible={gameApprovalModalVisible}
+        onClose={() => setGameApprovalModalVisible(false)}
+        notificationId={notificationId}
+        notificationType={notificationType}
+        senderId={senderId}
+        gameId={gameId || ""}
+        leagueId={selectedLeagueId || ""}
+        playersToUpdate={playersToUpdate || ""}
+        usersToUpdate={usersToUpdate || ""}
       />
     </HomeContainer>
   );
