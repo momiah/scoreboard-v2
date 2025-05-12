@@ -51,6 +51,7 @@ const AddGameModal = ({
     retrieveTeams,
     getAllUsers,
     updateUsers,
+    currentUser,
     sendNotification,
   } = useContext(UserContext);
   const [errorText, setErrorText] = useState("");
@@ -161,9 +162,14 @@ const AddGameModal = ({
       get result() {
         return calculateWin(this.team1, this.team2, this.leagueType);
       },
+      numberOfApprovals: 0,
+      numberOfDeclines: 0,
+      approvalStatus: "pending",
     };
 
     const allPlayersInLeague = await retrievePlayersFromLeague(leagueId);
+
+    // console.log("losers", losers);
     const allUsers = await getAllUsers();
 
     const playersToUpdate = allPlayersInLeague.filter((player) =>
@@ -185,6 +191,44 @@ const AddGameModal = ({
       allUsers,
       playersToUpdate
     );
+
+    const winners = newGame.result.winner.players;
+    const losers = newGame.result.loser.players;
+
+    const isUserOnWinningTeam = winners.includes(currentUser.username);
+    const opponents = isUserOnWinningTeam ? losers : winners;
+
+    const requestForOpponentApprovals = usersToUpdate.filter((user) =>
+      opponents.includes(user.username)
+    );
+
+    console.log(
+      "requestForOpponentApprovals",
+      JSON.stringify(requestForOpponentApprovals, null, 2)
+    );
+
+    for (const user of requestForOpponentApprovals) {
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: user.userId,
+        senderId: currentUser.userId,
+        message: `${currentUser.username} has just reported a score in ${leagueType} league`,
+        type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
+
+        data: {
+          leagueId,
+          gameId,
+          playersToUpdate,
+          usersToUpdate,
+          // newGame,
+        },
+      };
+
+      await sendNotification(payload);
+    }
+
+    console.log("winners", opponents);
 
     const playerPerformance = calculatePlayerPerformance(
       newGame,

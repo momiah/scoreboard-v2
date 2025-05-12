@@ -47,6 +47,26 @@ export const locationSchema = {
   address: "",
 };
 
+export const gameSchema = {
+  gameId: "",
+  gamescore: "",
+  date: "",
+  team1: {
+    player1: "",
+    player2: null,
+    score: 0,
+  },
+  team2: {
+    player1: "",
+    player2: null,
+    score: 0,
+  },
+  result: "",
+  numberOfApprovals: 0,
+  numberOfDeclines: 0,
+  approvalStatus: "",
+};
+
 export const scoreboardProfileSchema = {
   prevGameXP: 0,
   highestLossStreak: 0,

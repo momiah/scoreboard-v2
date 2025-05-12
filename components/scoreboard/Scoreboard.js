@@ -116,25 +116,36 @@ const Scoreboard = ({
       <FlatList
         data={reversedGames}
         keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <GameContainer>
-            <TeamColumn
-              team="left"
-              players={item.team1}
-              leagueType={leagueType}
-            />
-            <ScoreDisplay
-              date={item.date}
-              team1={item.team1.score}
-              team2={item.team2.score}
-            />
-            <TeamColumn
-              team="right"
-              players={item.team2}
-              leagueType={leagueType}
-            />
-          </GameContainer>
-        )}
+        renderItem={({ item }) => {
+          const Game =
+            item.approvalStatus === "pending"
+              ? PendingApprovalContainer
+              : GameContainer;
+
+          return (
+            <Game>
+              <TeamColumn
+                team="left"
+                players={item.team1}
+                leagueType={leagueType}
+              />
+              <ScoreDisplay
+                date={item.date}
+                team1={item.team1.score}
+                team2={item.team2.score}
+              />
+              <TeamColumn
+                team="right"
+                players={item.team2}
+                leagueType={leagueType}
+              />
+
+              {item.approvalStatus === "pending" && (
+                <PendingLabel>Pending Approval</PendingLabel>
+              )}
+            </Game>
+          );
+        }}
       />
 
       <AddGameModal
@@ -206,7 +217,32 @@ const GameContainer = styled.View({
   marginBottom: 16,
   backgroundColor: "#001123",
   border: "1px solid rgb(9, 33, 62)",
+
   borderRadius: 8,
+});
+
+const PendingApprovalContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginBottom: 16,
+  backgroundColor: "#001123",
+  border: "1px solid rgb(9, 33, 62)",
+  borderRadius: 8,
+  opacity: 0.6, // faded look
+  position: "relative",
+});
+
+const PendingLabel = styled.Text({
+  position: "absolute",
+  bottom: 5,
+  right: 10,
+  fontSize: 9,
+  color: "white",
+  backgroundColor: "rgba(255, 0, 0, 0.6)",
+  paddingHorizontal: 6,
+  paddingVertical: 2,
+  borderRadius: 4,
+  overflow: "hidden",
 });
 
 const ResultsContainer = styled.View({
