@@ -29,6 +29,7 @@ const InviteActionModal = ({
   inviteId,
   inviteType,
   notificationId,
+  isRead,
 }) => {
   const { fetchLeagueById, acceptLeagueInvite, declineLeagueInvite } =
     useContext(LeagueContext);
@@ -215,10 +216,11 @@ const InviteActionModal = ({
                 <Button
                   style={{ backgroundColor: "red" }}
                   onPress={handleDeclineInvite}
+                  disabled={isRead}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
-                <Button onPress={handleAcceptInvite}>
+                <Button onPress={handleAcceptInvite} disabled={isRead}>
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
               </View>
@@ -296,12 +298,14 @@ const CloseButtonText = styled.Text({
 });
 
 const Button = styled.TouchableOpacity({
-  backgroundColor: "#00A2FF",
+  backgroundColor: (props) => (props.disabled ? "#888" : "#00A2FF"),
   paddingHorizontal: 20,
   paddingVertical: 8,
   borderRadius: 8,
   marginTop: 10,
+  opacity: (props) => (props.disabled ? 0.6 : 1),
 });
+
 const AcceptButtonText = styled.Text({
   color: "white",
   fontWeight: "bold",

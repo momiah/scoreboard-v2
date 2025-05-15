@@ -169,7 +169,6 @@ const AddGameModal = ({
 
     const allPlayersInLeague = await retrievePlayersFromLeague(leagueId);
 
-    // console.log("losers", losers);
     const allUsers = await getAllUsers();
 
     const playersToUpdate = allPlayersInLeague.filter((player) =>
@@ -202,11 +201,6 @@ const AddGameModal = ({
       opponents.includes(user.username)
     );
 
-    console.log(
-      "requestForOpponentApprovals",
-      JSON.stringify(requestForOpponentApprovals, null, 2)
-    );
-
     for (const user of requestForOpponentApprovals) {
       const payload = {
         ...notificationSchema,
@@ -227,8 +221,6 @@ const AddGameModal = ({
 
       await sendNotification(payload);
     }
-
-    console.log("winners", opponents);
 
     const playerPerformance = calculatePlayerPerformance(
       newGame,

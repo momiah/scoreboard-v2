@@ -34,11 +34,10 @@ const GameApprovalModal = ({
   gameId,
   leagueId,
   playersToUpdate,
+  isRead,
   usersToUpdate,
 }) => {
-  console.log("gameId", gameId);
-  const { fetchLeagueById, acceptLeagueInvite, declineLeagueInvite } =
-    useContext(LeagueContext);
+  const { fetchLeagueById, approveGame } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,9 +56,9 @@ const GameApprovalModal = ({
 
   const navigation = useNavigation();
 
-  const navigateTo = (route, leagueId) => {
+  const navigateTo = (route, id) => {
     onClose();
-    navigation.navigate(route, { leagueId });
+    navigation.navigate(route, id);
   };
 
   useEffect(() => {
@@ -68,7 +67,6 @@ const GameApprovalModal = ({
       if (notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE) {
         try {
           const league = await fetchLeagueById(leagueId);
-          console.log("league", league);
           const game = league.games.find((game) => game.gameId === gameId);
           setLeagueDetails(league);
           setGameDetails(game);
@@ -82,7 +80,20 @@ const GameApprovalModal = ({
     setLoading(false);
   }, [notificationType, gameId, leagueId]);
 
-  console.log("leagueId", JSON.stringify(leagueDetails, null, 2));
+  const handleApproveGame = async () => {
+    try {
+      await approveGame(
+        gameDetails.gameId,
+        leagueDetails.id,
+        currentUser.userId,
+        senderId,
+        notificationId
+      );
+      onClose(); // Close the modal after accepting
+    } catch (error) {
+      console.error("Error approving game:", error);
+    }
+  };
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -112,7 +123,9 @@ const GameApprovalModal = ({
               <Message>
                 A game has been reported on{" "}
                 <LinkText
-                  onPress={() => navigateTo("League", leagueDetails.id)}
+                  onPress={() =>
+                    navigateTo("League", { leagueId: leagueDetails.id })
+                  }
                 >
                   {leagueDetails?.leagueName}
                 </LinkText>
@@ -120,7 +133,11 @@ const GameApprovalModal = ({
 
               <Message>
                 Reporter:{" "}
-                <LinkText onPress={() => navigateTo("UserProfile", senderId)}>
+                <LinkText
+                  onPress={() =>
+                    navigateTo("UserProfile", { userId: senderId })
+                  }
+                >
                   {senderUsername}
                 </LinkText>
               </Message>
@@ -141,22 +158,17 @@ const GameApprovalModal = ({
                   players={gameDetails?.team2}
                   leagueType={gameDetails?.leagueType}
                 />
-
-                {/* {gameDetails?.approvalStatus === "pending" && (
-                  <PendingLabel>Pending Approval</PendingLabel>
-                )} */}
               </GameContainer>
 
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
+                  disabled={isRead}
                   //   onPress={handleDeclineInvite}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
-                <Button
-                // onPress={handleAcceptInvite}
-                >
+                <Button onPress={handleApproveGame} disabled={isRead}>
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
               </View>
@@ -183,17 +195,17 @@ const PlayerCell = ({ position, player }) => (
   </TeamTextContainer>
 );
 
+// Updated ScoreDisplay component for better alignment
 const ScoreDisplay = ({ date, team1, team2 }) => (
   <ResultsContainer>
     <DateText>{date}</DateText>
     <ScoreContainer>
-      <Score>
-        {team1} - {team2}
-      </Score>
+      <ScoreNumber>{team1}</ScoreNumber>
+      <ScoreSeparator>-</ScoreSeparator>
+      <ScoreNumber>{team2}</ScoreNumber>
     </ScoreContainer>
   </ResultsContainer>
 );
-
 const ModalContainer = styled(BlurView).attrs({
   intensity: 50,
   tint: "dark",
@@ -233,14 +245,15 @@ const CloseButtonText = styled.Text({
   color: "white",
   fontWeight: "bold",
 });
-
 const Button = styled.TouchableOpacity({
-  backgroundColor: "#00A2FF",
+  backgroundColor: (props) => (props.disabled ? "#888" : "#00A2FF"),
   paddingHorizontal: 20,
   paddingVertical: 8,
   borderRadius: 8,
   marginTop: 10,
+  opacity: (props) => (props.disabled ? 0.6 : 1),
 });
+
 const AcceptButtonText = styled.Text({
   color: "white",
   fontWeight: "bold",
@@ -252,63 +265,83 @@ const LinkText = styled.Text({
   fontWeight: "bold",
 });
 
+// Adjusted GameContainer to ensure equal spacing
 const GameContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
+  alignItems: "center",
   marginBottom: 16,
   backgroundColor: "#001123",
-  border: "1px solid rgb(9, 33, 62)",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
   marginTop: 20,
   borderRadius: 8,
+  width: "100%",
+  paddingVertical: 10, // Added vertical padding for better spacing
 });
 
+// Enhanced ResultsContainer for better centering
 const ResultsContainer = styled.View({
-  display: "flex",
-  justifyContent: "space-between",
+  flex: 1, // Changed from flexGrow to flex
+  justifyContent: "center",
   alignItems: "center",
-  padding: 10,
-  paddingBottom: 30,
+  paddingVertical: 5, // Reduced padding for better balance
 });
 
-const Score = styled.Text({
-  fontSize: 25,
+// Improved score display components
+const ScoreNumber = styled.Text({
+  fontSize: 24, // Larger font size for better visibility
   fontWeight: "bold",
   color: "#00A2FF",
 });
 
-const ScoreContainer = styled.View({
-  display: "flex",
-  flexDirection: "row",
-  justifyContent: "center",
-  marginTop: screenWidth <= 400 ? 20 : null,
+const ScoreSeparator = styled.Text({
+  fontSize: 24,
+  fontWeight: "bold",
+  color: "#ccc",
+  marginHorizontal: 8, // More spacing around the separator
 });
 
-const TeamText = styled.Text({
-  color: "white",
-  fontSize: screenWidth <= 400 ? 13 : 14,
-  textAlign: (props) => (props.position === "right" ? "right" : "left"),
+// Perfectly centered score container
+const ScoreContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: 5,
+  paddingHorizontal: 5,
 });
 
 const TeamContainer = styled.View({
-  display: "flex",
+  flex: 1.5, // Increased relative flex size for team containers
   justifyContent: "center",
   flexDirection: "column",
   borderRadius: 8,
 });
 
+// Adjusted width to accommodate up to 10 capital letter usernames
 const TeamTextContainer = styled.View({
-  display: "flex",
   flexDirection: "column",
   padding: 15,
-  paddingLeft: 20,
-  paddingRight: 20,
-  width: screenWidth <= 400 ? 115 : 130,
+  // paddingHorizontal: 10, // Reduced horizontal padding to give more space for text
+  paddingRight: 10,
+  paddingLeft: 10,
+  width: "100%", // Use full width of parent TeamContainer
+  maxWidth: screenWidth <= 400 ? 125 : 140, // Increased max width
+});
+
+// Added text wrapping capability
+const TeamText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 13 : 14,
+  textAlign: (props) => (props.position === "right" ? "right" : "left"),
+  flexWrap: "wrap", // Ensures text fits properly and doesn't overflow
 });
 
 const DateText = styled.Text({
   fontSize: 10,
   fontWeight: "bold",
   color: "white",
+  marginBottom: 5,
 });
 
 export default GameApprovalModal;

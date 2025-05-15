@@ -45,11 +45,6 @@ const PlayerPerformance = ({ playersData }) => {
     }
   }, [playersData]);
 
-  console.log(
-    "playersWithUserData",
-    JSON.stringify(playersWithUserData, null, 2)
-  );
-
   useEffect(() => {
     if (playersData.length > 0) {
       setLoading(false);
