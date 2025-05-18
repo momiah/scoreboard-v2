@@ -100,14 +100,14 @@ const NotificationRow = ({
 
   return (
     <Wrapper onPress={handlePress}>
-      <NotificationTextContainer $fullWidth={!isRead}>
+      <NotificationTextContainer $fullWidth={!responseText}>
         <NotificationText style={NotificationTextStyle}>
           {item.message}
         </NotificationText>
         <NotificationTimestamp>{timeAgo(createdAt)}</NotificationTimestamp>
       </NotificationTextContainer>
 
-      {isAction && isRead && responseText && (
+      {responseText && (
         <Tag
           name={responseText}
           color="#16181B"
