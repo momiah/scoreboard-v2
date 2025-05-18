@@ -27,12 +27,16 @@ const AddGame = ({
           onSelectPlayer={(player) => handleSelectPlayer("team1", 0, player)}
           selectedPlayers={selectedPlayers}
           borderType={leagueType === "Singles" ? "none" : "topLeft"}
+          team="team1"
+          index={0}
         />
         {leagueType === "Doubles" && (
           <SelectPlayer
             onSelectPlayer={(player) => handleSelectPlayer("team1", 1, player)}
             selectedPlayers={selectedPlayers}
             borderType={"bottomLeft"}
+            team="team1"
+            index={1}
           />
         )}
       </TeamContainer>
@@ -63,12 +67,16 @@ const AddGame = ({
           onSelectPlayer={(player) => handleSelectPlayer("team2", 0, player)}
           selectedPlayers={selectedPlayers}
           borderType={leagueType === "Singles" ? "none" : "topRight"}
+          team="team2"
+          index={0}
         />
         {leagueType === "Doubles" && (
           <SelectPlayer
             onSelectPlayer={(player) => handleSelectPlayer("team2", 1, player)}
             selectedPlayers={selectedPlayers}
             borderType={"bottomRight"}
+            team="team2"
+            index={1}
           />
         )}
       </TeamContainer>

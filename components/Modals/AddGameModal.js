@@ -114,13 +114,13 @@ const AddGameModal = ({
 
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
-      const isPlayerSelected = Object.values(prev).flat().includes(player);
-      if (isPlayerSelected) return prev;
-
       const newTeam = [...prev[team]];
-      if (index >= newTeam.length) return prev; // Prevent index overflow
       newTeam[index] = player;
-      return { ...prev, [team]: newTeam };
+
+      return {
+        ...prev,
+        [team]: newTeam,
+      };
     });
   };
 
@@ -250,6 +250,14 @@ const AddGameModal = ({
     console.log("Game added successfully.");
   };
 
+  const clearSelectedPlayers = () => {
+    setModalVisible(false);
+    setSelectedPlayers({
+      team1: leagueType === "Singles" ? [""] : ["", ""],
+      team2: leagueType === "Singles" ? [""] : ["", ""],
+    });
+  };
+
   return (
     <View>
       <Modal
@@ -273,7 +281,7 @@ const AddGameModal = ({
           <GradientOverlay colors={["#191b37", "#001d2e"]}>
             <ModalContent>
               <TouchableOpacity
-                onPress={() => setModalVisible(false)}
+                onPress={clearSelectedPlayers}
                 style={{
                   alignSelf: "flex-end",
                   position: "absolute",
