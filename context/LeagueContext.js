@@ -25,12 +25,21 @@ import { UserContext } from "./UserContext";
 import { notificationTypes } from "../schemas/schema";
 import { locationSchema } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
+import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
+import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
 
 const LeagueContext = createContext();
 
 const LeagueProvider = ({ children }) => {
   const [leagues, setLeagues] = useState([]);
-  const { sendNotification, getUserById } = useContext(UserContext);
+  const {
+    sendNotification,
+    getUserById,
+    updatePlayers,
+    updateTeams,
+    updateUsers,
+    retrieveTeams,
+  } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
   const [leagueIdForDetail, setLeagueIdForDetail] = useState("");
   const [leagueById, setLeagueById] = useState(null);
@@ -451,7 +460,9 @@ const LeagueProvider = ({ children }) => {
     leagueId,
     userId,
     senderId,
-    notificationId
+    notificationId,
+    playersToUpdate,
+    usersToUpdate
   ) => {
     try {
       const leagueRef = doc(db, "leagues", leagueId);
@@ -474,11 +485,6 @@ const LeagueProvider = ({ children }) => {
       const currentUser = await getUserById(userId);
       const currentUserUsername = currentUser.username;
 
-      if (game.numberOfApprovals >= approvalLimit) {
-        console.log("Game already approved!");
-        return;
-      }
-
       // Update approvals
       const updatedGame = {
         ...game,
@@ -487,6 +493,23 @@ const LeagueProvider = ({ children }) => {
 
       if (updatedGame.numberOfApprovals >= approvalLimit) {
         updatedGame.approvalStatus = "approved";
+
+        const playerPerformance = calculatePlayerPerformance(
+          updatedGame,
+          playersToUpdate,
+          usersToUpdate
+        );
+
+        await updatePlayers(playerPerformance.playersToUpdate, leagueId);
+        await updateUsers(playerPerformance.usersToUpdate);
+
+        const teamsToUpdate = await calculateTeamPerformance(
+          updatedGame,
+          retrieveTeams,
+          leagueId
+        );
+
+        await updateTeams(teamsToUpdate, leagueId);
       }
 
       // Replace the game in the array

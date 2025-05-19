@@ -49,8 +49,8 @@ const AddGameModal = ({
     updatePlayers,
     updateTeams,
     retrieveTeams,
-    getAllUsers,
     updateUsers,
+    getAllUsers,
     currentUser,
     sendNotification,
   } = useContext(UserContext);
@@ -222,22 +222,22 @@ const AddGameModal = ({
       await sendNotification(payload);
     }
 
-    const playerPerformance = calculatePlayerPerformance(
-      newGame,
-      playersToUpdate,
-      usersToUpdate
-    );
+    // const playerPerformance = calculatePlayerPerformance(
+    //   newGame,
+    //   playersToUpdate,
+    //   usersToUpdate
+    // );
 
-    await updatePlayers(playerPerformance.playersToUpdate, leagueId);
-    await updateUsers(playerPerformance.usersToUpdate);
+    // await updatePlayers(playerPerformance.playersToUpdate, leagueId);
+    // await updateUsers(playerPerformance.usersToUpdate);
 
-    const teamsToUpdate = await calculateTeamPerformance(
-      newGame,
-      retrieveTeams,
-      leagueId
-    );
+    // const teamsToUpdate = await calculateTeamPerformance(
+    //   newGame,
+    //   retrieveTeams,
+    //   leagueId
+    // );
 
-    await updateTeams(teamsToUpdate, leagueId);
+    // await updateTeams(teamsToUpdate, leagueId);
 
     await addGame(newGame, gameId, leagueId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });

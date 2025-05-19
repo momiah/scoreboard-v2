@@ -35,7 +35,7 @@ const League = () => {
   const { leagueId } = route.params;
   const { fetchLeagueById, leagueById, generateNewLeagueParticipants } =
     useContext(LeagueContext);
-  const { checkUserRole } = useContext(UserContext);
+  const { checkUserRole, currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("Scoreboard");
@@ -60,7 +60,7 @@ const League = () => {
     };
 
     fetchData();
-  }, [leagueId]);
+  }, [leagueId, currentUser]);
 
   const getUserRole = async (leagueData) => {
     try {
