@@ -26,6 +26,7 @@ const Scoreboard = ({
   leagueOwner,
   leagueStartDate,
   leagueEndDate,
+  leagueName,
 }) => {
   const { fetchPlayers, currentUser } = useContext(UserContext);
   const { requestToJoinLeague } = useContext(LeagueContext);
@@ -151,6 +152,7 @@ const Scoreboard = ({
         leagueId={leagueId}
         leagueGames={leagueGames}
         leagueType={leagueType}
+        leagueName={leagueName}
       />
     </Container>
   );

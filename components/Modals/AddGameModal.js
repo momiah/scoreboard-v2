@@ -19,7 +19,6 @@ import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../helpers/generateUniqueId";
 import { calculatePlayerPerformance } from "../../helpers/calculatePlayerPerformance";
-// import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
 import AddGame from "../scoreboard/AddGame/AddGame";
 import { calculateTeamPerformance } from "../../helpers/calculateTeamPerformance";
 
@@ -34,6 +33,7 @@ const AddGameModal = ({
   leagueId,
   leagueGames,
   leagueType,
+  leagueName,
 }) => {
   const { addGame } = useContext(GameContext);
   const { fetchLeagueById } = useContext(LeagueContext);
@@ -207,7 +207,7 @@ const AddGameModal = ({
         createdAt: new Date(),
         recipientId: user.userId,
         senderId: currentUser.userId,
-        message: `${currentUser.username} has just reported a score in ${leagueType} league`,
+        message: `${currentUser.username} has just reported a score in ${leagueName} league`,
         type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
 
         data: {
