@@ -174,19 +174,21 @@ const PlayerCell = ({ position, player }) => (
   </TeamTextContainer>
 );
 
-const ScoreDisplay = ({ date, team1, team2, item }) => (
-  <ResultsContainer>
-    <DateText>{date}</DateText>
-    <ScoreContainer>
-      <Score>
-        {team1} - {team2}
-      </Score>
-    </ScoreContainer>
-    {item.approvalStatus === "pending" && (
-      <PendingLabel>Pending Approval</PendingLabel>
-    )}
-  </ResultsContainer>
-);
+const ScoreDisplay = ({ date, team1, team2, item }) => {
+  const isPending = item.approvalStatus === "pending";
+  return (
+    <ResultsContainer style={!isPending ? { paddingBottom: 20 } : undefined}>
+      <DateText>{date}</DateText>
+      <ScoreContainer>
+        <Score>
+          {team1} - {team2}
+        </Score>
+      </ScoreContainer>
+      {isPending && <PendingLabel>Pending Approval</PendingLabel>}
+    </ResultsContainer>
+  );
+};
+
 // Define styles
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -304,6 +306,8 @@ const DateText = styled.Text({
   fontSize: 10,
   fontWeight: "bold",
   color: "white",
+
+  marginBottom: screenWidth <= 400 ? 0 : 15,
 });
 
 export default React.memo(Scoreboard);

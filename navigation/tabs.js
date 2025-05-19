@@ -48,6 +48,7 @@ const ProfileStack = () => {
     >
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="Login" component={Login} />
@@ -64,6 +65,7 @@ const NotificationsStack = () => {
     >
       <Stack.Screen name="Notification" component={Notifications} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
