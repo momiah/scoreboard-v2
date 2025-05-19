@@ -41,6 +41,7 @@ const GameApprovalModal = ({
   const { currentUser } = useContext(UserContext);
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [approvingGame, setApprovingGame] = useState(false);
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [senderUsername, setSenderUsername] = useState(null);
 
@@ -81,6 +82,7 @@ const GameApprovalModal = ({
   }, [notificationType, gameId, leagueId]);
 
   const handleApproveGame = async () => {
+    setApprovingGame(true);
     try {
       await approveGame(
         gameDetails.gameId,
@@ -91,6 +93,7 @@ const GameApprovalModal = ({
         playersToUpdate,
         usersToUpdate
       );
+      setApprovingGame(false);
       onClose(); // Close the modal after accepting
     } catch (error) {
       console.error("Error approving game:", error);
@@ -165,13 +168,20 @@ const GameApprovalModal = ({
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
-                  disabled={isRead}
+                  disabled={isRead || approvingGame}
                   //   onPress={handleDeclineInvite}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
-                <Button onPress={handleApproveGame} disabled={isRead}>
-                  <AcceptButtonText>Accept</AcceptButtonText>
+                <Button
+                  onPress={handleApproveGame}
+                  disabled={isRead || approvingGame}
+                >
+                  {approvingGame ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <AcceptButtonText>Accept</AcceptButtonText>
+                  )}
                 </Button>
               </View>
             </>
@@ -254,6 +264,8 @@ const Button = styled.TouchableOpacity({
   borderRadius: 8,
   marginTop: 10,
   opacity: (props) => (props.disabled ? 0.6 : 1),
+  width: 100,
+  alignItems: "center",
 });
 
 const AcceptButtonText = styled.Text({
