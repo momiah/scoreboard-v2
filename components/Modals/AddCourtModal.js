@@ -80,7 +80,6 @@ const AddCourtModal = ({
     try {
       setCourtCreationLoading(true);
       const newCourtId = await addCourt(courtDetails);
-      console.log("courtDetails", JSON.stringify(courtDetails, null, 2));
       if (newCourtId) {
         onCourtAdded(courtDetails, newCourtId);
         onClose();

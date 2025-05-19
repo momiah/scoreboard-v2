@@ -1,3 +1,4 @@
+import { type } from "@testing-library/react-native/build/user-event/type";
 import { createdAt } from "expo-updates";
 import { count } from "firebase/firestore";
 import moment from "moment";
@@ -45,6 +46,26 @@ export const locationSchema = {
   countryCode: "",
   postCode: "",
   address: "",
+};
+
+export const gameSchema = {
+  gameId: "",
+  gamescore: "",
+  date: "",
+  team1: {
+    player1: "",
+    player2: null,
+    score: 0,
+  },
+  team2: {
+    player1: "",
+    player2: null,
+    score: 0,
+  },
+  result: "",
+  numberOfApprovals: 0,
+  numberOfDeclines: 0,
+  approvalStatus: "",
 };
 
 export const scoreboardProfileSchema = {
@@ -160,9 +181,22 @@ export const courtSchema = {
 export const notificationTypes = {
   // Shows information modal
   INFORMATION: {
-    APP: "app",
-    GENERAL: "general",
-    REMINDER: "reminder",
+    APP: {
+      ROUTE: "Home",
+      TYPE: "app",
+    },
+    LEAGUE: {
+      ROUTE: "League",
+      TYPE: "league",
+    },
+    TOURNAMENT: {
+      ROUTE: "Tournament",
+      TYPE: "tournament",
+    },
+    USER: {
+      ROUTE: "UserProfile",
+      TYPE: "user",
+    },
   },
   ACTION: {
     // Shows League/Tournament modal
@@ -187,12 +221,14 @@ export const notificationTypes = {
   },
 };
 
+const systemSenderId = "system";
+
 export const notificationSchema = {
   createdAt: new Date(),
   type: "",
   message: "",
   isRead: false,
-  senderId: "",
+  senderId: systemSenderId,
   recipientId: "",
   data: {},
   response: "",

@@ -36,6 +36,7 @@ const JoinRequestModal = ({
   requestType,
   notificationId,
   senderId,
+  isRead,
 }) => {
   const { fetchLeagueById, acceptLeagueJoinRequest, declineLeagueJoinRequest } =
     useContext(LeagueContext);
@@ -69,8 +70,6 @@ const JoinRequestModal = ({
     fetchDetails();
     setLoading(false);
   }, [requestId, requestType]);
-
-  console.log("Sender Details:", JSON.stringify(senderDetails, null, 2));
 
   const handleAcceptJoinRequest = async () => {
     try {
@@ -140,13 +139,6 @@ const JoinRequestModal = ({
             <StatTitle>Wins</StatTitle>
             <Stat>{player?.profileDetail.numberOfWins}</Stat>
           </TableCell>
-          {/* 
-          <TableCell>
-            <StatTitle>PD</StatTitle>
-            <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
-              {pointDifference}
-            </Stat>
-          </TableCell> */}
           <TableCell>
             <MedalDisplay xp={playerXp.toFixed(0)} size={iconSize} />
             <RankLevel>{rankLevel}</RankLevel>
@@ -198,11 +190,12 @@ const JoinRequestModal = ({
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
+                  disabled={isRead}
                   onPress={handleDeclineJoinRequest}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
-                <Button onPress={handleAcceptJoinRequest}>
+                <Button onPress={handleAcceptJoinRequest} disabled={isRead}>
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
               </View>
@@ -320,12 +313,14 @@ const CloseButtonText = styled.Text({
 });
 
 const Button = styled.TouchableOpacity({
-  backgroundColor: "#00A2FF",
+  backgroundColor: (props) => (props.disabled ? "#888" : "#00A2FF"),
   paddingHorizontal: 20,
   paddingVertical: 8,
   borderRadius: 8,
   marginTop: 10,
+  opacity: (props) => (props.disabled ? 0.6 : 1),
 });
+
 const AcceptButtonText = styled.Text({
   color: "white",
   fontWeight: "bold",

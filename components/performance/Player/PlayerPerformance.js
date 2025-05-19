@@ -45,11 +45,6 @@ const PlayerPerformance = ({ playersData }) => {
     }
   }, [playersData]);
 
-  console.log(
-    "playersWithUserData",
-    JSON.stringify(playersWithUserData, null, 2)
-  );
-
   useEffect(() => {
     if (playersData.length > 0) {
       setLoading(false);
@@ -164,7 +159,6 @@ const PlayerNameCell = styled.View({
   justifyContent: "space-between",
   paddingTop: 15,
   paddingBottom: 15,
-  paddingLeft: 10,
   paddingRight: 20,
   borderTopWidth: 1,
   width: 130,

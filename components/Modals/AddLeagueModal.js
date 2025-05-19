@@ -107,7 +107,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   }, []);
 
   const handleCourtSelect = (key) => {
-    console.log("Selected court key:", key);
     if (key === "add-new-court") {
       setShowAddCourtModal(true);
     } else {

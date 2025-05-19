@@ -25,12 +25,21 @@ import { UserContext } from "./UserContext";
 import { notificationTypes } from "../schemas/schema";
 import { locationSchema } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
+import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
+import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
 
 const LeagueContext = createContext();
 
 const LeagueProvider = ({ children }) => {
   const [leagues, setLeagues] = useState([]);
-  const { sendNotification, getUserById } = useContext(UserContext);
+  const {
+    sendNotification,
+    getUserById,
+    updatePlayers,
+    updateTeams,
+    updateUsers,
+    retrieveTeams,
+  } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
   const [leagueIdForDetail, setLeagueIdForDetail] = useState("");
   const [leagueById, setLeagueById] = useState(null);
@@ -213,7 +222,6 @@ const LeagueProvider = ({ children }) => {
   const addCourt = async (courtData) => {
     try {
       const courtId = generateCourtId(courtData);
-      console.log("court", courtData);
       await setDoc(doc(db, "courts", courtId), {
         ...courtData,
       });
@@ -447,6 +455,110 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const approveGame = async (
+    gameId,
+    leagueId,
+    userId,
+    senderId,
+    notificationId,
+    playersToUpdate,
+    usersToUpdate
+  ) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+
+      const games = leagueData.games || [];
+      const gameIndex = games.findIndex((game) => game.gameId === gameId);
+
+      if (gameIndex === -1) {
+        console.error("Game not found in league");
+        return;
+      }
+
+      const game = games[gameIndex];
+      const gameType = leagueData.leagueType;
+      const approvalLimit = gameType === "Doubles" ? 2 : 1;
+
+      // Retrieve currentUser username
+      const currentUser = await getUserById(userId);
+      const currentUserUsername = currentUser.username;
+
+      // Update approvals
+      const updatedGame = {
+        ...game,
+        numberOfApprovals: (game.numberOfApprovals || 0) + 1,
+      };
+
+      if (updatedGame.numberOfApprovals >= approvalLimit) {
+        updatedGame.approvalStatus = "approved";
+
+        const playerPerformance = calculatePlayerPerformance(
+          updatedGame,
+          playersToUpdate,
+          usersToUpdate
+        );
+
+        await updatePlayers(playerPerformance.playersToUpdate, leagueId);
+        await updateUsers(playerPerformance.usersToUpdate);
+
+        const teamsToUpdate = await calculateTeamPerformance(
+          updatedGame,
+          retrieveTeams,
+          leagueId
+        );
+
+        await updateTeams(teamsToUpdate, leagueId);
+      }
+
+      // Replace the game in the array
+      const updatedGames = [...games];
+      updatedGames[gameIndex] = updatedGame;
+
+      // Save back to Firestore
+      await updateDoc(leagueRef, {
+        games: updatedGames,
+      });
+
+      // Update league owners notification
+      const currentUserNotificationsRef = collection(
+        db,
+        "users",
+        userId,
+        "notifications"
+      );
+
+      const notificationDocRef = doc(
+        currentUserNotificationsRef,
+        notificationId
+      );
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.ACCEPT,
+      });
+
+      // Send notification to sender
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: senderId,
+        senderId: userId,
+        message: `${currentUserUsername} has approved your game on ${leagueData.leagueName}!`,
+        type: notificationTypes.INFORMATION.LEAGUE.TYPE,
+        data: {
+          leagueId,
+          gameId,
+        },
+      };
+      await sendNotification(payload);
+
+      console.log("Game approved successfully!");
+    } catch (error) {
+      console.error("Error approving game:", error);
+    }
+  };
+
   // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
@@ -480,11 +592,6 @@ const LeagueProvider = ({ children }) => {
 
         await setDoc(doc(db, "users", player.userId), userDoc);
       }
-
-      console.log(
-        "newPlayers added to users collection:",
-        JSON.stringify(newPlayers, null, 2)
-      );
 
       // Add newPlayers to league
       const leagueRef = doc(db, "leagues", leagueId);
@@ -534,6 +641,7 @@ const LeagueProvider = ({ children }) => {
         requestToJoinLeague,
         acceptLeagueJoinRequest,
         declineLeagueJoinRequest,
+        approveGame,
 
         // Mock Data Management
         setShowMockData,

@@ -581,6 +581,21 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const readNotification = async (notificationId, userId) => {
+    try {
+      // const userId = await AsyncStorage.getItem("userId");
+      if (!userId) throw new Error("User not authenticated");
+      const userRef = doc(db, "users", userId);
+      const notifRef = doc(userRef, "notifications", notificationId);
+      await updateDoc(notifRef, {
+        isRead: true,
+      });
+      console.log("Notification marked as read:", notificationId);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
   const sendNotification = async (notification) => {
     console.log("Sending Notification:", JSON.stringify(notification, null, 2));
     try {
@@ -617,6 +632,7 @@ const UserProvider = ({ children }) => {
         //Notification
         sendNotification,
         notifications,
+        readNotification,
 
         // League-related operations
         retrievePlayersFromLeague,

@@ -26,6 +26,7 @@ const Scoreboard = ({
   leagueOwner,
   leagueStartDate,
   leagueEndDate,
+  leagueName,
 }) => {
   const { fetchPlayers, currentUser } = useContext(UserContext);
   const { requestToJoinLeague } = useContext(LeagueContext);
@@ -116,25 +117,33 @@ const Scoreboard = ({
       <FlatList
         data={reversedGames}
         keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <GameContainer>
-            <TeamColumn
-              team="left"
-              players={item.team1}
-              leagueType={leagueType}
-            />
-            <ScoreDisplay
-              date={item.date}
-              team1={item.team1.score}
-              team2={item.team2.score}
-            />
-            <TeamColumn
-              team="right"
-              players={item.team2}
-              leagueType={leagueType}
-            />
-          </GameContainer>
-        )}
+        renderItem={({ item }) => {
+          const Game =
+            item.approvalStatus === "pending"
+              ? PendingApprovalContainer
+              : GameContainer;
+
+          return (
+            <Game>
+              <TeamColumn
+                team="left"
+                players={item.team1}
+                leagueType={leagueType}
+              />
+              <ScoreDisplay
+                date={item.date}
+                team1={item.team1.score}
+                team2={item.team2.score}
+                item={item}
+              />
+              <TeamColumn
+                team="right"
+                players={item.team2}
+                leagueType={leagueType}
+              />
+            </Game>
+          );
+        }}
       />
 
       <AddGameModal
@@ -143,6 +152,7 @@ const Scoreboard = ({
         leagueId={leagueId}
         leagueGames={leagueGames}
         leagueType={leagueType}
+        leagueName={leagueName}
       />
     </Container>
   );
@@ -164,16 +174,21 @@ const PlayerCell = ({ position, player }) => (
   </TeamTextContainer>
 );
 
-const ScoreDisplay = ({ date, team1, team2 }) => (
-  <ResultsContainer>
-    <DateText>{date}</DateText>
-    <ScoreContainer>
-      <Score>
-        {team1} - {team2}
-      </Score>
-    </ScoreContainer>
-  </ResultsContainer>
-);
+const ScoreDisplay = ({ date, team1, team2, item }) => {
+  const isPending = item.approvalStatus === "pending";
+  return (
+    <ResultsContainer style={!isPending ? { paddingBottom: 20 } : undefined}>
+      <DateText>{date}</DateText>
+      <ScoreContainer>
+        <Score>
+          {team1} - {team2}
+        </Score>
+      </ScoreContainer>
+      {isPending && <PendingLabel>Pending Approval</PendingLabel>}
+    </ResultsContainer>
+  );
+};
+
 // Define styles
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -206,7 +221,30 @@ const GameContainer = styled.View({
   marginBottom: 16,
   backgroundColor: "#001123",
   border: "1px solid rgb(9, 33, 62)",
+
   borderRadius: 8,
+});
+
+const PendingApprovalContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginBottom: 16,
+  backgroundColor: "#001123",
+  border: "1px solid rgb(9, 33, 62)",
+  borderRadius: 8,
+  opacity: 0.6, // faded look
+  // position: "relative",
+});
+
+const PendingLabel = styled.Text({
+  paddingHorizontal: 6,
+  paddingVertical: 2,
+  marginTop: 10,
+  fontSize: 9,
+  color: "white",
+  backgroundColor: "rgba(255, 0, 0, 0.6)",
+  borderRadius: 4,
+  overflow: "hidden",
 });
 
 const ResultsContainer = styled.View({
@@ -214,7 +252,6 @@ const ResultsContainer = styled.View({
   justifyContent: "space-between",
   alignItems: "center",
   padding: 10,
-  paddingBottom: 30,
 });
 
 const Score = styled.Text({
@@ -269,6 +306,8 @@ const DateText = styled.Text({
   fontSize: 10,
   fontWeight: "bold",
   color: "white",
+
+  marginBottom: screenWidth <= 400 ? 0 : 15,
 });
 
 export default React.memo(Scoreboard);

@@ -19,13 +19,13 @@ import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../helpers/generateUniqueId";
 import { calculatePlayerPerformance } from "../../helpers/calculatePlayerPerformance";
-// import RegisterPlayer from "../scoreboard/AddGame/RegisterPlayer";
 import AddGame from "../scoreboard/AddGame/AddGame";
 import { calculateTeamPerformance } from "../../helpers/calculateTeamPerformance";
 
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
+import { notificationSchema, notificationTypes } from "../../schemas/schema";
 
 const AddGameModal = ({
   modalVisible,
@@ -33,6 +33,7 @@ const AddGameModal = ({
   leagueId,
   leagueGames,
   leagueType,
+  leagueName,
 }) => {
   const { addGame } = useContext(GameContext);
   const { fetchLeagueById } = useContext(LeagueContext);
@@ -48,8 +49,10 @@ const AddGameModal = ({
     updatePlayers,
     updateTeams,
     retrieveTeams,
-    getAllUsers,
     updateUsers,
+    getAllUsers,
+    currentUser,
+    sendNotification,
   } = useContext(UserContext);
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -111,13 +114,13 @@ const AddGameModal = ({
 
   const handleSelectPlayer = (team, index, player) => {
     setSelectedPlayers((prev) => {
-      const isPlayerSelected = Object.values(prev).flat().includes(player);
-      if (isPlayerSelected) return prev;
-
       const newTeam = [...prev[team]];
-      if (index >= newTeam.length) return prev; // Prevent index overflow
       newTeam[index] = player;
-      return { ...prev, [team]: newTeam };
+
+      return {
+        ...prev,
+        [team]: newTeam,
+      };
     });
   };
 
@@ -159,9 +162,13 @@ const AddGameModal = ({
       get result() {
         return calculateWin(this.team1, this.team2, this.leagueType);
       },
+      numberOfApprovals: 0,
+      numberOfDeclines: 0,
+      approvalStatus: "pending",
     };
 
     const allPlayersInLeague = await retrievePlayersFromLeague(leagueId);
+
     const allUsers = await getAllUsers();
 
     const playersToUpdate = allPlayersInLeague.filter((player) =>
@@ -184,24 +191,53 @@ const AddGameModal = ({
       playersToUpdate
     );
 
-    const playerPerformance = calculatePlayerPerformance(
-      newGame,
-      playersToUpdate,
-      usersToUpdate
+    const winners = newGame.result.winner.players;
+    const losers = newGame.result.loser.players;
+
+    const isUserOnWinningTeam = winners.includes(currentUser.username);
+    const opponents = isUserOnWinningTeam ? losers : winners;
+
+    const requestForOpponentApprovals = usersToUpdate.filter((user) =>
+      opponents.includes(user.username)
     );
 
-    await updatePlayers(playerPerformance.playersToUpdate, leagueId);
-    await updateUsers(playerPerformance.usersToUpdate);
+    for (const user of requestForOpponentApprovals) {
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: user.userId,
+        senderId: currentUser.userId,
+        message: `${currentUser.username} has just reported a score in ${leagueName} league`,
+        type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
 
-    // const allTeams = await retrieveTeams(leagueId);
+        data: {
+          leagueId,
+          gameId,
+          playersToUpdate,
+          usersToUpdate,
+          // newGame,
+        },
+      };
 
-    const teamsToUpdate = await calculateTeamPerformance(
-      newGame,
-      retrieveTeams,
-      leagueId
-    );
+      await sendNotification(payload);
+    }
 
-    await updateTeams(teamsToUpdate, leagueId);
+    // const playerPerformance = calculatePlayerPerformance(
+    //   newGame,
+    //   playersToUpdate,
+    //   usersToUpdate
+    // );
+
+    // await updatePlayers(playerPerformance.playersToUpdate, leagueId);
+    // await updateUsers(playerPerformance.usersToUpdate);
+
+    // const teamsToUpdate = await calculateTeamPerformance(
+    //   newGame,
+    //   retrieveTeams,
+    //   leagueId
+    // );
+
+    // await updateTeams(teamsToUpdate, leagueId);
 
     await addGame(newGame, gameId, leagueId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
@@ -212,6 +248,14 @@ const AddGameModal = ({
     await fetchLeagueById(leagueId);
     setLoading(false);
     console.log("Game added successfully.");
+  };
+
+  const clearSelectedPlayers = () => {
+    setModalVisible(false);
+    setSelectedPlayers({
+      team1: leagueType === "Singles" ? [""] : ["", ""],
+      team2: leagueType === "Singles" ? [""] : ["", ""],
+    });
   };
 
   return (
@@ -237,7 +281,7 @@ const AddGameModal = ({
           <GradientOverlay colors={["#191b37", "#001d2e"]}>
             <ModalContent>
               <TouchableOpacity
-                onPress={() => setModalVisible(false)}
+                onPress={clearSelectedPlayers}
                 style={{
                   alignSelf: "flex-end",
                   position: "absolute",

@@ -153,10 +153,8 @@ const Signup = ({ route }) => {
       const welcomeNotification = {
         ...notificationSchema,
         createdAt: new Date(),
-
         message: "Welcome to Court Champs! 🎉",
-        type: notificationTypes.INFORMATION.GENERAL,
-        senderId: notificationTypes.INFORMATION.APP,
+        type: notificationTypes.INFORMATION.APP.TYPE,
         recipientId: profileToSave.userId,
       };
 
