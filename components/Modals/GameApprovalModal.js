@@ -146,7 +146,7 @@ const GameApprovalModal = ({
                 <TeamColumn
                   team="left"
                   players={gameDetails?.team1}
-                  leagueType={gameDetails?.leagueType}
+                  leagueType={leagueDetails?.leagueType}
                 />
                 <ScoreDisplay
                   date={gameDetails?.date}
@@ -156,7 +156,7 @@ const GameApprovalModal = ({
                 <TeamColumn
                   team="right"
                   players={gameDetails?.team2}
-                  leagueType={gameDetails?.leagueType}
+                  leagueType={leagueDetails?.leagueType}
                 />
               </GameContainer>
 

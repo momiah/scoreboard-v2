@@ -133,16 +133,13 @@ const Scoreboard = ({
                 date={item.date}
                 team1={item.team1.score}
                 team2={item.team2.score}
+                item={item}
               />
               <TeamColumn
                 team="right"
                 players={item.team2}
                 leagueType={leagueType}
               />
-
-              {item.approvalStatus === "pending" && (
-                <PendingLabel>Pending Approval</PendingLabel>
-              )}
             </Game>
           );
         }}
@@ -175,7 +172,7 @@ const PlayerCell = ({ position, player }) => (
   </TeamTextContainer>
 );
 
-const ScoreDisplay = ({ date, team1, team2 }) => (
+const ScoreDisplay = ({ date, team1, team2, item }) => (
   <ResultsContainer>
     <DateText>{date}</DateText>
     <ScoreContainer>
@@ -183,6 +180,9 @@ const ScoreDisplay = ({ date, team1, team2 }) => (
         {team1} - {team2}
       </Score>
     </ScoreContainer>
+    {item.approvalStatus === "pending" && (
+      <PendingLabel>Pending Approval</PendingLabel>
+    )}
   </ResultsContainer>
 );
 // Define styles
@@ -229,18 +229,16 @@ const PendingApprovalContainer = styled.View({
   border: "1px solid rgb(9, 33, 62)",
   borderRadius: 8,
   opacity: 0.6, // faded look
-  position: "relative",
+  // position: "relative",
 });
 
 const PendingLabel = styled.Text({
-  position: "absolute",
-  bottom: 5,
-  right: 10,
+  paddingHorizontal: 6,
+  paddingVertical: 2,
+  marginTop: 10,
   fontSize: 9,
   color: "white",
   backgroundColor: "rgba(255, 0, 0, 0.6)",
-  paddingHorizontal: 6,
-  paddingVertical: 2,
   borderRadius: 4,
   overflow: "hidden",
 });
@@ -250,7 +248,6 @@ const ResultsContainer = styled.View({
   justifyContent: "space-between",
   alignItems: "center",
   padding: 10,
-  paddingBottom: 30,
 });
 
 const Score = styled.Text({
