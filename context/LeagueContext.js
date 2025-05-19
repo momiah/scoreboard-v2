@@ -559,6 +559,81 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const declineGame = async (
+    gameId,
+    leagueId,
+    userId,
+    senderId,
+    notificationId
+  ) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueDoc = await getDoc(leagueRef);
+      const leagueData = leagueDoc.data();
+
+      const games = leagueData.games || [];
+      const gameIndex = games.findIndex((game) => game.gameId === gameId);
+
+      if (gameIndex === -1) {
+        console.error("Game not found in league");
+        return;
+      }
+
+      const game = games[gameIndex];
+      const declineLimit = 1;
+
+      const currentUser = await getUserById(userId);
+      const currentUserUsername = currentUser.username;
+
+      const updatedGame = {
+        ...game,
+        numberOfDeclines: (game.numberOfDeclines || 0) + 1,
+      };
+
+      let updatedGames = [...games];
+
+      if (updatedGame.numberOfDeclines >= declineLimit) {
+        // Remove the game entirely
+        updatedGames.splice(gameIndex, 1);
+      } else {
+        // Otherwise update the decline count
+        updatedGames[gameIndex] = updatedGame;
+      }
+
+      await updateDoc(leagueRef, {
+        games: updatedGames,
+      });
+
+      const notificationDocRef = doc(
+        collection(db, "users", userId, "notifications"),
+        notificationId
+      );
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
+      });
+
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: senderId,
+        senderId: userId,
+        message: `${currentUserUsername} has declined your game on ${leagueData.leagueName}!`,
+        type: notificationTypes.INFORMATION.LEAGUE.TYPE,
+        data: {
+          leagueId,
+          gameId,
+        },
+      };
+
+      await sendNotification(payload);
+
+      console.log("Game declined and removed successfully!");
+    } catch (error) {
+      console.error("Error declining game:", error);
+    }
+  };
+
   // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
@@ -642,6 +717,7 @@ const LeagueProvider = ({ children }) => {
         acceptLeagueJoinRequest,
         declineLeagueJoinRequest,
         approveGame,
+        declineGame,
 
         // Mock Data Management
         setShowMockData,

@@ -37,13 +37,15 @@ const GameApprovalModal = ({
   isRead,
   usersToUpdate,
 }) => {
-  const { fetchLeagueById, approveGame } = useContext(LeagueContext);
+  const { fetchLeagueById, approveGame, declineGame } =
+    useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [approvingGame, setApprovingGame] = useState(false);
+  const [loadingDecision, setLoadingDecision] = useState(false);
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [senderUsername, setSenderUsername] = useState(null);
+  const [gameDeleted, setGameDeleted] = useState(false); // 🆕
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -71,6 +73,12 @@ const GameApprovalModal = ({
           const game = league.games.find((game) => game.gameId === gameId);
           setLeagueDetails(league);
           setGameDetails(game);
+
+          if (!game) {
+            setGameDeleted(true); // 🆕 Game no longer exists
+          } else {
+            setGameDeleted(false);
+          }
         } catch (error) {
           console.error("Error fetching league details:", error);
         }
@@ -82,7 +90,7 @@ const GameApprovalModal = ({
   }, [notificationType, gameId, leagueId]);
 
   const handleApproveGame = async () => {
-    setApprovingGame(true);
+    setLoadingDecision(true);
     try {
       await approveGame(
         gameDetails.gameId,
@@ -93,10 +101,27 @@ const GameApprovalModal = ({
         playersToUpdate,
         usersToUpdate
       );
-      setApprovingGame(false);
+      setLoadingDecision(false);
       onClose(); // Close the modal after accepting
     } catch (error) {
       console.error("Error approving game:", error);
+    }
+  };
+
+  const handleDeclineGame = async () => {
+    setLoadingDecision(true);
+    try {
+      await declineGame(
+        gameDetails.gameId,
+        leagueDetails.id,
+        currentUser.userId,
+        senderId,
+        notificationId
+      );
+      setLoadingDecision(false);
+      onClose(); // Close the modal after declining
+    } catch (error) {
+      console.error("Error declining game:", error);
     }
   };
 
@@ -147,37 +172,46 @@ const GameApprovalModal = ({
                 </LinkText>
               </Message>
 
-              <GameContainer>
-                <TeamColumn
-                  team="left"
-                  players={gameDetails?.team1}
-                  leagueType={leagueDetails?.leagueType}
-                />
-                <ScoreDisplay
-                  date={gameDetails?.date}
-                  team1={gameDetails?.team1.score}
-                  team2={gameDetails?.team2.score}
-                />
-                <TeamColumn
-                  team="right"
-                  players={gameDetails?.team2}
-                  leagueType={leagueDetails?.leagueType}
-                />
-              </GameContainer>
+              {!gameDeleted && (
+                <GameContainer>
+                  <TeamColumn
+                    team="left"
+                    players={gameDetails?.team1}
+                    leagueType={leagueDetails?.leagueType}
+                  />
+                  <ScoreDisplay
+                    date={gameDetails?.date}
+                    team1={gameDetails?.team1.score}
+                    team2={gameDetails?.team2.score}
+                  />
+                  <TeamColumn
+                    team="right"
+                    players={gameDetails?.team2}
+                    leagueType={leagueDetails?.leagueType}
+                  />
+                </GameContainer>
+              )}
+
+              {gameDeleted && (
+                <DeletedMessage>
+                  This game has been declined and no longer exists. Please agree
+                  on the scores and report again.
+                </DeletedMessage> // 🆕
+              )}
 
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
-                  disabled={isRead || approvingGame}
-                  //   onPress={handleDeclineInvite}
+                  disabled={isRead || loadingDecision || gameDeleted}
+                  onPress={handleDeclineGame}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button
                   onPress={handleApproveGame}
-                  disabled={isRead || approvingGame}
+                  disabled={isRead || loadingDecision || gameDeleted}
                 >
-                  {approvingGame ? (
+                  {loadingDecision ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
                     <AcceptButtonText>Accept</AcceptButtonText>
@@ -356,6 +390,14 @@ const DateText = styled.Text({
   fontWeight: "bold",
   color: "white",
   marginBottom: 5,
+});
+
+const DeletedMessage = styled.Text({
+  color: "red",
+  fontSize: 12,
+  marginTop: 10,
+  fontWeight: "bold",
+  fontStyle: "italic",
 });
 
 export default GameApprovalModal;
