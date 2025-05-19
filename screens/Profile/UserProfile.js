@@ -30,6 +30,7 @@ import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
 import RankSuffix from "../../components/RankSuffix";
 import { formatNumber } from "../../helpers/formatNumber";
 import Icon from "react-native-ico-flags";
+import { RankInformation } from "../../components/Modals/RankInformation";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
@@ -46,6 +47,7 @@ const UserProfile = () => {
     getCountryRank,
   } = useContext(UserContext);
   const { medalNames, findRankIndex } = useContext(GameContext);
+  const [ranksVisible, setRanksVisible] = useState(false);
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -322,7 +324,12 @@ const UserProfile = () => {
 
         {/* Medal display stays on the right */}
         <MedalContainer>
-          <MedalDisplay xp={profileDetail?.XP} size={screenAdjustedMedalSize} />
+          <TouchableOpacity onPress={() => setRanksVisible(true)}>
+            <MedalDisplay
+              xp={profileDetail?.XP}
+              size={screenAdjustedMedalSize}
+            />
+          </TouchableOpacity>
           <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
           <MedalName style={{ fontWeight: "bold" }}>{rankLevel}</MedalName>
         </MedalContainer>
@@ -391,6 +398,10 @@ const UserProfile = () => {
           />
         </Pressable>
       </Modal>
+      <RankInformation
+        visible={ranksVisible}
+        onClose={() => setRanksVisible(false)}
+      />
     </Container>
   );
 };
