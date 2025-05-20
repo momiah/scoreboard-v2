@@ -149,6 +149,9 @@ const JoinRequestModal = ({
     [findRankIndex]
   );
 
+  const leagueFull =
+    requestDetails?.leagueParticipants.length >= requestDetails?.maxPlayers;
+
   return (
     <Modal transparent visible={visible} animationType="slide">
       <ModalContainer>
@@ -187,6 +190,12 @@ const JoinRequestModal = ({
                   index: 0,
                 })}
 
+              {leagueFull && (
+                <LeagueFullText>
+                  This invite has expired as the league is full
+                </LeagueFullText>
+              )}
+
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
@@ -195,7 +204,10 @@ const JoinRequestModal = ({
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
-                <Button onPress={handleAcceptJoinRequest} disabled={isRead}>
+                <Button
+                  onPress={handleAcceptJoinRequest}
+                  disabled={isRead || leagueFull}
+                >
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
               </View>
@@ -324,6 +336,14 @@ const Button = styled.TouchableOpacity({
 const AcceptButtonText = styled.Text({
   color: "white",
   fontWeight: "bold",
+});
+
+const LeagueFullText = styled.Text({
+  color: "red",
+  fontSize: 12,
+  marginTop: 10,
+  fontWeight: "bold",
+  fontStyle: "italic",
 });
 
 export default JoinRequestModal;
