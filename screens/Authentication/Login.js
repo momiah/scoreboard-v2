@@ -21,6 +21,7 @@ import { collection, where, getDocs, query } from "firebase/firestore";
 import {
   signInWithCredential,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
@@ -126,6 +127,30 @@ export default function Login() {
         // Alert.alert(`Error", "Login failed. ${error.message}`);
         console.log("Login Error: ", error.message);
       }
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Enter your email", "Please enter your email address first.");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      Alert.alert(
+        "Reset Link Sent",
+        "Check your inbox for a password reset link."
+      );
+    } catch (error) {
+      const messages = {
+        "auth/invalid-email": "Enter a valid email address.",
+        "auth/user-not-found": "No user found with that email.",
+      };
+      const errorMessage =
+        messages[error.code] || "Failed to send reset email.";
+      Alert.alert("Error", errorMessage);
+      console.log("Password Reset Error:", error.message);
     }
   };
 
@@ -262,7 +287,7 @@ export default function Login() {
             <Text style={styles.buttonText}>Sign In</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity onPress={handleForgotPassword}>
             <Text style={styles.forgotPassword}>Forgot password?</Text>
             <View style={styles.underline} />
           </TouchableOpacity>
