@@ -348,15 +348,20 @@ const EditProfile = ({ navigation }) => {
             <Section>
               <SectionTitle>Contact Email</SectionTitle>
               <Input
+                disabled
                 value={formData.email}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, email: text })
-                }
+                // onChangeText={(text) =>
+                //   setFormData({ ...formData, email: text })
+                // }
                 placeholder="Enter your email"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor={"#aaa"}
               />
+              <Text style={{ color: "#aaa", fontSize: 12, marginTop: 10 }}>
+                This email is used for account recovery and notifications. To
+                change your email, please contact support.
+              </Text>
             </Section>
 
             <ButtonWrapper>

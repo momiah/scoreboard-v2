@@ -10,7 +10,10 @@ import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { useForm, Controller } from "react-hook-form";
 import styled from "styled-components/native";
 import { auth, db } from "../../services/firebase.config";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
 import {
   setDoc,
   doc,
@@ -131,6 +134,8 @@ const Signup = ({ route }) => {
           password
         );
         uid = user.uid;
+
+        await sendEmailVerification(user);
       }
 
       const profileToSave = {
@@ -166,7 +171,9 @@ const Signup = ({ route }) => {
       // 3. Show success UI
       setPopupIcon("success");
       setPopupButtonText("Login");
-      handleShowPopup("Account created successfully, please login to continue");
+      handleShowPopup(
+        "Account created successfully, please verify your email and login to continue"
+      );
     } catch (error) {
       const messages = {
         "auth/email-already-in-use": "Email already registered",
