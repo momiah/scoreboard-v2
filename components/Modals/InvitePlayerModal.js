@@ -22,6 +22,8 @@ import { UserContext } from "../../context/UserContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
 import { createdAt } from "expo-updates";
 import { LeagueContext } from "../../context/LeagueContext";
+import { PopupContext } from "../../context/PopupContext";
+import Popup from "../popup/Popup";
 
 const InvitePlayerModal = ({
   modalVisible,
@@ -35,6 +37,35 @@ const InvitePlayerModal = ({
   const [sendingInvite, setSendingInvite] = useState(false);
   const { sendNotification } = useContext(UserContext);
   const { updatePendingInvites } = useContext(LeagueContext);
+  const {
+    handleShowPopup,
+    setPopupMessage,
+    popupMessage,
+    setShowPopup,
+    showPopup,
+  } = useContext(PopupContext);
+
+  // ✅ Must come first
+  const hasConflictedUsers = inviteUsers.some(
+    (item) =>
+      leagueDetails.leagueParticipants.some((u) => u.userId === item.userId) ||
+      leagueDetails.pendingInvites.some((u) => u.userId === item.userId)
+  );
+
+  useEffect(() => {
+    if (hasConflictedUsers) {
+      setErrorText(
+        "Some selected users are already in the league or already invited"
+      );
+    }
+  }, [hasConflictedUsers]);
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setPopupMessage("");
+
+    setModalVisible(false);
+  };
 
   const handleSendInvite = async () => {
     setSendingInvite(true);
@@ -45,28 +76,20 @@ const InvitePlayerModal = ({
         return;
       }
 
-      // Check if the selected users are already in the league
-      const alreadyInLeague = leagueDetails.leagueParticipants.some((user) =>
-        inviteUsers.some((invitedUser) => invitedUser.userId === user.userId)
-      );
-      if (alreadyInLeague) {
-        setErrorText("Some selected users are already in the league");
-        setSendingInvite(false);
-        return;
-      }
-      // Check if the selected users are already invited
-      const alreadyInvited = leagueDetails.pendingInvites.some((user) =>
-        inviteUsers.some((invitedUser) => invitedUser.userId === user.userId)
-      );
-      if (alreadyInvited) {
-        setErrorText(
-          "Some selected users are already invited, please check your pending invites"
-        );
-        setSendingInvite(false);
-        return;
-      }
-
       const currentUserId = await AsyncStorage.getItem("userId");
+      const inLeague = leagueDetails.leagueParticipants.map((u) => u.userId);
+      const pending = leagueDetails.pendingInvites.map((u) => u.userId);
+
+      const hasConflict = inviteUsers.some(
+        (u) => inLeague.includes(u.userId) || pending.includes(u.userId)
+      );
+
+      if (hasConflict) {
+        setErrorText(
+          "Some selected users are already in the league or already invited"
+        );
+        return;
+      }
 
       for (const user of inviteUsers) {
         const payload = {
@@ -84,7 +107,8 @@ const InvitePlayerModal = ({
         await sendNotification(payload);
         await updatePendingInvites(leagueDetails.id, user.userId);
       }
-      setModalVisible(false);
+      handleShowPopup("Players invited successfully!");
+      // setModalVisible(false);
     } catch (error) {
       setErrorText("Failed to send invites. Please try again.");
       console.error("Error sending invites:", error);
@@ -174,6 +198,13 @@ const InvitePlayerModal = ({
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
+        <Popup
+          visible={showPopup}
+          message={popupMessage}
+          onClose={handleClosePopup}
+          type="success"
+          height={450}
+        />
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ModalContainer>
             <GradientOverlay colors={["#191b37", "#001d2e"]}>
@@ -267,24 +298,38 @@ const InvitePlayerModal = ({
                 )}
                 {inviteUsers?.length > 0 && (
                   <FlatList
+                    style={{ marginBottom: 10 }}
                     data={inviteUsers}
                     keyExtractor={(item, index) =>
                       item.email || index.toString()
                     }
-                    renderItem={({ item }) => (
-                      <UserItem>
-                        <UserName>{item.username}</UserName>
-                        <AntDesign
-                          name="closecircleo"
-                          size={20}
-                          color="red"
-                          onPress={() => handleRemoveUser(item)}
-                        />
-                        {/* <RemoveButton onPress={() => handleRemoveUser(item)}>
-                          <RemoveText>✖</RemoveText>
-                        </RemoveButton> */}
-                      </UserItem>
-                    )}
+                    renderItem={({ item }) => {
+                      const inLeague = leagueDetails.leagueParticipants.some(
+                        (u) => u.userId === item.userId
+                      );
+                      const isPending = leagueDetails.pendingInvites.some(
+                        (u) => u.userId === item.userId
+                      );
+
+                      const hasConflict = inLeague || isPending;
+
+                      return (
+                        <UserItem
+                          style={{
+                            borderColor: hasConflict ? "red" : "transparent",
+                            borderWidth: hasConflict ? 1 : 0,
+                          }}
+                        >
+                          <UserName>{item.username}</UserName>
+                          <AntDesign
+                            name="closecircleo"
+                            size={20}
+                            color="red"
+                            onPress={() => handleRemoveUser(item)}
+                          />
+                        </UserItem>
+                      );
+                    }}
                   />
                 )}
 
