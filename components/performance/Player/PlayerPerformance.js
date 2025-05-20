@@ -158,7 +158,7 @@ const PlayerNameCell = styled.View({
   justifyContent: "space-between",
   paddingTop: 15,
   paddingBottom: 15,
-  paddingRight: 20,
+  paddingRight: 5,
   borderTopWidth: 1,
   width: 130,
   borderColor: "1px solid rgb(9, 33, 62)",
