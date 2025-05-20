@@ -5,6 +5,7 @@ import {
   View,
   TouchableOpacity,
   Keyboard,
+  ActivityIndicator,
   TouchableWithoutFeedback,
 } from "react-native";
 import styled from "styled-components/native";
@@ -31,36 +32,65 @@ const InvitePlayerModal = ({
   const [suggestions, setSuggestions] = useState([]);
   const [inviteUsers, setInviteUsers] = useState([]);
   const [errorText, setErrorText] = useState("");
+  const [sendingInvite, setSendingInvite] = useState(false);
   const { sendNotification } = useContext(UserContext);
   const { updatePendingInvites } = useContext(LeagueContext);
 
   const handleSendInvite = async () => {
-    if (inviteUsers.length === 0) {
-      setErrorText("Please select at least one player to invite");
-      return;
+    setSendingInvite(true);
+    try {
+      if (inviteUsers.length === 0) {
+        setErrorText("Please select at least one player to invite");
+        setSendingInvite(false);
+        return;
+      }
+
+      // Check if the selected users are already in the league
+      const alreadyInLeague = leagueDetails.leagueParticipants.some((user) =>
+        inviteUsers.some((invitedUser) => invitedUser.userId === user.userId)
+      );
+      if (alreadyInLeague) {
+        setErrorText("Some selected users are already in the league");
+        setSendingInvite(false);
+        return;
+      }
+      // Check if the selected users are already invited
+      const alreadyInvited = leagueDetails.pendingInvites.some((user) =>
+        inviteUsers.some((invitedUser) => invitedUser.userId === user.userId)
+      );
+      if (alreadyInvited) {
+        setErrorText(
+          "Some selected users are already invited, please check your pending invites"
+        );
+        setSendingInvite(false);
+        return;
+      }
+
+      const currentUserId = await AsyncStorage.getItem("userId");
+
+      for (const user of inviteUsers) {
+        const payload = {
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: user.userId,
+          senderId: currentUserId,
+          message: `You've been invited to join ${leagueDetails.leagueName}`,
+          type: notificationTypes.ACTION.INVITE.LEAGUE,
+          data: {
+            leagueId: leagueDetails.id,
+          },
+        };
+
+        await sendNotification(payload);
+        await updatePendingInvites(leagueDetails.id, user.userId);
+      }
+      setModalVisible(false);
+    } catch (error) {
+      setErrorText("Failed to send invites. Please try again.");
+      console.error("Error sending invites:", error);
+    } finally {
+      setSendingInvite(false);
     }
-
-    const currentUserId = await AsyncStorage.getItem("userId");
-
-    for (const user of inviteUsers) {
-      const payload = {
-        ...notificationSchema,
-        createdAt: new Date(),
-        recipientId: user.userId,
-        senderId: currentUserId,
-        message: `You've been invited to join ${leagueDetails.leagueName}`,
-        type: notificationTypes.ACTION.INVITE.LEAGUE,
-
-        data: {
-          leagueId: leagueDetails.id,
-        },
-      };
-
-      await sendNotification(payload);
-      await updatePendingInvites(leagueDetails.id, user.userId);
-    }
-
-    setModalVisible(false);
   };
 
   const handleSearch = async (value) => {
@@ -268,9 +298,13 @@ const InvitePlayerModal = ({
                 </View>
 
                 <ButtonContainer>
-                  <CreateButton onPress={handleSendInvite}>
-                    <CreateText>Invite</CreateText>
-                  </CreateButton>
+                  <InviteButton onPress={handleSendInvite}>
+                    {sendingInvite ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <InviteText>Invite</InviteText>
+                    )}
+                  </InviteButton>
                 </ButtonContainer>
               </ModalContent>
             </GradientOverlay>
@@ -342,7 +376,7 @@ const ButtonContainer = styled.View({
   marginTop: 20,
 });
 
-const CreateButton = styled.TouchableOpacity({
+const InviteButton = styled.TouchableOpacity({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
@@ -378,7 +412,7 @@ const LeagueDetailsContainer = styled.View({
   overflow: "hidden",
 });
 
-const CreateText = styled.Text({
+const InviteText = styled.Text({
   color: "white",
 });
 const DropdownContainer = styled.View({

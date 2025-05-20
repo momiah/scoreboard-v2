@@ -123,7 +123,6 @@ const PlayerPerformance = ({ playersData }) => {
 
       {showPlayerDetails && (
         <PlayerDetails
-          // playersData={playersWithUserData}
           selectedPlayer={selectedPlayer}
           showPlayerDetails={showPlayerDetails}
           setShowPlayerDetails={setShowPlayerDetails}

@@ -14,16 +14,14 @@ import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext } from "react";
-import Tag from "../Tag";
+
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
-import { useRef } from "react";
-import moment from "moment";
-import { copyLocationAddress } from "../../helpers/copyLocationAddress";
+
 import { useNavigation } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
-import { render } from "@testing-library/react-native";
+
 import MedalDisplay from "../performance/MedalDisplay";
 
 const screenWidth = Dimensions.get("window").width;

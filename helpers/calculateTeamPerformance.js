@@ -43,6 +43,7 @@ export const calculateTeamPerformance = async (
       resultLog: [],
       pointDifferenceLog: [],
       averagePointDifference: 0,
+      totalPointDifference: 0,
       currentStreak: 0,
       highestWinStreak: 0,
       highestLossStreak: 0,
@@ -65,6 +66,7 @@ export const calculateTeamPerformance = async (
       resultLog: [],
       pointDifferenceLog: [],
       averagePointDifference: 0,
+      totalPointDifference: 0,
       currentStreak: 0,
       highestWinStreak: 0,
       highestLossStreak: 0,
@@ -117,6 +119,11 @@ function updateTeamStats(team, result, pointDifference) {
   if (!team.pointDifferenceLog) {
     team.pointDifferenceLog = [];
   }
+
+  if (typeof team.totalPointDifference !== "number")
+    team.totalPointDifference = 0;
+
+  team.totalPointDifference += pointDifference;
   team.pointDifferenceLog.push(pointDifference);
   team.pointDifferenceLog = team.pointDifferenceLog.slice(-10);
 
