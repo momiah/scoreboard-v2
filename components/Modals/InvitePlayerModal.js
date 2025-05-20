@@ -110,9 +110,20 @@ const InvitePlayerModal = ({
   };
 
   const handleSelectUser = (user) => {
-    setInviteUsers((prevUsers) => [...prevUsers, user]); // Directly add the user to the array
-    setSearchUser(""); // Clear the input after selection
-    setSuggestions([]); // Clear the suggestions
+    const totalCount =
+      leagueDetails.leagueParticipants.length +
+      inviteUsers.length +
+      leagueDetails.pendingInvites.length;
+
+    if (totalCount >= leagueDetails.maxPlayers) {
+      setErrorText("You have reached the maximum number of players");
+      return;
+    }
+
+    setInviteUsers((prevUsers) => [...prevUsers, user]);
+    setSearchUser("");
+    setSuggestions([]);
+    setErrorText(""); // Clear any previous errors
   };
 
   const handleRemoveUser = (userToRemove) => {
@@ -121,6 +132,9 @@ const InvitePlayerModal = ({
         prevUsers.filter((user) => user.userId !== userToRemove.userId) // Remove user based on userId
     );
   };
+
+  // Shows 2/8 (Example) for number of players
+  const numberOfPlayers = `${leagueDetails.leagueParticipants?.length} / ${leagueDetails.maxPlayers}`;
 
   return (
     <View>
@@ -168,6 +182,15 @@ const InvitePlayerModal = ({
                       marginTop: 10,
                     }}
                   >
+                    <Tag
+                      name={numberOfPlayers}
+                      color={"rgba(0, 0, 0, 0.7)"}
+                      iconColor={"#00A2FF"}
+                      iconSize={15}
+                      icon={"person"}
+                      iconPosition={"right"}
+                      bold
+                    />
                     <Tag name={leagueDetails.leagueType} />
                     <Tag name={leagueDetails.prizeType} />
                   </View>

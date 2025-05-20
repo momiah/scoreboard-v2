@@ -5,6 +5,7 @@ import {
   View,
   ActivityIndicator,
   Clipboard,
+  Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -17,7 +18,6 @@ import Tag from "../Tag";
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
 import { useRef } from "react";
-import moment from "moment";
 import { copyLocationAddress } from "../../helpers/copyLocationAddress";
 import { useNavigation } from "@react-navigation/native";
 
@@ -62,6 +62,14 @@ const InviteActionModal = ({
   }, [inviteId, inviteType]);
 
   const handleAcceptInvite = async () => {
+    if (inviteDetails.leagueParticipants.length >= inviteDetails.maxPlayers) {
+      console.log("League is full");
+      Alert.alert(
+        "League Full",
+        "This invite has expired as the league is full."
+      );
+      return;
+    }
     try {
       await acceptLeagueInvite(
         currentUser.userId,
@@ -98,6 +106,8 @@ const InviteActionModal = ({
   };
 
   const numberOfPlayers = `${inviteDetails?.leagueParticipants.length} / ${inviteDetails?.maxPlayers}`;
+  const leagueFull =
+    inviteDetails?.leagueParticipants.length >= inviteDetails?.maxPlayers;
 
   const location = inviteDetails?.location;
 
@@ -212,6 +222,12 @@ const InviteActionModal = ({
                 </View>
               </LeagueDetailsContainer>
 
+              {leagueFull && (
+                <LeagueFullText>
+                  This invite has expired as the league is full
+                </LeagueFullText>
+              )}
+
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
@@ -220,7 +236,10 @@ const InviteActionModal = ({
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
-                <Button onPress={handleAcceptInvite} disabled={isRead}>
+                <Button
+                  onPress={handleAcceptInvite}
+                  disabled={isRead || leagueFull}
+                >
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
               </View>
@@ -315,6 +334,14 @@ const LinkText = styled.Text({
   color: "#00A2FF",
   textDecorationLine: "underline",
   fontWeight: "bold",
+});
+
+const LeagueFullText = styled.Text({
+  color: "red",
+  fontSize: 12,
+  marginTop: 10,
+  fontWeight: "bold",
+  fontStyle: "italic",
 });
 
 export default InviteActionModal;
