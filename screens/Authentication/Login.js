@@ -94,6 +94,16 @@ export default function Login() {
         console.log("Logged in successfully");
         // setFirebaseError("");
         const user = userCredential.user;
+
+        if (!user.emailVerified) {
+          await auth.signOut(); // Sign them out immediately
+          Alert.alert(
+            "Verify Email",
+            "Please verify your email address before logging in."
+          );
+          return;
+        }
+
         const token = await user.getIdToken(); // Get the Firebase Auth ID token
         const userId = user.uid;
 
