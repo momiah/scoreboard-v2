@@ -14,38 +14,49 @@ const TeamPerformance = ({ leagueTeams }) => {
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [team, setTeam] = useState({});
 
-  const renderTeam = ({ item: team, index }) => (
-    <TableRow
-      onPress={() => {
-        setShowTeamDetails(true);
-        setTeam(team);
-      }}
-    >
-      <TableCell>
-        <Rank>
-          {index + 1}
-          {index === 0 ? "st" : index === 1 ? "nd" : index === 2 ? "rd" : "th"}
-        </Rank>
-      </TableCell>
-      <TeamCell>
-        <TeamNameCell>
-          {team.team.map((player, idx) => (
-            <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
-          ))}
-        </TeamNameCell>
-        {recentGameResult(team.resultLog)}
-      </TeamCell>
-      <TableCell>
-        <StatTitle>Win Ratio</StatTitle>
-        <Stat>{(team.numberOfWins / team.numberOfLosses).toFixed(2)}</Stat>
-      </TableCell>
-      <TableCell>
-        <StatTitle>Wins</StatTitle>
-        <Stat>{team.numberOfWins}</Stat>
-      </TableCell>
-      {/* Add more TableCell components here to display other stats */}
-    </TableRow>
-  );
+  const renderTeam = ({ item: team, index }) => {
+    const pointDifference = team.totalPointDifference || 0;
+    return (
+      <TableRow
+        onPress={() => {
+          setShowTeamDetails(true);
+          setTeam(team);
+        }}
+      >
+        <TableCell>
+          <Rank>
+            {index + 1}
+            {index === 0
+              ? "st"
+              : index === 1
+              ? "nd"
+              : index === 2
+              ? "rd"
+              : "th"}
+          </Rank>
+        </TableCell>
+        <TeamCell>
+          <TeamNameCell>
+            {team.team.map((player, idx) => (
+              <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
+            ))}
+          </TeamNameCell>
+          {recentGameResult(team.resultLog)}
+        </TeamCell>
+        <TableCell>
+          <StatTitle>PD</StatTitle>
+          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+            {pointDifference}
+          </Stat>
+        </TableCell>
+        <TableCell>
+          <StatTitle>Wins</StatTitle>
+          <Stat>{team.numberOfWins}</Stat>
+        </TableCell>
+        {/* Add more TableCell components here to display other stats */}
+      </TableRow>
+    );
+  };
 
   return (
     <TableContainer>
@@ -107,12 +118,12 @@ const TeamNameCell = styled.View({
   paddingTop: 20,
   paddingBottom: 20,
   paddingRight: 20,
-  width: 110,
+  width: 130,
   gap: 20,
 });
 
 const PlayerName = styled.Text({
-  fontSize: 15,
+  fontSize: 14,
   fontWeight: "bold",
   color: "white",
 });

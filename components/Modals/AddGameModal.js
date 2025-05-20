@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import {
   Modal,
   TextInput,
@@ -14,13 +14,10 @@ import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import styled from "styled-components/native";
 import Popup from "../popup/Popup";
-import SelectPlayer from "../scoreboard/AddGame/SelectPlayer";
 import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../helpers/generateUniqueId";
-import { calculatePlayerPerformance } from "../../helpers/calculatePlayerPerformance";
 import AddGame from "../scoreboard/AddGame/AddGame";
-import { calculateTeamPerformance } from "../../helpers/calculateTeamPerformance";
 
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -46,10 +43,6 @@ const AddGameModal = ({
   } = useContext(PopupContext);
   const {
     retrievePlayersFromLeague,
-    updatePlayers,
-    updateTeams,
-    retrieveTeams,
-    updateUsers,
     getAllUsers,
     currentUser,
     sendNotification,
@@ -222,29 +215,14 @@ const AddGameModal = ({
       await sendNotification(payload);
     }
 
-    // const playerPerformance = calculatePlayerPerformance(
-    //   newGame,
-    //   playersToUpdate,
-    //   usersToUpdate
-    // );
-
-    // await updatePlayers(playerPerformance.playersToUpdate, leagueId);
-    // await updateUsers(playerPerformance.usersToUpdate);
-
-    // const teamsToUpdate = await calculateTeamPerformance(
-    //   newGame,
-    //   retrieveTeams,
-    //   leagueId
-    // );
-
-    // await updateTeams(teamsToUpdate, leagueId);
-
     await addGame(newGame, gameId, leagueId);
     setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
     setTeam1Score("");
     setTeam2Score("");
 
-    handleShowPopup("Game added and players updated successfully!");
+    handleShowPopup(
+      "Game added! Opponents must approve for stats to be updated"
+    );
     await fetchLeagueById(leagueId);
     setLoading(false);
     console.log("Game added successfully.");
