@@ -613,6 +613,36 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const sendSupportRequest = async ({ subject, message, currentUser }) => {
+    if (!currentUser) throw new Error("No user authenticated");
+
+    const supportData = {
+      userId: currentUser.userId,
+      username: currentUser.username,
+      email: currentUser.email,
+      subject,
+      message,
+      createdAt: new Date(),
+    };
+
+    await addDoc(collection(db, "account-support"), supportData);
+  };
+
+  const sendFeedback = async ({ subject, message, currentUser }) => {
+    if (!currentUser) throw new Error("User not authenticated");
+
+    const feedbackData = {
+      userId: currentUser.userId,
+      username: currentUser.username,
+      email: currentUser.email,
+      subject,
+      message,
+      createdAt: new Date(),
+    };
+
+    await addDoc(collection(db, "feedback"), feedbackData);
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -628,6 +658,8 @@ const UserProvider = ({ children }) => {
         setIsLoggingOut,
         updateUserProfile,
         getUserById,
+        sendSupportRequest,
+        sendFeedback,
 
         //Notification
         sendNotification,

@@ -72,8 +72,8 @@ const League = () => {
     }
   };
 
-  const handleEditClick = () => {
-    navigation.navigate("EditLeague", { leagueId });
+  const handleNavigate = () => {
+    navigation.navigate("LeagueSettings", { leagueId });
   };
 
   const leaguePrompt = () => {
@@ -180,7 +180,7 @@ const League = () => {
           />
           <LeagueDetailsContainer>
             {userRole === "admin" && (
-              <EditButton onPress={handleEditClick}>
+              <EditButton onPress={handleNavigate}>
                 <Ionicons name="menu" size={25} color="white" />
               </EditButton>
             )}

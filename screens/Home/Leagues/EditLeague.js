@@ -1,4 +1,4 @@
-import React, { useContext, useState, useMemo } from "react";
+import React, { useContext, useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,9 @@ import {
   ScrollView,
   SafeAreaView,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+
 import { LeagueContext } from "../../../context/LeagueContext";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -15,15 +16,30 @@ import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import { uploadLeagueImage } from "../../../utils/UploadLeagueImageToFirebase";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
-const EditLeagueScreen = () => {
-  const { updateLeague, leagueById } = useContext(LeagueContext);
+const EditLeague = () => {
+  const route = useRoute();
+  const { leagueId } = route.params;
+
+  const { updateLeague, leagueById, fetchLeagueById } =
+    useContext(LeagueContext);
   const navigation = useNavigation();
 
-  const [selectedImage, setSelectedImage] = useState(
-    leagueById.leagueImage || null
-  );
+  const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const loadLeague = async () => {
+      if (!leagueById || leagueById.id !== leagueId) {
+        await fetchLeagueById(leagueId);
+      }
+      setSelectedImage(leagueById?.leagueImage || null);
+      setLoading(false);
+    };
+    loadLeague();
+  }, [leagueId]);
 
   // Setup React Hook Form
   const {
@@ -42,6 +58,7 @@ const EditLeagueScreen = () => {
   const formValues = watch();
 
   const hasChanges = useMemo(() => {
+    if (!leagueById) return false;
     const imageChanged = selectedImage !== leagueById.leagueImage;
     const descriptionChanged =
       formValues.leagueDescription !== leagueById.leagueDescription;
@@ -93,6 +110,22 @@ const EditLeagueScreen = () => {
       setIsSubmitting(false);
     }
   };
+
+  if (loading || !leagueById) {
+    return (
+      <SafeAreaWrapper>
+        <ScrollContainer
+          contentContainerStyle={{
+            alignItems: "center",
+            justifyContent: "center",
+            flex: 1,
+          }}
+        >
+          <ActivityIndicator size="large" color="#00A2FF" />
+        </ScrollContainer>
+      </SafeAreaWrapper>
+    );
+  }
 
   return (
     <SafeAreaWrapper>
@@ -165,7 +198,7 @@ const EditLeagueScreen = () => {
   );
 };
 
-export default EditLeagueScreen;
+export default EditLeague;
 
 // --- Styled Components ---
 // --- Styled Components (Object Style) ---

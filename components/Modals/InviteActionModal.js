@@ -37,6 +37,8 @@ const InviteActionModal = ({
   const [inviteDetails, setInviteDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
+  const [isWithdrawn, setIsWithdrawn] = useState(false);
+
   const navigation = useNavigation();
   const timeoutRef = useRef(null);
 
@@ -51,8 +53,15 @@ const InviteActionModal = ({
         try {
           const league = await fetchLeagueById(inviteId);
           setInviteDetails(league);
+
+          const withdrawn = !league?.pendingInvites?.some(
+            (u) => u.userId === currentUser.userId
+          );
+          setIsWithdrawn(withdrawn);
         } catch (error) {
           console.error("Error fetching league details:", error);
+        } finally {
+          setLoading(false);
         }
       }
     };
@@ -223,22 +232,26 @@ const InviteActionModal = ({
               </LeagueDetailsContainer>
 
               {leagueFull && (
-                <LeagueFullText>
+                <ErrorText>
                   This invite has expired as the league is full
-                </LeagueFullText>
+                </ErrorText>
+              )}
+
+              {isWithdrawn && (
+                <ErrorText>This invite has been withdrawn</ErrorText>
               )}
 
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
                   onPress={handleDeclineInvite}
-                  disabled={isRead}
+                  disabled={isRead || leagueFull || isWithdrawn}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button
                   onPress={handleAcceptInvite}
-                  disabled={isRead || leagueFull}
+                  disabled={isRead || leagueFull || isWithdrawn}
                 >
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
@@ -336,7 +349,7 @@ const LinkText = styled.Text({
   fontWeight: "bold",
 });
 
-const LeagueFullText = styled.Text({
+const ErrorText = styled.Text({
   color: "red",
   fontSize: 12,
   marginTop: 10,
