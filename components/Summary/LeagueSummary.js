@@ -42,6 +42,8 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
       {/* Participants */}
       <ParticipantCarousel
         leagueParticipants={leagueDetails?.leagueParticipants}
+        leagueAdmins={leagueDetails?.leagueAdmins}
+        leagueOwner={leagueDetails?.leagueOwner}
       />
 
       {/* League Description */}

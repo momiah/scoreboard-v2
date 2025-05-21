@@ -6,7 +6,11 @@ import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
 
-const ParticipantCarousel = ({ leagueParticipants }) => {
+const ParticipantCarousel = ({
+  leagueParticipants,
+  leagueAdmins,
+  leagueOwner,
+}) => {
   const navigation = useNavigation();
 
   return (
@@ -25,6 +29,13 @@ const ParticipantCarousel = ({ leagueParticipants }) => {
             >
               <Avatar source={CourtChampsLogo} />
               <ParticipantName>{participant.username}</ParticipantName>
+              {participant.userId === leagueOwner?.userId ? (
+                <RoleLabel style={{ color: "orange" }}>Owner</RoleLabel>
+              ) : leagueAdmins?.some(
+                  (admin) => admin.userId === participant.userId
+                ) ? (
+                <RoleLabel style={{ color: "#00A2FF" }}>Admin</RoleLabel>
+              ) : null}
             </ParticipantView>
           ))}
         </ScrollView>
@@ -53,6 +64,7 @@ const SectionTitle = styled.Text({
 
 const ParticipantView = styled.TouchableOpacity({
   alignItems: "center",
+  justifyContent: "flex-start",
   marginRight: 15,
 });
 
@@ -69,6 +81,14 @@ const ParticipantName = styled.Text({
   color: "#ffffff",
   fontSize: 12,
   textAlign: "center",
+});
+
+const RoleLabel = styled.Text({
+  fontSize: 10,
+  fontWeight: "600",
+  marginTop: 2,
+  textAlign: "center",
+  color: "#00A2FF", // default blue, overridden inline if needed
 });
 
 export default ParticipantCarousel;
