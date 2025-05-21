@@ -245,13 +245,13 @@ const InviteActionModal = ({
                 <Button
                   style={{ backgroundColor: "red" }}
                   onPress={handleDeclineInvite}
-                  disabled={isRead}
+                  disabled={isRead || leagueFull || isWithdrawn}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button
                   onPress={handleAcceptInvite}
-                  disabled={isRead || leagueFull}
+                  disabled={isRead || leagueFull || isWithdrawn}
                 >
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
