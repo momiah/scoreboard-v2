@@ -11,6 +11,8 @@ const SubHeader = ({
   onIconPress,
   actionText,
   navigationRoute,
+  paddingTop = 35,
+  paddingBottom = 20,
 }) => {
   const navigation = useNavigation();
 
@@ -21,7 +23,7 @@ const SubHeader = ({
   };
 
   return (
-    <SubHeaderContainer>
+    <SubHeaderContainer style={{ paddingTop, paddingBottom }}>
       <LeftContainer>
         <TitleText>{title}</TitleText>
         {showIcon && (
@@ -44,9 +46,6 @@ const SubHeaderContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  // paddingHorizontal: 30,
-  paddingTop: 35,
-  paddingBottom: 20,
 });
 
 const LeftContainer = styled.View({

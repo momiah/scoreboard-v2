@@ -17,19 +17,7 @@ export const prizeTypes = {
   MEDAL: "Medal",
   CASH_PRIZE: "Cash Prize",
 };
-const currencyTypes = ["GBP", "USD", "EUR", "INR"];
-const locations = [
-  "Milton Keynes",
-  "London",
-  "Birmingham",
-  "Manchester",
-  "York",
-  "Nottingham",
-  "Bath",
-  "Glasgow",
-  "Edinburgh",
-  "Leeds",
-];
+export const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 export const daysOfWeek = [
   "Monday",
   "Tuesday",

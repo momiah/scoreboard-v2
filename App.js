@@ -6,32 +6,39 @@ import { PopupProvider } from "./context/PopupContext";
 import { LeagueProvider } from "./context/LeagueContext";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 import Tabs from "./navigation/tabs";
 
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <PopupProvider>
-      <UserProvider>
-        <LeagueProvider>
-          <GameProvider>
-            <NavigationContainer>
-              <SafeAreaView
-                style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
-              >
-                <Stack.Navigator
-                  screenOptions={{
-                    headerShown: false,
-                  }}
-                >
-                  <Stack.Screen name="Tabs" component={Tabs} />
-                </Stack.Navigator>
-              </SafeAreaView>
-            </NavigationContainer>
-          </GameProvider>
-        </LeagueProvider>
-      </UserProvider>
-    </PopupProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PopupProvider>
+        <UserProvider>
+          <LeagueProvider>
+            <GameProvider>
+              <NavigationContainer>
+                <BottomSheetModalProvider>
+                  <SafeAreaView
+                    style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
+                  >
+                    <Stack.Navigator
+                      screenOptions={{
+                        headerShown: false,
+                      }}
+                    >
+                      <Stack.Screen name="Tabs" component={Tabs} />
+                    </Stack.Navigator>
+                  </SafeAreaView>
+                </BottomSheetModalProvider>
+              </NavigationContainer>
+            </GameProvider>
+          </LeagueProvider>
+        </UserProvider>
+      </PopupProvider>
+    </GestureHandlerRootView>
   );
 }

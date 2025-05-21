@@ -115,6 +115,15 @@ const JoinRequestModal = ({
     }
   };
 
+  const navigateToProfile = () => {
+    if (senderDetails) {
+      onClose();
+      navigation.navigate("UserProfile", {
+        userId: senderDetails.userId,
+      });
+    }
+  };
+
   const handleDeclineJoinRequest = async () => {
     try {
       await declineLeagueJoinRequest(
@@ -133,18 +142,10 @@ const JoinRequestModal = ({
   const renderPlayer = useCallback(
     ({ item: player }) => {
       const playerXp = player?.profileDetail.XP;
-      const pointDifference = player?.profileDetail.totalPointDifference || 0;
       const rankLevel = findRankIndex(playerXp) + 1;
 
       return (
-        <PlayerRow
-          key={player.userId}
-          onPress={() => {
-            navigation.navigate("UserProfile", {
-              userId: player.userId,
-            });
-          }}
-        >
+        <PlayerRow key={player.userId} onPress={navigateToProfile}>
           <Avatar
             source={
               player?.profileImage
