@@ -37,6 +37,12 @@ const ProfileMenu = ({ navigation }) => {
 
   const menuOptions = [
     { label: "Edit Profile", icon: "create-outline", action: "EditProfile" },
+    { label: "Support", icon: "help-circle-outline", action: "AccountSupport" },
+    {
+      label: "Feedback",
+      icon: "chatbubble-ellipses-outline",
+      action: "UserFeedback",
+    },
     { label: "Log out", icon: "log-out-outline", action: "logout" },
   ];
 

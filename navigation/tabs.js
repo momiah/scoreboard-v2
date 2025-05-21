@@ -17,6 +17,8 @@ import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Leagues/PendingInvites";
 import LeagueSettings from "../screens/Home/Leagues/LeagueSettings";
 import AssignAdmin from "../screens/Home/Leagues/AssignAdmin";
+import AccountSupport from "../screens/Profile/AccountSupport";
+import UserFeedback from "../screens/Profile/UserFeedback";
 import { UserContext } from "../context/UserContext";
 import { View } from "react-native";
 
@@ -38,6 +40,9 @@ const HomeStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="UserFeedback" component={UserFeedback} />
+      <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
+      <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
 
       <Stack.Screen name="Login" component={Login} />
@@ -60,6 +65,8 @@ const ProfileStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
+      <Stack.Screen name="UserFeedback" component={UserFeedback} />
+      <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
@@ -79,6 +86,9 @@ const NotificationsStack = () => {
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
+      <Stack.Screen name="UserFeedback" component={UserFeedback} />
+      <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
