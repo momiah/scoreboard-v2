@@ -45,9 +45,12 @@ const PendingInvites = () => {
   const renderItem = ({ item }) => (
     <Row onPress={() => goToProfile(item.userId)}>
       <Username>{item.username}</Username>
-      <TouchableOpacity onPress={() => handleRemove(item.userId)}>
+      <WithdrawButton onPress={() => handleWithdraw(item.id)}>
+        <WithdrawText>Withdraw</WithdrawText>
+      </WithdrawButton>
+      {/* <TouchableOpacity onPress={() => handleRemove(item.userId)}>
         <Ionicons name="close-circle-outline" size={20} color="red" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </Row>
   );
 
@@ -103,7 +106,20 @@ const Row = styled.TouchableOpacity({
 
 const Username = styled.Text({
   color: "white",
-  fontSize: 16,
+  fontSize: 14,
+});
+
+const WithdrawButton = styled.TouchableOpacity({
+  backgroundColor: "#e53935",
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  borderRadius: 6,
+});
+
+const WithdrawText = styled.Text({
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 12,
 });
 
 const NoPendingInvites = styled.Text({

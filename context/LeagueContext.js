@@ -687,6 +687,47 @@ const LeagueProvider = ({ children }) => {
     await updateDoc(leagueRef, { leagueAdmins: updatedAdmins });
   };
 
+  const fetchUserPendingRequests = async (userId) => {
+    try {
+      const leaguesRef = collection(db, "leagues");
+      const snapshot = await getDocs(leaguesRef);
+
+      const result = snapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter(
+          (league) =>
+            Array.isArray(league.pendingRequests) &&
+            league.pendingRequests.some((p) => p.userId === userId)
+        );
+
+      return result;
+    } catch (err) {
+      console.error("Failed to fetch pending requests", err);
+      return [];
+    }
+  };
+
+  // Withdraw user request from a league
+  const withdrawJoinRequest = async (leagueId, userId) => {
+    try {
+      const leagueRef = doc(db, "leagues", leagueId);
+      const leagueSnap = await getDoc(leagueRef);
+
+      if (!leagueSnap.exists()) return;
+
+      const leagueData = leagueSnap.data();
+      const pendingRequests = leagueData.pendingRequests || [];
+
+      const updatedPending = pendingRequests.filter(
+        (req) => req.userId !== userId
+      );
+
+      await updateDoc(leagueRef, { pendingRequests: updatedPending });
+    } catch (error) {
+      console.error("Error withdrawing join request:", error);
+    }
+  };
+
   // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
@@ -762,6 +803,8 @@ const LeagueProvider = ({ children }) => {
         removePendingInvite,
         assignLeagueAdmin,
         revokeLeagueAdmin,
+        fetchUserPendingRequests,
+        withdrawJoinRequest,
 
         // League State Management
         leagues,

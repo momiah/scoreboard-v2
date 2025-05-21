@@ -43,6 +43,11 @@ const ProfileMenu = ({ navigation }) => {
       icon: "chatbubble-ellipses-outline",
       action: "UserFeedback",
     },
+    {
+      label: "Pending Requests",
+      icon: "people-outline",
+      action: "PendingRequests",
+    },
     { label: "Log out", icon: "log-out-outline", action: "logout" },
   ];
 

@@ -39,7 +39,8 @@ const JoinRequestModal = ({
   const { fetchLeagueById, acceptLeagueJoinRequest, declineLeagueJoinRequest } =
     useContext(LeagueContext);
   const { findRankIndex } = useContext(GameContext);
-  const { currentUser, getUserById } = useContext(UserContext);
+  const { currentUser, getUserById, readNotification } =
+    useContext(UserContext);
   const [senderDetails, setSenderDetails] = useState(null);
   const [requestDetails, setRequestDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,13 @@ const JoinRequestModal = ({
   const navigateTo = (leagueId) => {
     navigation.navigate("League", { leagueId });
   };
+
+  const leagueFull =
+    requestDetails?.leagueParticipants.length >= requestDetails?.maxPlayers;
+
+  const requestWithdrawn = !requestDetails?.pendingRequests?.some(
+    (req) => req.userId === senderId
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -68,6 +76,21 @@ const JoinRequestModal = ({
     fetchDetails();
     setLoading(false);
   }, [requestId, requestType]);
+
+  useEffect(() => {
+    if (!requestDetails || isRead) return;
+
+    if (leagueFull || requestWithdrawn) {
+      readNotification(notificationId, currentUser.userId);
+    }
+  }, [
+    requestDetails,
+    isRead,
+    leagueFull,
+    requestWithdrawn,
+    notificationId,
+    currentUser.userId,
+  ]);
 
   const handleAcceptJoinRequest = async () => {
     try {
@@ -147,9 +170,6 @@ const JoinRequestModal = ({
     [findRankIndex]
   );
 
-  const leagueFull =
-    requestDetails?.leagueParticipants.length >= requestDetails?.maxPlayers;
-
   return (
     <Modal transparent visible={visible} animationType="slide">
       <ModalContainer>
@@ -188,6 +208,12 @@ const JoinRequestModal = ({
                   index: 0,
                 })}
 
+              {requestWithdrawn && (
+                <LeagueFullText>
+                  Request to join league has been withdrawn
+                </LeagueFullText>
+              )}
+
               {leagueFull && (
                 <LeagueFullText>
                   This invite has expired as the league is full
@@ -197,14 +223,14 @@ const JoinRequestModal = ({
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
-                  disabled={isRead}
+                  disabled={isRead || leagueFull || requestWithdrawn}
                   onPress={handleDeclineJoinRequest}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button
                   onPress={handleAcceptJoinRequest}
-                  disabled={isRead || leagueFull}
+                  disabled={isRead || leagueFull || requestWithdrawn}
                 >
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
