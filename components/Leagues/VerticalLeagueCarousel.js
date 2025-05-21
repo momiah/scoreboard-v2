@@ -10,9 +10,8 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
 import { ccDefaultImage } from "../../mockImages/index";
 
-const VerticalLeagueCarousel = ({ navigationRoute }) => {
+const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
   const navigation = useNavigation();
-  const { leagues, fetchLeagues } = useContext(LeagueContext);
 
   const publicLeagues = leagues.filter((league) => league.privacy === "Public");
 
@@ -115,7 +114,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
 };
 
 const CarouselContainer = styled.ScrollView({
-  marginBottom: 20,
+  // marginBottom: 20,
 });
 
 const CarouselItem = styled(TouchableOpacity)({
