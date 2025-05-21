@@ -18,9 +18,9 @@ const LeaguSettings = () => {
       action: "PendingInvites",
     },
     {
-      label: "Pending Requests",
+      label: "Assign Admin",
       icon: "people-outline",
-      action: "PendingRequests",
+      action: "AssignAdmin",
     },
     { label: "Support", icon: "help-circle-outline", action: "LeagueSupport" },
   ];

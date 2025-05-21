@@ -16,6 +16,7 @@ import Signup from "../screens/Authentication/Signup";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Leagues/PendingInvites";
 import LeagueSettings from "../screens/Home/Leagues/LeagueSettings";
+import AssignAdmin from "../screens/Home/Leagues/AssignAdmin";
 import { UserContext } from "../context/UserContext";
 import { View } from "react-native";
 
@@ -34,6 +35,7 @@ const HomeStack = () => {
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
+      <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
@@ -55,6 +57,7 @@ const ProfileStack = () => {
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
+      <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="Login" component={Login} />
@@ -74,6 +77,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
+      <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />

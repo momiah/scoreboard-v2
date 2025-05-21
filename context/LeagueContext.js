@@ -659,6 +659,34 @@ const LeagueProvider = ({ children }) => {
     await updateDoc(leagueRef, { pendingInvites: updatedPending });
   };
 
+  const assignLeagueAdmin = async (leagueId, user) => {
+    const leagueRef = doc(db, "leagues", leagueId);
+    const leagueSnap = await getDoc(leagueRef);
+    const leagueData = leagueSnap.data();
+
+    const updatedAdmins = [
+      ...(leagueData.leagueAdmins || []),
+      {
+        userId: user.userId,
+        userName: user.username,
+      },
+    ];
+
+    await updateDoc(leagueRef, { leagueAdmins: updatedAdmins });
+  };
+
+  const revokeLeagueAdmin = async (leagueId, userId) => {
+    const leagueRef = doc(db, "leagues", leagueId);
+    const leagueSnap = await getDoc(leagueRef);
+    const leagueData = leagueSnap.data();
+
+    const updatedAdmins = (leagueData.leagueAdmins || []).filter(
+      (admin) => admin.userId !== userId
+    );
+
+    await updateDoc(leagueRef, { leagueAdmins: updatedAdmins });
+  };
+
   // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
@@ -732,6 +760,8 @@ const LeagueProvider = ({ children }) => {
         updatePendingInvites,
         getPendingInviteUsers,
         removePendingInvite,
+        assignLeagueAdmin,
+        revokeLeagueAdmin,
 
         // League State Management
         leagues,
