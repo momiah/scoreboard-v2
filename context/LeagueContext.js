@@ -634,6 +634,31 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const getPendingInviteUsers = async (league) => {
+    const pendingUserData = [];
+
+    for (const invite of league.pendingInvites || []) {
+      const userDoc = await getDoc(doc(db, "users", invite.userId));
+      if (userDoc.exists()) {
+        pendingUserData.push(userDoc.data());
+      }
+    }
+
+    return pendingUserData;
+  };
+
+  const removePendingInvite = async (leagueId, userId) => {
+    const leagueRef = doc(db, "leagues", leagueId);
+    const leagueSnap = await getDoc(leagueRef);
+    const leagueData = leagueSnap.data();
+
+    const updatedPending = leagueData.pendingInvites.filter(
+      (invite) => invite.userId !== userId
+    );
+
+    await updateDoc(leagueRef, { pendingInvites: updatedPending });
+  };
+
   // Mocks
   const generateNewLeagueParticipants = async (number, leagueId) => {
     const newPlayers = Array.from({ length: number }, (_, i) => {
@@ -705,6 +730,8 @@ const LeagueProvider = ({ children }) => {
         getCourts,
         addCourt,
         updatePendingInvites,
+        getPendingInviteUsers,
+        removePendingInvite,
 
         // League State Management
         leagues,
