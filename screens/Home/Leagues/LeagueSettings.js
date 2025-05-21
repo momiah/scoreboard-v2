@@ -22,7 +22,7 @@ const LeaguSettings = () => {
       icon: "people-outline",
       action: "AssignAdmin",
     },
-    { label: "Support", icon: "help-circle-outline", action: "LeagueSupport" },
+    // { label: "Support", icon: "help-circle-outline", action: "LeagueSupport" },
   ];
 
   const handlePress = (action) => {
