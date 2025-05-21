@@ -14,6 +14,8 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
   const { leagues, fetchLeagues } = useContext(LeagueContext);
 
+  const publicLeagues = leagues.filter((league) => league.privacy === "Public");
+
   // Memoize navigation handler to prevent re-renders
   const navigateTo = useCallback(
     (leagueId) => {
@@ -103,7 +105,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
 
   return (
     <FlatList
-      data={leagues}
+      data={publicLeagues}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderLeagueItem}
       showsVerticalScrollIndicator={false}

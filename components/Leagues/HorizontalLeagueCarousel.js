@@ -29,6 +29,9 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const itemWidth = width - 80;
   const spacing = 20;
 
+  // find the leagues that have privacy set to "Public"
+  const publicLeagues = leagues.filter((league) => league.privacy === "Public");
+
   return (
     <CarouselContainer
       horizontal
@@ -38,7 +41,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
       snapToAlignment="start"
       decelerationRate="fast"
     >
-      {leagues.map((league, index) => {
+      {publicLeagues.map((league, index) => {
         const leagueStatus = calculateLeagueStatus(league);
         const leagueParticipantsLength = league.leagueParticipants.length;
         const maxPlayers = league.maxPlayers;

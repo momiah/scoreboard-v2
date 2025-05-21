@@ -33,7 +33,7 @@ const InviteActionModal = ({
 }) => {
   const { fetchLeagueById, acceptLeagueInvite, declineLeagueInvite } =
     useContext(LeagueContext);
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, readNotification } = useContext(UserContext);
   const [inviteDetails, setInviteDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
@@ -45,6 +45,11 @@ const InviteActionModal = ({
   const navigateTo = (leagueId) => {
     navigation.navigate("League", { leagueId });
   };
+
+  const leagueFull =
+    inviteDetails?.leagueParticipants.length >= inviteDetails?.maxPlayers;
+
+  const location = inviteDetails?.location;
 
   useEffect(() => {
     setLoading(true);
@@ -69,6 +74,21 @@ const InviteActionModal = ({
     fetchDetails();
     setLoading(false);
   }, [inviteId, inviteType]);
+
+  useEffect(() => {
+    if (!inviteDetails || isRead) return;
+
+    if (leagueFull || isWithdrawn) {
+      readNotification(notificationId, currentUser.userId);
+    }
+  }, [
+    inviteDetails,
+    isRead,
+    leagueFull,
+    isWithdrawn,
+    notificationId,
+    currentUser.userId,
+  ]);
 
   const handleAcceptInvite = async () => {
     if (inviteDetails.leagueParticipants.length >= inviteDetails.maxPlayers) {
@@ -115,10 +135,6 @@ const InviteActionModal = ({
   };
 
   const numberOfPlayers = `${inviteDetails?.leagueParticipants.length} / ${inviteDetails?.maxPlayers}`;
-  const leagueFull =
-    inviteDetails?.leagueParticipants.length >= inviteDetails?.maxPlayers;
-
-  const location = inviteDetails?.location;
 
   return (
     <Modal transparent visible={visible} animationType="slide">

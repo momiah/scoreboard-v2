@@ -19,6 +19,7 @@ import LeagueSettings from "../screens/Home/Leagues/LeagueSettings";
 import AssignAdmin from "../screens/Home/Leagues/AssignAdmin";
 import AccountSupport from "../screens/Profile/AccountSupport";
 import UserFeedback from "../screens/Profile/UserFeedback";
+import PendingRequests from "../screens/Profile/PendingRequests";
 import { UserContext } from "../context/UserContext";
 import { View } from "react-native";
 
@@ -43,6 +44,7 @@ const HomeStack = () => {
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
 
       <Stack.Screen name="Login" component={Login} />
@@ -67,6 +69,7 @@ const ProfileStack = () => {
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
@@ -89,6 +92,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
