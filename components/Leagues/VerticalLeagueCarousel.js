@@ -32,6 +32,7 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
       const maxPlayers = league.maxPlayers;
 
       const location = `${league.location.city}, ${league.location.countryCode}`;
+      const numberOfPlayers = `${leagueParticipantsLength} / ${maxPlayers}`;
 
       return (
         <CarouselContainer>
@@ -56,15 +57,15 @@ const VerticalLeagueCarousel = ({ navigationRoute }) => {
                   </TagContainer>
 
                   <NumberOfPlayers>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 12,
-                      }}
-                    >
-                      {leagueParticipantsLength} / {maxPlayers}
-                    </Text>
-                    <Ionicons name="person" size={15} color={"#00A2FF"} />
+                    <Tag
+                      name={numberOfPlayers}
+                      color="rgba(0, 0, 0, 0.7)"
+                      iconColor="#00A2FF"
+                      iconSize={15}
+                      icon="person"
+                      iconPosition="right"
+                      bold
+                    />
                   </NumberOfPlayers>
 
                   <LeagueName>{league.leagueName}</LeagueName>
@@ -189,7 +190,7 @@ const TagContainer = styled.View({
 });
 
 const NumberOfPlayers = styled.View({
-  paddingBottom: 10,
+  paddingBottom: 5,
   borderRadius: 5,
   flexDirection: "row",
   alignItems: "center",

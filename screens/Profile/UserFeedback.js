@@ -13,8 +13,6 @@ import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
-import { addDoc, collection } from "firebase/firestore";
-import { db } from "../../services/firebase.config";
 
 const UserFeedback = () => {
   const { currentUser, sendFeedback } = useContext(UserContext);
@@ -59,7 +57,7 @@ const UserFeedback = () => {
         <Title>Feedback</Title>
         <IntroText>
           We're always looking to improve CourtChamps! If you have any feedback
-          or ideas, feel free to drop us a message!
+          or find any bugs, feel free to drop us a message!
         </IntroText>
 
         <Label>Subject</Label>
