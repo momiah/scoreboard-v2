@@ -115,6 +115,7 @@ const NotificationRow = ({
           iconSize={15}
           icon={responseIcon}
           iconPosition="right"
+          width="25%"
           bold
         />
       )}

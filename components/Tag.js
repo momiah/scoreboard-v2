@@ -12,6 +12,7 @@ const Tag = ({
   iconSize = 12,
   bold,
   iconPosition,
+  width = undefined,
 }) => {
   const tagName = name ? name.toUpperCase() : "";
   const TagComponent = onPress ? InteractiveTagContainer : TagContainer;
@@ -22,6 +23,7 @@ const Tag = ({
       backgroundColor={color}
       onPress={onPress}
       flexDirection={flexDirection}
+      style={{ width: width }}
     >
       {icon && (
         <TagIcon
@@ -36,24 +38,28 @@ const Tag = ({
   );
 };
 
-const TagContainer = styled.View(({ backgroundColor, flexDirection }) => ({
-  flexDirection: flexDirection,
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: 6,
-  borderRadius: 6,
-  // margin: 4,
-  backgroundColor,
-  // alignSelf: "flex-start",
-}));
-
-const InteractiveTagContainer = styled.TouchableOpacity(
-  ({ backgroundColor, flexDirection }) => ({
+const TagContainer = styled.View(
+  ({ backgroundColor, flexDirection, width }) => ({
     flexDirection: flexDirection,
     justifyContent: "space-between",
     alignItems: "center",
     padding: 6,
     borderRadius: 6,
+    width: width,
+    // margin: 4,
+    backgroundColor,
+    // alignSelf: "flex-start",
+  })
+);
+
+const InteractiveTagContainer = styled.TouchableOpacity(
+  ({ backgroundColor, flexDirection, width }) => ({
+    flexDirection: flexDirection,
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 6,
+    borderRadius: 6,
+    width: width,
     // margin: 4,
     backgroundColor,
     // alignSelf: "flex-start",
