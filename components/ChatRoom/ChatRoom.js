@@ -61,13 +61,6 @@ const ChatRoom = ({ leagueId, userRole }) => {
     return () => unsubscribe();
   }, [leagueId]);
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-    return () => clearTimeout(timeout);
-  }, [messages]);
-
   const handleSend = async () => {
     if (!inputText.trim()) return;
 
@@ -84,8 +77,8 @@ const ChatRoom = ({ leagueId, userRole }) => {
     await sendChatMessage(newMessage, leagueId);
     setInputText("");
     Keyboard.dismiss();
+    flatListRef.current?.scrollToEnd({ animated: false });
   };
-
   const formatDate = (date) => {
     const today = new Date();
     const isToday = date.toDateString() === today.toDateString();
@@ -186,6 +179,12 @@ const ChatRoom = ({ leagueId, userRole }) => {
           renderItem={renderItem}
           onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
           onLayout={() => flatListRef.current?.scrollToEnd()}
+          initialScrollIndex={messages.length - 1}
+          getItemLayout={(data, index) => ({
+            length: 80,
+            offset: 80 * index,
+            index,
+          })}
         />
         <InputBar>
           <MessageInput
