@@ -20,6 +20,8 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { uploadProfileImage } from "../../utils/ProfileImageUploadToFirebase";
 import { loadCountries, loadCities } from "../../utils/locationData";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
+import { PopupContext } from "../../context/PopupContext";
+import Popup from "../../components/popup/Popup";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
@@ -35,6 +37,21 @@ const EditProfile = ({ navigation }) => {
   const [cities, setCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingCountries, setLoadingCountries] = useState(false);
+
+  const {
+    handleShowPopup,
+    setPopupMessage,
+    popupMessage,
+    setShowPopup,
+    showPopup,
+  } = useContext(PopupContext);
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setPopupMessage("");
+
+    navigation.goBack();
+  };
 
   const [formData, setFormData] = useState({
     location: {
@@ -153,8 +170,8 @@ const EditProfile = ({ navigation }) => {
         },
       });
 
-      Alert.alert("Success", "Profile updated!");
-      navigation.goBack();
+      // Alert.alert("Success", "Profile updated!");
+      handleShowPopup("Profile updated!");
     } catch (err) {
       console.error("Update failed:", err);
       Alert.alert("Error", err.message || "Something went wrong.");
@@ -182,12 +199,14 @@ const EditProfile = ({ navigation }) => {
 
   return (
     <Container>
+      <Popup
+        visible={showPopup}
+        message={popupMessage}
+        onClose={handleClosePopup}
+        type="success"
+      />
       <Header>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
         <HeaderTitle>Edit Profile</HeaderTitle>
-        <View style={{ width: 24 }} />
       </Header>
 
       <FlatList
@@ -419,7 +438,7 @@ const ConfirmButton = styled.TouchableOpacity({
 
 const Header = styled.View({
   flexDirection: "row",
-  justifyContent: "space-between",
+  justifyContent: "center",
   alignItems: "center",
   marginBottom: 30,
 });

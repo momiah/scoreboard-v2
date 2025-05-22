@@ -590,15 +590,6 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  // const onSend = useCallback(
-  //   async (newMessages = []) => {
-  //     const msg = newMessages[0];
-
-  //     await sendChatMessage(msg, leagueId);
-  //   },
-  //   [leagueId, currentUser]
-  // );
-
   const declineGame = async (
     gameId,
     leagueId,
