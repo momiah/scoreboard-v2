@@ -22,6 +22,10 @@ import AddLeagueModel from "../../components/Modals/AddLeagueModal";
 import { LeagueContext } from "../../context/LeagueContext";
 import { Switch } from "react-native";
 import { UserContext } from "../../context/UserContext";
+import {
+  HorizontalLeagueCarouselSkeleton,
+  TopPlayersSkeleton,
+} from "../../components/Skeletons/HomeSkeleton";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -81,11 +85,6 @@ const Home = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
-      {loading && (
-        <LoadingContainer>
-          <ActivityIndicator size="large" color="#00A2FF" />
-        </LoadingContainer>
-      )}
       <HomeContainer
         refreshControl={
           <RefreshControl
@@ -125,14 +124,24 @@ const Home = () => {
           navigationRoute={"Leagues"}
         />
 
-        <HorizontalLeagueCarousel navigationRoute={"League"} />
+        {loading ? (
+          <HorizontalLeagueCarouselSkeleton />
+        ) : (
+          <HorizontalLeagueCarousel navigationRoute={"League"} />
+        )}
 
         <SubHeader
           title="Top Players"
           actionText="See All Players"
           navigationRoute={"AllPlayers"}
         />
-        <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
+        {loading ? (
+          <TopPlayersSkeleton topPlayers={topPlayers} />
+        ) : (
+          <>
+            <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
+          </>
+        )}
 
         {/* <SubHeader
           title="Tournaments"
