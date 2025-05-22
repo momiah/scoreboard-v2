@@ -28,6 +28,7 @@ import { ccDefaultImage } from "../../../mockImages/index";
 import moment from "moment";
 import { copyLocationAddress } from "../../../helpers/copyLocationAddress";
 import { formatDate } from "../../../helpers/formatDate";
+import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 
 const League = () => {
   const route = useRoute();
@@ -91,6 +92,7 @@ const League = () => {
   };
 
   const tabs = [
+    { component: "Chat Room" },
     { component: "Summary" },
     { component: "Scoreboard" },
     { component: "Player Performance" },
@@ -120,6 +122,8 @@ const League = () => {
 
   const renderComponent = () => {
     switch (selectedTab) {
+      case "Chat Room":
+        return <ChatRoom leagueId={leagueId} />;
       case "Summary":
         return (
           <LeagueSummary

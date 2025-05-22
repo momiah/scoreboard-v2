@@ -162,6 +162,18 @@ const LeagueProvider = ({ children }) => {
         ...leagueData,
       });
 
+      const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
+      await setDoc(messageRef, {
+        _id: "welcome",
+        text: `Welcome to the chat for ${leagueData.leagueName}!`,
+        createdAt: new Date(),
+        user: {
+          _id: "system",
+          name: "CourtChamps",
+          avatar: "https://i.imgur.com/5RJzV6W.png", // optional system avatar
+        },
+      });
+
       fetchLeagues(); // Re-fetch leagues to update the list
       setLeagueIdForDetail(leagueId);
 
@@ -559,6 +571,34 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const sendChatMessage = async (message, leagueId) => {
+    try {
+      const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
+      const messageToSend = {
+        _id: messageRef.id,
+        text: message.text,
+        createdAt: message.createdAt,
+        user: {
+          _id: message.user._id,
+          name: message.user.name,
+          avatar: message.user.avatar || ccDefaultImage,
+        },
+      };
+      await setDoc(messageRef, messageToSend);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  // const onSend = useCallback(
+  //   async (newMessages = []) => {
+  //     const msg = newMessages[0];
+
+  //     await sendChatMessage(msg, leagueId);
+  //   },
+  //   [leagueId, currentUser]
+  // );
+
   const declineGame = async (
     gameId,
     leagueId,
@@ -805,6 +845,7 @@ const LeagueProvider = ({ children }) => {
         revokeLeagueAdmin,
         fetchUserPendingRequests,
         withdrawJoinRequest,
+        sendChatMessage,
 
         // League State Management
         leagues,
