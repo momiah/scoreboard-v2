@@ -13,7 +13,9 @@ import {
   Platform,
   Keyboard,
   View,
+  Text,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 import {
@@ -29,13 +31,12 @@ import { db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 
-const ChatRoom = () => {
+const ChatRoom = ({ leagueId, userRole }) => {
   const { currentUser } = useContext(UserContext);
-  const { leagueById, sendChatMessage } = useContext(LeagueContext);
+  const { sendChatMessage } = useContext(LeagueContext);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef(null);
-  const leagueId = leagueById?.id;
 
   useEffect(() => {
     if (!leagueId) return;
@@ -98,6 +99,35 @@ const ChatRoom = () => {
           year: "numeric",
         });
   };
+
+  const restrictedRoles = [
+    "hide",
+    "user",
+    "invitationPending",
+    "requestPending",
+  ];
+
+  if (restrictedRoles.includes(userRole)) {
+    return (
+      <BlurView
+        intensity={10}
+        tint="dark"
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <Text
+          style={{
+            color: "#aaa",
+            fontSize: 14,
+            textAlign: "center",
+            padding: 20,
+            fontStyle: "italic",
+          }}
+        >
+          Only participants of the league can view this chat 📝
+        </Text>
+      </BlurView>
+    );
+  }
 
   const renderItem = ({ item, index }) => {
     const isCurrentUser = item.user._id === currentUser.userId;
@@ -184,8 +214,8 @@ const AvatarImage = styled.Image({
   width: 28,
   height: 28,
   borderRadius: 14,
-  marginBottom: 4,
-  backgroundColor: "#444",
+  marginBottom: 5,
+  backgroundColor: " rgb(5, 23, 45)",
 });
 
 const BubbleContainer = styled.View(({ isCurrentUser }) => ({

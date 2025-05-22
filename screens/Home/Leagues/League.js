@@ -123,7 +123,7 @@ const League = () => {
   const renderComponent = () => {
     switch (selectedTab) {
       case "Chat Room":
-        return <ChatRoom leagueId={leagueId} />;
+        return <ChatRoom leagueId={leagueId} userRole={userRole} />;
       case "Summary":
         return (
           <LeagueSummary

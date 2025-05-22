@@ -27,6 +27,8 @@ import { locationSchema } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
+const ccImageEndpoint =
+  "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
 
 const LeagueContext = createContext();
 
@@ -170,7 +172,7 @@ const LeagueProvider = ({ children }) => {
         user: {
           _id: "system",
           name: "CourtChamps",
-          avatar: "https://i.imgur.com/5RJzV6W.png", // optional system avatar
+          avatar: ccImageEndpoint, // optional system avatar
         },
       });
 
