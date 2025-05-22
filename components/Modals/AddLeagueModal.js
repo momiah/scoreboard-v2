@@ -45,7 +45,7 @@ const { width: screenWidth } = Dimensions.get("window");
 // Main component
 const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   // Context
-  const { addLeagues, getCourts, addCourt } = useContext(LeagueContext);
+  const { addLeague, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
 
   // State
@@ -188,7 +188,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         leagueOwner: adminData.leagueOwner,
       };
 
-      await addLeagues(newLeague);
+      await addLeague(newLeague);
       setLeagueCreationLoading(false);
       setModalVisible(false);
     } catch (err) {

@@ -16,6 +16,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
+import VerticalLeagueCarouselSkeleton from "../../../components/Skeletons/LeaguesSkeleton";
 
 const Leagues = () => {
   const navigation = useNavigation();
@@ -25,7 +26,7 @@ const Leagues = () => {
   const [isFiltering, setIsFiltering] = useState(false);
 
   const { currentUser } = useContext(UserContext);
-  const { leagues } = useContext(LeagueContext);
+  const { fetchLeagues } = useContext(LeagueContext);
 
   // Initial form values with the user's country
   const initialFilterValues = {
@@ -48,6 +49,7 @@ const Leagues = () => {
 
   // Initialize leagues only on first load with country filter only
   useEffect(() => {
+    const leagues = fetchLeagues();
     // Only filter by country on initial load
     const publicLeagues = leagues.filter(
       (league) =>
@@ -56,7 +58,7 @@ const Leagues = () => {
           league.location.country === appliedFilters.country)
     );
     setFilteredLeagues(publicLeagues);
-  }, [leagues]);
+  }, [currentUser]);
 
   const handleApplyFilters = () => {
     const currentValues = getValues();
@@ -137,9 +139,7 @@ const Leagues = () => {
       </View>
 
       {isFiltering ? (
-        <LoadingWrapper>
-          <ActivityIndicator size="large" color="#00A2FF" />
-        </LoadingWrapper>
+        <VerticalLeagueCarouselSkeleton leagues={filteredLeagues} />
       ) : filteredLeagues.length > 0 ? (
         <VerticalLeagueCarousel
           navigationRoute={"League"}

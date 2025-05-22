@@ -9,6 +9,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LeagueContext } from "../../context/LeagueContext";
 import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
 import { ccDefaultImage } from "../../mockImages/index";
+import VerticalLeagueCarouselSkeleton from "../Skeletons/LeaguesSkeleton";
 
 const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
   const navigation = useNavigation();

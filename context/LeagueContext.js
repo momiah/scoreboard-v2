@@ -46,8 +46,25 @@ const LeagueProvider = ({ children }) => {
 
   // Fetch leagues data based on mock or real data
   useEffect(() => {
-    fetchLeagues();
+    fetchLatestLeagues();
   }, []);
+
+  const fetchLatestLeagues = async () => {
+    try {
+      const leaguesRef = collection(db, "leagues");
+      const q = query(leaguesRef, orderBy("createdAt", "desc"), limit(10));
+      const querySnapshot = await getDocs(q);
+
+      const latestLeagues = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setLeagues(latestLeagues);
+    } catch (error) {
+      console.error("Error fetching latest leagues:", error);
+    }
+  };
 
   const fetchLeagues = async () => {
     try {
@@ -155,14 +172,14 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const addLeagues = async (leagueData) => {
+  const addLeague = async (leagueData) => {
     const leagueId = generateLeagueId(leagueData);
     try {
       await setDoc(doc(db, "leagues", leagueId), {
         ...leagueData,
       });
 
-      fetchLeagues(); // Re-fetch leagues to update the list
+      fetchLatestLeagues(); // Re-fetch leagues to update the list
       setLeagueIdForDetail(leagueId);
 
       // Reset the league detail state after a short delay
@@ -792,9 +809,10 @@ const LeagueProvider = ({ children }) => {
         deletePlaytime,
 
         // League Data Management
-        addLeagues,
+        addLeague,
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
+        fetchLatestLeagues,
         fetchLeagueById,
         getCourts,
         addCourt,
