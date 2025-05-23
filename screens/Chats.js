@@ -63,6 +63,11 @@ const Chats = () => {
   return (
     <Container>
       <Header>Chats</Header>
+      {chatSummaries.length === 0 && (
+        <LoadingContainer>
+          <Header>No chats available</Header>
+        </LoadingContainer>
+      )}
       <FlatList
         data={[...chatSummaries].sort(
           (a, b) => b.createdAt?.seconds - a.createdAt?.seconds

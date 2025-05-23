@@ -95,7 +95,7 @@ const GameApprovalModal = ({
       await approveGame(
         gameDetails.gameId,
         leagueDetails.id,
-        currentUser.userId,
+        currentUser?.userId,
         senderId,
         notificationId,
         playersToUpdate,
@@ -114,7 +114,7 @@ const GameApprovalModal = ({
       await declineGame(
         gameDetails.gameId,
         leagueDetails.id,
-        currentUser.userId,
+        currentUser?.userId,
         senderId,
         notificationId
       );

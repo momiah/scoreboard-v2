@@ -720,6 +720,40 @@ const LeagueProvider = ({ children }) => {
     await updateDoc(leagueRef, { leagueAdmins: updatedAdmins });
   };
 
+  // REMOVE PLAYER FROM LEAGUE
+  const removePlayerFromLeague = async (leagueId, userId, reason) => {
+    const leagueRef = doc(db, "leagues", leagueId);
+    const leagueSnap = await getDoc(leagueRef);
+    const leagueData = leagueSnap.data();
+
+    const removedParticipants = leagueData.removedParticipants || [];
+    const removedParticipant = leagueData.leagueParticipants.find(
+      (participant) => participant.userId === userId
+    );
+
+    const updatedParticipants = (leagueData.leagueParticipants || []).filter(
+      (participant) => participant.userId !== userId
+    );
+
+    // Add user to removed participants
+    removedParticipants.push({
+      profile: removedParticipant,
+      removedAt: new Date(),
+      reason,
+    });
+
+    // Remove user from leagueAdmins if they are an admin
+    const updatedAdmins = (leagueData.leagueAdmins || []).filter(
+      (admin) => admin.userId !== userId
+    );
+
+    await updateDoc(leagueRef, {
+      leagueParticipants: updatedParticipants,
+      leagueAdmins: updatedAdmins,
+      removedParticipants,
+    });
+  };
+
   const fetchUserPendingRequests = async (userId) => {
     try {
       const leaguesRef = collection(db, "leagues");
@@ -845,6 +879,7 @@ const LeagueProvider = ({ children }) => {
         leagueById,
         leagueIdForDetail,
         setLeagueIdForDetail,
+        removePlayerFromLeague,
         acceptLeagueInvite,
         declineLeagueInvite,
         requestToJoinLeague,

@@ -3,6 +3,7 @@ import {
   View,
   FlatList,
   TouchableOpacity,
+  Alert,
   ActivityIndicator,
 } from "react-native";
 import styled from "styled-components/native";
@@ -10,18 +11,21 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
+import RemovePlayerModal from "../../../components/Modals/RemovePlayerModal";
 
-const AssignAdmin = () => {
+const RemovePlayers = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { leagueId } = route.params;
 
+  const { fetchLeagueById, removePlayerFromLeague } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
-  const { fetchLeagueById, assignLeagueAdmin, revokeLeagueAdmin } =
-    useContext(LeagueContext);
 
   const [league, setLeague] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   const loadLeague = async () => {
     setLoading(true);
@@ -34,39 +38,60 @@ const AssignAdmin = () => {
     loadLeague();
   }, []);
 
-  const handleAssign = async (user) => {
-    await assignLeagueAdmin(leagueId, user);
-    loadLeague();
-  };
-
-  const handleRevoke = async (userId) => {
-    await revokeLeagueAdmin(leagueId, userId);
-    loadLeague();
+  const handleRemove = (player) => {
+    setSelectedPlayer(player);
+    setModalVisible(true);
   };
 
   const goToProfile = (userId) => {
     navigation.navigate("UserProfile", { userId });
   };
 
-  const isAdmin = (userId) =>
-    league?.leagueAdmins?.some((admin) => admin.userId === userId);
+  const sortOwnerByFirst = (a, b) => {
+    const isOwnerA = a.userId === league?.leagueOwner?.userId;
+    const isOwnerB = b.userId === league?.leagueOwner?.userId;
+    if (isOwnerA && !isOwnerB) return -1;
+    if (!isOwnerA && isOwnerB) return 1;
+    return 0;
+  };
+  const sortedParticipants = league?.leagueParticipants.sort(sortOwnerByFirst);
 
   const renderItem = ({ item }) => {
-    const isUserAdmin = isAdmin(item.userId);
     const isOwner = item.userId === league?.leagueOwner?.userId;
-    const isCurrentUser = item.userId === currentUser.userId;
-
-    const canAssign = !isUserAdmin && !isCurrentUser && !isOwner;
-    const canRevoke =
-      isUserAdmin &&
-      currentUser.userId === league?.leagueOwner?.userId &&
-      !isOwner;
+    const isAdmin = league?.leagueAdmins?.some(
+      (admin) => admin.userId === item.userId
+    );
+    const isSelf = item.userId === currentUser.userId;
+    const canRemove =
+      currentUser.userId === league?.leagueOwner?.userId && !isOwner && !isSelf;
 
     return (
       <PlayerRow onPress={() => goToProfile(item.userId)}>
         <Player>
           <Username>{item.username}</Username>
-          {isUserAdmin && (
+          {isOwner && (
+            <>
+              <Tag
+                name={"Owner"}
+                color="rgb(3, 16, 31)"
+                iconColor="#FFD700"
+                iconSize={15}
+                icon={"star-outline"}
+                iconPosition={"right"}
+                bold
+              />
+              <Tag
+                name={"Admin"}
+                color="rgb(3, 16, 31)"
+                iconColor="#00A2FF"
+                iconSize={15}
+                icon={"checkmark-circle-outline"}
+                iconPosition={"right"}
+                bold
+              />
+            </>
+          )}
+          {isAdmin && !isOwner && (
             <Tag
               name={"Admin"}
               color="rgb(3, 16, 31)"
@@ -79,18 +104,11 @@ const AssignAdmin = () => {
           )}
         </Player>
 
-        <Action>
-          {canAssign && (
-            <ActionButton onPress={() => handleAssign(item)}>
-              <ButtonText>Assign</ButtonText>
-            </ActionButton>
-          )}
-          {canRevoke && (
-            <RevokeButton onPress={() => handleRevoke(item.userId)}>
-              <ButtonText>Revoke</ButtonText>
-            </RevokeButton>
-          )}
-        </Action>
+        {canRemove && (
+          <RemoveButton onPress={() => handleRemove(item)}>
+            <ButtonText>Remove</ButtonText>
+          </RemoveButton>
+        )}
       </PlayerRow>
     );
   };
@@ -105,20 +123,35 @@ const AssignAdmin = () => {
 
   return (
     <Container>
-      <Title>Assign League Admins</Title>
+      <Title>Remove Players</Title>
       <FlatList
-        data={league.leagueParticipants}
+        data={sortedParticipants}
         keyExtractor={(item) => item.userId}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <Separator />}
+      />
+
+      <RemovePlayerModal
+        visible={modalVisible}
+        playerName={selectedPlayer?.username}
+        onClose={() => {
+          setModalVisible(false);
+          setSelectedPlayer(null);
+        }}
+        onConfirm={async (reason) => {
+          await removePlayerFromLeague(leagueId, selectedPlayer.userId, reason);
+          loadLeague();
+          setModalVisible(false);
+          setSelectedPlayer(null);
+        }}
       />
     </Container>
   );
 };
 
-export default AssignAdmin;
+export default RemovePlayers;
 
-// --- Styled ---
+// Styled
 const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
@@ -147,25 +180,12 @@ const Player = styled.View({
   gap: 8,
 });
 
-const Action = styled.View({
-  flexDirection: "row",
-  gap: 10,
-});
-
 const Username = styled.Text({
   color: "white",
   fontSize: 16,
 });
 
-const ActionButton = styled.TouchableOpacity({
-  backgroundColor: "#00A2FF",
-  paddingVertical: 6,
-  paddingHorizontal: 14,
-  borderRadius: 6,
-  width: 80,
-});
-
-const RevokeButton = styled.TouchableOpacity({
+const RemoveButton = styled.TouchableOpacity({
   backgroundColor: "#e53935",
   paddingVertical: 6,
   paddingHorizontal: 14,
@@ -175,7 +195,7 @@ const RevokeButton = styled.TouchableOpacity({
 
 const ButtonText = styled.Text({
   color: "white",
-  fontSize: 14,
+  fontSize: 13,
   fontWeight: "bold",
 });
 

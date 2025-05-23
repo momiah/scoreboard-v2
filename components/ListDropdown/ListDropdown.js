@@ -38,6 +38,7 @@ const ListDropdown = ({
   onDropdownOpen,
   label,
   disabled = false,
+  sliceAmount = 5,
 }) => {
   // This component must take in a list of objects with the following structure:
   // { key: "uniqueKey", value: "displayValue", description: "optionalDescription" }
@@ -171,7 +172,7 @@ const ListDropdown = ({
         >
           <FlatList
             ref={flatListRef}
-            data={filteredData.slice(0, 5)}
+            data={filteredData.slice(0, sliceAmount)}
             renderItem={listItems}
             keyExtractor={(item) => item.key || item.value}
             initialNumToRender={20}
