@@ -117,6 +117,17 @@ export const userProfileSchema = {
   phoneNumber: "",
 };
 
+export const chatMessageSchema = {
+  _id: "",
+  text: "",
+  createdAt: new Date(),
+  user: {
+    _id: "",
+    name: "",
+    avatar: "",
+  },
+};
+
 export const leagueSchema = {
   leagueParticipants: [],
   leagueTeams: [],

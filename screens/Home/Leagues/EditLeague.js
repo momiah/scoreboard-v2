@@ -17,6 +17,8 @@ import { AntDesign } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import { uploadLeagueImage } from "../../../utils/UploadLeagueImageToFirebase";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import Popup from "../../../components/popup/Popup";
+import { PopupContext } from "../../../context/PopupContext";
 
 const EditLeague = () => {
   const route = useRoute();
@@ -29,6 +31,21 @@ const EditLeague = () => {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    handleShowPopup,
+    setPopupMessage,
+    popupMessage,
+    setShowPopup,
+    showPopup,
+  } = useContext(PopupContext);
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+    setPopupMessage("");
+
+    navigation.goBack();
+  };
 
   useEffect(() => {
     const loadLeague = async () => {
@@ -103,7 +120,7 @@ const EditLeague = () => {
       };
 
       await updateLeague(updatedLeague);
-      navigation.goBack();
+      handleShowPopup("League updated!");
     } catch (err) {
       console.error("Update error:", err);
     } finally {
@@ -129,6 +146,12 @@ const EditLeague = () => {
 
   return (
     <SafeAreaWrapper>
+      <Popup
+        visible={showPopup}
+        message={popupMessage}
+        onClose={handleClosePopup}
+        type="success"
+      />
       <ScrollContainer showsVerticalScrollIndicator={false}>
         <Title>Edit League</Title>
 

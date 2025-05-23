@@ -27,6 +27,8 @@ import { locationSchema } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
+const ccImageEndpoint =
+  "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
 
 const LeagueContext = createContext();
 
@@ -160,6 +162,18 @@ const LeagueProvider = ({ children }) => {
     try {
       await setDoc(doc(db, "leagues", leagueId), {
         ...leagueData,
+      });
+
+      const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
+      await setDoc(messageRef, {
+        _id: "welcome",
+        text: `Welcome to the chat for ${leagueData.leagueName}!`,
+        createdAt: new Date(),
+        user: {
+          _id: "system",
+          name: "CourtChamps",
+          avatar: ccImageEndpoint, // optional system avatar
+        },
       });
 
       fetchLeagues(); // Re-fetch leagues to update the list
@@ -559,6 +573,25 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const sendChatMessage = async (message, leagueId) => {
+    try {
+      const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
+      const messageToSend = {
+        _id: messageRef.id,
+        text: message.text,
+        createdAt: message.createdAt,
+        user: {
+          _id: message.user._id,
+          name: message.user.name,
+          avatar: message.user.avatar || ccDefaultImage,
+        },
+      };
+      await setDoc(messageRef, messageToSend);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
   const declineGame = async (
     gameId,
     leagueId,
@@ -805,6 +838,7 @@ const LeagueProvider = ({ children }) => {
         revokeLeagueAdmin,
         fetchUserPendingRequests,
         withdrawJoinRequest,
+        sendChatMessage,
 
         // League State Management
         leagues,
