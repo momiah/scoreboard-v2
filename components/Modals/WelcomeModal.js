@@ -6,44 +6,16 @@ import {
   Image,
   TouchableOpacity,
   Linking,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { UserContext } from "../../context/UserContext";
-
+import { handleSocialPress } from "../../helpers/handleSocialPress";
+import { getSplitParagraphs } from "../../helpers/getSplitParagraphs";
+import { ICON_MAP } from "../../schemas/schema";
 const { width: screenWidth } = Dimensions.get("window");
-
-const ICON_MAP = {
-  Instagram: "logo-instagram",
-  TikTok: "logo-tiktok",
-  Facebook: "logo-facebook",
-};
-
-const getSplitParagraphs = (body, splitAfter) => {
-  if (!body) return [];
-
-  // Split and trim individual sentences
-  const sentences = body
-    .split(".")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const total = sentences.length;
-  const groupSize = Math.ceil(total / splitAfter);
-
-  const chunks = [];
-  for (let i = 0; i < total; i += groupSize) {
-    const groupSentences = sentences.slice(i, i + groupSize);
-    let group = groupSentences.join(". ");
-    if (!/[.!?]$/.test(group.trim())) {
-      group += ".";
-    }
-    chunks.push(group);
-  }
-
-  return chunks;
-};
 
 const WelcomeModal = ({
   visible,
@@ -53,17 +25,6 @@ const WelcomeModal = ({
   onClose,
   splitAfter = 2,
 }) => {
-  const handleSocialPress = (platform) => {
-    // Placeholder links — replace with actual URLs
-    const urls = {
-      Instagram: "https://www.instagram.com/courtchamps",
-      TikTok: "https://www.tiktok.com/@courtchamps",
-      Facebook: "https://www.facebook.com/courtchamps",
-    };
-    const url = urls[platform];
-    if (url) Linking.openURL(url);
-  };
-
   const splitParagraphs = getSplitParagraphs(body, splitAfter);
 
   return (

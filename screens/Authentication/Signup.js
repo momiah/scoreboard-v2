@@ -26,14 +26,16 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
-import { profileDetailSchema } from "../../schemas/schema";
-import { userProfileSchema } from "../../schemas/schema";
-import { loadCountries, loadCities } from "../../utils/locationData";
+
 import {
+  userProfileSchema,
+  socialMediaPlatforms,
+  profileDetailSchema,
   notificationSchema,
   notificationTypes,
   ccImageEndpoint,
 } from "../../schemas/schema";
+import { loadCountries, loadCities } from "../../utils/locationData";
 
 const Signup = ({ route }) => {
   const { userId: socialId, userName, userEmail } = route.params || {};
@@ -174,7 +176,7 @@ const Signup = ({ route }) => {
             "Join or create leagues now and start your journey to the top. " +
             "Keep an eye out for exciting updates and features coming your way soon! 🏸🔥",
           footer: "Follow us on",
-          buttons: ["Instagram", "TikTok", "Facebook"],
+          buttons: socialMediaPlatforms,
         },
       };
 

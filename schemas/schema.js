@@ -12,6 +12,35 @@ export const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
+export const ICON_MAP = {
+  Instagram: "logo-instagram",
+  TikTok: "logo-tiktok",
+  Facebook: "logo-facebook",
+};
+
+export const socialMediaPlatforms = ["Instagram", "TikTok", "Facebook"];
+
+export const iosAppLinks = {
+  Instagram: "instagram://user?username=courtchamps.io",
+  Facebook: "fb://page/61576837973289",
+  TikTok: "snssdk1128://user/profile/7507766818326840342",
+};
+
+export const androidIntentLinks = {
+  Instagram:
+    "intent://user?username=courtchamps.io#Intent;package=com.instagram.android;scheme=instagram;end",
+  Facebook:
+    "intent://page/61576837973289#Intent;package=com.facebook.katana;scheme=fb;end",
+  TikTok:
+    "intent://user/profile/7507766818326840342#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1128;end",
+};
+
+export const fallbackUrls = {
+  Instagram: "https://www.instagram.com/courtchamps.io/",
+  Facebook: "https://www.facebook.com/profile.php?id=61576837973289",
+  TikTok: "https://www.tiktok.com/@courtchamps",
+};
+
 export const ccImageEndpoint =
   "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
 
