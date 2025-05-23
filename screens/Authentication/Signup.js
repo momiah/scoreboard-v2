@@ -26,10 +26,16 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
-import { profileDetailSchema } from "../../schemas/schema";
-import { userProfileSchema } from "../../schemas/schema";
+
+import {
+  userProfileSchema,
+  socialMediaPlatforms,
+  profileDetailSchema,
+  notificationSchema,
+  notificationTypes,
+  ccImageEndpoint,
+} from "../../schemas/schema";
 import { loadCountries, loadCities } from "../../utils/locationData";
-import { notificationSchema, notificationTypes } from "../../schemas/schema";
 
 const Signup = ({ route }) => {
   const { userId: socialId, userName, userEmail } = route.params || {};
@@ -158,9 +164,20 @@ const Signup = ({ route }) => {
       const welcomeNotification = {
         ...notificationSchema,
         createdAt: new Date(),
-        message: "Welcome to Court Champs! 🎉",
-        type: notificationTypes.INFORMATION.APP.TYPE,
+        message: notificationTypes.WELCOME.MESSAGE,
+        type: notificationTypes.WELCOME.TYPE,
         recipientId: profileToSave.userId,
+        data: {
+          image: ccImageEndpoint,
+          header: notificationTypes.WELCOME.MESSAGE,
+          body:
+            "You’ve just joined the ultimate community for competitive players. " +
+            "Track your games, climb the ranks, and prove you're the best on the court. " +
+            "Join or create leagues now and start your journey to the top. " +
+            "Keep an eye out for exciting updates and features coming your way soon! 🏸🔥",
+          footer: "Follow us on",
+          buttons: socialMediaPlatforms,
+        },
       };
 
       await addDoc(

@@ -7,7 +7,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 
 const LeaguSettings = () => {
   const route = useRoute();
-  const { leagueId } = route.params;
+  const { leagueId, leagueById } = route.params;
   const navigation = useNavigation();
 
   const menuOptions = [
@@ -22,11 +22,20 @@ const LeaguSettings = () => {
       icon: "people-outline",
       action: "AssignAdmin",
     },
+    {
+      label: "Remove Players",
+      icon: "person-remove-outline",
+      action: "RemovePlayers",
+    },
+    // { label: "League Rules", icon: "document-text-outline", action: "LeagueRules" },
+    // { label: "League Chat", icon: "chatbubble-ellipses-outline", action: "LeagueChat" },
+    // { label: "League Schedule", icon: "calendar-outline", action: "LeagueSchedule" },
+    // { label: "League Stats", icon: "bar-chart-outline", action: "LeagueStats" },
     // { label: "Support", icon: "help-circle-outline", action: "LeagueSupport" },
   ];
 
   const handlePress = (action) => {
-    navigation.navigate(action, { leagueId });
+    navigation.navigate(action, { leagueId, leagueById });
   };
 
   return (

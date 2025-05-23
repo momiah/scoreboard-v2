@@ -13,7 +13,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 const PendingInvites = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { leagueId } = route.params;
+  const { leagueId, leagueById } = route.params;
 
   const { fetchLeagueById, getPendingInviteUsers, removePendingInvite } =
     useContext(LeagueContext);
@@ -23,8 +23,7 @@ const PendingInvites = () => {
 
   const fetchInvites = async () => {
     setLoading(true);
-    const league = await fetchLeagueById(leagueId);
-    const users = await getPendingInviteUsers(league);
+    const users = await getPendingInviteUsers(leagueById);
     setPendingUsers(users);
     setLoading(false);
   };
@@ -45,12 +44,9 @@ const PendingInvites = () => {
   const renderItem = ({ item }) => (
     <Row onPress={() => goToProfile(item.userId)}>
       <Username>{item.username}</Username>
-      <WithdrawButton onPress={() => handleWithdraw(item.id)}>
+      <WithdrawButton onPress={() => handleRemove(item.id)}>
         <WithdrawText>Withdraw</WithdrawText>
       </WithdrawButton>
-      {/* <TouchableOpacity onPress={() => handleRemove(item.userId)}>
-        <Ionicons name="close-circle-outline" size={20} color="red" />
-      </TouchableOpacity> */}
     </Row>
   );
 

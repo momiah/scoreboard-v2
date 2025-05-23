@@ -17,6 +17,7 @@ import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Leagues/PendingInvites";
 import LeagueSettings from "../screens/Home/Leagues/LeagueSettings";
 import AssignAdmin from "../screens/Home/Leagues/AssignAdmin";
+import RemovePlayers from "../screens/Home/Leagues/RemovePlayers";
 import AccountSupport from "../screens/Profile/AccountSupport";
 import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
@@ -40,6 +41,7 @@ const HomeStack = () => {
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
+      <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
@@ -66,7 +68,9 @@ const ProfileStack = () => {
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
+      <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
+
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
@@ -89,6 +93,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
+      <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
@@ -112,6 +117,7 @@ const ChatsStack = () => {
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
+      <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />

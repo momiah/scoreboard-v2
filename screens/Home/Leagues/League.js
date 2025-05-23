@@ -76,7 +76,7 @@ const League = () => {
   };
 
   const handleNavigate = () => {
-    navigation.navigate("LeagueSettings", { leagueId });
+    navigation.navigate("LeagueSettings", { leagueId, leagueById });
   };
 
   const leaguePrompt = () => {

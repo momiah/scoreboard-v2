@@ -33,6 +33,7 @@ const NotificationRow = ({
   isAction,
   onPressAction,
   currentUser,
+  isWelcome,
 }) => {
   const navigation = useNavigation();
   const { readNotification } = useContext(UserContext);
@@ -68,8 +69,14 @@ const NotificationRow = ({
   const handlePress = () => {
     if (isAction) {
       onPressAction(item);
+    } else if (isWelcome) {
+      // This is likely the welcome notification or one meant for modal
+      if (!isRead) {
+        readNotification(item.id, currentUser.userId);
+      }
+      onPressAction(item); // will be routed to modal handler in Notifications
     } else {
-      handleInformationNotification(item);
+      handleInformationNotification(item); // fallback to route navigation
     }
   };
 

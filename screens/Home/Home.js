@@ -26,6 +26,9 @@ import {
   HorizontalLeagueCarouselSkeleton,
   TopPlayersSkeleton,
 } from "../../components/Skeletons/HomeSkeleton";
+import { handleSocialPress } from "../../helpers/handleSocialPress";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -102,8 +105,18 @@ const Home = () => {
         <Overview>
           <Image
             source={CourtChampLogo}
-            style={{ width: 175, height: 175, resizeMode: "contain" }}
+            style={{ width: 150, height: 150, resizeMode: "contain" }}
           />
+          <SocialRow>
+            {socialMediaPlatforms?.map((platform) => (
+              <SocialButton
+                key={platform}
+                onPress={() => handleSocialPress(platform)}
+              >
+                <Ionicons name={ICON_MAP[platform]} size={20} color="#00A2FF" />
+              </SocialButton>
+            ))}
+          </SocialRow>
         </Overview>
 
         {currentUser ? (
@@ -174,18 +187,18 @@ const Overview = styled.View({
   flexDirection: "row",
   height: "100px",
   width: "100%",
-  justifyContent: "center",
+  justifyContent: "space-between",
   alignItems: "center",
   paddingRight: 15,
 });
 
-const LoadingContainer = styled.View({
-  position: "absolute",
-  top: 10, // Adjusts position near the top
-  left: 0,
-  right: 0,
-  alignItems: "center",
-  zIndex: 10, // Keeps it above other elements
+const SocialRow = styled.View({
+  flexDirection: "row",
+  gap: 10,
+});
+
+const SocialButton = styled(TouchableOpacity)({
+  padding: 5,
 });
 
 export default Home;

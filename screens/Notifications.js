@@ -14,6 +14,7 @@ import InviteActionModal from "../components/Modals/InviteActionModal";
 import JoinRequestModal from "../components/Modals/JoinRequestModal";
 import GameApprovalModal from "../components/Modals/GameApprovalModal";
 import NotificationRow from "../components/Notification/NotificationRow";
+import WelcomeModal from "../components/Modals/WelcomeModal";
 
 // Extract notification type constants
 const ACTION_TYPES = {
@@ -28,6 +29,10 @@ const allActionTypes = Object.values(notificationTypes.ACTION)
 
 // Helper function to check if a notification is an action type
 const isActionType = (type) => allActionTypes.includes(type.toLowerCase());
+
+//Is welcome type
+const isWelcomeType = (type) =>
+  type === notificationTypes.WELCOME.TYPE.toLowerCase();
 
 const Notifications = () => {
   const { currentUser, notifications } = useContext(UserContext);
@@ -44,6 +49,7 @@ const Notifications = () => {
     playersToUpdate: null,
     usersToUpdate: null,
     isRead: false,
+    data: null,
   });
 
   // Modal visibility states
@@ -51,6 +57,7 @@ const Notifications = () => {
     invite: false,
     joinRequest: false,
     gameApproval: false,
+    welcome: false,
   });
 
   // Redirect if not logged in
@@ -71,6 +78,7 @@ const Notifications = () => {
       invite: false,
       joinRequest: false,
       gameApproval: false,
+      welcome: false,
     });
   }, []);
 
@@ -98,6 +106,9 @@ const Notifications = () => {
       setModals((prev) => ({ ...prev, invite: true }));
     } else if (ACTION_TYPES.JOIN_REQUEST.includes(item.type)) {
       setModals((prev) => ({ ...prev, joinRequest: true }));
+    } else if (item.type === notificationTypes.WELCOME.TYPE) {
+      setModalState((prev) => ({ ...prev, data: item.data }));
+      setModals((prev) => ({ ...prev, welcome: true }));
     } else {
       setModals((prev) => ({ ...prev, gameApproval: true }));
     }
@@ -111,6 +122,7 @@ const Notifications = () => {
           item={item}
           isRead={item.isRead}
           isAction={isActionType(item.type)}
+          isWelcome={isWelcomeType(item.type)}
           onPressAction={handleNotificationAction}
           currentUser={currentUser}
         />
@@ -138,6 +150,14 @@ const Notifications = () => {
         maxToRenderPerBatch={10}
         windowSize={10}
         removeClippedSubviews={true}
+      />
+
+      <WelcomeModal
+        visible={modals.welcome}
+        onClose={closeAllModals}
+        header={modalState.data?.header}
+        body={modalState.data?.body}
+        data={modalState.data}
       />
 
       <InviteActionModal

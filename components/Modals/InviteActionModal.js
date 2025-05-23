@@ -87,7 +87,7 @@ const InviteActionModal = ({
     leagueFull,
     isWithdrawn,
     notificationId,
-    currentUser.userId,
+    currentUser?.userId,
   ]);
 
   const handleAcceptInvite = async () => {
