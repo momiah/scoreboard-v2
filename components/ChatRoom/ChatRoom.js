@@ -38,6 +38,14 @@ const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Scroll to end function with delay to ensure rendering is complete
+  const scrollToEnd = useCallback((animated = true) => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated });
+    }, 100);
+  }, []);
 
   useEffect(() => {
     if (!leagueId) return;
@@ -57,10 +65,18 @@ const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
         };
       });
       setMessages(msgs);
+
+      // Scroll to end when messages are loaded or updated
+      if (msgs.length > 0) {
+        scrollToEnd(!isInitialLoad);
+        if (isInitialLoad) {
+          setIsInitialLoad(false);
+        }
+      }
     });
 
     return () => unsubscribe();
-  }, [leagueId]);
+  }, [leagueId, scrollToEnd, isInitialLoad]);
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -78,7 +94,9 @@ const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
     await sendChatMessage(newMessage, leagueId);
     setInputText("");
     Keyboard.dismiss();
-    flatListRef.current?.scrollToEnd({ animated: false });
+
+    // Scroll to end after sending message
+    scrollToEnd(true);
 
     const recipients = leagueParticipants.filter(
       (u) => u.userId !== currentUser?.userId
@@ -201,6 +219,7 @@ const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
       </View>
     );
   };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -212,14 +231,9 @@ const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-          onLayout={() => flatListRef.current?.scrollToEnd()}
-          initialScrollIndex={messages.length - 1}
-          getItemLayout={(data, index) => ({
-            length: 80,
-            offset: 80 * index,
-            index,
-          })}
+          onScrollToIndexFailed={() => {
+            scrollToEnd(false);
+          }}
         />
         <InputBar>
           <MessageInput
