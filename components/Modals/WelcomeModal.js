@@ -1,13 +1,5 @@
-import React, { useContext } from "react";
-import {
-  Modal,
-  Text,
-  Dimensions,
-  Image,
-  TouchableOpacity,
-  Linking,
-  Platform,
-} from "react-native";
+import React from "react";
+import { Modal, Dimensions, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";

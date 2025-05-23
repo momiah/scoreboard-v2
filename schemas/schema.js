@@ -15,24 +15,28 @@ export const leagueStatus = [
 export const ICON_MAP = {
   Instagram: "logo-instagram",
   TikTok: "logo-tiktok",
-  Facebook: "logo-facebook",
+  // Facebook: "logo-facebook",
 };
 
-export const socialMediaPlatforms = ["Instagram", "TikTok", "Facebook"];
+export const socialMediaPlatforms = [
+  "Instagram",
+  "TikTok",
+  // "Facebook"
+];
 
 export const iosAppLinks = {
   Instagram: "instagram://user?username=courtchamps.io",
-  Facebook: "fb://page/61576837973289",
   TikTok: "snssdk1128://user/profile/7507766818326840342",
+  // Facebook: "fb://page/61576837973289",
 };
 
 export const androidIntentLinks = {
   Instagram:
     "intent://user?username=courtchamps.io#Intent;package=com.instagram.android;scheme=instagram;end",
-  Facebook:
-    "intent://page/61576837973289#Intent;package=com.facebook.katana;scheme=fb;end",
   TikTok:
     "intent://user/profile/7507766818326840342#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1128;end",
+  // Facebook:
+  //   "intent://page/61576837973289#Intent;package=com.facebook.katana;scheme=fb;end",
 };
 
 export const fallbackUrls = {
