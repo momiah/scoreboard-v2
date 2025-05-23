@@ -31,6 +31,7 @@ const UserProvider = ({ children }) => {
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
 
   const [notifications, setNotifications] = useState([]); // Optional: Track notifications
+  const [chatSummaries, setChatSummaries] = useState([]);
 
   useEffect(() => {
     const loadInitialUser = async () => {
@@ -49,6 +50,42 @@ const UserProvider = ({ children }) => {
 
     loadInitialUser();
   }, []);
+
+  useEffect(() => {
+    let unsubscribe;
+    let isMounted = true;
+
+    const setupChatSummaryListener = async () => {
+      const userUid = currentUser?.userId;
+      if (!userUid) return;
+
+      const chatsRef = collection(db, "users", userUid, "chats");
+
+      unsubscribe = onSnapshot(chatsRef, (snapshot) => {
+        // 🛡️ Protect against null currentUser and unmounted component
+        if (!isMounted || !currentUser?.userId) return;
+
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Optional: sort by createdAt descending
+        data.sort(
+          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+        );
+
+        setChatSummaries(data);
+      });
+    };
+
+    setupChatSummaryListener();
+
+    return () => {
+      isMounted = false;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [currentUser?.userId]);
 
   useEffect(() => {
     let unsubscribe;
@@ -581,6 +618,18 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const readChat = async (leagueId, userId) => {
+    try {
+      const chatRef = doc(db, "users", userId, "chats", leagueId);
+      await updateDoc(chatRef, {
+        isRead: true,
+        messageCount: 0,
+      });
+    } catch (error) {
+      console.error("Failed to mark chat as read:", error);
+    }
+  };
+
   const readNotification = async (notificationId, userId) => {
     try {
       // const userId = await AsyncStorage.getItem("userId");
@@ -665,6 +714,8 @@ const UserProvider = ({ children }) => {
         sendNotification,
         notifications,
         readNotification,
+        chatSummaries,
+        readChat,
 
         // League-related operations
         retrievePlayersFromLeague,

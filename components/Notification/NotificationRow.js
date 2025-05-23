@@ -157,27 +157,6 @@ const NotificationText = styled.Text({
   color: "white",
 });
 
-const NotificationButtonContainer = styled.View({
-  flexDirection: "row",
-  justifyContent: "flex-end",
-});
-
-const NotificationButton = styled.TouchableOpacity.attrs(() => ({
-  activeOpacity: 0.8,
-}))`
-  background-color: rgb(0, 162, 255);
-  padding: 4px 10px;
-  border-radius: 6px;
-  margin-left: 6px;
-  margin-bottom: 4px;
-`;
-
-const NotificationButtonText = styled.Text({
-  color: "white",
-  fontSize: 11,
-  fontWeight: "500",
-});
-
 const NotificationTimestamp = styled.Text({
   fontSize: 10,
   color: "#aaa",

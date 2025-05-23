@@ -33,13 +33,15 @@ import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { leagueId } = route.params;
+  const { leagueId, tab } = route.params;
   const { fetchLeagueById, leagueById, generateNewLeagueParticipants } =
     useContext(LeagueContext);
   const { checkUserRole, currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("Scoreboard");
+
+  const defaultTab = tab || "Scoreboard";
+  const [selectedTab, setSelectedTab] = useState(defaultTab);
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
 
@@ -123,7 +125,14 @@ const League = () => {
   const renderComponent = () => {
     switch (selectedTab) {
       case "Chat Room":
-        return <ChatRoom leagueId={leagueId} userRole={userRole} />;
+        return (
+          <ChatRoom
+            leagueId={leagueId}
+            userRole={userRole}
+            leagueParticipants={leagueParticipants}
+            leagueName={leagueName}
+          />
+        );
       case "Summary":
         return (
           <LeagueSummary

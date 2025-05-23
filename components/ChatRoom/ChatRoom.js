@@ -26,12 +26,13 @@ import {
   doc,
   setDoc,
   Timestamp,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 
-const ChatRoom = ({ leagueId, userRole }) => {
+const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
   const [messages, setMessages] = useState([]);
@@ -68,9 +69,9 @@ const ChatRoom = ({ leagueId, userRole }) => {
       text: inputText.trim(),
       createdAt: Timestamp.now(),
       user: {
-        _id: currentUser.userId,
-        name: currentUser.username,
-        avatar: currentUser.profileImage || "",
+        _id: currentUser?.userId,
+        name: currentUser?.username,
+        avatar: currentUser?.profileImage || "",
       },
     };
 
@@ -78,7 +79,41 @@ const ChatRoom = ({ leagueId, userRole }) => {
     setInputText("");
     Keyboard.dismiss();
     flatListRef.current?.scrollToEnd({ animated: false });
+
+    const recipients = leagueParticipants.filter(
+      (u) => u.userId !== currentUser?.userId
+    );
+
+    for (const recipient of recipients) {
+      const chatRef = doc(db, "users", recipient.userId, "chats", leagueId);
+      const existing = await getDoc(chatRef);
+
+      if (existing.exists()) {
+        await setDoc(
+          chatRef,
+          {
+            isRead: false,
+            messageCount: (existing.data().messageCount || 0) + 1,
+            lastMessage: `${currentUser?.username}: ${newMessage.text}`,
+            createdAt: new Date(),
+            leagueName,
+          },
+          { merge: true }
+        );
+      } else {
+        await setDoc(chatRef, {
+          type: "chat",
+          isRead: false,
+          messageCount: 1,
+          leagueId,
+          lastMessage: `${currentUser?.username}: ${newMessage.text}`,
+          createdAt: new Date(),
+          leagueName,
+        });
+      }
+    }
   };
+
   const formatDate = (date) => {
     const today = new Date();
     const isToday = date.toDateString() === today.toDateString();
@@ -123,7 +158,7 @@ const ChatRoom = ({ leagueId, userRole }) => {
   }
 
   const renderItem = ({ item, index }) => {
-    const isCurrentUser = item.user._id === currentUser.userId;
+    const isCurrentUser = item.user._id === currentUser?.userId;
     const showAvatar =
       index === 0 || messages[index - 1]?.user._id !== item.user._id;
 
