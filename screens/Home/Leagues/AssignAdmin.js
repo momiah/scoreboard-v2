@@ -14,19 +14,17 @@ import Tag from "../../../components/Tag";
 const AssignAdmin = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { leagueId } = route.params;
+  const { leagueId, leagueById } = route.params;
 
   const { currentUser } = useContext(UserContext);
-  const { fetchLeagueById, assignLeagueAdmin, revokeLeagueAdmin } =
-    useContext(LeagueContext);
+  const { assignLeagueAdmin, revokeLeagueAdmin } = useContext(LeagueContext);
 
   const [league, setLeague] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadLeague = async () => {
     setLoading(true);
-    const data = await fetchLeagueById(leagueId);
-    setLeague(data);
+    setLeague(leagueById);
     setLoading(false);
   };
 

@@ -16,7 +16,7 @@ import RemovePlayerModal from "../../../components/Modals/RemovePlayerModal";
 const RemovePlayers = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { leagueId } = route.params;
+  const { leagueId, leagueById } = route.params;
 
   const { fetchLeagueById, removePlayerFromLeague } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
@@ -27,15 +27,9 @@ const RemovePlayers = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
-  const loadLeague = async () => {
-    setLoading(true);
-    const data = await fetchLeagueById(leagueId);
-    setLeague(data);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    loadLeague();
+    setLeague(leagueById);
+    setLoading(false);
   }, []);
 
   const handleRemove = (player) => {
@@ -140,7 +134,8 @@ const RemovePlayers = () => {
         }}
         onConfirm={async (reason) => {
           await removePlayerFromLeague(leagueId, selectedPlayer.userId, reason);
-          loadLeague();
+          const updated = await fetchLeagueById(leagueId);
+          setLeague(updated);
           setModalVisible(false);
           setSelectedPlayer(null);
         }}

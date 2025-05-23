@@ -22,10 +22,9 @@ import { PopupContext } from "../../../context/PopupContext";
 
 const EditLeague = () => {
   const route = useRoute();
-  const { leagueId } = route.params;
+  const { leagueId, leagueById } = route.params;
 
-  const { updateLeague, leagueById, fetchLeagueById } =
-    useContext(LeagueContext);
+  const { updateLeague, fetchLeagueById } = useContext(LeagueContext);
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(true);

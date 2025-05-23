@@ -7,7 +7,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 
 const LeaguSettings = () => {
   const route = useRoute();
-  const { leagueId } = route.params;
+  const { leagueId, leagueById } = route.params;
   const navigation = useNavigation();
 
   const menuOptions = [
@@ -22,7 +22,6 @@ const LeaguSettings = () => {
       icon: "people-outline",
       action: "AssignAdmin",
     },
-    //REMOVE PLAYERS
     {
       label: "Remove Players",
       icon: "person-remove-outline",
@@ -36,7 +35,7 @@ const LeaguSettings = () => {
   ];
 
   const handlePress = (action) => {
-    navigation.navigate(action, { leagueId });
+    navigation.navigate(action, { leagueId, leagueById });
   };
 
   return (
