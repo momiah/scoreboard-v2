@@ -81,7 +81,7 @@ const JoinRequestModal = ({
     if (!requestDetails || isRead) return;
 
     if (leagueFull || requestWithdrawn) {
-      readNotification(notificationId, currentUser.userId);
+      readNotification(notificationId, currentUser?.userId);
     }
   }, [
     requestDetails,
@@ -89,7 +89,7 @@ const JoinRequestModal = ({
     leagueFull,
     requestWithdrawn,
     notificationId,
-    currentUser.userId,
+    currentUser?.userId,
   ]);
 
   const handleAcceptJoinRequest = async () => {
@@ -98,7 +98,7 @@ const JoinRequestModal = ({
         senderId,
         requestDetails.id,
         notificationId,
-        currentUser.userId
+        currentUser?.userId
       );
 
       console.log("Invite accepted successfully");
@@ -130,7 +130,7 @@ const JoinRequestModal = ({
         senderId,
         requestDetails.id,
         notificationId,
-        currentUser.userId
+        currentUser?.userId
       );
       console.log("Invite declined successfully");
       onClose(); // Close the modal after declining

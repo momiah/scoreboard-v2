@@ -20,6 +20,7 @@ import {
   userProfileSchema,
   scoreboardProfileSchema,
   profileDetailSchema,
+  ccImageEndpoint,
 } from "../schemas/schema";
 import { UserContext } from "./UserContext";
 import { notificationTypes } from "../schemas/schema";
@@ -27,8 +28,6 @@ import { locationSchema } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
-const ccImageEndpoint =
-  "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
 
 const LeagueContext = createContext();
 
@@ -752,6 +751,21 @@ const LeagueProvider = ({ children }) => {
       leagueAdmins: updatedAdmins,
       removedParticipants,
     });
+
+    // send notification to removed user
+    const payload = {
+      ...notificationSchema,
+      createdAt: new Date(),
+      recipientId: userId,
+      senderId: leagueData.leagueOwner.userId,
+      message: `You have been removed from ${leagueData.leagueName} for the following reason: ${reason}`,
+      type: notificationTypes.INFORMATION.LEAGUE.TYPE,
+      data: {
+        leagueId,
+      },
+    };
+    await sendNotification(payload);
+    console.log("Player removed from league successfully!");
   };
 
   const fetchUserPendingRequests = async (userId) => {

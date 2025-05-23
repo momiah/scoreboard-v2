@@ -12,6 +12,9 @@ export const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
+export const ccImageEndpoint =
+  "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
+
 export const prizeTypes = {
   TROPHY: "Trophy",
   MEDAL: "Medal",
@@ -196,6 +199,14 @@ export const notificationTypes = {
       ROUTE: "UserProfile",
       TYPE: "user",
     },
+    WELCOME: {
+      ROUTE: "Welcome",
+      TYPE: "welcome",
+    },
+  },
+  WELCOME: {
+    TYPE: "welcome",
+    MESSAGE: "Welcome to Court Champs! 🎉",
   },
   ACTION: {
     // Shows League/Tournament modal
