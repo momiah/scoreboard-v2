@@ -14,17 +14,17 @@ const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues, leagueIdForDetail } = useContext(LeagueContext);
+  const { leagues, leagueNavigationId } = useContext(LeagueContext);
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
 
   useEffect(() => {
-    if (leagueIdForDetail !== "") {
-      navigateTo(leagueIdForDetail);
+    if (leagueNavigationId !== "") {
+      navigateTo(leagueNavigationId);
     }
-  }, [leagueIdForDetail]);
+  }, [leagueNavigationId]);
 
   const itemWidth = width - 80;
   const spacing = 20;

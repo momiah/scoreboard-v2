@@ -42,13 +42,30 @@ const LeagueProvider = ({ children }) => {
     retrieveTeams,
   } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
-  const [leagueIdForDetail, setLeagueIdForDetail] = useState("");
+  const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
 
   // Fetch leagues data based on mock or real data
   useEffect(() => {
-    fetchLeagues();
+    fetchLatestLeagues();
   }, []);
+
+  const fetchLatestLeagues = async () => {
+    try {
+      const leaguesRef = collection(db, "leagues");
+      const q = query(leaguesRef, orderBy("createdAt", "desc"), limit(10));
+      const querySnapshot = await getDocs(q);
+
+      const latestLeagues = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setLeagues(latestLeagues);
+    } catch (error) {
+      console.error("Error fetching latest leagues:", error);
+    }
+  };
 
   const fetchLeagues = async () => {
     try {
@@ -176,11 +193,11 @@ const LeagueProvider = ({ children }) => {
       });
 
       fetchLeagues(); // Re-fetch leagues to update the list
-      setLeagueIdForDetail(leagueId);
+      setLeagueNavigationId(leagueId);
 
       // Reset the league detail state after a short delay
       setTimeout(() => {
-        setLeagueIdForDetail("");
+        setLeagueNavigationId("");
       }, 2000);
     } catch (error) {
       console.error("Error adding league: ", error);
@@ -891,8 +908,8 @@ const LeagueProvider = ({ children }) => {
         // League State Management
         leagues,
         leagueById,
-        leagueIdForDetail,
-        setLeagueIdForDetail,
+        leagueNavigationId,
+        setLeagueNavigationId,
         removePlayerFromLeague,
         acceptLeagueInvite,
         declineLeagueInvite,
