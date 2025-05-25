@@ -326,23 +326,21 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             setValue={setValue}
           />
 
-          {showAddCourtModal && (
-            <AddCourtModal
-              visible={showAddCourtModal}
-              courtDetails={courtDetails}
-              setCourtDetails={setCourtDetails}
-              onClose={() => setShowAddCourtModal(false)}
-              addCourt={addCourt}
-              onCourtAdded={async (courtDetails) => {
-                // Refresh courts list
-                const courtData = await getCourts();
-                const formattedCourts = formatCourtDetailsForList(courtData);
-                setCourtsList(formattedCourts);
-                setCourtData(courtData);
-                handleCourtSelect(courtDetails.courtName);
-              }}
-            />
-          )}
+          <AddCourtModal
+            visible={showAddCourtModal}
+            courtDetails={courtDetails}
+            setCourtDetails={setCourtDetails}
+            onClose={() => setShowAddCourtModal(false)}
+            addCourt={addCourt}
+            onCourtAdded={async (courtDetails) => {
+              // Refresh courts list
+              const courtData = await getCourts();
+              const formattedCourts = formatCourtDetailsForList(courtData);
+              setCourtsList(formattedCourts);
+              setCourtData(courtData);
+              handleCourtSelect(courtDetails.courtName);
+            }}
+          />
         </SafeAreaWrapper>
       </ModalContainer>
     </Modal>
