@@ -1,17 +1,27 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 
 import styled from "styled-components/native";
-
+import { TouchableOpacity } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PlayTime from "./PlayTime";
+import { copyLocationAddress } from "../../helpers/copyLocationAddress";
+import { View } from "moti";
 
 const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const timeoutRef = useRef(null);
+
   const maxPlayers = leagueDetails.maxPlayers;
   const numberOfGamesPlayed = leagueDetails.games.length;
   const totalGamePointsWon = leagueDetails.games.reduce((acc, game) => {
     return acc + game.result.winner.score;
   }, 0);
+
+  const { courtName, address, postCode, city, countryCode } =
+    leagueDetails.location;
+  const fullAddress = `${courtName}, ${address}, ${city}, ${postCode}, ${countryCode}`;
 
   const prizePool = maxPlayers * numberOfGamesPlayed + totalGamePointsWon;
 
@@ -22,6 +32,24 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
         endDate={endDate}
         leagueParticipants={leagueDetails?.leagueParticipants}
       />
+
+      {/* League Name and Location */}
+      <Section>
+        <TouchableOpacity
+          onPress={() =>
+            copyLocationAddress(leagueDetails.location, timeoutRef, setIsCopied)
+          }
+          style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+        >
+          <SectionTitle>Full Address</SectionTitle>
+          <Ionicons
+            name={isCopied ? "checkmark-circle-outline" : "copy-outline"}
+            size={16}
+            color={isCopied ? "green" : "white"}
+          />
+        </TouchableOpacity>
+        <DescriptionText>{fullAddress}</DescriptionText>
+      </Section>
 
       {/* Start and End Dates */}
       <Section>
@@ -67,13 +95,14 @@ const LeagueSummaryContainer = styled.ScrollView({
 
 const Section = styled.View({
   marginTop: 10,
+  gap: 10,
 });
 
 const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   color: "#ffffff",
-  marginBottom: 10,
+  // marginBottom: 10,
 });
 
 const DescriptionText = styled.Text({
@@ -90,6 +119,7 @@ const DisabledText = styled.Text({
 const DateRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
+  marginTop: 20,
 });
 
 const DateView = styled.View({
@@ -97,8 +127,9 @@ const DateView = styled.View({
 });
 
 const DateValue = styled.Text({
-  color: "#ffffff",
+  color: "#ccc",
   fontSize: 14,
+  marginTop: 10,
 });
 
 export default LeagueSummary;
