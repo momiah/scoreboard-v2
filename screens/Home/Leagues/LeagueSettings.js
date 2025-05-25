@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useContext } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { BlurView } from "expo-blur";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { UserContext } from "../../../context/UserContext";
 
 const LeaguSettings = () => {
   const route = useRoute();
   const { leagueId, leagueById } = route.params;
+  const { currentUser } = useContext(UserContext);
   const navigation = useNavigation();
 
   const menuOptions = [
@@ -38,6 +40,12 @@ const LeaguSettings = () => {
     navigation.navigate(action, { leagueId, leagueById });
   };
 
+  // Only owners can see remove players
+  const isOwner = leagueById?.leagueOwner.userId === currentUser?.userId;
+  const filteredMenuOptions = isOwner
+    ? menuOptions
+    : menuOptions.filter((option) => option.action !== "RemovePlayers");
+
   return (
     <Container>
       <Modal transparent animationType="fade" visible={false}>
@@ -53,7 +61,7 @@ const LeaguSettings = () => {
       </Header>
 
       <MenuList>
-        {menuOptions.map((option) => (
+        {filteredMenuOptions.map((option) => (
           <MenuItem
             key={option.label}
             onPress={() => handlePress(option.action)}

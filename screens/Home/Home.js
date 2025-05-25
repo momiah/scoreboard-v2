@@ -34,7 +34,7 @@ const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
-  const { fetchLeagues } = useContext(LeagueContext);
+  const { fetchLatestLeagues } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser } = useContext(UserContext);
 
   const [sortedUsers, setSortedUsers] = useState([]);
@@ -94,7 +94,7 @@ const Home = () => {
             refreshing={refreshing}
             onRefresh={() => {
               fetchUsers();
-              fetchLeagues();
+              fetchLatestLeagues();
             }}
             tintColor="white" // iOS
             colors={["white"]} // Android

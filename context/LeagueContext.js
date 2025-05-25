@@ -6,6 +6,9 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  query,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import moment from "moment";
 
@@ -53,7 +56,7 @@ const LeagueProvider = ({ children }) => {
   const fetchLatestLeagues = async () => {
     try {
       const leaguesRef = collection(db, "leagues");
-      const q = query(leaguesRef, orderBy("createdAt", "desc"), limit(10));
+      const q = query(leaguesRef, orderBy("startDate", "asc"), limit(10));
       const querySnapshot = await getDocs(q);
 
       const latestLeagues = querySnapshot.docs.map((doc) => ({
@@ -192,10 +195,9 @@ const LeagueProvider = ({ children }) => {
         },
       });
 
-      fetchLeagues(); // Re-fetch leagues to update the list
       setLeagueNavigationId(leagueId);
 
-      // Reset the league detail state after a short delay
+      // Reset the league navigation ID after a short delay
       setTimeout(() => {
         setLeagueNavigationId("");
       }, 2000);
@@ -893,6 +895,7 @@ const LeagueProvider = ({ children }) => {
         addLeagues,
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
+        fetchLatestLeagues,
         fetchLeagueById,
         getCourts,
         addCourt,

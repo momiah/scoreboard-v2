@@ -185,6 +185,7 @@ export const leagueSchema = {
   leagueDescription: "",
   location: locationSchema,
   centerName: "",
+  createdAt: new Date(),
   startDate: "",
   leagueLengthInMonths: "",
   endDate: "",
