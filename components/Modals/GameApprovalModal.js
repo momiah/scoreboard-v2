@@ -6,19 +6,16 @@ import {
   ActivityIndicator,
   Clipboard,
 } from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
 
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext } from "react";
-import Tag from "../Tag";
+
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
-import { useRef } from "react";
-import moment from "moment";
-import { copyLocationAddress } from "../../helpers/copyLocationAddress";
+
 import { useNavigation } from "@react-navigation/native";
 import { notificationTypes } from "../../schemas/schema";
 

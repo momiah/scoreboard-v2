@@ -34,7 +34,7 @@ const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
-  const { fetchLatestLeagues } = useContext(LeagueContext);
+  const { fetchUpcomingLeagues } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser } = useContext(UserContext);
 
   const [sortedUsers, setSortedUsers] = useState([]);
@@ -94,7 +94,7 @@ const Home = () => {
             refreshing={refreshing}
             onRefresh={() => {
               fetchUsers();
-              fetchLatestLeagues();
+              fetchUpcomingLeagues();
             }}
             tintColor="white" // iOS
             colors={["white"]} // Android
@@ -113,7 +113,7 @@ const Home = () => {
                 key={platform}
                 onPress={() => handleSocialPress(platform)}
               >
-                <Ionicons name={ICON_MAP[platform]} size={20} color="#00A2FF" />
+                <Ionicons name={ICON_MAP[platform]} size={25} color="#00A2FF" />
               </SocialButton>
             ))}
           </SocialRow>

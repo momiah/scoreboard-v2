@@ -25,9 +25,9 @@ import { UserContext } from "../../../context/UserContext";
 import { calculateLeagueStatus } from "../../../helpers/calculateLeagueStatus";
 
 import { ccDefaultImage } from "../../../mockImages/index";
-import moment from "moment";
+
 import { copyLocationAddress } from "../../../helpers/copyLocationAddress";
-import { formatDate } from "../../../helpers/formatDate";
+
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 
 const League = () => {

@@ -83,7 +83,7 @@ const LeagueProvider = ({ children }) => {
         };
       });
 
-      setLeagues(leaguesData);
+      return leaguesData;
     } catch (error) {
       console.error("Error fetching leagues:", error);
     }
@@ -235,7 +235,7 @@ const LeagueProvider = ({ children }) => {
       await updateDoc(leagueDocRef, updatedLeague);
 
       // Update the state in the context
-      setLeagues((prevLeagues) =>
+      setUpcomingLeagues((prevLeagues) =>
         prevLeagues.map((league) =>
           league.id === updatedLeague.id ? updatedLeague : league
         )
@@ -895,7 +895,7 @@ const LeagueProvider = ({ children }) => {
         addLeagues,
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
-        fetchLatestLeagues,
+        fetchUpcomingLeagues,
         fetchLeagueById,
         getCourts,
         addCourt,
@@ -909,7 +909,7 @@ const LeagueProvider = ({ children }) => {
         sendChatMessage,
 
         // League State Management
-        leagues,
+        upcomingLeagues,
         leagueById,
         leagueNavigationId,
         setLeagueNavigationId,
