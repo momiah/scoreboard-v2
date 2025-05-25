@@ -35,7 +35,7 @@ import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
 const LeagueContext = createContext();
 
 const LeagueProvider = ({ children }) => {
-  const [leagues, setLeagues] = useState([]);
+  const [upcomingLeagues, setUpcomingLeagues] = useState([]);
   const {
     sendNotification,
     getUserById,
@@ -50,10 +50,10 @@ const LeagueProvider = ({ children }) => {
 
   // Fetch leagues data based on mock or real data
   useEffect(() => {
-    fetchLatestLeagues();
+    fetchUpcomingLeagues();
   }, []);
 
-  const fetchLatestLeagues = async () => {
+  const fetchUpcomingLeagues = async () => {
     try {
       const leaguesRef = collection(db, "leagues");
       const q = query(leaguesRef, orderBy("startDate", "asc"), limit(10));
@@ -64,7 +64,7 @@ const LeagueProvider = ({ children }) => {
         ...doc.data(),
       }));
 
-      setLeagues(latestLeagues);
+      setUpcomingLeagues(latestLeagues);
     } catch (error) {
       console.error("Error fetching latest leagues:", error);
     }

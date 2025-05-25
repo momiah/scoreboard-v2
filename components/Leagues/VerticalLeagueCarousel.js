@@ -13,7 +13,7 @@ import { ccDefaultImage } from "../../mockImages/index";
 const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
   const navigation = useNavigation();
 
-  const publicLeagues = leagues.filter((league) => league.privacy === "Public");
+  // const publicLeagues = leagues.filter((league) => league.privacy === "Public");
 
   // Memoize navigation handler to prevent re-renders
   const navigateTo = useCallback(
@@ -105,7 +105,7 @@ const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
 
   return (
     <FlatList
-      data={publicLeagues}
+      data={leagues}
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderLeagueItem}
       showsVerticalScrollIndicator={false}

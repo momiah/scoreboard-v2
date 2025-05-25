@@ -14,7 +14,7 @@ const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues, leagueNavigationId } = useContext(LeagueContext);
+  const { upcomingLeagues, leagueNavigationId } = useContext(LeagueContext);
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
@@ -30,7 +30,9 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const spacing = 20;
 
   // find the leagues that have privacy set to "Public"
-  const publicLeagues = leagues.filter((league) => league.privacy === "Public");
+  const publicLeagues = upcomingLeagues.filter(
+    (league) => league.privacy === "Public"
+  );
 
   return (
     <CarouselContainer
