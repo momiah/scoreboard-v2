@@ -10,7 +10,8 @@ import { useRef } from "react";
 
 export const copyLocationAddress = (location, timeoutRef, setIsCopied) => {
   if (!location) return;
-  const address = `${location.courtName}, ${location.city}, ${location.postCode}`;
+  const address = `${location.courtName}, ${location.address}, ${location.city}, ${location.postCode}, ${location.countryCode}`;
+
   Clipboard.setString(address);
   setIsCopied(true);
 

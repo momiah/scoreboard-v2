@@ -34,7 +34,7 @@ const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
-  const { fetchLeagues } = useContext(LeagueContext);
+  const { fetchUpcomingLeagues } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser } = useContext(UserContext);
 
   const [sortedUsers, setSortedUsers] = useState([]);
@@ -94,7 +94,7 @@ const Home = () => {
             refreshing={refreshing}
             onRefresh={() => {
               fetchUsers();
-              fetchLeagues();
+              fetchUpcomingLeagues();
             }}
             tintColor="white" // iOS
             colors={["white"]} // Android
@@ -113,14 +113,14 @@ const Home = () => {
                 key={platform}
                 onPress={() => handleSocialPress(platform)}
               >
-                <Ionicons name={ICON_MAP[platform]} size={20} color="#00A2FF" />
+                <Ionicons name={ICON_MAP[platform]} size={25} color="#00A2FF" />
               </SocialButton>
             ))}
           </SocialRow>
         </Overview>
 
         {currentUser ? (
-          <Text style={{ color: "white" }}>
+          <Text style={{ color: "white", marginVertical: 10 }}>
             Hello, {currentUser.firstName}{" "}
           </Text>
         ) : (
@@ -130,7 +130,7 @@ const Home = () => {
         )}
 
         <SubHeader
-          title="Leagues"
+          title="Upcoming Leagues"
           onIconPress={addLeague}
           actionText="Browse Leagues"
           showIcon
@@ -175,8 +175,6 @@ const Home = () => {
   );
 };
 
-const { width: screenWidth } = Dimensions.get("window");
-
 const HomeContainer = styled.ScrollView({
   flex: 1,
   backgroundColor: " rgb(3, 16, 31)",
@@ -190,6 +188,7 @@ const Overview = styled.View({
   justifyContent: "space-between",
   alignItems: "center",
   paddingRight: 15,
+  marginTop: 10,
 });
 
 const SocialRow = styled.View({

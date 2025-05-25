@@ -235,7 +235,13 @@ const UserProfile = () => {
   return (
     <Container>
       {isOwnProfile && (
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 20,
+          }}
+        >
           <TouchableOpacity
             style={{ alignSelf: "flex-start", paddingHorizontal: 20 }}
             onPress={() => loadProfile()}

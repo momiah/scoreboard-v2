@@ -17,6 +17,8 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 
+const FILTERS_STORAGE_KEY = "@courtchamp_league_filters";
+
 const Leagues = () => {
   const navigation = useNavigation();
   const bottomSheetRef = useRef(null);
@@ -25,65 +27,124 @@ const Leagues = () => {
   const [isFiltering, setIsFiltering] = useState(false);
 
   const { currentUser } = useContext(UserContext);
-  const { leagues } = useContext(LeagueContext);
+  const { fetchLeagues } = useContext(LeagueContext);
 
-  // Initial form values with the user's country
+  const [loadingLeagues, setLoadingLeagues] = useState(true);
+  const [leagues, setLeagues] = useState([]);
+  const [filteredLeagues, setFilteredLeagues] = useState([]);
+
   const initialFilterValues = {
     country: currentUser?.location?.country || "",
     countryCode: currentUser?.location?.countryCode || "",
     city: "",
-    matchType: "",
+    leagueType: "",
     maxPlayers: null,
   };
+
+  const [appliedFilters, setAppliedFilters] = useState(initialFilterValues);
 
   const { control, getValues, setValue, watch, reset } = useForm({
     defaultValues: initialFilterValues,
   });
 
   const watchedCountryCode = watch("countryCode");
-  const [filteredLeagues, setFilteredLeagues] = useState([]);
-  const [appliedFilters, setAppliedFilters] = useState(initialFilterValues);
 
-  //  const [loadingLeagues, setLoadingLeagues] = useState(false);
-
-  // Initialize leagues only on first load with country filter only
+  // Load saved filters on component mount
   useEffect(() => {
-    // Only filter by country on initial load
-    const publicLeagues = leagues.filter(
-      (league) =>
-        league.privacy === "Public" &&
-        (!appliedFilters.country ||
-          league.location.country === appliedFilters.country)
-    );
-    setFilteredLeagues(publicLeagues);
-  }, [leagues]);
+    const loadSavedFilters = async () => {
+      try {
+        setLoadingLeagues(true);
+        const savedFilters = await AsyncStorage.getItem(FILTERS_STORAGE_KEY);
+        if (savedFilters) {
+          const parsedFilters = JSON.parse(savedFilters);
+          setAppliedFilters(parsedFilters);
 
-  const handleApplyFilters = () => {
-    const currentValues = getValues();
-    setAppliedFilters(currentValues);
+          // Update form with saved filters
+          Object.keys(parsedFilters).forEach((key) => {
+            setValue(key, parsedFilters[key]);
+          });
+        }
+      } catch (error) {
+        console.error("Error loading saved filters:", error);
+      } finally {
+        setLoadingLeagues(false);
+      }
+    };
+
+    loadSavedFilters();
+  }, [setValue]);
+
+  // Fetch leagues effect
+  useEffect(() => {
+    const fetchAndSetLeagues = async () => {
+      try {
+        setLoadingLeagues(true);
+        const fetchedLeagues = await fetchLeagues();
+        const publicLeagues = fetchedLeagues.filter(
+          (l) => l.privacy === "Public"
+        );
+        setLeagues(publicLeagues);
+      } catch (error) {
+        console.error("Error fetching leagues:", error);
+        setLeagues([]);
+      } finally {
+        setLoadingLeagues(false);
+      }
+    };
+
+    fetchAndSetLeagues();
+  }, [fetchLeagues]);
+
+  // Apply filters whenever leagues or appliedFilters change
+  useEffect(() => {
+    if (leagues.length === 0) {
+      setFilteredLeagues([]);
+      return;
+    }
+
     setIsFiltering(true);
 
-    setTimeout(() => {
-      const publicLeagues = leagues.filter(
-        (league) => league.privacy === "Public"
+    const filtered = leagues.filter((league) => {
+      const leagueType = String(league.leagueType).toLowerCase();
+      const filterLeagueType = appliedFilters.leagueType?.toLowerCase() || "";
+
+      return (
+        // Country filter
+        (!appliedFilters.country ||
+          league.location.country === appliedFilters.country) &&
+        // City filter
+        (!appliedFilters.city ||
+          league.location.city === appliedFilters.city) &&
+        // League type filter
+        (!appliedFilters.leagueType || leagueType === filterLeagueType) &&
+        // Max players filter
+        (!appliedFilters.maxPlayers ||
+          league.maxPlayers === appliedFilters.maxPlayers)
       );
+    });
 
-      const filtered = publicLeagues.filter((league) => {
-        return (
-          (!currentValues.country ||
-            league.location.country === currentValues.country) &&
-          (!currentValues.city ||
-            league.location.city === currentValues.city) &&
-          (!currentValues.matchType ||
-            league.leagueType === currentValues.matchType.toLowerCase()) &&
-          (!currentValues.maxPlayers ||
-            league.maxPlayers === currentValues.maxPlayers)
-        );
-      });
+    console.log(
+      `Filtered ${leagues.length} leagues to ${filtered.length} leagues`
+    );
+    setFilteredLeagues(filtered);
+    setIsFiltering(false);
+  }, [leagues, appliedFilters]);
 
-      setFilteredLeagues(filtered);
-      setIsFiltering(false);
-    }, 200); // slight delay to allow UI to update
+  const handleApplyFilters = async () => {
+    const currentValues = getValues();
+    console.log("Applying new filters:", currentValues);
+
+    // Save filters to AsyncStorage
+    try {
+      await AsyncStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify(currentValues)
+      );
+    } catch (error) {
+      console.error("Error saving filters:", error);
+    }
+
+    setAppliedFilters(currentValues);
   };
 
   const addLeague = async () => {
@@ -97,11 +158,23 @@ const Leagues = () => {
   };
 
   const showFilterSheet = () => {
-    // Reset form to last applied filters when opening filter sheet
     reset(appliedFilters);
     setFilterSheetVisible(true);
     bottomSheetRef.current?.present();
   };
+
+  const hasActiveFilters =
+    appliedFilters.country ||
+    appliedFilters.city ||
+    appliedFilters.leagueType ||
+    appliedFilters.maxPlayers;
+
+  // Sort leagues by start date
+  const sortedLeagues = [...filteredLeagues].sort((a, b) => {
+    const dateA = new Date(a.startDate);
+    const dateB = new Date(b.startDate);
+    return dateA - dateB;
+  });
 
   return (
     <LeagueContainer>
@@ -115,6 +188,7 @@ const Leagues = () => {
       <View
         style={{
           marginTop: 20,
+          marginBottom: 10,
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
@@ -128,15 +202,28 @@ const Leagues = () => {
           onIconPress={addLeague}
           showIcon
         />
-        <Ionicons
-          name="filter"
-          size={25}
-          color={"white"}
-          onPress={showFilterSheet}
-        />
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {hasActiveFilters && (
+            <View
+              style={{
+                backgroundColor: "#00A2FF",
+                borderRadius: 10,
+                width: 8,
+                height: 8,
+                marginRight: 5,
+              }}
+            />
+          )}
+          <Ionicons
+            name="filter"
+            size={25}
+            color={"white"}
+            onPress={showFilterSheet}
+          />
+        </View>
       </View>
 
-      {isFiltering ? (
+      {isFiltering || loadingLeagues ? (
         <LoadingWrapper>
           <ActivityIndicator size="large" color="#00A2FF" />
         </LoadingWrapper>
@@ -148,9 +235,9 @@ const Leagues = () => {
       ) : (
         <EmptyState>
           <EmptyText>
-            There are no leagues matching your criteria, please try broaden your
-            search or you can help grow the community by creating your own
-            league! 🏟️
+            {hasActiveFilters
+              ? "No leagues match your current filters. Try adjusting your search criteria or create your own league! 🏟️"
+              : "No leagues available in your area. Help grow the community by creating your own league! 🏟️"}
           </EmptyText>
         </EmptyState>
       )}
@@ -221,6 +308,7 @@ const EmptyText = styled.Text({
   fontSize: 16,
   fontStyle: "italic",
   textAlign: "center",
+  paddingHorizontal: 20,
 });
 
 export default Leagues;

@@ -254,7 +254,7 @@ const InviteActionModal = ({
               )}
 
               {isWithdrawn && (
-                <ErrorText>This invite has been withdrawn</ErrorText>
+                <ErrorText>This invite is no longer available</ErrorText>
               )}
 
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>

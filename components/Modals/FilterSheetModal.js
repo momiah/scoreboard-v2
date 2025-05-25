@@ -28,6 +28,7 @@ const FilterSheetModal = ({
   onApplyFilters,
   watchedCountryCode,
   initialValues,
+  isFiltering,
 }) => {
   const [countries, setCountries] = useState([]);
   const [cities, setCities] = useState([]);
@@ -47,7 +48,7 @@ const FilterSheetModal = ({
     return (
       currentValues.country !== appliedValues.country ||
       currentValues.city !== appliedValues.city ||
-      currentValues.matchType !== appliedValues.matchType ||
+      currentValues.leagueType !== appliedValues.leagueType ||
       currentValues.maxPlayers !== appliedValues.maxPlayers
     );
   }, [currentValues, appliedValues]);
@@ -57,7 +58,7 @@ const FilterSheetModal = ({
     return (
       !currentValues.country &&
       !currentValues.city &&
-      !currentValues.matchType &&
+      !currentValues.leagueType &&
       !currentValues.maxPlayers
     );
   }, [currentValues]);
@@ -146,9 +147,9 @@ const FilterSheetModal = ({
     }
   }, [initialValues]);
 
-  const handleApply = () => {
-    onApplyFilters();
+  const handleApply = async () => {
     setAppliedValues({ ...currentValues });
+    await onApplyFilters();
     bottomSheetRef.current?.dismiss();
   };
 
@@ -156,18 +157,17 @@ const FilterSheetModal = ({
     setValue("country", "");
     setValue("countryCode", "");
     setValue("city", "");
-    setValue("matchType", "");
+    setValue("leagueType", "");
     setValue("maxPlayers", null);
     setCities([]);
-
-    // The parent component will handle filtering when onApplyFilters is called
-    // onApplyFilters();
-    // bottomSheetRef.current?.dismiss();
+    // Don't apply or close - user must press Apply
   };
 
   return (
     <BottomSheetView style={{ padding: 20 }}>
-      <Title>Filter Leagues</Title>
+      <HeaderRow>
+        <Title>Filter Leagues</Title>
+      </HeaderRow>
 
       <Controller
         name="country"
@@ -218,9 +218,9 @@ const FilterSheetModal = ({
       />
 
       <Spacer />
-      <RadioTitle>Match Type</RadioTitle>
+      <RadioTitle>League Type</RadioTitle>
       <Controller
-        name="matchType"
+        name="leagueType"
         control={control}
         render={({ field }) => (
           <RadioGroup>
@@ -253,8 +253,15 @@ const FilterSheetModal = ({
 
       <Spacer />
       <ButtonRow>
-        <ApplyButton onPress={handleApply} disabled={!hasChanges}>
-          <ApplyButtonText>Apply</ApplyButtonText>
+        <ApplyButton
+          onPress={handleApply}
+          disabled={!hasChanges || isFiltering}
+        >
+          {isFiltering ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <ApplyButtonText>Apply Filters</ApplyButtonText>
+          )}
         </ApplyButton>
         <ClearButton onPress={handleClear} disabled={isClearDisabled}>
           <ClearButtonText>Clear</ClearButtonText>
@@ -272,31 +279,41 @@ const FilterSheetModal = ({
 
 const screenWidth = Dimensions.get("window").width;
 
+const HeaderRow = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 20,
+});
+
 const Title = styled.Text({
   fontSize: 20,
   fontWeight: "bold",
   color: "#fff",
-  marginBottom: 15,
 });
 
 const Spacer = styled.View({ height: 20 });
+
 const RadioTitle = styled.Text({
   color: "#fff",
   fontSize: 14,
   fontWeight: "bold",
   marginBottom: 10,
 });
+
 const RadioGroup = styled.View({
   flexDirection: "row",
   flexWrap: "wrap",
   gap: 15,
 });
+
 const RadioOption = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   marginBottom: 10,
   marginRight: 15,
 });
+
 const RadioCircle = styled.View(({ selected }) => ({
   height: 18,
   width: 18,
@@ -306,7 +323,11 @@ const RadioCircle = styled.View(({ selected }) => ({
   backgroundColor: selected ? "#fff" : "transparent",
   marginRight: 8,
 }));
-const RadioLabel = styled.Text({ color: "#fff", fontSize: 14 });
+
+const RadioLabel = styled.Text({
+  color: "#fff",
+  fontSize: 14,
+});
 
 const ButtonRow = styled.View({
   flexDirection: "row",
@@ -316,35 +337,38 @@ const ButtonRow = styled.View({
   marginTop: 20,
   marginBottom: 20,
 });
+
 const ApplyButton = styled.TouchableOpacity(({ disabled }) => ({
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  padding: 10,
+  padding: 15,
   borderRadius: 8,
-  width: screenWidth <= 400 ? 250 : 300,
+  width: screenWidth <= 400 ? 200 : 240,
   backgroundColor: disabled ? "#444" : "#00A2FF",
   flex: 1,
   opacity: disabled ? 0.6 : 1,
 }));
+
 const ApplyButtonText = styled.Text({
   color: "#fff",
   fontWeight: "bold",
   fontSize: 16,
 });
+
 const ClearButton = styled.TouchableOpacity(({ disabled }) => ({
   padding: 15,
   borderRadius: 10,
   alignItems: "center",
-  flex: 0.2,
   flexDirection: "row",
   justifyContent: "center",
   marginRight: 5,
   opacity: disabled ? 0.6 : 1,
+  minWidth: 80,
 }));
+
 const ClearButtonText = styled.Text({
   color: "red",
-  //   fontWeight: "bold",
   fontSize: 16,
 });
 

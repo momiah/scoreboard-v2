@@ -14,23 +14,25 @@ const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const navigation = useNavigation();
-  const { leagues, leagueIdForDetail } = useContext(LeagueContext);
+  const { upcomingLeagues, leagueNavigationId } = useContext(LeagueContext);
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
 
   useEffect(() => {
-    if (leagueIdForDetail !== "") {
-      navigateTo(leagueIdForDetail);
+    if (leagueNavigationId !== "") {
+      navigateTo(leagueNavigationId);
     }
-  }, [leagueIdForDetail]);
+  }, [leagueNavigationId]);
 
   const itemWidth = width - 80;
   const spacing = 20;
 
   // find the leagues that have privacy set to "Public"
-  const publicLeagues = leagues.filter((league) => league.privacy === "Public");
+  const publicLeagues = upcomingLeagues.filter(
+    (league) => league.privacy === "Public"
+  );
 
   return (
     <CarouselContainer

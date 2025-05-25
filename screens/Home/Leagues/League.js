@@ -7,6 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  Linking,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -25,10 +27,18 @@ import { UserContext } from "../../../context/UserContext";
 import { calculateLeagueStatus } from "../../../helpers/calculateLeagueStatus";
 
 import { ccDefaultImage } from "../../../mockImages/index";
-import moment from "moment";
-import { copyLocationAddress } from "../../../helpers/copyLocationAddress";
-import { formatDate } from "../../../helpers/formatDate";
+
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
+
+const openMap = (location) => {
+  const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
+  const encoded = encodeURIComponent(query);
+  const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+
+  Linking.openURL(url).catch((err) =>
+    console.error("Error opening Google Maps web:", err)
+  );
+};
 
 const League = () => {
   const route = useRoute();
@@ -40,13 +50,10 @@ const League = () => {
 
   const [loading, setLoading] = useState(true);
 
-  const defaultTab = tab || "Scoreboard";
+  const defaultTab = tab || "Summary";
   const [selectedTab, setSelectedTab] = useState(defaultTab);
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
-
-  const [isCopied, setIsCopied] = useState(false);
-  const timeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -199,35 +206,13 @@ const League = () => {
             )}
 
             <LeagueName>{leagueName}</LeagueName>
-            {/* <TouchableOpacity
-              onPress={() => generateNewLeagueParticipants(4, leagueId)}
-            >
-              <LeagueLocation>Generate Participant</LeagueLocation>
-            </TouchableOpacity> */}
 
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 10,
-              }}
-            >
+            <Address onPress={() => openMap(location)}>
               <LeagueLocation>
                 {location.courtName}, {location.city}
               </LeagueLocation>
-              <TouchableOpacity
-                onPress={() =>
-                  copyLocationAddress(location, timeoutRef, setIsCopied)
-                }
-                style={{ marginLeft: 5 }}
-              >
-                <Ionicons
-                  name={isCopied ? "checkmark-circle-outline" : "copy-outline"}
-                  size={16}
-                  color={isCopied ? "green" : "white"}
-                />
-              </TouchableOpacity>
-            </View>
+              <Ionicons name={"open-outline"} size={20} color={"#00A2FF"} />
+            </Address>
 
             <View
               style={{
@@ -381,6 +366,13 @@ const LeagueName = styled.Text({
   backgroundColor: "rgba(0, 0, 0, 0.3)",
   borderRadius: 5,
   alignSelf: "flex-start",
+});
+
+const Address = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 15,
+  gap: 5,
 });
 
 const LeagueLocation = styled.Text({

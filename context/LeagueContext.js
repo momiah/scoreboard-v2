@@ -6,6 +6,9 @@ import {
   getDocs,
   getDoc,
   updateDoc,
+  query,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import moment from "moment";
 
@@ -32,7 +35,7 @@ import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
 const LeagueContext = createContext();
 
 const LeagueProvider = ({ children }) => {
-  const [leagues, setLeagues] = useState([]);
+  const [upcomingLeagues, setUpcomingLeagues] = useState([]);
   const {
     sendNotification,
     getUserById,
@@ -42,13 +45,30 @@ const LeagueProvider = ({ children }) => {
     retrieveTeams,
   } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
-  const [leagueIdForDetail, setLeagueIdForDetail] = useState("");
+  const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
 
   // Fetch leagues data based on mock or real data
   useEffect(() => {
-    fetchLeagues();
+    fetchUpcomingLeagues();
   }, []);
+
+  const fetchUpcomingLeagues = async () => {
+    try {
+      const leaguesRef = collection(db, "leagues");
+      const q = query(leaguesRef, orderBy("startDate", "asc"), limit(10));
+      const querySnapshot = await getDocs(q);
+
+      const latestLeagues = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setUpcomingLeagues(latestLeagues);
+    } catch (error) {
+      console.error("Error fetching latest leagues:", error);
+    }
+  };
 
   const fetchLeagues = async () => {
     try {
@@ -63,7 +83,7 @@ const LeagueProvider = ({ children }) => {
         };
       });
 
-      setLeagues(leaguesData);
+      return leaguesData;
     } catch (error) {
       console.error("Error fetching leagues:", error);
     }
@@ -175,12 +195,11 @@ const LeagueProvider = ({ children }) => {
         },
       });
 
-      fetchLeagues(); // Re-fetch leagues to update the list
-      setLeagueIdForDetail(leagueId);
+      setLeagueNavigationId(leagueId);
 
-      // Reset the league detail state after a short delay
+      // Reset the league navigation ID after a short delay
       setTimeout(() => {
-        setLeagueIdForDetail("");
+        setLeagueNavigationId("");
       }, 2000);
     } catch (error) {
       console.error("Error adding league: ", error);
@@ -216,7 +235,7 @@ const LeagueProvider = ({ children }) => {
       await updateDoc(leagueDocRef, updatedLeague);
 
       // Update the state in the context
-      setLeagues((prevLeagues) =>
+      setUpcomingLeagues((prevLeagues) =>
         prevLeagues.map((league) =>
           league.id === updatedLeague.id ? updatedLeague : league
         )
@@ -876,6 +895,7 @@ const LeagueProvider = ({ children }) => {
         addLeagues,
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
+        fetchUpcomingLeagues,
         fetchLeagueById,
         getCourts,
         addCourt,
@@ -889,10 +909,10 @@ const LeagueProvider = ({ children }) => {
         sendChatMessage,
 
         // League State Management
-        leagues,
+        upcomingLeagues,
         leagueById,
-        leagueIdForDetail,
-        setLeagueIdForDetail,
+        leagueNavigationId,
+        setLeagueNavigationId,
         removePlayerFromLeague,
         acceptLeagueInvite,
         declineLeagueInvite,

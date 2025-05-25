@@ -86,7 +86,7 @@ const AddGame = ({
 
 const screenWidth = Dimensions.get("window").width;
 
-const GameContainer = styled.TouchableOpacity({
+const GameContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
@@ -118,7 +118,7 @@ const ScoreContainer = styled.View({
   display: "flex",
   flexDirection: "row",
   justifyContent: "center",
-  marginTop: screenWidth <= 400 ? 20 : 0,
+  marginTop: 20,
 });
 
 const ScoreInput = styled.TextInput({

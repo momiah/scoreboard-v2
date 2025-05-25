@@ -17,7 +17,8 @@ const AssignAdmin = () => {
   const { leagueId, leagueById } = route.params;
 
   const { currentUser } = useContext(UserContext);
-  const { assignLeagueAdmin, revokeLeagueAdmin } = useContext(LeagueContext);
+  const { assignLeagueAdmin, revokeLeagueAdmin, fetchLeagueById } =
+    useContext(LeagueContext);
 
   const [league, setLeague] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,14 +33,26 @@ const AssignAdmin = () => {
     loadLeague();
   }, []);
 
+  const refetchLeague = async () => {
+    setLoading(true);
+    try {
+      const fetchedLeague = await fetchLeagueById(leagueId);
+      setLeague(fetchedLeague);
+    } catch (error) {
+      console.error("Failed to fetch league:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAssign = async (user) => {
     await assignLeagueAdmin(leagueId, user);
-    loadLeague();
+    refetchLeague();
   };
 
   const handleRevoke = async (userId) => {
     await revokeLeagueAdmin(leagueId, userId);
-    loadLeague();
+    refetchLeague();
   };
 
   const goToProfile = (userId) => {
