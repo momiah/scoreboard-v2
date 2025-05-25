@@ -13,7 +13,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 const PendingInvites = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { leagueId, leagueById } = route.params;
+  const { leagueId } = route.params;
 
   const { fetchLeagueById, getPendingInviteUsers, removePendingInvite } =
     useContext(LeagueContext);
@@ -22,10 +22,16 @@ const PendingInvites = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchInvites = async () => {
-    setLoading(true);
-    const users = await getPendingInviteUsers(leagueById);
-    setPendingUsers(users);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const league = await fetchLeagueById(leagueId);
+      const users = await getPendingInviteUsers(league);
+      setPendingUsers(users);
+    } catch (error) {
+      console.error("Failed to fetch pending invites:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -33,8 +39,13 @@ const PendingInvites = () => {
   }, []);
 
   const handleRemove = async (userId) => {
-    await removePendingInvite(leagueId, userId);
-    setPendingUsers((prev) => prev.filter((u) => u.userId !== userId));
+    try {
+      await removePendingInvite(leagueId, userId);
+      setPendingUsers((prev) => prev.filter((u) => u.userId !== userId));
+      fetchInvites();
+    } catch (error) {
+      console.error("Failed to remove pending invite:", error);
+    }
   };
 
   const goToProfile = (userId) => {
@@ -42,12 +53,15 @@ const PendingInvites = () => {
   };
 
   const renderItem = ({ item }) => (
-    <Row onPress={() => goToProfile(item.userId)}>
-      <Username>{item.username}</Username>
-      <WithdrawButton onPress={() => handleRemove(item.id)}>
-        <WithdrawText>Withdraw</WithdrawText>
-      </WithdrawButton>
-    </Row>
+    console.log("Rendering item:", JSON.stringify(item, null, 2)),
+    (
+      <Row onPress={() => goToProfile(item.userId)}>
+        <Username>{item.username}</Username>
+        <WithdrawButton onPress={() => handleRemove(item.userId)}>
+          <WithdrawText>Withdraw</WithdrawText>
+        </WithdrawButton>
+      </Row>
+    )
   );
 
   if (loading) {

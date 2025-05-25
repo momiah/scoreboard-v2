@@ -313,36 +313,36 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
               </>
             )}
           />
-
-          <ConfirmLeagueSettingsModal
-            visible={showLeagueSettingsModal}
-            leagueCreationLoading={leagueCreationLoading}
-            onBack={() => setShowLeagueSettingsModal(false)}
-            onConfirm={handleSubmit(onSubmit)}
-            confirmDisabled={confirmDisabled}
-            control={control}
-            watch={watch}
-            errors={errors}
-            setValue={setValue}
-          />
-
-          <AddCourtModal
-            visible={showAddCourtModal}
-            courtDetails={courtDetails}
-            setCourtDetails={setCourtDetails}
-            onClose={() => setShowAddCourtModal(false)}
-            addCourt={addCourt}
-            onCourtAdded={async (courtDetails) => {
-              // Refresh courts list
-              const courtData = await getCourts();
-              const formattedCourts = formatCourtDetailsForList(courtData);
-              setCourtsList(formattedCourts);
-              setCourtData(courtData);
-              handleCourtSelect(courtDetails.courtName);
-            }}
-          />
         </SafeAreaWrapper>
       </ModalContainer>
+
+      <ConfirmLeagueSettingsModal
+        visible={showLeagueSettingsModal}
+        leagueCreationLoading={leagueCreationLoading}
+        onBack={() => setShowLeagueSettingsModal(false)}
+        onConfirm={handleSubmit(onSubmit)}
+        confirmDisabled={confirmDisabled}
+        control={control}
+        watch={watch}
+        errors={errors}
+        setValue={setValue}
+      />
+
+      <AddCourtModal
+        visible={showAddCourtModal}
+        courtDetails={courtDetails}
+        setCourtDetails={setCourtDetails}
+        onClose={() => setShowAddCourtModal(false)}
+        addCourt={addCourt}
+        onCourtAdded={async (courtDetails) => {
+          // Refresh courts list
+          const courtData = await getCourts();
+          const formattedCourts = formatCourtDetailsForList(courtData);
+          setCourtsList(formattedCourts);
+          setCourtData(courtData);
+          handleCourtSelect(courtDetails.courtName);
+        }}
+      />
     </Modal>
   );
 };
@@ -459,11 +459,10 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
 });
 
 const ScrollContainer = styled.FlatList({
-  padding: 20,
+  padding: "40px 20px",
 });
 
 const SafeAreaWrapper = styled(SafeAreaView)({
-  flex: 1,
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,

@@ -120,7 +120,7 @@ const Home = () => {
         </Overview>
 
         {currentUser ? (
-          <Text style={{ color: "white" }}>
+          <Text style={{ color: "white", marginVertical: 10 }}>
             Hello, {currentUser.firstName}{" "}
           </Text>
         ) : (
@@ -130,7 +130,7 @@ const Home = () => {
         )}
 
         <SubHeader
-          title="Leagues"
+          title="Upcoming Leagues"
           onIconPress={addLeague}
           actionText="Browse Leagues"
           showIcon
@@ -175,8 +175,6 @@ const Home = () => {
   );
 };
 
-const { width: screenWidth } = Dimensions.get("window");
-
 const HomeContainer = styled.ScrollView({
   flex: 1,
   backgroundColor: " rgb(3, 16, 31)",
@@ -190,6 +188,7 @@ const Overview = styled.View({
   justifyContent: "space-between",
   alignItems: "center",
   paddingRight: 15,
+  marginTop: 10,
 });
 
 const SocialRow = styled.View({
