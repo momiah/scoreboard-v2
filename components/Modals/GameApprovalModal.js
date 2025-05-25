@@ -39,7 +39,7 @@ const GameApprovalModal = ({
 }) => {
   const { fetchLeagueById, approveGame, declineGame } =
     useContext(LeagueContext);
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, readNotification } = useContext(UserContext);
   const [gameDetails, setGameDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingDecision, setLoadingDecision] = useState(false);
@@ -76,6 +76,7 @@ const GameApprovalModal = ({
 
           if (!game) {
             setGameDeleted(true); // 🆕 Game no longer exists
+            readNotification(notificationId, currentUser.userId);
           } else {
             setGameDeleted(false);
           }
