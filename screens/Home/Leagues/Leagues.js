@@ -188,6 +188,7 @@ const Leagues = () => {
       <View
         style={{
           marginTop: 20,
+          marginBottom: 10,
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
