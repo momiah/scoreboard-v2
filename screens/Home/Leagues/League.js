@@ -40,7 +40,7 @@ const League = () => {
 
   const [loading, setLoading] = useState(true);
 
-  const defaultTab = tab || "Scoreboard";
+  const defaultTab = tab || "Summary";
   const [selectedTab, setSelectedTab] = useState(defaultTab);
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
