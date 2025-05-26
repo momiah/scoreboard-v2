@@ -48,7 +48,7 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
             color={isCopied ? "green" : "white"}
           />
         </TouchableOpacity>
-        <DescriptionText>{fullAddress}</DescriptionText>
+        <FullAddressText>{fullAddress}</FullAddressText>
       </Section>
 
       {/* Start and End Dates */}
@@ -110,7 +110,13 @@ const SectionTitle = styled.Text({
 const DescriptionText = styled.Text({
   color: "#ccc",
   fontSize: screenWidth <= 400 ? 13 : 14,
-  marginBottom: 25,
+  marginBottom: 30,
+});
+
+const FullAddressText = styled.Text({
+  color: "#ccc",
+  fontSize: screenWidth <= 400 ? 13 : 14,
+  marginBottom: 10,
 });
 
 const DisabledText = styled.Text({
