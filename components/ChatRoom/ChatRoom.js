@@ -4,6 +4,7 @@ import React, {
   useRef,
   useContext,
   useCallback,
+  useMemo,
 } from "react";
 import {
   FlatList,
@@ -31,8 +32,15 @@ import {
 import { db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
+import moment from "moment";
 
-const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
+const ChatRoom = ({
+  leagueId,
+  userRole,
+  leagueParticipants,
+  leagueName,
+  endDate,
+}) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
   const [messages, setMessages] = useState([]);
@@ -77,6 +85,12 @@ const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
 
     return () => unsubscribe();
   }, [leagueId, scrollToEnd, isInitialLoad]);
+
+  // at top of component
+  const leagueHasEnded = moment(endDate, "DD-MM-YYYY").isBefore(
+    moment(),
+    "day"
+  );
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -238,13 +252,20 @@ const ChatRoom = ({ leagueId, userRole, leagueParticipants, leagueName }) => {
         <InputBar>
           <MessageInput
             value={inputText}
-            onChangeText={setInputText}
-            placeholder="Type your message..."
+            onChangeText={leagueHasEnded ? null : setInputText}
+            placeholder={
+              leagueHasEnded
+                ? "Chat room closed as the league has ended"
+                : "Type a message..."
+            }
             placeholderTextColor="#aaa"
           />
-          <TouchableOpacity onPress={handleSend}>
+          <SendButton
+            onPress={handleSend}
+            disabled={!inputText.trim() || leagueHasEnded}
+          >
             <Ionicons name="send" size={24} color="#00A2FF" />
-          </TouchableOpacity>
+          </SendButton>
         </InputBar>
       </View>
     </KeyboardAvoidingView>
@@ -327,5 +348,9 @@ const MessageInput = styled.TextInput({
   borderRadius: 8,
   marginRight: 10,
 });
+
+const SendButton = styled.TouchableOpacity(({ disabled }) => ({
+  opacity: disabled ? 0.5 : 1,
+}));
 
 export default ChatRoom;

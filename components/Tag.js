@@ -13,6 +13,7 @@ const Tag = ({
   bold,
   iconPosition,
   width = undefined,
+  fontSize = 10,
 }) => {
   const tagName = name ? name.toUpperCase() : "";
   const TagComponent = onPress ? InteractiveTagContainer : TagContainer;
@@ -33,7 +34,9 @@ const Tag = ({
           flexDirection={flexDirection}
         />
       )}
-      <TagText bold={bold}>{tagName}</TagText>
+      <TagText bold={bold} fontSize={fontSize}>
+        {tagName}
+      </TagText>
     </TagComponent>
   );
 };
@@ -71,9 +74,9 @@ const TagIcon = styled(Ionicons)(({ flexDirection }) => ({
   paddingRight: flexDirection === "row-reverse" ? 0 : 5,
 }));
 
-const TagText = styled.Text(({ bold }) => ({
+const TagText = styled.Text(({ bold, fontSize }) => ({
   color: "white",
-  fontSize: 10,
+  fontSize: fontSize,
   fontWeight: bold ? "bold" : "normal",
 }));
 

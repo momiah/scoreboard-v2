@@ -138,6 +138,7 @@ const League = () => {
             userRole={userRole}
             leagueParticipants={leagueParticipants}
             leagueName={leagueName}
+            endDate={endDate}
           />
         );
       case "Summary":

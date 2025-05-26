@@ -102,7 +102,8 @@ const ProfileActivity = ({ profile }) => {
               name={"Owner"}
               color="rgb(3, 16, 31)"
               iconColor="#FFD700"
-              iconSize={15}
+              iconSize={10}
+              fontSize={8}
               icon={"star-outline"}
               iconPosition={"right"}
               bold
@@ -112,7 +113,8 @@ const ProfileActivity = ({ profile }) => {
               name={"Admin"}
               color="#16181B"
               iconColor="#00A2FF"
-              iconSize={15}
+              iconSize={10}
+              fontSize={8}
               icon={"checkmark-circle-outline"}
               iconPosition={"right"}
               bold
