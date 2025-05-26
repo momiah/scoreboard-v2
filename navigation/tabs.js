@@ -190,7 +190,7 @@ const Tabs = () => {
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
-            if (route.name === "HomeTab") {
+            if (route.name === "Home") {
               iconName = focused ? "home" : "home-outline";
               return (
                 <TabIcon
@@ -200,7 +200,7 @@ const Tabs = () => {
                   hasNotification={false}
                 />
               );
-            } else if (route.name === "ProfileTab") {
+            } else if (route.name === "Profile") {
               iconName = focused ? "person" : "person-outline";
               return (
                 <TabIcon
@@ -210,7 +210,7 @@ const Tabs = () => {
                   hasNotification={false}
                 />
               );
-            } else if (route.name === "NotificationsTab") {
+            } else if (route.name === "Notifications") {
               iconName = focused ? "notifications" : "notifications-outline";
               return (
                 <TabIcon
@@ -242,9 +242,9 @@ const Tabs = () => {
         })}
       >
         {/* Replace Home component with HomeStack */}
-        <Tab.Screen name="HomeTab" component={HomeStack} />
+        <Tab.Screen name="Home" component={HomeStack} />
         <Tab.Screen
-          name="NotificationsTab"
+          name="Notifications"
           component={NotificationsStack}
           options={{
             tabBarBadge: unreadNotifications > 0 ? unreadNotifications : null,
@@ -266,7 +266,7 @@ const Tabs = () => {
           }}
         />
         {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
-        <Tab.Screen name="ProfileTab" component={ProfileStack} />
+        <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
       <View style={{ width: "100%", alignItems: "center" }}>
         <BannerAd
