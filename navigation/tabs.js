@@ -190,7 +190,7 @@ const Tabs = () => {
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
-            if (route.name === "Home") {
+            if (route.name === "HomeTab") {
               iconName = focused ? "home" : "home-outline";
               return (
                 <TabIcon
@@ -200,7 +200,7 @@ const Tabs = () => {
                   hasNotification={false}
                 />
               );
-            } else if (route.name === "Profile") {
+            } else if (route.name === "ProfileTab") {
               iconName = focused ? "person" : "person-outline";
               return (
                 <TabIcon
@@ -210,7 +210,7 @@ const Tabs = () => {
                   hasNotification={false}
                 />
               );
-            } else if (route.name === "Notifications") {
+            } else if (route.name === "NotificationsTab") {
               iconName = focused ? "notifications" : "notifications-outline";
               return (
                 <TabIcon
@@ -220,7 +220,7 @@ const Tabs = () => {
                   hasNotification={unreadNotifications > 0}
                 />
               );
-            } else if (route.name === "Chats") {
+            } else if (route.name === "ChatsTab") {
               iconName = focused ? "chatbubbles" : "chatbubbles-outline";
 
               return (
@@ -242,9 +242,9 @@ const Tabs = () => {
         })}
       >
         {/* Replace Home component with HomeStack */}
-        <Tab.Screen name="Home" component={HomeStack} />
+        <Tab.Screen name="HomeTab" component={HomeStack} />
         <Tab.Screen
-          name="Notifications"
+          name="NotificationsTab"
           component={NotificationsStack}
           options={{
             tabBarBadge: unreadNotifications > 0 ? unreadNotifications : null,
@@ -255,7 +255,7 @@ const Tabs = () => {
           }}
         />
         <Tab.Screen
-          name="Chats"
+          name="ChatsTab"
           component={ChatsStack}
           options={{
             tabBarBadge: unreadChats > 0 ? unreadChats : null,
@@ -266,7 +266,7 @@ const Tabs = () => {
           }}
         />
         {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
-        <Tab.Screen name="Profile" component={ProfileStack} />
+        <Tab.Screen name="ProfileTab" component={ProfileStack} />
       </Tab.Navigator>
       <View style={{ width: "100%", alignItems: "center" }}>
         <BannerAd

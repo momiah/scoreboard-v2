@@ -110,6 +110,7 @@ const SectionTitle = styled.Text({
 const DescriptionText = styled.Text({
   color: "#ccc",
   fontSize: screenWidth <= 400 ? 13 : 14,
+  marginBottom: 25,
 });
 
 const DisabledText = styled.Text({
