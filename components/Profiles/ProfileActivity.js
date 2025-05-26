@@ -84,8 +84,41 @@ const ProfileActivity = ({ profile }) => {
 
   const renderLeagueItem = useCallback(({ item }) => {
     const leagueStatus = calculateLeagueStatus(item);
+    const isOwner = item.leagueOwner?.userId === profile?.userId;
+    const isAdmin =
+      !isOwner &&
+      item.leagueAdmins?.some((admin) => admin.userId === profile?.userId);
     return (
       <LeagueItem key={item.id} onPress={() => navigateTo(item.id)}>
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+          }}
+        >
+          {isOwner ? (
+            <Tag
+              name={"Owner"}
+              color="rgb(3, 16, 31)"
+              iconColor="#FFD700"
+              iconSize={15}
+              icon={"star-outline"}
+              iconPosition={"right"}
+              bold
+            />
+          ) : isAdmin ? (
+            <Tag
+              name={"Admin"}
+              color="#16181B"
+              iconColor="#00A2FF"
+              iconSize={15}
+              icon={"checkmark-circle-outline"}
+              iconPosition={"right"}
+              bold
+            />
+          ) : null}
+        </View>
         <View
           style={{
             padding: 5,
@@ -148,7 +181,7 @@ const ProfileActivity = ({ profile }) => {
 const LeagueItem = styled.TouchableOpacity`
   background-color: rgba(0, 0, 0, 0.3);
   border: 1px solid rgb(26, 28, 54);
-  padding: ${screenWidth <= 400 ? 10 : 15}px;
+  padding: ${screenWidth <= 400 ? 12 : 17}px;
   border-radius: 8px;
   margin-bottom: 10px;
   flex-direction: row;

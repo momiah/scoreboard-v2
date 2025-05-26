@@ -43,6 +43,7 @@ const LeagueProvider = ({ children }) => {
     updateTeams,
     updateUsers,
     retrieveTeams,
+    currentUser,
   } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
@@ -56,17 +57,31 @@ const LeagueProvider = ({ children }) => {
   const fetchUpcomingLeagues = async () => {
     try {
       const leaguesRef = collection(db, "leagues");
-      const q = query(leaguesRef, orderBy("startDate", "asc"), limit(10));
-      const querySnapshot = await getDocs(q);
+      let leaguesQuery;
 
-      const latestLeagues = querySnapshot.docs.map((doc) => ({
+      if (currentUser?.country) {
+        leaguesQuery = query(
+          leaguesRef,
+          where("location.country", "==", currentUser.country),
+          orderBy("startDate", "asc"),
+          limit(10)
+        );
+      } else {
+        leaguesQuery = query(
+          leaguesRef,
+          orderBy("startDate", "asc"),
+          limit(10)
+        );
+      }
+
+      const snapshot = await getDocs(leaguesQuery);
+      const leagues = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-
-      setUpcomingLeagues(latestLeagues);
+      setUpcomingLeagues(leagues);
     } catch (error) {
-      console.error("Error fetching latest leagues:", error);
+      console.error("Error fetching upcoming leagues:", error);
     }
   };
 

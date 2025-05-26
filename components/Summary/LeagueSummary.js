@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 
 import styled from "styled-components/native";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, Dimensions } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
@@ -87,6 +87,8 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
   );
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+
 const LeagueSummaryContainer = styled.ScrollView({
   padding: 20,
   borderRadius: 12,
@@ -107,7 +109,7 @@ const SectionTitle = styled.Text({
 
 const DescriptionText = styled.Text({
   color: "#ccc",
-  fontSize: 14,
+  fontSize: screenWidth <= 400 ? 13 : 14,
 });
 
 const DisabledText = styled.Text({
