@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/court-champ-logo.png",
       "resizeMode": "contain",
@@ -51,6 +51,13 @@
       "favicon": "./assets/court-champ-logo-icon.png"
     },
     "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "iosAppId": "ca-app-pub-4901008825984109~3153352304",
+          "androidAppId": "ca-app-pub-4901008825984109~4699811229"
+        }
+      ],
       [
         "@react-native-google-signin/google-signin",
         {

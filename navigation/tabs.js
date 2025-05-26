@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
+import { Platform } from "react-native";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
@@ -23,10 +24,13 @@ import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
+import { getUnitId } from "../utils/getAdMobUnitId";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+const BANNER_UNIT_ID = getUnitId();
 
 // Home Stack
 const HomeStack = () => {
@@ -176,93 +180,108 @@ const Tabs = () => {
   ).length;
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
-        tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
-        tabBarActiveTintColor: "#FFD700",
-        tabBarInactiveTintColor: "#A9A9A9",
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+    <>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
+          tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
+          tabBarActiveTintColor: "#FFD700",
+          tabBarInactiveTintColor: "#A9A9A9",
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName;
 
-          if (route.name === "Home") {
-            iconName = focused ? "home" : "home-outline";
-            return (
-              <TabIcon
-                name={iconName}
-                color={color}
-                size={size}
-                hasNotification={false}
-              />
-            );
-          } else if (route.name === "Profile") {
-            iconName = focused ? "person" : "person-outline";
-            return (
-              <TabIcon
-                name={iconName}
-                color={color}
-                size={size}
-                hasNotification={false}
-              />
-            );
-          } else if (route.name === "Notifications") {
-            iconName = focused ? "notifications" : "notifications-outline";
-            return (
-              <TabIcon
-                name={iconName}
-                color={color}
-                size={size}
-                hasNotification={unreadNotifications > 0}
-              />
-            );
-          } else if (route.name === "Chats") {
-            iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+            if (route.name === "Home") {
+              iconName = focused ? "home" : "home-outline";
+              return (
+                <TabIcon
+                  name={iconName}
+                  color={color}
+                  size={size}
+                  hasNotification={false}
+                />
+              );
+            } else if (route.name === "Profile") {
+              iconName = focused ? "person" : "person-outline";
+              return (
+                <TabIcon
+                  name={iconName}
+                  color={color}
+                  size={size}
+                  hasNotification={false}
+                />
+              );
+            } else if (route.name === "Notifications") {
+              iconName = focused ? "notifications" : "notifications-outline";
+              return (
+                <TabIcon
+                  name={iconName}
+                  color={color}
+                  size={size}
+                  hasNotification={unreadNotifications > 0}
+                />
+              );
+            } else if (route.name === "Chats") {
+              iconName = focused ? "chatbubbles" : "chatbubbles-outline";
 
-            return (
-              <TabIcon
-                name={iconName}
-                color={color}
-                size={size}
-                hasNotification={false}
-              />
-            );
-          }
-        },
-        tabBarStyle: {
-          borderTopWidth: 1,
-          borderTopColor: "#262626",
-        },
-        tabBarLabel: () => null, // Remove label
-        headerShown: false, // Hide the header
-      })}
-    >
-      {/* Replace Home component with HomeStack */}
-      <Tab.Screen name="Home" component={HomeStack} />
-      <Tab.Screen
-        name="Notifications"
-        component={NotificationsStack}
-        options={{
-          tabBarBadge: unreadNotifications > 0 ? unreadNotifications : null,
-          tabBarBadgeStyle: {
-            backgroundColor: "red",
-            color: "white",
+              return (
+                <TabIcon
+                  name={iconName}
+                  color={color}
+                  size={size}
+                  hasNotification={false}
+                />
+              );
+            }
           },
-        }}
-      />
-      <Tab.Screen
-        name="Chats"
-        component={ChatsStack}
-        options={{
-          tabBarBadge: unreadChats > 0 ? unreadChats : null,
-          tabBarBadgeStyle: {
-            backgroundColor: "red",
-            color: "white",
+          tabBarStyle: {
+            borderTopWidth: 1,
+            borderTopColor: "#262626",
           },
-        }}
-      />
-      {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
-      <Tab.Screen name="Profile" component={ProfileStack} />
-    </Tab.Navigator>
+          tabBarLabel: () => null, // Remove label
+          headerShown: false, // Hide the header
+        })}
+      >
+        {/* Replace Home component with HomeStack */}
+        <Tab.Screen name="Home" component={HomeStack} />
+        <Tab.Screen
+          name="Notifications"
+          component={NotificationsStack}
+          options={{
+            tabBarBadge: unreadNotifications > 0 ? unreadNotifications : null,
+            tabBarBadgeStyle: {
+              backgroundColor: "red",
+              color: "white",
+            },
+          }}
+        />
+        <Tab.Screen
+          name="Chats"
+          component={ChatsStack}
+          options={{
+            tabBarBadge: unreadChats > 0 ? unreadChats : null,
+            tabBarBadgeStyle: {
+              backgroundColor: "red",
+              color: "white",
+            },
+          }}
+        />
+        {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
+        <Tab.Screen name="Profile" component={ProfileStack} />
+      </Tab.Navigator>
+      <View style={{ width: "100%", alignItems: "center" }}>
+        <BannerAd
+          unitId={BANNER_UNIT_ID}
+          size={BannerAdSize.FULL_BANNER}
+          onAdFailedToLoad={(error) => {
+            console.error("Ad failed to load:", error);
+          }}
+          requestOptions={{
+            requestNonPersonalizedAdsOnly: true,
+            networkExtras: { collapsible: "bottom" },
+          }}
+        />
+      </View>
+    </>
   );
 };
 
