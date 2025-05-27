@@ -165,15 +165,23 @@ const ProfileActivity = ({ profile }) => {
     }
 
     return (
-      <FlatList
-        data={sortedLeagues} // Use sortedLeagues directly
-        renderItem={renderLeagueItem}
-        keyExtractor={(item) => item.id}
-        initialNumToRender={8}
-        maxToRenderPerBatch={6}
-        windowSize={10}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
+      <>
+        {sortedLeagues.length > 0 ? (
+          <FlatList
+            data={sortedLeagues}
+            renderItem={renderLeagueItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingBottom: 20,
+            }}
+          />
+        ) : (
+          <NoActivityText>
+            Here you can find all of the leagues you are participating in.
+            Please create or join a league for details 🏟️
+          </NoActivityText>
+        )}
+      </>
     );
   }, [rankLoading, sortedLeagues, renderLeagueItem]);
 
@@ -207,6 +215,14 @@ const TableCell = styled.View({
   alignItems: "center",
   paddingTop: 15,
   paddingBottom: 15,
+});
+
+const NoActivityText = styled.Text({
+  color: "#696969",
+  fontStyle: "italic",
+  fontSize: 16,
+  textAlign: "center",
+  marginTop: 50,
 });
 
 const styles = {
