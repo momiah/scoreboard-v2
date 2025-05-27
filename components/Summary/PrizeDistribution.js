@@ -6,6 +6,13 @@ import styled from "styled-components/native";
 import moment from "moment";
 import { calculatePrizeAllocation } from "../../helpers/calculatePrizeAllocation";
 import { UserContext } from "../../context/UserContext";
+import { useImageLoader } from "../../utils/imageLoader";
+import {
+  CircleSkeleton,
+  TextSkeleton,
+  TrophyItemSkeleton,
+} from "../../components/Skeletons/UserProfileSkeleton";
+import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
 const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
   const { updatePlacementStats } = useContext(UserContext);
@@ -32,7 +39,40 @@ const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
     }
   }, [endDate]);
 
+  const TrophyItem = React.memo(({ trophySource, statValue, index }) => {
+    const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
+
+    return (
+      <PrizeView>
+        <CircleSkeleton
+          show={!imageLoaded}
+          size={60}
+          config={SKELETON_THEMES.dark}
+        >
+          <PrizeImage
+            source={trophySource}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            style={{ opacity: imageLoaded ? 1 : 0 }}
+          />
+        </CircleSkeleton>
+
+        <TextSkeleton
+          show={!imageLoaded}
+          height={14}
+          width={30}
+          config={SKELETON_THEMES.dark}
+        >
+          {imageLoaded ? (
+            <PrizeText style={{ opacity: 1 }}>{statValue} XP</PrizeText>
+          ) : null}
+        </TextSkeleton>
+      </PrizeView>
+    );
+  });
+
   const prizes = prizeDistribution(prizePool);
+  console.log("Prizes:", prizes);
   return (
     <PrizeDistributionContainer>
       <SectionTitleContainer>
@@ -41,10 +81,16 @@ const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
       </SectionTitleContainer>
       <PrizeRow>
         {prizes.map((prize, index) => (
-          <PrizeView key={index}>
-            <PrizeImage source={prize.trophy} />
-            <PrizeText>{prize.xp} XP</PrizeText>
-          </PrizeView>
+          <TrophyItem
+            key={index}
+            trophySource={trophies[index]}
+            statValue={prize.xp ?? 0}
+            index={index}
+          />
+          // <PrizeView key={index}>
+          //   <PrizeImage source={prize.trophy} />
+          //   <PrizeText>{prize.xp} XP</PrizeText>
+          // </PrizeView>
         ))}
       </PrizeRow>
     </PrizeDistributionContainer>
@@ -78,13 +124,11 @@ const PrizeRow = styled.View({
 });
 
 const PrizeView = styled.View({
-  // width: "25%",
   backgroundColor: "rgba(0, 0, 0, 0.3)",
   border: "1px solid rgb(26, 28, 54)",
   padding: screenWidth <= 400 ? 10 : 15,
   borderRadius: 8,
   alignItems: "center",
-  // marginHorizontal: 5,
 });
 
 const PrizeImage = styled.Image({
