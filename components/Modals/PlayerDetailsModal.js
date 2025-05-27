@@ -13,6 +13,7 @@ import { BlurView } from "expo-blur";
 import { useNavigation } from "@react-navigation/native";
 import PerformanceStats from "../performance/PerformanceStats";
 import { UserContext } from "../../context/UserContext";
+import Tag from "../Tag";
 
 // Function to calculate the current streak
 const currentStreak = (resultLog) => {
@@ -150,22 +151,19 @@ const PlayerDetails = ({
                 >
                   Last Active {selectedPlayer.lastActive}
                 </Text>
-                <TouchableOpacity onPress={goToProfile}>
-                  <Text
-                    style={{
-                      color: "white",
-                      fontSize: screenWidth <= 400 ? 12 : 14,
-                      marginTop: 15,
-                      fontWeight: "bold",
-                      backgroundColor: "#00A2FF",
-                      padding: 5,
-                      borderRadius: 5,
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    Go to profile
-                  </Text>
-                </TouchableOpacity>
+
+                <View style={{ marginTop: 10, alignSelf: "flex-start" }}>
+                  <Tag
+                    name={"Go to profile"}
+                    icon="person"
+                    iconSize={screenWidth <= 400 ? 12 : 14}
+                    iconColor="white"
+                    iconPosition="left"
+                    color="#00A2FF"
+                    onPress={goToProfile}
+                    bold
+                  />
+                </View>
               </View>
 
               <MedalContainer>

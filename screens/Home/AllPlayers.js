@@ -16,6 +16,7 @@ import AllPlayerSkeleton from "../../components/Skeletons/AllPlayerSkeleton";
 import Icon from "react-native-ico-flags";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
 import { useImageLoader } from ".././../utils/imageLoader";
+import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 const iconSize = 40;
 
 const AllPlayers = () => {
@@ -113,7 +114,7 @@ const AllPlayers = () => {
           <CircleSkeleton
             show={!imageLoaded}
             size={iconSize}
-            config={{ backgroundColor: "#1a2f4b" }}
+            config={SKELETON_THEMES.dark}
           >
             <Avatar
               onLoad={handleImageLoad}
@@ -265,7 +266,7 @@ const Avatar = styled.Image({
   width: iconSize,
   height: iconSize,
   borderRadius: 30,
-  borderWidth: 2,
+  borderWidth: 1,
   borderColor: "#00A2FF",
   marginBottom: 5,
 });

@@ -17,6 +17,7 @@ const ProfilePerformance = ({ profile }) => {
   const statData = useMemo(() => {
     const wins = profileDetail?.numberOfWins || 0;
     const losses = profileDetail?.numberOfLosses || 0;
+    const winRatio = wins / losses;
 
     return [
       {
@@ -36,9 +37,7 @@ const ProfilePerformance = ({ profile }) => {
       },
       {
         statTitle: "Win Ratio",
-        stat: (
-          <Stat>{losses ? (wins / losses).toFixed(2) : wins.toFixed(2)}</Stat>
-        ),
+        stat: <Stat>{isNaN(winRatio) ? 0 : winRatio.toFixed(2)}</Stat>,
       },
       {
         statTitle: "Highest Streak",

@@ -119,7 +119,7 @@ export const scoreboardProfileSchema = {
 
 export const profileDetailSchema = {
   ...scoreboardProfileSchema,
-  XP: 0,
+  XP: 10,
   memberSince: moment().format("MMM YYYY"),
   leagueStats: {
     first: 0,

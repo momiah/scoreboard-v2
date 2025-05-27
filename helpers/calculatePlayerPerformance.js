@@ -136,8 +136,8 @@ export const calculatePlayerPerformance = (
     // Calculate the difference in scores
     const scoreDifference = winnerScore - loserScore;
 
-    // Calculate difference multiplier safely
-    const differenceMultiplier = combinedLoserXp / combinedWinnerXp;
+    const differenceMultiplier =
+      combinedWinnerXp > 0 ? combinedLoserXp / combinedWinnerXp : 1;
 
     // Cap the rank multiplier between 0 and 10
     const rankMultiplier =

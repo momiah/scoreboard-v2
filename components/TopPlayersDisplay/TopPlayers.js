@@ -104,7 +104,7 @@ const Avatar = styled.Image({
   width: iconSize,
   height: iconSize,
   borderRadius: 30,
-  borderWidth: 2,
+  borderWidth: 1,
   borderColor: "#00A2FF",
   marginBottom: 5,
 });
