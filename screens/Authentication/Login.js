@@ -4,10 +4,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   Image,
   Animated,
   Alert,
+  Keyboard,
 } from "react-native";
 import {
   AppleLogo,
@@ -40,6 +42,11 @@ export default function Login() {
   const { getUserById, setCurrentUser } = useContext(UserContext);
 
   const navigation = useNavigation();
+
+  // Dismiss keyboard when tapping outside
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   // Validation for Email
   const validateEmail = () => {
@@ -242,7 +249,7 @@ export default function Login() {
   // }
 
   return (
-    <>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <View style={styles.container}>
         {/* Logo Section */}
         <Image source={CourtChampLogo} style={styles.logo} />
@@ -305,23 +312,22 @@ export default function Login() {
 
         {/* Social Media Buttons */}
         {/* <View style={styles.socialContainer}>
-          <TouchableOpacity
-            onPress={() => {
-              onSocialLogin("google");
-            }}
-          >
-            <Image source={GoogleLogo} style={styles.socialIcon} />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Image source={FacebookLogo} style={styles.socialIcon} />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Image source={AppleLogo} style={styles.socialIconApple} />
-          </TouchableOpacity>
-        </View> */}
+            <TouchableOpacity
+              onPress={() => {
+                onSocialLogin("google");
+              }}
+            >
+              <Image source={GoogleLogo} style={styles.socialIcon} />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Image source={FacebookLogo} style={styles.socialIcon} />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Image source={AppleLogo} style={styles.socialIconApple} />
+            </TouchableOpacity>
+          </View> */}
 
         {/* Register Section */}
-
         <TouchableOpacity>
           <Text
             onPress={() => {
@@ -333,7 +339,7 @@ export default function Login() {
           </Text>
         </TouchableOpacity>
       </View>
-    </>
+    </TouchableWithoutFeedback>
   );
 }
 
