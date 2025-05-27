@@ -237,37 +237,37 @@ const ChatRoom = ({
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
     >
-      <View style={{ flex: 1 }}>
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          onScrollToIndexFailed={() => {
-            scrollToEnd(false);
-          }}
+      <FlatList
+        ref={flatListRef}
+        style={{ flex: 1 }}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        onScrollToIndexFailed={() => {
+          scrollToEnd(false);
+        }}
+      />
+      <InputBar>
+        <MessageInput
+          value={inputText}
+          onChangeText={leagueHasEnded ? null : setInputText}
+          placeholder={
+            leagueHasEnded
+              ? "Chat room closed as the league has ended"
+              : "Type a message..."
+          }
+          placeholderTextColor="#aaa"
         />
-        <InputBar>
-          <MessageInput
-            value={inputText}
-            onChangeText={leagueHasEnded ? null : setInputText}
-            placeholder={
-              leagueHasEnded
-                ? "Chat room closed as the league has ended"
-                : "Type a message..."
-            }
-            placeholderTextColor="#aaa"
-          />
-          <SendButton
-            onPress={handleSend}
-            disabled={!inputText.trim() || leagueHasEnded}
-          >
-            <Ionicons name="send" size={24} color="#00A2FF" />
-          </SendButton>
-        </InputBar>
-      </View>
+        <SendButton
+          onPress={handleSend}
+          disabled={!inputText.trim() || leagueHasEnded}
+        >
+          <Ionicons name="send" size={24} color="#00A2FF" />
+        </SendButton>
+      </InputBar>
     </KeyboardAvoidingView>
   );
 };
