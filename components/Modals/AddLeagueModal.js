@@ -229,7 +229,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
           <ScrollContainer
             data={[1]} // Dummy single item
             keyExtractor={() => "main"}
-            // keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled={true}
             renderItem={() => (
               <>
                 <ModalTitle>Create League</ModalTitle>
@@ -316,33 +317,37 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         </SafeAreaWrapper>
       </ModalContainer>
 
-      <ConfirmLeagueSettingsModal
-        visible={showLeagueSettingsModal}
-        leagueCreationLoading={leagueCreationLoading}
-        onBack={() => setShowLeagueSettingsModal(false)}
-        onConfirm={handleSubmit(onSubmit)}
-        confirmDisabled={confirmDisabled}
-        control={control}
-        watch={watch}
-        errors={errors}
-        setValue={setValue}
-      />
+      {showLeagueSettingsModal && (
+        <ConfirmLeagueSettingsModal
+          visible={showLeagueSettingsModal}
+          leagueCreationLoading={leagueCreationLoading}
+          onBack={() => setShowLeagueSettingsModal(false)}
+          onConfirm={handleSubmit(onSubmit)}
+          confirmDisabled={confirmDisabled}
+          control={control}
+          watch={watch}
+          errors={errors}
+          setValue={setValue}
+        />
+      )}
 
-      <AddCourtModal
-        visible={showAddCourtModal}
-        courtDetails={courtDetails}
-        setCourtDetails={setCourtDetails}
-        onClose={() => setShowAddCourtModal(false)}
-        addCourt={addCourt}
-        onCourtAdded={async (courtDetails) => {
-          // Refresh courts list
-          const courtData = await getCourts();
-          const formattedCourts = formatCourtDetailsForList(courtData);
-          setCourtsList(formattedCourts);
-          setCourtData(courtData);
-          handleCourtSelect(courtDetails.courtName);
-        }}
-      />
+      {showAddCourtModal && (
+        <AddCourtModal
+          visible={showAddCourtModal}
+          courtDetails={courtDetails}
+          setCourtDetails={setCourtDetails}
+          onClose={() => setShowAddCourtModal(false)}
+          addCourt={addCourt}
+          onCourtAdded={async (courtDetails) => {
+            // Refresh courts list
+            const courtData = await getCourts();
+            const formattedCourts = formatCourtDetailsForList(courtData);
+            setCourtsList(formattedCourts);
+            setCourtData(courtData);
+            handleCourtSelect(courtDetails.courtName);
+          }}
+        />
+      )}
     </Modal>
   );
 };

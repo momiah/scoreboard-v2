@@ -31,6 +31,8 @@ const AddCourtModal = ({
   const [loadingCountries, setLoadingCountries] = useState(false);
 
   useEffect(() => {
+    if (!visible) return;
+
     if (countries.length) return;
 
     setLoadingCountries(true);
@@ -42,7 +44,7 @@ const AddCourtModal = ({
         setLoadingCountries(false);
       }
     }, 0);
-  }, [countries]);
+  }, [visible, countries]);
 
   const handleCityDropdownOpen = useCallback(async () => {
     if (!selectedCountryCode) {
