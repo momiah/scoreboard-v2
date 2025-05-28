@@ -206,7 +206,16 @@ const League = () => {
               </EditButton>
             )}
 
-            <LeagueName>{leagueName}</LeagueName>
+            <View
+              style={{
+                padding: 5,
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                borderRadius: 5,
+                alignSelf: "flex-start",
+              }}
+            >
+              <LeagueName>{leagueName}</LeagueName>
+            </View>
 
             <Address onPress={() => openMap(location)}>
               <LeagueLocation>
@@ -363,10 +372,6 @@ const LeagueName = styled.Text({
   fontSize: 18,
   fontWeight: "bold",
   color: "white",
-  padding: 5,
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
-  borderRadius: 5,
-  alignSelf: "flex-start",
 });
 
 const Address = styled.TouchableOpacity({
@@ -374,15 +379,15 @@ const Address = styled.TouchableOpacity({
   alignItems: "center",
   marginBottom: 15,
   gap: 5,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 5,
+  alignSelf: "flex-start",
 });
 
 const LeagueLocation = styled.Text({
   fontSize: 13,
   padding: 5,
   color: "white",
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
-  borderRadius: 5,
-  alignItems: "center",
 });
 
 const EditButton = styled.TouchableOpacity({

@@ -87,7 +87,6 @@ const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
                         name={"location"}
                         size={15}
                         color={"#286EFA"}
-                        backgroundColor={"rgba(0, 0, 0, 0.3)"}
                         padding={5}
                         borderRadius={15}
                       />
