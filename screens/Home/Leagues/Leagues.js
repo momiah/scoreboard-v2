@@ -1,4 +1,10 @@
-import React, { useRef, useContext, useEffect, useState } from "react";
+import React, {
+  useRef,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { View, Image, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
@@ -22,9 +28,10 @@ const FILTERS_STORAGE_KEY = "@courtchamp_league_filters";
 const Leagues = () => {
   const navigation = useNavigation();
   const bottomSheetRef = useRef(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
+  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
+
   const [isFiltering, setIsFiltering] = useState(false);
+  const [isFilterModalReady, setIsFilterModalReady] = useState(false);
 
   const { currentUser } = useContext(UserContext);
   const { fetchLeagues } = useContext(LeagueContext);
@@ -150,18 +157,33 @@ const Leagues = () => {
   const addLeague = async () => {
     const token = await AsyncStorage.getItem("userToken");
 
-    if (token) {
-      setModalVisible(true);
+    if (token && currentUser) {
+      setAddLeagueModalVisible(true);
     } else {
       navigation.navigate("Login");
     }
   };
 
-  const showFilterSheet = () => {
+  const showFilterSheet = useCallback(() => {
+    // Pre-load the form with applied filters BEFORE opening
     reset(appliedFilters);
-    setFilterSheetVisible(true);
-    bottomSheetRef.current?.present();
-  };
+
+    // Set ready state first
+    setIsFilterModalReady(true);
+
+    // Small delay to ensure form is ready
+    setTimeout(() => {
+      bottomSheetRef.current?.present();
+    }, 50);
+  }, [appliedFilters, reset]);
+
+  // Add callback to handle modal dismiss
+  const handleModalDismiss = useCallback(() => {
+    // Keep modal mounted but mark as not ready to prevent unnecessary re-renders
+    setTimeout(() => {
+      setIsFilterModalReady(false);
+    }, 300); // Wait for dismiss animation
+  }, []);
 
   const hasActiveFilters =
     appliedFilters.country ||
@@ -245,30 +267,32 @@ const Leagues = () => {
       <BottomSheetModal
         ref={bottomSheetRef}
         snapPoints={["75%"]}
-        onDismiss={() => setFilterSheetVisible(false)}
+        onDismiss={handleModalDismiss}
         backdropComponent={({ style }) => (
           <View style={[style, { backgroundColor: "rgba(0,0,0,0.5)" }]} />
         )}
         backgroundStyle={{ backgroundColor: "#020D18" }}
         handleIndicatorStyle={{ backgroundColor: "white" }}
+        enablePanDownToClose={true}
+        enableOverDrag={false}
       >
-        {filterSheetVisible && (
-          <FilterSheetModal
-            bottomSheetRef={bottomSheetRef}
-            control={control}
-            setValue={setValue}
-            onApplyFilters={handleApplyFilters}
-            watchedCountryCode={watchedCountryCode}
-            initialValues={appliedFilters}
-            isFiltering={isFiltering}
-          />
-        )}
+        {/* Always render the modal, but control its internal loading with isVisible prop */}
+        <FilterSheetModal
+          bottomSheetRef={bottomSheetRef}
+          control={control}
+          setValue={setValue}
+          onApplyFilters={handleApplyFilters}
+          watchedCountryCode={watchedCountryCode}
+          initialValues={appliedFilters}
+          isFiltering={isFiltering}
+          isVisible={isFilterModalReady} // Add this prop
+        />
       </BottomSheetModal>
 
-      {modalVisible && (
+      {addLeagueModalVisible && (
         <AddLeagueModel
-          modalVisible={modalVisible}
-          setModalVisible={setModalVisible}
+          addLeagueModalVisible={addLeagueModalVisible}
+          setAddLeagueModalVisible={setAddLeagueModalVisible}
         />
       )}
     </LeagueContainer>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Dimensions,
   View,
@@ -21,6 +21,12 @@ import { Ionicons } from "@expo/vector-icons";
 const COUNTRIES_STORAGE_KEY = "@courtchamp_countries";
 const CITIES_STORAGE_KEY = "@courtchamp_cities_";
 
+// Create a singleton cache to persist data across modal opens/closes
+const dataCache = {
+  countries: null,
+  cities: {},
+};
+
 const FilterSheetModal = ({
   bottomSheetRef,
   control,
@@ -29,8 +35,9 @@ const FilterSheetModal = ({
   watchedCountryCode,
   initialValues,
   isFiltering,
+  isVisible, // Add this prop to control when to load data
 }) => {
-  const [countries, setCountries] = useState([]);
+  const [countries, setCountries] = useState(dataCache.countries || []);
   const [cities, setCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingCountries, setLoadingCountries] = useState(false);
@@ -63,82 +70,96 @@ const FilterSheetModal = ({
     );
   }, [currentValues]);
 
-  // Load countries on component mount
-  useEffect(() => {
-    const fetchCountries = async () => {
-      setLoadingCountries(true);
-      try {
-        // Try to get countries from AsyncStorage first
-        const storedCountries = await AsyncStorage.getItem(
-          COUNTRIES_STORAGE_KEY
-        );
-        if (storedCountries) {
-          setCountries(JSON.parse(storedCountries));
-        } else {
-          // If not in storage, load from source and save to AsyncStorage
-          const countryData = loadCountries();
-          setCountries(countryData);
-          await AsyncStorage.setItem(
-            COUNTRIES_STORAGE_KEY,
-            JSON.stringify(countryData)
-          );
-        }
-      } catch (error) {
-        console.error("Error loading countries:", error);
-        // Fallback to direct loading if storage fails
-        const countryData = loadCountries();
-        setCountries(countryData);
-      } finally {
-        setLoadingCountries(false);
-      }
-    };
+  // Memoized country loading function
+  const loadCountriesData = useCallback(async () => {
+    if (dataCache.countries) {
+      setCountries(dataCache.countries);
+      return;
+    }
 
-    fetchCountries();
+    setLoadingCountries(true);
+    try {
+      const storedCountries = await AsyncStorage.getItem(COUNTRIES_STORAGE_KEY);
+      if (storedCountries) {
+        const parsedCountries = JSON.parse(storedCountries);
+        dataCache.countries = parsedCountries;
+        setCountries(parsedCountries);
+      } else {
+        const countryData = loadCountries();
+        dataCache.countries = countryData;
+        setCountries(countryData);
+        await AsyncStorage.setItem(
+          COUNTRIES_STORAGE_KEY,
+          JSON.stringify(countryData)
+        );
+      }
+    } catch (error) {
+      console.error("Error loading countries:", error);
+      const countryData = loadCountries();
+      dataCache.countries = countryData;
+      setCountries(countryData);
+    } finally {
+      setLoadingCountries(false);
+    }
   }, []);
 
-  // Load cities when country changes
+  // Load countries only when modal becomes visible
   useEffect(() => {
-    const loadCitiesForCountry = async () => {
-      if (!watchedCountryCode) {
-        setCities([]);
-        return;
-      }
-
-      setLoadingCities(true);
-      try {
-        // Try to get cities from AsyncStorage first
-        const storageCitiesKey = `${CITIES_STORAGE_KEY}${watchedCountryCode}`;
-        const storedCities = await AsyncStorage.getItem(storageCitiesKey);
-
-        if (storedCities) {
-          setCities(JSON.parse(storedCities));
-        } else {
-          // If not in storage, load from source and save to AsyncStorage
-          const cityData = loadCities(watchedCountryCode);
-          setCities(cityData);
-          await AsyncStorage.setItem(
-            storageCitiesKey,
-            JSON.stringify(cityData)
-          );
-        }
-      } catch (error) {
-        console.error(`Error loading cities for ${watchedCountryCode}:`, error);
-        // Fallback to direct loading if storage fails
-        try {
-          const cityData = loadCities(watchedCountryCode);
-          setCities(cityData);
-        } catch {
-          setCities([]);
-        }
-      } finally {
-        setLoadingCities(false);
-      }
-    };
-
-    if (watchedCountryCode) {
-      loadCitiesForCountry();
+    if (isVisible) {
+      loadCountriesData();
     }
-  }, [watchedCountryCode]);
+  }, [isVisible, loadCountriesData]);
+
+  // Memoized city loading function
+  const loadCitiesForCountry = useCallback(async (countryCode) => {
+    if (!countryCode) {
+      setCities([]);
+      return;
+    }
+
+    // Check cache first
+    if (dataCache.cities[countryCode]) {
+      setCities(dataCache.cities[countryCode]);
+      return;
+    }
+
+    setLoadingCities(true);
+    try {
+      const storageCitiesKey = `${CITIES_STORAGE_KEY}${countryCode}`;
+      const storedCities = await AsyncStorage.getItem(storageCitiesKey);
+
+      if (storedCities) {
+        const parsedCities = JSON.parse(storedCities);
+        dataCache.cities[countryCode] = parsedCities;
+        setCities(parsedCities);
+      } else {
+        const cityData = loadCities(countryCode);
+        dataCache.cities[countryCode] = cityData;
+        setCities(cityData);
+        await AsyncStorage.setItem(storageCitiesKey, JSON.stringify(cityData));
+      }
+    } catch (error) {
+      console.error(`Error loading cities for ${countryCode}:`, error);
+      try {
+        const cityData = loadCities(countryCode);
+        dataCache.cities[countryCode] = cityData;
+        setCities(cityData);
+      } catch {
+        setCities([]);
+      }
+    } finally {
+      setLoadingCities(false);
+    }
+  }, []);
+
+  // Load cities when country changes, but only if modal is visible
+  useEffect(() => {
+    if (isVisible && watchedCountryCode) {
+      loadCitiesForCountry(watchedCountryCode);
+    } else if (!watchedCountryCode) {
+      setCities([]);
+    }
+  }, [watchedCountryCode, isVisible, loadCitiesForCountry]);
 
   // Update applied values when initialValues change (on modal open)
   useEffect(() => {
@@ -147,21 +168,37 @@ const FilterSheetModal = ({
     }
   }, [initialValues]);
 
-  const handleApply = async () => {
+  const handleApply = useCallback(async () => {
     setAppliedValues({ ...currentValues });
     await onApplyFilters();
     bottomSheetRef.current?.dismiss();
-  };
+  }, [currentValues, onApplyFilters, bottomSheetRef]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setValue("country", "");
     setValue("countryCode", "");
     setValue("city", "");
     setValue("leagueType", "");
     setValue("maxPlayers", null);
     setCities([]);
-    // Don't apply or close - user must press Apply
-  };
+  }, [setValue]);
+
+  const handleCountryChange = useCallback(
+    (val) => {
+      setValue("country", val);
+      setValue("city", "");
+      setValue(
+        "countryCode",
+        countries.find((c) => c.value === val)?.key || ""
+      );
+    },
+    [setValue, countries]
+  );
+
+  // Don't render content if not visible (helps with performance)
+  if (!isVisible) {
+    return null;
+  }
 
   return (
     <BottomSheetView style={{ padding: 20 }}>
@@ -177,11 +214,7 @@ const FilterSheetModal = ({
             label="Country"
             setSelected={(val) => {
               field.onChange(val);
-              setValue("city", "");
-              setValue(
-                "countryCode",
-                countries.find((c) => c.value === val)?.key || ""
-              );
+              handleCountryChange(val);
             }}
             data={countries}
             save="value"
@@ -277,6 +310,7 @@ const FilterSheetModal = ({
   );
 };
 
+// Styled components remain the same...
 const screenWidth = Dimensions.get("window").width;
 
 const HeaderRow = styled.View({
@@ -372,4 +406,4 @@ const ClearButtonText = styled.Text({
   fontSize: 16,
 });
 
-export default FilterSheetModal;
+export default React.memo(FilterSheetModal);

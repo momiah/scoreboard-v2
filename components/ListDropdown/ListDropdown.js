@@ -132,37 +132,43 @@ const ListDropdown = ({
           </Text>
         </View>
       ) : (
-        <TouchableOpacity activeOpacity={0.8} onPress={handleToggle}>
-          {loading ? (
-            <View style={styles.inputContainer}>
-              <Text style={{ color: "white" }}>Loading...</Text>
-              <ActivityIndicator size="small" color="#666" />
-            </View>
-          ) : (
-            <View style={styles.inputContainer}>
-              <TextInput
-                ref={inputRef}
-                style={[styles.input, inputStyles]}
-                value={dropdown ? searchQuery : selectedOption?.value || ""}
-                placeholder={dropdown ? searchPlaceholder : placeholder}
-                placeholderTextColor="#888"
-                editable={dropdown}
-                onChangeText={setSearchQuery}
-                pointerEvents={dropdown ? "auto" : "none"}
-              />
-
-              <Ionicons
-                name={dropdown ? "chevron-up" : "chevron-down"}
-                size={20}
-                color="white"
-                style={styles.chevron}
-              />
-            </View>
-          )}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={loading ? undefined : handleToggle} // Prevent interaction when loading
+          disabled={loading}
+        >
+          <View style={[styles.inputContainer, boxStyles]}>
+            {loading ? (
+              <>
+                <Text style={[styles.input, { color: "#888" }]}>
+                  Loading...
+                </Text>
+                <ActivityIndicator size="small" color="#666" />
+              </>
+            ) : (
+              <>
+                <TextInput
+                  ref={inputRef}
+                  style={[styles.input, inputStyles]}
+                  value={dropdown ? searchQuery : selectedOption?.value || ""}
+                  placeholder={dropdown ? searchPlaceholder : placeholder}
+                  placeholderTextColor="#888"
+                  editable={dropdown}
+                  onChangeText={setSearchQuery}
+                  pointerEvents={dropdown ? "auto" : "none"}
+                />
+                <Ionicons
+                  name={dropdown ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color="white"
+                  style={styles.chevron}
+                />
+              </>
+            )}
+          </View>
         </TouchableOpacity>
       )}
-
-      {dropdown && (
+      {dropdown && !loading && (
         <Animated.View
           style={[
             styles.dropdown,
