@@ -230,8 +230,6 @@ const UserProfile = () => {
   const pointDifference = profileDetail?.totalPointDifference || 0;
   const pointDifferenceMetric = pointDifference > 0 ? "+" : "";
 
-  console.log(("pointDifference", pointDifference));
-
   return (
     <Container>
       {isOwnProfile && (
@@ -404,10 +402,12 @@ const UserProfile = () => {
           />
         </Pressable>
       </Modal>
-      <RankInformation
-        visible={ranksVisible}
-        onClose={() => setRanksVisible(false)}
-      />
+      {ranksVisible && (
+        <RankInformation
+          visible={ranksVisible}
+          onClose={() => setRanksVisible(false)}
+        />
+      )}
     </Container>
   );
 };
