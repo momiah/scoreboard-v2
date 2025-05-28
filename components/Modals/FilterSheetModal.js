@@ -35,18 +35,36 @@ const FilterSheetModal = ({
   watchedCountryCode,
   initialValues,
   isFiltering,
-  isVisible, // Add this prop to control when to load data
+  isVisible,
 }) => {
-  const [countries, setCountries] = useState(dataCache.countries || []);
+  const [countries, setCountries] = useState([]);
   const [cities, setCities] = useState([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [loadingCountries, setLoadingCountries] = useState(false);
+  const [shouldLoadData, setShouldLoadData] = useState(false);
 
   // Store the initially applied values
   const [appliedValues, setAppliedValues] = useState(initialValues || {});
 
   // Watch form values
   const currentValues = useWatch({ control });
+
+  // Reset loading state when modal closes
+  useEffect(() => {
+    if (!isVisible) {
+      setShouldLoadData(false);
+    }
+  }, [isVisible]);
+
+  // Start loading data after modal animation completes
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        setShouldLoadData(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
 
   // Check if there are any changes compared to applied values
   const hasChanges = useMemo(() => {
@@ -103,12 +121,12 @@ const FilterSheetModal = ({
     }
   }, []);
 
-  // Load countries only when modal becomes visible
+  // Load countries only when modal becomes visible and data loading is enabled
   useEffect(() => {
-    if (isVisible) {
+    if (shouldLoadData) {
       loadCountriesData();
     }
-  }, [isVisible, loadCountriesData]);
+  }, [shouldLoadData, loadCountriesData]);
 
   // Memoized city loading function
   const loadCitiesForCountry = useCallback(async (countryCode) => {
@@ -152,14 +170,14 @@ const FilterSheetModal = ({
     }
   }, []);
 
-  // Load cities when country changes, but only if modal is visible
+  // Load cities when country changes, but only if modal is visible and data loading is enabled
   useEffect(() => {
-    if (isVisible && watchedCountryCode) {
+    if (shouldLoadData && watchedCountryCode) {
       loadCitiesForCountry(watchedCountryCode);
     } else if (!watchedCountryCode) {
       setCities([]);
     }
-  }, [watchedCountryCode, isVisible, loadCitiesForCountry]);
+  }, [watchedCountryCode, shouldLoadData, loadCitiesForCountry]);
 
   // Update applied values when initialValues change (on modal open)
   useEffect(() => {
