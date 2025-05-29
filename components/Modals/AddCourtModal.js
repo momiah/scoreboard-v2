@@ -6,7 +6,9 @@ import {
   Dimensions,
   SafeAreaView,
   ActivityIndicator,
+  KeyboardAvoidingView,
   View,
+  Platform,
 } from "react-native";
 import { loadCountries, loadCities } from "../../utils/locationData";
 import ListDropdown from "../ListDropdown/ListDropdown";
@@ -96,7 +98,9 @@ const AddCourtModal = ({
   return (
     <Modal visible={visible} transparent animationType="slide">
       <ModalContainer>
-        <CourtLocationWrapper>
+        <CourtLocationWrapper
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
           <AddCourtScrollContainer
             data={[1]} // Dummy single item
             keyExtractor={() => "court"}
@@ -240,7 +244,7 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   alignItems: "center",
 });
 
-const CourtLocationWrapper = styled(SafeAreaView)({
+const CourtLocationWrapper = styled(KeyboardAvoidingView)({
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,

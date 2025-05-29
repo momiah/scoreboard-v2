@@ -12,8 +12,10 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Platform,
   SafeAreaView,
   ActivityIndicator,
+  KeyboardAvoidingView,
   StyleSheet,
 } from "react-native";
 import { BlurView } from "expo-blur";
@@ -225,7 +227,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       onRequestClose={() => setModalVisible(false)}
     >
       <ModalContainer>
-        <SafeAreaWrapper>
+        <SafeAreaWrapper
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
           <ScrollContainer
             data={[1]} // Dummy single item
             keyExtractor={() => "main"}
@@ -467,7 +471,7 @@ const ScrollContainer = styled.FlatList({
   padding: "40px 20px",
 });
 
-const SafeAreaWrapper = styled(SafeAreaView)({
+const SafeAreaWrapper = styled(KeyboardAvoidingView)({
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,
