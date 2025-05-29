@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Dimensions,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 
 import { LeagueContext } from "../../../context/LeagueContext";
@@ -19,6 +20,7 @@ import { uploadLeagueImage } from "../../../utils/UploadLeagueImageToFirebase";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Popup from "../../../components/popup/Popup";
 import { PopupContext } from "../../../context/PopupContext";
+import * as FileSystem from "expo-file-system";
 
 const EditLeague = () => {
   const route = useRoute();
@@ -89,16 +91,44 @@ const EditLeague = () => {
         aspect: [1, 1],
       });
 
-      if (!result.canceled) {
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const pickedUri = asset.uri;
+
+        // Check file size (5MB = 5 * 1024 * 1024 bytes)
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+
+        // Get file info to check size
+        const fileInfo = await FileSystem.getInfoAsync(pickedUri);
+
+        if (fileInfo.size && fileInfo.size > MAX_SIZE) {
+          Alert.alert(
+            "File Too Large",
+            `Image size is ${(fileInfo.size / (1024 * 1024)).toFixed(
+              2
+            )}MB. Please select an image smaller than 5MB.`,
+            [{ text: "OK" }]
+          );
+          return;
+        }
+
         const cropped = await ImageManipulator.manipulateAsync(
-          result.assets[0].uri,
+          pickedUri,
           [{ resize: { width: 600 } }],
           { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
         );
+
+        // Optional: Log the final image size
+        const croppedInfo = await FileSystem.getInfoAsync(cropped.uri);
+        console.log(
+          `Final image size: ${(croppedInfo.size / 1024).toFixed(1)}KB`
+        );
+
         setSelectedImage(cropped.uri);
       }
     } catch (error) {
       console.error("Image picker error:", error);
+      Alert.alert("Error", "Unable to pick image.");
     }
   };
 
