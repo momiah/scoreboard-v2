@@ -54,13 +54,21 @@ const GameProvider = ({ children }) => {
   };
 
   const findRankIndex = (xp) => {
-    const index = ranks.findIndex((rank, i) => {
-      return xp < (ranks[i + 1]?.xp || Infinity);
+    // Ensure xp is treated as number
+    const numericXP = Number(xp);
+
+    if (isNaN(numericXP) || numericXP < 0) return 0;
+
+    // Handle cases where xp is higher than max rank
+    if (numericXP >= ranks[ranks.length - 1].xp) {
+      return ranks.length - 1;
+    }
+
+    return ranks.findIndex((rank, i) => {
+      const nextXP = ranks[i + 1]?.xp || Infinity;
+      return numericXP >= rank.xp && numericXP < nextXP;
     });
-
-    return index !== -1 ? index : ranks.length - 1;
   };
-
   const sortGamesByNewest = (games) => {
     return games.sort((a, b) => {
       const [dateA, gameNumberA] = a.gameId.split("-game-");

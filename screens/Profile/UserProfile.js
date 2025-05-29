@@ -225,8 +225,11 @@ const UserProfile = () => {
   const isOwnProfile =
     !route.params?.userId || route.params?.userId === currentUser?.userId;
 
-  const profileXp = formatNumber(profileDetail.XP.toFixed(0));
-  const rankLevel = findRankIndex(profileXp) + 1;
+  const rawXP = profileDetail.XP; // Keep as number
+  const profileXp = formatNumber(rawXP.toFixed(0)); // For display only
+  const rankLevel = findRankIndex(rawXP) + 1; // Pass raw number to function
+  console.log("Profile XP:", profileXp);
+  console.log("Rank Level:", rankLevel);
   const pointDifference = profileDetail?.totalPointDifference || 0;
   const pointDifferenceMetric = pointDifference > 0 ? "+" : "";
 
