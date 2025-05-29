@@ -507,14 +507,13 @@ const LeagueProvider = ({ children }) => {
     leagueId,
     userId,
     senderId,
-    notificationId,
-    playersToUpdate,
-    usersToUpdate
+    notificationId
   ) => {
     try {
       const leagueRef = doc(db, "leagues", leagueId);
       const leagueDoc = await getDoc(leagueRef);
       const leagueData = leagueDoc.data();
+      const leagueParticipants = leagueDoc.data().leagueParticipants;
 
       const games = leagueData.games || [];
       const gameIndex = games.findIndex((game) => game.gameId === gameId);
@@ -540,6 +539,15 @@ const LeagueProvider = ({ children }) => {
 
       if (updatedGame.numberOfApprovals >= approvalLimit) {
         updatedGame.approvalStatus = "approved";
+
+        const playersToUpdate = leagueParticipants.filter((player) =>
+          newGame.result.winner.players
+            .concat(newGame.result.loser.players)
+            .includes(player.username)
+        );
+
+        const userIds = playersToUpdate.map((player) => player.userId);
+        const usersToUpdate = await Promise.all(userIds.map(getUserById));
 
         const playerPerformance = calculatePlayerPerformance(
           updatedGame,

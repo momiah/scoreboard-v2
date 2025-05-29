@@ -575,8 +575,6 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  // Add this in your UserProvider component
-  // UserContext.js - Final optimized version
   const updateUserProfile = async (updatedFields) => {
     try {
       const userId = await AsyncStorage.getItem("userId");

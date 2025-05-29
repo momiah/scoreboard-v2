@@ -160,30 +160,6 @@ const AddGameModal = ({
       approvalStatus: "pending",
     };
 
-    const allPlayersInLeague = await retrievePlayersFromLeague(leagueId);
-
-    const allUsers = await getAllUsers();
-
-    const playersToUpdate = allPlayersInLeague.filter((player) =>
-      newGame.result.winner.players
-        .concat(newGame.result.loser.players)
-        .includes(player.username)
-    );
-
-    //TODO - Instead of using allUsers, use the usersToUpdate array to update only the users that need to be updated
-    const getUsersFromPlayersToUpdate = (allUsers, playersToUpdate) => {
-      // Extract the userIds from the playersToUpdate array
-      const playerUserIds = playersToUpdate.map((player) => player.userId);
-
-      // Filter allUsers to include only those users whose userId is in the playersToUpdate list
-      return allUsers.filter((user) => playerUserIds.includes(user.userId));
-    };
-
-    const usersToUpdate = getUsersFromPlayersToUpdate(
-      allUsers,
-      playersToUpdate
-    );
-
     const winners = newGame.result.winner.players;
     const losers = newGame.result.loser.players;
 
@@ -206,9 +182,6 @@ const AddGameModal = ({
         data: {
           leagueId,
           gameId,
-          playersToUpdate,
-          usersToUpdate,
-          // newGame,
         },
       };
 
