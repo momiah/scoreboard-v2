@@ -27,7 +27,7 @@ const Scoreboard = ({
   leagueStartDate,
   leagueEndDate,
   leagueName,
-  leagueParticipants,
+  leagueParticipants = [],
   maxPlayers = 8,
 }) => {
   const { fetchPlayers, currentUser } = useContext(UserContext);
@@ -59,7 +59,7 @@ const Scoreboard = ({
   // Player threshold logic: at least half of maxPlayers
   const playersCount = leagueParticipants.length;
   const minRequired = Math.ceil(maxPlayers / 2);
-  const canAddGame = playersCount >= minRequired;
+  const hasMinPlayers = playersCount >= minRequired;
 
   // Handlers
   const handleAddGame = useCallback(() => {
@@ -90,7 +90,8 @@ const Scoreboard = ({
         handleRequestSend,
         handleAddGame,
         handleLogin,
-        canAddGame
+        hasMinPlayers,
+        minRequired
       ),
     [
       userRole,
@@ -99,7 +100,8 @@ const Scoreboard = ({
       handleRequestSend,
       handleAddGame,
       handleLogin,
-      canAddGame,
+      hasMinPlayers,
+      minRequired,
     ]
   );
 
@@ -108,10 +110,6 @@ const Scoreboard = ({
     [leagueState, gamesExist, userRole]
   );
 
-  const minimumPlayersText = canAddGame
-    ? buttonConfig.text
-    : `Minimum ${minRequired} players required to add a game`;
-
   return (
     <Container>
       <AddGameButton
@@ -119,13 +117,12 @@ const Scoreboard = ({
         onPress={buttonConfig.action}
         style={{ backgroundColor: buttonConfig.disabled ? "gray" : "#00A2FF" }}
       >
-        <ButtonText>{minimumPlayersText}</ButtonText>
+        <ButtonText>{buttonConfig.text}</ButtonText>
       </AddGameButton>
 
       {!gamesExist && fallbackMessage && (
         <FallbackMessage>{fallbackMessage}</FallbackMessage>
       )}
-
       <FlatList
         data={reversedGames}
         keyExtractor={(item, index) => index.toString()}

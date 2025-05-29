@@ -7,7 +7,8 @@ export const getButtonConfig = (
   handleRequestSend,
   handleAddGame,
   handleLogin,
-  canAddGame
+  hasMinPlayers,
+  minRequired
 ) => {
   const baseConfig = {
     hide: {
@@ -21,7 +22,11 @@ export const getButtonConfig = (
         disabled: false,
         action: () => handleLogin(),
       },
-      ended: { text: "League has ended", disabled: true, action: null },
+      ended: {
+        text: "League has ended",
+        disabled: true,
+        action: null,
+      },
     },
     user: {
       not_started: {
@@ -34,7 +39,11 @@ export const getButtonConfig = (
         disabled: requestSend,
         action: () => handleRequestSend(),
       },
-      ended: { text: "League has ended", disabled: true, action: null },
+      ended: {
+        text: "League has ended",
+        disabled: true,
+        action: null,
+      },
     },
     participant: {
       not_started: {
@@ -42,21 +51,45 @@ export const getButtonConfig = (
         disabled: true,
         action: null,
       },
-      started: {
-        text: "Add Game",
-        disabled: !canAddGame,
-        action: canAddGame ? handleAddGame : null,
+      started: hasMinPlayers
+        ? {
+            text: "Add Game",
+            disabled: false,
+            action: () => handleAddGame(),
+          }
+        : {
+            text: `Minimum ${minRequired} players required to add a game`,
+            disabled: true,
+            action: null,
+          },
+      ended: {
+        text: "League has ended",
+        disabled: true,
+        action: null,
       },
-      ended: { text: "League has ended", disabled: true, action: null },
     },
     admin: {
-      not_started: { text: "Add Game", disabled: true, action: null },
-      started: {
+      not_started: {
         text: "Add Game",
-        disabled: !canAddGame,
-        action: canAddGame ? handleAddGame : null,
+        disabled: true,
+        action: null,
       },
-      ended: { text: "League has ended", disabled: true, action: null },
+      started: hasMinPlayers
+        ? {
+            text: "Add Game",
+            disabled: false,
+            action: () => handleAddGame(),
+          }
+        : {
+            text: `Minimum ${minRequired} players required to add a game`,
+            disabled: true,
+            action: null,
+          },
+      ended: {
+        text: "League has ended",
+        disabled: true,
+        action: null,
+      },
     },
     requestPending: {
       not_started: {
