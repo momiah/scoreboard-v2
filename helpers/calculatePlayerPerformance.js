@@ -172,23 +172,22 @@ export const calculatePlayerPerformance = (
 
     const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
     const xp = baseXP * multiplier;
-    const demonWin = xp * 2;
 
-    const rankXp = (xp * rankMultiplier + demonWin) / 2;
+    // Only apply demon win bonus for wins with 10+ point difference
+    const demonWin = streakType === "W" && scoreDifference >= 10 ? xp * 2 : 0;
+
+    // Calculate rank XP safely
+    const rankXpValue = xp * rankMultiplier + demonWin;
+    const rankXp = isNaN(rankXpValue) ? 0 : rankXpValue;
 
     // Final XP calculation
     const finalXp = xp + rankXp;
 
     // Update the player's XP
-    // player.XP += finalXp;
     user.XP += finalXp;
     player.prevGameXP = finalXp;
 
     // Ensure the player's XP doesn't drop below 10
-    // if (player.XP < 10) {
-    //   player.XP = 10;
-    // }
-
     if (user.XP < 10) {
       user.XP = 10;
     }
