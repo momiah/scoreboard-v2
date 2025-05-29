@@ -77,7 +77,7 @@ const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
     <PrizeDistributionContainer>
       <SectionTitleContainer>
         <SectionTitle>Prize Distribution</SectionTitle>
-        <Tooltip message="Prize Distribution is calculated by the total number of games played, max players of the league and total number of winning points accumulated in the league" />
+        <Tooltip message="Prize Distribution is calculated by the total number of games played, number of players in the league and total number of winning points accumulated in the league" />
       </SectionTitleContainer>
       <PrizeRow>
         {prizes.map((prize, index) => (

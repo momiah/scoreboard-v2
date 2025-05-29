@@ -161,6 +161,8 @@ const League = () => {
             leagueEndDate={endDate}
             leagueOwner={leagueOwner}
             leagueName={leagueName}
+            leagueParticipants={leagueParticipants || []}
+            maxPlayers={maxPlayers}
           />
         );
       case "Player Performance":

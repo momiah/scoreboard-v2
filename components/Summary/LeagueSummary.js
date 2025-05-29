@@ -13,7 +13,7 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
   const [isCopied, setIsCopied] = useState(false);
   const timeoutRef = useRef(null);
 
-  const maxPlayers = leagueDetails.maxPlayers;
+  const numberOfParticipants = leagueDetails.leagueParticipants.length || 1;
   const numberOfGamesPlayed = leagueDetails.games.length;
   const totalGamePointsWon = leagueDetails.games.reduce((acc, game) => {
     return acc + game.result.winner.score;
@@ -23,7 +23,8 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
     leagueDetails.location;
   const fullAddress = `${courtName}, ${address}, ${city}, ${postCode}, ${countryCode}`;
 
-  const prizePool = maxPlayers * numberOfGamesPlayed + totalGamePointsWon;
+  const prizePool =
+    numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon;
 
   return (
     <LeagueSummaryContainer>

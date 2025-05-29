@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { View, FlatList, Text } from "react-native";
 import styled from "styled-components/native";
 
@@ -58,13 +58,27 @@ const TeamPerformance = ({ leagueTeams }) => {
     );
   };
 
+  const sortedTeams = useMemo(() => {
+    return [...leagueTeams].sort((a, b) => {
+      if (b.numberOfWins !== a.numberOfWins) {
+        return b.numberOfWins - a.numberOfWins;
+      }
+      if (b.totalPointDifference !== a.totalPointDifference) {
+        return b.totalPointDifference - a.totalPointDifference;
+      }
+      return b.averagePointDifference - a.averagePointDifference;
+    });
+  }, [leagueTeams]);
+
+  console.log("League Teams:", JSON.stringify(leagueTeams, null, 2));
+
   return (
     <TableContainer>
       {leagueTeams.length === 0 ? (
         <FallbackMessage>Add a game to see Team Performance 📈</FallbackMessage>
       ) : (
         <FlatList
-          data={leagueTeams}
+          data={sortedTeams}
           renderItem={renderTeam}
           keyExtractor={(team, index) => team.team.join("-") + index}
         />

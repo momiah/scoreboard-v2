@@ -6,7 +6,8 @@ export const getButtonConfig = (
   requestSend,
   handleRequestSend,
   handleAddGame,
-  handleLogin
+  handleLogin,
+  canAddGame
 ) => {
   const baseConfig = {
     hide: {
@@ -41,12 +42,20 @@ export const getButtonConfig = (
         disabled: true,
         action: null,
       },
-      started: { text: "Add Game", disabled: false, action: handleAddGame },
+      started: {
+        text: "Add Game",
+        disabled: !canAddGame,
+        action: canAddGame ? handleAddGame : null,
+      },
       ended: { text: "League has ended", disabled: true, action: null },
     },
     admin: {
       not_started: { text: "Add Game", disabled: true, action: null },
-      started: { text: "Add Game", disabled: false, action: handleAddGame },
+      started: {
+        text: "Add Game",
+        disabled: !canAddGame,
+        action: canAddGame ? handleAddGame : null,
+      },
       ended: { text: "League has ended", disabled: true, action: null },
     },
     requestPending: {

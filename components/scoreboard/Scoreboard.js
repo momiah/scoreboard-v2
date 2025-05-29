@@ -27,6 +27,8 @@ const Scoreboard = ({
   leagueStartDate,
   leagueEndDate,
   leagueName,
+  leagueParticipants,
+  maxPlayers = 8,
 }) => {
   const { fetchPlayers, currentUser } = useContext(UserContext);
   const { requestToJoinLeague } = useContext(LeagueContext);
@@ -52,10 +54,14 @@ const Scoreboard = ({
     () => (leagueGames || []).filter(Boolean).reverse(),
     [leagueGames]
   );
-
   const gamesExist = reversedGames.length > 0;
 
-  // Button click handlers
+  // Player threshold logic: at least half of maxPlayers
+  const playersCount = leagueParticipants.length;
+  const minRequired = Math.ceil(maxPlayers / 2);
+  const canAddGame = playersCount >= minRequired;
+
+  // Handlers
   const handleAddGame = useCallback(() => {
     fetchPlayers(leagueId);
     setModalVisible(true);
@@ -83,7 +89,8 @@ const Scoreboard = ({
         requestSend,
         handleRequestSend,
         handleAddGame,
-        handleLogin
+        handleLogin,
+        canAddGame
       ),
     [
       userRole,
@@ -92,6 +99,7 @@ const Scoreboard = ({
       handleRequestSend,
       handleAddGame,
       handleLogin,
+      canAddGame,
     ]
   );
 
@@ -100,6 +108,10 @@ const Scoreboard = ({
     [leagueState, gamesExist, userRole]
   );
 
+  const minimumPlayersText = canAddGame
+    ? buttonConfig.text
+    : `Minimum ${minRequired} players required to add a game`;
+
   return (
     <Container>
       <AddGameButton
@@ -107,7 +119,7 @@ const Scoreboard = ({
         onPress={buttonConfig.action}
         style={{ backgroundColor: buttonConfig.disabled ? "gray" : "#00A2FF" }}
       >
-        <ButtonText>{buttonConfig.text}</ButtonText>
+        <ButtonText>{minimumPlayersText}</ButtonText>
       </AddGameButton>
 
       {!gamesExist && fallbackMessage && (
@@ -221,10 +233,8 @@ const GameContainer = styled.View({
   marginBottom: 16,
   backgroundColor: "#001123",
   border: "1px solid rgb(9, 33, 62)",
-
   borderRadius: 8,
 });
-
 const PendingApprovalContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
@@ -232,10 +242,8 @@ const PendingApprovalContainer = styled.View({
   backgroundColor: "#001123",
   border: "1px solid rgb(9, 33, 62)",
   borderRadius: 8,
-  opacity: 0.6, // faded look
-  // position: "relative",
+  opacity: 0.6,
 });
-
 const PendingLabel = styled.Text({
   paddingHorizontal: 6,
   paddingVertical: 2,
@@ -246,40 +254,34 @@ const PendingLabel = styled.Text({
   borderRadius: 4,
   overflow: "hidden",
 });
-
 const ResultsContainer = styled.View({
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
   padding: 10,
 });
-
 const Score = styled.Text({
   fontSize: 28,
   fontWeight: "bold",
   color: "#00A2FF",
 });
-
 const ScoreContainer = styled.View({
   display: "flex",
   flexDirection: "row",
   justifyContent: "center",
   marginTop: screenWidth <= 400 ? 20 : null,
 });
-
 const TeamText = styled.Text({
   color: "white",
   fontSize: screenWidth <= 400 ? 15 : 16,
   textAlign: (props) => (props.position === "right" ? "right" : "left"),
 });
-
 const TeamContainer = styled.View({
   display: "flex",
   justifyContent: "center",
   flexDirection: "column",
   borderRadius: 8,
 });
-
 const TeamTextContainer = styled.View({
   display: "flex",
   flexDirection: "column",
@@ -288,7 +290,6 @@ const TeamTextContainer = styled.View({
   paddingRight: 20,
   width: screenWidth <= 400 ? 125 : 140,
 });
-
 const FallbackMessage = styled.Text({
   color: "#696969",
   fontStyle: "italic",
@@ -296,17 +297,14 @@ const FallbackMessage = styled.Text({
   textAlign: "center",
   marginTop: 50,
 });
-
 const ButtonText = styled.Text({
   color: "white",
   fontSize: 16,
 });
-
 const DateText = styled.Text({
   fontSize: 10,
   fontWeight: "bold",
   color: "white",
-
   marginBottom: screenWidth <= 400 ? 0 : 15,
 });
 

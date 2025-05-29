@@ -95,7 +95,7 @@ const NotificationRow = ({
 
     let routeProp = {};
     if (route === "League") {
-      routeProp = { leagueId: item.data?.leagueId };
+      routeProp = { leagueId: item.data?.leagueId, tab: "Scoreboard" };
     } else if (route === "Tournament") {
       routeProp = { tournamentId: item.data?.tournamentId };
     } else if (route === "UserProfile") {

@@ -3,6 +3,7 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  View,
   Dimensions,
 } from "react-native";
 import styled from "styled-components/native";
@@ -47,7 +48,18 @@ const Chats = () => {
           <LeagueName>{item.leagueName || "Unknown League"}</LeagueName>
           <LastMessage numberOfLines={1}>{item.lastMessage}</LastMessage>
         </ChatDetails>
-        {!item.isRead && <UnreadBadge>{item.messageCount}</UnreadBadge>}
+        {!item.isRead && (
+          <View
+            style={{
+              backgroundColor: "#00A2FF",
+              borderRadius: 20,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+            }}
+          >
+            <UnreadBadge>{item.messageCount}</UnreadBadge>
+          </View>
+        )}
       </ChatRow>
     );
   };
@@ -131,12 +143,8 @@ const LastMessage = styled.Text({
 });
 
 const UnreadBadge = styled.Text({
-  backgroundColor: "#00A2FF",
   color: "white",
   fontSize: 12,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 20,
   overflow: "hidden",
 });
 
