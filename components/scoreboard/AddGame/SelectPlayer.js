@@ -110,6 +110,8 @@ const SelectPlayer = ({
 
     setSelected(newValue); // update internal state immediately
     onSelectPlayer(newValue); // notify parent
+    if (isSame) return; // do not close dropdown if same value is selected
+    closeDropdown(); // close dropdown after selection
   };
 
   // FlatList render item function

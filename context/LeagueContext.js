@@ -541,18 +541,33 @@ const LeagueProvider = ({ children }) => {
         updatedGame.approvalStatus = "approved";
 
         const playersToUpdate = leagueParticipants.filter((player) =>
-          newGame.result.winner.players
-            .concat(newGame.result.loser.players)
+          game.result.winner.players
+            .concat(game.result.loser.players)
             .includes(player.username)
         );
 
         const userIds = playersToUpdate.map((player) => player.userId);
         const usersToUpdate = await Promise.all(userIds.map(getUserById));
 
+        console.log(
+          "Players to update:",
+          JSON.stringify(playersToUpdate, null, 2)
+        );
+        console.log("Users to update:", JSON.stringify(usersToUpdate, null, 2));
+
         const playerPerformance = calculatePlayerPerformance(
           updatedGame,
           playersToUpdate,
           usersToUpdate
+        );
+
+        console.log(
+          "Player performance:",
+          JSON.stringify(playerPerformance.playersToUpdate, null, 2)
+        );
+        console.log(
+          "Users to update:",
+          JSON.stringify(playerPerformance.usersToUpdate, null, 2)
         );
 
         await updatePlayers(playerPerformance.playersToUpdate, leagueId);
@@ -664,18 +679,28 @@ const LeagueProvider = ({ children }) => {
         numberOfDeclines: (game.numberOfDeclines || 0) + 1,
       };
 
+      const declinedGame = {
+        ...updatedGame,
+        declinedBy: {
+          userId: currentUser.userId,
+          username: currentUserUsername,
+        },
+      };
+
+      const declinedGames = leagueData.declinedGames || [];
+
       let updatedGames = [...games];
 
       if (updatedGame.numberOfDeclines >= declineLimit) {
-        // Remove the game entirely
+        declinedGames.push(declinedGame);
         updatedGames.splice(gameIndex, 1);
       } else {
-        // Otherwise update the decline count
         updatedGames[gameIndex] = updatedGame;
       }
 
       await updateDoc(leagueRef, {
         games: updatedGames,
+        declinedGames: declinedGames,
       });
 
       const notificationDocRef = doc(

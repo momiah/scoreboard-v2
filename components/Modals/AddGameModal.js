@@ -23,6 +23,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
+import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 
 const AddGameModal = ({
   modalVisible,
@@ -43,7 +44,7 @@ const AddGameModal = ({
   } = useContext(PopupContext);
   const {
     retrievePlayersFromLeague,
-    getAllUsers,
+    getUserById,
     currentUser,
     sendNotification,
   } = useContext(UserContext);
@@ -136,6 +137,17 @@ const AddGameModal = ({
       return;
     }
 
+    const score1 = parseInt(team1Score);
+    const score2 = parseInt(team2Score);
+
+    // Use helper for validation
+    const validationError = validateBadmintonScores(score1, score2);
+    if (validationError) {
+      setErrorText(validationError);
+      setLoading(false);
+      return;
+    }
+
     const gameId = generateUniqueGameId(leagueGames);
 
     const newGame = {
@@ -159,6 +171,17 @@ const AddGameModal = ({
       numberOfDeclines: 0,
       approvalStatus: "pending",
     };
+
+    const playersToUpdate = await retrievePlayersFromLeague(leagueId);
+    if (!playersToUpdate || playersToUpdate.length === 0) {
+      setErrorText("No players found in the league.");
+      setLoading(false);
+      return;
+    }
+    setErrorText(""); // Clear any previous error messages
+
+    const userIds = playersToUpdate.map((player) => player.userId);
+    const usersToUpdate = await Promise.all(userIds.map(getUserById));
 
     const winners = newGame.result.winner.players;
     const losers = newGame.result.loser.players;
