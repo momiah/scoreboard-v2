@@ -22,6 +22,7 @@ import { loadCountries, loadCities } from "../../utils/locationData";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../../components/popup/Popup";
+import * as FileSystem from "expo-file-system";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
@@ -137,12 +138,38 @@ const EditProfile = ({ navigation }) => {
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        const pickedUri = result.assets[0].uri;
+        const asset = result.assets[0];
+        const pickedUri = asset.uri;
+
+        // Check file size (5MB = 5 * 1024 * 1024 bytes)
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+
+        // Get file info to check size
+        const fileInfo = await FileSystem.getInfoAsync(pickedUri);
+
+        if (fileInfo.size && fileInfo.size > MAX_SIZE) {
+          Alert.alert(
+            "File Too Large",
+            `Image size is ${(fileInfo.size / (1024 * 1024)).toFixed(
+              2
+            )}MB. Please select an image smaller than 5MB.`,
+            [{ text: "OK" }]
+          );
+          return;
+        }
+
         const manipulated = await ImageManipulator.manipulateAsync(
           pickedUri,
           [{ resize: { width: 300, height: 300 } }],
           { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
         );
+
+        // Optional: Double-check the manipulated image size
+        const manipulatedInfo = await FileSystem.getInfoAsync(manipulated.uri);
+        console.log(
+          `Final image size: ${(manipulatedInfo.size / 1024).toFixed(1)}KB`
+        );
+
         setFormData((prev) => ({ ...prev, profileImage: manipulated.uri }));
       }
     } catch (err) {
@@ -150,7 +177,6 @@ const EditProfile = ({ navigation }) => {
       Alert.alert("Error", "Unable to pick image.");
     }
   };
-
   const handleUpdate = async () => {
     try {
       setLoading(true);
