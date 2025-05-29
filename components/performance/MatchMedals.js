@@ -1,4 +1,4 @@
-import rankingMedals from "../../rankingMedals";
+import gameMedals from "../../rankingMedals";
 import styled from "styled-components/native";
 import React, { useMemo } from "react";
 import { Dimensions } from "react-native";
@@ -23,25 +23,25 @@ const MatchMedals = ({
   const medalsData = useMemo(
     () => [
       {
-        medal: rankingMedals.demon_win,
+        medal: gameMedals.demon_win,
         title: "Assassin",
         stat: demonWin,
         key: "demon_win",
       },
       {
-        medal: rankingMedals.win_streak_3,
+        medal: gameMedals.win_streak_3,
         title: "3 Win Streak",
         stat: winStreak3,
         key: "win_streak_3",
       },
       {
-        medal: rankingMedals.win_streak_5,
+        medal: gameMedals.win_streak_5,
         title: "5 Win Streak",
         stat: winStreak5,
         key: "win_streak_5",
       },
       {
-        medal: rankingMedals.win_streak_7,
+        medal: gameMedals.win_streak_7,
         title: "7 Win Streak",
         stat: winStreak7,
         key: "win_streak_7",
