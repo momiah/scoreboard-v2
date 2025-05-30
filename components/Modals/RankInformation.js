@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useContext,
+} from "react";
 import {
   Modal,
   Text,
@@ -14,15 +20,18 @@ import { AntDesign } from "@expo/vector-icons";
 import { ranks } from "../../rankingMedals/ranking/ranks";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
+import { GameContext } from "../../context/GameContext";
 
 const screenWidth = Dimensions.get("window").width;
 const ITEM_WIDTH = screenWidth / 4 - 20;
 const ICON_SIZE = screenWidth < 400 ? 50 : 60;
+const LAST_ICON_SIZE = ICON_SIZE + 30; // Adjusted size for the last item in the last group
 const GROUP_SIZE = 4;
 
 export const RankInformation = ({ visible, onClose }) => {
   const [imageLoadStatus, setImageLoadStatus] = useState({});
   const [shouldLoadImages, setShouldLoadImages] = useState(false);
+  const { findRankIndex } = useContext(GameContext);
 
   useEffect(() => {
     if (!visible) {
@@ -47,35 +56,61 @@ export const RankInformation = ({ visible, onClose }) => {
     return groups;
   }, []);
 
-  const renderGroup = ({ item: group, index }) => (
-    <GroupContainer>
-      <GroupTitle>Rank Group {index + 1}</GroupTitle>
-      <GroupRow>
-        {group.map((item) => {
-          const loading = !imageLoadStatus[item.name];
-          return (
-            <RankItem key={item.name}>
-              <CircleSkeleton
-                show={loading}
-                size={ICON_SIZE}
-                config={SKELETON_THEMES.dark}
-              >
-                {shouldLoadImages && (
-                  <RankImage
-                    onLoad={() => handleImageLoad(item.name)}
-                    onError={() => handleImageError(item.name)}
-                    source={item.icon}
-                  />
-                )}
-              </CircleSkeleton>
-              <RankName numberOfLines={1}>{item.name}</RankName>
-              <RankXP>{item.xp} XP</RankXP>
-            </RankItem>
-          );
-        })}
-      </GroupRow>
-    </GroupContainer>
-  );
+  const renderGroup = ({ item: group, index }) => {
+    // const lastRank = index === group.length - 1;
+    const isLastGroup = index === groupedRanks.length - 1;
+    const groupText = isLastGroup ? "" : `Rank Group ${index + 1}`;
+    return (
+      <GroupContainer
+        key={`group-${index}`}
+        style={isLastGroup ? { alignItems: "center" } : null}
+      >
+        <GroupTitle
+          style={isLastGroup ? { alignSelf: "center", marginBottom: 0 } : null}
+        >
+          {groupText}
+        </GroupTitle>
+        <GroupRow>
+          {group.map((item, idx) => {
+            const loading = !imageLoadStatus[item.name];
+            const isLastItem = idx === group.length - 1;
+            return (
+              <RankItem key={item.name}>
+                <CircleSkeleton
+                  show={loading}
+                  size={isLastGroup && isLastItem ? LAST_ICON_SIZE : ICON_SIZE}
+                  config={SKELETON_THEMES.dark}
+                >
+                  {shouldLoadImages && (
+                    <RankImage
+                      onLoad={() => handleImageLoad(item.name)}
+                      onError={() => handleImageError(item.name)}
+                      source={item.icon}
+                      style={{
+                        width:
+                          isLastGroup && isLastItem
+                            ? LAST_ICON_SIZE
+                            : ICON_SIZE,
+                        height:
+                          isLastGroup && isLastItem
+                            ? LAST_ICON_SIZE
+                            : ICON_SIZE,
+                      }}
+                    />
+                  )}
+                </CircleSkeleton>
+                <RankName numberOfLines={1}>{item.name}</RankName>
+                <RankXP>{item.xp} XP</RankXP>
+                <RankLevel>
+                  {findRankIndex(item.xp) + 1} {item.suffix}
+                </RankLevel>
+              </RankItem>
+            );
+          })}
+        </GroupRow>
+      </GroupContainer>
+    );
+  };
 
   return (
     <Modal
@@ -120,6 +155,7 @@ const ModalContainer = styled(BlurView).attrs({
 const ModalContent = styled.View({
   backgroundColor: "rgba(2, 13, 24, 1)",
   padding: 20,
+  paddingBottom: 0,
   borderRadius: 10,
   width: screenWidth - 40,
   height: "80%",
@@ -171,11 +207,18 @@ const RankImage = styled(Image)({
 });
 
 const RankName = styled(Text)({
-  fontSize: 12,
+  fontSize: screenWidth < 400 ? 10 : 12,
   color: "white",
   marginTop: 5,
   textAlign: "center",
   fontWeight: "600",
+});
+
+const RankLevel = styled.Text({
+  fontSize: 10,
+  fontWeight: "bold",
+  color: "white",
+  marginTop: 2,
 });
 
 const RankXP = styled(Text)({

@@ -69,6 +69,7 @@ const GameProvider = ({ children }) => {
       return numericXP >= rank.xp && numericXP < nextXP;
     });
   };
+
   const sortGamesByNewest = (games) => {
     return games.sort((a, b) => {
       const [dateA, gameNumberA] = a.gameId.split("-game-");
