@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Modal,
+  Alert,
 } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -16,7 +17,7 @@ import { PopupContext } from "../../context/PopupContext";
 import { BlurView } from "expo-blur";
 
 const ProfileMenu = ({ navigation }) => {
-  const { Logout, currentUser, setCurrentUser, isLoggingOut } =
+  const { Logout, currentUser, setCurrentUser, isLoggingOut, deleteAccount } =
     useContext(UserContext);
   const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
     useContext(PopupContext);
@@ -25,8 +26,7 @@ const ProfileMenu = ({ navigation }) => {
     setShowPopup(false);
     setPopupMessage("");
 
-    setCurrentUser(null);
-
+    // Only navigate if user is logged out (currentUser is null)
     if (!currentUser) {
       navigation.reset({
         index: 0,
@@ -49,12 +49,45 @@ const ProfileMenu = ({ navigation }) => {
       action: "PendingRequests",
     },
     { label: "Log out", icon: "log-out-outline", action: "logout" },
+    {
+      label: "Delete Account",
+      icon: "trash-outline",
+      action: "DeleteAccount",
+      color: "red",
+    },
   ];
+
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount();
+      // No need for manual navigation - deleteAccount handles state cleanup
+      // and the popup will show success message, then navigate on popup close
+    } catch (error) {
+      // Error is already handled in deleteAccount function
+      console.error("Delete account failed:", error);
+    }
+  };
 
   const handlePress = async (action) => {
     if (action === "logout") {
       console.log("Logging out...");
       await Logout();
+    } else if (action === "DeleteAccount") {
+      Alert.alert(
+        "Delete Account",
+        "Are you sure you want to delete your account? This action CANNOT be undone.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Delete",
+            onPress: handleDeleteAccount,
+            style: "destructive",
+          },
+        ]
+      );
     } else {
       navigation.navigate(action);
     }
@@ -84,6 +117,7 @@ const ProfileMenu = ({ navigation }) => {
           )}
         </BlurView>
       </Modal>
+
       <Header>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="white" />
@@ -99,8 +133,16 @@ const ProfileMenu = ({ navigation }) => {
             onPress={() => handlePress(option.action)}
           >
             <LeftContainer>
-              <Ionicons name={option.icon} size={20} color="white" />
-              <MenuText>{option.label}</MenuText>
+              <Ionicons
+                name={option.icon}
+                size={20}
+                color={option.color ? option.color : "white"}
+              />
+              <MenuText
+                style={{ color: option.color ? option.color : "white" }}
+              >
+                {option.label}
+              </MenuText>
             </LeftContainer>
             <Ionicons name="chevron-forward" size={18} color="#666" />
           </MenuItem>

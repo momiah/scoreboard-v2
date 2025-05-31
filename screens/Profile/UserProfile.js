@@ -120,7 +120,7 @@ const UserProfile = () => {
   }, [profile, getGlobalRank]);
 
   useEffect(() => {
-    if (!route.params?.userId && !profile && !loading) {
+    if (!route.params?.userId && !profile && !loading && !currentUser) {
       navigation.reset({ index: 0, routes: [{ name: "Login" }] });
     }
   }, [profile, loading]);
@@ -235,7 +235,7 @@ const UserProfile = () => {
   if (!profile || !profileDetail) {
     return (
       <LoadingContainer>
-        <Text style={{ color: "#fff" }}>This profile no longer exists</Text>
+        <Text style={{ color: "#aaa" }}>This profile no longer exists</Text>
       </LoadingContainer>
     );
   }
