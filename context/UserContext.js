@@ -629,6 +629,10 @@ const UserProvider = ({ children }) => {
   };
 
   const readNotification = async (notificationId, userId) => {
+    if (!notificationId) {
+      console.error("Invalid notificationId:", notificationId);
+      return;
+    }
     try {
       // const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
@@ -639,7 +643,12 @@ const UserProvider = ({ children }) => {
       });
       console.log("Notification marked as read:", notificationId);
     } catch (error) {
-      console.error("Error marking notification as read:", error);
+      console.error(
+        "Error marking notification as read:",
+        error,
+        notificationId,
+        userId
+      );
     }
   };
 
@@ -664,9 +673,9 @@ const UserProvider = ({ children }) => {
     if (!currentUser) throw new Error("No user authenticated");
 
     const supportData = {
-      userId: currentUser.userId,
-      username: currentUser.username,
-      email: currentUser.email,
+      userId: currentUser?.userId,
+      username: currentUser?.username,
+      email: currentUser?.email,
       subject,
       message,
       createdAt: new Date(),
@@ -679,9 +688,9 @@ const UserProvider = ({ children }) => {
     if (!currentUser) throw new Error("User not authenticated");
 
     const feedbackData = {
-      userId: currentUser.userId,
-      username: currentUser.username,
-      email: currentUser.email,
+      userId: currentUser?.userId,
+      username: currentUser?.username,
+      email: currentUser?.email,
       subject,
       message,
       createdAt: new Date(),

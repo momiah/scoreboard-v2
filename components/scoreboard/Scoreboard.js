@@ -75,9 +75,9 @@ const Scoreboard = ({
     setRequestSend(true);
     requestToJoinLeague(
       leagueId,
-      currentUser.userId,
+      currentUser?.userId,
       leagueOwner.userId,
-      currentUser.username
+      currentUser?.username
     );
   }, [requestToJoinLeague, leagueId, currentUser, leagueOwner]);
 

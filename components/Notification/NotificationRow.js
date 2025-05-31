@@ -72,7 +72,7 @@ const NotificationRow = ({
     } else if (isWelcome) {
       // This is likely the welcome notification or one meant for modal
       if (!isRead) {
-        readNotification(item.id, currentUser.userId);
+        readNotification(item.id, currentUser?.userId);
       }
       onPressAction(item); // will be routed to modal handler in Notifications
     } else {
@@ -82,7 +82,7 @@ const NotificationRow = ({
 
   const handleInformationNotification = () => {
     if (!isRead) {
-      readNotification(item.id, currentUser.userId);
+      readNotification(item.id, currentUser?.userId);
     }
 
     const infoEntry = Object.values(notificationTypes.INFORMATION).find(

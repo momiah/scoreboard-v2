@@ -23,7 +23,7 @@ const PendingRequests = () => {
 
   const loadRequests = async () => {
     setLoading(true);
-    const data = await fetchUserPendingRequests(currentUser.userId);
+    const data = await fetchUserPendingRequests(currentUser?.userId);
     console.log("Pending requests:", data);
     setRequests(data);
     setLoading(false);
@@ -35,7 +35,7 @@ const PendingRequests = () => {
 
   const handleWithdraw = async (leagueId) => {
     try {
-      await withdrawJoinRequest(leagueId, currentUser.userId);
+      await withdrawJoinRequest(leagueId, currentUser?.userId);
       loadRequests();
     } catch (err) {
       Alert.alert("Error", "Failed to withdraw request.");

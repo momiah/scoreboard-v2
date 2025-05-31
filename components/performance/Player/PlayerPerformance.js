@@ -113,6 +113,22 @@ const PlayerPerformance = ({ playersData }) => {
     );
   };
 
+  if (playersWithUserData.length === 0) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#aaa", fontSize: 14, textAlign: "center" }}>
+          No players available for performance analysis.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <TableContainer>
       <FlatList

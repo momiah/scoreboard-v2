@@ -65,12 +65,12 @@ const AssignAdmin = () => {
   const renderItem = ({ item }) => {
     const isUserAdmin = isAdmin(item.userId);
     const isOwner = item.userId === league?.leagueOwner?.userId;
-    const isCurrentUser = item.userId === currentUser.userId;
+    const isCurrentUser = item.userId === currentUser?.userId;
 
     const canAssign = !isUserAdmin && !isCurrentUser && !isOwner;
     const canRevoke =
       isUserAdmin &&
-      currentUser.userId === league?.leagueOwner?.userId &&
+      currentUser?.userId === league?.leagueOwner?.userId &&
       !isOwner;
 
     return (
