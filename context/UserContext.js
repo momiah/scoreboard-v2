@@ -9,8 +9,10 @@ import {
   updateDoc,
   addDoc,
   onSnapshot,
+  deleteDoc,
 } from "firebase/firestore";
-import { db } from "../services/firebase.config";
+import { db, auth } from "../services/firebase.config";
+import { deleteUser } from "firebase/auth";
 
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -639,7 +641,12 @@ const UserProvider = ({ children }) => {
       });
       console.log("Notification marked as read:", notificationId);
     } catch (error) {
-      console.error("Error marking notification as read:", error);
+      console.error(
+        "Error marking notification as read:",
+        error,
+        notificationId,
+        userId
+      );
     }
   };
 
@@ -664,9 +671,9 @@ const UserProvider = ({ children }) => {
     if (!currentUser) throw new Error("No user authenticated");
 
     const supportData = {
-      userId: currentUser.userId,
-      username: currentUser.username,
-      email: currentUser.email,
+      userId: currentUser?.userId,
+      username: currentUser?.username,
+      email: currentUser?.email,
       subject,
       message,
       createdAt: new Date(),
@@ -679,15 +686,66 @@ const UserProvider = ({ children }) => {
     if (!currentUser) throw new Error("User not authenticated");
 
     const feedbackData = {
-      userId: currentUser.userId,
-      username: currentUser.username,
-      email: currentUser.email,
+      userId: currentUser?.userId,
+      username: currentUser?.username,
+      email: currentUser?.email,
       subject,
       message,
       createdAt: new Date(),
     };
 
     await addDoc(collection(db, "feedback"), feedbackData);
+  };
+
+  const deleteAccount = async () => {
+    try {
+      setIsLoggingOut(true);
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId || !currentUser) {
+        throw new Error("User not authenticated");
+      }
+
+      // Get the current authenticated user from Firebase Auth
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
+
+      // Verify the Firebase Auth user matches our current user
+      if (user.uid !== currentUser.userId) {
+        throw new Error("Authentication mismatch");
+      }
+
+      // Step 1: Delete user document from Firestore users collection
+      const userDocRef = doc(db, "users", userId);
+      await deleteDoc(userDocRef);
+      console.log("User document deleted from Firestore");
+
+      // Step 2: Delete the user's Firebase Authentication account
+      await deleteUser(user);
+      console.log("User account deleted from Firebase Auth");
+
+      // Step 3: Clear local storage and state
+      await AsyncStorage.clear();
+      setCurrentUser(null);
+      setNotifications([]);
+      setChatSummaries([]);
+      setIsLoggingOut(false);
+      return true;
+    } catch (error) {
+      console.error("Error deleting account:", error);
+
+      // Handle specific Firebase Auth errors
+      if (error.code === "auth/requires-recent-login") {
+        handleShowPopup(
+          "Please log in again before deleting your account for security reasons."
+        );
+      } else {
+        handleShowPopup("Error deleting account. Please try again.");
+      }
+
+      throw error;
+    }
   };
 
   return (
@@ -707,6 +765,7 @@ const UserProvider = ({ children }) => {
         getUserById,
         sendSupportRequest,
         sendFeedback,
+        deleteAccount,
 
         //Notification
         sendNotification,

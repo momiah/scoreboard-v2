@@ -335,10 +335,21 @@ const LeagueProvider = ({ children }) => {
       const notificationsRef = collection(db, "users", userId, "notifications");
 
       const notificationDocRef = doc(notificationsRef, notificationId);
+
+      if (!leagueDoc.exists()) {
+        console.error("League does not exist or has been deleted");
+        await updateDoc(notificationDocRef, {
+          isRead: true,
+        });
+        return;
+      }
+
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.ACCEPT,
       });
+
+      // return if league doesnt exist
 
       console.log("League invite accepted successfully!");
     } catch (error) {
@@ -367,6 +378,15 @@ const LeagueProvider = ({ children }) => {
       const notificationsRef = collection(db, "users", userId, "notifications");
 
       const notificationDocRef = doc(notificationsRef, notificationId);
+
+      if (!leagueDoc.exists()) {
+        console.error("League does not exist or has been deleted");
+        await updateDoc(notificationDocRef, {
+          isRead: true,
+        });
+        return;
+      }
+
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.DECLINE,
@@ -529,7 +549,7 @@ const LeagueProvider = ({ children }) => {
 
       // Retrieve currentUser username
       const currentUser = await getUserById(userId);
-      const currentUserUsername = currentUser.username;
+      const currentUserUsername = currentUser?.username;
 
       // Update approvals
       const updatedGame = {
@@ -549,25 +569,10 @@ const LeagueProvider = ({ children }) => {
         const userIds = playersToUpdate.map((player) => player.userId);
         const usersToUpdate = await Promise.all(userIds.map(getUserById));
 
-        console.log(
-          "Players to update:",
-          JSON.stringify(playersToUpdate, null, 2)
-        );
-        console.log("Users to update:", JSON.stringify(usersToUpdate, null, 2));
-
         const playerPerformance = calculatePlayerPerformance(
           updatedGame,
           playersToUpdate,
           usersToUpdate
-        );
-
-        console.log(
-          "Player performance:",
-          JSON.stringify(playerPerformance.playersToUpdate, null, 2)
-        );
-        console.log(
-          "Users to update:",
-          JSON.stringify(playerPerformance.usersToUpdate, null, 2)
         );
 
         await updatePlayers(playerPerformance.playersToUpdate, leagueId);
@@ -672,7 +677,7 @@ const LeagueProvider = ({ children }) => {
       const declineLimit = 1;
 
       const currentUser = await getUserById(userId);
-      const currentUserUsername = currentUser.username;
+      const currentUserUsername = currentUser?.username;
 
       const updatedGame = {
         ...game,
@@ -682,7 +687,7 @@ const LeagueProvider = ({ children }) => {
       const declinedGame = {
         ...updatedGame,
         declinedBy: {
-          userId: currentUser.userId,
+          userId: currentUser?.userId,
           username: currentUserUsername,
         },
       };

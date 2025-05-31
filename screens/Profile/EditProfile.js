@@ -71,19 +71,19 @@ const EditProfile = ({ navigation }) => {
     if (currentUser) {
       setFormData({
         location: {
-          city: currentUser.location?.city || "",
-          country: currentUser.location?.country || "",
-          countryCode: currentUser.location?.countryCode || "",
+          city: currentUser?.location?.city || "",
+          country: currentUser?.location?.country || "",
+          countryCode: currentUser?.location?.countryCode || "",
         },
-        handPreference: currentUser.handPreference || "",
-        bio: currentUser.bio || "",
-        email: currentUser.email || "",
-        profileImage: currentUser.profileImage || "",
-        headline: currentUser.headline || "",
+        handPreference: currentUser?.handPreference || "",
+        bio: currentUser?.bio || "",
+        email: currentUser?.email || "",
+        profileImage: currentUser?.profileImage || "",
+        headline: currentUser?.headline || "",
       });
 
       // Initialize selected country code
-      setSelectedCountryCode(currentUser.location?.countryCode || null);
+      setSelectedCountryCode(currentUser?.location?.countryCode || null);
     }
   }, [currentUser]);
 
@@ -183,7 +183,7 @@ const EditProfile = ({ navigation }) => {
       let imageUrl = formData.profileImage;
 
       if (imageUrl && !imageUrl.startsWith("https://")) {
-        imageUrl = await uploadProfileImage(imageUrl, currentUser.userId);
+        imageUrl = await uploadProfileImage(imageUrl, currentUser?.userId);
       }
 
       await updateUserProfile({
@@ -211,15 +211,15 @@ const EditProfile = ({ navigation }) => {
 
     // Compare each field with currentUser's data
     return (
-      formData.location.city !== (currentUser.location?.city || "") ||
-      formData.location.country !== (currentUser.location?.country || "") ||
+      formData.location.city !== (currentUser?.location?.city || "") ||
+      formData.location.country !== (currentUser?.location?.country || "") ||
       formData.location.countryCode !==
-        (currentUser.location?.countryCode || "") ||
-      formData.handPreference !== (currentUser.handPreference || "") ||
-      formData.bio !== (currentUser.bio || "") ||
-      formData.email !== (currentUser.email || "") ||
-      formData.profileImage !== (currentUser.profileImage || "") ||
-      formData.headline !== (currentUser.headline || "")
+        (currentUser?.location?.countryCode || "") ||
+      formData.handPreference !== (currentUser?.handPreference || "") ||
+      formData.bio !== (currentUser?.bio || "") ||
+      formData.email !== (currentUser?.email || "") ||
+      formData.profileImage !== (currentUser?.profileImage || "") ||
+      formData.headline !== (currentUser?.headline || "")
     );
   }, [currentUser, formData]);
 

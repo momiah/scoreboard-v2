@@ -50,11 +50,6 @@ const PlayerDetails = ({
 
   const goToProfile = () => {
     setShowPlayerDetails(false);
-
-    if (!currentUser) {
-      navigation.navigate("Login");
-      return;
-    }
     navigation.navigate("UserProfile", {
       userId: selectedPlayer.userId,
     });

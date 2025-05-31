@@ -67,18 +67,29 @@ const GameApprovalModal = ({
       if (notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE) {
         try {
           const league = await fetchLeagueById(leagueId);
+
+          if (!league) {
+            setLeagueDetails(null);
+            setGameDetails(null);
+            readNotification(notificationId, currentUser?.userId);
+            return;
+          }
+
           const game = league.games.find((game) => game.gameId === gameId);
           setLeagueDetails(league);
           setGameDetails(game);
 
           if (!game) {
-            setGameDeleted(true); // 🆕 Game no longer exists
-            readNotification(notificationId, currentUser.userId);
+            setGameDeleted(true);
+            readNotification(notificationId, currentUser?.userId);
           } else {
             setGameDeleted(false);
           }
         } catch (error) {
           console.error("Error fetching league details:", error);
+          // Also set states to null on error
+          setLeagueDetails(null);
+          setGameDetails(null);
         }
       }
     };
@@ -148,74 +159,83 @@ const GameApprovalModal = ({
               </TouchableOpacity>
 
               <Title>Game Approval Request</Title>
-              <Message>
-                A game has been reported on{" "}
-                <LinkText
-                  onPress={() =>
-                    navigateTo("League", { leagueId: leagueDetails.id })
-                  }
-                >
-                  {leagueDetails?.leagueName}
-                </LinkText>
-              </Message>
 
-              <Message>
-                Reporter:{" "}
-                <LinkText
-                  onPress={() =>
-                    navigateTo("UserProfile", { userId: senderId })
-                  }
-                >
-                  {senderUsername}
-                </LinkText>
-              </Message>
+              {leagueDetails && gameDetails ? (
+                <>
+                  <Message>
+                    A game has been reported on{" "}
+                    <LinkText
+                      onPress={() =>
+                        navigateTo("League", { leagueId: leagueDetails.id })
+                      }
+                    >
+                      {leagueDetails?.leagueName}
+                    </LinkText>
+                  </Message>
 
-              {!gameDeleted && (
-                <GameContainer>
-                  <TeamColumn
-                    team="left"
-                    players={gameDetails?.team1}
-                    leagueType={leagueDetails?.leagueType}
-                  />
-                  <ScoreDisplay
-                    date={gameDetails?.date}
-                    team1={gameDetails?.team1.score}
-                    team2={gameDetails?.team2.score}
-                  />
-                  <TeamColumn
-                    team="right"
-                    players={gameDetails?.team2}
-                    leagueType={leagueDetails?.leagueType}
-                  />
-                </GameContainer>
-              )}
+                  <Message>
+                    Reporter:{" "}
+                    <LinkText
+                      onPress={() =>
+                        navigateTo("UserProfile", { userId: senderId })
+                      }
+                    >
+                      {senderUsername}
+                    </LinkText>
+                  </Message>
 
-              {gameDeleted && (
-                <DeletedMessage>
-                  This game has been declined and no longer exists. Please agree
-                  on the scores and report again.
-                </DeletedMessage> // 🆕
-              )}
-
-              <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
-                <Button
-                  style={{ backgroundColor: "red" }}
-                  disabled={isRead || loadingDecision || gameDeleted}
-                  onPress={handleDeclineGame}
-                >
-                  <CloseButtonText>Decline</CloseButtonText>
-                </Button>
-                <Button
-                  onPress={handleApproveGame}
-                  disabled={isRead || loadingDecision || gameDeleted}
-                >
-                  {loadingDecision ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <AcceptButtonText>Accept</AcceptButtonText>
+                  {!gameDeleted && (
+                    <GameContainer>
+                      <TeamColumn
+                        team="left"
+                        players={gameDetails?.team1}
+                        leagueType={leagueDetails?.leagueType}
+                      />
+                      <ScoreDisplay
+                        date={gameDetails?.date}
+                        team1={gameDetails?.team1.score}
+                        team2={gameDetails?.team2.score}
+                      />
+                      <TeamColumn
+                        team="right"
+                        players={gameDetails?.team2}
+                        leagueType={leagueDetails?.leagueType}
+                      />
+                    </GameContainer>
                   )}
-                </Button>
-              </View>
+
+                  {gameDeleted && (
+                    <DeletedMessage>
+                      This game has been declined and no longer exists. Please
+                      agree on the scores and report again.
+                    </DeletedMessage> // 🆕
+                  )}
+
+                  <View
+                    style={{ flexDirection: "row", gap: 15, marginTop: 10 }}
+                  >
+                    <Button
+                      style={{ backgroundColor: "red" }}
+                      disabled={isRead || loadingDecision || gameDeleted}
+                      onPress={handleDeclineGame}
+                    >
+                      <CloseButtonText>Decline</CloseButtonText>
+                    </Button>
+                    <Button
+                      onPress={handleApproveGame}
+                      disabled={isRead || loadingDecision || gameDeleted}
+                    >
+                      {loadingDecision ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <AcceptButtonText>Accept</AcceptButtonText>
+                      )}
+                    </Button>
+                  </View>
+                </>
+              ) : (
+                <DeletedMessage>This league no longer exists.</DeletedMessage>
+              )}
             </>
           )}
         </ModalContent>

@@ -64,7 +64,7 @@ const UserProfile = () => {
         const userProfile = await getUserById(route.params.userId);
         setProfile(userProfile);
       } else if (currentUser) {
-        const personalProfile = await getUserById(currentUser.userId);
+        const personalProfile = await getUserById(currentUser?.userId);
         setProfile(personalProfile);
       } else {
         const userId = await AsyncStorage.getItem("userId");
@@ -102,7 +102,7 @@ const UserProfile = () => {
 
   useEffect(() => {
     const fetchRank = async () => {
-      if (profile?.userId) {
+      if (profile) {
         try {
           const rank = await getGlobalRank(profile.userId);
           const countryRank = await getCountryRank(
@@ -120,7 +120,7 @@ const UserProfile = () => {
   }, [profile, getGlobalRank]);
 
   useEffect(() => {
-    if (!route.params?.userId && !profile && !loading) {
+    if (!route.params?.userId && !profile && !loading && !currentUser) {
       navigation.reset({ index: 0, routes: [{ name: "Login" }] });
     }
   }, [profile, loading]);
@@ -225,13 +225,20 @@ const UserProfile = () => {
   const isOwnProfile =
     !route.params?.userId || route.params?.userId === currentUser?.userId;
 
-  const rawXP = profileDetail.XP; // Keep as number
-  const profileXp = formatNumber(rawXP.toFixed(0)); // For display only
+  const rawXP = profileDetail?.XP; // Keep as number
+  const profileXp = formatNumber(rawXP?.toFixed(0) || 1); // For display only
   const rankLevel = findRankIndex(rawXP) + 1; // Pass raw number to function
-  console.log("Profile XP:", profileXp);
-  console.log("Rank Level:", rankLevel);
+
   const pointDifference = profileDetail?.totalPointDifference || 0;
   const pointDifferenceMetric = pointDifference > 0 ? "+" : "";
+
+  if (!profile || !profileDetail) {
+    return (
+      <LoadingContainer>
+        <Text style={{ color: "#aaa" }}>This profile no longer exists</Text>
+      </LoadingContainer>
+    );
+  }
 
   return (
     <Container>
@@ -357,7 +364,7 @@ const UserProfile = () => {
         </CCRankContainer>
         <CCRankContainer>
           {/* <XpText>🌍</XpText> */}
-          <Icon name={profile.location.countryCode} height="20" width="20" />
+          <Icon name={profile?.location.countryCode} height="20" width="20" />
           <RankSuffix
             number={countryRank}
             numberStyle={{
@@ -397,7 +404,7 @@ const UserProfile = () => {
           <Image
             source={
               profile?.profileImage
-                ? { uri: profile.profileImage }
+                ? { uri: profile?.profileImage }
                 : CourtChampsLogo
             }
             style={styles.fullImage}

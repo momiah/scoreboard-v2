@@ -78,6 +78,8 @@ const JoinRequestModal = ({
   }, [requestId, requestType]);
 
   useEffect(() => {
+    // const notificationExistsWithNoDetails = notificationId && !requestDetails;
+
     if (!requestDetails || isRead) return;
 
     if (leagueFull || requestWithdrawn) {

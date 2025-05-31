@@ -54,13 +54,19 @@ const League = () => {
   const [selectedTab, setSelectedTab] = useState(defaultTab);
   const [modalVisible, setModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [leagueNotFound, setLeagueNotFound] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       if (leagueId) {
         try {
           const fetchedLeague = await fetchLeagueById(leagueId);
-          await getUserRole(fetchedLeague);
+          if (!fetchedLeague) {
+            setLeagueNotFound(true); // Set this when league is not found
+          } else {
+            setLeagueNotFound(false);
+            await getUserRole(fetchedLeague);
+          }
         } catch (error) {
           console.error("Error fetching league data:", error);
         } finally {
@@ -185,6 +191,23 @@ const League = () => {
         }}
       >
         <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
+
+  if (!leagueById || leagueNotFound) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#00152B",
+        }}
+      >
+        <Text style={{ color: "white", textAlign: "center" }}>
+          League not found.
+        </Text>
       </View>
     );
   }

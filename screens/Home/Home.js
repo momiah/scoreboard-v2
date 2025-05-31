@@ -121,7 +121,7 @@ const Home = () => {
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
-            Hello, {currentUser.firstName}{" "}
+            Hello, {currentUser?.firstName}{" "}
           </Text>
         ) : (
           <TouchableOpacity onPress={() => navigateTo("Login")}>

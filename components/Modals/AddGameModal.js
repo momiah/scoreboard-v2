@@ -186,7 +186,7 @@ const AddGameModal = ({
     const winners = newGame.result.winner.players;
     const losers = newGame.result.loser.players;
 
-    const isUserOnWinningTeam = winners.includes(currentUser.username);
+    const isUserOnWinningTeam = winners.includes(currentUser?.username);
     const opponents = isUserOnWinningTeam ? losers : winners;
 
     const requestForOpponentApprovals = usersToUpdate.filter((user) =>
@@ -198,8 +198,8 @@ const AddGameModal = ({
         ...notificationSchema,
         createdAt: new Date(),
         recipientId: user.userId,
-        senderId: currentUser.userId,
-        message: `${currentUser.username} has just reported a score in ${leagueName} league`,
+        senderId: currentUser?.userId,
+        message: `${currentUser?.username} has just reported a score in ${leagueName} league`,
         type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
 
         data: {

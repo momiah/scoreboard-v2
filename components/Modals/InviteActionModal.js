@@ -60,7 +60,7 @@ const InviteActionModal = ({
           setInviteDetails(league);
 
           const withdrawn = !league?.pendingInvites?.some(
-            (u) => u.userId === currentUser.userId
+            (u) => u.userId === currentUser?.userId
           );
           setIsWithdrawn(withdrawn);
         } catch (error) {
@@ -76,6 +76,8 @@ const InviteActionModal = ({
   }, [inviteId, inviteType]);
 
   useEffect(() => {
+    // const notificationExistsWithNoDetails = notificationId && !inviteDetails;
+
     if (!inviteDetails || isRead) return;
 
     if (leagueFull || isWithdrawn) {
@@ -101,7 +103,7 @@ const InviteActionModal = ({
     }
     try {
       await acceptLeagueInvite(
-        currentUser.userId,
+        currentUser?.userId,
         inviteDetails.id,
         notificationId
       );
@@ -123,7 +125,7 @@ const InviteActionModal = ({
   const handleDeclineInvite = async () => {
     try {
       await declineLeagueInvite(
-        currentUser.userId,
+        currentUser?.userId,
         inviteDetails.id,
         notificationId
       );
@@ -162,89 +164,96 @@ const InviteActionModal = ({
 
               <LeagueDetailsContainer>
                 <Title>League Invite</Title>
-                <Message>
-                  You’ve been invited to join{" "}
-                  <LinkText onPress={handleLinkPress}>
-                    {inviteDetails?.leagueName}
-                  </LinkText>
-                </Message>
 
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    marginTop: 15,
-                  }}
-                >
-                  <LeagueLocation>
-                    {inviteDetails?.location.courtName},{" "}
-                    {inviteDetails?.location.city},{" "}
-                    {inviteDetails?.location.postCode}
-                  </LeagueLocation>
-                  <TouchableOpacity
-                    onPress={() =>
-                      copyLocationAddress(location, timeoutRef, setIsCopied)
-                    }
-                    style={{ marginLeft: 5 }}
-                  >
-                    <Ionicons
-                      // name={"checkmark-circle-outline"}
-                      name={
-                        isCopied ? "checkmark-circle-outline" : "copy-outline"
-                      }
-                      size={16}
-                      color={isCopied ? "green" : "white"}
-                    />
-                  </TouchableOpacity>
-                </View>
+                {inviteDetails ? (
+                  <>
+                    <Message>
+                      You’ve been invited to join{" "}
+                      <LinkText onPress={handleLinkPress}>
+                        {inviteDetails?.leagueName}
+                      </LinkText>
+                    </Message>
 
-                <View
-                  style={{
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    marginTop: 10,
-                    gap: 5,
-                  }}
-                >
-                  <Tag
-                    name={`Start Date - ${inviteDetails?.startDate}`}
-                    color="rgba(0, 0, 0, 0.7)"
-                    iconColor="rgb(0, 133, 40)"
-                    iconSize={15}
-                    icon="calendar-outline"
-                    iconPosition="left"
-                    bold
-                  />
-                  <Tag
-                    name={`End Date - ${inviteDetails?.endDate}`}
-                    color="rgba(0, 0, 0, 0.7)"
-                    iconColor="rgb(190, 0, 0)"
-                    iconSize={15}
-                    icon="calendar-outline"
-                    iconPosition="left"
-                    bold
-                  />
-                </View>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 15,
+                      }}
+                    >
+                      <LeagueLocation>
+                        {inviteDetails?.location.courtName},{" "}
+                        {inviteDetails?.location.city},{" "}
+                        {inviteDetails?.location.postCode}
+                      </LeagueLocation>
+                      <TouchableOpacity
+                        onPress={() =>
+                          copyLocationAddress(location, timeoutRef, setIsCopied)
+                        }
+                        style={{ marginLeft: 5 }}
+                      >
+                        <Ionicons
+                          // name={"checkmark-circle-outline"}
+                          name={
+                            isCopied
+                              ? "checkmark-circle-outline"
+                              : "copy-outline"
+                          }
+                          size={16}
+                          color={isCopied ? "green" : "white"}
+                        />
+                      </TouchableOpacity>
+                    </View>
 
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 5,
-                    marginTop: 20,
-                  }}
-                >
-                  <Tag
-                    name={numberOfPlayers}
-                    color="rgba(0, 0, 0, 0.7)"
-                    iconColor="#00A2FF"
-                    iconSize={15}
-                    icon="person"
-                    iconPosition="right"
-                    bold
-                  />
-                  <Tag name={inviteDetails?.leagueType} />
-                  <Tag name={inviteDetails?.prizeType} />
-                </View>
+                    <View
+                      style={{
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        marginTop: 10,
+                        gap: 5,
+                      }}
+                    >
+                      <Tag
+                        name={`Start Date - ${inviteDetails?.startDate}`}
+                        color="rgba(0, 0, 0, 0.7)"
+                        iconColor="rgb(0, 133, 40)"
+                        iconSize={15}
+                        icon="calendar-outline"
+                        iconPosition="left"
+                        bold
+                      />
+                      <Tag
+                        name={`End Date - ${inviteDetails?.endDate}`}
+                        color="rgba(0, 0, 0, 0.7)"
+                        iconColor="rgb(190, 0, 0)"
+                        iconSize={15}
+                        icon="calendar-outline"
+                        iconPosition="left"
+                        bold
+                      />
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 5,
+                        marginTop: 20,
+                      }}
+                    >
+                      <Tag
+                        name={numberOfPlayers}
+                        color="rgba(0, 0, 0, 0.7)"
+                        iconColor="#00A2FF"
+                        iconSize={15}
+                        icon="person"
+                        iconPosition="right"
+                        bold
+                      />
+                      <Tag name={inviteDetails?.leagueType} />
+                      <Tag name={inviteDetails?.prizeType} />
+                    </View>
+                  </>
+                ) : null}
               </LeagueDetailsContainer>
 
               {leagueFull && (

@@ -55,9 +55,11 @@ const RemovePlayers = () => {
     const isAdmin = league?.leagueAdmins?.some(
       (admin) => admin.userId === item.userId
     );
-    const isSelf = item.userId === currentUser.userId;
+    const isSelf = item.userId === currentUser?.userId;
     const canRemove =
-      currentUser.userId === league?.leagueOwner?.userId && !isOwner && !isSelf;
+      currentUser?.userId === league?.leagueOwner?.userId &&
+      !isOwner &&
+      !isSelf;
 
     return (
       <PlayerRow onPress={() => goToProfile(item.userId)}>
