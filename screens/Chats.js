@@ -77,7 +77,10 @@ const Chats = () => {
       <Header>Chats</Header>
       {chatSummaries.length === 0 && (
         <LoadingContainer>
-          <Header>No chats available</Header>
+          <NoChatsText>
+            Here you can find all your league chats rooms. Create or join a
+            league to get involved! 🏟️💬
+          </NoChatsText>
         </LoadingContainer>
       )}
       <FlatList
@@ -146,6 +149,13 @@ const UnreadBadge = styled.Text({
   color: "white",
   fontSize: 12,
   overflow: "hidden",
+});
+
+const NoChatsText = styled.Text({
+  color: "#aaa",
+  fontSize: 16,
+  textAlign: "center",
+  paddingHorizontal: 20,
 });
 
 export default memo(Chats);

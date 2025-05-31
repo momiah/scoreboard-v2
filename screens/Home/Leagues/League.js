@@ -202,10 +202,10 @@ const League = () => {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#00152B",
+          backgroundColor: "rgb(3, 16, 31)",
         }}
       >
-        <Text style={{ color: "white", textAlign: "center" }}>
+        <Text style={{ color: "#aaa", textAlign: "center" }}>
           League not found.
         </Text>
       </View>
