@@ -198,7 +198,7 @@ export const ranks = [
   // { name: "Immortal V", xp: 35000, icon: require("./purple_rank16.png") }, // +900 Rank Group 17
   // { name: "Immortal V", xp: 100000, icon: require("./purple_rank16_v2.png") }, // +900 Rank Group 17
   // { name: "Immortal VII", xp: 35000, icon: require("./purple_rank16_v3.png") }, // +900 Rank Group 17
-  { name: "Immortal VII", xp: 60000, icon: require("./purple_rank16_v4.png") }, // +900 Rank Group 17
+  { name: "Immortal V", xp: 60000, icon: require("./purple_rank16_v4.png") }, // +900 Rank Group 17
   // { name: "Immortal VII", xp: 35000, icon: require("./purple_rank16_v5.png") }, // +900 Rank Group 17
   // { name: "Immortal V", xp: 60000, icon: require("./purple_rank16_v6.png") }, // +900 Rank Group 17
 ];

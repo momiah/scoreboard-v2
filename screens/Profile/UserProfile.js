@@ -471,7 +471,7 @@ const Avatar = styled.Image({
   width: AVATAR_SIZE,
   height: AVATAR_SIZE,
   borderRadius: AVATAR_SIZE / 2,
-  borderWidth: 2,
+  borderWidth: 1,
   borderColor: "#00a2ff",
 });
 
