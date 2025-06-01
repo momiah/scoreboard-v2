@@ -35,6 +35,7 @@ import { RankInformation } from "../../components/Modals/RankInformation";
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
+const AVATAR_SIZE = screenWidth <= 400 ? 70 : 80;
 
 const UserProfile = () => {
   const route = useRoute();
@@ -457,9 +458,9 @@ const DetailColumn = styled.View({
 });
 
 const Avatar = styled.Image({
-  width: 70,
-  height: 70,
-  borderRadius: 35,
+  width: AVATAR_SIZE,
+  height: AVATAR_SIZE,
+  borderRadius: AVATAR_SIZE / 2,
   borderWidth: 2,
   borderColor: "#00a2ff",
 });
