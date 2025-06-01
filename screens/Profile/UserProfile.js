@@ -162,7 +162,17 @@ const UserProfile = () => {
         fallback: "Not provided",
       },
       { title: "Bio", key: "bio", fallback: "Bio not provided" },
-      { title: "Contact", key: "email", fallback: "Email not provided" },
+      {
+        title: "Contact",
+        getValue: () => {
+          // Always show email for own profile, otherwise check showEmail setting
+          if (isOwnProfile || profile?.showEmail) {
+            return profile?.email || "Email not provided";
+          }
+          return "Email is private";
+        },
+        fallback: "Email is private",
+      },
       {
         title: "Member Since",
         getValue: () => profileDetail?.memberSince,

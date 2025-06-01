@@ -11,6 +11,7 @@ import {
   Modal,
   Pressable,
   FlatList,
+  Switch,
 } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
@@ -65,6 +66,7 @@ const EditProfile = ({ navigation }) => {
     email: "",
     profileImage: "",
     headline: "",
+    showEmail: false,
   });
 
   useEffect(() => {
@@ -80,6 +82,7 @@ const EditProfile = ({ navigation }) => {
         email: currentUser?.email || "",
         profileImage: currentUser?.profileImage || "",
         headline: currentUser?.headline || "",
+        showEmail: currentUser?.showEmail || false,
       });
 
       // Initialize selected country code
@@ -177,6 +180,7 @@ const EditProfile = ({ navigation }) => {
       Alert.alert("Error", "Unable to pick image.");
     }
   };
+
   const handleUpdate = async () => {
     try {
       setLoading(true);
@@ -219,7 +223,8 @@ const EditProfile = ({ navigation }) => {
       formData.bio !== (currentUser?.bio || "") ||
       formData.email !== (currentUser?.email || "") ||
       formData.profileImage !== (currentUser?.profileImage || "") ||
-      formData.headline !== (currentUser?.headline || "")
+      formData.headline !== (currentUser?.headline || "") ||
+      formData.showEmail !== (currentUser?.showEmail || false)
     );
   }, [currentUser, formData]);
 
@@ -391,7 +396,35 @@ const EditProfile = ({ navigation }) => {
             </Section>
 
             <Section>
-              <SectionTitle>Contact Email</SectionTitle>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <SectionTitle>Contact Email</SectionTitle>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 10,
+                  }}
+                >
+                  <Text style={{ color: "#aaa", fontSize: 12 }}>
+                    {formData.showEmail ? "Visible" : "Hidden"}
+                  </Text>
+                  <Switch
+                    value={formData.showEmail}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, showEmail: value })
+                    }
+                    trackColor={{ false: "#767577", true: "#00a2ff" }}
+                    thumbColor={formData.showEmail ? "#ffffff" : "#f4f3f4"}
+                  />
+                </View>
+              </View>
               <Input
                 disabled
                 value={formData.email}
@@ -517,7 +550,6 @@ const PreferenceText = styled.Text(({ selected }) => ({
 
 const ButtonWrapper = styled.View({
   marginTop: 30,
-  marginBottom: 50,
 });
 
 const ImageSection = styled.View({

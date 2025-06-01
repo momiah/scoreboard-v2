@@ -151,6 +151,8 @@ export const userProfileSchema = {
   location: locationSchema,
   email: "",
   phoneNumber: "",
+  showEmail: true,
+  showPhoneNumber: false,
 };
 
 export const chatMessageSchema = {
