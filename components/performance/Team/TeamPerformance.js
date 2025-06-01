@@ -160,7 +160,7 @@ const Stat = styled.Text({
 });
 
 const FallbackMessage = styled.Text({
-  color: "#696969",
+  color: "#aaa",
   fontStyle: "italic",
   fontSize: 16,
   textAlign: "center",

@@ -288,7 +288,7 @@ const TeamTextContainer = styled.View({
   width: screenWidth <= 400 ? 125 : 140,
 });
 const FallbackMessage = styled.Text({
-  color: "#696969",
+  color: "#aaa",
   fontStyle: "italic",
   fontSize: 16,
   textAlign: "center",

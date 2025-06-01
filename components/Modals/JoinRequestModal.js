@@ -65,6 +65,11 @@ const JoinRequestModal = ({
         try {
           const league = await fetchLeagueById(requestId);
           const player = await getUserById(senderId);
+          if (!league || !player) {
+            console.error("League or player not found");
+            readNotification(notificationId, currentUser?.userId);
+            return;
+          }
           setRequestDetails(league);
           setSenderDetails(player);
         } catch (error) {

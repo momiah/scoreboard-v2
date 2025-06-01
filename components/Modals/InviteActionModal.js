@@ -57,6 +57,13 @@ const InviteActionModal = ({
       if (inviteType === "invite-league") {
         try {
           const league = await fetchLeagueById(inviteId);
+          if (!league) {
+            console.log("League not found for invite ID:", inviteId);
+            readNotification(notificationId, currentUser.userId);
+            setIsWithdrawn(true);
+            setLoading(false);
+            return;
+          }
           setInviteDetails(league);
 
           const withdrawn = !league?.pendingInvites?.some(
