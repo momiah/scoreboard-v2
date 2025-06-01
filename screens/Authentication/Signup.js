@@ -155,6 +155,7 @@ const Signup = ({ route }) => {
         userId: uid,
         provider: isSocialSignup ? "gmail" : "email_password",
         profileDetail: profileDetailSchema,
+        profileImage: ccImageEndpoint,
       };
 
       // 1. Create the user document

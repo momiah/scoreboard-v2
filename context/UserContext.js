@@ -700,51 +700,90 @@ const UserProvider = ({ children }) => {
   const deleteAccount = async () => {
     try {
       setIsLoggingOut(true);
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId || !currentUser) {
+
+      if (!currentUser?.userId) {
         throw new Error("User not authenticated");
       }
 
-      // Get the current authenticated user from Firebase Auth
-      const user = auth.currentUser;
+      const userId = currentUser.userId;
+
+      // Check if Firebase Auth user exists
+      let user = auth.currentUser;
       if (!user) {
-        throw new Error("No authenticated user found");
+        throw new Error(
+          "Session expired. Please log out and log back in, then try deleting your account again."
+        );
       }
 
-      // Verify the Firebase Auth user matches our current user
-      if (user.uid !== currentUser.userId) {
-        throw new Error("Authentication mismatch");
+      // Verify auth user matches current user
+      if (user.uid !== userId) {
+        await Logout();
+        throw new Error(
+          "Authentication mismatch. Please log in again to delete your account."
+        );
       }
 
-      // Step 1: Delete user document from Firestore users collection
+      // Delete notifications subcollection
+      try {
+        const notificationsRef = collection(
+          db,
+          "users",
+          userId,
+          "notifications"
+        );
+        const notificationsSnapshot = await getDocs(notificationsRef);
+        const notificationDeletes = notificationsSnapshot.docs.map((doc) =>
+          deleteDoc(doc.ref)
+        );
+        await Promise.all(notificationDeletes);
+      } catch (error) {
+        console.log("Error deleting notifications:", error);
+      }
+
+      // Delete chats subcollection
+      try {
+        const chatsRef = collection(db, "users", userId, "chats");
+        const chatsSnapshot = await getDocs(chatsRef);
+        const chatDeletes = chatsSnapshot.docs.map((doc) => deleteDoc(doc.ref));
+        await Promise.all(chatDeletes);
+      } catch (error) {
+        console.log("Error deleting chats:", error);
+      }
+
+      // Delete the main user document
       const userDocRef = doc(db, "users", userId);
       await deleteDoc(userDocRef);
-      console.log("User document deleted from Firestore");
 
-      // Step 2: Delete the user's Firebase Authentication account
+      // Delete Firebase Authentication account
       await deleteUser(user);
-      console.log("User account deleted from Firebase Auth");
 
-      // Step 3: Clear local storage and state
+      // Clear local storage and state
       await AsyncStorage.clear();
       setCurrentUser(null);
       setNotifications([]);
       setChatSummaries([]);
-      setIsLoggingOut(false);
+
       return true;
     } catch (error) {
       console.error("Error deleting account:", error);
 
-      // Handle specific Firebase Auth errors
-      if (error.code === "auth/requires-recent-login") {
-        handleShowPopup(
-          "Please log in again before deleting your account for security reasons."
+      if (
+        error.message.includes("Session expired") ||
+        error.message.includes("Authentication mismatch")
+      ) {
+        Alert.alert("Authentication Error", error.message);
+      } else if (error.code === "auth/requires-recent-login") {
+        Alert.alert(
+          "Re-authentication Required",
+          "Please log out and log back in, then try deleting your account again for security reasons."
         );
       } else {
-        handleShowPopup("Error deleting account. Please try again.");
+        Alert.alert("Error", "Error deleting account. Please try again.");
       }
 
       throw error;
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
