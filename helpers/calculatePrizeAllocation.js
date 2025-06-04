@@ -1,15 +1,18 @@
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../services/firebase.config";
+
 export const calculatePrizeAllocation = async (
   leagueParticipants,
   prizePool,
   updatePlacementStats,
-  prizeDistribution
+  prizeDistribution,
+  leagueId
 ) => {
   try {
     const topPlayers = leagueParticipants
       .sort((a, b) => b.XP - a.XP)
       .slice(0, 4);
 
-    // Helper function to get the correct suffix
     const getSuffix = (num) => {
       if (num === 1) return "st";
       if (num === 2) return "nd";
@@ -17,6 +20,7 @@ export const calculatePrizeAllocation = async (
       return "th";
     };
 
+    // Update all users first
     for (let i = 0; i < topPlayers.length; i++) {
       const player = topPlayers[i];
       const prizeXP = Math.floor(prizePool * prizeDistribution[i]);
@@ -25,6 +29,15 @@ export const calculatePrizeAllocation = async (
 
       await updatePlacementStats(player.userId, prizeXP, placement);
     }
+
+    // Only update league flag ONCE after all users are updated
+    const leagueDocRef = doc(db, "leagues", leagueId);
+    await updateDoc(leagueDocRef, {
+      prizesDistributed: true,
+      prizeDistributionDate: new Date(),
+    });
+
+    console.log("All prizes distributed and league updated successfully");
   } catch (error) {
     console.error("Error allocating prizes:", error);
   }

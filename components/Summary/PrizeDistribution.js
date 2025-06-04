@@ -1,6 +1,6 @@
-import React, { useEffect, useContext } from "react";
+import React, { useEffect, useContext, useMemo } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
-import Tooltip from "../Tooltip"; // Import the Tooltip component
+import Tooltip from "../Tooltip";
 import { trophies } from "../../mockImages/index";
 import styled from "styled-components/native";
 import moment from "moment";
@@ -14,30 +14,58 @@ import {
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
-const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
-  const { updatePlacementStats } = useContext(UserContext);
-  const distribution = [0.4, 0.3, 0.2, 0.1]; // Percentage splits for 1st, 2nd, and 3rd
+const PrizeDistribution = ({
+  prizePool,
+  endDate,
+  leagueParticipants,
+  hasPrizesDistributed,
+  leagueId,
+}) => {
+  const { updatePlacementStats, currentUser } = useContext(UserContext);
+  const distribution = [0.4, 0.3, 0.2, 0.1];
 
-  const prizeDistribution = (prizePool) => {
-    return distribution.map((percentage, index) => {
-      return {
-        xp: Math.floor(prizePool * percentage),
-        trophy: trophies[index],
-      };
-    });
-  };
+  // Memoize prize calculation to avoid recalculation on every render
+  const prizes = useMemo(() => {
+    return distribution.map((percentage, index) => ({
+      xp: Math.floor(prizePool * percentage),
+      trophy: trophies[index],
+    }));
+  }, [prizePool]);
+
+  // Memoize user participation check
+  const userIsParticipant = useMemo(() => {
+    return (
+      currentUser?.userId &&
+      leagueParticipants?.some(
+        (participant) => participant.userId === currentUser.userId
+      )
+    );
+  }, [currentUser?.userId, leagueParticipants]);
+
+  // Memoize date comparison
+  const canDistributePrizes = useMemo(() => {
+    const today = moment().format("DD-MM-YYYY");
+    const endDateMoment = moment(endDate, "DD-MM-YYYY");
+    const todayMoment = moment(today, "DD-MM-YYYY");
+
+    return (
+      todayMoment.isSameOrAfter(endDateMoment) &&
+      !hasPrizesDistributed &&
+      userIsParticipant
+    );
+  }, [endDate, hasPrizesDistributed, userIsParticipant]);
 
   useEffect(() => {
-    const todaysDate = moment().format("DD-MM-YYYY");
-    if (todaysDate === endDate) {
+    if (canDistributePrizes) {
       calculatePrizeAllocation(
         leagueParticipants,
         prizePool,
         updatePlacementStats,
-        distribution
+        distribution,
+        leagueId
       );
     }
-  }, [endDate]);
+  }, [canDistributePrizes]);
 
   const TrophyItem = React.memo(({ trophySource, statValue, index }) => {
     const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
@@ -71,8 +99,6 @@ const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
     );
   });
 
-  const prizes = prizeDistribution(prizePool);
-  console.log("Prizes:", prizes);
   return (
     <PrizeDistributionContainer>
       <SectionTitleContainer>
@@ -83,14 +109,10 @@ const PrizeDistribution = ({ prizePool, endDate, leagueParticipants }) => {
         {prizes.map((prize, index) => (
           <TrophyItem
             key={index}
-            trophySource={trophies[index]}
+            trophySource={prize.trophy}
             statValue={prize.xp ?? 0}
             index={index}
           />
-          // <PrizeView key={index}>
-          //   <PrizeImage source={prize.trophy} />
-          //   <PrizeText>{prize.xp} XP</PrizeText>
-          // </PrizeView>
         ))}
       </PrizeRow>
     </PrizeDistributionContainer>
@@ -107,7 +129,6 @@ const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   color: "#ffffff",
-  // marginBottom: 10,
 });
 
 const SectionTitleContainer = styled.View({
@@ -134,7 +155,6 @@ const PrizeView = styled.View({
 const PrizeImage = styled.Image({
   width: 60,
   height: 60,
-
   marginBottom: 5,
 });
 

@@ -26,12 +26,17 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
   const prizePool =
     numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon;
 
+  const hasPrizesDistributed = leagueDetails.prizesDistributed;
+  const leagueId = leagueDetails.leagueId;
+
   return (
     <LeagueSummaryContainer>
       <PrizeDistribution
         prizePool={prizePool}
         endDate={endDate}
         leagueParticipants={leagueDetails?.leagueParticipants}
+        hasPrizesDistributed={hasPrizesDistributed}
+        leagueId={leagueId}
       />
 
       {/* League Name and Location */}

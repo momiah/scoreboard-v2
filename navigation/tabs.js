@@ -268,7 +268,7 @@ const Tabs = () => {
         {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
-      <View style={{ width: "100%", alignItems: "center" }}>
+      {/* <View style={{ width: "100%", alignItems: "center" }}>
         <BannerAd
           unitId={BANNER_UNIT_ID}
           size={BannerAdSize.FULL_BANNER}
@@ -280,7 +280,7 @@ const Tabs = () => {
             networkExtras: { collapsible: "bottom" },
           }}
         />
-      </View>
+      </View> */}
     </>
   );
 };

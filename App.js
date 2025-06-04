@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import * as Updates from "expo-updates";
 import { SafeAreaView } from "react-native";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
@@ -14,6 +15,25 @@ import Tabs from "./navigation/tabs";
 const Stack = createStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      if (!__DEV__) {
+        // Only check in production
+        try {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            await Updates.fetchUpdateAsync();
+            await Updates.reloadAsync();
+          }
+        } catch (error) {
+          console.error("Error checking for updates:", error);
+        }
+      }
+    };
+
+    checkForUpdates();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PopupProvider>
