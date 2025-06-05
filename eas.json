@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 10.1.1",
-    "appVersionSource":"local"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -11,15 +11,23 @@
     "preview": {
       "distribution": "internal"
     },
-    "production": {}
+    "production": {
+    "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
+      }
+    }
   },
   "submit": {
     "production": {
-      "ios":{
-      "appleId": "moemia12@gmail.com",
-      "ascAppId": "6538725576",
-      "appleTeamId": "R66MT5YKZR"
-    }
+      "ios": {
+        "appleId": "moemia12@gmail.com",
+        "ascAppId": "6538725576",
+        "appleTeamId": "R66MT5YKZR"
+      }
     }
   }
 }

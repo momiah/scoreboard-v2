@@ -41,6 +41,9 @@
       }
     },
     "android": {
+           "compileSdkVersion": 33,
+      "targetSdkVersion": 33,
+      "buildToolsVersion": "33.0.0",
       "adaptiveIcon": {
         "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
         "backgroundColor": "#00152B"
@@ -51,6 +54,17 @@
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
     },
     "plugins": [
+       [
+    "expo-build-properties",
+    {
+      "android": {
+        "compileSdkVersion": 33,
+        "targetSdkVersion": 33,
+        "buildToolsVersion": "33.0.0",
+        "minSdkVersion": 21
+      }
+    }
+  ],
       [
         "react-native-google-mobile-ads",
         {
