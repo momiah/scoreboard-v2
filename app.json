@@ -2,7 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "runtimeVersion": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "10",
+      "buildNumber": "11",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
