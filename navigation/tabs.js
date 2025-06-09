@@ -24,13 +24,13 @@ import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
-import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+// import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
-import { getUnitId } from "../utils/getAdMobUnitId";
+// import { getUnitId } from "../utils/getAdMobUnitId";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-const BANNER_UNIT_ID = getUnitId();
+// const BANNER_UNIT_ID = getUnitId();
 
 // Home Stack
 const HomeStack = () => {

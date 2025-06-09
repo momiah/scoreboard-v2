@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../../services/firebase.config";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { FlatList } from "react-native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { UserContext } from "../../context/UserContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";

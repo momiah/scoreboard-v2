@@ -1,6 +1,6 @@
 // admobUnitId.js
 import { Platform } from "react-native";
-import { TestIds } from "react-native-google-mobile-ads";
+// import { TestIds } from "react-native-google-mobile-ads";
 import { ADMOB_BANNER_IOS_PROD, ADMOB_BANNER_ANDROID_PROD } from "@env";
 
 export const getUnitId = () => {

@@ -1,6 +1,3 @@
-import { type } from "@testing-library/react-native/build/user-event/type";
-import { createdAt } from "expo-updates";
-import { count } from "firebase/firestore";
 import moment from "moment";
 
 export const leagueTypes = ["Doubles", "Singles"];

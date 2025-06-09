@@ -10,7 +10,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCallback } from "react";
 
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext } from "react";

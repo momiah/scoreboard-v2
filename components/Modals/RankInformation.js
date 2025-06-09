@@ -15,7 +15,7 @@ import {
   FlatList,
 } from "react-native";
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { AntDesign } from "@expo/vector-icons";
 import { ranks } from "../../rankingMedals/ranking/ranks";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";

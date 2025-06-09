@@ -14,7 +14,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 
 const ProfileMenu = ({ navigation }) => {
   const { Logout, currentUser, setCurrentUser, isLoggingOut, deleteAccount } =

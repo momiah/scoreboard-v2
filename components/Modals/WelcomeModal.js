@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, Dimensions, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { handleSocialPress } from "../../helpers/handleSocialPress";

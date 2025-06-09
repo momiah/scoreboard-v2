@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, Modal } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../../components/PlatformBlurView";
 import { calculateEndDate } from "../../../helpers/calculateEndDate";
 import { formatDateForDatePicker } from "../../../helpers/formatDateForDatePicker";
 import { formatDateForStorage } from "../../../helpers/formatDateForStorage";

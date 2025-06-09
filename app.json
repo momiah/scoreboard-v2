@@ -30,7 +30,7 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
+              "com.googleusercontent.apps.215867687150-vsjhsrp8arian23ceo5oq4iip42436m7d"
             ]
           }
         ],
@@ -50,21 +50,7 @@
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
     },
-    "plugins": [
-      [
-        "react-native-google-mobile-ads",
-        {
-          "iosAppId": "ca-app-pub-4901008825984109~3153352304",
-          "androidAppId": "ca-app-pub-4901008825984109~4699811229"
-        }
-      ],
-      [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
-        }
-      ]
-    ],
+    "plugins": [],
     "extra": {
       "eas": {
         "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"

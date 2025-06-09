@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import ListDropdown from "../ListDropdown/ListDropdown";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 
 const REASONS = [
   { key: "inactive", value: "Inactive player" },
