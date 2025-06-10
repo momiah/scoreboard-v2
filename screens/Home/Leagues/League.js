@@ -215,7 +215,13 @@ const League = () => {
   const numberOfPlayers = `${leagueParticipants?.length} / ${maxPlayers}`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+        paddingTop: platformAdjustedPaddingTop,
+      }}
+    >
       <Overview>
         <LeagueImage
           source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
@@ -356,6 +362,7 @@ const League = () => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 30; // Adjust font size based on screen width
 
 const Overview = styled.View({
   flexDirection: "row",
