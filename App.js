@@ -9,12 +9,24 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import mobileAds from "react-native-google-mobile-ads";
 
 import Tabs from "./navigation/tabs";
 
 const Stack = createStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    mobileAds()
+      .initialize()
+      .then((adapterStatuses) => {
+        console.log("AdMob initialized:", adapterStatuses);
+      })
+      .catch((error) => {
+        console.error("AdMob initialization failed:", error);
+      });
+  }, []);
+
   useEffect(() => {
     const checkForUpdates = async () => {
       if (!__DEV__) {

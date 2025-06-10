@@ -34,7 +34,8 @@
             ]
           }
         ],
-        "LSMinimumSystemVersion": "13.0"
+        "LSMinimumSystemVersion": "13.0",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -50,14 +51,44 @@
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
     },
-    "plugins": [],
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 33,
+            "targetSdkVersion": 33,
+            "minSdkVersion": 21,
+            "buildToolsVersion": "33.0.0"
+          },
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"
       }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/43db0104-f8f3-44de-b831-a74cd535baee"
     }
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-4901008825984109~4699811229",
+    "ios_app_id": "ca-app-pub-4901008825984109~3153352304"
+  },
+  "extra": {
+    "eas": {
+      "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"
+    }
+  },
+  "updates": {
+    "url": "https://u.expo.dev/43db0104-f8f3-44de-b831-a74cd535baee"
   }
 }

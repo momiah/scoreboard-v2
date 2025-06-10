@@ -25,13 +25,14 @@ import PendingRequests from "../screens/Profile/PendingRequests";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
 import { Dimensions, Platform } from "react-native";
-// import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
-// import { getUnitId } from "../utils/getAdMobUnitId";
+import { getUnitId } from "../utils/getAdMobUnitId";
+import { ADMOB_BANNER_IOS_PROD, ADMOB_BANNER_ANDROID_PROD } from "@env";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-// const BANNER_UNIT_ID = getUnitId();
+const BANNER_UNIT_ID = getUnitId();
 const { width: screenWidth } = Dimensions.get("window");
 const platformAdjustedPaddingBottom = Platform.OS === "ios" ? 0 : 10; // Adjust padding for iOS
 
@@ -272,19 +273,22 @@ const Tabs = () => {
         {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
-      {/* <View style={{ width: "100%", alignItems: "center" }}>
+      <View style={{ width: "100%", alignItems: "center" }}>
         <BannerAd
           unitId={BANNER_UNIT_ID}
           size={BannerAdSize.FULL_BANNER}
           onAdFailedToLoad={(error) => {
             console.error("Ad failed to load:", error);
           }}
+          onAdLoaded={() => {
+            console.log("Ad loaded successfully");
+          }}
           requestOptions={{
-            requestNonPersonalizedAdsOnly: true,
+            requestNonPersonalizedAdsOnly: false,
             networkExtras: { collapsible: "bottom" },
           }}
         />
-      </View> */}
+      </View>
     </>
   );
 };

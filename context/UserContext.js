@@ -45,8 +45,6 @@ const UserProvider = ({ children }) => {
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
-      } finally {
-        setInitializing(false);
       }
     };
 
