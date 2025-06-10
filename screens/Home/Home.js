@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
@@ -22,6 +23,7 @@ import AddLeagueModel from "../../components/Modals/AddLeagueModal";
 import { LeagueContext } from "../../context/LeagueContext";
 import { Switch } from "react-native";
 import { UserContext } from "../../context/UserContext";
+import { AntDesign } from "@expo/vector-icons";
 import {
   HorizontalLeagueCarouselSkeleton,
   TopPlayersSkeleton,
@@ -29,6 +31,10 @@ import {
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
+
+const { width: screenWidth } = Dimensions.get("window");
+const screenAdjustedFontSize = screenWidth < 450 ? 13 : 16; // Adjust font size based on screen width
+const platformPaddingTop = Platform.OS === "ios" ? 0 : 20; // Adjust padding for iOS
 
 const Home = () => {
   const navigation = useNavigation();
@@ -87,8 +93,17 @@ const Home = () => {
   const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+      }}
+    >
       <HomeContainer
+        contentContainerStyle={{
+          paddingTop: platformPaddingTop,
+          paddingBottom: 20,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -113,7 +128,24 @@ const Home = () => {
                 key={platform}
                 onPress={() => handleSocialPress(platform)}
               >
-                <Ionicons name={ICON_MAP[platform]} size={25} color="#00A2FF" />
+                {Platform.OS === "ios" ? (
+                  <Ionicons
+                    name={ICON_MAP[platform]}
+                    size={25}
+                    color="#00A2FF"
+                  />
+                ) : (
+                  <>
+                    <Text
+                      style={{
+                        color: "#00A2FF",
+                        fontSize: screenAdjustedFontSize,
+                      }}
+                    >
+                      {platform}
+                    </Text>
+                  </>
+                )}
               </SocialButton>
             ))}
           </SocialRow>

@@ -24,6 +24,7 @@ import styled from "styled-components/native";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
+const screenAdjustedPaddingTop = screenWidth <= 450 ? 12 : undefined;
 
 const ProfileActivity = ({ profile }) => {
   const { getLeaguesForUser } = useContext(UserContext);
@@ -142,18 +143,19 @@ const ProfileActivity = ({ profile }) => {
         </TableCell>
         <TableCell>
           <StatTitle>Rank</StatTitle>
-          <Stat>
-            <RankSuffix
-              number={item.userRank}
-              numberStyle={{
-                fontSize: screenAdjustedStatFontSize,
-                color: "white",
-              }}
-              suffixStyle={{
-                color: "rgba(255,255,255,0.7)",
-              }}
-            />
-          </Stat>
+          {/* <Stat> */}
+          <RankSuffix
+            number={item.userRank}
+            numberStyle={{
+              fontSize: screenAdjustedStatFontSize,
+              color: "white",
+            }}
+            style={{ paddingTop: screenAdjustedPaddingTop }}
+            suffixStyle={{
+              color: "rgba(255,255,255,0.7)",
+            }}
+          />
+          {/* </Stat> */}
         </TableCell>
       </LeagueItem>
     );

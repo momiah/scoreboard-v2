@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Modal } from "react-native";
+import { View, Text, Modal, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import styled from "styled-components/native";
 import { PlatformBlurView as BlurView } from "../../../components/PlatformBlurView";
@@ -7,6 +7,8 @@ import { calculateEndDate } from "../../../helpers/calculateEndDate";
 import { formatDateForDatePicker } from "../../../helpers/formatDateForDatePicker";
 import { formatDateForStorage } from "../../../helpers/formatDateForStorage";
 import { Ionicons } from "@expo/vector-icons";
+
+const platformDisplay = Platform.OS === "ios" ? "spinner" : "default";
 
 const DatePicker = ({ setValue, watch, errorText }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -94,52 +96,95 @@ const DatePicker = ({ setValue, watch, errorText }) => {
         </LeagueLengthContainer>
       </LengthContainer>
 
-      <Modal animationType="fade" transparent visible={datePickerVisible}>
-        <ModalContainer>
-          <DatePickerModalContent>
-            <DateTimePicker
-              value={tempDate || new Date()}
-              mode="date"
-              dateFormat="dayofweek day month"
-              display="spinner"
-              themeVariant="dark"
-              onChange={(event, selectedDate) => {
-                handleTempDateChange(selectedDate);
-              }}
-              minimumDate={new Date()}
-              maximumDate={
-                new Date(new Date().setMonth(new Date().getMonth() + 3))
-              }
-            />
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 3,
-              }}
-            >
-              <Ionicons
-                name="information-circle-outline"
-                size={20}
-                color={"#00A2FF"}
+      {Platform.OS === "ios" ? (
+        <Modal animationType="fade" transparent visible={datePickerVisible}>
+          <ModalContainer>
+            <DatePickerModalContent>
+              <DateTimePicker
+                value={tempDate || new Date()}
+                mode="date"
+                display={platformDisplay}
+                themeVariant="dark"
+                onChange={(_, selected) => {
+                  // always stash the latest
+                  if (selected) setTempDate(selected);
+                }}
+                minimumDate={new Date()}
+                maximumDate={
+                  new Date(new Date().setMonth(new Date().getMonth() + 3))
+                }
               />
-              <DisclaimerText>
-                Please select a date within the next 3 months.
-              </DisclaimerText>
-            </View>
 
-            <ButtonContainer>
-              <CancelButton onPress={() => setDatePickerVisible(false)}>
-                <CancelText>Cancel</CancelText>
-              </CancelButton>
-              <ConfirmButton onPress={confirmDateChange}>
-                <CreateText>Confirm Date</CreateText>
-              </ConfirmButton>
-            </ButtonContainer>
-          </DatePickerModalContent>
-        </ModalContainer>
-      </Modal>
+              {/* … info text … */}
+
+              <ButtonContainer>
+                <CancelButton
+                  onPress={() => {
+                    setTempDate(null);
+                    setDatePickerVisible(false);
+                  }}
+                >
+                  <CancelText>Cancel</CancelText>
+                </CancelButton>
+
+                <ConfirmButton
+                  onPress={() => {
+                    if (!tempDate) return;
+                    // apply exactly like our confirmDateChange()
+                    const formatted = formatDateForStorage(tempDate);
+                    const endDate = calculateEndDate(
+                      formatted,
+                      leagueLengthInMonths
+                    );
+                    setValue("startDate", formatted);
+                    setValue("endDate", endDate);
+
+                    setTempDate(null);
+                    setDatePickerVisible(false);
+                  }}
+                >
+                  <CreateText>Confirm Date</CreateText>
+                </ConfirmButton>
+              </ButtonContainer>
+            </DatePickerModalContent>
+          </ModalContainer>
+        </Modal>
+      ) : (
+        // Android native
+        datePickerVisible && (
+          <DateTimePicker
+            value={tempDate || new Date()}
+            mode="date"
+            display={platformDisplay}
+            themeVariant="dark"
+            onChange={(event, selected) => {
+              if (event.type === "dismissed") {
+                // user cancelled
+                setTempDate(null);
+                setDatePickerVisible(false);
+              } else if (event.type === "set") {
+                // user picked—apply immediately to avoid async state lag
+                const picked = selected || tempDate;
+                const formatted = formatDateForStorage(picked);
+                const endDate = calculateEndDate(
+                  formatted,
+                  leagueLengthInMonths
+                );
+
+                setValue("startDate", formatted);
+                setValue("endDate", endDate);
+
+                setTempDate(null);
+                setDatePickerVisible(false);
+              }
+            }}
+            minimumDate={new Date()}
+            maximumDate={
+              new Date(new Date().setMonth(new Date().getMonth() + 3))
+            }
+          />
+        )
+      )}
     </DatePickerContainer>
   );
 };

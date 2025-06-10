@@ -1,4 +1,5 @@
 import moment from "moment";
+import { Platform } from "react-native";
 
 export const leagueTypes = ["Doubles", "Singles"];
 export const privacyTypes = ["Public", "Private"];
@@ -9,9 +10,11 @@ export const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
+const TikTokIcon = Platform.OS === "ios" ? "logo-tiktok" : "tiktok";
+
 export const ICON_MAP = {
   Instagram: "logo-instagram",
-  TikTok: "logo-tiktok",
+  TikTok: TikTokIcon,
   // Facebook: "logo-facebook",
 };
 

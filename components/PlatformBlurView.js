@@ -10,23 +10,9 @@ export const PlatformBlurView = ({
   style,
   ...props
 }) => {
-  if (Platform.OS === "ios") {
-    return (
-      <BlurView intensity={intensity} tint={tint} style={style} {...props}>
-        {children}
-      </BlurView>
-    );
-  }
-
-  // Android fallback
-  const androidBlurStyle = {
-    backgroundColor:
-      tint === "dark" ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.9)",
-  };
-
   return (
-    <View style={[style, androidBlurStyle]} {...props}>
+    <BlurView intensity={intensity} tint={tint} style={style} {...props}>
       {children}
-    </View>
+    </BlurView>
   );
 };

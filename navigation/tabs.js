@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import { Platform } from "react-native";
+
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
@@ -24,6 +24,7 @@ import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
+import { Dimensions, Platform } from "react-native";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
 // import { getUnitId } from "../utils/getAdMobUnitId";
@@ -31,6 +32,8 @@ import { View } from "react-native";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 // const BANNER_UNIT_ID = getUnitId();
+const { width: screenWidth } = Dimensions.get("window");
+const platformAdjustedPaddingBottom = Platform.OS === "ios" ? 0 : 10; // Adjust padding for iOS
 
 // Home Stack
 const HomeStack = () => {
@@ -187,6 +190,7 @@ const Tabs = () => {
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarActiveTintColor: "#FFD700",
           tabBarInactiveTintColor: "#A9A9A9",
+          tabBarItemStyle: { paddingBottom: platformAdjustedPaddingBottom },
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 

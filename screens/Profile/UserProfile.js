@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Platform,
   Image,
 } from "react-native";
 import { UserContext } from "../../context/UserContext";
@@ -35,6 +36,8 @@ import { RankInformation } from "../../components/Modals/RankInformation";
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
+const screenAdjustedPaddingTop = screenWidth <= 450 ? 6 : undefined;
+const platformAdjustedMarginTop = Platform.OS === "ios" ? 20 : 60; // Adjust for iOS platform
 const AVATAR_SIZE = screenWidth <= 400 ? 70 : 80;
 
 const UserProfile = () => {
@@ -258,7 +261,7 @@ const UserProfile = () => {
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
-            marginTop: 20,
+            marginTop: platformAdjustedMarginTop,
           }}
         >
           <TouchableOpacity
@@ -370,6 +373,7 @@ const UserProfile = () => {
               fontSize: screenAdjustedStatFontSize,
               color: "white",
             }}
+            style={{ paddingTop: screenAdjustedPaddingTop }}
             suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
           />
         </CCRankContainer>
@@ -382,6 +386,7 @@ const UserProfile = () => {
               fontSize: screenAdjustedStatFontSize,
               color: "white",
             }}
+            style={{ paddingTop: screenAdjustedPaddingTop }}
             suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
           />
         </CCRankContainer>
@@ -454,6 +459,7 @@ const Overview = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
+  marginTop: platformAdjustedMarginTop,
 });
 
 const PlayerDetail = styled.View({

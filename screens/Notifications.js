@@ -5,7 +5,7 @@ import React, {
   useCallback,
   memo,
 } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { FlatList, ActivityIndicator, Platform } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
@@ -195,6 +195,8 @@ const Notifications = () => {
   );
 };
 
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 30; // Adjust font size based on screen width
+
 // Styled Components
 const LoadingContainer = styled.View({
   flex: 1,
@@ -207,6 +209,7 @@ const HomeContainer = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   width: "100%",
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Header = styled.Text({
