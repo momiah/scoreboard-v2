@@ -459,7 +459,6 @@ const Overview = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  marginTop: platformAdjustedMarginTop,
 });
 
 const PlayerDetail = styled.View({
