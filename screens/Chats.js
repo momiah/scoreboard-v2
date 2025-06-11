@@ -96,10 +96,12 @@ const Chats = () => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 30;
 
 const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Header = styled.Text({
