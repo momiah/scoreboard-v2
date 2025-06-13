@@ -470,44 +470,33 @@ const DropdownContainer = styled.View({
 });
 
 const DropdownItem = styled.TouchableOpacity({
-  backgroundColor: "rgb(5, 34, 64)", // Translucent dark blue
-  borderRadius: 5, // Consistent rounding
-  padding: 10, // Spacing inside the item
-  marginVertical: 5, // Space between items
+  backgroundColor: "rgb(5, 34, 64)",
+  borderRadius: 5,
+  padding: 10,
+  marginVertical: 5,
 });
 
 const DropdownText = styled.Text({
-  color: "#FFFFFF", // White text for visibility
-  fontSize: 16, // Readable font size
-  fontWeight: "500", // Slightly bold for emphasis
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "500",
 });
 
 const UserItem = styled.View({
-  flexDirection: "row", // Align items horizontally
-  justifyContent: "space-between", // Push name to the left and cross to the right
-  alignItems: "center", // Center items vertically
-  padding: 10, // Add spacing inside the item
-  marginVertical: 5, // Space between items
-  backgroundColor: "rgb(5, 34, 64)", // Translucent dark blue
-  borderRadius: 5, // Rounded corners
-  width: "100%",
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: 10,
+  marginVertical: 5,
+  backgroundColor: "rgb(5, 34, 64)",
+  borderRadius: 5,
+  width: screenWidth < 450 ? "75%" : "100%",
 });
 
 const UserName = styled.Text({
   fontSize: 16, // Set a readable font size
   color: "#FFFFFF", // White text color
   fontWeight: "500", // Slightly bold text
-});
-
-const RemoveButton = styled.TouchableOpacity({
-  padding: 5, // Add padding for better touch area
-  borderRadius: 5, // Slightly rounded corners
-  backgroundColor: "#E53E3E", // Red background for the remove button
-});
-
-const RemoveText = styled.Text({
-  color: "#FFFFFF", // White text color
-  fontWeight: "bold", // Bold text for emphasis
 });
 
 const ErrorText = styled.Text({

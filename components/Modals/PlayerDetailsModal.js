@@ -212,7 +212,7 @@ const ModalContainer = styled(BlurView).attrs({
 const ModalContent = styled.View({
   backgroundColor: "rgba(2, 13, 24, 0.7)", // Translucent dark blue
   margin: 10,
-  padding: 20,
+  padding: screenWidth < 450 ? 5 : 20,
   paddingLeft: 25,
   paddingRight: 25,
   borderRadius: 20,
@@ -232,11 +232,6 @@ const PlayerName = styled.Text({
   fontWeight: "bold",
 });
 
-const PlayerStat = styled.View({
-  flexDirection: "row",
-  flexWrap: "wrap",
-});
-
 const PlayerDetail = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
@@ -249,21 +244,6 @@ const PlayerDetail = styled.View({
 const MedalContainer = styled.View({
   flexDirection: "column",
   alignItems: "center",
-});
-
-const TableCell = styled.View({
-  width: "50%", // Adjust this to fit two cells per row
-  justifyContent: "center",
-  alignItems: "center",
-  paddingTop: screenWidth <= 400 ? 15 : 20,
-  paddingBottom: screenWidth <= 400 ? 15 : 20,
-  borderTopWidth: 1,
-  borderColor: "#262626",
-});
-
-const StatTitle = styled.Text({
-  fontSize: screenWidth <= 400 ? 12 : 14,
-  color: "#aaa",
 });
 
 const Stat = styled.Text({

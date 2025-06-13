@@ -111,7 +111,7 @@ const ResultsContainer = styled.View({
   alignItems: "center",
   padding: 10,
   paddingBottom: 30,
-  width: screenWidth <= 400 ? 110 : 140,
+  width: screenWidth <= 450 ? 110 : 140,
 });
 
 const ScoreContainer = styled.View({

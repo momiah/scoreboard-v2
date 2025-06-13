@@ -60,6 +60,7 @@ const JoinRequestModal = ({
 
   useEffect(() => {
     setLoading(true);
+    console.log("senderId from prop:", senderId);
     const fetchDetails = async () => {
       if (requestType === "join-league-request") {
         try {
@@ -80,7 +81,7 @@ const JoinRequestModal = ({
 
     fetchDetails();
     setLoading(false);
-  }, [requestId, requestType]);
+  }, [requestId, requestType, senderId]);
 
   useEffect(() => {
     // const notificationExistsWithNoDetails = notificationId && !requestDetails;
@@ -122,13 +123,11 @@ const JoinRequestModal = ({
     }
   };
 
-  const navigateToProfile = () => {
-    if (senderDetails) {
-      onClose();
-      navigation.navigate("UserProfile", {
-        userId: senderDetails.userId,
-      });
-    }
+  const navigateToProfile = (senderId) => {
+    onClose();
+    navigation.navigate("UserProfile", {
+      userId: senderId,
+    });
   };
 
   const handleDeclineJoinRequest = async () => {
@@ -152,7 +151,10 @@ const JoinRequestModal = ({
       const rankLevel = findRankIndex(playerXp) + 1;
 
       return (
-        <PlayerRow key={player.userId} onPress={navigateToProfile}>
+        <PlayerRow
+          key={player.userId}
+          onPress={() => navigateToProfile(senderId)}
+        >
           <Avatar
             source={
               player?.profileImage

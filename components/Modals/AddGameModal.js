@@ -278,7 +278,7 @@ const AddGameModal = ({
               />
               {errorText && <ErrorText>{errorText}</ErrorText>}
 
-              <SubmitButton onPress={handleAddGame}>
+              <SubmitButton onPress={handleAddGame} disabled={loading}>
                 {loading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
