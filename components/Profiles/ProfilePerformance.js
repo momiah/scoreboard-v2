@@ -8,7 +8,7 @@ import PerformanceStats from "../performance/PerformanceStats";
 import AnimateNumber from "../performance/AnimateNumber";
 
 const { width: screenWidth } = Dimensions.get("window");
-const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
+const screenAdjustedStatFontSize = screenWidth <= 450 ? 20 : 25;
 
 const ProfilePerformance = ({ profile }) => {
   const profileDetail = profile?.profileDetail;

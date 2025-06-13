@@ -11,6 +11,8 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
 
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
+
 const AssignAdmin = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -134,6 +136,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Title = styled.Text({

@@ -11,6 +11,7 @@ import {
   Modal,
   Pressable,
   FlatList,
+  Platform,
   Switch,
 } from "react-native";
 import styled from "styled-components/native";
@@ -24,6 +25,8 @@ import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../../components/popup/Popup";
 import * as FileSystem from "expo-file-system";
+
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
@@ -484,6 +487,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const ConfirmButton = styled.TouchableOpacity({

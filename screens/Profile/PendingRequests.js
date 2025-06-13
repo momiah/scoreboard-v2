@@ -5,12 +5,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import Tag from "../../components/Tag";
+
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const PendingRequests = () => {
   const { currentUser } = useContext(UserContext);
@@ -91,6 +94,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Title = styled.Text({

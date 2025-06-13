@@ -285,7 +285,7 @@ const UserProfile = () => {
       )}
 
       {/* Avatar & Modal */}
-      <Overview>
+      <Overview isOwnProfile={isOwnProfile}>
         {profile?.headline ? (
           <View style={{ flex: 1 }}>
             <PlayerDetail>
@@ -451,15 +451,13 @@ const LoadingContainer = styled.View({
   backgroundColor: "rgb(3, 16, 31)",
 });
 
-const Overview = styled.View({
-  paddingTop: 20,
-  paddingRight: 20,
-  paddingBottom: 20,
-  paddingLeft: 20,
+const Overview = styled.View(({ isOwnProfile }) => ({
+  marginTop: !isOwnProfile ? platformAdjustedMarginTop : undefined,
+  padding: 20,
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-});
+}));
 
 const PlayerDetail = styled.View({
   flexDirection: "row",

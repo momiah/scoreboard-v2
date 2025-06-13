@@ -34,8 +34,8 @@ const currentStreak = (resultLog) => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
-const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
-const screenAdjustedMedalSize = screenWidth <= 400 ? 60 : 70;
+const screenAdjustedStatFontSize = screenWidth <= 450 ? 20 : 25;
+const screenAdjustedMedalSize = screenWidth <= 450 ? 60 : 70;
 
 const PlayerDetails = ({
   showPlayerDetails,
@@ -151,7 +151,7 @@ const PlayerDetails = ({
                   <Tag
                     name={"Go to profile"}
                     icon="person"
-                    iconSize={screenWidth <= 400 ? 12 : 14}
+                    iconSize={screenWidth <= 450 ? 12 : 14}
                     iconColor="white"
                     iconPosition="left"
                     color="#00A2FF"

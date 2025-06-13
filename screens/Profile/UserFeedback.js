@@ -14,6 +14,8 @@ import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
 
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
+
 const UserFeedback = () => {
   const { currentUser, sendFeedback } = useContext(UserContext);
   const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
@@ -51,6 +53,7 @@ const UserFeedback = () => {
           padding: 20,
           backgroundColor: "rgb(3, 16, 31)",
           flexGrow: 1,
+          paddingTop: platformAdjustedPaddingTop,
         }}
         keyboardShouldPersistTaps="handled"
       >

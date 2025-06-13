@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 
 import { LeagueContext } from "../../../context/LeagueContext";
@@ -21,6 +22,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import Popup from "../../../components/popup/Popup";
 import { PopupContext } from "../../../context/PopupContext";
 import * as FileSystem from "expo-file-system";
+
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const EditLeague = () => {
   const route = useRoute();
@@ -261,6 +264,7 @@ const SafeAreaWrapper = styled(SafeAreaView)({
 
 const ScrollContainer = styled.ScrollView({
   padding: 20,
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Title = styled.Text({
