@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useMemo } from "react";
+import React, { useEffect, useContext, useMemo, useState } from "react";
 import { View, Text, StyleSheet, Dimensions } from "react-native";
 import Tooltip from "../Tooltip";
 import { trophies } from "../../mockImages/index";
@@ -69,11 +69,24 @@ const PrizeDistribution = ({
 
   const TrophyItem = React.memo(({ trophySource, statValue, index }) => {
     const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
+    const [showSkeleton, setShowSkeleton] = useState(true);
+
+    // Reset skeleton when image source changes or component mounts
+    useEffect(() => {
+      setShowSkeleton(true);
+    }, [trophySource]);
+
+    useEffect(() => {
+      if (imageLoaded) {
+        const timer = setTimeout(() => setShowSkeleton(false), 100);
+        return () => clearTimeout(timer);
+      }
+    }, [imageLoaded]);
 
     return (
       <PrizeView>
         <CircleSkeleton
-          show={!imageLoaded}
+          show={showSkeleton}
           size={60}
           config={SKELETON_THEMES.dark}
         >
@@ -81,18 +94,18 @@ const PrizeDistribution = ({
             source={trophySource}
             onLoad={handleImageLoad}
             onError={handleImageError}
-            style={{ opacity: imageLoaded ? 1 : 0 }}
+            style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}
           />
         </CircleSkeleton>
 
         <TextSkeleton
-          show={!imageLoaded}
+          show={showSkeleton}
           height={14}
           width={30}
           config={SKELETON_THEMES.dark}
         >
-          {imageLoaded ? (
-            <PrizeText style={{ opacity: 1 }}>{statValue} XP</PrizeText>
+          {imageLoaded && !showSkeleton ? (
+            <PrizeText>{statValue} XP</PrizeText>
           ) : null}
         </TextSkeleton>
       </PrizeView>

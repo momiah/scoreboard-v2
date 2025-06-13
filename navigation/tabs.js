@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 
@@ -174,6 +174,7 @@ const TabIcon = ({ focused, name, color, size, hasNotification }) => {
 // Tabs Navigator
 const Tabs = () => {
   const { notifications, chatSummaries } = useContext(UserContext);
+  const [showAd, setShowAd] = useState(true);
 
   const unreadNotifications = notifications.filter(
     (notification) => notification.isRead === false
@@ -273,22 +274,25 @@ const Tabs = () => {
         {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
-      <View style={{ width: "100%", alignItems: "center" }}>
-        <BannerAd
-          unitId={BANNER_UNIT_ID}
-          size={BannerAdSize.FULL_BANNER}
-          onAdFailedToLoad={(error) => {
-            console.error("Ad failed to load:", error);
-          }}
-          onAdLoaded={() => {
-            console.log("Ad loaded successfully");
-          }}
-          requestOptions={{
-            requestNonPersonalizedAdsOnly: false,
-            networkExtras: { collapsible: "bottom" },
-          }}
-        />
-      </View>
+      {showAd && (
+        <View style={{ width: "100%", alignItems: "center" }}>
+          <BannerAd
+            unitId={BANNER_UNIT_ID}
+            size={BannerAdSize.FULL_BANNER}
+            onAdFailedToLoad={(error) => {
+              console.error("Ad failed to load:", error);
+              setShowAd(false);
+            }}
+            onAdLoaded={() => {
+              console.log("Ad loaded successfully");
+            }}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: false,
+              networkExtras: { collapsible: "bottom" },
+            }}
+          />
+        </View>
+      )}
     </>
   );
 };

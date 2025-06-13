@@ -100,27 +100,32 @@ const PlayTime = ({ userRole }) => {
         showIcon={userRole === "admin"}
       />
 
-      {playTimes.length > 0 ? (
+      {!playTimes && userRole === "admin" && (
+        <DisabledText>Please add playtime for the league.</DisabledText>
+      )}
+
+      {!playTimes && userRole !== "admin" && (
+        <DisabledText>Admin has not added playtime yet.</DisabledText>
+      )}
+
+      {playTimes.length > 0 &&
         playTimes.map((playTime, index) => (
           <PlayTimeRow
             key={index}
             playTime={playTime}
             isAdmin={userRole === "admin"}
           />
-        ))
-      ) : userRole === "admin" ? (
-        <DisabledText>Please add playtime for the league.</DisabledText>
-      ) : (
-        <DisabledText>Admin has not added playtime yet.</DisabledText>
-      )}
+        ))}
 
       {/* Modal */}
-      <AddPlayTimeModal
-        isVisible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        onConfirm={handleConfirmPlayTime}
-        defaultValues={selectedPlayTime} // Pass selected playtime for editing
-      />
+      {isModalVisible && (
+        <AddPlayTimeModal
+          isVisible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onConfirm={handleConfirmPlayTime}
+          defaultValues={selectedPlayTime}
+        />
+      )}
     </PlayTimeContainer>
   );
 };
@@ -184,7 +189,6 @@ const ActionText = styled.Text({
 });
 
 const DisabledText = styled.Text({
-  flex: 1,
   color: "#888",
   fontSize: 14,
 });
