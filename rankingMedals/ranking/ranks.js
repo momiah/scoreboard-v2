@@ -1,3 +1,6 @@
+import { canHandleHighQualityImages } from "../../utils/canRenderHighQualityImages";
+
+//+50 Progressive Rank System
 // export const ranks = [
 //   // Tier 1
 //   { name: "Beginner", xp: 0, icon: require("./bronze_rank1-min.png") }, // +100 Rank Group 1
@@ -98,7 +101,8 @@
 //   // { name: "Immortal V", xp: 35000, icon: require('./bronze_rank17-min.png') }, // +900 Rank Group 17
 // ];
 
-export const ranks = [
+//+100 Progressive Rank System High Quality
+export const highQualityRanks = [
   // Tier 1
   { name: "Beginner", xp: 0, icon: require("./bronze_rank1-min.png") }, // Group 1 - Step: 100
   { name: "Beginner II", xp: 100, icon: require("./silver_rank1-min.png") },
@@ -202,6 +206,358 @@ export const ranks = [
   // { name: "Immortal VII", xp: 35000, icon: require("./purple_rank16_v5.png") }, // +900 Rank Group 17
   // { name: "Immortal V", xp: 60000, icon: require("./purple_rank16_v6.png") }, // +900 Rank Group 17
 ];
+
+//+100 Progressive Rank System Low Quality
+export const lowQualityRanks = [
+  // Tier 1
+  {
+    name: "Beginner",
+    xp: 0,
+    icon: require("./micro-rank-icons/micro-bronze_rank1.png"),
+  }, // Group 1 - Step: 100
+  {
+    name: "Beginner II",
+    xp: 100,
+    icon: require("./micro-rank-icons/micro-silver_rank1.png"),
+  },
+  {
+    name: "Beginner III",
+    xp: 200,
+    icon: require("./micro-rank-icons/micro-ruby_rank1.png"),
+  },
+  {
+    name: "Beginner IV",
+    xp: 300,
+    icon: require("./micro-rank-icons/micro-gold_rank1.png"),
+  },
+
+  {
+    name: "Rookie",
+    xp: 400,
+    icon: require("./micro-rank-icons/micro-bronze_rank2.png"),
+  }, // Group 2 - Step: 200
+  {
+    name: "Rookie II",
+    xp: 600,
+    icon: require("./micro-rank-icons/micro-silver_rank2.png"),
+  },
+  {
+    name: "Rookie III",
+    xp: 800,
+    icon: require("./micro-rank-icons/micro-ruby_rank2.png"),
+  },
+  {
+    name: "Rookie IV",
+    xp: 1000,
+    icon: require("./micro-rank-icons/micro-gold_rank2.png"),
+  },
+
+  {
+    name: "Apprentice",
+    xp: 1300,
+    icon: require("./micro-rank-icons/micro-bronze_rank3.png"),
+  }, // Group 3 - Step: 300
+  {
+    name: "Apprentice II",
+    xp: 1600,
+    icon: require("./micro-rank-icons/micro-silver_rank3.png"),
+  },
+  {
+    name: "Apprentice III",
+    xp: 1900,
+    icon: require("./micro-rank-icons/micro-ruby_rank3.png"),
+  },
+  {
+    name: "Apprentice IV",
+    xp: 2200,
+    icon: require("./micro-rank-icons/micro-gold_rank3.png"),
+  },
+
+  {
+    name: "Challenger",
+    xp: 2600,
+    icon: require("./micro-rank-icons/micro-bronze_rank4.png"),
+  }, // Group 4 - Step: 400
+  {
+    name: "Challenger II",
+    xp: 3000,
+    icon: require("./micro-rank-icons/micro-silver_rank4.png"),
+  },
+  {
+    name: "Challenger III",
+    xp: 3400,
+    icon: require("./micro-rank-icons/micro-ruby_rank4.png"),
+  },
+  {
+    name: "Challenger IV",
+    xp: 3800,
+    icon: require("./micro-rank-icons/micro-gold_rank4.png"),
+  },
+
+  // Tier 2
+  {
+    name: "Competitor",
+    xp: 4300,
+    icon: require("./micro-rank-icons/micro-bronze_rank5.png"),
+  }, // Group 5 - Step: 500
+  {
+    name: "Competitor II",
+    xp: 4800,
+    icon: require("./micro-rank-icons/micro-silver_rank5.png"),
+  },
+  {
+    name: "Competitor III",
+    xp: 5300,
+    icon: require("./micro-rank-icons/micro-ruby_rank5.png"),
+  },
+  {
+    name: "Competitor IV",
+    xp: 5800,
+    icon: require("./micro-rank-icons/micro-gold_rank5.png"),
+  },
+
+  {
+    name: "Intermediate",
+    xp: 6400,
+    icon: require("./micro-rank-icons/micro-bronze_rank6.png"),
+  }, // Group 6 - Step: 600
+  {
+    name: "Intermediate II",
+    xp: 7000,
+    icon: require("./micro-rank-icons/micro-silver_rank6.png"),
+  },
+  {
+    name: "Intermediate III",
+    xp: 7600,
+    icon: require("./micro-rank-icons/micro-ruby_rank6.png"),
+  },
+  {
+    name: "Intermediate IV",
+    xp: 8200,
+    icon: require("./micro-rank-icons/micro-gold_rank6.png"),
+  },
+
+  {
+    name: "Proficient",
+    xp: 8900,
+    icon: require("./micro-rank-icons/micro-bronze_rank7.png"),
+  }, // Group 7 - Step: 700
+  {
+    name: "Proficient II",
+    xp: 9600,
+    icon: require("./micro-rank-icons/micro-silver_rank7.png"),
+  },
+  {
+    name: "Proficient III",
+    xp: 10300,
+    icon: require("./micro-rank-icons/micro-ruby_rank7.png"),
+  },
+  {
+    name: "Proficient IV",
+    xp: 11000,
+    icon: require("./micro-rank-icons/micro-gold_rank7.png"),
+  },
+
+  {
+    name: "Advanced",
+    xp: 11800,
+    icon: require("./micro-rank-icons/micro-bronze_rank8.png"),
+  }, // Group 8 - Step: 800
+  {
+    name: "Advanced II",
+    xp: 12600,
+    icon: require("./micro-rank-icons/micro-silver_rank8.png"),
+  },
+  {
+    name: "Advanced III",
+    xp: 13400,
+    icon: require("./micro-rank-icons/micro-ruby_rank8.png"),
+  },
+  {
+    name: "Advanced IV",
+    xp: 14200,
+    icon: require("./micro-rank-icons/micro-gold_rank8.png"),
+  },
+
+  // Tier 3
+  {
+    name: "Expert",
+    xp: 15100,
+    icon: require("./micro-rank-icons/micro-bronze_rank9.png"),
+  }, // Group 9 - Step: 900
+  {
+    name: "Expert II",
+    xp: 16000,
+    icon: require("./micro-rank-icons/micro-silver_rank9.png"),
+  },
+  {
+    name: "Expert III",
+    xp: 16900,
+    icon: require("./micro-rank-icons/micro-ruby_rank9.png"),
+  },
+  {
+    name: "Expert IV",
+    xp: 17800,
+    icon: require("./micro-rank-icons/micro-gold_rank9.png"),
+  },
+
+  {
+    name: "Elite",
+    xp: 18800,
+    icon: require("./micro-rank-icons/micro-bronze_rank10.png"),
+  }, // Group 10 - Step: 1000
+  {
+    name: "Elite II",
+    xp: 19800,
+    icon: require("./micro-rank-icons/micro-silver_rank10.png"),
+  },
+  {
+    name: "Elite III",
+    xp: 20800,
+    icon: require("./micro-rank-icons/micro-ruby_rank10.png"),
+  },
+  {
+    name: "Elite IV",
+    xp: 21800,
+    icon: require("./micro-rank-icons/micro-gold_rank10.png"),
+  },
+
+  {
+    name: "Master",
+    xp: 22900,
+    icon: require("./micro-rank-icons/micro-bronze_rank11.png"),
+  }, // Group 11 - Step: 1100
+  {
+    name: "Master II",
+    xp: 24000,
+    icon: require("./micro-rank-icons/micro-silver_rank11.png"),
+  },
+  {
+    name: "Master III",
+    xp: 25100,
+    icon: require("./micro-rank-icons/micro-ruby_rank11.png"),
+  },
+  {
+    name: "Master IV",
+    xp: 26200,
+    icon: require("./micro-rank-icons/micro-gold_rank11.png"),
+  },
+
+  {
+    name: "Grandmaster",
+    xp: 27400,
+    icon: require("./micro-rank-icons/micro-bronze_rank12.png"),
+  }, // Group 12 - Step: 1200
+  {
+    name: "Grandmaster II",
+    xp: 28600,
+    icon: require("./micro-rank-icons/micro-silver_rank12.png"),
+  },
+  {
+    name: "Grandmaster III",
+    xp: 29800,
+    icon: require("./micro-rank-icons/micro-ruby_rank12.png"),
+  },
+  {
+    name: "Grandmaster IV",
+    xp: 31000,
+    icon: require("./micro-rank-icons/micro-gold_rank12.png"),
+  },
+
+  // Tier 4
+  {
+    name: "Demon",
+    xp: 32300,
+    icon: require("./micro-rank-icons/micro-bronze_rank13.png"),
+  }, // Group 13 - Step: 1300
+  {
+    name: "Demon II",
+    xp: 33600,
+    icon: require("./micro-rank-icons/micro-silver_rank13.png"),
+  },
+  {
+    name: "Demon III",
+    xp: 34900,
+    icon: require("./micro-rank-icons/micro-ruby_rank13.png"),
+  },
+  {
+    name: "Demon IV",
+    xp: 36200,
+    icon: require("./micro-rank-icons/micro-gold_rank13.png"),
+  },
+
+  {
+    name: "Champion",
+    xp: 37600,
+    icon: require("./micro-rank-icons/micro-bronze_rank14.png"),
+  }, // Group 14 - Step: 1400
+  {
+    name: "Champion II",
+    xp: 39000,
+    icon: require("./micro-rank-icons/micro-silver_rank14.png"),
+  },
+  {
+    name: "Champion III",
+    xp: 40400,
+    icon: require("./micro-rank-icons/micro-ruby_rank14.png"),
+  },
+  {
+    name: "Champion IV",
+    xp: 41800,
+    icon: require("./micro-rank-icons/micro-gold_rank14.png"),
+  },
+
+  {
+    name: "Legend I",
+    xp: 43300,
+    icon: require("./micro-rank-icons/micro-bronze_rank15.png"),
+  }, // Group 15 - Step: 1500
+  {
+    name: "Legend II",
+    xp: 44800,
+    icon: require("./micro-rank-icons/micro-silver_rank15.png"),
+  },
+  {
+    name: "Legend III",
+    xp: 46300,
+    icon: require("./micro-rank-icons/micro-ruby_rank15.png"),
+  },
+  {
+    name: "Legend IV",
+    xp: 47800,
+    icon: require("./micro-rank-icons/micro-gold_rank15.png"),
+  },
+
+  {
+    name: "Immortal I",
+    xp: 49400,
+    icon: require("./micro-rank-icons/micro-bronze_rank16.png"),
+  }, // Group 16 - Step: 1600
+  {
+    name: "Immortal II",
+    xp: 51000,
+    icon: require("./micro-rank-icons/micro-silver_rank16.png"),
+  },
+  {
+    name: "Immortal III",
+    xp: 52600,
+    icon: require("./micro-rank-icons/micro-ruby_rank16.png"),
+  },
+  {
+    name: "Immortal IV",
+    xp: 54200,
+    icon: require("./micro-rank-icons/micro-gold_rank16.png"),
+  },
+  {
+    name: "Immortal V",
+    xp: 60000,
+    icon: require("./micro-rank-icons/micro-purple_rank16_v4.png"),
+  },
+];
+
+export const ranks = canHandleHighQualityImages()
+  ? highQualityRanks
+  : lowQualityRanks;
 
 export function getRankByXP(xp) {
   for (let i = ranks.length - 1; i >= 0; i--) {
