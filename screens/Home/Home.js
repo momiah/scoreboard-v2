@@ -6,6 +6,8 @@ import {
   Text,
   TouchableOpacity,
   RefreshControl,
+  Platform,
+  Linking,
   ActivityIndicator,
 } from "react-native";
 import styled from "styled-components/native";
@@ -84,6 +86,17 @@ const Home = () => {
     }
   };
 
+  const goToWebsite = () => {
+    const url = "https://courtchamps.com/";
+    if (Platform.OS === "web") {
+      window.open(url, "_blank");
+    } else {
+      Linking.openURL(url).catch((err) =>
+        console.error("Failed to open URL:", err)
+      );
+    }
+  };
+
   const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
 
   return (
@@ -103,10 +116,12 @@ const Home = () => {
         }
       >
         <Overview>
-          <Image
-            source={CourtChampLogo}
-            style={{ width: 150, height: 150, resizeMode: "contain" }}
-          />
+          <TouchableOpacity onPress={goToWebsite}>
+            <Image
+              source={CourtChampLogo}
+              style={{ width: 150, height: 150, resizeMode: "contain" }}
+            />
+          </TouchableOpacity>
           <SocialRow>
             {socialMediaPlatforms?.map((platform) => (
               <SocialButton

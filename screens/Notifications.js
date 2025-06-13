@@ -187,8 +187,8 @@ const Notifications = () => {
         senderId={modalState.senderId}
         gameId={modalState.gameId || ""}
         leagueId={modalState.selectedLeagueId || ""}
-        playersToUpdate={modalState.playersToUpdate || ""}
-        usersToUpdate={modalState.usersToUpdate || ""}
+        playersToUpdate={modalState.playersToUpdate || []}
+        usersToUpdate={modalState.usersToUpdate || []}
         isRead={modalState.isRead}
       />
     </HomeContainer>

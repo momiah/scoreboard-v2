@@ -122,13 +122,11 @@ const JoinRequestModal = ({
     }
   };
 
-  const navigateToProfile = () => {
-    if (senderDetails) {
-      onClose();
-      navigation.navigate("UserProfile", {
-        userId: senderDetails.userId,
-      });
-    }
+  const navigateToProfile = (senderId) => {
+    onClose();
+    navigation.navigate("UserProfile", {
+      userId: senderId,
+    });
   };
 
   const handleDeclineJoinRequest = async () => {
@@ -152,7 +150,10 @@ const JoinRequestModal = ({
       const rankLevel = findRankIndex(playerXp) + 1;
 
       return (
-        <PlayerRow key={player.userId} onPress={navigateToProfile}>
+        <PlayerRow
+          key={player.userId}
+          onPress={() => navigateToProfile(senderId)}
+        >
           <Avatar
             source={
               player?.profileImage

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from "react";
-import { TouchableOpacity } from "react-native";
+import { TouchableOpacity, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import AddPlayTimeModal from "../Modals/AddPlayTimeModal";
 import SubHeader from "../SubHeader";
@@ -11,11 +11,13 @@ const PlayTime = ({ userRole }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedPlayTime, setSelectedPlayTime] = useState(null); // For editing
   const { addPlaytime, leagueById, deletePlaytime } = useContext(LeagueContext); // Ensure `deletePlaytime` is implemented in context
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (leagueById?.playingTime) {
       setPlayTimes(leagueById.playingTime);
     }
+    setIsLoading(false);
   }, [leagueById]);
 
   const handleAddPlayTime = () => {
@@ -100,27 +102,37 @@ const PlayTime = ({ userRole }) => {
         showIcon={userRole === "admin"}
       />
 
-      {playTimes.length > 0 ? (
-        playTimes.map((playTime, index) => (
-          <PlayTimeRow
-            key={index}
-            playTime={playTime}
-            isAdmin={userRole === "admin"}
-          />
-        ))
-      ) : userRole === "admin" ? (
-        <DisabledText>Please add playtime for the league.</DisabledText>
+      {isLoading ? (
+        <ActivityIndicator size="small" color="#666" />
       ) : (
-        <DisabledText>Admin has not added playtime yet.</DisabledText>
+        <>
+          {playTimes.map((playTime, index) => (
+            <PlayTimeRow
+              key={index}
+              playTime={playTime}
+              isAdmin={userRole === "admin"}
+            />
+          ))}
+
+          {playTimes.length === 0 && userRole === "admin" && (
+            <DisabledText>Please add playtime for the league.</DisabledText>
+          )}
+
+          {playTimes.length === 0 && userRole !== "admin" && (
+            <DisabledText>Admin has not added playtime yet.</DisabledText>
+          )}
+        </>
       )}
 
       {/* Modal */}
-      <AddPlayTimeModal
-        isVisible={isModalVisible}
-        onClose={() => setIsModalVisible(false)}
-        onConfirm={handleConfirmPlayTime}
-        defaultValues={selectedPlayTime} // Pass selected playtime for editing
-      />
+      {isModalVisible && (
+        <AddPlayTimeModal
+          isVisible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onConfirm={handleConfirmPlayTime}
+          defaultValues={selectedPlayTime}
+        />
+      )}
     </PlayTimeContainer>
   );
 };
@@ -184,7 +196,6 @@ const ActionText = styled.Text({
 });
 
 const DisabledText = styled.Text({
-  flex: 1,
   color: "#888",
   fontSize: 14,
 });
