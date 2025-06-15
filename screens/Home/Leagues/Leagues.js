@@ -291,8 +291,8 @@ const Leagues = () => {
 
       {addLeagueModalVisible && (
         <AddLeagueModel
-          addLeagueModalVisible={addLeagueModalVisible}
-          setAddLeagueModalVisible={setAddLeagueModalVisible}
+          modalVisible={addLeagueModalVisible}
+          setModalVisible={setAddLeagueModalVisible}
         />
       )}
     </LeagueContainer>
