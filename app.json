@@ -47,7 +47,7 @@
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp",
-      "versionCode": 3
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
