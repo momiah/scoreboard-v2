@@ -177,7 +177,7 @@ const JoinRequestModal = ({
         </PlayerRow>
       );
     },
-    [findRankIndex]
+    [findRankIndex, senderId, navigateToProfile]
   );
 
   return (
@@ -216,6 +216,7 @@ const JoinRequestModal = ({
                 renderPlayer({
                   item: senderDetails,
                   index: 0,
+                  senderId,
                 })}
 
               {requestWithdrawn && (

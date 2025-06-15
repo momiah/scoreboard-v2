@@ -2,8 +2,8 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "2.1.0",
-    "runtimeVersion": "2.0.0",
+    "version": "3.0.0",
+    "runtimeVersion": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "11",
+      "buildNumber": "12",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -43,7 +43,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
+        "foregroundImage": "./assets/court-champ-logo-icon-w-bg-android.png", 
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp"
