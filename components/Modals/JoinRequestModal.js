@@ -122,7 +122,10 @@ const JoinRequestModal = ({
     }
   };
 
+  console.log("senderId on load:", senderId);
+
   const navigateToProfile = (senderId) => {
+    console.log("Navigating to profile of user:", senderId);
     onClose();
     navigation.navigate("UserProfile", {
       userId: senderId,
@@ -176,7 +179,7 @@ const JoinRequestModal = ({
         </PlayerRow>
       );
     },
-    [findRankIndex]
+    [findRankIndex, navigateToProfile, senderId]
   );
 
   return (
@@ -214,6 +217,7 @@ const JoinRequestModal = ({
               {senderDetails &&
                 renderPlayer({
                   item: senderDetails,
+                  senderId,
                   index: 0,
                 })}
 
