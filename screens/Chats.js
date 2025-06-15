@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../context/UserContext";
