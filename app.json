@@ -43,10 +43,11 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/court-champ-logo-icon-w-bg-android.png", 
+        "foregroundImage": "./assets/court-champ-logo-icon-w-bg-android.png",
         "backgroundColor": "#00152B"
       },
-      "package": "com.courtchamp"
+      "package": "com.courtchamp",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
@@ -56,10 +57,10 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 33,
-            "targetSdkVersion": 33,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
             "minSdkVersion": 21,
-            "buildToolsVersion": "33.0.0"
+            "buildToolsVersion": "34.0.0"
           },
           "ios": {
             "useFrameworks": "static"
