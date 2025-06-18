@@ -27,7 +27,7 @@ const ParticipantCarousel = ({
                 });
               }}
             >
-              <Avatar source={CourtChampsLogo} />
+              <Avatar source={participant.profileImage || CourtChampsLogo} />
               <ParticipantName>{participant.username}</ParticipantName>
               {participant.userId === leagueOwner?.userId ? (
                 <RoleLabel style={{ color: "orange" }}>Owner</RoleLabel>
