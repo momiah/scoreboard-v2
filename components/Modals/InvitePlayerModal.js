@@ -78,15 +78,21 @@ const InvitePlayerModal = ({
 
       const currentUserId = await AsyncStorage.getItem("userId");
       const inLeague = leagueDetails.leagueParticipants.map((u) => u.userId);
-      const pending = leagueDetails.pendingInvites.map((u) => u.userId);
+      const pendingInvites = leagueDetails.pendingInvites.map((u) => u.userId);
+      const pendingRequests = leagueDetails.pendingRequests.map(
+        (u) => u.userId
+      );
 
       const hasConflict = inviteUsers.some(
-        (u) => inLeague.includes(u.userId) || pending.includes(u.userId)
+        (u) =>
+          inLeague.includes(u.userId) ||
+          pendingInvites.includes(u.userId) ||
+          pendingRequests.includes(u.userId)
       );
 
       if (hasConflict) {
         setErrorText(
-          "Some selected users are already in the league or already invited"
+          "Some selected users are already in the league or already invited/ requested to join"
         );
         return;
       }
