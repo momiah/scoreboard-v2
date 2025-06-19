@@ -106,9 +106,7 @@ const GameApprovalModal = ({
         leagueDetails.id,
         currentUser?.userId,
         senderId,
-        notificationId,
-        playersToUpdate,
-        usersToUpdate
+        notificationId
       );
       setLoadingDecision(false);
       onClose(); // Close the modal after accepting
