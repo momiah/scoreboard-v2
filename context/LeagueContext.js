@@ -324,6 +324,7 @@ const LeagueProvider = ({ children }) => {
         username: newParticipant.username,
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
+        profileImage: newParticipant.profilImage || ccImageEndpoint,
       };
 
       await updateDoc(leagueRef, {
@@ -463,6 +464,7 @@ const LeagueProvider = ({ children }) => {
         username: newParticipant.username,
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
+        profileImage: newParticipant.profilImage || ccImageEndpoint,
       };
 
       await updateDoc(leagueRef, {
@@ -544,8 +546,8 @@ const LeagueProvider = ({ children }) => {
       }
 
       const game = games[gameIndex];
-      const gameType = leagueData.leagueType;
-      const approvalLimit = gameType === "Doubles" ? 2 : 1;
+      // const gameType = leagueData.leagueType;
+      const approvalLimit = 1;
 
       // Retrieve currentUser username
       const currentUser = await getUserById(userId);
@@ -686,6 +688,7 @@ const LeagueProvider = ({ children }) => {
 
       const declinedGame = {
         ...updatedGame,
+        approvalStatus: notificationTypes.RESPONSE.DECLINE,
         declinedBy: {
           userId: currentUser?.userId,
           username: currentUserUsername,

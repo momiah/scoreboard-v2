@@ -172,25 +172,49 @@ const AddGameModal = ({
       approvalStatus: "pending",
     };
 
-    const playersToUpdate = await retrievePlayersFromLeague(leagueId);
-    if (!playersToUpdate || playersToUpdate.length === 0) {
+    // Extract all players participating in this specific game
+    const playersInGame = [
+      newGame.team1.player1,
+      newGame.team1.player2,
+      newGame.team2.player1,
+      newGame.team2.player2,
+    ].filter(Boolean); // Remove null values
+
+    // Verify current user is actually playing in this game
+    if (!playersInGame.includes(currentUser?.username)) {
+      setErrorText("You must be a participant in the game to report it.");
+      setLoading(false);
+      return;
+    }
+    setErrorText("");
+
+    // Get league players and convert to user objects, but only for game participants
+    const playersInLeague = await retrievePlayersFromLeague(leagueId);
+    if (!playersInLeague || playersInLeague.length === 0) {
       setErrorText("No players found in the league.");
       setLoading(false);
       return;
     }
-    setErrorText(""); // Clear any previous error messages
 
-    const userIds = playersToUpdate.map((player) => player.userId);
-    const usersToUpdate = await Promise.all(userIds.map(getUserById));
+    // Determine which team the current user is on
+    const isCurrentUserTeam1 = [
+      newGame.team1.player1,
+      newGame.team1.player2,
+    ].includes(currentUser?.username);
 
-    const winners = newGame.result.winner.players;
-    const losers = newGame.result.loser.players;
+    // Get opponents (players from the opposing team only)
+    const opponentUsernames = isCurrentUserTeam1
+      ? [newGame.team2.player1, newGame.team2.player2].filter(Boolean)
+      : [newGame.team1.player1, newGame.team1.player2].filter(Boolean);
 
-    const isUserOnWinningTeam = winners.includes(currentUser?.username);
-    const opponents = isUserOnWinningTeam ? losers : winners;
+    // Filter league players to only the opponents
+    const opponentPlayers = playersInLeague.filter((player) =>
+      opponentUsernames.includes(player.username)
+    );
 
-    const requestForOpponentApprovals = usersToUpdate.filter((user) =>
-      opponents.includes(user.username)
+    const userIds = opponentPlayers.map((player) => player.userId);
+    const requestForOpponentApprovals = await Promise.all(
+      userIds.map(getUserById)
     );
 
     for (const user of requestForOpponentApprovals) {
