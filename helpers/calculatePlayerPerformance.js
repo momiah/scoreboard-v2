@@ -131,6 +131,12 @@ export const calculatePlayerPerformance = (
     winnerScore,
     loserScore
   ) => {
+    // console.log("=== XP Calculation Debug ===");
+    // console.log("Player:", player.username);
+    // console.log("Streak Type:", streakType);
+    // console.log("Streak Count:", streakCount);
+    // console.log("Score Difference:", winnerScore - loserScore);
+
     const baseXP = streakType === "W" ? 20 : -15;
 
     // Calculate the difference in scores
@@ -143,8 +149,8 @@ export const calculatePlayerPerformance = (
     const rankMultiplier =
       differenceMultiplier < 2
         ? 0
-        : differenceMultiplier > 10
-        ? 10
+        : differenceMultiplier > 5
+        ? 5
         : differenceMultiplier;
 
     // Multiplier logic based on streak
@@ -161,9 +167,9 @@ export const calculatePlayerPerformance = (
 
     const winMultiplier =
       streakCount >= 7
-        ? 3
+        ? 4
         : streakCount >= 5
-        ? 2.5
+        ? 3
         : streakCount >= 3
         ? 2
         : streakCount > 1
@@ -171,17 +177,27 @@ export const calculatePlayerPerformance = (
         : 1;
 
     const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
-    const xp = baseXP * multiplier;
+    const streakXp = baseXP * multiplier;
 
-    // Only apply demon win bonus for wins with 10+ point difference
-    const demonWin = streakType === "W" && scoreDifference >= 10 ? xp * 2 : 0;
-
-    // Calculate rank XP safely
-    const rankXpValue = xp * rankMultiplier + demonWin;
+    // Calculate rank XP
+    const rankXpValue = streakXp * rankMultiplier;
     const rankXp = isNaN(rankXpValue) ? 0 : rankXpValue;
 
+    // Calculate demon win bonus (doubles the streak XP for wins with 10+ point difference)
+    let demonWinBonus = 0;
+    if (streakType === "W" && scoreDifference >= 10) {
+      demonWinBonus = streakXp; // Double the streak XP only
+    }
+
     // Final XP calculation
-    const finalXp = xp + rankXp;
+    const finalXp = streakXp + rankXp + demonWinBonus;
+
+    // console.log("Streak XP:", streakXp);
+    // console.log("Rank XP:", rankXp);
+    // console.log("Demon Win Bonus:", demonWinBonus);
+    // console.log("Final XP:", finalXp);
+    // console.log("User XP before:", user.XP);
+    // console.log("User XP after:", user.XP + finalXp);
 
     // Update the player's XP
     user.XP += finalXp;
@@ -287,8 +303,7 @@ export const calculatePlayerPerformance = (
         combinedWinnerXp,
         combinedLoserXp,
         game.result.winner.score,
-        winnerScore,
-        loserScore
+        game.result.loser.score // ← Use game.result.loser.score
       );
       updateDemonWin(
         player,
@@ -329,8 +344,8 @@ export const calculatePlayerPerformance = (
         player.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp,
-        winnerScore,
-        loserScore
+        game.result.winner.score,
+        game.result.loser.score // ← Use game.result.loser.score
       );
       updateLastActive(player, date, user.profileDetail);
       calculatePointDifference(
