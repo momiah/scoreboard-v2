@@ -5,18 +5,15 @@ export const calculateTeamPerformance = async (
 ) => {
   const allTeams = await retrieveTeams(leagueId);
 
-  // Helper function to normalize team keys
   const normalizeTeamKey = (key) => {
     return key.join("-").split("-").sort().join("-");
   };
 
   const { result } = game;
 
-  // Generate normalized keys from the result data
   const winnerTeamKey = normalizeTeamKey(result.winner.players);
   const loserTeamKey = normalizeTeamKey(result.loser.players);
 
-  // Helper function to retrieve teams by normalized keys
   const getTeamsByKeys = (teams, winnerKey, loserKey) => {
     let winnerTeam = teams.find(
       (team) => normalizeTeamKey(team.team) === winnerKey
@@ -35,7 +32,7 @@ export const calculateTeamPerformance = async (
 
   if (!winnerTeam) {
     winnerTeam = {
-      team: result.winner.players.slice().sort(), // Store sorted player IDs
+      team: result.winner.players.slice().sort(),
       teamKey: winnerTeamKey,
       numberOfWins: 0,
       numberOfLosses: 0,
@@ -50,15 +47,15 @@ export const calculateTeamPerformance = async (
       winStreak3: 0,
       winStreak5: 0,
       winStreak7: 0,
+      demonWin: 0,
       lossesTo: {},
       rival: null,
     };
   }
 
-  // Create loser team if it doesn't exist
   if (!loserTeam) {
     loserTeam = {
-      team: result.loser.players.slice().sort(), // Store sorted player IDs
+      team: result.loser.players.slice().sort(),
       teamKey: loserTeamKey,
       numberOfWins: 0,
       numberOfLosses: 0,
@@ -73,49 +70,59 @@ export const calculateTeamPerformance = async (
       winStreak3: 0,
       winStreak5: 0,
       winStreak7: 0,
+      demonWin: 0,
       lossesTo: {},
       rival: null,
     };
   }
 
-  // Calculate point difference for this game
   const pointDifference = result.winner.score - result.loser.score;
 
-  // Update team stats and point difference logs
   updateTeamStats(winnerTeam, "W", pointDifference);
   updateTeamStats(loserTeam, "L", -pointDifference);
 
-  // Update losing team rivalry stats
   if (!loserTeam.lossesTo[winnerTeamKey]) loserTeam.lossesTo[winnerTeamKey] = 0;
   loserTeam.lossesTo[winnerTeamKey] += 1;
 
-  // Update rival info
-  const maxLosses = Math.max(...Object.values(loserTeam.lossesTo));
-  const rivalKey = Object.keys(loserTeam.lossesTo).find(
-    (key) => loserTeam.lossesTo[key] === maxLosses
-  );
-  loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
+  const lossesToValues = Object.values(loserTeam.lossesTo);
+  const maxLosses = Math.max(...lossesToValues);
+  
+  if (maxLosses > 1) {
+    const teamsWithMaxLosses = Object.keys(loserTeam.lossesTo).filter(
+      (key) => loserTeam.lossesTo[key] === maxLosses
+    );
+    
+    if (teamsWithMaxLosses.length === 1) {
+      const rivalKey = teamsWithMaxLosses[0];
+      loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
+    } else {
+      loserTeam.rival = null;
+    }
+  } else {
+    loserTeam.rival = null;
+  }
 
-  // Return the updated teams
   return [winnerTeam, loserTeam];
 };
 
-// Helper function to update team stats and point difference logs
 function updateTeamStats(team, result, pointDifference) {
-  // Update basic stats
+  const previousWinStreak = team.currentStreak > 0 ? team.currentStreak : 0;
+  
   if (result === "W") {
     team.numberOfWins += 1;
+    
+    if (pointDifference >= 10) {
+      team.demonWin = (team.demonWin || 0) + 1;
+    }
   } else {
     team.numberOfLosses += 1;
   }
 
   team.numberOfGamesPlayed += 1;
 
-  // Update result log (limit to last 10 entries)
   team.resultLog.push(result);
   team.resultLog = team.resultLog.slice(-10);
 
-  // Update point difference log
   if (!team.pointDifferenceLog) {
     team.pointDifferenceLog = [];
   }
@@ -127,7 +134,6 @@ function updateTeamStats(team, result, pointDifference) {
   team.pointDifferenceLog.push(pointDifference);
   team.pointDifferenceLog = team.pointDifferenceLog.slice(-10);
 
-  // Calculate average point difference
   const totalPointDifference = team.pointDifferenceLog.reduce(
     (sum, pd) => sum + pd,
     0
@@ -135,48 +141,48 @@ function updateTeamStats(team, result, pointDifference) {
   team.averagePointDifference =
     totalPointDifference / team.pointDifferenceLog.length;
 
-  // Update streaks
-  updateWinStreaks(team);
+  updateWinStreaks(team, previousWinStreak);
 }
 
-// Helper function to update win/loss streaks
-function updateWinStreaks(team) {
-  let currentStreakCount = 0;
-  let highestWinStreak = 0;
-  let highestLossStreak = 0;
-  let isCurrentStreakWin = null;
-
-  team.resultLog.forEach((result) => {
-    if (result === "W") {
-      if (isCurrentStreakWin === true || isCurrentStreakWin === null) {
-        currentStreakCount += 1;
-      } else {
-        currentStreakCount = 1;
-      }
-      isCurrentStreakWin = true;
-      highestWinStreak = Math.max(highestWinStreak, currentStreakCount);
-    } else if (result === "L") {
-      if (isCurrentStreakWin === false || isCurrentStreakWin === null) {
-        currentStreakCount -= 1;
-      } else {
-        currentStreakCount = -1;
-      }
-      isCurrentStreakWin = false;
-      highestLossStreak = Math.max(
-        highestLossStreak,
-        Math.abs(currentStreakCount)
-      );
+function updateWinStreaks(team, previousWinStreak) {
+  const previousResult = team.resultLog.length > 1 ? team.resultLog[team.resultLog.length - 2] : null;
+  const currentResult = team.resultLog[team.resultLog.length - 1];
+  
+  if (currentResult === "W") {
+    if (previousResult === "L" || previousResult === null) {
+      team.currentStreak = 1;
+    } else {
+      team.currentStreak += 1;
     }
-  });
+  } else if (currentResult === "L") {
+    if (previousResult === "W" || previousResult === null) {
+      team.currentStreak = -1;
+    } else {
+      team.currentStreak -= 1;
+    }
+  }
 
-  team.currentStreak = currentStreakCount;
-  team.highestWinStreak = highestWinStreak;
-  team.highestLossStreak = highestLossStreak;
+  if (team.currentStreak > 0) {
+    team.highestWinStreak = Math.max(team.highestWinStreak || 0, team.currentStreak);
+  } else if (team.currentStreak < 0) {
+    team.highestLossStreak = Math.max(team.highestLossStreak || 0, Math.abs(team.currentStreak));
+  }
 
-  // Update win streak milestones
-  if (currentStreakCount >= 3) team.winStreak3++;
-  if (currentStreakCount >= 5) team.winStreak5++;
-  if (currentStreakCount >= 7) team.winStreak7++;
+  const currentWinStreak = team.currentStreak > 0 ? team.currentStreak : 0;
+  
+  if (typeof team.winStreak3 !== "number") team.winStreak3 = 0;
+  if (typeof team.winStreak5 !== "number") team.winStreak5 = 0;
+  if (typeof team.winStreak7 !== "number") team.winStreak7 = 0;
+  
+  if (previousWinStreak < 3 && currentWinStreak >= 3) {
+    team.winStreak3 += 1;
+  }
+  if (previousWinStreak < 5 && currentWinStreak >= 5) {
+    team.winStreak5 += 1;
+  }
+  if (previousWinStreak < 7 && currentWinStreak >= 7) {
+    team.winStreak7 += 1;
+  }
 }
 
 // export const calculateTeamPerformance = (newGame, teamPerformance) => {
