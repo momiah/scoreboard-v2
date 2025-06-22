@@ -31,6 +31,12 @@ import {
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
+import { resetLeagueParticipantStats } from "../../devFunctions/resetLeagueParticipantStats";
+import { resetUsersProfileDetails } from "../../devFunctions/resetUsersProfileDetails";
+import {
+  bulkAddApprovedGames,
+  leagueGames,
+} from "../../devFunctions/bulkAddApprovedGames";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -99,6 +105,21 @@ const Home = () => {
 
   const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
 
+  const usersToReset = [
+    "Hussain",
+    "AnisZaman", // Anis,
+    "Bokul",
+    "Yasin",
+    "ProLikeMo", //Mohsin
+    "MaxHoque", // Max,
+    "Babu",
+    "R4YY4NH", // Rayyan,
+    "Gesh",
+    "Komal", // Doc
+    "Saiful",
+    "Raqeeb",
+  ];
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
       <HomeContainer
@@ -150,6 +171,37 @@ const Home = () => {
           actionText="Browse Leagues"
           showIcon
           navigationRoute={"Leagues"}
+        />
+
+        <SubHeader
+          title="Reset User Profile Details"
+          onIconPress={() => resetUsersProfileDetails(usersToReset)}
+          showIcon
+          iconName="refresh"
+        />
+
+        <SubHeader
+          title="Reset League Participant Stats"
+          onIconPress={() =>
+            resetLeagueParticipantStats(
+              usersToReset,
+              "Enfield-Doubles-16-06-2025-WPD51"
+            )
+          }
+          showIcon
+          iconName="refresh"
+        />
+
+        <SubHeader
+          title="Bulk Add League Games"
+          onIconPress={() =>
+            bulkAddApprovedGames(
+              leagueGames,
+              "Enfield-Doubles-16-06-2025-WPD51"
+            )
+          }
+          showIcon
+          iconName="add"
         />
 
         {loading ? (
