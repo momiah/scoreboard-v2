@@ -22,6 +22,7 @@ import RemovePlayers from "../screens/Home/Leagues/RemovePlayers";
 import AccountSupport from "../screens/Profile/AccountSupport";
 import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
+import BulkGamePublisher from "../screens/Home/Leagues/BulkGamePublisher";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
@@ -53,6 +54,7 @@ const HomeStack = () => {
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
+      <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -74,6 +76,7 @@ const ProfileStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
+      <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
 
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
@@ -103,6 +106,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
+            <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
@@ -129,6 +133,7 @@ const ChatsStack = () => {
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+            <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
     </Stack.Navigator>
   );
 };

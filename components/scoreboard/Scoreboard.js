@@ -1,11 +1,10 @@
 import React, {
   useState,
-  useEffect,
   useContext,
   useMemo,
   useCallback,
 } from "react";
-import { Text, FlatList } from "react-native";
+import { FlatList } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
@@ -14,6 +13,7 @@ import { Dimensions } from "react-native";
 
 import AddGameModal from "../Modals/AddGameModal";
 import { getButtonConfig, getFallbackMessage } from "./scoreboardConfig";
+import { TeamColumn, ScoreDisplay } from "./ScoreboardAtoms";
 
 import moment from "moment";
 import { LeagueContext } from "../../context/LeagueContext";
@@ -167,36 +167,6 @@ const Scoreboard = ({
   );
 };
 
-// Sub-components for better readability
-const TeamColumn = ({ team, players = {}, leagueType }) => (
-  <TeamContainer>
-    <PlayerCell position={team} player={players?.player1} />
-    {leagueType === "Doubles" && (
-      <PlayerCell position={team} player={players?.player2} />
-    )}
-  </TeamContainer>
-);
-
-const PlayerCell = ({ position, player }) => (
-  <TeamTextContainer position={position}>
-    <TeamText position={position}>{player}</TeamText>
-  </TeamTextContainer>
-);
-
-const ScoreDisplay = ({ date, team1, team2, item }) => {
-  const isPending = item.approvalStatus === "pending";
-  return (
-    <ResultsContainer style={!isPending ? { paddingBottom: 20 } : undefined}>
-      <DateText>{date}</DateText>
-      <ScoreContainer>
-        <Score>
-          {team1} - {team2}
-        </Score>
-      </ScoreContainer>
-      {isPending && <PendingLabel>Pending Approval</PendingLabel>}
-    </ResultsContainer>
-  );
-};
 
 // Define styles
 const { width: screenWidth } = Dimensions.get("window");

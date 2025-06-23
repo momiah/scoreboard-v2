@@ -32,6 +32,8 @@ const AddGameModal = ({
   leagueGames,
   leagueType,
   leagueName,
+   onGameAdded, // New prop for bulk mode
+  isBulkMode = false, // New prop to indicate bulk mode
 }) => {
   const { addGame } = useContext(GameContext);
   const { fetchLeagueById } = useContext(LeagueContext);
@@ -120,6 +122,29 @@ const AddGameModal = ({
 
   const handleAddGame = async () => {
     setLoading(true);
+
+    if (isBulkMode && onGameAdded) {
+      const gameData = {
+        selectedPlayers,
+        team1Score,
+        team2Score,
+      };
+      
+      const success = onGameAdded(gameData);
+      if (success) {
+        // Reset form
+        setSelectedPlayers({ 
+          team1: leagueType === "Singles" ? [""] : ["", ""], 
+          team2: leagueType === "Singles" ? [""] : ["", ""] 
+        });
+        setTeam1Score("");
+        setTeam2Score("");
+        setErrorText("");
+      }
+      setLoading(false);
+      return;
+    }
+
     // Check if both teams have selected players
     if (
       selectedPlayers.team1.every((player) => player === "") ||
