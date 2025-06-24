@@ -24,6 +24,7 @@ import {
   TeamColumn,
   ScoreDisplay,
 } from "../../../components/scoreboard/ScoreboardAtoms";
+import { notificationSchema, notificationTypes } from "../../../schemas/schema";
 
 const { height: screenHight } = Dimensions.get("window");
 const popupHeight = screenHight * 0.3; // 30% of screen height
@@ -32,7 +33,13 @@ const BulkGamePublisher = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { leagueId, leagueById } = route.params;
-  const { currentUser, fetchPlayers } = useContext(UserContext);
+  const { 
+    currentUser, 
+    fetchPlayers, 
+    retrievePlayersFromLeague, 
+    getUserById, 
+    sendNotification 
+  } = useContext(UserContext);
   const { fetchLeagueById } = useContext(LeagueContext);
   const {
     handleShowPopup,
@@ -189,6 +196,72 @@ const BulkGamePublisher = () => {
     [expandedGameId]
   );
 
+  // Function to send bulk notifications
+  const sendBulkNotifications = async () => {
+    try {
+      // 1. Collect all players and count their appearances
+      const playerGameCounts = {};
+      
+      pendingGames.forEach(game => {
+        const playersInGame = [
+          game.team1.player1,
+          game.team1.player2,
+          game.team2.player1,
+          game.team2.player2,
+        ].filter(Boolean); // Remove null values
+        
+        playersInGame.forEach(playerName => {
+          playerGameCounts[playerName] = (playerGameCounts[playerName] || 0) + 1;
+        });
+      });
+      
+      // 2. Get league players to map usernames to userIds
+      const leagueParticipants = await retrievePlayersFromLeague(leagueId);
+      if (!leagueParticipants || leagueParticipants.length === 0) {
+        console.log("No league participants found");
+        return;
+      }
+      
+      // 3. Send notifications to each unique player
+      for (const [playerName, gameCount] of Object.entries(playerGameCounts)) {
+        // Skip sending notification to current user (the admin)
+        if (playerName === currentUser?.username) continue;
+        
+        // Find the player in league participants
+        const player = leagueParticipants.find(p => p.username === playerName);
+        if (!player) {
+          console.log(`Player ${playerName} not found in league participants`);
+          continue;
+        }
+        
+        // Get full user data
+        const userData = await getUserById(player.userId);
+        if (!userData) {
+          console.log(`User data not found for ${playerName}`);
+          continue;
+        }
+        
+        const payload = {
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: userData.userId,
+          senderId: currentUser?.userId,
+          message: `An admin has bulk published ${gameCount} game${gameCount > 1 ? 's' : ''} with you playing in ${leagueName}`,
+          type: notificationTypes.INFORMATION.LEAGUE.TYPE,
+          data: {
+            leagueId,
+          },
+        };
+        
+        await sendNotification(payload);
+        console.log(`Notification sent to ${playerName} for ${gameCount} games`);
+      }
+    } catch (error) {
+      console.error("Error sending bulk notifications:", error);
+      // Don't fail the whole operation if notifications fail
+    }
+  };
+
   // Handle publishing all games
   const handlePublishGames = useCallback(async () => {
     if (pendingGames.length === 0) {
@@ -210,6 +283,9 @@ const BulkGamePublisher = () => {
               const result = await bulkAddApprovedGames(pendingGames, leagueId);
 
               if (result.success) {
+                // Send notifications to players
+                await sendBulkNotifications();
+                
                 handleShowPopup(
                   `Successfully published ${result.totalSuccessful} games!`
                 );
@@ -234,7 +310,7 @@ const BulkGamePublisher = () => {
         },
       ]
     );
-  }, [pendingGames, leagueId, handleShowPopup, fetchLeagueById, navigation]);
+  }, [pendingGames, leagueId, handleShowPopup, fetchLeagueById, navigation, sendBulkNotifications]);
 
   // Handle cancel - clear all pending games
   const handleCancel = useCallback(() => {

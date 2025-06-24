@@ -24,15 +24,12 @@ const screenWidth = Dimensions.get("window").width;
 const GameApprovalModal = ({
   visible,
   onClose,
-
   notificationId,
   notificationType,
   senderId,
   gameId,
   leagueId,
-  playersToUpdate,
   isRead,
-  usersToUpdate,
 }) => {
   const { fetchLeagueById, approveGame, declineGame } =
     useContext(LeagueContext);
@@ -44,15 +41,6 @@ const GameApprovalModal = ({
   const [senderUsername, setSenderUsername] = useState(null);
   const [gameDeleted, setGameDeleted] = useState(false); // 🆕
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      const sender = playersToUpdate?.find(
-        (player) => player.userId === senderId
-      )?.username;
-      setSenderUsername(sender);
-    };
-    fetchDetails();
-  }, [playersToUpdate, senderId]);
 
   const navigation = useNavigation();
 
@@ -67,6 +55,10 @@ const GameApprovalModal = ({
       if (notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE) {
         try {
           const league = await fetchLeagueById(leagueId);
+          const sender = league?.leagueParticipants?.find(
+            (participant) => participant.userId === senderId
+          )?.username;
+          setSenderUsername(sender);
 
           if (!league) {
             setLeagueDetails(null);
@@ -131,6 +123,8 @@ const GameApprovalModal = ({
       console.error("Error declining game:", error);
     }
   };
+
+  console.log('senderUsername', senderUsername);
 
   return (
     <Modal transparent visible={visible} animationType="slide">
