@@ -43,40 +43,6 @@ const retrieveTeams = async (leagueId) => {
   }
 };
 
-// Helper function to update players (similar to your UserContext)
-const updatePlayers = async (updatedPlayers, leagueId) => {
-  if (updatedPlayers.length === 0) {
-    console.log("No players to update!");
-    return;
-  }
-
-  try {
-    const leagueDocRef = doc(db, "leagues", leagueId);
-    const leagueDoc = await getDoc(leagueDocRef);
-
-    if (!leagueDoc.exists()) {
-      console.log("League not found!");
-      return;
-    }
-
-    const leagueData = leagueDoc.data();
-    const existingPlayers = leagueData.leagueParticipants || [];
-
-    const updatedParticipants = existingPlayers.map((player) => {
-      const updatedPlayer = updatedPlayers.find(
-        (p) => p.username === player.username
-      );
-      return updatedPlayer ? { ...player, ...updatedPlayer } : player;
-    });
-
-    await updateDoc(leagueDocRef, {
-      leagueParticipants: updatedParticipants,
-    });
-  } catch (error) {
-    console.error("Error updating player data:", error);
-  }
-};
-
 // Helper function to update users (similar to your UserContext)
 const updateUsers = async (usersToUpdate) => {
   try {
