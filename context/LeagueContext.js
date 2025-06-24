@@ -324,7 +324,7 @@ const LeagueProvider = ({ children }) => {
         username: newParticipant.username,
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
-        profileImage: newParticipant.profileImage || ccDefaultImage,
+        profileImage: newParticipant.profilImage || ccImageEndpoint,
       };
 
       await updateDoc(leagueRef, {
@@ -464,7 +464,7 @@ const LeagueProvider = ({ children }) => {
         username: newParticipant.username,
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
-        profileImage: newParticipant.profileImage || ccDefaultImage,
+        profileImage: newParticipant.profilImage || ccImageEndpoint,
       };
 
       await updateDoc(leagueRef, {

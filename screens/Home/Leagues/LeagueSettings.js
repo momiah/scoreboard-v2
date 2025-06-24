@@ -29,6 +29,9 @@ const LeaguSettings = () => {
       icon: "person-remove-outline",
       action: "RemovePlayers",
     },
+
+    { label: "Bulk Publish Games", icon: "archive-outline", action: "BulkGamePublisher" },
+
     // { label: "League Rules", icon: "document-text-outline", action: "LeagueRules" },
     // { label: "League Chat", icon: "chatbubble-ellipses-outline", action: "LeagueChat" },
     // { label: "League Schedule", icon: "calendar-outline", action: "LeagueSchedule" },

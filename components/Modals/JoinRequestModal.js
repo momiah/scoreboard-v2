@@ -177,7 +177,7 @@ const JoinRequestModal = ({
         </PlayerRow>
       );
     },
-    [findRankIndex, senderId, navigateToProfile]
+    [findRankIndex, navigateToProfile, senderId]
   );
 
   return (
