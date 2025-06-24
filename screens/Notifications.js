@@ -46,8 +46,6 @@ const Notifications = () => {
     senderId: null,
     selectedLeagueId: null,
     gameId: null,
-    playersToUpdate: null,
-    usersToUpdate: null,
     isRead: false,
     data: null,
   });
@@ -97,8 +95,6 @@ const Notifications = () => {
     setModalState({
       ...commonState,
       gameId: item.data.gameId || null,
-      playersToUpdate: item.data.playersToUpdate || null,
-      usersToUpdate: item.data.usersToUpdate || null,
     });
 
     // Open the appropriate modal
@@ -187,8 +183,6 @@ const Notifications = () => {
         senderId={modalState.senderId}
         gameId={modalState.gameId || ""}
         leagueId={modalState.selectedLeagueId || ""}
-        playersToUpdate={modalState.playersToUpdate || []}
-        usersToUpdate={modalState.usersToUpdate || []}
         isRead={modalState.isRead}
       />
     </HomeContainer>
