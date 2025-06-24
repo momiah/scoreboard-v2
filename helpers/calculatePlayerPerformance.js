@@ -11,9 +11,6 @@ export const calculatePlayerPerformance = (
   const getUserByUsername = (username) =>
     usersToUpdate.find((user) => user.username === username);
 
-  const winnerScore = game.result.winner.score;
-  const loserScore = game.result.loser.score;
-
   const combinedWinnerXp = game.result.winner.players.reduce(
     (totalXp, playerUsername) => {
       const user = getUserByUsername(playerUsername);
@@ -149,8 +146,8 @@ export const calculatePlayerPerformance = (
     const rankMultiplier =
       differenceMultiplier < 2
         ? 0
-        : differenceMultiplier > 5
-        ? 5
+        : differenceMultiplier > 4
+        ? 4
         : differenceMultiplier;
 
     // Multiplier logic based on streak
@@ -167,13 +164,13 @@ export const calculatePlayerPerformance = (
 
     const winMultiplier =
       streakCount >= 7
-        ? 4
+        ? 5
         : streakCount >= 5
-        ? 3
+        ? 4
         : streakCount >= 3
-        ? 2
+        ? 3
         : streakCount > 1
-        ? 1.5
+        ? 2
         : 1;
 
     const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
