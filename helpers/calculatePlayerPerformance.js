@@ -146,8 +146,8 @@ export const calculatePlayerPerformance = (
     const rankMultiplier =
       differenceMultiplier < 2
         ? 0
-        : differenceMultiplier > 4
-        ? 4
+        : differenceMultiplier > 3
+        ? 3
         : differenceMultiplier;
 
     // Multiplier logic based on streak
@@ -181,17 +181,18 @@ export const calculatePlayerPerformance = (
     const rankXp = isNaN(rankXpValue) ? 0 : rankXpValue;
 
     // Calculate demon win bonus (doubles the streak XP for wins with 10+ point difference)
-    let demonWinBonus = 0;
-    if (streakType === "W" && scoreDifference >= 10) {
-      demonWinBonus = streakXp; // Double the streak XP only
-    }
+    let demonBonus = 0;
+  if (scoreDifference >= 10) {
+    demon = streakType === "W" ? streakXp : -streakXp;
+  }
+
 
     // Final XP calculation
-    const finalXp = streakXp + rankXp + demonWinBonus;
+    const finalXp = streakXp + rankXp + demonBonus;
 
     // console.log("Streak XP:", streakXp);
     // console.log("Rank XP:", rankXp);
-    // console.log("Demon Win Bonus:", demonWinBonus);
+    // console.log("Demon Win Bonus:", demonBonus);
     // console.log("Final XP:", finalXp);
     // console.log("User XP before:", user.XP);
     // console.log("User XP after:", user.XP + finalXp);
