@@ -546,21 +546,29 @@ const LeagueProvider = ({ children }) => {
       }
 
       const game = games[gameIndex];
-      // const gameType = leagueData.leagueType;
-      const approvalLimit = 1;
+      const approvalLimit = leagueData.approvalLimit || 1;
 
       // Retrieve currentUser username
       const currentUser = await getUserById(userId);
       const currentUserUsername = currentUser?.username;
+      const approvers = game.approvers || [];
 
-      // Update approvals
+      // ✅ Update approvals correctly
       const updatedGame = {
         ...game,
         numberOfApprovals: (game.numberOfApprovals || 0) + 1,
+        approvers: [
+          ...approvers,
+          {
+            userId: currentUser?.userId,
+            username: currentUserUsername,
+          },
+        ],
       };
 
+      // ✅ Check approval limit
       if (updatedGame.numberOfApprovals >= approvalLimit) {
-        updatedGame.approvalStatus = "approved";
+        updatedGame.approvalStatus = notificationTypes.RESPONSE.APPROVE_GAME;
 
         const playersToUpdate = leagueParticipants.filter((player) =>
           game.result.winner.players
@@ -569,6 +577,7 @@ const LeagueProvider = ({ children }) => {
         );
 
         const userIds = playersToUpdate.map((player) => player.userId);
+
         const usersToUpdate = await Promise.all(userIds.map(getUserById));
 
         const playerPerformance = calculatePlayerPerformance(
@@ -615,7 +624,7 @@ const LeagueProvider = ({ children }) => {
         response: notificationTypes.RESPONSE.ACCEPT,
       });
 
-      // Send notification to sender
+      // ✅ Send notification to sender
       const payload = {
         ...notificationSchema,
         createdAt: new Date(),

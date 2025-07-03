@@ -17,7 +17,8 @@ import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
 
 import { useNavigation } from "@react-navigation/native";
-import { notificationTypes } from "../../schemas/schema";
+import { notificationSchema, notificationTypes } from "../../schemas/schema";
+import { notificationTypes } from "../schemas/schema";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -40,7 +41,6 @@ const GameApprovalModal = ({
   const [leagueDetails, setLeagueDetails] = useState(null);
   const [senderUsername, setSenderUsername] = useState(null);
   const [gameDeleted, setGameDeleted] = useState(false); // 🆕
-
 
   const navigation = useNavigation();
 
@@ -88,7 +88,15 @@ const GameApprovalModal = ({
 
     fetchDetails();
     setLoading(false);
-  }, [notificationType, gameId, leagueId]);
+  }, [
+    notificationType,
+    gameId,
+    leagueId,
+    fetchLeagueById,
+    readNotification,
+    currentUser?.userId,
+    notificationId,
+  ]);
 
   const handleApproveGame = async () => {
     setLoadingDecision(true);
@@ -124,7 +132,8 @@ const GameApprovalModal = ({
     }
   };
 
-  console.log('senderUsername', senderUsername);
+  const approvalLimitReached =
+    gameDetails.approvalStatus === notificationTypes.RESPONSE.APPROVE_GAME;
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -208,14 +217,24 @@ const GameApprovalModal = ({
                   >
                     <Button
                       style={{ backgroundColor: "red" }}
-                      disabled={isRead || loadingDecision || gameDeleted}
+                      disabled={
+                        isRead ||
+                        loadingDecision ||
+                        gameDeleted ||
+                        approvalLimitReached
+                      }
                       onPress={handleDeclineGame}
                     >
                       <CloseButtonText>Decline</CloseButtonText>
                     </Button>
                     <Button
                       onPress={handleApproveGame}
-                      disabled={isRead || loadingDecision || gameDeleted}
+                      disabled={
+                        isRead ||
+                        loadingDecision ||
+                        gameDeleted ||
+                        approvalLimitReached
+                      }
                     >
                       {loadingDecision ? (
                         <ActivityIndicator size="small" color="white" />
