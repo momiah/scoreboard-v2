@@ -203,6 +203,7 @@ export const leagueSchema = {
   playingTime: [],
   pendingInvites: [],
   pendingRequests: [],
+  approvalLimit: 1,
 };
 
 export const courtSchema = {
@@ -266,6 +267,8 @@ export const notificationTypes = {
   RESPONSE: {
     ACCEPT: "accepted",
     DECLINE: "declined",
+    APPROVE_GAME: "approved",
+    REJECT_GAME: "rejected",
   },
 };
 
