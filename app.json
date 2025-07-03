@@ -29,14 +29,11 @@
         "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
-            ]
-          },
-          {
-            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d",
               "fb1264178202106496"
             ]
           }
@@ -69,6 +66,19 @@
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
+        }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1264178202106496",
+          "clientToken": "924121d20d839d1a41302ec91d32346d",
+          "displayName": "Court Champs",
+          "scheme": "fb1264178202106496",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
         }
       ]
     ],
