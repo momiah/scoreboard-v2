@@ -2,7 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "runtimeVersion": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
@@ -15,10 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "13",
+      "buildNumber": "15",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
+        "FacebookAppID": "1264178202106496",
+        "FacebookDisplayName": "Court Champs",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsArbitraryLoadsInWebContent": true,
@@ -31,6 +33,11 @@
           {
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "fb1264178202106496"
             ]
           }
         ],
