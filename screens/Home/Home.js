@@ -173,7 +173,7 @@ const Home = () => {
           navigationRoute={"Leagues"}
         />
 
-        <SubHeader
+        {/* <SubHeader
           title="Reset User Profile Details"
           onIconPress={() => resetUsersProfileDetails(usersToReset)}
           showIcon
@@ -202,7 +202,7 @@ const Home = () => {
           }
           showIcon
           iconName="add"
-        />
+        /> */}
 
         {loading ? (
           <HorizontalLeagueCarouselSkeleton />
