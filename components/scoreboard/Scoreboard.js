@@ -131,7 +131,7 @@ const Scoreboard = ({
       <View>
         {uniqueDates.length > 0 && (
           <FlatList
-            data={uniqueDates}
+            data={["All", ...uniqueDates]}
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item, index) => index.toString()}
@@ -141,11 +141,15 @@ const Scoreboard = ({
             }}
             renderItem={({ item }) => (
               <DateItem
-                onPress={() => setSelectedDate(item)}
+                onPress={() => setSelectedDate(item === "All" ? null : item)}
                 item={item}
                 selectedDate={selectedDate}
               >
-                <Date>{item}</Date>
+                <Date>
+                  {item === "All"
+                    ? "All Games"
+                    : moment(item, "DD-MM-YYYY").format("D MMM YY")}
+                </Date>
               </DateItem>
             )}
           />
@@ -254,9 +258,13 @@ const ButtonText = styled.Text({
 });
 
 const DateItem = styled.TouchableOpacity(({ item, selectedDate }) => ({
-  borderBottomColor: selectedDate === item ? "#00A2FF" : "rgb(9, 33, 62)",
+  borderBottomColor:
+    (selectedDate === null && item === "All") || selectedDate === item
+      ? "#00A2FF"
+      : "rgb(9, 33, 62)",
   borderBottomWidth: 2,
   paddingHorizontal: 10,
+  paddingVertical: 8,
   marginRight: 10,
   justifyContent: "center",
   alignItems: "center",
