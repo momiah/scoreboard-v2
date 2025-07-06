@@ -26,12 +26,14 @@
     "expo-blur": "^14.0.1",
     "expo-constants": "~17.0.8",
     "expo-dev-client": "~5.0.20",
+    "expo-device": "~7.0.3",
     "expo-file-system": "~18.0.12",
     "expo-image-crop": "^1.0.4",
     "expo-image-manipulator": "^13.0.6",
     "expo-image-picker": "^16.0.6",
     "expo-linear-gradient": "~14.0.2",
     "expo-status-bar": "~2.0.0",
+    "expo-tracking-transparency": "^5.2.4",
     "expo-updates": "~0.27.4",
     "firebase": "^10.12.2",
     "firebase-admin": "^12.1.1",
@@ -48,6 +50,7 @@
     "react-native-datepicker": "^1.7.2",
     "react-native-dotenv": "^3.4.11",
     "react-native-dropdown-select-list": "^2.0.5",
+    "react-native-fbsdk-next": "^13.4.1",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-google-mobile-ads": "^15.3.0",
     "react-native-ico-flags": "^6.4.1",
@@ -57,8 +60,7 @@
     "react-native-screens": "~4.1.0",
     "react-native-svg": "15.8.0",
     "react-native-web": "~0.19.13",
-    "styled-components": "^6.1.11",
-    "expo-device": "~7.0.3"
+    "styled-components": "^6.1.11"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
