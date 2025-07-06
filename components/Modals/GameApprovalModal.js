@@ -17,8 +17,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
 
 import { useNavigation } from "@react-navigation/native";
-import { notificationSchema, notificationTypes } from "../../schemas/schema";
-import { notificationTypes } from "../schemas/schema";
+import { notificationTypes } from "../../schemas/schema";
 
 const screenWidth = Dimensions.get("window").width;
 

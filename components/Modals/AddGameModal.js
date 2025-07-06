@@ -32,7 +32,7 @@ const AddGameModal = ({
   leagueGames,
   leagueType,
   leagueName,
-   onGameAdded, // New prop for bulk mode
+  onGameAdded, // New prop for bulk mode
   isBulkMode = false, // New prop to indicate bulk mode
 }) => {
   const { addGame } = useContext(GameContext);
@@ -129,13 +129,13 @@ const AddGameModal = ({
         team1Score,
         team2Score,
       };
-      
+
       const success = onGameAdded(gameData);
       if (success) {
         // Reset form
-        setSelectedPlayers({ 
-          team1: leagueType === "Singles" ? [""] : ["", ""], 
-          team2: leagueType === "Singles" ? [""] : ["", ""] 
+        setSelectedPlayers({
+          team1: leagueType === "Singles" ? [""] : ["", ""],
+          team2: leagueType === "Singles" ? [""] : ["", ""],
         });
         setTeam1Score("");
         setTeam2Score("");
@@ -179,6 +179,7 @@ const AddGameModal = ({
       gameId,
       gamescore: `${team1Score} - ${team2Score}`,
       date: moment().format("DD-MM-YYYY"),
+      time: moment().format("HH:mm"),
       team1: {
         player1: selectedPlayers.team1[0],
         player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
