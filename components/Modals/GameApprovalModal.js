@@ -63,6 +63,7 @@ const GameApprovalModal = ({
             setLeagueDetails(null);
             setGameDetails(null);
             readNotification(notificationId, currentUser?.userId);
+            setLoading(false);
             return;
           }
 
@@ -78,23 +79,38 @@ const GameApprovalModal = ({
           }
         } catch (error) {
           console.error("Error fetching league details:", error);
-          // Also set states to null on error
           setLeagueDetails(null);
           setGameDetails(null);
+        } finally {
+          setLoading(false);
         }
       }
     };
 
     fetchDetails();
-    setLoading(false);
   }, [
     notificationType,
     gameId,
     leagueId,
-    fetchLeagueById,
-    readNotification,
-    currentUser?.userId,
+    senderId,
     notificationId,
+    currentUser?.userId,
+  ]);
+
+  useEffect(() => {
+    if (
+      gameDetails?.approvalStatus === notificationTypes.RESPONSE.APPROVE_GAME &&
+      !isRead
+    ) {
+      readNotification(notificationId, currentUser?.userId);
+    }
+  }, [
+    gameDetails?.approvalStatus,
+    notificationTypes.RESPONSE.APPROVE_GAME,
+    readNotification,
+    notificationId,
+    currentUser?.userId,
+    isRead,
   ]);
 
   const handleApproveGame = async () => {
@@ -132,7 +148,7 @@ const GameApprovalModal = ({
   };
 
   const approvalLimitReached =
-    gameDetails.approvalStatus === notificationTypes.RESPONSE.APPROVE_GAME;
+    gameDetails?.approvalStatus === notificationTypes.RESPONSE.APPROVE_GAME;
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -205,10 +221,17 @@ const GameApprovalModal = ({
                   )}
 
                   {gameDeleted && (
-                    <DeletedMessage>
+                    <Description>
                       This game has been declined and no longer exists. Please
                       agree on the scores and report again.
-                    </DeletedMessage> // 🆕
+                    </Description> // 🆕
+                  )}
+
+                  {approvalLimitReached && (
+                    <Description>
+                      This game has already been approved by the maximum number
+                      of participants. No further actions can be taken.
+                    </Description>
                   )}
 
                   <View
@@ -244,7 +267,7 @@ const GameApprovalModal = ({
                   </View>
                 </>
               ) : (
-                <DeletedMessage>This league no longer exists.</DeletedMessage>
+                <Description>This league no longer exists.</Description>
               )}
             </>
           )}
@@ -420,7 +443,7 @@ const DateText = styled.Text({
   marginBottom: 5,
 });
 
-const DeletedMessage = styled.Text({
+const Description = styled.Text({
   color: "red",
   fontSize: 12,
   marginTop: 10,

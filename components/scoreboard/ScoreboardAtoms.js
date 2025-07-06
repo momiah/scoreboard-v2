@@ -1,4 +1,5 @@
 import styled from "styled-components/native";
+import moment from "moment";
 import { Dimensions } from "react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -18,12 +19,11 @@ export const TeamColumn = ({ team, players = {}, leagueType }) => (
   </TeamContainer>
 );
 
-
 export const ScoreDisplay = ({ date, team1, team2, item }) => {
   const isPending = item.approvalStatus === "pending";
   return (
     <ResultsContainer style={!isPending ? { paddingBottom: 20 } : undefined}>
-      <DateText>{date}</DateText>
+      <DateText>{moment(date, "DD-MM-YYYY").format("D MMM YY")}</DateText>
       <ScoreContainer>
         <Score>
           {team1} - {team2}
@@ -33,7 +33,6 @@ export const ScoreDisplay = ({ date, team1, team2, item }) => {
     </ResultsContainer>
   );
 };
-
 
 const PendingLabel = styled.Text({
   paddingHorizontal: 6,
