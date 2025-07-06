@@ -1,10 +1,5 @@
-import React, {
-  useState,
-  useContext,
-  useMemo,
-  useCallback,
-} from "react";
-import { FlatList } from "react-native";
+import React, { useState, useContext, useMemo, useCallback } from "react";
+import { FlatList, TouchableOpacity, View } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
@@ -34,9 +29,10 @@ const Scoreboard = ({
   const { requestToJoinLeague } = useContext(LeagueContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null); // ✅ New State
+
   const navigation = useNavigation();
 
-  // Date calculations with validation
   const currentDate = moment();
   const leagueStart = moment(leagueStartDate, "DD-MM-YYYY");
   const leagueEnd = moment(leagueEndDate, "DD-MM-YYYY");
@@ -49,19 +45,16 @@ const Scoreboard = ({
     ? "started"
     : "not_started";
 
-  // Memoized game data with null check
-  const reversedGames = useMemo(
+  const gamesDescending = useMemo(
     () => (leagueGames || []).filter(Boolean).reverse(),
     [leagueGames]
   );
-  const gamesExist = reversedGames.length > 0;
+  const gamesExist = gamesDescending.length > 0;
 
-  // Player threshold logic: at least half of maxPlayers
   const playersCount = leagueParticipants.length;
   const minRequired = Math.ceil(maxPlayers / 2);
   const hasMinPlayers = playersCount >= minRequired;
 
-  // Handlers
   const handleAddGame = useCallback(() => {
     fetchPlayers(leagueId);
     setModalVisible(true);
@@ -110,6 +103,22 @@ const Scoreboard = ({
     [leagueState, gamesExist, userRole]
   );
 
+  const uniqueDates = useMemo(() => {
+    const seen = new Set();
+    return gamesDescending
+      .map((game) => game.date)
+      .filter((date) => {
+        if (seen.has(date)) return false;
+        seen.add(date);
+        return true;
+      });
+  }, [gamesDescending]);
+
+  const filteredGames = useMemo(() => {
+    if (!selectedDate) return gamesDescending;
+    return gamesDescending.filter((game) => game.date === selectedDate);
+  }, [gamesDescending, selectedDate]);
+
   return (
     <Container>
       <AddGameButton
@@ -119,12 +128,36 @@ const Scoreboard = ({
       >
         <ButtonText>{buttonConfig.text}</ButtonText>
       </AddGameButton>
+      <View>
+        {uniqueDates.length > 0 && (
+          <FlatList
+            data={uniqueDates}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item, index) => index.toString()}
+            contentContainerStyle={{
+              minHeight: 40,
+              marginBottom: 20,
+            }}
+            renderItem={({ item }) => (
+              <DateItem
+                onPress={() => setSelectedDate(item)}
+                item={item}
+                selectedDate={selectedDate}
+              >
+                <Date>{item}</Date>
+              </DateItem>
+            )}
+          />
+        )}
+      </View>
 
       {!gamesExist && fallbackMessage && (
         <FallbackMessage>{fallbackMessage}</FallbackMessage>
       )}
+
       <FlatList
-        data={reversedGames}
+        data={filteredGames} // ✅ Apply Filter
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => {
           const Game =
@@ -167,10 +200,6 @@ const Scoreboard = ({
   );
 };
 
-
-// Define styles
-const { width: screenWidth } = Dimensions.get("window");
-
 const Container = styled.View({
   flex: 1,
   padding: 10,
@@ -211,52 +240,7 @@ const PendingApprovalContainer = styled.View({
   borderRadius: 8,
   opacity: 0.6,
 });
-const PendingLabel = styled.Text({
-  paddingHorizontal: 6,
-  paddingVertical: 2,
-  marginTop: 10,
-  fontSize: 9,
-  color: "white",
-  backgroundColor: "rgba(255, 0, 0, 0.6)",
-  borderRadius: 4,
-  overflow: "hidden",
-});
-const ResultsContainer = styled.View({
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: 10,
-});
-const Score = styled.Text({
-  fontSize: 28,
-  fontWeight: "bold",
-  color: "#00A2FF",
-});
-const ScoreContainer = styled.View({
-  display: "flex",
-  flexDirection: "row",
-  justifyContent: "center",
-  marginTop: screenWidth <= 400 ? 20 : null,
-});
-const TeamText = styled.Text({
-  color: "white",
-  fontSize: screenWidth <= 400 ? 15 : 16,
-  textAlign: (props) => (props.position === "right" ? "right" : "left"),
-});
-const TeamContainer = styled.View({
-  display: "flex",
-  justifyContent: "center",
-  flexDirection: "column",
-  borderRadius: 8,
-});
-const TeamTextContainer = styled.View({
-  display: "flex",
-  flexDirection: "column",
-  padding: 15,
-  paddingLeft: 20,
-  paddingRight: 20,
-  width: screenWidth <= 400 ? 125 : 140,
-});
+
 const FallbackMessage = styled.Text({
   color: "#aaa",
   fontStyle: "italic",
@@ -268,11 +252,14 @@ const ButtonText = styled.Text({
   color: "white",
   fontSize: 16,
 });
-const DateText = styled.Text({
-  fontSize: 10,
-  fontWeight: "bold",
-  color: "white",
-  marginBottom: screenWidth <= 400 ? 0 : 15,
-});
+
+const DateItem = styled.TouchableOpacity(({ item, selectedDate }) => ({
+  borderBottomColor: selectedDate === item ? "#00A2FF" : "rgb(9, 33, 62)",
+  borderBottomWidth: 2,
+  paddingHorizontal: 10,
+  marginRight: 10,
+  justifyContent: "center",
+  alignItems: "center",
+}));
 
 export default React.memo(Scoreboard);
