@@ -11,6 +11,10 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import mobileAds from "react-native-google-mobile-ads";
 
+// Importing Expo Tracking Transparency for iOS tracking permissions
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import { Settings } from 'react-native-fbsdk-next';
+
 import Tabs from "./navigation/tabs";
 
 const Stack = createStackNavigator();
@@ -28,6 +32,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Facebook SDK setup
+    const initFacebook = async () => {
+      const { status } = await requestTrackingPermissionsAsync();
+
+      Settings.initializeSDK();
+
+      if (status === 'granted') {
+        Settings.setAdvertiserTrackingEnabled(true);
+      }
+    };
+
     const checkForUpdates = async () => {
       if (!__DEV__) {
         // Only check in production
@@ -43,6 +58,7 @@ export default function App() {
       }
     };
 
+    initFacebook();
     checkForUpdates();
   }, []);
 
