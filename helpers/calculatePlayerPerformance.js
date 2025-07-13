@@ -182,10 +182,9 @@ export const calculatePlayerPerformance = (
 
     // Calculate demon win bonus (doubles the streak XP for wins with 10+ point difference)
     let demonBonus = 0;
-  if (scoreDifference >= 10) {
-    demon = streakType === "W" ? streakXp : -streakXp;
-  }
-
+    if (scoreDifference >= 10) {
+      demon = streakType === "W" ? streakXp : -streakXp;
+    }
 
     // Final XP calculation
     const finalXp = streakXp + rankXp + demonBonus;
@@ -202,8 +201,8 @@ export const calculatePlayerPerformance = (
     player.prevGameXP = finalXp;
 
     // Ensure the player's XP doesn't drop below 10
-    if (user.XP < 10) {
-      user.XP = 10;
+    if (user.XP < 20) {
+      user.XP = 20;
     }
 
     return { player, user };
