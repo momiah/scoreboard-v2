@@ -72,6 +72,19 @@
         {
           "userTrackingPermission": "This identifier will be used to deliver personalized ads to you."
         }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1264178202106496",
+          "clientToken": "924121d20d839d1a41302ec91d32346d",
+          "displayName": "Court Champs",
+          "scheme": "fb1264178202106496",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+        }
       ]
     ],
     "extra": {
