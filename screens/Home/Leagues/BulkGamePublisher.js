@@ -405,7 +405,7 @@ const BulkGamePublisher = () => {
           <Ionicons name="archive-outline" size={60} color="#666" />
           <EmptyText>No games added yet</EmptyText>
           <EmptySubtext>
-            Tap "Add Game" to start building your game list
+            Bulk publishing allows admins to publish multiple games without approval.
           </EmptySubtext>
         </EmptyState>
       ) : (

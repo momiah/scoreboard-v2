@@ -1,6 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
 import styled from "styled-components/native";
+
+const { width: screenWidth } = Dimensions.get("window");
+const screenAdjustedFontSize = screenWidth <= 405 ? 16 : 18;
 
 const ResultLog = ({ resultLog }) => {
   return (
@@ -28,7 +31,7 @@ const LogContainer = styled.View({
 });
 
 const Result = styled.Text({
-  fontSize: 18,
+  fontSize: screenAdjustedFontSize,
   fontWeight: "bold",
 });
 
