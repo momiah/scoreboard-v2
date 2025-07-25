@@ -7,6 +7,8 @@ import { Dimensions } from "react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
 
+const screenAdjustedStatTitleFontSize = screenWidth <= 405 ? 12 : 14;
+
 const PerformanceStats = ({ statData, selectedPlayer }) => {
   return (
     <>
@@ -46,7 +48,7 @@ const TableCell = styled.View({
 });
 
 const StatTitle = styled.Text({
-  fontSize: screenWidth <= 400 ? 12 : 14,
+  fontSize: screenAdjustedStatTitleFontSize,
   color: "#aaa",
 });
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, Animated, StyleSheet } from "react-native";
+import { View, Text, Animated, StyleSheet, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import MedalDisplay from "./MedalDisplay";
 import { LinearGradient } from "expo-linear-gradient";
@@ -83,7 +83,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
         <RankContainer style={{ alignItems: "flex-start" }}>
           <RankXpText>{formatNumber(currentRank.xp)} XP</RankXpText>
           <MedalDisplay xp={currentRank.xp} size={20} />
-          <Text style={{ color: "#aaa" }}>{currentRank.name}</Text>
+          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>{currentRank.name}</Text>
         </RankContainer>
         {previousGameXp !== null && (
           <PreviousGameXpContainer>
@@ -100,12 +100,16 @@ const MedalProgress = ({ xp, prevGameXp }) => {
         <RankContainer style={{ alignItems: "flex-end" }}>
           <RankXpText>{formatNumber(nextRank.xp)} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
-          <Text style={{ color: "#aaa" }}>{nextRank.name}</Text>
+          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>{nextRank.name}</Text>
         </RankContainer>
       </ProgressRanks>
     </Container>
   );
 };
+
+const screenWidth = Dimensions.get("window").width;
+const screenAdjustedPreviousXpFontSize = screenWidth <= 405 ? 18 : 20;
+const screenAdjustedRankFontSize = screenWidth <= 405 ? 12 : 14;
 
 const Container = styled.View({
   marginVertical: 20,
@@ -115,6 +119,7 @@ const RankXpText = styled.Text({
   color: "white",
   fontWeight: "bold",
   marginBottom: 5,
+  fontSize: screenWidth <= 405 ? 12 : 14,
 });
 const ProgressBar = styled.View({
   height: 20,
@@ -139,7 +144,7 @@ const ProgressArrowContainer = styled.View({
 
 const PreviousGameXp = styled.Text`
   color: ${(props) => (props.prevGameXp < 0 ? "red" : "green")};
-  font-size: 20px;
+  font-size: ${screenAdjustedPreviousXpFontSize}px;
   font-weight: bold;
 `;
 

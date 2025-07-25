@@ -11,7 +11,7 @@ import {
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
 const { width: screenWidth } = Dimensions.get("window");
-const medalSize = screenWidth <= 400 ? 50 : 60;
+const medalSize = screenWidth <= 405 ? 50 : 60;
 
 const MatchMedals = ({
   demonWin = 0,
