@@ -34,8 +34,11 @@ const currentStreak = (resultLog) => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
-const screenAdjustedStatFontSize = screenWidth <= 450 ? 20 : 25;
-const screenAdjustedMedalSize = screenWidth <= 450 ? 60 : 70;
+const screenAdjustedStatFontSize = screenWidth <= 405 ? 20 : 25;
+const screenAdjustedNameFontSize = screenWidth <= 405 ? 20 : 25;
+const screenAdjustedDescriptionFontSize = screenWidth <= 405 ? 12 : 14;
+const screenAdjustedMedalSize = screenWidth <= 405 ? 60 : 70;
+const screenAdjustedPadding = screenWidth <= 405 ? 10 : 20;
 
 const PlayerDetails = ({
   showPlayerDetails,
@@ -133,7 +136,7 @@ const PlayerDetails = ({
                 <Text
                   style={{
                     color: "#aaa",
-                    fontSize: screenWidth <= 400 ? 12 : 14,
+                    fontSize: screenAdjustedDescriptionFontSize
                   }}
                 >
                   Member since {selectedPlayer.memberSince}
@@ -141,7 +144,7 @@ const PlayerDetails = ({
                 <Text
                   style={{
                     color: "#aaa",
-                    fontSize: screenWidth <= 400 ? 12 : 14,
+                    fontSize: screenAdjustedDescriptionFontSize
                   }}
                 >
                   Last Active {selectedPlayer.lastActive}
@@ -151,7 +154,7 @@ const PlayerDetails = ({
                   <Tag
                     name={"Go to profile"}
                     icon="person"
-                    iconSize={screenWidth <= 450 ? 12 : 14}
+                    iconSize={screenAdjustedDescriptionFontSize}
                     iconColor="white"
                     iconPosition="left"
                     color="#00A2FF"
@@ -195,6 +198,8 @@ const PlayerDetails = ({
   );
 };
 
+console.log('screenWidth', screenWidth);
+
 const Divider = styled.View({
   borderBottomColor: "#262626",
   borderBottomWidth: 1,
@@ -212,7 +217,8 @@ const ModalContainer = styled(BlurView).attrs({
 const ModalContent = styled.View({
   backgroundColor: "rgba(2, 13, 24, 0.7)", // Translucent dark blue
   margin: 10,
-  padding: screenWidth < 450 ? 5 : 20,
+  marginVertical: 20,
+  padding: screenAdjustedPadding,
   paddingLeft: 25,
   paddingRight: 25,
   borderRadius: 20,
@@ -227,7 +233,7 @@ const CloseIconContainer = styled.View({
 });
 
 const PlayerName = styled.Text({
-  fontSize: 25,
+  fontSize: screenAdjustedNameFontSize,
   color: "white",
   fontWeight: "bold",
 });
