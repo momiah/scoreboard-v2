@@ -197,6 +197,7 @@ const AddGameModal = ({
       numberOfApprovals: 0,
       numberOfDeclines: 0,
       approvalStatus: "pending",
+      reporter: currentUser?.username,
     };
 
     const playersInGame = [
