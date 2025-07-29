@@ -132,7 +132,6 @@ const AddGameModal = ({
 
       const success = onGameAdded(gameData);
       if (success) {
-        // Reset form
         setSelectedPlayers({
           team1: leagueType === "Singles" ? [""] : ["", ""],
           team2: leagueType === "Singles" ? [""] : ["", ""],
@@ -145,7 +144,6 @@ const AddGameModal = ({
       return;
     }
 
-    // Check if both teams have selected players
     if (
       selectedPlayers.team1.every((player) => player === "") ||
       selectedPlayers.team2.every((player) => player === "")
@@ -155,7 +153,6 @@ const AddGameModal = ({
       return;
     }
 
-    // Check if both teams have entered scores
     if (!team1Score || !team2Score) {
       setErrorText("Please enter scores for both teams.");
       setLoading(false);
@@ -165,7 +162,6 @@ const AddGameModal = ({
     const score1 = parseInt(team1Score);
     const score2 = parseInt(team2Score);
 
-    // Use helper for validation
     const validationError = validateBadmintonScores(score1, score2);
     if (validationError) {
       setErrorText(validationError);
@@ -175,46 +171,49 @@ const AddGameModal = ({
 
     const gameId = generateUniqueGameId(leagueGames);
 
+    const team1 = {
+      player1: selectedPlayers.team1[0],
+      player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
+      score: score1,
+    };
+
+    const team2 = {
+      player1: selectedPlayers.team2[0],
+      player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
+      score: score2,
+    };
+
+    const result = calculateWin(team1, team2);
+
     const newGame = {
       gameId,
       gamescore: `${team1Score} - ${team2Score}`,
+      createdAt: new Date(),
       date: moment().format("DD-MM-YYYY"),
       time: moment().format("HH:mm"),
-      team1: {
-        player1: selectedPlayers.team1[0],
-        player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
-        score: parseInt(team1Score) || 0,
-      },
-      team2: {
-        player1: selectedPlayers.team2[0],
-        player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
-        score: parseInt(team2Score) || 0,
-      },
-      get result() {
-        return calculateWin(this.team1, this.team2, this.leagueType);
-      },
+      team1,
+      team2,
+      result,
       numberOfApprovals: 0,
       numberOfDeclines: 0,
       approvalStatus: "pending",
     };
 
-    // Extract all players participating in this specific game
     const playersInGame = [
-      newGame.team1.player1,
-      newGame.team1.player2,
-      newGame.team2.player1,
-      newGame.team2.player2,
-    ].filter(Boolean); // Remove null values
+      team1.player1,
+      team1.player2,
+      team2.player1,
+      team2.player2,
+    ].filter(Boolean);
 
-    // Verify current user is actually playing in this game
     if (!playersInGame.includes(currentUser?.username)) {
       setErrorText("You must be a participant in the game to report it.");
       setLoading(false);
       return;
     }
+
     setErrorText("");
 
-    // Get league players and convert to user objects, but only for game participants
     const playersInLeague = await retrievePlayersFromLeague(leagueId);
     if (!playersInLeague || playersInLeague.length === 0) {
       setErrorText("No players found in the league.");
@@ -222,18 +221,14 @@ const AddGameModal = ({
       return;
     }
 
-    // Determine which team the current user is on
-    const isCurrentUserTeam1 = [
-      newGame.team1.player1,
-      newGame.team1.player2,
-    ].includes(currentUser?.username);
+    const isCurrentUserTeam1 = [team1.player1, team1.player2].includes(
+      currentUser?.username
+    );
 
-    // Get opponents (players from the opposing team only)
     const opponentUsernames = isCurrentUserTeam1
-      ? [newGame.team2.player1, newGame.team2.player2].filter(Boolean)
-      : [newGame.team1.player1, newGame.team1.player2].filter(Boolean);
+      ? [team2.player1, team2.player2].filter(Boolean)
+      : [team1.player1, team1.player2].filter(Boolean);
 
-    // Filter league players to only the opponents
     const opponentPlayers = playersInLeague.filter((player) =>
       opponentUsernames.includes(player.username)
     );
@@ -251,11 +246,7 @@ const AddGameModal = ({
         senderId: currentUser?.userId,
         message: `${currentUser?.username} has just reported a score in ${leagueName} league`,
         type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
-
-        data: {
-          leagueId,
-          gameId,
-        },
+        data: { leagueId, gameId },
       };
 
       await sendNotification(payload);

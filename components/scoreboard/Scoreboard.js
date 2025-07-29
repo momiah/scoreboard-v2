@@ -52,7 +52,7 @@ const Scoreboard = ({
   const gamesExist = gamesDescending.length > 0;
 
   const playersCount = leagueParticipants.length;
-  const minRequired = Math.ceil(maxPlayers / 2);
+  const minRequired = 4;
   const hasMinPlayers = playersCount >= minRequired;
 
   const handleAddGame = useCallback(() => {
