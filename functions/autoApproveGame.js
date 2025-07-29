@@ -1,23 +1,21 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
+const db = admin.firestore();
 
 const {
   calculatePlayerPerformance,
-} = require("../helpers/calculatePlayerPerformance");
+} = require("./helpers/calculatePlayerPerformance");  
 const {
   calculateTeamPerformance,
-} = require("../helpers/calculateTeamPerformance");
+} = require("./helpers/calculateTeamPerformance");   
 const {
   getUserById,
   updatePlayers,
   updateUsers,
   updateTeams,
   retrieveTeams,
-} = require("../helpers/firebaseHelpers");
-const { notificationTypes } = require("../schemas/schema");
-
-admin.initializeApp();
-const db = admin.firestore();
+} = require("./helpers/firebaseHelpers");            
+const { notificationTypes } = require("./schemas/schema");  
 
 exports.autoApproveGames = onSchedule("every 15 minutes", async () => {
   const leaguesSnap = await db.collection("leagues").get();
@@ -33,7 +31,6 @@ exports.autoApproveGames = onSchedule("every 15 minutes", async () => {
     leagues.map(async ({ id: leagueId, ref: leagueRef, data: leagueData }) => {
       const games = leagueData.games || [];
       const leagueParticipants = leagueData.leagueParticipants || [];
-      const approvalLimit = leagueData.approvalLimit || 1;
 
       const updatedGames = [...games];
 
@@ -62,6 +59,9 @@ exports.autoApproveGames = onSchedule("every 15 minutes", async () => {
             autoApproved: true,
             autoApprovedAt: new Date(),
           };
+
+          console.log('Auto-approved at:', updatedGame.autoApprovedAt);
+          
 
           const playersToUpdate = leagueParticipants.filter((player) =>
             updatedGame.result.winner.players
@@ -102,4 +102,12 @@ exports.autoApproveGames = onSchedule("every 15 minutes", async () => {
   );
 
   console.log("✅ Auto-approval function finished.");
+});
+
+
+const { onCall } = require("firebase-functions/v2/https");
+
+// Simple test function
+exports.testFunction = onCall(async (request) => {
+  return { message: "Test function works!" };
 });
