@@ -5,7 +5,7 @@ import {
   ActivityIndicator,
   View,
   Text,
-  Button,
+  TouchableOpacity,
 } from "react-native";
 import styled from "styled-components/native";
 import MedalDisplay from "../../components/performance/MedalDisplay";
@@ -36,14 +36,14 @@ const AllPlayers = () => {
   
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
-  const fetchUsers = async (page = 1, append = false) => {
+  const fetchUsers = async (page = 1) => {
     try {
       setLoading(true);
       const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, PAGE_SIZE);
       const sorted = rankSortingPaginated(users, page, PAGE_SIZE);
       setTotalUsers(totalUsers);
       setTotalPages(totalPages);
-      setUsers((prev) => (append ? [...prev, ...sorted] : sorted));
+      setUsers(sorted);
       setCurrentPage(page);
     } catch (error) {
       console.error("Failed to fetch users:", error);
@@ -56,22 +56,22 @@ const AllPlayers = () => {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await fetchUsers();
+      await fetchUsers(1);
     } finally {
       setRefreshing(false);
     }
   }, [fetchUsers]);
 
-  const handleLoadMore = () => {
-    if (currentPage < totalPages && !loading) {
-      fetchUsers(currentPage + 1, true);
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages && !loading) {
+      fetchUsers(page);
     }
   };
 
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
-      await fetchUsers(1, false);
+      await fetchUsers(1);
     };
     loadInitialData();
   }, [getAllUsersPaginated]);
@@ -101,7 +101,7 @@ const AllPlayers = () => {
         );
         setUsers(filtered);
       } else {
-        fetchUsers(1, false);
+        fetchUsers(1);
       }
     } catch (error) {
       console.error("Search error:", error);
@@ -171,6 +171,47 @@ const AllPlayers = () => {
     ]
   );
 
+  const renderPagination = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <PageButton
+          key={i}
+          onPress={() => handlePageChange(i)}
+          disabled={i === currentPage}
+        >
+          <PageText selected={i === currentPage}>{i}</PageText>
+        </PageButton>
+      );
+    }
+
+    return (
+      <PaginationContainer>
+        <PageButton
+          onPress={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1 || loading}
+        >
+          <PageText>Prev Page</PageText>
+        </PageButton>
+        {pages}
+        <PageButton
+          onPress={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages || loading}
+        >
+          <PageText>Next Page</PageText>
+        </PageButton>
+      </PaginationContainer>
+    );
+  };
+
   return (
     <TableContainer>
       {loading && (
@@ -216,13 +257,7 @@ const AllPlayers = () => {
             progressBackgroundColor="#00A2FF"
           />
         }
-        ListFooterComponent={
-          currentPage < totalPages && !loading ? (
-            <LoadMoreButton>
-              <Button title="Load More" onPress={handleLoadMore} color="#00A2FF" />
-            </LoadMoreButton>
-          ) : null
-        }
+        ListFooterComponent={totalPages > 1 ? renderPagination : null}
       />
     </TableContainer>
   );
@@ -327,9 +362,22 @@ const LoadingContainer = styled.View({
   zIndex: 10, // Keeps it above other elements
 });
 
-const LoadMoreButton = styled.View({
-  padding: 10,
+const PaginationContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
   alignItems: "center",
+  padding: 10,
 });
+
+const PageButton = styled.TouchableOpacity({
+  padding: 10,
+  marginHorizontal: 5,
+});
+
+const PageText = styled.Text(({ selected }) => ({
+  color: selected ? "#00A2FF" : "white",
+  fontWeight: selected ? "bold" : "normal",
+  fontSize: 14,
+}));
 
 export default AllPlayers;
