@@ -10,6 +10,11 @@ import {
   addDoc,
   onSnapshot,
   deleteDoc,
+  query,
+  orderBy,
+  limit,
+  startAfter,
+
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase.config";
 import { deleteUser } from "firebase/auth";
@@ -903,6 +908,8 @@ const UserProvider = ({ children }) => {
         rankSorting,
         getGlobalRank,
         getCountryRank,
+        getAllUsersPaginated,
+        rankSortingPaginated,
 
         // Profile-related operations
         profileViewCount,
