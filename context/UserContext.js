@@ -267,6 +267,55 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  // Paginated version of getAllUsers for AllPlayers screen
+  const getAllUsersPaginated = async (page = 1, pageSize = 10) => {
+    try {
+      const usersRef = collection(db, "users");
+      let usersQuery = query(
+        usersRef,
+        orderBy("profileDetail.XP", "desc"),
+        limit(pageSize)
+      );
+
+      if (page > 1) {
+        const prevPageQuery = query(
+          usersRef,
+          orderBy("profileDetail.XP", "desc"),
+          limit((page - 1) * pageSize)
+        );
+        const prevSnapshot = await getDocs(prevPageQuery);
+        const lastDoc = prevSnapshot.docs[prevSnapshot.docs.length - 1];
+        if (lastDoc) {
+          usersQuery = query(
+            usersRef,
+            orderBy("profileDetail.XP", "desc"),
+            startAfter(lastDoc),
+            limit(pageSize)
+          );
+        }
+      }
+
+      const querySnapshot = await getDocs(usersQuery);
+      const users = querySnapshot.docs.map((doc, index) => ({
+        userId: doc.id,
+        ...doc.data(),
+        globalRank: (page - 1) * pageSize + index + 1,
+      }));
+
+      const totalUsersSnapshot = await getDocs(collection(db, "users"));
+      const totalUsers = totalUsersSnapshot.size;
+
+      return {
+        users,
+        totalUsers,
+        totalPages: Math.ceil(totalUsers / pageSize),
+      };
+    } catch (error) {
+      console.error("Error fetching paginated users:", error);
+      return { users: [], totalUsers: 0, totalPages: 0 };
+    }
+  };
+
   const updateUsers = async (usersToUpdate) => {
     try {
       const updatePromises = usersToUpdate.map(async (user) => {
@@ -502,6 +551,29 @@ const UserProvider = ({ children }) => {
       // Fallback to username comparison
       return (a.username || "").localeCompare(b.username || "");
     });
+  };
+
+  //for pagination in all players screen
+  const rankSortingPaginated = (users, page = 1, pageSize = 10) => {
+    const sorted = [...users].sort((a, b) => {
+      const aDetail = a.profileDetail || {};
+      const bDetail = b.profileDetail || {};
+
+      if (bDetail.XP !== aDetail.XP) return bDetail.XP - aDetail.XP;
+      if (bDetail.numberOfWins !== aDetail.numberOfWins)
+        return bDetail.numberOfWins - aDetail.numberOfWins;
+      if (bDetail.winPercentage !== aDetail.winPercentage)
+        return bDetail.winPercentage - aDetail.winPercentage;
+      if (bDetail.totalPointDifference !== aDetail.totalPointDifference)
+        return bDetail.totalPointDifference - aDetail.totalPointDifference;
+
+      return (a.username || "").localeCompare(b.username || "");
+    });
+
+    return sorted.map((user, index) => ({
+      ...user,
+      globalRank: (page - 1) * pageSize + index + 1,
+    }));
   };
 
   const getGlobalRank = async (userId) => {
