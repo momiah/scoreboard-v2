@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   View,
   Text,
+  Button,
 } from "react-native";
 import styled from "styled-components/native";
 import MedalDisplay from "../../components/performance/MedalDisplay";
@@ -21,26 +22,29 @@ const iconSize = 40;
 
 const AllPlayers = () => {
   const { findRankIndex } = useContext(GameContext);
-  const { getAllUsers, rankSorting } = useContext(UserContext);
+  const { getAllUsersPaginated, rankSortingPaginated } = useContext(UserContext);
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [originalUsers, setOriginalUsers] = useState([]);
-  const [sortedUsers, setSortedUsers] = useState([]);
+  
+  const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [pageSize] = useState(10);
+  
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1, append = false) => {
     try {
-      const users = await getAllUsers();
-      setTotalUsers(users.length);
-      const sorted = rankSorting(users).map((user, index) => ({
-        ...user,
-        globalRank: index + 1,
-      }));
-      setOriginalUsers(sorted);
-      setSortedUsers(sorted);
+      setLoading(true);
+      const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, pageSize);
+      const sorted = rankSortingPaginated(users, page, pageSize);
+      setTotalUsers(totalUsers);
+      setTotalPages(totalPages);
+      setUsers((prev) => (append ? [...prev, ...sorted] : sorted));
+      setCurrentPage(page);
     } catch (error) {
       console.error("Failed to fetch users:", error);
       Alert.alert("Refresh failed", "Could not update player list");
@@ -58,13 +62,19 @@ const AllPlayers = () => {
     }
   }, [fetchUsers]);
 
+  const handleLoadMore = () => {
+    if (currentPage < totalPages && !loading) {
+      fetchUsers(currentPage + 1, true);
+    }
+  };
+
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
-      await fetchUsers();
+      await fetchUsers(1, false);
     };
     loadInitialData();
-  }, [getAllUsers]);
+  }, [getAllUsersPaginated]);
 
   const getRankSuffix = (rank) => {
     const lastTwo = rank % 100;
@@ -86,12 +96,12 @@ const AllPlayers = () => {
     try {
       if (value.trim()) {
         const searchTerm = value.toLowerCase();
-        const filtered = originalUsers.filter((user) =>
+        const filtered = users.filter((user) =>
           user.username.toLowerCase().includes(searchTerm)
         );
-        setSortedUsers(filtered);
+        setUsers(filtered);
       } else {
-        setSortedUsers(originalUsers);
+        fetchUsers(1, false);
       }
     } catch (error) {
       console.error("Search error:", error);
@@ -186,11 +196,11 @@ const AllPlayers = () => {
         value={searchQuery}
         onChangeText={handleSearch}
       />
-      {!loading && sortedUsers.length === 0 && (
+      {!loading && users.length === 0 && (
         <EmptyState>No players found</EmptyState>
       )}
       <FlatList
-        data={sortedUsers}
+        data={users}
         renderItem={renderPlayer}
         keyExtractor={(player) => `${player.userId}-${player.globalRank}`}
         initialNumToRender={15}
@@ -205,6 +215,13 @@ const AllPlayers = () => {
             colors={["white"]}
             progressBackgroundColor="#00A2FF"
           />
+        }
+        ListFooterComponent={
+          currentPage < totalPages && !loading ? (
+            <LoadMoreButton>
+              <Button title="Load More" onPress={handleLoadMore} color="#00A2FF" />
+            </LoadMoreButton>
+          ) : null
         }
       />
     </TableContainer>
@@ -308,6 +325,11 @@ const LoadingContainer = styled.View({
   right: 0,
   alignItems: "center",
   zIndex: 10, // Keeps it above other elements
+});
+
+const LoadMoreButton = styled.View({
+  padding: 10,
+  alignItems: "center",
 });
 
 export default AllPlayers;
