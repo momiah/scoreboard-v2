@@ -32,15 +32,15 @@ const AllPlayers = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [pageSize] = useState(10);
+  const PAGE_SIZE = 25;
   
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
   const fetchUsers = async (page = 1, append = false) => {
     try {
       setLoading(true);
-      const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, pageSize);
-      const sorted = rankSortingPaginated(users, page, pageSize);
+      const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, PAGE_SIZE);
+      const sorted = rankSortingPaginated(users, page, PAGE_SIZE);
       setTotalUsers(totalUsers);
       setTotalPages(totalPages);
       setUsers((prev) => (append ? [...prev, ...sorted] : sorted));
