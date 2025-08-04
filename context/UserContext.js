@@ -273,7 +273,7 @@ const UserProvider = ({ children }) => {
   };
 
   // Paginated version of getAllUsers for AllPlayers screen
-  const getAllUsersPaginated = async (page = 1, pageSize = 10) => {
+  const getAllUsersPaginated = async (page = 1, pageSize = 25) => {
     try {
       const usersRef = collection(db, "users");
       let usersQuery = query(
@@ -559,7 +559,7 @@ const UserProvider = ({ children }) => {
   };
 
   //for pagination in all players screen
-  const rankSortingPaginated = (users, page = 1, pageSize = 10) => {
+  const rankSortingPaginated = (users, page = 1, pageSize = 25) => {
     const sorted = [...users].sort((a, b) => {
       const aDetail = a.profileDetail || {};
       const bDetail = b.profileDetail || {};
