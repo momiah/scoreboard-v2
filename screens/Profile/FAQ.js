@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { LayoutAnimation, Platform, UIManager } from 'react-native';
+import { LayoutAnimation, Platform, UIManager, Image } from 'react-native';
 import styled from 'styled-components/native';
 import Feather from 'react-native-vector-icons/Feather';
-import { UserContext } from '../../context/UserContext';
+import gameMedals from '../../rankingMedals';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// --- UPDATED FAQS DATA ---
 const faqs = [
     {
         question: 'What is the purpose of Court Champs?',
@@ -20,7 +19,7 @@ const faqs = [
         answer: 'Here’s a simple breakdown of how to get started:',
         sections: [
             {
-                title: 'Create or Join a League',
+                title: 'Create or Join a League 🏟️',
                 lines: [
                     'You can request to join an open league by visiting the league page and tapping "Request to Join".',
                     'A league owner or admin can also invite players directly into their league and approve join requests.',
@@ -28,14 +27,14 @@ const faqs = [
                 ]
             },
             {
-                title: 'Play Matches & Submit Scores',
+                title: 'Play Matches & Submit Scores 🏸',
                 lines: [
                     'After playing a match, submit the game result by pressing "Add Game" in the league scoreboard.',
                     'Select your opponents, input scores and submit for approval.'
                 ]
             },
             {
-                title: 'Approve Game Results',
+                title: 'Approve Game Results ✅',
                 lines: [
                     'Your opponents will receive a notification to approve the scores to ensure fair play and accurate tracking of performance.',
                     'Once approved by opponents, stats and rankings will update accordingly.',
@@ -44,25 +43,22 @@ const faqs = [
                 ]
             },
             {
-                title: 'Track Stats & Climb Ranks',
+                title: 'Track Stats & Climb Ranks 📈',
                 lines: [
                     'View your personal stats and league rankings in real-time after every game is approved.',
                     'Earn XP and medals through victories and achievements to climb the leaderboard.'
                 ]
             },
             {
-                title: 'Prize XP Distribution',
+                title: 'Prize XP Distribution 🏆',
                 lines: [
                     'Each league has its own prize pool which accumulates prize XP for every game played.',
                     'The system considers the total number of games played, number of active players, and total winning points accumulated.',
                     'Once the league ends, prizes are distributed to the top 4 players',
-
                 ]
             }
-
         ]
-    }
-    ,
+    },
     {
         question: 'How do ranks and medals work?',
         answer: 'Your rank is based on XP. You gain XP for wins and lose it for losses. Special achievements grant medals and bonus XP, while significant losses have extra penalties.',
@@ -99,22 +95,10 @@ const faqs = [
             'Team performance and rival opponents',
         ],
     },
-    // {
-    //     question: 'How do I reset my password?',
-    //     answer: 'Go to Settings > Account > Reset Password and follow the instructions.',
-    // },
     {
         question: 'How can I contact support?',
         answer: 'You can contact support via the Help section in the app or email support@example.com.',
     },
-    // {
-    //     question: 'Can I change my username?',
-    //     answer: 'Usernames are unique and cannot be changed once set.',
-    // },
-    // {
-    //     question: 'How do I delete my account?',
-    //     answer: 'Please contact support to request account deletion.',
-    // },
     {
         question: 'Is my data secure?',
         answer: 'Yes, we use industry-standard security measures to protect your data.',
@@ -150,9 +134,6 @@ const FAQ = () => {
                             <>
                                 <Answer>{faq.answer}</Answer>
 
-                                {/* --- MODIFIED RENDERING LOGIC --- */}
-
-                                {/* Renders original bullets if they exist */}
                                 {faq.bullets && faq.bullets.map((bullet, i) => (
                                     <BulletRow key={i}>
                                         <BulletDot>{'\u2022'}</BulletDot>
@@ -160,10 +141,21 @@ const FAQ = () => {
                                     </BulletRow>
                                 ))}
 
-                                {/* Renders new sections if they exist */}
                                 {faq.sections && faq.sections.map((section, i) => (
                                     <SectionContainer key={i}>
-                                        <SectionTitle>{section.title}</SectionTitle>
+                                        <SectionTitleRow>
+                                            <SectionTitle>{section.title}</SectionTitle>
+                                            {section.title.includes('Assassin Medal') && (
+                                                <MedalImage source={gameMedals.demon_win} />
+                                            )}
+                                            {section.title.includes('Streak Medals') && (
+                                                <StreakMedalsRow>
+                                                    <MedalImage source={gameMedals.win_streak_3} />
+                                                    <MedalImage source={gameMedals.win_streak_5} />
+                                                    <MedalImage source={gameMedals.win_streak_7} />
+                                                </StreakMedalsRow>
+                                            )}
+                                        </SectionTitleRow>
                                         {section.lines.map((line, j) => (
                                             <BulletRow key={j}>
                                                 <BulletDot>{'\u2022'}</BulletDot>
@@ -181,8 +173,7 @@ const FAQ = () => {
     );
 };
 
-// --- STYLES (with new additions) ---
-
+// --- Styled Components ---
 const Container = styled.ScrollView({
     flex: 1,
     paddingHorizontal: 16,
@@ -231,17 +222,21 @@ const Answer = styled.Text({
     marginTop: 12,
 });
 
-// New Style for Section Container
 const SectionContainer = styled.View({
     marginTop: 16,
 });
 
-// New Style for Section Title
+const SectionTitleRow = styled.View({
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'wrap',
+});
+
 const SectionTitle = styled.Text({
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
-    marginBottom: 8,
 });
 
 const BulletRow = styled.View({
@@ -254,7 +249,7 @@ const BulletDot = styled.Text({
     color: 'rgba(255,255,255,0.8)',
     fontSize: 14,
     marginRight: 8,
-    lineHeight: 20, // Aligns dot with text better
+    lineHeight: 20,
 });
 
 const BulletText = styled.Text({
@@ -262,6 +257,18 @@ const BulletText = styled.Text({
     fontSize: 14,
     lineHeight: 20,
     flex: 1,
+});
+
+const StreakMedalsRow = styled.View({
+    flexDirection: 'row',
+    marginLeft: 8,
+    alignItems: 'center',
+});
+
+const MedalImage = styled(Image)({
+    width: 25,
+    height: 25,
+    marginLeft: 6,
 });
 
 export default FAQ;
