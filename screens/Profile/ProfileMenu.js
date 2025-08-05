@@ -48,6 +48,8 @@ const ProfileMenu = ({ navigation }) => {
       icon: "people-outline",
       action: "PendingRequests",
     },
+    // FAQ
+    { label: "FAQ", icon: "help-buoy-outline", action: "FAQ" },
     { label: "Log out", icon: "log-out-outline", action: "logout" },
     {
       label: "Delete Account",

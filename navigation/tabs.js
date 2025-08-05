@@ -23,6 +23,7 @@ import AccountSupport from "../screens/Profile/AccountSupport";
 import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import BulkGamePublisher from "../screens/Home/Leagues/BulkGamePublisher";
+import FAQ from "../screens/Profile/FAQ";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
@@ -55,6 +56,7 @@ const HomeStack = () => {
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="FAQ" component={FAQ} />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -77,6 +79,7 @@ const ProfileStack = () => {
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="FAQ" component={FAQ} />
 
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
@@ -106,7 +109,8 @@ const NotificationsStack = () => {
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
-            <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
@@ -134,6 +138,7 @@ const ChatsStack = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
             <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="FAQ" component={FAQ} />
     </Stack.Navigator>
   );
 };
@@ -274,7 +279,7 @@ const Tabs = () => {
         {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
-      {showAd && (
+      {/* {showAd && (
         <View style={{ width: "100%", alignItems: "center" }}>
           <BannerAd
             unitId={BANNER_UNIT_ID}
@@ -292,7 +297,7 @@ const Tabs = () => {
             }}
           />
         </View>
-      )}
+      )} */}
     </>
   );
 };
