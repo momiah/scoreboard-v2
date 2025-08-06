@@ -6,6 +6,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import styled from "styled-components/native";
 import MedalDisplay from "../../components/performance/MedalDisplay";
@@ -16,8 +17,9 @@ import { useNavigation } from "@react-navigation/native";
 import AllPlayerSkeleton from "../../components/Skeletons/AllPlayerSkeleton";
 import Icon from "react-native-ico-flags";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
-import { useImageLoader } from ".././../utils/imageLoader";
+import { useImageLoader } from "../../utils/imageLoader";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
+import debounce from "lodash.debounce";
 const iconSize = 40;
 
 const AllPlayers = () => {
@@ -32,19 +34,20 @@ const AllPlayers = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
   const PAGE_SIZE = 25;
   
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
-  const fetchUsers = async (page = 1) => {
+  const fetchUsers = async (page = 1, searchParam = "") => {
     try {
       setLoading(true);
-      const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, PAGE_SIZE);
-      const sorted = rankSortingPaginated(users, page, PAGE_SIZE);
+      const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, PAGE_SIZE, searchParam);
       setTotalUsers(totalUsers);
       setTotalPages(totalPages);
-      setUsers(sorted);
+      setUsers(users);
       setCurrentPage(page);
+      setIsSearching(!!searchParam);
     } catch (error) {
       console.error("Failed to fetch users:", error);
       Alert.alert("Refresh failed", "Could not update player list");
@@ -53,18 +56,40 @@ const AllPlayers = () => {
     }
   };
 
+  const debouncedSearch = useCallback(
+    debounce(async (value) => {
+      try {
+        if (value.trim()) {
+          await fetchUsers(1, value.trim());
+        } else {
+          await fetchUsers(1);
+        }
+      } catch (error) {
+        console.error("Search error:", error);
+        Alert.alert("Search failed", "Could not find players");
+      }
+    }, 300),
+    [fetchUsers]
+  );
+
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+    debouncedSearch(value);
+  };
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
+      setSearchQuery("");
       await fetchUsers(1);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchUsers]);
+  }, []);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages && !loading) {
-      fetchUsers(page);
+      fetchUsers(page, searchQuery);
     }
   };
 
@@ -88,23 +113,6 @@ const AllPlayers = () => {
         return "rd";
       default:
         return "th";
-    }
-  };
-
-  const handleSearch = (value) => {
-    setSearchQuery(value);
-    try {
-      if (value.trim()) {
-        const searchTerm = value.toLowerCase();
-        const filtered = users.filter((user) =>
-          user.username.toLowerCase().includes(searchTerm)
-        );
-        setUsers(filtered);
-      } else {
-        fetchUsers(1);
-      }
-    } catch (error) {
-      console.error("Search error:", error);
     }
   };
 
@@ -172,6 +180,8 @@ const AllPlayers = () => {
   );
 
   const renderPagination = () => {
+    if (isSearching && totalPages <= 1) return null;
+
     const pages = [];
     const maxPagesToShow = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
