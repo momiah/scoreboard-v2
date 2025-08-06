@@ -9,6 +9,7 @@ import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
 import Tag from "../Tag";
 import { UserContext } from "../../context/UserContext";
 import { ccDefaultImage } from "../../mockImages/index";
+import moment from "moment";
 
 const { width } = Dimensions.get("window");
 
@@ -29,10 +30,20 @@ const HorizontalLeagueCarousel = ({ navigationRoute }) => {
   const itemWidth = width - 80;
   const spacing = 20;
 
-  // find the leagues that have privacy set to "Public"
-  const publicLeagues = upcomingLeagues.filter(
-    (league) => league.privacy === "Public"
-  );
+const today = new Date();
+
+const publicLeagues = upcomingLeagues.filter((league) => {
+  // Guard against missing endDate or wrong privacy
+  if (league.privacy !== "Public" || !league.endDate) return false;
+
+  const [day, month, year] = league.endDate.split("-");
+  if (!day || !month || !year) return false; // Extra safety if endDate format is broken
+
+  const endDate = new Date(`${year}-${month}-${day}`);
+
+  return endDate >= today;
+});
+
 
   return (
     <CarouselContainer
