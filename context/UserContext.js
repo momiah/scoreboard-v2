@@ -260,9 +260,10 @@ const UserProvider = ({ children }) => {
   const getAllUsers = async () => {
     try {
       const usersRef = collection(db, "users");
-      const querySnapshot = await getDocs(usersRef);
+      const usersQuery = query(usersRef, orderBy("profileDetail.XP", "desc")); // Added orderBy
+      const querySnapshot = await getDocs(usersQuery);
       const users = querySnapshot.docs.map((doc) => ({
-        // id: doc.id,
+        userId: doc.id, // Include userId
         ...doc.data(),
       }));
       return users;
@@ -273,53 +274,128 @@ const UserProvider = ({ children }) => {
   };
 
   // Paginated version of getAllUsers for AllPlayers screen
-  const getAllUsersPaginated = async (page = 1, pageSize = 25) => {
+  const getAllUsersPaginated = async (page = 1, pageSize = 25, searchParam = "") => {
     try {
       const usersRef = collection(db, "users");
-      let usersQuery = query(
-        usersRef,
-        orderBy("profileDetail.XP", "desc"),
-        limit(pageSize)
-      );
+      let users;
 
-      if (page > 1) {
-        const prevPageQuery = query(
+      if (searchParam) {
+        // Query for username using range to reduce result set
+        const lowerSearch = searchParam.toLowerCase();
+        const upperSearch = lowerSearch + '\uf8ff';
+        let usersQuery = query(
+          usersRef,
+          where("username", ">=", lowerSearch),
+          where("username", "<", upperSearch),
+          orderBy("username"),
+          orderBy("profileDetail.XP", "desc"),
+          limit(pageSize)
+        );
+
+        if (page > 1) {
+          const prevPageQuery = query(
+            usersRef,
+            where("username", ">=", lowerSearch),
+            where("username", "<", upperSearch),
+            orderBy("username"),
+            orderBy("profileDetail.XP", "desc"),
+            limit((page - 1) * pageSize)
+          );
+          const prevSnapshot = await getDocs(prevPageQuery);
+          const lastDoc = prevSnapshot.docs[prevSnapshot.docs.length - 1];
+          if (lastDoc) {
+            usersQuery = query(
+              usersRef,
+              where("username", ">=", lowerSearch),
+              where("username", "<", upperSearch),
+              orderBy("username"),
+              orderBy("profileDetail.XP", "desc"),
+              startAfter(lastDoc),
+              limit(pageSize)
+            );
+          }
+        }
+
+        const querySnapshot = await getDocs(usersQuery);
+        let filteredUsers = querySnapshot.docs.map((doc) => ({
+          userId: doc.id,
+          ...doc.data(),
+        }));
+
+        // Client-side filter for email, firstName, lastName
+        filteredUsers = filteredUsers.filter((user) =>
+          (user.username?.toLowerCase() || "").includes(lowerSearch) ||
+          (user.email?.toLowerCase() || "").includes(lowerSearch) ||
+          (user.firstName?.toLowerCase() || "").includes(lowerSearch) ||
+          (user.lastName?.toLowerCase() || "").includes(lowerSearch)
+        );
+
+        // Sort and assign ranks using rankSortingPaginated
+        users = rankSortingPaginated(filteredUsers, page, pageSize);
+
+        // Estimate totalUsers (since we can't get exact count without fetching all)
+        const totalUsersSnapshot = await getDocs(
+          query(
+            usersRef,
+            where("username", ">=", lowerSearch),
+            where("username", "<", upperSearch)
+          )
+        );
+        const totalUsers = Math.min(totalUsersSnapshot.size, filteredUsers.length);
+
+        return {
+          users,
+          totalUsers,
+          totalPages: Math.ceil(totalUsers / pageSize),
+        };
+      } else {
+        // Normal pagination
+        let usersQuery = query(
           usersRef,
           orderBy("profileDetail.XP", "desc"),
-          limit((page - 1) * pageSize)
+          limit(pageSize)
         );
-        const prevSnapshot = await getDocs(prevPageQuery);
-        const lastDoc = prevSnapshot.docs[prevSnapshot.docs.length - 1];
-        if (lastDoc) {
-          usersQuery = query(
+
+        if (page > 1) {
+          const prevPageQuery = query(
             usersRef,
             orderBy("profileDetail.XP", "desc"),
-            startAfter(lastDoc),
-            limit(pageSize)
+            limit((page - 1) * pageSize)
           );
+          const prevSnapshot = await getDocs(prevPageQuery);
+          const lastDoc = prevSnapshot.docs[prevSnapshot.docs.length - 1];
+          if (lastDoc) {
+            usersQuery = query(
+              usersRef,
+              orderBy("profileDetail.XP", "desc"),
+              startAfter(lastDoc),
+              limit(pageSize)
+            );
+          }
         }
+
+        const querySnapshot = await getDocs(usersQuery);
+        users = querySnapshot.docs.map((doc, index) => ({
+          userId: doc.id,
+          ...doc.data(),
+          globalRank: (page - 1) * pageSize + index + 1,
+        }));
+
+        const totalUsersSnapshot = await getDocs(collection(db, "users"));
+        const totalUsers = totalUsersSnapshot.size;
+
+        return {
+          users,
+          totalUsers,
+          totalPages: Math.ceil(totalUsers / pageSize),
+        };
       }
-
-      const querySnapshot = await getDocs(usersQuery);
-      const users = querySnapshot.docs.map((doc, index) => ({
-        userId: doc.id,
-        ...doc.data(),
-        globalRank: (page - 1) * pageSize + index + 1,
-      }));
-
-      const totalUsersSnapshot = await getDocs(collection(db, "users"));
-      const totalUsers = totalUsersSnapshot.size;
-
-      return {
-        users,
-        totalUsers,
-        totalPages: Math.ceil(totalUsers / pageSize),
-      };
     } catch (error) {
       console.error("Error fetching paginated users:", error);
       return { users: [], totalUsers: 0, totalPages: 0 };
     }
   };
+
 
   const updateUsers = async (usersToUpdate) => {
     try {
