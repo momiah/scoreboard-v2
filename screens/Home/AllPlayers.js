@@ -32,7 +32,6 @@ const AllPlayers = () => {
   
   const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const PAGE_SIZE = 25;
