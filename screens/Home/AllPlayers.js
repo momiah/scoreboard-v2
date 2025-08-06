@@ -29,6 +29,7 @@ const AllPlayers = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   
   const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
