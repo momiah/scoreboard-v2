@@ -49,10 +49,12 @@ const LeagueProvider = ({ children }) => {
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
 
-  // Fetch leagues data based on mock or real data
-  useEffect(() => {
+useEffect(() => {
+  if (currentUser?.location?.countryCode) {
     fetchUpcomingLeagues();
-  }, []);
+  }
+}, [currentUser?.location?.countryCode]);
+
 
   // NEED TO MODIFY LEAGUE SCHEMA TO INCLUDE COUNTRY CODE AT TOP LEVEL RATHER THAN NESTED
   // const fetchUpcomingLeagues = async () => {
