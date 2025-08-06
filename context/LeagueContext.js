@@ -54,36 +54,64 @@ const LeagueProvider = ({ children }) => {
     fetchUpcomingLeagues();
   }, []);
 
+  // NEED TO MODIFY LEAGUE SCHEMA TO INCLUDE COUNTRY CODE AT TOP LEVEL RATHER THAN NESTED
+  // const fetchUpcomingLeagues = async () => {
+  //   try {
+  //     const leaguesRef = collection(db, "leagues");
+  //     let leaguesQuery;
+
+  //     console.log('location.countryCode:', currentUser?.location.countryCode);
+
+  //     if (currentUser?.country) {
+  //       leaguesQuery = query(
+  //         leaguesRef,
+  //         where("location.countryCode", "==", currentUser?.location.countryCode),
+  //         // orderBy("startDate", "asc"),
+  //         // limit(10)
+  //       );
+  //     } else {
+  //       leaguesQuery = query(
+  //         leaguesRef,
+  //         orderBy("startDate", "asc"),
+  //         limit(10)
+  //       );
+  //     }
+
+  //     const snapshot = await getDocs(leaguesQuery);
+  //     const leagues = snapshot.docs.map((doc) => ({
+  //       id: doc.id,
+  //       ...doc.data(),
+  //     }));
+  //     setUpcomingLeagues(leagues);
+  //   } catch (error) {
+  //     console.error("Error fetching upcoming leagues:", error);
+  //   }
+  // };
+
+  // NEED TO REPLACE FOR THE ABOVE TO QUERY RATHER THAN FILTERING ON THE FRONT END BELOW
+  // MAX 200 LEAGUES UNTIL IT START TO SLOW DOWN
   const fetchUpcomingLeagues = async () => {
-    try {
-      const leaguesRef = collection(db, "leagues");
-      let leaguesQuery;
+  try {
+    const leaguesRef = collection(db, "leagues");
 
-      if (currentUser?.country) {
-        leaguesQuery = query(
-          leaguesRef,
-          where("location.country", "==", currentUser.country),
-          orderBy("startDate", "asc"),
-          limit(10)
-        );
-      } else {
-        leaguesQuery = query(
-          leaguesRef,
-          orderBy("startDate", "asc"),
-          limit(10)
-        );
-      }
+    console.log('location.countryCode:', currentUser?.location.countryCode);
 
-      const snapshot = await getDocs(leaguesQuery);
-      const leagues = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUpcomingLeagues(leagues);
-    } catch (error) {
-      console.error("Error fetching upcoming leagues:", error);
-    }
-  };
+    const snapshot = await getDocs(leaguesRef);
+    const leagues = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const filteredLeagues = leagues.filter(
+      (league) => league.location?.countryCode === currentUser?.location.countryCode
+    );
+
+    setUpcomingLeagues(filteredLeagues);
+  } catch (error) {
+    console.error("Error fetching upcoming leagues:", error);
+  }
+};
+
 
   const fetchLeagues = async () => {
     try {
