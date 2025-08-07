@@ -268,10 +268,9 @@ const UserProvider = ({ children }) => {
       );
 
       const querySnapshot = await getDocs(usersQuery);
-      const users = querySnapshot.docs.map((doc, index) => ({
+      const users = querySnapshot.docs.map((doc) => ({
         userId: doc.id,
         ...doc.data(),
-        globalRank: index + 1,
       }));
 
       return users;
