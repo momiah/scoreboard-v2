@@ -12,9 +12,6 @@ import {
   deleteDoc,
   query,
   orderBy,
-  limit,
-  startAfter,
-  where,
 
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase.config";
@@ -261,12 +258,22 @@ const UserProvider = ({ children }) => {
   const getAllUsers = async () => {
     try {
       const usersRef = collection(db, "users");
-      const usersQuery = query(usersRef, orderBy("profileDetail.XP", "desc")); // Added orderBy
+      const usersQuery = query(
+        usersRef,
+        orderBy("profileDetail.XP", "desc"),
+        orderBy("profileDetail.numberOfWins", "desc"),
+        orderBy("profileDetail.winPercentage", "desc"),
+        orderBy("profileDetail.totalPointDifference", "desc"),
+        orderBy("username", "asc")
+      );
+
       const querySnapshot = await getDocs(usersQuery);
-      const users = querySnapshot.docs.map((doc) => ({
-        userId: doc.id, // Include userId
+      const users = querySnapshot.docs.map((doc, index) => ({
+        userId: doc.id,
         ...doc.data(),
+        globalRank: index + 1,
       }));
+
       return users;
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -274,123 +281,54 @@ const UserProvider = ({ children }) => {
     }
   };
 
+
   // Paginated version of getAllUsers for AllPlayers screen
   const getAllUsersPaginated = async (page = 1, pageSize = 25, searchParam = "") => {
     try {
       const usersRef = collection(db, "users");
-      let users;
 
-      if (searchParam) {
-        // Query for username using range to reduce result set
-        const lowerSearch = searchParam.toLowerCase();
-        const upperSearch = lowerSearch + '\uf8ff';
-        let usersQuery = query(
-          usersRef,
-          where("username", ">=", lowerSearch),
-          where("username", "<", upperSearch),
-          orderBy("username"),
-          orderBy("profileDetail.XP", "desc"),
-          limit(pageSize)
-        );
+      // Sort using consistent ranking criteria
+      const baseQuery = query(
+        usersRef,
+        orderBy("profileDetail.XP", "desc"),
+        orderBy("profileDetail.numberOfWins", "desc"),
+        orderBy("profileDetail.winPercentage", "desc"),
+        orderBy("profileDetail.totalPointDifference", "desc"),
+        orderBy("username", "asc")
+      );
 
-        if (page > 1) {
-          const prevPageQuery = query(
-            usersRef,
-            where("username", ">=", lowerSearch),
-            where("username", "<", upperSearch),
-            orderBy("username"),
-            orderBy("profileDetail.XP", "desc"),
-            limit((page - 1) * pageSize)
+      // Fetch all matching documents (or page + offset)
+      const allSnapshot = await getDocs(baseQuery);
+
+      // Map all users with globalRank
+      let allUsers = allSnapshot.docs.map((doc, index) => ({
+        userId: doc.id,
+        ...doc.data(),
+        globalRank: index + 1,
+      }));
+
+      // Optional in-memory filtering by username, email, or name (case-insensitive)
+      if (searchParam && searchParam.trim() !== "") {
+        const param = searchParam.toLowerCase();
+        allUsers = allUsers.filter((user) => {
+          return (
+            user.username?.toLowerCase().includes(param) ||
+            user.firstName?.toLowerCase().includes(param) ||
+            user.lastName?.toLowerCase().includes(param) ||
+            user.email?.toLowerCase().includes(param)
           );
-          const prevSnapshot = await getDocs(prevPageQuery);
-          const lastDoc = prevSnapshot.docs[prevSnapshot.docs.length - 1];
-          if (lastDoc) {
-            usersQuery = query(
-              usersRef,
-              where("username", ">=", lowerSearch),
-              where("username", "<", upperSearch),
-              orderBy("username"),
-              orderBy("profileDetail.XP", "desc"),
-              startAfter(lastDoc),
-              limit(pageSize)
-            );
-          }
-        }
-
-        const querySnapshot = await getDocs(usersQuery);
-        let filteredUsers = querySnapshot.docs.map((doc) => ({
-          userId: doc.id,
-          ...doc.data(),
-        }));
-
-        // Client-side filter for email, firstName, lastName
-        filteredUsers = filteredUsers.filter((user) =>
-          (user.username?.toLowerCase() || "").includes(lowerSearch) ||
-          (user.email?.toLowerCase() || "").includes(lowerSearch) ||
-          (user.firstName?.toLowerCase() || "").includes(lowerSearch) ||
-          (user.lastName?.toLowerCase() || "").includes(lowerSearch)
-        );
-
-        // Sort and assign ranks using rankSortingPaginated
-        users = rankSortingPaginated(filteredUsers, page, pageSize);
-
-        // Estimate totalUsers (since we can't get exact count without fetching all)
-        const totalUsersSnapshot = await getDocs(
-          query(
-            usersRef,
-            where("username", ">=", lowerSearch),
-            where("username", "<", upperSearch)
-          )
-        );
-        const totalUsers = Math.min(totalUsersSnapshot.size, filteredUsers.length);
-
-        return {
-          users,
-          totalUsers,
-          totalPages: Math.ceil(totalUsers / pageSize),
-        };
-      } else {
-        // Normal pagination
-        let usersQuery = query(
-          usersRef,
-          orderBy("profileDetail.XP", "desc"),
-          limit(pageSize)
-        );
-
-        if (page > 1) {
-          const prevPageQuery = query(
-            usersRef,
-            orderBy("profileDetail.XP", "desc"),
-            limit((page - 1) * pageSize)
-          );
-          const prevSnapshot = await getDocs(prevPageQuery);
-          const lastDoc = prevSnapshot.docs[prevSnapshot.docs.length - 1];
-          if (lastDoc) {
-            usersQuery = query(
-              usersRef,
-              orderBy("profileDetail.XP", "desc"),
-              startAfter(lastDoc),
-              limit(pageSize)
-            );
-          }
-        }
-
-        const querySnapshot = await getDocs(usersQuery);
-        users = querySnapshot.docs.map((doc, index) => ({
-          userId: doc.id,
-          ...doc.data(),
-          globalRank: (page - 1) * pageSize + index + 1,
-        }));
-
-        const totalUsersSnapshot = await getDocs(collection(db, "users"));
-        const totalUsers = totalUsersSnapshot.size;
-
-        return {
-          users,
-          totalUsers,
-          totalPages: Math.ceil(totalUsers / pageSize),
-        };
+        });
       }
+
+      // Get only users for this page
+      const start = (page - 1) * pageSize;
+      const paginatedUsers = allUsers.slice(start, start + pageSize);
+
+      return {
+        users: paginatedUsers,
+        totalUsers: allUsers.length,
+        totalPages: Math.ceil(allUsers.length / pageSize),
+      };
     } catch (error) {
       console.error("Error fetching paginated users:", error);
       return { users: [], totalUsers: 0, totalPages: 0 };
@@ -635,39 +573,16 @@ const UserProvider = ({ children }) => {
     });
   };
 
-  //for pagination in all players screen
-  const rankSortingPaginated = (users, page = 1, pageSize = 25) => {
-    const sorted = [...users].sort((a, b) => {
-      const aDetail = a.profileDetail || {};
-      const bDetail = b.profileDetail || {};
-
-      if (bDetail.XP !== aDetail.XP) return bDetail.XP - aDetail.XP;
-      if (bDetail.numberOfWins !== aDetail.numberOfWins)
-        return bDetail.numberOfWins - aDetail.numberOfWins;
-      if (bDetail.winPercentage !== aDetail.winPercentage)
-        return bDetail.winPercentage - aDetail.winPercentage;
-      if (bDetail.totalPointDifference !== aDetail.totalPointDifference)
-        return bDetail.totalPointDifference - aDetail.totalPointDifference;
-
-      return (a.username || "").localeCompare(b.username || "");
-    });
-
-    return sorted.map((user, index) => ({
-      ...user,
-      globalRank: (page - 1) * pageSize + index + 1,
-    }));
-  };
-
   const getGlobalRank = async (userId) => {
     try {
       // 1. Get all users using existing fetch logic
       const allUsers = await getAllUsers();
 
       // 2. Use the EXACT SAME sorting as AllPlayers
-      const sorted = rankSorting(allUsers);
+      // const sorted = rankSorting(allUsers);
 
       // 3. Find index of the target user
-      const userIndex = sorted.findIndex((user) => user.userId === userId);
+      const userIndex = allUsers.findIndex((user) => user.userId === userId);
 
       // 4. Return rank (index + 1)
       return userIndex >= 0 ? userIndex + 1 : null;
@@ -688,10 +603,10 @@ const UserProvider = ({ children }) => {
       );
 
       // 2. Use the EXACT SAME sorting as AllPlayers
-      const sorted = rankSorting(filteredUsers);
+      // const sorted = rankSorting(filteredUsers);
 
       // 3. Find index of the target user
-      const userIndex = sorted.findIndex((user) => user.userId === userId);
+      const userIndex = filteredUsers.findIndex((user) => user.userId === userId);
 
       // 4. Return rank (index + 1)
       return userIndex >= 0 ? userIndex + 1 : null;
@@ -986,7 +901,6 @@ const UserProvider = ({ children }) => {
         getGlobalRank,
         getCountryRank,
         getAllUsersPaginated,
-        rankSortingPaginated,
 
         // Profile-related operations
         profileViewCount,
