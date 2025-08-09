@@ -1,13 +1,10 @@
-import React, { useEffect, useState, useContext, useRef } from "react";
+import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
 import {
   View,
   Text,
-  Image,
   ActivityIndicator,
   ScrollView,
-  TouchableOpacity,
   Dimensions,
-  Platform,
   Linking,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -25,58 +22,55 @@ import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { calculateLeagueStatus } from "../../../helpers/calculateLeagueStatus";
+import LeagueRoleTag from "./LeagueRoleTag";
 
 import { ccDefaultImage } from "../../../mockImages/index";
-
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 
 const openMap = (location) => {
   const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
   const encoded = encodeURIComponent(query);
   const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-
-  Linking.openURL(url).catch((err) =>
-    console.error("Error opening Google Maps web:", err)
-  );
+  Linking.openURL(url).catch((err) => console.error("Error opening Google Maps web:", err));
 };
 
 const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { leagueId, tab } = route.params;
-  const { fetchLeagueById, leagueById, generateNewLeagueParticipants } =
-    useContext(LeagueContext);
+
+  const {
+    fetchLeagueById,
+    leagueById,
+    requestToJoinLeague,
+  } = useContext(LeagueContext);
   const { checkUserRole, currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
-
-  const defaultTab = tab || "Summary";
-  const [selectedTab, setSelectedTab] = useState(defaultTab);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(tab || "Summary");
+  const [invitePlayerModalVisible, setInvitePlayerModalVisible] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [leagueNotFound, setLeagueNotFound] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (leagueId) {
-        try {
-          const fetchedLeague = await fetchLeagueById(leagueId);
-          if (!fetchedLeague) {
-            setLeagueNotFound(true); // Set this when league is not found
-          } else {
-            setLeagueNotFound(false);
-            await getUserRole(fetchedLeague);
-          }
-        } catch (error) {
-          console.error("Error fetching league data:", error);
-        } finally {
-          setLoading(false);
+      if (!leagueId) return;
+      try {
+        const fetchedLeague = await fetchLeagueById(leagueId);
+        if (!fetchedLeague) {
+          setLeagueNotFound(true);
+        } else {
+          setLeagueNotFound(false);
+          await getUserRole(fetchedLeague);
         }
+      } catch (error) {
+        console.error("Error fetching league data:", error);
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchData();
-  }, [leagueId, currentUser]);
+  }, [leagueId, currentUser, fetchLeagueById]);
 
   const getUserRole = async (leagueData) => {
     try {
@@ -88,13 +82,55 @@ const League = () => {
     }
   };
 
-  const handleNavigate = () => {
-    navigation.navigate("LeagueSettings", { leagueId, leagueById });
-  };
+  const leagueStatus = calculateLeagueStatus(leagueById);
+  const {
+    leagueParticipants,
+    leagueTeams,
+    leagueName,
+    leagueImage,
+    leagueOwner,
+    location,
+    startDate,
+    endDate,
+    leagueType,
+    maxPlayers,
+    games,
+  } = leagueById || {};
 
-  const leaguePrompt = () => {
-    setModalVisible(true);
-  };
+  const handleNavigate = useCallback(
+    (screen, extraParams = {}) => {
+      navigation.navigate(screen, { leagueId, leagueById, ...extraParams });
+    },
+    [navigation, leagueId, leagueById]
+  );
+
+  const handleOpenInviteModal = useCallback(() => {
+    setInvitePlayerModalVisible(true);
+  }, []);
+
+  const handleLogin = useCallback(() => {
+    handleNavigate("Login");
+  }, [handleNavigate]);
+
+  const handleRequestToJoin = useCallback(() => {
+    if (!currentUser?.userId) {
+      handleNavigate("Login");
+      return;
+    }
+    requestToJoinLeague(
+      leagueId,
+      currentUser.userId,
+      leagueOwner?.userId,
+      currentUser?.username
+    );
+  }, [
+    requestToJoinLeague,
+    leagueId,
+    currentUser?.userId,
+    currentUser?.username,
+    leagueOwner?.userId,
+    handleNavigate,
+  ]);
 
   const handleTabPress = async (tabName) => {
     setSelectedTab(tabName);
@@ -106,34 +142,16 @@ const League = () => {
     }
   };
 
-  const tabs = [
-    { component: "Chat Room" },
-    { component: "Summary" },
-    { component: "Scoreboard" },
-    { component: "Player Performance" },
-    ...(leagueById?.leagueType !== "Singles"
-      ? [{ component: "Team Performance" }]
-      : []),
-  ];
-
-  const leagueStatus = calculateLeagueStatus(leagueById);
-  const {
-    leagueParticipants,
-    leagueTeams,
-    leagueName,
-    leagueImage,
-    centerName,
-    leagueOwner,
-    location,
-    startDate,
-    endDate,
-    leagueType,
-    maxPlayers,
-    games,
-  } = leagueById || {};
-
-  // const startDate = formatDate(leagueById?.startDate);
-  // const endDate = formatDate(leagueById?.endDate);
+  const tabs = useMemo(
+    () => [
+      { component: "Chat Room" },
+      { component: "Summary" },
+      { component: "Scoreboard" },
+      { component: "Player Performance" },
+      ...(leagueById?.leagueType !== "Singles" ? [{ component: "Team Performance" }] : []),
+    ],
+    [leagueById?.leagueType]
+  );
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -182,14 +200,7 @@ const League = () => {
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#00152B",
-        }}
-      >
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#00152B" }}>
         <ActivityIndicator size="large" color="#fff" />
       </View>
     );
@@ -197,17 +208,8 @@ const League = () => {
 
   if (!leagueById || leagueNotFound) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgb(3, 16, 31)",
-        }}
-      >
-        <Text style={{ color: "#aaa", textAlign: "center" }}>
-          League not found.
-        </Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgb(3, 16, 31)" }}>
+        <Text style={{ color: "#aaa", textAlign: "center" }}>League not found.</Text>
       </View>
     );
   }
@@ -223,45 +225,29 @@ const League = () => {
       }}
     >
       <Overview>
-        <LeagueImage
-          source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
-        >
-          <GradientOverlay
-            colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
-            locations={[0.1, 1]}
-          />
+        <LeagueImage source={leagueImage ? { uri: leagueImage } : ccDefaultImage}>
+          <GradientOverlay colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]} locations={[0.1, 1]} />
           <LeagueDetailsContainer>
             {userRole === "admin" && (
-              <EditButton onPress={handleNavigate}>
+              <EditButton onPress={() => handleNavigate("LeagueSettings")}>
                 <Ionicons name="menu" size={25} color="white" />
               </EditButton>
             )}
 
-            <View
-              style={{
-                padding: 5,
-                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                borderRadius: 5,
-                alignSelf: "flex-start",
-              }}
-            >
+            <View style={{ padding: 5, backgroundColor: "rgba(0, 0, 0, 0.3)", borderRadius: 5, alignSelf: "flex-start" }}>
               <LeagueName>{leagueName}</LeagueName>
             </View>
 
-            <Address onPress={() => openMap(location)}>
-              <LeagueLocation>
-                {location.courtName}, {location.city}
-              </LeagueLocation>
-              <Ionicons name={"open-outline"} size={20} color={"#00A2FF"} />
-            </Address>
+            {location ? (
+              <Address onPress={() => openMap(location)}>
+                <LeagueLocation>
+                  {location.courtName}, {location.city}
+                </LeagueLocation>
+                <Ionicons name="open-outline" size={20} color="#00A2FF" />
+              </Address>
+            ) : null}
 
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <View style={{ flexDirection: "row", gap: 5 }}>
                 <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
                 <Tag
@@ -287,61 +273,28 @@ const League = () => {
               )}
             </View>
 
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 5,
-              }}
-            >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
               <View style={{ flexDirection: "row", gap: 5 }}>
                 <Tag name={leagueType} />
                 <Tag name="TROPHY" />
               </View>
 
-              {userRole === "participant" && (
-                <Tag
-                  name={"Participant"}
-                  color="#16181B"
-                  iconColor="green"
-                  iconSize={15}
-                  icon={"checkmark-circle-outline"}
-                  iconPosition={"right"}
-                  bold
-                />
-              )}
-              {userRole === "admin" && (
-                <Tag
-                  name={"Invite Players"}
-                  color="#00A2FF"
-                  icon={"paper-plane-sharp"}
-                  onPress={leaguePrompt}
-                  bold
-                />
-              )}
+              <LeagueRoleTag
+                userRole={userRole}
+                onInvitePress={handleOpenInviteModal}
+                onLoginPress={handleLogin}
+                onRequestJoinPress={handleRequestToJoin}
+              />
             </View>
           </LeagueDetailsContainer>
         </LeagueImage>
       </Overview>
 
       <TabsContainer>
-        <GradientOverlay
-          colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
-          locations={[0.1, 1]}
-          style={{ bottom: -560 }}
-        />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 10 }}
-        >
+        <GradientOverlay colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]} locations={[0.1, 1]} style={{ bottom: -560 }} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10 }}>
           {tabs.map((tab) => (
-            <Tab
-              key={tab.component}
-              onPress={() => handleTabPress(tab.component)}
-              isSelected={selectedTab === tab.component}
-            >
+            <Tab key={tab.component} onPress={() => handleTabPress(tab.component)} isSelected={selectedTab === tab.component}>
               <TabText>{tab.component}</TabText>
             </Tab>
           ))}
@@ -350,10 +303,10 @@ const League = () => {
 
       {renderComponent()}
 
-      {modalVisible && (
+      {invitePlayerModalVisible && (
         <InvitePlayerModel
-          modalVisible={modalVisible}
-          setModalVisible={setModalVisible}
+          modalVisible={invitePlayerModalVisible}
+          setModalVisible={setInvitePlayerModalVisible}
           leagueDetails={leagueById}
         />
       )}
@@ -379,7 +332,7 @@ const LeagueImage = styled.ImageBackground.attrs({
   },
 })({
   width: "100%",
-  height: "100%", // or any fixed height
+  height: "100%",
   justifyContent: "flex-end",
   alignItems: "center",
 });
