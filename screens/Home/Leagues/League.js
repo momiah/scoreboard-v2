@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -38,12 +38,8 @@ const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { leagueId, tab } = route.params;
-
-  const {
-    fetchLeagueById,
-    leagueById,
-    requestToJoinLeague,
-  } = useContext(LeagueContext);
+  const { fetchLeagueById, leagueById, generateNewLeagueParticipants, requestToJoinLeague } =
+    useContext(LeagueContext);
   const { checkUserRole, currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
@@ -54,23 +50,25 @@ const League = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!leagueId) return;
-      try {
-        const fetchedLeague = await fetchLeagueById(leagueId);
-        if (!fetchedLeague) {
-          setLeagueNotFound(true);
-        } else {
-          setLeagueNotFound(false);
-          await getUserRole(fetchedLeague);
+      if (leagueId) {
+        try {
+          const fetchedLeague = await fetchLeagueById(leagueId);
+          if (!fetchedLeague) {
+            setLeagueNotFound(true);
+          } else {
+            setLeagueNotFound(false);
+            await getUserRole(fetchedLeague);
+          }
+        } catch (error) {
+          console.error("Error fetching league data:", error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Error fetching league data:", error);
-      } finally {
-        setLoading(false);
       }
     };
+
     fetchData();
-  }, [leagueId, currentUser, fetchLeagueById]);
+  }, [leagueId, currentUser]);
 
   const getUserRole = async (leagueData) => {
     try {
@@ -82,55 +80,26 @@ const League = () => {
     }
   };
 
-  const leagueStatus = calculateLeagueStatus(leagueById);
-  const {
-    leagueParticipants,
-    leagueTeams,
-    leagueName,
-    leagueImage,
-    leagueOwner,
-    location,
-    startDate,
-    endDate,
-    leagueType,
-    maxPlayers,
-    games,
-  } = leagueById || {};
+  const handleNavigate = () => {
+    navigation.navigate("LeagueSettings", { leagueId, leagueById });
+  };
 
-  const handleNavigate = useCallback(
-    (screen, extraParams = {}) => {
-      navigation.navigate(screen, { leagueId, leagueById, ...extraParams });
-    },
-    [navigation, leagueId, leagueById]
-  );
-
-  const handleOpenInviteModal = useCallback(() => {
+  const handleOpenInviteModal = () => {
     setInvitePlayerModalVisible(true);
-  }, []);
+  };
 
-  const handleLogin = useCallback(() => {
-    handleNavigate("Login");
-  }, [handleNavigate]);
+  const handleLogin = () => {
+    navigation.navigate("Login");
+  };
 
-  const handleRequestToJoin = useCallback(() => {
-    if (!currentUser?.userId) {
-      handleNavigate("Login");
-      return;
-    }
+  const handleRequestToJoin = () => {
     requestToJoinLeague(
       leagueId,
-      currentUser.userId,
-      leagueOwner?.userId,
+      currentUser?.userId,
+      leagueById?.leagueOwner?.userId,
       currentUser?.username
     );
-  }, [
-    requestToJoinLeague,
-    leagueId,
-    currentUser?.userId,
-    currentUser?.username,
-    leagueOwner?.userId,
-    handleNavigate,
-  ]);
+  };
 
   const handleTabPress = async (tabName) => {
     setSelectedTab(tabName);
@@ -142,16 +111,31 @@ const League = () => {
     }
   };
 
-  const tabs = useMemo(
-    () => [
-      { component: "Chat Room" },
-      { component: "Summary" },
-      { component: "Scoreboard" },
-      { component: "Player Performance" },
-      ...(leagueById?.leagueType !== "Singles" ? [{ component: "Team Performance" }] : []),
-    ],
-    [leagueById?.leagueType]
-  );
+  const tabs = [
+    { component: "Chat Room" },
+    { component: "Summary" },
+    { component: "Scoreboard" },
+    { component: "Player Performance" },
+    ...(leagueById?.leagueType !== "Singles"
+      ? [{ component: "Team Performance" }]
+      : []),
+  ];
+
+  const leagueStatus = calculateLeagueStatus(leagueById);
+  const {
+    leagueParticipants,
+    leagueTeams,
+    leagueName,
+    leagueImage,
+    location,
+    startDate,
+    endDate,
+    leagueType,
+    maxPlayers,
+    games,
+  } = leagueById || {};
+
+  const numberOfPlayers = `${leagueParticipants?.length} / ${maxPlayers}`;
 
   const renderComponent = () => {
     switch (selectedTab) {
@@ -183,7 +167,7 @@ const League = () => {
             userRole={userRole}
             leagueStartDate={startDate}
             leagueEndDate={endDate}
-            leagueOwner={leagueOwner}
+            leagueOwner={leagueById?.leagueOwner}
             leagueName={leagueName}
             leagueParticipants={leagueParticipants || []}
             maxPlayers={maxPlayers}
@@ -214,8 +198,6 @@ const League = () => {
     );
   }
 
-  const numberOfPlayers = `${leagueParticipants?.length} / ${maxPlayers}`;
-
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
@@ -223,7 +205,7 @@ const League = () => {
           <GradientOverlay colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]} locations={[0.1, 1]} />
           <LeagueDetailsContainer>
             {userRole === "admin" && (
-              <EditButton onPress={() => handleNavigate("LeagueSettings")}>
+              <EditButton onPress={handleNavigate}>
                 <Ionicons name="menu" size={25} color="white" />
               </EditButton>
             )}
