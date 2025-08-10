@@ -476,6 +476,19 @@ const UserProvider = ({ children }) => {
         },
       });
 
+      // Send a notification to the users
+
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: userId,
+        message: `Congratulations! You have been awarded ${prizeXP} XP for placing ${placement} in the league. Check your profile to see your trophy!`,
+        type: notificationTypes.INFORMATION.USER.ROUTE,
+        data: { userId },
+      };
+
+      await sendNotification(payload);
+
       // console.log(
       //   `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
       // );
