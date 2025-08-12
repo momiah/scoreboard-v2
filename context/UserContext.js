@@ -22,6 +22,7 @@ import {
   notificationSchema,
   notificationTypes,
 } from "../schemas/schema";
+import { registerForPushNotificationsAsync } from "../services/pushNotifications";
 
 const UserContext = createContext();
 
@@ -42,6 +43,9 @@ const UserProvider = ({ children }) => {
         if (userId) {
           const userData = await getUserById(userId);
           setCurrentUser(userData);
+
+          // Register for push notifications
+          await registerForPushNotificationsAsync(userId);
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
@@ -661,11 +665,41 @@ const UserProvider = ({ children }) => {
       // ➕ Add the notification as a new document
       await addDoc(notifRef, notification);
 
+      // Lookup push tokens
+      const recipientDoc = await getDoc(doc(db, "users", recipientId));
+      const pushTokens = recipientDoc.data()?.pushTokens || [];
+
+      //send device notification
+      if (pushTokens.length > 0) {
+        const messages = pushTokens.map((token) => ({
+          to: token,
+          sound: 'default',
+          title: `New Notification in Court Champs - ${notification.type.toUpperCase()}`,
+          body: notification.message,
+          data: {
+            ...notification.data,
+            type: notification.type,
+          }
+        }));
+
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Accept-Encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(messages),
+        });
+        console.log(`Push sent to ${pushTokens.length} devices`);
+    }
+
       console.log("✅ Notification saved to subcollection!");
     } catch (error) {
       console.error("❌ Failed to send notification:", error);
     }
   };
+
 
   const sendSupportRequest = async ({ subject, message, currentUser }) => {
     if (!currentUser) throw new Error("No user authenticated");

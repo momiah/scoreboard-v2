@@ -1,0 +1,55 @@
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from './firebase.config';
+
+export async function registerForPushNotificationsAsync(userId) {
+  if (!Device.isDevice) {
+    console.log('Push notifications only work on a real device');
+    return;
+  }
+
+  try {
+    //request permissions
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('Push notification permission not granted');
+      return;
+    }
+
+    // Get Expo push token
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log('Push token acquired:', token);
+
+    // Save to Firestore (multi-device safe)
+    if (userId && token) {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        pushTokens: arrayUnion(token), // Store as array
+      });
+      console.log('Push token saved for user:', userId);
+    }
+
+    // Android notification channel (optional but recommended)
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+
+    return token;
+  } catch (error) {
+    console.error('Error registering for push notifications:', error);
+  }
+}

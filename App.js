@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import * as Updates from "expo-updates";
 import { SafeAreaView } from "react-native";
 import { GameProvider } from "./context/GameContext";
@@ -9,12 +9,16 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as Notifications from "expo-notifications";
 
 import Tabs from "./navigation/tabs";
 
 const Stack = createStackNavigator();
 
 export default function App() {
+
+  const navigationRef = useRef();
+
   useEffect(() => {
     const checkForUpdates = async () => {
       if (!__DEV__) {
@@ -32,6 +36,24 @@ export default function App() {
     };
 
     checkForUpdates();
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+        console.log("Notification tapped:", data);
+
+        // Navigate to Notifications tab
+        if (navigationRef.current) {
+          navigationRef.current.navigate("Tabs", {
+            screen: "Notifications",
+            params: { notificationData: data },
+          });
+        }
+      }
+    );
+
+    return () => subscription.remove();
+
   }, []);
 
   return (
@@ -40,7 +62,7 @@ export default function App() {
         <UserProvider>
           <LeagueProvider>
             <GameProvider>
-              <NavigationContainer>
+              <NavigationContainer ref={navigationRef}>
                 <BottomSheetModalProvider>
                   <SafeAreaView
                     style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
