@@ -5,6 +5,8 @@ import {
   ActivityIndicator,
   View,
   Text,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
 import styled from "styled-components/native";
 import MedalDisplay from "../../components/performance/MedalDisplay";
@@ -15,32 +17,37 @@ import { useNavigation } from "@react-navigation/native";
 import AllPlayerSkeleton from "../../components/Skeletons/AllPlayerSkeleton";
 import Icon from "react-native-ico-flags";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
-import { useImageLoader } from ".././../utils/imageLoader";
+import { useImageLoader } from "../../utils/imageLoader";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
+import debounce from "lodash.debounce";
 const iconSize = 40;
 
 const AllPlayers = () => {
   const { findRankIndex } = useContext(GameContext);
-  const { getAllUsers, rankSorting } = useContext(UserContext);
+  const { getAllUsersPaginated, rankSortingPaginated } = useContext(UserContext);
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [originalUsers, setOriginalUsers] = useState([]);
-  const [sortedUsers, setSortedUsers] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
+  const PAGE_SIZE = 25;
+  
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1, searchParam = "") => {
     try {
-      const users = await getAllUsers();
-      setTotalUsers(users.length);
-      const sorted = rankSorting(users).map((user, index) => ({
-        ...user,
-        globalRank: index + 1,
-      }));
-      setOriginalUsers(sorted);
-      setSortedUsers(sorted);
+      setLoading(true);
+      const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, PAGE_SIZE, searchParam);
+      setTotalUsers(totalUsers);
+      setTotalPages(totalPages);
+      setUsers(users);
+      setCurrentPage(page);
+      setIsSearching(!!searchParam);
     } catch (error) {
       console.error("Failed to fetch users:", error);
       Alert.alert("Refresh failed", "Could not update player list");
@@ -49,22 +56,50 @@ const AllPlayers = () => {
     }
   };
 
+  const debouncedSearch = useCallback(
+    debounce(async (value) => {
+      try {
+        if (value.trim()) {
+          await fetchUsers(1, value.trim());
+        } else {
+          await fetchUsers(1);
+        }
+      } catch (error) {
+        console.error("Search error:", error);
+        Alert.alert("Search failed", "Could not find players");
+      }
+    }, 300),
+    [fetchUsers]
+  );
+
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+    debouncedSearch(value);
+  };
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await fetchUsers();
+      setSearchQuery("");
+      await fetchUsers(1);
     } finally {
       setRefreshing(false);
     }
-  }, [fetchUsers]);
+  }, []);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages && !loading) {
+      fetchUsers(page, searchQuery);
+    }
+  };
 
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
-      await fetchUsers();
+      await fetchUsers(1);
     };
     loadInitialData();
-  }, [getAllUsers]);
+  }, [getAllUsersPaginated]);
 
   const getRankSuffix = (rank) => {
     const lastTwo = rank % 100;
@@ -78,23 +113,6 @@ const AllPlayers = () => {
         return "rd";
       default:
         return "th";
-    }
-  };
-
-  const handleSearch = (value) => {
-    setSearchQuery(value);
-    try {
-      if (value.trim()) {
-        const searchTerm = value.toLowerCase();
-        const filtered = originalUsers.filter((user) =>
-          user.username.toLowerCase().includes(searchTerm)
-        );
-        setSortedUsers(filtered);
-      } else {
-        setSortedUsers(originalUsers);
-      }
-    } catch (error) {
-      console.error("Search error:", error);
     }
   };
 
@@ -161,6 +179,49 @@ const AllPlayers = () => {
     ]
   );
 
+  const renderPagination = () => {
+    if (isSearching && totalPages <= 1) return null;
+
+    const pages = [];
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <PageButton
+          key={i}
+          onPress={() => handlePageChange(i)}
+          disabled={i === currentPage}
+        >
+          <PageText selected={i === currentPage}>{i}</PageText>
+        </PageButton>
+      );
+    }
+
+    return (
+      <PaginationContainer>
+        <PageButton
+          onPress={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1 || loading}
+        >
+          <PageText>Prev Page</PageText>
+        </PageButton>
+        {pages}
+        <PageButton
+          onPress={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages || loading}
+        >
+          <PageText>Next Page</PageText>
+        </PageButton>
+      </PaginationContainer>
+    );
+  };
+
   return (
     <TableContainer>
       {loading && (
@@ -186,11 +247,11 @@ const AllPlayers = () => {
         value={searchQuery}
         onChangeText={handleSearch}
       />
-      {!loading && sortedUsers.length === 0 && (
+      {!loading && users.length === 0 && (
         <EmptyState>No players found</EmptyState>
       )}
       <FlatList
-        data={sortedUsers}
+        data={users}
         renderItem={renderPlayer}
         keyExtractor={(player) => `${player.userId}-${player.globalRank}`}
         initialNumToRender={15}
@@ -206,6 +267,7 @@ const AllPlayers = () => {
             progressBackgroundColor="#00A2FF"
           />
         }
+        ListFooterComponent={totalPages > 1 ? renderPagination : null}
       />
     </TableContainer>
   );
@@ -309,5 +371,23 @@ const LoadingContainer = styled.View({
   alignItems: "center",
   zIndex: 10, // Keeps it above other elements
 });
+
+const PaginationContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 10,
+});
+
+const PageButton = styled.TouchableOpacity({
+  padding: 10,
+  marginHorizontal: 5,
+});
+
+const PageText = styled.Text(({ selected }) => ({
+  color: selected ? "#00A2FF" : "white",
+  fontWeight: selected ? "bold" : "normal",
+  fontSize: 14,
+}));
 
 export default AllPlayers;
