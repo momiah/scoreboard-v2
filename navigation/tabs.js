@@ -30,6 +30,8 @@ import { Dimensions, Platform } from "react-native";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
 import { getUnitId } from "../utils/getAdMobUnitId";
+import { TouchableOpacity } from "react-native";
+import QuickAddModal from "../components/Modals/QuickAddModal";
 import { ADMOB_BANNER_IOS_PROD, ADMOB_BANNER_ANDROID_PROD } from "@env";
 
 const Tab = createBottomTabNavigator();
@@ -141,7 +143,7 @@ const ChatsStack = () => {
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
-            <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
     </Stack.Navigator>
   );
@@ -183,8 +185,11 @@ const TabIcon = ({ focused, name, color, size, hasNotification }) => {
 
 // Tabs Navigator
 const Tabs = () => {
-  const { notifications, chatSummaries } = useContext(UserContext);
+  const { notifications, chatSummaries, currentUser } = useContext(UserContext);
   const [showAd, setShowAd] = useState(true);
+  const [quickAddVisible, setQuickAddVisible] = useState(false);
+
+  console.log("Current User:", currentUser);
 
   const unreadNotifications = notifications.filter(
     (notification) => notification.isRead === false
@@ -270,6 +275,38 @@ const Tabs = () => {
             },
           }}
         />
+
+        <Tab.Screen
+          name="QuickAdd"
+          component={() => null}
+          options={{
+            tabBarIcon: () => (
+              <TouchableOpacity
+                onPress={() => setQuickAddVisible(true)}
+                style={{
+                  backgroundColor: "rgb(3, 16, 31)",
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  borderWidth: 5,
+                  borderColor: "#00A2FF",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: Platform.OS === "ios" ? 10 : 0,
+                }}
+              >
+                <Ionicons name="add" size={26} color="white" />
+              </TouchableOpacity>
+            ),
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              setQuickAddVisible(true);
+            },
+          }}
+        />
+
         <Tab.Screen
           name="ChatsTab"
           component={ChatsStack}
@@ -284,6 +321,12 @@ const Tabs = () => {
         {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
+
+      <QuickAddModal
+        modalVisible={quickAddVisible}
+        setModalVisible={setQuickAddVisible}
+      />
+
       {/* {showAd && (
         <View style={{ width: "100%", alignItems: "center" }}>
           <BannerAd

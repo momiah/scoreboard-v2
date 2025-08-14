@@ -24,6 +24,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
+import { calculateWin } from "../../helpers/calculateWin";
 
 const AddGameModal = ({
   modalVisible,
@@ -32,8 +33,8 @@ const AddGameModal = ({
   leagueGames,
   leagueType,
   leagueName,
-  onGameAdded, // New prop for bulk mode
-  isBulkMode = false, // New prop to indicate bulk mode
+  onGameAdded,
+  isBulkMode = false,
 }) => {
   const { addGame } = useContext(GameContext);
   const { fetchLeagueById } = useContext(LeagueContext);
@@ -59,53 +60,31 @@ const AddGameModal = ({
     team2: leagueType === "Singles" ? [""] : ["", ""],
   });
 
+  const areAllPlayersSelected = () => {
+    if (leagueType === "Singles") {
+      return selectedPlayers.team1[0] !== "" && selectedPlayers.team2[0] !== "";
+    } else {
+      return (
+        selectedPlayers.team1[0] !== "" &&
+        selectedPlayers.team1[1] !== "" &&
+        selectedPlayers.team2[0] !== "" &&
+        selectedPlayers.team2[1] !== ""
+      );
+    }
+  };
+
+  const areScoresEntered = () => {
+    return team1Score.trim() !== "" && team2Score.trim() !== "";
+  };
+
+  const isSubmitDisabled = () => {
+    return loading || !areAllPlayersSelected() || !areScoresEntered();
+  };
+
   const handleClosePopup = () => {
     setShowPopup(false);
     setPopupMessage("");
-
     setModalVisible(false);
-  };
-
-  const calculateWin = (team1, team2) => {
-    if (team1.score > team2.score) {
-      return {
-        winner: {
-          team: "Team 1",
-          players:
-            leagueType === "Singles"
-              ? [team1.player1]
-              : [team1.player1, team1.player2],
-          score: team1.score,
-        },
-        loser: {
-          team: "Team 2",
-          players:
-            leagueType === "Singles"
-              ? [team2.player1]
-              : [team2.player1, team2.player2],
-          score: team2.score,
-        },
-      };
-    } else {
-      return {
-        winner: {
-          team: "Team 2",
-          players:
-            leagueType === "Singles"
-              ? [team2.player1]
-              : [team2.player1, team2.player2],
-          score: team2.score,
-        },
-        loser: {
-          team: "Team 1",
-          players:
-            leagueType === "Singles"
-              ? [team1.player1]
-              : [team1.player1, team1.player2],
-          score: team1.score,
-        },
-      };
-    }
   };
 
   const handleSelectPlayer = (team, index, player) => {
@@ -122,6 +101,25 @@ const AddGameModal = ({
 
   const handleAddGame = async () => {
     setLoading(true);
+
+    if (leagueType === "Singles") {
+      if (selectedPlayers.team1[0] === "" || selectedPlayers.team2[0] === "") {
+        setErrorText("Please select both players.");
+        setLoading(false);
+        return;
+      }
+    } else if (leagueType === "Doubles") {
+      if (
+        selectedPlayers.team1[0] === "" ||
+        selectedPlayers.team1[1] === "" ||
+        selectedPlayers.team2[0] === "" ||
+        selectedPlayers.team2[1] === ""
+      ) {
+        setErrorText("Please select all 4 players.");
+        setLoading(false);
+        return;
+      }
+    }
 
     if (isBulkMode && onGameAdded) {
       const gameData = {
@@ -140,15 +138,6 @@ const AddGameModal = ({
         setTeam2Score("");
         setErrorText("");
       }
-      setLoading(false);
-      return;
-    }
-
-    if (
-      selectedPlayers.team1.every((player) => player === "") ||
-      selectedPlayers.team2.every((player) => player === "")
-    ) {
-      setErrorText("Please select players for both teams.");
       setLoading(false);
       return;
     }
@@ -318,9 +307,17 @@ const AddGameModal = ({
                 handleSelectPlayer={handleSelectPlayer}
                 leagueType={leagueType}
               />
+
               {errorText && <ErrorText>{errorText}</ErrorText>}
 
-              <SubmitButton onPress={handleAddGame} disabled={loading}>
+              <SubmitButton
+                onPress={handleAddGame}
+                disabled={isSubmitDisabled()}
+                style={{
+                  backgroundColor: isSubmitDisabled() ? "#666" : "#00A2FF",
+                  opacity: isSubmitDisabled() ? 0.6 : 1,
+                }}
+              >
                 {loading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
@@ -361,6 +358,7 @@ const ModalContent = styled.View({
   width: screenWidth - 40,
   alignItems: "center",
 });
+
 const GradientOverlay = styled(LinearGradient)({
   padding: 2,
   borderRadius: 12,
