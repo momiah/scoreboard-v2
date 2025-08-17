@@ -183,6 +183,8 @@ const TabIcon = ({ focused, name, color, size, hasNotification }) => {
   );
 };
 
+const QuickAddPlaceholder = () => null;
+
 // Tabs Navigator
 const Tabs = () => {
   const { notifications, chatSummaries, currentUser } = useContext(UserContext);
@@ -278,7 +280,7 @@ const Tabs = () => {
 
         <Tab.Screen
           name="QuickAdd"
-          component={() => null}
+          component={QuickAddPlaceholder}
           options={{
             tabBarIcon: () => (
               <TouchableOpacity
