@@ -12,7 +12,6 @@ import {
   deleteDoc,
   query,
   orderBy,
-
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase.config";
 import { deleteUser } from "firebase/auth";
@@ -280,9 +279,12 @@ const UserProvider = ({ children }) => {
     }
   };
 
-
   // Paginated version of getAllUsers for AllPlayers screen
-  const getAllUsersPaginated = async (page = 1, pageSize = 25, searchParam = "") => {
+  const getAllUsersPaginated = async (
+    page = 1,
+    pageSize = 25,
+    searchParam = ""
+  ) => {
     try {
       const usersRef = collection(db, "users");
 
@@ -306,16 +308,10 @@ const UserProvider = ({ children }) => {
         globalRank: index + 1,
       }));
 
-      // Optional in-memory filtering by username, email, or name (case-insensitive)
       if (searchParam && searchParam.trim() !== "") {
-        const param = searchParam.toLowerCase();
+        const param = searchParam.toLowerCase(); // "pr" becomes "pr"
         allUsers = allUsers.filter((user) => {
-          return (
-            user.username?.toLowerCase().includes(param) ||
-            user.firstName?.toLowerCase().includes(param) ||
-            user.lastName?.toLowerCase().includes(param) ||
-            user.email?.toLowerCase().includes(param)
-          );
+          return user.username?.toLowerCase().startsWith(param); // "ProLikeMo" becomes "prolikemo"
         });
       }
 
@@ -333,7 +329,6 @@ const UserProvider = ({ children }) => {
       return { users: [], totalUsers: 0, totalPages: 0 };
     }
   };
-
 
   const updateUsers = async (usersToUpdate) => {
     try {
@@ -605,7 +600,9 @@ const UserProvider = ({ children }) => {
       // const sorted = rankSorting(filteredUsers);
 
       // 3. Find index of the target user
-      const userIndex = filteredUsers.findIndex((user) => user.userId === userId);
+      const userIndex = filteredUsers.findIndex(
+        (user) => user.userId === userId
+      );
 
       // 4. Return rank (index + 1)
       return userIndex >= 0 ? userIndex + 1 : null;

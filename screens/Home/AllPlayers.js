@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useContext, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   FlatList,
   RefreshControl,
@@ -20,62 +26,75 @@ import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
 import { useImageLoader } from "../../utils/imageLoader";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import debounce from "lodash.debounce";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 const iconSize = 40;
 
 const AllPlayers = () => {
   const { findRankIndex } = useContext(GameContext);
-  const { getAllUsersPaginated, rankSortingPaginated } = useContext(UserContext);
+  const { getAllUsersPaginated, rankSortingPaginated } =
+    useContext(UserContext);
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  
   const [users, setUsers] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
   const PAGE_SIZE = 25;
-  
+
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
-  const fetchUsers = async (page = 1, searchParam = "") => {
-    try {
-      setLoading(true);
-      const { users, totalUsers, totalPages } = await getAllUsersPaginated(page, PAGE_SIZE, searchParam);
-      setTotalUsers(totalUsers);
-      setTotalPages(totalPages);
-      setUsers(users);
-      setCurrentPage(page);
-      setIsSearching(!!searchParam);
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-      Alert.alert("Refresh failed", "Could not update player list");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const debouncedSearch = useCallback(
-    debounce(async (value) => {
+  const fetchUsers = useCallback(
+    async (page = 1, searchParam = "") => {
       try {
-        if (value.trim()) {
-          await fetchUsers(1, value.trim());
-        } else {
-          await fetchUsers(1);
-        }
+        setLoading(true);
+        const { users, totalUsers, totalPages } = await getAllUsersPaginated(
+          page,
+          PAGE_SIZE,
+          searchParam
+        );
+        setTotalUsers(totalUsers);
+        setTotalPages(totalPages);
+        setUsers(users);
+        setCurrentPage(page);
+        setIsSearching(!!searchParam);
       } catch (error) {
-        console.error("Search error:", error);
-        Alert.alert("Search failed", "Could not find players");
+        console.error("Failed to fetch users:", error);
+        Alert.alert("Refresh failed", "Could not update player list");
+      } finally {
+        setLoading(false);
       }
-    }, 300),
+    },
+    [getAllUsersPaginated]
+  );
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce(async (value) => {
+        try {
+          if (value.trim()) {
+            await fetchUsers(1, value.trim());
+          } else {
+            await fetchUsers(1);
+          }
+        } catch (error) {
+          console.error("Search error:", error);
+          Alert.alert("Search failed", "Could not find players");
+        }
+      }, 300),
     [fetchUsers]
   );
 
-  const handleSearch = (value) => {
-    setSearchQuery(value);
-    debouncedSearch(value);
-  };
+  const handleSearch = useCallback(
+    (value) => {
+      setSearchQuery(value);
+      debouncedSearch(value);
+    },
+    [debouncedSearch]
+  );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -85,13 +104,16 @@ const AllPlayers = () => {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [fetchUsers]);
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages && !loading) {
-      fetchUsers(page, searchQuery);
-    }
-  };
+  const handlePageChange = useCallback(
+    (page) => {
+      if (page >= 1 && page <= totalPages && !loading) {
+        fetchUsers(page, searchQuery);
+      }
+    },
+    [totalPages, loading, fetchUsers, searchQuery]
+  );
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -100,6 +122,12 @@ const AllPlayers = () => {
     };
     loadInitialData();
   }, [getAllUsersPaginated]);
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const getRankSuffix = (rank) => {
     const lastTwo = rank % 100;
@@ -120,6 +148,9 @@ const AllPlayers = () => {
     ({ item: player, index }) => {
       const playerXp = player.profileDetail.XP;
       const rankLevel = findRankIndex(playerXp) + 1;
+      const winRatio =
+        player.profileDetail.numberOfWins /
+        (player.profileDetail.numberOfLosses || 1);
 
       return (
         <PlayerRow
@@ -198,25 +229,67 @@ const AllPlayers = () => {
           onPress={() => handlePageChange(i)}
           disabled={i === currentPage}
         >
-          <PageText selected={i === currentPage}>{i}</PageText>
+          {i === currentPage ? (
+            <CirclePageContainer>
+              <PageTextInCircle>{i}</PageTextInCircle>
+            </CirclePageContainer>
+          ) : (
+            <PageText selected={false}>{i}</PageText>
+          )}
         </PageButton>
       );
     }
 
     return (
       <PaginationContainer>
+        {/* First Page */}
+        <PageButton
+          onPress={() => handlePageChange(1)}
+          disabled={currentPage === 1 || loading}
+        >
+          <Ionicons
+            name="play-skip-back"
+            size={18}
+            color={currentPage === 1 || loading ? "#666" : "white"}
+          />
+        </PageButton>
+
+        {/* Previous Page */}
         <PageButton
           onPress={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1 || loading}
         >
-          <PageText>Prev Page</PageText>
+          <Ionicons
+            name="chevron-back"
+            size={18}
+            color={currentPage === 1 || loading ? "#666" : "white"}
+          />
         </PageButton>
+
         {pages}
+
+        {/* Next Page */}
         <PageButton
           onPress={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages || loading}
         >
-          <PageText>Next Page</PageText>
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={currentPage === totalPages || loading ? "#666" : "white"}
+          />
+        </PageButton>
+
+        {/* Last Page */}
+        <PageButton
+          onPress={() => handlePageChange(totalPages)}
+          disabled={currentPage === totalPages || loading}
+        >
+          <Ionicons
+            name="play-skip-forward"
+            size={18}
+            color={currentPage === totalPages || loading ? "#666" : "white"}
+          />
         </PageButton>
       </PaginationContainer>
     );
@@ -389,5 +462,20 @@ const PageText = styled.Text(({ selected }) => ({
   fontWeight: selected ? "bold" : "normal",
   fontSize: 14,
 }));
+
+const CirclePageContainer = styled.View({
+  width: 28,
+  height: 28,
+  borderRadius: 14,
+  backgroundColor: "#00A2FF",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const PageTextInCircle = styled.Text({
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 14,
+});
 
 export default AllPlayers;
