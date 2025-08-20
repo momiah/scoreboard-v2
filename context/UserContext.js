@@ -10,6 +10,8 @@ import {
   addDoc,
   onSnapshot,
   deleteDoc,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase.config";
 import { deleteUser } from "firebase/auth";
@@ -253,15 +255,76 @@ const UserProvider = ({ children }) => {
   const getAllUsers = async () => {
     try {
       const usersRef = collection(db, "users");
-      const querySnapshot = await getDocs(usersRef);
+      const usersQuery = query(
+        usersRef,
+        orderBy("profileDetail.XP", "desc"),
+        orderBy("profileDetail.numberOfWins", "desc"),
+        orderBy("profileDetail.winPercentage", "desc"),
+        orderBy("profileDetail.totalPointDifference", "desc"),
+        orderBy("username", "asc")
+      );
+
+      const querySnapshot = await getDocs(usersQuery);
       const users = querySnapshot.docs.map((doc) => ({
-        // id: doc.id,
+        userId: doc.id,
         ...doc.data(),
       }));
+
       return users;
     } catch (error) {
       console.error("Error fetching users:", error);
       return [];
+    }
+  };
+
+  // Paginated version of getAllUsers for AllPlayers screen
+  const getAllUsersPaginated = async (
+    page = 1,
+    pageSize = 25,
+    searchParam = ""
+  ) => {
+    try {
+      const usersRef = collection(db, "users");
+
+      // Sort using consistent ranking criteria
+      const baseQuery = query(
+        usersRef,
+        orderBy("profileDetail.XP", "desc"),
+        orderBy("profileDetail.numberOfWins", "desc"),
+        orderBy("profileDetail.winPercentage", "desc"),
+        orderBy("profileDetail.totalPointDifference", "desc"),
+        orderBy("username", "asc")
+      );
+
+      // Fetch all matching documents (or page + offset)
+      const allSnapshot = await getDocs(baseQuery);
+
+      // Map all users with globalRank
+      let allUsers = allSnapshot.docs.map((doc, index) => ({
+        userId: doc.id,
+        ...doc.data(),
+        globalRank: index + 1,
+      }));
+
+      if (searchParam && searchParam.trim() !== "") {
+        const param = searchParam.toLowerCase(); // "pr" becomes "pr"
+        allUsers = allUsers.filter((user) => {
+          return user.username?.toLowerCase().startsWith(param); // "ProLikeMo" becomes "prolikemo"
+        });
+      }
+
+      // Get only users for this page
+      const start = (page - 1) * pageSize;
+      const paginatedUsers = allUsers.slice(start, start + pageSize);
+
+      return {
+        users: paginatedUsers,
+        totalUsers: allUsers.length,
+        totalPages: Math.ceil(allUsers.length / pageSize),
+      };
+    } catch (error) {
+      console.error("Error fetching paginated users:", error);
+      return { users: [], totalUsers: 0, totalPages: 0 };
     }
   };
 
@@ -508,10 +571,10 @@ const UserProvider = ({ children }) => {
       const allUsers = await getAllUsers();
 
       // 2. Use the EXACT SAME sorting as AllPlayers
-      const sorted = rankSorting(allUsers);
+      // const sorted = rankSorting(allUsers);
 
       // 3. Find index of the target user
-      const userIndex = sorted.findIndex((user) => user.userId === userId);
+      const userIndex = allUsers.findIndex((user) => user.userId === userId);
 
       // 4. Return rank (index + 1)
       return userIndex >= 0 ? userIndex + 1 : null;
@@ -532,10 +595,12 @@ const UserProvider = ({ children }) => {
       );
 
       // 2. Use the EXACT SAME sorting as AllPlayers
-      const sorted = rankSorting(filteredUsers);
+      // const sorted = rankSorting(filteredUsers);
 
       // 3. Find index of the target user
-      const userIndex = sorted.findIndex((user) => user.userId === userId);
+      const userIndex = filteredUsers.findIndex(
+        (user) => user.userId === userId
+      );
 
       // 4. Return rank (index + 1)
       return userIndex >= 0 ? userIndex + 1 : null;
@@ -829,6 +894,7 @@ const UserProvider = ({ children }) => {
         rankSorting,
         getGlobalRank,
         getCountryRank,
+        getAllUsersPaginated,
 
         // Profile-related operations
         profileViewCount,
