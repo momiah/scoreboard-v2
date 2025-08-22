@@ -1,8 +1,16 @@
 import React, { useState } from "react";
-import { LayoutAnimation, Platform, UIManager, Image } from "react-native";
+import {
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  Image,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import styled from "styled-components/native";
 import Feather from "react-native-vector-icons/Feather";
 import gameMedals from "../../rankingMedals";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 // Enable LayoutAnimation on Android
 if (
@@ -115,7 +123,7 @@ const faqs = [
   },
 ];
 
-const FAQ = () => {
+const FAQ = ({ navigation }) => {
   const [expandedIndex, setExpandedIndex] = useState(null);
 
   const toggleExpand = (index) => {
@@ -125,7 +133,13 @@ const FAQ = () => {
 
   return (
     <Container>
-      <Title>Frequently Asked Questions</Title>
+      <Header>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color="white" />
+        </TouchableOpacity>
+        <HeaderTitle>Frequently Asked Questions</HeaderTitle>
+        <View style={{ width: 24 }} />
+      </Header>
       {faqs.map((faq, idx) => {
         const isExpanded = expandedIndex === idx;
         return (
@@ -193,13 +207,18 @@ const Container = styled.ScrollView({
   backgroundColor: "rgb(3, 16, 31)",
 });
 
-const Title = styled.Text({
-  fontSize: 24,
-  fontWeight: "700",
-  marginBottom: 20,
-  color: "#FFFFFF",
+const Header = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 30,
+  justifyContent: "space-between",
 });
 
+const HeaderTitle = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
+});
 const FAQItem = styled.TouchableOpacity({
   backgroundColor: "#00152B",
   borderRadius: 12,

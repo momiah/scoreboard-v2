@@ -125,7 +125,7 @@ const ProfileMenu = ({ navigation }) => {
 
       <Header>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
         <HeaderTitle>Profile Settings</HeaderTitle>
         <View style={{ width: 24 }} />
@@ -192,43 +192,44 @@ const Container = styled.View`
   padding-top: ${platformAdjustedPaddingTop}px;
 `;
 
-const Header = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-`;
+const Header = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 30,
+});
 
-const HeaderTitle = styled.Text`
-  color: white;
-  font-size: 18px;
-  font-weight: bold;
-`;
+const HeaderTitle = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
+});
 
-const MenuList = styled.View`
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 10px 0;
-`;
+const MenuList = styled.View({
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  borderRadius: 12,
+  paddingVertical: 10,
+});
 
-const MenuItem = styled.TouchableOpacity`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  border-bottom-width: ${StyleSheet.hairlineWidth}px;
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-`;
+const MenuItem = styled.TouchableOpacity({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingVertical: 15,
+  paddingHorizontal: 20,
+  borderBottomWidth: StyleSheet.hairlineWidth,
+  borderBottomColor: "rgba(255, 255, 255, 0.1)",
+});
 
-const LeftContainer = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: 15px;
-`;
+const LeftContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 15,
+});
 
-const MenuText = styled.Text`
-  color: white;
-  font-size: 16px;
-`;
+const MenuText = styled.Text({
+  color: "white",
+  fontSize: 16,
+});
 
 export default ProfileMenu;
