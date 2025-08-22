@@ -237,6 +237,13 @@ const EditProfile = ({ navigation }) => {
         type="success"
       />
       <Header>
+        <BackButton
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back to previous screen"
+        >
+          <Ionicons name="chevron-back" size={24} color="white" />
+        </BackButton>
+
         <HeaderTitle>Edit Profile</HeaderTitle>
       </Header>
 
@@ -496,16 +503,25 @@ const ConfirmButton = styled.TouchableOpacity({
 });
 
 const Header = styled.View({
-  flexDirection: "row",
+  position: "relative",
   justifyContent: "center",
   alignItems: "center",
   marginBottom: 30,
+  minHeight: 44,
+});
+
+const BackButton = styled.TouchableOpacity({
+  position: "absolute",
+  left: 0,
+  padding: 4,
 });
 
 const HeaderTitle = styled.Text({
   color: "white",
   fontSize: 18,
   fontWeight: "bold",
+  textAlign: "center",
+  paddingHorizontal: 44,
 });
 
 const Section = styled.View({

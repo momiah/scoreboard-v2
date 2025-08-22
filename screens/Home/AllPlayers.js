@@ -325,6 +325,7 @@ const AllPlayers = () => {
       )}
       <FlatList
         data={users}
+        contentContainerStyle={{ paddingBottom: 30 }}
         renderItem={renderPlayer}
         keyExtractor={(player) => `${player.userId}-${player.globalRank}`}
         initialNumToRender={15}

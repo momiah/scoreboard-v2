@@ -11,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import Tag from "../../components/Tag";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 const PendingRequests = () => {
   const { currentUser } = useContext(UserContext);
@@ -66,7 +67,13 @@ const PendingRequests = () => {
 
   return (
     <Container>
-      <Title>Pending Join Requests</Title>
+      <Header>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color="white" />
+        </TouchableOpacity>
+        <HeaderTitle>Pending Join Requests</HeaderTitle>
+        <View style={{ width: 24 }} />
+      </Header>
       {requests.length === 0 ? (
         <EmptyText>
           You have no pending requests. Please check out the leagues page to
@@ -103,6 +110,19 @@ const Title = styled.Text({
 const LeagueName = styled.Text({
   color: "white",
   fontSize: 14,
+});
+
+const Header = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 30,
+  justifyContent: "space-between",
+});
+
+const HeaderTitle = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
 });
 
 const Row = styled.View({

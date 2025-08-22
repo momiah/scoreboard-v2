@@ -9,12 +9,13 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
 
-const AccountSupport = () => {
+const AccountSupport = ({ navigation }) => {
   const { sendSupportRequest, currentUser } = useContext(UserContext);
   const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
     useContext(PopupContext);
@@ -55,7 +56,13 @@ const AccountSupport = () => {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <Title>Support Request</Title>
+        <Header>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <HeaderTitle>Account Support</HeaderTitle>
+          <View style={{ width: 24 }} />
+        </Header>
         <Label>Subject</Label>
         <Input
           placeholder="Enter subject"
@@ -107,6 +114,19 @@ const Title = styled.Text({
   color: "white",
   fontWeight: "bold",
   marginBottom: 20,
+});
+
+const Header = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 30,
+  justifyContent: "space-between",
+});
+
+const HeaderTitle = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
 });
 
 const Label = styled.Text({

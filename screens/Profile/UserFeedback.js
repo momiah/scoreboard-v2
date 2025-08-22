@@ -13,8 +13,9 @@ import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
-const UserFeedback = () => {
+const UserFeedback = ({ navigation }) => {
   const { currentUser, sendFeedback } = useContext(UserContext);
   const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
     useContext(PopupContext);
@@ -54,7 +55,13 @@ const UserFeedback = () => {
         }}
         keyboardShouldPersistTaps="handled"
       >
-        <Title>Feedback</Title>
+        <Header>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
+          <HeaderTitle>Feedback</HeaderTitle>
+          <View style={{ width: 24 }} />
+        </Header>
         <IntroText>
           We're always looking to improve CourtChamps! If you have any feedback
           or find any bugs, feel free to drop us a message!
@@ -123,6 +130,19 @@ const Label = styled.Text({
   color: "#ccc",
   fontSize: 12,
   marginBottom: 6,
+});
+
+const Header = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 30,
+  justifyContent: "space-between",
+});
+
+const HeaderTitle = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
 });
 
 const Input = styled.TextInput({
