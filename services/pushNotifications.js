@@ -40,16 +40,6 @@ export async function registerForPushNotificationsAsync(userId) {
       console.log('Push token saved for user:', userId);
     }
 
-    // Android notification channel (optional but recommended)
-    if (Platform.OS === 'android') {
-      Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
-    }
-
     return token.data;
   } catch (error) {
     console.error('Error registering for push notifications:', error);
