@@ -26,14 +26,16 @@ export async function registerForPushNotificationsAsync(userId) {
     }
 
     // Get Expo push token
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
-    console.log('Push token acquired:', token);
+    const token = await Notifications.getExpoPushTokenAsync({
+      projectId: '43db0104-f8f3-44de-b831-a74cd535baee',
+    });
+    console.log('Push token acquired:', token.data);
 
     // Save to Firestore (multi-device safe)
-    if (userId && token) {
+    if (userId && token.data) {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
-        pushTokens: arrayUnion(token), // Store as array
+        pushTokens: arrayUnion(token.data), // Store as array
       });
       console.log('Push token saved for user:', userId);
     }
@@ -48,8 +50,9 @@ export async function registerForPushNotificationsAsync(userId) {
       });
     }
 
-    return token;
+    return token.data;
   } catch (error) {
     console.error('Error registering for push notifications:', error);
+    return;
   }
 }
