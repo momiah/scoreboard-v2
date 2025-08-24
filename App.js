@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import * as Updates from "expo-updates";
-import { SafeAreaView } from "react-native";
+import { SafeAreaView, Platform } from "react-native";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
@@ -20,6 +20,35 @@ export default function App() {
   const navigationRef = useRef();
 
   useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+
+    // request permissions and set up Android notification channel
+    const setupNotifications = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Notification permissions not granted");
+        return;
+      }
+
+      // android notification channel
+      if (Platform.OS === "android") {
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "default",
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+        });
+      }
+    };
+
+    setupNotifications();
+    
     const checkForUpdates = async () => {
       if (!__DEV__) {
         // Only check in production
