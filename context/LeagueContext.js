@@ -49,12 +49,11 @@ const LeagueProvider = ({ children }) => {
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
 
-useEffect(() => {
-  if (currentUser?.location?.countryCode) {
-    fetchUpcomingLeagues();
-  }
-}, [currentUser?.location?.countryCode]);
-
+  useEffect(() => {
+    if (currentUser?.location?.countryCode) {
+      fetchUpcomingLeagues();
+    }
+  }, [currentUser?.location?.countryCode]);
 
   // NEED TO MODIFY LEAGUE SCHEMA TO INCLUDE COUNTRY CODE AT TOP LEVEL RATHER THAN NESTED
   // const fetchUpcomingLeagues = async () => {
@@ -93,27 +92,41 @@ useEffect(() => {
   // NEED TO REPLACE FOR THE ABOVE TO QUERY RATHER THAN FILTERING ON THE FRONT END BELOW
   // MAX 200 LEAGUES UNTIL IT START TO SLOW DOWN
   const fetchUpcomingLeagues = async () => {
-  try {
-    const leaguesRef = collection(db, "leagues");
+    try {
+      const leaguesRef = collection(db, "leagues");
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
 
-    console.log('location.countryCode:', currentUser?.location.countryCode);
+      const snapshot = await getDocs(leaguesRef);
+      const leagues = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
-    const snapshot = await getDocs(leaguesRef);
-    const leagues = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+      const filteredLeagues = leagues.filter((league) => {
+        // Filter by country
+        if (
+          league.location?.countryCode !== currentUser?.location.countryCode
+        ) {
+          return false;
+        }
 
-    const filteredLeagues = leagues.filter(
-      (league) => league.location?.countryCode === currentUser?.location.countryCode
-    );
+        // Filter by date (upcoming leagues only)
+        if (!league.endDate) return false;
 
-    setUpcomingLeagues(filteredLeagues);
-  } catch (error) {
-    console.error("Error fetching upcoming leagues:", error);
-  }
-};
+        const [day, month, year] = league.endDate.split("-");
+        if (!day || !month || !year) return false; // Extra safety if endDate format is broken
 
+        const endDate = new Date(`${year}-${month}-${day}`);
+
+        return endDate >= today;
+      });
+
+      setUpcomingLeagues(filteredLeagues);
+    } catch (error) {
+      console.error("Error fetching upcoming leagues:", error);
+    }
+  };
 
   const fetchLeagues = async () => {
     try {
@@ -481,6 +494,15 @@ useEffect(() => {
       const leagueData = leagueDoc.data();
       const leagueParticipants = leagueData.leagueParticipants || [];
       const pendingRequests = leagueData.pendingRequests || [];
+
+      const userAlreadyInLeague = leagueParticipants.filter(
+        (participant) => participant.userId === senderId
+      );
+
+      if (userAlreadyInLeague.length > 0) {
+        console.log("User is already a participant in this league");
+        return;
+      }
 
       // Add senderId to league and remove from pending requests
       const updatedPending = pendingRequests.filter(

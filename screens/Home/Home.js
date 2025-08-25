@@ -42,9 +42,11 @@ const Home = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [userToken, setUserToken] = useState(null);
-  const { fetchUpcomingLeagues } = useContext(LeagueContext);
-  const { getAllUsers, rankSorting, currentUser } = useContext(UserContext);
+  const { fetchUpcomingLeagues, upcomingLeagues } = useContext(LeagueContext);
+  const { getAllUsers, rankSorting, currentUser, getLeaguesForUser } =
+    useContext(UserContext);
 
+  const [userLeagues, setUserLeagues] = useState([]);
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -78,6 +80,22 @@ const Home = () => {
     fetchUsers();
   }, []);
 
+  const fetchUserLeagues = async () => {
+    const userId = currentUser?.userId;
+    if (!userId) return;
+
+    try {
+      const leagues = await getLeaguesForUser(userId);
+      setUserLeagues(leagues);
+    } catch (error) {
+      console.error("Error fetching leagues:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserLeagues();
+  }, [currentUser?.userId]);
+
   const navigateTo = (route) => {
     if (route) {
       navigation.navigate(route);
@@ -105,20 +123,36 @@ const Home = () => {
 
   const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
 
-  const usersToReset = [
-    "Hussain",
-    "AnisZaman", // Anis,
-    "Bokul",
-    "Yasin",
-    "ProLikeMo", //Mohsin
-    "MaxHoque", // Max,
-    "Babu",
-    "R4YY4NH", // Rayyan,
-    "Gesh",
-    "Komal", // Doc
-    "Saiful",
-    "Raqeeb",
-  ];
+  const publicLeagues = upcomingLeagues.filter((league) => {
+    // Must be public
+    if (league.privacy !== "Public") return false;
+
+    // Exclude leagues where user is already a participant
+    const userIsParticipant = league.leagueParticipants?.filter(
+      (participant) => participant.userId === currentUser?.userId
+    );
+
+    return userIsParticipant?.length === 0;
+  });
+
+  // const usersToReset = [
+  //   "Hussain",
+  //   "AnisZaman", // Anis,
+  //   "Bokul",
+  //   "Yasin",
+  //   "ProLikeMo", //Mohsin
+  //   "MaxHoque", // Max,
+  //   "Babu",
+  //   "R4YY4NH", // Rayyan,
+  //   "Gesh",
+  //   "Komal", // Doc
+  //   "Saiful",
+  //   "Raqeeb",
+  // ];
+
+  const subHeaderTitle = userLeagues.length ? "My Leagues" : "Upcoming Leagues";
+
+  const actionText = !userLeagues.length ? "Browse Leagues" : null;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
@@ -129,6 +163,7 @@ const Home = () => {
             onRefresh={() => {
               fetchUsers();
               fetchUpcomingLeagues();
+              fetchUserLeagues();
             }}
             tintColor="white" // iOS
             colors={["white"]} // Android
@@ -166,9 +201,9 @@ const Home = () => {
         )}
 
         <SubHeader
-          title="Upcoming Leagues"
+          title={subHeaderTitle}
           onIconPress={addLeague}
-          actionText="Browse Leagues"
+          actionText={actionText}
           showIcon
           navigationRoute={"Leagues"}
         />
@@ -206,8 +241,16 @@ const Home = () => {
 
         {loading ? (
           <HorizontalLeagueCarouselSkeleton />
+        ) : userLeagues.length > 0 ? (
+          <HorizontalLeagueCarousel
+            navigationRoute={"League"}
+            leagues={userLeagues}
+          />
         ) : (
-          <HorizontalLeagueCarousel navigationRoute={"League"} />
+          <HorizontalLeagueCarousel
+            navigationRoute={"League"}
+            leagues={publicLeagues}
+          />
         )}
 
         <SubHeader
@@ -215,6 +258,7 @@ const Home = () => {
           actionText="See All Players"
           navigationRoute={"AllPlayers"}
         />
+
         {loading ? (
           <TopPlayersSkeleton topPlayers={topPlayers} />
         ) : (
@@ -222,6 +266,23 @@ const Home = () => {
             <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
           </>
         )}
+
+        <SubHeader
+          title="Upcoming Leagues"
+          actionText="Browse Leagues"
+          navigationRoute={"Leagues"}
+        />
+
+        {loading ? (
+          <HorizontalLeagueCarouselSkeleton />
+        ) : userLeagues.length ? (
+          <HorizontalLeagueCarousel
+            navigationRoute={"League"}
+            leagues={publicLeagues}
+          />
+        ) : null}
+
+        <View style={{ height: 30 }} />
 
         {/* <SubHeader
           title="Tournaments"
