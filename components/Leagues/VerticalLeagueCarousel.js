@@ -108,6 +108,7 @@ const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
       keyExtractor={(item) => item.id.toString()}
       renderItem={renderLeagueItem}
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 50 }}
     />
   );
 };
