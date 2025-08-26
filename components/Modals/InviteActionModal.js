@@ -49,6 +49,10 @@ const InviteActionModal = ({
   const leagueFull =
     inviteDetails?.leagueParticipants.length >= inviteDetails?.maxPlayers;
 
+  const alreadyInLeague = inviteDetails?.leagueParticipants?.some(
+    (p) => p.userId === currentUser?.userId
+  );
+
   const location = inviteDetails?.location;
 
   useEffect(() => {
@@ -273,17 +277,27 @@ const InviteActionModal = ({
                 <ErrorText>This invite is no longer available</ErrorText>
               )}
 
+              {alreadyInLeague && !isRead && (
+                <ErrorText>
+                  You are already a participant in this league
+                </ErrorText>
+              )}
+
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
                   onPress={handleDeclineInvite}
-                  disabled={isRead || leagueFull || isWithdrawn}
+                  disabled={
+                    isRead || leagueFull || isWithdrawn || alreadyInLeague
+                  }
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button
                   onPress={handleAcceptInvite}
-                  disabled={isRead || leagueFull || isWithdrawn}
+                  disabled={
+                    isRead || leagueFull || isWithdrawn || alreadyInLeague
+                  }
                 >
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
