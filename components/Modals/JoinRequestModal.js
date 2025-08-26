@@ -44,6 +44,7 @@ const JoinRequestModal = ({
   const [senderDetails, setSenderDetails] = useState(null);
   const [requestDetails, setRequestDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [joiningLeague, setJoiningLeague] = useState(false);
 
   const navigation = useNavigation();
 
@@ -56,6 +57,10 @@ const JoinRequestModal = ({
 
   const requestWithdrawn = !requestDetails?.pendingRequests?.some(
     (req) => req.userId === senderId
+  );
+
+  const userAlreadyInLeague = requestDetails?.leagueParticipants?.some(
+    (participant) => participant.userId === senderId
   );
 
   useEffect(() => {
@@ -101,6 +106,7 @@ const JoinRequestModal = ({
 
   const handleAcceptJoinRequest = async () => {
     try {
+      setJoiningLeague(true);
       await acceptLeagueJoinRequest(
         senderId,
         requestDetails.id,
@@ -109,9 +115,11 @@ const JoinRequestModal = ({
       );
 
       console.log("Invite accepted successfully");
-      onClose(); // Close the modal after accepting
+      onClose();
     } catch (error) {
       console.error("Error accepting invite:", error);
+    } finally {
+      setJoiningLeague(false);
     }
   };
 
@@ -219,28 +227,46 @@ const JoinRequestModal = ({
                 })}
 
               {requestWithdrawn && (
-                <LeagueFullText>
+                <DisabledText>
                   Request to join league has been withdrawn
-                </LeagueFullText>
+                </DisabledText>
               )}
 
               {leagueFull && (
-                <LeagueFullText>
+                <DisabledText>
                   This invite has expired as the league is full
-                </LeagueFullText>
+                </DisabledText>
+              )}
+
+              {userAlreadyInLeague && (
+                <DisabledText>
+                  This user is already a participant in the league
+                </DisabledText>
               )}
 
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
-                  disabled={isRead || leagueFull || requestWithdrawn}
+                  disabled={
+                    isRead ||
+                    leagueFull ||
+                    requestWithdrawn ||
+                    userAlreadyInLeague ||
+                    joiningLeague
+                  }
                   onPress={handleDeclineJoinRequest}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button
                   onPress={handleAcceptJoinRequest}
-                  disabled={isRead || leagueFull || requestWithdrawn}
+                  disabled={
+                    isRead ||
+                    leagueFull ||
+                    requestWithdrawn ||
+                    userAlreadyInLeague ||
+                    joiningLeague
+                  }
                 >
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
@@ -372,7 +398,7 @@ const AcceptButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const LeagueFullText = styled.Text({
+const DisabledText = styled.Text({
   color: "red",
   fontSize: 12,
   marginTop: 10,
