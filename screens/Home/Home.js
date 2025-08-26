@@ -128,6 +128,9 @@ const Home = () => {
     if (league.privacy !== "Public") return false;
 
     // Exclude leagues where user is already a participant
+
+    if (!currentUser) return true; // If not logged in, show all public leagues
+
     const userIsParticipant = league.leagueParticipants?.filter(
       (participant) => participant.userId === currentUser?.userId
     );
@@ -150,9 +153,7 @@ const Home = () => {
   //   "Raqeeb",
   // ];
 
-  const subHeaderTitle = userLeagues.length ? "My Leagues" : "Upcoming Leagues";
-
-  const actionText = !userLeagues.length ? "Browse Leagues" : null;
+  console.log("publicLeagues", publicLeagues.length);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
@@ -200,12 +201,13 @@ const Home = () => {
           </TouchableOpacity>
         )}
 
+        {/* First carousel - My Leagues (if signed in) OR Upcoming Leagues (if not signed in) */}
         <SubHeader
-          title={subHeaderTitle}
+          title={currentUser ? "My Leagues" : "Upcoming Leagues"}
           onIconPress={addLeague}
-          actionText={actionText}
-          showIcon
-          navigationRoute={"Leagues"}
+          actionText={currentUser ? null : "Browse Leagues"}
+          showIcon={!!currentUser}
+          navigationRoute={currentUser ? null : "Leagues"}
         />
 
         {/* <SubHeader
@@ -241,15 +243,10 @@ const Home = () => {
 
         {loading ? (
           <HorizontalLeagueCarouselSkeleton />
-        ) : userLeagues.length > 0 ? (
-          <HorizontalLeagueCarousel
-            navigationRoute={"League"}
-            leagues={userLeagues}
-          />
         ) : (
           <HorizontalLeagueCarousel
             navigationRoute={"League"}
-            leagues={publicLeagues}
+            leagues={currentUser ? userLeagues : publicLeagues}
           />
         )}
 
@@ -267,20 +264,25 @@ const Home = () => {
           </>
         )}
 
-        <SubHeader
-          title="Upcoming Leagues"
-          actionText="Browse Leagues"
-          navigationRoute={"Leagues"}
-        />
+        {/* Second carousel - Only show if user is signed in */}
+        {currentUser && (
+          <>
+            <SubHeader
+              title="Upcoming Leagues"
+              actionText="Browse Leagues"
+              navigationRoute={"Leagues"}
+            />
 
-        {loading ? (
-          <HorizontalLeagueCarouselSkeleton />
-        ) : userLeagues.length ? (
-          <HorizontalLeagueCarousel
-            navigationRoute={"League"}
-            leagues={publicLeagues}
-          />
-        ) : null}
+            {loading ? (
+              <HorizontalLeagueCarouselSkeleton />
+            ) : (
+              <HorizontalLeagueCarousel
+                navigationRoute={"League"}
+                leagues={publicLeagues}
+              />
+            )}
+          </>
+        )}
 
         <View style={{ height: 30 }} />
 
@@ -329,28 +331,3 @@ const SocialButton = styled(TouchableOpacity)({
 });
 
 export default Home;
-
-{
-  /* Set mocks */
-}
-{
-  /* <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            // paddingLeft: 27,
-          }}
-        >
-          <Text style={{ color: "white" }}>Set Mock Data </Text>
-          <Switch
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
-            thumbColor={showMockData ? "#00152B" : "#f4f3f4"}
-            ios_backgroundColor="#3e3e3e"
-            onValueChange={() => setShowMockData(!showMockData)}
-            value={showMockData}
-            style={{
-              transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
-            }}
-          />
-        </View> */
-}

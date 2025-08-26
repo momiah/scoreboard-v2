@@ -50,10 +50,8 @@ const LeagueProvider = ({ children }) => {
   const [leagueById, setLeagueById] = useState(null);
 
   useEffect(() => {
-    if (currentUser?.location?.countryCode) {
-      fetchUpcomingLeagues();
-    }
-  }, [currentUser?.location?.countryCode]);
+    fetchUpcomingLeagues();
+  }, []);
 
   // NEED TO MODIFY LEAGUE SCHEMA TO INCLUDE COUNTRY CODE AT TOP LEVEL RATHER THAN NESTED
   // const fetchUpcomingLeagues = async () => {
@@ -91,40 +89,32 @@ const LeagueProvider = ({ children }) => {
 
   // NEED TO REPLACE FOR THE ABOVE TO QUERY RATHER THAN FILTERING ON THE FRONT END BELOW
   // MAX 200 LEAGUES UNTIL IT START TO SLOW DOWN
+
   const fetchUpcomingLeagues = async () => {
     try {
       const leaguesRef = collection(db, "leagues");
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
 
-      const snapshot = await getDocs(leaguesRef);
+      // Simply get 30 most recently created leagues
+      const q = query(leaguesRef, orderBy("createdAt", "desc"), limit(30));
+
+      const snapshot = await getDocs(q);
       const leagues = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      const filteredLeagues = leagues.filter((league) => {
-        // Filter by country
-        if (
-          league.location?.countryCode !== currentUser?.location.countryCode
-        ) {
-          return false;
-        }
+      if (currentUser?.location?.countryCode) {
+        const filteredLeagues = leagues.filter(
+          (league) =>
+            league.location?.countryCode === currentUser.location.countryCode
+        );
+        setUpcomingLeagues(filteredLeagues);
+        return;
+      }
 
-        // Filter by date (upcoming leagues only)
-        if (!league.endDate) return false;
-
-        const [day, month, year] = league.endDate.split("-");
-        if (!day || !month || !year) return false; // Extra safety if endDate format is broken
-
-        const endDate = new Date(`${year}-${month}-${day}`);
-
-        return endDate >= today;
-      });
-
-      setUpcomingLeagues(filteredLeagues);
+      setUpcomingLeagues(leagues);
     } catch (error) {
-      console.error("Error fetching upcoming leagues:", error);
+      console.error("Error fetching leagues:", error);
     }
   };
 
