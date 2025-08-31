@@ -28,6 +28,7 @@ import {
 import { auth, db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { useContext } from "react";
+import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 // import { GoogleSignin } from '@react-native-google-signin/google-signin';
 // GoogleAuthProvider
 
@@ -116,6 +117,8 @@ export default function Login() {
 
         await AsyncStorage.setItem("userToken", token);
         await AsyncStorage.setItem("userId", userId);
+
+        await registerForPushNotificationsAsync(userId);
 
         const profile = await getUserById(userId);
         if (profile) {
