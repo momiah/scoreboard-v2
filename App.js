@@ -17,16 +17,15 @@ import { registerForPushNotificationsAsync } from "./services/pushNotifications"
 import Tabs from "./navigation/tabs";
 
 const Stack = createStackNavigator();
+const navigationRef = React.createRef();
 
 export default function App() {
-
-  const navigationRef = useRef();
 
   useEffect(() => {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
-        shouldPlaySound: false,
+        shouldPlaySound: true,
         shouldSetBadge: false,
       }),
     });
@@ -44,6 +43,8 @@ export default function App() {
         await Notifications.setNotificationChannelAsync("default", {
           name: "default",
           importance: Notifications.AndroidImportance.MAX,
+          sound: "default",
+          enableVibration: true,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF231F7C",
         });
@@ -90,15 +91,28 @@ export default function App() {
 
         // Navigate to Notifications tab
         if (navigationRef.current) {
-          navigationRef.current.navigate("Tabs", {
-            screen: "Notifications",
+          navigationRef.current?.navigate("NotificationsStack", {
+            screen: "Notification",
             params: { notificationData: data },
           });
+        } else {
+          console.log("Navigation reference is not ready");
+          Alert.alert("Error", "Navigation is not ready");
         }
       }
     );
 
-    return () => subscription.remove();
+    // Listener for notifications received while the app is in the foreground
+    const backgroundSubscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        console.log("Notification received in background:", JSON.stringify(notification, null, 2));
+      }
+    );
+
+    return () => {
+      subscription.remove();
+      backgroundSubscription.remove();
+    };
 
   }, []);
 
