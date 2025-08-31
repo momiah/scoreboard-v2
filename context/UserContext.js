@@ -22,7 +22,6 @@ import {
   notificationSchema,
   notificationTypes,
 } from "../schemas/schema";
-import { registerForPushNotificationsAsync } from "../services/pushNotifications";
 
 const UserContext = createContext();
 
@@ -46,8 +45,6 @@ const UserProvider = ({ children }) => {
           const userData = await getUserById(userId);
           setCurrentUser(userData);
 
-          // Register for push notifications
-          await registerForPushNotificationsAsync(userId);
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
