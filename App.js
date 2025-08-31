@@ -11,6 +11,9 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Notifications from "expo-notifications";
 
+
+import { registerForPushNotificationsAsync } from "./services/pushNotifications";
+
 import Tabs from "./navigation/tabs";
 
 const Stack = createStackNavigator();
@@ -44,6 +47,20 @@ export default function App() {
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF231F7C",
         });
+      }
+
+      try {
+        const userId = await AsyncStorage.getItem("userId");
+        console.log("App.js: Retrieved userId from AsyncStorage:", userId);
+        if (userId) {
+          await registerForPushNotificationsAsync(userId);
+          // Alert.alert("Success", "Push notifications set up successfully!");
+        } else {
+          console.log("App.js: No userId found in AsyncStorage");
+        }
+      } catch (error) {
+        console.error("App.js: Error registering push notifications:", error);
+        // Alert.alert("Error", "Push notifications not set up. Please try again later." + error.message);
       }
     };
 
