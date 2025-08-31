@@ -57,7 +57,8 @@
         "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
         "backgroundColor": "#00152B"
       },
-      "package": "com.courtchamp"
+      "package": "com.courtchamp",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
