@@ -654,34 +654,60 @@ const UserProvider = ({ children }) => {
   };
 
   const sendNotification = async (notification) => {
-    console.log("Sending Notification:", JSON.stringify(notification, null, 2));
+    const error = [];
+    const success = [];
+    // console.log("Sending Notification:", JSON.stringify(notification, null, 2));
     try {
       const recipientId = notification.recipientId;
+      if (!recipientId) {
+        error.push("No recipientId");
+      } else {
+        success.push("Has recipientId");
+      }
 
       // 🔥 Get the subcollection reference under the user
       const notifRef = collection(db, "users", recipientId, "notifications");
+      if (!notifRef) {
+        error.push("No notifRef");
+      } else {
+        success.push("Has notifRef");
+      }
 
       // ➕ Add the notification as a new document
       await addDoc(notifRef, notification);
 
       // Lookup push tokens
       const recipientDoc = await getDoc(doc(db, "users", recipientId));
+      if (!recipientDoc.exists()) {
+        error.push("No recipientDoc");
+      } else {
+        success.push("Has recipientDoc");
+      }
       const pushTokens = recipientDoc.data()?.pushTokens || [];
+
+      if (pushTokens.length === 0) {
+        error.push("No pushTokens");
+      } else {
+        success.push("Has pushTokens");
+      }
 
       //send device notification
       if (pushTokens.length > 0) {
         const messages = pushTokens.map((token) => ({
           to: token,
-          sound: 'default',
-          title: `New Notification in Court Champs - ${notification.type.toUpperCase()}`,
+          title: `New Notification in Court Champs!`,
           body: notification.message,
           data: {
             ...notification.data,
             type: notification.type,
           }
         }));
-
-        await fetch('https://exp.host/--/api/v2/push/send', {
+        if (messages.length === 0) {
+          error.push("No messages");
+        } else {
+          success.push("Has messages");
+        }
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
           method: 'POST',
           headers: {
             Accept: 'application/json',
@@ -690,15 +716,28 @@ const UserProvider = ({ children }) => {
           },
           body: JSON.stringify(messages),
         });
+
+        if (!response.ok) {
+          error.push("Push response not ok");
+          error.push(`Response status: ${JSON.stringify(response)}`);
+        } else {
+          success.push("Push response ok");
+        }
         console.log(`Push sent to ${pushTokens.length} devices`);
-    }
+      }
 
       console.log("✅ Notification saved to subcollection!");
     } catch (error) {
       console.error("❌ Failed to send notification:", error);
+      // Alert.alert(
+      //   "Error",
+      //   `5. Passed notification: ${JSON.stringify(notification)}. 
+      //     6. Success checks: ${success.join(",\n ")}. 
+      //     7. Error checks: ${error.join(",\n ")}.
+      //    Failed to send notification: ${error.message} `
+      // );
     }
   };
-
 
   const sendSupportRequest = async ({ subject, message, currentUser }) => {
     if (!currentUser) throw new Error("No user authenticated");
