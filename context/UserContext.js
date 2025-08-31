@@ -695,6 +695,9 @@ const UserProvider = ({ children }) => {
       if (pushTokens.length > 0) {
         const messages = pushTokens.map((token) => ({
           to: token,
+          sound: "default",
+          vibrate: [200, 100, 200],
+          priority: "high",
           title: `New Notification in Court Champs!`,
           body: notification.message,
           data: {
