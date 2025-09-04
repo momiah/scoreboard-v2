@@ -34,5 +34,3 @@ export const calculateLeagueStatus = (leagueDetails) => {
     color: "#286EFA",
   };
 };
-
-// console.log("todaysDate >= endDate", todaysDate >= endDate);

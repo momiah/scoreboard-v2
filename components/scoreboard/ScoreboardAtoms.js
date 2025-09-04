@@ -59,11 +59,11 @@ const ScoreContainer = styled.View({
   display: "flex",
   flexDirection: "row",
   justifyContent: "center",
-  marginTop: screenWidth <= 400 ? 20 : null,
+  marginTop: screenWidth <= 405 ? 20 : null,
 });
 const TeamText = styled.Text({
   color: "white",
-  fontSize: screenWidth <= 400 ? 15 : 16,
+  fontSize: screenWidth <= 405 ? 13 : 14,
   textAlign: (props) => (props.position === "right" ? "right" : "left"),
 });
 const TeamContainer = styled.View({
@@ -78,12 +78,12 @@ const TeamTextContainer = styled.View({
   padding: 15,
   paddingLeft: 20,
   paddingRight: 20,
-  width: screenWidth <= 400 ? 125 : 140,
+  width: screenWidth <= 405 ? 125 : 140,
 });
 
 const DateText = styled.Text({
   fontSize: 10,
   fontWeight: "bold",
   color: "white",
-  marginBottom: screenWidth <= 400 ? 0 : 15,
+  marginBottom: screenWidth <= 405 ? 0 : 15,
 });

@@ -355,9 +355,11 @@ const LeagueProvider = ({ children }) => {
       const newParticipantProfile = {
         ...scoreboardProfileSchema,
         username: newParticipant.username,
+        firstName: newParticipant.firstName.split(" ")[0],
+        lastName: newParticipant.lastName.split(" ")[0],
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
-        profileImage: newParticipant.profilImage || ccImageEndpoint,
+        profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
       await updateDoc(leagueRef, {
