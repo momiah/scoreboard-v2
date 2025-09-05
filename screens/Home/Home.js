@@ -31,12 +31,12 @@ import {
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
-import { resetLeagueParticipantStats } from "../../devFunctions/resetLeagueParticipantStats";
-import { resetUsersProfileDetails } from "../../devFunctions/resetUsersProfileDetails";
-import {
-  bulkAddApprovedGames,
-  leagueGames,
-} from "../../devFunctions/bulkAddApprovedGames";
+// import { resetLeagueParticipantStats } from "../../devFunctions/resetLeagueParticipantStats";
+// import { resetUsersProfileDetails } from "../../devFunctions/resetUsersProfileDetails";
+// import {
+//   bulkAddApprovedGames,
+//   leagueGames,
+// } from "../../devFunctions/bulkAddApprovedGames";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -152,8 +152,6 @@ const Home = () => {
   //   "Saiful",
   //   "Raqeeb",
   // ];
-
-  console.log("publicLeagues", publicLeagues.length);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>

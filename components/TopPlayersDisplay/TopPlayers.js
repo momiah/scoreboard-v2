@@ -7,6 +7,7 @@ import { FlatList } from "react-native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-ico-flags";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 const iconSize = 40;
 
@@ -19,6 +20,8 @@ const TopPlayers = ({ topPlayers }) => {
       const playerXp = player.profileDetail.XP;
       const pointDifference = player.profileDetail.totalPointDifference || 0;
       const rankLevel = findRankIndex(playerXp) + 1;
+
+      const displayName = formatDisplayName(player);
 
       return (
         <PlayerRow
@@ -49,7 +52,7 @@ const TopPlayers = ({ topPlayers }) => {
             </Rank>
           </TableCell>
           <PlayerNameCell>
-            <PlayerName>{player.username}</PlayerName>
+            <PlayerName>{displayName}</PlayerName>
           </PlayerNameCell>
           <TableCell>
             <Icon name={player.location.countryCode} height="20" width="20" />

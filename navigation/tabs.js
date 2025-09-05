@@ -187,8 +187,6 @@ const Tabs = () => {
   const [showAd, setShowAd] = useState(true);
   const [quickAddVisible, setQuickAddVisible] = useState(false);
 
-  console.log("Current User:", currentUser);
-
   const unreadNotifications = notifications.filter(
     (notification) => notification.isRead === false
   ).length;
