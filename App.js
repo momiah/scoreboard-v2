@@ -97,7 +97,7 @@ export default function App() {
           });
         } else {
           console.log("Navigation reference is not ready");
-          Alert.alert("Error", "Navigation is not ready");
+          // Alert.alert("Error", "Navigation is not ready");
         }
       }
     );
