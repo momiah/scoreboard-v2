@@ -1,4 +1,4 @@
-export const calculateWin = (team1, team2) => {
+export const calculateWin = (team1, team2, leagueType = "Singles") => {
   if (team1.score > team2.score) {
     return {
       winner: {

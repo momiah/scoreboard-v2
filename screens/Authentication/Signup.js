@@ -147,6 +147,7 @@ const Signup = ({ route }) => {
       const profileToSave = {
         ...userProfileSchema,
         ...profileFields,
+        usernameLower: profileFields.username.toLowerCase(),
         location: {
           country: formCountry,
           city: formCity,
@@ -172,7 +173,7 @@ const Signup = ({ route }) => {
           image: ccImageEndpoint,
           header: notificationTypes.WELCOME.MESSAGE,
           body:
-            "You’ve just joined the ultimate community for competitive players. " +
+            "You've just joined the ultimate community for competitive players. " +
             "Track your games, climb the ranks, and prove you're the best on the court. " +
             "Join or create leagues now and start your journey to the top. " +
             "Keep an eye out for exciting updates and features coming your way soon! 🏸🔥",
@@ -226,18 +227,28 @@ const Signup = ({ route }) => {
     },
   };
 
+  // Name validation rules (first name and last name)
+  const nameValidation = {
+    required: "This field is required",
+    validate: {
+      onlyLetters: (value) =>
+        /^[a-zA-Z]+$/.test(value) ||
+        "Only letters are allowed (no spaces, numbers, or special characters)",
+    },
+  };
+
   const checkUsernameExists = async (username) => {
     try {
       const usersRef = collection(db, "users");
       const q = query(
         usersRef,
-        where("username", "==", username.toLowerCase())
+        where("usernameLower", "==", username.toLowerCase())
       );
       const querySnapshot = await getDocs(q);
       return !querySnapshot.empty;
     } catch (error) {
       console.error("Error checking username:", error);
-      return true; // Prevent submission if check fails
+      return true;
     }
   };
 
@@ -285,7 +296,7 @@ const Signup = ({ route }) => {
               <Controller
                 control={control}
                 name="firstName"
-                rules={{ required: "First name is required" }}
+                rules={nameValidation}
                 render={({ field }) => (
                   <InputWrapper
                     label="First Name"
@@ -298,7 +309,7 @@ const Signup = ({ route }) => {
               <Controller
                 control={control}
                 name="lastName"
-                rules={{ required: "Last name is required" }}
+                rules={nameValidation}
                 render={({ field }) => (
                   <InputWrapper
                     label="Last Name"

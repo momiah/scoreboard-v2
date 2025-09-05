@@ -141,6 +141,7 @@ export const userProfileSchema = {
   lastName: "",
   firstName: "",
   username: "",
+  usernameLower: "",
   provider: "",
   dob: "",
   profileDetail: profileDetailSchema,

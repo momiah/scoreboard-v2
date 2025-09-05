@@ -57,10 +57,15 @@ const SelectPlayer = ({
 
   const playerArray = React.useMemo(
     () =>
-      players.map((player) => ({
-        key: player.userId,
-        value: player.username,
-      })),
+      players.map((player) => {
+        // Take only the first word of the first name and trim to max 9 chars
+        const firstName = player.firstName.split(" ")[0].slice(0, 9);
+        const lastInitial = player.lastName.charAt(0);
+        return {
+          key: player.userId,
+          value: `${firstName} ${lastInitial}`,
+        };
+      }),
     [players]
   );
 

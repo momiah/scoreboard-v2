@@ -172,7 +172,7 @@ const AddGameModal = ({
       score: score2,
     };
 
-    const result = calculateWin(team1, team2);
+    const result = calculateWin(team1, team2, leagueType);
 
     const newGame = {
       gameId,

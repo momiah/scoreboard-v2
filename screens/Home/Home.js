@@ -152,8 +152,6 @@ const Home = () => {
   //   "Raqeeb",
   // ];
 
-  console.log("publicLeagues", publicLeagues.length);
-
   return (
     <SafeAreaView
       style={{

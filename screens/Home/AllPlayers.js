@@ -27,6 +27,7 @@ import { useImageLoader } from "../../utils/imageLoader";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import debounce from "lodash.debounce";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 const iconSize = 40;
 
@@ -152,6 +153,8 @@ const AllPlayers = () => {
         player.profileDetail.numberOfWins /
         (player.profileDetail.numberOfLosses || 1);
 
+      const displayName = formatDisplayName(player);
+
       return (
         <PlayerRow
           key={player.userId}
@@ -184,7 +187,7 @@ const AllPlayers = () => {
             </Rank>
           </TableCell>
           <PlayerNameCell>
-            <PlayerName>{player.username}</PlayerName>
+            <PlayerName>{displayName}</PlayerName>
           </PlayerNameCell>
           <TableCell>
             <Icon name={player.location.countryCode} height="20" width="20" />
