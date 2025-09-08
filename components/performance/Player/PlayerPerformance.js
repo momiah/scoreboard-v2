@@ -5,6 +5,8 @@ import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
 import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "../../Modals/PlayerDetailsModal";
+import { enrichPlayers } from "../../../helpers/enrichPlayers";
+import { formatDisplayName } from "../../../helpers/formatDisplayName";
 
 const PlayerPerformance = ({ playersData }) => {
   const { findRankIndex, recentGameResult } = useContext(GameContext);
@@ -14,36 +16,16 @@ const PlayerPerformance = ({ playersData }) => {
   const [playersWithUserData, setPlayersWithUserData] = useState([]);
 
   useEffect(() => {
-    const enrichPlayers = async () => {
-      const enriched = await Promise.all(
-        playersData.map(async (player) => {
-          const user = await getUserById(player.userId);
-          const XP = user.profileDetail.XP;
-          return {
-            ...player,
-            XP,
-          };
-        })
-      );
-
-      enriched.sort((a, b) => {
-        if (b.numberOfWins !== a.numberOfWins) {
-          return b.numberOfWins - a.numberOfWins;
-        }
-        if (b.totalPointDifference !== a.totalPointDifference) {
-          return b.totalPointDifference - a.totalPointDifference;
-        }
-        return (b.XP || 0) - (a.XP || 0); // fallback: highest XP wins
-      });
-
-      setPlayersWithUserData(enriched);
-      setLoading(false);
+    const loadEnrichedPlayers = async () => {
+      if (playersData.length > 0) {
+        const enriched = await enrichPlayers(getUserById, playersData);
+        setPlayersWithUserData(enriched);
+        setLoading(false);
+      }
     };
 
-    if (playersData.length > 0) {
-      enrichPlayers();
-    }
-  }, [playersData]);
+    loadEnrichedPlayers();
+  }, [playersData, getUserById]);
 
   useEffect(() => {
     if (playersData.length > 0) {
@@ -70,6 +52,7 @@ const PlayerPerformance = ({ playersData }) => {
     const playerXp = player.XP || 0;
     const pointDifference = player.totalPointDifference || 0;
     const rankLevel = findRankIndex(playerXp) + 1;
+    const displayName = formatDisplayName(player);
 
     return (
       <TableRow
@@ -92,7 +75,7 @@ const PlayerPerformance = ({ playersData }) => {
           </Rank>
         </TableCell>
         <PlayerNameCell>
-          <PlayerName>{player.username}</PlayerName>
+          <PlayerName>{displayName}</PlayerName>
           {recentGameResult(player.resultLog)}
         </PlayerNameCell>
         <TableCell>

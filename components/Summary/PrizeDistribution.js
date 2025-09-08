@@ -20,9 +20,10 @@ const PrizeDistribution = ({
   leagueParticipants,
   hasPrizesDistributed,
   leagueId,
+  distribution,
 }) => {
   const { updatePlacementStats, currentUser } = useContext(UserContext);
-  const distribution = [0.4, 0.3, 0.2, 0.1];
+  // const distribution = [0.4, 0.3, 0.2, 0.1];
 
   // Memoize prize calculation to avoid recalculation on every render
   const prizes = useMemo(() => {
@@ -57,13 +58,13 @@ const PrizeDistribution = ({
 
   useEffect(() => {
     if (canDistributePrizes) {
-      calculatePrizeAllocation(
+      calculatePrizeAllocation({
         leagueParticipants,
         prizePool,
         updatePlacementStats,
-        distribution,
-        leagueId
-      );
+        prizeDistribution: distribution,
+        leagueId,
+      });
     }
   }, [canDistributePrizes]);
 
