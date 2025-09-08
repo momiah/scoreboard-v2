@@ -529,19 +529,20 @@ const UserProvider = ({ children }) => {
       if (placement === "4th") updatedLeagueStats.fourth += 1;
 
       // Update the user's document in Firebase
-      await updateDoc(userDocRef, {
-        profileDetail: {
-          ...profileDetail,
-          XP: updatedXP, // Update XP
-          leagueStats: updatedLeagueStats, // Update leagueStats
-        },
-      });
+      // await updateDoc(userDocRef, {
+      //   profileDetail: {
+      //     ...profileDetail,
+      //     XP: updatedXP, // Update XP
+      //     leagueStats: updatedLeagueStats, // Update leagueStats
+      //   },
+      // });
 
-      // console.log(
-      //   `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
-      // );
+      console.log(
+        `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
+      );
     } catch (error) {
       console.error(`Error updating stats for user ${userId}:`, error);
+      throw new Error("Failed to update user stats");
     }
   };
 

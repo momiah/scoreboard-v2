@@ -1,13 +1,13 @@
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 
-export const calculatePrizeAllocation = async (
+export const calculatePrizeAllocation = async ({
   leagueParticipants,
   prizePool,
   updatePlacementStats,
   prizeDistribution,
-  leagueId
-) => {
+  leagueId,
+}) => {
   try {
     const topPlayers = leagueParticipants
       .sort((a, b) => b.XP - a.XP)
@@ -32,13 +32,13 @@ export const calculatePrizeAllocation = async (
 
     // Only update league flag ONCE after all users are updated
     const leagueDocRef = doc(db, "leagues", leagueId);
+
     await updateDoc(leagueDocRef, {
       prizesDistributed: true,
       prizeDistributionDate: new Date(),
     });
-
-    console.log("All prizes distributed and league updated successfully");
   } catch (error) {
     console.error("Error allocating prizes:", error);
+    throw error;
   }
 };
