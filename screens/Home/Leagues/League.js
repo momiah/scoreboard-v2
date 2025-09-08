@@ -31,20 +31,27 @@ const openMap = (location) => {
   const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
   const encoded = encodeURIComponent(query);
   const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-  Linking.openURL(url).catch((err) => console.error("Error opening Google Maps web:", err));
+  Linking.openURL(url).catch((err) =>
+    console.error("Error opening Google Maps web:", err)
+  );
 };
 
 const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { leagueId, tab } = route.params;
-  const { fetchLeagueById, leagueById, generateNewLeagueParticipants, requestToJoinLeague } =
-    useContext(LeagueContext);
+  const {
+    fetchLeagueById,
+    leagueById,
+    generateNewLeagueParticipants,
+    requestToJoinLeague,
+  } = useContext(LeagueContext);
   const { checkUserRole, currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState(tab || "Summary");
-  const [invitePlayerModalVisible, setInvitePlayerModalVisible] = useState(false);
+  const [invitePlayerModalVisible, setInvitePlayerModalVisible] =
+    useState(false);
   const [userRole, setUserRole] = useState(null);
   const [leagueNotFound, setLeagueNotFound] = useState(false);
 
@@ -184,7 +191,14 @@ const League = () => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#00152B" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#00152B",
+        }}
+      >
         <ActivityIndicator size="large" color="#fff" />
       </View>
     );
@@ -192,8 +206,17 @@ const League = () => {
 
   if (!leagueById || leagueNotFound) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgb(3, 16, 31)" }}>
-        <Text style={{ color: "#aaa", textAlign: "center" }}>League not found.</Text>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "rgb(3, 16, 31)",
+        }}
+      >
+        <Text style={{ color: "#aaa", textAlign: "center" }}>
+          League not found.
+        </Text>
       </View>
     );
   }
@@ -201,8 +224,13 @@ const League = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage source={leagueImage ? { uri: leagueImage } : ccDefaultImage}>
-          <GradientOverlay colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]} locations={[0.1, 1]} />
+        <LeagueImage
+          source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
+        >
+          <GradientOverlay
+            colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
+            locations={[0.1, 1]}
+          />
           <LeagueDetailsContainer>
             {userRole === "admin" && (
               <EditButton onPress={handleNavigate}>
@@ -210,7 +238,14 @@ const League = () => {
               </EditButton>
             )}
 
-            <View style={{ padding: 5, backgroundColor: "rgba(0, 0, 0, 0.3)", borderRadius: 5, alignSelf: "flex-start" }}>
+            <View
+              style={{
+                padding: 5,
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                borderRadius: 5,
+                alignSelf: "flex-start",
+              }}
+            >
               <LeagueName>{leagueName}</LeagueName>
             </View>
 
@@ -223,7 +258,13 @@ const League = () => {
               </Address>
             ) : null}
 
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <View style={{ flexDirection: "row", gap: 5 }}>
                 <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
                 <Tag
@@ -249,7 +290,14 @@ const League = () => {
               )}
             </View>
 
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 5,
+              }}
+            >
               <View style={{ flexDirection: "row", gap: 5 }}>
                 <Tag name={leagueType} />
                 <Tag name="TROPHY" />
@@ -267,10 +315,22 @@ const League = () => {
       </Overview>
 
       <TabsContainer>
-        <GradientOverlay colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]} locations={[0.1, 1]} style={{ bottom: -560 }} />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10 }}>
+        <GradientOverlay
+          colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
+          locations={[0.1, 1]}
+          style={{ bottom: -560 }}
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 10 }}
+        >
           {tabs.map((tab) => (
-            <Tab key={tab.component} onPress={() => handleTabPress(tab.component)} isSelected={selectedTab === tab.component}>
+            <Tab
+              key={tab.component}
+              onPress={() => handleTabPress(tab.component)}
+              isSelected={selectedTab === tab.component}
+            >
               <TabText>{tab.component}</TabText>
             </Tab>
           ))}

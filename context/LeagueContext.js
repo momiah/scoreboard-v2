@@ -260,7 +260,7 @@ const LeagueProvider = ({ children }) => {
 
       if (leagueDoc.exists()) {
         const leagueData = {
-          id: leagueDoc.id,
+          leagueId: leagueDoc.id,
           ...leagueDoc.data(),
         };
 
