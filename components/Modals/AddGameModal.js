@@ -196,7 +196,11 @@ const AddGameModal = ({
       team2.player2,
     ].filter(Boolean);
 
-    if (!playersInGame.includes(currentUser?.username)) {
+    const firstName = currentUser?.firstName.split(" ")[0].slice(0, 9);
+    const lastInitial = currentUser?.lastName.charAt(0);
+    const reporterName = `${firstName} ${lastInitial}`;
+
+    if (!playersInGame.includes(reporterName)) {
       setErrorText("You must be a participant in the game to report it.");
       setLoading(false);
       return;
@@ -212,16 +216,19 @@ const AddGameModal = ({
     }
 
     const isCurrentUserTeam1 = [team1.player1, team1.player2].includes(
-      currentUser?.username
+      reporterName
     );
 
     const opponentUsernames = isCurrentUserTeam1
       ? [team2.player1, team2.player2].filter(Boolean)
       : [team1.player1, team1.player2].filter(Boolean);
 
-    const opponentPlayers = playersInLeague.filter((player) =>
-      opponentUsernames.includes(player.username)
-    );
+    const opponentPlayers = playersInLeague.filter((player) => {
+      const firstName = player?.firstName.split(" ")[0].slice(0, 9);
+      const lastInitial = player?.lastName.charAt(0);
+      const reporterName = `${firstName} ${lastInitial}`;
+      return opponentUsernames.includes(reporterName);
+    });
 
     const userIds = opponentPlayers.map((player) => player.userId);
     const requestForOpponentApprovals = await Promise.all(
