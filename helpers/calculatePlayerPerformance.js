@@ -1,5 +1,6 @@
 import { use } from "react";
 import { transformDate } from "./dateTransform";
+import { formatDisplayName } from "./formatDisplayName";
 
 export const calculatePlayerPerformance = (
   game,
@@ -8,12 +9,12 @@ export const calculatePlayerPerformance = (
 ) => {
   const date = transformDate(game.date);
 
-  const getUserByUsername = (username) =>
-    usersToUpdate.find((user) => user.username === username);
+  const getUserByDisplayName = (displayName) =>
+    usersToUpdate.find((user) => formatDisplayName(user) === displayName);
 
   const combinedWinnerXp = game.result.winner.players.reduce(
-    (totalXp, playerUsername) => {
-      const user = getUserByUsername(playerUsername);
+    (totalXp, player) => {
+      const user = getUserByDisplayName(player);
       if (user) {
         return totalXp + user.profileDetail.XP;
       }
@@ -23,8 +24,8 @@ export const calculatePlayerPerformance = (
   );
 
   const combinedLoserXp = game.result.loser.players.reduce(
-    (totalXp, playerUsername) => {
-      const user = getUserByUsername(playerUsername);
+    (totalXp, player) => {
+      const user = getUserByDisplayName(player);
       if (user) {
         return totalXp + user.profileDetail.XP;
       }
@@ -183,7 +184,7 @@ export const calculatePlayerPerformance = (
     // Calculate demon win bonus (doubles the streak XP for wins with 10+ point difference)
     let demonBonus = 0;
     if (scoreDifference >= 10) {
-      demon = streakType === "W" ? streakXp : -streakXp;
+      demonBonus = streakType === "W" ? streakXp : -streakXp;
     }
 
     // Final XP calculation
@@ -279,7 +280,9 @@ export const calculatePlayerPerformance = (
 
   // Update stats for winning players
   game.result.winner.players.forEach((winnerId) => {
-    const player = playersToUpdate.find((p) => p.username === winnerId);
+    const player = playersToUpdate.find(
+      (p) => formatDisplayName(p) === winnerId
+    );
     const user = usersToUpdate.find((u) => u.userId === player.userId);
 
     // console.log("user to be updated for a win", user);
@@ -321,10 +324,10 @@ export const calculatePlayerPerformance = (
 
   // Update stats for losing players
   game.result.loser.players.forEach((loserId) => {
-    const player = playersToUpdate.find((p) => p.username === loserId);
+    const player = playersToUpdate.find(
+      (p) => formatDisplayName(p) === loserId
+    );
     const user = usersToUpdate.find((u) => u.userId === player.userId);
-
-    // console.log("user to be updated for a loss", user);
 
     if (player && user) {
       updatePlayerStats(player, false, user.profileDetail);
