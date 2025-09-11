@@ -31,6 +31,7 @@ import { locationSchema } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
+import { formatDisplayName } from "../helpers/formatDisplayName";
 
 const LeagueContext = createContext();
 
@@ -617,7 +618,7 @@ const LeagueProvider = ({ children }) => {
         const playersToUpdate = leagueParticipants.filter((player) =>
           game.result.winner.players
             .concat(game.result.loser.players)
-            .includes(player.username)
+            .includes(formatDisplayName(player))
         );
 
         const userIds = playersToUpdate.map((player) => player.userId);

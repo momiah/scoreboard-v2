@@ -11,6 +11,7 @@ import {
   updateTeams,
 } from "./firebaseFunctions";
 import { calculateWin } from "../helpers/calculateWin";
+import { formatDisplayName } from "../helpers/formatDisplayName";
 
 export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
   try {
@@ -71,7 +72,7 @@ export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
         const playersToUpdate = currentLeagueParticipants.filter((player) =>
           approvedGame.result.winner.players
             .concat(approvedGame.result.loser.players)
-            .includes(player.username)
+            .includes(formatDisplayName(player))
         );
 
         if (playersToUpdate.length === 0) {
@@ -93,7 +94,7 @@ export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
         // Update league participants in memory for next iteration
         currentLeagueParticipants = currentLeagueParticipants.map((player) => {
           const updatedPlayer = playerPerformance.playersToUpdate.find(
-            (p) => p.username === player.username
+            (p) => formatDisplayName(p) === formatDisplayName(player)
           );
           return updatedPlayer ? { ...player, ...updatedPlayer } : player;
         });

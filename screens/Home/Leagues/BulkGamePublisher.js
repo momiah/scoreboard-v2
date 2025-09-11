@@ -25,6 +25,8 @@ import {
   ScoreDisplay,
 } from "../../../components/scoreboard/ScoreboardAtoms";
 import { notificationSchema, notificationTypes } from "../../../schemas/schema";
+import { calculateWin } from "../../../helpers/calculateWin";
+import { formatDisplayName } from "../../../helpers/formatDisplayName";
 
 const { height: screenHight } = Dimensions.get("window");
 const popupHeight = screenHight * 0.3; // 30% of screen height
@@ -33,12 +35,12 @@ const BulkGamePublisher = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { leagueId, leagueById } = route.params;
-  const { 
-    currentUser, 
-    fetchPlayers, 
-    retrievePlayersFromLeague, 
-    getUserById, 
-    sendNotification 
+  const {
+    currentUser,
+    fetchPlayers,
+    retrievePlayersFromLeague,
+    getUserById,
+    sendNotification,
   } = useContext(UserContext);
   const { fetchLeagueById } = useContext(LeagueContext);
   const {
@@ -53,16 +55,11 @@ const BulkGamePublisher = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [expandedGameId, setExpandedGameId] = useState(null);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
 
   const leagueType = leagueById?.leagueType || "Doubles";
   const leagueName = leagueById?.leagueName || "";
   const existingGames = leagueById?.games || [];
-
-  useEffect(() => {
-    if (leagueId) {
-      fetchPlayers(leagueId);
-    }
-  }, [leagueId, fetchPlayers]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -70,48 +67,12 @@ const BulkGamePublisher = () => {
     navigation.goBack();
   };
 
-  // Calculate win for game result
-  const calculateWin = (team1, team2) => {
-    if (team1.score > team2.score) {
-      return {
-        winner: {
-          team: "Team 1",
-          players:
-            leagueType === "Singles"
-              ? [team1.player1]
-              : [team1.player1, team1.player2],
-          score: team1.score,
-        },
-        loser: {
-          team: "Team 2",
-          players:
-            leagueType === "Singles"
-              ? [team2.player1]
-              : [team2.player1, team2.player2],
-          score: team2.score,
-        },
-      };
-    } else {
-      return {
-        winner: {
-          team: "Team 2",
-          players:
-            leagueType === "Singles"
-              ? [team2.player1]
-              : [team2.player1, team2.player2],
-          score: team2.score,
-        },
-        loser: {
-          team: "Team 1",
-          players:
-            leagueType === "Singles"
-              ? [team1.player1]
-              : [team1.player1, team1.player2],
-          score: team1.score,
-        },
-      };
-    }
-  };
+  const handleAddGame = useCallback(async () => {
+    setLoadingPlayers(true);
+    await fetchPlayers(leagueId);
+    setLoadingPlayers(false);
+    setModalVisible(true);
+  }, [fetchPlayers, leagueId]);
 
   // Handle adding a new game to pending list
   const handleAddGameToPending = useCallback(
@@ -141,35 +102,33 @@ const BulkGamePublisher = () => {
         return false;
       }
 
-      // Check if current user is participating
-      const playersInGame = [
-        selectedPlayers.team1[0],
-        selectedPlayers.team1[1],
-        selectedPlayers.team2[0],
-        selectedPlayers.team2[1],
-      ].filter(Boolean);
-
       // Generate unique ID for pending games
       const allGames = [...existingGames, ...pendingGames];
       const gameId = generateUniqueGameId(allGames);
 
+      const team1 = {
+        player1: selectedPlayers.team1[0],
+        player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
+        score: score1,
+      };
+
+      const team2 = {
+        player1: selectedPlayers.team2[0],
+        player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
+        score: score2,
+      };
+
+      const result = calculateWin(team1, team2, leagueType);
+
       const newGame = {
         gameId,
         gamescore: `${team1Score} - ${team2Score}`,
+        createdAt: new Date(),
         date: moment().format("DD-MM-YYYY"),
-        team1: {
-          player1: selectedPlayers.team1[0],
-          player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
-          score: parseInt(team1Score) || 0,
-        },
-        team2: {
-          player1: selectedPlayers.team2[0],
-          player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
-          score: parseInt(team2Score) || 0,
-        },
-        get result() {
-          return calculateWin(this.team1, this.team2);
-        },
+        time: moment().format("HH:mm"),
+        team1,
+        team2,
+        result,
         numberOfApprovals: 0,
         numberOfDeclines: 0,
       };
@@ -201,60 +160,67 @@ const BulkGamePublisher = () => {
     try {
       // 1. Collect all players and count their appearances
       const playerGameCounts = {};
-      
-      pendingGames.forEach(game => {
+
+      pendingGames.forEach((game) => {
         const playersInGame = [
           game.team1.player1,
           game.team1.player2,
           game.team2.player1,
           game.team2.player2,
         ].filter(Boolean); // Remove null values
-        
-        playersInGame.forEach(playerName => {
-          playerGameCounts[playerName] = (playerGameCounts[playerName] || 0) + 1;
+
+        playersInGame.forEach((playerName) => {
+          playerGameCounts[playerName] =
+            (playerGameCounts[playerName] || 0) + 1;
         });
       });
-      
+
       // 2. Get league players to map usernames to userIds
       const leagueParticipants = await retrievePlayersFromLeague(leagueId);
       if (!leagueParticipants || leagueParticipants.length === 0) {
         console.log("No league participants found");
         return;
       }
-      
+
       // 3. Send notifications to each unique player
       for (const [playerName, gameCount] of Object.entries(playerGameCounts)) {
-        // Skip sending notification to current user (the admin)
-        if (playerName === currentUser?.username) continue;
-        
+        const currentUserDisplayName = formatDisplayName(currentUser);
+        if (playerName === currentUserDisplayName) continue;
+
         // Find the player in league participants
-        const player = leagueParticipants.find(p => p.username === playerName);
+        const player = leagueParticipants.find(
+          (p) => formatDisplayName(p) === playerName
+        );
         if (!player) {
           console.log(`Player ${playerName} not found in league participants`);
           continue;
         }
-        
+
         // Get full user data
         const userData = await getUserById(player.userId);
         if (!userData) {
           console.log(`User data not found for ${playerName}`);
           continue;
         }
-        
+
         const payload = {
           ...notificationSchema,
           createdAt: new Date(),
           recipientId: userData.userId,
           senderId: currentUser?.userId,
-          message: `An admin has bulk published ${gameCount} game${gameCount > 1 ? 's' : ''} with you playing in ${leagueName}`,
+          message: `An admin has bulk published ${gameCount} game${
+            gameCount > 1 ? "s" : ""
+          } with you playing in ${leagueName}`,
           type: notificationTypes.INFORMATION.LEAGUE.TYPE,
           data: {
             leagueId,
           },
         };
-        
+
         await sendNotification(payload);
-        console.log(`Notification sent to ${playerName} for ${gameCount} games`);
+        console.log(
+          `Notification sent to ${playerName} for ${gameCount} games`
+        );
       }
     } catch (error) {
       console.error("Error sending bulk notifications:", error);
@@ -285,7 +251,7 @@ const BulkGamePublisher = () => {
               if (result.success) {
                 // Send notifications to players
                 await sendBulkNotifications();
-                
+
                 handleShowPopup(
                   `Successfully published ${result.totalSuccessful} games!`
                 );
@@ -310,7 +276,14 @@ const BulkGamePublisher = () => {
         },
       ]
     );
-  }, [pendingGames, leagueId, handleShowPopup, fetchLeagueById, navigation, sendBulkNotifications]);
+  }, [
+    pendingGames,
+    leagueId,
+    handleShowPopup,
+    fetchLeagueById,
+    navigation,
+    sendBulkNotifications,
+  ]);
 
   // Handle cancel - clear all pending games
   const handleCancel = useCallback(() => {
@@ -338,40 +311,48 @@ const BulkGamePublisher = () => {
 
   // Render game item
   const renderGameItem = useCallback(
-  ({ item }) => {
-    const isExpanded = expandedGameId === item.gameId;
+    ({ item }) => {
+      const isExpanded = expandedGameId === item.gameId;
 
-    return (
-      <GameContainer
-        expanded={isExpanded}
-        onPress={() => handleGameItemPress(item.gameId)}
-      >
-        {isExpanded ? (
-          <ActionButtons>
-            <CancelButton onPress={() => setExpandedGameId(null)}>
-              <ActionButtonText>Cancel</ActionButtonText>
-            </CancelButton>
-            <DeleteButton onPress={() => handleRemoveGame(item.gameId)}>
-              <ActionButtonText>Delete</ActionButtonText>
-            </DeleteButton>
-          </ActionButtons>
-        ) : (
-          <>
-            <TeamColumn team="left" players={item.team1} leagueType={leagueType} />
-            <ScoreDisplay
-              date={item.date}
-              team1={item.team1.score}
-              team2={item.team2.score}
-              item={item}
-            />
-            <TeamColumn team="right" players={item.team2} leagueType={leagueType} />
-          </>
-        )}
-      </GameContainer>
-    );
-  },
-  [leagueType, expandedGameId, handleGameItemPress, handleRemoveGame]
-);
+      return (
+        <GameContainer
+          expanded={isExpanded}
+          onPress={() => handleGameItemPress(item.gameId)}
+        >
+          {isExpanded ? (
+            <ActionButtons>
+              <CancelButton onPress={() => setExpandedGameId(null)}>
+                <ActionButtonText>Cancel</ActionButtonText>
+              </CancelButton>
+              <DeleteButton onPress={() => handleRemoveGame(item.gameId)}>
+                <ActionButtonText>Delete</ActionButtonText>
+              </DeleteButton>
+            </ActionButtons>
+          ) : (
+            <>
+              <TeamColumn
+                team="left"
+                players={item.team1}
+                leagueType={leagueType}
+              />
+              <ScoreDisplay
+                date={item.date}
+                team1={item.team1.score}
+                team2={item.team2.score}
+                item={item}
+              />
+              <TeamColumn
+                team="right"
+                players={item.team2}
+                leagueType={leagueType}
+              />
+            </>
+          )}
+        </GameContainer>
+      );
+    },
+    [leagueType, expandedGameId, handleGameItemPress, handleRemoveGame]
+  );
 
   const publishText =
     pendingGames.length === 1
@@ -396,8 +377,12 @@ const BulkGamePublisher = () => {
         <View style={{ width: 24 }} />
       </Header>
 
-      <AddGameButton onPress={() => setModalVisible(true)}>
-        <ButtonText>Add Game</ButtonText>
+      <AddGameButton onPress={handleAddGame} disabled={loadingPlayers}>
+        {loadingPlayers ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <ButtonText>Add Game</ButtonText>
+        )}
       </AddGameButton>
 
       {pendingGames.length === 0 ? (
@@ -405,7 +390,8 @@ const BulkGamePublisher = () => {
           <Ionicons name="archive-outline" size={60} color="#666" />
           <EmptyText>No games added yet</EmptyText>
           <EmptySubtext>
-            Bulk publishing allows admins to publish multiple games without approval.
+            Bulk publishing allows admins to publish multiple games without
+            approval.
           </EmptySubtext>
         </EmptyState>
       ) : (
@@ -488,7 +474,6 @@ const PublishButtons = styled.View({
   flexDirection: "row",
   gap: 10,
   paddingTop: 20,
-
 });
 
 const CancelButton = styled.TouchableOpacity({

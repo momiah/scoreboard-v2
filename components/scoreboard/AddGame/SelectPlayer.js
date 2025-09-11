@@ -16,6 +16,7 @@ import {
 import styled from "styled-components/native";
 import { UserContext } from "../../../context/UserContext";
 import { AntDesign } from "@expo/vector-icons";
+import { formatDisplayName } from "../../../helpers/formatDisplayName";
 
 // Memoized player item component to optimize rendering in FlatList
 const PlayerItem = memo(({ item, onSelect, isSelected, isDisabled }) => (
@@ -63,7 +64,7 @@ const SelectPlayer = ({
         const lastInitial = player.lastName.charAt(0);
         return {
           key: player.userId,
-          value: `${firstName} ${lastInitial}`,
+          value: formatDisplayName(player),
         };
       }),
     [players]

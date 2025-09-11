@@ -25,6 +25,7 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 const AddGameModal = ({
   modalVisible,
@@ -196,9 +197,7 @@ const AddGameModal = ({
       team2.player2,
     ].filter(Boolean);
 
-    const firstName = currentUser?.firstName.split(" ")[0].slice(0, 9);
-    const lastInitial = currentUser?.lastName.charAt(0);
-    const reporterName = `${firstName} ${lastInitial}`;
+    const reporterName = formatDisplayName(currentUser);
 
     if (!playersInGame.includes(reporterName)) {
       setErrorText("You must be a participant in the game to report it.");
@@ -224,10 +223,7 @@ const AddGameModal = ({
       : [team1.player1, team1.player2].filter(Boolean);
 
     const opponentPlayers = playersInLeague.filter((player) => {
-      const firstName = player?.firstName.split(" ")[0].slice(0, 9);
-      const lastInitial = player?.lastName.charAt(0);
-      const reporterName = `${firstName} ${lastInitial}`;
-      return opponentUsernames.includes(reporterName);
+      return opponentUsernames.includes(formatDisplayName(player)); // Fixed
     });
 
     const userIds = opponentPlayers.map((player) => player.userId);
@@ -241,7 +237,9 @@ const AddGameModal = ({
         createdAt: new Date(),
         recipientId: user.userId,
         senderId: currentUser?.userId,
-        message: `${currentUser?.username} has just reported a score in ${leagueName} league`,
+        message: `${formatDisplayName(
+          currentUser
+        )} has just reported a score in ${leagueName} league`,
         type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
         data: { leagueId, gameId },
       };
