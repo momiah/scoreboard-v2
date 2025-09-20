@@ -5,7 +5,7 @@ const { calculatePrizeAllocation, parseDDMMYYYY } = require("./helpers/calculate
 
 const db = admin.firestore();
 
-exports.distributePrizes = onSchedule("every 1 hours", async () => {
+exports.distributeLeaguePrizes = onSchedule("every 1 hours", async () => {
     const today = new Date();
 
     try {
@@ -20,7 +20,7 @@ exports.distributePrizes = onSchedule("every 1 hours", async () => {
 
         // Check if league endDate has passed
         const endDate = parseDDMMYYYY(league.endDate);
-        
+
         if (today >= endDate) {
           await calculatePrizeAllocation({
             leagueParticipants: league.leagueParticipants || [],
@@ -30,6 +30,7 @@ exports.distributePrizes = onSchedule("every 1 hours", async () => {
           });
         }
       }
+      console.log("Prizes distributed successfully!");
     } catch (error) {
       console.error("Error distributing prizes:", error);
     }
