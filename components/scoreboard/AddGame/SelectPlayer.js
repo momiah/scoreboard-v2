@@ -18,10 +18,10 @@ import { UserContext } from "../../../context/UserContext";
 import { AntDesign } from "@expo/vector-icons";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
 
-// Memoized player item component to optimize rendering in FlatList
-const PlayerItem = memo(({ item, onSelect, isSelected, isDisabled }) => (
+// Memoized player item component
+const PlayerItem = memo(({ player, onSelect, isSelected, isDisabled }) => (
   <PlayerDropDown
-    onPress={() => !isDisabled && onSelect(item.value)}
+    onPress={() => !isDisabled && onSelect(player)}
     style={{
       backgroundColor: isSelected ? "#e6f7ff" : isDisabled ? "#f0f0f0" : "#fff",
     }}
@@ -32,12 +32,11 @@ const PlayerItem = memo(({ item, onSelect, isSelected, isDisabled }) => (
         color: isDisabled ? "#999" : "#000",
       }}
     >
-      {item.value}
+      {player.displayName}
     </PlayerText>
   </PlayerDropDown>
 ));
 
-// Add these props
 const SelectPlayer = ({
   onSelectPlayer,
   selectedPlayers,
@@ -45,28 +44,28 @@ const SelectPlayer = ({
   team,
   index,
 }) => {
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(null); // Store full player object, not string
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { players } = useContext(UserContext);
 
   useEffect(() => {
-    const externalSelected = selectedPlayers[team]?.[index] || "";
-    if (externalSelected !== selected) {
+    const externalSelected = selectedPlayers[team]?.[index] || null;
+    if (externalSelected?.userId !== selected?.userId) {
       setSelected(externalSelected);
     }
   }, [selectedPlayers, team, index]);
 
   const playerArray = React.useMemo(
     () =>
-      players.map((player) => {
-        // Take only the first word of the first name and trim to max 9 chars
-        const firstName = player.firstName.split(" ")[0].slice(0, 9);
-        const lastInitial = player.lastName.charAt(0);
-        return {
-          key: player.userId,
-          value: formatDisplayName(player),
-        };
-      }),
+      players.map((player) => ({
+        // key: player.userId,
+        // value: formatDisplayName(player), // Display name
+        userId: player.userId,
+        firstName: player.firstName,
+        lastName: player.lastName,
+        username: player.username,
+        displayName: formatDisplayName(player),
+      })),
     [players]
   );
 
@@ -101,7 +100,6 @@ const SelectPlayer = ({
     }
   }, [borderType]);
 
-  // Callbacks for actions to avoid recreating functions on each render
   const toggleDropdown = useCallback(() => {
     setDropdownVisible(true);
   }, []);
@@ -110,30 +108,30 @@ const SelectPlayer = ({
     setDropdownVisible(false);
   }, []);
 
-  const handleSelect = (value) => {
-    const isSame = selected === value;
-    const newValue = isSame ? "" : value;
+  const handleSelect = (player) => {
+    const isSame = selected?.userId === player.userId;
+    const newPlayer = isSame ? null : player;
 
-    setSelected(newValue); // update internal state immediately
-    onSelectPlayer(newValue); // notify parent
-    if (isSame) return; // do not close dropdown if same value is selected
-    closeDropdown(); // close dropdown after selection
+    setSelected(newPlayer);
+    onSelectPlayer(newPlayer); // Pass full player object or null
+    if (isSame) return; // Don't close dropdown if deselecting
+    closeDropdown();
   };
 
   // FlatList render item function
   const renderItem = ({ item }) => {
-    const isSelected = selected === item.value;
+    const isSelected = selected?.userId === item.userId;
 
-    // ✅ Only disable if the player is selected by someone else
+    // Check if player is already selected by someone else
     const isSelectedByOthers =
-      selectedPlayers.team1.includes(item.value) ||
-      selectedPlayers.team2.includes(item.value);
+      selectedPlayers.team1.some((p) => p?.userId === item.userId) ||
+      selectedPlayers.team2.some((p) => p?.userId === item.userId);
 
     const isDisabled = !isSelected && isSelectedByOthers;
 
     return (
       <PlayerItem
-        item={item}
+        player={item}
         onSelect={handleSelect}
         isSelected={isSelected}
         isDisabled={isDisabled}
@@ -149,7 +147,7 @@ const SelectPlayer = ({
         hasBorder={borderType !== "none"}
       >
         <PlayerSelect style={textStyle}>
-          {selected || "Select Player"}
+          {selected?.displayName || "Select Player"}
         </PlayerSelect>
       </PlayerSelectContainer>
 
@@ -172,7 +170,7 @@ const SelectPlayer = ({
             <FlatList
               data={playerArray}
               renderItem={renderItem}
-              keyExtractor={(item) => item.key}
+              keyExtractor={(item) => item.userId}
               initialNumToRender={10}
               maxToRenderPerBatch={10}
               windowSize={5}
@@ -187,7 +185,7 @@ const SelectPlayer = ({
 
 const { width: screenWidth } = Dimensions.get("window");
 
-// Styled components defined outside the component to avoid recreation on each render
+// Styled components
 const PlayerSelectContainer = styled.TouchableOpacity(({ hasBorder }) => ({
   width: screenWidth <= 400 ? 110 : 110,
   alignItems: "center",
