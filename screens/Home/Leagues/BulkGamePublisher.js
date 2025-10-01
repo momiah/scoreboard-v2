@@ -79,10 +79,10 @@ const BulkGamePublisher = () => {
     (gameData) => {
       const { selectedPlayers, team1Score, team2Score } = gameData;
 
-      // Validation
+      // Updated validation - check for null instead of empty string
       if (
-        selectedPlayers.team1.every((player) => player === "") ||
-        selectedPlayers.team2.every((player) => player === "")
+        selectedPlayers.team1.every((player) => player === null) ||
+        selectedPlayers.team2.every((player) => player === null)
       ) {
         Alert.alert("Error", "Please select players for both teams.");
         return false;
@@ -155,51 +155,45 @@ const BulkGamePublisher = () => {
     [expandedGameId]
   );
 
-  // Function to send bulk notifications
   const sendBulkNotifications = async () => {
     try {
       // 1. Collect all players and count their appearances
       const playerGameCounts = {};
 
       pendingGames.forEach((game) => {
+        // Extract player objects from teams
         const playersInGame = [
           game.team1.player1,
           game.team1.player2,
           game.team2.player1,
           game.team2.player2,
-        ].filter(Boolean); // Remove null values
+        ].filter(Boolean); // Remove nulls
 
-        playersInGame.forEach((playerName) => {
-          playerGameCounts[playerName] =
-            (playerGameCounts[playerName] || 0) + 1;
+        playersInGame.forEach((playerObj) => {
+          const userId = playerObj.userId;
+          const displayName = playerObj.displayName;
+
+          if (!playerGameCounts[userId]) {
+            playerGameCounts[userId] = {
+              count: 0,
+              displayName: displayName,
+              userId: userId,
+            };
+          }
+          playerGameCounts[userId].count++;
         });
       });
 
-      // 2. Get league players to map usernames to userIds
-      const leagueParticipants = await retrievePlayersFromLeague(leagueId);
-      if (!leagueParticipants || leagueParticipants.length === 0) {
-        console.log("No league participants found");
-        return;
-      }
-
-      // 3. Send notifications to each unique player
-      for (const [playerName, gameCount] of Object.entries(playerGameCounts)) {
-        const currentUserDisplayName = formatDisplayName(currentUser);
-        if (playerName === currentUserDisplayName) continue;
-
-        // Find the player in league participants
-        const player = leagueParticipants.find(
-          (p) => formatDisplayName(p) === playerName
-        );
-        if (!player) {
-          console.log(`Player ${playerName} not found in league participants`);
+      // 2. Send notifications to each unique player
+      for (const [userId, data] of Object.entries(playerGameCounts)) {
+        // Skip current user
+        if (userId === currentUser?.userId) {
           continue;
         }
 
-        // Get full user data
-        const userData = await getUserById(player.userId);
+        const userData = await getUserById(userId);
         if (!userData) {
-          console.log(`User data not found for ${playerName}`);
+          console.log(`User data not found for ${data.displayName}`);
           continue;
         }
 
@@ -208,8 +202,8 @@ const BulkGamePublisher = () => {
           createdAt: new Date(),
           recipientId: userData.userId,
           senderId: currentUser?.userId,
-          message: `An admin has bulk published ${gameCount} game${
-            gameCount > 1 ? "s" : ""
+          message: `An admin has bulk published ${data.count} game${
+            data.count > 1 ? "s" : ""
           } with you playing in ${leagueName}`,
           type: notificationTypes.INFORMATION.LEAGUE.TYPE,
           data: {
@@ -219,7 +213,7 @@ const BulkGamePublisher = () => {
 
         await sendNotification(payload);
         console.log(
-          `Notification sent to ${playerName} for ${gameCount} games`
+          `Notification sent to ${data.displayName} for ${data.count} games`
         );
       }
     } catch (error) {

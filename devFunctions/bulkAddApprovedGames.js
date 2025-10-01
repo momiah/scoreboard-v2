@@ -60,19 +60,23 @@ export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
           `Processing game ${i + 1}/${gameObjects.length}: ${game.gameId}`
         );
 
-        // Ensure the game is marked as approved
         const approvedGame = {
           ...game,
           approvalStatus: "approved",
           numberOfApprovals: 1,
           numberOfDeclines: 0,
         };
+        // Extract player userIds from the game's team objects
+        const playerUserIds = [
+          game.team1.player1?.userId,
+          game.team1.player2?.userId,
+          game.team2.player1?.userId,
+          game.team2.player2?.userId,
+        ].filter(Boolean); // Remove nulls
 
-        // Step 3: Calculate performance updates for this game
+        // Filter league participants who are in this game
         const playersToUpdate = currentLeagueParticipants.filter((player) =>
-          approvedGame.result.winner.players
-            .concat(approvedGame.result.loser.players)
-            .includes(formatDisplayName(player))
+          playerUserIds.includes(player.userId)
         );
 
         if (playersToUpdate.length === 0) {
@@ -81,10 +85,11 @@ export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
           continue;
         }
 
-        const userIds = playersToUpdate.map((player) => player.userId);
-        const usersToUpdate = await Promise.all(userIds.map(getUserById));
+        const usersToUpdate = (
+          await Promise.all(playerUserIds.map(getUserById))
+        ).filter(Boolean);
 
-        // Calculate player performance
+        // Calculate player performance using the new matching method
         const playerPerformance = calculatePlayerPerformance(
           approvedGame,
           playersToUpdate,
@@ -94,7 +99,7 @@ export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
         // Update league participants in memory for next iteration
         currentLeagueParticipants = currentLeagueParticipants.map((player) => {
           const updatedPlayer = playerPerformance.playersToUpdate.find(
-            (p) => formatDisplayName(p) === formatDisplayName(player)
+            (p) => p.userId === player.userId // Match by userId instead of display name
           );
           return updatedPlayer ? { ...player, ...updatedPlayer } : player;
         });
