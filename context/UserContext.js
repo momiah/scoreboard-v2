@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 
 import {
   doc,
@@ -165,12 +171,10 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const retrievePlayersFromLeague = async (leagueId) => {
+  const retrievePlayersFromLeague = useCallback(async (leagueId) => {
     try {
       const leagueCollectionRef = collection(db, "leagues");
       const leagueDocRef = doc(leagueCollectionRef, leagueId);
-
-      // Get the existing league document
       const leagueDoc = await getDoc(leagueDocRef);
       const leagueParticipants = leagueDoc.data().leagueParticipants;
 
@@ -179,7 +183,8 @@ const UserProvider = ({ children }) => {
       console.error("Error retrieving players:", error);
       return [];
     }
-  };
+  }, []);
+
   const retrieveTeams = async (leagueId) => {
     try {
       const leagueCollectionRef = collection(db, "leagues");
@@ -241,15 +246,17 @@ const UserProvider = ({ children }) => {
     }
   }
 
-  const fetchPlayers = async (leagueId) => {
-    try {
-      const players = await retrievePlayersFromLeague(leagueId);
-      setPlayers(players); // Set the retrieved players in the state
-    } catch (error) {
-      console.error("Error fetching players:", error);
-    }
-  };
-
+  const fetchPlayers = useCallback(
+    async (leagueId) => {
+      try {
+        const players = await retrievePlayersFromLeague(leagueId);
+        setPlayers(players);
+      } catch (error) {
+        console.error("Error fetching players:", error);
+      }
+    },
+    [retrievePlayersFromLeague]
+  );
   const [loading, setLoading] = useState(true); // Track loading state
 
   const getAllUsers = async () => {

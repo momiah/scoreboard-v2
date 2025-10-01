@@ -1,41 +1,24 @@
+import { formatTeam } from "./formatTeam";
+
 export const calculateWin = (team1, team2, leagueType = "Singles") => {
-  if (team1.score > team2.score) {
-    return {
-      winner: {
-        team: "Team 1",
-        players:
-          leagueType === "Singles"
-            ? [team1.player1]
-            : [team1.player1, team1.player2],
-        score: team1.score,
-      },
-      loser: {
-        team: "Team 2",
-        players:
-          leagueType === "Singles"
-            ? [team2.player1]
-            : [team2.player1, team2.player2],
-        score: team2.score,
-      },
-    };
-  } else {
-    return {
-      winner: {
-        team: "Team 2",
-        players:
-          leagueType === "Singles"
-            ? [team2.player1]
-            : [team2.player1, team2.player2],
-        score: team2.score,
-      },
-      loser: {
-        team: "Team 1",
-        players:
-          leagueType === "Singles"
-            ? [team1.player1]
-            : [team1.player1, team1.player2],
-        score: team1.score,
-      },
-    };
-  }
+  const team1Wins = team1.score > team2.score;
+
+  const winnerTeam = team1Wins ? team1 : team2;
+  const winnerPlayers = formatTeam(winnerTeam, leagueType);
+
+  const loserTeam = team1Wins ? team2 : team1;
+  const loserPlayers = formatTeam(loserTeam, leagueType);
+
+  return {
+    winner: {
+      team: team1Wins ? "Team 1" : "Team 2",
+      players: winnerPlayers,
+      score: winnerTeam.score,
+    },
+    loser: {
+      team: team1Wins ? "Team 2" : "Team 1",
+      players: loserPlayers,
+      score: loserTeam.score,
+    },
+  };
 };

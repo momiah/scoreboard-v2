@@ -1,16 +1,25 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity, Dimensions } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PlayTime from "./PlayTime";
-import PrizeContenders from "./PrizeContenders"; // Import the new component
+import PrizeContenders from "./PrizeContenders";
 import { copyLocationAddress } from "../../helpers/copyLocationAddress";
 import { GameContext } from "../../context/GameContext";
 import { useContext } from "react";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
+
+// Constants moved outside to prevent recreation
+const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
+  userId: `placeholder-${index}`,
+  username: "",
+  numberOfWins: 0,
+}));
+
+const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 
 const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
   const { getUserById } = useContext(UserContext);
@@ -18,17 +27,46 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
   const [isCopied, setIsCopied] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
+  const locationCopyTimeoutRef = useRef(null);
+
+  // Memoize expensive calculations
+  const gameStats = useMemo(() => {
+    const numberOfParticipants = leagueDetails?.leagueParticipants?.length || 1;
+    const numberOfGamesPlayed = leagueDetails?.games?.length || 0;
+    const totalGamePointsWon =
+      leagueDetails?.games?.reduce((acc, game) => {
+        return acc + (game?.result?.winner?.score || 0);
+      }, 0) || 0;
+
+    return {
+      numberOfParticipants,
+      numberOfGamesPlayed,
+      totalGamePointsWon,
+      prizePool:
+        (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2,
+    };
+  }, [leagueDetails?.leagueParticipants, leagueDetails?.games]);
+
+  // Memoize participants to prevent unnecessary useEffect runs
+  const participants = useMemo(
+    () => leagueDetails?.leagueParticipants || [],
+    [leagueDetails?.leagueParticipants]
+  );
+
   useEffect(() => {
     const loadEnrichedContenders = async () => {
       setIsDataLoading(true);
-      const participants = leagueDetails.leagueParticipants || [];
 
-      // Only filter (no sorting - enrichPlayers handles that)
       const contendersWithWins = participants.filter((p) => p.numberOfWins > 0);
 
       if (contendersWithWins.length > 0) {
-        const enriched = await enrichPlayers(getUserById, contendersWithWins);
-        setTopContenders(enriched.slice(0, 4));
+        try {
+          const enriched = await enrichPlayers(getUserById, contendersWithWins);
+          setTopContenders(enriched.slice(0, 4));
+        } catch (error) {
+          console.error("Error enriching players:", error);
+          setTopContenders([]);
+        }
       } else {
         setTopContenders([]);
       }
@@ -36,46 +74,30 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
     };
 
     loadEnrichedContenders();
-  }, [leagueDetails.leagueParticipants, getUserById]);
-
-  const locationCopyTimeoutRef = useRef(null);
-
-  const numberOfParticipants = leagueDetails.leagueParticipants.length || 1;
-  const numberOfGamesPlayed = leagueDetails.games.length;
-
-  const totalGamePointsWon = leagueDetails.games.reduce((acc, game) => {
-    return acc + game.result.winner.score;
-  }, 0);
+  }, [participants, getUserById]);
 
   const { courtName, address, postCode, city, countryCode } =
-    leagueDetails.location;
-  const fullAddress = `${courtName}, ${address}, ${city}, ${postCode}, ${countryCode}`;
+    leagueDetails?.location || {};
+  const fullAddress = `${courtName || ""}, ${address || ""}, ${city || ""}, ${
+    postCode || ""
+  }, ${countryCode || ""}`;
 
-  const prizePool =
-    (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2;
-
-  const distribution = [0.4, 0.3, 0.2, 0.1];
-
-  const hasPrizesDistributed = leagueDetails.prizesDistributed;
-  const leagueId = leagueDetails.leagueId;
+  const hasPrizesDistributed = leagueDetails?.prizesDistributed;
+  const leagueId = leagueDetails?.leagueId;
 
   const renderContenders = isDataLoading
-    ? Array.from({ length: 4 }, (_, index) => ({
-        userId: `placeholder-${index}`,
-        username: "",
-        numberOfWins: 0,
-      }))
+    ? PLACEHOLDER_CONTENDERS
     : topContenders;
 
   return (
     <LeagueSummaryContainer>
       <PrizeDistribution
-        prizePool={prizePool}
+        prizePool={gameStats.prizePool}
         endDate={endDate}
-        leagueParticipants={leagueDetails?.leagueParticipants}
+        leagueParticipants={participants}
         hasPrizesDistributed={hasPrizesDistributed}
         leagueId={leagueId}
-        distribution={distribution}
+        distribution={DISTRIBUTION}
       />
 
       <SectionTitleContainer>
@@ -106,8 +128,8 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
               item={player}
               index={index}
               isDataLoading={isDataLoading}
-              distribution={distribution}
-              prizePool={prizePool}
+              distribution={DISTRIBUTION}
+              prizePool={gameStats.prizePool}
               hasPrizesDistributed={hasPrizesDistributed}
             />
           ))
@@ -119,7 +141,7 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
         <TouchableOpacity
           onPress={() =>
             copyLocationAddress(
-              leagueDetails.location,
+              leagueDetails?.location,
               locationCopyTimeoutRef,
               setIsCopied
             )
@@ -154,7 +176,7 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
 
       {/* Participants */}
       <ParticipantCarousel
-        leagueParticipants={leagueDetails?.leagueParticipants}
+        leagueParticipants={participants}
         leagueAdmins={leagueDetails?.leagueAdmins}
         leagueOwner={leagueDetails?.leagueOwner}
       />

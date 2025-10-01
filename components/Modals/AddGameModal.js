@@ -25,6 +25,7 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 const AddGameModal = ({
   modalVisible,
@@ -55,20 +56,24 @@ const AddGameModal = ({
   const [loading, setLoading] = useState(false);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
+
+  // Initialize with null or empty strings, not objects
   const [selectedPlayers, setSelectedPlayers] = useState({
-    team1: leagueType === "Singles" ? [""] : ["", ""],
-    team2: leagueType === "Singles" ? [""] : ["", ""],
+    team1: leagueType === "Singles" ? [null] : [null, null],
+    team2: leagueType === "Singles" ? [null] : [null, null],
   });
 
   const areAllPlayersSelected = () => {
     if (leagueType === "Singles") {
-      return selectedPlayers.team1[0] !== "" && selectedPlayers.team2[0] !== "";
+      return (
+        selectedPlayers.team1[0] !== null && selectedPlayers.team2[0] !== null
+      );
     } else {
       return (
-        selectedPlayers.team1[0] !== "" &&
-        selectedPlayers.team1[1] !== "" &&
-        selectedPlayers.team2[0] !== "" &&
-        selectedPlayers.team2[1] !== ""
+        selectedPlayers.team1[0] !== null &&
+        selectedPlayers.team1[1] !== null &&
+        selectedPlayers.team2[0] !== null &&
+        selectedPlayers.team2[1] !== null
       );
     }
   };
@@ -103,17 +108,17 @@ const AddGameModal = ({
     setLoading(true);
 
     if (leagueType === "Singles") {
-      if (selectedPlayers.team1[0] === "" || selectedPlayers.team2[0] === "") {
+      if (!selectedPlayers.team1[0] || !selectedPlayers.team2[0]) {
         setErrorText("Please select both players.");
         setLoading(false);
         return;
       }
     } else if (leagueType === "Doubles") {
       if (
-        selectedPlayers.team1[0] === "" ||
-        selectedPlayers.team1[1] === "" ||
-        selectedPlayers.team2[0] === "" ||
-        selectedPlayers.team2[1] === ""
+        !selectedPlayers.team1[0] ||
+        !selectedPlayers.team1[1] ||
+        !selectedPlayers.team2[0] ||
+        !selectedPlayers.team2[1]
       ) {
         setErrorText("Please select all 4 players.");
         setLoading(false);
@@ -131,8 +136,8 @@ const AddGameModal = ({
       const success = onGameAdded(gameData);
       if (success) {
         setSelectedPlayers({
-          team1: leagueType === "Singles" ? [""] : ["", ""],
-          team2: leagueType === "Singles" ? [""] : ["", ""],
+          team1: leagueType === "Singles" ? [null] : [null, null],
+          team2: leagueType === "Singles" ? [null] : [null, null],
         });
         setTeam1Score("");
         setTeam2Score("");
@@ -186,17 +191,21 @@ const AddGameModal = ({
       numberOfApprovals: 0,
       numberOfDeclines: 0,
       approvalStatus: "pending",
-      reporter: currentUser?.username,
+      reporter: formatDisplayName(currentUser),
     };
 
+    // console.log("New Game Object:", JSON.stringify(newGame, null, 2));
+
     const playersInGame = [
-      team1.player1,
-      team1.player2,
-      team2.player1,
-      team2.player2,
+      team1.player1?.userId,
+      team1.player2?.userId,
+      team2.player1?.userId,
+      team2.player2?.userId,
     ].filter(Boolean);
 
-    if (!playersInGame.includes(currentUser?.username)) {
+    const currentUserId = currentUser?.userId;
+
+    if (!playersInGame.includes(currentUser?.userId)) {
       setErrorText("You must be a participant in the game to report it.");
       setLoading(false);
       return;
@@ -204,28 +213,19 @@ const AddGameModal = ({
 
     setErrorText("");
 
-    const playersInLeague = await retrievePlayersFromLeague(leagueId);
-    if (!playersInLeague || playersInLeague.length === 0) {
-      setErrorText("No players found in the league.");
-      setLoading(false);
-      return;
-    }
+    const isCurrentUserTeam1 = [
+      team1.player1?.userId,
+      team1.player2?.userId,
+    ].includes(currentUserId);
 
-    const isCurrentUserTeam1 = [team1.player1, team1.player2].includes(
-      currentUser?.username
-    );
+    const opponentUserIds = isCurrentUserTeam1
+      ? [team2.player1?.userId, team2.player2?.userId].filter(Boolean)
+      : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
 
-    const opponentUsernames = isCurrentUserTeam1
-      ? [team2.player1, team2.player2].filter(Boolean)
-      : [team1.player1, team1.player2].filter(Boolean);
+    console.log("Opponent User IDs:", opponentUserIds);
 
-    const opponentPlayers = playersInLeague.filter((player) =>
-      opponentUsernames.includes(player.username)
-    );
-
-    const userIds = opponentPlayers.map((player) => player.userId);
     const requestForOpponentApprovals = await Promise.all(
-      userIds.map(getUserById)
+      opponentUserIds.map(getUserById)
     );
 
     for (const user of requestForOpponentApprovals) {
@@ -233,8 +233,10 @@ const AddGameModal = ({
         ...notificationSchema,
         createdAt: new Date(),
         recipientId: user.userId,
-        senderId: currentUser?.userId,
-        message: `${currentUser?.username} has just reported a score in ${leagueName} league`,
+        senderId: currentUserId,
+        message: `${formatDisplayName(
+          currentUser
+        )} has just reported a score in ${leagueName} league`,
         type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
         data: { leagueId, gameId },
       };
@@ -243,7 +245,12 @@ const AddGameModal = ({
     }
 
     await addGame(newGame, gameId, leagueId);
-    setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
+
+    // Reset with nulls
+    setSelectedPlayers({
+      team1: leagueType === "Singles" ? [null] : [null, null],
+      team2: leagueType === "Singles" ? [null] : [null, null],
+    });
     setTeam1Score("");
     setTeam2Score("");
 
@@ -252,14 +259,14 @@ const AddGameModal = ({
     );
     await fetchLeagueById(leagueId);
     setLoading(false);
-    console.log("Game added successfully.");
+    console.log("Game added successfully with player objects:", newGame);
   };
 
   const clearSelectedPlayers = () => {
     setModalVisible(false);
     setSelectedPlayers({
-      team1: leagueType === "Singles" ? [""] : ["", ""],
-      team2: leagueType === "Singles" ? [""] : ["", ""],
+      team1: leagueType === "Singles" ? [null] : [null, null],
+      team2: leagueType === "Singles" ? [null] : [null, null],
     });
   };
 
@@ -271,7 +278,10 @@ const AddGameModal = ({
         visible={modalVisible}
         onRequestClose={() => {
           setModalVisible(false);
-          setSelectedPlayers({ team1: ["", ""], team2: ["", ""] });
+          setSelectedPlayers({
+            team1: leagueType === "Singles" ? [null] : [null, null],
+            team2: leagueType === "Singles" ? [null] : [null, null],
+          });
           setTeam1Score("");
           setTeam2Score("");
         }}
@@ -352,7 +362,7 @@ const ModalContainer = styled(BlurView).attrs({
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "rgba(2, 13, 24, 1)", // Translucent dark blue
+  backgroundColor: "rgba(2, 13, 24, 1)",
   padding: 20,
   borderRadius: 10,
   width: screenWidth - 40,
