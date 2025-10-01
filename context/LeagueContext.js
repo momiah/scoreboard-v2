@@ -507,6 +507,8 @@ const LeagueProvider = ({ children }) => {
       const newParticipantProfile = {
         ...scoreboardProfileSchema,
         username: newParticipant.username,
+        firstName: newParticipant.firstName.split(" ")[0],
+        lastName: newParticipant.lastName.split(" ")[0],
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
         profileImage: newParticipant.profilImage || ccImageEndpoint,
@@ -580,7 +582,8 @@ const LeagueProvider = ({ children }) => {
       const leagueRef = doc(db, "leagues", leagueId);
       const leagueDoc = await getDoc(leagueRef);
       const leagueData = leagueDoc.data();
-      const leagueParticipants = leagueDoc.data().leagueParticipants;
+      const leagueParticipants = leagueData.leagueParticipants;
+      const leagueType = leagueData.leagueType;
 
       const games = leagueData.games || [];
       const gameIndex = games.findIndex((game) => game.gameId === gameId);
@@ -634,13 +637,15 @@ const LeagueProvider = ({ children }) => {
         await updatePlayers(playerPerformance.playersToUpdate, leagueId);
         await updateUsers(playerPerformance.usersToUpdate);
 
-        const teamsToUpdate = await calculateTeamPerformance(
-          updatedGame,
-          retrieveTeams,
-          leagueId
-        );
+        if (leagueType === "Doubles") {
+          const teamsToUpdate = await calculateTeamPerformance(
+            updatedGame,
+            retrieveTeams,
+            leagueId
+          );
 
-        await updateTeams(teamsToUpdate, leagueId);
+          await updateTeams(teamsToUpdate, leagueId);
+        }
       }
 
       // Replace the game in the array
