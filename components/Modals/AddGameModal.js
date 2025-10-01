@@ -228,36 +228,36 @@ const AddGameModal = ({
       opponentUserIds.map(getUserById)
     );
 
-    // for (const user of requestForOpponentApprovals) {
-    //   const payload = {
-    //     ...notificationSchema,
-    //     createdAt: new Date(),
-    //     recipientId: user.userId,
-    //     senderId: currentUserId,
-    //     message: `${formatDisplayName(
-    //       currentUser
-    //     )} has just reported a score in ${leagueName} league`,
-    //     type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
-    //     data: { leagueId, gameId },
-    //   };
+    for (const user of requestForOpponentApprovals) {
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: user.userId,
+        senderId: currentUserId,
+        message: `${formatDisplayName(
+          currentUser
+        )} has just reported a score in ${leagueName} league`,
+        type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
+        data: { leagueId, gameId },
+      };
 
-    //   await sendNotification(payload);
-    // }
+      await sendNotification(payload);
+    }
 
-    // await addGame(newGame, gameId, leagueId);
+    await addGame(newGame, gameId, leagueId);
 
-    // // Reset with nulls
-    // setSelectedPlayers({
-    //   team1: leagueType === "Singles" ? [null] : [null, null],
-    //   team2: leagueType === "Singles" ? [null] : [null, null],
-    // });
-    // setTeam1Score("");
-    // setTeam2Score("");
+    // Reset with nulls
+    setSelectedPlayers({
+      team1: leagueType === "Singles" ? [null] : [null, null],
+      team2: leagueType === "Singles" ? [null] : [null, null],
+    });
+    setTeam1Score("");
+    setTeam2Score("");
 
-    // handleShowPopup(
-    //   "Game added! Opponents must approve for stats to be updated"
-    // );
-    // await fetchLeagueById(leagueId);
+    handleShowPopup(
+      "Game added! Opponents must approve for stats to be updated"
+    );
+    await fetchLeagueById(leagueId);
     setLoading(false);
     console.log("Game added successfully with player objects:", newGame);
   };
