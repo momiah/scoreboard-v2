@@ -125,6 +125,8 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     const leagueCreatorProfile = {
       ...scoreboardProfileSchema,
       username: userInfo.username,
+      firstName: userInfo.firstName,
+      lastName: userInfo.lastName,
       userId: userInfo.userId,
       memberSince: userInfo.profileDetail?.memberSince || "",
     };
