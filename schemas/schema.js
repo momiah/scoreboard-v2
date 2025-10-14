@@ -154,6 +154,7 @@ export const userProfileSchema = {
   phoneNumber: "",
   showEmail: true,
   showPhoneNumber: false,
+  pushTokens: [],
 };
 
 export const chatMessageSchema = {
