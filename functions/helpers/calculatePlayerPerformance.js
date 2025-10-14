@@ -279,7 +279,17 @@ const calculatePlayerPerformance = (
   // Update stats for winning players
   game.result.winner.players.forEach((winnerId) => {
     const player = playersToUpdate.find((p) => p.username === winnerId);
-    const user = usersToUpdate.find((u) => u.userId === player.userId);
+    const user = usersToUpdate.find((u) => u?.userId === player?.userId);
+
+    if (!player) {
+      console.warn(`⚠️ Winner player ${winnerId} not found in playersToUpdate`);
+      return;
+    }
+
+    if (!user) {
+      console.warn(`⚠️ User for winner player ${winnerId} not found`);
+      return;
+    }
 
     // console.log("user to be updated for a win", user);
 
@@ -321,7 +331,17 @@ const calculatePlayerPerformance = (
   // Update stats for losing players
   game.result.loser.players.forEach((loserId) => {
     const player = playersToUpdate.find((p) => p.username === loserId);
-    const user = usersToUpdate.find((u) => u.userId === player.userId);
+    const user = usersToUpdate.find((u) => u?.userId === player?.userId);
+
+    if (!player) {
+      console.warn(`⚠️ Loser player ${loserId} not found in playersToUpdate`);
+      return;
+    }
+
+    if (!user) {
+      console.warn(`⚠️ User for loser player ${loserId} not found`);
+      return;
+    }
 
     // console.log("user to be updated for a loss", user);
 

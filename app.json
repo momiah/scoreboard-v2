@@ -27,6 +27,11 @@
         "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
+        "NSUserNotificationUsageDescription": "This app needs permission to send you notifications.",
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -47,7 +52,8 @@
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp",
-      "versionCode": 5
+      "versionCode": 5,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
@@ -84,6 +90,13 @@
           "autoLogAppEventsEnabled": true,
           "isAutoInitEnabled": true,
           "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/court-champ-logo-icon-w-bg.png",
+          "color": "#FF231F7C"
         }
       ]
     ],

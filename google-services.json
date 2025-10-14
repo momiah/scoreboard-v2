@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "215867687150",
+    "project_id": "scoreboard-app-29148",
+    "storage_bucket": "scoreboard-app-29148.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215867687150:android:1412b1c56d5c6fbc2133ff",
+        "android_client_info": {
+          "package_name": "com.courtchamp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "215867687150-vo45nt8737742vlbkik1i4eq7bkekasp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.courtchamp",
+            "certificate_hash": "05bbc23f222d5b7f2800d596efc420fea457a0cd"
+          }
+        },
+        {
+          "client_id": "215867687150-gqh2v2j67ul3jtjce1vn4omkpmd0r0m6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyABATi30rxSVoh39OiUeway1SHDwIzOuTY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "215867687150-gqh2v2j67ul3jtjce1vn4omkpmd0r0m6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.courtchamp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
