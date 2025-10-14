@@ -10,7 +10,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Notifications from "expo-notifications";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { registerForPushNotificationsAsync } from "./services/pushNotifications";
 
@@ -20,7 +20,6 @@ const Stack = createStackNavigator();
 const navigationRef = React.createRef();
 
 export default function App() {
-
   useEffect(() => {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -66,7 +65,7 @@ export default function App() {
     };
 
     setupNotifications();
-    
+
     const checkForUpdates = async () => {
       if (!__DEV__) {
         // Only check in production
@@ -103,17 +102,18 @@ export default function App() {
     );
 
     // Listener for notifications received while the app is in the foreground
-    const backgroundSubscription = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log("Notification received in background:", JSON.stringify(notification, null, 2));
-      }
-    );
+    const backgroundSubscription =
+      Notifications.addNotificationReceivedListener((notification) => {
+        console.log(
+          "Notification received in background:",
+          JSON.stringify(notification, null, 2)
+        );
+      });
 
     return () => {
       subscription.remove();
       backgroundSubscription.remove();
     };
-
   }, []);
 
   return (
