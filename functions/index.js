@@ -35,4 +35,7 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 
 const { autoApproveGames } = require('./autoApproveGame');
+const { distributeLeaguePrizes } = require('./distributeLeaguePrizes');
+
 exports.autoApproveGames = autoApproveGames;
+exports.distributeLeaguePrizes = distributeLeaguePrizes;
