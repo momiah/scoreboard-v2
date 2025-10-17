@@ -6,7 +6,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 export const PlayerCell = ({ position, player }) => (
   <TeamTextContainer position={position}>
-    <TeamText position={position}>{player.displayName}</TeamText>
+    <TeamText position={position}>{player?.displayName || ""}</TeamText>
   </TeamTextContainer>
 );
 
