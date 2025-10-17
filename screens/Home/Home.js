@@ -153,8 +153,6 @@ const Home = () => {
   //   "Raqeeb",
   // ];
 
-  console.log("publicLeagues", upcomingLeagues.length);
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
       <HomeContainer
