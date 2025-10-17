@@ -153,6 +153,8 @@ const Home = () => {
   //   "Raqeeb",
   // ];
 
+  console.log("publicLeagues", upcomingLeagues.length);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
       <HomeContainer
@@ -263,7 +265,7 @@ const Home = () => {
         )}
 
         {/* Second carousel - Only show if user is signed in */}
-        {currentUser && (
+        {currentUser && publicLeagues.length > 0 && (
           <>
             <SubHeader
               title="Upcoming Leagues"
