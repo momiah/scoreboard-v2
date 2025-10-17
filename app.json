@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "15",
+      "buildNumber": "16",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
