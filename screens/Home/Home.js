@@ -257,7 +257,7 @@ const Home = () => {
         )}
 
         {/* Second carousel - Only show if user is signed in */}
-        {currentUser && (
+        {currentUser && publicLeagues.length > 0 && (
           <>
             <SubHeader
               title="Upcoming Leagues"
