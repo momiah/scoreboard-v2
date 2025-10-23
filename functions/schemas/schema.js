@@ -1,4 +1,4 @@
-const leagueTypes = ["Doubles", "Singles"];
+const gameTypes = ["Doubles", "Singles"];
 const privacyTypes = ["Public", "Private"];
 const maxPlayers = [8, 16, 32, 64];
 const leagueStatus = [
@@ -117,8 +117,18 @@ const scoreboardProfileSchema = {
 const getCurrentMonthYear = () => {
   const now = new Date();
   const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
   return `${months[now.getMonth()]} ${now.getFullYear()}`;
 };
@@ -192,7 +202,6 @@ const leagueSchema = {
   leagueName: "",
   leagueDescription: "",
   location: locationSchema,
-  centerName: "",
   createdAt: new Date(),
   startDate: "",
   leagueLengthInMonths: "",
@@ -293,7 +302,7 @@ const notificationSchema = {
 
 // Export using CommonJS syntax
 module.exports = {
-  leagueTypes,
+  gameTypes,
   privacyTypes,
   maxPlayers,
   leagueStatus,
