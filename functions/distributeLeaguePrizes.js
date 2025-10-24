@@ -1,39 +1,74 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const moment = require("moment-timezone");
 const admin = require("firebase-admin");
 
-const { calculatePrizeAllocation, parseDDMMYYYY } = require("./helpers/calculatePrizeAllocation");
+const {
+  calculatePrizeAllocation,
+} = require("./helpers/calculatePrizeAllocation");
 
 const db = admin.firestore();
 
-exports.distributeLeaguePrizes = onSchedule("every 1 hours", async () => {
-    const today = new Date();
+const isLeagueDue = (endDateStr, tz = "Europe/London") => {
+  const end = moment
+    .tz(endDateStr, ["DD-MM-YYYY", "DD/MM/YYYY"], tz)
+    .endOf("day");
+  if (!end.isValid()) return false;
+  const now = moment.tz(tz);
+  return now.isSameOrAfter(end);
+};
 
+const computePrizePool = (league) => {
+  const numberOfParticipants = league?.leagueParticipants?.length || 1;
+  const games = league?.games || [];
+  const numberOfGamesPlayed = games.length || 0;
+  const totalGamePointsWon =
+    games.reduce((acc, game) => acc + (game?.result?.winner?.score || 0), 0) ||
+    0;
+
+  return Math.floor(
+    (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2
+  );
+};
+
+const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
+
+exports.distributeLeaguePrizes = onSchedule(
+  { schedule: "every 1 minutes", timeZone: "Europe/London" },
+  async () => {
     try {
-      const leaguesSnapshot = await db
+      const snap = await db
         .collection("leagues")
         .where("prizesDistributed", "==", false)
         .get();
 
-      for (const doc of leaguesSnapshot.docs) {
-        const league = doc.data();
+      for (const doc of snap.docs) {
+        const league = doc.data() || {};
         const leagueId = doc.id;
 
-        // Check if league endDate has passed
-        const endDate = parseDDMMYYYY(league.endDate);
-
-        if (today >= endDate) {
-          await calculatePrizeAllocation({
-            leagueParticipants: league.leagueParticipants || [],
-            prizePool: league.entryFee || 0, // or prizePool field if exists
-            prizeDistribution: [0.4, 0.3, 0.2, 0.1], // can fetch from league doc
-            leagueId,
-          });
+        if (!isLeagueDue(league.endDate)) {
+          console.log(`[prizes] ${leagueId} not due yet`);
+          continue;
         }
-      }
-      console.log("Prizes distributed successfully!");
-    } catch (error) {
-      console.error("Error distributing prizes:", error);
-    }
 
+        const prizePool = computePrizePool(league);
+
+        console.log("league participants:", league.leagueParticipants);
+        console.log("prize pool:", prizePool);
+        console.log("prize distribution:", DISTRIBUTION);
+        console.log(`[prizes] distributing prizes for league ${leagueId}...`);
+
+        await calculatePrizeAllocation({
+          leagueParticipants: league.leagueParticipants || [],
+          prizePool: prizePool,
+          prizeDistribution: DISTRIBUTION,
+          leagueId,
+        });
+      }
+
+      console.log("[prizes] run complete");
+    } catch (err) {
+      console.error("[prizes] error:", err);
+    }
     return null;
-  });
+  }
+);
