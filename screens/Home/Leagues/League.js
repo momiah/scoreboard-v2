@@ -54,6 +54,7 @@ const League = () => {
     useState(false);
   const [userRole, setUserRole] = useState(null);
   const [leagueNotFound, setLeagueNotFound] = useState(false);
+  const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,20 +100,30 @@ const League = () => {
     navigation.navigate("Login");
   };
 
-  const handleRequestToJoin = () => {
-    requestToJoinLeague(
-      leagueId,
-      currentUser?.userId,
-      leagueById?.leagueOwner?.userId,
-      currentUser?.username
-    );
+  const handleRequestToJoin = async () => {
+    try {
+      setIsJoinRequestSending(true);
+      await requestToJoinLeague(
+        leagueId,
+        currentUser?.userId,
+        leagueById?.leagueOwner?.userId,
+        currentUser?.username
+      );
+      const refetchedLeague = await fetchLeagueById(leagueId);
+      await getUserRole(refetchedLeague);
+    } catch (error) {
+      console.error("Error sending join request:", error);
+    } finally {
+      // Once backend marks requestPending, role shifts and both CTAs disable anyway.
+      setIsJoinRequestSending(false);
+    }
   };
 
   const handleTabPress = async (tabName) => {
     setSelectedTab(tabName);
     try {
-      const freshData = await fetchLeagueById(leagueId);
-      await getUserRole(freshData);
+      const refetchedLeague = await fetchLeagueById(leagueId);
+      await getUserRole(refetchedLeague);
     } catch (error) {
       console.error("Tab refresh error:", error);
     }
@@ -178,6 +189,7 @@ const League = () => {
             leagueName={leagueName}
             leagueParticipants={leagueParticipants || []}
             maxPlayers={maxPlayers}
+            isJoinRequestSending={isJoinRequestSending}
           />
         );
       case "Player Performance":
@@ -314,6 +326,7 @@ const League = () => {
                 onInvitePress={handleOpenInviteModal}
                 onLoginPress={handleLogin}
                 onRequestJoinPress={handleRequestToJoin}
+                isJoining={isJoinRequestSending}
               />
             </View>
           </LeagueDetailsContainer>

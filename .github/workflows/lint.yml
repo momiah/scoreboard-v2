@@ -1,0 +1,36 @@
+name: Lint Code
+
+on:
+  push:
+    branches: [main, Zahid-Hasan-GitHub-actions-linting]
+  pull_request:
+    branches: [main, Zahid-Hasan-GitHub-actions-linting]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+        if: github.event_name == 'push'
+
+      - name: Run ESLint with Reviewdog (PRs)
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-eslint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          eslint_flags: ". --ext .js,.jsx,.mjs,.cjs,.ts,.tsx"

@@ -3,7 +3,7 @@
 export const getButtonConfig = (
   userRole,
   leagueState,
-  requestSend,
+  requestSending,
   handleRequestSend,
   handleAddGame,
   handleLogin,
@@ -30,13 +30,13 @@ export const getButtonConfig = (
     },
     user: {
       not_started: {
-        text: requestSend ? "Request sent successfully" : "Request To Join",
-        disabled: requestSend,
+        text: requestSending ? "Request sent successfully" : "Request To Join",
+        disabled: requestSending,
         action: () => handleRequestSend(),
       },
       started: {
-        text: requestSend ? "Request sent successfully" : "Request To Join",
-        disabled: requestSend,
+        text: requestSending ? "Request sent successfully" : "Request To Join",
+        disabled: requestSending,
         action: () => handleRequestSend(),
       },
       ended: {
