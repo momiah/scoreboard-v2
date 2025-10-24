@@ -1,11 +1,8 @@
-import React, { useEffect, useContext, useMemo, useState } from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Dimensions } from "react-native";
 import Tooltip from "../Tooltip";
 import { trophies } from "../../mockImages/index";
 import styled from "styled-components/native";
-import moment from "moment";
-import { calculatePrizeAllocation } from "../../helpers/calculatePrizeAllocation";
-import { UserContext } from "../../context/UserContext";
 import { useImageLoader } from "../../utils/imageLoader";
 import {
   CircleSkeleton,
@@ -14,59 +11,13 @@ import {
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
-const PrizeDistribution = ({
-  prizePool,
-  endDate,
-  leagueParticipants,
-  hasPrizesDistributed,
-  leagueId,
-  distribution,
-}) => {
-  const { updatePlacementStats, currentUser } = useContext(UserContext);
-  // const distribution = [0.4, 0.3, 0.2, 0.1];
-
-  // Memoize prize calculation to avoid recalculation on every render
+const PrizeDistribution = ({ prizePool, distribution }) => {
   const prizes = useMemo(() => {
     return distribution.map((percentage, index) => ({
       xp: Math.floor(prizePool * percentage),
       trophy: trophies[index],
     }));
   }, [prizePool]);
-
-  // Memoize user participation check
-  const userIsParticipant = useMemo(() => {
-    return (
-      currentUser?.userId &&
-      leagueParticipants?.some(
-        (participant) => participant.userId === currentUser.userId
-      )
-    );
-  }, [currentUser?.userId, leagueParticipants]);
-
-  // Memoize date comparison
-  const canDistributePrizes = useMemo(() => {
-    const today = moment().format("DD-MM-YYYY");
-    const endDateMoment = moment(endDate, "DD-MM-YYYY");
-    const todayMoment = moment(today, "DD-MM-YYYY");
-
-    return (
-      todayMoment.isSameOrAfter(endDateMoment) &&
-      !hasPrizesDistributed &&
-      userIsParticipant
-    );
-  }, [endDate, hasPrizesDistributed, userIsParticipant]);
-
-  useEffect(() => {
-    if (canDistributePrizes) {
-      calculatePrizeAllocation({
-        leagueParticipants,
-        prizePool,
-        updatePlacementStats,
-        prizeDistribution: distribution,
-        leagueId,
-      });
-    }
-  }, [canDistributePrizes]);
 
   const TrophyItem = React.memo(({ trophySource, statValue, index }) => {
     const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
