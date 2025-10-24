@@ -52,7 +52,6 @@ const UserProvider = ({ children }) => {
         if (userId) {
           const userData = await getUserById(userId);
           setCurrentUser(userData);
-
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
@@ -505,57 +504,6 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const updatePlacementStats = async (userId, prizeXP, placement) => {
-    try {
-      // Fetch the user's document
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
-
-      if (!userDoc.exists()) {
-        console.error(`User with ID ${userId} not found.`);
-        return;
-      }
-
-      const userData = userDoc.data();
-
-      // Ensure profileDetail exists
-      const profileDetail = userData.profileDetail || {};
-
-      // Update XP inside profileDetail
-      const updatedXP = (profileDetail.XP || 0) + prizeXP;
-
-      // Update leagueStats inside profileDetail
-      const updatedLeagueStats = {
-        first: profileDetail.leagueStats?.first || 0,
-        second: profileDetail.leagueStats?.second || 0,
-        third: profileDetail.leagueStats?.third || 0,
-        fourth: profileDetail.leagueStats?.fourth || 0,
-      };
-
-      // Increment the corresponding placement stat
-      if (placement === "1st") updatedLeagueStats.first += 1;
-      if (placement === "2nd") updatedLeagueStats.second += 1;
-      if (placement === "3rd") updatedLeagueStats.third += 1;
-      if (placement === "4th") updatedLeagueStats.fourth += 1;
-
-      // Update the user's document in Firebase
-      // await updateDoc(userDocRef, {
-      //   profileDetail: {
-      //     ...profileDetail,
-      //     XP: updatedXP, // Update XP
-      //     leagueStats: updatedLeagueStats, // Update leagueStats
-      //   },
-      // });
-
-      console.log(
-        `User ${userId} updated in profileDetail: +${prizeXP} XP, Incremented ${placement} place`
-      );
-    } catch (error) {
-      console.error(`Error updating stats for user ${userId}:`, error);
-      throw new Error("Failed to update user stats");
-    }
-  };
-
   const rankSorting = (users) => {
     // Create a copy to avoid mutating original array
     return [...users].sort((a, b) => {
@@ -774,19 +722,19 @@ const UserProvider = ({ children }) => {
           data: {
             ...notification.data,
             type: notification.type,
-          }
+          },
         }));
         if (messages.length === 0) {
           error.push("No messages");
         } else {
           success.push("Has messages");
         }
-        const response = await fetch('https://exp.host/--/api/v2/push/send', {
-          method: 'POST',
+        const response = await fetch("https://exp.host/--/api/v2/push/send", {
+          method: "POST",
           headers: {
-            Accept: 'application/json',
-            'Accept-Encoding': 'gzip, deflate',
-            'Content-Type': 'application/json',
+            Accept: "application/json",
+            "Accept-Encoding": "gzip, deflate",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(messages),
         });
@@ -805,8 +753,8 @@ const UserProvider = ({ children }) => {
       console.error("❌ Failed to send notification:", error);
       // Alert.alert(
       //   "Error",
-      //   `5. Passed notification: ${JSON.stringify(notification)}. 
-      //     6. Success checks: ${success.join(",\n ")}. 
+      //   `5. Passed notification: ${JSON.stringify(notification)}.
+      //     6. Success checks: ${success.join(",\n ")}.
       //     7. Error checks: ${error.join(",\n ")}.
       //    Failed to send notification: ${error.message} `
       // );
@@ -971,7 +919,6 @@ const UserProvider = ({ children }) => {
         // Player and stats management
         resetPlayerStats,
         resetAllPlayerStats,
-        updatePlacementStats,
 
         // Ranking and sorting
         rankSorting,

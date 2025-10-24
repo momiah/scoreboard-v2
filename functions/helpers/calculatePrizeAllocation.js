@@ -1,12 +1,6 @@
 const admin = require("firebase-admin");
 const db = admin.firestore();
 
-
-function parseDDMMYYYY(dateStr) {
-  const [day, month, year] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day); // JS months are 0-based
-}
-
 const calculatePrizeAllocation = async ({
   leagueParticipants,
   prizePool,
@@ -14,52 +8,44 @@ const calculatePrizeAllocation = async ({
   leagueId,
 }) => {
   try {
-    // Sort participants by XP, top 4
-    const topPlayers = leagueParticipants
-      .sort((a, b) => b.XP - a.XP)
-      .slice(0, 4);
+    console.log(`Calculating prize allocation for league ${leagueId}...`);
 
-    const getSuffix = (num) => {
-      if (num === 1) return "st";
-      if (num === 2) return "nd";
-      if (num === 3) return "rd";
-      return "th";
-    };
+    // sort participants by wins
+    leagueParticipants.sort((a, b) => {
+      if (b.numberOfWins !== a.numberOfWins) {
+        return b.numberOfWins - a.numberOfWins;
+      }
+      if (b.totalPointDifference !== a.totalPointDifference) {
+        return b.totalPointDifference - a.totalPointDifference;
+      }
+      return (b.XP || 0) - (a.XP || 0);
+    });
 
-    // Update all users first
-    for (let i = 0; i < topPlayers.length; i++) {
-      const player = topPlayers[i];
-      const prizeXP = Math.floor(prizePool * prizeDistribution[i]);
-      const placementNumber = i + 1;
-      const placement = `${placementNumber}${getSuffix(placementNumber)}`;
+    const placementKeys = ["first", "second", "third", "fourth"];
+    const finalists = leagueParticipants.slice(0, 4);
+
+    console.log("finalists:", finalists);
+
+    for (let index = 0; index < finalists.length; index++) {
+      const player = finalists[index];
+      const placementKey = placementKeys[index];
+      const prizeXP = Math.floor(prizePool * (prizeDistribution[index] || 0));
 
       const userRef = db.collection("users").doc(player.userId);
-      const userDoc = await userRef.get();
+      await userRef.update({
+        "profileDetail.XP": admin.firestore.FieldValue.increment(prizeXP),
+        [`profileDetail.leagueStats.${placementKey}`]:
+          admin.firestore.FieldValue.increment(1),
+      });
 
-      if (userDoc.exists) {
-        await userRef.update({
-          "profileDetail.XP": admin.firestore.FieldValue.increment(prizeXP),
-          [`profileDetail.leagueStats.${placementNumber}`]:
-            admin.firestore.FieldValue.increment(1),
-        });
-        console.log(`✅ Allocated ${prizeXP} XP to user ${player.userId} (${placement})`);
-      } else {
-        console.warn(`⚠️ Skipping prize allocation, user not found: ${player.userId}`);
-      }
-
-      // Update user stats
-      // await db.collection("users").doc(player.userId).update({
-      //   "profileDetail.XP": admin.firestore.FieldValue.increment(prizeXP),
-      //   [`profileDetail.leagueStats.${placementNumber}`]:
-      //     admin.firestore.FieldValue.increment(1),
-      // });
+      console.log(
+        `+${prizeXP} XP -> user ${player.userId} (${player.displayName}) (${placementKey})`
+      );
     }
 
-    // Update league status
-    const leagueDocRef = db.collection("leagues").doc(leagueId);
-    await leagueDocRef.update({
+    await db.collection("leagues").doc(leagueId).update({
       prizesDistributed: true,
-      prizeDistributionDate: new Date(),
+      prizeDistributionDate: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     console.log(`Prizes distributed for league ${leagueId}`);
@@ -68,5 +54,4 @@ const calculatePrizeAllocation = async ({
   }
 };
 
-
-module.exports = { calculatePrizeAllocation, parseDDMMYYYY };
+module.exports = { calculatePrizeAllocation };
