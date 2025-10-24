@@ -48,6 +48,7 @@ const LeagueProvider = ({ children }) => {
   } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
+  const [tournamentNavigationId, setTournamentNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
 
   useEffect(() => {
@@ -225,33 +226,81 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const addLeagues = async (leagueData) => {
-    const leagueId = generateLeagueId(leagueData);
+  const COMPETITION_CONFIG = {
+    league: {
+      collectionName: "leagues",
+      idField: "leagueId",
+      nameField: "leagueName",
+      setNavigationId: (id) => setLeagueNavigationId(id),
+      clearNavigationId: () => setLeagueNavigationId(""),
+    },
+    tournament: {
+      collectionName: "tournaments",
+      idField: "tournamentId",
+      nameField: "tournamentName",
+      setNavigationId: (id) => setTournamentNavigationId(id),
+      clearNavigationId: () => setTournamentNavigationId(""),
+    },
+  };
+
+  const createWelcomeChatMessage = async ({
+    collectionName,
+    documentId,
+    title,
+  }) => {
+    const messageReference = doc(
+      collection(db, collectionName, documentId, "chat")
+    );
+    await setDoc(messageReference, {
+      _id: "welcome",
+      text: `Welcome to the chat for ${title || ""}!`,
+      createdAt: new Date(),
+      user: {
+        _id: "system",
+        name: "CourtChamps",
+        avatar: ccImageEndpoint,
+      },
+    });
+  };
+
+  const addCompetition = async ({
+    data,
+    competitionType,
+    resetDelayMs = 2000,
+  }) => {
     try {
-      await setDoc(doc(db, "leagues", leagueId), {
-        ...leagueData,
-      });
+      const config = COMPETITION_CONFIG[competitionType];
+      if (!config) {
+        console.warn("Unknown competitionType:", competitionType);
+        return;
+      }
 
-      const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
-      await setDoc(messageRef, {
-        _id: "welcome",
-        text: `Welcome to the chat for ${leagueData.leagueName}!`,
-        createdAt: new Date(),
-        user: {
-          _id: "system",
-          name: "CourtChamps",
-          avatar: ccImageEndpoint, // optional system avatar
-        },
-      });
+      const {
+        collectionName,
+        idField,
+        nameField,
+        setNavigationId,
+        clearNavigationId,
+      } = config;
 
-      setLeagueNavigationId(leagueId);
+      const documentId = data?.[idField];
+      const title = data?.[nameField];
 
-      // Reset the league navigation ID after a short delay
+      if (!documentId) {
+        console.error(`Missing required id field "${idField}" on data.`);
+        return;
+      }
+
+      await setDoc(doc(db, collectionName, documentId), { ...data });
+      await createWelcomeChatMessage({ collectionName, documentId, title });
+
+      setNavigationId(documentId);
+
       setTimeout(() => {
-        setLeagueNavigationId("");
-      }, 2000);
+        clearNavigationId();
+      }, resetDelayMs);
     } catch (error) {
-      console.error("Error adding league: ", error);
+      console.error("Error adding competition:", error);
     }
   };
 
@@ -1007,7 +1056,7 @@ const LeagueProvider = ({ children }) => {
         deletePlaytime,
 
         // League Data Management
-        addLeagues,
+        addCompetition,
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
         fetchUpcomingLeagues,
@@ -1022,6 +1071,10 @@ const LeagueProvider = ({ children }) => {
         fetchUserPendingRequests,
         withdrawJoinRequest,
         sendChatMessage,
+
+        // Tournament State Management
+        tournamentNavigationId,
+        setTournamentNavigationId,
 
         // League State Management
         upcomingLeagues,

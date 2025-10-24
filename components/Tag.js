@@ -1,5 +1,6 @@
+// components/Tag.tsx
 import React from "react";
-import { Text, TouchableOpacity } from "react-native";
+import { ActivityIndicator } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
@@ -14,6 +15,8 @@ const Tag = ({
   iconPosition,
   width = undefined,
   fontSize = 10,
+  disabled = false,
+  loading = false,
 }) => {
   const tagName = name ? name.toUpperCase() : "";
   const TagComponent = onPress ? InteractiveTagContainer : TagContainer;
@@ -24,15 +27,26 @@ const Tag = ({
       backgroundColor={color}
       onPress={onPress}
       flexDirection={flexDirection}
-      style={{ width: width }}
+      disabled={disabled}
+      style={{
+        width,
+      }}
     >
-      {icon && (
-        <TagIcon
-          name={icon}
-          size={iconSize}
-          color={iconColor}
-          flexDirection={flexDirection}
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color="white"
+          style={{ marginHorizontal: 4 }}
         />
+      ) : (
+        icon && (
+          <TagIcon
+            name={icon}
+            size={iconSize}
+            color={iconColor}
+            flexDirection={flexDirection}
+          />
+        )
       )}
       <TagText bold={bold} fontSize={fontSize}>
         {tagName}
@@ -43,29 +57,25 @@ const Tag = ({
 
 const TagContainer = styled.View(
   ({ backgroundColor, flexDirection, width }) => ({
-    flexDirection: flexDirection,
+    flexDirection,
     justifyContent: "space-between",
     alignItems: "center",
     padding: 6,
     borderRadius: 6,
-    width: width,
-    // margin: 4,
+    width,
     backgroundColor,
-    // alignSelf: "flex-start",
   })
 );
 
 const InteractiveTagContainer = styled.TouchableOpacity(
   ({ backgroundColor, flexDirection, width }) => ({
-    flexDirection: flexDirection,
+    flexDirection,
     justifyContent: "space-between",
     alignItems: "center",
     padding: 6,
     borderRadius: 6,
-    width: width,
-    // margin: 4,
+    width,
     backgroundColor,
-    // alignSelf: "flex-start",
   })
 );
 
@@ -76,7 +86,7 @@ const TagIcon = styled(Ionicons)(({ flexDirection }) => ({
 
 const TagText = styled.Text(({ bold, fontSize }) => ({
   color: "white",
-  fontSize: fontSize,
+  fontSize,
   fontWeight: bold ? "bold" : "normal",
 }));
 
