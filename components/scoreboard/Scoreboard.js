@@ -1,15 +1,12 @@
+// components/scoreboard/Scoreboard.tsx
 import React, { useState, useContext, useMemo, useCallback } from "react";
-import { FlatList, TouchableOpacity, View } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
-
-import { Dimensions } from "react-native";
-
+import { FlatList, View, ActivityIndicator } from "react-native";
 import AddGameModal from "../Modals/AddGameModal";
 import { getButtonConfig, getFallbackMessage } from "./scoreboardConfig";
 import { TeamColumn, ScoreDisplay } from "./ScoreboardAtoms";
-
 import moment from "moment";
 import { LeagueContext } from "../../context/LeagueContext";
 
@@ -24,12 +21,15 @@ const Scoreboard = ({
   leagueName,
   leagueParticipants = [],
   maxPlayers = 8,
+  // 🔹 New optional flag – no handler passed
+  isJoinRequestSending = false,
 }) => {
   const { fetchPlayers, currentUser } = useContext(UserContext);
   const { requestToJoinLeague } = useContext(LeagueContext);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null); // ✅ New State
+  const [selectedDate, setSelectedDate] = useState(null);
 
   const navigation = useNavigation();
 
@@ -65,6 +65,7 @@ const Scoreboard = ({
   }, [navigation]);
 
   const handleRequestSend = useCallback(() => {
+    // ✅ Keep your original local flow
     setRequestSend(true);
     requestToJoinLeague(
       leagueId,
@@ -72,14 +73,18 @@ const Scoreboard = ({
       leagueOwner.userId,
       currentUser?.username
     );
+    setRequestSend(false);
   }, [requestToJoinLeague, leagueId, currentUser, leagueOwner]);
+
+  // 🔹 Merge local + external (header press) flags
+  const isSending = requestSend || isJoinRequestSending;
 
   const buttonConfig = useMemo(
     () =>
       getButtonConfig(
         userRole,
         leagueState,
-        requestSend,
+        isSending, // <- only this changes
         handleRequestSend,
         handleAddGame,
         handleLogin,
@@ -89,7 +94,7 @@ const Scoreboard = ({
     [
       userRole,
       leagueState,
-      requestSend,
+      isSending,
       handleRequestSend,
       handleAddGame,
       handleLogin,
@@ -127,7 +132,15 @@ const Scoreboard = ({
         style={{ backgroundColor: buttonConfig.disabled ? "gray" : "#00A2FF" }}
       >
         <ButtonText>{buttonConfig.text}</ButtonText>
+        {isSending && (
+          <ActivityIndicator
+            size="small"
+            color="white"
+            style={{ marginLeft: 8 }}
+          />
+        )}
       </AddGameButton>
+
       <View>
         {uniqueDates.length > 0 && (
           <FlatList
@@ -161,7 +174,7 @@ const Scoreboard = ({
       )}
 
       <FlatList
-        data={filteredGames} // ✅ Apply Filter
+        data={filteredGames}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => {
           const Game =
@@ -209,13 +222,11 @@ const Container = styled.View({
   padding: 10,
 });
 const AddGameButton = styled.TouchableOpacity({
-  display: "flex",
+  flexDirection: "row",
   justifyContent: "center",
   alignItems: "center",
-  fontSize: 24,
-  fontWeight: "bold",
+  gap: 6,
   marginBottom: 15,
-
   padding: 10,
   borderRadius: 8,
   backgroundColor: "#00A2FF",
