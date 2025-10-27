@@ -3,6 +3,8 @@ import styled from "styled-components/native";
 import { trophies } from "../../mockImages";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { useImageLoader } from "../../utils/imageLoader";
+import { useNavigation } from "@react-navigation/native";
+
 import {
   CircleSkeleton,
   TextSkeleton,
@@ -19,6 +21,7 @@ const PrizeContenders = ({
 }) => {
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const navigation = useNavigation();
 
   const displayName = formatDisplayName(player);
   const trophySource = trophies[index] || trophies[0];
@@ -36,7 +39,14 @@ const PrizeContenders = ({
   }, [isDataLoading, imageLoaded]);
 
   return (
-    <TableRow key={player.userId}>
+    <TableRow
+      key={player.userId}
+      onPress={() => {
+        navigation.navigate("UserProfile", {
+          userId: player.userId,
+        });
+      }}
+    >
       <TableCell>
         <TextSkeleton
           show={showSkeleton}
@@ -137,7 +147,7 @@ const PrizeContenders = ({
   );
 };
 
-const TableRow = styled.View({
+const TableRow = styled.TouchableOpacity({
   flexDirection: "row",
 });
 
