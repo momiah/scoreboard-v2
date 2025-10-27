@@ -667,10 +667,16 @@ const LeagueProvider = ({ children }) => {
       if (updatedGame.numberOfApprovals >= approvalLimit) {
         updatedGame.approvalStatus = notificationTypes.RESPONSE.APPROVE_GAME;
 
+        const playerUserIds = [
+          updatedGame.team1.player1?.userId,
+          updatedGame.team1.player2?.userId,
+          updatedGame.team2.player1?.userId,
+          updatedGame.team2.player2?.userId,
+        ].filter(Boolean); // Remove nulls
+
+        // Filter league participants who are in this game
         const playersToUpdate = leagueParticipants.filter((player) =>
-          game.result.winner.players
-            .concat(game.result.loser.players)
-            .includes(formatDisplayName(player))
+          playerUserIds.includes(player.userId)
         );
 
         const userIds = playersToUpdate.map((player) => player.userId);

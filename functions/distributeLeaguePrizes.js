@@ -33,7 +33,7 @@ const computePrizePool = (league) => {
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 
 exports.distributeLeaguePrizes = onSchedule(
-  { schedule: "every 1 minutes", timeZone: "Europe/London" },
+  { schedule: "every 1 hours", timeZone: "Europe/London" },
   async () => {
     try {
       const snap = await db
