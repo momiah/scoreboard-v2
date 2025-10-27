@@ -1,36 +1,31 @@
 const { transformDate } = require("./dateTransform");
 
-const calculatePlayerPerformance = (
-  game,
-  playersToUpdate,
-  usersToUpdate
-) => {
+const calculatePlayerPerformance = (game, playersToUpdate, usersToUpdate) => {
   const date = transformDate(game.date);
 
-  const getUserByUsername = (username) =>
-    usersToUpdate.find((user) => user.username === username);
+  const getTeamPlayers = (teamLabel) =>
+    teamLabel === "Team 1"
+      ? [game.team1.player1, game.team1.player2].filter(Boolean)
+      : [game.team2.player1, game.team2.player2].filter(Boolean);
 
-  const combinedWinnerXp = game.result.winner.players.reduce(
-    (totalXp, playerUsername) => {
-      const user = getUserByUsername(playerUsername);
-      if (user) {
-        return totalXp + user.profileDetail.XP;
-      }
-      return totalXp;
-    },
-    0
-  );
+  const winnerPlayers = getTeamPlayers(game.result.winner.team);
+  const loserPlayers = getTeamPlayers(game.result.loser.team);
 
-  const combinedLoserXp = game.result.loser.players.reduce(
-    (totalXp, playerUsername) => {
-      const user = getUserByUsername(playerUsername);
-      if (user) {
-        return totalXp + user.profileDetail.XP;
-      }
-      return totalXp;
-    },
-    0
-  );
+  const getUserById = (userId) =>
+    usersToUpdate.find((u) => u.userId === userId);
+
+  const getParticipantById = (userId) =>
+    playersToUpdate.find((p) => p.userId === userId);
+
+  const combinedWinnerXp = winnerPlayers.reduce((sum, player) => {
+    const user = getUserById(player.userId);
+    return user ? sum + (user.profileDetail?.XP || 0) : sum;
+  }, 0);
+
+  const combinedLoserXp = loserPlayers.reduce((sum, player) => {
+    const user = getUserById(player.userId);
+    return user ? sum + (user.profileDetail?.XP || 0) : sum;
+  }, 0);
 
   const updatePlayerStats = (player, isWinner, user) => {
     player.numberOfGamesPlayed += 1;
@@ -44,7 +39,6 @@ const calculatePlayerPerformance = (
       user.numberOfLosses += 1;
     }
 
-    // Calculate win percentage if needed
     player.winPercentage =
       (player.numberOfWins / player.numberOfGamesPlayed) * 100;
     user.winPercentage = (user.numberOfWins / user.numberOfGamesPlayed) * 100;
@@ -83,7 +77,6 @@ const calculatePlayerPerformance = (
       if (player.currentStreak.count === 5) winStreak5 += 1;
       if (player.currentStreak.count === 7) winStreak7 += 1;
 
-      // Update the highest win streak if the current one exceeds the previous
       highestWinStreak = Math.max(highestWinStreak, player.currentStreak.count);
     } else {
       if (lastResult === "L") {
@@ -93,21 +86,18 @@ const calculatePlayerPerformance = (
         player.currentStreak.count = -1;
       }
 
-      // Update the highest loss streak
       highestLossStreak = Math.min(
         highestLossStreak,
         player.currentStreak.count
       );
     }
 
-    // Save back the calculated streaks
     player.highestWinStreak = highestWinStreak;
     player.highestLossStreak = Math.abs(highestLossStreak);
     player.winStreak3 = winStreak3;
     player.winStreak5 = winStreak5;
     player.winStreak7 = winStreak7;
 
-    // Update the user's stats
     user.highestWinStreak = highestWinStreak;
     user.highestLossStreak = Math.abs(highestLossStreak);
     user.winStreak3 = winStreak3;
@@ -127,21 +117,12 @@ const calculatePlayerPerformance = (
     winnerScore,
     loserScore
   ) => {
-    // console.log("=== XP Calculation Debug ===");
-    // console.log("Player:", player.username);
-    // console.log("Streak Type:", streakType);
-    // console.log("Streak Count:", streakCount);
-    // console.log("Score Difference:", winnerScore - loserScore);
-
     const baseXP = streakType === "W" ? 20 : -15;
-
-    // Calculate the difference in scores
     const scoreDifference = winnerScore - loserScore;
 
     const differenceMultiplier =
       combinedWinnerXp > 0 ? combinedLoserXp / combinedWinnerXp : 1;
 
-    // Cap the rank multiplier between 0 and 10
     const rankMultiplier =
       differenceMultiplier < 2
         ? 0
@@ -149,7 +130,6 @@ const calculatePlayerPerformance = (
         ? 3
         : differenceMultiplier;
 
-    // Multiplier logic based on streak
     const lossMultiplier =
       streakCount <= -7
         ? 3
@@ -175,31 +155,19 @@ const calculatePlayerPerformance = (
     const multiplier = streakType === "W" ? winMultiplier : lossMultiplier;
     const streakXp = baseXP * multiplier;
 
-    // Calculate rank XP
     const rankXpValue = streakXp * rankMultiplier;
     const rankXp = isNaN(rankXpValue) ? 0 : rankXpValue;
 
-    // Calculate demon win bonus (doubles the streak XP for wins with 10+ point difference)
     let demonBonus = 0;
     if (scoreDifference >= 10) {
-      demon = streakType === "W" ? streakXp : -streakXp;
+      demonBonus = streakType === "W" ? streakXp : -streakXp;
     }
 
-    // Final XP calculation
     const finalXp = streakXp + rankXp + demonBonus;
 
-    // console.log("Streak XP:", streakXp);
-    // console.log("Rank XP:", rankXp);
-    // console.log("Demon Win Bonus:", demonBonus);
-    // console.log("Final XP:", finalXp);
-    // console.log("User XP before:", user.XP);
-    // console.log("User XP after:", user.XP + finalXp);
-
-    // Update the player's XP
     user.XP += finalXp;
     player.prevGameXP = finalXp;
 
-    // Ensure the player's XP doesn't drop below 10
     if (user.XP < 20) {
       user.XP = 20;
     }
@@ -229,7 +197,6 @@ const calculatePlayerPerformance = (
   const updateLastActive = (player, gameDate, user) => {
     player.lastActive = gameDate;
     user.lastActive = gameDate;
-
     return { player, user };
   };
 
@@ -241,7 +208,6 @@ const calculatePlayerPerformance = (
     user
   ) => {
     const pointDifference = winnerScore - loserScore;
-
     const adjustedPointDifference = isWinner
       ? pointDifference
       : -pointDifference;
@@ -262,7 +228,6 @@ const calculatePlayerPerformance = (
     user.totalPointDifference += adjustedPointDifference;
 
     player.pointDifferenceLog.push(adjustedPointDifference);
-
     player.pointDifferenceLog = player.pointDifferenceLog.slice(-10);
 
     const tenGamesPointDifference = player.pointDifferenceLog.reduce(
@@ -276,50 +241,42 @@ const calculatePlayerPerformance = (
     player.averagePointDifference = averagePointDifference;
   };
 
-  // Update stats for winning players
-  game.result.winner.players.forEach((winnerId) => {
-    const player = playersToUpdate.find((p) => p.username === winnerId);
-    const user = usersToUpdate.find((u) => u?.userId === player?.userId);
+  // --- Update stats for winners ---
+  winnerPlayers.forEach((player) => {
+    const leagueParticipant = getParticipantById(player.userId);
+    const user = getUserById(player.userId);
 
-    if (!player) {
-      console.warn(`⚠️ Winner player ${winnerId} not found in playersToUpdate`);
-      return;
-    }
-
-    if (!user) {
-      console.warn(`⚠️ User for winner player ${winnerId} not found`);
-      return;
-    }
-
-    // console.log("user to be updated for a win", user);
-
-    if (player && user) {
-      updatePlayerStats(player, true, user.profileDetail);
+    if (leagueParticipant && user) {
+      updatePlayerStats(leagueParticipant, true, user.profileDetail);
       updatePlayerTotalPoints(
-        player,
+        leagueParticipant,
         game.result.winner.score,
         user.profileDetail
       );
-      updatePlayerResultLogAndStreak(player, true, user.profileDetail);
+      updatePlayerResultLogAndStreak(
+        leagueParticipant,
+        true,
+        user.profileDetail
+      );
       updateXp(
-        player,
+        leagueParticipant,
         user.profileDetail,
-        player.currentStreak.type,
-        player.currentStreak.count,
+        leagueParticipant.currentStreak.type,
+        leagueParticipant.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp,
         game.result.winner.score,
-        game.result.loser.score // ← Use game.result.loser.score
+        game.result.loser.score
       );
       updateDemonWin(
-        player,
+        leagueParticipant,
         game.result.winner.score,
         game.result.loser.score,
         user.profileDetail
       );
-      updateLastActive(player, date, user.profileDetail);
+      updateLastActive(leagueParticipant, date, user.profileDetail);
       calculatePointDifference(
-        player,
+        leagueParticipant,
         game.result.winner.score,
         game.result.loser.score,
         true,
@@ -328,44 +285,36 @@ const calculatePlayerPerformance = (
     }
   });
 
-  // Update stats for losing players
-  game.result.loser.players.forEach((loserId) => {
-    const player = playersToUpdate.find((p) => p.username === loserId);
-    const user = usersToUpdate.find((u) => u?.userId === player?.userId);
+  // --- Update stats for losers ---
+  loserPlayers.forEach((player) => {
+    const leagueParticipant = getParticipantById(player.userId);
+    const user = getUserById(player.userId);
 
-    if (!player) {
-      console.warn(`⚠️ Loser player ${loserId} not found in playersToUpdate`);
-      return;
-    }
-
-    if (!user) {
-      console.warn(`⚠️ User for loser player ${loserId} not found`);
-      return;
-    }
-
-    // console.log("user to be updated for a loss", user);
-
-    if (player && user) {
-      updatePlayerStats(player, false, user.profileDetail);
+    if (leagueParticipant && user) {
+      updatePlayerStats(leagueParticipant, false, user.profileDetail);
       updatePlayerTotalPoints(
-        player,
+        leagueParticipant,
         game.result.loser.score,
         user.profileDetail
       );
-      updatePlayerResultLogAndStreak(player, false, user.profileDetail);
+      updatePlayerResultLogAndStreak(
+        leagueParticipant,
+        false,
+        user.profileDetail
+      );
       updateXp(
-        player,
+        leagueParticipant,
         user.profileDetail,
-        player.currentStreak.type,
-        player.currentStreak.count,
+        leagueParticipant.currentStreak.type,
+        leagueParticipant.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp,
         game.result.winner.score,
-        game.result.loser.score // ← Use game.result.loser.score
+        game.result.loser.score
       );
-      updateLastActive(player, date, user.profileDetail);
+      updateLastActive(leagueParticipant, date, user.profileDetail);
       calculatePointDifference(
-        player,
+        leagueParticipant,
         game.result.winner.score,
         game.result.loser.score,
         false,
@@ -373,6 +322,7 @@ const calculatePlayerPerformance = (
       );
     }
   });
+
   return { playersToUpdate, usersToUpdate };
 };
 

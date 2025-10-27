@@ -63,6 +63,7 @@ export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
         const approvedGame = {
           ...game,
           approvalStatus: "approved",
+          createdAt: new Date(),
           numberOfApprovals: 1,
           numberOfDeclines: 0,
         };
