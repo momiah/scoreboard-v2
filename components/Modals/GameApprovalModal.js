@@ -179,7 +179,7 @@ const GameApprovalModal = ({
 
               <Title>Game Approval Request</Title>
 
-              {leagueDetails && gameDetails ? (
+              {leagueDetails ? (
                 <>
                   <Message>
                     A game has been reported on{" "}
