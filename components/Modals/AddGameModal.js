@@ -255,7 +255,7 @@ const AddGameModal = ({
     setTeam2Score("");
 
     handleShowPopup(
-      "Game added! Opponents must approve for stats to be updated"
+      "Game added! Opponents have 24 hours to approve or will be auto-approved."
     );
     await fetchLeagueById(leagueId);
     setLoading(false);
