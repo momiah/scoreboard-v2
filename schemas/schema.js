@@ -1,7 +1,8 @@
 import moment from "moment";
 import { Platform } from "react-native";
 
-export const leagueTypes = ["Doubles", "Singles"];
+export const gameTypes = ["Doubles", "Singles"];
+export const tournamentModes = ["Knockout", "Round Robin"];
 export const privacyTypes = ["Public", "Private"];
 export const maxPlayers = [8, 16, 32, 64];
 export const leagueStatus = [
@@ -11,6 +12,11 @@ export const leagueStatus = [
 ];
 
 const TikTokIcon = Platform.OS === "ios" ? "logo-tiktok" : "tiktok";
+
+export const COMPETITION_TYPES = {
+  LEAGUE: "league",
+  TOURNAMENT: "tournament",
+};
 
 export const ICON_MAP = {
   Instagram: "logo-instagram",
@@ -188,18 +194,50 @@ export const leagueSchema = {
   leagueName: "",
   leagueDescription: "",
   location: locationSchema,
-  centerName: "",
   createdAt: new Date(),
   startDate: "",
   leagueLengthInMonths: "",
   endDate: "",
-  image: "",
   leagueType: "",
   prizeType: "",
   prizesDistributed: false,
   prizeDistributionDate: null,
   currencyType: "",
   entryFee: 0,
+  maxPlayers: 0,
+  privacy: "",
+  playingTime: [],
+  pendingInvites: [],
+  pendingRequests: [],
+  approvalLimit: 1,
+};
+export const tournamentSchema = {
+  tournamentParticipants: [],
+  tournamentTeams: [],
+  tournamentAdmins: [],
+  tournamentOwner: {
+    userId: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    location: locationSchema,
+  },
+  games: [],
+  tournamentType: "",
+  tournamentMode: "",
+  prizeType: "",
+  entryFee: 0,
+  currencyType: "",
+  tournamentImage: "",
+  tournamentName: "",
+  tournamentDescription: "",
+  location: locationSchema,
+  createdAt: new Date(),
+  startDate: "",
+  tournamentLengthInMonths: "",
+  endDate: "",
+  prizesDistributed: false,
+  prizeDistributionDate: null,
   maxPlayers: 0,
   privacy: "",
   playingTime: [],

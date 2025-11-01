@@ -18,7 +18,7 @@ import {
   KeyboardAvoidingView,
   StyleSheet,
 } from "react-native";
-import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
+import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -27,15 +27,15 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import DatePicker from "../DatePicker";
 import {
-  leagueSchema,
+  tournamentSchema,
   scoreboardProfileSchema,
   courtSchema,
   gameTypes,
+  tournamentModes,
   maxPlayers,
   privacyTypes,
   COMPETITION_TYPES,
 } from "../../schemas/schema";
-import OptionSelector from "../OptionSelector";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
@@ -44,11 +44,12 @@ import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails
 import AddCourtModal from "./AddCourtModal";
 import { prizeTypes } from "../../schemas/schema";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
+import OptionSelector from "../OptionSelector";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
+const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -57,10 +58,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [selectedImage, setSelectedImage] = useState(null);
 
   // Modal state
-  const [showLeagueSettingsModal, setShowLeagueSettingsModal] = useState(false);
+  const [showTournamentSettingsModal, setShowTournamentSettingsModal] =
+    useState(false);
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
 
-  const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
+  const [tournamentCreationLoading, setTournamentCreationLoading] =
+    useState(false);
 
   // Court state
   const [courtsList, setCourtsList] = useState([]);
@@ -78,16 +81,16 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     setValue,
     watch,
   } = useForm({
-    defaultValues: leagueSchema,
+    defaultValues: tournamentSchema,
   });
 
   // Watch form values for validation
-  const leagueName = watch("leagueName");
+  const tournamentName = watch("tournamentName");
   const location = watch("location");
   const startDate = watch("startDate");
   const maxPlayers = watch("maxPlayers");
-  const leagueType = watch("leagueType");
-  const leagueLengthInMonths = watch("leagueLengthInMonths");
+  const tournamentType = watch("tournamentType");
+  const tournamentMode = watch("tournamentMode");
   const privacy = watch("privacy");
 
   const formatCourtDetailsForList = (courtsList) =>
@@ -119,13 +122,13 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       setValue("location", key);
     }
   };
-  // Get league admin information
-  const assignLeagueAdmin = async () => {
+  // Get tournament admin information
+  const assignTournamentAdmin = async () => {
     const currentUserId = await AsyncStorage.getItem("userId");
     if (!currentUserId) return null;
 
     const userInfo = await getUserById(currentUserId);
-    const leagueCreatorProfile = {
+    const tournamentCreatorProfile = {
       ...scoreboardProfileSchema,
       username: userInfo.username,
       firstName: userInfo.firstName,
@@ -134,7 +137,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       memberSince: userInfo.profileDetail?.memberSince || "",
     };
 
-    const leagueOwner = {
+    const tournamentOwner = {
       userId: userInfo.userId,
       username: userInfo.username,
       firstName: userInfo.firstName,
@@ -143,9 +146,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     };
 
     return {
-      leagueAdmin: { userId: userInfo.userId, username: userInfo.username },
-      leagueParticipant: leagueCreatorProfile,
-      leagueOwner,
+      tournamentAdmin: { userId: userInfo.userId, username: userInfo.username },
+      tournamentParticipant: tournamentCreatorProfile,
+      tournamentOwner,
     };
   };
 
@@ -167,50 +170,54 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
     }
   };
 
-  // Handle league creation
+  // Handle tournament creation
   const onSubmit = async (data) => {
-    setLeagueCreationLoading(true);
-    const leagueId = generateLeagueId(data.leagueName, data.startDate);
+    console.log("Submitting tournament data:", JSON.stringify(data, null, 2));
+    setTournamentCreationLoading(true);
+    const tournamentId = generateLeagueId(data.tournamentName, data.startDate);
 
     try {
-      const adminData = await assignLeagueAdmin();
+      const adminData = await assignTournamentAdmin();
       if (!adminData) return;
 
       let imageDownloadUrl = null;
       if (selectedImage) {
-        imageDownloadUrl = await uploadLeagueImage(selectedImage, leagueId);
+        imageDownloadUrl = await uploadLeagueImage(selectedImage, tournamentId);
       }
 
       const location = getLeagueLocationDetails(courtData, selectedLocation);
 
-      const newLeague = {
+      const newTournament = {
         ...data,
-        leagueAdmins: [adminData.leagueAdmin],
-        leagueParticipants: [adminData.leagueParticipant],
-        leagueImage: imageDownloadUrl || null,
+        tournamentAdmins: [adminData.tournamentAdmin],
+        tournamentsParticipants: [adminData.tournamentParticipant],
+        tournamentImage: imageDownloadUrl || null,
         prizeType: prizeTypes.TROPHY,
         location,
-        leagueOwner: adminData.leagueOwner,
-        leagueId,
+        tournamentOwner: adminData.tournamentOwner,
+        tournamentId,
       };
 
-      console.log("Creating league:", JSON.stringify(newLeague, null, 2));
+      console.log(
+        "Creating tournament:",
+        JSON.stringify(newTournament, null, 2)
+      );
 
       await addCompetition({
-        data: newLeague,
-        competitionType: COMPETITION_TYPES.LEAGUE,
+        data: newTournament,
+        competitionType: COMPETITION_TYPES.TOURNAMENT,
       });
-      setLeagueCreationLoading(false);
+      setTournamentCreationLoading(false);
       setModalVisible(false);
     } catch (err) {
       console.error("Error creating league:", err);
-      setLeagueCreationLoading(false);
+      setTournamentCreationLoading(false);
     }
   };
 
   // Step 1 validation check
   const canProceedToNext =
-    leagueName?.trim() &&
+    tournamentName?.trim() &&
     selectedLocation &&
     Object.values(selectedLocation).some((value) => value.trim() !== "");
 
@@ -218,10 +225,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const confirmDisabled = !(
     startDate &&
     maxPlayers &&
-    leagueType &&
-    leagueLengthInMonths &&
+    tournamentType &&
+    tournamentMode &&
     privacy &&
-    !leagueCreationLoading
+    !tournamentCreationLoading
   );
 
   useEffect(() => {
@@ -247,12 +254,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
             nestedScrollEnabled={true}
             renderItem={() => (
               <>
-                <ModalTitle>Create League</ModalTitle>
+                <ModalTitle>Create Tournament</ModalTitle>
 
                 <ImagePickerContainer onPress={handleImagePick}>
                   {selectedImage ? (
                     <>
-                      <LeagueImage source={{ uri: selectedImage }} />
+                      <TournamentImage source={{ uri: selectedImage }} />
                       <OverlayIcon>
                         <AntDesign name="pluscircleo" size={32} color="#fff" />
                       </OverlayIcon>
@@ -268,10 +275,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
                 </ImagePickerContainer>
 
                 <FormField
-                  label="League Name"
-                  name="leagueName"
+                  label="Tournament Name"
+                  name="tournamentName"
                   control={control}
-                  error={errors.leagueName}
+                  error={errors.tournamentName}
                   required
                 />
 
@@ -301,16 +308,16 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
                 <FormField
                   label="Description"
-                  name="leagueDescription"
+                  name="tournamentDescription"
                   control={control}
-                  error={errors.leagueDescription}
+                  error={errors.tournamentDescription}
                   multiline
                 />
 
                 <DisclaimerText>
                   Please ensure you have arranged court reservation directly
                   with the venue. Court Champs does not reserve any courts when
-                  you post a game or add a league.
+                  you post a game or add a tournament.
                 </DisclaimerText>
 
                 <ButtonContainer>
@@ -320,7 +327,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
 
                   <CreateButton
                     disabled={!canProceedToNext}
-                    onPress={() => setShowLeagueSettingsModal(true)}
+                    onPress={() => setShowTournamentSettingsModal(true)}
                   >
                     <CreateText>Next</CreateText>
                   </CreateButton>
@@ -331,11 +338,11 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         </SafeAreaWrapper>
       </ModalContainer>
 
-      {showLeagueSettingsModal && (
-        <ConfirmLeagueSettingsModal
-          visible={showLeagueSettingsModal}
-          leagueCreationLoading={leagueCreationLoading}
-          onBack={() => setShowLeagueSettingsModal(false)}
+      {showTournamentSettingsModal && (
+        <ConfirmTournamentSettingsModal
+          visible={showTournamentSettingsModal}
+          tournamentCreationLoading={tournamentCreationLoading}
+          onBack={() => setShowTournamentSettingsModal(false)}
           onConfirm={handleSubmit(onSubmit)}
           confirmDisabled={confirmDisabled}
           control={control}
@@ -412,10 +419,10 @@ const FormField = ({
 );
 
 // Settings Modal Component
-const ConfirmLeagueSettingsModal = ({
+const ConfirmTournamentSettingsModal = ({
   visible,
   onBack,
-  leagueCreationLoading,
+  tournamentCreationLoading,
   onConfirm,
   confirmDisabled,
   watch,
@@ -425,13 +432,14 @@ const ConfirmLeagueSettingsModal = ({
   return (
     <Modal animationType="slide" transparent visible={visible}>
       <ModalContainer>
-        <LeagueSettingsWrapper>
+        <TournamentSettingsWrapper>
           <SupportModalScrollContainer>
-            <ModalTitle>Confirm League Settings</ModalTitle>
+            <ModalTitle>Confirm Tournament Settings</ModalTitle>
             <DatePicker
               setValue={setValue}
               watch={watch}
               errorText={errors.startDate?.message}
+              hasEndDate={false}
             />
 
             <OptionSelector
@@ -446,10 +454,19 @@ const ConfirmLeagueSettingsModal = ({
             <OptionSelector
               setValue={setValue}
               watch={watch}
-              name="leagueType"
+              name="tournamentType"
               label="Type"
               options={gameTypes}
-              errorText={errors.leagueType?.message}
+              errorText={errors.tournamentType?.message}
+            />
+
+            <OptionSelector
+              setValue={setValue}
+              watch={watch}
+              name="tournamentMode"
+              label="Mode"
+              options={tournamentModes}
+              errorText={errors.tournamentMode?.message}
             />
 
             <OptionSelector
@@ -465,7 +482,7 @@ const ConfirmLeagueSettingsModal = ({
                 <CancelText>Back</CancelText>
               </CancelButton>
               <CreateButton disabled={confirmDisabled} onPress={onConfirm}>
-                {leagueCreationLoading ? (
+                {tournamentCreationLoading ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <CreateText>Create</CreateText>
@@ -473,7 +490,7 @@ const ConfirmLeagueSettingsModal = ({
               </CreateButton>
             </ButtonContainer>
           </SupportModalScrollContainer>
-        </LeagueSettingsWrapper>
+        </TournamentSettingsWrapper>
       </ModalContainer>
     </Modal>
   );
@@ -497,7 +514,7 @@ const SafeAreaWrapper = styled(KeyboardAvoidingView)({
   backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
-const LeagueSettingsWrapper = styled(SafeAreaView)({
+const TournamentSettingsWrapper = styled(SafeAreaView)({
   width: screenWidth - 40,
   margin: 20,
   borderRadius: 20,
@@ -591,7 +608,7 @@ const ImagePickerContainer = styled.TouchableOpacity({
   marginBottom: 20,
 });
 
-const LeagueImage = styled.Image({
+const TournamentImage = styled.Image({
   width: "100%",
   height: 200,
   borderRadius: 8,
@@ -646,4 +663,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddLeagueModal;
+export default AddTournamentModal;
