@@ -35,6 +35,7 @@ import {
   privacyTypes,
   COMPETITION_TYPES,
 } from "../../schemas/schema";
+import OptionSelector from "../OptionSelector";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";

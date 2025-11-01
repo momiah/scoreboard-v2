@@ -115,7 +115,7 @@ const InviteActionModal = ({
     try {
       await acceptLeagueInvite(
         currentUser?.userId,
-        inviteDetails.id,
+        inviteDetails.leagueId,
         notificationId
       );
 
@@ -129,7 +129,7 @@ const InviteActionModal = ({
   const handleLinkPress = () => {
     if (inviteDetails) {
       onClose();
-      navigateTo(inviteDetails.id);
+      navigateTo(inviteDetails.leagueId);
     }
   };
 
@@ -137,7 +137,7 @@ const InviteActionModal = ({
     try {
       await declineLeagueInvite(
         currentUser?.userId,
-        inviteDetails.id,
+        inviteDetails.leagueId,
         notificationId
       );
       console.log("Invite declined successfully");

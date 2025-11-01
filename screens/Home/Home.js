@@ -295,13 +295,13 @@ const Home = () => {
 
         <View style={{ height: 30 }} />
 
+        {/*
         <SubHeader
           title="Tournaments"
           onIconPress={addTournament}
           actionText="Browse Tournaments"
           showIcon
         />
-        {/*
         <TournamentGrid tournaments={tournaments} /> 
         */}
 
