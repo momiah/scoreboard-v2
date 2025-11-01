@@ -45,30 +45,50 @@ const InvitePlayerModal = ({
     showPopup,
   } = useContext(PopupContext);
 
-  // ✅ Must come first
-  const hasConflictedUsers = inviteUsers.some(
-    (item) =>
-      leagueDetails.leagueParticipants.some((u) => u.userId === item.userId) ||
-      leagueDetails.pendingInvites.some((u) => u.userId === item.userId)
-  );
+  // Simple function to check if user has conflict (not including current invite list)
+  const hasUserConflict = (userId) => {
+    const inLeague = leagueDetails.leagueParticipants?.some(
+      (u) => u.userId === userId
+    );
+    const inPendingInvites = leagueDetails.pendingInvites?.some(
+      (u) => u.userId === userId
+    );
+    const inPendingRequests = leagueDetails.pendingRequests?.some(
+      (u) => u.userId === userId
+    );
 
+    return inLeague || inPendingInvites || inPendingRequests;
+  };
+
+  // Check if any users in invite list have conflicts
+  const hasConflicts = inviteUsers.some((user) => hasUserConflict(user.userId));
+
+  // Show error when there are conflicts
   useEffect(() => {
-    if (hasConflictedUsers) {
-      setErrorText(
-        "Some selected users are already in the league or already invited"
+    if (hasConflicts) {
+      const conflictedUsers = inviteUsers.filter((user) =>
+        hasUserConflict(user.userId)
       );
+      setErrorText(
+        `Cannot invite: ${conflictedUsers
+          .map((u) => u.username)
+          .join(", ")}. Remove them to continue.`
+      );
+    } else {
+      setErrorText("");
     }
-  }, [hasConflictedUsers]);
+  }, [inviteUsers, leagueDetails]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
     setPopupMessage("");
-
     setModalVisible(false);
   };
 
   const handleSendInvite = async () => {
     setSendingInvite(true);
+    setErrorText("");
+
     try {
       if (inviteUsers.length === 0) {
         setErrorText("Please select at least one player to invite");
@@ -77,26 +97,8 @@ const InvitePlayerModal = ({
       }
 
       const currentUserId = await AsyncStorage.getItem("userId");
-      const inLeague = leagueDetails.leagueParticipants.map((u) => u.userId);
-      const pendingInvites = leagueDetails.pendingInvites.map((u) => u.userId);
-      const pendingRequests = leagueDetails.pendingRequests.map(
-        (u) => u.userId
-      );
 
-      const hasConflict = inviteUsers.some(
-        (u) =>
-          inLeague.includes(u.userId) ||
-          pendingInvites.includes(u.userId) ||
-          pendingRequests.includes(u.userId)
-      );
-
-      if (hasConflict) {
-        setErrorText(
-          "Some selected users are already in the league or already invited/ requested to join"
-        );
-        return;
-      }
-
+      // Send invites
       for (const user of inviteUsers) {
         const payload = {
           ...notificationSchema,
@@ -106,15 +108,19 @@ const InvitePlayerModal = ({
           message: `You've been invited to join ${leagueDetails.leagueName}`,
           type: notificationTypes.ACTION.INVITE.LEAGUE,
           data: {
-            leagueId: leagueDetails.id,
+            leagueId: leagueDetails.leagueId,
           },
         };
 
         await sendNotification(payload);
-        await updatePendingInvites(leagueDetails.id, user.userId);
+        await updatePendingInvites(leagueDetails.leagueId, user.userId);
       }
+
       handleShowPopup("Players invited successfully!");
-      // setModalVisible(false);
+      // Clear the invite list after successful invitation
+      setInviteUsers([]);
+      setSearchUser("");
+      setSuggestions([]);
     } catch (error) {
       setErrorText("Failed to send invites. Please try again.");
       console.error("Error sending invites:", error);
@@ -128,36 +134,28 @@ const InvitePlayerModal = ({
 
     if (value.trim().length > 0) {
       try {
-        // Retrieve the logged-in user ID from AsyncStorage
         const currentUserId = await AsyncStorage.getItem("userId");
         if (!currentUserId) {
-          return; // Handle if no user is logged in
+          return;
         }
 
-        // Split the search value into individual words
-        const searchWords = value.toLowerCase().split(/\s+/); // Split by spaces
-
-        // Query Firestore for matching usernames
-        const q = query(collection(db, "users")); // Base query
-
+        const searchWords = value.toLowerCase().split(/\s+/);
+        const q = query(collection(db, "users"));
         const querySnapshot = await getDocs(q);
-
-        // Map the result into an array and filter the users by search words
         const users = querySnapshot.docs.map((doc) => doc.data());
 
-        // Filter based on search words
+        // Filter only current user and already selected users
         const filteredUsers = users.filter((user) => {
-          const username = user.username.toLowerCase(); // Convert username to lowercase
-          return (
-            searchWords.some((word) => username.includes(word)) && // Match any word
-            user.userId !== currentUserId && // Exclude the logged-in user
-            !leagueDetails.leagueParticipants.some(
-              (selectedUser) => selectedUser.userId === user.userId
-            ) &&
-            !inviteUsers.some(
-              (invitedUser) => invitedUser.userId === user.userId
-            ) // Exclude already selected users
+          const username = user.username.toLowerCase();
+          const matchesSearch = searchWords.some((word) =>
+            username.includes(word)
           );
+          const isCurrentUser = user.userId === currentUserId;
+          const alreadySelected = inviteUsers.some(
+            (u) => u.userId === user.userId
+          );
+
+          return matchesSearch && !isCurrentUser && !alreadySelected;
         });
 
         setSuggestions(filteredUsers);
@@ -165,11 +163,12 @@ const InvitePlayerModal = ({
         console.error("Error fetching users:", error);
       }
     } else {
-      setSuggestions([]); // Clear suggestions if input is empty
+      setSuggestions([]);
     }
   };
 
   const handleSelectUser = (user) => {
+    // Check max players limit
     const totalCount =
       leagueDetails.leagueParticipants.length +
       inviteUsers.length +
@@ -183,18 +182,18 @@ const InvitePlayerModal = ({
     setInviteUsers((prevUsers) => [...prevUsers, user]);
     setSearchUser("");
     setSuggestions([]);
-    setErrorText(""); // Clear any previous errors
+    setErrorText("");
   };
 
   const handleRemoveUser = (userToRemove) => {
-    setInviteUsers(
-      (prevUsers) =>
-        prevUsers.filter((user) => user.userId !== userToRemove.userId) // Remove user based on userId
+    setInviteUsers((prevUsers) =>
+      prevUsers.filter((user) => user.userId !== userToRemove.userId)
     );
   };
 
-  // Shows 2/8 (Example) for number of players
-  const numberOfPlayers = `${leagueDetails.leagueParticipants?.length} / ${leagueDetails.maxPlayers}`;
+  const numberOfPlayers = `${leagueDetails.leagueParticipants?.length || 0} / ${
+    leagueDetails.maxPlayers
+  }`;
 
   return (
     <View>
@@ -273,7 +272,7 @@ const InvitePlayerModal = ({
                   <DropdownContainer>
                     <FlatList
                       data={suggestions}
-                      keyExtractor={(item) => item.userId} // Use userId instead of email
+                      keyExtractor={(item) => item.userId}
                       renderItem={({ item }) => {
                         const isAlreadySelected = inviteUsers.some(
                           (invitedUser) => invitedUser.userId === item.userId
@@ -302,22 +301,16 @@ const InvitePlayerModal = ({
                     />
                   </DropdownContainer>
                 )}
+
                 {inviteUsers?.length > 0 && (
                   <FlatList
                     style={{ marginBottom: 10 }}
                     data={inviteUsers}
                     keyExtractor={(item, index) =>
-                      item.email || index.toString()
+                      item.userId || index.toString()
                     }
                     renderItem={({ item }) => {
-                      const inLeague = leagueDetails.leagueParticipants.some(
-                        (u) => u.userId === item.userId
-                      );
-                      const isPending = leagueDetails.pendingInvites.some(
-                        (u) => u.userId === item.userId
-                      );
-
-                      const hasConflict = inLeague || isPending;
+                      const hasConflict = hasUserConflict(item.userId);
 
                       return (
                         <UserItem
@@ -344,16 +337,32 @@ const InvitePlayerModal = ({
                   with the venue. Court Champs does not reserve any courts when
                   you post a game
                 </DisclaimerText>
-                <View style={{ width: "100%" }}>
-                  {errorText && <ErrorText>{errorText}</ErrorText>}
-                </View>
+
+                {errorText ? (
+                  <View style={{ width: "100%" }}>
+                    <ErrorText>{errorText}</ErrorText>
+                  </View>
+                ) : null}
 
                 <ButtonContainer>
-                  <InviteButton onPress={handleSendInvite}>
+                  <InviteButton
+                    onPress={handleSendInvite}
+                    disabled={
+                      sendingInvite || inviteUsers.length === 0 || hasConflicts
+                    }
+                    style={{
+                      opacity:
+                        sendingInvite ||
+                        inviteUsers.length === 0 ||
+                        hasConflicts
+                          ? 0.6
+                          : 1,
+                    }}
+                  >
                     {sendingInvite ? (
                       <ActivityIndicator size="small" color="white" />
                     ) : (
-                      <InviteText>Invite</InviteText>
+                      <InviteText>Invite ({inviteUsers.length})</InviteText>
                     )}
                   </InviteButton>
                 </ButtonContainer>
@@ -366,6 +375,7 @@ const InvitePlayerModal = ({
   );
 };
 
+// ✅ All styled components remain the same
 const { width: screenWidth } = Dimensions.get("window");
 
 const ModalContainer = styled(BlurView).attrs({
@@ -378,21 +388,20 @@ const ModalContainer = styled(BlurView).attrs({
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "rgba(2, 13, 24, 1)", // Translucent dark blue
+  backgroundColor: "rgba(2, 13, 24, 1)",
   padding: 20,
   borderRadius: 10,
   width: screenWidth - 40,
   alignItems: "center",
-
-  // border: "1px solid #191b37",
 });
+
 const GradientOverlay = styled(LinearGradient)({
-  padding: 2, // Creates a border-like effect
-  borderRadius: 12, // Rounded corners
-  shadowColor: "#00A2FF", // Glow color
+  padding: 2,
+  borderRadius: 12,
+  shadowColor: "#00A2FF",
   shadowOffset: { width: 0, height: 10 },
   shadowOpacity: 0.4,
-  shadowRadius: 20, // Soft glow effect
+  shadowRadius: 20,
   opacity: 0.9,
 });
 
@@ -466,59 +475,49 @@ const LeagueDetailsContainer = styled.View({
 const InviteText = styled.Text({
   color: "white",
 });
+
 const DropdownContainer = styled.View({
-  backgroundColor: "rgb(4, 26, 49)", // Translucent dark blue
-  borderRadius: 5, // Rounded corners
-  padding: 10, // Padding inside the container
-  marginVertical: 5, // Spacing from the input field
+  backgroundColor: "rgb(4, 26, 49)",
+  borderRadius: 5,
+  padding: 10,
+  marginVertical: 5,
   maxHeight: "200px",
   width: "100%",
 });
 
 const DropdownItem = styled.TouchableOpacity({
-  backgroundColor: "rgb(5, 34, 64)", // Translucent dark blue
-  borderRadius: 5, // Consistent rounding
-  padding: 10, // Spacing inside the item
-  marginVertical: 5, // Space between items
+  backgroundColor: "rgb(5, 34, 64)",
+  borderRadius: 5,
+  padding: 10,
+  marginVertical: 5,
 });
 
 const DropdownText = styled.Text({
-  color: "#FFFFFF", // White text for visibility
-  fontSize: 16, // Readable font size
-  fontWeight: "500", // Slightly bold for emphasis
+  color: "#FFFFFF",
+  fontSize: 16,
+  fontWeight: "500",
 });
 
 const UserItem = styled.View({
-  flexDirection: "row", // Align items horizontally
-  justifyContent: "space-between", // Push name to the left and cross to the right
-  alignItems: "center", // Center items vertically
-  padding: 10, // Add spacing inside the item
-  marginVertical: 5, // Space between items
-  backgroundColor: "rgb(5, 34, 64)", // Translucent dark blue
-  borderRadius: 5, // Rounded corners
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: 10,
+  marginVertical: 5,
+  backgroundColor: "rgb(5, 34, 64)",
+  borderRadius: 5,
   width: "100%",
 });
 
 const UserName = styled.Text({
-  fontSize: 16, // Set a readable font size
-  color: "#FFFFFF", // White text color
-  fontWeight: "500", // Slightly bold text
-});
-
-const RemoveButton = styled.TouchableOpacity({
-  padding: 5, // Add padding for better touch area
-  borderRadius: 5, // Slightly rounded corners
-  backgroundColor: "#E53E3E", // Red background for the remove button
-});
-
-const RemoveText = styled.Text({
-  color: "#FFFFFF", // White text color
-  fontWeight: "bold", // Bold text for emphasis
+  fontSize: 16,
+  color: "#FFFFFF",
+  fontWeight: "500",
 });
 
 const ErrorText = styled.Text({
   color: "red",
-  fontSize: 10,
+  fontSize: 12,
   fontStyle: "italic",
   textAlign: "left",
   marginVertical: 10,

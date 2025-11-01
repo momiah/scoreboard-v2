@@ -11,7 +11,7 @@ import styled from "styled-components/native";
 import ListDropdown from "../ListDropdown/ListDropdown";
 import { loadCountries, loadCities } from "../../utils/locationData";
 import {
-  leagueTypes,
+  gameTypes,
   maxPlayers as maxPlayersOptions,
 } from "../../schemas/schema";
 import { Controller, useWatch } from "react-hook-form";
@@ -275,7 +275,7 @@ const FilterSheetModal = ({
         control={control}
         render={({ field }) => (
           <RadioGroup>
-            {leagueTypes.map((type) => (
+            {gameTypes.map((type) => (
               <RadioOption key={type} onPress={() => field.onChange(type)}>
                 <RadioCircle selected={field.value === type} />
                 <RadioLabel>{type}</RadioLabel>

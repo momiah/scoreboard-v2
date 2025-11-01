@@ -31,6 +31,7 @@ import {
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
+import AddTournamentModal from "../../components/Modals/AddTournamentModal";
 // import { resetLeagueParticipantStats } from "../../devFunctions/resetLeagueParticipantStats";
 // import { resetUsersProfileDetails } from "../../devFunctions/resetUsersProfileDetails";
 // import {
@@ -40,7 +41,9 @@ import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
 
 const Home = () => {
   const navigation = useNavigation();
-  const [modalVisible, setModalVisible] = useState(false);
+  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
+  const [addTournamentModalVisible, setAddTournamentModalVisible] =
+    useState(false);
   const [userToken, setUserToken] = useState(null);
   const { fetchUpcomingLeagues, upcomingLeagues } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser, getLeaguesForUser } =
@@ -104,7 +107,15 @@ const Home = () => {
 
   const addLeague = async () => {
     if (userToken && currentUser) {
-      setModalVisible(true);
+      setAddLeagueModalVisible(true);
+    } else {
+      navigateTo("Login");
+    }
+  };
+
+  const addTournament = async () => {
+    if (userToken && currentUser) {
+      setAddTournamentModalVisible(true);
     } else {
       navigateTo("Login");
     }
@@ -284,18 +295,27 @@ const Home = () => {
 
         <View style={{ height: 30 }} />
 
-        {/* <SubHeader
+        {/*
+        <SubHeader
           title="Tournaments"
-          onIconPress={() => navigateTo("Players")}
+          onIconPress={addTournament}
           actionText="Browse Tournaments"
           showIcon
         />
-        <TournamentGrid tournaments={tournaments} /> */}
+        <TournamentGrid tournaments={tournaments} /> 
+        */}
 
-        {modalVisible && (
+        {addLeagueModalVisible && (
           <AddLeagueModel
-            modalVisible={modalVisible}
-            setModalVisible={setModalVisible}
+            modalVisible={addLeagueModalVisible}
+            setModalVisible={setAddLeagueModalVisible}
+          />
+        )}
+
+        {addTournamentModalVisible && (
+          <AddTournamentModal
+            modalVisible={addTournamentModalVisible}
+            setModalVisible={setAddTournamentModalVisible}
           />
         )}
       </HomeContainer>

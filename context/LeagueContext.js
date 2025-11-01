@@ -304,6 +304,67 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  // const addCompetition = async ({ data, competitionType }) => {
+  //   try {
+  //     if (competitionType === "league") {
+  //       const { leagueId } = data;
+  //       // Save league document
+  //       await setDoc(doc(db, "leagues", leagueId), {
+  //         ...data,
+  //       });
+
+  //       // Create welcome chat message
+  //       const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
+  //       await setDoc(messageRef, {
+  //         _id: "welcome",
+  //         text: `Welcome to the chat for ${data.leagueName || ""}!`,
+  //         createdAt: new Date(),
+  //         user: {
+  //           _id: "system",
+  //           name: "CourtChamps",
+  //           avatar: ccImageEndpoint, // optional system avatar
+  //         },
+  //       });
+
+  //       // Navigate to created league
+  //       setLeagueNavigationId(leagueId);
+  //     } else if (competitionType === "tournament") {
+  //       const { tournamentId } = data;
+  //       // Save tournament document
+  //       await setDoc(doc(db, "tournaments", tournamentId), {
+  //         ...data,
+  //       });
+
+  //       // Create welcome chat message
+  //       const messageRef = doc(
+  //         collection(db, "tournaments", tournamentId, "chat")
+  //       );
+  //       await setDoc(messageRef, {
+  //         _id: "welcome",
+  //         text: `Welcome to the chat for ${data.tournamentName || ""}!`,
+  //         createdAt: new Date(),
+  //         user: {
+  //           _id: "system",
+  //           name: "CourtChamps",
+  //           avatar: ccImageEndpoint, // optional system avatar
+  //         },
+  //       });
+
+  //       // Navigate to created tournament
+  //       setTournamentNavigationId(tournamentId);
+  //     } else {
+  //       console.warn("Unknown competitionType:", competitionType);
+  //     }
+
+  //     // Reset the navigation ID after a short delay
+  //     setTimeout(() => {
+  //       setTournamentNavigationId("");
+  //     }, 2000);
+  //   } catch (error) {
+  //     console.error("Error adding competition: ", error);
+  //   }
+  // };
+
   const fetchLeagueById = async (leagueId) => {
     try {
       const leagueDoc = await getDoc(doc(db, "leagues", leagueId));
