@@ -78,7 +78,7 @@ const TeamTextContainer = styled.View({
   padding: 15,
   paddingLeft: 20,
   paddingRight: 20,
-  maxWidth: screenWidth <= 405 ? 125 : 140,
+  width: screenWidth <= 405 ? 125 : 140,
 });
 
 const DateText = styled.Text({
