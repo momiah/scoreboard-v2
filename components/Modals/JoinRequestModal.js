@@ -110,7 +110,7 @@ const JoinRequestModal = ({
       setJoiningLeague(true);
       await acceptLeagueJoinRequest(
         senderId,
-        requestDetails.id,
+        requestDetails.leagueId,
         notificationId,
         currentUser?.userId
       );
@@ -127,7 +127,7 @@ const JoinRequestModal = ({
   const handleLinkPress = () => {
     if (requestDetails) {
       onClose();
-      navigateTo(requestDetails.id);
+      navigateTo(requestDetails.leagueId);
     }
   };
 
@@ -142,7 +142,7 @@ const JoinRequestModal = ({
     try {
       await declineLeagueJoinRequest(
         senderId,
-        requestDetails.id,
+        requestDetails.leagueId,
         notificationId,
         currentUser?.userId
       );
