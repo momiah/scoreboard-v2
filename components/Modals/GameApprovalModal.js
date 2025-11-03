@@ -18,7 +18,7 @@ import { UserContext } from "../../context/UserContext";
 
 import { useNavigation } from "@react-navigation/native";
 import { notificationTypes } from "../../schemas/schema";
-import { TeamColumn, ScoreDisplay } from "../scoreboard/ScoreboardAtoms";
+// import { TeamColumn, ScoreDisplay } from "../scoreboard/ScoreboardAtoms";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -292,6 +292,33 @@ const GameApprovalModal = ({
   );
 };
 
+const TeamColumn = ({ team, players = {}, leagueType }) => (
+  <TeamContainer>
+    <PlayerCell position={team} player={players?.player1} />
+    {leagueType === "Doubles" && (
+      <PlayerCell position={team} player={players?.player2} />
+    )}
+  </TeamContainer>
+);
+
+const PlayerCell = ({ position, player }) => (
+  <TeamTextContainer position={position}>
+    <TeamText position={position}>{player}</TeamText>
+  </TeamTextContainer>
+);
+
+// Updated ScoreDisplay component for better alignment
+const ScoreDisplay = ({ date, team1, team2 }) => (
+  <ResultsContainer>
+    <DateText>{date}</DateText>
+    <ScoreContainer>
+      <ScoreNumber>{team1}</ScoreNumber>
+      <ScoreSeparator>-</ScoreSeparator>
+      <ScoreNumber>{team2}</ScoreNumber>
+    </ScoreContainer>
+  </ResultsContainer>
+);
+
 const ModalContainer = styled(BlurView).attrs({
   intensity: 50,
   tint: "dark",
@@ -366,6 +393,70 @@ const GameContainer = styled.View({
   borderRadius: 8,
   width: "100%",
   paddingVertical: 10, // Added vertical padding for better spacing
+});
+
+// Enhanced ResultsContainer for better centering
+const ResultsContainer = styled.View({
+  flex: 1, // Changed from flexGrow to flex
+  justifyContent: "center",
+  alignItems: "center",
+  paddingVertical: 5, // Reduced padding for better balance
+});
+
+// Improved score display components
+const ScoreNumber = styled.Text({
+  fontSize: 24, // Larger font size for better visibility
+  fontWeight: "bold",
+  color: "#00A2FF",
+});
+
+const ScoreSeparator = styled.Text({
+  fontSize: 24,
+  fontWeight: "bold",
+  color: "#ccc",
+  marginHorizontal: 8, // More spacing around the separator
+});
+
+// Perfectly centered score container
+const ScoreContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: 5,
+  paddingHorizontal: 5,
+});
+
+const TeamContainer = styled.View({
+  flex: 1.5, // Increased relative flex size for team containers
+  justifyContent: "center",
+  flexDirection: "column",
+  borderRadius: 8,
+});
+
+// Adjusted width to accommodate up to 10 capital letter usernames
+const TeamTextContainer = styled.View({
+  flexDirection: "column",
+  padding: 15,
+  // paddingHorizontal: 10, // Reduced horizontal padding to give more space for text
+  paddingRight: 10,
+  paddingLeft: 10,
+  width: "100%", // Use full width of parent TeamContainer
+  maxWidth: screenWidth <= 400 ? 125 : 140, // Increased max width
+});
+
+// Added text wrapping capability
+const TeamText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 13 : 14,
+  textAlign: (props) => (props.position === "right" ? "right" : "left"),
+  flexWrap: "wrap", // Ensures text fits properly and doesn't overflow
+});
+
+const DateText = styled.Text({
+  fontSize: 10,
+  fontWeight: "bold",
+  color: "white",
+  marginBottom: 5,
 });
 
 const Description = styled.Text({
