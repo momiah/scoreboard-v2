@@ -2,7 +2,29 @@ import globals from 'globals';
 import pluginJs from '@eslint/js';
 import pluginReact from 'eslint-plugin-react';
 
+const ignorePatterns = [
+  'node_modules/**',
+  '**/node_modules/**',
+  '.expo/**',
+  'dist/**',
+  'build/**',
+  '_d_/**',
+  '__drafts__/**',
+  'coverage/**',
+  '.git/**',
+  'android/**',
+  'ios/**',
+  'web-build/**',
+  'babel.config.js',
+  'metro.config.js',
+  'functions/.eslintrc.js',
+  'rankingMedals/**',
+  '**/*.d.ts',
+  '**/*.min.js',
+];
+
 export default [
+  { ignores: ignorePatterns },
   {
     files: ['**/*.{js,mjs,cjs,jsx,ts,tsx}'],
     languageOptions: {
