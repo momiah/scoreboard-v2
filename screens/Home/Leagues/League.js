@@ -21,8 +21,8 @@ import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
-import { calculateLeagueStatus } from "../../../helpers/calculateLeagueStatus";
-import LeagueRoleTag from "./LeagueRoleTag";
+import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
+import UserRoleTag from "../../../components/UserRoleTag";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
@@ -139,7 +139,7 @@ const League = () => {
       : []),
   ];
 
-  const leagueStatus = calculateLeagueStatus(leagueById);
+  const leagueStatus = calculateCompetitionStatus(leagueById);
   const {
     leagueParticipants,
     leagueTeams,
@@ -315,7 +315,7 @@ const League = () => {
                 <Tag name="TROPHY" />
               </View>
 
-              <LeagueRoleTag
+              <UserRoleTag
                 userRole={userRole}
                 onInvitePress={handleOpenInviteModal}
                 onLoginPress={handleLogin}

@@ -50,9 +50,11 @@ const LeagueProvider = ({ children }) => {
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [tournamentNavigationId, setTournamentNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
+  const [upcomingTournaments, setUpcomingTournaments] = useState([]);
 
   useEffect(() => {
     fetchUpcomingLeagues();
+    fetchUpcomingTournaments();
   }, []);
 
   // NEED TO MODIFY LEAGUE SCHEMA TO INCLUDE COUNTRY CODE AT TOP LEVEL RATHER THAN NESTED
@@ -115,6 +117,34 @@ const LeagueProvider = ({ children }) => {
       }
 
       setUpcomingLeagues(leagues);
+    } catch (error) {
+      console.error("Error fetching leagues:", error);
+    }
+  };
+  const fetchUpcomingTournaments = async () => {
+    try {
+      const tournamentsRef = collection(db, "tournaments");
+
+      // Simply get 30 most recently created tournaments
+      const q = query(tournamentsRef, orderBy("createdAt", "desc"), limit(30));
+
+      const snapshot = await getDocs(q);
+      const tournaments = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // if (currentUser?.location?.countryCode) {
+      //   const filteredTournaments = tournaments.filter(
+      //     (tournament) =>
+      //       tournament.location?.countryCode ===
+      //       currentUser.location.countryCode
+      //   );
+      //   setUpcomingTournaments(filteredTournaments);
+      //   return;
+      // }
+
+      setUpcomingTournaments(tournaments);
     } catch (error) {
       console.error("Error fetching leagues:", error);
     }
@@ -303,67 +333,6 @@ const LeagueProvider = ({ children }) => {
       console.error("Error adding competition:", error);
     }
   };
-
-  // const addCompetition = async ({ data, competitionType }) => {
-  //   try {
-  //     if (competitionType === "league") {
-  //       const { leagueId } = data;
-  //       // Save league document
-  //       await setDoc(doc(db, "leagues", leagueId), {
-  //         ...data,
-  //       });
-
-  //       // Create welcome chat message
-  //       const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
-  //       await setDoc(messageRef, {
-  //         _id: "welcome",
-  //         text: `Welcome to the chat for ${data.leagueName || ""}!`,
-  //         createdAt: new Date(),
-  //         user: {
-  //           _id: "system",
-  //           name: "CourtChamps",
-  //           avatar: ccImageEndpoint, // optional system avatar
-  //         },
-  //       });
-
-  //       // Navigate to created league
-  //       setLeagueNavigationId(leagueId);
-  //     } else if (competitionType === "tournament") {
-  //       const { tournamentId } = data;
-  //       // Save tournament document
-  //       await setDoc(doc(db, "tournaments", tournamentId), {
-  //         ...data,
-  //       });
-
-  //       // Create welcome chat message
-  //       const messageRef = doc(
-  //         collection(db, "tournaments", tournamentId, "chat")
-  //       );
-  //       await setDoc(messageRef, {
-  //         _id: "welcome",
-  //         text: `Welcome to the chat for ${data.tournamentName || ""}!`,
-  //         createdAt: new Date(),
-  //         user: {
-  //           _id: "system",
-  //           name: "CourtChamps",
-  //           avatar: ccImageEndpoint, // optional system avatar
-  //         },
-  //       });
-
-  //       // Navigate to created tournament
-  //       setTournamentNavigationId(tournamentId);
-  //     } else {
-  //       console.warn("Unknown competitionType:", competitionType);
-  //     }
-
-  //     // Reset the navigation ID after a short delay
-  //     setTimeout(() => {
-  //       setTournamentNavigationId("");
-  //     }, 2000);
-  //   } catch (error) {
-  //     console.error("Error adding competition: ", error);
-  //   }
-  // };
 
   const fetchLeagueById = async (leagueId) => {
     try {
@@ -1142,6 +1111,9 @@ const LeagueProvider = ({ children }) => {
         // Tournament State Management
         tournamentNavigationId,
         setTournamentNavigationId,
+        upcomingTournaments,
+        setUpcomingTournaments,
+        fetchUpcomingTournaments,
 
         // League State Management
         upcomingLeagues,

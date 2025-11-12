@@ -45,7 +45,12 @@ const Home = () => {
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
   const [userToken, setUserToken] = useState(null);
-  const { fetchUpcomingLeagues, upcomingLeagues } = useContext(LeagueContext);
+  const {
+    fetchUpcomingLeagues,
+    upcomingLeagues,
+    fetchUpcomingTournaments,
+    upcomingTournaments,
+  } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser, getLeaguesForUser } =
     useContext(UserContext);
 
@@ -53,6 +58,11 @@ const Home = () => {
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // console.log(
+  //   "Upcoming Tournaments on Homepage:",
+  //   JSON.stringify(upcomingTournaments, null, 2)
+  // );
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -149,21 +159,6 @@ const Home = () => {
     return userIsParticipant?.length === 0;
   });
 
-  // const usersToReset = [
-  //   "Hussain",
-  //   "AnisZaman", // Anis,
-  //   "Bokul",
-  //   "Yasin",
-  //   "ProLikeMo", //Mohsin
-  //   "MaxHoque", // Max,
-  //   "Babu",
-  //   "R4YY4NH", // Rayyan,
-  //   "Gesh",
-  //   "Komal", // Doc
-  //   "Saiful",
-  //   "Raqeeb",
-  // ];
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
       <HomeContainer
@@ -174,6 +169,7 @@ const Home = () => {
               fetchUsers();
               fetchUpcomingLeagues();
               fetchUserLeagues();
+              fetchUpcomingTournaments();
             }}
             tintColor="white" // iOS
             colors={["white"]} // Android
@@ -295,15 +291,14 @@ const Home = () => {
 
         <View style={{ height: 30 }} />
 
-        {/*
         <SubHeader
           title="Tournaments"
           onIconPress={addTournament}
           actionText="Browse Tournaments"
           showIcon
         />
-        <TournamentGrid tournaments={tournaments} /> 
-        */}
+
+        <TournamentGrid tournaments={upcomingTournaments} />
 
         {addLeagueModalVisible && (
           <AddLeagueModel

@@ -5,6 +5,7 @@ import { Platform } from "react-native";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
+import Tournament from "../screens/Home/Tournaments/Tournament";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
@@ -59,6 +60,7 @@ const HomeStack = () => {
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="Tournament" component={Tournament} />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -89,6 +91,7 @@ const ProfileStack = () => {
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="Tournament" component={Tournament} />
     </Stack.Navigator>
   );
 };
@@ -115,6 +118,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="Tournament" component={Tournament} />
     </Stack.Navigator>
   );
 };
@@ -141,6 +145,7 @@ const ChatsStack = () => {
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="Tournament" component={Tournament} />
     </Stack.Navigator>
   );
 };

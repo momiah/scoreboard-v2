@@ -5,7 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
+import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import Tag from "../Tag";
 import { UserContext } from "../../context/UserContext";
 import { ccDefaultImage } from "../../mockImages/index";
@@ -40,7 +40,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
       decelerationRate="fast"
     >
       {leagues.map((league, index) => {
-        const leagueStatus = calculateLeagueStatus(league);
+        const leagueStatus = calculateCompetitionStatus(league);
         const leagueParticipantsLength = league.leagueParticipants.length;
         const maxPlayers = league.maxPlayers;
 

@@ -190,6 +190,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         leagueImage: imageDownloadUrl || null,
         prizeType: prizeTypes.TROPHY,
         location,
+        countryCode: location.countryCode || "",
         leagueOwner: adminData.leagueOwner,
         leagueId,
       };

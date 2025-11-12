@@ -18,7 +18,6 @@ import { UserContext } from "../../context/UserContext";
 
 import { useNavigation } from "@react-navigation/native";
 import { notificationTypes } from "../../schemas/schema";
-// import { TeamColumn, ScoreDisplay } from "../scoreboard/ScoreboardAtoms";
 
 const screenWidth = Dimensions.get("window").width;
 

@@ -1,8 +1,8 @@
-// screens/Home/Leagues/LeagueRoleTag.tsx
+// screens/Home/Leagues/UserRoleTag.tsx
 import React from "react";
-import Tag from "../../../components/Tag";
+import Tag from "./Tag";
 
-const LeagueRoleTag = ({
+const UserRoleTag = ({
   userRole,
   onInvitePress,
   onLoginPress,
@@ -89,4 +89,4 @@ const LeagueRoleTag = ({
   }
 };
 
-export default LeagueRoleTag;
+export default UserRoleTag;

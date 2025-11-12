@@ -14,7 +14,7 @@ import {
   Dimensions,
 } from "react-native";
 import { processLeagues } from "../../helpers/processedProfileLeagues";
-import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
+import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { sortLeaguesByEndDate } from "../../helpers/sortedLeaguesByEndDate";
 import Tag from "../Tag";
 import RankSuffix from "../RankSuffix";
@@ -83,7 +83,7 @@ const ProfileActivity = ({ profile }) => {
   );
 
   const renderLeagueItem = useCallback(({ item }) => {
-    const leagueStatus = calculateLeagueStatus(item);
+    const leagueStatus = calculateCompetitionStatus(item);
     const isOwner = item.leagueOwner?.userId === profile?.userId;
     const isAdmin =
       !isOwner &&

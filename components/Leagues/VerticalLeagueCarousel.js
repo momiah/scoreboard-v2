@@ -7,7 +7,7 @@ import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LeagueContext } from "../../context/LeagueContext";
-import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
+import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { ccDefaultImage } from "../../mockImages/index";
 
 const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
@@ -26,7 +26,7 @@ const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
   // Render individual league items
   const renderLeagueItem = useCallback(
     ({ item: league, index }) => {
-      const leagueStatus = calculateLeagueStatus(league);
+      const leagueStatus = calculateCompetitionStatus(league);
       const leagueParticipantsLength = league.leagueParticipants.length;
       const maxPlayers = league.maxPlayers;
 
