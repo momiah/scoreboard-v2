@@ -17,7 +17,7 @@ const AssignAdmin = () => {
   const { leagueId, leagueById } = route.params;
 
   const { currentUser } = useContext(UserContext);
-  const { assignLeagueAdmin, revokeLeagueAdmin, fetchLeagueById } =
+  const { assignLeagueAdmin, revokeLeagueAdmin, fetchCompetitionById } =
     useContext(LeagueContext);
 
   const [league, setLeague] = useState(null);
@@ -36,7 +36,9 @@ const AssignAdmin = () => {
   const refetchLeague = async () => {
     setLoading(true);
     try {
-      const fetchedLeague = await fetchLeagueById(leagueId);
+      const fetchedLeague = await fetchCompetitionById({
+        competitionId: leagueId,
+      });
       setLeague(fetchedLeague);
     } catch (error) {
       console.error("Failed to fetch league:", error);

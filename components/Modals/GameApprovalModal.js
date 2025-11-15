@@ -31,7 +31,7 @@ const GameApprovalModal = ({
   leagueId,
   isRead,
 }) => {
-  const { fetchLeagueById, approveGame, declineGame } =
+  const { fetchCompetitionById, approveGame, declineGame } =
     useContext(LeagueContext);
   const { currentUser, readNotification } = useContext(UserContext);
   const [gameDetails, setGameDetails] = useState(null);
@@ -53,7 +53,9 @@ const GameApprovalModal = ({
     const fetchDetails = async () => {
       if (notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE) {
         try {
-          const league = await fetchLeagueById(leagueId);
+          const league = await fetchCompetitionById({
+            competitionId: leagueId,
+          });
           const sender = league?.leagueParticipants?.find(
             (participant) => participant.userId === senderId
           )?.username;

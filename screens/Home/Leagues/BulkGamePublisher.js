@@ -42,7 +42,7 @@ const BulkGamePublisher = () => {
     getUserById,
     sendNotification,
   } = useContext(UserContext);
-  const { fetchLeagueById } = useContext(LeagueContext);
+  const { fetchCompetitionById } = useContext(LeagueContext);
   const {
     handleShowPopup,
     setPopupMessage,
@@ -250,7 +250,7 @@ const BulkGamePublisher = () => {
                   `Successfully published ${result.totalSuccessful} games!`
                 );
                 setPendingGames([]);
-                await fetchLeagueById(leagueId);
+                await fetchCompetitionById({ competitionId: leagueId });
               } else {
                 Alert.alert(
                   "Error",
@@ -274,7 +274,7 @@ const BulkGamePublisher = () => {
     pendingGames,
     leagueId,
     handleShowPopup,
-    fetchLeagueById,
+    fetchCompetitionById,
     navigation,
     sendBulkNotifications,
   ]);

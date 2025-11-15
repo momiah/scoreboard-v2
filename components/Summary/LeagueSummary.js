@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, memo } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity, Dimensions } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -7,10 +7,10 @@ import ParticipantCarousel from "./ParticipantCarousel";
 import PlayTime from "./PlayTime";
 import PrizeContenders from "./PrizeContenders";
 import { copyLocationAddress } from "../../helpers/copyLocationAddress";
-import { GameContext } from "../../context/GameContext";
 import { useContext } from "react";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
+import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 
 // Constants moved outside to prevent recreation
 const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
@@ -21,179 +21,206 @@ const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 
-const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
-  const { getUserById } = useContext(UserContext);
-  const [topContenders, setTopContenders] = useState([]);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isDataLoading, setIsDataLoading] = useState(true);
+const LeagueSummary = memo(
+  ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
+    const { getUserById } = useContext(UserContext);
+    const [topContenders, setTopContenders] = useState([]);
+    const [isCopied, setIsCopied] = useState(false);
+    const [isDataLoading, setIsDataLoading] = useState(true);
 
-  const locationCopyTimeoutRef = useRef(null);
+    const locationCopyTimeoutRef = useRef(null);
 
-  // Memoize expensive calculations
-  const gameStats = useMemo(() => {
-    const numberOfParticipants = leagueDetails?.leagueParticipants?.length || 1;
-    const numberOfGamesPlayed = leagueDetails?.games?.length || 0;
-    const totalGamePointsWon =
-      leagueDetails?.games?.reduce((acc, game) => {
-        return acc + (game?.result?.winner?.score || 0);
-      }, 0) || 0;
+    const competitionData = useMemo(
+      () =>
+        normalizeCompetitionData({
+          rawData: competitionDetails,
+          competitionType,
+        }),
+      [competitionDetails, competitionType]
+    );
 
-    return {
-      numberOfParticipants,
-      numberOfGamesPlayed,
-      totalGamePointsWon,
-      prizePool:
-        (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2,
-    };
-  }, [leagueDetails?.leagueParticipants, leagueDetails?.games]);
+    const participants = competitionData?.participants || [];
+    const games = competitionData?.games || [];
+    const admins = competitionData?.admins || [];
+    const owner = competitionData?.owner || {};
+    const description = competitionData?.description || "";
+    const playtime = competitionData?.playingTime || [];
+    const competitionId = competitionData.id;
 
-  // Memoize participants to prevent unnecessary useEffect runs
-  const participants = useMemo(
-    () => leagueDetails?.leagueParticipants || [],
-    [leagueDetails?.leagueParticipants]
-  );
+    const gameStats = useMemo(() => {
+      const numberOfParticipants = participants.length || 1;
+      const numberOfGamesPlayed = games.length || 0;
+      const totalGamePointsWon =
+        games.reduce((acc, game) => {
+          return acc + (game?.result?.winner?.score || 0);
+        }, 0) || 0;
 
-  useEffect(() => {
-    const loadEnrichedContenders = async () => {
-      setIsDataLoading(true);
+      return {
+        numberOfParticipants,
+        numberOfGamesPlayed,
+        totalGamePointsWon,
+        prizePool:
+          (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2,
+      };
+    }, [participants.length, games.length, games]);
 
-      const contendersWithWins = participants.filter((p) => p.numberOfWins > 0);
+    useEffect(() => {
+      const loadEnrichedContenders = async () => {
+        setIsDataLoading(true);
 
-      if (contendersWithWins.length > 0) {
-        try {
-          const enriched = await enrichPlayers(getUserById, contendersWithWins);
-          setTopContenders(enriched.slice(0, 4));
-        } catch (error) {
-          console.error("Error enriching players:", error);
+        const contendersWithWins = participants.filter(
+          (p) => p.numberOfWins > 0
+        );
+
+        if (contendersWithWins.length > 0) {
+          try {
+            const enriched = await enrichPlayers(
+              getUserById,
+              contendersWithWins
+            );
+            setTopContenders(enriched.slice(0, 4));
+          } catch (error) {
+            console.error("Error enriching players:", error);
+            setTopContenders([]);
+          }
+        } else {
           setTopContenders([]);
         }
-      } else {
-        setTopContenders([]);
-      }
-      setIsDataLoading(false);
-    };
+        setIsDataLoading(false);
+      };
 
-    loadEnrichedContenders();
-  }, [participants, getUserById]);
+      loadEnrichedContenders();
+    }, [participants.length, competitionType]);
 
-  const { courtName, address, postCode, city, countryCode } =
-    leagueDetails?.location || {};
-  const fullAddress = `${courtName || ""}, ${address || ""}, ${city || ""}, ${
-    postCode || ""
-  }, ${countryCode || ""}`;
+    const addressData = useMemo(() => {
+      const { courtName, address, postCode, city, countryCode } =
+        competitionData?.location || {};
+      const fullAddress = `${courtName || ""}, ${address || ""}, ${
+        city || ""
+      }, ${postCode || ""}, ${countryCode || ""}`;
+      return { courtName, address, postCode, city, countryCode, fullAddress };
+    }, [competitionData?.location]);
 
-  const hasPrizesDistributed = leagueDetails?.prizesDistributed;
-  const leagueId = leagueDetails?.leagueId;
+    const hasPrizesDistributed = competitionData?.prizesDistributed;
 
-  const renderContenders = isDataLoading
-    ? PLACEHOLDER_CONTENDERS
-    : topContenders;
+    const renderContenders = isDataLoading
+      ? PLACEHOLDER_CONTENDERS
+      : topContenders;
 
-  return (
-    <LeagueSummaryContainer>
-      <PrizeDistribution
-        prizePool={gameStats.prizePool}
-        endDate={endDate}
-        leagueParticipants={participants}
-        hasPrizesDistributed={hasPrizesDistributed}
-        leagueId={leagueId}
-        distribution={DISTRIBUTION}
-      />
+    return (
+      <LeagueSummaryContainer>
+        <PrizeDistribution
+          prizePool={gameStats.prizePool}
+          distribution={DISTRIBUTION}
+        />
 
-      <SectionTitleContainer>
-        {hasPrizesDistributed ? (
-          <>
-            <SectionTitle>Prize Winners</SectionTitle>
-            <Ionicons name="checkmark-circle" size={20} color="green" />
-          </>
-        ) : (
-          <>
-            <SectionTitle>Top Contenders</SectionTitle>
-            <Ionicons name="hourglass-outline" size={20} color="#FF9800" />
-          </>
-        )}
-      </SectionTitleContainer>
-      <TableContainer>
-        {renderContenders.length === 0 && !isDataLoading ? (
-          <EmptyStateContainer>
-            <EmptyStateText>
-              Top prize contenders will be displayed here once players start
-              winning games.
-            </EmptyStateText>
-          </EmptyStateContainer>
-        ) : (
-          renderContenders.map((player, index) => (
-            <PrizeContenders
-              key={player.userId}
-              item={player}
-              index={index}
-              isDataLoading={isDataLoading}
-              distribution={DISTRIBUTION}
-              prizePool={gameStats.prizePool}
-              hasPrizesDistributed={hasPrizesDistributed}
+        <SectionTitleContainer>
+          {hasPrizesDistributed ? (
+            <>
+              <SectionTitle>Prize Winners</SectionTitle>
+              <Ionicons name="checkmark-circle" size={20} color="green" />
+            </>
+          ) : (
+            <>
+              <SectionTitle>Top Contenders</SectionTitle>
+              <Ionicons name="hourglass-outline" size={20} color="#FF9800" />
+            </>
+          )}
+        </SectionTitleContainer>
+
+        <TableContainer>
+          {renderContenders.length === 0 && !isDataLoading ? (
+            <EmptyStateContainer>
+              <EmptyStateText>
+                Top prize contenders will be displayed here once players start
+                winning games.
+              </EmptyStateText>
+            </EmptyStateContainer>
+          ) : (
+            renderContenders.map((player, index) => (
+              <PrizeContenders
+                key={player.userId}
+                item={player}
+                index={index}
+                isDataLoading={isDataLoading}
+                distribution={DISTRIBUTION}
+                prizePool={gameStats.prizePool}
+                hasPrizesDistributed={hasPrizesDistributed}
+              />
+            ))
+          )}
+        </TableContainer>
+
+        {/* Competition Location */}
+        <Section>
+          <TouchableOpacity
+            onPress={() =>
+              copyLocationAddress(
+                competitionData?.location,
+                locationCopyTimeoutRef,
+                setIsCopied
+              )
+            }
+            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+          >
+            <SectionTitle>Full Address</SectionTitle>
+            <Ionicons
+              name={isCopied ? "checkmark-circle-outline" : "copy-outline"}
+              size={16}
+              color={isCopied ? "green" : "white"}
             />
-          ))
-        )}
-      </TableContainer>
+          </TouchableOpacity>
+          <FullAddressText>{addressData.fullAddress}</FullAddressText>
+        </Section>
 
-      {/* League Name and Location */}
-      <Section>
-        <TouchableOpacity
-          onPress={() =>
-            copyLocationAddress(
-              leagueDetails?.location,
-              locationCopyTimeoutRef,
-              setIsCopied
-            )
-          }
-          style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-        >
-          <SectionTitle>Full Address</SectionTitle>
-          <Ionicons
-            name={isCopied ? "checkmark-circle-outline" : "copy-outline"}
-            size={16}
-            color={isCopied ? "green" : "white"}
-          />
-        </TouchableOpacity>
-        <FullAddressText>{fullAddress}</FullAddressText>
-      </Section>
+        {/* Start and End Dates */}
+        <Section>
+          <DateRow>
+            <DateView>
+              <SectionTitle>Start Date</SectionTitle>
+              <DateValue>{startDate || "N/A"}</DateValue>
+            </DateView>
+            {endDate && (
+              <DateView>
+                <SectionTitle>End Date</SectionTitle>
+                <DateValue>{endDate || "N/A"}</DateValue>
+              </DateView>
+            )}
+          </DateRow>
+        </Section>
 
-      {/* Start and End Dates */}
-      <Section>
-        <DateRow>
-          <DateView>
-            <SectionTitle>Start Date</SectionTitle>
-            <DateValue>{startDate || "N/A"}</DateValue>
-          </DateView>
-          <DateView>
-            <SectionTitle>End Date</SectionTitle>
-            <DateValue>{endDate || "N/A"}</DateValue>
-          </DateView>
-        </DateRow>
-      </Section>
+        <PlayTime
+          userRole={userRole}
+          competitionType={competitionType}
+          playtime={playtime}
+          competitionId={competitionId}
+        />
 
-      <PlayTime userRole={userRole} />
+        {/* Participants */}
+        <ParticipantCarousel
+          participants={participants}
+          admins={admins}
+          owner={owner}
+        />
 
-      {/* Participants */}
-      <ParticipantCarousel
-        leagueParticipants={participants}
-        leagueAdmins={leagueDetails?.leagueAdmins}
-        leagueOwner={leagueDetails?.leagueOwner}
-      />
+        {/* Competition Description */}
+        <Section>
+          <SectionTitle>Description</SectionTitle>
+          {description ? (
+            <DescriptionText>{description}</DescriptionText>
+          ) : (
+            <DisabledText>No description available</DisabledText>
+          )}
+        </Section>
+      </LeagueSummaryContainer>
+    );
+  }
+);
 
-      {/* League Description */}
-      <Section>
-        <SectionTitle>League Description</SectionTitle>
-        {leagueDetails?.leagueDescription ? (
-          <DescriptionText>{leagueDetails.leagueDescription}</DescriptionText>
-        ) : (
-          <DisabledText>No description available</DisabledText>
-        )}
-      </Section>
-    </LeagueSummaryContainer>
-  );
-};
+// ✅ OPTIMIZATION 6: Add display name for better debugging
+LeagueSummary.displayName = "LeagueSummary";
 
+// Styled components remain the same...
 const { width: screenWidth } = Dimensions.get("window");
 
 const TableContainer = styled.View({

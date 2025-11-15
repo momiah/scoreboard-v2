@@ -36,8 +36,11 @@ const JoinRequestModal = ({
   senderId,
   isRead,
 }) => {
-  const { fetchLeagueById, acceptLeagueJoinRequest, declineLeagueJoinRequest } =
-    useContext(LeagueContext);
+  const {
+    fetchCompetitionById,
+    acceptLeagueJoinRequest,
+    declineLeagueJoinRequest,
+  } = useContext(LeagueContext);
   const { findRankIndex } = useContext(GameContext);
   const { currentUser, getUserById, readNotification } =
     useContext(UserContext);
@@ -68,7 +71,9 @@ const JoinRequestModal = ({
     const fetchDetails = async () => {
       if (requestType === "join-league-request") {
         try {
-          const league = await fetchLeagueById(requestId);
+          const league = await fetchCompetitionById({
+            competitionId: requestId,
+          });
           const player = await getUserById(senderId);
           if (!league || !player) {
             console.error("League or player not found");

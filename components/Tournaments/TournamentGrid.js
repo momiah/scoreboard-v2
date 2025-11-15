@@ -1,11 +1,20 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Text } from "react-native";
 import styled from "styled-components/native";
 import Tag from "../Tag";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { COMPETITION_TYPES } from "../../schemas/schema";
+import { useNavigation } from "@react-navigation/native";
 
-const TournamentGrid = ({ tournaments }) => {
+const TournamentGrid = ({ navigationRoute, tournaments }) => {
+  const navigation = useNavigation();
+
+  const navigateTo = useCallback(
+    (tournamentId) => {
+      navigation.navigate(navigationRoute, { tournamentId });
+    },
+    [navigation, navigationRoute]
+  );
   return (
     <Container>
       {tournaments.slice(0, 4).map((tournament) => {
@@ -24,7 +33,10 @@ const TournamentGrid = ({ tournaments }) => {
             : tournament.tournamentName;
 
         return (
-          <TournamentContainer key={tournament.id || tournament.tournamentId}>
+          <TournamentContainer
+            key={tournament.id || tournament.tournamentId}
+            onPress={() => navigateTo(tournament.tournamentId)}
+          >
             <TournamentCard>
               <TournamentImageContainer>
                 <TournamentImage

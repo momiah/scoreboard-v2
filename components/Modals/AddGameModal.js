@@ -38,7 +38,7 @@ const AddGameModal = ({
   isBulkMode = false,
 }) => {
   const { addGame } = useContext(GameContext);
-  const { fetchLeagueById } = useContext(LeagueContext);
+  const { fetchCompetitionById } = useContext(LeagueContext);
   const {
     handleShowPopup,
     setPopupMessage,
@@ -257,7 +257,7 @@ const AddGameModal = ({
     handleShowPopup(
       "Game added! Opponents have 24 hours to approve or will be auto-approved."
     );
-    await fetchLeagueById(leagueId);
+    await fetchCompetitionById({ competitionId: leagueId });
     setLoading(false);
     console.log("Game added successfully with player objects:", newGame);
   };

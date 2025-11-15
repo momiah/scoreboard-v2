@@ -18,7 +18,8 @@ const RemovePlayers = () => {
   const route = useRoute();
   const { leagueId, leagueById } = route.params;
 
-  const { fetchLeagueById, removePlayerFromLeague } = useContext(LeagueContext);
+  const { fetchCompetitionById, removePlayerFromLeague } =
+    useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
 
   const [league, setLeague] = useState(null);
@@ -136,7 +137,9 @@ const RemovePlayers = () => {
         }}
         onConfirm={async (reason) => {
           await removePlayerFromLeague(leagueId, selectedPlayer.userId, reason);
-          const updated = await fetchLeagueById(leagueId);
+          const updated = await fetchCompetitionById({
+            competitionId: leagueId,
+          });
           setLeague(updated);
           setModalVisible(false);
           setSelectedPlayer(null);

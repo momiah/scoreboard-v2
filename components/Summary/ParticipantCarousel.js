@@ -6,19 +6,15 @@ import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
 
-const ParticipantCarousel = ({
-  leagueParticipants,
-  leagueAdmins,
-  leagueOwner,
-}) => {
+const ParticipantCarousel = ({ participants, admins, owner }) => {
   const navigation = useNavigation();
 
   return (
     <ParticipantContainer>
       <SectionTitle>Participants</SectionTitle>
-      {leagueParticipants?.length > 0 ? (
+      {participants?.length > 0 ? (
         <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-          {leagueParticipants.map((participant, index) => (
+          {participants.map((participant, index) => (
             <ParticipantView
               key={index}
               onPress={() => {
@@ -35,9 +31,9 @@ const ParticipantCarousel = ({
                 }
               />
               <ParticipantName>{participant.username}</ParticipantName>
-              {participant.userId === leagueOwner?.userId ? (
+              {participant.userId === owner?.userId ? (
                 <RoleLabel style={{ color: "orange" }}>Owner</RoleLabel>
-              ) : leagueAdmins?.some(
+              ) : admins?.some(
                   (admin) => admin.userId === participant.userId
                 ) ? (
                 <RoleLabel style={{ color: "#00A2FF" }}>Admin</RoleLabel>

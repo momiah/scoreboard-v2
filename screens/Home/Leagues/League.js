@@ -11,6 +11,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { COMPETITION_TYPES } from "../../../schemas/schema";
 
 import LeagueSummary from "../../../components/Summary/LeagueSummary";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";
@@ -41,7 +42,7 @@ const League = () => {
   const navigation = useNavigation();
   const { leagueId, tab } = route.params;
   const {
-    fetchLeagueById,
+    fetchCompetitionById,
     leagueById,
     generateNewLeagueParticipants,
     requestToJoinLeague,
@@ -60,7 +61,10 @@ const League = () => {
     const fetchData = async () => {
       if (leagueId) {
         try {
-          const fetchedLeague = await fetchLeagueById(leagueId);
+          const fetchedLeague = await fetchCompetitionById({
+            competitionId: leagueId,
+            competitionType: COMPETITION_TYPES.LEAGUE,
+          });
           if (!fetchedLeague) {
             setLeagueNotFound(true);
           } else {
@@ -80,7 +84,10 @@ const League = () => {
 
   const getUserRole = async (leagueData) => {
     try {
-      const role = await checkUserRole(leagueData);
+      const role = await checkUserRole({
+        competitionData: leagueData,
+        competitionType: COMPETITION_TYPES.LEAGUE,
+      });
       setUserRole(role);
     } catch (error) {
       console.error("Error getting user role:", error);
@@ -109,7 +116,10 @@ const League = () => {
         leagueById?.leagueOwner?.userId,
         currentUser?.username
       );
-      const refetchedLeague = await fetchLeagueById(leagueId);
+      const refetchedLeague = await fetchCompetitionById({
+        competitionId: leagueId,
+        competitionType: COMPETITION_TYPES.LEAGUE,
+      });
       await getUserRole(refetchedLeague);
     } catch (error) {
       console.error("Error sending join request:", error);
@@ -122,7 +132,10 @@ const League = () => {
   const handleTabPress = async (tabName) => {
     setSelectedTab(tabName);
     try {
-      const refetchedLeague = await fetchLeagueById(leagueId);
+      const refetchedLeague = await fetchCompetitionById({
+        competitionId: leagueId,
+        competitionType: COMPETITION_TYPES.LEAGUE,
+      });
       await getUserRole(refetchedLeague);
     } catch (error) {
       console.error("Tab refresh error:", error);
@@ -160,20 +173,22 @@ const League = () => {
       case "Chat Room":
         return (
           <ChatRoom
-            leagueId={leagueId}
+            competitionId={leagueId}
             userRole={userRole}
-            leagueParticipants={leagueParticipants}
-            leagueName={leagueName}
+            competitionParticipants={leagueParticipants}
+            competitionName={leagueName}
             endDate={endDate}
+            competitionType={COMPETITION_TYPES.LEAGUE}
           />
         );
       case "Summary":
         return (
           <LeagueSummary
-            leagueDetails={leagueById}
+            competitionDetails={leagueById}
             userRole={userRole}
             startDate={startDate}
             endDate={endDate}
+            competitionType={COMPETITION_TYPES.LEAGUE}
           />
         );
       case "Scoreboard":

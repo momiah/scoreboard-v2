@@ -1,243 +1,255 @@
-// import React, { useEffect, useState, useContext } from "react";
-// import {
-//   View,
-//   Text,
-//   ActivityIndicator,
-//   ScrollView,
-//   Dimensions,
-//   Linking,
-// } from "react-native";
-// import { useRoute, useNavigation } from "@react-navigation/native";
-// import styled from "styled-components/native";
-// import { LinearGradient } from "expo-linear-gradient";
-// import Ionicons from "@expo/vector-icons/Ionicons";
+import React, { useEffect, useState, useContext } from "react";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  ScrollView,
+  Dimensions,
+  Linking,
+} from "react-native";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import { COMPETITION_TYPES } from "../../../schemas/schema";
+import styled from "styled-components/native";
+import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
-// import LeagueSummary from "../../../components/Summary/LeagueSummary";
-// import Scoreboard from "../../../components/scoreboard/Scoreboard";
-// import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
-// import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
-// import Tag from "../../../components/Tag";
-// import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
-// import UserRoleTag from ".../../../components/UserRoleTag";
+import LeagueSummary from "../../../components/Summary/LeagueSummary";
+import Scoreboard from "../../../components/scoreboard/Scoreboard";
+import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
+import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
+import Tag from "../../../components/Tag";
+import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
+import UserRoleTag from "../../../components/UserRoleTag";
 
-// import { LeagueContext } from "../../../context/LeagueContext";
-// import { UserContext } from "../../../context/UserContext";
-// import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
+import { LeagueContext } from "../../../context/LeagueContext";
+import { UserContext } from "../../../context/UserContext";
+import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
 
-// import { ccDefaultImage } from "../../../mockImages/index";
-// import ChatRoom from "../../../components/ChatRoom/ChatRoom";
+import { ccDefaultImage } from "../../../mockImages/index";
+import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 
-// const openMap = (location) => {
-//   const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
-//   const encoded = encodeURIComponent(query);
-//   const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-//   Linking.openURL(url).catch((err) =>
-//     console.error("Error opening Google Maps web:", err)
-//   );
-// };
+const openMap = (location) => {
+  const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
+  const encoded = encodeURIComponent(query);
+  const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+  Linking.openURL(url).catch((err) =>
+    console.error("Error opening Google Maps web:", err)
+  );
+};
 
 const Tournament = () => {
-  // const route = useRoute();
-  // const navigation = useNavigation();
-  // const { tournamentId, tab } = route.params;
-  // const {
-  //   fetchLeagueById,
-  //   leagueById,
-  //   generateNewLeagueParticipants,
-  //   requestToJoinLeague,
-  // } = useContext(LeagueContext);
-  // const { checkUserRole, currentUser } = useContext(UserContext);
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { tournamentId, tab } = route.params;
 
-  // const [loading, setLoading] = useState(true);
-  // const [selectedTab, setSelectedTab] = useState(tab || "Summary");
-  // const [invitePlayerModalVisible, setInvitePlayerModalVisible] =
-  //   useState(false);
-  // const [userRole, setUserRole] = useState(null);
-  // const [leagueNotFound, setLeagueNotFound] = useState(false);
-  // const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
+  const { fetchCompetitionById, tournamentById, requestToJoinLeague } =
+    useContext(LeagueContext);
+  const { checkUserRole, currentUser } = useContext(UserContext);
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     if (tournamentId) {
-  //       try {
-  //         const fetchedLeague = await fetchLeagueById(tournamentId);
-  //         if (!fetchedLeague) {
-  //           setLeagueNotFound(true);
-  //         } else {
-  //           setLeagueNotFound(false);
-  //           await getUserRole(fetchedLeague);
-  //         }
-  //       } catch (error) {
-  //         console.error("Error fetching league data:", error);
-  //       } finally {
-  //         setLoading(false);
-  //       }
-  //     }
-  //   };
+  const [loading, setLoading] = useState(true);
+  const [selectedTab, setSelectedTab] = useState(tab || "Summary");
+  const [invitePlayerModalVisible, setInvitePlayerModalVisible] =
+    useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [tournamentNotFound, setTournamentNotFound] = useState(false);
+  const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
 
-  //   fetchData();
-  // }, [tournamentId, currentUser]);
+  useEffect(() => {
+    const fetchData = async () => {
+      if (tournamentId) {
+        try {
+          const fetchedTournament = await fetchCompetitionById({
+            competitionId: tournamentId,
+            competitionType: COMPETITION_TYPES.TOURNAMENT,
+          });
+          if (!fetchedTournament) {
+            setTournamentNotFound(true);
+          } else {
+            setTournamentNotFound(false);
+            await getUserRole(fetchedTournament);
+          }
+        } catch (error) {
+          console.error("Error fetching league data:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
 
-  // const getUserRole = async (leagueData) => {
-  //   try {
-  //     const role = await checkUserRole(leagueData);
-  //     setUserRole(role);
-  //   } catch (error) {
-  //     console.error("Error getting user role:", error);
-  //     setUserRole("hide");
-  //   }
-  // };
+    fetchData();
+  }, [tournamentId, currentUser]);
 
-  // const handleNavigate = () => {
-  //   navigation.navigate("LeagueSettings", { tournamentId, leagueById });
-  // };
+  const getUserRole = async (tournamentData) => {
+    try {
+      const role = await checkUserRole({
+        competitionData: tournamentData,
+        competitionType: COMPETITION_TYPES.TOURNAMENT,
+      });
+      setUserRole(role);
+    } catch (error) {
+      console.error("Error getting user role:", error);
+      setUserRole("hide");
+    }
+  };
 
-  // const handleOpenInviteModal = () => {
-  //   setInvitePlayerModalVisible(true);
-  // };
+  const handleNavigate = () => {
+    navigation.navigate("LeagueSettings", { tournamentId, tournamentById });
+  };
 
-  // const handleLogin = () => {
-  //   navigation.navigate("Login");
-  // };
+  const handleOpenInviteModal = () => {
+    setInvitePlayerModalVisible(true);
+  };
 
-  // const handleRequestToJoin = async () => {
-  //   try {
-  //     setIsJoinRequestSending(true);
-  //     await requestToJoinLeague(
-  //       tournamentId,
-  //       currentUser?.userId,
-  //       leagueById?.leagueOwner?.userId,
-  //       currentUser?.username
-  //     );
-  //     const refetchedLeague = await fetchLeagueById(tournamentId);
-  //     await getUserRole(refetchedLeague);
-  //   } catch (error) {
-  //     console.error("Error sending join request:", error);
-  //   } finally {
-  //     // Once backend marks requestPending, role shifts and both CTAs disable anyway.
-  //     setIsJoinRequestSending(false);
-  //   }
-  // };
+  const handleLogin = () => {
+    navigation.navigate("Login");
+  };
 
-  // const handleTabPress = async (tabName) => {
-  //   setSelectedTab(tabName);
-  //   try {
-  //     const refetchedLeague = await fetchLeagueById(tournamentId);
-  //     await getUserRole(refetchedLeague);
-  //   } catch (error) {
-  //     console.error("Tab refresh error:", error);
-  //   }
-  // };
+  const handleRequestToJoin = async () => {
+    try {
+      setIsJoinRequestSending(true);
+      await requestToJoinLeague(
+        tournamentId,
+        currentUser?.userId,
+        tournamentById?.leagueOwner?.userId,
+        currentUser?.username
+      );
+      const refetchedTournament = await fetchCompetitionById({
+        competitionId: tournamentId,
+        competitionType: COMPETITION_TYPES.TOURNAMENT,
+      });
+      await getUserRole(refetchedTournament);
+    } catch (error) {
+      console.error("Error sending join request:", error);
+    } finally {
+      // Once backend marks requestPending, role shifts and both CTAs disable anyway.
+      setIsJoinRequestSending(false);
+    }
+  };
 
-  // const tabs = [
-  //   { component: "Chat Room" },
-  //   { component: "Summary" },
-  //   { component: "Scoreboard" },
-  //   { component: "Player Performance" },
-  //   ...(leagueById?.leagueType !== "Singles"
-  //     ? [{ component: "Team Performance" }]
-  //     : []),
-  // ];
+  const handleTabPress = async (tabName) => {
+    setSelectedTab(tabName);
+    try {
+      const refetchedTournament = await fetchCompetitionById({
+        competitionId: tournamentId,
+        competitionType: COMPETITION_TYPES.TOURNAMENT,
+      });
+      await getUserRole(refetchedTournament);
+    } catch (error) {
+      console.error("Tab refresh error:", error);
+    }
+  };
 
-  // const leagueStatus = calculateCompetitionStatus(leagueById);
-  // const {
-  //   leagueParticipants,
-  //   leagueTeams,
-  //   leagueName,
-  //   leagueImage,
-  //   location,
-  //   startDate,
-  //   endDate,
-  //   leagueType,
-  //   maxPlayers,
-  //   games,
-  // } = leagueById || {};
+  const tabs = [
+    { component: "Chat Room" },
+    { component: "Summary" },
+    { component: "Scoreboard" },
+    { component: "Player Performance" },
+    ...(tournamentById?.tournamentType !== "Singles"
+      ? [{ component: "Team Performance" }]
+      : []),
+  ];
 
-  // const numberOfPlayers = `${leagueParticipants?.length} / ${maxPlayers}`;
+  const tournamentStatus = calculateCompetitionStatus(tournamentById);
+  const {
+    tournamentParticipants,
+    tournamentTeams,
+    tournamentName,
+    tournamentImage,
+    location,
+    startDate,
+    endDate,
+    tournamentType,
+    maxPlayers,
+    games,
+  } = tournamentById || {};
 
-  // const renderComponent = () => {
-  //   switch (selectedTab) {
-  //     case "Chat Room":
-  //       return (
-  //         <ChatRoom
-  //           leagueId={tournamentId}
-  //           userRole={userRole}
-  //           leagueParticipants={leagueParticipants}
-  //           leagueName={leagueName}
-  //           endDate={endDate}
-  //         />
-  //       );
-  //     case "Summary":
-  //       return (
-  //         <LeagueSummary
-  //           leagueDetails={leagueById}
-  //           userRole={userRole}
-  //           startDate={startDate}
-  //           endDate={endDate}
-  //         />
-  //       );
-  //     case "Scoreboard":
-  //       return (
-  //         <Scoreboard
-  //           leagueGames={games || []}
-  //           leagueType={leagueType}
-  //           leagueId={tournamentId}
-  //           userRole={userRole}
-  //           leagueStartDate={startDate}
-  //           leagueEndDate={endDate}
-  //           leagueOwner={leagueById?.leagueOwner}
-  //           leagueName={leagueName}
-  //           leagueParticipants={leagueParticipants || []}
-  //           maxPlayers={maxPlayers}
-  //           isJoinRequestSending={isJoinRequestSending}
-  //         />
-  //       );
-  //     case "Player Performance":
-  //       return <PlayerPerformance playersData={leagueParticipants} />;
-  //     case "Team Performance":
-  //       return <TeamPerformance leagueTeams={leagueTeams} />;
-  //     default:
-  //       return null;
-  //   }
-  // };
+  const numberOfPlayers = `${tournamentParticipants?.length} / ${maxPlayers}`;
 
-  // if (loading) {
-  //   return (
-  //     <View
-  //       style={{
-  //         flex: 1,
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         backgroundColor: "#00152B",
-  //       }}
-  //     >
-  //       <ActivityIndicator size="large" color="#fff" />
-  //     </View>
-  //   );
-  // }
+  const renderComponent = () => {
+    switch (selectedTab) {
+      case "Chat Room":
+        return (
+          <ChatRoom
+            competitionId={tournamentId}
+            userRole={userRole}
+            competitionParticipants={tournamentParticipants}
+            competitionName={tournamentName}
+            endDate={endDate}
+            competitionType={COMPETITION_TYPES.TOURNAMENT}
+          />
+        );
+      case "Summary":
+        return (
+          <LeagueSummary
+            competitionDetails={tournamentById}
+            userRole={userRole}
+            startDate={startDate}
+            endDate={endDate}
+            competitionType={COMPETITION_TYPES.TOURNAMENT}
+          />
+        );
+      case "Scoreboard":
+        return (
+          <Scoreboard
+            leagueGames={games || []}
+            leagueType={tournamentType}
+            leagueId={tournamentId}
+            userRole={userRole}
+            leagueStartDate={startDate}
+            leagueEndDate={endDate}
+            leagueOwner={tournamentById?.tournamentOwner}
+            leagueName={tournamentName}
+            leagueParticipants={tournamentParticipants || []}
+            maxPlayers={maxPlayers}
+            isJoinRequestSending={isJoinRequestSending}
+          />
+        );
+      case "Player Performance":
+        return <PlayerPerformance playersData={tournamentParticipants} />;
+      case "Team Performance":
+        return <TeamPerformance leagueTeams={tournamentTeams} />;
+      default:
+        return null;
+    }
+  };
 
-  // if (!leagueById || leagueNotFound) {
-  //   return (
-  //     <View
-  //       style={{
-  //         flex: 1,
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         backgroundColor: "rgb(3, 16, 31)",
-  //       }}
-  //     >
-  //       <Text style={{ color: "#aaa", textAlign: "center" }}>
-  //         League not found.
-  //       </Text>
-  //     </View>
-  //   );
-  // }
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#00152B",
+        }}
+      >
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
+
+  if (!tournamentById || tournamentNotFound) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "rgb(3, 16, 31)",
+        }}
+      >
+        <Text style={{ color: "#aaa", textAlign: "center" }}>
+          Tournament not found.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
-      {/* <Overview>
+      <Overview>
         <LeagueImage
-          source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
+          source={tournamentImage ? { uri: tournamentImage } : ccDefaultImage}
         >
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
@@ -258,7 +270,7 @@ const Tournament = () => {
                 alignSelf: "flex-start",
               }}
             >
-              <LeagueName>{leagueName}</LeagueName>
+              <LeagueName>{tournamentName}</LeagueName>
             </View>
 
             {location ? (
@@ -278,7 +290,10 @@ const Tournament = () => {
               }}
             >
               <View style={{ flexDirection: "row", gap: 5 }}>
-                <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
+                <Tag
+                  name={tournamentStatus?.status}
+                  color={tournamentStatus?.color}
+                />
                 <Tag
                   name={numberOfPlayers}
                   color={"rgba(0, 0, 0, 0.7)"}
@@ -311,7 +326,7 @@ const Tournament = () => {
               }}
             >
               <View style={{ flexDirection: "row", gap: 5 }}>
-                <Tag name={leagueType} />
+                <Tag name={tournamentType} />
                 <Tag name="TROPHY" />
               </View>
 
@@ -356,99 +371,99 @@ const Tournament = () => {
         <InvitePlayerModel
           modalVisible={invitePlayerModalVisible}
           setModalVisible={setInvitePlayerModalVisible}
-          leagueDetails={leagueById}
+          leagueDetails={tournamentById}
         />
-      )} */}
+      )}
     </View>
   );
 };
 
-// const { width: screenWidth } = Dimensions.get("window");
+const { width: screenWidth } = Dimensions.get("window");
 
-// const Overview = styled.View({
-//   flexDirection: "row",
-//   height: 200,
-//   width: "100%",
-//   justifyContent: "center",
-//   alignItems: "flex-start",
-//   position: "relative",
-// });
+const Overview = styled.View({
+  flexDirection: "row",
+  height: 200,
+  width: "100%",
+  justifyContent: "center",
+  alignItems: "flex-start",
+  position: "relative",
+});
 
-// const LeagueImage = styled.ImageBackground.attrs({
-//   imageStyle: {
-//     resizeMode: "cover",
-//   },
-// })({
-//   width: "100%",
-//   height: "100%",
-//   justifyContent: "flex-end",
-//   alignItems: "center",
-// });
+const LeagueImage = styled.ImageBackground.attrs({
+  imageStyle: {
+    resizeMode: "cover",
+  },
+})({
+  width: "100%",
+  height: "100%",
+  justifyContent: "flex-end",
+  alignItems: "center",
+});
 
-// const GradientOverlay = styled(LinearGradient)({
-//   position: "absolute",
-//   top: 0,
-//   left: 0,
-//   right: 0,
-//   bottom: -60,
-// });
+const GradientOverlay = styled(LinearGradient)({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: -60,
+});
 
-// const LeagueDetailsContainer = styled.View({
-//   width: "100%",
-//   height: "100%",
-//   paddingLeft: 15,
-//   paddingRight: 15,
-//   justifyContent: "center",
-// });
+const LeagueDetailsContainer = styled.View({
+  width: "100%",
+  height: "100%",
+  paddingLeft: 15,
+  paddingRight: 15,
+  justifyContent: "center",
+});
 
-// const LeagueName = styled.Text({
-//   fontSize: 18,
-//   fontWeight: "bold",
-//   color: "white",
-// });
+const LeagueName = styled.Text({
+  fontSize: 18,
+  fontWeight: "bold",
+  color: "white",
+});
 
-// const Address = styled.TouchableOpacity({
-//   flexDirection: "row",
-//   alignItems: "center",
-//   marginBottom: 15,
-//   gap: 5,
-//   backgroundColor: "rgba(0, 0, 0, 0.3)",
-//   borderRadius: 5,
-//   alignSelf: "flex-start",
-// });
+const Address = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 15,
+  gap: 5,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 5,
+  alignSelf: "flex-start",
+});
 
-// const LeagueLocation = styled.Text({
-//   fontSize: 13,
-//   padding: 5,
-//   color: "white",
-// });
+const LeagueLocation = styled.Text({
+  fontSize: 13,
+  padding: 5,
+  color: "white",
+});
 
-// const EditButton = styled.TouchableOpacity({
-//   borderRadius: 5,
-//   alignSelf: "flex-end",
-// });
+const EditButton = styled.TouchableOpacity({
+  borderRadius: 5,
+  alignSelf: "flex-end",
+});
 
-// const TabsContainer = styled.View({
-//   width: "100%",
-//   backgroundColor: "#00152B",
-//   borderTopLeftRadius: 30,
-//   borderTopRightRadius: 30,
-//   paddingTop: 25,
-//   paddingBottom: 10,
-// });
+const TabsContainer = styled.View({
+  width: "100%",
+  backgroundColor: "#00152B",
+  borderTopLeftRadius: 30,
+  borderTopRightRadius: 30,
+  paddingTop: 25,
+  paddingBottom: 10,
+});
 
-// const Tab = styled.TouchableOpacity(({ isSelected }) => ({
-//   marginHorizontal: 5,
-//   paddingHorizontal: 20,
-//   paddingVertical: 10,
-//   borderRadius: 20,
-//   borderWidth: isSelected ? 2 : 1,
-//   borderColor: isSelected ? "#00A2FF" : "white",
-// }));
+const Tab = styled.TouchableOpacity(({ isSelected }) => ({
+  marginHorizontal: 5,
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 20,
+  borderWidth: isSelected ? 2 : 1,
+  borderColor: isSelected ? "#00A2FF" : "white",
+}));
 
-// const TabText = styled.Text({
-//   color: "white",
-//   fontSize: screenWidth <= 400 ? 12 : 14,
-// });
+const TabText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 12 : 14,
+});
 
 export default Tournament;

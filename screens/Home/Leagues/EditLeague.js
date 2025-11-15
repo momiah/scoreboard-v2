@@ -26,7 +26,7 @@ const EditLeague = () => {
   const route = useRoute();
   const { leagueId, leagueById } = route.params;
 
-  const { updateLeague, fetchLeagueById } = useContext(LeagueContext);
+  const { updateLeague, fetchCompetitionById } = useContext(LeagueContext);
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ const EditLeague = () => {
   useEffect(() => {
     const loadLeague = async () => {
       if (!leagueById || leagueById.id !== leagueId) {
-        await fetchLeagueById(leagueId);
+        await fetchCompetitionById({ competitionId: leagueId });
       }
       setSelectedImage(leagueById?.leagueImage || null);
       setLoading(false);

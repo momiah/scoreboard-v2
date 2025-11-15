@@ -31,7 +31,7 @@ const InviteActionModal = ({
   notificationId,
   isRead,
 }) => {
-  const { fetchLeagueById, acceptLeagueInvite, declineLeagueInvite } =
+  const { fetchCompetitionById, acceptLeagueInvite, declineLeagueInvite } =
     useContext(LeagueContext);
   const { currentUser, readNotification } = useContext(UserContext);
   const [inviteDetails, setInviteDetails] = useState(null);
@@ -60,7 +60,9 @@ const InviteActionModal = ({
     const fetchDetails = async () => {
       if (inviteType === "invite-league") {
         try {
-          const league = await fetchLeagueById(inviteId);
+          const league = await fetchCompetitionById({
+            competitionId: inviteId,
+          });
           if (!league) {
             console.log("League not found for invite ID:", inviteId);
             readNotification(notificationId, currentUser.userId);

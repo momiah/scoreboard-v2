@@ -15,7 +15,7 @@ const PendingInvites = () => {
   const route = useRoute();
   const { leagueId } = route.params;
 
-  const { fetchLeagueById, getPendingInviteUsers, removePendingInvite } =
+  const { fetchCompetitionById, getPendingInviteUsers, removePendingInvite } =
     useContext(LeagueContext);
 
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -24,7 +24,7 @@ const PendingInvites = () => {
   const fetchInvites = async () => {
     try {
       setLoading(true);
-      const league = await fetchLeagueById(leagueId);
+      const league = await fetchCompetitionById({ competitionId: leagueId });
       const users = await getPendingInviteUsers(league);
       setPendingUsers(users);
     } catch (error) {

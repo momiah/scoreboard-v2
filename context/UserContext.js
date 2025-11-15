@@ -205,41 +205,54 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  async function checkUserRole(leagueData) {
+  async function checkUserRole({
+    competitionData,
+    competitionType = "league",
+  }) {
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) return "hide";
 
       if (
-        !leagueData ||
-        !leagueData.leagueOwner ||
-        !leagueData.leagueAdmins ||
-        !leagueData.leagueParticipants ||
-        !leagueData.pendingInvites ||
-        !leagueData.pendingRequests
+        !competitionData ||
+        !competitionData[`${competitionType}Owner`] ||
+        !competitionData[`${competitionType}Admins`] ||
+        !competitionData[`${competitionType}Participants`] ||
+        !competitionData.pendingInvites ||
+        !competitionData.pendingRequests
       ) {
-        console.error("Invalid league data:", leagueData);
+        console.error("Invalid competition data:", competitionData);
         return "hide";
       }
 
-      // 1) League owner
-      if (leagueData.leagueOwner === userId) {
+      // 1) Tournament owner
+      if (competitionData[`${competitionType}Owner`] === userId) {
         return "owner";
       }
       // 2) Admin
-      if (leagueData.leagueAdmins.some((a) => a.userId === userId)) {
+      if (
+        competitionData[`${competitionType}Admins`].some(
+          (a) => a.userId === userId
+        )
+      ) {
         return "admin";
       }
       // 3) Participant
-      if (leagueData.leagueParticipants.some((p) => p.userId === userId)) {
+      if (
+        competitionData[`${competitionType}Participants`].some(
+          (p) => p.userId === userId
+        )
+      ) {
         return "participant";
       }
       // 4) Pending invite (you’ve been invited)
-      if (leagueData.pendingInvites.some((inv) => inv.userId === userId)) {
+      if (competitionData.pendingInvites.some((inv) => inv.userId === userId)) {
         return "invitationPending";
       }
       // 5) Pending request (you’ve asked to join)
-      if (leagueData.pendingRequests.some((req) => req.userId === userId)) {
+      if (
+        competitionData.pendingRequests.some((req) => req.userId === userId)
+      ) {
         return "requestPending";
       }
       // 6) Default

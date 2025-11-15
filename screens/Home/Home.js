@@ -298,7 +298,10 @@ const Home = () => {
           showIcon
         />
 
-        <TournamentGrid tournaments={upcomingTournaments} />
+        <TournamentGrid
+          tournaments={upcomingTournaments}
+          navigationRoute={"Tournament"}
+        />
 
         {addLeagueModalVisible && (
           <AddLeagueModel

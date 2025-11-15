@@ -27,7 +27,7 @@ import {
 } from "../schemas/schema";
 import { UserContext } from "./UserContext";
 import { notificationTypes } from "../schemas/schema";
-import { locationSchema } from "../schemas/schema";
+import { locationSchema, COMPETITION_TYPES } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
@@ -50,6 +50,7 @@ const LeagueProvider = ({ children }) => {
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [tournamentNavigationId, setTournamentNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
+  const [tournamentById, setTournamentById] = useState(null);
   const [upcomingTournaments, setUpcomingTournaments] = useState([]);
 
   useEffect(() => {
@@ -169,16 +170,23 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const addPlaytime = async (playtime, existingPlaytime = null) => {
+  const addPlaytime = async ({
+    playtime,
+    existingPlaytime = null,
+    competitionType,
+    competitionId,
+  }) => {
     try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+      const collectionName =
+        competitionType === "league" ? "leagues" : "tournaments";
 
-      // Get the existing league document
-      const leagueDoc = await getDoc(leagueDocRef);
+      const collectionRef = collection(db, collectionName);
+      const docRef = doc(collectionRef, competitionId);
 
-      if (leagueDoc.exists()) {
-        const currentPlaytime = leagueDoc.data().playingTime || [];
+      const docSnapshot = await getDoc(docRef);
+
+      if (docSnapshot.exists()) {
+        const currentPlaytime = docSnapshot.data().playingTime || [];
         let updatedPlaytime;
 
         if (existingPlaytime) {
@@ -193,11 +201,11 @@ const LeagueProvider = ({ children }) => {
           updatedPlaytime = [...currentPlaytime, ...playtime];
         }
 
-        // Update the league document with updated playtime array
-        await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
+        // Update the document with updated playtime array
+        await updateDoc(docRef, { playingTime: updatedPlaytime });
       } else {
-        console.error("League document not found.");
-        Alert.alert("Error", "League not found.");
+        console.error("Document not found.");
+        Alert.alert("Error", "Document not found.");
       }
     } catch (error) {
       console.error("Error saving playtime:", error);
@@ -205,15 +213,22 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const deletePlaytime = async (playtimeToDelete) => {
+  const deletePlaytime = async ({
+    playtimeToDelete,
+    competitionType,
+    competitionId,
+  }) => {
     try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+      const collectionRef = collection(
+        db,
+        competitionType === "league" ? "leagues" : "tournaments"
+      );
+      const docRef = doc(collectionRef, competitionId);
 
-      const leagueDoc = await getDoc(leagueDocRef);
+      const docSnapshot = await getDoc(docRef);
 
-      if (leagueDoc.exists()) {
-        const currentPlaytime = leagueDoc.data().playingTime || [];
+      if (docSnapshot.exists()) {
+        const currentPlaytime = docSnapshot.data().playingTime || [];
 
         // Filter out the playtime to be deleted
         const updatedPlaytime = currentPlaytime.filter(
@@ -226,10 +241,10 @@ const LeagueProvider = ({ children }) => {
         );
 
         // Update Firebase with updated playtime array
-        await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
+        await updateDoc(docRef, { playingTime: updatedPlaytime });
       } else {
-        console.error("League document not found.");
-        Alert.alert("Error", "League not found.");
+        console.error("Document not found.");
+        Alert.alert("Error", "Document not found.");
       }
     } catch (error) {
       console.error("Error deleting playtime:", error);
@@ -334,23 +349,37 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const fetchLeagueById = async (leagueId) => {
+  const fetchCompetitionById = async ({
+    competitionId,
+    competitionType = COMPETITION_TYPES.LEAGUE,
+  }) => {
     try {
-      const leagueDoc = await getDoc(doc(db, "leagues", leagueId));
+      const collectionName =
+        competitionType === COMPETITION_TYPES.TOURNAMENT
+          ? "tournaments"
+          : "leagues";
 
-      if (leagueDoc.exists()) {
-        const leagueData = {
-          leagueId: leagueDoc.id,
-          ...leagueDoc.data(),
+      const competitionDoc = await getDoc(
+        doc(db, collectionName, competitionId)
+      );
+
+      if (competitionDoc.exists()) {
+        const competitionData = {
+          [`${competitionType}Id`]: competitionDoc.id,
+          ...competitionDoc.data(),
         };
 
-        setLeagueById(leagueData);
-        return leagueData;
+        if (competitionType === COMPETITION_TYPES.LEAGUE) {
+          setLeagueById(competitionData);
+        } else {
+          setTournamentById(competitionData);
+        }
+        return competitionData;
       } else {
-        console.log("No league found with the given ID");
+        console.log("No competition found with the given ID");
       }
     } catch (error) {
-      console.error("Error fetching league:", error);
+      console.error("Error fetching competition:", error);
     }
   };
 
@@ -780,9 +809,19 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const sendChatMessage = async (message, leagueId) => {
+  const sendChatMessage = async ({
+    message,
+    competitionId,
+    competitionType = COMPETITION_TYPES.LEAGUE,
+  }) => {
+    const collectionRef =
+      competitionType === COMPETITION_TYPES.TOURNAMENT
+        ? "tournaments"
+        : "leagues";
     try {
-      const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
+      const messageRef = doc(
+        collection(db, collectionRef, competitionId, "chat")
+      );
       const messageToSend = {
         _id: messageRef.id,
         text: message.text,
@@ -1096,7 +1135,7 @@ const LeagueProvider = ({ children }) => {
         updateLeague, // Exposing the updateLeague function
         fetchLeagues,
         fetchUpcomingLeagues,
-        fetchLeagueById,
+        fetchCompetitionById,
         getCourts,
         addCourt,
         updatePendingInvites,
@@ -1114,6 +1153,8 @@ const LeagueProvider = ({ children }) => {
         upcomingTournaments,
         setUpcomingTournaments,
         fetchUpcomingTournaments,
+        tournamentById,
+        setTournamentById,
 
         // League State Management
         upcomingLeagues,
