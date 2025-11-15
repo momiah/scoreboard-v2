@@ -108,8 +108,8 @@ const AddGameModal = ({
     const url = await reference.getDownloadURL();
     return {
       url,
-      sizeMB: fileSize ? fileSize / (1024 * 1024) : 0,
-      durationSec: duration || 0,
+      sizeMB: video.fileSize ? video.fileSize / (1024 * 1024) : 0,
+      durationSec: video.duration || 0,
       uploadedAt: new Date(),
       uploaderId: currentUser?.userId || "",
     };
