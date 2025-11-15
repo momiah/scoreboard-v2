@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Alert,
 } from "react-native";
 import { GameContext } from "../../context/GameContext";
 import { UserContext } from "../../context/UserContext";
@@ -26,6 +27,10 @@ import { notificationSchema, notificationTypes } from "../../schemas/schema";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+
+import { launchImageLibrary } from "react-native-image-picker";
+import storage from "@react-native-firebase/storage";
+
 
 const AddGameModal = ({
   modalVisible,
@@ -56,12 +61,60 @@ const AddGameModal = ({
   const [loading, setLoading] = useState(false);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
+  const [video, setVideo] = useState(null);
+
+
 
   // Initialize with null or empty strings, not objects
   const [selectedPlayers, setSelectedPlayers] = useState({
     team1: leagueType === "Singles" ? [null] : [null, null],
     team2: leagueType === "Singles" ? [null] : [null, null],
   });
+
+  const pickVideo = async () => {
+    const result = await launchImageLibrary({
+      mediaType: "video",
+      videoQuality: "high",
+      durationLimit: 1800, // prevents too long videos (some devices enforce)
+    });
+
+    if (result.didCancel) return;
+
+    const asset = result.assets[0];
+    setVideo(asset);
+  };
+
+  const validateVideo = (video) => {
+    const sizeMB = video.fileSize ? video.fileSize / (1024 * 1024) : 0;
+    const duration = video.duration || 0;
+    if (sizeMB > 150) {
+      setErrorText("Video must be smaller than 150MB.");
+      return false;
+    }
+
+    if (duration > 1800) {
+      setErrorText("Video must be shorter than 30 minutes.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const uploadVideoToFirebase = async (video) => {
+    const { uri, fileName } = video;
+    const uniqueName = fileName || `game_${Date.now()}.mp4`;
+    const reference = storage().ref(`leagues/${leagueId}/gameVideos/${uniqueName}`);
+    await reference.putFile(uri);
+    const url = await reference.getDownloadURL();
+    return {
+      url,
+      sizeMB: fileSize ? fileSize / (1024 * 1024) : 0,
+      durationSec: duration || 0,
+      uploadedAt: new Date(),
+      uploaderId: currentUser?.userId || "",
+    };
+  };
+
 
   const areAllPlayersSelected = () => {
     if (leagueType === "Singles") {
@@ -107,6 +160,31 @@ const AddGameModal = ({
   const handleAddGame = async () => {
     setLoading(true);
 
+    // REQUIRE video
+    if (!video) {
+      setErrorText("Please upload a video.");
+      setLoading(false);
+      return;
+    }
+
+    // Validate video
+    if (!validateVideo(video)) {
+      // Alert.alert("Invalid Video", errorText);
+      setLoading(false);
+      return;
+    }
+
+    // Upload to Firebase
+    let videoUrl = "";
+    try {
+      videoUrl = await uploadVideoToFirebase(video);
+    } catch (error) {
+      setErrorText("Video upload failed. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+
     if (leagueType === "Singles") {
       if (!selectedPlayers.team1[0] || !selectedPlayers.team2[0]) {
         setErrorText("Please select both players.");
@@ -131,6 +209,7 @@ const AddGameModal = ({
         selectedPlayers,
         team1Score,
         team2Score,
+        videoUrl,
       };
 
       const success = onGameAdded(gameData);
@@ -142,6 +221,7 @@ const AddGameModal = ({
         setTeam1Score("");
         setTeam2Score("");
         setErrorText("");
+        setVideo(null);
       }
       setLoading(false);
       return;
@@ -188,6 +268,7 @@ const AddGameModal = ({
       team1,
       team2,
       result,
+      videoUrl,
       numberOfApprovals: 0,
       numberOfDeclines: 0,
       approvalStatus: "pending",
@@ -317,6 +398,39 @@ const AddGameModal = ({
                 handleSelectPlayer={handleSelectPlayer}
                 leagueType={leagueType}
               />
+
+              <TouchableOpacity
+                onPress={pickVideo}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: video ? "#28a745" : "#007bff",
+                  padding: 12,
+                  borderRadius: 12,
+                  marginTop: 15,
+                  width: screenWidth - 100,
+                }}
+              >
+                <AntDesign
+                  name={video ? "checkcircle" : "videocamera"}
+                  size={20}
+                  color="white"
+                  style={{ marginRight: 10 }}
+                />
+                <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
+                  {video ? "Video Selected ✓" : "Upload Video"}
+                </Text>
+              </TouchableOpacity>
+
+              {video && (
+                <Text style={{ color: "#ccc", fontSize: 12, marginTop: 5 }}>
+                  {`${(video.fileSize / (1024 * 1024)).toFixed(2)} MB • ${Math.floor(
+                    video.duration / 60
+                  )} min ${Math.floor(video.duration % 60)} sec`}
+                </Text>
+              )}
+
 
               {errorText && <ErrorText>{errorText}</ErrorText>}
 

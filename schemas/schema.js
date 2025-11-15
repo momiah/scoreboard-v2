@@ -96,6 +96,7 @@ export const gameSchema = {
   numberOfApprovals: 0,
   numberOfDeclines: 0,
   approvalStatus: "",
+  videoUrl: null,
 };
 
 export const scoreboardProfileSchema = {
@@ -186,6 +187,7 @@ export const leagueSchema = {
     location: locationSchema,
   },
   games: [],
+  gameVideos: [],
   leagueType: "",
   prizeType: "",
   entryFee: 0,
