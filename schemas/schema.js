@@ -4,6 +4,7 @@ import { count } from "firebase/firestore";
 import moment from "moment";
 
 export const gameTypes = ["Doubles", "Singles"];
+export const doublesVariants = ["Mixed Doubles", "Fixed Doubles"];
 export const tournamentModes = ["Knockout", "Round Robin"];
 export const privacyTypes = ["Public", "Private"];
 export const maxPlayers = [8, 16, 32, 64];
@@ -242,6 +243,43 @@ export const tournamentSchema = {
   pendingInvites: [],
   pendingRequests: [],
   approvalLimit: 1,
+};
+
+export const fixturesSchema = {
+  fixtures: [
+    {
+      round: 1,
+      games: [
+        {
+          gameId: "",
+          team1: {
+            player1: {
+              userId: "",
+              username: "",
+              firstName: "",
+              lastName: "",
+              displayName: "",
+            },
+            player2: null,
+          },
+          team2: {
+            player1: {
+              userId: "",
+              username: "",
+              firstName: "",
+              lastName: "",
+              displayName: "",
+            },
+            player2: null,
+          },
+          scheduledDate: "",
+          approvalStatus: "", // Pending, Approved, Declined
+          status: "Scheduled", // Scheduled, Completed
+          result: null, // To be filled after game completion
+        },
+      ],
+    },
+  ],
 };
 
 export const courtSchema = {

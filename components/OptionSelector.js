@@ -12,6 +12,7 @@ const OptionSelector = ({
   display, // optional (opt) => string
   containerMarginTop = 10, // optional marginTop for container
   roundButtons = false,
+  disabled = false,
 }) => {
   const selected = watch(name);
 
@@ -36,12 +37,13 @@ const OptionSelector = ({
           const isSelected = selected === opt;
           return (
             <Button
+              disabled={disabled}
               key={key}
-              onPress={() => handleSelect(opt)}
+              onPress={disabled ? undefined : () => handleSelect(opt)}
               isSelected={isSelected}
               roundButtons={roundButtons}
             >
-              <ButtonText isSelected={isSelected}>
+              <ButtonText isSelected={isSelected} disabled={disabled}>
                 {display ? display(opt) : String(opt)}
               </ButtonText>
             </Button>
@@ -87,25 +89,27 @@ const Row = styled.View({
   width: "100%",
 });
 
-const Button = styled.TouchableOpacity(({ isSelected, roundButtons }) => ({
-  alignItems: "center",
-  flex: 1,
-  backgroundColor: isSelected ? "#00284b" : "#00152B",
-  borderWidth: 1,
-  borderColor: isSelected ? "#004eb4" : "#414141",
-  marginHorizontal: 5,
-  paddingVertical: 10,
-  paddingHorizontal: 15,
-  aspectRatio: roundButtons ? 1 : null,
-  borderRadius: roundButtons ? 100 : 5,
-  justifyContent: "center",
-}));
-
-const ButtonText = styled.Text(({ isSelected }) => ({
+const Button = styled.TouchableOpacity(
+  ({ isSelected, roundButtons, disabled }) => ({
+    alignItems: "center",
+    flex: 1,
+    backgroundColor: disabled ? "#3a3a3a" : isSelected ? "#00284b" : "#00152B",
+    borderWidth: 1,
+    borderColor: disabled ? "#666" : isSelected ? "#004eb4" : "#414141",
+    marginHorizontal: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    aspectRatio: roundButtons ? 1 : null,
+    borderRadius: roundButtons ? 100 : 5,
+    justifyContent: "center",
+    opacity: disabled ? 0.7 : 1,
+  })
+);
+const ButtonText = styled.Text(({ isSelected, disabled }) => ({
   fontSize: 12,
   fontWeight: "bold",
   textAlign: "center",
-  color: isSelected ? "white" : "#7b7b7b",
+  color: disabled ? "#9a9a9a" : isSelected ? "white" : "#7b7b7b",
 }));
 
 export default OptionSelector;

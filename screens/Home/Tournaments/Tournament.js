@@ -24,6 +24,7 @@ import UserRoleTag from "../../../components/UserRoleTag";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
+import Fixtures from "../../../components/Fixtures/Fixtures";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
@@ -144,6 +145,7 @@ const Tournament = () => {
     { component: "Summary" },
     { component: "Scoreboard" },
     { component: "Player Performance" },
+    { component: "Fixtures" },
     ...(tournamentById?.tournamentType !== "Singles"
       ? [{ component: "Team Performance" }]
       : []),
@@ -188,6 +190,8 @@ const Tournament = () => {
             competitionType={COMPETITION_TYPES.TOURNAMENT}
           />
         );
+      case "Fixtures":
+        return <Fixtures tournament={tournamentById} />;
       case "Scoreboard":
         return (
           <Scoreboard
