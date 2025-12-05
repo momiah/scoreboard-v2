@@ -506,7 +506,7 @@ const UserItem = styled.View({
   marginVertical: 5,
   backgroundColor: "rgb(5, 34, 64)",
   borderRadius: 5,
-  width: screenWidth < 450 ? "75%" : "100%",
+  width: screenWidth < 450 ? "80%" : "100%",
 });
 
 const UserName = styled.Text({
