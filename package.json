@@ -2,7 +2,6 @@
   "name": "court-champs",
   "version": "1.0.0",
   "main": "expo/AppEntry.js",
-  "type": "module",
   "scripts": {
     "lint": "eslint .",
     "start": "npm run lint && expo start",
