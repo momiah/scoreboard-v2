@@ -19,7 +19,6 @@
     },
     "production": {
       "android": {
-        "image": "ubuntu-20.04-jdk-11-ndk-r21e",
         "buildType": "app-bundle"
       },
       "channel": "production",
