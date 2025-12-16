@@ -4,7 +4,7 @@ import { count } from "firebase/firestore";
 import moment from "moment";
 
 export const gameTypes = ["Doubles", "Singles"];
-export const doublesVariants = ["Mixed Doubles", "Fixed Doubles"];
+export const doublesModes = ["Mixed Doubles", "Fixed Doubles"];
 export const tournamentModes = ["Knockout", "Round Robin"];
 export const privacyTypes = ["Public", "Private"];
 export const maxPlayers = [8, 16, 32, 64];

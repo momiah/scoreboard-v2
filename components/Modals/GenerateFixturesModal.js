@@ -158,7 +158,7 @@ const GenerateFixturesModal = ({
     }
   };
 
-  const handleGeneration = async (variant) => {
+  const handleDoublesGeneration = async (variant) => {
     setIsGenerating(true);
 
     try {
@@ -200,67 +200,10 @@ const GenerateFixturesModal = ({
     }
   };
 
-  const handleMixedDoublesGeneration = () => handleGeneration("Mixed Doubles");
-  const handleFixedDoublesGeneration = () => handleGeneration("Fixed Doubles");
-
-  // const handleMixedDoublesGeneration = async () => {
-  //   setIsGenerating(true);
-
-  //   try {
-  //     const teams = generateMixedDoublesTeams({
-  //       mixedDoublesMode,
-  //       participants: mockParticipants,
-  //     });
-
-  //     if (!teams || teams.length === 0) {
-  //       Alert.alert("Error", "No teams generated");
-  //       setIsGenerating(false);
-  //       return;
-  //     }
-
-  //     await new Promise((resolve) => setTimeout(resolve, 2000));
-  //     const fixtures = generateRoundRobinFixtures({ teams, numberOfCourts });
-
-  //     if (fixtures) {
-  //       setGeneratedFixtures(fixtures);
-  //       setCurrentScreen(GENERATED_FIXTURES_SCREEN);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error generating fixtures:", error);
-  //     Alert.alert("Error", "Failed to generate fixtures");
-  //   } finally {
-  //     setIsGenerating(false);
-  //   }
-  // };
-
-  // const handleFixedDoublesGeneration = async () => {
-  //   setIsGenerating(true);
-
-  //   try {
-  //     const teams = fixedDoublesTeams.filter(
-  //       (team) => team.player1 && team.player2
-  //     );
-
-  //     if (!teams.length) {
-  //       Alert.alert("Error", "Please complete all team assignments");
-  //       setIsGenerating(false);
-  //       return;
-  //     }
-
-  //     await new Promise((resolve) => setTimeout(resolve, 2000));
-  //     const fixtures = generateRoundRobinFixtures({ teams, numberOfCourts });
-
-  //     if (fixtures) {
-  //       setGeneratedFixtures(fixtures);
-  //       setCurrentScreen(GENERATED_FIXTURES_SCREEN);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error generating fixtures:", error);
-  //     Alert.alert("Error", "Failed to generate fixtures");
-  //   } finally {
-  //     setIsGenerating(false);
-  //   }
-  // };
+  const handleMixedDoublesGeneration = () =>
+    handleDoublesGeneration("Mixed Doubles");
+  const handleFixedDoublesGeneration = () =>
+    handleDoublesGeneration("Fixed Doubles");
 
   const handleGenerateTournament = () => {
     Alert.alert("Success", "Tournament generated successfully!", [

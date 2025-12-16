@@ -24,7 +24,7 @@ import UserRoleTag from "../../../components/UserRoleTag";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
-import Fixtures from "../../../components/Fixtures/Fixtures";
+import Fixtures from "../../../components/Tournaments/Fixtures/Fixtures";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";

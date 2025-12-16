@@ -9,9 +9,9 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
-import { LeagueContext } from "../../context/LeagueContext";
-import { UserContext } from "../../context/UserContext";
-import GenerateFixturesModal from "../Modals/GenerateFixturesModal";
+import { LeagueContext } from "../../../context/LeagueContext";
+import { UserContext } from "../../../context/UserContext";
+import GenerateFixturesModal from "../../Modals/GenerateFixturesModal";
 
 const Fixtures = ({ tournament }) => {
   const [showGenerateFixturesModal, setShowGenerateFixturesModal] =

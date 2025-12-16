@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { ActivityIndicator, Dimensions } from "react-native";
-
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import SelectPlayerModal from "../../Modals/SelectPlayerModal";
@@ -16,85 +15,80 @@ export const CreateTeamsScreen = ({
   setFixedDoublesTeams,
   participants,
 }) => {
-  const [playerModalVisible, setPlayerModalVisible] = useState(false);
-  const [selectionContext, setSelectionContext] = useState({
-    teamIndex: null,
-    playerPosition: null,
-  });
+  const [modalVisible, setModalVisible] = useState(false);
+  const [activeTeamIndex, setActiveTeamIndex] = useState(null);
+  const [activePlayerPosition, setActivePlayerPosition] = useState(null);
 
-  const canGenerateFixtures = () => {
-    return fixedDoublesTeams.every((team) => team.player1 && team.player2);
-  };
+  const playerArray = useMemo(
+    () =>
+      participants.map((participant) => ({
+        userId: participant.userId,
+        firstName: participant.firstName,
+        lastName: participant.lastName,
+        username: participant.username,
+        displayName: formatDisplayName(participant),
+      })),
+    [participants]
+  );
 
-  const openPlayerSelection = (teamIndex, playerPosition) => {
-    setSelectionContext({ teamIndex, playerPosition });
-    setPlayerModalVisible(true);
-  };
+  const selectedPlayers = useMemo(
+    () => ({
+      team1: fixedDoublesTeams
+        .flatMap((team) => [team.player1, team.player2])
+        .filter(Boolean),
+      team2: [],
+    }),
+    [fixedDoublesTeams]
+  );
 
-  const closeDropdown = () => {
-    setPlayerModalVisible(false);
-    setSelectionContext({ teamIndex: null, playerPosition: null });
-  };
+  const canGenerate = useMemo(
+    () => fixedDoublesTeams.every((team) => team.player1 && team.player2),
+    [fixedDoublesTeams]
+  );
 
-  const playerArray = participants.map((participant) => ({
-    userId: participant.userId,
-    firstName: participant.firstName,
-    lastName: participant.lastName,
-    username: participant.username,
-    displayName: formatDisplayName(participant),
-  }));
+  const currentlySelected = useMemo(() => {
+    if (activeTeamIndex === null || activePlayerPosition === null) return null;
+    return fixedDoublesTeams[activeTeamIndex]?.[activePlayerPosition] || null;
+  }, [fixedDoublesTeams, activeTeamIndex, activePlayerPosition]);
 
-  const selectedPlayers = {
-    team1: fixedDoublesTeams
-      .flatMap((team) => [team.player1, team.player2])
-      .filter(Boolean),
-    team2: [], // Required by modal but not used
-  };
+  // Memoized callbacks
+  const openPlayerSelection = useCallback((teamIndex, playerPosition) => {
+    setActiveTeamIndex(teamIndex);
+    setActivePlayerPosition(playerPosition);
+    setModalVisible(true);
+  }, []);
 
-  const getCurrentlySelected = () => {
-    if (
-      selectionContext.teamIndex === null ||
-      selectionContext.playerPosition === null
-    ) {
-      return null;
-    }
-    const team = fixedDoublesTeams[selectionContext.teamIndex];
-    return team?.[selectionContext.playerPosition] || null;
-  };
+  const closeModal = useCallback(() => {
+    setModalVisible(false);
+    setActiveTeamIndex(null);
+    setActivePlayerPosition(null);
+  }, []);
 
-  const handleFixedDoublesPlayerSelect = (
-    teamIndex,
-    playerPosition,
-    playerId
-  ) => {
-    const player = playerId
-      ? participants.find((p) => p.userId === playerId)
-      : null;
+  const handlePlayerSelect = useCallback(
+    (player) => {
+      const isSame = currentlySelected?.userId === player.userId;
+      const newPlayer = isSame ? null : player;
 
-    setFixedDoublesTeams((prev) => {
-      const updated = [...prev];
-      updated[teamIndex] = {
-        ...updated[teamIndex],
-        [playerPosition]: player,
-      };
-      return updated;
-    });
-  };
+      setFixedDoublesTeams((prev) => {
+        const updated = [...prev];
+        updated[activeTeamIndex] = {
+          ...updated[activeTeamIndex],
+          [activePlayerPosition]: newPlayer,
+        };
+        return updated;
+      });
 
-  const handleSelect = (player) => {
-    const currentlySelected = getCurrentlySelected();
-    const isSame = currentlySelected?.userId === player.userId;
-    const newPlayer = isSame ? null : player;
-
-    handleFixedDoublesPlayerSelect(
-      selectionContext.teamIndex,
-      selectionContext.playerPosition,
-      newPlayer?.userId || null
-    );
-
-    if (isSame) return;
-    closeDropdown();
-  };
+      if (isSame) return;
+      closeModal();
+    },
+    [
+      currentlySelected,
+      activeTeamIndex,
+      activePlayerPosition,
+      setFixedDoublesTeams,
+      closeModal,
+    ]
+  );
 
   return (
     <>
@@ -103,35 +97,12 @@ export const CreateTeamsScreen = ({
       <FormSection>
         <FixedTeamsContainer>
           {fixedDoublesTeams.map((team, index) => (
-            <TeamPairContainer key={team.teamId}>
-              <TeamPairTitle>Team {index + 1}</TeamPairTitle>
-
-              <PlayerSelectionRow
-                onPress={() => openPlayerSelection(index, "player1")}
-              >
-                <PlayerSlotContent>
-                  <PlayerSlotText>
-                    {team.player1
-                      ? formatDisplayName(team.player1)
-                      : "Select Player 1"}
-                  </PlayerSlotText>
-                </PlayerSlotContent>
-                <AntDesign name="plus" size={20} color="#00A2FF" />
-              </PlayerSelectionRow>
-
-              <PlayerSelectionRow
-                onPress={() => openPlayerSelection(index, "player2")}
-              >
-                <PlayerSlotContent>
-                  <PlayerSlotText>
-                    {team.player2
-                      ? formatDisplayName(team.player2)
-                      : "Select Player 2"}
-                  </PlayerSlotText>
-                </PlayerSlotContent>
-                <AntDesign name="plus" size={20} color="#00A2FF" />
-              </PlayerSelectionRow>
-            </TeamPairContainer>
+            <TeamPair
+              key={team.teamId}
+              team={team}
+              index={index}
+              onPlayerSelect={openPlayerSelection}
+            />
           ))}
         </FixedTeamsContainer>
       </FormSection>
@@ -141,7 +112,7 @@ export const CreateTeamsScreen = ({
           <BackText>Back</BackText>
         </BackButton>
         <GenerateButton
-          disabled={!canGenerateFixtures() || isGenerating}
+          disabled={!canGenerate || isGenerating}
           onPress={onGenerateFixtures}
         >
           {isGenerating ? (
@@ -160,16 +131,40 @@ export const CreateTeamsScreen = ({
       </ButtonContainer>
 
       <SelectPlayerModal
-        dropdownVisible={playerModalVisible}
-        closeDropdown={closeDropdown}
+        dropdownVisible={modalVisible}
+        closeDropdown={closeModal}
         playerArray={playerArray}
-        handleSelect={handleSelect}
+        handleSelect={handlePlayerSelect}
         selectedPlayers={selectedPlayers}
-        selected={getCurrentlySelected()}
+        selected={currentlySelected}
       />
     </>
   );
 };
+
+const TeamPair = ({ team, index, onPlayerSelect }) => (
+  <TeamPairContainer>
+    <TeamPairTitle>Team {index + 1}</TeamPairTitle>
+
+    <PlayerSelectionRow onPress={() => onPlayerSelect(index, "player1")}>
+      <PlayerSlotContent>
+        <PlayerSlotText playerSelected={!!team.player1}>
+          {team.player1 ? formatDisplayName(team.player1) : "Select Player 1"}
+        </PlayerSlotText>
+      </PlayerSlotContent>
+      <AntDesign name="plus" size={20} color="#00A2FF" />
+    </PlayerSelectionRow>
+
+    <PlayerSelectionRow onPress={() => onPlayerSelect(index, "player2")}>
+      <PlayerSlotContent>
+        <PlayerSlotText playerSelected={!!team.player2}>
+          {team.player2 ? formatDisplayName(team.player2) : "Select Player 2"}
+        </PlayerSlotText>
+      </PlayerSlotContent>
+      <AntDesign name="plus" size={20} color="#00A2FF" />
+    </PlayerSelectionRow>
+  </TeamPairContainer>
+);
 
 const PlayerSelectionRow = styled.TouchableOpacity({
   flexDirection: "row",
@@ -185,10 +180,10 @@ const PlayerSlotContent = styled.View({
   flex: 1,
 });
 
-const PlayerSlotText = styled.Text({
-  color: "#fff",
+const PlayerSlotText = styled.Text(({ playerSelected }) => ({
+  color: playerSelected ? "white" : "grey",
   fontSize: 14,
-});
+}));
 
 const ModalTitle = styled.Text({
   fontSize: 20,
@@ -212,6 +207,7 @@ const TeamPairContainer = styled.View({
   padding: 16,
   borderRadius: 8,
   gap: 8,
+  marginBottom: 10,
 });
 
 const TeamPairTitle = styled.Text({
