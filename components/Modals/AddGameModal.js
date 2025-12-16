@@ -92,18 +92,6 @@ const AddGameModal = ({
     setModalVisible(false);
   };
 
-  const handleSelectPlayer = (team, index, player) => {
-    setSelectedPlayers((prev) => {
-      const newTeam = [...prev[team]];
-      newTeam[index] = player;
-
-      return {
-        ...prev,
-        [team]: newTeam,
-      };
-    });
-  };
-
   const handleAddGame = async () => {
     setLoading(true);
 
@@ -314,7 +302,7 @@ const AddGameModal = ({
                 team2Score={team2Score}
                 setTeam2Score={setTeam2Score}
                 selectedPlayers={selectedPlayers}
-                handleSelectPlayer={handleSelectPlayer}
+                setSelectedPlayers={setSelectedPlayers}
                 leagueType={leagueType}
               />
 

@@ -10,7 +10,7 @@ const AddGame = ({
   team2Score,
   setTeam2Score,
   selectedPlayers,
-  handleSelectPlayer,
+  setSelectedPlayers,
   leagueType,
 }) => {
   const handleScoreChange = (setScore) => (text) => {
@@ -18,6 +18,18 @@ const AddGame = ({
     if (numericText.length <= 2) {
       setScore(numericText);
     }
+  };
+
+  const handleSelectPlayer = (team, index, player) => {
+    setSelectedPlayers((prev) => {
+      const newTeam = [...prev[team]];
+      newTeam[index] = player;
+
+      return {
+        ...prev,
+        [team]: newTeam,
+      };
+    });
   };
 
   return (

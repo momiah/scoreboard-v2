@@ -1,3 +1,6 @@
+import { generateUniqueGameId } from "../generateUniqueId";
+import moment from "moment";
+
 export const generateSinglesRoundRobinFixtures = ({
   players,
   numberOfCourts,
@@ -10,7 +13,6 @@ export const generateSinglesRoundRobinFixtures = ({
     return null;
   }
 
-  // Generate all possible pairings first
   const allMatches = [];
   for (let i = 0; i < numPlayers; i++) {
     for (let j = i + 1; j < numPlayers; j++) {
@@ -21,14 +23,14 @@ export const generateSinglesRoundRobinFixtures = ({
     }
   }
 
-  // Distribute matches across rounds based on available courts
+  let allCreatedGames = [];
+
   let roundNumber = 1;
   let gameCounter = 0;
 
   while (gameCounter < allMatches.length) {
     const roundGames = [];
 
-    // Fill this round with as many matches as we have courts
     for (
       let court = 1;
       court <= numberOfCourts && gameCounter < allMatches.length;
@@ -36,17 +38,23 @@ export const generateSinglesRoundRobinFixtures = ({
     ) {
       const match = allMatches[gameCounter];
 
-      roundGames.push({
-        gameId: `game_${roundNumber}_${court}`,
+      const game = {
+        gameId: generateUniqueGameId(allCreatedGames),
         team1: { player1: match.player1, player2: null },
         team2: { player1: match.player2, player2: null },
         court: court,
-        scheduledDate: "",
+        gamescore: "",
+        createdAt: new Date(),
+        reportedAt: "",
+        createdTime: moment().format("HH:mm"),
+        reportedTime: "",
         approvalStatus: "Pending",
         status: "Scheduled",
         result: null,
-      });
+      };
 
+      roundGames.push(game);
+      allCreatedGames.push(game);
       gameCounter++;
     }
 
@@ -66,48 +74,74 @@ export const generateRoundRobinFixtures = ({ teams, numberOfCourts }) => {
     return null;
   }
 
-  // Generate all possible team pairings first
   const allMatches = [];
   for (let i = 0; i < numTeams; i++) {
     for (let j = i + 1; j < numTeams; j++) {
       allMatches.push({
         team1: teams[i],
         team2: teams[j],
+        team1Index: i,
+        team2Index: j,
       });
     }
   }
 
-  // Distribute matches across rounds based on available courts
+  let allCreatedGames = [];
+
   let roundNumber = 1;
-  let gameCounter = 0;
+  const remainingMatches = [...allMatches];
 
-  while (gameCounter < allMatches.length) {
+  while (remainingMatches.length > 0) {
     const roundGames = [];
+    const teamsPlayedThisRound = new Set();
 
-    // Fill this round with as many matches as we have courts
+    let startingCourt = ((roundNumber - 1) % numberOfCourts) + 1;
+    let court = startingCourt;
+
     for (
-      let court = 1;
-      court <= numberOfCourts && gameCounter < allMatches.length;
-      court++
+      let i = 0;
+      i < remainingMatches.length && roundGames.length < numberOfCourts;
+      i++
     ) {
-      const match = allMatches[gameCounter];
+      const match = remainingMatches[i];
 
-      roundGames.push({
-        gameId: `game_${roundNumber}_${court}`,
-        team1: { player1: match.team1.player1, player2: match.team1.player2 },
-        team2: { player1: match.team2.player1, player2: match.team2.player2 },
-        court: court,
-        scheduledDate: "",
-        approvalStatus: "Pending",
-        status: "Scheduled",
-        result: null,
-      });
+      if (
+        !teamsPlayedThisRound.has(match.team1Index) &&
+        !teamsPlayedThisRound.has(match.team2Index)
+      ) {
+        const game = {
+          gameId: generateUniqueGameId(allCreatedGames),
+          team1: { player1: match.team1.player1, player2: match.team1.player2 },
+          team2: { player1: match.team2.player1, player2: match.team2.player2 },
+          court: court,
+          gamescore: "",
+          createdAt: new Date(),
+          reportedAt: "",
+          reportedTime: "",
+          createdTime: moment().format("HH:mm"),
+          approvalStatus: "Pending",
+          status: "Scheduled",
+          result: null,
+        };
 
-      gameCounter++;
+        roundGames.push(game);
+        allCreatedGames.push(game);
+
+        teamsPlayedThisRound.add(match.team1Index);
+        teamsPlayedThisRound.add(match.team2Index);
+
+        remainingMatches.splice(i, 1);
+        i--; // Adjust index after removal
+
+        // Rotate to next court
+        court = (court % numberOfCourts) + 1;
+      }
     }
 
-    fixtures.push({ round: roundNumber, games: roundGames });
-    roundNumber++;
+    if (roundGames.length > 0) {
+      fixtures.push({ round: roundNumber, games: roundGames });
+      roundNumber++;
+    }
   }
 
   return { fixtures };
