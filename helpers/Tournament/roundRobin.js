@@ -14,56 +14,116 @@ export const generateSinglesRoundRobinFixtures = ({
     return null;
   }
 
+  // Generate all possible matches
   const allMatches = [];
   for (let i = 0; i < numPlayers; i++) {
     for (let j = i + 1; j < numPlayers; j++) {
       allMatches.push({
         player1: players[i],
         player2: players[j],
+        player1Index: i,
+        player2Index: j,
       });
     }
   }
 
   let allCreatedGames = [];
-
   let roundNumber = 1;
-  let gameCounter = 0;
+  let gameNumber = 1; // Add game counter
+  const remainingMatches = [...allMatches];
 
-  while (gameCounter < allMatches.length) {
+  // Track how many rounds each player has been sitting out consecutively
+  const playerConsecutiveBreaks = new Array(numPlayers).fill(0);
+
+  while (remainingMatches.length > 0) {
     const roundGames = [];
+    const playersPlayedThisRound = new Set();
+    let startingCourt = ((roundNumber - 1) % numberOfCourts) + 1;
+    let court = startingCourt;
 
-    for (
-      let court = 1;
-      court <= numberOfCourts && gameCounter < allMatches.length;
-      court++
-    ) {
-      const match = allMatches[gameCounter];
+    // Find players that have been sitting out the longest
+    const availableMatches = remainingMatches.filter(
+      (match) =>
+        !playersPlayedThisRound.has(match.player1Index) &&
+        !playersPlayedThisRound.has(match.player2Index)
+    );
 
-      const game = {
-        gameId: generateUniqueGameId({
-          existingGames: allCreatedGames,
-          competitionId: competitionId,
-        }),
-        team1: { player1: match.player1, player2: null },
-        team2: { player1: match.player2, player2: null },
-        court: court,
-        gamescore: "",
-        createdAt: new Date(),
-        reportedAt: "",
-        createdTime: moment().format("HH:mm"),
-        reportedTime: "",
-        approvalStatus: "Pending",
-        status: "Scheduled",
-        result: null,
-      };
+    // Sort by players with longest consecutive breaks (highest priority to play)
+    availableMatches.sort((a, b) => {
+      const aMaxBreaks = Math.max(
+        playerConsecutiveBreaks[a.player1Index],
+        playerConsecutiveBreaks[a.player2Index]
+      );
+      const bMaxBreaks = Math.max(
+        playerConsecutiveBreaks[b.player1Index],
+        playerConsecutiveBreaks[b.player2Index]
+      );
 
-      roundGames.push(game);
-      allCreatedGames.push(game);
-      gameCounter++;
+      // Players with more consecutive breaks get higher priority
+      return bMaxBreaks - aMaxBreaks;
+    });
+
+    // Select matches for this round
+    for (const match of availableMatches) {
+      if (roundGames.length >= numberOfCourts) break;
+
+      if (
+        !playersPlayedThisRound.has(match.player1Index) &&
+        !playersPlayedThisRound.has(match.player2Index)
+      ) {
+        const game = {
+          gameId: generateUniqueGameId({
+            existingGames: allCreatedGames,
+            competitionId: competitionId,
+          }),
+          gameNumber: gameNumber, // Add sequential game number
+          team1: { player1: match.player1, player2: null },
+          team2: { player1: match.player2, player2: null },
+          court: court,
+          gamescore: "",
+          createdAt: new Date(),
+          reportedAt: "",
+          createdTime: moment().format("HH:mm"),
+          reportedTime: "",
+          approvalStatus: "Pending",
+          status: "Scheduled",
+          result: null,
+        };
+
+        roundGames.push(game);
+        allCreatedGames.push(game);
+        gameNumber++; // Increment game counter
+
+        playersPlayedThisRound.add(match.player1Index);
+        playersPlayedThisRound.add(match.player2Index);
+
+        // Remove this match from remaining matches
+        const matchIndex = remainingMatches.findIndex(
+          (m) =>
+            m.player1Index === match.player1Index &&
+            m.player2Index === match.player2Index
+        );
+        if (matchIndex !== -1) {
+          remainingMatches.splice(matchIndex, 1);
+        }
+
+        court = (court % numberOfCourts) + 1;
+      }
     }
 
-    fixtures.push({ round: roundNumber, games: roundGames });
-    roundNumber++;
+    // Update consecutive break counters
+    for (let i = 0; i < numPlayers; i++) {
+      if (playersPlayedThisRound.has(i)) {
+        playerConsecutiveBreaks[i] = 0; // Reset break counter for players that played
+      } else {
+        playerConsecutiveBreaks[i]++; // Increment break counter for players that didn't play
+      }
+    }
+
+    if (roundGames.length > 0) {
+      fixtures.push({ round: roundNumber, games: roundGames });
+      roundNumber++;
+    }
   }
 
   return { fixtures };
