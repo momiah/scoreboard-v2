@@ -27,7 +27,7 @@ export const GeneratedFixturesScreen = ({
           {round.games.map((game, gameIndex) => (
             <GameCard key={game.gameId}>
               <GameHeader>
-                <Tag name={`Game ${gameIndex + 1}`} bold color="#00A2FF" />
+                <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
                 <Tag name={`Court ${game.court}`} bold />
               </GameHeader>
 

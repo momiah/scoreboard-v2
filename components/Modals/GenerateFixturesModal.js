@@ -86,6 +86,22 @@ const mockParticipants = [
     displayName: "Babu M.",
     XP: 875,
   },
+  {
+    userId: "9",
+    firstName: "Alice",
+    lastName: "Wonderland",
+    username: "alicew",
+    displayName: "Alice W.",
+    XP: 950,
+  },
+  {
+    userId: "10",
+    firstName: "Bob",
+    lastName: "Builder",
+    username: "bobb",
+    displayName: "Bob B.",
+    XP: 800,
+  },
 ];
 
 // Main Modal Component
@@ -112,6 +128,8 @@ const GenerateFixturesModal = ({
 
   // const tournamentType = "Singles";
   const tournamentType = competition?.tournamentType || "Doubles";
+  const competitionId = competition?.tournamentId;
+  console.log("competitionId in modal", competitionId);
 
   useEffect(() => {
     let maxCourts;
@@ -144,6 +162,7 @@ const GenerateFixturesModal = ({
       const fixtures = generateSinglesRoundRobinFixtures({
         players: mockParticipants,
         numberOfCourts,
+        competitionId,
       });
 
       if (fixtures) {
@@ -186,8 +205,13 @@ const GenerateFixturesModal = ({
       }
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const fixtures = generateRoundRobinFixtures({ teams, numberOfCourts });
+      const fixtures = generateRoundRobinFixtures({
+        teams,
+        numberOfCourts,
+        competitionId,
+      });
 
+      console.log("fictures", JSON.stringify(fixtures, null, 2));
       if (fixtures) {
         setGeneratedFixtures(fixtures);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);

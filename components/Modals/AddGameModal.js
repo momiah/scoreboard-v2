@@ -151,7 +151,10 @@ const AddGameModal = ({
       return;
     }
 
-    const gameId = generateUniqueGameId(leagueGames);
+    const gameId = generateUniqueGameId({
+      existingGames: leagueGames,
+      competitionId: leagueId,
+    });
 
     const team1 = {
       player1: selectedPlayers.team1[0],
