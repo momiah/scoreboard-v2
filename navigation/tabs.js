@@ -9,6 +9,7 @@ import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
 import Notifications from "../screens/Notifications";
+import GameVideoPlayer from "../screens/GameVideoPlayer";
 import Schedule from "../screens/Schedule";
 import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -51,6 +52,7 @@ const HomeStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="GameVideoPlayer" component={GameVideoPlayer} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
@@ -74,6 +76,7 @@ const ProfileStack = () => {
     >
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="GameVideoPlayer" component={GameVideoPlayer} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -101,6 +104,7 @@ const NotificationsStack = () => {
     >
       <Stack.Screen name="Notification" component={Notifications} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="GameVideoPlayer" component={GameVideoPlayer} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -127,6 +131,7 @@ const ChatsStack = () => {
     >
       <Stack.Screen name="Chats" component={Chats} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="GameVideoPlayer" component={GameVideoPlayer} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />

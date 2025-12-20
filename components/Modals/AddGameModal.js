@@ -334,6 +334,7 @@ const AddGameModal = ({
     });
     setTeam1Score("");
     setTeam2Score("");
+    setVideo(null);
 
     handleShowPopup(
       "Game added! Opponents have 24 hours to approve or will be auto-approved."
@@ -349,6 +350,9 @@ const AddGameModal = ({
       team1: leagueType === "Singles" ? [null] : [null, null],
       team2: leagueType === "Singles" ? [null] : [null, null],
     });
+    setTeam1Score("");
+    setTeam2Score("");
+    setVideo(null);
   };
 
   return (

@@ -16,6 +16,7 @@ import LeagueSummary from "../../../components/Summary/LeagueSummary";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
+import LeagueVideos from "../../../components/LeagueVideos/LeagueVideos";
 import Tag from "../../../components/Tag";
 import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 
@@ -133,6 +134,7 @@ const League = () => {
     { component: "Chat Room" },
     { component: "Summary" },
     { component: "Scoreboard" },
+    { component: "Videos" },
     { component: "Player Performance" },
     ...(leagueById?.leagueType !== "Singles"
       ? [{ component: "Team Performance" }]
@@ -190,6 +192,14 @@ const League = () => {
             leagueParticipants={leagueParticipants || []}
             maxPlayers={maxPlayers}
             isJoinRequestSending={isJoinRequestSending}
+          />
+        );
+      case "Videos":
+        return (
+          <LeagueVideos
+            games={games || []}
+            leagueId={leagueId}
+            navigation={navigation}
           />
         );
       case "Player Performance":
