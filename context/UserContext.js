@@ -732,7 +732,7 @@ const UserProvider = ({ children }) => {
           sound: "default",
           vibrate: [200, 100, 200],
           priority: "high",
-          title: `New Notification in Court Champs!`,
+          title: `Court Champs`,
           body: notification.message,
           data: {
             ...notification.data,

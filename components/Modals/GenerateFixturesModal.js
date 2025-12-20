@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Modal,
   KeyboardAvoidingView,
@@ -18,6 +18,7 @@ import { generateMixedDoublesTeams } from "../../helpers/Tournament/teamGenerati
 import { SetupScreen } from "../Tournaments/FixturesGeneration/SetupScreen";
 import { CreateTeamsScreen } from "../Tournaments/FixturesGeneration/CreateTeamsScreen";
 import { GeneratedFixturesScreen } from "../Tournaments/FixturesGeneration/GeneratedFixturesScreen";
+import { LeagueContext } from "../../context/LeagueContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -86,22 +87,22 @@ const mockParticipants = [
     displayName: "Babu M.",
     XP: 875,
   },
-  {
-    userId: "9",
-    firstName: "Alice",
-    lastName: "Wonderland",
-    username: "alicew",
-    displayName: "Alice W.",
-    XP: 950,
-  },
-  {
-    userId: "10",
-    firstName: "Bob",
-    lastName: "Builder",
-    username: "bobb",
-    displayName: "Bob B.",
-    XP: 800,
-  },
+  // {
+  //   userId: "9",
+  //   firstName: "Alice",
+  //   lastName: "Wonderland",
+  //   username: "alicew",
+  //   displayName: "Alice W.",
+  //   XP: 950,
+  // },
+  // {
+  //   userId: "10",
+  //   firstName: "Bob",
+  //   lastName: "Builder",
+  //   username: "bobb",
+  //   displayName: "Bob B.",
+  //   XP: 800,
+  // },
 ];
 
 // Main Modal Component
@@ -109,6 +110,9 @@ const GenerateFixturesModal = ({
   modalVisible,
   setModalVisible,
   competition,
+  currentUser,
+  setGeneratedFixtures,
+  generatedFixtures,
 }) => {
   // State
   const SET_UP_SCREEN = 1;
@@ -122,14 +126,11 @@ const GenerateFixturesModal = ({
   const [mixedDoublesMode, setMixedDoublesMode] = useState("");
   const [fixedDoublesTeams, setFixedDoublesTeams] = useState([]);
   const [numberOfCourts, setNumberOfCourts] = useState(1);
-
-  // Fixtures state
-  const [generatedFixtures, setGeneratedFixtures] = useState(null);
+  const { addTournamentFixtures } = useContext(LeagueContext);
 
   // const tournamentType = "Singles";
   const tournamentType = competition?.tournamentType || "Doubles";
   const competitionId = competition?.tournamentId;
-  console.log("competitionId in modal", competitionId);
 
   useEffect(() => {
     let maxCourts;
@@ -211,7 +212,6 @@ const GenerateFixturesModal = ({
         competitionId,
       });
 
-      console.log("fictures", JSON.stringify(fixtures, null, 2));
       if (fixtures) {
         setGeneratedFixtures(fixtures);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
@@ -229,10 +229,37 @@ const GenerateFixturesModal = ({
   const handleFixedDoublesGeneration = () =>
     handleDoublesGeneration("Fixed Doubles");
 
-  const handleGenerateTournament = () => {
-    Alert.alert("Success", "Tournament generated successfully!", [
-      { text: "OK", onPress: () => setModalVisible(false) },
-    ]);
+  const handleGenerateTournament = async () => {
+    try {
+      if (!generatedFixtures) {
+        Alert.alert("Error", "No fixtures to save");
+        return;
+      }
+
+      // Show loading state
+      setIsGenerating(true);
+
+      // Write to database
+      await addTournamentFixtures({
+        tournamentId: competitionId,
+        fixtures: generatedFixtures,
+        numberOfCourts,
+        currentUser: currentUser,
+      });
+
+      Alert.alert("Success", "Tournament fixtures saved successfully!", [
+        { text: "OK", onPress: () => setModalVisible(false) },
+      ]);
+    } catch (error) {
+      // Error handling
+      Alert.alert(
+        "Error",
+        "Failed to save tournament fixtures. Please try again.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const renderCurrentScreen = () => {
@@ -272,6 +299,7 @@ const GenerateFixturesModal = ({
                   setGeneratedFixtures(null);
                 }
               }}
+              isGenerating={isGenerating}
               onGenerateTournament={handleGenerateTournament}
               tournamentType={tournamentType}
             />

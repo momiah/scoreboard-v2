@@ -221,6 +221,7 @@ export const tournamentSchema = {
     location: locationSchema,
   },
   games: [],
+  fixtures: [],
   tournamentType: "",
   tournamentMode: "",
   prizeType: "",

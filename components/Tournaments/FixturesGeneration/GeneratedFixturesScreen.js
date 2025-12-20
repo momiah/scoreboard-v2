@@ -1,5 +1,5 @@
 import React from "react";
-import { Dimensions } from "react-native";
+import { Dimensions, ActivityIndicator } from "react-native";
 
 import { TeamColumn } from "../../scoreboard/ScoreboardAtoms";
 import styled from "styled-components/native";
@@ -13,6 +13,7 @@ export const GeneratedFixturesScreen = ({
   tournamentType,
   onBack,
   onGenerateTournament,
+  isGenerating,
 }) => (
   <>
     <ModalTitle>Generated Fixtures</ModalTitle>
@@ -62,7 +63,8 @@ export const GeneratedFixturesScreen = ({
       <BackButton onPress={onBack}>
         <BackText>Back</BackText>
       </BackButton>
-      <ConfirmButton onPress={onGenerateTournament}>
+      <ConfirmButton onPress={onGenerateTournament} disabled={isGenerating}>
+        {isGenerating && <ActivityIndicator size="small" color="#fff" />}
         <ConfirmText>Confirm</ConfirmText>
       </ConfirmButton>
     </ButtonContainer>
@@ -147,13 +149,16 @@ const BackButton = styled.TouchableOpacity({
   alignItems: "center",
 });
 
-const ConfirmButton = styled.TouchableOpacity({
+const ConfirmButton = styled.TouchableOpacity(({ disabled }) => ({
   flex: 1,
   padding: 12,
-  backgroundColor: "#00A2FF",
+  backgroundColor: disabled ? "#666" : "#00A2FF",
   borderRadius: 6,
   alignItems: "center",
-});
+  flexDirection: "row",
+  justifyContent: "center",
+  gap: 8,
+}));
 
 const BackText = styled.Text({
   color: "white",

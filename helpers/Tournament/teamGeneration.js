@@ -17,12 +17,14 @@ export const generateMixedDoublesTeams = ({
             lastName: shuffled[i].lastName,
             username: shuffled[i].username,
             displayName: shuffled[i].displayName,
+            userId: shuffled[i].userId,
           },
           player2: {
             firstName: shuffled[i + 1].firstName,
             lastName: shuffled[i + 1].lastName,
             username: shuffled[i + 1].username,
             displayName: shuffled[i + 1].displayName,
+            userId: shuffled[i + 1].userId,
           },
         });
       }
@@ -44,12 +46,14 @@ export const generateMixedDoublesTeams = ({
             lastName: highXP[i].lastName,
             username: highXP[i].username,
             displayName: highXP[i].displayName,
+            userId: highXP[i].userId,
           },
           player2: {
             firstName: lowXP[i].firstName,
             lastName: lowXP[i].lastName,
             username: lowXP[i].username,
             displayName: lowXP[i].displayName,
+            userId: lowXP[i].userId,
           },
         });
       }

@@ -1,31 +1,54 @@
 import React, { useState, useContext } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  Alert,
-  StyleSheet,
-} from "react-native";
+import { SafeAreaView } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
-import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import GenerateFixturesModal from "../../Modals/GenerateFixturesModal";
+import { FixturesDisplay } from "./FixturesAtoms";
 
-const Fixtures = ({ tournament }) => {
+const Fixtures = ({ tournament, userRole }) => {
   const [showGenerateFixturesModal, setShowGenerateFixturesModal] =
     useState(false);
 
-  // Context (for future use when implementing fixture logic)
+  const [generatedFixtures, setGeneratedFixtures] = useState(
+    tournament?.fixtures ?? null
+  );
+
+  const fixturesArray = generatedFixtures?.fixtures || generatedFixtures || [];
+
   const { currentUser } = useContext(UserContext);
 
   const numberOfParticipants = tournament?.participants
     ? tournament.participants.length
     : 0;
 
-  // const isEvenNumberOfParticipants = false;
+  const hasFixtures = fixturesArray && fixturesArray.length > 0;
+  const tournamentType = tournament?.tournamentType || "Singles";
+  const numberOfCourts = tournament?.numberOfCourts || 1;
+  const numberOfCourtsMessage = `${numberOfCourts} Court${
+    numberOfCourts > 1 ? "s" : ""
+  }`;
+
+  const numberOfParticipantsMessage = `${numberOfParticipants} Participant${
+    numberOfParticipants !== 1 ? "s" : ""
+  }`;
+  const numberOfTeamsMessage = `${Math.floor(numberOfParticipants / 2)} Team${
+    Math.floor(numberOfParticipants / 2) !== 1 ? "s" : ""
+  }`;
+
+  const FixtureDetailsMessage =
+    tournamentType === "Singles"
+      ? numberOfParticipantsMessage
+      : numberOfTeamsMessage;
+
+  const numberOfMatches =
+    fixturesArray.flatMap((round) => round.games || []).length || 0;
+
   const isEvenNumberOfParticipants = numberOfParticipants % 2 === 0;
+  const emptyStateMessage =
+    userRole === "admin"
+      ? "Create your tournament fixtures to start organizing matches"
+      : "Please contact the tournament organizer to generate fixtures.";
 
   const handleShowGenerateFixtures = () => {
     if (!isEvenNumberOfParticipants) {
@@ -37,39 +60,51 @@ const Fixtures = ({ tournament }) => {
 
   return (
     <Container>
-      <Header>
-        <Title>Fixtures</Title>
-        <Subtitle>Tournament fixtures will appear here once generated</Subtitle>
-      </Header>
+      {hasFixtures && (
+        <Header>
+          <FixtureDetails>
+            {numberOfMatches} Matches - {numberOfCourtsMessage} -{" "}
+            {FixtureDetailsMessage}
+          </FixtureDetails>
+        </Header>
+      )}
 
-      <Content>
-        <EmptyStateContainer>
-          <EmptyStateIcon>
-            <AntDesign name="calendar" size={64} color="#ccc" />
-          </EmptyStateIcon>
-
-          <EmptyStateText>No fixtures generated yet</EmptyStateText>
-          <EmptyStateSubtext>
-            Create your tournament fixtures to start organizing matches
-          </EmptyStateSubtext>
-
-          <GenerateButton onPress={handleShowGenerateFixtures}>
-            <AntDesign
-              name="plus"
-              size={20}
-              color="#fff"
-              style={{ marginRight: 8 }}
-            />
-            <GenerateButtonText>Generate Fixtures</GenerateButtonText>
-          </GenerateButton>
-        </EmptyStateContainer>
-      </Content>
+      {hasFixtures ? (
+        <FixturesDisplay
+          fixtures={fixturesArray}
+          tournamentType={tournamentType}
+        />
+      ) : (
+        <Content>
+          <EmptyStateContainer>
+            <EmptyStateIcon>
+              <AntDesign name="calendar" size={64} color="#ccc" />
+            </EmptyStateIcon>
+            <EmptyStateText>No fixtures generated yet</EmptyStateText>
+            <EmptyStateSubtext>{emptyStateMessage}</EmptyStateSubtext>
+            {userRole === "admin" && (
+              <GenerateButton onPress={handleShowGenerateFixtures}>
+                <AntDesign
+                  name="plus"
+                  size={20}
+                  color="#fff"
+                  style={{ marginRight: 8 }}
+                />
+                <GenerateButtonText>Generate Fixtures</GenerateButtonText>
+              </GenerateButton>
+            )}
+          </EmptyStateContainer>
+        </Content>
+      )}
 
       {showGenerateFixturesModal && (
         <GenerateFixturesModal
           modalVisible={showGenerateFixturesModal}
           setModalVisible={setShowGenerateFixturesModal}
           competition={tournament}
+          currentUser={currentUser}
+          setGeneratedFixtures={setGeneratedFixtures}
+          generatedFixtures={generatedFixtures}
         />
       )}
     </Container>
@@ -78,13 +113,20 @@ const Fixtures = ({ tournament }) => {
 
 const Container = styled(SafeAreaView)({
   flex: 1,
-  backgroundColor: "#020D18",
+  // backgroundColor: "#020D18",
 });
 
 const Header = styled.View({
   padding: "20px 20px 10px 20px",
   borderBottomWidth: 1,
   borderBottomColor: "rgba(255, 255, 255, 0.1)",
+  marginBottom: 10,
+});
+
+const TitleContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
 });
 
 const Title = styled.Text({
@@ -92,6 +134,11 @@ const Title = styled.Text({
   fontWeight: "bold",
   color: "#fff",
   marginBottom: 4,
+});
+
+const FixtureDetails = styled.Text({
+  fontSize: 14,
+  color: "#ccc",
 });
 
 const Subtitle = styled.Text({

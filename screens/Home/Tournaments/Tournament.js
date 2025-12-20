@@ -191,7 +191,7 @@ const Tournament = () => {
           />
         );
       case "Fixtures":
-        return <Fixtures tournament={tournamentById} />;
+        return <Fixtures tournament={tournamentById} userRole={userRole} />;
       case "Scoreboard":
         return (
           <Scoreboard

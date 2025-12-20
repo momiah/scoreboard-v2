@@ -1123,6 +1123,54 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const addTournamentFixtures = async ({
+    tournamentId,
+    fixtures,
+    numberOfCourts,
+    currentUser,
+  }) => {
+    try {
+      const tournamentRef = doc(db, "tournaments", tournamentId);
+      const tournamentSnap = await getDoc(tournamentRef);
+
+      const tournamentData = tournamentSnap.data();
+      const tournamentParticipants =
+        tournamentData.tournamentParticipants || [];
+      const tournamentName = tournamentData.tournamentName;
+
+      await updateDoc(tournamentRef, {
+        fixtures: fixtures.fixtures, // The fixtures array from your generated data
+        fixturesGenerated: true,
+        fixturesGeneratedAt: new Date(),
+        numberOfCourts,
+      });
+
+      for (const participant of tournamentParticipants) {
+        const userId = participant.userId;
+        if (userId === currentUser.userId) continue;
+
+        const payload = {
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: userId,
+          senderId: tournamentData.tournamentOwner.userId,
+          message: `Game fixtures generated for ${tournamentName}! Check out your upcoming matches.`,
+          type: notificationTypes.INFORMATION.TOURNAMENT.TYPE,
+          data: {
+            tournamentId,
+          },
+        };
+        await sendNotification(payload);
+      }
+
+      console.log("Fixtures successfully written to database");
+      return { success: true };
+    } catch (error) {
+      console.error("Error writing fixtures to database:", error);
+      throw error;
+    }
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -1155,6 +1203,9 @@ const LeagueProvider = ({ children }) => {
         fetchUpcomingTournaments,
         tournamentById,
         setTournamentById,
+
+        // Tournament Data Management
+        addTournamentFixtures,
 
         // League State Management
         upcomingLeagues,
