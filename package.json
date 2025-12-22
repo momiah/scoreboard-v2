@@ -26,7 +26,7 @@
     "country-state-city": "^3.2.1",
     "dotenv": "^16.5.0",
     "expo": "~52.0.17",
-    "expo-av": "^16.0.8",
+    "expo-av": "~13.4.1",
     "expo-blur": "^14.0.1",
     "expo-constants": "~17.0.8",
     "expo-dev-client": "~5.0.20",
