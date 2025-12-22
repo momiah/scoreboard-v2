@@ -28,8 +28,7 @@ import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 
-import { launchImageLibrary } from "react-native-image-picker";
-import storage from "@react-native-firebase/storage";
+import * as ImagePicker from "expo-image-picker";
 
 
 const AddGameModal = ({
@@ -72,17 +71,15 @@ const AddGameModal = ({
   });
 
   const pickVideo = async () => {
-    const result = await launchImageLibrary({
-      mediaType: "video",
-      videoQuality: "high",
-      durationLimit: 1800, // prevents too long videos (some devices enforce)
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
     });
 
-    if (result.didCancel) return;
-
-    const asset = result.assets[0];
-    setVideo(asset);
+    if (!result.canceled) {
+      setVideo(result.assets[0]);
+    }
   };
+
 
   const validateVideo = (video) => {
     const sizeMB = video.fileSize ? video.fileSize / (1024 * 1024) : 0;
@@ -101,18 +98,24 @@ const AddGameModal = ({
   };
 
   const uploadVideoToFirebase = async (video) => {
-    const { uri, fileName } = video;
-    const uniqueName = fileName || `game_${Date.now()}.mp4`;
-    const reference = storage().ref(`leagues/${leagueId}/gameVideos/${uniqueName}`);
-    await reference.putFile(uri);
-    const url = await reference.getDownloadURL();
-    return {
-      url,
-      sizeMB: video.fileSize ? video.fileSize / (1024 * 1024) : 0,
-      durationSec: video.duration || 0,
-      uploadedAt: new Date(),
-      uploaderId: currentUser?.userId || "",
-    };
+    const formData = new FormData();
+
+    formData.append("file", {
+      uri: video.uri,
+      name: `game-${Date.now()}.mp4`,
+      type: "video/mp4",
+    });
+
+    const response = await fetch(
+      "https://us-central1-scoreboard-app-29148.cloudfunctions.net/uploadGameVideo",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    return data.videoUrl;
   };
 
 
@@ -160,28 +163,23 @@ const AddGameModal = ({
   const handleAddGame = async () => {
     setLoading(true);
 
-    // REQUIRE video
-    if (!video) {
-      setErrorText("Please upload a video.");
-      setLoading(false);
-      return;
-    }
-
     // Validate video
-    if (!validateVideo(video)) {
-      // Alert.alert("Invalid Video", errorText);
-      setLoading(false);
-      return;
-    }
+    // if (!validateVideo(video)) {
+    //   // Alert.alert("Invalid Video", errorText);
+    //   setLoading(false);
+    //   return;
+    // }
 
     // Upload to Firebase
     let videoUrl = "";
-    try {
-      videoUrl = await uploadVideoToFirebase(video);
-    } catch (error) {
-      setErrorText("Video upload failed. Please try again.");
-      setLoading(false);
-      return;
+    if (video) {
+      try {
+        videoUrl = await uploadVideoToFirebase(video);
+      } catch {
+        setErrorText("Video upload failed. Make sure video is under 20 minutes and 150MB. Please try again.");
+        setLoading(false);
+        return;
+      }
     }
 
 
@@ -429,9 +427,7 @@ const AddGameModal = ({
 
               {video && (
                 <Text style={{ color: "#ccc", fontSize: 12, marginTop: 5 }}>
-                  {`${(video.fileSize / (1024 * 1024)).toFixed(2)} MB • ${Math.floor(
-                    video.duration / 60
-                  )} min ${Math.floor(video.duration % 60)} sec`}
+                  Video selected
                 </Text>
               )}
 
