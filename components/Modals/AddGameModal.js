@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Alert,
+  Platform,
 } from "react-native";
 import { GameContext } from "../../context/GameContext";
 import { UserContext } from "../../context/UserContext";
@@ -29,6 +30,9 @@ import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 import * as ImagePicker from "expo-image-picker";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "../../services/firebase.config";
+
 
 
 const AddGameModal = ({
@@ -71,6 +75,12 @@ const AddGameModal = ({
   });
 
   const pickVideo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission denied!");
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
     });
@@ -97,25 +107,29 @@ const AddGameModal = ({
     return true;
   };
 
-  const uploadVideoToFirebase = async (video) => {
-    const formData = new FormData();
+  const uploadVideoToFirebase = async (fileUri) => {
+    const response = await fetch(fileUri);
+    const blob = await response.blob();
 
-    formData.append("file", {
-      uri: video.uri,
-      name: `game-${Date.now()}.mp4`,
-      type: "video/mp4",
+    const fileName = `game-${Date.now()}.mp4`;
+    const storageRef = ref(storage, `gameVideos/${fileName}`);
+
+    const uploadTask = uploadBytesResumable(storageRef, blob);
+
+    return new Promise((resolve, reject) => {
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(`Upload is ${progress.toFixed(0)}% done`);
+        },
+        (error) => reject(error),
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        }
+      );
     });
-
-    const response = await fetch(
-      "https://us-central1-scoreboard-app-29148.cloudfunctions.net/uploadGameVideo",
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    const data = await response.json();
-    return data.videoUrl;
   };
 
 
