@@ -73,6 +73,7 @@ const Fixtures = ({ tournament, userRole }) => {
         <FixturesDisplay
           fixtures={fixturesArray}
           tournamentType={tournamentType}
+          currentUser={currentUser}
         />
       ) : (
         <Content>
@@ -123,25 +124,7 @@ const Header = styled.View({
   marginBottom: 10,
 });
 
-const TitleContainer = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-});
-
-const Title = styled.Text({
-  fontSize: 24,
-  fontWeight: "bold",
-  color: "#fff",
-  marginBottom: 4,
-});
-
 const FixtureDetails = styled.Text({
-  fontSize: 14,
-  color: "#ccc",
-});
-
-const Subtitle = styled.Text({
   fontSize: 14,
   color: "#ccc",
 });

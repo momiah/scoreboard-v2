@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import Tag from "../../Tag";
+import AddTournamentGameModal from "../../Modals/AddTournamentGameModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -49,7 +50,7 @@ export const FixtureScoreDisplay = ({ game }) => {
 export const FixtureGameHeader = ({ game }) => (
   <FixtureGameHeaderContainer>
     <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
-    <Tag name={`Court ${game.court}`} bold />
+    <Tag name={`Court ${game.court}`} bold color="#005322ff" />
   </FixtureGameHeaderContainer>
 );
 
@@ -81,10 +82,13 @@ export const FixtureRoundHeader = ({ roundNumber }) => (
 );
 
 // Main fixtures display component
-export const FixturesDisplay = ({ fixtures, tournamentType }) => {
+export const FixturesDisplay = ({ fixtures, tournamentType, currentUser }) => {
+  const [gameModalVisible, setGameModalVisible] = useState(false);
+  const [selectedGame, setSelectedGame] = useState(null);
+
   const handleGamePress = (game) => {
-    console.log("Game pressed:", game);
-    // TODO: Open modal here
+    setSelectedGame(game);
+    setGameModalVisible(true);
   };
 
   if (!fixtures?.length) {
@@ -113,6 +117,19 @@ export const FixturesDisplay = ({ fixtures, tournamentType }) => {
           ))}
         </FixtureRoundContainer>
       ))}
+      <AddTournamentGameModal
+        visible={gameModalVisible}
+        game={selectedGame}
+        tournamentType={tournamentType}
+        currentUser={currentUser}
+        onClose={() => {
+          setGameModalVisible(false);
+          setSelectedGame(null);
+        }}
+        onGameUpdated={(gameData) => {
+          console.log("Game updated:", gameData);
+        }}
+      />
     </FixturesContainer>
   );
 };

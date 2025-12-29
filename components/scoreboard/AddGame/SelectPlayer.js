@@ -17,17 +17,23 @@ const SelectPlayer = ({
   borderType,
   team,
   index,
+  readonly = false,
+  presetPlayer = null,
 }) => {
-  const [selected, setSelected] = useState(null); // Store full player object, not string
+  const [selected, setSelected] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { players } = useContext(UserContext);
 
   useEffect(() => {
-    const externalSelected = selectedPlayers[team]?.[index] || null;
-    if (externalSelected?.userId !== selected?.userId) {
-      setSelected(externalSelected);
+    if (readonly && presetPlayer) {
+      setSelected(presetPlayer);
+    } else {
+      const externalSelected = selectedPlayers[team]?.[index] || null;
+      if (externalSelected?.userId !== selected?.userId) {
+        setSelected(externalSelected);
+      }
     }
-  }, [selectedPlayers, team, index]);
+  }, [selectedPlayers, team, index, readonly, presetPlayer]);
 
   const playerArray = React.useMemo(
     () =>
@@ -73,8 +79,11 @@ const SelectPlayer = ({
   }, [borderType]);
 
   const toggleDropdown = useCallback(() => {
-    setDropdownVisible(true);
-  }, []);
+    if (!readonly) {
+      // Only allow dropdown if not readonly
+      setDropdownVisible(true);
+    }
+  }, [readonly]);
 
   const closeDropdown = useCallback(() => {
     setDropdownVisible(false);
@@ -96,20 +105,23 @@ const SelectPlayer = ({
         onPress={toggleDropdown}
         style={borderStyle}
         hasBorder={borderType !== "none"}
+        readonly={readonly} // Pass readonly for styling
       >
-        <PlayerSelect style={textStyle}>
-          {selected?.displayName || "Select Player"}
+        <PlayerSelect style={textStyle} readonly={readonly}>
+          {selected?.displayName || (readonly ? "No Player" : "Select Player")}
         </PlayerSelect>
       </PlayerSelectContainer>
 
-      <SelectPlayerModal
-        dropdownVisible={dropdownVisible}
-        closeDropdown={closeDropdown}
-        playerArray={playerArray}
-        handleSelect={handleSelect}
-        selectedPlayers={selectedPlayers}
-        selected={selected}
-      />
+      {!readonly && ( // Only show modal if not readonly
+        <SelectPlayerModal
+          dropdownVisible={dropdownVisible}
+          closeDropdown={closeDropdown}
+          playerArray={playerArray}
+          handleSelect={handleSelect}
+          selectedPlayers={selectedPlayers}
+          selected={selected}
+        />
+      )}
     </View>
   );
 };
@@ -123,12 +135,12 @@ const PlayerSelectContainer = styled.TouchableOpacity(({ hasBorder }) => ({
   border: hasBorder ? "1px solid #262626" : "none",
 }));
 
-const PlayerSelect = styled.Text({
+const PlayerSelect = styled.Text(({ readonly }) => ({
   fontSize: 12,
-  color: "#999",
+  color: readonly ? "#fff" : "#999", // White for readonly, grey for interactive
   width: screenWidth <= 400 ? 110 : 130,
   padding: screenWidth <= 400 ? 17 : 20,
   textAlign: "center",
-});
+}));
 
 export default memo(SelectPlayer);

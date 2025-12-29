@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Dimensions } from "react-native";
+import { Text, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import SelectPlayer from "./SelectPlayer";
 import moment from "moment";
@@ -12,6 +12,8 @@ const AddGame = ({
   selectedPlayers,
   setSelectedPlayers,
   leagueType,
+  isReadOnly = false,
+  presetPlayers = null,
 }) => {
   const handleScoreChange = (setScore) => (text) => {
     const numericText = text.replace(/[^0-9]/g, "");
@@ -36,19 +38,31 @@ const AddGame = ({
     <GameContainer>
       <TeamContainer>
         <SelectPlayer
-          onSelectPlayer={(player) => handleSelectPlayer("team1", 0, player)}
+          onSelectPlayer={
+            isReadOnly
+              ? () => {}
+              : (player) => handleSelectPlayer("team1", 0, player)
+          }
           selectedPlayers={selectedPlayers}
           borderType={leagueType === "Singles" ? "none" : "topLeft"}
           team="team1"
           index={0}
+          readonly={isReadOnly}
+          presetPlayer={isReadOnly ? presetPlayers?.team1?.player1 : null}
         />
         {leagueType === "Doubles" && (
           <SelectPlayer
-            onSelectPlayer={(player) => handleSelectPlayer("team1", 1, player)}
+            onSelectPlayer={
+              isReadOnly
+                ? () => {}
+                : (player) => handleSelectPlayer("team1", 1, player)
+            }
             selectedPlayers={selectedPlayers}
-            borderType={"bottomLeft"}
+            borderType="bottomLeft"
             team="team1"
             index={1}
+            readonly={isReadOnly}
+            presetPlayer={isReadOnly ? presetPlayers?.team1?.player2 : null}
           />
         )}
       </TeamContainer>
@@ -76,19 +90,31 @@ const AddGame = ({
 
       <TeamContainer>
         <SelectPlayer
-          onSelectPlayer={(player) => handleSelectPlayer("team2", 0, player)}
+          onSelectPlayer={
+            isReadOnly
+              ? () => {}
+              : (player) => handleSelectPlayer("team2", 0, player)
+          }
           selectedPlayers={selectedPlayers}
           borderType={leagueType === "Singles" ? "none" : "topRight"}
           team="team2"
           index={0}
+          readonly={isReadOnly}
+          presetPlayer={isReadOnly ? presetPlayers?.team2?.player1 : null}
         />
         {leagueType === "Doubles" && (
           <SelectPlayer
-            onSelectPlayer={(player) => handleSelectPlayer("team2", 1, player)}
+            onSelectPlayer={
+              isReadOnly
+                ? () => {}
+                : (player) => handleSelectPlayer("team2", 1, player)
+            }
             selectedPlayers={selectedPlayers}
-            borderType={"bottomRight"}
+            borderType="bottomRight"
             team="team2"
             index={1}
+            readonly={isReadOnly}
+            presetPlayer={isReadOnly ? presetPlayers?.team2?.player2 : null}
           />
         )}
       </TeamContainer>
