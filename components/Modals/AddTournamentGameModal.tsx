@@ -6,8 +6,19 @@ import { BlurView } from "expo-blur";
 import moment from "moment";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import AddGame from "../scoreboard/AddGame/AddGame";
+import { GameTeam, Game, GameResult, PresetPlayers } from "../../types/game";
+import { calculateWin } from "../../helpers/calculateWin";
 
 const { width: screenWidth } = Dimensions.get("window");
+
+type AddTournamentGameModalProps = {
+  visible: boolean;
+  game: Game | null;
+  tournamentType: string;
+  onClose: () => void;
+  onGameUpdated?: (updatedGame: Game) => void;
+  currentUserId: string;
+};
 
 const AddTournamentGameModal = ({
   visible,
@@ -15,38 +26,40 @@ const AddTournamentGameModal = ({
   tournamentType,
   onClose,
   onGameUpdated,
-  currentUser,
-}) => {
+  currentUserId,
+}: AddTournamentGameModalProps) => {
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState("");
 
   const isCurrentUserInGame = () => {
-    const isInTeam1 = game?.team1?.players?.some(
-      (player) => player.userId === currentUser.userId
-    );
-    const isInTeam2 = game?.team2?.players?.some(
-      (player) => player.userId === currentUser.userId
-    );
-    return isInTeam1 || isInTeam2;
+    if (!game) return false;
+
+    const checkTeam = (team?: GameTeam | null) => {
+      if (!team) return false;
+      return (
+        team.player1?.userId === currentUserId ||
+        team.player2?.userId === currentUserId
+      );
+    };
+
+    return checkTeam(game.team1) || checkTeam(game.team2);
   };
 
   const canCurrentUserReport = isCurrentUserInGame();
-
-  const handleScoreChange = (setScore) => (text) => {
-    const numericText = text.replace(/[^0-9]/g, "");
-    if (numericText.length <= 2) {
-      setScore(numericText);
-    }
-    setErrorText(""); // Clear error when user types
-  };
 
   const areScoresEntered = () => {
     return team1Score.trim() !== "" && team2Score.trim() !== "";
   };
 
   const handleSubmit = async () => {
+    // Ensure we have a game before proceeding to satisfy TypeScript's null checks
+    if (!game) {
+      setErrorText("No game selected.");
+      return;
+    }
+
     if (!areScoresEntered()) {
       setErrorText("Please enter scores for both teams.");
       return;
@@ -63,22 +76,36 @@ const AddTournamentGameModal = ({
 
     setLoading(true);
 
+    const team1: GameTeam = {
+      player1: game?.team1?.player1 ?? null,
+      player2: game?.team1?.player2 ?? null,
+      score: score1,
+    };
+
+    const team2: GameTeam = {
+      player1: game?.team2?.player1 ?? null,
+      player2: game?.team2?.player2 ?? null,
+      score: score2,
+    };
+
+    const result = calculateWin(team1, team2, tournamentType) as GameResult;
+
     // Prepare game result data
-    const gameResult = {
-      gameId: game?.gameId,
-      gameNumber: game?.gameNumber,
+    const gameResult: Game = {
+      gameId: game.gameId,
+      gamescore: `${score1}-${score2}`,
+      createdAt: new Date(),
+      date: moment().format("DD-MM-YYYY"),
+      createdTime: moment().format("HH:mm"),
+      team1,
+      team2,
+      result,
+      numberOfApprovals: 0,
+      numberOfDeclines: 0,
+      approvalStatus: "pending",
+      reporter: currentUserId,
       court: game?.court,
-      team1Score: score1,
-      team2Score: score2,
-      team1: game?.team1,
-      team2: game?.team2,
-      result: {
-        team1Score: score1,
-        team2Score: score2,
-        winner: score1 > score2 ? "team1" : "team2",
-      },
-      reportedAt: new Date(),
-      reportedTime: moment().format("HH:mm"),
+      gameNumber: game?.gameNumber,
     };
 
     console.log("Tournament Game Result:", gameResult);
@@ -131,11 +158,11 @@ const AddTournamentGameModal = ({
             setSelectedPlayers={() => {}} // Not used in readonly mode
             leagueType={tournamentType}
             isReadOnly={true}
+            // @ts-expect-error - allow passing preset players despite a narrower prop type in AddGame
             presetPlayers={{
               team1: game?.team1,
               team2: game?.team2,
             }}
-            handleScoreChange={handleScoreChange} // Pass the score change handler
           />
 
           {errorText && <ErrorText>{errorText}</ErrorText>}

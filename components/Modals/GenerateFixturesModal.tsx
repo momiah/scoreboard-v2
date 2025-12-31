@@ -19,6 +19,8 @@ import { SetupScreen } from "../Tournaments/FixturesGeneration/SetupScreen";
 import { CreateTeamsScreen } from "../Tournaments/FixturesGeneration/CreateTeamsScreen";
 import { GeneratedFixturesScreen } from "../Tournaments/FixturesGeneration/GeneratedFixturesScreen";
 import { LeagueContext } from "../../context/LeagueContext";
+import { Fixtures, GameTeam, TournamentMode } from "../../types/game";
+import { UserProfile } from "../../types/player";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -105,6 +107,19 @@ const mockParticipants = [
   // },
 ];
 
+// Types
+interface GenerateFixturesModalProps {
+  modalVisible: boolean;
+  setModalVisible: (visible: boolean) => void;
+  competition: {
+    tournamentType?: string;
+    tournamentId?: string;
+  } | null;
+  currentUser: UserProfile | null;
+  setGeneratedFixtures: (fixtures: Fixtures[] | null) => void;
+  generatedFixtures: Fixtures[] | null;
+}
+
 // Main Modal Component
 const GenerateFixturesModal = ({
   modalVisible,
@@ -113,7 +128,7 @@ const GenerateFixturesModal = ({
   currentUser,
   setGeneratedFixtures,
   generatedFixtures,
-}) => {
+}: GenerateFixturesModalProps) => {
   // State
   const SET_UP_SCREEN = 1;
   const GENERATED_FIXTURES_SCREEN = 2;
@@ -123,13 +138,13 @@ const GenerateFixturesModal = ({
 
   // Team generation state
   const [selectedMode, setSelectedMode] = useState("");
-  const [mixedDoublesMode, setMixedDoublesMode] = useState("");
-  const [fixedDoublesTeams, setFixedDoublesTeams] = useState([]);
+  const [generationType, setGenerationType] = useState("");
+  const [fixedDoublesTeams, setFixedDoublesTeams] = useState<GameTeam[]>([]);
   const [numberOfCourts, setNumberOfCourts] = useState(1);
   const { addTournamentFixtures } = useContext(LeagueContext);
 
-  // const tournamentType = "Singles";
   const tournamentType = competition?.tournamentType || "Doubles";
+  // const tournamentType = "Singles";
   const competitionId = competition?.tournamentId;
 
   useEffect(() => {
@@ -147,11 +162,13 @@ const GenerateFixturesModal = ({
 
   useEffect(() => {
     const numberOfTeams = Math.floor(mockParticipants.length / 2);
-    const initialTeams = Array.from({ length: numberOfTeams }, (_, index) => ({
-      teamId: `team_${index + 1}`,
-      player1: null,
-      player2: null,
-    }));
+    const initialTeams: GameTeam[] = Array.from(
+      { length: numberOfTeams },
+      () => ({
+        player1: null,
+        player2: null,
+      })
+    );
     setFixedDoublesTeams(initialTeams);
   }, []);
 
@@ -163,7 +180,7 @@ const GenerateFixturesModal = ({
       const fixtures = generateSinglesRoundRobinFixtures({
         players: mockParticipants,
         numberOfCourts,
-        competitionId,
+        competitionId: competitionId ?? "",
       });
 
       if (fixtures) {
@@ -178,18 +195,18 @@ const GenerateFixturesModal = ({
     }
   };
 
-  const handleDoublesGeneration = async (variant) => {
+  const handleDoublesGeneration = async (mode: TournamentMode) => {
     setIsGenerating(true);
 
     try {
-      let teams;
+      let teams: GameTeam[] | undefined;
 
-      if (variant === "Mixed Doubles") {
+      if (mode === "Mixed Doubles") {
         teams = generateMixedDoublesTeams({
-          mixedDoublesMode,
+          generationType: generationType,
           participants: mockParticipants,
         });
-      } else if (variant === "Fixed Doubles") {
+      } else if (mode === "Fixed Doubles") {
         teams = fixedDoublesTeams.filter(
           (team) => team.player1 && team.player2
         );
@@ -198,7 +215,7 @@ const GenerateFixturesModal = ({
       if (!teams?.length) {
         Alert.alert(
           "Error",
-          variant === "Fixed Doubles"
+          mode === "Fixed Doubles"
             ? "Please complete all team assignments"
             : "No teams generated"
         );
@@ -209,8 +226,13 @@ const GenerateFixturesModal = ({
       const fixtures = generateRoundRobinFixtures({
         teams,
         numberOfCourts,
-        competitionId,
+        competitionId: competitionId ?? "",
       });
+
+      console.log(
+        "Generated Doubles Fixtures:",
+        JSON.stringify(fixtures, null, 2)
+      );
 
       if (fixtures) {
         setGeneratedFixtures(fixtures);
@@ -245,6 +267,8 @@ const GenerateFixturesModal = ({
         fixtures: generatedFixtures,
         numberOfCourts,
         currentUser: currentUser,
+        mode: tournamentType === "Doubles" ? selectedMode : "",
+        generationType: tournamentType === "Doubles" ? generationType : "",
       });
 
       Alert.alert("Success", "Tournament fixtures saved successfully!", [
@@ -257,6 +281,7 @@ const GenerateFixturesModal = ({
         "Failed to save tournament fixtures. Please try again.",
         [{ text: "OK" }]
       );
+      console.error("Error saving tournament fixtures:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -270,8 +295,8 @@ const GenerateFixturesModal = ({
             tournamentType={tournamentType}
             selectedMode={selectedMode}
             setSelectedMode={setSelectedMode}
-            mixedDoublesMode={mixedDoublesMode}
-            setMixedDoublesMode={setMixedDoublesMode}
+            generationType={generationType}
+            setGenerationType={setGenerationType}
             numberOfCourts={numberOfCourts}
             onSinglesGenerate={handleSinglesGeneration}
             setNumberOfCourts={setNumberOfCourts}
@@ -289,8 +314,7 @@ const GenerateFixturesModal = ({
           return (
             <GeneratedFixturesScreen
               generatedFixtures={generatedFixtures}
-              numberOfCourts={numberOfCourts}
-              selectedMode={selectedMode}
+              tournamentType={tournamentType}
               onBack={() => {
                 if (selectedMode === "Fixed Doubles") {
                   setGeneratedFixtures(null);
@@ -299,16 +323,14 @@ const GenerateFixturesModal = ({
                   setGeneratedFixtures(null);
                 }
               }}
-              isGenerating={isGenerating}
               onGenerateTournament={handleGenerateTournament}
-              tournamentType={tournamentType}
+              isGenerating={isGenerating}
             />
           );
         }
         return (
           <CreateTeamsScreen
             fixedDoublesTeams={fixedDoublesTeams}
-            numberOfCourts={numberOfCourts}
             onBack={() => setCurrentScreen(SET_UP_SCREEN)}
             onGenerateFixtures={handleFixedDoublesGeneration}
             isGenerating={isGenerating}

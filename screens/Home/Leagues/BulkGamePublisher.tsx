@@ -1,7 +1,6 @@
-import React, { useState, useContext, useCallback, useEffect } from "react";
+import React, { useState, useContext, useCallback } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
@@ -26,22 +25,23 @@ import {
 } from "../../../components/scoreboard/ScoreboardAtoms";
 import { notificationSchema, notificationTypes } from "../../../schemas/schema";
 import { calculateWin } from "../../../helpers/calculateWin";
-import { formatDisplayName } from "../../../helpers/formatDisplayName";
+import { Game, GameTeam, SelectedPlayers } from "../../../types/game";
+import { League } from "../../../types/competition";
 
 const { height: screenHight } = Dimensions.get("window");
 const popupHeight = screenHight * 0.3; // 30% of screen height
 
+type BulkGamePublisherParams = {
+  leagueId: string;
+  leagueById: League | null;
+};
+
 const BulkGamePublisher = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { leagueId, leagueById } = route.params;
-  const {
-    currentUser,
-    fetchPlayers,
-    retrievePlayersFromLeague,
-    getUserById,
-    sendNotification,
-  } = useContext(UserContext);
+  const { leagueId, leagueById } = route.params as BulkGamePublisherParams;
+  const { currentUser, fetchPlayers, getUserById, sendNotification } =
+    useContext(UserContext);
   const { fetchCompetitionById } = useContext(LeagueContext);
   const {
     handleShowPopup,
@@ -51,10 +51,10 @@ const BulkGamePublisher = () => {
     showPopup,
   } = useContext(PopupContext);
 
-  const [pendingGames, setPendingGames] = useState([]);
+  const [pendingGames, setPendingGames] = useState<Game[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [expandedGameId, setExpandedGameId] = useState(null);
+  const [expandedGameId, setExpandedGameId] = useState<string | null>(null);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
 
   const leagueType = leagueById?.leagueType || "Doubles";
@@ -75,8 +75,14 @@ const BulkGamePublisher = () => {
   }, [fetchPlayers, leagueId]);
 
   // Handle adding a new game to pending list
+  interface GameDataInput {
+    selectedPlayers: SelectedPlayers;
+    team1Score: string;
+    team2Score: string;
+  }
+
   const handleAddGameToPending = useCallback(
-    (gameData) => {
+    (gameData: GameDataInput): boolean => {
       const { selectedPlayers, team1Score, team2Score } = gameData;
 
       // Updated validation - check for null instead of empty string
@@ -103,34 +109,39 @@ const BulkGamePublisher = () => {
       }
 
       // Generate unique ID for pending games
-      const allGames = [...existingGames, ...pendingGames];
-      const gameId = generateUniqueGameId(allGames);
+      const allGames: Game[] = [...existingGames, ...pendingGames];
+      const gameId = generateUniqueGameId({
+        existingGames: allGames,
+        competitionId: leagueId,
+      });
 
-      const team1 = {
+      const team1: GameTeam = {
         player1: selectedPlayers.team1[0],
         player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
         score: score1,
       };
 
-      const team2 = {
+      const team2: GameTeam = {
         player1: selectedPlayers.team2[0],
         player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
         score: score2,
       };
 
-      const result = calculateWin(team1, team2, leagueType);
+      const result = calculateWin(team1, team2, leagueType) as Game["result"];
 
-      const newGame = {
+      const newGame: Game = {
         gameId,
         gamescore: `${team1Score} - ${team2Score}`,
         createdAt: new Date(),
+        createdTime: moment().format("HH:mm"),
         date: moment().format("DD-MM-YYYY"),
-        time: moment().format("HH:mm"),
         team1,
         team2,
         result,
         numberOfApprovals: 0,
         numberOfDeclines: 0,
+        approvalStatus: "approved",
+        reporter: currentUser?.userId || "",
       };
 
       setPendingGames((prev) => [...prev, newGame]);
@@ -142,14 +153,14 @@ const BulkGamePublisher = () => {
   );
 
   // Handle removing a game from pending list
-  const handleRemoveGame = useCallback((gameId) => {
+  const handleRemoveGame = useCallback((gameId: string) => {
     setPendingGames((prev) => prev.filter((game) => game.gameId !== gameId));
     setExpandedGameId(null);
   }, []);
 
   // Add function to handle game item press
   const handleGameItemPress = useCallback(
-    (gameId) => {
+    (gameId: string) => {
       setExpandedGameId(expandedGameId === gameId ? null : gameId);
     },
     [expandedGameId]
@@ -158,7 +169,10 @@ const BulkGamePublisher = () => {
   const sendBulkNotifications = async () => {
     try {
       // 1. Collect all players and count their appearances
-      const playerGameCounts = {};
+      const playerGameCounts: Record<
+        string,
+        { count: number; displayName: string; userId: string }
+      > = {};
 
       pendingGames.forEach((game) => {
         // Extract player objects from teams
@@ -170,13 +184,15 @@ const BulkGamePublisher = () => {
         ].filter(Boolean); // Remove nulls
 
         playersInGame.forEach((playerObj) => {
-          const userId = playerObj.userId;
-          const displayName = playerObj.displayName;
+          const userId = playerObj?.userId;
+          const displayName = playerObj?.displayName;
+
+          if (!userId) return;
 
           if (!playerGameCounts[userId]) {
             playerGameCounts[userId] = {
               count: 0,
-              displayName: displayName,
+              displayName: displayName || "",
               userId: userId,
             };
           }
@@ -185,7 +201,10 @@ const BulkGamePublisher = () => {
       });
 
       // 2. Send notifications to each unique player
-      for (const [userId, data] of Object.entries(playerGameCounts)) {
+      for (const [userId, data] of Object.entries(playerGameCounts) as [
+        string,
+        { count: number; displayName: string; userId: string }
+      ][]) {
         // Skip current user
         if (userId === currentUser?.userId) {
           continue;
@@ -305,7 +324,7 @@ const BulkGamePublisher = () => {
 
   // Render game item
   const renderGameItem = useCallback(
-    ({ item }) => {
+    ({ item }: { item: Game }) => {
       const isExpanded = expandedGameId === item.gameId;
 
       return (
@@ -433,8 +452,6 @@ const BulkGamePublisher = () => {
   );
 };
 
-const { width: screenWidth } = Dimensions.get("window");
-
 const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
@@ -525,16 +542,18 @@ const EmptySubtext = styled.Text({
   paddingHorizontal: 40,
 });
 
-const GameContainer = styled.TouchableOpacity(({ expanded }) => ({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  backgroundColor: "#001123",
-  borderWidth: 1,
-  borderColor: expanded ? "rgb(201, 0, 0)" : "rgb(9, 33, 62)",
-  borderRadius: 8,
-  opacity: expanded ? 0.8 : 1,
-  marginBottom: 16,
-}));
+const GameContainer = styled.TouchableOpacity(
+  ({ expanded }: { expanded: boolean }) => ({
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#001123",
+    borderWidth: 1,
+    borderColor: expanded ? "rgb(201, 0, 0)" : "rgb(9, 33, 62)",
+    borderRadius: 8,
+    opacity: expanded ? 0.8 : 1,
+    marginBottom: 16,
+  })
+);
 
 const PublishButton = styled.TouchableOpacity({
   flex: 2,

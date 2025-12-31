@@ -4,12 +4,24 @@ import React, {
   useCallback,
   memo,
   useEffect,
+  useMemo,
 } from "react";
 import { View, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../../context/UserContext";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
 import SelectPlayerModal from "../../Modals/SelectPlayerModal";
+import { Player } from "../../../types/game";
+
+interface SelectPlayerProps {
+  onSelectPlayer: (player: Player | null) => void;
+  selectedPlayers: Record<string, (Player | null)[]>;
+  borderType: "topLeft" | "topRight" | "bottomLeft" | "bottomRight" | "none";
+  team: string;
+  index: number;
+  readonly?: boolean;
+  presetPlayer?: Player | null;
+}
 
 const SelectPlayer = ({
   onSelectPlayer,
@@ -19,8 +31,8 @@ const SelectPlayer = ({
   index,
   readonly = false,
   presetPlayer = null,
-}) => {
-  const [selected, setSelected] = useState(null);
+}: SelectPlayerProps) => {
+  const [selected, setSelected] = useState<Player | null>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { players } = useContext(UserContext);
 
@@ -35,9 +47,9 @@ const SelectPlayer = ({
     }
   }, [selectedPlayers, team, index, readonly, presetPlayer]);
 
-  const playerArray = React.useMemo(
+  const playerArray: Player[] = useMemo(
     () =>
-      players.map((player) => ({
+      players.map((player: Player) => ({
         userId: player.userId,
         firstName: player.firstName,
         lastName: player.lastName,
@@ -48,7 +60,7 @@ const SelectPlayer = ({
   );
 
   // Get border and text direction styles based on borderType
-  const borderStyle = React.useMemo(() => {
+  const borderStyle = useMemo(() => {
     switch (borderType) {
       case "topLeft":
         return { borderTopLeftRadius: 8 };
@@ -63,7 +75,7 @@ const SelectPlayer = ({
     }
   }, [borderType]);
 
-  const textStyle = React.useMemo(() => {
+  const textStyle = useMemo(() => {
     switch (borderType) {
       case "topLeft":
         return { textAlign: "left" };
@@ -89,7 +101,7 @@ const SelectPlayer = ({
     setDropdownVisible(false);
   }, []);
 
-  const handleSelect = (player) => {
+  const handleSelect = (player: Player) => {
     const isSame = selected?.userId === player.userId;
     const newPlayer = isSame ? null : player;
 
@@ -129,13 +141,15 @@ const SelectPlayer = ({
 const { width: screenWidth } = Dimensions.get("window");
 
 // Styled components
-const PlayerSelectContainer = styled.TouchableOpacity(({ hasBorder }) => ({
-  width: screenWidth <= 400 ? 110 : 110,
-  alignItems: "center",
-  border: hasBorder ? "1px solid #262626" : "none",
-}));
+const PlayerSelectContainer = styled.TouchableOpacity(
+  ({ hasBorder }: { hasBorder: boolean }) => ({
+    width: screenWidth <= 400 ? 110 : 110,
+    alignItems: "center",
+    border: hasBorder ? "1px solid #262626" : "none",
+  })
+);
 
-const PlayerSelect = styled.Text(({ readonly }) => ({
+const PlayerSelect = styled.Text(({ readonly }: { readonly: boolean }) => ({
   fontSize: 12,
   color: readonly ? "#fff" : "#999", // White for readonly, grey for interactive
   width: screenWidth <= 400 ? 110 : 130,

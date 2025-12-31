@@ -1,36 +1,38 @@
 import { transformDate } from "./dateTransform";
+import { Game } from "../types/game";
+import { PlayersToUpdate, ProfileDetail, ScoreboardProfile, UsersToUpdate,  } from "../types/player";
 
 export const calculatePlayerPerformance = (
-  game,
-  playersToUpdate,
-  usersToUpdate
+  game: Game,
+  playersToUpdate: PlayersToUpdate,
+  usersToUpdate: UsersToUpdate
 ) => {
-  const date = transformDate(game.date);
+  const date = new Date(transformDate(game.date));
 
-  const getTeamPlayers = (teamLabel) =>
+  const getTeamPlayers = (teamLabel: string | undefined) =>
     teamLabel === "Team 1"
       ? [game.team1.player1, game.team1.player2].filter(Boolean)
       : [game.team2.player1, game.team2.player2].filter(Boolean);
 
-  const winnerPlayers = getTeamPlayers(game.result.winner.team);
-  const loserPlayers = getTeamPlayers(game.result.loser.team);
+  const winnerPlayers = getTeamPlayers(game.result?.winner.team);
+  const loserPlayers = getTeamPlayers(game.result?.loser.team);
 
-  const getUserById = (userId) =>
+  const getUserById = (userId: string | undefined) =>
     usersToUpdate.find((u) => u.userId === userId);
-  const getParticipantById = (userId) =>
+  const getParticipantById = (userId: string | undefined) =>
     playersToUpdate.find((p) => p.userId === userId);
 
   const combinedWinnerXp = winnerPlayers.reduce((sum, player) => {
-    const user = getUserById(player.userId);
+    const user = getUserById(player?.userId);
     return user ? sum + (user.profileDetail?.XP || 0) : sum;
   }, 0);
 
   const combinedLoserXp = loserPlayers.reduce((sum, player) => {
-    const user = getUserById(player.userId);
+    const user = getUserById(player?.userId);
     return user ? sum + (user.profileDetail?.XP || 0) : sum;
   }, 0);
 
-  const updatePlayerStats = (player, isWinner, user) => {
+  const updatePlayerStats = (player: ScoreboardProfile, isWinner: boolean, user: ProfileDetail) => {
     player.numberOfGamesPlayed += 1;
     user.numberOfGamesPlayed += 1;
 
@@ -49,7 +51,7 @@ export const calculatePlayerPerformance = (
     return { player, user };
   };
 
-  const updatePlayerResultLogAndStreak = (player, isWinner, user) => {
+  const updatePlayerResultLogAndStreak = (player: ScoreboardProfile, isWinner: boolean, user: ProfileDetail) => {
     const currentResult = isWinner ? "W" : "L";
     player.resultLog.push(currentResult);
 
@@ -110,16 +112,21 @@ export const calculatePlayerPerformance = (
     return { player, user };
   };
 
+  interface XpUpdateResult {
+    player: ScoreboardProfile;
+    user: ProfileDetail;
+  }
+
   const updateXp = (
-    player,
-    user,
-    streakType,
-    streakCount,
-    combinedWinnerXp,
-    combinedLoserXp,
-    winnerScore,
-    loserScore
-  ) => {
+    player: ScoreboardProfile,
+    user: ProfileDetail,
+    streakType: string | null,
+    streakCount: number,
+    combinedWinnerXp: number,
+    combinedLoserXp: number,
+    winnerScore: number,
+    loserScore: number
+  ): XpUpdateResult => {
     const baseXP = streakType === "W" ? 20 : -15;
     const scoreDifference = winnerScore - loserScore;
 
@@ -178,13 +185,13 @@ export const calculatePlayerPerformance = (
     return { player, user };
   };
 
-  const updatePlayerTotalPoints = (player, points, user) => {
-    player.totalPoints += points;
-    user.totalPoints += points;
+  const updatePlayerTotalPoints = (player: ScoreboardProfile, points: number | undefined, user: ProfileDetail) => {
+    player.totalPoints +=  points ?? 0;
+    user.totalPoints += points ?? 0;
     return { player, user };
   };
 
-  const updateDemonWin = (player, winnerGameScore, loserGameScore, user) => {
+  const updateDemonWin = (player: ScoreboardProfile, winnerGameScore: number, loserGameScore: number, user: ProfileDetail) => {
     let demonWin = player.demonWin || 0;
     let userDemonWin = user.demonWin || 0;
 
@@ -197,20 +204,25 @@ export const calculatePlayerPerformance = (
     return { player, user };
   };
 
-  const updateLastActive = (player, gameDate, user) => {
+  const updateLastActive = (player: ScoreboardProfile, gameDate: Date, user: ProfileDetail) => {
     player.lastActive = gameDate;
     user.lastActive = gameDate;
     return { player, user };
   };
 
+  interface CalculatePointDifferenceResult {
+    player: ScoreboardProfile;
+    user: ProfileDetail;
+  }
+
   const calculatePointDifference = (
-    player,
-    winnerScore,
-    loserScore,
-    isWinner,
-    user
-  ) => {
-    const pointDifference = winnerScore - loserScore;
+    player: ScoreboardProfile,
+    winnerScore: number | undefined,
+    loserScore: number | undefined,
+    isWinner: boolean,
+    user: ProfileDetail
+  ): CalculatePointDifferenceResult => {
+    const pointDifference = (winnerScore ?? 0) - (loserScore ?? 0);
     const adjustedPointDifference = isWinner
       ? pointDifference
       : -pointDifference;
@@ -234,7 +246,7 @@ export const calculatePlayerPerformance = (
     player.pointDifferenceLog = player.pointDifferenceLog.slice(-10);
 
     const tenGamesPointDifference = player.pointDifferenceLog.reduce(
-      (sum, pd) => sum + pd,
+      (sum: number, pd: number) => sum + pd,
       0
     );
     const averagePointDifference = Math.round(
@@ -242,18 +254,20 @@ export const calculatePlayerPerformance = (
     );
 
     player.averagePointDifference = averagePointDifference;
+
+    return { player, user };
   };
 
   // --- Update stats for winners ---
   winnerPlayers.forEach((player) => {
-    const leagueParticipant = getParticipantById(player.userId);
-    const user = getUserById(player.userId);
+    const leagueParticipant = getParticipantById(player?.userId);
+    const user = getUserById(player?.userId);
 
     if (leagueParticipant && user) {
       updatePlayerStats(leagueParticipant, true, user.profileDetail);
       updatePlayerTotalPoints(
         leagueParticipant,
-        game.result.winner.score,
+        game.result?.winner.score,
         user.profileDetail
       );
       updatePlayerResultLogAndStreak(
@@ -268,20 +282,20 @@ export const calculatePlayerPerformance = (
         leagueParticipant.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp,
-        game.result.winner.score,
-        game.result.loser.score
+        game.result?.winner.score ?? 0,
+        game.result?.loser.score ?? 0
       );
       updateDemonWin(
         leagueParticipant,
-        game.result.winner.score,
-        game.result.loser.score,
+        game.result?.winner.score ?? 0,
+        game.result?.loser.score ?? 0,
         user.profileDetail
       );
       updateLastActive(leagueParticipant, date, user.profileDetail);
       calculatePointDifference(
         leagueParticipant,
-        game.result.winner.score,
-        game.result.loser.score,
+        game.result?.winner.score,
+        game.result?.loser.score,
         true,
         user.profileDetail
       );
@@ -290,14 +304,14 @@ export const calculatePlayerPerformance = (
 
   // --- Update stats for losers ---
   loserPlayers.forEach((player) => {
-    const leagueParticipant = getParticipantById(player.userId);
-    const user = getUserById(player.userId);
+    const leagueParticipant = getParticipantById(player?.userId);
+    const user = getUserById(player?.userId);
 
     if (leagueParticipant && user) {
       updatePlayerStats(leagueParticipant, false, user.profileDetail);
       updatePlayerTotalPoints(
         leagueParticipant,
-        game.result.loser.score,
+        game.result?.loser.score,
         user.profileDetail
       );
       updatePlayerResultLogAndStreak(
@@ -312,14 +326,14 @@ export const calculatePlayerPerformance = (
         leagueParticipant.currentStreak.count,
         combinedWinnerXp,
         combinedLoserXp,
-        game.result.winner.score,
-        game.result.loser.score
+        game.result?.winner.score ?? 0,
+        game.result?.loser.score ?? 0
       );
       updateLastActive(leagueParticipant, date, user.profileDetail);
       calculatePointDifference(
         leagueParticipant,
-        game.result.winner.score,
-        game.result.loser.score,
+        game.result?.winner.score,
+        game.result?.loser.score,
         false,
         user.profileDetail
       );

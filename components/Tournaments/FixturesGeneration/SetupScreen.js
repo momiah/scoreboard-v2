@@ -14,8 +14,8 @@ export const SetupScreen = ({
   tournamentType,
   selectedMode,
   setSelectedMode,
-  mixedDoublesMode,
-  setMixedDoublesMode,
+  generationType,
+  setGenerationType,
   numberOfCourts,
   setNumberOfCourts,
   onCancel,
@@ -50,7 +50,7 @@ export const SetupScreen = ({
             <OptionSelector
               setValue={(name, value) => {
                 setSelectedMode(value);
-                setMixedDoublesMode("");
+                setGenerationType("");
               }}
               watch={() => selectedMode}
               name="doublesMode"
@@ -62,8 +62,8 @@ export const SetupScreen = ({
 
           <FormSection>
             <OptionSelector
-              setValue={(name, value) => setMixedDoublesMode(value)}
-              watch={() => mixedDoublesMode}
+              setValue={(name, value) => setGenerationType(value)}
+              watch={() => generationType}
               name="mixedDoublesMode"
               label="Generation Method"
               options={mixedDoublesOptions}
@@ -112,7 +112,7 @@ export const SetupScreen = ({
                 disabled={
                   !(
                     selectedMode === "Mixed Doubles" &&
-                    mixedDoublesMode &&
+                    generationType &&
                     numberOfCourts >= 1
                   ) || isGenerating
                 }

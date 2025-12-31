@@ -121,7 +121,7 @@ export const FixturesDisplay = ({ fixtures, tournamentType, currentUser }) => {
         visible={gameModalVisible}
         game={selectedGame}
         tournamentType={tournamentType}
-        currentUser={currentUser}
+        currentUserId={currentUser.userId}
         onClose={() => {
           setGameModalVisible(false);
           setSelectedGame(null);

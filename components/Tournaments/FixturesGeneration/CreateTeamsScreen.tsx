@@ -4,8 +4,20 @@ import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import SelectPlayerModal from "../../Modals/SelectPlayerModal";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
+import { Player, GameTeam } from "../../../types/game";
 
 const { width: screenWidth } = Dimensions.get("window");
+
+interface CreateTeamsScreenProps {
+  fixedDoublesTeams: GameTeam[];
+  onBack: () => void;
+  onGenerateFixtures: () => void;
+  isGenerating: boolean;
+  setFixedDoublesTeams: React.Dispatch<React.SetStateAction<GameTeam[]>>;
+  participants: Player[];
+}
+
+type PlayerPosition = "player1" | "player2";
 
 export const CreateTeamsScreen = ({
   fixedDoublesTeams,
@@ -14,14 +26,15 @@ export const CreateTeamsScreen = ({
   isGenerating,
   setFixedDoublesTeams,
   participants,
-}) => {
+}: CreateTeamsScreenProps) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [activeTeamIndex, setActiveTeamIndex] = useState(null);
-  const [activePlayerPosition, setActivePlayerPosition] = useState(null);
+  const [activeTeamIndex, setActiveTeamIndex] = useState<number | null>(null);
+  const [activePlayerPosition, setActivePlayerPosition] =
+    useState<PlayerPosition | null>(null);
 
-  const playerArray = useMemo(
+  const playerArray: Player[] = useMemo(
     () =>
-      participants.map((participant) => ({
+      participants.map((participant: Player) => ({
         userId: participant.userId,
         firstName: participant.firstName,
         lastName: participant.lastName,
@@ -52,11 +65,14 @@ export const CreateTeamsScreen = ({
   }, [fixedDoublesTeams, activeTeamIndex, activePlayerPosition]);
 
   // Memoized callbacks
-  const openPlayerSelection = useCallback((teamIndex, playerPosition) => {
-    setActiveTeamIndex(teamIndex);
-    setActivePlayerPosition(playerPosition);
-    setModalVisible(true);
-  }, []);
+  const openPlayerSelection = useCallback(
+    (teamIndex: number, playerPosition: PlayerPosition) => {
+      setActiveTeamIndex(teamIndex);
+      setActivePlayerPosition(playerPosition);
+      setModalVisible(true);
+    },
+    []
+  );
 
   const closeModal = useCallback(() => {
     setModalVisible(false);
@@ -65,7 +81,9 @@ export const CreateTeamsScreen = ({
   }, []);
 
   const handlePlayerSelect = useCallback(
-    (player) => {
+    (player: Player) => {
+      if (activeTeamIndex === null || activePlayerPosition === null) return;
+
       const isSame = currentlySelected?.userId === player.userId;
       const newPlayer = isSame ? null : player;
 
@@ -98,7 +116,7 @@ export const CreateTeamsScreen = ({
         <FixedTeamsContainer>
           {fixedDoublesTeams.map((team, index) => (
             <TeamPair
-              key={team.teamId}
+              key={index}
               team={team}
               index={index}
               onPlayerSelect={openPlayerSelection}
@@ -142,7 +160,15 @@ export const CreateTeamsScreen = ({
   );
 };
 
-const TeamPair = ({ team, index, onPlayerSelect }) => (
+const TeamPair = ({
+  team,
+  index,
+  onPlayerSelect,
+}: {
+  team: GameTeam;
+  index: number;
+  onPlayerSelect: (teamIndex: number, playerPosition: PlayerPosition) => void;
+}) => (
   <TeamPairContainer>
     <TeamPairTitle>Team {index + 1}</TeamPairTitle>
 
@@ -180,10 +206,12 @@ const PlayerSlotContent = styled.View({
   flex: 1,
 });
 
-const PlayerSlotText = styled.Text(({ playerSelected }) => ({
-  color: playerSelected ? "white" : "grey",
-  fontSize: 14,
-}));
+const PlayerSlotText = styled.Text(
+  ({ playerSelected }: { playerSelected: boolean }) => ({
+    color: playerSelected ? "white" : "grey",
+    fontSize: 14,
+  })
+);
 
 const ModalTitle = styled.Text({
   fontSize: 20,
@@ -232,16 +260,18 @@ const BackButton = styled.TouchableOpacity({
   alignItems: "center",
 });
 
-const GenerateButton = styled.TouchableOpacity(({ disabled }) => ({
-  flex: 1,
-  padding: 12,
-  borderRadius: 6,
-  alignItems: "center",
-  backgroundColor: disabled ? "#9e9e9e" : "#28a745",
-  opacity: disabled ? 0.6 : 1,
-  flexDirection: "row",
-  justifyContent: "center",
-}));
+const GenerateButton = styled.TouchableOpacity(
+  ({ disabled }: { disabled?: boolean }) => ({
+    flex: 1,
+    padding: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    backgroundColor: disabled ? "#9e9e9e" : "#28a745",
+    opacity: disabled ? 0.6 : 1,
+    flexDirection: "row",
+    justifyContent: "center",
+  })
+);
 
 const BackText = styled.Text({
   color: "white",

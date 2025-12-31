@@ -1128,6 +1128,8 @@ const LeagueProvider = ({ children }) => {
     fixtures,
     numberOfCourts,
     currentUser,
+    mode,
+    generationType,
   }) => {
     try {
       const tournamentRef = doc(db, "tournaments", tournamentId);
@@ -1139,10 +1141,12 @@ const LeagueProvider = ({ children }) => {
       const tournamentName = tournamentData.tournamentName;
 
       await updateDoc(tournamentRef, {
-        fixtures: fixtures.fixtures, // The fixtures array from your generated data
+        fixtures: fixtures, // The fixtures array from your generated data
         fixturesGenerated: true,
         fixturesGeneratedAt: new Date(),
         numberOfCourts,
+        generationMode: mode,
+        generationType: generationType,
       });
 
       for (const participant of tournamentParticipants) {

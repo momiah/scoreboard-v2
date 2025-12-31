@@ -19,7 +19,7 @@ export const GeneratedFixturesScreen = ({
     <ModalTitle>Generated Fixtures</ModalTitle>
 
     <FixturesContainer>
-      {generatedFixtures?.fixtures?.map((round, roundIndex) => (
+      {generatedFixtures?.map((round, roundIndex) => (
         <RoundContainer key={`round_${round.round}`}>
           <TitleContainer>
             <RoundTitle>ROUND {round.round}</RoundTitle>

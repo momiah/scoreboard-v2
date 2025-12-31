@@ -1,17 +1,23 @@
+import { GameTeam, PlayerWithXP } from "../../types/game";
+
 export const generateMixedDoublesTeams = ({
-  mixedDoublesMode,
+  generationType,
   participants,
+}: {
+  generationType: string;
+  participants: PlayerWithXP[];
 }) => {
-  let teams = [];
+  let teams: GameTeam[] = [];
+
   const participantsCopy = [...participants];
 
-  if (mixedDoublesMode === "Random") {
+  if (generationType === "Random") {
     // Randomly shuffle and pair
     const shuffled = participantsCopy.sort(() => 0.5 - Math.random());
+
     for (let i = 0; i < shuffled.length; i += 2) {
       if (shuffled[i + 1]) {
         teams.push({
-          teamId: `team_${teams.length + 1}`,
           player1: {
             firstName: shuffled[i].firstName,
             lastName: shuffled[i].lastName,
@@ -29,7 +35,7 @@ export const generateMixedDoublesTeams = ({
         });
       }
     }
-  } else if (mixedDoublesMode === "Balanced") {
+  } else if (generationType === "Balanced") {
     // Sort by XP (highest to lowest)
     const sortedByXP = participantsCopy.sort((a, b) => b.XP - a.XP);
 
@@ -40,7 +46,6 @@ export const generateMixedDoublesTeams = ({
     for (let i = 0; i < highXP.length; i++) {
       if (lowXP[i]) {
         teams.push({
-          teamId: `team_${teams.length + 1}`,
           player1: {
             firstName: highXP[i].firstName,
             lastName: highXP[i].lastName,

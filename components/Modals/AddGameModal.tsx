@@ -26,6 +26,31 @@ import { notificationSchema, notificationTypes } from "../../schemas/schema";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import {
+  GameTeam,
+  Game,
+  GameResult,
+  Player,
+  CompetitionTypes,
+} from "../../types/game";
+
+type AddGameModalProps = {
+  modalVisible: boolean;
+  setModalVisible: (visible: boolean) => void;
+  leagueId: string;
+  leagueGames: Game[];
+  leagueType: string;
+  leagueName: string;
+  onGameAdded?: (gameData: {
+    selectedPlayers: {
+      team1: (Player | null)[];
+      team2: (Player | null)[];
+    };
+    team1Score: string;
+    team2Score: string;
+  }) => boolean;
+  isBulkMode?: boolean;
+};
 
 const AddGameModal = ({
   modalVisible,
@@ -36,7 +61,7 @@ const AddGameModal = ({
   leagueName,
   onGameAdded,
   isBulkMode = false,
-}) => {
+}: AddGameModalProps) => {
   const { addGame } = useContext(GameContext);
   const { fetchCompetitionById } = useContext(LeagueContext);
   const {
@@ -46,12 +71,8 @@ const AddGameModal = ({
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
-  const {
-    retrievePlayersFromLeague,
-    getUserById,
-    currentUser,
-    sendNotification,
-  } = useContext(UserContext);
+  const { getUserById, currentUser, sendNotification } =
+    useContext(UserContext);
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
   const [team1Score, setTeam1Score] = useState("");
@@ -156,26 +177,26 @@ const AddGameModal = ({
       competitionId: leagueId,
     });
 
-    const team1 = {
+    const team1: GameTeam = {
       player1: selectedPlayers.team1[0],
       player2: leagueType === "Doubles" ? selectedPlayers.team1[1] : null,
       score: score1,
     };
 
-    const team2 = {
+    const team2: GameTeam = {
       player1: selectedPlayers.team2[0],
       player2: leagueType === "Doubles" ? selectedPlayers.team2[1] : null,
       score: score2,
     };
 
-    const result = calculateWin(team1, team2, leagueType);
+    const result = calculateWin(team1, team2, leagueType) as GameResult;
 
-    const newGame = {
+    const newGame: Game = {
       gameId,
-      gamescore: `${team1Score} - ${team2Score}`,
+      gamescore: `${score1} - ${score2}`,
       createdAt: new Date(),
       date: moment().format("DD-MM-YYYY"),
-      time: moment().format("HH:mm"),
+      createdTime: moment().format("HH:mm"),
       team1,
       team2,
       result,
@@ -215,9 +236,9 @@ const AddGameModal = ({
 
     console.log("Opponent User IDs:", opponentUserIds);
 
-    const requestForOpponentApprovals = await Promise.all(
+    const requestForOpponentApprovals = (await Promise.all(
       opponentUserIds.map(getUserById)
-    );
+    )) as Array<{ userId: string; [key: string]: unknown }>;
 
     for (const user of requestForOpponentApprovals) {
       const payload = {

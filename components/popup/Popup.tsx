@@ -3,14 +3,23 @@ import { TouchableOpacity, View, Text } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
+interface PopupProps {
+  visible: boolean;
+  message: string;
+  onClose: () => void;
+  type: "success" | "error" | "info";
+  buttonText?: string;
+  height?: number;
+}
+
 const Popup = ({
   visible,
   message,
   onClose,
   type,
   buttonText = "Close",
-  height = undefined,
-}) => {
+  height,
+}: PopupProps) => {
   if (!visible) return null;
 
   const iconName =
@@ -23,9 +32,11 @@ const Popup = ({
   const iconColor =
     type === "success" ? "#00A2FF" : type === "error" ? "#FF0000" : "#FFA500";
 
+  const popupHeight = height ? height : undefined;
+
   return (
     <PopupContainer>
-      <PopupContent style={{ height: height }}>
+      <PopupContent style={{ height: popupHeight }}>
         <Ionicons name={iconName} size={75} color={iconColor} />
         <MessageText>{message}</MessageText>
         <CloseButton onPress={onClose}>

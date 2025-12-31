@@ -1,10 +1,17 @@
 import { generateUniqueGameId } from "../generateUniqueId";
+import { Alert } from "react-native";
 import moment from "moment";
+
+import { PlayerWithXP, GameTeam, Game } from "../../types/game";
 
 export const generateSinglesRoundRobinFixtures = ({
   players,
   numberOfCourts,
   competitionId,
+}: {
+  players: PlayerWithXP[];
+  numberOfCourts: number;
+  competitionId: string;
 }) => {
   const fixtures = [];
   const numPlayers = players.length;
@@ -15,7 +22,13 @@ export const generateSinglesRoundRobinFixtures = ({
   }
 
   // Generate all possible matches
-  const allMatches = [];
+  const allMatches: {
+    player1: PlayerWithXP;
+    player2: PlayerWithXP;
+    player1Index: number;
+    player2Index: number;
+  }[] = [];
+
   for (let i = 0; i < numPlayers; i++) {
     for (let j = i + 1; j < numPlayers; j++) {
       allMatches.push({
@@ -71,7 +84,7 @@ export const generateSinglesRoundRobinFixtures = ({
         !playersPlayedThisRound.has(match.player1Index) &&
         !playersPlayedThisRound.has(match.player2Index)
       ) {
-        const game = {
+        const game: Game = {
           gameId: generateUniqueGameId({
             existingGames: allCreatedGames,
             competitionId: competitionId,
@@ -82,12 +95,15 @@ export const generateSinglesRoundRobinFixtures = ({
           court: court,
           gamescore: "",
           createdAt: new Date(),
-          reportedAt: "",
+          reportedAt: null,
           createdTime: moment().format("HH:mm"),
-          reportedTime: "",
+          reportedTime: null,
           approvalStatus: "Pending",
           status: "Scheduled",
           result: null,
+          numberOfApprovals: 0,
+          numberOfDeclines: 0,
+          reporter: "",
         };
 
         roundGames.push(game);
@@ -126,13 +142,17 @@ export const generateSinglesRoundRobinFixtures = ({
     }
   }
 
-  return { fixtures };
+  return fixtures;
 };
 
 export const generateRoundRobinFixtures = ({
   teams,
   numberOfCourts,
   competitionId,
+}: {
+  teams: GameTeam[];
+  numberOfCourts: number;
+  competitionId: string;
 }) => {
   const fixtures = [];
   const numTeams = teams.length;
@@ -199,7 +219,7 @@ export const generateRoundRobinFixtures = ({
         !teamsPlayedThisRound.has(match.team1Index) &&
         !teamsPlayedThisRound.has(match.team2Index)
       ) {
-        const game = {
+        const game: Game = {
           gameId: generateUniqueGameId({
             existingGames: allCreatedGames,
             competitionId: competitionId,
@@ -210,12 +230,15 @@ export const generateRoundRobinFixtures = ({
           court: court,
           gamescore: "",
           createdAt: new Date(),
-          reportedAt: "",
-          reportedTime: "",
+          reportedAt: null,
+          reportedTime: null,
           createdTime: moment().format("HH:mm"),
           approvalStatus: "Pending",
           status: "Scheduled",
           result: null,
+          numberOfApprovals: 0,
+          numberOfDeclines: 0,
+          reporter: "",
         };
 
         roundGames.push(game);
@@ -254,5 +277,5 @@ export const generateRoundRobinFixtures = ({
     }
   }
 
-  return { fixtures };
+  return fixtures;
 };

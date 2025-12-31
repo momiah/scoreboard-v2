@@ -3,7 +3,7 @@ import { Text } from "react-native";
 import styled from "styled-components/native";
 import Tag from "../Tag";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { COMPETITION_TYPES, ccImageEndpoint } from "../../schemas/schema";
 import { useNavigation } from "@react-navigation/native";
 
 const TournamentGrid = ({ navigationRoute, tournaments }) => {
@@ -40,7 +40,9 @@ const TournamentGrid = ({ navigationRoute, tournaments }) => {
             <TournamentCard>
               <TournamentImageContainer>
                 <TournamentImage
-                  source={{ uri: tournament.tournamentImage }}
+                  source={{
+                    uri: tournament.tournamentImage || ccImageEndpoint,
+                  }}
                   resizeMode="cover"
                 >
                   <StatusTagContainer>

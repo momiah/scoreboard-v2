@@ -1,6 +1,8 @@
 import { type } from "@testing-library/react-native/build/user-event/type";
 import { createdAt } from "expo-updates";
 import { count } from "firebase/firestore";
+import { ScoreboardProfile, ProfileDetail, UserProfile, Location } from "../types/player";
+import { League, Tournament } from "../types/competition";
 import moment from "moment";
 
 export const gameTypes = ["Doubles", "Singles"];
@@ -71,7 +73,7 @@ export const daysOfWeek = [
   "Sunday",
 ];
 
-export const locationSchema = {
+export const locationSchema: Location = {
   city: "",
   country: "",
   countryCode: "",
@@ -99,7 +101,7 @@ export const gameSchema = {
   approvalStatus: "",
 };
 
-export const scoreboardProfileSchema = {
+export const scoreboardProfileSchema: ScoreboardProfile = {
   prevGameXP: 0,
   highestLossStreak: 0,
   highestWinStreak: 0,
@@ -113,6 +115,7 @@ export const scoreboardProfileSchema = {
   winStreak7: 0,
   demonWin: 0,
   averagePointDifference: 0,
+  pointDifferenceLog: [],
   resultLog: [],
   currentStreak: {
     type: null, // or '' if needed
@@ -124,7 +127,7 @@ export const scoreboardProfileSchema = {
   numberOfGamesPlayed: 0,
 };
 
-export const profileDetailSchema = {
+export const profileDetailSchema: ProfileDetail = {
   ...scoreboardProfileSchema,
   XP: 20,
   memberSince: moment().format("MMM YYYY"),
@@ -142,7 +145,7 @@ export const profileDetailSchema = {
   },
 };
 
-export const userProfileSchema = {
+export const userProfileSchema: UserProfile = {
   handPreference: "",
   userId: "",
   lastName: "",
@@ -175,7 +178,7 @@ export const chatMessageSchema = {
   },
 };
 
-export const leagueSchema = {
+export const leagueSchema: League = {
   leagueParticipants: [],
   leagueTeams: [],
   leagueAdmins: [],
@@ -209,7 +212,7 @@ export const leagueSchema = {
   pendingRequests: [],
   approvalLimit: 1,
 };
-export const tournamentSchema = {
+export const tournamentSchema: Tournament = {
   tournamentParticipants: [],
   tournamentTeams: [],
   tournamentAdmins: [],
