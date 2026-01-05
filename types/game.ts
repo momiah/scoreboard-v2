@@ -33,10 +33,13 @@ export interface GameResult {
 }
 
 // Approval status options
-export type ApprovalStatus = "pending" | "Pending" | "approved" | "declined";
+export type ApprovalStatus =
+  | "Scheduled"
+  | "Pending"
+  | "pending"
+  | "Approved"
+  | "Declined";
 
-// Game status options
-export type GameStatus = "Scheduled" | "InProgress" | "Completed";
 export type CompetitionTypes = "Singles" | "Doubles";
 export type GenerationType = "Random" | "Balanced";
 export type TournamentMode = "Fixed Doubles" | "Mixed Doubles";
@@ -44,7 +47,7 @@ export type TournamentMode = "Fixed Doubles" | "Mixed Doubles";
 export interface Game {
   gameId: string;
   gamescore: string;
-  createdAt: Date;
+  createdAt?: Date;
   date?: string; // "DD-MM-YYYY"
   team1: GameTeam;
   team2: GameTeam;
@@ -56,10 +59,10 @@ export interface Game {
   // Optional tournament-specific fields
   court?: number;
   gameNumber?: number;
-  createdTime: string;
+  createdTime?: string;
   reportedAt?: Date | null;
   reportedTime?: string | null;
-  status?: GameStatus;
+  // status?: GameStatus;
 }
 export interface Fixtures {
   round: number;

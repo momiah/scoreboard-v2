@@ -229,11 +229,6 @@ const GenerateFixturesModal = ({
         competitionId: competitionId ?? "",
       });
 
-      console.log(
-        "Generated Doubles Fixtures:",
-        JSON.stringify(fixtures, null, 2)
-      );
-
       if (fixtures) {
         setGeneratedFixtures(fixtures);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);

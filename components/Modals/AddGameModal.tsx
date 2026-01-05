@@ -202,7 +202,7 @@ const AddGameModal = ({
       result,
       numberOfApprovals: 0,
       numberOfDeclines: 0,
-      approvalStatus: "pending",
+      approvalStatus: "Pending",
       reporter: formatDisplayName(currentUser),
     };
 

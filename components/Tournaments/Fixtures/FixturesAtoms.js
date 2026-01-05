@@ -28,20 +28,32 @@ export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
 // Score/status display for fixtures
 export const FixtureScoreDisplay = ({ game }) => {
   const hasResult = game?.result;
-  const isPending = game?.approvalStatus === "Pending";
+  const approvalStatus = game?.approvalStatus;
+  const isScheduled = approvalStatus === "Scheduled";
+  const isPending =
+    approvalStatus === "pending" || approvalStatus === "Pending";
 
   return (
     <FixtureResultsContainer>
       <FixtureScoreContainer>
         {hasResult ? (
           <FixtureScore>
-            {game.result.team1Score} - {game.result.team2Score}
+            {game.team1.score} - {game.team2.score}
           </FixtureScore>
         ) : (
           <FixtureScore>-</FixtureScore>
         )}
       </FixtureScoreContainer>
-      {isPending && <FixturePendingLabel>Scheduled</FixturePendingLabel>}
+      {isScheduled && (
+        <FixtureStatusLabel status={approvalStatus}>
+          Scheduled
+        </FixtureStatusLabel>
+      )}
+      {isPending && (
+        <FixtureStatusLabel status={approvalStatus}>
+          Pending Approval
+        </FixtureStatusLabel>
+      )}
     </FixtureResultsContainer>
   );
 };
@@ -55,24 +67,30 @@ export const FixtureGameHeader = ({ game }) => (
 );
 
 // Individual fixture game item - UPDATED
-export const FixtureGameItem = ({ game, tournamentType, onPress }) => (
-  <FixtureGameContainer onPress={() => onPress(game)}>
-    <FixtureGameHeader game={game} />
-    <FixtureTeamVsContainer>
-      <FixtureTeamColumn
-        team={game?.team1}
-        position="left"
-        tournamentType={tournamentType}
-      />
-      <FixtureScoreDisplay game={game} />
-      <FixtureTeamColumn
-        team={game?.team2}
-        position="right"
-        tournamentType={tournamentType}
-      />
-    </FixtureTeamVsContainer>
-  </FixtureGameContainer>
-);
+export const FixtureGameItem = ({ game, tournamentType, onPress }) => {
+  const GameContainer =
+    game.approvalStatus === "pending" || game.approvalStatus === "Pending"
+      ? PendingFixtureGameContainer
+      : FixtureGameContainer;
+  return (
+    <GameContainer onPress={() => onPress(game)}>
+      <FixtureGameHeader game={game} />
+      <FixtureTeamVsContainer>
+        <FixtureTeamColumn
+          team={game?.team1}
+          position="left"
+          tournamentType={tournamentType}
+        />
+        <FixtureScoreDisplay game={game} />
+        <FixtureTeamColumn
+          team={game?.team2}
+          position="right"
+          tournamentType={tournamentType}
+        />
+      </FixtureTeamVsContainer>
+    </GameContainer>
+  );
+};
 
 // Round header
 export const FixtureRoundHeader = ({ roundNumber }) => (
@@ -82,7 +100,13 @@ export const FixtureRoundHeader = ({ roundNumber }) => (
 );
 
 // Main fixtures display component
-export const FixturesDisplay = ({ fixtures, tournamentType, currentUser }) => {
+export const FixturesDisplay = ({
+  fixtures,
+  tournamentType,
+  currentUser,
+  tournamentName,
+  tournamentId,
+}) => {
   const [gameModalVisible, setGameModalVisible] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
 
@@ -121,7 +145,9 @@ export const FixturesDisplay = ({ fixtures, tournamentType, currentUser }) => {
         visible={gameModalVisible}
         game={selectedGame}
         tournamentType={tournamentType}
-        currentUserId={currentUser.userId}
+        currentUser={currentUser}
+        tournamentName={tournamentName}
+        tournamentId={tournamentId}
         onClose={() => {
           setGameModalVisible(false);
           setSelectedGame(null);
@@ -228,16 +254,32 @@ const FixtureGameContainer = styled.TouchableOpacity({
   overflow: "hidden",
 });
 
-const FixturePendingLabel = styled.Text({
+const PendingFixtureGameContainer = styled.View({
+  marginHorizontal: 20,
+  marginBottom: 12,
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
+  borderRadius: 8,
+  backgroundColor: "rgb(3, 16, 31)",
+  overflow: "hidden",
+  opacity: 0.6,
+});
+
+const FixtureStatusLabel = styled.Text(({ status }) => ({
   paddingHorizontal: 6,
   paddingVertical: 2,
   marginTop: 8,
   fontSize: 9,
   color: "white",
-  backgroundColor: "rgba(0, 162, 255, 0.6)",
+  backgroundColor:
+    status === "Scheduled"
+      ? "rgba(0, 162, 255, 0.6)"
+      : status === "Approved"
+      ? "rgba(0, 255, 0, 0.6)"
+      : "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,
   overflow: "hidden",
-});
+}));
 
 const NoFixturesContainer = styled.View({
   flex: 1,

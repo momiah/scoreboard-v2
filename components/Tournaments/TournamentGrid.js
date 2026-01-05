@@ -1,5 +1,4 @@
 import React, { useCallback } from "react";
-import { Text } from "react-native";
 import styled from "styled-components/native";
 import Tag from "../Tag";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";

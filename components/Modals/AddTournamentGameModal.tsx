@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { Modal, ActivityIndicator, Alert, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
@@ -7,7 +7,12 @@ import moment from "moment";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import AddGame from "../scoreboard/AddGame/AddGame";
 import { GameTeam, Game, GameResult, PresetPlayers } from "../../types/game";
+import { UserProfile } from "@/types/player";
 import { calculateWin } from "../../helpers/calculateWin";
+import { UserContext } from "@/context/UserContext";
+import { notificationSchema, notificationTypes } from "@/schemas/schema";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { GameContext } from "@/context/GameContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -17,7 +22,9 @@ type AddTournamentGameModalProps = {
   tournamentType: string;
   onClose: () => void;
   onGameUpdated?: (updatedGame: Game) => void;
-  currentUserId: string;
+  currentUser: UserProfile | null;
+  tournamentName: string;
+  tournamentId: string;
 };
 
 const AddTournamentGameModal = ({
@@ -26,8 +33,12 @@ const AddTournamentGameModal = ({
   tournamentType,
   onClose,
   onGameUpdated,
-  currentUserId,
+  currentUser,
+  tournamentName,
+  tournamentId,
 }: AddTournamentGameModalProps) => {
+  const { getUserById, sendNotification } = useContext(UserContext);
+  const { updateTournamentGame } = useContext(GameContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,8 +50,8 @@ const AddTournamentGameModal = ({
     const checkTeam = (team?: GameTeam | null) => {
       if (!team) return false;
       return (
-        team.player1?.userId === currentUserId ||
-        team.player2?.userId === currentUserId
+        team.player1?.userId === currentUser?.userId ||
+        team.player2?.userId === currentUser?.userId
       );
     };
 
@@ -94,20 +105,55 @@ const AddTournamentGameModal = ({
     const gameResult: Game = {
       gameId: game.gameId,
       gamescore: `${score1}-${score2}`,
-      createdAt: new Date(),
       date: moment().format("DD-MM-YYYY"),
-      createdTime: moment().format("HH:mm"),
+      reportedAt: new Date(),
+      reportedTime: moment().format("HH:mm"),
       team1,
       team2,
       result,
       numberOfApprovals: 0,
       numberOfDeclines: 0,
-      approvalStatus: "pending",
-      reporter: currentUserId,
+      approvalStatus: "Pending",
+      reporter: currentUser?.userId || "",
       court: game?.court,
       gameNumber: game?.gameNumber,
     };
 
+    // const isCurrentUserTeam1 = [
+    //   team1.player1?.userId,
+    //   team1.player2?.userId,
+    // ].includes(currentUser?.userId);
+
+    // const opponentUserIds = isCurrentUserTeam1
+    //   ? [team2.player1?.userId, team2.player2?.userId].filter(Boolean)
+    //   : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
+
+    // const requestForOpponentApprovals = (await Promise.all(
+    //   opponentUserIds.map(getUserById)
+    // )) as Array<{ userId: string; [key: string]: unknown }>;
+
+    // for (const user of requestForOpponentApprovals) {
+    //   const payload = {
+    //     ...notificationSchema,
+    //     createdAt: new Date(),
+    //     recipientId: user.userId,
+    //     senderId: currentUser?.userId,
+    //     message: `${formatDisplayName(
+    //       currentUser
+    //     )} has just reported a score in ${tournamentName} tournament`,
+    //     type: notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
+    //     data: { tournamentId, gameId: game.gameId },
+    //   };
+
+    //   await sendNotification(payload);
+    // }
+
+    // Update the game using context method
+    await updateTournamentGame({
+      tournamentId,
+      gameId: game.gameId,
+      gameResult,
+    });
     console.log("Tournament Game Result:", gameResult);
 
     // Call onGameUpdated for now
@@ -173,7 +219,7 @@ const AddTournamentGameModal = ({
           )}
           <SubmitButton
             onPress={handleSubmit}
-            disabled={loading || !areScoresEntered() || !canCurrentUserReport}
+            // disabled={loading || !areScoresEntered() || !canCurrentUserReport}
             style={{
               backgroundColor:
                 loading || !areScoresEntered() || !canCurrentUserReport

@@ -74,6 +74,8 @@ const Fixtures = ({ tournament, userRole }) => {
           fixtures={fixturesArray}
           tournamentType={tournamentType}
           currentUser={currentUser}
+          tournamentName={tournament?.tournamentName}
+          tournamentId={tournament?.tournamentId}
         />
       ) : (
         <Content>
