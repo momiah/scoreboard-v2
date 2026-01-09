@@ -108,12 +108,11 @@ export const bulkAddApprovedGames = async (gameObjects, leagueId) => {
         // Update users' personal profiles
         await updateUsers(playerPerformance.usersToUpdate);
 
-        // Calculate and update team performance
-        const teamsToUpdate = await calculateTeamPerformance(
-          approvedGame,
-          retrieveTeams,
-          leagueId
-        );
+        const teams = await retrieveTeams(leagueId, "leagues");
+        const teamsToUpdate = await calculateTeamPerformance({
+          game: approvedGame,
+          allTeams: teams,
+        });
 
         await updateTeams(teamsToUpdate, leagueId);
 

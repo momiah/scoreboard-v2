@@ -50,6 +50,8 @@ const Home = () => {
     upcomingLeagues,
     fetchUpcomingTournaments,
     upcomingTournaments,
+    leagueNavigationId, // Add these
+    tournamentNavigationId,
   } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser, getLeaguesForUser } =
     useContext(UserContext);
@@ -59,10 +61,19 @@ const Home = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // console.log(
-  //   "Upcoming Tournaments on Homepage:",
-  //   JSON.stringify(upcomingTournaments, null, 2)
-  // );
+  useEffect(() => {
+    if (leagueNavigationId) {
+      navigation.navigate("League", { leagueId: leagueNavigationId });
+    }
+  }, [leagueNavigationId]);
+
+  useEffect(() => {
+    if (tournamentNavigationId) {
+      navigation.navigate("Tournament", {
+        tournamentId: tournamentNavigationId,
+      });
+    }
+  }, [tournamentNavigationId]);
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -215,9 +226,16 @@ const Home = () => {
           navigationRoute={currentUser ? null : "Leagues"}
         />
 
-        {/* <SubHeader
-          title="Reset User Profile Details"
-          onIconPress={() => resetUsersProfileDetails(usersToReset)}
+        {/*
+        <SubHeader
+          title="Add League Invite"
+          onIconPress={() =>
+            acceptLeagueInvite(
+              "VXk56Lk6eITWa5aEuysyBfEVjXo2",
+              "WNB-2026-Winter-Special-Leauge-07-01-2026-HQXP8",
+              "jkxcyZowcJFvpCW9KuIZ"
+            )
+          }
           showIcon
           iconName="refresh"
         />

@@ -91,18 +91,13 @@ const NotificationRow = ({
 
     if (!infoEntry) return;
 
-    const route = infoEntry.ROUTE;
+    const routeParams = {
+      League: { leagueId: item.data?.leagueId, tab: "Scoreboard" },
+      Tournament: { tournamentId: item.data?.tournamentId },
+      UserProfile: { userId: item.data?.userId },
+    };
 
-    let routeProp = {};
-    if (route === "League") {
-      routeProp = { leagueId: item.data?.leagueId, tab: "Scoreboard" };
-    } else if (route === "Tournament") {
-      routeProp = { tournamentId: item.data?.tournamentId };
-    } else if (route === "UserProfile") {
-      routeProp = { userId: item.data?.userId };
-    }
-
-    navigation.navigate(route, routeProp);
+    navigation.navigate(infoEntry.ROUTE, routeParams[infoEntry.ROUTE] || {});
   };
 
   return (

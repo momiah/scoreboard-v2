@@ -12,7 +12,7 @@ import { calculateWin } from "../../helpers/calculateWin";
 import { UserContext } from "@/context/UserContext";
 import { notificationSchema, notificationTypes } from "@/schemas/schema";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
-import { GameContext } from "@/context/GameContext";
+import { LeagueContext } from "@/context/LeagueContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -38,7 +38,7 @@ const AddTournamentGameModal = ({
   tournamentId,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
-  const { updateTournamentGame } = useContext(GameContext);
+  const { updateTournamentGame } = useContext(LeagueContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [loading, setLoading] = useState(false);
@@ -119,34 +119,34 @@ const AddTournamentGameModal = ({
       gameNumber: game?.gameNumber,
     };
 
-    // const isCurrentUserTeam1 = [
-    //   team1.player1?.userId,
-    //   team1.player2?.userId,
-    // ].includes(currentUser?.userId);
+    const isCurrentUserTeam1 = [
+      team1.player1?.userId,
+      team1.player2?.userId,
+    ].includes(currentUser?.userId);
 
-    // const opponentUserIds = isCurrentUserTeam1
-    //   ? [team2.player1?.userId, team2.player2?.userId].filter(Boolean)
-    //   : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
+    const opponentUserIds = isCurrentUserTeam1
+      ? [team2.player1?.userId, team2.player2?.userId].filter(Boolean)
+      : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
 
-    // const requestForOpponentApprovals = (await Promise.all(
-    //   opponentUserIds.map(getUserById)
-    // )) as Array<{ userId: string; [key: string]: unknown }>;
+    const requestForOpponentApprovals = (await Promise.all(
+      opponentUserIds.map(getUserById)
+    )) as Array<{ userId: string; [key: string]: unknown }>;
 
-    // for (const user of requestForOpponentApprovals) {
-    //   const payload = {
-    //     ...notificationSchema,
-    //     createdAt: new Date(),
-    //     recipientId: user.userId,
-    //     senderId: currentUser?.userId,
-    //     message: `${formatDisplayName(
-    //       currentUser
-    //     )} has just reported a score in ${tournamentName} tournament`,
-    //     type: notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
-    //     data: { tournamentId, gameId: game.gameId },
-    //   };
+    for (const user of requestForOpponentApprovals) {
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: user.userId,
+        senderId: currentUser?.userId,
+        message: `${formatDisplayName(
+          currentUser
+        )} has just reported a score in ${tournamentName} tournament`,
+        type: notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
+        data: { tournamentId, gameId: game.gameId },
+      };
 
-    //   await sendNotification(payload);
-    // }
+      await sendNotification(payload);
+    }
 
     // Update the game using context method
     await updateTournamentGame({

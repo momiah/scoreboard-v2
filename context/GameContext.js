@@ -166,38 +166,6 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  const updateTournamentGame = async ({ tournamentId, gameId, gameResult }) => {
-    try {
-      const tournamentRef = doc(db, "tournaments", tournamentId);
-      const tournamentDoc = await getDoc(tournamentRef);
-
-      if (!tournamentDoc.exists()) {
-        throw new Error("Tournament not found");
-      }
-
-      const tournamentData = tournamentDoc.data();
-      const fixtures = tournamentData.fixtures || [];
-
-      // Find and update the specific game
-      const updatedFixtures = fixtures.map((round) => ({
-        ...round,
-        games: round.games.map((game) =>
-          game.gameId === gameId ? gameResult : game
-        ),
-      }));
-
-      await updateDoc(tournamentRef, {
-        fixtures: updatedFixtures,
-        lastUpdated: new Date(),
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error("Error updating tournament game:", error);
-      throw error;
-    }
-  };
-
   return (
     <GameContext.Provider
       value={{
@@ -205,7 +173,6 @@ const GameProvider = ({ children }) => {
         setGames,
         addGame,
         retrieveGames,
-        updateTournamentGame,
 
         medalNames,
         ranks,

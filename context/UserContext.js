@@ -189,16 +189,19 @@ const UserProvider = ({ children }) => {
     }
   }, []);
 
-  const retrieveTeams = async (leagueId) => {
+  const retrieveTeams = async (competitionId, collectionName) => {
     try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueId);
+      const collectionRef = collection(db, collectionName);
+      const docRef = doc(collectionRef, competitionId);
 
       // Get the existing league document
-      const leagueDoc = await getDoc(leagueDocRef);
-      const leagueTeams = leagueDoc.data().leagueTeams;
+      const collectionDoc = await getDoc(docRef);
+      const teams =
+        collectionName === "tournaments"
+          ? collectionDoc.data().tournamentTeams
+          : collectionDoc.data().leagueTeams;
 
-      return leagueTeams;
+      return teams;
     } catch (error) {
       console.error("Error retrieving teams:", error);
       return [];
@@ -369,25 +372,32 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const updatePlayers = async (updatedPlayers, leagueId) => {
+  const updatePlayers = async ({
+    updatedPlayers,
+    competitionId,
+    collectionName,
+  }) => {
     if (updatedPlayers.length === 0) {
       handleShowPopup("No players to update!");
       return;
     }
 
     try {
-      const leagueDocRef = doc(db, "leagues", leagueId); // Reference to the league document
+      const collectionDocRef = doc(db, collectionName, competitionId);
 
       // Fetch the current league document
-      const leagueDoc = await getDoc(leagueDocRef);
+      const collectionDoc = await getDoc(collectionDocRef);
 
-      if (!leagueDoc.exists()) {
+      if (!collectionDoc.exists()) {
         handleShowPopup("League not found!");
         return;
       }
 
-      const leagueData = leagueDoc.data();
-      const existingPlayers = leagueData.leagueParticipants || [];
+      const collectionData = collectionDoc.data();
+      const existingPlayers =
+        collectionName === "leagues"
+          ? collectionData.leagueParticipants || []
+          : collectionData.tournamentParticipants || [];
 
       // Update the existing players array with updated data
       const updatedParticipants = existingPlayers.map((player) => {
@@ -397,13 +407,20 @@ const UserProvider = ({ children }) => {
         return updatedPlayer ? { ...player, ...updatedPlayer } : player;
       });
 
-      // Update the leagueParticipants field in Firestore
-      await updateDoc(leagueDocRef, {
-        leagueParticipants: updatedParticipants,
-      });
+      if (collectionName === "leagues") {
+        // Update the leagueParticipants field in Firestore
+        await updateDoc(collectionDocRef, {
+          leagueParticipants: updatedParticipants,
+        });
+      } else if (collectionName === "tournaments") {
+        // Update the tournamentParticipants field in Firestore
+        await updateDoc(collectionDocRef, {
+          tournamentParticipants: updatedParticipants,
+        });
+      }
 
       // Optionally fetch the updated players to refresh the UI
-      await fetchPlayers(leagueId);
+      await fetchPlayers(competitionId);
       // handleShowPopup("Players updated successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);
@@ -411,24 +428,31 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const updateTeams = async (updatedTeams, leagueId) => {
+  const updateTeams = async ({
+    updatedTeams,
+    competitionId,
+    collectionName,
+  }) => {
     if (updatedTeams.length === 0) {
       console.error("No teams to update!");
       return;
     }
 
     try {
-      const leagueDocRef = doc(db, "leagues", leagueId);
+      const collectionDocRef = doc(db, collectionName, competitionId);
 
       // Fetch the current league document
-      const leagueDoc = await getDoc(leagueDocRef);
-      if (!leagueDoc.exists()) {
+      const collectionDoc = await getDoc(collectionDocRef);
+      if (!collectionDoc.exists()) {
         console.error("League not found!");
         return;
       }
 
-      const leagueData = leagueDoc.data();
-      const existingTeams = leagueData.leagueTeams || [];
+      const collectionData = collectionDoc.data();
+      const existingTeams =
+        collectionName === "tournaments"
+          ? collectionData.tournamentTeams || []
+          : collectionData.leagueTeams || [];
 
       // Merge the updated teams into the existing ones
       const updatedTeamsArray = existingTeams.map((team) => {
@@ -447,7 +471,11 @@ const UserProvider = ({ children }) => {
       // Final teams list to update in Firestore
       const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
 
-      await updateDoc(leagueDocRef, { leagueTeams: finalTeamsArray });
+      if (collectionName === "tournaments") {
+        await updateDoc(collectionDocRef, { tournamentTeams: finalTeamsArray });
+      } else {
+        await updateDoc(collectionDocRef, { leagueTeams: finalTeamsArray });
+      }
     } catch (error) {
       console.error("Error updating team data:", error);
     }
@@ -667,15 +695,19 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const readNotification = async (notificationId, userId) => {
+  const readNotification = async (notificationId, userId, response = null) => {
     try {
-      // const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
+
       const userRef = doc(db, "users", userId);
       const notifRef = doc(userRef, "notifications", notificationId);
-      await updateDoc(notifRef, {
-        isRead: true,
-      });
+
+      const updateData = { isRead: true };
+      if (response) {
+        updateData.response = response;
+      }
+
+      await updateDoc(notifRef, updateData);
       console.log("Notification marked as read:", notificationId);
     } catch (error) {
       console.error(

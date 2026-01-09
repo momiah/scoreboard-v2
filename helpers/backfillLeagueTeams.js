@@ -17,11 +17,12 @@ export const computeLeagueTeamsFromGames = async (games, leagueId) => {
 
   for (const game of games) {
     if (!game) continue;
-    const [winnerTeam, loserTeam] = await calculateTeamPerformance(
+
+    const allTeams = await retrieveTeams();
+    const [winnerTeam, loserTeam] = await calculateTeamPerformance({
       game,
-      retrieveTeams,
-      leagueId
-    );
+      allTeams,
+    });
     ensureTeamInList(rebuiltTeams, winnerTeam);
     ensureTeamInList(rebuiltTeams, loserTeam);
   }

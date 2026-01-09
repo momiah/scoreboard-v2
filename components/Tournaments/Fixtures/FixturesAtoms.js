@@ -29,9 +29,15 @@ export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
 export const FixtureScoreDisplay = ({ game }) => {
   const hasResult = game?.result;
   const approvalStatus = game?.approvalStatus;
-  const isScheduled = approvalStatus === "Scheduled";
-  const isPending =
-    approvalStatus === "pending" || approvalStatus === "Pending";
+
+  console.log("FixtureScoreDisplay - approvalStatus:", approvalStatus);
+
+  const statusLabel =
+    approvalStatus === "Scheduled"
+      ? "Scheduled"
+      : approvalStatus === "pending" || approvalStatus === "Pending"
+      ? "Pending Approval"
+      : null;
 
   return (
     <FixtureResultsContainer>
@@ -44,14 +50,9 @@ export const FixtureScoreDisplay = ({ game }) => {
           <FixtureScore>-</FixtureScore>
         )}
       </FixtureScoreContainer>
-      {isScheduled && (
+      {statusLabel && (
         <FixtureStatusLabel status={approvalStatus}>
-          Scheduled
-        </FixtureStatusLabel>
-      )}
-      {isPending && (
-        <FixtureStatusLabel status={approvalStatus}>
-          Pending Approval
+          {statusLabel}
         </FixtureStatusLabel>
       )}
     </FixtureResultsContainer>

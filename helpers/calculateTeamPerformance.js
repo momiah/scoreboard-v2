@@ -1,11 +1,6 @@
 import { formatDisplayName } from "./formatDisplayName.js";
 
-export const calculateTeamPerformance = async (
-  game,
-  retrieveTeams,
-  leagueId
-) => {
-  const allTeams = await retrieveTeams(leagueId);
+export const calculateTeamPerformance = async ({ game, allTeams }) => {
   const { team1, team2, result } = game;
 
   const getPlayersForTeam = (label) =>

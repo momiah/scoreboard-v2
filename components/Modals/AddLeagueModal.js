@@ -195,8 +195,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         leagueId,
       };
 
-      console.log("Creating league:", JSON.stringify(newLeague, null, 2));
-
       await addCompetition({
         data: newLeague,
         competitionType: COMPETITION_TYPES.LEAGUE,
