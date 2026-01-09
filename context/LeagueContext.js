@@ -11,7 +11,7 @@ import {
   limit,
 } from "firebase/firestore";
 import moment from "moment";
-
+import { Alert } from "react-native";
 // import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
@@ -388,7 +388,7 @@ const LeagueProvider = ({ children }) => {
   // Function to update a league
   const updateLeague = async (updatedLeague) => {
     try {
-      const leagueDocRef = doc(db, "leagues", updatedLeague.id);
+      const leagueDocRef = doc(db, "leagues", updatedLeague.leagueId);
 
       // Update the league document in Firebase
       await updateDoc(leagueDocRef, updatedLeague);
