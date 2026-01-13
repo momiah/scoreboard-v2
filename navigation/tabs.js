@@ -24,6 +24,9 @@ import AccountSupport from "../screens/Profile/AccountSupport";
 import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import BulkGamePublisher from "../screens/Home/Leagues/BulkGamePublisher";
+import TournamentSettings from "../screens/Home/Tournaments/TournamentSettings";
+import BulkFixturesPublisher from "../screens/Home/Tournaments/BulkFixturesPublisher";
+import EditTournament from "../screens/Home/Tournaments/EditTournament";
 import FAQ from "../screens/Profile/FAQ";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
@@ -61,6 +64,12 @@ const HomeStack = () => {
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -92,6 +101,12 @@ const ProfileStack = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
     </Stack.Navigator>
   );
 };
@@ -119,6 +134,12 @@ const NotificationsStack = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
     </Stack.Navigator>
   );
 };
@@ -146,6 +167,12 @@ const ChatsStack = () => {
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
     </Stack.Navigator>
   );
 };

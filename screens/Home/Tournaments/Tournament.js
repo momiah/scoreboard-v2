@@ -14,7 +14,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import LeagueSummary from "../../../components/Summary/LeagueSummary";
-import Scoreboard from "../../../components/scoreboard/Scoreboard";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
 import Tag from "../../../components/Tag";
@@ -94,7 +93,7 @@ const Tournament = () => {
   };
 
   const handleNavigate = () => {
-    navigation.navigate("LeagueSettings", { tournamentId, tournamentById });
+    navigation.navigate("TournamentSettings", { tournamentId, tournamentById });
   };
 
   const handleOpenInviteModal = () => {
@@ -143,9 +142,8 @@ const Tournament = () => {
   const tabs = [
     { component: "Chat Room" },
     { component: "Summary" },
-    { component: "Scoreboard" },
-    { component: "Player Performance" },
     { component: "Fixtures" },
+    { component: "Player Performance" },
     ...(tournamentById?.tournamentType !== "Singles"
       ? [{ component: "Team Performance" }]
       : []),
@@ -162,7 +160,6 @@ const Tournament = () => {
     endDate,
     tournamentType,
     maxPlayers,
-    games,
   } = tournamentById || {};
 
   const numberOfPlayers = `${tournamentParticipants?.length} / ${maxPlayers}`;
@@ -192,22 +189,6 @@ const Tournament = () => {
         );
       case "Fixtures":
         return <Fixtures tournament={tournamentById} userRole={userRole} />;
-      case "Scoreboard":
-        return (
-          <Scoreboard
-            leagueGames={games || []}
-            leagueType={tournamentType}
-            leagueId={tournamentId}
-            userRole={userRole}
-            leagueStartDate={startDate}
-            leagueEndDate={endDate}
-            leagueOwner={tournamentById?.tournamentOwner}
-            leagueName={tournamentName}
-            leagueParticipants={tournamentParticipants || []}
-            maxPlayers={maxPlayers}
-            isJoinRequestSending={isJoinRequestSending}
-          />
-        );
       case "Player Performance":
         return <PlayerPerformance playersData={tournamentParticipants} />;
       case "Team Performance":

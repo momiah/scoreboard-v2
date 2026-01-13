@@ -6,14 +6,18 @@ import { BlurView } from "expo-blur";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
 
-const LeagueSettings = () => {
+const TournamentSettings = () => {
   const route = useRoute();
-  const { leagueId, leagueById } = route.params;
+  const { tournamentId, tournamentById } = route.params;
   const { currentUser } = useContext(UserContext);
   const navigation = useNavigation();
 
   const menuOptions = [
-    { label: "Edit League", icon: "create-outline", action: "EditLeague" },
+    {
+      label: "Edit Tournament",
+      icon: "create-outline",
+      action: "EditTournament",
+    },
     {
       label: "Pending Invites",
       icon: "person-add-outline",
@@ -31,9 +35,9 @@ const LeagueSettings = () => {
     },
 
     {
-      label: "Bulk Publish Games",
+      label: "Bulk Publish Fixtures",
       icon: "archive-outline",
-      action: "BulkGamePublisher",
+      action: "BulkFixturesPublisher",
     },
 
     // { label: "League Rules", icon: "document-text-outline", action: "LeagueRules" },
@@ -44,11 +48,12 @@ const LeagueSettings = () => {
   ];
 
   const handlePress = (action) => {
-    navigation.navigate(action, { leagueId, leagueById });
+    navigation.navigate(action, { tournamentId, tournamentById });
   };
 
   // Only owners can see remove players
-  const isOwner = leagueById?.leagueOwner.userId === currentUser?.userId;
+  const isOwner =
+    tournamentById?.tournamentOwner.userId === currentUser?.userId;
   const filteredMenuOptions = isOwner
     ? menuOptions
     : menuOptions.filter((option) => option.action !== "RemovePlayers");
@@ -63,7 +68,7 @@ const LeagueSettings = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <HeaderTitle>League Settings</HeaderTitle>
+        <HeaderTitle>Tournament Settings</HeaderTitle>
         <View style={{ width: 24 }} />
       </Header>
 
@@ -139,4 +144,4 @@ const MenuText = styled.Text({
   fontSize: 16,
 });
 
-export default LeagueSettings;
+export default TournamentSettings;

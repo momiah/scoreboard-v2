@@ -24,12 +24,13 @@ import { deleteUser } from "firebase/auth";
 
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { profileDetailSchema } from "../schemas/schema";
 import {
-  profileDetailSchema,
-  scoreboardProfileSchema,
-  notificationSchema,
-  notificationTypes,
-} from "../schemas/schema";
+  getUserById,
+  retrieveTeams,
+  updateUsers,
+  updateTeams,
+} from "../devFunctions/firebaseFunctions";
 
 const UserContext = createContext();
 
@@ -189,25 +190,6 @@ const UserProvider = ({ children }) => {
     }
   }, []);
 
-  const retrieveTeams = async (competitionId, collectionName) => {
-    try {
-      const collectionRef = collection(db, collectionName);
-      const docRef = doc(collectionRef, competitionId);
-
-      // Get the existing league document
-      const collectionDoc = await getDoc(docRef);
-      const teams =
-        collectionName === "tournaments"
-          ? collectionDoc.data().tournamentTeams
-          : collectionDoc.data().leagueTeams;
-
-      return teams;
-    } catch (error) {
-      console.error("Error retrieving teams:", error);
-      return [];
-    }
-  };
-
   async function checkUserRole({
     competitionData,
     competitionType = "league",
@@ -355,23 +337,6 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const updateUsers = async (usersToUpdate) => {
-    try {
-      const updatePromises = usersToUpdate.map(async (user) => {
-        const userRef = doc(db, "users", user.userId);
-
-        await updateDoc(userRef, {
-          profileDetail: user.profileDetail,
-        });
-      });
-
-      await Promise.all(updatePromises);
-      // console.log("All users updated successfully.");
-    } catch (error) {
-      console.error("Error updating users:", error);
-    }
-  };
-
   const updatePlayers = async ({
     updatedPlayers,
     competitionId,
@@ -425,81 +390,6 @@ const UserProvider = ({ children }) => {
     } catch (error) {
       console.error("Error updating player data:", error);
       handleShowPopup("Error updating player data");
-    }
-  };
-
-  const updateTeams = async ({
-    updatedTeams,
-    competitionId,
-    collectionName,
-  }) => {
-    if (updatedTeams.length === 0) {
-      console.error("No teams to update!");
-      return;
-    }
-
-    try {
-      const collectionDocRef = doc(db, collectionName, competitionId);
-
-      // Fetch the current league document
-      const collectionDoc = await getDoc(collectionDocRef);
-      if (!collectionDoc.exists()) {
-        console.error("League not found!");
-        return;
-      }
-
-      const collectionData = collectionDoc.data();
-      const existingTeams =
-        collectionName === "tournaments"
-          ? collectionData.tournamentTeams || []
-          : collectionData.leagueTeams || [];
-
-      // Merge the updated teams into the existing ones
-      const updatedTeamsArray = existingTeams.map((team) => {
-        const updatedTeam = updatedTeams.find(
-          (t) => t.teamKey === team.teamKey
-        );
-        return updatedTeam ? { ...team, ...updatedTeam } : team;
-      });
-
-      // Add any new teams that weren't already in existingTeams
-      const newTeams = updatedTeams.filter(
-        (updatedTeam) =>
-          !existingTeams.some((team) => team.teamKey === updatedTeam.teamKey)
-      );
-
-      // Final teams list to update in Firestore
-      const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
-
-      if (collectionName === "tournaments") {
-        await updateDoc(collectionDocRef, { tournamentTeams: finalTeamsArray });
-      } else {
-        await updateDoc(collectionDocRef, { leagueTeams: finalTeamsArray });
-      }
-    } catch (error) {
-      console.error("Error updating team data:", error);
-    }
-  };
-
-  const getUserById = async (userId) => {
-    try {
-      if (!userId) {
-        return null;
-      }
-
-      // Reference the document in the 'users' collection by ID
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        return userDoc.data(); // Include the document ID
-      } else {
-        console.error("No user found with the given ID.");
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching user by ID:", error);
-      return null;
     }
   };
 

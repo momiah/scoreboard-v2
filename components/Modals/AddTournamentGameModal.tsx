@@ -219,7 +219,7 @@ const AddTournamentGameModal = ({
           )}
           <SubmitButton
             onPress={handleSubmit}
-            // disabled={loading || !areScoresEntered() || !canCurrentUserReport}
+            disabled={loading || !areScoresEntered() || !canCurrentUserReport}
             style={{
               backgroundColor:
                 loading || !areScoresEntered() || !canCurrentUserReport

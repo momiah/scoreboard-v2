@@ -30,8 +30,6 @@ export const FixtureScoreDisplay = ({ game }) => {
   const hasResult = game?.result;
   const approvalStatus = game?.approvalStatus;
 
-  console.log("FixtureScoreDisplay - approvalStatus:", approvalStatus);
-
   const statusLabel =
     approvalStatus === "Scheduled"
       ? "Scheduled"
@@ -210,7 +208,7 @@ const FixtureTeamText = styled.Text(({ position }) => ({
 
 const FixtureResultsContainer = styled.View({
   display: "flex",
-  justifyContent: "space-between",
+  justifyContent: "center",
   alignItems: "center",
   padding: 10,
   minWidth: 100,
@@ -220,7 +218,6 @@ const FixtureScoreContainer = styled.View({
   display: "flex",
   flexDirection: "row",
   justifyContent: "center",
-  marginTop: 5,
 });
 
 const FixtureScore = styled.Text({
