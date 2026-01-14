@@ -4,6 +4,21 @@ import { ActivityIndicator } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
+interface TagProps {
+  name?: string;
+  color?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  onPress?: () => void;
+  iconSize?: number;
+  bold?: boolean;
+  iconPosition?: "left" | "right";
+  width?: number | string;
+  fontSize?: number;
+  disabled?: boolean;
+  loading?: boolean;
+}
+
 const Tag = ({
   name,
   color = "#2F2F30",
@@ -17,7 +32,7 @@ const Tag = ({
   fontSize = 10,
   disabled = false,
   loading = false,
-}) => {
+}: TagProps) => {
   const tagName = name ? name.toUpperCase() : "";
   const TagComponent = onPress ? InteractiveTagContainer : TagContainer;
   const flexDirection = iconPosition === "left" ? "row" : "row-reverse";
@@ -56,7 +71,15 @@ const Tag = ({
 };
 
 const TagContainer = styled.View(
-  ({ backgroundColor, flexDirection, width }) => ({
+  ({
+    backgroundColor,
+    flexDirection,
+    width,
+  }: {
+    backgroundColor: string;
+    flexDirection: string;
+    width?: number | string;
+  }) => ({
     flexDirection,
     justifyContent: "space-between",
     alignItems: "center",
@@ -68,7 +91,15 @@ const TagContainer = styled.View(
 );
 
 const InteractiveTagContainer = styled.TouchableOpacity(
-  ({ backgroundColor, flexDirection, width }) => ({
+  ({
+    backgroundColor,
+    flexDirection,
+    width,
+  }: {
+    backgroundColor: string;
+    flexDirection: string;
+    width?: number | string;
+  }) => ({
     flexDirection,
     justifyContent: "space-between",
     alignItems: "center",
@@ -79,15 +110,19 @@ const InteractiveTagContainer = styled.TouchableOpacity(
   })
 );
 
-const TagIcon = styled(Ionicons)(({ flexDirection }) => ({
-  paddingLeft: flexDirection === "row" ? 0 : 5,
-  paddingRight: flexDirection === "row-reverse" ? 0 : 5,
-}));
+const TagIcon = styled(Ionicons)(
+  ({ flexDirection }: { flexDirection: string }) => ({
+    paddingLeft: flexDirection === "row" ? 0 : 5,
+    paddingRight: flexDirection === "row-reverse" ? 0 : 5,
+  })
+);
 
-const TagText = styled.Text(({ bold, fontSize }) => ({
-  color: "white",
-  fontSize,
-  fontWeight: bold ? "bold" : "normal",
-}));
+const TagText = styled.Text(
+  ({ bold, fontSize }: { bold?: boolean; fontSize: number }) => ({
+    color: "white",
+    fontSize,
+    fontWeight: bold ? "bold" : "normal",
+  })
+);
 
 export default Tag;

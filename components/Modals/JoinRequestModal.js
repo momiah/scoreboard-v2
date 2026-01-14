@@ -21,6 +21,7 @@ import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
+import { COLLECTION_NAMES } from "../../schemas/schema";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
@@ -73,6 +74,7 @@ const JoinRequestModal = ({
         try {
           const league = await fetchCompetitionById({
             competitionId: requestId,
+            collectionName: COLLECTION_NAMES.leagues,
           });
           const player = await getUserById(senderId);
           if (!league || !player) {
@@ -359,12 +361,6 @@ const PlayerName = styled.Text({
   fontSize: 13,
   fontWeight: "bold",
   color: "white",
-});
-
-const Rank = styled.Text({
-  fontSize: 13,
-  color: "#00A2FF",
-  fontWeight: "bold",
 });
 
 const StatTitle = styled.Text({

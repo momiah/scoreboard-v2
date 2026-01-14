@@ -20,6 +20,7 @@ import { UserContext } from "../../context/UserContext";
 import { useRef } from "react";
 import { copyLocationAddress } from "../../helpers/copyLocationAddress";
 import { useNavigation } from "@react-navigation/native";
+import { COLLECTION_NAMES } from "../../schemas/schema";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -62,6 +63,7 @@ const InviteActionModal = ({
         try {
           const league = await fetchCompetitionById({
             competitionId: inviteId,
+            collectionName: COLLECTION_NAMES.leagues,
           });
           if (!league) {
             console.log("League not found for invite ID:", inviteId);

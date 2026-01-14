@@ -1,31 +1,51 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  View,
-  TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-} from "react-native";
+import { FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import {
+  useNavigation,
+  useRoute,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import { LeagueContext } from "../../../context/LeagueContext";
+import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
+
+type PendingInvite = {
+  userId: string;
+  username: string;
+};
 
 const PendingInvites = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+
   const route = useRoute();
-  const { leagueId } = route.params;
+  const { leagueId, tournamentId, collectionName } = route.params as {
+    leagueId: string;
+    tournamentId: string;
+    collectionName: string;
+  };
+
+  const { competitionId, competitionType } = getCompetitionTypeAndId({
+    collectionName,
+    leagueId,
+    tournamentId,
+  });
 
   const { fetchCompetitionById, getPendingInviteUsers, removePendingInvite } =
     useContext(LeagueContext);
 
-  const [pendingUsers, setPendingUsers] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState<PendingInvite[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchInvites = async () => {
     try {
       setLoading(true);
-      const league = await fetchCompetitionById({ competitionId: leagueId });
-      const users = await getPendingInviteUsers(league);
+      const competition = await fetchCompetitionById({
+        competitionId,
+        collectionName,
+      });
+
+      const users = await getPendingInviteUsers(competition);
       setPendingUsers(users);
     } catch (error) {
       console.error("Failed to fetch pending invites:", error);
@@ -38,9 +58,9 @@ const PendingInvites = () => {
     fetchInvites();
   }, []);
 
-  const handleRemove = async (userId) => {
+  const handleRemove = async (userId: string): Promise<void> => {
     try {
-      await removePendingInvite(leagueId, userId);
+      await removePendingInvite(competitionId, userId, collectionName);
       setPendingUsers((prev) => prev.filter((u) => u.userId !== userId));
       fetchInvites();
     } catch (error) {
@@ -48,20 +68,17 @@ const PendingInvites = () => {
     }
   };
 
-  const goToProfile = (userId) => {
+  const goToProfile = (userId: string) => {
     navigation.navigate("UserProfile", { userId });
   };
 
-  const renderItem = ({ item }) => (
-    console.log("Rendering item:", JSON.stringify(item, null, 2)),
-    (
-      <Row onPress={() => goToProfile(item.userId)}>
-        <Username>{item.username}</Username>
-        <WithdrawButton onPress={() => handleRemove(item.userId)}>
-          <WithdrawText>Withdraw</WithdrawText>
-        </WithdrawButton>
-      </Row>
-    )
+  const renderItem = ({ item }: { item: PendingInvite }) => (
+    <Row onPress={() => goToProfile(item.userId)}>
+      <Username>{item.username}</Username>
+      <WithdrawButton onPress={() => handleRemove(item.userId)}>
+        <WithdrawText>Withdraw</WithdrawText>
+      </WithdrawButton>
+    </Row>
   );
 
   if (loading) {
@@ -77,8 +94,8 @@ const PendingInvites = () => {
       <Title>Pending Invites</Title>
       {pendingUsers.length === 0 ? (
         <NoPendingInvites>
-          No Pending Invites, please go back to the league page to invite
-          players to your league 📩
+          No Pending Invites, please go back to the {competitionType} page to
+          invite players to your {competitionType} 📩
         </NoPendingInvites>
       ) : (
         <FlatList

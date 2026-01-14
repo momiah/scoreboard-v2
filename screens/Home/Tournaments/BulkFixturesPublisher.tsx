@@ -31,7 +31,7 @@ import {
   FixtureRoundHeader,
 } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
 import { LeagueContext } from "@/context/LeagueContext";
-import { COMPETITION_TYPES } from "@/schemas/schema";
+import { COLLECTION_NAMES } from "@/schemas/schema";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { processGamePerformance } from "../../../helpers/processGamePerformance";
@@ -70,8 +70,6 @@ interface BulkGameItemProps {
   ) => void;
 }
 
-// Custom score display component for bulk editing
-// Updated BulkScoreDisplay component
 const BulkScoreDisplay = ({ game, onScoreChange }: BulkScoreDisplayProps) => {
   const hasReportedScore =
     game.result && game.gamescore && game.gamescore !== "";
@@ -158,7 +156,7 @@ const BulkFixturesPublisher = () => {
         try {
           const updatedTournament = await fetchCompetitionById({
             competitionId: tournamentId,
-            competitionType: COMPETITION_TYPES.TOURNAMENT,
+            collectionName: COLLECTION_NAMES.tournaments,
           });
 
           if (updatedTournament?.fixtures) {
@@ -217,7 +215,6 @@ const BulkFixturesPublisher = () => {
     navigation.goBack();
   };
 
-  // Handle score input changes
   const handleScoreChange = useCallback(
     (gameId: string, team: "team1" | "team2", score: string): void => {
       const numericText = score.replace(/[^0-9]/g, "");
@@ -230,7 +227,6 @@ const BulkFixturesPublisher = () => {
                 [`input${team === "team1" ? "Team1" : "Team2"}Score`]:
                   numericText,
               };
-              // Check if both scores are entered
               const team1Score =
                 team === "team1" ? numericText : game.inputTeam1Score;
               const team2Score =
@@ -245,11 +241,6 @@ const BulkFixturesPublisher = () => {
       }
     },
     []
-  );
-
-  // Get games that have scores entered
-  const gamesWithCompleteScores: GameWithScores[] = gamesWithScores.filter(
-    (game) => game.hasScores
   );
 
   // Group games by round for display
@@ -270,9 +261,21 @@ const BulkFixturesPublisher = () => {
     {} as Record<number, GameWithScores[]>
   );
 
+  const publishedGamesCount = gamesWithScores.filter(
+    (game) => game.result && game.gamescore && game.gamescore !== ""
+  ).length;
+
+  const gamesReadyToSubmit: GameWithScores[] = gamesWithScores.filter(
+    (game) =>
+      game.hasScores &&
+      !(game.result && game.gamescore && game.gamescore !== "")
+  );
+
+  const totalCompletedCount = publishedGamesCount + gamesReadyToSubmit.length;
+
   // Update the handleSubmitGames function
   const handleSubmitGames = useCallback(async (): Promise<void> => {
-    if (gamesWithCompleteScores.length === 0) {
+    if (gamesReadyToSubmit.length === 0) {
       Alert.alert(
         "No Scores",
         "Please add scores to at least one game before submitting."
@@ -284,7 +287,7 @@ const BulkFixturesPublisher = () => {
     const invalidGames: string[] = [];
     const validatedGames: Game[] = [];
 
-    for (const game of gamesWithCompleteScores) {
+    for (const game of gamesReadyToSubmit) {
       const score1 = parseInt(game.inputTeam1Score);
       const score2 = parseInt(game.inputTeam2Score);
 
@@ -443,7 +446,7 @@ const BulkFixturesPublisher = () => {
       ]
     );
   }, [
-    gamesWithCompleteScores,
+    gamesReadyToSubmit,
     tournamentById,
     tournamentId,
     currentUser,
@@ -475,9 +478,9 @@ const BulkFixturesPublisher = () => {
   }, [gamesWithScores, navigation]);
 
   const submitText: string =
-    gamesWithCompleteScores.length === 1
+    gamesReadyToSubmit.length === 1
       ? "Submit 1 Game"
-      : `Submit ${gamesWithCompleteScores.length} Games`;
+      : `Submit ${gamesReadyToSubmit.length} Games`;
 
   return (
     <Container>
@@ -499,8 +502,8 @@ const BulkFixturesPublisher = () => {
 
       <SubHeader>
         <SubHeaderText>
-          Enter scores for games you want to publish (
-          {gamesWithCompleteScores.length}/{gamesWithScores.length} completed)
+          Enter scores for games you want to publish ({totalCompletedCount}/
+          {gamesWithScores.length} completed)
         </SubHeaderText>
       </SubHeader>
 
@@ -525,10 +528,10 @@ const BulkFixturesPublisher = () => {
       <SubmitButtons>
         <SubmitButton
           onPress={handleSubmitGames}
-          disabled={gamesWithCompleteScores.length === 0 || publishing}
+          disabled={gamesReadyToSubmit.length === 0 || publishing}
           style={{
             backgroundColor:
-              gamesWithCompleteScores.length === 0 || publishing
+              gamesReadyToSubmit.length === 0 || publishing
                 ? "#666"
                 : "#00A2FF",
           }}

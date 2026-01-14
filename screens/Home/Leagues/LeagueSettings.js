@@ -5,6 +5,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { BlurView } from "expo-blur";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
+import { COLLECTION_NAMES } from "../../../schemas/schema";
 
 const LeagueSettings = () => {
   const route = useRoute();
@@ -44,7 +45,11 @@ const LeagueSettings = () => {
   ];
 
   const handlePress = (action) => {
-    navigation.navigate(action, { leagueId, leagueById });
+    navigation.navigate(action, {
+      leagueId,
+      leagueById,
+      collectionName: COLLECTION_NAMES.leagues,
+    });
   };
 
   // Only owners can see remove players

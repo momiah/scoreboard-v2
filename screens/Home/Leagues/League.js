@@ -11,9 +11,9 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { COMPETITION_TYPES } from "../../../schemas/schema";
+import { COMPETITION_TYPES, COLLECTION_NAMES } from "../../../schemas/schema";
 
-import LeagueSummary from "../../../components/Summary/LeagueSummary";
+import CompetitionSummary from "../../../components/Summary/CompetitionSummary";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
@@ -63,7 +63,7 @@ const League = () => {
         try {
           const fetchedLeague = await fetchCompetitionById({
             competitionId: leagueId,
-            competitionType: COMPETITION_TYPES.LEAGUE,
+            collectionName: COLLECTION_NAMES.leagues,
           });
           if (!fetchedLeague) {
             setLeagueNotFound(true);
@@ -118,7 +118,7 @@ const League = () => {
       );
       const refetchedLeague = await fetchCompetitionById({
         competitionId: leagueId,
-        competitionType: COMPETITION_TYPES.LEAGUE,
+        collectionName: COLLECTION_NAMES.leagues,
       });
       await getUserRole(refetchedLeague);
     } catch (error) {
@@ -134,7 +134,7 @@ const League = () => {
     try {
       const refetchedLeague = await fetchCompetitionById({
         competitionId: leagueId,
-        competitionType: COMPETITION_TYPES.LEAGUE,
+        collectionName: COLLECTION_NAMES.leagues,
       });
       await getUserRole(refetchedLeague);
     } catch (error) {
@@ -183,7 +183,7 @@ const League = () => {
         );
       case "Summary":
         return (
-          <LeagueSummary
+          <CompetitionSummary
             competitionDetails={leagueById}
             userRole={userRole}
             startDate={startDate}

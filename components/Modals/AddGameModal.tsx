@@ -33,6 +33,7 @@ import {
   Player,
   CompetitionTypes,
 } from "../../types/game";
+import { COLLECTION_NAMES } from "../../schemas/schema";
 
 type AddGameModalProps = {
   modalVisible: boolean;
@@ -269,7 +270,10 @@ const AddGameModal = ({
     handleShowPopup(
       "Game added! Opponents have 24 hours to approve or will be auto-approved."
     );
-    await fetchCompetitionById({ competitionId: leagueId });
+    await fetchCompetitionById({
+      competitionId: leagueId,
+      collectionName: COLLECTION_NAMES.leagues,
+    });
     setLoading(false);
     console.log("Game added successfully with player objects:", newGame);
   };

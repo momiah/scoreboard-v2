@@ -5,6 +5,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { BlurView } from "expo-blur";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
+import { COLLECTION_NAMES } from "../../../schemas/schema";
 
 const TournamentSettings = () => {
   const route = useRoute();
@@ -48,7 +49,11 @@ const TournamentSettings = () => {
   ];
 
   const handlePress = (action) => {
-    navigation.navigate(action, { tournamentId, tournamentById });
+    navigation.navigate(action, {
+      tournamentId,
+      tournamentById,
+      collectionName: COLLECTION_NAMES.tournaments,
+    });
   };
 
   // Only owners can see remove players

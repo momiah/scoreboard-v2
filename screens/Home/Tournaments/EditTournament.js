@@ -3,9 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
-  Dimensions,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -23,9 +21,9 @@ import { PopupContext } from "../../../context/PopupContext";
 import * as FileSystem from "expo-file-system";
 import { COLLECTION_NAMES } from "../../../schemas/schema";
 
-const EditLeague = () => {
+const EditTournament = () => {
   const route = useRoute();
-  const { leagueId, leagueById } = route.params;
+  const { tournamentId, tournamentById } = route.params;
 
   const { updateCompetition, fetchCompetitionById } = useContext(LeagueContext);
   const navigation = useNavigation();
@@ -50,18 +48,18 @@ const EditLeague = () => {
   };
 
   useEffect(() => {
-    const loadLeague = async () => {
-      if (!leagueById || leagueById.id !== leagueId) {
+    const loadTournament = async () => {
+      if (!tournamentById || tournamentById.id !== tournamentId) {
         await fetchCompetitionById({
-          competitionId: leagueId,
-          collectionName: COLLECTION_NAMES.leagues,
+          competitionId: tournamentId,
+          collectionName: COLLECTION_NAMES.tournaments,
         });
       }
-      setSelectedImage(leagueById?.leagueImage || null);
+      setSelectedImage(tournamentById?.tournamentImage || null);
       setLoading(false);
     };
-    loadLeague();
-  }, [leagueId]);
+    loadTournament();
+  }, [tournamentId]);
 
   // Setup React Hook Form
   const {
@@ -71,8 +69,8 @@ const EditLeague = () => {
     watch,
   } = useForm({
     defaultValues: {
-      leagueImage: leagueById.leagueImage || "",
-      leagueDescription: leagueById.leagueDescription || "",
+      tournamentImage: tournamentById.tournamentImage || "",
+      tournamentDescription: tournamentById.tournamentDescription || "",
     },
   });
 
@@ -80,12 +78,12 @@ const EditLeague = () => {
   const formValues = watch();
 
   const hasChanges = useMemo(() => {
-    if (!leagueById) return false;
-    const imageChanged = selectedImage !== leagueById.leagueImage;
+    if (!tournamentById) return false;
+    const imageChanged = selectedImage !== tournamentById.tournamentImage;
     const descriptionChanged =
-      formValues.leagueDescription !== leagueById.leagueDescription;
+      formValues.tournamentDescription !== tournamentById.tournamentDescription;
     return imageChanged || descriptionChanged || isDirty;
-  }, [selectedImage, leagueById, formValues, isDirty]);
+  }, [selectedImage, tournamentById, formValues, isDirty]);
 
   const handleImagePick = async () => {
     try {
@@ -142,24 +140,24 @@ const EditLeague = () => {
     setIsSubmitting(true);
     try {
       let updatedImage = selectedImage;
-      if (selectedImage && selectedImage !== leagueById.leagueImage) {
+      if (selectedImage && selectedImage !== tournamentById.tournamentImage) {
         updatedImage = await uploadLeagueImage(
           selectedImage,
-          leagueById.leagueId
+          tournamentById.tournamentId
         );
       }
 
-      const updatedLeague = {
-        ...leagueById,
-        leagueDescription: data.leagueDescription,
-        leagueImage: updatedImage || leagueById.leagueImage,
+      const updatedTournament = {
+        ...tournamentById,
+        tournamentDescription: data.tournamentDescription,
+        tournamentImage: updatedImage || tournamentById.tournamentImage,
       };
 
       await updateCompetition({
-        competition: updatedLeague,
-        collectionName: COLLECTION_NAMES.leagues,
+        competition: updatedTournament,
+        collectionName: COLLECTION_NAMES.tournaments,
       });
-      handleShowPopup("League updated!");
+      handleShowPopup("Tournament updated!");
     } catch (err) {
       console.error("Update error:", err);
     } finally {
@@ -167,7 +165,7 @@ const EditLeague = () => {
     }
   };
 
-  if (loading || !leagueById) {
+  if (loading || !tournamentById) {
     return (
       <SafeAreaWrapper>
         <ScrollContainer
@@ -192,12 +190,12 @@ const EditLeague = () => {
         type="success"
       />
       <ScrollContainer showsVerticalScrollIndicator={false}>
-        <Title>Edit League</Title>
+        <Title>Edit Tournament</Title>
 
         <TouchableOpacity onPress={handleImagePick} disabled={isSubmitting}>
           <ImageWrapper>
             {selectedImage ? (
-              <LeagueImage source={{ uri: selectedImage }} />
+              <TournamentImage source={{ uri: selectedImage }} />
             ) : (
               <ImagePlaceholder>
                 <Text style={{ color: "#ccc" }}>Tap to add image</Text>
@@ -212,13 +210,13 @@ const EditLeague = () => {
         <View>
           <LabelContainer>
             <Label>Description</Label>
-            {errors.leagueDescription && (
-              <ErrorText>{errors.leagueDescription.message}</ErrorText>
+            {errors.tournamentDescription && (
+              <ErrorText>{errors.tournamentDescription.message}</ErrorText>
             )}
           </LabelContainer>
           <Controller
             control={control}
-            name="leagueDescription"
+            name="tournamentDescription"
             rules={{
               minLength: {
                 value: 10,
@@ -260,7 +258,7 @@ const EditLeague = () => {
   );
 };
 
-export default EditLeague;
+export default EditTournament;
 
 // --- Styled Components ---
 // --- Styled Components (Object Style) ---
@@ -313,7 +311,7 @@ const ImageWrapper = styled.View({
   marginBottom: 20,
 });
 
-const LeagueImage = styled.Image({
+const TournamentImage = styled.Image({
   width: "100%",
   height: "100%",
   borderRadius: 8,

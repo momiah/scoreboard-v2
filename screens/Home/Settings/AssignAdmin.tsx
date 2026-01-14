@@ -1,82 +1,102 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
+import { NormalizedCompetition } from "@/types/competition";
+import { ScoreboardProfile } from "@/types/player";
+import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
+import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
 
 const AssignAdmin = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+
   const route = useRoute();
-  const { leagueId, leagueById } = route.params;
+  const { leagueId, tournamentId, collectionName } = route.params as {
+    leagueId: string;
+    tournamentId: string;
+    collectionName: string;
+  };
+
+  const { competitionId, competitionType } = getCompetitionTypeAndId({
+    collectionName,
+    leagueId,
+    tournamentId,
+  });
 
   const { currentUser } = useContext(UserContext);
   const { assignLeagueAdmin, revokeLeagueAdmin, fetchCompetitionById } =
     useContext(LeagueContext);
 
-  const [league, setLeague] = useState(null);
+  const [competition, setCompetition] = useState<NormalizedCompetition | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
-  const loadLeague = async () => {
-    setLoading(true);
-    setLeague(leagueById);
-    setLoading(false);
-  };
-
   useEffect(() => {
-    loadLeague();
+    fetchCompetition();
   }, []);
 
-  const refetchLeague = async () => {
+  const fetchCompetition = async () => {
     setLoading(true);
     try {
       const fetchedLeague = await fetchCompetitionById({
-        competitionId: leagueId,
+        competitionId: competitionId,
+        collectionName,
       });
-      setLeague(fetchedLeague);
+
+      const normalizedCompetitionData = normalizeCompetitionData({
+        rawData: fetchedLeague,
+        competitionType,
+      }) as NormalizedCompetition;
+
+      setCompetition(normalizedCompetitionData);
     } catch (error) {
-      console.error("Failed to fetch league:", error);
+      console.error("Failed to fetch competition:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAssign = async (user) => {
-    await assignLeagueAdmin(leagueId, user);
-    refetchLeague();
+  const handleAssign = async (user: ScoreboardProfile) => {
+    await assignLeagueAdmin(competitionId, user);
+    fetchCompetition();
   };
 
-  const handleRevoke = async (userId) => {
-    await revokeLeagueAdmin(leagueId, userId);
-    refetchLeague();
+  const handleRevoke = async (userId: string) => {
+    await revokeLeagueAdmin(competitionId, userId);
+    fetchCompetition();
   };
 
-  const goToProfile = (userId) => {
+  const goToProfile = (userId: string) => {
     navigation.navigate("UserProfile", { userId });
   };
 
-  const isAdmin = (userId) =>
-    league?.leagueAdmins?.some((admin) => admin.userId === userId);
+  const isAdmin = (userId: string | undefined) =>
+    userId
+      ? competition?.admins?.some((admin) => admin.userId === userId)
+      : false;
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item }: { item: ScoreboardProfile }) => {
     const isUserAdmin = isAdmin(item.userId);
-    const isOwner = item.userId === league?.leagueOwner?.userId;
+    const isOwner = item.userId === competition?.owner?.userId;
     const isCurrentUser = item.userId === currentUser?.userId;
 
     const canAssign = !isUserAdmin && !isCurrentUser && !isOwner;
     const canRevoke =
       isUserAdmin &&
-      currentUser?.userId === league?.leagueOwner?.userId &&
+      currentUser?.userId === competition?.owner?.userId &&
       !isOwner;
 
     return (
-      <PlayerRow onPress={() => goToProfile(item.userId)}>
+      <PlayerRow onPress={() => item.userId && goToProfile(item.userId)}>
         <Player>
           <Username>{item.username}</Username>
           {isUserAdmin && (
@@ -99,7 +119,7 @@ const AssignAdmin = () => {
             </ActionButton>
           )}
           {canRevoke && (
-            <RevokeButton onPress={() => handleRevoke(item.userId)}>
+            <RevokeButton onPress={() => handleRevoke(item.userId!)}>
               <ButtonText>Revoke</ButtonText>
             </RevokeButton>
           )}
@@ -108,7 +128,7 @@ const AssignAdmin = () => {
     );
   };
 
-  if (loading || !league) {
+  if (loading || !competition) {
     return (
       <LoadingContainer>
         <ActivityIndicator size="large" color="#00A2FF" />
@@ -120,8 +140,8 @@ const AssignAdmin = () => {
     <Container>
       <Title>Assign League Admins</Title>
       <FlatList
-        data={league.leagueParticipants}
-        keyExtractor={(item) => item.userId}
+        data={competition.participants}
+        keyExtractor={(item, index) => item.userId ?? index.toString()}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <Separator />}
       />

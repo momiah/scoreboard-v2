@@ -27,6 +27,7 @@ import { notificationSchema, notificationTypes } from "../../../schemas/schema";
 import { calculateWin } from "../../../helpers/calculateWin";
 import { Game, GameTeam, SelectedPlayers } from "../../../types/game";
 import { League } from "../../../types/competition";
+import { COLLECTION_NAMES } from "../../../schemas/schema";
 
 const { height: screenHight } = Dimensions.get("window");
 const popupHeight = screenHight * 0.3; // 30% of screen height
@@ -269,7 +270,10 @@ const BulkGamePublisher = () => {
                   `Successfully published ${result.totalSuccessful} games!`
                 );
                 setPendingGames([]);
-                await fetchCompetitionById({ competitionId: leagueId });
+                await fetchCompetitionById({
+                  competitionId: leagueId,
+                  collectionName: COLLECTION_NAMES.leagues,
+                });
               } else {
                 Alert.alert(
                   "Error",

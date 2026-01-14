@@ -1,8 +1,13 @@
 import { type } from "@testing-library/react-native/build/user-event/type";
 import { createdAt } from "expo-updates";
 import { count } from "firebase/firestore";
-import { ScoreboardProfile, ProfileDetail, UserProfile, Location } from "../types/player";
-import { League, Tournament } from "../types/competition";
+import {
+  ScoreboardProfile,
+  ProfileDetail,
+  UserProfile,
+  Location,
+} from "../types/player";
+import { League, Tournament, CollectionName } from "../types/competition";
 import moment from "moment";
 
 export const gameTypes = ["Doubles", "Singles"];
@@ -19,6 +24,11 @@ export const leagueStatus = [
 export const COMPETITION_TYPES = {
   LEAGUE: "league",
   TOURNAMENT: "tournament",
+};
+
+export const COLLECTION_NAMES: Record<CollectionName, string> = {
+  leagues: "leagues",
+  tournaments: "tournaments",
 };
 
 export const ICON_MAP = {

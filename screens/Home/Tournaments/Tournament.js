@@ -8,12 +8,12 @@ import {
   Linking,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { COMPETITION_TYPES } from "../../../schemas/schema";
+import { COMPETITION_TYPES, COLLECTION_NAMES } from "../../../schemas/schema";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import LeagueSummary from "../../../components/Summary/LeagueSummary";
+import CompetitionSummary from "../../../components/Summary/CompetitionSummary";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
 import Tag from "../../../components/Tag";
@@ -60,7 +60,7 @@ const Tournament = () => {
         try {
           const fetchedTournament = await fetchCompetitionById({
             competitionId: tournamentId,
-            competitionType: COMPETITION_TYPES.TOURNAMENT,
+            collectionName: COLLECTION_NAMES.tournaments,
           });
           if (!fetchedTournament) {
             setTournamentNotFound(true);
@@ -115,7 +115,7 @@ const Tournament = () => {
       );
       const refetchedTournament = await fetchCompetitionById({
         competitionId: tournamentId,
-        competitionType: COMPETITION_TYPES.TOURNAMENT,
+        collectionName: COLLECTION_NAMES.tournaments,
       });
       await getUserRole(refetchedTournament);
     } catch (error) {
@@ -131,7 +131,7 @@ const Tournament = () => {
     try {
       const refetchedTournament = await fetchCompetitionById({
         competitionId: tournamentId,
-        competitionType: COMPETITION_TYPES.TOURNAMENT,
+        collectionName: COLLECTION_NAMES.tournaments,
       });
       await getUserRole(refetchedTournament);
     } catch (error) {
@@ -179,7 +179,7 @@ const Tournament = () => {
         );
       case "Summary":
         return (
-          <LeagueSummary
+          <CompetitionSummary
             competitionDetails={tournamentById}
             userRole={userRole}
             startDate={startDate}
@@ -233,14 +233,14 @@ const Tournament = () => {
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
       <Overview>
-        <LeagueImage
+        <TournamentImage
           source={tournamentImage ? { uri: tournamentImage } : ccDefaultImage}
         >
           <GradientOverlay
             colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
             locations={[0.1, 1]}
           />
-          <LeagueDetailsContainer>
+          <TournamentDetailsContainer>
             {userRole === "admin" && (
               <EditButton onPress={handleNavigate}>
                 <Ionicons name="menu" size={25} color="white" />
@@ -255,14 +255,14 @@ const Tournament = () => {
                 alignSelf: "flex-start",
               }}
             >
-              <LeagueName>{tournamentName}</LeagueName>
+              <TournamentName>{tournamentName}</TournamentName>
             </View>
 
             {location ? (
               <Address onPress={() => openMap(location)}>
-                <LeagueLocation>
+                <TournamentLocation>
                   {location.courtName}, {location.city}
-                </LeagueLocation>
+                </TournamentLocation>
                 <Ionicons name="open-outline" size={20} color="#00A2FF" />
               </Address>
             ) : null}
@@ -323,8 +323,8 @@ const Tournament = () => {
                 isJoining={isJoinRequestSending}
               />
             </View>
-          </LeagueDetailsContainer>
-        </LeagueImage>
+          </TournamentDetailsContainer>
+        </TournamentImage>
       </Overview>
 
       <TabsContainer>
@@ -374,7 +374,7 @@ const Overview = styled.View({
   position: "relative",
 });
 
-const LeagueImage = styled.ImageBackground.attrs({
+const TournamentImage = styled.ImageBackground.attrs({
   imageStyle: {
     resizeMode: "cover",
   },
@@ -393,7 +393,7 @@ const GradientOverlay = styled(LinearGradient)({
   bottom: -60,
 });
 
-const LeagueDetailsContainer = styled.View({
+const TournamentDetailsContainer = styled.View({
   width: "100%",
   height: "100%",
   paddingLeft: 15,
@@ -401,7 +401,7 @@ const LeagueDetailsContainer = styled.View({
   justifyContent: "center",
 });
 
-const LeagueName = styled.Text({
+const TournamentName = styled.Text({
   fontSize: 18,
   fontWeight: "bold",
   color: "white",
@@ -417,7 +417,7 @@ const Address = styled.TouchableOpacity({
   alignSelf: "flex-start",
 });
 
-const LeagueLocation = styled.Text({
+const TournamentLocation = styled.Text({
   fontSize: 13,
   padding: 5,
   color: "white",

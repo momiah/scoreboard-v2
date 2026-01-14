@@ -21,7 +21,7 @@ const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 
-const LeagueSummary = memo(
+const CompetitionSummary = memo(
   ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
     const { getUserById } = useContext(UserContext);
     const [topContenders, setTopContenders] = useState([]);
@@ -108,7 +108,7 @@ const LeagueSummary = memo(
       : topContenders;
 
     return (
-      <LeagueSummaryContainer>
+      <CompetitionSummaryContainer>
         <PrizeDistribution
           prizePool={gameStats.prizePool}
           distribution={DISTRIBUTION}
@@ -212,13 +212,13 @@ const LeagueSummary = memo(
             <DisabledText>No description available</DisabledText>
           )}
         </Section>
-      </LeagueSummaryContainer>
+      </CompetitionSummaryContainer>
     );
   }
 );
 
 // ✅ OPTIMIZATION 6: Add display name for better debugging
-LeagueSummary.displayName = "LeagueSummary";
+CompetitionSummary.displayName = "CompetitionSummary";
 
 // Styled components remain the same...
 const { width: screenWidth } = Dimensions.get("window");
@@ -229,7 +229,7 @@ const TableContainer = styled.View({
   flex: 1,
 });
 
-const LeagueSummaryContainer = styled.ScrollView({
+const CompetitionSummaryContainer = styled.ScrollView({
   padding: 20,
   borderRadius: 12,
   marginBottom: 20,
@@ -301,4 +301,4 @@ const DateValue = styled.Text({
   marginTop: 10,
 });
 
-export default LeagueSummary;
+export default CompetitionSummary;

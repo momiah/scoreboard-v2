@@ -9,22 +9,9 @@ import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
 import { notificationTypes } from "../../schemas/schema";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { getCompetitionConfig } from "../../helpers/getCompetitionConfig";
 
 const screenWidth = Dimensions.get("window").width;
-
-// Helper to get competition-specific properties
-const getCompetitionConfig = (notificationType) => {
-  const isLeague =
-    notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE;
-
-  return {
-    isLeague,
-    navRoute: isLeague ? "League" : "Tournament",
-    nameKey: isLeague ? "leagueName" : "tournamentName",
-    typeKey: isLeague ? "leagueType" : "tournamentType",
-    participantsKey: isLeague ? "leagueParticipants" : "tournamentParticipants",
-  };
-};
 
 // Helper to find game in competition
 const findGame = (competition, gameId, isLeague) => {
@@ -92,7 +79,10 @@ const GameApprovalModal = ({
 
     const fetchDetails = async () => {
       try {
-        const competition = await fetchCompetitionById({ competitionId });
+        const competition = await fetchCompetitionById({
+          competitionId,
+          collectionName: config.collectionName,
+        });
 
         if (!isMounted) return;
 

@@ -1,6 +1,7 @@
 // helpers/processGamePerformance.ts
 
 import { Game } from "../types/game";
+import { CollectionName } from "../types/competition";
 import { ScoreboardProfile, UserProfile } from "../types/player";
 import { calculatePlayerPerformance } from "./calculatePlayerPerformance";
 import { calculateTeamPerformance } from "./calculateTeamPerformance";
@@ -10,14 +11,11 @@ import {
   updateUsers,
   updateTeams,
 } from "../devFunctions/firebaseFunctions";
-
-type CollectionType = "leagues" | "tournaments";
-
 interface ProcessGamePerformanceParams {
   game: Game;
   participants: ScoreboardProfile[];
   competitionId: string;
-  collectionName: CollectionType;
+  collectionName: CollectionName;
 }
 
 interface ProcessGamePerformanceResult {

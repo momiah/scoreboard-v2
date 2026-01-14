@@ -7,63 +7,103 @@ import {
   ActivityIndicator,
 } from "react-native";
 import styled from "styled-components/native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  useNavigation,
+  useRoute,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
 import RemovePlayerModal from "../../../components/Modals/RemovePlayerModal";
+import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
+import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
+import { ScoreboardProfile } from "@/types/player";
+import { NormalizedCompetition } from "@/types/competition";
 
 const RemovePlayers = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route = useRoute();
-  const { leagueId, leagueById } = route.params;
+
+  const { leagueId, tournamentId, collectionName } = route.params as {
+    leagueId: string;
+    tournamentId: string;
+    collectionName: string;
+  };
 
   const { fetchCompetitionById, removePlayerFromLeague } =
     useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
 
-  const [league, setLeague] = useState(null);
+  const [competition, setCompetition] = useState<NormalizedCompetition | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [selectedPlayer, setSelectedPlayer] =
+    useState<ScoreboardProfile | null>(null);
 
+  const { competitionId, competitionType } = getCompetitionTypeAndId({
+    collectionName,
+    leagueId,
+    tournamentId,
+  });
+
+  const fetchCompetition = async () => {
+    setLoading(true);
+    try {
+      const fetchedLeague = await fetchCompetitionById({
+        competitionId: competitionId,
+        collectionName,
+      });
+
+      const normalizedCompetitionData = normalizeCompetitionData({
+        rawData: fetchedLeague,
+        competitionType,
+      }) as NormalizedCompetition;
+
+      setCompetition(normalizedCompetitionData);
+    } catch (error) {
+      console.error("Failed to fetch competition:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    setLeague(leagueById);
-    setLoading(false);
+    fetchCompetition();
   }, []);
 
-  const handleRemove = (player) => {
+  const handleRemove = (player: ScoreboardProfile) => {
     setSelectedPlayer(player);
     setModalVisible(true);
   };
 
-  const goToProfile = (userId) => {
+  const goToProfile = (userId: string) => {
     navigation.navigate("UserProfile", { userId });
   };
 
-  const sortOwnerByFirst = (a, b) => {
-    const isOwnerA = a.userId === league?.leagueOwner?.userId;
-    const isOwnerB = b.userId === league?.leagueOwner?.userId;
+  const sortOwnerByFirst = (a: ScoreboardProfile, b: ScoreboardProfile) => {
+    const isOwnerA = a.userId === competition?.owner?.userId;
+    const isOwnerB = b.userId === competition?.owner?.userId;
     if (isOwnerA && !isOwnerB) return -1;
     if (!isOwnerA && isOwnerB) return 1;
     return 0;
   };
-  const sortedParticipants = league?.leagueParticipants.sort(sortOwnerByFirst);
+  const sortedParticipants = competition?.participants.sort(sortOwnerByFirst);
 
-  const renderItem = ({ item }) => {
-    const isOwner = item.userId === league?.leagueOwner?.userId;
-    const isAdmin = league?.leagueAdmins?.some(
+  const renderItem = ({ item }: { item: ScoreboardProfile }) => {
+    const isOwner = item.userId === competition?.owner?.userId;
+    const isAdmin = competition?.admins?.some(
       (admin) => admin.userId === item.userId
     );
     const isSelf = item.userId === currentUser?.userId;
     const canRemove =
-      currentUser?.userId === league?.leagueOwner?.userId &&
-      !isOwner &&
-      !isSelf;
+      currentUser?.userId === competition?.owner?.userId && !isOwner && !isSelf;
 
     return (
-      <PlayerRow onPress={() => goToProfile(item.userId)}>
+      <PlayerRow onPress={() => item.userId && goToProfile(item.userId)}>
         <Player>
           <Username>{item.username}</Username>
           {isOwner && (
@@ -110,7 +150,7 @@ const RemovePlayers = () => {
     );
   };
 
-  if (loading || !league) {
+  if (loading || !competition) {
     return (
       <LoadingContainer>
         <ActivityIndicator size="large" color="#00A2FF" />
@@ -123,7 +163,7 @@ const RemovePlayers = () => {
       <Title>Remove Players</Title>
       <FlatList
         data={sortedParticipants}
-        keyExtractor={(item) => item.userId}
+        keyExtractor={(item, index) => item.userId ?? index.toString()}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <Separator />}
       />
@@ -135,12 +175,17 @@ const RemovePlayers = () => {
           setModalVisible(false);
           setSelectedPlayer(null);
         }}
-        onConfirm={async (reason) => {
-          await removePlayerFromLeague(leagueId, selectedPlayer.userId, reason);
+        onConfirm={async (reason: string) => {
+          await removePlayerFromLeague(
+            competitionId,
+            selectedPlayer?.userId,
+            reason
+          );
           const updated = await fetchCompetitionById({
-            competitionId: leagueId,
+            competitionId,
+            collectionName,
           });
-          setLeague(updated);
+          setCompetition(updated);
           setModalVisible(false);
           setSelectedPlayer(null);
         }}
