@@ -62,6 +62,7 @@ exports.distributeLeaguePrizes = onSchedule(
           prizePool: prizePool,
           prizeDistribution: DISTRIBUTION,
           leagueId,
+          leagueName: league.leagueName,
         });
       }
 
