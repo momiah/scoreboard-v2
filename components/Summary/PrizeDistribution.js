@@ -124,7 +124,6 @@ const PrizeView = styled.View({
 const PrizeImage = styled.Image(({ prizeType }) => ({
   width: prizeType === "league" ? 60 : 40,
   height: 60,
-  marginBottom: 5,
 }));
 const PrizeText = styled.Text({
   color: "#ccc",
@@ -139,6 +138,7 @@ const ImageWrapper = styled.View({
   height: 60,
   alignItems: "center",
   justifyContent: "center",
+  marginBottom: 10,
 });
 
 export default PrizeDistribution;

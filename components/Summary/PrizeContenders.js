@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components/native";
-import { trophies } from "../../mockImages";
+import { trophies, medals } from "../../mockImages";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { useImageLoader } from "../../utils/imageLoader";
 import { useNavigation } from "@react-navigation/native";
@@ -10,6 +10,7 @@ import {
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
+import { COMPETITION_TYPES } from "../../schemas/schema";
 
 const PrizeContenders = ({
   item: player,
@@ -18,13 +19,16 @@ const PrizeContenders = ({
   distribution,
   prizePool,
   hasPrizesDistributed,
+  competitionType,
 }) => {
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
   const [showSkeleton, setShowSkeleton] = useState(true);
   const navigation = useNavigation();
 
   const displayName = formatDisplayName(player);
-  const trophySource = trophies[index] || trophies[0];
+  const prizesType =
+    competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
+  const prizeSource = prizesType[index] || prizesType[0];
 
   const prizeXP =
     distribution && prizePool ? Math.floor(prizePool * distribution[index]) : 0;
@@ -136,7 +140,7 @@ const PrizeContenders = ({
           config={SKELETON_THEMES.dark}
         >
           <PrizeImage
-            source={trophySource}
+            source={prizeSource}
             onLoad={handleImageLoad}
             onError={handleImageError}
             style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}

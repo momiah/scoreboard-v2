@@ -11,6 +11,7 @@ import { useContext } from "react";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
+import { COMPETITION_TYPES } from "../../schemas/schema";
 
 // Constants moved outside to prevent recreation
 const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
@@ -20,6 +21,8 @@ const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
 }));
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
+const SINGLES_MULTIPLIER = 25;
+const DOUBLES_MULTIPLIER = 75;
 
 const CompetitionSummary = memo(
   ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
@@ -55,14 +58,37 @@ const CompetitionSummary = memo(
           return acc + (game?.result?.winner?.score || 0);
         }, 0) || 0;
 
+      const fixturesArray = competitionData?.fixtures || [];
+      const numberOfMatches =
+        fixturesArray.flatMap((round) => round.games || []).length || 0;
+
+      // Prize pool calculation
+      let prizePool;
+      if (competitionType === COMPETITION_TYPES.LEAGUE) {
+        prizePool =
+          (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2;
+      } else {
+        const gameMode = competitionData?.type || "singles";
+        const matchMultiplier =
+          gameMode === "singles" ? SINGLES_MULTIPLIER : DOUBLES_MULTIPLIER;
+
+        prizePool = numberOfMatches * matchMultiplier;
+      }
+
       return {
         numberOfParticipants,
         numberOfGamesPlayed,
         totalGamePointsWon,
-        prizePool:
-          (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2,
+        prizePool,
       };
-    }, [participants.length, games.length, games]);
+    }, [
+      participants.length,
+      games.length,
+      games,
+      competitionType,
+      competitionData?.competitionType,
+      competitionData?.fixtures,
+    ]);
 
     useEffect(() => {
       const loadEnrichedContenders = async () => {
@@ -147,6 +173,7 @@ const CompetitionSummary = memo(
                 distribution={DISTRIBUTION}
                 prizePool={gameStats.prizePool}
                 hasPrizesDistributed={hasPrizesDistributed}
+                competitionType={competitionType}
               />
             ))
           )}

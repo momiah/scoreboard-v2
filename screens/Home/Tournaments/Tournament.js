@@ -92,6 +92,8 @@ const Tournament = () => {
     }
   };
 
+  const fixturesGenerated = tournamentById?.fixtures.fixturesGenerated || false;
+
   const handleNavigate = () => {
     navigation.navigate("TournamentSettings", { tournamentId, tournamentById });
   };

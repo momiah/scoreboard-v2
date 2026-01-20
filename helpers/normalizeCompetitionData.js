@@ -64,6 +64,9 @@ export const normalizeCompetitionData = ({ rawData, competitionType }) => {
     pendingInvites: rawData?.pendingInvites || [],
     pendingRequests: rawData?.pendingRequests || [],
 
+    // Fixtures (Tournaments)
+    ...(rawData?.fixtures && { fixtures: rawData.fixtures }),
+
     // Metadata
     createdAt: rawData?.createdAt || new Date(),
     id: rawData?.id || rawData?.[`${competitionType}Id`] || "",
