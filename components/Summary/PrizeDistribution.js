@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Dimensions } from "react-native";
 import Tooltip from "../Tooltip";
-import { trophies } from "../../mockImages/index";
+import { trophies, medals } from "../../mockImages/index";
 import styled from "styled-components/native";
 import { useImageLoader } from "../../utils/imageLoader";
 import {
@@ -11,11 +11,12 @@ import {
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
-const PrizeDistribution = ({ prizePool, distribution }) => {
+const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
   const prizes = useMemo(() => {
+    const prizesType = competitionType === "league" ? trophies : medals;
     return distribution.map((percentage, index) => ({
       xp: Math.floor(prizePool * percentage),
-      trophy: trophies[index],
+      trophy: prizesType[index],
     }));
   }, [prizePool]);
 
@@ -42,12 +43,15 @@ const PrizeDistribution = ({ prizePool, distribution }) => {
           size={60}
           config={SKELETON_THEMES.dark}
         >
-          <PrizeImage
-            source={trophySource}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}
-          />
+          <ImageWrapper>
+            <PrizeImage
+              source={trophySource}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              prizeType={competitionType}
+              style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}
+            />
+          </ImageWrapper>
         </CircleSkeleton>
 
         <TextSkeleton
@@ -117,16 +121,24 @@ const PrizeView = styled.View({
   alignItems: "center",
 });
 
-const PrizeImage = styled.Image({
-  width: 60,
+const PrizeImage = styled.Image(({ prizeType }) => ({
+  width: prizeType === "league" ? 60 : 40,
   height: 60,
   marginBottom: 5,
-});
-
+}));
 const PrizeText = styled.Text({
   color: "#ccc",
   fontSize: 14,
   fontWeight: "bold",
+});
+
+// ...
+
+const ImageWrapper = styled.View({
+  width: 60,
+  height: 60,
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 export default PrizeDistribution;

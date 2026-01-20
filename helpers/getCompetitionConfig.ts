@@ -11,13 +11,16 @@ interface CompetitionConfig {
   typeKey: "leagueType" | "tournamentType";
   participantsKey: "leagueParticipants" | "tournamentParticipants";
   collectionName: string;
+  competitionType: "league" | "tournament";
 }
 
 export const getCompetitionConfig = (
   notificationType: string
 ): CompetitionConfig => {
   const isLeague: boolean =
-    notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE;
+    notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE ||
+    notificationType === notificationTypes.ACTION.INVITE.LEAGUE ||
+    notificationType === notificationTypes.ACTION.JOIN_REQUEST.LEAGUE;
 
   return {
     isLeague,
@@ -28,6 +31,9 @@ export const getCompetitionConfig = (
     collectionName: isLeague
       ? COLLECTION_NAMES.leagues
       : COLLECTION_NAMES.tournaments,
+    competitionType: (isLeague
+      ? COMPETITION_TYPES.LEAGUE
+      : COMPETITION_TYPES.TOURNAMENT) as "league" | "tournament",
   };
 };
 

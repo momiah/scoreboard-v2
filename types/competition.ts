@@ -1,11 +1,21 @@
 import { Location, ScoreboardProfile } from "./player";
 import { Game, Fixtures } from "./game";
+import { extend } from "lodash";
+import { COMPETITION_TYPES } from "@/schemas/schema";
 
 export type CollectionName = "leagues" | "tournaments";
+export type CompetitionType =
+  | typeof COMPETITION_TYPES.LEAGUE
+  | typeof COMPETITION_TYPES.TOURNAMENT;
 
 interface CompetitionAdmins {
   userId: string;
   username: string;
+}
+
+export interface CourtLocation extends Location {
+  courtName: string;
+  courtId: string;
 }
 
 interface CompetitionOwner {
@@ -64,7 +74,7 @@ export interface League {
   leagueImage: string;
   leagueName: string;
   leagueDescription: string;
-  location: Location;
+  location: CourtLocation;
   countryCode: string;
   createdAt: Date;
   startDate: string;
@@ -95,7 +105,7 @@ export interface Tournament {
   tournamentImage: string;
   tournamentName: string;
   tournamentDescription: string;
-  location: Location;
+  location: CourtLocation;
   countryCode: string;
   createdAt: Date;
   startDate: string;
@@ -126,7 +136,7 @@ export interface NormalizedCompetition {
   image: string;
   name: string;
   description: string;
-  location: Location;
+  location: CourtLocation;
   countryCode: string;
   createdAt: Date;
   startDate: string;
@@ -140,4 +150,5 @@ export interface NormalizedCompetition {
   pendingInvites: PendingInvites[];
   pendingRequests: PendingRequests[];
   approvalLimit: number;
+  id: string;
 }

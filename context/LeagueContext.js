@@ -30,6 +30,7 @@ import { COMPETITION_TYPES, COLLECTION_NAMES } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
 
 const LeagueContext = createContext();
 
@@ -40,7 +41,7 @@ const LeagueContext = createContext();
 /**
  * Get competition-specific configuration based on type
  */
-const getCompetitionConfig = (notificationType) => {
+export const getCompetitionConfig = (notificationType) => {
   const isTournament =
     notificationType === notificationTypes.ACTION.ADD_GAME.TOURNAMENT;
 
@@ -462,17 +463,21 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const updatePendingInvites = async (leagueId, userId) => {
+  const updatePendingInvites = async (
+    competitionId,
+    userId,
+    collectionName
+  ) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueSnap = await getDoc(leagueRef);
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionSnap = await getDoc(competitionRef);
 
-      if (leagueSnap.exists()) {
-        const leagueData = leagueSnap.data();
-        const pendingInvites = leagueData.pendingInvites || [];
+      if (competitionSnap.exists()) {
+        const competitionData = competitionSnap.data();
+        const pendingInvites = competitionData.pendingInvites || [];
 
         // Add user to pending invites if not already present
-        await updateDoc(leagueRef, {
+        await updateDoc(competitionRef, {
           pendingInvites: [...pendingInvites, { userId }],
         });
 
@@ -487,15 +492,41 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const acceptLeagueInvite = async (userId, leagueId, notificationId) => {
+  const acceptCompetitionInvite = async ({
+    userId,
+    competitionId,
+    notificationId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-      const leagueParticipants = leagueData.leagueParticipants || [];
-      const pendingInvites = leagueData.pendingInvites || [];
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
 
-      // Add user to league and remove from pending invites
+      if (!competitionDoc.exists()) {
+        console.error("Competition does not exist or has been deleted");
+        const notificationsRef = collection(
+          db,
+          "users",
+          userId,
+          "notifications"
+        );
+        const notificationDocRef = doc(notificationsRef, notificationId);
+        await updateDoc(notificationDocRef, {
+          isRead: true,
+        });
+        return;
+      }
+
+      const competitionData = competitionDoc.data();
+      const participantsKey =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      const competitionParticipants = competitionData[participantsKey] || [];
+      const pendingInvites = competitionData.pendingInvites || [];
+
+      // Add user to competition and remove from pending invites
       const updatedPending = pendingInvites.filter(
         (inv) => inv.userId !== userId
       );
@@ -512,102 +543,114 @@ const LeagueProvider = ({ children }) => {
         profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
-      await updateDoc(leagueRef, {
-        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+      await updateDoc(competitionRef, {
+        [participantsKey]: [...competitionParticipants, newParticipantProfile],
         pendingInvites: updatedPending,
       });
 
-      //Update users notification
+      // Update user's notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.ACCEPT,
+      });
 
-      if (!leagueDoc.exists()) {
-        console.error("League does not exist or has been deleted");
+      console.log("Competition invite accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting competition invite:", error);
+    }
+  };
+
+  const declineCompetitionInvite = async ({
+    userId,
+    competitionId,
+    notificationId,
+    collectionName,
+  }) => {
+    try {
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
+
+      if (!competitionDoc.exists()) {
+        console.error("Competition does not exist or has been deleted");
+        const notificationsRef = collection(
+          db,
+          "users",
+          userId,
+          "notifications"
+        );
+        const notificationDocRef = doc(notificationsRef, notificationId);
         await updateDoc(notificationDocRef, {
           isRead: true,
         });
         return;
       }
 
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.ACCEPT,
-      });
-
-      // return if league doesnt exist
-
-      console.log("League invite accepted successfully!");
-    } catch (error) {
-      console.error("Error accepting league invite:", error);
-    }
-  };
-
-  const declineLeagueInvite = async (userId, leagueId, notificationId) => {
-    try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-
-      const pendingInvites = leagueData.pendingInvites || [];
+      const competitionData = competitionDoc.data();
+      const pendingInvites = competitionData.pendingInvites || [];
 
       // Remove user from pending invites
       const updatedPending = pendingInvites.filter(
         (inv) => inv.userId !== userId
       );
 
-      await updateDoc(leagueRef, {
+      await updateDoc(competitionRef, {
         pendingInvites: updatedPending,
       });
 
-      //Update users notification
+      // Update user's notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
-
-      if (!leagueDoc.exists()) {
-        console.error("League does not exist or has been deleted");
-        await updateDoc(notificationDocRef, {
-          isRead: true,
-        });
-        return;
-      }
-
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.DECLINE,
       });
 
-      console.log("League invite declined successfully!");
+      console.log("Competition invite declined successfully!");
     } catch (error) {
-      console.error("Error accepting league invite:", error);
+      console.error("Error declining competition invite:", error);
     }
   };
 
-  const requestToJoinLeague = async (leagueId, userId, ownerId, username) => {
+  const requestToJoinLeague = async ({
+    competitionId,
+    currentUser,
+    ownerId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueSnap = await getDoc(leagueRef);
+      const collectionRef = doc(db, collectionName, competitionId);
+      const competitionSnap = await getDoc(collectionRef);
 
-      if (leagueSnap.exists()) {
-        const leagueData = leagueSnap.data();
-        const pendingRequests = leagueData.pendingRequests || [];
+      if (competitionSnap.exists()) {
+        const competitionData = competitionSnap.data();
+        const pendingRequests = competitionData.pendingRequests || [];
 
         // Add user to pending invites if not already present
-        await updateDoc(leagueRef, {
-          pendingRequests: [...pendingRequests, { userId }],
+        await updateDoc(collectionRef, {
+          pendingRequests: [
+            ...pendingRequests,
+            { userId: currentUser?.userId },
+          ],
         });
+
+        const displayName = formatDisplayName(currentUser);
+        const metaDataId =
+          collectionName === COLLECTION_NAMES.tournaments
+            ? "tournamentId"
+            : "leagueId";
 
         const payload = {
           ...notificationSchema,
           createdAt: new Date(),
           recipientId: ownerId,
-          senderId: userId,
-          message: `${username} has requested to join your league!`,
+          senderId: currentUser?.userId,
+          message: `${displayName} has requested to join your league!`,
           type: notificationTypes.ACTION.JOIN_REQUEST.LEAGUE,
 
           data: {
-            leagueId,
+            [metaDataId]: competitionId,
           },
         };
 
@@ -624,29 +667,36 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const acceptLeagueJoinRequest = async (
+  const acceptCompetitionJoinRequest = async ({
     senderId,
-    leagueId,
+    competitionId,
     notificationId,
-    userId
-  ) => {
+    userId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-      const leagueParticipants = leagueData.leagueParticipants || [];
-      const pendingRequests = leagueData.pendingRequests || [];
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
+      const competitionData = competitionDoc.data();
 
-      const userAlreadyInLeague = leagueParticipants.filter(
+      // Define the field name as a string
+      const participantsKey =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      const competitionParticipants = competitionData[participantsKey] || [];
+      const pendingRequests = competitionData.pendingRequests || [];
+
+      const userAlreadyInCompetition = competitionParticipants.some(
         (participant) => participant.userId === senderId
       );
 
-      if (userAlreadyInLeague.length > 0) {
-        console.log("User is already a participant in this league");
+      if (userAlreadyInCompetition) {
+        console.log("User is already a participant in this competition");
         return;
       }
 
-      // Add senderId to league and remove from pending requests
       const updatedPending = pendingRequests.filter(
         (pen) => pen.userId !== senderId
       );
@@ -660,63 +710,62 @@ const LeagueProvider = ({ children }) => {
         lastName: newParticipant.lastName.split(" ")[0],
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
-        profileImage: newParticipant.profilImage || ccImageEndpoint,
+        profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
-      await updateDoc(leagueRef, {
-        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+      await updateDoc(competitionRef, {
+        [participantsKey]: [...competitionParticipants, newParticipantProfile],
         pendingRequests: updatedPending,
       });
 
-      // Update league owners notification
+      // Update notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.ACCEPT,
       });
 
-      console.log("League join request accepted successfully!");
+      console.log("Competition join request accepted successfully!");
     } catch (error) {
-      console.error("Error accepting league join request:", error);
+      console.error("Error accepting competition join request:", error);
     }
   };
 
-  const declineLeagueJoinRequest = async (
+  const declineCompetitionJoinRequest = async ({
     senderId,
-    leagueId,
+    competitionId,
     notificationId,
-    userId
-  ) => {
+    userId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
+      const competitionData = competitionDoc.data();
 
       // Remove senderId from pending requests
-      const pendingRequests = leagueData.pendingRequests || [];
+      const pendingRequests = competitionData.pendingRequests || [];
 
       const updatedPending = pendingRequests.filter(
         (pen) => pen.userId !== senderId
       );
 
-      await updateDoc(leagueRef, {
+      await updateDoc(competitionRef, {
         pendingRequests: updatedPending,
       });
 
-      // Update league owners notification
+      // Update competition owner's notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.DECLINE,
       });
 
-      console.log("League join request declined successfully!");
+      console.log("Competition join request declined successfully!");
     } catch (error) {
-      console.error("Error accepting league join request:", error);
+      console.error("Error declining competition join request:", error);
     }
   };
 
@@ -1341,11 +1390,11 @@ const LeagueProvider = ({ children }) => {
         leagueNavigationId,
         setLeagueNavigationId,
         removePlayerFromLeague,
-        acceptLeagueInvite,
-        declineLeagueInvite,
+        acceptCompetitionInvite,
+        declineCompetitionInvite,
         requestToJoinLeague,
-        acceptLeagueJoinRequest,
-        declineLeagueJoinRequest,
+        acceptCompetitionJoinRequest,
+        declineCompetitionJoinRequest,
         approveGame,
         declineGame,
 

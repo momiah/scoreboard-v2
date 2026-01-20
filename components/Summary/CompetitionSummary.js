@@ -112,6 +112,7 @@ const CompetitionSummary = memo(
         <PrizeDistribution
           prizePool={gameStats.prizePool}
           distribution={DISTRIBUTION}
+          competitionType={competitionType}
         />
 
         <SectionTitleContainer>

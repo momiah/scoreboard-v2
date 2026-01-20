@@ -107,12 +107,12 @@ const Tournament = () => {
   const handleRequestToJoin = async () => {
     try {
       setIsJoinRequestSending(true);
-      await requestToJoinLeague(
-        tournamentId,
-        currentUser?.userId,
-        tournamentById?.leagueOwner?.userId,
-        currentUser?.username
-      );
+      await requestToJoinLeague({
+        competitionId: tournamentId,
+        currentUser,
+        ownerId: tournamentById?.tournamentOwner?.userId,
+        collectionName: COLLECTION_NAMES.tournaments,
+      });
       const refetchedTournament = await fetchCompetitionById({
         competitionId: tournamentId,
         collectionName: COLLECTION_NAMES.tournaments,
@@ -356,7 +356,8 @@ const Tournament = () => {
         <InvitePlayerModel
           modalVisible={invitePlayerModalVisible}
           setModalVisible={setInvitePlayerModalVisible}
-          leagueDetails={tournamentById}
+          competitionDetails={tournamentById}
+          competitionType={COMPETITION_TYPES.TOURNAMENT}
         />
       )}
     </View>

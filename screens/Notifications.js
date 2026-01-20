@@ -78,8 +78,13 @@ const Notifications = () => {
       senderId: item.senderId,
       isRead: item.isRead,
       gameId: item.data.gameId || null,
-      data: item.type === MODAL_TYPES.WELCOME ? item.data : null,
+      data: item.data ?? null,
     };
+
+    console.log(
+      "Opening modal for notification:",
+      JSON.stringify(commonState, null, 2)
+    );
 
     setModalState(commonState);
 

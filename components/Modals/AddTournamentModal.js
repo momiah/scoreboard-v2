@@ -191,7 +191,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
         tournamentAdmins: [adminData.tournamentAdmin],
         tournamentParticipants: [adminData.tournamentParticipant],
         tournamentImage: imageDownloadUrl || null,
-        prizeType: prizeTypes.TROPHY,
+        prizeType: prizeTypes.MEDAL,
         location,
         countryCode: location.countryCode || "",
         tournamentOwner: adminData.tournamentOwner,

@@ -1,12 +1,4 @@
-import {
-  Modal,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Clipboard,
-} from "react-native";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Modal, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { useCallback } from "react";
 
 import styled from "styled-components/native";
@@ -14,19 +6,35 @@ import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext } from "react";
+import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+import { UserProfile } from "@/types/player";
 
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
-
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
-import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
-import { COLLECTION_NAMES } from "../../schemas/schema";
+import { ccImageEndpoint } from "@/schemas/schema";
+import { NormalizedCompetition } from "@/types/competition";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
 const screenWidth = Dimensions.get("window").width;
 const iconSize = 45;
+
+type JoinRequestModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  requestId: string;
+  requestType: string;
+  notificationId: string;
+  senderId: string;
+  isRead: boolean;
+};
 
 const JoinRequestModal = ({
   visible,
@@ -36,76 +44,87 @@ const JoinRequestModal = ({
   notificationId,
   senderId,
   isRead,
-}) => {
+}: JoinRequestModalProps) => {
   const {
     fetchCompetitionById,
-    acceptLeagueJoinRequest,
-    declineLeagueJoinRequest,
+    acceptCompetitionJoinRequest,
+    declineCompetitionJoinRequest,
   } = useContext(LeagueContext);
   const { findRankIndex } = useContext(GameContext);
   const { currentUser, getUserById, readNotification } =
     useContext(UserContext);
   const [senderDetails, setSenderDetails] = useState(null);
-  const [requestDetails, setRequestDetails] = useState(null);
+  const [competition, setCompetition] = useState<NormalizedCompetition | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
-  const [joiningLeague, setJoiningLeague] = useState(false);
+  const [joiningCompetition, setJoiningCompetition] = useState(false);
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const config = getCompetitionConfig(requestType);
+  const competitionType = config.competitionType;
+  const navRoute = config.navRoute;
 
-  const navigateTo = (leagueId) => {
-    navigation.navigate("League", { leagueId });
+  const navigateTo = (competitionId: string) => {
+    navigation.navigate(navRoute, { competitionId });
   };
 
-  const leagueFull =
-    requestDetails?.leagueParticipants.length >= requestDetails?.maxPlayers;
+  const competitionFull =
+    competition?.participants.length !== undefined &&
+    competition?.maxPlayers !== undefined &&
+    competition.participants.length >= competition.maxPlayers;
 
-  const requestWithdrawn = !requestDetails?.pendingRequests?.some(
+  const requestWithdrawn = !competition?.pendingRequests?.some(
     (req) => req.userId === senderId
   );
 
-  const userAlreadyInLeague = requestDetails?.leagueParticipants?.some(
+  const userAlreadyInCompetition = competition?.participants?.some(
     (participant) => participant.userId === senderId
   );
 
   useEffect(() => {
     setLoading(true);
     const fetchDetails = async () => {
-      if (requestType === "join-league-request") {
-        try {
-          const league = await fetchCompetitionById({
-            competitionId: requestId,
-            collectionName: COLLECTION_NAMES.leagues,
-          });
-          const player = await getUserById(senderId);
-          if (!league || !player) {
-            console.error("League or player not found");
-            readNotification(notificationId, currentUser?.userId);
-            return;
-          }
-          setRequestDetails(league);
-          setSenderDetails(player);
-        } catch (error) {
-          console.error("Error fetching league details:", error);
+      try {
+        const competition = await fetchCompetitionById({
+          competitionId: requestId,
+          collectionName: config.collectionName,
+        });
+        const player = await getUserById(senderId);
+        if (!competition || !player) {
+          console.error("Competition or player not found");
+          readNotification(notificationId, currentUser?.userId);
+          return;
         }
-      } // Add else for tournaments in the future
-    };
+
+        const normalizedCompetition = normalizeCompetitionData({
+          rawData: competition,
+          competitionType: config.competitionType,
+        }) as NormalizedCompetition;
+
+        setCompetition(normalizedCompetition);
+        setSenderDetails(player);
+      } catch (error) {
+        console.error("Error fetching competition details:", error);
+      }
+    }; // Add else for tournaments in the future
 
     fetchDetails();
     setLoading(false);
   }, [requestId, requestType]);
 
   useEffect(() => {
-    // const notificationExistsWithNoDetails = notificationId && !requestDetails;
+    // const notificationExistsWithNoDetails = notificationId && !competition;
 
-    if (!requestDetails || isRead) return;
+    if (!competition || isRead) return;
 
-    if (leagueFull || requestWithdrawn) {
+    if (competitionFull || requestWithdrawn) {
       readNotification(notificationId, currentUser?.userId);
     }
   }, [
-    requestDetails,
+    competition,
     isRead,
-    leagueFull,
+    competitionFull,
     requestWithdrawn,
     notificationId,
     currentUser?.userId,
@@ -113,31 +132,32 @@ const JoinRequestModal = ({
 
   const handleAcceptJoinRequest = async () => {
     try {
-      setJoiningLeague(true);
-      await acceptLeagueJoinRequest(
+      setJoiningCompetition(true);
+      await acceptCompetitionJoinRequest({
         senderId,
-        requestDetails.leagueId,
+        competitionId: competition?.id,
         notificationId,
-        currentUser?.userId
-      );
+        userId: currentUser?.userId,
+        collectionName: config.collectionName,
+      });
 
       console.log("Invite accepted successfully");
       onClose();
     } catch (error) {
       console.error("Error accepting invite:", error);
     } finally {
-      setJoiningLeague(false);
+      setJoiningCompetition(false);
     }
   };
 
   const handleLinkPress = () => {
-    if (requestDetails) {
+    if (competition) {
       onClose();
-      navigateTo(requestDetails.leagueId);
+      navigateTo(competition.id);
     }
   };
 
-  const navigateToProfile = (senderId) => {
+  const navigateToProfile = (senderId: string) => {
     onClose();
     navigation.navigate("UserProfile", {
       userId: senderId,
@@ -146,21 +166,22 @@ const JoinRequestModal = ({
 
   const handleDeclineJoinRequest = async () => {
     try {
-      await declineLeagueJoinRequest(
+      await declineCompetitionJoinRequest({
         senderId,
-        requestDetails.leagueId,
+        competitionId: competition?.id,
         notificationId,
-        currentUser?.userId
-      );
-      console.log("Invite declined successfully");
-      onClose(); // Close the modal after declining
+        userId: currentUser?.userId,
+        collectionName: config.collectionName,
+      });
+      console.log("Join request declined successfully");
+      onClose();
     } catch (error) {
-      console.error("Error declining invite:", error);
+      console.error("Error declining join request:", error);
     }
   };
 
   const renderPlayer = useCallback(
-    ({ item: player }) => {
+    ({ item: player, senderId }: { item: UserProfile; senderId: string }) => {
       const playerXp = player?.profileDetail.XP;
       const rankLevel = findRankIndex(playerXp) + 1;
 
@@ -173,7 +194,7 @@ const JoinRequestModal = ({
             source={
               player?.profileImage
                 ? { uri: player.profileImage }
-                : CourtChampsLogo
+                : { uri: ccImageEndpoint }
             }
           />
 
@@ -222,32 +243,31 @@ const JoinRequestModal = ({
               <Message>
                 A user has requested to join{" "}
                 <LinkText onPress={handleLinkPress}>
-                  {requestDetails?.leagueName}
+                  {competition?.name}
                 </LinkText>
               </Message>
 
               {senderDetails &&
                 renderPlayer({
                   item: senderDetails,
-                  index: 0,
                   senderId,
                 })}
 
               {requestWithdrawn && (
                 <DisabledText>
-                  Request to join league has been withdrawn
+                  Request to join {competitionType} has been withdrawn
                 </DisabledText>
               )}
 
-              {leagueFull && (
+              {competitionFull && (
                 <DisabledText>
-                  This invite has expired as the league is full
+                  This invite has expired as the {competitionType} is full
                 </DisabledText>
               )}
 
-              {userAlreadyInLeague && (
+              {userAlreadyInCompetition && (
                 <DisabledText>
-                  This user is already a participant in the league
+                  This user is already a participant in the {competitionType}
                 </DisabledText>
               )}
 
@@ -256,10 +276,10 @@ const JoinRequestModal = ({
                   style={{ backgroundColor: "red" }}
                   disabled={
                     isRead ||
-                    leagueFull ||
+                    competitionFull ||
                     requestWithdrawn ||
-                    userAlreadyInLeague ||
-                    joiningLeague
+                    userAlreadyInCompetition ||
+                    joiningCompetition
                   }
                   onPress={handleDeclineJoinRequest}
                 >
@@ -269,10 +289,10 @@ const JoinRequestModal = ({
                   onPress={handleAcceptJoinRequest}
                   disabled={
                     isRead ||
-                    leagueFull ||
+                    competitionFull ||
                     requestWithdrawn ||
-                    userAlreadyInLeague ||
-                    joiningLeague
+                    userAlreadyInCompetition ||
+                    joiningCompetition
                   }
                 >
                   <AcceptButtonText>Accept</AcceptButtonText>
@@ -385,14 +405,20 @@ const CloseButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const Button = styled.TouchableOpacity({
-  backgroundColor: (props) => (props.disabled ? "#888" : "#00A2FF"),
-  paddingHorizontal: 20,
-  paddingVertical: 8,
-  borderRadius: 8,
-  marginTop: 10,
-  opacity: (props) => (props.disabled ? 0.6 : 1),
-});
+interface ButtonProps {
+  disabled?: boolean;
+}
+
+const Button = styled.TouchableOpacity<ButtonProps>(
+  ({ disabled }: ButtonProps) => ({
+    backgroundColor: disabled ? "#888" : "#00A2FF",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 10,
+    opacity: disabled ? 0.6 : 1,
+  })
+);
 
 const AcceptButtonText = styled.Text({
   color: "white",

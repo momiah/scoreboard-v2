@@ -24,15 +24,32 @@ import { createdAt } from "expo-updates";
 import { LeagueContext } from "../../context/LeagueContext";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../popup/Popup";
+import {
+  League,
+  Tournament,
+  NormalizedCompetition,
+  CompetitionType,
+} from "@/types/competition";
+import { COMPETITION_TYPES, COLLECTION_NAMES } from "@/schemas/schema";
+import { UserProfile } from "@/types/player";
+import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+
+type InvitePlayerModalProps = {
+  modalVisible: boolean;
+  setModalVisible: (visible: boolean) => void;
+  competitionDetails: League | Tournament;
+  competitionType: CompetitionType;
+};
 
 const InvitePlayerModal = ({
   modalVisible,
   setModalVisible,
-  leagueDetails,
-}) => {
+  competitionDetails,
+  competitionType,
+}: InvitePlayerModalProps) => {
   const [searchUser, setSearchUser] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [inviteUsers, setInviteUsers] = useState([]);
+  const [suggestions, setSuggestions] = useState<UserProfile[]>([]);
+  const [inviteUsers, setInviteUsers] = useState<UserProfile[]>([]);
   const [errorText, setErrorText] = useState("");
   const [sendingInvite, setSendingInvite] = useState(false);
   const { sendNotification } = useContext(UserContext);
@@ -45,15 +62,23 @@ const InvitePlayerModal = ({
     showPopup,
   } = useContext(PopupContext);
 
+  const competition = normalizeCompetitionData({
+    rawData: competitionDetails,
+    competitionType,
+  }) as NormalizedCompetition;
+
+  const collectionName =
+    competitionType === COMPETITION_TYPES.LEAGUE
+      ? COLLECTION_NAMES.leagues
+      : COLLECTION_NAMES.tournaments;
+
   // Simple function to check if user has conflict (not including current invite list)
-  const hasUserConflict = (userId) => {
-    const inLeague = leagueDetails.leagueParticipants?.some(
+  const hasUserConflict = (userId: string) => {
+    const inLeague = competition.participants?.some((u) => u.userId === userId);
+    const inPendingInvites = competition.pendingInvites?.some(
       (u) => u.userId === userId
     );
-    const inPendingInvites = leagueDetails.pendingInvites?.some(
-      (u) => u.userId === userId
-    );
-    const inPendingRequests = leagueDetails.pendingRequests?.some(
+    const inPendingRequests = competition.pendingRequests?.some(
       (u) => u.userId === userId
     );
 
@@ -77,7 +102,7 @@ const InvitePlayerModal = ({
     } else {
       setErrorText("");
     }
-  }, [inviteUsers, leagueDetails]);
+  }, [inviteUsers, competition]);
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -98,6 +123,16 @@ const InvitePlayerModal = ({
 
       const currentUserId = await AsyncStorage.getItem("userId");
 
+      const notificationType =
+        competitionType === COMPETITION_TYPES.LEAGUE
+          ? notificationTypes.ACTION.INVITE.LEAGUE
+          : notificationTypes.ACTION.INVITE.TOURNAMENT;
+
+      const metaDataId =
+        competitionType === COMPETITION_TYPES.LEAGUE
+          ? "leagueId"
+          : "tournamentId";
+
       // Send invites
       for (const user of inviteUsers) {
         const payload = {
@@ -105,15 +140,15 @@ const InvitePlayerModal = ({
           createdAt: new Date(),
           recipientId: user.userId,
           senderId: currentUserId,
-          message: `You've been invited to join ${leagueDetails.leagueName}`,
-          type: notificationTypes.ACTION.INVITE.LEAGUE,
+          message: `You've been invited to join ${competition.name}`,
+          type: notificationType,
           data: {
-            leagueId: leagueDetails.leagueId,
+            [metaDataId]: competition.id,
           },
         };
 
         await sendNotification(payload);
-        await updatePendingInvites(leagueDetails.leagueId, user.userId);
+        await updatePendingInvites(competition.id, user.userId, collectionName);
       }
 
       handleShowPopup("Players invited successfully!");
@@ -129,7 +164,7 @@ const InvitePlayerModal = ({
     }
   };
 
-  const handleSearch = async (value) => {
+  const handleSearch = async (value: string) => {
     setSearchUser(value);
 
     if (value.trim().length > 0) {
@@ -142,7 +177,9 @@ const InvitePlayerModal = ({
         const searchWords = value.toLowerCase().split(/\s+/);
         const q = query(collection(db, "users"));
         const querySnapshot = await getDocs(q);
-        const users = querySnapshot.docs.map((doc) => doc.data());
+        const users = querySnapshot.docs.map(
+          (doc) => doc.data() as UserProfile
+        );
 
         // Filter only current user and already selected users
         const filteredUsers = users.filter((user) => {
@@ -167,14 +204,14 @@ const InvitePlayerModal = ({
     }
   };
 
-  const handleSelectUser = (user) => {
+  const handleSelectUser = (user: UserProfile) => {
     // Check max players limit
     const totalCount =
-      leagueDetails.leagueParticipants.length +
+      competition.participants.length +
       inviteUsers.length +
-      leagueDetails.pendingInvites.length;
+      competition.pendingInvites.length;
 
-    if (totalCount >= leagueDetails.maxPlayers) {
+    if (totalCount >= competition.maxPlayers) {
       setErrorText("You have reached the maximum number of players");
       return;
     }
@@ -185,14 +222,14 @@ const InvitePlayerModal = ({
     setErrorText("");
   };
 
-  const handleRemoveUser = (userToRemove) => {
+  const handleRemoveUser = (userToRemove: UserProfile) => {
     setInviteUsers((prevUsers) =>
       prevUsers.filter((user) => user.userId !== userToRemove.userId)
     );
   };
 
-  const numberOfPlayers = `${leagueDetails.leagueParticipants?.length || 0} / ${
-    leagueDetails.maxPlayers
+  const numberOfPlayers = `${competition.participants?.length || 0} / ${
+    competition.maxPlayers
   }`;
 
   return (
@@ -228,7 +265,7 @@ const InvitePlayerModal = ({
                 </TouchableOpacity>
 
                 <LeagueDetailsContainer>
-                  <LeagueName>{leagueDetails.leagueName}</LeagueName>
+                  <LeagueName>{competition.name}</LeagueName>
                   <View
                     style={{
                       flexDirection: "row",
@@ -236,8 +273,8 @@ const InvitePlayerModal = ({
                     }}
                   >
                     <LeagueLocation>
-                      {leagueDetails.location.courtName},{" "}
-                      {leagueDetails.location.city}
+                      {competition.location.courtName},{" "}
+                      {competition.location.city}
                     </LeagueLocation>
                   </View>
 
@@ -257,11 +294,11 @@ const InvitePlayerModal = ({
                       iconPosition={"right"}
                       bold
                     />
-                    <Tag name={leagueDetails.leagueType} />
-                    <Tag name={leagueDetails.prizeType} />
+                    <Tag name={competition.type} />
+                    <Tag name={competition.prizeType} />
                   </View>
                 </LeagueDetailsContainer>
-                <Label>Search Players</Label>
+                <Label>Search Players by username</Label>
                 <Input
                   placeholder="Start typing to search players"
                   placeholderTextColor="#999"

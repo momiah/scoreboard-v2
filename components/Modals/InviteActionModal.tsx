@@ -1,10 +1,8 @@
 import {
   Modal,
-  Text,
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Clipboard,
   Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -19,10 +17,25 @@ import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
 import { useRef } from "react";
 import { copyLocationAddress } from "../../helpers/copyLocationAddress";
-import { useNavigation } from "@react-navigation/native";
-import { COLLECTION_NAMES } from "../../schemas/schema";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
+import { NormalizedCompetition } from "@/types/competition";
+import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
 const screenWidth = Dimensions.get("window").width;
+
+type InviteActionModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  inviteId: string;
+  inviteType: "invite-league" | "invite-tournament";
+  notificationId: string;
+  isRead: boolean;
+};
 
 const InviteActionModal = ({
   visible,
@@ -31,50 +44,65 @@ const InviteActionModal = ({
   inviteType,
   notificationId,
   isRead,
-}) => {
-  const { fetchCompetitionById, acceptLeagueInvite, declineLeagueInvite } =
-    useContext(LeagueContext);
+}: InviteActionModalProps) => {
+  const {
+    fetchCompetitionById,
+    acceptCompetitionInvite,
+    declineCompetitionInvite,
+  } = useContext(LeagueContext);
   const { currentUser, readNotification } = useContext(UserContext);
-  const [inviteDetails, setInviteDetails] = useState(null);
+  const [competition, setCompetition] = useState<NormalizedCompetition | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
   const [isWithdrawn, setIsWithdrawn] = useState(false);
 
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const timeoutRef = useRef(null);
 
-  const navigateTo = (leagueId) => {
-    navigation.navigate("League", { leagueId });
+  const config = getCompetitionConfig(inviteType);
+  const navRoute = config.navRoute;
+
+  const navigateTo = (competitionId: string) => {
+    navigation.navigate(navRoute, { competitionId });
   };
 
   const leagueFull =
-    inviteDetails?.leagueParticipants.length >= inviteDetails?.maxPlayers;
+    (competition?.participants?.length ?? 0) >=
+    (competition?.maxPlayers ?? Infinity);
 
-  const alreadyInLeague = inviteDetails?.leagueParticipants?.some(
+  const alreadyInLeague = competition?.participants?.some(
     (p) => p.userId === currentUser?.userId
   );
 
-  const location = inviteDetails?.location;
+  const location = competition?.location;
 
   useEffect(() => {
     setLoading(true);
     const fetchDetails = async () => {
       if (inviteType === "invite-league") {
         try {
-          const league = await fetchCompetitionById({
+          const competition = await fetchCompetitionById({
             competitionId: inviteId,
-            collectionName: COLLECTION_NAMES.leagues,
+            collectionName: config.collectionName,
           });
-          if (!league) {
-            console.log("League not found for invite ID:", inviteId);
+
+          if (!competition) {
+            console.log("Competition not found for invite ID:", inviteId);
             readNotification(notificationId, currentUser.userId);
             setIsWithdrawn(true);
             setLoading(false);
             return;
           }
-          setInviteDetails(league);
+          const normalizedCompetition = normalizeCompetitionData({
+            rawData: competition,
+            competitionType: config.competitionType,
+          }) as NormalizedCompetition;
 
-          const withdrawn = !league?.pendingInvites?.some(
+          setCompetition(normalizedCompetition);
+
+          const withdrawn = !normalizedCompetition?.pendingInvites?.some(
             (u) => u.userId === currentUser?.userId
           );
           setIsWithdrawn(withdrawn);
@@ -91,15 +119,13 @@ const InviteActionModal = ({
   }, [inviteId, inviteType]);
 
   useEffect(() => {
-    // const notificationExistsWithNoDetails = notificationId && !inviteDetails;
-
-    if (!inviteDetails || isRead) return;
+    if (!competition || isRead) return;
 
     if (leagueFull || isWithdrawn) {
       readNotification(notificationId, currentUser.userId);
     }
   }, [
-    inviteDetails,
+    competition,
     isRead,
     leagueFull,
     isWithdrawn,
@@ -108,7 +134,11 @@ const InviteActionModal = ({
   ]);
 
   const handleAcceptInvite = async () => {
-    if (inviteDetails.leagueParticipants.length >= inviteDetails.maxPlayers) {
+    if (!competition) {
+      console.log("Competition not found");
+      return;
+    }
+    if (competition.participants.length >= competition.maxPlayers) {
       console.log("League is full");
       Alert.alert(
         "League Full",
@@ -117,41 +147,43 @@ const InviteActionModal = ({
       return;
     }
     try {
-      await acceptLeagueInvite(
-        currentUser?.userId,
-        inviteDetails.leagueId,
-        notificationId
-      );
+      await acceptCompetitionInvite({
+        userId: currentUser?.userId,
+        competitionId: competition.id,
+        notificationId,
+        collectionName: config.collectionName,
+      });
 
       console.log("Invite accepted successfully");
-      onClose(); // Close the modal after accepting
+      onClose();
     } catch (error) {
       console.error("Error accepting invite:", error);
     }
   };
 
   const handleLinkPress = () => {
-    if (inviteDetails) {
+    if (competition) {
       onClose();
-      navigateTo(inviteDetails.leagueId);
+      navigateTo(competition.id);
     }
   };
 
   const handleDeclineInvite = async () => {
     try {
-      await declineLeagueInvite(
-        currentUser?.userId,
-        inviteDetails.leagueId,
-        notificationId
-      );
+      await declineCompetitionInvite({
+        userId: currentUser?.userId,
+        competitionId: competition?.id,
+        notificationId,
+        collectionName: config.collectionName,
+      });
       console.log("Invite declined successfully");
-      onClose(); // Close the modal after declining
+      onClose();
     } catch (error) {
       console.error("Error declining invite:", error);
     }
   };
 
-  const numberOfPlayers = `${inviteDetails?.leagueParticipants.length} / ${inviteDetails?.maxPlayers}`;
+  const numberOfPlayers = `${competition?.participants.length} / ${competition?.maxPlayers}`;
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -180,12 +212,12 @@ const InviteActionModal = ({
               <LeagueDetailsContainer>
                 <Title>League Invite</Title>
 
-                {inviteDetails ? (
+                {competition ? (
                   <>
                     <Message>
                       You’ve been invited to join{" "}
                       <LinkText onPress={handleLinkPress}>
-                        {inviteDetails?.leagueName}
+                        {competition?.name}
                       </LinkText>
                     </Message>
 
@@ -197,9 +229,9 @@ const InviteActionModal = ({
                       }}
                     >
                       <LeagueLocation>
-                        {inviteDetails?.location.courtName},{" "}
-                        {inviteDetails?.location.city},{" "}
-                        {inviteDetails?.location.postCode}
+                        {competition?.location.courtName},{" "}
+                        {competition?.location.city},{" "}
+                        {competition?.location.postCode}
                       </LeagueLocation>
                       <TouchableOpacity
                         onPress={() =>
@@ -229,7 +261,7 @@ const InviteActionModal = ({
                       }}
                     >
                       <Tag
-                        name={`Start Date - ${inviteDetails?.startDate}`}
+                        name={`Start Date - ${competition?.startDate}`}
                         color="rgba(0, 0, 0, 0.7)"
                         iconColor="rgb(0, 133, 40)"
                         iconSize={15}
@@ -238,7 +270,7 @@ const InviteActionModal = ({
                         bold
                       />
                       <Tag
-                        name={`End Date - ${inviteDetails?.endDate}`}
+                        name={`End Date - ${competition?.endDate}`}
                         color="rgba(0, 0, 0, 0.7)"
                         iconColor="rgb(190, 0, 0)"
                         iconSize={15}
@@ -264,26 +296,20 @@ const InviteActionModal = ({
                         iconPosition="right"
                         bold
                       />
-                      <Tag name={inviteDetails?.leagueType} />
-                      <Tag name={inviteDetails?.prizeType} />
+                      <Tag name={competition?.type} />
+                      <Tag name={competition?.prizeType} />
                     </View>
                   </>
                 ) : null}
               </LeagueDetailsContainer>
 
-              {leagueFull && (
+              {(leagueFull || isWithdrawn || (alreadyInLeague && !isRead)) && (
                 <ErrorText>
-                  This invite has expired as the league is full
-                </ErrorText>
-              )}
-
-              {isWithdrawn && (
-                <ErrorText>This invite is no longer available</ErrorText>
-              )}
-
-              {alreadyInLeague && !isRead && (
-                <ErrorText>
-                  You are already a participant in this league
+                  {leagueFull
+                    ? "This invite has expired as the league is full"
+                    : isWithdrawn
+                    ? "This invite is no longer available"
+                    : "You are already a participant in this league"}
                 </ErrorText>
               )}
 
@@ -347,17 +373,6 @@ const Message = styled.Text({
   //   textAlign: "center",
 });
 
-const LeagueName = styled.Text({
-  fontSize: 18,
-  fontWeight: "bold",
-  color: "white",
-  padding: 5,
-  marginBottom: 5,
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
-  borderRadius: 5,
-  alignSelf: "flex-start",
-});
-
 const LeagueLocation = styled.Text({
   fontSize: 14,
   //   padding: 5,
@@ -379,13 +394,18 @@ const CloseButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const Button = styled.TouchableOpacity({
-  backgroundColor: (props) => (props.disabled ? "#888" : "#00A2FF"),
+interface ButtonProps {
+  disabled?: boolean;
+}
+
+const Button = styled.TouchableOpacity<ButtonProps>({
+  backgroundColor: (props: ButtonProps) =>
+    props.disabled ? "#888" : "#00A2FF",
   paddingHorizontal: 20,
   paddingVertical: 8,
   borderRadius: 8,
   marginTop: 10,
-  opacity: (props) => (props.disabled ? 0.6 : 1),
+  opacity: (props: ButtonProps) => (props.disabled ? 0.6 : 1),
 });
 
 const AcceptButtonText = styled.Text({

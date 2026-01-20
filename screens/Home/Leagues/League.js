@@ -371,7 +371,8 @@ const League = () => {
         <InvitePlayerModel
           modalVisible={invitePlayerModalVisible}
           setModalVisible={setInvitePlayerModalVisible}
-          leagueDetails={leagueById}
+          competitionDetails={leagueById}
+          competitionType={COMPETITION_TYPES.LEAGUE}
         />
       )}
     </View>

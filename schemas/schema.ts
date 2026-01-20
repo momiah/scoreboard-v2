@@ -7,7 +7,12 @@ import {
   UserProfile,
   Location,
 } from "../types/player";
-import { League, Tournament, CollectionName } from "../types/competition";
+import {
+  League,
+  Tournament,
+  CollectionName,
+  CourtLocation,
+} from "../types/competition";
 import moment from "moment";
 
 export const gameTypes = ["Doubles", "Singles"];
@@ -70,7 +75,8 @@ export const ccImageEndpoint =
 export const prizeTypes = {
   TROPHY: "Trophy",
   MEDAL: "Medal",
-  CASH_PRIZE: "Cash Prize",
+  CASH_TROPHY: "Cash & Trophy",
+  CASH_MEDAL: "Cash & Medal",
 };
 export const currencyTypes = ["GBP", "USD", "EUR", "INR"];
 export const daysOfWeek = [
@@ -89,6 +95,12 @@ export const locationSchema: Location = {
   countryCode: "",
   postCode: "",
   address: "",
+};
+
+const courtLocationSchema: CourtLocation = {
+  courtName: "",
+  courtId: "",
+  ...locationSchema,
 };
 
 export const gameSchema = {
@@ -207,7 +219,7 @@ export const leagueSchema: League = {
   leagueImage: "",
   leagueName: "",
   leagueDescription: "",
-  location: locationSchema,
+  location: courtLocationSchema,
   countryCode: "",
   createdAt: new Date(),
   startDate: "",
@@ -243,7 +255,7 @@ export const tournamentSchema: Tournament = {
   tournamentImage: "",
   tournamentName: "",
   tournamentDescription: "",
-  location: locationSchema,
+  location: courtLocationSchema,
   countryCode: "",
   createdAt: new Date(),
   startDate: "",
