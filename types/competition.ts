@@ -40,7 +40,7 @@ interface PendingRequests {
   userId: string;
 }
 
-interface TeamStats {
+export interface TeamStats {
   averagePointDifference: number;
   currentStreak: number;
   demonWin: number;
@@ -97,6 +97,8 @@ export interface Tournament {
   tournamentOwner: CompetitionOwner;
   games: Game[];
   fixtures: Fixtures[];
+  numberOfGames?: number;
+  gamesCompleted?: number;
   tournamentType: string;
   tournamentMode: string;
   prizeType: string;

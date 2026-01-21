@@ -9,11 +9,13 @@ import {
   TextSkeleton,
   TrophyItemSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
+import { COMPETITION_TYPES } from "../../schemas/schema";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
 const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
   const prizes = useMemo(() => {
-    const prizesType = competitionType === "league" ? trophies : medals;
+    const prizesType =
+      competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
     return distribution.map((percentage, index) => ({
       xp: Math.floor(prizePool * percentage),
       trophy: prizesType[index],

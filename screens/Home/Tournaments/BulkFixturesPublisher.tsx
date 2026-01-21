@@ -32,7 +32,7 @@ import {
 } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
 import { LeagueContext } from "@/context/LeagueContext";
 import { COLLECTION_NAMES } from "@/schemas/schema";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { processGamePerformance } from "../../../helpers/processGamePerformance";
 import { ScoreboardProfile } from "../../../types/player";
@@ -402,6 +402,7 @@ const BulkFixturesPublisher = () => {
                   const tournamentRef = doc(db, "tournaments", tournamentId);
                   await updateDoc(tournamentRef, {
                     tournamentParticipants: currentParticipants,
+                    gamesCompleted: increment(successCount),
                   });
                   console.log(
                     `✅ Updated ${currentParticipants.length} tournament participants`

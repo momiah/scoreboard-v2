@@ -12,6 +12,7 @@ import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 import { COMPETITION_TYPES } from "../../schemas/schema";
+import { calculateTournamentPrizePool } from "../../helpers/Tournament/calculateTournamentPrizePool";
 
 // Constants moved outside to prevent recreation
 const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
@@ -21,8 +22,6 @@ const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
 }));
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
-const SINGLES_MULTIPLIER = 25;
-const DOUBLES_MULTIPLIER = 75;
 
 const CompetitionSummary = memo(
   ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
@@ -68,11 +67,13 @@ const CompetitionSummary = memo(
         prizePool =
           (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2;
       } else {
-        const gameMode = competitionData?.type || "singles";
-        const matchMultiplier =
-          gameMode === "singles" ? SINGLES_MULTIPLIER : DOUBLES_MULTIPLIER;
+        const gameMode = competitionData?.type || "Singles";
+        const tournamentPrizePool = calculateTournamentPrizePool(
+          numberOfMatches,
+          gameMode
+        );
 
-        prizePool = numberOfMatches * matchMultiplier;
+        prizePool = tournamentPrizePool;
       }
 
       return {

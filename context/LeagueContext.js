@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   limit,
+  increment,
 } from "firebase/firestore";
 import moment from "moment";
 
@@ -875,6 +876,12 @@ const LeagueProvider = ({ children }) => {
           gameId,
           gameResult: updatedGame,
         });
+
+        if (isFullyApproved) {
+          await updateDoc(competitionRef, {
+            gamesCompleted: increment(1),
+          });
+        }
       } else {
         const updatedGames = [...games];
         updatedGames[gameIndex] = updatedGame;
@@ -1265,6 +1272,11 @@ const LeagueProvider = ({ children }) => {
         tournamentData.tournamentParticipants || [];
       const tournamentName = tournamentData.tournamentName;
 
+      const numberOfGames = fixtures.reduce(
+        (total, round) => total + round.games.length,
+        0
+      );
+
       await updateDoc(tournamentRef, {
         fixtures: fixtures, // The fixtures array from your generated data
         fixturesGenerated: true,
@@ -1272,6 +1284,8 @@ const LeagueProvider = ({ children }) => {
         numberOfCourts,
         generationMode: mode,
         generationType: generationType,
+        numberOfGames: numberOfGames,
+        gamesCompleted: 0,
       });
 
       for (const participant of tournamentParticipants) {
