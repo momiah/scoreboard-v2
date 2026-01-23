@@ -3,12 +3,6 @@ const { notificationTypes } = require("../schemas/schema");
 const { sendNotification } = require("./sendNotification");
 const db = admin.firestore();
 
-
-
-
-
-
-
 const calculatePrizeAllocation = async ({
   leagueParticipants,
   prizePool,
