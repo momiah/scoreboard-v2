@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState } from "react";
 import {
   Modal,
   Text,
@@ -20,7 +20,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { UserContext } from "../../context/UserContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
-import { createdAt } from "expo-updates";
+import moment from "moment";
 import { LeagueContext } from "../../context/LeagueContext";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../popup/Popup";
@@ -50,7 +50,7 @@ const InvitePlayerModal = ({
   const [searchUser, setSearchUser] = useState("");
   const [suggestions, setSuggestions] = useState<UserProfile[]>([]);
   const [inviteUsers, setInviteUsers] = useState<UserProfile[]>([]);
-  const [errorText, setErrorText] = useState("");
+  const [validationError, setValidationError] = useState("");
   const [sendingInvite, setSendingInvite] = useState(false);
   const { sendNotification } = useContext(UserContext);
   const { updatePendingInvites } = useContext(LeagueContext);
@@ -72,7 +72,7 @@ const InvitePlayerModal = ({
       ? COLLECTION_NAMES.leagues
       : COLLECTION_NAMES.tournaments;
 
-  // Simple function to check if user has conflict (not including current invite list)
+  // Check if user has conflict (already in competition or pending)
   const hasUserConflict = (userId: string) => {
     const inLeague = competition.participants?.some((u) => u.userId === userId);
     const inPendingInvites = competition.pendingInvites?.some(
@@ -85,24 +85,42 @@ const InvitePlayerModal = ({
     return inLeague || inPendingInvites || inPendingRequests;
   };
 
-  // Check if any users in invite list have conflicts
-  const hasConflicts = inviteUsers.some((user) => hasUserConflict(user.userId));
+  // Derived state - computed on each render, no useEffects needed
+  const fixturesGenerated =
+    competitionType === COMPETITION_TYPES.TOURNAMENT &&
+    (competitionDetails as Tournament).fixturesGenerated;
 
-  // Show error when there are conflicts
-  useEffect(() => {
-    if (hasConflicts) {
-      const conflictedUsers = inviteUsers.filter((user) =>
-        hasUserConflict(user.userId)
-      );
-      setErrorText(
-        `Cannot invite: ${conflictedUsers
-          .map((u) => u.username)
-          .join(", ")}. Remove them to continue.`
-      );
-    } else {
-      setErrorText("");
+  const competitionEnded = competition.endDate
+    ? moment(competition.endDate, "DD-MM-YYYY").isBefore(moment())
+    : false;
+
+  const conflictedUsers = inviteUsers.filter((user) =>
+    hasUserConflict(user.userId)
+  );
+  const hasConflicts = conflictedUsers.length > 0;
+
+  // Single source of truth for blocking errors (prevents inviting)
+  const getBlockingError = (): string => {
+    if (competitionEnded) {
+      const label =
+        competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
+      return `Cannot invite players as the ${label} has ended.`;
     }
-  }, [inviteUsers, competition]);
+    if (fixturesGenerated) {
+      return "Cannot invite players as fixtures have been generated for this tournament.";
+    }
+    if (hasConflicts) {
+      return `Cannot invite: ${conflictedUsers
+        .map((u) => u.username)
+        .join(", ")}. Remove them to continue.`;
+    }
+    return "";
+  };
+
+  const blockingError = getBlockingError();
+  const displayError = blockingError || validationError;
+  const isInviteDisabled =
+    sendingInvite || inviteUsers.length === 0 || !!blockingError;
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -112,11 +130,11 @@ const InvitePlayerModal = ({
 
   const handleSendInvite = async () => {
     setSendingInvite(true);
-    setErrorText("");
+    setValidationError("");
 
     try {
       if (inviteUsers.length === 0) {
-        setErrorText("Please select at least one player to invite");
+        setValidationError("Please select at least one player to invite");
         setSendingInvite(false);
         return;
       }
@@ -152,12 +170,11 @@ const InvitePlayerModal = ({
       }
 
       handleShowPopup("Players invited successfully!");
-      // Clear the invite list after successful invitation
       setInviteUsers([]);
       setSearchUser("");
       setSuggestions([]);
     } catch (error) {
-      setErrorText("Failed to send invites. Please try again.");
+      setValidationError("Failed to send invites. Please try again.");
       console.error("Error sending invites:", error);
     } finally {
       setSendingInvite(false);
@@ -181,7 +198,6 @@ const InvitePlayerModal = ({
           (doc) => doc.data() as UserProfile
         );
 
-        // Filter only current user and already selected users
         const filteredUsers = users.filter((user) => {
           const username = user.username.toLowerCase();
           const matchesSearch = searchWords.some((word) =>
@@ -205,27 +221,27 @@ const InvitePlayerModal = ({
   };
 
   const handleSelectUser = (user: UserProfile) => {
-    // Check max players limit
     const totalCount =
       competition.participants.length +
       inviteUsers.length +
       competition.pendingInvites.length;
 
     if (totalCount >= competition.maxPlayers) {
-      setErrorText("You have reached the maximum number of players");
+      setValidationError("You have reached the maximum number of players");
       return;
     }
 
     setInviteUsers((prevUsers) => [...prevUsers, user]);
     setSearchUser("");
     setSuggestions([]);
-    setErrorText("");
+    setValidationError("");
   };
 
   const handleRemoveUser = (userToRemove: UserProfile) => {
     setInviteUsers((prevUsers) =>
       prevUsers.filter((user) => user.userId !== userToRemove.userId)
     );
+    setValidationError("");
   };
 
   const numberOfPlayers = `${competition.participants?.length || 0} / ${
@@ -375,26 +391,17 @@ const InvitePlayerModal = ({
                   you post a game
                 </DisclaimerText>
 
-                {errorText ? (
+                {displayError ? (
                   <View style={{ width: "100%" }}>
-                    <ErrorText>{errorText}</ErrorText>
+                    <ErrorText>{displayError}</ErrorText>
                   </View>
                 ) : null}
 
                 <ButtonContainer>
                   <InviteButton
                     onPress={handleSendInvite}
-                    disabled={
-                      sendingInvite || inviteUsers.length === 0 || hasConflicts
-                    }
-                    style={{
-                      opacity:
-                        sendingInvite ||
-                        inviteUsers.length === 0 ||
-                        hasConflicts
-                          ? 0.6
-                          : 1,
-                    }}
+                    disabled={isInviteDisabled}
+                    style={{ opacity: isInviteDisabled ? 0.6 : 1 }}
                   >
                     {sendingInvite ? (
                       <ActivityIndicator size="small" color="white" />
@@ -412,7 +419,6 @@ const InvitePlayerModal = ({
   );
 };
 
-// ✅ All styled components remain the same
 const { width: screenWidth } = Dimensions.get("window");
 
 const ModalContainer = styled(BlurView).attrs({

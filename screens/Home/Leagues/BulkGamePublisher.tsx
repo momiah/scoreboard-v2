@@ -61,6 +61,9 @@ const BulkGamePublisher = () => {
   const leagueType = leagueById?.leagueType || "Doubles";
   const leagueName = leagueById?.leagueName || "";
   const existingGames = leagueById?.games || [];
+  const leagueEnded = leagueById
+    ? moment().isAfter(moment(leagueById.endDate, "DD-MM-YYYY"))
+    : false;
 
   const handleClosePopup = () => {
     setShowPopup(false);
@@ -394,7 +397,10 @@ const BulkGamePublisher = () => {
         <View style={{ width: 24 }} />
       </Header>
 
-      <AddGameButton onPress={handleAddGame} disabled={loadingPlayers}>
+      <AddGameButton
+        onPress={handleAddGame}
+        disabled={loadingPlayers || leagueEnded}
+      >
         {loadingPlayers ? (
           <ActivityIndicator size="small" color="white" />
         ) : (
@@ -410,6 +416,11 @@ const BulkGamePublisher = () => {
             Bulk publishing allows admins to publish multiple games without
             approval.
           </EmptySubtext>
+          <ErrorSubtext>
+            {leagueEnded
+              ? "The league has ended. You cannot add new games."
+              : ""}
+          </ErrorSubtext>
         </EmptyState>
       ) : (
         <FlatList
@@ -513,15 +524,23 @@ const ActionButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const AddGameButton = styled.TouchableOpacity({
+const AddGameButton = styled.TouchableOpacity((disabled: boolean) => ({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#00A2FF",
+  backgroundColor: disabled ? "#666" : "#00A2FF",
   padding: 15,
   borderRadius: 8,
   marginBottom: 20,
   gap: 8,
+}));
+
+const ErrorSubtext = styled.Text({
+  color: "#e53935",
+  fontSize: 12,
+  textAlign: "center",
+  marginTop: 10,
+  paddingHorizontal: 40,
 });
 
 const EmptyState = styled.View({

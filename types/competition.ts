@@ -97,6 +97,7 @@ export interface Tournament {
   tournamentOwner: CompetitionOwner;
   games: Game[];
   fixtures: Fixtures[];
+  fixturesGenerated: boolean;
   numberOfGames?: number;
   gamesCompleted?: number;
   tournamentType: string;

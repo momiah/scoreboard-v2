@@ -255,6 +255,7 @@ export const tournamentSchema: Tournament = {
   tournamentImage: "",
   tournamentName: "",
   tournamentDescription: "",
+  fixturesGenerated: false,
   location: courtLocationSchema,
   countryCode: "",
   createdAt: new Date(),
