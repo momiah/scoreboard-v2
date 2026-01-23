@@ -1,6 +1,7 @@
 const { db } = require("../../services/firebase.config");
 
-export const sendNotification = async (notification) => {
+
+const sendNotification = async (notification) => {
     try {
         const recipientId = notification.recipientId;
         if (!recipientId) {
@@ -43,7 +44,7 @@ export const sendNotification = async (notification) => {
             sound: "default",
             vibrate: [200, 100, 200],
             priority: "high",
-            title: `New Notification in Court Champs!`,
+            title: `Court Champs`,
             body: notification.message,
             data: {
                 ...notification.data,
@@ -76,4 +77,5 @@ export const sendNotification = async (notification) => {
         console.error("❌ Failed to send notification:", err);
 
     }
-};
+}
+module.exports = { sendNotification }
