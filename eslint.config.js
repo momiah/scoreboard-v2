@@ -1,6 +1,6 @@
-import globals from 'globals';
-import pluginJs from '@eslint/js';
-import pluginReact from 'eslint-plugin-react';
+const globals = require('globals');
+const pluginJs = require('@eslint/js');
+const pluginReact = require('eslint-plugin-react');
 
 const ignorePatterns = [
   'node_modules/**',
@@ -23,7 +23,7 @@ const ignorePatterns = [
   '**/*.min.js',
 ];
 
-export default [
+module.exports = [
   { ignores: ignorePatterns },
   {
     files: ['**/*.{js,mjs,cjs,jsx,ts,tsx}'],
