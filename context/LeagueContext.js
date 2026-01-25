@@ -32,30 +32,13 @@ import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 
 const LeagueContext = createContext();
 
 // ============================================
 // HELPER FUNCTIONS (for game approval)
 // ============================================
-
-/**
- * Get competition-specific configuration based on type
- */
-export const getCompetitionConfig = (notificationType) => {
-  const isTournament =
-    notificationType === notificationTypes.ACTION.ADD_GAME.TOURNAMENT;
-
-  return {
-    isTournament,
-    collectionName: isTournament ? "tournaments" : "leagues",
-    participantsKey: isTournament
-      ? "tournamentParticipants"
-      : "leagueParticipants",
-    typeKey: isTournament ? "tournamentType" : "leagueType",
-    nameKey: isTournament ? "tournamentName" : "leagueName",
-  };
-};
 
 /**
  * Find game in competition (handles both league and tournament structures)
@@ -780,6 +763,8 @@ const LeagueProvider = ({ children }) => {
   }) => {
     try {
       const config = getCompetitionConfig(notificationType);
+      const isTournament = !config.isLeague; // ✅ Derive from isLeague
+
       const competitionRef = doc(db, config.collectionName, competitionId);
       const competitionSnap = await getDoc(competitionRef);
 
@@ -793,7 +778,7 @@ const LeagueProvider = ({ children }) => {
         game,
         index: gameIndex,
         games,
-      } = findGameInCompetition(competitionData, gameId, config.isTournament);
+      } = findGameInCompetition(competitionData, gameId, isTournament);
 
       if (!game || gameIndex === -1) {
         console.error("Game not found in competition");
@@ -870,7 +855,7 @@ const LeagueProvider = ({ children }) => {
       }
 
       // Save updated game
-      if (config.isTournament) {
+      if (isTournament) {
         await updateTournamentGame({
           tournamentId: competitionId,
           gameId,
@@ -902,42 +887,18 @@ const LeagueProvider = ({ children }) => {
         message: `${currentUserData.username} has approved your game on ${
           competitionData[config.nameKey]
         }!`,
-        type: notificationType,
-        data: { competitionId, gameId },
+        type: notificationTypes.INFORMATION[
+          isTournament ? "TOURNAMENT" : "LEAGUE"
+        ].TYPE,
+        data: {
+          [config.paramKey]: competitionId,
+          gameId,
+        },
       });
 
       console.log("Game approved successfully!");
     } catch (error) {
       console.error("Error approving game:", error);
-    }
-  };
-
-  const sendChatMessage = async ({
-    message,
-    competitionId,
-    competitionType = COMPETITION_TYPES.LEAGUE,
-  }) => {
-    const collectionRef =
-      competitionType === COMPETITION_TYPES.TOURNAMENT
-        ? "tournaments"
-        : "leagues";
-    try {
-      const messageRef = doc(
-        collection(db, collectionRef, competitionId, "chat")
-      );
-      const messageToSend = {
-        _id: messageRef.id,
-        text: message.text,
-        createdAt: message.createdAt,
-        user: {
-          _id: message.user._id,
-          name: message.user.name,
-          avatar: message.user.avatar || ccDefaultImage,
-        },
-      };
-      await setDoc(messageRef, messageToSend);
-    } catch (error) {
-      console.error("Error sending message:", error);
     }
   };
 
@@ -951,6 +912,8 @@ const LeagueProvider = ({ children }) => {
   }) => {
     try {
       const config = getCompetitionConfig(notificationType);
+      const isTournament = !config.isLeague;
+
       const competitionRef = doc(db, config.collectionName, competitionId);
       const competitionSnap = await getDoc(competitionRef);
 
@@ -964,7 +927,7 @@ const LeagueProvider = ({ children }) => {
         game,
         index: gameIndex,
         games,
-      } = findGameInCompetition(competitionData, gameId, config.isTournament);
+      } = findGameInCompetition(competitionData, gameId, isTournament);
 
       if (!game || gameIndex === -1) {
         console.error("Game not found in competition");
@@ -1005,7 +968,7 @@ const LeagueProvider = ({ children }) => {
       }
 
       // Save updated games
-      if (config.isTournament) {
+      if (isTournament) {
         if (isFullyDeclined) {
           await updateTournamentGame({
             tournamentId: competitionId,
@@ -1042,10 +1005,10 @@ const LeagueProvider = ({ children }) => {
           competitionData[config.nameKey]
         }!`,
         type: notificationTypes.INFORMATION[
-          config.isTournament ? "TOURNAMENT" : "LEAGUE"
+          isTournament ? "TOURNAMENT" : "LEAGUE"
         ].TYPE,
         data: {
-          competitionId,
+          [config.paramKey]: competitionId,
           gameId,
         },
       });
@@ -1053,6 +1016,35 @@ const LeagueProvider = ({ children }) => {
       console.log("Game declined successfully!");
     } catch (error) {
       console.error("Error declining game:", error);
+    }
+  };
+
+  const sendChatMessage = async ({
+    message,
+    competitionId,
+    competitionType = COMPETITION_TYPES.LEAGUE,
+  }) => {
+    const collectionRef =
+      competitionType === COMPETITION_TYPES.TOURNAMENT
+        ? "tournaments"
+        : "leagues";
+    try {
+      const messageRef = doc(
+        collection(db, collectionRef, competitionId, "chat")
+      );
+      const messageToSend = {
+        _id: messageRef.id,
+        text: message.text,
+        createdAt: message.createdAt,
+        user: {
+          _id: message.user._id,
+          name: message.user.name,
+          avatar: message.user.avatar || ccDefaultImage,
+        },
+      };
+      await setDoc(messageRef, messageToSend);
+    } catch (error) {
+      console.error("Error sending message:", error);
     }
   };
 

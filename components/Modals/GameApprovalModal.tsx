@@ -1,4 +1,4 @@
-import { Modal, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import { Modal, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
@@ -6,28 +6,53 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext, useCallback } from "react";
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import { notificationTypes } from "../../schemas/schema";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import { getCompetitionConfig } from "../../helpers/getCompetitionConfig";
+import { NormalizedCompetition } from "@/types/competition";
+import { Game } from "@/types/game";
+import { Player } from "@/types/game";
+import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
 const screenWidth = Dimensions.get("window").width;
 
-// Helper to find game in competition
-const findGame = (competition, gameId, isLeague) => {
+const findGame = (
+  competition: NormalizedCompetition,
+  gameId: string,
+  isLeague: boolean
+): Game | null => {
   if (isLeague) {
     return competition.games?.find((game) => game.gameId === gameId) || null;
   }
 
-  // Tournament: first check fixtures
   for (const fixture of competition.fixtures || []) {
     const game = fixture.games?.find((game) => game.gameId === gameId);
     if (game) return game;
   }
 
-  // Fallback: check root games array if it exists
   return competition.games?.find((game) => game.gameId === gameId) || null;
 };
+
+interface GameApprovalModalProps {
+  visible: boolean;
+  onClose: () => void;
+  notificationId: string;
+  notificationType: string;
+  senderId: string;
+  gameId: string;
+  competitionId: string;
+  isRead: boolean;
+}
+
+interface NavigateToParams {
+  competitionId?: string;
+  userId?: string;
+}
 
 const GameApprovalModal = ({
   visible,
@@ -38,31 +63,35 @@ const GameApprovalModal = ({
   gameId,
   competitionId,
   isRead,
-}) => {
+}: GameApprovalModalProps) => {
   const { fetchCompetitionById, approveGame, declineGame } =
     useContext(LeagueContext);
   const { currentUser, readNotification } = useContext(UserContext);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
-  const [gameDetails, setGameDetails] = useState(null);
+  const [gameDetails, setGameDetails] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingDecision, setLoadingDecision] = useState(false);
-  const [competitionDetails, setCompetitionDetails] = useState(null);
-  const [senderDisplayName, setSenderDisplayName] = useState(null);
+  const [competition, setCompetition] = useState<NormalizedCompetition | null>(
+    null
+  );
+  const [senderDisplayName, setSenderDisplayName] = useState<string | null>(
+    null
+  );
   const [gameDeleted, setGameDeleted] = useState(false);
 
   const config = getCompetitionConfig(notificationType);
 
   const resetState = useCallback(() => {
     setGameDetails(null);
-    setCompetitionDetails(null);
+    setCompetition(null);
     setSenderDisplayName(null);
     setGameDeleted(false);
     setLoading(true);
   }, []);
 
   const navigateTo = useCallback(
-    (route, params) => {
+    (route: string, params: NavigateToParams) => {
       onClose();
       navigation.navigate(route, params);
     },
@@ -87,22 +116,28 @@ const GameApprovalModal = ({
         if (!isMounted) return;
 
         if (!competition) {
-          setCompetitionDetails(null);
+          setCompetition(null);
           setGameDetails(null);
           readNotification(notificationId, currentUser?.userId);
           setLoading(false);
           return;
         }
 
-        const senderParticipant = competition[config.participantsKey]?.find(
+        const normalizedCompetition = normalizeCompetitionData({
+          rawData: competition,
+          competitionType: config.competitionType,
+        }) as NormalizedCompetition;
+
+        const senderParticipant = normalizedCompetition?.participants?.find(
           (p) => p.userId === senderId
         );
         setSenderDisplayName(
           senderParticipant ? formatDisplayName(senderParticipant) : "Unknown"
         );
 
-        const game = findGame(competition, gameId, config.isLeague);
-        setCompetitionDetails(competition);
+        const game = findGame(normalizedCompetition, gameId, config.isLeague);
+
+        setCompetition(normalizedCompetition);
         setGameDetails(game);
 
         if (!game) {
@@ -112,7 +147,7 @@ const GameApprovalModal = ({
       } catch (error) {
         console.error("Error fetching competition details:", error);
         if (isMounted) {
-          setCompetitionDetails(null);
+          setCompetition(null);
           setGameDetails(null);
         }
       } finally {
@@ -145,7 +180,7 @@ const GameApprovalModal = ({
     setLoadingDecision(true);
     try {
       await approveGame({
-        gameId: gameDetails.gameId,
+        gameId: gameDetails?.gameId,
         competitionId,
         userId: currentUser?.userId,
         senderId,
@@ -164,7 +199,7 @@ const GameApprovalModal = ({
     setLoadingDecision(true);
     try {
       await declineGame({
-        gameId: gameDetails.gameId,
+        gameId: gameDetails?.gameId,
         competitionId,
         userId: currentUser?.userId,
         senderId,
@@ -182,8 +217,8 @@ const GameApprovalModal = ({
   const approvalLimitReached =
     gameDetails?.approvalStatus === notificationTypes.RESPONSE.APPROVE_GAME;
   const autoApproved = gameDetails?.autoApproved || false;
-  const competitionName = competitionDetails?.[config.nameKey];
-  const competitionType = competitionDetails?.[config.typeKey];
+  const competitionName = competition?.name || "Unknown Competition";
+  const competitionType = competition?.type || "Singles";
   const isDisabled =
     isRead ||
     loadingDecision ||
@@ -205,13 +240,15 @@ const GameApprovalModal = ({
 
               <Title>Game Approval Request</Title>
 
-              {competitionDetails ? (
+              {competition ? (
                 <>
                   <Message>
                     A game has been reported on{" "}
                     <LinkText
                       onPress={() =>
-                        navigateTo(config.navRoute, { competitionId })
+                        navigateTo(config.navRoute, {
+                          [config.paramKey]: competitionId,
+                        })
                       }
                     >
                       {competitionName}
@@ -232,17 +269,17 @@ const GameApprovalModal = ({
                   {!gameDeleted && (
                     <GameContainer>
                       <TeamColumn
-                        team="left"
+                        position="left"
                         players={gameDetails?.team1}
                         competitionType={competitionType}
                       />
                       <ScoreDisplay
-                        date={gameDetails?.date}
+                        date={gameDetails?.date || "TBD"}
                         team1={gameDetails?.team1?.score}
                         team2={gameDetails?.team2?.score}
                       />
                       <TeamColumn
-                        team="right"
+                        position="right"
                         players={gameDetails?.team2}
                         competitionType={competitionType}
                       />
@@ -298,16 +335,36 @@ const GameApprovalModal = ({
   );
 };
 
-const TeamColumn = ({ team, players = {}, competitionType }) => (
+interface TeamColumnProps {
+  position: "left" | "right";
+  players?: {
+    player1?: Player | null;
+    player2?: Player | null;
+    score?: number;
+  };
+  competitionType: string;
+}
+
+const TeamColumn = ({
+  position,
+  players = {},
+  competitionType,
+}: TeamColumnProps) => (
   <TeamContainer>
-    <PlayerCell position={team} player={players?.player1} />
+    <PlayerCell position={position} player={players?.player1} />
     {competitionType === "Doubles" && (
-      <PlayerCell position={team} player={players?.player2} />
+      <PlayerCell position={position} player={players?.player2} />
     )}
   </TeamContainer>
 );
 
-const PlayerCell = ({ position, player }) => (
+const PlayerCell = ({
+  position,
+  player,
+}: {
+  position: "left" | "right";
+  player: Player | null | undefined;
+}) => (
   <TeamTextContainer position={position}>
     <TeamText position={position}>
       {player ? formatDisplayName(player) : "TBD"}
@@ -315,7 +372,15 @@ const PlayerCell = ({ position, player }) => (
   </TeamTextContainer>
 );
 
-const ScoreDisplay = ({ date, team1, team2 }) => (
+const ScoreDisplay = ({
+  date,
+  team1,
+  team2,
+}: {
+  date: string;
+  team1: number | undefined;
+  team2: number | undefined;
+}) => (
   <ResultsContainer>
     <DateText>{date}</DateText>
     <ScoreContainer>
@@ -388,20 +453,28 @@ const ButtonRow = styled.View({
   marginTop: 10,
 });
 
-const Button = styled.TouchableOpacity(({ disabled, variant }) => ({
-  backgroundColor: disabled
-    ? "#888"
-    : variant === "decline"
-    ? "red"
-    : "#00A2FF",
-  paddingHorizontal: 20,
-  paddingVertical: 8,
-  borderRadius: 8,
-  marginTop: 10,
-  opacity: disabled ? 0.6 : 1,
-  width: 100,
-  alignItems: "center",
-}));
+const Button = styled.TouchableOpacity(
+  ({
+    disabled,
+    variant,
+  }: {
+    disabled: boolean;
+    variant: "decline" | "accept";
+  }) => ({
+    backgroundColor: disabled
+      ? "#888"
+      : variant === "decline"
+      ? "red"
+      : "#00A2FF",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 10,
+    opacity: disabled ? 0.6 : 1,
+    width: 100,
+    alignItems: "center",
+  })
+);
 
 const ButtonText = styled.Text({
   color: "white",
@@ -438,12 +511,14 @@ const TeamTextContainer = styled.View({
   maxWidth: screenWidth <= 400 ? 125 : 140,
 });
 
-const TeamText = styled.Text(({ position }) => ({
-  color: "white",
-  fontSize: screenWidth <= 400 ? 13 : 14,
-  textAlign: position === "right" ? "right" : "left",
-  flexWrap: "wrap",
-}));
+const TeamText = styled.Text(
+  ({ position }: { position: "left" | "right" }) => ({
+    color: "white",
+    fontSize: screenWidth <= 400 ? 13 : 14,
+    textAlign: position === "right" ? "right" : "left",
+    flexWrap: "wrap",
+  })
+);
 
 const ResultsContainer = styled.View({
   flex: 1,

@@ -1,13 +1,18 @@
 import { transformDate } from "./dateTransform";
 import { Game } from "../types/game";
-import { PlayersToUpdate, ProfileDetail, ScoreboardProfile, UsersToUpdate,  } from "../types/player";
+import {
+  PlayersToUpdate,
+  ProfileDetail,
+  ScoreboardProfile,
+  UsersToUpdate,
+} from "../types/player";
 
 export const calculatePlayerPerformance = (
   game: Game,
   playersToUpdate: PlayersToUpdate,
   usersToUpdate: UsersToUpdate
 ) => {
-  const date = new Date(transformDate(game.date));
+  const date = transformDate(game.date);
 
   const getTeamPlayers = (teamLabel: string | undefined) =>
     teamLabel === "Team 1"
@@ -32,7 +37,11 @@ export const calculatePlayerPerformance = (
     return user ? sum + (user.profileDetail?.XP || 0) : sum;
   }, 0);
 
-  const updatePlayerStats = (player: ScoreboardProfile, isWinner: boolean, user: ProfileDetail) => {
+  const updatePlayerStats = (
+    player: ScoreboardProfile,
+    isWinner: boolean,
+    user: ProfileDetail
+  ) => {
     player.numberOfGamesPlayed += 1;
     user.numberOfGamesPlayed += 1;
 
@@ -51,7 +60,11 @@ export const calculatePlayerPerformance = (
     return { player, user };
   };
 
-  const updatePlayerResultLogAndStreak = (player: ScoreboardProfile, isWinner: boolean, user: ProfileDetail) => {
+  const updatePlayerResultLogAndStreak = (
+    player: ScoreboardProfile,
+    isWinner: boolean,
+    user: ProfileDetail
+  ) => {
     const currentResult = isWinner ? "W" : "L";
     player.resultLog.push(currentResult);
 
@@ -185,13 +198,22 @@ export const calculatePlayerPerformance = (
     return { player, user };
   };
 
-  const updatePlayerTotalPoints = (player: ScoreboardProfile, points: number | undefined, user: ProfileDetail) => {
-    player.totalPoints +=  points ?? 0;
+  const updatePlayerTotalPoints = (
+    player: ScoreboardProfile,
+    points: number | undefined,
+    user: ProfileDetail
+  ) => {
+    player.totalPoints += points ?? 0;
     user.totalPoints += points ?? 0;
     return { player, user };
   };
 
-  const updateDemonWin = (player: ScoreboardProfile, winnerGameScore: number, loserGameScore: number, user: ProfileDetail) => {
+  const updateDemonWin = (
+    player: ScoreboardProfile,
+    winnerGameScore: number,
+    loserGameScore: number,
+    user: ProfileDetail
+  ) => {
     let demonWin = player.demonWin || 0;
     let userDemonWin = user.demonWin || 0;
 
@@ -204,7 +226,11 @@ export const calculatePlayerPerformance = (
     return { player, user };
   };
 
-  const updateLastActive = (player: ScoreboardProfile, gameDate: Date, user: ProfileDetail) => {
+  const updateLastActive = (
+    player: ScoreboardProfile,
+    gameDate: string,
+    user: ProfileDetail
+  ) => {
     player.lastActive = gameDate;
     user.lastActive = gameDate;
     return { player, user };

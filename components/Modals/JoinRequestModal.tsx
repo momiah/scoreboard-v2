@@ -1,11 +1,9 @@
 import { Modal, TouchableOpacity, View, ActivityIndicator } from "react-native";
-import { useCallback } from "react";
-
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import { UserProfile } from "@/types/player";
@@ -82,7 +80,18 @@ const JoinRequestModal = ({
     (participant) => participant.userId === senderId
   );
 
+  const resetState = useCallback(() => {
+    setCompetition(null);
+    setSenderDetails(null);
+    setJoiningCompetition(false);
+    setLoading(true);
+  }, []);
+
   useEffect(() => {
+    if (!visible) {
+      resetState();
+      return;
+    }
     setLoading(true);
     const fetchDetails = async () => {
       try {
@@ -111,17 +120,18 @@ const JoinRequestModal = ({
 
     fetchDetails();
     setLoading(false);
-  }, [requestId, requestType]);
+  }, [visible, requestId, requestType]);
 
   useEffect(() => {
     // const notificationExistsWithNoDetails = notificationId && !competition;
 
-    if (!competition || isRead) return;
+    if (!visible || !competition || isRead) return;
 
     if (competitionFull || requestWithdrawn) {
       readNotification(notificationId, currentUser?.userId);
     }
   }, [
+    visible,
     competition,
     isRead,
     competitionFull,

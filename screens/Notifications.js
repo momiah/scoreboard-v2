@@ -67,9 +67,8 @@ const Notifications = () => {
   }, []);
 
   const handleNotificationAction = useCallback((item) => {
-    const competitionId = item.data.leagueId
-      ? item.data.leagueId
-      : item.data.tournamentId;
+    const competitionId =
+      item.data.leagueId || item.data.tournamentId || item.data.competitionId;
 
     const commonState = {
       notificationId: item.id,
@@ -80,11 +79,6 @@ const Notifications = () => {
       gameId: item.data.gameId || null,
       data: item.data ?? null,
     };
-
-    console.log(
-      "Opening modal for notification:",
-      JSON.stringify(commonState, null, 2)
-    );
 
     setModalState(commonState);
 
@@ -127,43 +121,51 @@ const Notifications = () => {
         removeClippedSubviews={true}
       />
 
-      <WelcomeModal
-        visible={modals.welcome}
-        onClose={closeAllModals}
-        header={modalState.data?.header}
-        body={modalState.data?.body}
-        data={modalState.data}
-      />
+      {modals.welcome && (
+        <WelcomeModal
+          visible={modals.welcome}
+          onClose={closeAllModals}
+          header={modalState.data?.header}
+          body={modalState.data?.body}
+          data={modalState.data}
+        />
+      )}
 
-      <InviteActionModal
-        visible={modals.invite}
-        onClose={closeAllModals}
-        inviteId={modalState.selectedCompetitionId || ""}
-        inviteType={modalState.notificationType}
-        notificationId={modalState.notificationId}
-        isRead={modalState.isRead}
-      />
+      {modals.invite && (
+        <InviteActionModal
+          visible={modals.invite}
+          onClose={closeAllModals}
+          inviteId={modalState.selectedCompetitionId || ""}
+          inviteType={modalState.notificationType}
+          notificationId={modalState.notificationId}
+          isRead={modalState.isRead}
+        />
+      )}
 
-      <JoinRequestModal
-        visible={modals.joinRequest}
-        onClose={closeAllModals}
-        requestId={modalState.selectedCompetitionId || ""}
-        requestType={modalState.notificationType}
-        notificationId={modalState.notificationId}
-        senderId={modalState.senderId}
-        isRead={modalState.isRead}
-      />
+      {modals.joinRequest && (
+        <JoinRequestModal
+          visible={modals.joinRequest}
+          onClose={closeAllModals}
+          requestId={modalState.selectedCompetitionId || ""}
+          requestType={modalState.notificationType}
+          notificationId={modalState.notificationId}
+          senderId={modalState.senderId}
+          isRead={modalState.isRead}
+        />
+      )}
 
-      <GameApprovalModal
-        visible={modals.gameApproval}
-        onClose={closeAllModals}
-        notificationId={modalState.notificationId}
-        notificationType={modalState.notificationType}
-        senderId={modalState.senderId}
-        gameId={modalState.gameId || ""}
-        competitionId={modalState.selectedCompetitionId || ""}
-        isRead={modalState.isRead}
-      />
+      {modals.gameApproval && (
+        <GameApprovalModal
+          visible={modals.gameApproval}
+          onClose={closeAllModals}
+          notificationId={modalState.notificationId}
+          notificationType={modalState.notificationType}
+          senderId={modalState.senderId}
+          gameId={modalState.gameId || ""}
+          competitionId={modalState.selectedCompetitionId || ""}
+          isRead={modalState.isRead}
+        />
+      )}
     </HomeContainer>
   );
 };

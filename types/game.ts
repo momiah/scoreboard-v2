@@ -53,6 +53,7 @@ export interface Game {
   team2: GameTeam;
   result: GameResult | null;
   numberOfApprovals: number;
+  autoApproved?: boolean;
   numberOfDeclines: number;
   approvalStatus: ApprovalStatus;
   reporter: string;

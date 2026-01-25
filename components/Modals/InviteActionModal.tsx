@@ -11,7 +11,7 @@ import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 import Tag from "../Tag";
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
@@ -78,53 +78,63 @@ const InviteActionModal = ({
 
   const location = competition?.location;
 
+  const resetState = useCallback(() => {
+    setCompetition(null);
+    setIsCopied(false);
+    setIsWithdrawn(false);
+    setLoading(true);
+  }, []);
+
   useEffect(() => {
+    if (!visible) {
+      resetState();
+      return;
+    }
     setLoading(true);
     const fetchDetails = async () => {
-      if (inviteType === "invite-league") {
-        try {
-          const competition = await fetchCompetitionById({
-            competitionId: inviteId,
-            collectionName: config.collectionName,
-          });
+      try {
+        const competition = await fetchCompetitionById({
+          competitionId: inviteId,
+          collectionName: config.collectionName,
+        });
 
-          if (!competition) {
-            console.log("Competition not found for invite ID:", inviteId);
-            readNotification(notificationId, currentUser.userId);
-            setIsWithdrawn(true);
-            setLoading(false);
-            return;
-          }
-          const normalizedCompetition = normalizeCompetitionData({
-            rawData: competition,
-            competitionType: config.competitionType,
-          }) as NormalizedCompetition;
-
-          setCompetition(normalizedCompetition);
-
-          const withdrawn = !normalizedCompetition?.pendingInvites?.some(
-            (u) => u.userId === currentUser?.userId
-          );
-          setIsWithdrawn(withdrawn);
-        } catch (error) {
-          console.error("Error fetching league details:", error);
-        } finally {
+        if (!competition) {
+          console.log("Competition not found for invite ID:", inviteId);
+          readNotification(notificationId, currentUser.userId);
+          setIsWithdrawn(true);
           setLoading(false);
+          return;
         }
+        const normalizedCompetition = normalizeCompetitionData({
+          rawData: competition,
+          competitionType: config.competitionType,
+        }) as NormalizedCompetition;
+
+        setCompetition(normalizedCompetition);
+
+        const withdrawn = !normalizedCompetition?.pendingInvites?.some(
+          (u) => u.userId === currentUser?.userId
+        );
+        setIsWithdrawn(withdrawn);
+      } catch (error) {
+        console.error("Error fetching league details:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchDetails();
     setLoading(false);
-  }, [inviteId, inviteType]);
+  }, [visible, inviteId, inviteType]);
 
   useEffect(() => {
-    if (!competition || isRead) return;
+    if (!visible || !competition || isRead) return;
 
     if (leagueFull || isWithdrawn) {
       readNotification(notificationId, currentUser.userId);
     }
   }, [
+    visible,
     competition,
     isRead,
     leagueFull,

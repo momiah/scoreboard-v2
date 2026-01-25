@@ -89,22 +89,6 @@ const mockParticipants = [
     displayName: "Babu M.",
     XP: 875,
   },
-  // {
-  //   userId: "9",
-  //   firstName: "Alice",
-  //   lastName: "Wonderland",
-  //   username: "alicew",
-  //   displayName: "Alice W.",
-  //   XP: 950,
-  // },
-  // {
-  //   userId: "10",
-  //   firstName: "Bob",
-  //   lastName: "Builder",
-  //   username: "bobb",
-  //   displayName: "Bob B.",
-  //   XP: 800,
-  // },
 ];
 
 // Types
@@ -131,7 +115,8 @@ const GenerateFixturesModal = ({
 }: GenerateFixturesModalProps) => {
   // State
   const SET_UP_SCREEN = 1;
-  const GENERATED_FIXTURES_SCREEN = 2;
+  const CREATE_TEAMS_SCREEN = 2;
+  const GENERATED_FIXTURES_SCREEN = 3;
 
   const [currentScreen, setCurrentScreen] = useState(SET_UP_SCREEN);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -298,31 +283,13 @@ const GenerateFixturesModal = ({
             onCancel={() => setModalVisible(false)}
             onMixedDoublesGenerate={handleMixedDoublesGeneration}
             onFixedDoublesCreateTeams={() =>
-              setCurrentScreen(GENERATED_FIXTURES_SCREEN)
+              setCurrentScreen(CREATE_TEAMS_SCREEN)
             }
             isGenerating={isGenerating}
             participants={mockParticipants}
           />
         );
-      case GENERATED_FIXTURES_SCREEN:
-        if (generatedFixtures) {
-          return (
-            <GeneratedFixturesScreen
-              generatedFixtures={generatedFixtures}
-              tournamentType={tournamentType}
-              onBack={() => {
-                if (selectedMode === "Fixed Doubles") {
-                  setGeneratedFixtures(null);
-                } else {
-                  setCurrentScreen(SET_UP_SCREEN);
-                  setGeneratedFixtures(null);
-                }
-              }}
-              onGenerateTournament={handleGenerateTournament}
-              isGenerating={isGenerating}
-            />
-          );
-        }
+      case CREATE_TEAMS_SCREEN:
         return (
           <CreateTeamsScreen
             fixedDoublesTeams={fixedDoublesTeams}
@@ -331,6 +298,23 @@ const GenerateFixturesModal = ({
             isGenerating={isGenerating}
             setFixedDoublesTeams={setFixedDoublesTeams}
             participants={mockParticipants}
+          />
+        );
+      case GENERATED_FIXTURES_SCREEN:
+        return (
+          <GeneratedFixturesScreen
+            generatedFixtures={generatedFixtures}
+            tournamentType={tournamentType}
+            onBack={() => {
+              setGeneratedFixtures(null);
+              if (selectedMode === "Fixed Doubles") {
+                setCurrentScreen(CREATE_TEAMS_SCREEN);
+              } else {
+                setCurrentScreen(SET_UP_SCREEN);
+              }
+            }}
+            onGenerateTournament={handleGenerateTournament}
+            isGenerating={isGenerating}
           />
         );
       default:
