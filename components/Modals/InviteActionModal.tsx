@@ -65,7 +65,7 @@ const InviteActionModal = ({
   const navRoute = config.navRoute;
 
   const navigateTo = (competitionId: string) => {
-    navigation.navigate(navRoute, { competitionId });
+    navigation.navigate(navRoute, { [config.paramKey]: competitionId });
   };
 
   const leagueFull =

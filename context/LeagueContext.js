@@ -620,21 +620,22 @@ const LeagueProvider = ({ children }) => {
         });
 
         const displayName = formatDisplayName(currentUser);
-        const metaDataId =
-          collectionName === COLLECTION_NAMES.tournaments
-            ? "tournamentId"
-            : "leagueId";
+        const isLeague = collectionName === COLLECTION_NAMES.leagues;
+        const paramKey = isLeague ? "leagueId" : "tournamentId";
+        const competitionType = isLeague ? "league" : "tournament";
+        const notificationType = isLeague
+          ? notificationTypes.ACTION.JOIN_REQUEST.LEAGUE
+          : notificationTypes.ACTION.JOIN_REQUEST.TOURNAMENT;
 
         const payload = {
           ...notificationSchema,
           createdAt: new Date(),
           recipientId: ownerId,
           senderId: currentUser?.userId,
-          message: `${displayName} has requested to join your league!`,
-          type: notificationTypes.ACTION.JOIN_REQUEST.LEAGUE,
-
+          message: `${displayName} has requested to join your ${competitionType}!`,
+          type: notificationType,
           data: {
-            [metaDataId]: competitionId,
+            [paramKey]: competitionId,
           },
         };
 
@@ -642,7 +643,7 @@ const LeagueProvider = ({ children }) => {
 
         return true;
       } else {
-        console.log("League does not exist");
+        console.log("Competition does not exist");
         return false;
       }
     } catch (error) {
