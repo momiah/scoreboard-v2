@@ -78,9 +78,8 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
 
   const { courtName, address, postCode, city, countryCode } =
     leagueDetails?.location || {};
-  const fullAddress = `${courtName || ""}, ${address || ""}, ${city || ""}, ${
-    postCode || ""
-  }, ${countryCode || ""}`;
+  const fullAddress = `${courtName || ""}, ${address || ""}, ${city || ""}, ${postCode || ""
+    }, ${countryCode || ""}`;
 
   const hasPrizesDistributed = leagueDetails?.prizesDistributed;
   const leagueId = leagueDetails?.leagueId;
@@ -98,6 +97,7 @@ const LeagueSummary = ({ leagueDetails, userRole, startDate, endDate }) => {
         hasPrizesDistributed={hasPrizesDistributed}
         leagueId={leagueId}
         distribution={DISTRIBUTION}
+        isDataLoading={isDataLoading}
       />
 
       <SectionTitleContainer>
