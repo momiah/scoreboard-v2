@@ -203,21 +203,6 @@ const League = () => {
     }
   };
 
-  // causing unnecessary loading state, skeletons area already handling the loading state
-  // if (loading) {
-  //   return (
-  //     <View
-  //       style={{
-  //         flex: 1,
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         backgroundColor: "#00152B",
-  //       }}
-  //     >
-  //       <ActivityIndicator size="large" color="#fff" />
-  //     </View>
-  //   );
-  // }
 
   if (!leagueById || leagueNotFound) {
     return (
