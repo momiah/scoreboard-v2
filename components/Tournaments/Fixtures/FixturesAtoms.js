@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import Tag from "../../Tag";
@@ -98,7 +98,6 @@ export const FixtureRoundHeader = ({ roundNumber }) => (
   </FixtureRoundHeaderContainer>
 );
 
-// Main fixtures display component
 export const FixturesDisplay = ({
   fixtures,
   tournamentType,
@@ -108,13 +107,31 @@ export const FixturesDisplay = ({
 }) => {
   const [gameModalVisible, setGameModalVisible] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
+  const [localFixtures, setLocalFixtures] = useState(fixtures);
+
+  // Sync with prop if fixtures change externally (e.g., initial load or refetch)
+  useEffect(() => {
+    setLocalFixtures(fixtures);
+  }, [fixtures]);
 
   const handleGamePress = (game) => {
     setSelectedGame(game);
     setGameModalVisible(true);
   };
 
-  if (!fixtures?.length) {
+  const handleGameUpdated = (updatedGame) => {
+    // Optimistically update local fixtures
+    setLocalFixtures((prevFixtures) =>
+      prevFixtures.map((round) => ({
+        ...round,
+        games: round.games.map((game) =>
+          game.gameId === updatedGame.gameId ? updatedGame : game
+        ),
+      }))
+    );
+  };
+
+  if (!localFixtures?.length) {
     return (
       <NoFixturesContainer>
         <NoFixturesText>No fixtures available</NoFixturesText>
@@ -124,7 +141,7 @@ export const FixturesDisplay = ({
 
   return (
     <FixturesContainer>
-      {fixtures.map((round) => (
+      {localFixtures.map((round) => (
         <FixtureRoundContainer key={round.round}>
           <FixtureRoundHeader
             roundNumber={round.round}
@@ -151,14 +168,11 @@ export const FixturesDisplay = ({
           setGameModalVisible(false);
           setSelectedGame(null);
         }}
-        onGameUpdated={(gameData) => {
-          console.log("Game updated:", gameData);
-        }}
+        onGameUpdated={handleGameUpdated}
       />
     </FixturesContainer>
   );
 };
-
 // Styled Components
 const FixturesContainer = styled.ScrollView({
   flex: 1,

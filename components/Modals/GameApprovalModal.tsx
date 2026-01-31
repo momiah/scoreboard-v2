@@ -38,6 +38,10 @@ const findGame = (
   return competition.games?.find((game) => game.gameId === gameId) || null;
 };
 
+type GameApprovalResponse =
+  | typeof notificationTypes.RESPONSE.ACCEPT
+  | typeof notificationTypes.RESPONSE.DECLINE;
+
 interface GameApprovalModalProps {
   visible: boolean;
   onClose: () => void;
@@ -47,6 +51,7 @@ interface GameApprovalModalProps {
   gameId: string;
   competitionId: string;
   isRead: boolean;
+  response: GameApprovalResponse | null;
 }
 
 interface NavigateToParams {
@@ -63,6 +68,7 @@ const GameApprovalModal = ({
   gameId,
   competitionId,
   isRead,
+  response,
 }: GameApprovalModalProps) => {
   const { fetchCompetitionById, approveGame, declineGame } =
     useContext(LeagueContext);
@@ -140,7 +146,7 @@ const GameApprovalModal = ({
         setCompetition(normalizedCompetition);
         setGameDetails(game);
 
-        if (!game) {
+        if (!game || response === notificationTypes.RESPONSE.DECLINE) {
           setGameDeleted(true);
           readNotification(notificationId, currentUser?.userId);
         }
@@ -164,7 +170,8 @@ const GameApprovalModal = ({
 
   useEffect(() => {
     if (
-      gameDetails?.approvalStatus === notificationTypes.RESPONSE.APPROVE_GAME &&
+      gameDetails?.approvalStatus ===
+        notificationTypes.RESPONSE.APPROVED_GAME &&
       !isRead
     ) {
       readNotification(notificationId, currentUser?.userId);
@@ -215,7 +222,7 @@ const GameApprovalModal = ({
   };
 
   const approvalLimitReached =
-    gameDetails?.approvalStatus === notificationTypes.RESPONSE.APPROVE_GAME;
+    gameDetails?.approvalStatus === notificationTypes.RESPONSE.APPROVED_GAME;
   const autoApproved = gameDetails?.autoApproved || false;
   const competitionName = competition?.name || "Unknown Competition";
   const competitionType = competition?.type || "Singles";

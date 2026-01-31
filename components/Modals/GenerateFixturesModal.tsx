@@ -19,12 +19,22 @@ import { SetupScreen } from "../Tournaments/FixturesGeneration/SetupScreen";
 import { CreateTeamsScreen } from "../Tournaments/FixturesGeneration/CreateTeamsScreen";
 import { GeneratedFixturesScreen } from "../Tournaments/FixturesGeneration/GeneratedFixturesScreen";
 import { LeagueContext } from "../../context/LeagueContext";
-import { Fixtures, GameTeam, TournamentMode } from "../../types/game";
+import { ScoreboardProfile } from "../../types/player";
+import {
+  Fixtures,
+  GameTeam,
+  Player,
+  PlayerWithXP,
+  TournamentMode,
+} from "../../types/game";
 import { UserProfile } from "../../types/player";
+import { enrichPlayers } from "../../helpers/enrichPlayers";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { UserContext } from "@/context/UserContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const mockParticipants = [
+const participants = [
   {
     userId: "1",
     firstName: "Yasin",
@@ -104,6 +114,30 @@ interface GenerateFixturesModalProps {
   generatedFixtures: Fixtures[] | null;
 }
 
+const extractPlayersWithXp = async (
+  players: ScoreboardProfile[],
+  getUserById: (id: string) => Promise<UserProfile | null>
+): Promise<PlayerWithXP[]> => {
+  const enriched = await Promise.all(
+    players
+      .filter((player) => player.userId)
+      .map(async (player) => {
+        const user = await getUserById(player.userId!);
+        const XP = user?.profileDetail?.XP ?? 0;
+        return {
+          userId: player.userId!,
+          firstName: player.firstName ?? "",
+          lastName: player.lastName ?? "",
+          username: player.username ?? "",
+          displayName: formatDisplayName(player),
+          XP,
+        };
+      })
+  );
+
+  return enriched;
+};
+
 // Main Modal Component
 const GenerateFixturesModal = ({
   modalVisible,
@@ -125,19 +159,47 @@ const GenerateFixturesModal = ({
   const [selectedMode, setSelectedMode] = useState("");
   const [generationType, setGenerationType] = useState("");
   const [fixedDoublesTeams, setFixedDoublesTeams] = useState<GameTeam[]>([]);
+  const [participants, setParticipants] = useState<PlayerWithXP[]>([]);
   const [numberOfCourts, setNumberOfCourts] = useState(1);
-  const { addTournamentFixtures } = useContext(LeagueContext);
+  const { addTournamentFixtures, fetchTournamentParticipants } =
+    useContext(LeagueContext);
+  const { getUserById } = useContext(UserContext);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const tournamentType = competition?.tournamentType || "Doubles";
   // const tournamentType = "Singles";
   const competitionId = competition?.tournamentId;
 
   useEffect(() => {
+    setLoadingParticipants(true);
+    const fetchParticipants = async () => {
+      try {
+        const fetchedParticipants = await fetchTournamentParticipants(
+          competitionId
+        );
+
+        const enrichedParticipants = await extractPlayersWithXp(
+          fetchedParticipants,
+          getUserById
+        );
+
+        setParticipants(enrichedParticipants);
+      } catch (error) {
+        console.error("Error fetching participants:", error);
+      } finally {
+        setLoadingParticipants(false);
+      }
+    };
+
+    fetchParticipants();
+  }, [competitionId]);
+
+  useEffect(() => {
     let maxCourts;
     if (tournamentType === "Singles") {
-      maxCourts = Math.floor(mockParticipants.length / 2) || 1;
+      maxCourts = Math.floor(participants.length / 2) || 1;
     } else {
-      maxCourts = Math.floor(Math.floor(mockParticipants.length / 2) / 2) || 1;
+      maxCourts = Math.floor(Math.floor(participants.length / 2) / 2) || 1;
     }
 
     if (numberOfCourts > maxCourts) {
@@ -146,7 +208,7 @@ const GenerateFixturesModal = ({
   }, [numberOfCourts, tournamentType]);
 
   useEffect(() => {
-    const numberOfTeams = Math.floor(mockParticipants.length / 2);
+    const numberOfTeams = Math.floor(participants.length / 2);
     const initialTeams: GameTeam[] = Array.from(
       { length: numberOfTeams },
       () => ({
@@ -163,7 +225,7 @@ const GenerateFixturesModal = ({
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       const fixtures = generateSinglesRoundRobinFixtures({
-        players: mockParticipants,
+        players: participants,
         numberOfCourts,
         competitionId: competitionId ?? "",
       });
@@ -189,7 +251,7 @@ const GenerateFixturesModal = ({
       if (mode === "Mixed Doubles") {
         teams = generateMixedDoublesTeams({
           generationType: generationType,
-          participants: mockParticipants,
+          participants: participants,
         });
       } else if (mode === "Fixed Doubles") {
         teams = fixedDoublesTeams.filter(
@@ -286,7 +348,7 @@ const GenerateFixturesModal = ({
               setCurrentScreen(CREATE_TEAMS_SCREEN)
             }
             isGenerating={isGenerating}
-            participants={mockParticipants}
+            participants={participants}
           />
         );
       case CREATE_TEAMS_SCREEN:
@@ -297,7 +359,7 @@ const GenerateFixturesModal = ({
             onGenerateFixtures={handleFixedDoublesGeneration}
             isGenerating={isGenerating}
             setFixedDoublesTeams={setFixedDoublesTeams}
-            participants={mockParticipants}
+            participants={participants}
           />
         );
       case GENERATED_FIXTURES_SCREEN:

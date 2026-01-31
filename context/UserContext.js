@@ -176,19 +176,32 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const retrievePlayersFromLeague = useCallback(async (leagueId) => {
-    try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueId);
-      const leagueDoc = await getDoc(leagueDocRef);
-      const leagueParticipants = leagueDoc.data().leagueParticipants;
+  const retrievePlayersFromCompetition = useCallback(
+    async (competitionId, collectionName) => {
+      try {
+        const collectionRef = collection(db, collectionName);
+        const docRef = doc(collectionRef, competitionId);
+        const docSnap = await getDoc(docRef);
 
-      return leagueParticipants;
-    } catch (error) {
-      console.error("Error retrieving players:", error);
-      return [];
-    }
-  }, []);
+        if (!docSnap.exists()) {
+          console.error("Competition not found");
+          return [];
+        }
+
+        const data = docSnap.data();
+        const participants =
+          collectionName === "leagues"
+            ? data.leagueParticipants
+            : data.tournamentParticipants;
+
+        return participants || [];
+      } catch (error) {
+        console.error("Error retrieving players:", error);
+        return [];
+      }
+    },
+    []
+  );
 
   async function checkUserRole({
     competitionData,
@@ -249,16 +262,20 @@ const UserProvider = ({ children }) => {
   }
 
   const fetchPlayers = useCallback(
-    async (leagueId) => {
+    async (competitionId, collectionName = "leagues") => {
       try {
-        const players = await retrievePlayersFromLeague(leagueId);
+        const players = await retrievePlayersFromCompetition(
+          competitionId,
+          collectionName
+        );
         setPlayers(players);
       } catch (error) {
         console.error("Error fetching players:", error);
       }
     },
-    [retrievePlayersFromLeague]
+    [retrievePlayersFromCompetition]
   );
+
   const [loading, setLoading] = useState(true); // Track loading state
 
   const getAllUsers = async () => {
@@ -384,53 +401,7 @@ const UserProvider = ({ children }) => {
         });
       }
 
-      // Optionally fetch the updated players to refresh the UI
-      await fetchPlayers(competitionId);
       // handleShowPopup("Players updated successfully!");
-    } catch (error) {
-      console.error("Error updating player data:", error);
-      handleShowPopup("Error updating player data");
-    }
-  };
-
-  const resetAllPlayerStats = async () => {
-    try {
-      const allPlayers = await retrievePlayersFromLeague();
-      const allPlayersIds = allPlayers.map((player) => player.username);
-
-      for (const playerId of allPlayersIds) {
-        const scoreboardCollectionRef = collection(db, "scoreboard");
-        const playersCollectionRef = collection(
-          scoreboardCollectionRef,
-          "players",
-          "players"
-        );
-
-        const playerDocRef = doc(playersCollectionRef, playerId);
-        await updateDoc(playerDocRef, profileDetailSchema);
-      }
-
-      handleShowPopup("All player stats reset successfully!");
-      await fetchPlayers();
-    } catch (error) {
-      console.error("Error resetting player stats:", error);
-      handleShowPopup("Error resetting player stats");
-    }
-  };
-
-  const resetPlayerStats = async () => {
-    try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
-
-      // Use the player name (or ID) as the document ID
-      const playerDocRef = doc(playersCollectionRef, "Abdul");
-      await setDoc(playerDocRef, profileDetailSchema); // Write the data directly
-      handleShowPopup("Player reset successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);
       handleShowPopup("Error updating player data");
@@ -845,17 +816,12 @@ const UserProvider = ({ children }) => {
         readChat,
 
         // League-related operations
-        retrievePlayersFromLeague,
         retrieveTeams,
         updateTeams,
         fetchPlayers,
         updatePlayers,
         getLeaguesForUser,
         checkUserRole,
-
-        // Player and stats management
-        resetPlayerStats,
-        resetAllPlayerStats,
 
         // Ranking and sorting
         rankSorting,

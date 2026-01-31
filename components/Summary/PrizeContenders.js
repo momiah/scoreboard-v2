@@ -205,6 +205,7 @@ const Stat = styled.Text({
 const PrizeImage = styled.Image({
   width: 30,
   height: 30,
+  resizeMode: "contain",
 });
 
 const PrizeText = styled.Text({

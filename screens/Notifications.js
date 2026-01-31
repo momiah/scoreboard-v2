@@ -78,6 +78,7 @@ const Notifications = () => {
       isRead: item.isRead,
       gameId: item.data.gameId || null,
       data: item.data ?? null,
+      response: item.response || null,
     };
 
     setModalState(commonState);
@@ -164,6 +165,7 @@ const Notifications = () => {
           gameId={modalState.gameId || ""}
           competitionId={modalState.selectedCompetitionId || ""}
           isRead={modalState.isRead}
+          response={modalState.response}
         />
       )}
     </HomeContainer>

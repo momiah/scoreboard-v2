@@ -72,13 +72,13 @@ const JoinRequestModal = ({
     competition?.maxPlayers !== undefined &&
     competition.participants.length >= competition.maxPlayers;
 
-  const requestWithdrawn = !competition?.pendingRequests?.some(
-    (req) => req.userId === senderId
-  );
-
   const userAlreadyInCompetition = competition?.participants?.some(
     (participant) => participant.userId === senderId
   );
+
+  const requestWithdrawn =
+    !competition?.pendingRequests?.some((req) => req.userId === senderId) &&
+    !userAlreadyInCompetition;
 
   const resetState = useCallback(() => {
     setCompetition(null);

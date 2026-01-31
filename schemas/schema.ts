@@ -370,8 +370,8 @@ export const notificationTypes = {
   RESPONSE: {
     ACCEPT: "accepted",
     DECLINE: "declined",
-    APPROVE_GAME: "approved",
-    REJECT_GAME: "rejected",
+    APPROVED_GAME: "approved",
+    REJECTED_GAME: "rejected",
   },
 };
 

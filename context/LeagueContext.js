@@ -816,7 +816,7 @@ const LeagueProvider = ({ children }) => {
       const isFullyApproved = updatedGame.numberOfApprovals >= approvalLimit;
 
       if (isFullyApproved) {
-        updatedGame.approvalStatus = notificationTypes.RESPONSE.APPROVE_GAME;
+        updatedGame.approvalStatus = notificationTypes.RESPONSE.APPROVED_GAME;
 
         const playerUserIds = getPlayerUserIds(updatedGame);
 
@@ -851,7 +851,11 @@ const LeagueProvider = ({ children }) => {
             game: updatedGame,
             allTeams: teams,
           });
-          await updateTeams({ updatedTeams: teamsToUpdate, competitionId });
+          await updateTeams({
+            updatedTeams: teamsToUpdate,
+            competitionId,
+            collectionName: config.collectionName,
+          });
         }
       }
 
@@ -953,42 +957,86 @@ const LeagueProvider = ({ children }) => {
       let updatedGames = [...games];
 
       if (isFullyDeclined) {
-        const declinedGame = {
-          ...updatedGame,
-          approvalStatus: notificationTypes.RESPONSE.DECLINE,
-          declinedBy: {
-            userId: currentUserData.userId,
-            username: currentUserData.username,
-          },
-        };
+        if (isTournament) {
+          // Tournament: Reset game to original state (keep the fixture slot)
+          const resetGame = {
+            gameId: game.gameId,
+            team1: {
+              player1: game.team1.player1,
+              player2: game.team1.player2 || null,
+              score: null,
+            },
+            team2: {
+              player1: game.team2.player1,
+              player2: game.team2.player2 || null,
+              score: null,
+            },
+            result: null,
+            approvalStatus: "Scheduled",
+            numberOfApprovals: 0,
+            numberOfDeclines: 0,
+            approvers: [],
+            reporter: null,
+            reportedAt: null,
+            reportedTime: null,
+            hasScores: false,
+            gamescore: null,
+            // Preserve fixture metadata
+            court: game.court,
+            gameNumber: game.gameNumber,
+            createdAt: game.createdAt,
+            createdTime: game.createdTime,
+          };
 
-        declinedGames.push(declinedGame);
-        updatedGames.splice(gameIndex, 1);
-      } else {
-        updatedGames[gameIndex] = updatedGame;
-      }
-
-      // Save updated games
-      if (isTournament) {
-        if (isFullyDeclined) {
           await updateTournamentGame({
             tournamentId: competitionId,
             gameId,
-            removeGame: true,
+            gameResult: resetGame,
           });
+
+          // Optionally track declined attempts separately
+          declinedGames.push({
+            ...updatedGame,
+            approvalStatus: notificationTypes.RESPONSE.REJECTED_GAME,
+            declinedBy: {
+              userId: currentUserData.userId,
+              username: currentUserData.username,
+            },
+            declinedAt: new Date(),
+          });
+
           await updateDoc(competitionRef, { declinedGames });
         } else {
+          // League: Remove the game completely (current behavior)
+          const declinedGame = {
+            ...updatedGame,
+            approvalStatus: notificationTypes.RESPONSE.REJECTED_GAME,
+            declinedBy: {
+              userId: currentUserData.userId,
+              username: currentUserData.username,
+            },
+          };
+
+          declinedGames.push(declinedGame);
+          updatedGames.splice(gameIndex, 1);
+
+          await updateDoc(competitionRef, {
+            games: updatedGames,
+            declinedGames,
+          });
+        }
+      } else {
+        // Not fully declined yet - just update the decline count
+        if (isTournament) {
           await updateTournamentGame({
             tournamentId: competitionId,
             gameId,
             gameResult: updatedGame,
           });
+        } else {
+          updatedGames[gameIndex] = updatedGame;
+          await updateDoc(competitionRef, { games: updatedGames });
         }
-      } else {
-        await updateDoc(competitionRef, {
-          games: updatedGames,
-          declinedGames,
-        });
       }
 
       await readNotification(
@@ -1354,6 +1402,23 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const fetchTournamentParticipants = async (tournamentId) => {
+    try {
+      const tournamentDoc = await getDoc(doc(db, "tournaments", tournamentId));
+
+      if (!tournamentDoc.exists()) {
+        console.log("No tournament found with the given ID");
+        return [];
+      }
+
+      const tournamentData = tournamentDoc.data();
+      return tournamentData.tournamentParticipants || [];
+    } catch (error) {
+      console.error("Error fetching tournament participants:", error);
+      return [];
+    }
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -1390,6 +1455,7 @@ const LeagueProvider = ({ children }) => {
         // Tournament Data Management
         addTournamentFixtures,
         updateTournamentGame,
+        fetchTournamentParticipants,
 
         // League State Management
         upcomingLeagues,

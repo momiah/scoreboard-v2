@@ -117,6 +117,8 @@ const AddTournamentGameModal = ({
       reporter: currentUser?.userId || "",
       court: game?.court,
       gameNumber: game?.gameNumber,
+      createdAt: game?.createdAt,
+      createdTime: game?.createdTime,
     };
 
     const isCurrentUserTeam1 = [
