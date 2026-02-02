@@ -503,6 +503,32 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const getTournamentsForUser = async (userId) => {
+    try {
+      const tournamentsRef = collection(db, "tournaments");
+      const querySnapshot = await getDocs(tournamentsRef);
+
+      const userTournaments = querySnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((tournament) => {
+          if (
+            !tournament.tournamentParticipants ||
+            !Array.isArray(tournament.tournamentParticipants)
+          ) {
+            return false;
+          }
+          return tournament.tournamentParticipants.some(
+            (participant) => participant.userId === userId
+          );
+        });
+
+      return userTournaments;
+    } catch (error) {
+      console.error("Error fetching tournaments for user:", error);
+      return [];
+    }
+  };
+
   const updateUserProfile = async (updatedFields) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
@@ -821,6 +847,7 @@ const UserProvider = ({ children }) => {
         fetchPlayers,
         updatePlayers,
         getLeaguesForUser,
+        getTournamentsForUser,
         checkUserRole,
 
         // Ranking and sorting

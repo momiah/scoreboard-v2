@@ -17,7 +17,7 @@ import {
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
-import { processLeagues } from "../../helpers/processedProfileLeagues";
+import { processLeagues } from "../../helpers/processCompetitions";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { sortLeaguesByEndDate } from "../../helpers/sortedLeaguesByEndDate";
 import Tag from "../Tag";
