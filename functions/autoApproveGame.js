@@ -117,11 +117,11 @@ exports.autoApproveGames = onSchedule("every 30 minutes", async () => {
               await updateUsers(playerPerformance.usersToUpdate);
 
               if (leagueType === "Doubles") {
-                const teamsToUpdate = await calculateTeamPerformance(
-                  updatedGame,
-                  retrieveTeams,
-                  leagueId
-                );
+                const allTeams = await retrieveTeams(leagueId, "leagues");
+                const teamsToUpdate = await calculateTeamPerformance({
+                  game: updatedGame,
+                  allTeams,
+                });
 
                 await updateTeams(teamsToUpdate, leagueId);
               }

@@ -70,13 +70,12 @@ const NotificationRow = ({
     if (isAction) {
       onPressAction(item);
     } else if (isWelcome) {
-      // This is likely the welcome notification or one meant for modal
       if (!isRead) {
         readNotification(item.id, currentUser?.userId);
       }
-      onPressAction(item); // will be routed to modal handler in Notifications
+      onPressAction(item);
     } else {
-      handleInformationNotification(item); // fallback to route navigation
+      handleInformationNotification(item);
     }
   };
 
@@ -91,18 +90,18 @@ const NotificationRow = ({
 
     if (!infoEntry) return;
 
-    const route = infoEntry.ROUTE;
+    const routeParams = {
+      League: {
+        leagueId: item.data?.leagueId || item.data?.competitionId,
+        tab: "Scoreboard",
+      },
+      Tournament: {
+        tournamentId: item.data?.tournamentId || item.data?.competitionId,
+      },
+      UserProfile: { userId: item.data?.userId },
+    };
 
-    let routeProp = {};
-    if (route === "League") {
-      routeProp = { leagueId: item.data?.leagueId, tab: "Scoreboard" };
-    } else if (route === "Tournament") {
-      routeProp = { tournamentId: item.data?.tournamentId };
-    } else if (route === "UserProfile") {
-      routeProp = { userId: item.data?.userId };
-    }
-
-    navigation.navigate(route, routeProp);
+    navigation.navigate(infoEntry.ROUTE, routeParams[infoEntry.ROUTE] || {});
   };
 
   return (

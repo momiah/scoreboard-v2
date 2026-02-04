@@ -114,8 +114,6 @@ const MatchMedals = ({
 const Container = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
-  borderTopColor: "#262626",
-  borderTopWidth: 1,
   width: "100%",
   paddingVertical: 20,
 });

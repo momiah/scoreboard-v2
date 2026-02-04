@@ -17,8 +17,8 @@ import {
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
-import { processLeagues } from "../../helpers/processedProfileLeagues";
-import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
+import { processLeagues } from "../../helpers/processCompetitions";
+import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { sortLeaguesByEndDate } from "../../helpers/sortedLeaguesByEndDate";
 import Tag from "../Tag";
 import RankSuffix from "../RankSuffix";
@@ -141,10 +141,6 @@ const QuickAddLeagueSelector = ({
     ({ item }) => {
       if (!item) return null;
 
-      const status = calculateLeagueStatus(item) || {
-        status: "—",
-        color: "#222",
-      };
       const isSelected = item?.id === selectedLeagueId;
       const isOwner = item?.leagueOwner?.userId === profile?.userId;
       const isAdmin =

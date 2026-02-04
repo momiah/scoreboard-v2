@@ -1,0 +1,389 @@
+import { type } from "@testing-library/react-native/build/user-event/type";
+import { createdAt } from "expo-updates";
+import { count } from "firebase/firestore";
+import {
+  ScoreboardProfile,
+  ProfileDetail,
+  UserProfile,
+  Location,
+} from "../types/player";
+import {
+  League,
+  Tournament,
+  CollectionName,
+  CourtLocation,
+} from "../types/competition";
+import moment from "moment";
+
+export const gameTypes = ["Doubles", "Singles"];
+export const doublesModes = ["Mixed Doubles", "Fixed Doubles"];
+export const tournamentModes = ["Knockout", "Round Robin"];
+export const privacyTypes = ["Public", "Private"];
+export const maxPlayers = [8, 16, 32, 64];
+export const leagueStatus = [
+  { status: "enlisting", color: "#FAB234" },
+  { status: "full", color: "#286EFA" },
+  { status: "completed", color: "#167500" },
+];
+
+export const COMPETITION_TYPES = {
+  LEAGUE: "league",
+  TOURNAMENT: "tournament",
+};
+
+export const COLLECTION_NAMES: Record<CollectionName, string> = {
+  leagues: "leagues",
+  tournaments: "tournaments",
+};
+
+export const ICON_MAP = {
+  Instagram: "logo-instagram",
+  TikTok: "logo-tiktok",
+  // Facebook: "logo-facebook",
+};
+
+export const socialMediaPlatforms = [
+  "Instagram",
+  "TikTok",
+  // "Facebook"
+];
+
+export const iosAppLinks = {
+  Instagram: "instagram://user?username=courtchamps.io",
+  TikTok: "snssdk1128://user/profile/7507766818326840342",
+  // Facebook: "fb://page/61576837973289",
+};
+
+export const androidIntentLinks = {
+  Instagram:
+    "intent://user?username=courtchamps.io#Intent;package=com.instagram.android;scheme=instagram;end",
+  TikTok:
+    "intent://user/profile/7507766818326840342#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1128;end",
+  // Facebook:
+  //   "intent://page/61576837973289#Intent;package=com.facebook.katana;scheme=fb;end",
+};
+
+export const fallbackUrls = {
+  Instagram: "https://www.instagram.com/courtchamps.io/",
+  Facebook: "https://www.facebook.com/profile.php?id=61576837973289",
+  TikTok: "https://www.tiktok.com/@courtchamps",
+};
+
+export const ccImageEndpoint =
+  "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
+
+export const prizeTypes = {
+  TROPHY: "Trophy",
+  MEDAL: "Medal",
+  CASH_TROPHY: "Cash & Trophy",
+  CASH_MEDAL: "Cash & Medal",
+};
+export const currencyTypes = ["GBP", "USD", "EUR", "INR"];
+export const daysOfWeek = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+export const locationSchema: Location = {
+  city: "",
+  country: "",
+  countryCode: "",
+  postCode: "",
+  address: "",
+};
+
+const courtLocationSchema: CourtLocation = {
+  courtName: "",
+  courtId: "",
+  ...locationSchema,
+};
+
+export const gameSchema = {
+  gameId: "",
+  gamescore: "",
+  date: "",
+  team1: {
+    player1: "",
+    player2: null,
+    score: 0,
+  },
+  team2: {
+    player1: "",
+    player2: null,
+    score: 0,
+  },
+  result: "",
+  numberOfApprovals: 0,
+  numberOfDeclines: 0,
+  approvalStatus: "",
+};
+
+export const scoreboardProfileSchema: ScoreboardProfile = {
+  prevGameXP: 0,
+  highestLossStreak: 0,
+  highestWinStreak: 0,
+  totalPoints: 0,
+  totalPointDifference: 0,
+  numberOfWins: 0,
+  pointEfficiency: 0,
+  totalPointEfficiency: 0,
+  winStreak3: 0,
+  winStreak5: 0,
+  winStreak7: 0,
+  demonWin: 0,
+  averagePointDifference: 0,
+  pointDifferenceLog: [],
+  resultLog: [],
+  currentStreak: {
+    type: null, // or '' if needed
+    count: 0,
+  },
+  lastActive: "",
+  winPercentage: 0,
+  numberOfLosses: 0,
+  numberOfGamesPlayed: 0,
+};
+
+export const profileDetailSchema: ProfileDetail = {
+  ...scoreboardProfileSchema,
+  XP: 20,
+  memberSince: moment().format("MMM YYYY"),
+  leagueStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
+  tournamentStats: {
+    first: 0,
+    second: 0,
+    third: 0,
+    fourth: 0,
+  },
+};
+
+export const userProfileSchema: UserProfile = {
+  handPreference: "",
+  userId: "",
+  lastName: "",
+  firstName: "",
+  username: "",
+  usernameLower: "",
+  provider: "",
+  dob: "",
+  profileDetail: profileDetailSchema,
+  profileImage: "",
+  bio: "",
+  headline: "",
+  profileViews: 0,
+  location: locationSchema,
+  email: "",
+  phoneNumber: "",
+  showEmail: true,
+  showPhoneNumber: false,
+  pushTokens: [],
+};
+
+export const chatMessageSchema = {
+  _id: "",
+  text: "",
+  createdAt: new Date(),
+  user: {
+    _id: "",
+    name: "",
+    avatar: "",
+  },
+};
+
+export const leagueSchema: League = {
+  leagueParticipants: [],
+  leagueTeams: [],
+  leagueAdmins: [],
+  leagueOwner: {
+    userId: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    location: locationSchema,
+  },
+  games: [],
+  leagueType: "",
+  prizeType: "",
+  entryFee: 0,
+  currencyType: "",
+  leagueImage: "",
+  leagueName: "",
+  leagueDescription: "",
+  location: courtLocationSchema,
+  countryCode: "",
+  createdAt: new Date(),
+  startDate: "",
+  leagueLengthInMonths: "",
+  endDate: "",
+  prizesDistributed: false,
+  prizeDistributionDate: null,
+  maxPlayers: 0,
+  privacy: "",
+  playingTime: [],
+  pendingInvites: [],
+  pendingRequests: [],
+  approvalLimit: 1,
+};
+export const tournamentSchema: Tournament = {
+  tournamentParticipants: [],
+  tournamentTeams: [],
+  tournamentAdmins: [],
+  tournamentOwner: {
+    userId: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    location: locationSchema,
+  },
+  games: [],
+  fixtures: [],
+  tournamentType: "",
+  tournamentMode: "",
+  prizeType: "",
+  entryFee: 0,
+  currencyType: "",
+  tournamentImage: "",
+  tournamentName: "",
+  tournamentDescription: "",
+  fixturesGenerated: false,
+  location: courtLocationSchema,
+  countryCode: "",
+  createdAt: new Date(),
+  startDate: "",
+  tournamentLengthInMonths: "",
+  endDate: "",
+  prizesDistributed: false,
+  prizeDistributionDate: null,
+  maxPlayers: 0,
+  privacy: "",
+  playingTime: [],
+  pendingInvites: [],
+  pendingRequests: [],
+  approvalLimit: 1,
+};
+
+export const fixturesSchema = {
+  fixtures: [
+    {
+      round: 1,
+      games: [
+        {
+          gameId: "",
+          team1: {
+            player1: {
+              userId: "",
+              username: "",
+              firstName: "",
+              lastName: "",
+              displayName: "",
+            },
+            player2: null,
+          },
+          team2: {
+            player1: {
+              userId: "",
+              username: "",
+              firstName: "",
+              lastName: "",
+              displayName: "",
+            },
+            player2: null,
+          },
+          scheduledDate: "",
+          approvalStatus: "", // Pending, Approved, Declined
+          status: "Scheduled", // Scheduled, Completed
+          result: null, // To be filled after game completion
+        },
+      ],
+    },
+  ],
+};
+
+export const courtSchema = {
+  courtName: "",
+  courtDescription: "",
+  courtImage: "",
+  location: locationSchema,
+  numberOfLeagues: 0,
+  numberOfCourts: 0,
+  numberOfTeams: 0,
+  numberOfPlayers: 0,
+  numberOfGames: 0,
+  numberOfTournaments: 0,
+};
+
+export const notificationTypes = {
+  // Shows information modal
+  INFORMATION: {
+    APP: {
+      ROUTE: "Home",
+      TYPE: "app",
+    },
+    LEAGUE: {
+      ROUTE: "League",
+      TYPE: "league",
+    },
+    TOURNAMENT: {
+      ROUTE: "Tournament",
+      TYPE: "tournament",
+    },
+    USER: {
+      ROUTE: "UserProfile",
+      TYPE: "user",
+    },
+    WELCOME: {
+      ROUTE: "Welcome",
+      TYPE: "welcome",
+    },
+  },
+  WELCOME: {
+    TYPE: "welcome",
+    MESSAGE: "Welcome to Court Champs! 🎉",
+  },
+  ACTION: {
+    // Shows League/Tournament modal
+    INVITE: {
+      LEAGUE: "invite-league",
+      TOURNAMENT: "invite-tournament",
+    },
+    // Shows player card
+    JOIN_REQUEST: {
+      LEAGUE: "join-league-request",
+      TOURNAMENT: "join-tournament-request",
+    },
+    // Shows game modal
+    ADD_GAME: {
+      LEAGUE: "add-league-game",
+      TOURNAMENT: "add-tournament-game",
+    },
+  },
+  RESPONSE: {
+    ACCEPT: "accepted",
+    DECLINE: "declined",
+    APPROVED_GAME: "approved",
+    REJECTED_GAME: "rejected",
+  },
+};
+
+const systemSenderId = "system";
+
+export const notificationSchema = {
+  createdAt: new Date(),
+  type: "",
+  message: "",
+  isRead: false,
+  senderId: systemSenderId,
+  recipientId: "",
+  data: {},
+  response: "",
+};

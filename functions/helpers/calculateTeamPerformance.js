@@ -1,10 +1,4 @@
-const calculateTeamPerformance = async (
-  game,
-  retrieveTeams,
-  leagueId
-) => {
-  const allTeams = await retrieveTeams(leagueId);
-
+const calculateTeamPerformance = async ({ game, allTeams }) => {
   const normalizeTeamKey = (key) => {
     return key.join("-").split("-").sort().join("-");
   };
@@ -86,12 +80,12 @@ const calculateTeamPerformance = async (
 
   const lossesToValues = Object.values(loserTeam.lossesTo);
   const maxLosses = Math.max(...lossesToValues);
-  
+
   if (maxLosses > 1) {
     const teamsWithMaxLosses = Object.keys(loserTeam.lossesTo).filter(
       (key) => loserTeam.lossesTo[key] === maxLosses
     );
-    
+
     if (teamsWithMaxLosses.length === 1) {
       const rivalKey = teamsWithMaxLosses[0];
       loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
@@ -107,10 +101,10 @@ const calculateTeamPerformance = async (
 
 function updateTeamStats(team, result, pointDifference) {
   const previousWinStreak = team.currentStreak > 0 ? team.currentStreak : 0;
-  
+
   if (result === "W") {
     team.numberOfWins += 1;
-    
+
     if (pointDifference >= 10) {
       team.demonWin = (team.demonWin || 0) + 1;
     }
@@ -145,9 +139,12 @@ function updateTeamStats(team, result, pointDifference) {
 }
 
 function updateWinStreaks(team, previousWinStreak) {
-  const previousResult = team.resultLog.length > 1 ? team.resultLog[team.resultLog.length - 2] : null;
+  const previousResult =
+    team.resultLog.length > 1
+      ? team.resultLog[team.resultLog.length - 2]
+      : null;
   const currentResult = team.resultLog[team.resultLog.length - 1];
-  
+
   if (currentResult === "W") {
     if (previousResult === "L" || previousResult === null) {
       team.currentStreak = 1;
@@ -163,17 +160,23 @@ function updateWinStreaks(team, previousWinStreak) {
   }
 
   if (team.currentStreak > 0) {
-    team.highestWinStreak = Math.max(team.highestWinStreak || 0, team.currentStreak);
+    team.highestWinStreak = Math.max(
+      team.highestWinStreak || 0,
+      team.currentStreak
+    );
   } else if (team.currentStreak < 0) {
-    team.highestLossStreak = Math.max(team.highestLossStreak || 0, Math.abs(team.currentStreak));
+    team.highestLossStreak = Math.max(
+      team.highestLossStreak || 0,
+      Math.abs(team.currentStreak)
+    );
   }
 
   const currentWinStreak = team.currentStreak > 0 ? team.currentStreak : 0;
-  
+
   if (typeof team.winStreak3 !== "number") team.winStreak3 = 0;
   if (typeof team.winStreak5 !== "number") team.winStreak5 = 0;
   if (typeof team.winStreak7 !== "number") team.winStreak7 = 0;
-  
+
   if (previousWinStreak < 3 && currentWinStreak >= 3) {
     team.winStreak3 += 1;
   }

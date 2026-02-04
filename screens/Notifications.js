@@ -9,30 +9,17 @@ import { FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
-import { notificationTypes } from "../schemas/schema";
 import InviteActionModal from "../components/Modals/InviteActionModal";
 import JoinRequestModal from "../components/Modals/JoinRequestModal";
 import GameApprovalModal from "../components/Modals/GameApprovalModal";
 import NotificationRow from "../components/Notification/NotificationRow";
 import WelcomeModal from "../components/Modals/WelcomeModal";
-
-// Extract notification type constants
-const ACTION_TYPES = {
-  INVITE: Object.values(notificationTypes.ACTION.INVITE),
-  JOIN_REQUEST: Object.values(notificationTypes.ACTION.JOIN_REQUEST),
-};
-
-// Flatten and lowercase all action types for easier checking
-const allActionTypes = Object.values(notificationTypes.ACTION)
-  .flatMap(Object.values)
-  .map((t) => t.toLowerCase());
-
-// Helper function to check if a notification is an action type
-const isActionType = (type) => allActionTypes.includes(type.toLowerCase());
-
-//Is welcome type
-const isWelcomeType = (type) =>
-  type === notificationTypes.WELCOME.TYPE.toLowerCase();
+import {
+  isActionType,
+  isWelcomeType,
+  getModalTypeForNotification,
+  MODAL_TYPES,
+} from "../helpers/handleNotificationAction";
 
 const Notifications = () => {
   const { currentUser, notifications } = useContext(UserContext);
@@ -44,7 +31,7 @@ const Notifications = () => {
     notificationId: null,
     notificationType: null,
     senderId: null,
-    selectedLeagueId: null,
+    selectedCompetitionId: null,
     gameId: null,
     isRead: false,
     data: null,
@@ -70,7 +57,6 @@ const Notifications = () => {
     return () => clearTimeout(timeout);
   }, [currentUser, navigation]);
 
-  // Modal toggle handlers
   const closeAllModals = useCallback(() => {
     setModals({
       invite: false,
@@ -80,50 +66,38 @@ const Notifications = () => {
     });
   }, []);
 
-  // Handler for notification actions
   const handleNotificationAction = useCallback((item) => {
-    // Set common state regardless of modal type
+    const competitionId =
+      item.data.leagueId || item.data.tournamentId || item.data.competitionId;
+
     const commonState = {
       notificationId: item.id,
       notificationType: item.type,
-      selectedLeagueId: item.data.leagueId,
+      selectedCompetitionId: competitionId,
       senderId: item.senderId,
       isRead: item.isRead,
+      gameId: item.data.gameId || null,
+      data: item.data ?? null,
+      response: item.response || null,
     };
 
-    // Clear previous state and set new state
-    setModalState({
-      ...commonState,
-      gameId: item.data.gameId || null,
-    });
+    setModalState(commonState);
 
-    // Open the appropriate modal
-    if (ACTION_TYPES.INVITE.includes(item.type)) {
-      setModals((prev) => ({ ...prev, invite: true }));
-    } else if (ACTION_TYPES.JOIN_REQUEST.includes(item.type)) {
-      setModals((prev) => ({ ...prev, joinRequest: true }));
-    } else if (item.type === notificationTypes.WELCOME.TYPE) {
-      setModalState((prev) => ({ ...prev, data: item.data }));
-      setModals((prev) => ({ ...prev, welcome: true }));
-    } else {
-      setModals((prev) => ({ ...prev, gameApproval: true }));
-    }
+    const modalType = getModalTypeForNotification(item.type);
+    setModals((prev) => ({ ...prev, [modalType]: true }));
   }, []);
 
-  // Memoized render function to prevent unnecessary rerenders
   const renderNotification = useCallback(
-    ({ item }) => {
-      return (
-        <NotificationRow
-          item={item}
-          isRead={item.isRead}
-          isAction={isActionType(item.type)}
-          isWelcome={isWelcomeType(item.type)}
-          onPressAction={handleNotificationAction}
-          currentUser={currentUser}
-        />
-      );
-    },
+    ({ item }) => (
+      <NotificationRow
+        item={item}
+        isRead={item.isRead}
+        isAction={isActionType(item.type)}
+        isWelcome={isWelcomeType(item.type)}
+        onPressAction={handleNotificationAction}
+        currentUser={currentUser}
+      />
+    ),
     [currentUser, handleNotificationAction]
   );
 
@@ -148,43 +122,52 @@ const Notifications = () => {
         removeClippedSubviews={true}
       />
 
-      <WelcomeModal
-        visible={modals.welcome}
-        onClose={closeAllModals}
-        header={modalState.data?.header}
-        body={modalState.data?.body}
-        data={modalState.data}
-      />
+      {modals.welcome && (
+        <WelcomeModal
+          visible={modals.welcome}
+          onClose={closeAllModals}
+          header={modalState.data?.header}
+          body={modalState.data?.body}
+          data={modalState.data}
+        />
+      )}
 
-      <InviteActionModal
-        visible={modals.invite}
-        onClose={closeAllModals}
-        inviteId={modalState.selectedLeagueId || ""}
-        inviteType={modalState.notificationType}
-        notificationId={modalState.notificationId}
-        isRead={modalState.isRead}
-      />
+      {modals.invite && (
+        <InviteActionModal
+          visible={modals.invite}
+          onClose={closeAllModals}
+          inviteId={modalState.selectedCompetitionId || ""}
+          inviteType={modalState.notificationType}
+          notificationId={modalState.notificationId}
+          isRead={modalState.isRead}
+        />
+      )}
 
-      <JoinRequestModal
-        visible={modals.joinRequest}
-        onClose={closeAllModals}
-        requestId={modalState.selectedLeagueId || ""}
-        requestType={modalState.notificationType}
-        notificationId={modalState.notificationId}
-        senderId={modalState.senderId}
-        isRead={modalState.isRead}
-      />
+      {modals.joinRequest && (
+        <JoinRequestModal
+          visible={modals.joinRequest}
+          onClose={closeAllModals}
+          requestId={modalState.selectedCompetitionId || ""}
+          requestType={modalState.notificationType}
+          notificationId={modalState.notificationId}
+          senderId={modalState.senderId}
+          isRead={modalState.isRead}
+        />
+      )}
 
-      <GameApprovalModal
-        visible={modals.gameApproval}
-        onClose={closeAllModals}
-        notificationId={modalState.notificationId}
-        notificationType={modalState.notificationType}
-        senderId={modalState.senderId}
-        gameId={modalState.gameId || ""}
-        leagueId={modalState.selectedLeagueId || ""}
-        isRead={modalState.isRead}
-      />
+      {modals.gameApproval && (
+        <GameApprovalModal
+          visible={modals.gameApproval}
+          onClose={closeAllModals}
+          notificationId={modalState.notificationId}
+          notificationType={modalState.notificationType}
+          senderId={modalState.senderId}
+          gameId={modalState.gameId || ""}
+          competitionId={modalState.selectedCompetitionId || ""}
+          isRead={modalState.isRead}
+          response={modalState.response}
+        />
+      )}
     </HomeContainer>
   );
 };
