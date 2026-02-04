@@ -1,7 +1,7 @@
 type TournamentType = "Singles" | "Doubles";
 
 const SINGLES_MULTIPLIER = 25;
-const DOUBLES_MULTIPLIER = 75;
+const DOUBLES_MULTIPLIER = 150;
 
 export const calculateTournamentPrizePool = (
   numberOfGames: number,

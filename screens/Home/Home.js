@@ -313,6 +313,7 @@ const Home = () => {
           title="Tournaments"
           onIconPress={addTournament}
           actionText="Browse Tournaments"
+          navigationRoute={"Tournaments"}
           showIcon
         />
 

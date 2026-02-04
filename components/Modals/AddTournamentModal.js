@@ -462,6 +462,7 @@ const ConfirmTournamentSettingsModal = ({
               label="Mode"
               options={tournamentModes}
               errorText={errors.tournamentMode?.message}
+              disabledOptions={["Knockout"]}
             />
 
             <OptionSelector

@@ -6,6 +6,7 @@ import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PlayTime from "./PlayTime";
 import PrizeContenders from "./PrizeContenders";
+import DoublesPrizeContenders from "../Summary/DoublesPrizeContenders";
 import { copyLocationAddress } from "../../helpers/copyLocationAddress";
 import { useContext } from "react";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
@@ -21,12 +22,34 @@ const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
   numberOfWins: 0,
 }));
 
+const PLACEHOLDER_TEAMS = Array.from({ length: 4 }, (_, index) => ({
+  teamKey: `placeholder-${index}`,
+  team: ["", ""],
+  numberOfWins: 0,
+  resultLog: [],
+  totalPointDifference: 0,
+  highestWinStreak: 0,
+  numberOfGamesPlayed: 0,
+  highestLossStreak: 0,
+  lossesTo: {},
+  demonWin: 0,
+  pointDifferenceLog: [],
+  rival: null,
+  winStreak5: 0,
+  winStreak3: 0,
+  averagePointDifference: 0,
+  currentStreak: 0,
+  winStreak7: 0,
+  numberOfLosses: 0,
+}));
+
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 
 const CompetitionSummary = memo(
   ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
     const { getUserById } = useContext(UserContext);
     const [topContenders, setTopContenders] = useState([]);
+    const [topTeams, setTopTeams] = useState([]);
     const [isCopied, setIsCopied] = useState(false);
     const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -42,12 +65,18 @@ const CompetitionSummary = memo(
     );
 
     const participants = competitionData?.participants || [];
+    const teams = competitionData?.teams || [];
     const games = competitionData?.games || [];
     const admins = competitionData?.admins || [];
     const owner = competitionData?.owner || {};
     const description = competitionData?.description || "";
     const playtime = competitionData?.playingTime || [];
     const competitionId = competitionData.id;
+
+    // Determine if this is a Doubles tournament
+    const isDoublesTournament =
+      competitionType === COMPETITION_TYPES.TOURNAMENT &&
+      competitionData?.type === "Doubles";
 
     const gameStats = useMemo(() => {
       const numberOfParticipants = participants.length || 1;
@@ -92,32 +121,51 @@ const CompetitionSummary = memo(
     ]);
 
     useEffect(() => {
-      const loadEnrichedContenders = async () => {
+      const loadContenders = async () => {
         setIsDataLoading(true);
 
-        const contendersWithWins = participants.filter(
-          (p) => p.numberOfWins > 0
-        );
+        if (isDoublesTournament) {
+          // For Doubles tournaments, sort teams by wins
+          const teamsWithWins = teams.filter((t) => t.numberOfWins > 0);
+          const sortedTeams = [...teamsWithWins].sort((a, b) => {
+            if (b.numberOfWins !== a.numberOfWins) {
+              return b.numberOfWins - a.numberOfWins;
+            }
+            return b.totalPointDifference - a.totalPointDifference;
+          });
+          setTopTeams(sortedTeams.slice(0, 4));
+        } else {
+          // For Singles competitions, enrich player data
+          const contendersWithWins = participants.filter(
+            (p) => p.numberOfWins > 0
+          );
 
-        if (contendersWithWins.length > 0) {
-          try {
-            const enriched = await enrichPlayers(
-              getUserById,
-              contendersWithWins
-            );
-            setTopContenders(enriched.slice(0, 4));
-          } catch (error) {
-            console.error("Error enriching players:", error);
+          if (contendersWithWins.length > 0) {
+            try {
+              const enriched = await enrichPlayers(
+                getUserById,
+                contendersWithWins
+              );
+              setTopContenders(enriched.slice(0, 4));
+            } catch (error) {
+              console.error("Error enriching players:", error);
+              setTopContenders([]);
+            }
+          } else {
             setTopContenders([]);
           }
-        } else {
-          setTopContenders([]);
         }
+
         setIsDataLoading(false);
       };
 
-      loadEnrichedContenders();
-    }, [participants.length, competitionType]);
+      loadContenders();
+    }, [
+      participants.length,
+      teams.length,
+      competitionType,
+      isDoublesTournament,
+    ]);
 
     const addressData = useMemo(() => {
       const { courtName, address, postCode, city, countryCode } =
@@ -133,6 +181,60 @@ const CompetitionSummary = memo(
     const renderContenders = isDataLoading
       ? PLACEHOLDER_CONTENDERS
       : topContenders;
+
+    const renderTeams = isDataLoading ? PLACEHOLDER_TEAMS : topTeams;
+
+    const renderPrizeContenders = () => {
+      if (isDoublesTournament) {
+        // Doubles Tournament - render DoublesPrizeContenders
+        if (renderTeams.length === 0 && !isDataLoading) {
+          return (
+            <EmptyStateContainer>
+              <EmptyStateText>
+                Top prize contenders will be displayed here once teams start
+                winning games.
+              </EmptyStateText>
+            </EmptyStateContainer>
+          );
+        }
+
+        return (
+          <DoublesPrizeContenders
+            teams={renderTeams}
+            isDataLoading={isDataLoading}
+            distribution={DISTRIBUTION}
+            prizePool={gameStats.prizePool}
+            hasPrizesDistributed={hasPrizesDistributed}
+            competitionType={competitionType}
+          />
+        );
+      }
+
+      // Singles competitions - render PrizeContenders
+      if (renderContenders.length === 0 && !isDataLoading) {
+        return (
+          <EmptyStateContainer>
+            <EmptyStateText>
+              Top prize contenders will be displayed here once players start
+              winning games.
+            </EmptyStateText>
+          </EmptyStateContainer>
+        );
+      }
+
+      return renderContenders.map((player, index) => (
+        <PrizeContenders
+          key={player.userId}
+          item={player}
+          index={index}
+          isDataLoading={isDataLoading}
+          distribution={DISTRIBUTION}
+          prizePool={gameStats.prizePool}
+          hasPrizesDistributed={hasPrizesDistributed}
+          competitionType={competitionType}
+        />
+      ));
+    };
 
     return (
       <CompetitionSummaryContainer>
@@ -156,29 +258,7 @@ const CompetitionSummary = memo(
           )}
         </SectionTitleContainer>
 
-        <TableContainer>
-          {renderContenders.length === 0 && !isDataLoading ? (
-            <EmptyStateContainer>
-              <EmptyStateText>
-                Top prize contenders will be displayed here once players start
-                winning games.
-              </EmptyStateText>
-            </EmptyStateContainer>
-          ) : (
-            renderContenders.map((player, index) => (
-              <PrizeContenders
-                key={player.userId}
-                item={player}
-                index={index}
-                isDataLoading={isDataLoading}
-                distribution={DISTRIBUTION}
-                prizePool={gameStats.prizePool}
-                hasPrizesDistributed={hasPrizesDistributed}
-                competitionType={competitionType}
-              />
-            ))
-          )}
-        </TableContainer>
+        <TableContainer>{renderPrizeContenders()}</TableContainer>
 
         {/* Competition Location */}
         <Section>

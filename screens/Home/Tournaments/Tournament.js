@@ -8,7 +8,11 @@ import {
   Linking,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { COMPETITION_TYPES, COLLECTION_NAMES } from "../../../schemas/schema";
+import {
+  COMPETITION_TYPES,
+  COLLECTION_NAMES,
+  prizeTypes,
+} from "../../../schemas/schema";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -312,7 +316,7 @@ const Tournament = () => {
             >
               <View style={{ flexDirection: "row", gap: 5 }}>
                 <Tag name={tournamentType} />
-                <Tag name="TROPHY" />
+                <Tag name={prizeTypes.MEDAL} />
               </View>
 
               <UserRoleTag

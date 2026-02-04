@@ -204,6 +204,22 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const fetchTournaments = async () => {
+    console.log("Fetching tournaments...");
+    try {
+      const tournamentsRef = collection(db, "tournaments");
+      const q = query(tournamentsRef, orderBy("createdAt", "desc"), limit(30));
+      const snapshot = await getDocs(q);
+      const tournaments = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return tournaments;
+    } catch (error) {
+      console.error("Error fetching tournaments:", error);
+    }
+  };
+
   const addPlaytime = async ({
     playtime,
     existingPlaytime = null,
@@ -1456,6 +1472,7 @@ const LeagueProvider = ({ children }) => {
         addTournamentFixtures,
         updateTournamentGame,
         fetchTournamentParticipants,
+        fetchTournaments,
 
         // League State Management
         upcomingLeagues,

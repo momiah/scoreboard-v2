@@ -27,6 +27,7 @@ import BulkGamePublisher from "../screens/Home/Leagues/BulkGamePublisher";
 import TournamentSettings from "../screens/Home/Tournaments/TournamentSettings";
 import BulkFixturesPublisher from "../screens/Home/Tournaments/BulkFixturesPublisher";
 import EditTournament from "../screens/Home/Tournaments/EditTournament";
+import Tournaments from "../screens/Home/Tournaments/Tournaments";
 import FAQ from "../screens/Profile/FAQ";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
@@ -64,6 +65,7 @@ const HomeStack = () => {
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -101,6 +103,7 @@ const ProfileStack = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -134,6 +137,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -167,6 +171,7 @@ const ChatsStack = () => {
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -230,6 +235,7 @@ const Tabs = () => {
   return (
     <>
       <Tab.Navigator
+        initialRouteName="Profile"
         screenOptions={({ route }) => ({
           tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",

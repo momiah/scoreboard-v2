@@ -52,7 +52,7 @@ const UserProfile = () => {
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("Profile");
+  const [selectedTab, setSelectedTab] = useState("Performance");
   const [globalRank, setGlobalRank] = useState(null);
   const [countryRank, setCountryRank] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
