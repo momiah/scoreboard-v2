@@ -8,7 +8,6 @@ import React, {
 
 import {
   doc,
-  setDoc,
   collection,
   getDocs,
   getDoc,
@@ -25,11 +24,12 @@ import { deleteUser } from "firebase/auth";
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-  profileDetailSchema,
-  scoreboardProfileSchema,
-  notificationSchema,
-  notificationTypes,
-} from "../schemas/schema";
+  getUserById,
+  retrieveTeams,
+  updateUsers,
+  updateTeams,
+} from "../devFunctions/firebaseFunctions";
+import { Alert } from "react-native";
 
 const UserContext = createContext();
 
@@ -46,78 +46,64 @@ const UserProvider = ({ children }) => {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
+    let unsubscribe;
+    let isMounted = true;
+
     const loadInitialUser = async () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
-        if (userId) {
-          const userData = await getUserById(userId);
-          setCurrentUser(userData);
-        }
+        if (!userId) return;
+
+        const userData = await getUserById(userId);
+        setCurrentUser(userData);
+
+        const userUid = userData?.userId;
+        if (!userUid) return;
+
+        const chatsRef = collection(db, "users", userUid, "chats");
+
+        unsubscribe = onSnapshot(chatsRef, (snapshot) => {
+          if (!isMounted) return;
+
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          data.sort(
+            (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+          );
+
+          setChatSummaries(data);
+        });
       } catch (error) {
         console.error("Initial user load failed:", error);
       }
     };
 
     loadInitialUser();
-  }, []);
-
-  useEffect(() => {
-    let unsubscribe;
-    let isMounted = true;
-
-    const setupChatSummaryListener = async () => {
-      const userUid = currentUser?.userId;
-      if (!userUid) return;
-
-      const chatsRef = collection(db, "users", userUid, "chats");
-
-      unsubscribe = onSnapshot(chatsRef, (snapshot) => {
-        // 🛡️ Protect against null currentUser and unmounted component
-        if (!isMounted || !currentUser?.userId) return;
-
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        // Optional: sort by createdAt descending
-        data.sort(
-          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
-        );
-
-        setChatSummaries(data);
-      });
-    };
-
-    setupChatSummaryListener();
 
     return () => {
       isMounted = false;
       if (unsubscribe) unsubscribe();
     };
-  }, [currentUser?.userId]);
+  }, []);
 
   useEffect(() => {
     let unsubscribe;
 
     const setupListener = async () => {
       try {
-        // const userId = await AsyncStorage.getItem("userId");
         const userUid = currentUser?.userId;
+        if (!userUid) return;
 
-        if (!currentUser) {
-          return;
-        }
-
-        // Create a reference to the user's notifications collection
         const notificationsRef = collection(
           db,
           "users",
           userUid,
-          "notifications"
+          "notifications",
         );
 
-        // Set up the snapshot listener
         unsubscribe = onSnapshot(
           notificationsRef,
           (snapshot) => {
@@ -126,17 +112,16 @@ const UserProvider = ({ children }) => {
               ...doc.data(),
             }));
 
-            // Sort by createdAt timestamp (newest first)
             notificationsData.sort(
               (a, b) =>
-                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
             );
 
             setNotifications(notificationsData);
           },
           (error) => {
             console.error("Error in notifications listener:", error);
-          }
+          },
         );
       } catch (error) {
         console.error("Failed to set up notifications listener:", error);
@@ -145,11 +130,8 @@ const UserProvider = ({ children }) => {
 
     setupListener();
 
-    // Clean up the listener when component unmounts
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribe) unsubscribe();
     };
   }, [currentUser?.userId]);
 
@@ -173,71 +155,81 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const retrievePlayersFromLeague = useCallback(async (leagueId) => {
-    try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueId);
-      const leagueDoc = await getDoc(leagueDocRef);
-      const leagueParticipants = leagueDoc.data().leagueParticipants;
+  const retrievePlayersFromCompetition = useCallback(
+    async (competitionId, collectionName) => {
+      try {
+        const collectionRef = collection(db, collectionName);
+        const docRef = doc(collectionRef, competitionId);
+        const docSnap = await getDoc(docRef);
 
-      return leagueParticipants;
-    } catch (error) {
-      console.error("Error retrieving players:", error);
-      return [];
-    }
-  }, []);
+        if (!docSnap.exists()) {
+          console.error("Competition not found");
+          return [];
+        }
 
-  const retrieveTeams = async (leagueId) => {
-    try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueId);
+        const data = docSnap.data();
+        const participants =
+          collectionName === "leagues"
+            ? data.leagueParticipants
+            : data.tournamentParticipants;
 
-      // Get the existing league document
-      const leagueDoc = await getDoc(leagueDocRef);
-      const leagueTeams = leagueDoc.data().leagueTeams;
+        return participants || [];
+      } catch (error) {
+        console.error("Error retrieving players:", error);
+        return [];
+      }
+    },
+    [],
+  );
 
-      return leagueTeams;
-    } catch (error) {
-      console.error("Error retrieving teams:", error);
-      return [];
-    }
-  };
-
-  async function checkUserRole(leagueData) {
+  async function checkUserRole({
+    competitionData,
+    competitionType = "league",
+  }) {
     try {
       const userId = await AsyncStorage.getItem("userId");
       if (!userId) return "hide";
 
       if (
-        !leagueData ||
-        !leagueData.leagueOwner ||
-        !leagueData.leagueAdmins ||
-        !leagueData.leagueParticipants ||
-        !leagueData.pendingInvites ||
-        !leagueData.pendingRequests
+        !competitionData ||
+        !competitionData[`${competitionType}Owner`] ||
+        !competitionData[`${competitionType}Admins`] ||
+        !competitionData[`${competitionType}Participants`] ||
+        !competitionData.pendingInvites ||
+        !competitionData.pendingRequests
       ) {
-        console.error("Invalid league data:", leagueData);
+        console.error("Invalid competition data:", competitionData);
         return "hide";
       }
 
-      // 1) League owner
-      if (leagueData.leagueOwner === userId) {
+      // 1) Tournament owner
+      if (competitionData[`${competitionType}Owner`] === userId) {
         return "owner";
       }
       // 2) Admin
-      if (leagueData.leagueAdmins.some((a) => a.userId === userId)) {
+      if (
+        competitionData[`${competitionType}Admins`].some(
+          (a) => a.userId === userId,
+        )
+      ) {
         return "admin";
       }
       // 3) Participant
-      if (leagueData.leagueParticipants.some((p) => p.userId === userId)) {
+      if (
+        competitionData[`${competitionType}Participants`].some(
+          (p) => p.userId === userId,
+        )
+      ) {
         return "participant";
       }
       // 4) Pending invite (you’ve been invited)
-      if (leagueData.pendingInvites.some((inv) => inv.userId === userId)) {
+      if (competitionData.pendingInvites.some((inv) => inv.userId === userId)) {
         return "invitationPending";
       }
       // 5) Pending request (you’ve asked to join)
-      if (leagueData.pendingRequests.some((req) => req.userId === userId)) {
+      if (
+        competitionData.pendingRequests.some((req) => req.userId === userId)
+      ) {
         return "requestPending";
       }
       // 6) Default
@@ -249,16 +241,20 @@ const UserProvider = ({ children }) => {
   }
 
   const fetchPlayers = useCallback(
-    async (leagueId) => {
+    async (competitionId, collectionName = "leagues") => {
       try {
-        const players = await retrievePlayersFromLeague(leagueId);
+        const players = await retrievePlayersFromCompetition(
+          competitionId,
+          collectionName,
+        );
         setPlayers(players);
       } catch (error) {
         console.error("Error fetching players:", error);
       }
     },
-    [retrievePlayersFromLeague]
+    [retrievePlayersFromCompetition],
   );
+
   const [loading, setLoading] = useState(true); // Track loading state
 
   const getAllUsers = async () => {
@@ -270,7 +266,7 @@ const UserProvider = ({ children }) => {
         orderBy("profileDetail.numberOfWins", "desc"),
         orderBy("profileDetail.winPercentage", "desc"),
         orderBy("profileDetail.totalPointDifference", "desc"),
-        orderBy("username", "asc")
+        orderBy("username", "asc"),
       );
 
       const querySnapshot = await getDocs(usersQuery);
@@ -290,7 +286,7 @@ const UserProvider = ({ children }) => {
   const getAllUsersPaginated = async (
     page = 1,
     pageSize = 25,
-    searchParam = ""
+    searchParam = "",
   ) => {
     try {
       const usersRef = collection(db, "users");
@@ -302,7 +298,7 @@ const UserProvider = ({ children }) => {
         orderBy("profileDetail.numberOfWins", "desc"),
         orderBy("profileDetail.winPercentage", "desc"),
         orderBy("profileDetail.totalPointDifference", "desc"),
-        orderBy("username", "asc")
+        orderBy("username", "asc"),
       );
 
       // Fetch all matching documents (or page + offset)
@@ -337,167 +333,54 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const updateUsers = async (usersToUpdate) => {
-    try {
-      const updatePromises = usersToUpdate.map(async (user) => {
-        const userRef = doc(db, "users", user.userId);
-
-        await updateDoc(userRef, {
-          profileDetail: user.profileDetail,
-        });
-      });
-
-      await Promise.all(updatePromises);
-      // console.log("All users updated successfully.");
-    } catch (error) {
-      console.error("Error updating users:", error);
-    }
-  };
-
-  const updatePlayers = async (updatedPlayers, leagueId) => {
+  const updatePlayers = async ({
+    updatedPlayers,
+    competitionId,
+    collectionName,
+  }) => {
     if (updatedPlayers.length === 0) {
       handleShowPopup("No players to update!");
       return;
     }
 
     try {
-      const leagueDocRef = doc(db, "leagues", leagueId); // Reference to the league document
+      const collectionDocRef = doc(db, collectionName, competitionId);
 
       // Fetch the current league document
-      const leagueDoc = await getDoc(leagueDocRef);
+      const collectionDoc = await getDoc(collectionDocRef);
 
-      if (!leagueDoc.exists()) {
+      if (!collectionDoc.exists()) {
         handleShowPopup("League not found!");
         return;
       }
 
-      const leagueData = leagueDoc.data();
-      const existingPlayers = leagueData.leagueParticipants || [];
+      const collectionData = collectionDoc.data();
+      const existingPlayers =
+        collectionName === "leagues"
+          ? collectionData.leagueParticipants || []
+          : collectionData.tournamentParticipants || [];
 
       // Update the existing players array with updated data
       const updatedParticipants = existingPlayers.map((player) => {
         const updatedPlayer = updatedPlayers.find(
-          (p) => p.username === player.username
+          (p) => p.username === player.username,
         );
         return updatedPlayer ? { ...player, ...updatedPlayer } : player;
       });
 
-      // Update the leagueParticipants field in Firestore
-      await updateDoc(leagueDocRef, {
-        leagueParticipants: updatedParticipants,
-      });
+      if (collectionName === "leagues") {
+        // Update the leagueParticipants field in Firestore
+        await updateDoc(collectionDocRef, {
+          leagueParticipants: updatedParticipants,
+        });
+      } else if (collectionName === "tournaments") {
+        // Update the tournamentParticipants field in Firestore
+        await updateDoc(collectionDocRef, {
+          tournamentParticipants: updatedParticipants,
+        });
+      }
 
-      // Optionally fetch the updated players to refresh the UI
-      await fetchPlayers(leagueId);
       // handleShowPopup("Players updated successfully!");
-    } catch (error) {
-      console.error("Error updating player data:", error);
-      handleShowPopup("Error updating player data");
-    }
-  };
-
-  const updateTeams = async (updatedTeams, leagueId) => {
-    if (updatedTeams.length === 0) {
-      console.error("No teams to update!");
-      return;
-    }
-
-    try {
-      const leagueDocRef = doc(db, "leagues", leagueId);
-
-      // Fetch the current league document
-      const leagueDoc = await getDoc(leagueDocRef);
-      if (!leagueDoc.exists()) {
-        console.error("League not found!");
-        return;
-      }
-
-      const leagueData = leagueDoc.data();
-      const existingTeams = leagueData.leagueTeams || [];
-
-      // Merge the updated teams into the existing ones
-      const updatedTeamsArray = existingTeams.map((team) => {
-        const updatedTeam = updatedTeams.find(
-          (t) => t.teamKey === team.teamKey
-        );
-        return updatedTeam ? { ...team, ...updatedTeam } : team;
-      });
-
-      // Add any new teams that weren't already in existingTeams
-      const newTeams = updatedTeams.filter(
-        (updatedTeam) =>
-          !existingTeams.some((team) => team.teamKey === updatedTeam.teamKey)
-      );
-
-      // Final teams list to update in Firestore
-      const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
-
-      await updateDoc(leagueDocRef, { leagueTeams: finalTeamsArray });
-    } catch (error) {
-      console.error("Error updating team data:", error);
-    }
-  };
-
-  const getUserById = async (userId) => {
-    try {
-      if (!userId) {
-        return null;
-      }
-
-      // Reference the document in the 'users' collection by ID
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        return userDoc.data(); // Include the document ID
-      } else {
-        console.error("No user found with the given ID.");
-        return null;
-      }
-    } catch (error) {
-      console.error("Error fetching user by ID:", error);
-      return null;
-    }
-  };
-
-  const resetAllPlayerStats = async () => {
-    try {
-      const allPlayers = await retrievePlayersFromLeague();
-      const allPlayersIds = allPlayers.map((player) => player.username);
-
-      for (const playerId of allPlayersIds) {
-        const scoreboardCollectionRef = collection(db, "scoreboard");
-        const playersCollectionRef = collection(
-          scoreboardCollectionRef,
-          "players",
-          "players"
-        );
-
-        const playerDocRef = doc(playersCollectionRef, playerId);
-        await updateDoc(playerDocRef, profileDetailSchema);
-      }
-
-      handleShowPopup("All player stats reset successfully!");
-      await fetchPlayers();
-    } catch (error) {
-      console.error("Error resetting player stats:", error);
-      handleShowPopup("Error resetting player stats");
-    }
-  };
-
-  const resetPlayerStats = async () => {
-    try {
-      const scoreboardCollectionRef = collection(db, "scoreboard");
-      const playersCollectionRef = collection(
-        scoreboardCollectionRef,
-        "players",
-        "players"
-      );
-
-      // Use the player name (or ID) as the document ID
-      const playerDocRef = doc(playersCollectionRef, "Abdul");
-      await setDoc(playerDocRef, profileDetailSchema); // Write the data directly
-      handleShowPopup("Player reset successfully!");
     } catch (error) {
       console.error("Error updating player data:", error);
       handleShowPopup("Error updating player data");
@@ -550,7 +433,7 @@ const UserProvider = ({ children }) => {
 
       // Filter users by country code
       const filteredUsers = allUsers.filter(
-        (user) => user.location?.countryCode === countryCode
+        (user) => user.location?.countryCode === countryCode,
       );
 
       // 2. Use the EXACT SAME sorting as AllPlayers
@@ -558,7 +441,7 @@ const UserProvider = ({ children }) => {
 
       // 3. Find index of the target user
       const userIndex = filteredUsers.findIndex(
-        (user) => user.userId === userId
+        (user) => user.userId === userId,
       );
 
       // 4. Return rank (index + 1)
@@ -588,13 +471,39 @@ const UserProvider = ({ children }) => {
           }
           // Return true if at least one participant has a matching userId
           return league.leagueParticipants.some(
-            (participant) => participant.userId === userId
+            (participant) => participant.userId === userId,
           );
         });
 
       return userLeagues;
     } catch (error) {
       console.error("Error fetching leagues for user:", error);
+      return [];
+    }
+  };
+
+  const getTournamentsForUser = async (userId) => {
+    try {
+      const tournamentsRef = collection(db, "tournaments");
+      const querySnapshot = await getDocs(tournamentsRef);
+
+      const userTournaments = querySnapshot.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .filter((tournament) => {
+          if (
+            !tournament.tournamentParticipants ||
+            !Array.isArray(tournament.tournamentParticipants)
+          ) {
+            return false;
+          }
+          return tournament.tournamentParticipants.some(
+            (participant) => participant.userId === userId,
+          );
+        });
+
+      return userTournaments;
+    } catch (error) {
+      console.error("Error fetching tournaments for user:", error);
       return [];
     }
   };
@@ -652,22 +561,26 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const readNotification = async (notificationId, userId) => {
+  const readNotification = async (notificationId, userId, response = null) => {
     try {
-      // const userId = await AsyncStorage.getItem("userId");
       if (!userId) throw new Error("User not authenticated");
+
       const userRef = doc(db, "users", userId);
       const notifRef = doc(userRef, "notifications", notificationId);
-      await updateDoc(notifRef, {
-        isRead: true,
-      });
+
+      const updateData = { isRead: true };
+      if (response) {
+        updateData.response = response;
+      }
+
+      await updateDoc(notifRef, updateData);
       console.log("Notification marked as read:", notificationId);
     } catch (error) {
       console.error(
         "Error marking notification as read:",
         error,
         notificationId,
-        userId
+        userId,
       );
     }
   };
@@ -717,7 +630,7 @@ const UserProvider = ({ children }) => {
           sound: "default",
           vibrate: [200, 100, 200],
           priority: "high",
-          title: `New Notification in Court Champs!`,
+          title: `Court Champs`,
           body: notification.message,
           data: {
             ...notification.data,
@@ -805,7 +718,7 @@ const UserProvider = ({ children }) => {
       let user = auth.currentUser;
       if (!user) {
         throw new Error(
-          "Session expired. Please log out and log back in, then try deleting your account again."
+          "Session expired. Please log out and log back in, then try deleting your account again.",
         );
       }
 
@@ -813,7 +726,7 @@ const UserProvider = ({ children }) => {
       if (user.uid !== userId) {
         await Logout();
         throw new Error(
-          "Authentication mismatch. Please log in again to delete your account."
+          "Authentication mismatch. Please log in again to delete your account.",
         );
       }
 
@@ -823,11 +736,11 @@ const UserProvider = ({ children }) => {
           db,
           "users",
           userId,
-          "notifications"
+          "notifications",
         );
         const notificationsSnapshot = await getDocs(notificationsRef);
         const notificationDeletes = notificationsSnapshot.docs.map((doc) =>
-          deleteDoc(doc.ref)
+          deleteDoc(doc.ref),
         );
         await Promise.all(notificationDeletes);
       } catch (error) {
@@ -869,7 +782,7 @@ const UserProvider = ({ children }) => {
       } else if (error.code === "auth/requires-recent-login") {
         Alert.alert(
           "Re-authentication Required",
-          "Please log out and log back in, then try deleting your account again for security reasons."
+          "Please log out and log back in, then try deleting your account again for security reasons.",
         );
       } else {
         Alert.alert("Error", "Error deleting account. Please try again.");
@@ -908,17 +821,13 @@ const UserProvider = ({ children }) => {
         readChat,
 
         // League-related operations
-        retrievePlayersFromLeague,
         retrieveTeams,
         updateTeams,
         fetchPlayers,
         updatePlayers,
         getLeaguesForUser,
+        getTournamentsForUser,
         checkUserRole,
-
-        // Player and stats management
-        resetPlayerStats,
-        resetAllPlayerStats,
 
         // Ranking and sorting
         rankSorting,

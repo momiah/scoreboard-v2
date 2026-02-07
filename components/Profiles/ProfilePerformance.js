@@ -3,12 +3,14 @@ import { Dimensions } from "react-native";
 import styled from "styled-components/native";
 import MedalProgress from "../performance/MedalProgress";
 import MatchMedals from "../performance/MatchMedals";
-import LeagueStatsDisplay from "../performance/LeagueStatDisplay";
+import CompetitionStatsDisplay from "../performance/CompetitionStatsDisplay";
 import PerformanceStats from "../performance/PerformanceStats";
+import { COMPETITION_TYPES } from "../../schemas/schema";
 import AnimateNumber from "../performance/AnimateNumber";
 
 const { width: screenWidth } = Dimensions.get("window");
-const screenAdjustedStatFontSize = screenWidth <= 450 ? 20 : 25;
+const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
+const screenAdjustedHeadingFontSize = screenWidth <= 400 ? 15 : 17;
 
 const ProfilePerformance = ({ profile }) => {
   const profileDetail = profile?.profileDetail;
@@ -58,6 +60,9 @@ const ProfilePerformance = ({ profile }) => {
           xp={profileDetail?.XP}
           prevGameXp={profileDetail?.prevGameXP}
         />
+        <Divider />
+
+        <Heading>Match Medals</Heading>
         <MatchMedals
           demonWin={profileDetail?.demonWin}
           winStreak3={profileDetail?.winStreak3}
@@ -65,7 +70,17 @@ const ProfilePerformance = ({ profile }) => {
           winStreak7={profileDetail?.winStreak7}
         />
         <Divider />
-        <LeagueStatsDisplay leagueStats={leagueStats} />
+        <Heading>League Victories</Heading>
+        <CompetitionStatsDisplay
+          stats={profileDetail.leagueStats}
+          competitionType={COMPETITION_TYPES.LEAGUE}
+        />
+        <Divider />
+        <Heading>Tournament Victories</Heading>
+        <CompetitionStatsDisplay
+          stats={profileDetail.tournamentStats}
+          competitionType={COMPETITION_TYPES.TOURNAMENT}
+        />
         <PerformanceStats statData={statData} selectedPlayer={profileDetail} />
       </>
     ),
@@ -75,21 +90,28 @@ const ProfilePerformance = ({ profile }) => {
   return <Container>{renderPerformanceContent()}</Container>;
 };
 
-const Container = styled.ScrollView`
-  padding-bottom: 40px;
-  padding-horizontal: 5px;
-`;
+const Container = styled.ScrollView({
+  paddingBottom: 40,
+  paddingHorizontal: 5,
+});
 
-const Stat = styled.Text`
-  font-size: ${screenAdjustedStatFontSize}px;
-  font-weight: bold;
-  color: white;
-`;
+const Heading = styled.Text({
+  fontSize: screenAdjustedHeadingFontSize,
+  fontWeight: "bold",
+  color: "white",
+  marginBottom: 10,
+});
 
-const Divider = styled.View`
-  height: 1px;
-  background-color: #262626;
-  margin-vertical: 10px;
-`;
+const Stat = styled.Text({
+  fontSize: screenAdjustedStatFontSize,
+  fontWeight: "bold",
+  color: "white",
+});
+
+const Divider = styled.View({
+  height: 1,
+  backgroundColor: "#262626",
+  marginVertical: 10,
+});
 
 export default React.memo(ProfilePerformance);

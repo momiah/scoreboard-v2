@@ -32,14 +32,16 @@ import {
 import { db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
+import { COMPETITION_TYPES } from "../../schemas/schema";
 import moment from "moment";
 
 const ChatRoom = ({
-  leagueId,
+  competitionId,
   userRole,
-  leagueParticipants,
-  leagueName,
+  competitionParticipants,
+  competitionName,
   endDate,
+  competitionType,
 }) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
@@ -56,10 +58,15 @@ const ChatRoom = ({
   }, []);
 
   useEffect(() => {
-    if (!leagueId) return;
+    if (!competitionId) return;
+
+    const collectionRef =
+      competitionType === COMPETITION_TYPES.TOURNAMENT
+        ? "tournaments"
+        : "leagues";
 
     const q = query(
-      collection(db, "leagues", leagueId, "chat"),
+      collection(db, collectionRef, competitionId, "chat"),
       orderBy("createdAt", "asc")
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -72,6 +79,8 @@ const ChatRoom = ({
           user: data.user,
         };
       });
+
+      console.log("Fetched messages:", msgs);
       setMessages(msgs);
 
       // Scroll to end when messages are loaded or updated
@@ -84,7 +93,7 @@ const ChatRoom = ({
     });
 
     return () => unsubscribe();
-  }, [leagueId, scrollToEnd, isInitialLoad]);
+  }, [competitionId, scrollToEnd, isInitialLoad]);
 
   // at top of component
   const leagueHasEnded = moment(endDate, "DD-MM-YYYY").isBefore(
@@ -105,19 +114,29 @@ const ChatRoom = ({
       },
     };
 
-    await sendChatMessage(newMessage, leagueId);
+    await sendChatMessage({
+      message: newMessage,
+      competitionId,
+      competitionType,
+    });
     setInputText("");
     Keyboard.dismiss();
 
     // Scroll to end after sending message
     scrollToEnd(true);
 
-    const recipients = leagueParticipants.filter(
+    const recipients = competitionParticipants.filter(
       (u) => u.userId !== currentUser?.userId
     );
 
     for (const recipient of recipients) {
-      const chatRef = doc(db, "users", recipient.userId, "chats", leagueId);
+      const chatRef = doc(
+        db,
+        "users",
+        recipient.userId,
+        "chats",
+        competitionId
+      );
       const existing = await getDoc(chatRef);
 
       if (existing.exists()) {
@@ -128,7 +147,7 @@ const ChatRoom = ({
             messageCount: (existing.data().messageCount || 0) + 1,
             lastMessage: `${currentUser?.username}: ${newMessage.text}`,
             createdAt: new Date(),
-            leagueName,
+            competitionName,
           },
           { merge: true }
         );
@@ -137,10 +156,10 @@ const ChatRoom = ({
           type: "chat",
           isRead: false,
           messageCount: 1,
-          leagueId,
+          competitionId,
           lastMessage: `${currentUser?.username}: ${newMessage.text}`,
           createdAt: new Date(),
-          leagueName,
+          competitionName,
         });
       }
     }

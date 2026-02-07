@@ -1,86 +1,105 @@
-import globals from 'globals';
-import pluginJs from '@eslint/js';
-import pluginReact from 'eslint-plugin-react';
+import globals from "globals";
+import js from "@eslint/js";
+import react from "eslint-plugin-react";
+import tsParser from "@typescript-eslint/parser";
+import tseslint from "@typescript-eslint/eslint-plugin";
 
 export default [
   {
-    files: ['**/*.{js,mjs,cjs,jsx,ts,tsx}'],
-    languageOptions: {
-      globals: {
-        ...globals.browser, // Browser globals for React Native
-        ...globals.node, // Node.js globals for require, module, exports
-        ...globals.jest, // Jest globals for tests
-        Alert: 'readonly',
-        Dimensions: 'readonly',
-        Platform: 'readonly',
-        StyleSheet: 'readonly',
-        View: 'readonly',
-        Text: 'readonly',
-        TouchableOpacity: 'readonly',
-        Image: 'readonly',
-        FlatList: 'readonly',
-        ScrollView: 'readonly',
-        TextInput: 'readonly',
-        ActivityIndicator: 'readonly',
-        Modal: 'readonly',
-        Button: 'readonly',
-        SafeAreaView: 'readonly',
-        Clipboard: 'readonly',
-        Ionicons: 'readonly',
-        __DEV__: 'readonly', // React Native dev flag
-        // Date: 'readonly', // Standard JS Date object
-        // demon: 'readonly', // Likely a typo, treat as global for now
-        // playerOne: 'readonly', // For test files
-        // playerTwo: 'readonly', // For test files
-      },
-    },
-    settings: {
-      react: {
-        version: '18.3.1', // From package.json
-      },
-    },
+    ignores: [
+      "node_modules/**",
+      ".expo/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      ".git/**",
+      "android/**",
+      "ios/**",
+      "web-build/**",
+      "babel.config.js",
+      "metro.config.js",
+      "**/*.d.ts",
+    ],
   },
+
+  // --------------------
+  // JavaScript / JSX
+  // --------------------
   {
-    // Firebase functions (Node.js environment)
-    files: ['functions/**/*.{js,mjs,cjs}'],
+    files: ["**/*.{js,jsx,mjs,cjs}"],
     languageOptions: {
       globals: {
+        ...globals.browser,
         ...globals.node,
-      },
-    },
-  },
-  {
-    // Jest test files
-    files: ['**/*.test.js'],
-    languageOptions: {
-      globals: {
         ...globals.jest,
+        __DEV__: "readonly",
       },
     },
+    plugins: {
+      react,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+
+      // 🟡 unused vars = warning
+      "no-unused-vars": "warn",
+
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
+    },
   },
-  pluginJs.configs.recommended,
-  pluginReact.configs.flat.recommended,
+
+  // --------------------
+  // TypeScript / TSX
+  // --------------------
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.jest,
+        __DEV__: "readonly",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tseslint,
+      react,
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+
+      // 🔥 disable base rule
+      "no-unused-vars": "off",
+
+      // 🟡 TS unused vars = warning
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
+
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
+    },
+  },
+
+  react.configs.flat.recommended,
   {
     rules: {
-      'no-unused-vars': 'warn', // Already warning
-      'react/prop-types': 'off', // Keep disabled
-      'react/react-in-jsx-scope': 'off', // Disable for React 17+
-      'react/display-name': 'warn', // Treat as warning
-      'react/no-unescaped-entities': 'warn', // Treat as warning
-      'no-undef': 'warn', // Treat undefined variables as warnings
-      'no-dupe-keys': 'warn', // Treat duplicate keys as warnings
-      'react/jsx-no-undef': 'warn', // Treat undefined JSX components as warnings
+      "react/prop-types": "off",
+      "react/react-in-jsx-scope": "off",
+      "react/jsx-uses-react": "off",
+      "react/display-name": "warn",
+      "react/no-unescaped-entities": "warn",
     },
-  },
-  {
-    ignores: [
-      'dist/*',
-      'node_modules/*',
-      '.expo/*',
-      'babel.config.js',
-      'metro.config.js',
-      'functions/.eslintrc.js', // Ignore legacy ESLint config in functions
-      'rankingMedals/**/*', // Ignore due to many require errors
-    ],
   },
 ];

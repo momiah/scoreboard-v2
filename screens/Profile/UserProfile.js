@@ -35,9 +35,9 @@ import { RankInformation } from "../../components/Modals/RankInformation";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
-const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
+const screenAdjustedStatFontSize = screenWidth <= 430 ? 15 : 18;
 const screenAdjustedPaddingTop = screenWidth <= 450 ? 6 : undefined;
-const platformAdjustedMarginTop = Platform.OS === "ios" ? 20 : 60; // Adjust for iOS platform
+const platformAdjustedMarginTop = Platform.OS === "ios" ? 20 : 30; // Adjust for iOS platform
 const AVATAR_SIZE = screenWidth <= 400 ? 70 : 80;
 
 const UserProfile = () => {
@@ -55,7 +55,7 @@ const UserProfile = () => {
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState("Profile");
+  const [selectedTab, setSelectedTab] = useState("Performance");
   const [globalRank, setGlobalRank] = useState(null);
   const [countryRank, setCountryRank] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,7 +99,7 @@ const UserProfile = () => {
       route.params.userId !== currentUser?.userId
     ) {
       profileViewCount(route.params.userId).catch((err) =>
-        console.error("Profile view tracking failed:", err)
+        console.error("Profile view tracking failed:", err),
       );
     }
   }, [profile, loading]);
@@ -111,7 +111,7 @@ const UserProfile = () => {
           const rank = await getGlobalRank(profile.userId);
           const countryRank = await getCountryRank(
             profile.userId,
-            profile.location?.countryCode
+            profile.location?.countryCode,
           );
           setCountryRank(countryRank);
           setGlobalRank(rank);
@@ -137,7 +137,7 @@ const UserProfile = () => {
       { component: "Performance" },
       { component: "Activity" },
     ],
-    []
+    [],
   );
 
   const sections = useMemo(
@@ -187,7 +187,7 @@ const UserProfile = () => {
         fallback: "Date not available",
       },
     ],
-    [profile, profileDetail]
+    [profile, profileDetail],
   );
 
   const renderProfileContent = useCallback(
@@ -208,7 +208,7 @@ const UserProfile = () => {
         })}
       </View>
     ),
-    [sections, profile]
+    [sections, profile],
   );
 
   const renderComponent = useCallback(() => {
@@ -373,7 +373,7 @@ const UserProfile = () => {
               fontSize: screenAdjustedStatFontSize,
               color: "white",
             }}
-            style={{ paddingTop: screenAdjustedPaddingTop }}
+            // style={{ paddingTop: screenAdjustedPaddingTop }}
             suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
           />
         </CCRankContainer>
@@ -386,7 +386,7 @@ const UserProfile = () => {
               fontSize: screenAdjustedStatFontSize,
               color: "white",
             }}
-            style={{ paddingTop: screenAdjustedPaddingTop }}
+            // style={{ paddingTop: screenAdjustedPaddingTop }}
             suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
           />
         </CCRankContainer>
@@ -511,12 +511,8 @@ const CCRankContainer = styled.View({
   gap: 5,
   alignItems: "center",
   flexDirection: "row",
-  alignSelf: "flex-start",
-});
 
-const XpText = styled.Text({
-  color: "#aaa",
-  fontSize: screenWidth <= 400 ? 13 : 15,
+  alignSelf: "flex-start",
 });
 
 const MedalContainer = styled.View({

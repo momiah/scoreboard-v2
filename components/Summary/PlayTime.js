@@ -6,22 +6,22 @@ import SubHeader from "../SubHeader";
 import { LeagueContext } from "../../context/LeagueContext";
 import { AntDesign } from "@expo/vector-icons";
 
-const PlayTime = ({ userRole }) => {
+const PlayTime = ({ userRole, competitionType, playtime, competitionId }) => {
   const [playTimes, setPlayTimes] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedPlayTime, setSelectedPlayTime] = useState(null); // For editing
-  const { addPlaytime, leagueById, deletePlaytime } = useContext(LeagueContext);
+  const [selectedPlayTime, setSelectedPlayTime] = useState(null);
+  const { addPlaytime, deletePlaytime } = useContext(LeagueContext);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (leagueById?.playingTime) {
-      setPlayTimes(leagueById.playingTime);
+    if (playtime) {
+      setPlayTimes(playtime);
     }
     setIsLoading(false);
-  }, [leagueById]);
+  }, [playtime]);
 
   const handleAddPlayTime = () => {
-    setSelectedPlayTime(null); // Clear selected playtime for adding new
+    setSelectedPlayTime(null);
     setIsModalVisible(true);
   };
 
@@ -35,11 +35,20 @@ const PlayTime = ({ userRole }) => {
           time === selectedPlayTime ? newPlayTime : time
         )
       );
-      addPlaytime([newPlayTime], selectedPlayTime);
+      addPlaytime({
+        playtime: [newPlayTime],
+        existingPlaytime: selectedPlayTime,
+        competitionType,
+        competitionId,
+      });
     } else {
       // Add new playtime
       setPlayTimes((prevTimes) => [...prevTimes, newPlayTime]);
-      addPlaytime([newPlayTime]);
+      addPlaytime({
+        playtime: [newPlayTime],
+        competitionType,
+        competitionId,
+      });
     }
 
     setIsModalVisible(false);
@@ -50,7 +59,11 @@ const PlayTime = ({ userRole }) => {
     setPlayTimes((prevTimes) => prevTimes.filter((time) => time !== playTime));
 
     // Delete from Firebase
-    deletePlaytime(playTime);
+    deletePlaytime({
+      playtimeToDelete: playTime,
+      competitionType,
+      competitionId,
+    });
   };
 
   const handleEditPlayTime = (playTime) => {

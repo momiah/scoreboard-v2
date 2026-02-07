@@ -5,8 +5,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { PlatformBlurView as BlurView } from "../../../components/PlatformBlurView";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
+import { COLLECTION_NAMES } from "../../../schemas/schema";
 
-const LeaguSettings = () => {
+const LeagueSettings = () => {
   const route = useRoute();
   const { leagueId, leagueById } = route.params;
   const { currentUser } = useContext(UserContext);
@@ -30,7 +31,11 @@ const LeaguSettings = () => {
       action: "RemovePlayers",
     },
 
-    { label: "Bulk Publish Games", icon: "archive-outline", action: "BulkGamePublisher" },
+    {
+      label: "Bulk Publish Games",
+      icon: "archive-outline",
+      action: "BulkGamePublisher",
+    },
 
     // { label: "League Rules", icon: "document-text-outline", action: "LeagueRules" },
     // { label: "League Chat", icon: "chatbubble-ellipses-outline", action: "LeagueChat" },
@@ -40,7 +45,11 @@ const LeaguSettings = () => {
   ];
 
   const handlePress = (action) => {
-    navigation.navigate(action, { leagueId, leagueById });
+    navigation.navigate(action, {
+      leagueId,
+      leagueById,
+      collectionName: COLLECTION_NAMES.leagues,
+    });
   };
 
   // Only owners can see remove players
@@ -135,4 +144,4 @@ const MenuText = styled.Text({
   fontSize: 16,
 });
 
-export default LeaguSettings;
+export default LeagueSettings;

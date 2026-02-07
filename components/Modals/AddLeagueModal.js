@@ -190,11 +190,10 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
         leagueImage: imageDownloadUrl || null,
         prizeType: prizeTypes.TROPHY,
         location,
+        countryCode: location.countryCode || "",
         leagueOwner: adminData.leagueOwner,
         leagueId,
       };
-
-      console.log("Creating league:", JSON.stringify(newLeague, null, 2));
 
       await addCompetition({
         data: newLeague,

@@ -5,6 +5,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
+import Tournament from "../screens/Home/Tournaments/Tournament";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
@@ -15,14 +16,18 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
 import Signup from "../screens/Authentication/Signup";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
-import PendingInvites from "../screens/Home/Leagues/PendingInvites";
+import PendingInvites from "../screens/Home/Settings/PendingInvites";
 import LeagueSettings from "../screens/Home/Leagues/LeagueSettings";
-import AssignAdmin from "../screens/Home/Leagues/AssignAdmin";
-import RemovePlayers from "../screens/Home/Leagues/RemovePlayers";
+import AssignAdmin from "../screens/Home/Settings/AssignAdmin";
+import RemovePlayers from "../screens/Home/Settings/RemovePlayers";
 import AccountSupport from "../screens/Profile/AccountSupport";
 import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import BulkGamePublisher from "../screens/Home/Leagues/BulkGamePublisher";
+import TournamentSettings from "../screens/Home/Tournaments/TournamentSettings";
+import BulkFixturesPublisher from "../screens/Home/Tournaments/BulkFixturesPublisher";
+import EditTournament from "../screens/Home/Tournaments/EditTournament";
+import Tournaments from "../screens/Home/Tournaments/Tournaments";
 import FAQ from "../screens/Profile/FAQ";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
@@ -63,6 +68,14 @@ const HomeStack = () => {
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -93,6 +106,14 @@ const ProfileStack = () => {
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
     </Stack.Navigator>
   );
 };
@@ -119,6 +140,14 @@ const NotificationsStack = () => {
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
     </Stack.Navigator>
   );
 };
@@ -145,6 +174,14 @@ const ChatsStack = () => {
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
     </Stack.Navigator>
   );
 };
@@ -202,6 +239,7 @@ const Tabs = () => {
   return (
     <>
       <Tab.Navigator
+        initialRouteName="Profile"
         screenOptions={({ route }) => ({
           tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",

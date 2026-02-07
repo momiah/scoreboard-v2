@@ -22,6 +22,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import Popup from "../../../components/popup/Popup";
 import { PopupContext } from "../../../context/PopupContext";
 import * as FileSystem from "expo-file-system";
+import { COLLECTION_NAMES } from "../../../schemas/schema";
 
 const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
@@ -29,7 +30,7 @@ const EditLeague = () => {
   const route = useRoute();
   const { leagueId, leagueById } = route.params;
 
-  const { updateLeague, fetchLeagueById } = useContext(LeagueContext);
+  const { updateCompetition, fetchCompetitionById } = useContext(LeagueContext);
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(true);
@@ -54,7 +55,10 @@ const EditLeague = () => {
   useEffect(() => {
     const loadLeague = async () => {
       if (!leagueById || leagueById.id !== leagueId) {
-        await fetchLeagueById(leagueId);
+        await fetchCompetitionById({
+          competitionId: leagueId,
+          collectionName: COLLECTION_NAMES.leagues,
+        });
       }
       setSelectedImage(leagueById?.leagueImage || null);
       setLoading(false);
@@ -142,7 +146,10 @@ const EditLeague = () => {
     try {
       let updatedImage = selectedImage;
       if (selectedImage && selectedImage !== leagueById.leagueImage) {
-        updatedImage = await uploadLeagueImage(selectedImage, leagueById.id);
+        updatedImage = await uploadLeagueImage(
+          selectedImage,
+          leagueById.leagueId
+        );
       }
 
       const updatedLeague = {
@@ -151,7 +158,10 @@ const EditLeague = () => {
         leagueImage: updatedImage || leagueById.leagueImage,
       };
 
-      await updateLeague(updatedLeague);
+      await updateCompetition({
+        competition: updatedLeague,
+        collectionName: COLLECTION_NAMES.leagues,
+      });
       handleShowPopup("League updated!");
     } catch (err) {
       console.error("Update error:", err);
