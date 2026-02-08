@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 
 import { CourtChampLogo } from "../../../assets";
 import SubHeader from "../../../components/SubHeader";
+import { LeagueSkeleton } from "../../../components/Skeletons/LeagueSkeleton";
 import AddLeagueModel from "../../../components/Modals/AddLeagueModal";
 import VerticalLeagueCarousel from "../../../components/Leagues/VerticalLeagueCarousel";
 import FilterSheetModal from "../../../components/Modals/FilterSheetModal";
@@ -24,6 +25,70 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 
 const FILTERS_STORAGE_KEY = "@courtchamp_league_filters";
+
+
+
+const renderEmptyState = (hasActiveFilters) => {
+  return (
+    <EmptyState>
+      <EmptyText>
+        {hasActiveFilters
+          ? "No leagues match your current filters. Try adjusting your search criteria or create your own league! 🏟️"
+          : "No leagues available in your area. Help grow the community by creating your own league! 🏟️"}
+      </EmptyText>
+    </EmptyState>
+  )
+}
+
+
+const renderHeadingSection = (addLeague, hasActiveFilters, showFilterSheet) => {
+  return <>
+    <Overview>
+      <Image
+        source={CourtChampLogo}
+        style={{ width: 175, height: 175, resizeMode: "contain" }}
+      />
+    </Overview>
+
+    <View
+      style={{
+        marginTop: 20,
+        marginBottom: 10,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 10,
+      }}
+    >
+      <SubHeader
+        paddingTop={0}
+        paddingBottom={0}
+        title="Leagues"
+        onIconPress={addLeague}
+        showIcon
+      />
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        {hasActiveFilters && (
+          <View
+            style={{
+              backgroundColor: "#00A2FF",
+              borderRadius: 10,
+              width: 8,
+              height: 8,
+              marginRight: 5,
+            }}
+          />
+        )}
+        <Ionicons
+          name="filter"
+          size={25}
+          color={"white"}
+          onPress={showFilterSheet}
+        />
+      </View>
+    </View>
+  </>
+}
 
 const Leagues = () => {
   const navigation = useNavigation();
@@ -60,7 +125,7 @@ const Leagues = () => {
   useEffect(() => {
     const loadSavedFilters = async () => {
       try {
-        setLoadingLeagues(true);
+
         const savedFilters = await AsyncStorage.getItem(FILTERS_STORAGE_KEY);
         if (savedFilters) {
           const parsedFilters = JSON.parse(savedFilters);
@@ -73,8 +138,6 @@ const Leagues = () => {
         }
       } catch (error) {
         console.error("Error loading saved filters:", error);
-      } finally {
-        setLoadingLeagues(false);
       }
     };
 
@@ -104,10 +167,6 @@ const Leagues = () => {
 
   // Apply filters whenever leagues or appliedFilters change
   useEffect(() => {
-    if (leagues.length === 0) {
-      setFilteredLeagues([]);
-      return;
-    }
 
     setIsFiltering(true);
 
@@ -135,6 +194,7 @@ const Leagues = () => {
     );
     setFilteredLeagues(filtered);
     setIsFiltering(false);
+
   }, [leagues, appliedFilters]);
 
   const handleApplyFilters = async () => {
@@ -200,68 +260,17 @@ const Leagues = () => {
 
   return (
     <LeagueContainer>
-      <Overview>
-        <Image
-          source={CourtChampLogo}
-          style={{ width: 175, height: 175, resizeMode: "contain" }}
-        />
-      </Overview>
+      {renderHeadingSection(addLeague, hasActiveFilters, showFilterSheet)}
 
-      <View
-        style={{
-          marginTop: 20,
-          marginBottom: 10,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          paddingHorizontal: 10,
-        }}
-      >
-        <SubHeader
-          paddingTop={0}
-          paddingBottom={0}
-          title="Leagues"
-          onIconPress={addLeague}
-          showIcon
-        />
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {hasActiveFilters && (
-            <View
-              style={{
-                backgroundColor: "#00A2FF",
-                borderRadius: 10,
-                width: 8,
-                height: 8,
-                marginRight: 5,
-              }}
-            />
-          )}
-          <Ionicons
-            name="filter"
-            size={25}
-            color={"white"}
-            onPress={showFilterSheet}
-          />
-        </View>
-      </View>
-
-      {isFiltering || loadingLeagues ? (
-        <LoadingWrapper>
-          <ActivityIndicator size="large" color="#00A2FF" />
-        </LoadingWrapper>
-      ) : filteredLeagues.length > 0 ? (
+      {isFiltering || loadingLeagues || filteredLeagues.length > 0 ? (
         <VerticalLeagueCarousel
           navigationRoute={"League"}
           leagues={filteredLeagues}
+          loading={loadingLeagues || isFiltering}
+
         />
       ) : (
-        <EmptyState>
-          <EmptyText>
-            {hasActiveFilters
-              ? "No leagues match your current filters. Try adjusting your search criteria or create your own league! 🏟️"
-              : "No leagues available in your area. Help grow the community by creating your own league! 🏟️"}
-          </EmptyText>
-        </EmptyState>
+        renderEmptyState(hasActiveFilters)
       )}
 
       <BottomSheetModal
