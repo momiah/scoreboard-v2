@@ -110,11 +110,12 @@ describe("calculateTeamPerformance (Doubles, id-based keys)", () => {
   it("updates core stats (wins/losses, games played)", async () => {
     mockRetrieveTeams.mockResolvedValueOnce(getInitialTeams());
 
-    const [winner, loser] = await calculateTeamPerformance(
-      baseGame,
-      mockRetrieveTeams,
-      "league123"
-    );
+    const allTeams = await mockRetrieveTeams("league123");
+
+    const [winner, loser] = await calculateTeamPerformance({
+      game: baseGame,
+      allTeams,
+    });
 
     // Winner stats
     expect(winner.teamKey).toBe("user3-user4");
@@ -130,11 +131,12 @@ describe("calculateTeamPerformance (Doubles, id-based keys)", () => {
   it("updates result logs", async () => {
     mockRetrieveTeams.mockResolvedValueOnce(getInitialTeams());
 
-    const [winner, loser] = await calculateTeamPerformance(
-      baseGame,
-      mockRetrieveTeams,
-      "league123"
-    );
+    const allTeams = await mockRetrieveTeams("league123");
+
+    const [winner, loser] = await calculateTeamPerformance({
+      game: baseGame,
+      allTeams,
+    });
 
     expect(winner.resultLog).toEqual(["W", "W", "L", "W"]);
     expect(loser.resultLog).toEqual(["L", "L", "L", "L"]);
@@ -143,11 +145,12 @@ describe("calculateTeamPerformance (Doubles, id-based keys)", () => {
   it("updates win/loss streaks", async () => {
     mockRetrieveTeams.mockResolvedValueOnce(getInitialTeams());
 
-    const [winner, loser] = await calculateTeamPerformance(
-      baseGame,
-      mockRetrieveTeams,
-      "league123"
-    );
+    const allTeams = await mockRetrieveTeams("league123");
+
+    const [winner, loser] = await calculateTeamPerformance({
+      game: baseGame,
+      allTeams,
+    });
 
     expect(winner.currentStreak).toBe(1);
     expect(winner.highestWinStreak).toBe(2);
@@ -159,11 +162,12 @@ describe("calculateTeamPerformance (Doubles, id-based keys)", () => {
   it("updates point-difference logs and averages", async () => {
     mockRetrieveTeams.mockResolvedValueOnce(getInitialTeams());
 
-    const [winner, loser] = await calculateTeamPerformance(
-      baseGame,
-      mockRetrieveTeams,
-      "league123"
-    );
+    const allTeams = await mockRetrieveTeams("league123");
+
+    const [winner, loser] = await calculateTeamPerformance({
+      game: baseGame,
+      allTeams,
+    });
 
     expect(winner.pointDifferenceLog).toEqual([10, 12, 7, 20]);
     expect(winner.averagePointDifference).toBeCloseTo(12.25, 2);
@@ -175,12 +179,12 @@ describe("calculateTeamPerformance (Doubles, id-based keys)", () => {
   it("sets rival only after multiple losses to the same opponent", async () => {
     // First match
     mockRetrieveTeams.mockResolvedValueOnce(getInitialTeams());
-    const [winnerAfter1, loserAfter1] = await calculateTeamPerformance(
-      baseGame,
-      mockRetrieveTeams,
-      "league123"
-    );
+    const allTeams = await mockRetrieveTeams("league123");
 
+    const [winnerAfter1, loserAfter1] = await calculateTeamPerformance({
+      game: baseGame,
+      allTeams,
+    });
     // After 1 loss: head-to-head incremented; rival still null
     expect(loserAfter1.lossesTo[winnerAfter1.teamKey]).toBe(1);
     expect(loserAfter1.rival).toBeNull();
@@ -193,11 +197,10 @@ describe("calculateTeamPerformance (Doubles, id-based keys)", () => {
       gameId: "02-02-2025-game-2",
     };
 
-    const [winnerAfter2, loserAfter2] = await calculateTeamPerformance(
-      game2,
-      mockRetrieveTeams,
-      "league123"
-    );
+    const [winnerAfter2, loserAfter2] = await calculateTeamPerformance({
+      game: game2,
+      allTeams,
+    });
 
     expect(loserAfter2.lossesTo[winnerAfter2.teamKey]).toBe(2);
     expect(loserAfter2.rival).toEqual({

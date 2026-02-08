@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   limit,
+  increment,
 } from "firebase/firestore";
 import moment from "moment";
 import { Alert } from "react-native";
@@ -16,7 +17,6 @@ import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
 
-import { generateLeagueId } from "../helpers/generateLeagueId";
 import { generateCourtId } from "../helpers/generateCourtId";
 import { generateUniqueUserId } from "../helpers/generateUniqueUserId";
 import {
@@ -27,13 +27,46 @@ import {
 } from "../schemas/schema";
 import { UserContext } from "./UserContext";
 import { notificationTypes } from "../schemas/schema";
-import { locationSchema } from "../schemas/schema";
+import { COMPETITION_TYPES, COLLECTION_NAMES } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
-import { formatDisplayName } from "../helpers/formatDisplayName";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 
 const LeagueContext = createContext();
+
+// ============================================
+// HELPER FUNCTIONS (for game approval)
+// ============================================
+
+/**
+ * Find game in competition (handles both league and tournament structures)
+ */
+const findGameInCompetition = (competitionData, gameId, isTournament) => {
+  if (isTournament) {
+    const allGames =
+      competitionData.fixtures?.flatMap((fixture) => fixture.games) || [];
+    const index = allGames.findIndex((game) => game.gameId === gameId);
+    return { game: allGames[index] || null, index, games: allGames };
+  }
+
+  const games = competitionData.games || [];
+  const index = games.findIndex((game) => game.gameId === gameId);
+  return { game: games[index] || null, index, games };
+};
+
+/**
+ * Get player user IDs from a game
+ */
+const getPlayerUserIds = (game) => {
+  return [
+    game.team1.player1?.userId,
+    game.team1.player2?.userId,
+    game.team2.player1?.userId,
+    game.team2.player2?.userId,
+  ].filter(Boolean);
+};
 
 const LeagueProvider = ({ children }) => {
   const [upcomingLeagues, setUpcomingLeagues] = useState([]);
@@ -45,14 +78,18 @@ const LeagueProvider = ({ children }) => {
     updateUsers,
     retrieveTeams,
     currentUser,
+    readNotification,
   } = useContext(UserContext);
   const [showMockData, setShowMockData] = useState(false);
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [tournamentNavigationId, setTournamentNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState(null);
+  const [tournamentById, setTournamentById] = useState(null);
+  const [upcomingTournaments, setUpcomingTournaments] = useState([]);
 
   useEffect(() => {
     fetchUpcomingLeagues();
+    fetchUpcomingTournaments();
   }, []);
 
   // NEED TO MODIFY LEAGUE SCHEMA TO INCLUDE COUNTRY CODE AT TOP LEVEL RATHER THAN NESTED
@@ -119,6 +156,34 @@ const LeagueProvider = ({ children }) => {
       console.error("Error fetching leagues:", error);
     }
   };
+  const fetchUpcomingTournaments = async () => {
+    try {
+      const tournamentsRef = collection(db, "tournaments");
+
+      // Simply get 30 most recently created tournaments
+      const q = query(tournamentsRef, orderBy("createdAt", "desc"), limit(30));
+
+      const snapshot = await getDocs(q);
+      const tournaments = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // if (currentUser?.location?.countryCode) {
+      //   const filteredTournaments = tournaments.filter(
+      //     (tournament) =>
+      //       tournament.location?.countryCode ===
+      //       currentUser.location.countryCode
+      //   );
+      //   setUpcomingTournaments(filteredTournaments);
+      //   return;
+      // }
+
+      setUpcomingTournaments(tournaments);
+    } catch (error) {
+      console.error("Error fetching leagues:", error);
+    }
+  };
 
   const fetchLeagues = async () => {
     try {
@@ -139,16 +204,39 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const addPlaytime = async (playtime, existingPlaytime = null) => {
+  const fetchTournaments = async () => {
+    console.log("Fetching tournaments...");
     try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+      const tournamentsRef = collection(db, "tournaments");
+      const q = query(tournamentsRef, orderBy("createdAt", "desc"), limit(30));
+      const snapshot = await getDocs(q);
+      const tournaments = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      return tournaments;
+    } catch (error) {
+      console.error("Error fetching tournaments:", error);
+    }
+  };
 
-      // Get the existing league document
-      const leagueDoc = await getDoc(leagueDocRef);
+  const addPlaytime = async ({
+    playtime,
+    existingPlaytime = null,
+    competitionType,
+    competitionId,
+  }) => {
+    try {
+      const collectionName =
+        competitionType === "league" ? "leagues" : "tournaments";
 
-      if (leagueDoc.exists()) {
-        const currentPlaytime = leagueDoc.data().playingTime || [];
+      const collectionRef = collection(db, collectionName);
+      const docRef = doc(collectionRef, competitionId);
+
+      const docSnapshot = await getDoc(docRef);
+
+      if (docSnapshot.exists()) {
+        const currentPlaytime = docSnapshot.data().playingTime || [];
         let updatedPlaytime;
 
         if (existingPlaytime) {
@@ -163,11 +251,11 @@ const LeagueProvider = ({ children }) => {
           updatedPlaytime = [...currentPlaytime, ...playtime];
         }
 
-        // Update the league document with updated playtime array
-        await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
+        // Update the document with updated playtime array
+        await updateDoc(docRef, { playingTime: updatedPlaytime });
       } else {
-        console.error("League document not found.");
-        Alert.alert("Error", "League not found.");
+        console.error("Document not found.");
+        Alert.alert("Error", "Document not found.");
       }
     } catch (error) {
       console.error("Error saving playtime:", error);
@@ -175,15 +263,22 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const deletePlaytime = async (playtimeToDelete) => {
+  const deletePlaytime = async ({
+    playtimeToDelete,
+    competitionType,
+    competitionId,
+  }) => {
     try {
-      const leagueCollectionRef = collection(db, "leagues");
-      const leagueDocRef = doc(leagueCollectionRef, leagueById.id);
+      const collectionRef = collection(
+        db,
+        competitionType === "league" ? "leagues" : "tournaments"
+      );
+      const docRef = doc(collectionRef, competitionId);
 
-      const leagueDoc = await getDoc(leagueDocRef);
+      const docSnapshot = await getDoc(docRef);
 
-      if (leagueDoc.exists()) {
-        const currentPlaytime = leagueDoc.data().playingTime || [];
+      if (docSnapshot.exists()) {
+        const currentPlaytime = docSnapshot.data().playingTime || [];
 
         // Filter out the playtime to be deleted
         const updatedPlaytime = currentPlaytime.filter(
@@ -196,10 +291,10 @@ const LeagueProvider = ({ children }) => {
         );
 
         // Update Firebase with updated playtime array
-        await updateDoc(leagueDocRef, { playingTime: updatedPlaytime });
+        await updateDoc(docRef, { playingTime: updatedPlaytime });
       } else {
-        console.error("League document not found.");
-        Alert.alert("Error", "League not found.");
+        console.error("Document not found.");
+        Alert.alert("Error", "Document not found.");
       }
     } catch (error) {
       console.error("Error deleting playtime:", error);
@@ -304,101 +399,46 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  // const addCompetition = async ({ data, competitionType }) => {
-  //   try {
-  //     if (competitionType === "league") {
-  //       const { leagueId } = data;
-  //       // Save league document
-  //       await setDoc(doc(db, "leagues", leagueId), {
-  //         ...data,
-  //       });
-
-  //       // Create welcome chat message
-  //       const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
-  //       await setDoc(messageRef, {
-  //         _id: "welcome",
-  //         text: `Welcome to the chat for ${data.leagueName || ""}!`,
-  //         createdAt: new Date(),
-  //         user: {
-  //           _id: "system",
-  //           name: "CourtChamps",
-  //           avatar: ccImageEndpoint, // optional system avatar
-  //         },
-  //       });
-
-  //       // Navigate to created league
-  //       setLeagueNavigationId(leagueId);
-  //     } else if (competitionType === "tournament") {
-  //       const { tournamentId } = data;
-  //       // Save tournament document
-  //       await setDoc(doc(db, "tournaments", tournamentId), {
-  //         ...data,
-  //       });
-
-  //       // Create welcome chat message
-  //       const messageRef = doc(
-  //         collection(db, "tournaments", tournamentId, "chat")
-  //       );
-  //       await setDoc(messageRef, {
-  //         _id: "welcome",
-  //         text: `Welcome to the chat for ${data.tournamentName || ""}!`,
-  //         createdAt: new Date(),
-  //         user: {
-  //           _id: "system",
-  //           name: "CourtChamps",
-  //           avatar: ccImageEndpoint, // optional system avatar
-  //         },
-  //       });
-
-  //       // Navigate to created tournament
-  //       setTournamentNavigationId(tournamentId);
-  //     } else {
-  //       console.warn("Unknown competitionType:", competitionType);
-  //     }
-
-  //     // Reset the navigation ID after a short delay
-  //     setTimeout(() => {
-  //       setTournamentNavigationId("");
-  //     }, 2000);
-  //   } catch (error) {
-  //     console.error("Error adding competition: ", error);
-  //   }
-  // };
-
-  const fetchLeagueById = async (leagueId) => {
+  const fetchCompetitionById = async ({ competitionId, collectionName }) => {
     try {
-      const leagueDoc = await getDoc(doc(db, "leagues", leagueId));
+      const competitionDoc = await getDoc(
+        doc(db, collectionName, competitionId)
+      );
 
-      if (leagueDoc.exists()) {
-        const leagueData = {
-          leagueId: leagueDoc.id,
-          ...leagueDoc.data(),
-        };
-
-        setLeagueById(leagueData);
-        return leagueData;
-      } else {
-        console.log("No league found with the given ID");
+      if (!competitionDoc.exists()) {
+        console.log("No competition found with the given ID");
+        return null;
       }
+
+      const isTournament = collectionName === COLLECTION_NAMES.tournaments;
+      const competitionIdField = isTournament ? "tournamentId" : "leagueId";
+
+      const competitionData = {
+        [competitionIdField]: competitionDoc.id,
+        ...competitionDoc.data(),
+      };
+
+      const setCompetition = isTournament ? setTournamentById : setLeagueById;
+      setCompetition(competitionData);
+
+      return competitionData;
     } catch (error) {
-      console.error("Error fetching league:", error);
+      console.error("Error fetching competition:", error);
+      return null;
     }
   };
 
   // Function to update a league
-  const updateLeague = async (updatedLeague) => {
+  const updateCompetition = async ({ competition, collectionName }) => {
     try {
-      const leagueDocRef = doc(db, "leagues", updatedLeague.leagueId);
+      const competitionId =
+        collectionName === "leagues"
+          ? competition.leagueId
+          : competition.tournamentId;
+      const competitionDocRef = doc(db, collectionName, competitionId);
 
-      // Update the league document in Firebase
-      await updateDoc(leagueDocRef, updatedLeague);
-
-      // Update the state in the context
-      setUpcomingLeagues((prevLeagues) =>
-        prevLeagues.map((league) =>
-          league.id === updatedLeague.id ? updatedLeague : league
-        )
-      );
+      // Update the competition document in Firebase
+      await updateDoc(competitionDocRef, competition);
     } catch (error) {
       console.error("Error updating league:", error);
       Alert.alert("Error", "Unable to update the league.");
@@ -423,17 +463,21 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const updatePendingInvites = async (leagueId, userId) => {
+  const updatePendingInvites = async (
+    competitionId,
+    userId,
+    collectionName
+  ) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueSnap = await getDoc(leagueRef);
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionSnap = await getDoc(competitionRef);
 
-      if (leagueSnap.exists()) {
-        const leagueData = leagueSnap.data();
-        const pendingInvites = leagueData.pendingInvites || [];
+      if (competitionSnap.exists()) {
+        const competitionData = competitionSnap.data();
+        const pendingInvites = competitionData.pendingInvites || [];
 
         // Add user to pending invites if not already present
-        await updateDoc(leagueRef, {
+        await updateDoc(competitionRef, {
           pendingInvites: [...pendingInvites, { userId }],
         });
 
@@ -448,15 +492,41 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const acceptLeagueInvite = async (userId, leagueId, notificationId) => {
+  const acceptCompetitionInvite = async ({
+    userId,
+    competitionId,
+    notificationId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-      const leagueParticipants = leagueData.leagueParticipants || [];
-      const pendingInvites = leagueData.pendingInvites || [];
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
 
-      // Add user to league and remove from pending invites
+      if (!competitionDoc.exists()) {
+        console.error("Competition does not exist or has been deleted");
+        const notificationsRef = collection(
+          db,
+          "users",
+          userId,
+          "notifications"
+        );
+        const notificationDocRef = doc(notificationsRef, notificationId);
+        await updateDoc(notificationDocRef, {
+          isRead: true,
+        });
+        return;
+      }
+
+      const competitionData = competitionDoc.data();
+      const participantsKey =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      const competitionParticipants = competitionData[participantsKey] || [];
+      const pendingInvites = competitionData.pendingInvites || [];
+
+      // Add user to competition and remove from pending invites
       const updatedPending = pendingInvites.filter(
         (inv) => inv.userId !== userId
       );
@@ -473,102 +543,115 @@ const LeagueProvider = ({ children }) => {
         profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
-      await updateDoc(leagueRef, {
-        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+      await updateDoc(competitionRef, {
+        [participantsKey]: [...competitionParticipants, newParticipantProfile],
         pendingInvites: updatedPending,
       });
 
-      //Update users notification
+      // Update user's notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.ACCEPT,
+      });
 
-      if (!leagueDoc.exists()) {
-        console.error("League does not exist or has been deleted");
+      console.log("Competition invite accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting competition invite:", error);
+    }
+  };
+
+  const declineCompetitionInvite = async ({
+    userId,
+    competitionId,
+    notificationId,
+    collectionName,
+  }) => {
+    try {
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
+
+      if (!competitionDoc.exists()) {
+        console.error("Competition does not exist or has been deleted");
+        const notificationsRef = collection(
+          db,
+          "users",
+          userId,
+          "notifications"
+        );
+        const notificationDocRef = doc(notificationsRef, notificationId);
         await updateDoc(notificationDocRef, {
           isRead: true,
         });
         return;
       }
 
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.ACCEPT,
-      });
-
-      // return if league doesnt exist
-
-      console.log("League invite accepted successfully!");
-    } catch (error) {
-      console.error("Error accepting league invite:", error);
-    }
-  };
-
-  const declineLeagueInvite = async (userId, leagueId, notificationId) => {
-    try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-
-      const pendingInvites = leagueData.pendingInvites || [];
+      const competitionData = competitionDoc.data();
+      const pendingInvites = competitionData.pendingInvites || [];
 
       // Remove user from pending invites
       const updatedPending = pendingInvites.filter(
         (inv) => inv.userId !== userId
       );
 
-      await updateDoc(leagueRef, {
+      await updateDoc(competitionRef, {
         pendingInvites: updatedPending,
       });
 
-      //Update users notification
+      // Update user's notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
-
-      if (!leagueDoc.exists()) {
-        console.error("League does not exist or has been deleted");
-        await updateDoc(notificationDocRef, {
-          isRead: true,
-        });
-        return;
-      }
-
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.DECLINE,
       });
 
-      console.log("League invite declined successfully!");
+      console.log("Competition invite declined successfully!");
     } catch (error) {
-      console.error("Error accepting league invite:", error);
+      console.error("Error declining competition invite:", error);
     }
   };
 
-  const requestToJoinLeague = async (leagueId, userId, ownerId, username) => {
+  const requestToJoinLeague = async ({
+    competitionId,
+    currentUser,
+    ownerId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueSnap = await getDoc(leagueRef);
+      const collectionRef = doc(db, collectionName, competitionId);
+      const competitionSnap = await getDoc(collectionRef);
 
-      if (leagueSnap.exists()) {
-        const leagueData = leagueSnap.data();
-        const pendingRequests = leagueData.pendingRequests || [];
+      if (competitionSnap.exists()) {
+        const competitionData = competitionSnap.data();
+        const pendingRequests = competitionData.pendingRequests || [];
 
         // Add user to pending invites if not already present
-        await updateDoc(leagueRef, {
-          pendingRequests: [...pendingRequests, { userId }],
+        await updateDoc(collectionRef, {
+          pendingRequests: [
+            ...pendingRequests,
+            { userId: currentUser?.userId },
+          ],
         });
+
+        const displayName = formatDisplayName(currentUser);
+        const isLeague = collectionName === COLLECTION_NAMES.leagues;
+        const paramKey = isLeague ? "leagueId" : "tournamentId";
+        const competitionType = isLeague ? "league" : "tournament";
+        const notificationType = isLeague
+          ? notificationTypes.ACTION.JOIN_REQUEST.LEAGUE
+          : notificationTypes.ACTION.JOIN_REQUEST.TOURNAMENT;
 
         const payload = {
           ...notificationSchema,
           createdAt: new Date(),
           recipientId: ownerId,
-          senderId: userId,
-          message: `${username} has requested to join your league!`,
-          type: notificationTypes.ACTION.JOIN_REQUEST.LEAGUE,
-
+          senderId: currentUser?.userId,
+          message: `${displayName} has requested to join your ${competitionType}!`,
+          type: notificationType,
           data: {
-            leagueId,
+            [paramKey]: competitionId,
           },
         };
 
@@ -576,7 +659,7 @@ const LeagueProvider = ({ children }) => {
 
         return true;
       } else {
-        console.log("League does not exist");
+        console.log("Competition does not exist");
         return false;
       }
     } catch (error) {
@@ -585,29 +668,36 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const acceptLeagueJoinRequest = async (
+  const acceptCompetitionJoinRequest = async ({
     senderId,
-    leagueId,
+    competitionId,
     notificationId,
-    userId
-  ) => {
+    userId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-      const leagueParticipants = leagueData.leagueParticipants || [];
-      const pendingRequests = leagueData.pendingRequests || [];
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
+      const competitionData = competitionDoc.data();
 
-      const userAlreadyInLeague = leagueParticipants.filter(
+      // Define the field name as a string
+      const participantsKey =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      const competitionParticipants = competitionData[participantsKey] || [];
+      const pendingRequests = competitionData.pendingRequests || [];
+
+      const userAlreadyInCompetition = competitionParticipants.some(
         (participant) => participant.userId === senderId
       );
 
-      if (userAlreadyInLeague.length > 0) {
-        console.log("User is already a participant in this league");
+      if (userAlreadyInCompetition) {
+        console.log("User is already a participant in this competition");
         return;
       }
 
-      // Add senderId to league and remove from pending requests
       const updatedPending = pendingRequests.filter(
         (pen) => pen.userId !== senderId
       );
@@ -621,128 +711,138 @@ const LeagueProvider = ({ children }) => {
         lastName: newParticipant.lastName.split(" ")[0],
         userId: newParticipant.userId,
         memberSince: newParticipant.profileDetail?.memberSince || "",
-        profileImage: newParticipant.profilImage || ccImageEndpoint,
+        profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
-      await updateDoc(leagueRef, {
-        leagueParticipants: [...leagueParticipants, newParticipantProfile],
+      await updateDoc(competitionRef, {
+        [participantsKey]: [...competitionParticipants, newParticipantProfile],
         pendingRequests: updatedPending,
       });
 
-      // Update league owners notification
+      // Update notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.ACCEPT,
       });
 
-      console.log("League join request accepted successfully!");
+      console.log("Competition join request accepted successfully!");
     } catch (error) {
-      console.error("Error accepting league join request:", error);
+      console.error("Error accepting competition join request:", error);
     }
   };
 
-  const declineLeagueJoinRequest = async (
+  const declineCompetitionJoinRequest = async ({
     senderId,
-    leagueId,
+    competitionId,
     notificationId,
-    userId
-  ) => {
+    userId,
+    collectionName,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionDoc = await getDoc(competitionRef);
+      const competitionData = competitionDoc.data();
 
       // Remove senderId from pending requests
-      const pendingRequests = leagueData.pendingRequests || [];
+      const pendingRequests = competitionData.pendingRequests || [];
 
       const updatedPending = pendingRequests.filter(
         (pen) => pen.userId !== senderId
       );
 
-      await updateDoc(leagueRef, {
+      await updateDoc(competitionRef, {
         pendingRequests: updatedPending,
       });
 
-      // Update league owners notification
+      // Update competition owner's notification
       const notificationsRef = collection(db, "users", userId, "notifications");
-
       const notificationDocRef = doc(notificationsRef, notificationId);
       await updateDoc(notificationDocRef, {
         isRead: true,
         response: notificationTypes.RESPONSE.DECLINE,
       });
 
-      console.log("League join request declined successfully!");
+      console.log("Competition join request declined successfully!");
     } catch (error) {
-      console.error("Error accepting league join request:", error);
+      console.error("Error declining competition join request:", error);
     }
   };
 
-  const approveGame = async (
+  const approveGame = async ({
     gameId,
-    leagueId,
+    competitionId,
     userId,
     senderId,
-    notificationId
-  ) => {
+    notificationId,
+    notificationType,
+  }) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-      const leagueParticipants = leagueData.leagueParticipants;
-      const leagueType = leagueData.leagueType;
+      const config = getCompetitionConfig(notificationType);
+      const isTournament = !config.isLeague; // ✅ Derive from isLeague
 
-      const games = leagueData.games || [];
-      const gameIndex = games.findIndex((game) => game.gameId === gameId);
+      const competitionRef = doc(db, config.collectionName, competitionId);
+      const competitionSnap = await getDoc(competitionRef);
 
-      if (gameIndex === -1) {
-        console.error("Game not found in league");
+      if (!competitionSnap.exists()) {
+        console.error("Competition not found");
         return;
       }
 
-      const game = games[gameIndex];
-      const approvalLimit = leagueData.approvalLimit || 1;
+      const competitionData = competitionSnap.data();
+      const {
+        game,
+        index: gameIndex,
+        games,
+      } = findGameInCompetition(competitionData, gameId, isTournament);
 
-      // Retrieve currentUser username
-      const currentUser = await getUserById(userId);
-      const currentUserUsername = currentUser?.username;
-      const approvers = game.approvers || [];
+      if (!game || gameIndex === -1) {
+        console.error("Game not found in competition");
+        return;
+      }
 
-      // ✅ Update approvals correctly
+      const currentUserData = await getUserById(userId);
+      if (!currentUserData) {
+        console.error("User not found");
+        return;
+      }
+
+      const approvalLimit = competitionData.approvalLimit || 1;
+      const existingApprovers = game.approvers || [];
+
+      // Check if already approved by this user
+      if (existingApprovers.some((a) => a.userId === userId)) {
+        console.error("User has already approved this game");
+        return;
+      }
+
       const updatedGame = {
         ...game,
         numberOfApprovals: (game.numberOfApprovals || 0) + 1,
         approvers: [
-          ...approvers,
+          ...existingApprovers,
           {
-            userId: currentUser?.userId,
-            username: currentUserUsername,
+            userId: currentUserData.userId,
+            username: currentUserData.username,
           },
         ],
       };
 
-      // ✅ Check approval limit
-      if (updatedGame.numberOfApprovals >= approvalLimit) {
-        updatedGame.approvalStatus = notificationTypes.RESPONSE.APPROVE_GAME;
+      const isFullyApproved = updatedGame.numberOfApprovals >= approvalLimit;
 
-        const playerUserIds = [
-          updatedGame.team1.player1?.userId,
-          updatedGame.team1.player2?.userId,
-          updatedGame.team2.player1?.userId,
-          updatedGame.team2.player2?.userId,
-        ].filter(Boolean); // Remove nulls
+      if (isFullyApproved) {
+        updatedGame.approvalStatus = notificationTypes.RESPONSE.APPROVED_GAME;
 
-        // Filter league participants who are in this game
-        const playersToUpdate = leagueParticipants.filter((player) =>
-          playerUserIds.includes(player.userId)
+        const playerUserIds = getPlayerUserIds(updatedGame);
+
+        const playersToUpdate = competitionData[config.participantsKey].filter(
+          (player) => playerUserIds.includes(player.userId)
         );
 
-        const userIds = playersToUpdate.map((player) => player.userId);
-
-        const usersToUpdate = await Promise.all(userIds.map(getUserById));
+        const usersToUpdate = await Promise.all(
+          playersToUpdate.map((player) => getUserById(player.userId))
+        );
 
         const playerPerformance = calculatePlayerPerformance(
           updatedGame,
@@ -750,60 +850,72 @@ const LeagueProvider = ({ children }) => {
           usersToUpdate
         );
 
-        await updatePlayers(playerPerformance.playersToUpdate, leagueId);
+        await updatePlayers({
+          updatedPlayers: playerPerformance.playersToUpdate,
+          competitionId,
+          collectionName: config.collectionName,
+        });
+
         await updateUsers(playerPerformance.usersToUpdate);
 
-        if (leagueType === "Doubles") {
-          const teamsToUpdate = await calculateTeamPerformance(
-            updatedGame,
-            retrieveTeams,
-            leagueId
+        if (competitionData[config.typeKey] === "Doubles") {
+          const teams = await retrieveTeams(
+            competitionId,
+            config.collectionName
           );
-
-          await updateTeams(teamsToUpdate, leagueId);
+          const teamsToUpdate = await calculateTeamPerformance({
+            game: updatedGame,
+            allTeams: teams,
+          });
+          await updateTeams({
+            updatedTeams: teamsToUpdate,
+            competitionId,
+            collectionName: config.collectionName,
+          });
         }
       }
 
-      // Replace the game in the array
-      const updatedGames = [...games];
-      updatedGames[gameIndex] = updatedGame;
+      // Save updated game
+      if (isTournament) {
+        await updateTournamentGame({
+          tournamentId: competitionId,
+          gameId,
+          gameResult: updatedGame,
+        });
 
-      // Save back to Firestore
-      await updateDoc(leagueRef, {
-        games: updatedGames,
-      });
+        if (isFullyApproved) {
+          await updateDoc(competitionRef, {
+            gamesCompleted: increment(1),
+          });
+        }
+      } else {
+        const updatedGames = [...games];
+        updatedGames[gameIndex] = updatedGame;
+        await updateDoc(competitionRef, { games: updatedGames });
+      }
 
-      // Update league owners notification
-      const currentUserNotificationsRef = collection(
-        db,
-        "users",
+      await readNotification(
+        notificationId,
         userId,
-        "notifications"
+        notificationTypes.RESPONSE.ACCEPT
       );
 
-      const notificationDocRef = doc(
-        currentUserNotificationsRef,
-        notificationId
-      );
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.ACCEPT,
-      });
-
-      // ✅ Send notification to sender
-      const payload = {
+      await sendNotification({
         ...notificationSchema,
         createdAt: new Date(),
         recipientId: senderId,
         senderId: userId,
-        message: `${currentUserUsername} has approved your game on ${leagueData.leagueName}!`,
-        type: notificationTypes.INFORMATION.LEAGUE.TYPE,
+        message: `${currentUserData.username} has approved your game on ${
+          competitionData[config.nameKey]
+        }!`,
+        type: notificationTypes.INFORMATION[
+          isTournament ? "TOURNAMENT" : "LEAGUE"
+        ].TYPE,
         data: {
-          leagueId,
+          [config.paramKey]: competitionId,
           gameId,
         },
-      };
-      await sendNotification(payload);
+      });
 
       console.log("Game approved successfully!");
     } catch (error) {
@@ -811,9 +923,180 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const sendChatMessage = async (message, leagueId) => {
+  const declineGame = async ({
+    gameId,
+    competitionId,
+    userId,
+    senderId,
+    notificationId,
+    notificationType,
+  }) => {
     try {
-      const messageRef = doc(collection(db, "leagues", leagueId, "chat"));
+      const config = getCompetitionConfig(notificationType);
+      const isTournament = !config.isLeague;
+
+      const competitionRef = doc(db, config.collectionName, competitionId);
+      const competitionSnap = await getDoc(competitionRef);
+
+      if (!competitionSnap.exists()) {
+        console.error("Competition not found");
+        return;
+      }
+
+      const competitionData = competitionSnap.data();
+      const {
+        game,
+        index: gameIndex,
+        games,
+      } = findGameInCompetition(competitionData, gameId, isTournament);
+
+      if (!game || gameIndex === -1) {
+        console.error("Game not found in competition");
+        return;
+      }
+
+      const currentUserData = await getUserById(userId);
+      if (!currentUserData) {
+        console.error("User not found");
+        return;
+      }
+
+      const declineLimit = competitionData.declineLimit || 1;
+
+      const updatedGame = {
+        ...game,
+        numberOfDeclines: (game.numberOfDeclines || 0) + 1,
+      };
+
+      const isFullyDeclined = updatedGame.numberOfDeclines >= declineLimit;
+      const declinedGames = competitionData.declinedGames || [];
+      let updatedGames = [...games];
+
+      if (isFullyDeclined) {
+        if (isTournament) {
+          // Tournament: Reset game to original state (keep the fixture slot)
+          const resetGame = {
+            gameId: game.gameId,
+            team1: {
+              player1: game.team1.player1,
+              player2: game.team1.player2 || null,
+              score: null,
+            },
+            team2: {
+              player1: game.team2.player1,
+              player2: game.team2.player2 || null,
+              score: null,
+            },
+            result: null,
+            approvalStatus: "Scheduled",
+            numberOfApprovals: 0,
+            numberOfDeclines: 0,
+            approvers: [],
+            reporter: null,
+            reportedAt: null,
+            reportedTime: null,
+            hasScores: false,
+            gamescore: null,
+            // Preserve fixture metadata
+            court: game.court,
+            gameNumber: game.gameNumber,
+            createdAt: game.createdAt,
+            createdTime: game.createdTime,
+          };
+
+          await updateTournamentGame({
+            tournamentId: competitionId,
+            gameId,
+            gameResult: resetGame,
+          });
+
+          // Optionally track declined attempts separately
+          declinedGames.push({
+            ...updatedGame,
+            approvalStatus: notificationTypes.RESPONSE.REJECTED_GAME,
+            declinedBy: {
+              userId: currentUserData.userId,
+              username: currentUserData.username,
+            },
+            declinedAt: new Date(),
+          });
+
+          await updateDoc(competitionRef, { declinedGames });
+        } else {
+          // League: Remove the game completely (current behavior)
+          const declinedGame = {
+            ...updatedGame,
+            approvalStatus: notificationTypes.RESPONSE.REJECTED_GAME,
+            declinedBy: {
+              userId: currentUserData.userId,
+              username: currentUserData.username,
+            },
+          };
+
+          declinedGames.push(declinedGame);
+          updatedGames.splice(gameIndex, 1);
+
+          await updateDoc(competitionRef, {
+            games: updatedGames,
+            declinedGames,
+          });
+        }
+      } else {
+        // Not fully declined yet - just update the decline count
+        if (isTournament) {
+          await updateTournamentGame({
+            tournamentId: competitionId,
+            gameId,
+            gameResult: updatedGame,
+          });
+        } else {
+          updatedGames[gameIndex] = updatedGame;
+          await updateDoc(competitionRef, { games: updatedGames });
+        }
+      }
+
+      await readNotification(
+        notificationId,
+        userId,
+        notificationTypes.RESPONSE.DECLINE
+      );
+
+      await sendNotification({
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: senderId,
+        senderId: userId,
+        message: `${currentUserData.username} has declined your game on ${
+          competitionData[config.nameKey]
+        }!`,
+        type: notificationTypes.INFORMATION[
+          isTournament ? "TOURNAMENT" : "LEAGUE"
+        ].TYPE,
+        data: {
+          [config.paramKey]: competitionId,
+          gameId,
+        },
+      });
+
+      console.log("Game declined successfully!");
+    } catch (error) {
+      console.error("Error declining game:", error);
+    }
+  };
+
+  const sendChatMessage = async ({
+    message,
+    competitionId,
+    competitionType = COMPETITION_TYPES.LEAGUE,
+  }) => {
+    const collectionRef =
+      competitionType === COMPETITION_TYPES.TOURNAMENT
+        ? "tournaments"
+        : "leagues";
+    try {
+      const messageRef = doc(
+        collection(db, collectionRef, competitionId, "chat")
+      );
       const messageToSend = {
         _id: messageRef.id,
         text: message.text,
@@ -830,96 +1113,10 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
-  const declineGame = async (
-    gameId,
-    leagueId,
-    userId,
-    senderId,
-    notificationId
-  ) => {
-    try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueDoc = await getDoc(leagueRef);
-      const leagueData = leagueDoc.data();
-
-      const games = leagueData.games || [];
-      const gameIndex = games.findIndex((game) => game.gameId === gameId);
-
-      if (gameIndex === -1) {
-        console.error("Game not found in league");
-        return;
-      }
-
-      const game = games[gameIndex];
-      const declineLimit = 1;
-
-      const currentUser = await getUserById(userId);
-      const currentUserUsername = currentUser?.username;
-
-      const updatedGame = {
-        ...game,
-        numberOfDeclines: (game.numberOfDeclines || 0) + 1,
-      };
-
-      const declinedGame = {
-        ...updatedGame,
-        approvalStatus: notificationTypes.RESPONSE.DECLINE,
-        declinedBy: {
-          userId: currentUser?.userId,
-          username: currentUserUsername,
-        },
-      };
-
-      const declinedGames = leagueData.declinedGames || [];
-
-      let updatedGames = [...games];
-
-      if (updatedGame.numberOfDeclines >= declineLimit) {
-        declinedGames.push(declinedGame);
-        updatedGames.splice(gameIndex, 1);
-      } else {
-        updatedGames[gameIndex] = updatedGame;
-      }
-
-      await updateDoc(leagueRef, {
-        games: updatedGames,
-        declinedGames: declinedGames,
-      });
-
-      const notificationDocRef = doc(
-        collection(db, "users", userId, "notifications"),
-        notificationId
-      );
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.DECLINE,
-      });
-
-      const payload = {
-        ...notificationSchema,
-        createdAt: new Date(),
-        recipientId: senderId,
-        senderId: userId,
-        message: `${currentUserUsername} has declined your game on ${leagueData.leagueName}!`,
-        type: notificationTypes.INFORMATION.LEAGUE.TYPE,
-        data: {
-          leagueId,
-          gameId,
-        },
-      };
-
-      await sendNotification(payload);
-
-      console.log("Game declined and removed successfully!");
-    } catch (error) {
-      console.error("Error declining game:", error);
-    }
-  };
-
-  const getPendingInviteUsers = async (league) => {
+  const getPendingInviteUsers = async (competition) => {
     const pendingUserData = [];
 
-    for (const invite of league.pendingInvites || []) {
+    for (const invite of competition.pendingInvites || []) {
       const userDoc = await getDoc(doc(db, "users", invite.userId));
       if (userDoc.exists()) {
         pendingUserData.push(userDoc.data());
@@ -929,16 +1126,16 @@ const LeagueProvider = ({ children }) => {
     return pendingUserData;
   };
 
-  const removePendingInvite = async (leagueId, userId) => {
-    const leagueRef = doc(db, "leagues", leagueId);
-    const leagueSnap = await getDoc(leagueRef);
-    const leagueData = leagueSnap.data();
+  const removePendingInvite = async (competitionId, userId, collectionName) => {
+    const competitionRef = doc(db, collectionName, competitionId);
+    const competitionSnap = await getDoc(competitionRef);
+    const competitionData = competitionSnap.data();
 
-    const updatedPending = leagueData.pendingInvites.filter(
+    const updatedPending = competitionData.pendingInvites.filter(
       (invite) => invite.userId !== userId
     );
 
-    await updateDoc(leagueRef, { pendingInvites: updatedPending });
+    await updateDoc(competitionRef, { pendingInvites: updatedPending });
   };
 
   const assignLeagueAdmin = async (leagueId, user) => {
@@ -1115,6 +1312,129 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const addTournamentFixtures = async ({
+    tournamentId,
+    fixtures,
+    numberOfCourts,
+    currentUser,
+    mode,
+    generationType,
+  }) => {
+    try {
+      const tournamentRef = doc(db, "tournaments", tournamentId);
+      const tournamentSnap = await getDoc(tournamentRef);
+
+      const tournamentData = tournamentSnap.data();
+      const tournamentParticipants =
+        tournamentData.tournamentParticipants || [];
+      const tournamentName = tournamentData.tournamentName;
+
+      const numberOfGames = fixtures.reduce(
+        (total, round) => total + round.games.length,
+        0
+      );
+
+      await updateDoc(tournamentRef, {
+        fixtures: fixtures, // The fixtures array from your generated data
+        fixturesGenerated: true,
+        fixturesGeneratedAt: new Date(),
+        numberOfCourts,
+        generationMode: mode,
+        generationType: generationType,
+        numberOfGames: numberOfGames,
+        gamesCompleted: 0,
+      });
+
+      for (const participant of tournamentParticipants) {
+        const userId = participant.userId;
+        if (userId === currentUser.userId) continue;
+
+        const payload = {
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: userId,
+          senderId: tournamentData.tournamentOwner.userId,
+          message: `Game fixtures generated for ${tournamentName}! Check out your upcoming matches.`,
+          type: notificationTypes.INFORMATION.TOURNAMENT.TYPE,
+          data: {
+            tournamentId,
+          },
+        };
+        await sendNotification(payload);
+      }
+
+      console.log("Fixtures successfully written to database");
+      return { success: true };
+    } catch (error) {
+      console.error("Error writing fixtures to database:", error);
+      throw error;
+    }
+  };
+
+  const updateTournamentGame = async ({
+    tournamentId,
+    gameId,
+    gameResult,
+    removeGame = false,
+  }) => {
+    try {
+      const tournamentRef = doc(db, "tournaments", tournamentId);
+      const tournamentDoc = await getDoc(tournamentRef);
+
+      if (!tournamentDoc.exists()) {
+        throw new Error("Tournament not found");
+      }
+
+      const tournamentData = tournamentDoc.data();
+      const fixtures = tournamentData.fixtures || [];
+
+      let updatedFixtures;
+
+      if (removeGame) {
+        // Remove the game from fixtures
+        updatedFixtures = fixtures.map((round) => ({
+          ...round,
+          games: round.games.filter((game) => game.gameId !== gameId),
+        }));
+      } else {
+        // Update the game with new result
+        updatedFixtures = fixtures.map((round) => ({
+          ...round,
+          games: round.games.map((game) =>
+            game.gameId === gameId ? gameResult : game
+          ),
+        }));
+      }
+
+      await updateDoc(tournamentRef, {
+        fixtures: updatedFixtures,
+        lastUpdated: new Date(),
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating tournament game:", error);
+      throw error;
+    }
+  };
+
+  const fetchTournamentParticipants = async (tournamentId) => {
+    try {
+      const tournamentDoc = await getDoc(doc(db, "tournaments", tournamentId));
+
+      if (!tournamentDoc.exists()) {
+        console.log("No tournament found with the given ID");
+        return [];
+      }
+
+      const tournamentData = tournamentDoc.data();
+      return tournamentData.tournamentParticipants || [];
+    } catch (error) {
+      console.error("Error fetching tournament participants:", error);
+      return [];
+    }
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -1124,10 +1444,10 @@ const LeagueProvider = ({ children }) => {
 
         // League Data Management
         addCompetition,
-        updateLeague, // Exposing the updateLeague function
+        updateCompetition, // Exposing the updateCompetition function
         fetchLeagues,
         fetchUpcomingLeagues,
-        fetchLeagueById,
+        fetchCompetitionById,
         getCourts,
         addCourt,
         updatePendingInvites,
@@ -1142,6 +1462,17 @@ const LeagueProvider = ({ children }) => {
         // Tournament State Management
         tournamentNavigationId,
         setTournamentNavigationId,
+        upcomingTournaments,
+        setUpcomingTournaments,
+        fetchUpcomingTournaments,
+        tournamentById,
+        setTournamentById,
+
+        // Tournament Data Management
+        addTournamentFixtures,
+        updateTournamentGame,
+        fetchTournamentParticipants,
+        fetchTournaments,
 
         // League State Management
         upcomingLeagues,
@@ -1149,11 +1480,11 @@ const LeagueProvider = ({ children }) => {
         leagueNavigationId,
         setLeagueNavigationId,
         removePlayerFromLeague,
-        acceptLeagueInvite,
-        declineLeagueInvite,
+        acceptCompetitionInvite,
+        declineCompetitionInvite,
         requestToJoinLeague,
-        acceptLeagueJoinRequest,
-        declineLeagueJoinRequest,
+        acceptCompetitionJoinRequest,
+        declineCompetitionJoinRequest,
         approveGame,
         declineGame,
 

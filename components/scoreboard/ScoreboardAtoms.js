@@ -20,7 +20,8 @@ export const TeamColumn = ({ team, players = {}, leagueType }) => (
 );
 
 export const ScoreDisplay = ({ date, team1, team2, item }) => {
-  const isPending = item.approvalStatus === "pending";
+  const isPending =
+    item.approvalStatus === "pending" || item.approvalStatus === "Pending";
   return (
     <ResultsContainer style={!isPending ? { paddingBottom: 20 } : undefined}>
       <DateText>{moment(date, "DD-MM-YYYY").format("D MMM YY")}</DateText>
@@ -40,7 +41,7 @@ const PendingLabel = styled.Text({
   marginTop: 10,
   fontSize: 9,
   color: "white",
-  backgroundColor: "rgba(255, 0, 0, 0.6)",
+  backgroundColor: "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,
   overflow: "hidden",
 });

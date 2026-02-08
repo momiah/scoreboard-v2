@@ -1,31 +1,21 @@
-import React, { useContext, useEffect } from "react";
-import { ScrollView, Dimensions, View, Text } from "react-native";
+import React from "react";
+import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
-import { LeagueContext } from "../../context/LeagueContext";
 
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { calculateLeagueStatus } from "../../helpers/calculateLeagueStatus";
+import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import Tag from "../Tag";
-import { UserContext } from "../../context/UserContext";
 import { ccDefaultImage } from "../../mockImages/index";
-import moment from "moment";
 
 const { width } = Dimensions.get("window");
 
 const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
   const navigation = useNavigation();
-  const { leagueNavigationId } = useContext(LeagueContext);
 
   const navigateTo = (leagueId) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
-
-  useEffect(() => {
-    if (leagueNavigationId !== "") {
-      navigateTo(leagueNavigationId);
-    }
-  }, [leagueNavigationId]);
 
   const itemWidth = width - 80;
   const spacing = 20;
@@ -40,7 +30,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
       decelerationRate="fast"
     >
       {leagues.map((league, index) => {
-        const leagueStatus = calculateLeagueStatus(league);
+        const leagueStatus = calculateCompetitionStatus(league);
         const leagueParticipantsLength = league.leagueParticipants.length;
         const maxPlayers = league.maxPlayers;
 

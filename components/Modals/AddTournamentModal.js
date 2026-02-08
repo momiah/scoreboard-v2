@@ -172,7 +172,6 @@ const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
 
   // Handle tournament creation
   const onSubmit = async (data) => {
-    console.log("Submitting tournament data:", JSON.stringify(data, null, 2));
     setTournamentCreationLoading(true);
     const tournamentId = generateLeagueId(data.tournamentName, data.startDate);
 
@@ -190,18 +189,14 @@ const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
       const newTournament = {
         ...data,
         tournamentAdmins: [adminData.tournamentAdmin],
-        tournamentsParticipants: [adminData.tournamentParticipant],
+        tournamentParticipants: [adminData.tournamentParticipant],
         tournamentImage: imageDownloadUrl || null,
-        prizeType: prizeTypes.TROPHY,
+        prizeType: prizeTypes.MEDAL,
         location,
+        countryCode: location.countryCode || "",
         tournamentOwner: adminData.tournamentOwner,
         tournamentId,
       };
-
-      console.log(
-        "Creating tournament:",
-        JSON.stringify(newTournament, null, 2)
-      );
 
       await addCompetition({
         data: newTournament,
@@ -467,6 +462,7 @@ const ConfirmTournamentSettingsModal = ({
               label="Mode"
               options={tournamentModes}
               errorText={errors.tournamentMode?.message}
+              disabledOptions={["Knockout"]}
             />
 
             <OptionSelector

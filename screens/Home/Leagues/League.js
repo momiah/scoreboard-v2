@@ -11,8 +11,9 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { COMPETITION_TYPES, COLLECTION_NAMES } from "../../../schemas/schema";
 
-import LeagueSummary from "../../../components/Summary/LeagueSummary";
+import CompetitionSummary from "../../../components/Summary/CompetitionSummary";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
@@ -21,8 +22,8 @@ import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
-import { calculateLeagueStatus } from "../../../helpers/calculateLeagueStatus";
-import LeagueRoleTag from "./LeagueRoleTag";
+import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
+import UserRoleTag from "../../../components/UserRoleTag";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
@@ -42,7 +43,7 @@ const League = () => {
   const navigation = useNavigation();
   const { leagueId, tab } = route.params;
   const {
-    fetchLeagueById,
+    fetchCompetitionById,
     leagueById,
     generateNewLeagueParticipants,
     requestToJoinLeague,
@@ -61,7 +62,10 @@ const League = () => {
     const fetchData = async () => {
       if (leagueId) {
         try {
-          const fetchedLeague = await fetchLeagueById(leagueId);
+          const fetchedLeague = await fetchCompetitionById({
+            competitionId: leagueId,
+            collectionName: COLLECTION_NAMES.leagues,
+          });
           if (!fetchedLeague) {
             setLeagueNotFound(true);
           } else {
@@ -82,7 +86,10 @@ const League = () => {
 
   const getUserRole = async (leagueData) => {
     try {
-      const role = await checkUserRole(leagueData);
+      const role = await checkUserRole({
+        competitionData: leagueData,
+        competitionType: COMPETITION_TYPES.LEAGUE,
+      });
       setUserRole(role);
     } catch (error) {
       console.error("Error getting user role:", error);
@@ -111,7 +118,10 @@ const League = () => {
         leagueById?.leagueOwner?.userId,
         currentUser?.username
       );
-      const refetchedLeague = await fetchLeagueById(leagueId);
+      const refetchedLeague = await fetchCompetitionById({
+        competitionId: leagueId,
+        collectionName: COLLECTION_NAMES.leagues,
+      });
       await getUserRole(refetchedLeague);
     } catch (error) {
       console.error("Error sending join request:", error);
@@ -124,7 +134,10 @@ const League = () => {
   const handleTabPress = async (tabName) => {
     setSelectedTab(tabName);
     try {
-      const refetchedLeague = await fetchLeagueById(leagueId);
+      const refetchedLeague = await fetchCompetitionById({
+        competitionId: leagueId,
+        collectionName: COLLECTION_NAMES.leagues,
+      });
       await getUserRole(refetchedLeague);
     } catch (error) {
       console.error("Tab refresh error:", error);
@@ -141,7 +154,7 @@ const League = () => {
       : []),
   ];
 
-  const leagueStatus = calculateLeagueStatus(leagueById);
+  const leagueStatus = calculateCompetitionStatus(leagueById);
   const {
     leagueParticipants,
     leagueTeams,
@@ -162,20 +175,22 @@ const League = () => {
       case "Chat Room":
         return (
           <ChatRoom
-            leagueId={leagueId}
+            competitionId={leagueId}
             userRole={userRole}
-            leagueParticipants={leagueParticipants}
-            leagueName={leagueName}
+            competitionParticipants={leagueParticipants}
+            competitionName={leagueName}
             endDate={endDate}
+            competitionType={COMPETITION_TYPES.LEAGUE}
           />
         );
       case "Summary":
         return (
-          <LeagueSummary
-            leagueDetails={leagueById}
+          <CompetitionSummary
+            competitionDetails={leagueById}
             userRole={userRole}
             startDate={startDate}
             endDate={endDate}
+            competitionType={COMPETITION_TYPES.LEAGUE}
           />
         );
       case "Scoreboard":
@@ -304,7 +319,7 @@ const League = () => {
                   <Tag name="TROPHY" />
                 </View>
 
-                <LeagueRoleTag
+                <UserRoleTag
                   userRole={userRole}
                   onInvitePress={handleOpenInviteModal}
                   onLoginPress={handleLogin}
@@ -346,7 +361,8 @@ const League = () => {
         <InvitePlayerModel
           modalVisible={invitePlayerModalVisible}
           setModalVisible={setInvitePlayerModalVisible}
-          leagueDetails={leagueById}
+          competitionDetails={leagueById}
+          competitionType={COMPETITION_TYPES.LEAGUE}
         />
       )}
     </View>

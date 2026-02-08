@@ -45,7 +45,14 @@ const Home = () => {
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
   const [userToken, setUserToken] = useState(null);
-  const { fetchUpcomingLeagues, upcomingLeagues } = useContext(LeagueContext);
+  const {
+    fetchUpcomingLeagues,
+    upcomingLeagues,
+    fetchUpcomingTournaments,
+    upcomingTournaments,
+    leagueNavigationId, // Add these
+    tournamentNavigationId,
+  } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser, getLeaguesForUser } =
     useContext(UserContext);
 
@@ -53,6 +60,20 @@ const Home = () => {
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (leagueNavigationId) {
+      navigation.navigate("League", { leagueId: leagueNavigationId });
+    }
+  }, [leagueNavigationId]);
+
+  useEffect(() => {
+    if (tournamentNavigationId) {
+      navigation.navigate("Tournament", {
+        tournamentId: tournamentNavigationId,
+      });
+    }
+  }, [tournamentNavigationId]);
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -149,21 +170,6 @@ const Home = () => {
     return userIsParticipant?.length === 0;
   });
 
-  // const usersToReset = [
-  //   "Hussain",
-  //   "AnisZaman", // Anis,
-  //   "Bokul",
-  //   "Yasin",
-  //   "ProLikeMo", //Mohsin
-  //   "MaxHoque", // Max,
-  //   "Babu",
-  //   "R4YY4NH", // Rayyan,
-  //   "Gesh",
-  //   "Komal", // Doc
-  //   "Saiful",
-  //   "Raqeeb",
-  // ];
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
       <HomeContainer
@@ -174,6 +180,7 @@ const Home = () => {
               fetchUsers();
               fetchUpcomingLeagues();
               fetchUserLeagues();
+              fetchUpcomingTournaments();
             }}
             tintColor="white" // iOS
             colors={["white"]} // Android
@@ -219,9 +226,16 @@ const Home = () => {
           navigationRoute={currentUser ? null : "Leagues"}
         />
 
-        {/* <SubHeader
-          title="Reset User Profile Details"
-          onIconPress={() => resetUsersProfileDetails(usersToReset)}
+        {/*
+        <SubHeader
+          title="Add League Invite"
+          onIconPress={() =>
+            acceptLeagueInvite(
+              "VXk56Lk6eITWa5aEuysyBfEVjXo2",
+              "WNB-2026-Winter-Special-Leauge-07-01-2026-HQXP8",
+              "jkxcyZowcJFvpCW9KuIZ"
+            )
+          }
           showIcon
           iconName="refresh"
         />
@@ -295,15 +309,18 @@ const Home = () => {
 
         <View style={{ height: 30 }} />
 
-        {/*
         <SubHeader
           title="Tournaments"
           onIconPress={addTournament}
           actionText="Browse Tournaments"
+          navigationRoute={"Tournaments"}
           showIcon
         />
-        <TournamentGrid tournaments={tournaments} /> 
-        */}
+
+        <TournamentGrid
+          tournaments={upcomingTournaments}
+          navigationRoute={"Tournament"}
+        />
 
         {addLeagueModalVisible && (
           <AddLeagueModel
