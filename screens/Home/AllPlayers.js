@@ -213,6 +213,12 @@ const AllPlayers = () => {
     ]
   );
 
+  const renderPlayerSkeleton = ({ index }) => {
+    return <AllPlayerSkeleton key={index} />;
+  };
+
+  const skeletonData = Array.from({ length: 25 }, (_, i) => ({ id: `skeleton-${i}` }));
+
   const renderPagination = () => {
     if (isSearching && totalPages <= 1) return null;
 
@@ -300,11 +306,7 @@ const AllPlayers = () => {
 
   return (
     <TableContainer>
-      {loading && (
-        <LoadingContainer>
-          <ActivityIndicator size="large" color="#00A2FF" />
-        </LoadingContainer>
-      )}
+
       <Text
         style={{
           color: "white",
@@ -315,7 +317,7 @@ const AllPlayers = () => {
           fontStyle: "italic",
         }}
       >
-        {totalUsers} players
+        {loading ? "Loading..." : `${totalUsers} players`}
       </Text>
       <SearchInput
         placeholder="Search players..."
@@ -327,16 +329,19 @@ const AllPlayers = () => {
         <EmptyState>No players found</EmptyState>
       )}
       <FlatList
-        data={users}
+        data={loading ? skeletonData : users}
         contentContainerStyle={{ paddingBottom: 30 }}
-        renderItem={renderPlayer}
-        keyExtractor={(player) => `${player.userId}-${player.globalRank}`}
+        renderItem={loading ? renderPlayerSkeleton : renderPlayer}
+        keyExtractor={(item, index) =>
+          loading ? `skeleton-${index}` : `${item.userId}-${item.globalRank}`
+        }
         initialNumToRender={15}
         maxToRenderPerBatch={10}
         windowSize={5}
         removeClippedSubviews={true}
         refreshControl={
           <RefreshControl
+            disabled={loading}
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor="white"
@@ -344,7 +349,7 @@ const AllPlayers = () => {
             progressBackgroundColor="#00A2FF"
           />
         }
-        ListFooterComponent={totalPages > 1 ? renderPagination : null}
+        ListFooterComponent={!loading && totalPages > 1 ? renderPagination : null}
       />
     </TableContainer>
   );
