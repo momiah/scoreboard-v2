@@ -2,25 +2,32 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "3.0.3",
-    "runtimeVersion": "3.0.0",
+    "version": "3.0.4",
+    "runtimeVersion": "3.0.1",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
+
     "splash": {
       "image": "./assets/court-champ-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#00152B"
     },
+
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/43db0104-f8f3-44de-b831-a74cd535baee"
+    },
+
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "18",
+      "buildNumber": "12",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "FacebookAppID": "1264178202106496",
-        "FacebookDisplayName": "Court Champs",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsArbitraryLoadsInWebContent": true,
@@ -37,44 +44,67 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
-            ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "fb1264178202106496"
+              "com.googleusercontent.apps.215867687150-vsjhsrp8arian23ceo5oq4iip42436m7d"
             ]
           }
         ],
-        "LSMinimumSystemVersion": "13.0"
+        "LSMinimumSystemVersion": "13.0",
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
       },
       "config": {
         "usesNonExemptEncryption": false
       }
     },
+
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
+        "foregroundImage": "./assets/court-champ-logo-icon-w-bg-android.png",
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp",
-      "googleServicesFile": "./google-services.json"
+      "versionCode": 9,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
     },
+
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
     },
+
     "plugins": [
       [
-        "react-native-google-mobile-ads",
+        "expo-build-properties",
         {
-          "iosAppId": "ca-app-pub-4901008825984109~3153352304",
-          "androidAppId": "ca-app-pub-4901008825984109~4699811229"
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 21,
+            "buildToolsVersion": "34.0.0"
+          },
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
       ],
       [
-        "@react-native-google-signin/google-signin",
+        "expo-tracking-transparency",
         {
-          "iosUrlScheme": "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
+          "userTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+        }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1264178202106496",
+          "clientToken": "924121d20d839d1a41302ec91d32346d",
+          "displayName": "Court Champs",
+          "scheme": "fb1264178202106496",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "This identifier will be used to deliver personalized ads to you."
         }
       ],
       [
@@ -85,13 +115,16 @@
         }
       ]
     ],
+
     "extra": {
       "eas": {
         "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"
       }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/43db0104-f8f3-44de-b831-a74cd535baee"
     }
+  },
+
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-4901008825984109~4699811229",
+    "ios_app_id": "ca-app-pub-4901008825984109~3153352304"
   }
 }

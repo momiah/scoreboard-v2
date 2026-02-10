@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import MatchMedals from "../performance/MatchMedals";
 import AnimateNumber from "../performance/AnimateNumber";
 import ResultLog from "../performance/ResultLog";

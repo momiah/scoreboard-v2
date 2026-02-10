@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../../services/firebase.config";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { FlatList } from "react-native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { UserContext } from "../../context/UserContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";
@@ -549,13 +549,13 @@ const UserItem = styled.View({
   marginVertical: 5,
   backgroundColor: "rgb(5, 34, 64)",
   borderRadius: 5,
-  width: "100%",
+  width: screenWidth < 450 ? "75%" : "100%",
 });
 
 const UserName = styled.Text({
-  fontSize: 16,
-  color: "#FFFFFF",
-  fontWeight: "500",
+  fontSize: 16, // Set a readable font size
+  color: "#FFFFFF", // White text color
+  fontWeight: "500", // Slightly bold text
 });
 
 const ErrorText = styled.Text({

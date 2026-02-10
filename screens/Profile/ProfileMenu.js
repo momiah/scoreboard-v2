@@ -8,13 +8,16 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { UserContext } from "../../context/UserContext";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
+
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const ProfileMenu = ({ navigation }) => {
   const { Logout, currentUser, setCurrentUser, isLoggingOut, deleteAccount } =
@@ -182,11 +185,12 @@ const styles = StyleSheet.create({
 });
 
 // Styled components
-const Container = styled.View({
-  flex: 1,
-  backgroundColor: "rgb(3, 16, 31)",
-  padding: 20,
-});
+const Container = styled.View`
+  flex: 1;
+  background-color: rgb(3, 16, 31);
+  padding: 20px;
+  padding-top: ${platformAdjustedPaddingTop}px;
+`;
 
 const Header = styled.View({
   flexDirection: "row",

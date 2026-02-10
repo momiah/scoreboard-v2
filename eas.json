@@ -1,28 +1,37 @@
 {
   "cli": {
     "version": ">= 10.1.1",
-    "appVersionSource":"local"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "image": "ubuntu-20.04-jdk-11-ndk-r21e"
+      }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "image": "ubuntu-20.04-jdk-11-ndk-r21e"
+      }
     },
     "production": {
-      "autoIncrement": true,
-      "channel": "production"
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "channel": "production",
+       "autoIncrement": true
     }
   },
   "submit": {
     "production": {
-      "ios":{
-      "appleId": "moemia12@gmail.com",
-      "ascAppId": "6538725576",
-      "appleTeamId": "R66MT5YKZR"
-    }
+      "ios": {
+        "appleId": "moemia12@gmail.com",
+        "ascAppId": "6538725576",
+        "appleTeamId": "R66MT5YKZR"
+      }
     }
   }
 }

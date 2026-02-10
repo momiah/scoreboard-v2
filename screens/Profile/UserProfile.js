@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Platform,
   Image,
 } from "react-native";
 import { UserContext } from "../../context/UserContext";
@@ -35,7 +36,9 @@ import { CircleSkeleton, SkeletonWrapper, TextSkeleton } from "../../components/
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
-const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
+const screenAdjustedStatFontSize = screenWidth <= 430 ? 15 : 18;
+const screenAdjustedPaddingTop = screenWidth <= 450 ? 6 : undefined;
+const platformAdjustedMarginTop = Platform.OS === "ios" ? 20 : 30; // Adjust for iOS platform
 const AVATAR_SIZE = screenWidth <= 400 ? 70 : 80;
 
 const UserProfile = () => {
@@ -97,7 +100,7 @@ const UserProfile = () => {
       route.params.userId !== currentUser?.userId
     ) {
       profileViewCount(route.params.userId).catch((err) =>
-        console.error("Profile view tracking failed:", err)
+        console.error("Profile view tracking failed:", err),
       );
     }
   }, [profile, loading]);
@@ -109,7 +112,7 @@ const UserProfile = () => {
           const rank = await getGlobalRank(profile.userId);
           const countryRank = await getCountryRank(
             profile.userId,
-            profile.location?.countryCode
+            profile.location?.countryCode,
           );
           setCountryRank(countryRank);
           setGlobalRank(rank);
@@ -135,7 +138,7 @@ const UserProfile = () => {
       { component: "Performance" },
       { component: "Activity" },
     ],
-    []
+    [],
   );
 
   const sections = useMemo(
@@ -185,7 +188,7 @@ const UserProfile = () => {
         fallback: "Date not available",
       },
     ],
-    [profile, profileDetail]
+    [profile, profileDetail],
   );
 
   const renderProfileContent = useCallback(
@@ -268,7 +271,7 @@ const UserProfile = () => {
           style={{
             flexDirection: "row",
             justifyContent: "space-between",
-            marginTop: 20,
+            marginTop: platformAdjustedMarginTop,
           }}
         >
           <TouchableOpacity
@@ -387,6 +390,7 @@ const UserProfile = () => {
               fontSize: screenAdjustedStatFontSize,
               color: "white",
             }}
+            // style={{ paddingTop: screenAdjustedPaddingTop }}
             suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
           />
         </CCRankContainer>
@@ -399,6 +403,7 @@ const UserProfile = () => {
               fontSize: screenAdjustedStatFontSize,
               color: "white",
             }}
+            // style={{ paddingTop: screenAdjustedPaddingTop }}
             suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
           />
         </CCRankContainer>
@@ -467,16 +472,14 @@ const LoadingContainer = styled.View({
   backgroundColor: "rgb(3, 16, 31)",
 });
 
-const Overview = styled.View({
-  paddingTop: 20,
-  paddingRight: 20,
-  paddingBottom: 20,
-  paddingLeft: 20,
+const Overview = styled.View(({ isOwnProfile }) => ({
+  marginTop: !isOwnProfile ? platformAdjustedMarginTop : undefined,
+  padding: 20,
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "stretch",
   gap: 5
-});
+}));
 
 const PlayerDetailContainer = styled.View({
   flex: 1,
@@ -537,12 +540,8 @@ const CCRankContainer = styled.View({
   gap: 5,
   alignItems: "center",
   flexDirection: "row",
-  alignSelf: "flex-start",
-});
 
-const XpText = styled.Text({
-  color: "#aaa",
-  fontSize: screenWidth <= 400 ? 13 : 15,
+  alignSelf: "flex-start",
 });
 
 const MedalContainer = styled.View({

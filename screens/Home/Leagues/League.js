@@ -6,6 +6,7 @@ import {
   ScrollView,
   Dimensions,
   Linking,
+  Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -34,7 +35,7 @@ const openMap = (location) => {
   const encoded = encodeURIComponent(query);
   const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
   Linking.openURL(url).catch((err) =>
-    console.error("Error opening Google Maps web:", err)
+    console.error("Error opening Google Maps web:", err),
   );
 };
 
@@ -116,7 +117,7 @@ const League = () => {
         leagueId,
         currentUser?.userId,
         leagueById?.leagueOwner?.userId,
-        currentUser?.username
+        currentUser?.username,
       );
       const refetchedLeague = await fetchCompetitionById({
         competitionId: leagueId,
@@ -237,7 +238,13 @@ const League = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+        paddingTop: platformAdjustedPaddingTop,
+      }}
+    >
       <Overview>
         <ImageSkeleton show={loading} height={"100%"} width={"100%"} borderRadius={0}>
           <LeagueImage
@@ -370,6 +377,7 @@ const League = () => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 30; // Adjust font size based on screen width
 
 const Overview = styled.View({
   flexDirection: "row",

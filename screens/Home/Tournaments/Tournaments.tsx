@@ -161,9 +161,6 @@ const Tournaments: React.FC = () => {
       );
     });
 
-    console.log(
-      `Filtered ${tournaments.length} tournaments to ${filtered.length} tournaments`
-    );
     setFilteredTournaments(filtered);
     setIsFiltering(false);
   }, [tournaments, appliedFilters]);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { FlatList, ActivityIndicator, Platform } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -14,6 +14,8 @@ type PendingInvite = {
   userId: string;
   username: string;
 };
+
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const PendingInvites = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -61,7 +63,7 @@ const PendingInvites = () => {
   const handleRemove = async (userId: string): Promise<void> => {
     try {
       await removePendingInvite(competitionId, userId, collectionName);
-      setPendingUsers((prev) => prev.filter((u) => u.userId !== userId));
+      setPendingUsers((prev: PendingInvite[]) => prev.filter((u: PendingInvite) => u.userId !== userId));
       fetchInvites();
     } catch (error) {
       console.error("Failed to remove pending invite:", error);
@@ -93,16 +95,16 @@ const PendingInvites = () => {
     <Container>
       <Title>Pending Invites</Title>
       {pendingUsers.length === 0 ? (
-        <NoPendingInvites>
-          No Pending Invites, please go back to the {competitionType} page to
-          invite players to your {competitionType} 📩
-        </NoPendingInvites>
+      <NoPendingInvites>
+        No Pending Invites, please go back to the {competitionType} page to
+        invite players to your {competitionType} 📩
+      </NoPendingInvites>
       ) : (
-        <FlatList
-          data={pendingUsers}
-          keyExtractor={(item) => item.userId}
-          renderItem={renderItem}
-        />
+      <FlatList<PendingInvite>
+        data={pendingUsers}
+        keyExtractor={(item: PendingInvite) => item.userId}
+        renderItem={renderItem}
+      />
       )}
     </Container>
   );
@@ -112,6 +114,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Title = styled.Text({

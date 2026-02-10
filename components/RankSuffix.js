@@ -1,6 +1,6 @@
 // RankSuffix.js
 import React from "react";
-import { Text, Dimensions } from "react-native";
+import { Text, Dimensions, View } from "react-native";
 
 const { width: screenWidth } = Dimensions.get("window");
 const defaultFontSize = screenWidth <= 400 ? 20 : 25;
@@ -25,21 +25,20 @@ const RankSuffix = ({ number, style, numberStyle, suffixStyle }) => {
   const fontSize = numberStyle?.fontSize || defaultFontSize;
 
   return (
-    <Text style={style}>
+    <View style={[{ flexDirection: "row", alignItems: "flex-start" }, style]}>
       <Text style={numberStyle}>{number}</Text>
       <Text
         style={[
           {
             fontSize: fontSize * 0.6,
-            lineHeight: fontSize * 0.8,
-            paddingTop: fontSize * 0.1,
+            lineHeight: fontSize,
           },
           suffixStyle,
         ]}
       >
         {suffix}
       </Text>
-    </Text>
+    </View>
   );
 };
 

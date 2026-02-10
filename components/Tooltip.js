@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal, TouchableOpacity, View, Text } from "react-native";
+import { Modal, TouchableOpacity, View, Platform } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -43,7 +43,8 @@ const TooltipContainer = styled.View({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  backgroundColor: "rgba(0, 0, 0, 0.6)",
+  backgroundColor:
+    Platform.OS === "ios" ? "rgba(0, 0, 0, 0.6)" : "rgba(0, 0, 0, 0.2)",
 });
 
 const TooltipContent = styled.View({

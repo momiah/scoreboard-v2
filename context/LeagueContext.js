@@ -31,8 +31,8 @@ import { COMPETITION_TYPES, COLLECTION_NAMES } from "../schemas/schema";
 import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
-import { formatDisplayName } from "@/helpers/formatDisplayName";
-import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { formatDisplayName } from "../helpers/formatDisplayName";
+import { getCompetitionConfig } from "../helpers/getCompetitionConfig";
 
 const LeagueContext = createContext();
 

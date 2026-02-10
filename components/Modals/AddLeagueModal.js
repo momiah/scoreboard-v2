@@ -18,7 +18,7 @@ import {
   KeyboardAvoidingView,
   StyleSheet,
 } from "react-native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";

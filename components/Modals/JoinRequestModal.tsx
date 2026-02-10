@@ -1,9 +1,9 @@
+import { useEffect, useState, useContext, useCallback } from "react";
 import { Modal, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
-import { useEffect, useState, useContext, useCallback } from "react";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import { UserProfile } from "@/types/player";
@@ -72,13 +72,19 @@ const JoinRequestModal = ({
     competition?.maxPlayers !== undefined &&
     competition.participants.length >= competition.maxPlayers;
 
-  const userAlreadyInCompetition = competition?.participants?.some(
-    (participant) => participant.userId === senderId
-  );
+  const userAlreadyInCompetition: boolean | undefined =
+    competition?.participants?.some(
+      (participant) => participant.userId === senderId
+    );
 
-  const requestWithdrawn =
-    !competition?.pendingRequests?.some((req) => req.userId === senderId) &&
-    !userAlreadyInCompetition;
+  interface PendingRequest {
+    userId: string;
+  }
+
+  const requestWithdrawn: boolean =
+    !competition?.pendingRequests?.some(
+      (req: PendingRequest) => req.userId === senderId
+    ) && !userAlreadyInCompetition;
 
   const resetState = useCallback(() => {
     setCompetition(null);
@@ -93,6 +99,7 @@ const JoinRequestModal = ({
       return;
     }
     setLoading(true);
+    console.log("senderId from prop:", senderId);
     const fetchDetails = async () => {
       try {
         const competition = await fetchCompetitionById({

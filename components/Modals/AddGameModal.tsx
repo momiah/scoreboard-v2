@@ -19,7 +19,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../helpers/generateUniqueId";
 import AddGame from "../scoreboard/AddGame/AddGame";
 
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
 import { notificationSchema, notificationTypes } from "../../schemas/schema";

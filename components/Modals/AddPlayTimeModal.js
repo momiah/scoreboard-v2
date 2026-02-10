@@ -3,7 +3,7 @@ import { TouchableOpacity, Modal, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { daysOfWeek } from "../../schemas/schema";
 import { Ionicons } from "@expo/vector-icons";
 

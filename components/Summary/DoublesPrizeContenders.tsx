@@ -26,7 +26,7 @@ interface DoublePrizeContendersProps {
   competitionType: CompetitionType;
 }
 
-const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
+const DoublesPrizeContenders: React.FC<DoublePrizeContendersProps> = ({
   teams,
   isDataLoading = false,
   distribution,
@@ -259,4 +259,4 @@ const PrizeText = styled.Text({
   textAlign: "center",
 });
 
-export default DoublePrizeContenders;
+export default DoublesPrizeContenders;

@@ -9,7 +9,7 @@ import AnimateNumber from "../performance/AnimateNumber";
 import { Dimensions } from "react-native";
 import ResultLog from "../performance/ResultLog";
 import { GameContext } from "../../context/GameContext";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { useNavigation } from "@react-navigation/native";
 import PerformanceStats from "../performance/PerformanceStats";
 import { UserContext } from "../../context/UserContext";
@@ -113,92 +113,86 @@ const PlayerDetails = ({
   ];
 
   return (
-    <View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showPlayerDetails}
-      >
-        <ModalContainer>
-          <ModalContent>
-            <CloseIconContainer>
-              <AntDesign
-                onPress={() => setShowPlayerDetails(false)}
-                name="closecircleo"
-                size={20}
-                color="red"
-              />
-            </CloseIconContainer>
+    <Modal animationType="slide" transparent={true} visible={showPlayerDetails}>
+      <ModalContainer>
+        <ModalContent>
+          <CloseIconContainer>
+            <AntDesign
+              onPress={() => setShowPlayerDetails(false)}
+              name="closecircleo"
+              size={20}
+              color="red"
+            />
+          </CloseIconContainer>
 
-            <PlayerDetail>
-              <View>
-                <PlayerName>{selectedPlayer.username}</PlayerName>
-                <Text
-                  style={{
-                    color: "#aaa",
-                    fontSize: screenAdjustedDescriptionFontSize
-                  }}
-                >
-                  Member since {selectedPlayer.memberSince}
-                </Text>
-                <Text
-                  style={{
-                    color: "#aaa",
-                    fontSize: screenAdjustedDescriptionFontSize
-                  }}
-                >
-                  Last Active {selectedPlayer.lastActive}
-                </Text>
+          <PlayerDetail>
+            <View>
+              <PlayerName>{selectedPlayer.username}</PlayerName>
+              <Text
+                style={{
+                  color: "#aaa",
+                  fontSize: screenAdjustedDescriptionFontSize,
+                }}
+              >
+                Member since {selectedPlayer.memberSince}
+              </Text>
+              <Text
+                style={{
+                  color: "#aaa",
+                  fontSize: screenAdjustedDescriptionFontSize,
+                }}
+              >
+                Last Active {selectedPlayer.lastActive}
+              </Text>
 
-                <View style={{ marginTop: 10, alignSelf: "flex-start" }}>
-                  <Tag
-                    name={"Go to profile"}
-                    icon="person"
-                    iconSize={screenAdjustedDescriptionFontSize}
-                    iconColor="white"
-                    iconPosition="left"
-                    color="#00A2FF"
-                    onPress={goToProfile}
-                    bold
-                  />
-                </View>
-              </View>
-
-              <MedalContainer>
-                <MedalDisplay
-                  xp={selectedPlayer.XP}
-                  size={screenAdjustedMedalSize}
+              <View style={{ marginTop: 10, alignSelf: "flex-start" }}>
+                <Tag
+                  name={"Go to profile"}
+                  icon="person"
+                  iconSize={screenAdjustedDescriptionFontSize}
+                  iconColor="white"
+                  iconPosition="left"
+                  color="#00A2FF"
+                  onPress={goToProfile}
+                  bold
                 />
-                <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
-                  {medalNames(selectedPlayer.XP)}
-                </Text>
-              </MedalContainer>
-            </PlayerDetail>
-            <MedalProgress
-              xp={selectedPlayer.XP}
-              prevGameXp={selectedPlayer.prevGameXP}
-            />
-            <Divider />
-            <ResultLog resultLog={selectedPlayer.resultLog} />
-            <MatchMedals
-              demonWin={selectedPlayer.demonWin}
-              winStreak3={selectedPlayer.winStreak3}
-              winStreak5={selectedPlayer.winStreak5}
-              winStreak7={selectedPlayer.winStreak7}
-            />
+              </View>
+            </View>
 
-            <PerformanceStats
-              statData={statData}
-              selectedPlayer={selectedPlayer}
-            />
-          </ModalContent>
-        </ModalContainer>
-      </Modal>
-    </View>
+            <MedalContainer>
+              <MedalDisplay
+                xp={selectedPlayer.XP}
+                size={screenAdjustedMedalSize}
+              />
+              <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
+                {medalNames(selectedPlayer.XP)}
+              </Text>
+            </MedalContainer>
+          </PlayerDetail>
+          <MedalProgress
+            xp={selectedPlayer.XP}
+            prevGameXp={selectedPlayer.prevGameXP}
+          />
+          <Divider />
+          <ResultLog resultLog={selectedPlayer.resultLog} />
+          <MatchMedals
+            demonWin={selectedPlayer.demonWin}
+            winStreak3={selectedPlayer.winStreak3}
+            winStreak5={selectedPlayer.winStreak5}
+            winStreak7={selectedPlayer.winStreak7}
+          />
+
+          <PerformanceStats
+            statData={statData}
+            selectedPlayer={selectedPlayer}
+          />
+        </ModalContent>
+      </ModalContainer>
+    </Modal>
   );
 };
 
-console.log('screenWidth', screenWidth);
+console.log("screenWidth", screenWidth);
 
 const Divider = styled.View({
   borderBottomColor: "#262626",

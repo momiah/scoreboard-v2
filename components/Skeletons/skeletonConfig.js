@@ -35,3 +35,12 @@ export const createSkeletonConfig = (overrides = {}) => {
     ...overrides,
   };
 };
+
+export const skeletonConfig = {
+    ...SKELETON_THEMES.dark,
+    transition: {
+      type: "timing",
+      duration: 1500,
+    },
+  };
+

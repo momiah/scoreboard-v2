@@ -153,7 +153,7 @@ const BulkGamePublisher = () => {
 
       return true;
     },
-    [currentUser, existingGames, pendingGames, leagueType, handleShowPopup]
+    [currentUser, existingGames, pendingGames, leagueType, handleShowPopup],
   );
 
   // Handle removing a game from pending list
@@ -167,7 +167,7 @@ const BulkGamePublisher = () => {
     (gameId: string) => {
       setExpandedGameId(expandedGameId === gameId ? null : gameId);
     },
-    [expandedGameId]
+    [expandedGameId],
   );
 
   const sendBulkNotifications = async () => {
@@ -207,7 +207,7 @@ const BulkGamePublisher = () => {
       // 2. Send notifications to each unique player
       for (const [userId, data] of Object.entries(playerGameCounts) as [
         string,
-        { count: number; displayName: string; userId: string }
+        { count: number; displayName: string; userId: string },
       ][]) {
         // Skip current user
         if (userId === currentUser?.userId) {
@@ -236,7 +236,7 @@ const BulkGamePublisher = () => {
 
         await sendNotification(payload);
         console.log(
-          `Notification sent to ${data.displayName} for ${data.count} games`
+          `Notification sent to ${data.displayName} for ${data.count} games`,
         );
       }
     } catch (error) {
@@ -270,7 +270,7 @@ const BulkGamePublisher = () => {
                 await sendBulkNotifications();
 
                 handleShowPopup(
-                  `Successfully published ${result.totalSuccessful} games!`
+                  `Successfully published ${result.totalSuccessful} games!`,
                 );
                 setPendingGames([]);
                 await fetchCompetitionById({
@@ -280,21 +280,21 @@ const BulkGamePublisher = () => {
               } else {
                 Alert.alert(
                   "Error",
-                  result.message || "Failed to publish games"
+                  result.message || "Failed to publish games",
                 );
               }
             } catch (error) {
               console.error("Error publishing games:", error);
               Alert.alert(
                 "Error",
-                "Failed to publish games. Please try again."
+                "Failed to publish games. Please try again.",
               );
             } finally {
               setPublishing(false);
             }
           },
         },
-      ]
+      ],
     );
   }, [
     pendingGames,
@@ -325,7 +325,7 @@ const BulkGamePublisher = () => {
             navigation.goBack();
           },
         },
-      ]
+      ],
     );
   }, [pendingGames.length, navigation]);
 
@@ -371,7 +371,7 @@ const BulkGamePublisher = () => {
         </GameContainer>
       );
     },
-    [leagueType, expandedGameId, handleGameItemPress, handleRemoveGame]
+    [leagueType, expandedGameId, handleGameItemPress, handleRemoveGame],
   );
 
   const publishText =
@@ -524,16 +524,18 @@ const ActionButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const AddGameButton = styled.TouchableOpacity((disabled: boolean) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: disabled ? "#666" : "#00A2FF",
-  padding: 15,
-  borderRadius: 8,
-  marginBottom: 20,
-  gap: 8,
-}));
+const AddGameButton = styled.TouchableOpacity<{ disabled?: boolean }>(
+  ({ disabled }: { disabled?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: disabled ? "#666" : "#00A2FF",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    gap: 8,
+  }),
+);
 
 const ErrorSubtext = styled.Text({
   color: "#e53935",
@@ -575,7 +577,7 @@ const GameContainer = styled.TouchableOpacity(
     borderRadius: 8,
     opacity: expanded ? 0.8 : 1,
     marginBottom: 16,
-  })
+  }),
 );
 
 const PublishButton = styled.TouchableOpacity({

@@ -15,7 +15,7 @@ import {
   FlatList,
 } from "react-native";
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { AntDesign } from "@expo/vector-icons";
 import { ranks } from "../../rankingMedals/ranking/ranks";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
@@ -23,7 +23,7 @@ import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import { GameContext } from "../../context/GameContext";
 
 const screenWidth = Dimensions.get("window").width;
-const ITEM_WIDTH = screenWidth / 4 - 20;
+const ITEM_WIDTH = screenWidth / 4 - 30;
 const ICON_SIZE = screenWidth < 400 ? 50 : 60;
 const LAST_ICON_SIZE = ICON_SIZE + 30; // Adjusted size for the last item in the last group
 const GROUP_SIZE = 4;

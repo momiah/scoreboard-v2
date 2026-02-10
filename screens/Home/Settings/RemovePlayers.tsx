@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { FlatList, Platform, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -21,6 +15,8 @@ import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
 import { ScoreboardProfile } from "@/types/player";
 import { NormalizedCompetition } from "@/types/competition";
+
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const RemovePlayers = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -201,6 +197,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Title = styled.Text({

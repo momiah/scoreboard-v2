@@ -1,13 +1,21 @@
 import React from "react";
-import { Modal, Dimensions, TouchableOpacity } from "react-native";
+import {
+  Modal,
+  Dimensions,
+  TouchableOpacity,
+  Platform,
+  Text,
+} from "react-native";
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import { getSplitParagraphs } from "../../helpers/getSplitParagraphs";
 import { ICON_MAP } from "../../schemas/schema";
+
 const { width: screenWidth } = Dimensions.get("window");
+const screenAdjustedFontSize = screenWidth < 450 ? 13 : 16; // Adjust font size based on screen width
 
 const WelcomeModal = ({
   visible,
@@ -47,11 +55,24 @@ const WelcomeModal = ({
                     key={platform}
                     onPress={() => handleSocialPress(platform)}
                   >
-                    <Ionicons
-                      name={ICON_MAP[platform]}
-                      size={24}
-                      color="#00A2FF"
-                    />
+                    {Platform.OS === "ios" ? (
+                      <Ionicons
+                        name={ICON_MAP[platform]}
+                        size={25}
+                        color="#00A2FF"
+                      />
+                    ) : (
+                      <>
+                        <Text
+                          style={{
+                            color: "#00A2FF",
+                            fontSize: screenAdjustedFontSize,
+                          }}
+                        >
+                          {platform}
+                        </Text>
+                      </>
+                    )}
                   </SocialButton>
                 ))}
               </SocialRow>

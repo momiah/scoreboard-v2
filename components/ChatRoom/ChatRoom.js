@@ -16,7 +16,7 @@ import {
   View,
   Text,
 } from "react-native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 import {

@@ -1,6 +1,3 @@
-import { type } from "@testing-library/react-native/build/user-event/type";
-import { createdAt } from "expo-updates";
-import { count } from "firebase/firestore";
 import {
   ScoreboardProfile,
   ProfileDetail,
@@ -14,6 +11,7 @@ import {
   CourtLocation,
 } from "../types/competition";
 import moment from "moment";
+import { Platform } from "react-native";
 
 export const gameTypes = ["Doubles", "Singles"];
 export const doublesModes = ["Mixed Doubles", "Fixed Doubles"];
@@ -25,6 +23,8 @@ export const leagueStatus = [
   { status: "full", color: "#286EFA" },
   { status: "completed", color: "#167500" },
 ];
+
+const TikTokIcon = Platform.OS === "ios" ? "logo-tiktok" : "tiktok";
 
 export const COMPETITION_TYPES = {
   LEAGUE: "league",
@@ -38,7 +38,7 @@ export const COLLECTION_NAMES: Record<CollectionName, string> = {
 
 export const ICON_MAP = {
   Instagram: "logo-instagram",
-  TikTok: "logo-tiktok",
+  TikTok: TikTokIcon,
   // Facebook: "logo-facebook",
 };
 

@@ -68,7 +68,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
   const [leaguesLoading, setLeaguesLoading] = useState(true);
   const [tournamentsLoading, setTournamentsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<CompetitionType>(
-    COMPETITION_TYPES.LEAGUE
+    COMPETITION_TYPES.LEAGUE,
   );
 
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -80,7 +80,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
         navigation.navigate("Tournament", { tournamentId: id });
       }
     },
-    [navigation]
+    [navigation],
   );
 
   // Fetch leagues
@@ -187,12 +187,12 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
 
   const sortedLeagues = useMemo(
     () => sortLeaguesByEndDate(leagueRankData),
-    [leagueRankData]
+    [leagueRankData],
   );
 
   const sortedTournaments = useMemo(
     () => sortLeaguesByEndDate(tournamentRankData),
-    [tournamentRankData]
+    [tournamentRankData],
   );
 
   const renderLeagueItem = useCallback(
@@ -255,6 +255,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
                 numberStyle={{
                   fontSize: screenAdjustedStatFontSize,
                   color: "white",
+                  fontWeight: "bold",
                 }}
                 suffixStyle={{
                   color: "rgba(255,255,255,0.7)",
@@ -266,7 +267,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
         </CompetitionItem>
       );
     },
-    [profile?.userId, navigateTo]
+    [profile?.userId, navigateTo],
   );
 
   const renderTournamentItem = useCallback(
@@ -276,7 +277,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
       const isAdmin =
         !isOwner &&
         item.tournamentAdmins?.some(
-          (admin) => admin.userId === profile?.userId
+          (admin) => admin.userId === profile?.userId,
         );
 
       return (
@@ -342,7 +343,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
         </CompetitionItem>
       );
     },
-    [profile?.userId, navigateTo]
+    [profile?.userId, navigateTo],
   );
 
   const renderContent = useMemo(() => {
@@ -429,7 +430,7 @@ const TabItem = styled.TouchableOpacity<{ isActive: boolean }>(
     paddingVertical: 10,
     justifyContent: "center",
     alignItems: "center",
-  })
+  }),
 );
 
 const TabText = styled.Text<{ isActive: boolean }>(
@@ -437,7 +438,7 @@ const TabText = styled.Text<{ isActive: boolean }>(
     fontSize: 14,
     fontWeight: "bold",
     color: isActive ? "#ffffffff" : "#aaa",
-  })
+  }),
 );
 
 const CompetitionItem = styled.TouchableOpacity({

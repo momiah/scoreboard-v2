@@ -7,7 +7,7 @@ import {
   CircleSkeleton,
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
-import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
+import { skeletonConfig } from "../../components/Skeletons/skeletonConfig";
 import { COMPETITION_TYPES } from "../../schemas/schema";
 
 type CompetitionType =
@@ -32,14 +32,6 @@ interface TrophyItemProps {
 
 const TrophyItem: React.FC<TrophyItemProps> = ({ imageSource, statValue }) => {
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
-
-  const skeletonConfig = {
-    ...SKELETON_THEMES.dark,
-    transition: {
-      type: "timing",
-      duration: 1500,
-    },
-  };
 
   return (
     <PrizeView>
