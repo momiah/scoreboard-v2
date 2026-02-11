@@ -1,100 +1,80 @@
-const calculateTeamPerformance = async ({ game, allTeams }) => {
-  const normalizeTeamKey = (key) => {
-    return key.join("-").split("-").sort().join("-");
-  };
+import { formatDisplayName } from "./formatDisplayName.js";
 
-  const { result } = game;
+export const calculateTeamPerformance = async ({ game, allTeams }) => {
+  const { team1, team2, result } = game;
 
-  const winnerTeamKey = normalizeTeamKey(result.winner.players);
-  const loserTeamKey = normalizeTeamKey(result.loser.players);
+  const getPlayersForTeam = (label) =>
+    label === "Team 1"
+      ? [team1.player1, team1.player2].filter(Boolean)
+      : [team2.player1, team2.player2].filter(Boolean);
 
-  const getTeamsByKeys = (teams, winnerKey, loserKey) => {
-    let winnerTeam = teams.find(
-      (team) => normalizeTeamKey(team.team) === winnerKey
-    );
-    let loserTeam = teams.find(
-      (team) => normalizeTeamKey(team.team) === loserKey
-    );
-    return [winnerTeam, loserTeam];
-  };
+  const makeIdKey = (players) =>
+    players
+      .map((p) => p.userId)
+      .sort()
+      .join("-");
 
-  let [winnerTeam, loserTeam] = getTeamsByKeys(
-    allTeams,
-    winnerTeamKey,
-    loserTeamKey
-  );
+  const toDisplayNames = (players) =>
+    players.map((p) => p.displayName ?? formatDisplayName(p));
 
-  if (!winnerTeam) {
-    winnerTeam = {
-      team: result.winner.players.slice().sort(),
-      teamKey: winnerTeamKey,
-      numberOfWins: 0,
-      numberOfLosses: 0,
-      numberOfGamesPlayed: 0,
-      resultLog: [],
-      pointDifferenceLog: [],
-      averagePointDifference: 0,
-      totalPointDifference: 0,
-      currentStreak: 0,
-      highestWinStreak: 0,
-      highestLossStreak: 0,
-      winStreak3: 0,
-      winStreak5: 0,
-      winStreak7: 0,
-      demonWin: 0,
-      lossesTo: {},
-      rival: null,
-    };
-  }
+  const normalizeNames = (names) => names.slice().sort().join("-");
 
-  if (!loserTeam) {
-    loserTeam = {
-      team: result.loser.players.slice().sort(),
-      teamKey: loserTeamKey,
-      numberOfWins: 0,
-      numberOfLosses: 0,
-      numberOfGamesPlayed: 0,
-      resultLog: [],
-      pointDifferenceLog: [],
-      averagePointDifference: 0,
-      totalPointDifference: 0,
-      currentStreak: 0,
-      highestWinStreak: 0,
-      highestLossStreak: 0,
-      winStreak3: 0,
-      winStreak5: 0,
-      winStreak7: 0,
-      demonWin: 0,
-      lossesTo: {},
-      rival: null,
-    };
-  }
+  const findTeam = (teams, idKey, displayNames) =>
+    teams.find((t) => t.teamKey === idKey) ||
+    teams.find(
+      (t) => normalizeNames(t.team || []) === normalizeNames(displayNames)
+    ) ||
+    null;
+
+  const createTeam = (displayNames, idKey) => ({
+    team: displayNames.slice().sort(),
+    teamKey: idKey,
+    numberOfWins: 0,
+    numberOfLosses: 0,
+    numberOfGamesPlayed: 0,
+    resultLog: [],
+    pointDifferenceLog: [],
+    averagePointDifference: 0,
+    totalPointDifference: 0,
+    currentStreak: 0,
+    highestWinStreak: 0,
+    highestLossStreak: 0,
+    winStreak3: 0,
+    winStreak5: 0,
+    winStreak7: 0,
+    demonWin: 0,
+    lossesTo: {},
+    rival: null,
+  });
+
+  const winnerPlayers = getPlayersForTeam(result.winner.team);
+  const loserPlayers = getPlayersForTeam(result.loser.team);
+
+  const winnerDisplay = toDisplayNames(winnerPlayers);
+  const loserDisplay = toDisplayNames(loserPlayers);
+
+  const winnerKey = makeIdKey(winnerPlayers);
+  const loserKey = makeIdKey(loserPlayers);
+
+  let winnerTeam = findTeam(allTeams, winnerKey, winnerDisplay);
+  let loserTeam = findTeam(allTeams, loserKey, loserDisplay);
+
+  if (!winnerTeam) winnerTeam = createTeam(winnerDisplay, winnerKey);
+  if (!loserTeam) loserTeam = createTeam(loserDisplay, loserKey);
+
+  winnerTeam.team = winnerDisplay.slice().sort();
+  loserTeam.team = loserDisplay.slice().sort();
 
   const pointDifference = result.winner.score - result.loser.score;
 
   updateTeamStats(winnerTeam, "W", pointDifference);
   updateTeamStats(loserTeam, "L", -pointDifference);
 
-  if (!loserTeam.lossesTo[winnerTeamKey]) loserTeam.lossesTo[winnerTeamKey] = 0;
-  loserTeam.lossesTo[winnerTeamKey] += 1;
+  if (!loserTeam.lossesTo[winnerTeam.teamKey])
+    loserTeam.lossesTo[winnerTeam.teamKey] = 0;
+  loserTeam.lossesTo[winnerTeam.teamKey] += 1;
 
-  const lossesToValues = Object.values(loserTeam.lossesTo);
-  const maxLosses = Math.max(...lossesToValues);
-
-  if (maxLosses > 1) {
-    const teamsWithMaxLosses = Object.keys(loserTeam.lossesTo).filter(
-      (key) => loserTeam.lossesTo[key] === maxLosses
-    );
-
-    if (teamsWithMaxLosses.length === 1) {
-      const rivalKey = teamsWithMaxLosses[0];
-      loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
-    } else {
-      loserTeam.rival = null;
-    }
-  } else {
-    loserTeam.rival = null;
-  }
+  updateRival(loserTeam, winnerTeam);
 
   return [winnerTeam, loserTeam];
 };
@@ -188,4 +168,22 @@ function updateWinStreaks(team, previousWinStreak) {
   }
 }
 
-module.exports = { calculateTeamPerformance };
+function updateRival(loserTeam, winnerTeam) {
+  const lossesToValues = Object.values(loserTeam.lossesTo);
+  const maxLosses = lossesToValues.length ? Math.max(...lossesToValues) : 0;
+
+  if (maxLosses > 1) {
+    const teamsWithMaxLosses = Object.keys(loserTeam.lossesTo).filter(
+      (key) => loserTeam.lossesTo[key] === maxLosses
+    );
+
+    if (teamsWithMaxLosses.length === 1) {
+      const rivalKey = teamsWithMaxLosses[0];
+      loserTeam.rival = { rivalKey, rivalPlayers: winnerTeam.team };
+    } else {
+      loserTeam.rival = null;
+    }
+  } else {
+    loserTeam.rival = null;
+  }
+}
