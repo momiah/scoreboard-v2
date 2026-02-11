@@ -63,6 +63,45 @@ const updatePlayers = async (updatedPlayers, leagueId) => {
     throw error; // Re-throw so the calling function knows it failed
   }
 };
+const updateTournamentPlayers = async (updatedPlayers, tournamentId) => {
+  if (updatedPlayers.length === 0) {
+    console.log("No players to update!");
+    return;
+  }
+
+  try {
+    const tournamentDocRef = db.collection("tournaments").doc(tournamentId);
+
+    // Fetch the current tournament document
+    const tournamentDoc = await tournamentDocRef.get();
+
+    if (!tournamentDoc.exists) {
+      console.log("Tournament not found!");
+      return;
+    }
+
+    const tournamentData = tournamentDoc.data();
+    const existingPlayers = tournamentData.tournamentParticipants || [];
+
+    // Update the existing players array with updated data
+    const updatedParticipants = existingPlayers.map((player) => {
+      const updatedPlayer = updatedPlayers.find(
+        (p) => p.userId === player.userId
+      );
+      return updatedPlayer ? { ...player, ...updatedPlayer } : player;
+    });
+
+    // Update the tournamentParticipants field in Firestore
+    await tournamentDocRef.update({
+      tournamentParticipants: updatedParticipants,
+    });
+
+    console.log(`✅ Updated ${updatedPlayers.length} players in tournament ${tournamentId}`);
+  } catch (error) {
+    console.error("Error updating tournament player data:", error);
+    throw error; // Re-throw so the calling function knows it failed
+  }
+};
 
 const updateUsers = async (usersToUpdate) => {
   try {
@@ -129,6 +168,53 @@ const updateTeams = async (updatedTeams, leagueId) => {
     throw error; // Re-throw so the calling function knows it failed
   }
 };
+const updateTournamentTeams = async (updatedTeams, tournamentId) => {
+  if (updatedTeams.length === 0) {
+    console.log("No teams to update!");
+    return;
+  }
+
+  try {
+    const tournamentDocRef = db.collection("tournaments").doc(tournamentId);
+
+    // Fetch the current tournament document
+    const tournamentDoc = await tournamentDocRef.get();
+    if (!tournamentDoc.exists) {
+      console.log("Tournament not found!");
+      return;
+    }
+
+    const tournamentData = tournamentDoc.data();
+    const existingTeams = tournamentData.tournamentTeams || [];
+
+    // Merge the updated teams into the existing ones
+    const updatedTeamsArray = existingTeams.map((team) => {
+      const updatedTeam = updatedTeams.find(
+        (t) => t.teamKey === team.teamKey
+      );
+      return updatedTeam ? { ...team, ...updatedTeam } : team;
+    });
+
+    // Add any new teams that weren't already in existingTeams
+    const newTeams = updatedTeams.filter(
+      (updatedTeam) =>
+        !existingTeams.some((team) => team.teamKey === updatedTeam.teamKey)
+    );
+
+    // Final teams list to update in Firestore
+    const finalTeamsArray = [...updatedTeamsArray, ...newTeams];
+
+    await tournamentDocRef.update({ tournamentTeams: finalTeamsArray });
+
+    console.log(`✅ Updated ${updatedTeams.length} teams in tournament ${tournamentId}`);
+    if (newTeams.length > 0) {
+      console.log(`✅ Added ${newTeams.length} new teams to tournament ${tournamentId}`);
+    }
+  } catch (error) {
+    console.error("Error updating tournament team data:", error);
+    throw error; // Re-throw so the calling function knows it failed
+  }
+};
 
 const retrieveTeams = async (leagueId) => {
   try {
@@ -136,7 +222,7 @@ const retrieveTeams = async (leagueId) => {
 
     // Get the existing league document
     const leagueDoc = await leagueDocRef.get();
-    
+
     if (!leagueDoc.exists) {
       console.log(`League not found with ID: ${leagueId}`);
       return [];
@@ -153,10 +239,37 @@ const retrieveTeams = async (leagueId) => {
   }
 };
 
+
+const retrieveTournamentTeams = async (tournamentId) => {
+  try {
+    const tournamentDocRef = db.collection("tournaments").doc(tournamentId);
+
+    // Get the existing tournament document
+    const tournamentDoc = await tournamentDocRef.get();
+
+    if (!tournamentDoc.exists) {
+      console.log(`Tournament not found with ID: ${tournamentId}`);
+      return [];
+    }
+
+    const tournamentData = tournamentDoc.data();
+    const tournamentTeams = tournamentData.tournamentTeams || [];
+
+    console.log(`✅ Retrieved ${tournamentTeams.length} teams from tournament ${tournamentId}`);
+    return tournamentTeams;
+  } catch (error) {
+    console.error("Error retrieving tournament teams:", error);
+    return [];
+  }
+}
+
 module.exports = {
   getUserById,
   updatePlayers,
+  updateTournamentPlayers,
   updateUsers,
   updateTeams,
+  updateTournamentTeams,
   retrieveTeams,
+  retrieveTournamentTeams,
 };

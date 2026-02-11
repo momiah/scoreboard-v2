@@ -1,4 +1,5 @@
-const { db } = require("../../services/firebase.config");
+import * as admin from "firebase-admin";
+const db = admin.firestore();
 
 export const sendNotification = async (notification) => {
     try {

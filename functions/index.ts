@@ -31,11 +31,11 @@
 //   response.send("Hello from Firebase!");
 // });
 
-const admin = require("firebase-admin");
+import * as admin from "firebase-admin";
 admin.initializeApp();
 
-const { autoApproveGames } = require('./autoApproveGame');
-const { distributeLeaguePrizes } = require('./distributeLeaguePrizes');
+import { autoApproveGames } from './autoApproveGame';
+import { distributeLeaguePrizes } from './distributeLeaguePrizes';
+import { autoApproveTournamentGames } from './autoApproveTournamentGame';
 
-exports.autoApproveGames = autoApproveGames;
-exports.distributeLeaguePrizes = distributeLeaguePrizes;
+export { autoApproveGames, distributeLeaguePrizes, autoApproveTournamentGames };
