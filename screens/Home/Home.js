@@ -20,7 +20,6 @@ import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";
 import SubHeader from "../../components/SubHeader";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
-import AddLeagueModel from "../../components/Modals/AddLeagueModal";
 import { LeagueContext } from "../../context/LeagueContext";
 import { Switch } from "react-native";
 import { UserContext } from "../../context/UserContext";
@@ -31,26 +30,16 @@ import {
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
-import AddTournamentModal from "../../components/Modals/AddTournamentModal";
-// import { resetLeagueParticipantStats } from "../../devFunctions/resetLeagueParticipantStats";
-// import { resetUsersProfileDetails } from "../../devFunctions/resetUsersProfileDetails";
-// import {
-//   bulkAddApprovedGames,
-//   leagueGames,
-// } from "../../devFunctions/bulkAddApprovedGames";
 
 const Home = () => {
   const navigation = useNavigation();
-  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
-  const [addTournamentModalVisible, setAddTournamentModalVisible] =
-    useState(false);
   const [userToken, setUserToken] = useState(null);
   const {
     fetchUpcomingLeagues,
     upcomingLeagues,
     fetchUpcomingTournaments,
     upcomingTournaments,
-    leagueNavigationId, // Add these
+    leagueNavigationId,
     tournamentNavigationId,
   } = useContext(LeagueContext);
   const { getAllUsers, rankSorting, currentUser, getLeaguesForUser } =
@@ -126,29 +115,13 @@ const Home = () => {
     }
   };
 
-  const addLeague = async () => {
-    if (userToken && currentUser) {
-      setAddLeagueModalVisible(true);
-    } else {
-      navigateTo("Login");
-    }
-  };
-
-  const addTournament = async () => {
-    if (userToken && currentUser) {
-      setAddTournamentModalVisible(true);
-    } else {
-      navigateTo("Login");
-    }
-  };
-
   const goToWebsite = () => {
     const url = "https://courtchamps.com/";
     if (Platform.OS === "web") {
       window.open(url, "_blank");
     } else {
       Linking.openURL(url).catch((err) =>
-        console.error("Failed to open URL:", err)
+        console.error("Failed to open URL:", err),
       );
     }
   };
@@ -164,7 +137,7 @@ const Home = () => {
     if (!currentUser) return true; // If not logged in, show all public leagues
 
     const userIsParticipant = league.leagueParticipants?.filter(
-      (participant) => participant.userId === currentUser?.userId
+      (participant) => participant.userId === currentUser?.userId,
     );
 
     return userIsParticipant?.length === 0;
@@ -217,59 +190,18 @@ const Home = () => {
           </TouchableOpacity>
         )}
 
-        {/* First carousel - My Leagues (if signed in) OR Upcoming Leagues (if not signed in) */}
         <SubHeader
-          title={currentUser ? "My Leagues" : "Upcoming Leagues"}
-          onIconPress={addLeague}
-          actionText={currentUser ? null : "Browse Leagues"}
-          showIcon={!!currentUser}
-          navigationRoute={currentUser ? null : "Leagues"}
+          title="Upcoming Leagues"
+          actionText="Browse Leagues"
+          navigationRoute={"Leagues"}
         />
-
-        {/*
-        <SubHeader
-          title="Add League Invite"
-          onIconPress={() =>
-            acceptLeagueInvite(
-              "VXk56Lk6eITWa5aEuysyBfEVjXo2",
-              "WNB-2026-Winter-Special-Leauge-07-01-2026-HQXP8",
-              "jkxcyZowcJFvpCW9KuIZ"
-            )
-          }
-          showIcon
-          iconName="refresh"
-        />
-
-        <SubHeader
-          title="Reset League Participant Stats"
-          onIconPress={() =>
-            resetLeagueParticipantStats(
-              usersToReset,
-              "Enfield-Doubles-16-06-2025-WPD51"
-            )
-          }
-          showIcon
-          iconName="refresh"
-        />
-
-        <SubHeader
-          title="Bulk Add League Games"
-          onIconPress={() =>
-            bulkAddApprovedGames(
-              leagueGames,
-              "Enfield-Doubles-16-06-2025-WPD51"
-            )
-          }
-          showIcon
-          iconName="add"
-        /> */}
 
         {loading ? (
           <HorizontalLeagueCarouselSkeleton />
         ) : (
           <HorizontalLeagueCarousel
             navigationRoute={"League"}
-            leagues={currentUser ? userLeagues : publicLeagues}
+            leagues={publicLeagues}
           />
         )}
 
@@ -282,59 +214,21 @@ const Home = () => {
         {loading ? (
           <TopPlayersSkeleton topPlayers={topPlayers} />
         ) : (
-          <>
-            <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
-          </>
+          <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
         )}
-
-        {/* Second carousel - Only show if user is signed in */}
-        {currentUser && publicLeagues.length > 0 && (
-          <>
-            <SubHeader
-              title="Upcoming Leagues"
-              actionText="Browse Leagues"
-              navigationRoute={"Leagues"}
-            />
-
-            {loading ? (
-              <HorizontalLeagueCarouselSkeleton />
-            ) : (
-              <HorizontalLeagueCarousel
-                navigationRoute={"League"}
-                leagues={publicLeagues}
-              />
-            )}
-          </>
-        )}
-
-        <View style={{ height: 30 }} />
+        {/* 
+        <View style={{ height: 30 }} /> */}
 
         <SubHeader
           title="Tournaments"
-          onIconPress={addTournament}
           actionText="Browse Tournaments"
           navigationRoute={"Tournaments"}
-          showIcon
         />
 
         <TournamentGrid
           tournaments={upcomingTournaments}
           navigationRoute={"Tournament"}
         />
-
-        {addLeagueModalVisible && (
-          <AddLeagueModel
-            modalVisible={addLeagueModalVisible}
-            setModalVisible={setAddLeagueModalVisible}
-          />
-        )}
-
-        {addTournamentModalVisible && (
-          <AddTournamentModal
-            modalVisible={addTournamentModalVisible}
-            setModalVisible={setAddTournamentModalVisible}
-          />
-        )}
       </HomeContainer>
     </SafeAreaView>
   );
