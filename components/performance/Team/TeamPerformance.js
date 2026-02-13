@@ -7,12 +7,21 @@ import { calculatTeamPerformance } from "../../../helpers/calculateTeamPerforman
 import TeamDetails from "../../Modals/TeamDetailsModal";
 import { Dimensions } from "react-native";
 import { UserContext } from "../../../context/UserContext";
+import { SkeletonWrapper } from "../../Skeletons/UserProfileSkeleton";
+import { SKELETON_THEMES } from "../../Skeletons/skeletonConfig";
 
 const TeamPerformance = ({ leagueTeams }) => {
   const { recentGameResult } = useContext(GameContext);
 
   const [showTeamDetails, setShowTeamDetails] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [team, setTeam] = useState({});
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 500);
+  }, []);
 
   const renderTeam = ({ item: team, index }) => {
     const pointDifference = team.totalPointDifference || 0;
@@ -23,36 +32,47 @@ const TeamPerformance = ({ leagueTeams }) => {
           setTeam(team);
         }}
       >
-        <TableCell>
-          <Rank>
-            {index + 1}
-            {index === 0
-              ? "st"
-              : index === 1
-              ? "nd"
-              : index === 2
-              ? "rd"
-              : "th"}
-          </Rank>
-        </TableCell>
-        <TeamCell>
-          <TeamNameCell>
-            {team.team.map((player, idx) => (
-              <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
-            ))}
-          </TeamNameCell>
-          {recentGameResult(team.resultLog)}
-        </TeamCell>
-        <TableCell>
-          <StatTitle>PD</StatTitle>
-          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
-            {pointDifference}
-          </Stat>
-        </TableCell>
-        <TableCell>
-          <StatTitle>Wins</StatTitle>
-          <Stat>{team.numberOfWins}</Stat>
-        </TableCell>
+        <SkeletonWrapper show={loading} radius={8} config={SKELETON_THEMES.dark}>
+          <TableCellPlayerGroup>
+            <TableCell>
+
+              <Rank>
+                {index + 1}
+                {index === 0
+                  ? "st"
+                  : index === 1
+                    ? "nd"
+                    : index === 2
+                      ? "rd"
+                      : "th"}
+              </Rank>
+            </TableCell>
+            <TeamCell>
+              <TeamNameCell>
+                {team.team.map((player, idx) => (
+                  <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
+                ))}
+              </TeamNameCell>
+              {recentGameResult(team.resultLog)}
+            </TeamCell>
+          </TableCellPlayerGroup>
+        </SkeletonWrapper>
+        <TableCellStatsGroupContainer>
+          <SkeletonWrapper show={loading} radius={8} config={SKELETON_THEMES.dark}>
+            <TableCellStatsGroup>
+              <TableCell>
+                <StatTitle>PD</StatTitle>
+                <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+                  {pointDifference}
+                </Stat>
+              </TableCell>
+              <TableCell>
+                <StatTitle>Wins</StatTitle>
+                <Stat>{team.numberOfWins}</Stat>
+              </TableCell>
+            </TableCellStatsGroup>
+          </SkeletonWrapper>
+        </TableCellStatsGroupContainer>
         {/* Add more TableCell components here to display other stats */}
       </TableRow>
     );
@@ -103,34 +123,59 @@ const TableContainer = styled.View({
 
 const TableRow = styled.TouchableOpacity({
   flexDirection: "row",
+  alignItems: "stretch",
   backgroundColor: "#001123",
+  borderTopWidth: 1,
+  borderColor: "#262626",
+  paddingTop: 20,
+  paddingBottom: 20,
+  paddingLeft: 10,
+  paddingRight: 5,
+  gap: 10,
+});
+
+const TableCellPlayerGroup = styled.View({
+  width: 220,
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+
+});
+
+const TableCellStatsGroupContainer = styled.View({
+  flex: 1,
+  flexDirection: "row",
+  justifyContent: "stretch",
+  alignItems: "stretch",
+  alignSelf: "stretch",
+});
+
+const TableCellStatsGroup = styled.View({
+  width: "100%",
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+
 });
 
 const TableCell = styled.View({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingTop: 20,
-  paddingBottom: 20,
-  borderTopWidth: 1,
-  borderColor: "#262626",
+
 });
 
 const TeamCell = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  paddingRight: 40,
+  paddingRight: 30,
   width: 150,
-  borderTopWidth: 1,
-  borderColor: "#262626",
 });
 
 const TeamNameCell = styled.View({
   justifyContent: "flex-start",
   alignItems: "flex-start",
-  paddingTop: 20,
-  paddingBottom: 20,
   paddingRight: 20,
   width: 130,
   gap: 20,

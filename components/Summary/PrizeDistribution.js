@@ -12,63 +12,66 @@ import {
 import { COMPETITION_TYPES } from "../../schemas/schema";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
-const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
+const TrophyItem = React.memo(({ trophySource, statValue, index, isDataLoading }) => {
+  const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
+  // Reset skeleton when image source changes or component mounts
+  useEffect(() => {
+    setShowSkeleton(true);
+  }, [trophySource]);
+
+  useEffect(() => {
+    if (isDataLoading) {
+      setShowSkeleton(true);
+      return;
+    }
+    if (imageLoaded) {
+      const timer = setTimeout(() => setShowSkeleton(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [imageLoaded, isDataLoading]);
+
+  return (
+    <PrizeView>
+      <CircleSkeleton
+        show={showSkeleton}
+        size={60}
+        config={SKELETON_THEMES.dark}
+      >
+        <PrizeImage
+          source={trophySource}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}
+        />
+      </CircleSkeleton>
+
+      <TextSkeleton
+        show={showSkeleton}
+        height={14}
+        width={30}
+        config={SKELETON_THEMES.dark}
+      >
+        {imageLoaded && !showSkeleton ? (
+          <PrizeText>{statValue} XP</PrizeText>
+        ) : null}
+      </TextSkeleton>
+    </PrizeView>
+  );
+});
+
+TrophyItem.displayName = "TrophyItem";
+
+
+const PrizeDistribution = ({ prizePool, distribution, isDataLoading }) => {
   const prizes = useMemo(() => {
-    const prizesType =
-      competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
     return distribution.map((percentage, index) => ({
       xp: Math.floor(prizePool * percentage),
-      trophy: prizesType[index],
+      trophy: trophies[index],
     }));
-  }, [prizePool]);
+  }, [prizePool, distribution]);
 
-  const TrophyItem = React.memo(({ trophySource, statValue, index }) => {
-    const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
-    const [showSkeleton, setShowSkeleton] = useState(true);
-
-    // Reset skeleton when image source changes or component mounts
-    useEffect(() => {
-      setShowSkeleton(true);
-    }, [trophySource]);
-
-    useEffect(() => {
-      if (imageLoaded) {
-        const timer = setTimeout(() => setShowSkeleton(false), 100);
-        return () => clearTimeout(timer);
-      }
-    }, [imageLoaded]);
-
-    return (
-      <PrizeView>
-        <CircleSkeleton
-          show={showSkeleton}
-          size={60}
-          config={SKELETON_THEMES.dark}
-        >
-          <ImageWrapper>
-            <PrizeImage
-              source={trophySource}
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-              prizeType={competitionType}
-              style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}
-            />
-          </ImageWrapper>
-        </CircleSkeleton>
-
-        <TextSkeleton
-          show={showSkeleton}
-          height={14}
-          width={30}
-          config={SKELETON_THEMES.dark}
-        >
-          {imageLoaded && !showSkeleton ? (
-            <PrizeText>{statValue} XP</PrizeText>
-          ) : null}
-        </TextSkeleton>
-      </PrizeView>
-    );
-  });
 
   return (
     <PrizeDistributionContainer>
@@ -83,6 +86,7 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
             trophySource={prize.trophy}
             statValue={prize.xp ?? 0}
             index={index}
+            isDataLoading={isDataLoading}
           />
         ))}
       </PrizeRow>
@@ -126,6 +130,7 @@ const PrizeView = styled.View({
 const PrizeImage = styled.Image(({ prizeType }) => ({
   width: prizeType === "league" ? 60 : 40,
   height: 60,
+  alignSelf: "center",
 }));
 const PrizeText = styled.Text({
   color: "#ccc",

@@ -305,7 +305,7 @@ const Home = () => {
         />
 
         {loading ? (
-          <TopPlayersSkeleton topPlayers={topPlayers} />
+          <TopPlayersSkeleton />
         ) : (
           <>
             <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />

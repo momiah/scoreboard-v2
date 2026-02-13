@@ -7,46 +7,34 @@ import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "../../Modals/PlayerDetailsModal";
 import { enrichPlayers } from "../../../helpers/enrichPlayers";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
+import { CircleSkeleton, SkeletonWrapper, TextSkeleton } from "../../Skeletons/UserProfileSkeleton";
+import { SKELETON_THEMES } from "../../Skeletons/skeletonConfig";
 
 const PlayerPerformance = ({ playersData }) => {
   const { findRankIndex, recentGameResult } = useContext(GameContext);
-  const { loading, setLoading, getUserById } = useContext(UserContext);
+  const { getUserById } = useContext(UserContext);
+  const [loading, setLoading] = useState(true);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersWithUserData, setPlayersWithUserData] = useState([]);
 
   useEffect(() => {
     const loadEnrichedPlayers = async () => {
+      setLoading(true);
       if (playersData.length > 0) {
         const enriched = await enrichPlayers(getUserById, playersData);
         setPlayersWithUserData(enriched);
-        setLoading(false);
+      } else {
+        setPlayersWithUserData([]);
       }
+
+      setLoading(false);
     };
 
     loadEnrichedPlayers();
   }, [playersData, getUserById]);
 
-  useEffect(() => {
-    if (playersData.length > 0) {
-      setLoading(false);
-    }
-  }, [playersData]);
 
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#00152B",
-        }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
 
   const renderPlayer = ({ item: player, index }) => {
     const playerXp = player.XP || 0;
@@ -62,41 +50,58 @@ const PlayerPerformance = ({ playersData }) => {
           setSelectedPlayer(player);
         }}
       >
-        <TableCell>
-          <Rank>
-            {index + 1}
-            {index === 0
-              ? "st"
-              : index === 1
-              ? "nd"
-              : index === 2
-              ? "rd"
-              : "th"}
-          </Rank>
-        </TableCell>
-        <PlayerNameCell>
-          <PlayerName>{displayName}</PlayerName>
-          {recentGameResult(player.resultLog)}
-        </PlayerNameCell>
-        <TableCell>
-          <StatTitle>Wins</StatTitle>
-          <Stat>{player.numberOfWins}</Stat>
-        </TableCell>
-        <TableCell>
-          <StatTitle>PD</StatTitle>
-          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
-            {pointDifference}
-          </Stat>
-        </TableCell>
-        <TableCell>
-          <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
-          <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
-        </TableCell>
+        <SkeletonWrapper show={loading} height={30} radius={8} config={SKELETON_THEMES.dark}>
+          <TableCellPlayerGroup>
+            <RankCell>
+              <Rank>
+                {index + 1}
+                {index === 0
+                  ? "st"
+                  : index === 1
+                    ? "nd"
+                    : index === 2
+                      ? "rd"
+                      : "th"}
+              </Rank>
+            </RankCell>
+            <PlayerNameCell>
+              <PlayerName>{displayName}</PlayerName>
+              {recentGameResult(player.resultLog)}
+            </PlayerNameCell>
+          </TableCellPlayerGroup>
+        </SkeletonWrapper>
+        <TableCellStatsGroupContainer>
+          <SkeletonWrapper show={loading} height={30} radius={8} config={SKELETON_THEMES.dark}>
+            <TableCellStatsGroupContent>
+              <TableCell>
+                <StatTitle>Wins</StatTitle>
+                <Stat>{player.numberOfWins}</Stat>
+              </TableCell>
+              <TableCell>
+                <StatTitle>PD</StatTitle>
+                <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+                  {pointDifference}
+                </Stat>
+              </TableCell>
+            </TableCellStatsGroupContent>
+          </SkeletonWrapper>
+        </TableCellStatsGroupContainer>
+
+        <TableCellMedal>
+          <CircleSkeleton show={loading} size={45} config={SKELETON_THEMES.dark}>
+            <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
+          </CircleSkeleton>
+          <StatContainer>
+            <SkeletonWrapper show={loading} width={20} radius={4} config={SKELETON_THEMES.dark}>
+              <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
+            </SkeletonWrapper>
+          </StatContainer>
+        </TableCellMedal>
       </TableRow>
     );
   };
 
-  if (playersWithUserData.length === 0) {
+  if (playersData.length === 0) {
     return (
       <View
         style={{
@@ -112,10 +117,13 @@ const PlayerPerformance = ({ playersData }) => {
     );
   }
 
+  // Use playersData while loading to show skeletons, otherwise use enriched data
+  const displayData = loading ? playersData : playersWithUserData;
+
   return (
     <TableContainer>
       <FlatList
-        data={playersWithUserData}
+        data={displayData}
         renderItem={renderPlayer}
         keyExtractor={(player) => player.userId}
       />
@@ -138,29 +146,75 @@ const TableContainer = styled.View({
 
 const TableRow = styled.TouchableOpacity({
   flexDirection: "row",
+  borderTopWidth: 1,
+  borderColor: "1px solid rgb(9, 33, 62)",
+  paddingTop: 15,
+  paddingBottom: 15,
+  alignItems: "center",
+  gap: 10,
+  paddingLeft: 20,
+
   // backgroundColor: "#001123",
+});
+
+const TableCellPlayerGroup = styled.View({
+  width: 180,
+  height: 30,
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+
+});
+
+const TableCellStatsGroupContainer = styled.View({
+  flex: 2,
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const TableCellStatsGroupContent = styled.View({
+  width: "100%",
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+});
+
+
+const TableCellMedal = styled.View({
+  flex: 1,
+  gap: 5,
+  justifyContent: "center",
+  alignItems: "center",
+
+});
+
+const StatContainer = styled.View({
+
+
 });
 
 const TableCell = styled.View({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
-  paddingTop: 15,
-  paddingBottom: 15,
-  borderTopWidth: 1,
-  borderColor: "1px solid rgb(9, 33, 62)",
+
 });
+
+const RankCell = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "flex-start",
+
+})
 
 const PlayerNameCell = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  paddingTop: 15,
-  paddingBottom: 15,
-  paddingRight: 5,
-  borderTopWidth: 1,
-  width: 130,
-  borderColor: "1px solid rgb(9, 33, 62)",
+  width: 140,
+
+
 });
 
 const PlayerName = styled.Text({
@@ -184,6 +238,7 @@ const Stat = styled.Text({
   fontSize: 14,
   fontWeight: "bold",
   color: "white",
+  textAlign: "center",
 });
 
 export default PlayerPerformance;
