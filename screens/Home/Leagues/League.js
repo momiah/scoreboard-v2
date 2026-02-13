@@ -219,8 +219,7 @@ const League = () => {
     }
   };
 
-
-  if (!leagueById || leagueNotFound) {
+  if (leagueNotFound) {
     return (
       <View
         style={{

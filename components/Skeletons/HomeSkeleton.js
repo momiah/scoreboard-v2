@@ -28,10 +28,10 @@ export const HorizontalLeagueCarouselSkeleton = ({ leagues }) => {
   );
 };
 
-export const TopPlayersSkeleton = ({ topPlayers }) => {
+export const TopPlayersSkeleton = ({ count = 5 }) => {
   return (
     <View style={styles.verticalList}>
-      {topPlayers.map((player, index) => (
+      {Array.from({ length: count }).map((_, index) => (
         <View key={index} style={styles.playerItem}>
           <View style={styles.playerInfo}>
             <Skeleton width={"100%"} height={65} radius={10} colors={colors} />
