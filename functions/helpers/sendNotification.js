@@ -1,4 +1,5 @@
-const { db } = require("../../services/firebase.config");
+import * as admin from "firebase-admin";
+const db = admin.firestore();
 
 export const sendNotification = async (notification) => {
     try {
@@ -43,7 +44,7 @@ export const sendNotification = async (notification) => {
             sound: "default",
             vibrate: [200, 100, 200],
             priority: "high",
-            title: `New Notification in Court Champs!`,
+            title: `Court Champs`,
             body: notification.message,
             data: {
                 ...notification.data,

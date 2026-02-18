@@ -64,7 +64,7 @@ export interface Game {
   reportedAt?: Date | null;
   reportedTime?: string | null;
   // status?: GameStatus;
-  approvers?: Approver[] | null;
+  approvers: Approver[];
 }
 export interface Approver {
   userId: string;

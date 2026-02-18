@@ -31,6 +31,7 @@ const calculatePrizeAllocation = async ({
     });
 
     const placementKeys = ["first", "second", "third", "fourth"];
+    const placementSuffix = ["st", "nd", "rd", "th"];
     const finalists = leagueParticipants.slice(0, 4);
 
     console.log("finalists:", finalists);
@@ -54,7 +55,7 @@ const calculatePrizeAllocation = async ({
       await sendNotification({
         createdAt: new Date(),
         type: notificationTypes.INFORMATION.LEAGUE.TYPE,
-        message: `You have placed ${placementKey} in ${leagueName} and won ${prizeXP} XP!`,
+        message: `You have placed ${index + 1}${placementSuffix[index]} in ${leagueName} and won ${prizeXP} XP!`,
         isRead: false,
         senderId: "system",
         recipientId: player.userId,

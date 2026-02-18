@@ -1,31 +1,58 @@
-const gameTypes = ["Doubles", "Singles"];
-const privacyTypes = ["Public", "Private"];
-const maxPlayers = [8, 16, 32, 64];
-const leagueStatus = [
+
+import {
+  ScoreboardProfile,
+  ProfileDetail,
+  UserProfile,
+  Location,
+} from "../types/player";
+import {
+  League,
+  Tournament,
+  CollectionName,
+  CourtLocation,
+} from "../types/competition";
+import moment from "moment";
+
+export const gameTypes = ["Doubles", "Singles"];
+export const doublesModes = ["Mixed Doubles", "Fixed Doubles"];
+export const tournamentModes = ["Knockout", "Round Robin"];
+export const privacyTypes = ["Public", "Private"];
+export const maxPlayers = [8, 16, 32, 64];
+export const leagueStatus = [
   { status: "enlisting", color: "#FAB234" },
   { status: "full", color: "#286EFA" },
   { status: "completed", color: "#167500" },
 ];
 
-const ICON_MAP = {
+export const COMPETITION_TYPES = {
+  LEAGUE: "league",
+  TOURNAMENT: "tournament",
+};
+
+export const COLLECTION_NAMES: Record<CollectionName, string> = {
+  leagues: "leagues",
+  tournaments: "tournaments",
+};
+
+export const ICON_MAP = {
   Instagram: "logo-instagram",
   TikTok: "logo-tiktok",
   // Facebook: "logo-facebook",
 };
 
-const socialMediaPlatforms = [
+export const socialMediaPlatforms = [
   "Instagram",
   "TikTok",
   // "Facebook"
 ];
 
-const iosAppLinks = {
+export const iosAppLinks = {
   Instagram: "instagram://user?username=courtchamps.io",
   TikTok: "snssdk1128://user/profile/7507766818326840342",
   // Facebook: "fb://page/61576837973289",
 };
 
-const androidIntentLinks = {
+export const androidIntentLinks = {
   Instagram:
     "intent://user?username=courtchamps.io#Intent;package=com.instagram.android;scheme=instagram;end",
   TikTok:
@@ -34,23 +61,23 @@ const androidIntentLinks = {
   //   "intent://page/61576837973289#Intent;package=com.facebook.katana;scheme=fb;end",
 };
 
-const fallbackUrls = {
+export const fallbackUrls = {
   Instagram: "https://www.instagram.com/courtchamps.io/",
   Facebook: "https://www.facebook.com/profile.php?id=61576837973289",
   TikTok: "https://www.tiktok.com/@courtchamps",
 };
 
-const ccImageEndpoint =
+export const ccImageEndpoint =
   "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
 
-const prizeTypes = {
+export const prizeTypes = {
   TROPHY: "Trophy",
   MEDAL: "Medal",
-  CASH_PRIZE: "Cash Prize",
+  CASH_TROPHY: "Cash & Trophy",
+  CASH_MEDAL: "Cash & Medal",
 };
-
-const currencyTypes = ["GBP", "USD", "EUR", "INR"];
-const daysOfWeek = [
+export const currencyTypes = ["GBP", "USD", "EUR", "INR"];
+export const daysOfWeek = [
   "Monday",
   "Tuesday",
   "Wednesday",
@@ -60,7 +87,7 @@ const daysOfWeek = [
   "Sunday",
 ];
 
-const locationSchema = {
+export const locationSchema: Location = {
   city: "",
   country: "",
   countryCode: "",
@@ -68,7 +95,13 @@ const locationSchema = {
   address: "",
 };
 
-const gameSchema = {
+const courtLocationSchema: CourtLocation = {
+  courtName: "",
+  courtId: "",
+  ...locationSchema,
+};
+
+export const gameSchema = {
   gameId: "",
   gamescore: "",
   date: "",
@@ -88,7 +121,7 @@ const gameSchema = {
   approvalStatus: "",
 };
 
-const scoreboardProfileSchema = {
+export const scoreboardProfileSchema: ScoreboardProfile = {
   prevGameXP: 0,
   highestLossStreak: 0,
   highestWinStreak: 0,
@@ -102,6 +135,7 @@ const scoreboardProfileSchema = {
   winStreak7: 0,
   demonWin: 0,
   averagePointDifference: 0,
+  pointDifferenceLog: [],
   resultLog: [],
   currentStreak: {
     type: null, // or '' if needed
@@ -113,30 +147,10 @@ const scoreboardProfileSchema = {
   numberOfGamesPlayed: 0,
 };
 
-// Helper function to get current month/year (replaces moment)
-const getCurrentMonthYear = () => {
-  const now = new Date();
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  return `${months[now.getMonth()]} ${now.getFullYear()}`;
-};
-
-const profileDetailSchema = {
+export const profileDetailSchema: ProfileDetail = {
   ...scoreboardProfileSchema,
   XP: 20,
-  memberSince: getCurrentMonthYear(), // Replaced moment()
+  memberSince: moment().format("MMM YYYY"),
   leagueStats: {
     first: 0,
     second: 0,
@@ -151,12 +165,13 @@ const profileDetailSchema = {
   },
 };
 
-const userProfileSchema = {
+export const userProfileSchema: UserProfile = {
   handPreference: "",
   userId: "",
   lastName: "",
   firstName: "",
   username: "",
+  usernameLower: "",
   provider: "",
   dob: "",
   profileDetail: profileDetailSchema,
@@ -169,9 +184,10 @@ const userProfileSchema = {
   phoneNumber: "",
   showEmail: true,
   showPhoneNumber: false,
+  pushTokens: [],
 };
 
-const chatMessageSchema = {
+export const chatMessageSchema = {
   _id: "",
   text: "",
   createdAt: new Date(),
@@ -182,7 +198,7 @@ const chatMessageSchema = {
   },
 };
 
-const leagueSchema = {
+export const leagueSchema: League = {
   leagueParticipants: [],
   leagueTeams: [],
   leagueAdmins: [],
@@ -201,18 +217,51 @@ const leagueSchema = {
   leagueImage: "",
   leagueName: "",
   leagueDescription: "",
-  location: locationSchema,
+  location: courtLocationSchema,
+  countryCode: "",
   createdAt: new Date(),
   startDate: "",
   leagueLengthInMonths: "",
   endDate: "",
-  image: "",
-  leagueType: "",
-  prizeType: "",
   prizesDistributed: false,
   prizeDistributionDate: null,
-  currencyType: "",
+  maxPlayers: 0,
+  privacy: "",
+  playingTime: [],
+  pendingInvites: [],
+  pendingRequests: [],
+  approvalLimit: 1,
+};
+export const tournamentSchema: Tournament = {
+  tournamentParticipants: [],
+  tournamentTeams: [],
+  tournamentAdmins: [],
+  tournamentOwner: {
+    userId: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    location: locationSchema,
+  },
+  games: [],
+  fixtures: [],
+  tournamentType: "",
+  tournamentMode: "",
+  prizeType: "",
   entryFee: 0,
+  currencyType: "",
+  tournamentImage: "",
+  tournamentName: "",
+  tournamentDescription: "",
+  fixturesGenerated: false,
+  location: courtLocationSchema,
+  countryCode: "",
+  createdAt: new Date(),
+  startDate: "",
+  tournamentLengthInMonths: "",
+  endDate: "",
+  prizesDistributed: false,
+  prizeDistributionDate: null,
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
@@ -221,7 +270,44 @@ const leagueSchema = {
   approvalLimit: 1,
 };
 
-const courtSchema = {
+export const fixturesSchema = {
+  fixtures: [
+    {
+      round: 1,
+      games: [
+        {
+          gameId: "",
+          team1: {
+            player1: {
+              userId: "",
+              username: "",
+              firstName: "",
+              lastName: "",
+              displayName: "",
+            },
+            player2: null,
+          },
+          team2: {
+            player1: {
+              userId: "",
+              username: "",
+              firstName: "",
+              lastName: "",
+              displayName: "",
+            },
+            player2: null,
+          },
+          scheduledDate: "",
+          approvalStatus: "", // Pending, Approved, Declined
+          status: "Scheduled", // Scheduled, Completed
+          result: null, // To be filled after game completion
+        },
+      ],
+    },
+  ],
+};
+
+export const courtSchema = {
   courtName: "",
   courtDescription: "",
   courtImage: "",
@@ -234,7 +320,7 @@ const courtSchema = {
   numberOfTournaments: 0,
 };
 
-const notificationTypes = {
+export const notificationTypes = {
   // Shows information modal
   INFORMATION: {
     APP: {
@@ -282,14 +368,14 @@ const notificationTypes = {
   RESPONSE: {
     ACCEPT: "accepted",
     DECLINE: "declined",
-    APPROVE_GAME: "approved",
-    REJECT_GAME: "rejected",
+    APPROVED_GAME: "approved",
+    REJECTED_GAME: "rejected",
   },
 };
 
 const systemSenderId = "system";
 
-const notificationSchema = {
+export const notificationSchema = {
   createdAt: new Date(),
   type: "",
   message: "",
@@ -298,32 +384,4 @@ const notificationSchema = {
   recipientId: "",
   data: {},
   response: "",
-};
-
-// Export using CommonJS syntax
-module.exports = {
-  gameTypes,
-  privacyTypes,
-  maxPlayers,
-  leagueStatus,
-  ICON_MAP,
-  socialMediaPlatforms,
-  iosAppLinks,
-  androidIntentLinks,
-  fallbackUrls,
-  ccImageEndpoint,
-  prizeTypes,
-  currencyTypes,
-  daysOfWeek,
-  locationSchema,
-  gameSchema,
-  scoreboardProfileSchema,
-  profileDetailSchema,
-  userProfileSchema,
-  chatMessageSchema,
-  leagueSchema,
-  courtSchema,
-  notificationTypes,
-  notificationSchema,
-  systemSenderId,
 };
