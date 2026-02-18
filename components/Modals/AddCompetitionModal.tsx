@@ -7,6 +7,7 @@ import AddTournamentModal from "./AddTournamentModal";
 import QuickAddModal from "./QuickAddModal";
 import { BlurView } from "expo-blur";
 import { trophies, medals } from "../../mockImages";
+import { AntDesign } from "@expo/vector-icons";
 
 interface AddCompetitionModalProps {
   modalVisible: boolean;
@@ -32,6 +33,11 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
     }
   };
 
+  // Callback to close AddCompetitionModal after successful action
+  const handleSuccess = () => {
+    setModalVisible(false);
+  };
+
   return (
     <View>
       <Modal
@@ -45,7 +51,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
             <ModalHeader>
               <ModalTitle>Add Competition</ModalTitle>
               <CloseButton onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={28} color="white" />
+                <AntDesign name="closecircleo" size={30} color="red" />
               </CloseButton>
             </ModalHeader>
 
@@ -64,7 +70,6 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
                 }}
               >
                 <IconContainer>
-                  {/* <Ionicons name="trophy-outline" size={32} color="#00A2FF" /> */}
                   <Image
                     source={trophies[4]}
                     style={{ width: 32, height: 32 }}
@@ -104,7 +109,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
                 <OptionContent>
                   <OptionTitle>Add Tournament</OptionTitle>
                   <OptionSubtitle>
-                    Add a tournament with pre generated games
+                    Add a tournament with pre generated games and teams
                   </OptionSubtitle>
                 </OptionContent>
                 <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
@@ -146,6 +151,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
         <AddLeagueModal
           modalVisible={addLeagueModalVisible}
           setModalVisible={setAddLeagueModalVisible}
+          onSuccess={handleSuccess}
         />
       )}
 
@@ -153,6 +159,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
         <AddTournamentModal
           modalVisible={addTournamentModalVisible}
           setModalVisible={setAddTournamentModalVisible}
+          onSuccess={handleSuccess}
         />
       )}
 
@@ -160,6 +167,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
         <QuickAddModal
           modalVisible={quickAddModalVisible}
           setModalVisible={setQuickAddModalVisible}
+          onSuccess={handleSuccess}
         />
       )}
     </View>
@@ -172,7 +180,6 @@ const ModalOverlay = styled(BlurView).attrs({
 })({
   flex: 1,
   justifyContent: "flex-end",
-  //   alignItems: "center",
 });
 
 const ModalContent = styled.View({
