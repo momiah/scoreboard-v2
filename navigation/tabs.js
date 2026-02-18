@@ -35,6 +35,9 @@ import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
 import { getUnitId } from "../utils/getAdMobUnitId";
 import { TouchableOpacity } from "react-native";
+import AddCompetitionModal from "../components/Modals/AddCompetitionModal";
+import AddLeagueModal from "../components/Modals/AddLeagueModal";
+import AddTournamentModal from "../components/Modals/AddTournamentModal";
 import QuickAddModal from "../components/Modals/QuickAddModal";
 
 const Tab = createBottomTabNavigator();
@@ -222,14 +225,31 @@ const QuickAddPlaceholder = () => null;
 const Tabs = () => {
   const { notifications, chatSummaries, currentUser } = useContext(UserContext);
   const [showAd, setShowAd] = useState(true);
-  const [quickAddVisible, setQuickAddVisible] = useState(false);
+  const [addCompetitionVisible, setAddCompetitionVisible] = useState(false);
+  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
+  const [addTournamentModalVisible, setAddTournamentModalVisible] =
+    useState(false);
+  const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
+
+  const handleCompetitionOptionSelect = (option) => {
+    // Small delay to allow the first modal to close smoothly
+    setTimeout(() => {
+      if (option === "league") {
+        setAddLeagueModalVisible(true);
+      } else if (option === "tournament") {
+        setAddTournamentModalVisible(true);
+      } else if (option === "game") {
+        setQuickAddModalVisible(true);
+      }
+    }, 500);
+  };
 
   const unreadNotifications = notifications.filter(
-    (notification) => notification.isRead === false
+    (notification) => notification.isRead === false,
   ).length;
 
   const unreadChats = chatSummaries.filter(
-    (chat) => chat.isRead === false
+    (chat) => chat.isRead === false,
   ).length;
 
   return (
@@ -315,7 +335,7 @@ const Tabs = () => {
           options={{
             tabBarIcon: () => (
               <TouchableOpacity
-                onPress={() => setQuickAddVisible(true)}
+                onPress={() => setAddCompetitionVisible(true)}
                 style={{
                   backgroundColor: "rgb(3, 16, 31)",
                   width: 48,
@@ -335,7 +355,7 @@ const Tabs = () => {
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              setQuickAddVisible(true);
+              setAddCompetitionVisible(true);
             },
           }}
         />
@@ -355,14 +375,32 @@ const Tabs = () => {
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
 
-      <QuickAddModal
-        modalVisible={quickAddVisible}
-        setModalVisible={setQuickAddVisible}
-        // leagueId={""}
-        // leagueGames={[]}
-        // leagueType="Singles"
-        // leagueName="Quick Add"
+      <AddCompetitionModal
+        modalVisible={addCompetitionVisible}
+        setModalVisible={setAddCompetitionVisible}
+        onOptionSelect={handleCompetitionOptionSelect}
       />
+
+      {addLeagueModalVisible && (
+        <AddLeagueModal
+          modalVisible={addLeagueModalVisible}
+          setModalVisible={setAddLeagueModalVisible}
+        />
+      )}
+
+      {addTournamentModalVisible && (
+        <AddTournamentModal
+          modalVisible={addTournamentModalVisible}
+          setModalVisible={setAddTournamentModalVisible}
+        />
+      )}
+
+      {quickAddModalVisible && (
+        <QuickAddModal
+          modalVisible={quickAddModalVisible}
+          setModalVisible={setQuickAddModalVisible}
+        />
+      )}
 
       {/* {showAd && (
         <View style={{ width: "100%", alignItems: "center" }}>

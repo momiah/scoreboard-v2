@@ -8,7 +8,7 @@ import React, {
 
 import {
   doc,
-  setDoc,
+  where,
   collection,
   getDocs,
   getDoc,
@@ -85,7 +85,7 @@ const UserProvider = ({ children }) => {
 
         // Optional: sort by createdAt descending
         data.sort(
-          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
         );
 
         setChatSummaries(data);
@@ -117,7 +117,7 @@ const UserProvider = ({ children }) => {
           db,
           "users",
           userUid,
-          "notifications"
+          "notifications",
         );
 
         // Set up the snapshot listener
@@ -132,14 +132,14 @@ const UserProvider = ({ children }) => {
             // Sort by createdAt timestamp (newest first)
             notificationsData.sort(
               (a, b) =>
-                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+                (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
             );
 
             setNotifications(notificationsData);
           },
           (error) => {
             console.error("Error in notifications listener:", error);
-          }
+          },
         );
       } catch (error) {
         console.error("Failed to set up notifications listener:", error);
@@ -200,7 +200,7 @@ const UserProvider = ({ children }) => {
         return [];
       }
     },
-    []
+    [],
   );
 
   async function checkUserRole({
@@ -230,7 +230,7 @@ const UserProvider = ({ children }) => {
       // 2) Admin
       if (
         competitionData[`${competitionType}Admins`].some(
-          (a) => a.userId === userId
+          (a) => a.userId === userId,
         )
       ) {
         return "admin";
@@ -238,7 +238,7 @@ const UserProvider = ({ children }) => {
       // 3) Participant
       if (
         competitionData[`${competitionType}Participants`].some(
-          (p) => p.userId === userId
+          (p) => p.userId === userId,
         )
       ) {
         return "participant";
@@ -266,14 +266,14 @@ const UserProvider = ({ children }) => {
       try {
         const players = await retrievePlayersFromCompetition(
           competitionId,
-          collectionName
+          collectionName,
         );
         setPlayers(players);
       } catch (error) {
         console.error("Error fetching players:", error);
       }
     },
-    [retrievePlayersFromCompetition]
+    [retrievePlayersFromCompetition],
   );
 
   const [loading, setLoading] = useState(true); // Track loading state
@@ -287,7 +287,7 @@ const UserProvider = ({ children }) => {
         orderBy("profileDetail.numberOfWins", "desc"),
         orderBy("profileDetail.winPercentage", "desc"),
         orderBy("profileDetail.totalPointDifference", "desc"),
-        orderBy("username", "asc")
+        orderBy("username", "asc"),
       );
 
       const querySnapshot = await getDocs(usersQuery);
@@ -307,7 +307,7 @@ const UserProvider = ({ children }) => {
   const getAllUsersPaginated = async (
     page = 1,
     pageSize = 25,
-    searchParam = ""
+    searchParam = "",
   ) => {
     try {
       const usersRef = collection(db, "users");
@@ -319,7 +319,7 @@ const UserProvider = ({ children }) => {
         orderBy("profileDetail.numberOfWins", "desc"),
         orderBy("profileDetail.winPercentage", "desc"),
         orderBy("profileDetail.totalPointDifference", "desc"),
-        orderBy("username", "asc")
+        orderBy("username", "asc"),
       );
 
       // Fetch all matching documents (or page + offset)
@@ -384,7 +384,7 @@ const UserProvider = ({ children }) => {
       // Update the existing players array with updated data
       const updatedParticipants = existingPlayers.map((player) => {
         const updatedPlayer = updatedPlayers.find(
-          (p) => p.username === player.username
+          (p) => p.username === player.username,
         );
         return updatedPlayer ? { ...player, ...updatedPlayer } : player;
       });
@@ -454,7 +454,7 @@ const UserProvider = ({ children }) => {
 
       // Filter users by country code
       const filteredUsers = allUsers.filter(
-        (user) => user.location?.countryCode === countryCode
+        (user) => user.location?.countryCode === countryCode,
       );
 
       // 2. Use the EXACT SAME sorting as AllPlayers
@@ -462,7 +462,7 @@ const UserProvider = ({ children }) => {
 
       // 3. Find index of the target user
       const userIndex = filteredUsers.findIndex(
-        (user) => user.userId === userId
+        (user) => user.userId === userId,
       );
 
       // 4. Return rank (index + 1)
@@ -492,7 +492,7 @@ const UserProvider = ({ children }) => {
           }
           // Return true if at least one participant has a matching userId
           return league.leagueParticipants.some(
-            (participant) => participant.userId === userId
+            (participant) => participant.userId === userId,
           );
         });
 
@@ -518,13 +518,63 @@ const UserProvider = ({ children }) => {
             return false;
           }
           return tournament.tournamentParticipants.some(
-            (participant) => participant.userId === userId
+            (participant) => participant.userId === userId,
           );
         });
 
       return userTournaments;
     } catch (error) {
       console.error("Error fetching tournaments for user:", error);
+      return [];
+    }
+  };
+
+  const getCompetitionsForUser = async (userId, collectionName) => {
+    try {
+      const competitionsRef = collection(db, collectionName);
+
+      // Determine the correct participants field name
+      const participantsField =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      console.log(
+        `Fetching active competitions for user ${userId} from ${collectionName}...`,
+      );
+
+      // Query only active competitions (prizes not yet distributed)
+      const q = query(competitionsRef, where("prizesDistributed", "==", false));
+
+      const querySnapshot = await getDocs(q);
+      const competitions = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        // Check if user is in participants array
+        const isParticipant = data[participantsField]?.some(
+          (participant) => participant.userId === userId,
+        );
+
+        if (isParticipant) {
+          competitions.push({
+            id: doc.id,
+            ...data,
+          });
+        }
+      });
+
+      console.log(
+        `Found ${competitions.length} active ${collectionName} for user ${userId}`,
+      );
+
+      return competitions;
+    } catch (error) {
+      console.error(
+        `Error fetching competitions from ${collectionName}:`,
+        error,
+      );
       return [];
     }
   };
@@ -601,7 +651,7 @@ const UserProvider = ({ children }) => {
         "Error marking notification as read:",
         error,
         notificationId,
-        userId
+        userId,
       );
     }
   };
@@ -739,7 +789,7 @@ const UserProvider = ({ children }) => {
       let user = auth.currentUser;
       if (!user) {
         throw new Error(
-          "Session expired. Please log out and log back in, then try deleting your account again."
+          "Session expired. Please log out and log back in, then try deleting your account again.",
         );
       }
 
@@ -747,7 +797,7 @@ const UserProvider = ({ children }) => {
       if (user.uid !== userId) {
         await Logout();
         throw new Error(
-          "Authentication mismatch. Please log in again to delete your account."
+          "Authentication mismatch. Please log in again to delete your account.",
         );
       }
 
@@ -757,11 +807,11 @@ const UserProvider = ({ children }) => {
           db,
           "users",
           userId,
-          "notifications"
+          "notifications",
         );
         const notificationsSnapshot = await getDocs(notificationsRef);
         const notificationDeletes = notificationsSnapshot.docs.map((doc) =>
-          deleteDoc(doc.ref)
+          deleteDoc(doc.ref),
         );
         await Promise.all(notificationDeletes);
       } catch (error) {
@@ -803,7 +853,7 @@ const UserProvider = ({ children }) => {
       } else if (error.code === "auth/requires-recent-login") {
         Alert.alert(
           "Re-authentication Required",
-          "Please log out and log back in, then try deleting your account again for security reasons."
+          "Please log out and log back in, then try deleting your account again for security reasons.",
         );
       } else {
         Alert.alert("Error", "Error deleting account. Please try again.");
@@ -848,6 +898,7 @@ const UserProvider = ({ children }) => {
         updatePlayers,
         getLeaguesForUser,
         getTournamentsForUser,
+        getCompetitionsForUser,
         checkUserRole,
 
         // Ranking and sorting

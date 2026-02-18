@@ -10,6 +10,7 @@ import {
   orderBy,
   limit,
   increment,
+  runTransaction,
 } from "firebase/firestore";
 import moment from "moment";
 import { Alert } from "react-native";
@@ -145,7 +146,7 @@ const LeagueProvider = ({ children }) => {
       if (currentUser?.location?.countryCode) {
         const filteredLeagues = leagues.filter(
           (league) =>
-            league.location?.countryCode === currentUser.location.countryCode
+            league.location?.countryCode === currentUser.location.countryCode,
         );
         setUpcomingLeagues(filteredLeagues);
         return;
@@ -245,7 +246,7 @@ const LeagueProvider = ({ children }) => {
             time.startTime === existingPlaytime.startTime &&
             time.endTime === existingPlaytime.endTime
               ? playtime[0] // Replace with updated playtime
-              : time
+              : time,
           );
         } else {
           updatedPlaytime = [...currentPlaytime, ...playtime];
@@ -271,7 +272,7 @@ const LeagueProvider = ({ children }) => {
     try {
       const collectionRef = collection(
         db,
-        competitionType === "league" ? "leagues" : "tournaments"
+        competitionType === "league" ? "leagues" : "tournaments",
       );
       const docRef = doc(collectionRef, competitionId);
 
@@ -287,7 +288,7 @@ const LeagueProvider = ({ children }) => {
               playtime.day === playtimeToDelete.day &&
               playtime.startTime === playtimeToDelete.startTime &&
               playtime.endTime === playtimeToDelete.endTime
-            )
+            ),
         );
 
         // Update Firebase with updated playtime array
@@ -344,7 +345,7 @@ const LeagueProvider = ({ children }) => {
     title,
   }) => {
     const messageReference = doc(
-      collection(db, collectionName, documentId, "chat")
+      collection(db, collectionName, documentId, "chat"),
     );
     await setDoc(messageReference, {
       _id: "welcome",
@@ -402,7 +403,7 @@ const LeagueProvider = ({ children }) => {
   const fetchCompetitionById = async ({ competitionId, collectionName }) => {
     try {
       const competitionDoc = await getDoc(
-        doc(db, collectionName, competitionId)
+        doc(db, collectionName, competitionId),
       );
 
       if (!competitionDoc.exists()) {
@@ -466,7 +467,7 @@ const LeagueProvider = ({ children }) => {
   const updatePendingInvites = async (
     competitionId,
     userId,
-    collectionName
+    collectionName,
   ) => {
     try {
       const competitionRef = doc(db, collectionName, competitionId);
@@ -508,7 +509,7 @@ const LeagueProvider = ({ children }) => {
           db,
           "users",
           userId,
-          "notifications"
+          "notifications",
         );
         const notificationDocRef = doc(notificationsRef, notificationId);
         await updateDoc(notificationDocRef, {
@@ -528,7 +529,7 @@ const LeagueProvider = ({ children }) => {
 
       // Add user to competition and remove from pending invites
       const updatedPending = pendingInvites.filter(
-        (inv) => inv.userId !== userId
+        (inv) => inv.userId !== userId,
       );
 
       const newParticipant = await getUserById(userId);
@@ -578,7 +579,7 @@ const LeagueProvider = ({ children }) => {
           db,
           "users",
           userId,
-          "notifications"
+          "notifications",
         );
         const notificationDocRef = doc(notificationsRef, notificationId);
         await updateDoc(notificationDocRef, {
@@ -592,7 +593,7 @@ const LeagueProvider = ({ children }) => {
 
       // Remove user from pending invites
       const updatedPending = pendingInvites.filter(
-        (inv) => inv.userId !== userId
+        (inv) => inv.userId !== userId,
       );
 
       await updateDoc(competitionRef, {
@@ -690,7 +691,7 @@ const LeagueProvider = ({ children }) => {
       const pendingRequests = competitionData.pendingRequests || [];
 
       const userAlreadyInCompetition = competitionParticipants.some(
-        (participant) => participant.userId === senderId
+        (participant) => participant.userId === senderId,
       );
 
       if (userAlreadyInCompetition) {
@@ -699,7 +700,7 @@ const LeagueProvider = ({ children }) => {
       }
 
       const updatedPending = pendingRequests.filter(
-        (pen) => pen.userId !== senderId
+        (pen) => pen.userId !== senderId,
       );
 
       const newParticipant = await getUserById(senderId);
@@ -749,7 +750,7 @@ const LeagueProvider = ({ children }) => {
       const pendingRequests = competitionData.pendingRequests || [];
 
       const updatedPending = pendingRequests.filter(
-        (pen) => pen.userId !== senderId
+        (pen) => pen.userId !== senderId,
       );
 
       await updateDoc(competitionRef, {
@@ -837,17 +838,17 @@ const LeagueProvider = ({ children }) => {
         const playerUserIds = getPlayerUserIds(updatedGame);
 
         const playersToUpdate = competitionData[config.participantsKey].filter(
-          (player) => playerUserIds.includes(player.userId)
+          (player) => playerUserIds.includes(player.userId),
         );
 
         const usersToUpdate = await Promise.all(
-          playersToUpdate.map((player) => getUserById(player.userId))
+          playersToUpdate.map((player) => getUserById(player.userId)),
         );
 
         const playerPerformance = calculatePlayerPerformance(
           updatedGame,
           playersToUpdate,
-          usersToUpdate
+          usersToUpdate,
         );
 
         await updatePlayers({
@@ -861,7 +862,7 @@ const LeagueProvider = ({ children }) => {
         if (competitionData[config.typeKey] === "Doubles") {
           const teams = await retrieveTeams(
             competitionId,
-            config.collectionName
+            config.collectionName,
           );
           const teamsToUpdate = await calculateTeamPerformance({
             game: updatedGame,
@@ -897,7 +898,7 @@ const LeagueProvider = ({ children }) => {
       await readNotification(
         notificationId,
         userId,
-        notificationTypes.RESPONSE.ACCEPT
+        notificationTypes.RESPONSE.ACCEPT,
       );
 
       await sendNotification({
@@ -1058,7 +1059,7 @@ const LeagueProvider = ({ children }) => {
       await readNotification(
         notificationId,
         userId,
-        notificationTypes.RESPONSE.DECLINE
+        notificationTypes.RESPONSE.DECLINE,
       );
 
       await sendNotification({
@@ -1095,7 +1096,7 @@ const LeagueProvider = ({ children }) => {
         : "leagues";
     try {
       const messageRef = doc(
-        collection(db, collectionRef, competitionId, "chat")
+        collection(db, collectionRef, competitionId, "chat"),
       );
       const messageToSend = {
         _id: messageRef.id,
@@ -1132,7 +1133,7 @@ const LeagueProvider = ({ children }) => {
     const competitionData = competitionSnap.data();
 
     const updatedPending = competitionData.pendingInvites.filter(
-      (invite) => invite.userId !== userId
+      (invite) => invite.userId !== userId,
     );
 
     await updateDoc(competitionRef, { pendingInvites: updatedPending });
@@ -1160,7 +1161,7 @@ const LeagueProvider = ({ children }) => {
     const leagueData = leagueSnap.data();
 
     const updatedAdmins = (leagueData.leagueAdmins || []).filter(
-      (admin) => admin.userId !== userId
+      (admin) => admin.userId !== userId,
     );
 
     await updateDoc(leagueRef, { leagueAdmins: updatedAdmins });
@@ -1174,11 +1175,11 @@ const LeagueProvider = ({ children }) => {
 
     const removedParticipants = leagueData.removedParticipants || [];
     const removedParticipant = leagueData.leagueParticipants.find(
-      (participant) => participant.userId === userId
+      (participant) => participant.userId === userId,
     );
 
     const updatedParticipants = (leagueData.leagueParticipants || []).filter(
-      (participant) => participant.userId !== userId
+      (participant) => participant.userId !== userId,
     );
 
     // Add user to removed participants
@@ -1190,7 +1191,7 @@ const LeagueProvider = ({ children }) => {
 
     // Remove user from leagueAdmins if they are an admin
     const updatedAdmins = (leagueData.leagueAdmins || []).filter(
-      (admin) => admin.userId !== userId
+      (admin) => admin.userId !== userId,
     );
 
     await updateDoc(leagueRef, {
@@ -1225,7 +1226,7 @@ const LeagueProvider = ({ children }) => {
         .filter(
           (league) =>
             Array.isArray(league.pendingRequests) &&
-            league.pendingRequests.some((p) => p.userId === userId)
+            league.pendingRequests.some((p) => p.userId === userId),
         );
 
       return result;
@@ -1247,7 +1248,7 @@ const LeagueProvider = ({ children }) => {
       const pendingRequests = leagueData.pendingRequests || [];
 
       const updatedPending = pendingRequests.filter(
-        (req) => req.userId !== userId
+        (req) => req.userId !== userId,
       );
 
       await updateDoc(leagueRef, { pendingRequests: updatedPending });
@@ -1305,7 +1306,7 @@ const LeagueProvider = ({ children }) => {
       });
 
       console.log(
-        `✅ Added ${number} players to league '${leagueId}' and users collection.`
+        `✅ Added ${number} players to league '${leagueId}' and users collection.`,
       );
     } catch (err) {
       console.error("❌ Error writing to Firestore:", err);
@@ -1331,7 +1332,7 @@ const LeagueProvider = ({ children }) => {
 
       const numberOfGames = fixtures.reduce(
         (total, round) => total + round.games.length,
-        0
+        0,
       );
 
       await updateDoc(tournamentRef, {
@@ -1379,36 +1380,62 @@ const LeagueProvider = ({ children }) => {
   }) => {
     try {
       const tournamentRef = doc(db, "tournaments", tournamentId);
-      const tournamentDoc = await getDoc(tournamentRef);
 
-      if (!tournamentDoc.exists()) {
-        throw new Error("Tournament not found");
-      }
+      // Use transaction to prevent race conditions
+      await runTransaction(db, async (transaction) => {
+        const tournamentDoc = await transaction.get(tournamentRef);
 
-      const tournamentData = tournamentDoc.data();
-      const fixtures = tournamentData.fixtures || [];
+        if (!tournamentDoc.exists()) {
+          throw new Error("Tournament not found");
+        }
 
-      let updatedFixtures;
+        const tournamentData = tournamentDoc.data();
+        const fixtures = tournamentData.fixtures || [];
 
-      if (removeGame) {
-        // Remove the game from fixtures
-        updatedFixtures = fixtures.map((round) => ({
-          ...round,
-          games: round.games.filter((game) => game.gameId !== gameId),
-        }));
-      } else {
-        // Update the game with new result
-        updatedFixtures = fixtures.map((round) => ({
-          ...round,
-          games: round.games.map((game) =>
-            game.gameId === gameId ? gameResult : game
-          ),
-        }));
-      }
+        // Find the current game to check its status
+        let currentGame = null;
+        for (const round of fixtures) {
+          const found = round.games?.find((game) => game.gameId === gameId);
+          if (found) {
+            currentGame = found;
+            break;
+          }
+        }
 
-      await updateDoc(tournamentRef, {
-        fixtures: updatedFixtures,
-        lastUpdated: new Date(),
+        if (!currentGame) {
+          throw new Error("Game not found in tournament fixtures");
+        }
+
+        // Check if game is still scheduled (prevent double reporting)
+        if (!removeGame && currentGame.approvalStatus !== "Scheduled") {
+          throw new Error(
+            "This game has already been reported. Please refresh to see the latest status.",
+          );
+        }
+
+        let updatedFixtures;
+
+        if (removeGame) {
+          // Remove the game from fixtures
+          updatedFixtures = fixtures.map((round) => ({
+            ...round,
+            games: round.games.filter((game) => game.gameId !== gameId),
+          }));
+        } else {
+          // Update the game with new result
+          updatedFixtures = fixtures.map((round) => ({
+            ...round,
+            games: round.games.map((game) =>
+              game.gameId === gameId ? gameResult : game,
+            ),
+          }));
+        }
+
+        // Atomically update within transaction
+        transaction.update(tournamentRef, {
+          fixtures: updatedFixtures,
+          lastUpdated: new Date(),
+        });
       });
 
       return { success: true };

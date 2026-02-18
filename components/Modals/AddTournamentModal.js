@@ -49,7 +49,7 @@ import OptionSelector from "../OptionSelector";
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
+const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess }) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -70,7 +70,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
   const [courtData, setCourtData] = useState([]);
   const [courtDetails, setCourtDetails] = useState(courtSchema);
   const [selectedLocation, setSelectedLocation] = useState(
-    courtDetails.location
+    courtDetails.location,
   );
 
   // React Hook Form setup
@@ -164,7 +164,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
       const cropped = await ImageManipulator.manipulateAsync(
         result.assets[0].uri,
         [{ resize: { width: 600 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
       );
       setSelectedImage(cropped.uri);
     }
@@ -204,6 +204,9 @@ const AddTournamentModal = ({ modalVisible, setModalVisible }) => {
       });
       setTournamentCreationLoading(false);
       setModalVisible(false);
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
       console.error("Error creating league:", err);
       setTournamentCreationLoading(false);
