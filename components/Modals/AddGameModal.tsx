@@ -17,7 +17,7 @@ import Popup from "../popup/Popup";
 import moment from "moment";
 import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../helpers/generateUniqueId";
-import AddGame from "../scoreboard/AddGame/AddGame";
+import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
 
 import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
@@ -51,6 +51,7 @@ type AddGameModalProps = {
     team2Score: string;
   }) => boolean;
   isBulkMode?: boolean;
+  onGameUpdated?: () => void;
 };
 
 const AddGameModal = ({
@@ -62,6 +63,7 @@ const AddGameModal = ({
   leagueName,
   onGameAdded,
   isBulkMode = false,
+  onGameUpdated,
 }: AddGameModalProps) => {
   const { addGame } = useContext(GameContext);
   const { fetchCompetitionById } = useContext(LeagueContext);
@@ -80,7 +82,10 @@ const AddGameModal = ({
   const [team2Score, setTeam2Score] = useState("");
 
   // Initialize with null or empty strings, not objects
-  const [selectedPlayers, setSelectedPlayers] = useState({
+  const [selectedPlayers, setSelectedPlayers] = useState<{
+    team1: (Player | null)[];
+    team2: (Player | null)[];
+  }>({
     team1: leagueType === "Singles" ? [null] : [null, null],
     team2: leagueType === "Singles" ? [null] : [null, null],
   });
@@ -112,8 +117,12 @@ const AddGameModal = ({
     setShowPopup(false);
     setPopupMessage("");
     setModalVisible(false);
-  };
 
+    // Call onGameUpdated callback if provided
+    if (onGameUpdated) {
+      onGameUpdated();
+    }
+  };
   const handleAddGame = async () => {
     setLoading(true);
 
@@ -238,7 +247,7 @@ const AddGameModal = ({
     console.log("Opponent User IDs:", opponentUserIds);
 
     const requestForOpponentApprovals = (await Promise.all(
-      opponentUserIds.map(getUserById)
+      opponentUserIds.map(getUserById),
     )) as Array<{ userId: string; [key: string]: unknown }>;
 
     for (const user of requestForOpponentApprovals) {
@@ -248,7 +257,7 @@ const AddGameModal = ({
         recipientId: user.userId,
         senderId: currentUserId,
         message: `${formatDisplayName(
-          currentUser
+          currentUser,
         )} has just reported a score in ${leagueName} league`,
         type: notificationTypes.ACTION.ADD_GAME.LEAGUE,
         data: { leagueId, gameId },
@@ -268,7 +277,7 @@ const AddGameModal = ({
     setTeam2Score("");
 
     handleShowPopup(
-      "Game added! Opponents have 24 hours to approve or will be auto-approved."
+      "Game added! Opponents have 24 hours to approve or will be auto-approved.",
     );
     await fetchCompetitionById({
       competitionId: leagueId,
@@ -324,7 +333,7 @@ const AddGameModal = ({
                 <AntDesign name="closecircleo" size={30} color="red" />
               </TouchableOpacity>
 
-              <AddGame
+              <AddGameDetails
                 team1Score={team1Score}
                 setTeam1Score={setTeam1Score}
                 team2Score={team2Score}

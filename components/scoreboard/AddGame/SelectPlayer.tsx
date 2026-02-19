@@ -56,7 +56,7 @@ const SelectPlayer = ({
         username: player.username,
         displayName: formatDisplayName(player),
       })),
-    [players]
+    [players],
   );
 
   // Get border and text direction styles based on borderType
@@ -142,11 +142,11 @@ const { width: screenWidth } = Dimensions.get("window");
 
 // Styled components
 const PlayerSelectContainer = styled.TouchableOpacity(
-  ({ hasBorder }: { hasBorder: boolean }) => ({
+  ({ hasBorder, readonly }: { hasBorder: boolean; readonly: boolean }) => ({
     width: screenWidth <= 400 ? 110 : 110,
     alignItems: "center",
-    border: hasBorder ? "1px solid #262626" : "none",
-  })
+    border: hasBorder && !readonly ? "1px solid #262626" : "none",
+  }),
 );
 
 const PlayerSelect = styled.Text(({ readonly }: { readonly: boolean }) => ({

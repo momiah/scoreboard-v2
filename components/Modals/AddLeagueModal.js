@@ -48,7 +48,7 @@ import { generateLeagueId } from "../../helpers/generateLeagueId";
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
+const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -67,7 +67,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
   const [courtData, setCourtData] = useState([]);
   const [courtDetails, setCourtDetails] = useState(courtSchema);
   const [selectedLocation, setSelectedLocation] = useState(
-    courtDetails.location
+    courtDetails.location,
   );
 
   // React Hook Form setup
@@ -161,7 +161,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       const cropped = await ImageManipulator.manipulateAsync(
         result.assets[0].uri,
         [{ resize: { width: 600 } }],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
       );
       setSelectedImage(cropped.uri);
     }
@@ -201,6 +201,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible }) => {
       });
       setLeagueCreationLoading(false);
       setModalVisible(false);
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
       console.error("Error creating league:", err);
       setLeagueCreationLoading(false);

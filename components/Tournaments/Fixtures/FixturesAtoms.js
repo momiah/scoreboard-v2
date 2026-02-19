@@ -34,8 +34,8 @@ export const FixtureScoreDisplay = ({ game }) => {
     approvalStatus === "Scheduled"
       ? "Scheduled"
       : approvalStatus === "pending" || approvalStatus === "Pending"
-      ? "Pending Approval"
-      : null;
+        ? "Pending Approval"
+        : null;
 
   return (
     <FixtureResultsContainer>
@@ -125,9 +125,9 @@ export const FixturesDisplay = ({
       prevFixtures.map((round) => ({
         ...round,
         games: round.games.map((game) =>
-          game.gameId === updatedGame.gameId ? updatedGame : game
+          game.gameId === updatedGame.gameId ? updatedGame : game,
         ),
-      }))
+      })),
     );
   };
 
@@ -277,7 +277,7 @@ const PendingFixtureGameContainer = styled.View({
   opacity: 0.6,
 });
 
-const FixtureStatusLabel = styled.Text(({ status }) => ({
+export const FixtureStatusLabel = styled.Text(({ status }) => ({
   paddingHorizontal: 6,
   paddingVertical: 2,
   marginTop: 8,
@@ -287,8 +287,8 @@ const FixtureStatusLabel = styled.Text(({ status }) => ({
     status === "Scheduled"
       ? "rgba(0, 162, 255, 0.6)"
       : status === "Approved"
-      ? "rgba(0, 255, 0, 0.6)"
-      : "rgba(255, 165, 0, 0.6)",
+        ? "rgba(0, 255, 0, 0.6)"
+        : "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,
   overflow: "hidden",
 }));

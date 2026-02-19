@@ -8,6 +8,7 @@ import React, {
 
 import {
   doc,
+  where,
   collection,
   getDocs,
   getDoc,
@@ -82,6 +83,37 @@ const UserProvider = ({ children }) => {
     };
 
     loadInitialUser();
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe;
+    let isMounted = true;
+
+    const setupChatSummaryListener = async () => {
+      const userUid = currentUser?.userId;
+      if (!userUid) return;
+
+      const chatsRef = collection(db, "users", userUid, "chats");
+
+      unsubscribe = onSnapshot(chatsRef, (snapshot) => {
+        // 🛡️ Protect against null currentUser and unmounted component
+        if (!isMounted || !currentUser?.userId) return;
+
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Optional: sort by createdAt descending
+        data.sort(
+          (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+        );
+
+        setChatSummaries(data);
+      });
+    };
+
+    setupChatSummaryListener();
 
     return () => {
       isMounted = false;
@@ -508,6 +540,56 @@ const UserProvider = ({ children }) => {
     }
   };
 
+  const getCompetitionsForUser = async (userId, collectionName) => {
+    try {
+      const competitionsRef = collection(db, collectionName);
+
+      // Determine the correct participants field name
+      const participantsField =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      console.log(
+        `Fetching active competitions for user ${userId} from ${collectionName}...`,
+      );
+
+      // Query only active competitions (prizes not yet distributed)
+      const q = query(competitionsRef, where("prizesDistributed", "==", false));
+
+      const querySnapshot = await getDocs(q);
+      const competitions = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        // Check if user is in participants array
+        const isParticipant = data[participantsField]?.some(
+          (participant) => participant.userId === userId,
+        );
+
+        if (isParticipant) {
+          competitions.push({
+            id: doc.id,
+            ...data,
+          });
+        }
+      });
+
+      console.log(
+        `Found ${competitions.length} active ${collectionName} for user ${userId}`,
+      );
+
+      return competitions;
+    } catch (error) {
+      console.error(
+        `Error fetching competitions from ${collectionName}:`,
+        error,
+      );
+      return [];
+    }
+  };
+
   const updateUserProfile = async (updatedFields) => {
     try {
       const userId = await AsyncStorage.getItem("userId");
@@ -827,6 +909,7 @@ const UserProvider = ({ children }) => {
         updatePlayers,
         getLeaguesForUser,
         getTournamentsForUser,
+        getCompetitionsForUser,
         checkUserRole,
 
         // Ranking and sorting

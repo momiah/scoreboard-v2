@@ -5,8 +5,8 @@ import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import moment from "moment";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
-import AddGame from "../scoreboard/AddGame/AddGame";
-import { GameTeam, Game, GameResult, PresetPlayers } from "../../types/game";
+import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
+import { GameTeam, Game, GameResult } from "../../types/game";
 import { UserProfile } from "@/types/player";
 import { calculateWin } from "../../helpers/calculateWin";
 import { UserContext } from "@/context/UserContext";
@@ -43,6 +43,10 @@ const AddTournamentGameModal = ({
   const [team2Score, setTeam2Score] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState("");
+
+  const gameNumber = game?.gameNumber ?? null;
+  const court = game?.court ?? null;
+  const approvalStatus = game?.approvalStatus ?? "Pending";
 
   const isCurrentUserInGame = () => {
     if (!game) return false;
@@ -131,7 +135,7 @@ const AddTournamentGameModal = ({
       : [team1.player1?.userId, team1.player2?.userId].filter(Boolean);
 
     const requestForOpponentApprovals = (await Promise.all(
-      opponentUserIds.map(getUserById)
+      opponentUserIds.map(getUserById),
     )) as Array<{ userId: string; [key: string]: unknown }>;
 
     for (const user of requestForOpponentApprovals) {
@@ -141,7 +145,7 @@ const AddTournamentGameModal = ({
         recipientId: user.userId,
         senderId: currentUser?.userId,
         message: `${formatDisplayName(
-          currentUser
+          currentUser,
         )} has just reported a score in ${tournamentName} tournament`,
         type: notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
         data: { tournamentId, gameId: game.gameId },
@@ -156,11 +160,9 @@ const AddTournamentGameModal = ({
       gameId: game.gameId,
       gameResult,
     });
-    console.log("Tournament Game Result:", gameResult);
 
     // Call onGameUpdated for now
     if (onGameUpdated) {
-      console.log("Calling onGameUpdated with:", gameResult);
       onGameUpdated(gameResult);
     }
 
@@ -197,19 +199,27 @@ const AddTournamentGameModal = ({
             <AntDesign name="closecircleo" size={30} color="red" />
           </CloseButton>
 
-          <AddGame
+          <AddGameDetails
             team1Score={team1Score}
             setTeam1Score={setTeam1Score}
             team2Score={team2Score}
             setTeam2Score={setTeam2Score}
-            selectedPlayers={{}} // Empty since we're using presetPlayers
+            selectedPlayers={{ team1: [null, null], team2: [null, null] }} // Empty since we're using presetPlayers
             setSelectedPlayers={() => {}} // Not used in readonly mode
             leagueType={tournamentType}
             isReadOnly={true}
-            // @ts-expect-error - allow passing preset players despite a narrower prop type in AddGame
+            gameNumber={gameNumber}
+            court={court}
+            approvalStatus={approvalStatus}
             presetPlayers={{
-              team1: game?.team1,
-              team2: game?.team2,
+              team1: {
+                player1: game?.team1?.player1 ?? undefined,
+                player2: game?.team1?.player2 ?? undefined,
+              },
+              team2: {
+                player1: game?.team2?.player1 ?? undefined,
+                player2: game?.team2?.player2 ?? undefined,
+              },
             }}
           />
 
