@@ -9,8 +9,9 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LeagueContext } from "../../context/LeagueContext";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { ccDefaultImage } from "../../mockImages/index";
+import { LeagueSkeleton } from "../Skeletons/LeagueSkeleton";
 
-const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
+const VerticalLeagueCarousel = ({ navigationRoute, leagues, loading }) => {
   const navigation = useNavigation();
 
   // const publicLeagues = leagues.filter((league) => league.privacy === "Public");
@@ -102,11 +103,23 @@ const VerticalLeagueCarousel = ({ navigationRoute, leagues }) => {
     [navigateTo]
   );
 
+  const renderLoadingItem = useCallback(() => {
+    return (
+      <CarouselContainer>
+        <CarouselItem>
+          <LeagueSkeleton show={loading} >
+            <ImageWrapper></ImageWrapper>
+          </LeagueSkeleton>
+        </CarouselItem>
+      </CarouselContainer>
+    );
+  }, []);
+
   return (
     <FlatList
-      data={leagues}
+      data={loading ? Array.from({ length: 5 }).map((_, index) => ({ id: index })) : leagues}
       keyExtractor={(item) => item.id.toString()}
-      renderItem={renderLeagueItem}
+      renderItem={loading ? renderLoadingItem : renderLeagueItem}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={{ paddingBottom: 50 }}
     />
