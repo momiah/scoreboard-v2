@@ -1381,7 +1381,6 @@ const LeagueProvider = ({ children }) => {
     try {
       const tournamentRef = doc(db, "tournaments", tournamentId);
 
-      // Use transaction to prevent race conditions
       await runTransaction(db, async (transaction) => {
         const tournamentDoc = await transaction.get(tournamentRef);
 
@@ -1392,7 +1391,7 @@ const LeagueProvider = ({ children }) => {
         const tournamentData = tournamentDoc.data();
         const fixtures = tournamentData.fixtures || [];
 
-        // Find the current game to check its status
+        // Find the current game
         let currentGame = null;
         for (const round of fixtures) {
           const found = round.games?.find((game) => game.gameId === gameId);
@@ -1406,23 +1405,39 @@ const LeagueProvider = ({ children }) => {
           throw new Error("Game not found in tournament fixtures");
         }
 
-        // Check if game is still scheduled (prevent double reporting)
-        if (!removeGame && currentGame.approvalStatus !== "Scheduled") {
-          throw new Error(
-            "This game has already been reported. Please refresh to see the latest status.",
-          );
+        // Check race conditions based on what we're trying to do
+        if (!removeGame) {
+          const newStatus = gameResult.approvalStatus;
+
+          // If reporting a new score, status must be "Scheduled"
+          if (
+            newStatus === "Pending" &&
+            currentGame.approvalStatus !== "Scheduled"
+          ) {
+            throw new Error(
+              "This game has already been reported. Please refresh to see the latest status.",
+            );
+          }
+
+          // If approving/rejecting, status must be "Pending"
+          if (
+            (newStatus === "Approved" || newStatus === "Rejected") &&
+            currentGame.approvalStatus !== "Pending"
+          ) {
+            throw new Error(
+              "This game is not pending approval or has already been processed.",
+            );
+          }
         }
 
         let updatedFixtures;
 
         if (removeGame) {
-          // Remove the game from fixtures
           updatedFixtures = fixtures.map((round) => ({
             ...round,
             games: round.games.filter((game) => game.gameId !== gameId),
           }));
         } else {
-          // Update the game with new result
           updatedFixtures = fixtures.map((round) => ({
             ...round,
             games: round.games.map((game) =>
@@ -1431,7 +1446,6 @@ const LeagueProvider = ({ children }) => {
           }));
         }
 
-        // Atomically update within transaction
         transaction.update(tournamentRef, {
           fixtures: updatedFixtures,
           lastUpdated: new Date(),
