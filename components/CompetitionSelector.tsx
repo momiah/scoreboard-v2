@@ -50,13 +50,11 @@ const CompetitionSelector: React.FC<CompetitionSelectorProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  // Determine competition type from first item
   const competitionType =
     competitions?.[0]?.type === COMPETITION_TYPES.LEAGUE
       ? COMPETITION_TYPES.LEAGUE
       : COMPETITION_TYPES.TOURNAMENT;
 
-  // Process competitions to calculate wins and ranks
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -113,12 +111,6 @@ const CompetitionSelector: React.FC<CompetitionSelectorProps> = ({
     }
   }, [currentIndex, sortedCompetitions, selectedId]);
 
-  const keyExtractor = useCallback(
-    (item: ProcessedCompetition, idx: number) =>
-      item?.id ?? `competition-${idx}`,
-    [],
-  );
-
   const goToIndex = (index: number) => {
     if (!sortedCompetitions?.length) return;
     const clampedIndex = Math.max(
@@ -134,79 +126,87 @@ const CompetitionSelector: React.FC<CompetitionSelectorProps> = ({
   };
 
   const renderCompetitionCard = useCallback(
-    ({ item }: { item: ProcessedCompetition }) => {
-      if (!item) return null;
-
-      const isSelected = item?.id === selectedId;
-
-      return (
-        <View style={{ width: screenWidth, alignItems: "center" }}>
-          {loading || processingRanks ? (
+    ({ item }: { item: ProcessedCompetition | null }) => {
+      if (!item || loading || processingRanks) {
+        return (
+          <View style={{ width: screenWidth, alignItems: "center" }}>
             <Skeleton
               width={screenWidth * 0.8}
               height={cardHeight}
               radius={8}
               colors={skeletonColor}
             />
-          ) : (
-            <Card
+          </View>
+        );
+      }
+
+      const isSelected = item?.id === selectedId;
+
+      return (
+        <View style={{ width: screenWidth, alignItems: "center" }}>
+          <Card
+            style={{
+              width: screenWidth * 0.8,
+              height: cardHeight,
+              borderColor: isSelected ? "#005b90ff" : "rgb(26, 28, 54)",
+              borderWidth: isSelected ? 2 : 1,
+            }}
+          >
+            <View
               style={{
-                width: screenWidth * 0.8,
-                height: cardHeight,
-                borderColor: isSelected ? "#005b90ff" : "rgb(26, 28, 54)",
-                borderWidth: isSelected ? 2 : 1,
+                padding: 6,
+                width: "60%",
+                justifyContent: "center",
               }}
             >
-              <View
-                style={{
-                  padding: 6,
-                  width: "60%",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={styles.competitionName}>
-                  {item.name || "Competition"}
-                </Text>
-                <Text style={styles.location}>
-                  {item.location?.courtName || "Unknown court"}
-                </Text>
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  <Tag name={item.type || "—"} />
-                </View>
+              <Text style={styles.competitionName}>
+                {item.name || "Competition"}
+              </Text>
+              <Text style={styles.location}>
+                {item.location?.courtName || "Unknown court"}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <Tag name={item.type || "—"} />
               </View>
+            </View>
 
-              <StatsContainer>
-                <StatColumn>
-                  <StatTitle>Wins</StatTitle>
-                  <StatValue>{item.wins || 0}</StatValue>
-                </StatColumn>
-                <StatColumn>
-                  <StatTitle>Rank</StatTitle>
-                  {item.userRank && item.userRank > 0 ? (
-                    <RankSuffix
-                      number={item.userRank}
-                      numberStyle={{
-                        fontSize: statValueFontSize,
-                        color: "white",
-                        fontWeight: "bold",
-                      }}
-                      suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
-                      style={[]}
-                    />
-                  ) : (
-                    <StatValue>—</StatValue>
-                  )}
-                </StatColumn>
-              </StatsContainer>
-            </Card>
-          )}
+            <StatsContainer>
+              <StatColumn>
+                <StatTitle>Wins</StatTitle>
+                <StatValue>{item.wins || 0}</StatValue>
+              </StatColumn>
+              <StatColumn>
+                <StatTitle>Rank</StatTitle>
+                {item.userRank && item.userRank > 0 ? (
+                  <RankSuffix
+                    number={item.userRank}
+                    numberStyle={{
+                      fontSize: statValueFontSize,
+                      color: "white",
+                      fontWeight: "bold",
+                    }}
+                    suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
+                    style={[]}
+                  />
+                ) : (
+                  <StatValue>—</StatValue>
+                )}
+              </StatColumn>
+            </StatsContainer>
+          </Card>
         </View>
       );
     },
-    [selectedId, profile?.userId],
+    [selectedId, loading, processingRanks],
   );
 
-  if (!sortedCompetitions?.length) {
+  const keyExtractor = useCallback(
+    (item: ProcessedCompetition | null, idx: number) =>
+      item?.id ?? `loading-${idx}`,
+    [],
+  );
+
+  if (!loading && !processingRanks && !sortedCompetitions?.length) {
     return (
       <Container style={{ marginTop: topOffset }}>
         <NoActivityText>
@@ -217,13 +217,20 @@ const CompetitionSelector: React.FC<CompetitionSelectorProps> = ({
     );
   }
 
+  const displayData =
+    sortedCompetitions?.length > 0
+      ? sortedCompetitions
+      : loading || processingRanks
+        ? [null]
+        : [];
+
   return (
     <View style={{ marginTop: topOffset }}>
       <Container>
         <FlatList
           ref={flatListRef}
           horizontal
-          data={sortedCompetitions}
+          data={displayData}
           renderItem={renderCompetitionCard}
           keyExtractor={keyExtractor}
           showsHorizontalScrollIndicator={false}
@@ -337,6 +344,7 @@ const NoActivityText = styled.Text({
   fontSize: 14,
   textAlign: "center",
 });
+
 const styles = StyleSheet.create({
   competitionName: {
     color: "white",

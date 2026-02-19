@@ -291,27 +291,13 @@ const QuickAddModal = ({
               ))}
             </TabContainer>
 
-            {noCompetitions ? (
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: "#aaa",
-                  marginTop: 20,
-                  textAlign: "center",
-                }}
-              >
-                {isLeagueTab
-                  ? "No active leagues found. Please create or join a league to add a game 🏟️."
-                  : "No active tournaments found. Please create or join a tournament to add a game 🏆."}
-              </Text>
-            ) : (
-              <CompetitionSelector
-                competitions={competitions}
-                selectedId={selectedCompetition?.id}
-                onSelectCompetition={handleCompetitionSelect}
-                profile={currentUser}
-              />
-            )}
+            <CompetitionSelector
+              competitions={competitions}
+              selectedId={selectedCompetition?.id}
+              onSelectCompetition={handleCompetitionSelect}
+              profile={currentUser}
+              loading={loading}
+            />
 
             {!isLeagueTab && selectedCompetition && !loading && (
               <>
