@@ -71,7 +71,7 @@ const CompetitionSummary = memo(
     const owner = competitionData?.owner || {};
     const description = competitionData?.description || "";
     const playtime = competitionData?.playingTime || [];
-    const competitionId = competitionData.id;
+    const competitionId = competitionData?.id;
 
     // Determine if this is a Doubles tournament
     const isDoublesTournament =
@@ -170,9 +170,8 @@ const CompetitionSummary = memo(
     const addressData = useMemo(() => {
       const { courtName, address, postCode, city, countryCode } =
         competitionData?.location || {};
-      const fullAddress = `${courtName || ""}, ${address || ""}, ${
-        city || ""
-      }, ${postCode || ""}, ${countryCode || ""}`;
+      const fullAddress = `${courtName || ""}, ${address || ""}, ${city || ""
+        }, ${postCode || ""}, ${countryCode || ""}`;
       return { courtName, address, postCode, city, countryCode, fullAddress };
     }, [competitionData?.location]);
 
@@ -242,6 +241,7 @@ const CompetitionSummary = memo(
           prizePool={gameStats.prizePool}
           distribution={DISTRIBUTION}
           competitionType={competitionType}
+          isDataLoading={isDataLoading}
         />
 
         <SectionTitleContainer>

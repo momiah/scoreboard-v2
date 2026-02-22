@@ -1,18 +1,44 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Dimensions } from "react-native";
 import Tooltip from "../Tooltip";
 import { trophies, medals } from "../../mockImages/index";
 import styled from "styled-components/native";
-import { useImageLoader } from "../../utils/imageLoader";
 import {
   CircleSkeleton,
   TextSkeleton,
-  TrophyItemSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { COMPETITION_TYPES } from "../../schemas/schema";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
-const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
+const TrophyItem = React.memo(({ trophySource, statValue, isDataLoading }) => {
+  return (
+    <PrizeView>
+      <CircleSkeleton
+        show={isDataLoading}
+        size={64}
+        config={SKELETON_THEMES.dark}
+      >
+        {!isDataLoading ? <PrizeImage source={trophySource} /> : null}
+      </CircleSkeleton>
+
+      <XPWrapper>
+        <TextSkeleton
+          show={isDataLoading}
+          height={16}
+          width={50}
+          config={SKELETON_THEMES.dark}
+        >
+          {!isDataLoading ? <PrizeText>{statValue} XP</PrizeText> : null}
+        </TextSkeleton>
+      </XPWrapper>
+    </PrizeView>
+  );
+});
+
+TrophyItem.displayName = "TrophyItem";
+
+
+const PrizeDistribution = React.memo(({ prizePool, distribution, isDataLoading, competitionType }) => {
   const prizes = useMemo(() => {
     const prizesType =
       competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
@@ -20,55 +46,8 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
       xp: Math.floor(prizePool * percentage),
       trophy: prizesType[index],
     }));
-  }, [prizePool]);
+  }, [prizePool, distribution, competitionType]);
 
-  const TrophyItem = React.memo(({ trophySource, statValue, index }) => {
-    const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
-    const [showSkeleton, setShowSkeleton] = useState(true);
-
-    // Reset skeleton when image source changes or component mounts
-    useEffect(() => {
-      setShowSkeleton(true);
-    }, [trophySource]);
-
-    useEffect(() => {
-      if (imageLoaded) {
-        const timer = setTimeout(() => setShowSkeleton(false), 100);
-        return () => clearTimeout(timer);
-      }
-    }, [imageLoaded]);
-
-    return (
-      <PrizeView>
-        <CircleSkeleton
-          show={showSkeleton}
-          size={60}
-          config={SKELETON_THEMES.dark}
-        >
-          <ImageWrapper>
-            <PrizeImage
-              source={trophySource}
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-              prizeType={competitionType}
-              style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}
-            />
-          </ImageWrapper>
-        </CircleSkeleton>
-
-        <TextSkeleton
-          show={showSkeleton}
-          height={14}
-          width={30}
-          config={SKELETON_THEMES.dark}
-        >
-          {imageLoaded && !showSkeleton ? (
-            <PrizeText>{statValue} XP</PrizeText>
-          ) : null}
-        </TextSkeleton>
-      </PrizeView>
-    );
-  });
 
   return (
     <PrizeDistributionContainer>
@@ -82,13 +61,15 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
             key={index}
             trophySource={prize.trophy}
             statValue={prize.xp ?? 0}
-            index={index}
+            isDataLoading={isDataLoading}
           />
         ))}
       </PrizeRow>
     </PrizeDistributionContainer>
   );
-};
+});
+
+PrizeDistribution.displayName = "PrizeDistribution";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -113,34 +94,35 @@ const SectionTitleContainer = styled.View({
 const PrizeRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
+  gap: 8,
 });
 
 const PrizeView = styled.View({
+  flex: 1,
   backgroundColor: "rgba(0, 0, 0, 0.3)",
-  border: "1px solid rgb(26, 28, 54)",
+  borderWidth: 1,
+  borderColor: "rgb(26, 28, 54)",
   padding: screenWidth <= 400 ? 10 : 15,
   borderRadius: 8,
   alignItems: "center",
 });
 
-const PrizeImage = styled.Image(({ prizeType }) => ({
-  width: prizeType === "league" ? 60 : 40,
-  height: 60,
-}));
+const PrizeImage = styled.Image({
+  width: 50,
+  height: 50,
+  resizeMode: "contain",
+});
+
 const PrizeText = styled.Text({
   color: "#ccc",
   fontSize: 14,
+  lineHeight: 16,
   fontWeight: "bold",
 });
 
-// ...
-
-const ImageWrapper = styled.View({
-  width: 60,
-  height: 60,
+const XPWrapper = styled.View({
+  marginTop: 4,
   alignItems: "center",
-  justifyContent: "center",
-  marginBottom: 10,
 });
 
 export default PrizeDistribution;
