@@ -1,10 +1,61 @@
-// components/Skeletons/AllPlayerSkeleton.js
 import React from "react";
-import { Skeleton } from "moti/skeleton";
+import { View } from "react-native";
 import styled from "styled-components/native";
+import { CircleSkeleton, TextSkeleton } from "./UserProfileSkeleton";
+import { SKELETON_THEMES } from "./skeletonConfig";
 
-// Default styled components
-const DefaultPlayerRow = styled.TouchableOpacity({
+const config = SKELETON_THEMES.dark;
+const iconSize = 40;
+
+const AllPlayerSkeleton = () => {
+  return (
+    <PlayerRow>
+      <CircleSkeleton show size={iconSize} config={config}>
+        <View style={{ width: iconSize, height: iconSize }} />
+      </CircleSkeleton>
+
+      <TableCell>
+        <TextSkeleton show height={13} width={30} config={config}>
+          <View />
+        </TextSkeleton>
+      </TableCell>
+
+      <PlayerNameCell>
+        <TextSkeleton show height={13} width={90} config={config}>
+          <View />
+        </TextSkeleton>
+      </PlayerNameCell>
+
+      <TableCell>
+        <TextSkeleton show height={20} width={20} config={config}>
+          <View />
+        </TextSkeleton>
+      </TableCell>
+
+      <TableCell>
+        <TextSkeleton show height={11} width={25} config={config}>
+          <View />
+        </TextSkeleton>
+        <View style={{ height: 3 }} />
+        <TextSkeleton show height={13} width={20} config={config}>
+          <View />
+        </TextSkeleton>
+      </TableCell>
+
+      <TableCell>
+        <CircleSkeleton show size={iconSize} config={config}>
+          <View style={{ width: iconSize, height: iconSize }} />
+        </CircleSkeleton>
+        <View style={{ height: 2 }} />
+        <TextSkeleton show height={10} width={14} config={config}>
+          <View />
+        </TextSkeleton>
+      </TableCell>
+    </PlayerRow>
+  );
+};
+
+const PlayerRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
@@ -14,13 +65,13 @@ const DefaultPlayerRow = styled.TouchableOpacity({
   borderRadius: 10,
 });
 
-const DefaultTableCell = styled.View({
+const TableCell = styled.View({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
 });
 
-const DefaultPlayerNameCell = styled.View({
+const PlayerNameCell = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
@@ -28,56 +79,5 @@ const DefaultPlayerNameCell = styled.View({
   paddingBottom: 15,
   width: 110,
 });
-
-const AllPlayerSkeleton = ({
-  iconSize = 40, // Default parameter
-  PlayerRow = DefaultPlayerRow, // Default component
-  TableCell = DefaultTableCell, // Default component
-  PlayerNameCell = DefaultPlayerNameCell, // Default component
-}) => {
-  return (
-    <PlayerRow>
-      {/* Left profile pic skeleton */}
-      <Skeleton
-        radius="round"
-        width={iconSize}
-        height={iconSize}
-        colorMode="dark"
-        backgroundColor="#1a2f4b"
-      />
-
-      {/* Rank skeleton */}
-      <TableCell>
-        <Skeleton width={30} height={20} colorMode="dark" />
-      </TableCell>
-
-      {/* Name skeleton */}
-      <PlayerNameCell>
-        <Skeleton width={100} height={20} colorMode="dark" />
-      </PlayerNameCell>
-
-      {/* Country skeleton */}
-      <TableCell>
-        <Skeleton width={20} height={20} colorMode="dark" />
-      </TableCell>
-
-      {/* Wins skeleton */}
-      <TableCell>
-        <Skeleton width={30} height={20} colorMode="dark" />
-      </TableCell>
-
-      {/* Right rank image skeleton */}
-      <TableCell>
-        <Skeleton
-          radius="round"
-          width={iconSize}
-          height={iconSize}
-          colorMode="dark"
-          backgroundColor="#1a2f4b"
-        />
-      </TableCell>
-    </PlayerRow>
-  );
-};
 
 export default AllPlayerSkeleton;
