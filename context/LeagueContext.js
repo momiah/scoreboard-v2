@@ -10,7 +10,9 @@ import {
   orderBy,
   limit,
   increment,
+  where,
   runTransaction,
+  count,
 } from "firebase/firestore";
 import moment from "moment";
 import { Alert } from "react-native";
@@ -89,137 +91,54 @@ const LeagueProvider = ({ children }) => {
   const [upcomingTournaments, setUpcomingTournaments] = useState([]);
 
   useEffect(() => {
+    if (!currentUser?.userId) return;
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
-  }, []);
+  }, [currentUser?.userId]);
 
-  // NEED TO MODIFY LEAGUE SCHEMA TO INCLUDE COUNTRY CODE AT TOP LEVEL RATHER THAN NESTED
-  // const fetchUpcomingLeagues = async () => {
-  //   try {
-  //     const leaguesRef = collection(db, "leagues");
-  //     let leaguesQuery;
+  const fetchCompetitions = async ({
+    competition,
+    numberToLoad = 30,
+    countryCode = null,
+  }) => {
+    try {
+      const ref = collection(db, competition);
+      const constraints = [orderBy("createdAt", "desc")]; // newest first
 
-  //     console.log('location.countryCode:', currentUser?.location.countryCode);
+      if (countryCode)
+        constraints.push(where("countryCode", "==", countryCode));
 
-  //     if (currentUser?.country) {
-  //       leaguesQuery = query(
-  //         leaguesRef,
-  //         where("location.countryCode", "==", currentUser?.location.countryCode),
-  //         // orderBy("startDate", "asc"),
-  //         // limit(10)
-  //       );
-  //     } else {
-  //       leaguesQuery = query(
-  //         leaguesRef,
-  //         orderBy("startDate", "asc"),
-  //         limit(10)
-  //       );
-  //     }
+      if (numberToLoad) constraints.push(limit(numberToLoad));
 
-  //     const snapshot = await getDocs(leaguesQuery);
-  //     const leagues = snapshot.docs.map((doc) => ({
-  //       id: doc.id,
-  //       ...doc.data(),
-  //     }));
-  //     setUpcomingLeagues(leagues);
-  //   } catch (error) {
-  //     console.error("Error fetching upcoming leagues:", error);
-  //   }
-  // };
-
-  // NEED TO REPLACE FOR THE ABOVE TO QUERY RATHER THAN FILTERING ON THE FRONT END BELOW
-  // MAX 200 LEAGUES UNTIL IT START TO SLOW DOWN
+      const snapshot = await getDocs(query(ref, ...constraints));
+      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.error(`Error fetching ${competition}:`, error);
+      return [];
+    }
+  };
 
   const fetchUpcomingLeagues = async () => {
-    try {
-      const leaguesRef = collection(db, "leagues");
-
-      // Simply get 30 most recently created leagues
-      const q = query(leaguesRef, orderBy("createdAt", "desc"), limit(30));
-
-      const snapshot = await getDocs(q);
-      const leagues = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      if (currentUser?.location?.countryCode) {
-        const filteredLeagues = leagues.filter(
-          (league) =>
-            league.location?.countryCode === currentUser.location.countryCode,
-        );
-        setUpcomingLeagues(filteredLeagues);
-        return;
-      }
-
-      setUpcomingLeagues(leagues);
-    } catch (error) {
-      console.error("Error fetching leagues:", error);
-    }
+    const leagues = await fetchCompetitions({
+      competition: "leagues",
+      numberToLoad: 30,
+    });
+    setUpcomingLeagues(leagues);
   };
+
   const fetchUpcomingTournaments = async () => {
-    try {
-      const tournamentsRef = collection(db, "tournaments");
-
-      // Simply get 30 most recently created tournaments
-      const q = query(tournamentsRef, orderBy("createdAt", "desc"), limit(30));
-
-      const snapshot = await getDocs(q);
-      const tournaments = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      // if (currentUser?.location?.countryCode) {
-      //   const filteredTournaments = tournaments.filter(
-      //     (tournament) =>
-      //       tournament.location?.countryCode ===
-      //       currentUser.location.countryCode
-      //   );
-      //   setUpcomingTournaments(filteredTournaments);
-      //   return;
-      // }
-
-      setUpcomingTournaments(tournaments);
-    } catch (error) {
-      console.error("Error fetching leagues:", error);
-    }
+    const tournaments = await fetchCompetitions({
+      competition: "tournaments",
+      numberToLoad: 30,
+    });
+    setUpcomingTournaments(tournaments);
   };
 
-  const fetchLeagues = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "leagues"));
+  const fetchLeagues = (options = {}) =>
+    fetchCompetitions({ competition: "leagues", ...options });
 
-      const leaguesData = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          image: data.image || ccDefaultImage, // Set default image if none exists
-        };
-      });
-
-      return leaguesData;
-    } catch (error) {
-      console.error("Error fetching leagues:", error);
-    }
-  };
-
-  const fetchTournaments = async () => {
-    console.log("Fetching tournaments...");
-    try {
-      const tournamentsRef = collection(db, "tournaments");
-      const q = query(tournamentsRef, orderBy("createdAt", "desc"), limit(30));
-      const snapshot = await getDocs(q);
-      const tournaments = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      return tournaments;
-    } catch (error) {
-      console.error("Error fetching tournaments:", error);
-    }
-  };
+  const fetchTournaments = (options = {}) =>
+    fetchCompetitions({ competition: "tournaments", ...options });
 
   const addPlaytime = async ({
     playtime,
