@@ -2,36 +2,36 @@ import React, { useState, useEffect, useContext, useMemo } from "react";
 import {
   Image,
   SafeAreaView,
-  View,
   Text,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
+  Dimensions,
   Platform,
   Linking,
 } from "react-native";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
-import { Dimensions } from "react-native";
+
 import HorizontalLeagueCarousel from "../../components/Leagues/HorizontalLeagueCarousel";
 import TournamentGrid from "../../components/Tournaments/TournamentGrid";
-import { tournaments } from "../../components/Tournaments/tournamentMocks";
+
 import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";
 import SubHeader from "../../components/SubHeader";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
-import { Switch } from "react-native";
+
 import { UserContext } from "../../context/UserContext";
-import { AntDesign } from "@expo/vector-icons";
 import {
   HorizontalLeagueCarouselSkeleton,
   TopPlayersSkeleton,
+  TournamentGridSkeleton,
 } from "../../components/Skeletons/HomeSkeleton";
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
+import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedFontSize = screenWidth < 450 ? 13 : 16; // Adjust font size based on screen width
@@ -39,7 +39,7 @@ const platformPaddingTop = Platform.OS === "ios" ? 0 : 20; // Adjust padding for
 
 const Home = () => {
   const navigation = useNavigation();
-  const [userToken, setUserToken] = useState(null);
+
   const {
     fetchUpcomingLeagues,
     upcomingLeagues,
@@ -48,13 +48,15 @@ const Home = () => {
     leagueNavigationId,
     tournamentNavigationId,
   } = useContext(LeagueContext);
-  const { getAllUsers, rankSorting, currentUser, getLeaguesForUser } =
-    useContext(UserContext);
+  const { getAllUsers, rankSorting, currentUser } = useContext(UserContext);
 
-  const [userLeagues, setUserLeagues] = useState([]);
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
+  const [addTournamentModalVisible, setAddTournamentModalVisible] =
+    useState(false);
 
   useEffect(() => {
     if (leagueNavigationId) {
@@ -69,14 +71,6 @@ const Home = () => {
       });
     }
   }, [tournamentNavigationId]);
-
-  useEffect(() => {
-    const fetchUserToken = async () => {
-      const token = await AsyncStorage.getItem("userToken");
-      setUserToken(token);
-    };
-    fetchUserToken();
-  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -99,22 +93,6 @@ const Home = () => {
     fetchUsers();
   }, []);
 
-  const fetchUserLeagues = async () => {
-    const userId = currentUser?.userId;
-    if (!userId) return;
-
-    try {
-      const leagues = await getLeaguesForUser(userId);
-      setUserLeagues(leagues);
-    } catch (error) {
-      console.error("Error fetching leagues:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserLeagues();
-  }, [currentUser?.userId]);
-
   const navigateTo = (route) => {
     if (route) {
       navigation.navigate(route);
@@ -134,19 +112,58 @@ const Home = () => {
 
   const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
 
-  const publicLeagues = upcomingLeagues.filter((league) => {
-    // Must be public
-    if (league.privacy !== "Public") return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    // Exclude leagues where user is already a participant
+  const parseEndDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [day, month, year] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
 
-    if (!currentUser) return true; // If not logged in, show all public leagues
+  const getLocalFirstCompetitions = ({
+    competitions,
+    ownerKey,
+    participantsKey,
+    checkEndDate = false,
+    limit = 5,
+  }) => {
+    const active = competitions.filter((competition) => {
+      if (competition?.privacy !== "Public") return false;
+      if (checkEndDate) {
+        const endDate = parseEndDate(competition?.endDate);
+        if (endDate && endDate < today) return false;
+      }
+      if (!currentUser) return true;
+      const userIsOwner =
+        competition?.[ownerKey]?.userId === currentUser?.userId;
+      const isParticipant = (competition?.[participantsKey] ?? []).some(
+        (p) => p?.userId === currentUser?.userId,
+      );
+      return !userIsOwner && !isParticipant;
+    });
 
-    const userIsParticipant = league.leagueParticipants?.filter(
-      (participant) => participant.userId === currentUser?.userId,
+    const local = active.filter(
+      (c) => c.countryCode === currentUser?.location?.countryCode,
+    );
+    const global = active.filter(
+      (c) => c.countryCode !== currentUser?.location?.countryCode,
     );
 
-    return userIsParticipant?.length === 0;
+    return [...local, ...global].slice(0, limit);
+  };
+
+  const publicLeagues = getLocalFirstCompetitions({
+    competitions: upcomingLeagues,
+    ownerKey: "leagueOwner",
+    participantsKey: "leagueParticipants",
+    checkEndDate: true,
+  });
+
+  const publicTournaments = getLocalFirstCompetitions({
+    competitions: upcomingTournaments,
+    ownerKey: "tournamentOwner",
+    participantsKey: "tournamentParticipants",
   });
 
   return (
@@ -167,7 +184,6 @@ const Home = () => {
             onRefresh={() => {
               fetchUsers();
               fetchUpcomingLeagues();
-              fetchUserLeagues();
               fetchUpcomingTournaments();
             }}
             tintColor="white" // iOS
@@ -227,16 +243,19 @@ const Home = () => {
           actionText="Browse Leagues"
           navigationRoute={"Leagues"}
         />
-
         {loading ? (
           <HorizontalLeagueCarouselSkeleton />
-        ) : (
+        ) : publicLeagues.length > 0 ? (
           <HorizontalLeagueCarousel
             navigationRoute={"League"}
             leagues={publicLeagues}
           />
+        ) : (
+          <CompetitionPlaceholder
+            message="No upcoming leagues in your area. Create one for your community!"
+            onPress={() => setAddLeagueModalVisible(true)}
+          />
         )}
-
         <SubHeader
           title="Top Players"
           actionText="See All Players"
@@ -244,27 +263,75 @@ const Home = () => {
         />
 
         {loading ? (
-          <TopPlayersSkeleton topPlayers={topPlayers} />
+          <TopPlayersSkeleton />
         ) : (
           <TopPlayers topPlayers={topPlayers} fetchUsers={fetchUsers} />
         )}
-        {/* 
-        <View style={{ height: 30 }} /> */}
 
         <SubHeader
-          title="Tournaments"
+          title="Upcoming Tournaments"
           actionText="Browse Tournaments"
           navigationRoute={"Tournaments"}
         />
+        {loading ? (
+          <TournamentGridSkeleton />
+        ) : publicTournaments.length > 0 ? (
+          <TournamentGrid
+            tournaments={publicTournaments}
+            navigationRoute={"Tournament"}
+          />
+        ) : (
+          <CompetitionPlaceholder
+            message="No upcoming tournaments in your area. Create one for your community!"
+            onPress={() => setAddTournamentModalVisible(true)}
+          />
+        )}
 
-        <TournamentGrid
-          tournaments={upcomingTournaments}
-          navigationRoute={"Tournament"}
-        />
+        {addLeagueModalVisible && (
+          <AddLeagueModal
+            modalVisible={addLeagueModalVisible}
+            setModalVisible={setAddLeagueModalVisible}
+          />
+        )}
+        {addTournamentModalVisible && (
+          <AddTournamentModal
+            modalVisible={addTournamentModalVisible}
+            setModalVisible={setAddTournamentModalVisible}
+          />
+        )}
       </HomeContainer>
     </SafeAreaView>
   );
 };
+
+const CompetitionPlaceholder = ({ message, onPress }) => (
+  <CarouselPlaceholder onPress={onPress}>
+    <Ionicons name="add-circle-outline" size={40} color="#00A2FF" />
+    <PlaceholderText>{message}</PlaceholderText>
+  </CarouselPlaceholder>
+);
+
+const CarouselPlaceholder = styled.TouchableOpacity({
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "#0A1F33",
+  borderRadius: 10,
+  height: 200,
+  width: "100%",
+  marginVertical: 10,
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  borderStyle: "dashed",
+  gap: 10,
+});
+
+const PlaceholderText = styled.Text({
+  color: "#aaa",
+  fontSize: 14,
+  fontStyle: "italic",
+  textAlign: "center",
+  paddingHorizontal: 30,
+});
 
 const HomeContainer = styled.ScrollView({
   flex: 1,

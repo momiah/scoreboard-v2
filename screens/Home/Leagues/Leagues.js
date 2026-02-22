@@ -22,6 +22,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
+import LeaguesSkeleton from "../../../components/Skeletons/LeaguesSkeleton";
 
 const FILTERS_STORAGE_KEY = "@courtchamp_league_filters";
 
@@ -56,51 +57,44 @@ const Leagues = () => {
 
   const watchedCountryCode = watch("countryCode");
 
-  // Load saved filters on component mount
   useEffect(() => {
     const loadSavedFilters = async () => {
       try {
-        setLoadingLeagues(true);
         const savedFilters = await AsyncStorage.getItem(FILTERS_STORAGE_KEY);
         if (savedFilters) {
           const parsedFilters = JSON.parse(savedFilters);
           setAppliedFilters(parsedFilters);
-
-          // Update form with saved filters
-          Object.keys(parsedFilters).forEach((key) => {
-            setValue(key, parsedFilters[key]);
-          });
+          Object.keys(parsedFilters).forEach((key) =>
+            setValue(key, parsedFilters[key]),
+          );
         }
       } catch (error) {
         console.error("Error loading saved filters:", error);
-      } finally {
-        setLoadingLeagues(false);
       }
+      // No loadingLeagues toggle here — fetch effect owns this
     };
 
     loadSavedFilters();
   }, [setValue]);
 
-  // Fetch leagues effect
   useEffect(() => {
     const fetchAndSetLeagues = async () => {
       try {
-        setLoadingLeagues(true);
-        const fetchedLeagues = await fetchLeagues();
-        const publicLeagues = fetchedLeagues.filter(
-          (l) => l.privacy === "Public"
-        );
-        setLeagues(publicLeagues);
+        setLoadingLeagues(true); // Only set here
+        const fetchedLeagues = await fetchLeagues({
+          countryCode: appliedFilters.countryCode || null,
+        });
+        setLeagues(fetchedLeagues.filter((l) => l.privacy === "Public"));
       } catch (error) {
         console.error("Error fetching leagues:", error);
         setLeagues([]);
       } finally {
-        setLoadingLeagues(false);
+        setLoadingLeagues(false); // Only unset here
       }
     };
 
     fetchAndSetLeagues();
-  }, [fetchLeagues]);
+  }, [appliedFilters.countryCode]);
 
   // Apply filters whenever leagues or appliedFilters change
   useEffect(() => {
@@ -130,9 +124,6 @@ const Leagues = () => {
       );
     });
 
-    console.log(
-      `Filtered ${leagues.length} leagues to ${filtered.length} leagues`
-    );
     setFilteredLeagues(filtered);
     setIsFiltering(false);
   }, [leagues, appliedFilters]);
@@ -145,7 +136,7 @@ const Leagues = () => {
     try {
       await AsyncStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify(currentValues)
+        JSON.stringify(currentValues),
       );
     } catch (error) {
       console.error("Error saving filters:", error);
@@ -246,9 +237,7 @@ const Leagues = () => {
       </View>
 
       {isFiltering || loadingLeagues ? (
-        <LoadingWrapper>
-          <ActivityIndicator size="large" color="#00A2FF" />
-        </LoadingWrapper>
+        <LeaguesSkeleton />
       ) : filteredLeagues.length > 0 ? (
         <VerticalLeagueCarousel
           navigationRoute={"League"}

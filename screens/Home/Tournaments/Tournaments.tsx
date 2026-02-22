@@ -5,7 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { View, Image, ActivityIndicator } from "react-native";
+import { View, Image, ScrollView } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { useForm, Control } from "react-hook-form";
@@ -24,8 +24,8 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { Tournament } from "../../../types/competition";
 import { UserProfile } from "../../../types/player";
+import TournamentsSkeleton from "../../../components/Skeletons/TournamentsSkeleton";
 
-// Extended Tournament type to include Firestore document id
 interface TournamentWithId extends Tournament {
   id?: string;
   tournamentId?: string;
@@ -85,41 +85,36 @@ const Tournaments: React.FC = () => {
 
   // Load saved filters on component mount
   useEffect(() => {
-    const loadSavedFilters = async (): Promise<void> => {
+    const loadSavedFilters = async () => {
       try {
-        setLoadingTournaments(true);
         const savedFilters = await AsyncStorage.getItem(FILTERS_STORAGE_KEY);
         if (savedFilters) {
-          const parsedFilters: FilterValues = JSON.parse(savedFilters);
+          const parsedFilters = JSON.parse(savedFilters);
           setAppliedFilters(parsedFilters);
-
-          // Update form with saved filters
           (Object.keys(parsedFilters) as Array<keyof FilterValues>).forEach(
             (key) => {
               setValue(key, parsedFilters[key]);
-            }
+            },
           );
         }
       } catch (error) {
         console.error("Error loading saved filters:", error);
-      } finally {
-        setLoadingTournaments(false);
       }
     };
-
     loadSavedFilters();
   }, [setValue]);
 
   // Fetch tournaments effect
   useEffect(() => {
-    const fetchAndSetTournaments = async (): Promise<void> => {
+    const fetchAndSetTournaments = async () => {
       try {
         setLoadingTournaments(true);
-        const fetchedTournaments = await fetchTournaments();
-        const publicTournaments = fetchedTournaments.filter(
-          (t: TournamentWithId) => t.privacy === "Public"
+        const fetchedTournaments = await fetchTournaments({
+          countryCode: appliedFilters.countryCode || null,
+        });
+        setTournaments(
+          fetchedTournaments.filter((t: Tournament) => t.privacy === "Public"),
         );
-        setTournaments(publicTournaments);
       } catch (error) {
         console.error("Error fetching tournaments:", error);
         setTournaments([]);
@@ -127,9 +122,8 @@ const Tournaments: React.FC = () => {
         setLoadingTournaments(false);
       }
     };
-
     fetchAndSetTournaments();
-  }, [fetchTournaments]);
+  }, [appliedFilters.countryCode]);
 
   // Apply filters whenever tournaments or appliedFilters change
   useEffect(() => {
@@ -173,7 +167,7 @@ const Tournaments: React.FC = () => {
     try {
       await AsyncStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify(currentValues)
+        JSON.stringify(currentValues),
       );
     } catch (error) {
       console.error("Error saving filters:", error);
@@ -276,16 +270,14 @@ const Tournaments: React.FC = () => {
       </View>
 
       {isFiltering || loadingTournaments ? (
-        <LoadingWrapper>
-          <ActivityIndicator size="large" color="#00A2FF" />
-        </LoadingWrapper>
+        <TournamentsSkeleton />
       ) : filteredTournaments.length > 0 ? (
-        <View style={{ flex: 1, marginTop: 20 }}>
+        <ScrollView style={{ flex: 1, marginTop: 20 }}>
           <TournamentGrid
-            navigationRoute={"Tournament"}
+            navigationRoute="Tournament"
             tournaments={sortedTournaments}
           />
-        </View>
+        </ScrollView>
       ) : (
         <EmptyState>
           <EmptyText>
@@ -295,7 +287,6 @@ const Tournaments: React.FC = () => {
           </EmptyText>
         </EmptyState>
       )}
-
       <BottomSheetModal
         ref={bottomSheetRef}
         snapPoints={["75%"]}
@@ -324,6 +315,9 @@ const Tournaments: React.FC = () => {
         <AddTournamentModal
           modalVisible={addTournamentModalVisible}
           setModalVisible={setAddTournamentModalVisible}
+          onSuccess={() => {
+            fetchTournaments();
+          }}
         />
       )}
     </TournamentContainer>
@@ -344,12 +338,6 @@ const Overview = styled.View({
   justifyContent: "center",
   alignItems: "center",
   paddingRight: 15,
-});
-
-const LoadingWrapper = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
 });
 
 const EmptyState = styled.View({

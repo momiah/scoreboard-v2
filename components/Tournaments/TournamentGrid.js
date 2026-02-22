@@ -1,9 +1,12 @@
-import React, { useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import styled from "styled-components/native";
 import Tag from "../Tag";
+import { Skeleton } from "moti/skeleton";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { COMPETITION_TYPES, ccImageEndpoint } from "../../schemas/schema";
 import { useNavigation } from "@react-navigation/native";
+
+const skeletonColors = ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"];
 
 const TournamentGrid = ({ navigationRoute, tournaments }) => {
   const navigation = useNavigation();
@@ -12,19 +15,19 @@ const TournamentGrid = ({ navigationRoute, tournaments }) => {
     (tournamentId) => {
       navigation.navigate(navigationRoute, { tournamentId });
     },
-    [navigation, navigationRoute]
+    [navigation, navigationRoute],
   );
+
   return (
     <Container>
       {tournaments.slice(0, 4).map((tournament) => {
         const status = calculateCompetitionStatus(
           tournament,
-          COMPETITION_TYPES.TOURNAMENT
+          COMPETITION_TYPES.TOURNAMENT,
         );
         const maxPlayers = tournament.maxPlayers;
         const participantsLength = tournament.tournamentParticipants.length;
         const numberOfPlayers = `${participantsLength} / ${maxPlayers}`;
-
         const location = `${tournament.location.city}, ${tournament.location.countryCode}`;
         const tournamentNameClipped =
           tournament.tournamentName.length > 15
@@ -32,74 +35,100 @@ const TournamentGrid = ({ navigationRoute, tournaments }) => {
             : tournament.tournamentName;
 
         return (
-          <TournamentContainer
+          <TournamentCardItem
             key={tournament.id || tournament.tournamentId}
+            tournament={tournament}
             onPress={() => navigateTo(tournament.tournamentId)}
-          >
-            <TournamentCard>
-              <TournamentImageContainer>
-                <TournamentImage
-                  source={{
-                    uri: tournament.tournamentImage || ccImageEndpoint,
-                  }}
-                  resizeMode="cover"
-                >
-                  <StatusTagContainer>
-                    <Tag
-                      name={status.status}
-                      color={status.color}
-                      fontSize={9}
-                      bold={true}
-                    />
-                  </StatusTagContainer>
-                  <NumberOfPlayers>
-                    <Tag
-                      name={numberOfPlayers}
-                      color="rgba(0, 0, 0, 0.7)"
-                      iconColor="#00A2FF"
-                      iconSize={15}
-                      icon="person"
-                      iconPosition="right"
-                      bold
-                    />
-                  </NumberOfPlayers>
-                </TournamentImage>
-              </TournamentImageContainer>
-
-              <TournamentInfo>
-                <TournamentName>{tournamentNameClipped}</TournamentName>
-                <TournamentLocation>
-                  {tournament.location.courtName || ""}
-                </TournamentLocation>
-                <TournamentLocation>{location || ""}</TournamentLocation>
-
-                <BottomTags>
-                  <Tag
-                    name={tournament.tournamentType}
-                    color="#2F2F30"
-                    iconColor="white"
-                    iconSize={10}
-                    fontSize={9}
-                  />
-
-                  <Tag
-                    name={tournament.tournamentMode}
-                    color="#2F2F30"
-                    iconColor="white"
-                    iconSize={10}
-                    fontSize={9}
-                  />
-                </BottomTags>
-              </TournamentInfo>
-            </TournamentCard>
-          </TournamentContainer>
+            status={status}
+            numberOfPlayers={numberOfPlayers}
+            location={location}
+            tournamentNameClipped={tournamentNameClipped}
+          />
         );
       })}
     </Container>
   );
 };
 
-// Styled components
+const TournamentCardItem = ({
+  tournament,
+  onPress,
+  status,
+  numberOfPlayers,
+  location,
+  tournamentNameClipped,
+}) => {
+  const [imageLoading, setImageLoading] = useState(true);
+
+  return (
+    <TournamentContainer onPress={onPress}>
+      <TournamentCard>
+        <TournamentImageContainer>
+          {imageLoading && (
+            <ImageSkeletonOverlay>
+              <Skeleton
+                width="100%"
+                height={120}
+                radius={0}
+                colors={skeletonColors}
+              />
+            </ImageSkeletonOverlay>
+          )}
+          <TournamentImage
+            source={{ uri: tournament.tournamentImage || ccImageEndpoint }}
+            resizeMode="cover"
+            onLoadEnd={() => setImageLoading(false)}
+          >
+            <StatusTagContainer>
+              <Tag
+                name={status.status}
+                color={status.color}
+                fontSize={9}
+                bold={true}
+              />
+            </StatusTagContainer>
+            <NumberOfPlayers>
+              <Tag
+                name={numberOfPlayers}
+                color="rgba(0, 0, 0, 0.7)"
+                iconColor="#00A2FF"
+                iconSize={15}
+                icon="person"
+                iconPosition="right"
+                bold
+              />
+            </NumberOfPlayers>
+          </TournamentImage>
+        </TournamentImageContainer>
+
+        <TournamentInfo>
+          <TournamentName>{tournamentNameClipped}</TournamentName>
+          <TournamentLocation>
+            {tournament.location.courtName || ""}
+          </TournamentLocation>
+          <TournamentLocation>{location || ""}</TournamentLocation>
+          <BottomTags>
+            <Tag
+              name={tournament.tournamentType}
+              color="#2F2F30"
+              iconColor="white"
+              iconSize={10}
+              fontSize={9}
+            />
+            <Tag
+              name={tournament.tournamentMode}
+              color="#2F2F30"
+              iconColor="white"
+              iconSize={10}
+              fontSize={9}
+            />
+          </BottomTags>
+        </TournamentInfo>
+      </TournamentCard>
+    </TournamentContainer>
+  );
+};
+
 const Container = styled.View({
   flexDirection: "row",
   flexWrap: "wrap",
@@ -121,6 +150,15 @@ const TournamentCard = styled.View({
 const TournamentImageContainer = styled.View({
   height: 120,
   position: "relative",
+});
+
+const ImageSkeletonOverlay = styled.View({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 1,
 });
 
 const TournamentImage = styled.ImageBackground({
@@ -168,7 +206,7 @@ const BottomTags = styled.View({
   flexDirection: "row",
   gap: 6,
   flexWrap: "wrap",
-  height: 22, // Fixed height for tags section
+  height: 22,
 });
 
 export default TournamentGrid;
