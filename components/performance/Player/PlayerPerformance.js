@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from "react";
-import { FlatList, ActivityIndicator, View, Text } from "react-native";
+import React, { useState, useEffect, useContext, useCallback } from "react";
+import { FlatList, View, Text } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
@@ -7,10 +7,14 @@ import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "../../Modals/PlayerDetailsModal";
 import { enrichPlayers } from "../../../helpers/enrichPlayers";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
+import PlayerPerformanceSkeleton from "../../Skeletons/PlayerPerformanceSkeleton";
+
+const SKELETON_ROWS = 5;
 
 const PlayerPerformance = ({ playersData }) => {
   const { findRankIndex, recentGameResult } = useContext(GameContext);
-  const { loading, setLoading, getUserById } = useContext(UserContext);
+  const { getUserById } = useContext(UserContext);
+  const [loading, setLoading] = useState(true);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersWithUserData, setPlayersWithUserData] = useState([]);
@@ -20,83 +24,67 @@ const PlayerPerformance = ({ playersData }) => {
       if (playersData.length > 0) {
         const enriched = await enrichPlayers(getUserById, playersData);
         setPlayersWithUserData(enriched);
-        setLoading(false);
+      } else {
+        setPlayersWithUserData([]);
       }
+      setLoading(false);
     };
 
     loadEnrichedPlayers();
   }, [playersData, getUserById]);
 
-  useEffect(() => {
-    if (playersData.length > 0) {
-      setLoading(false);
-    }
-  }, [playersData]);
+  const renderPlayer = useCallback(
+    ({ item: player, index }) => {
+      const playerXp = player.XP || 0;
+      const pointDifference = player.totalPointDifference || 0;
+      const rankLevel = findRankIndex(playerXp) + 1;
+      const displayName = formatDisplayName(player);
 
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#00152B",
-        }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
+      return (
+        <TableRow
+          key={player.userId}
+          onPress={() => {
+            setShowPlayerDetails(true);
+            setSelectedPlayer(player);
+          }}
+        >
+          <RankCell>
+            <Rank>
+              {index + 1}
+              {index === 0
+                ? "st"
+                : index === 1
+                  ? "nd"
+                  : index === 2
+                    ? "rd"
+                    : "th"}
+            </Rank>
+          </RankCell>
+          <PlayerNameCell>
+            <PlayerName>{displayName}</PlayerName>
+            {recentGameResult(player.resultLog)}
+          </PlayerNameCell>
+          <TableCell>
+            <StatTitle>Wins</StatTitle>
+            <Stat>{player.numberOfWins}</Stat>
+          </TableCell>
+          <TableCell>
+            <StatTitle>PD</StatTitle>
+            <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+              {pointDifference}
+            </Stat>
+          </TableCell>
+          <MedalCell>
+            <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
+            <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
+          </MedalCell>
+        </TableRow>
+      );
+    },
+    [findRankIndex, recentGameResult]
+  );
 
-  const renderPlayer = ({ item: player, index }) => {
-    const playerXp = player.XP || 0;
-    const pointDifference = player.totalPointDifference || 0;
-    const rankLevel = findRankIndex(playerXp) + 1;
-    const displayName = formatDisplayName(player);
-
-    return (
-      <TableRow
-        key={player.userId}
-        onPress={() => {
-          setShowPlayerDetails(true);
-          setSelectedPlayer(player);
-        }}
-      >
-        <TableCell>
-          <Rank>
-            {index + 1}
-            {index === 0
-              ? "st"
-              : index === 1
-              ? "nd"
-              : index === 2
-              ? "rd"
-              : "th"}
-          </Rank>
-        </TableCell>
-        <PlayerNameCell>
-          <PlayerName>{displayName}</PlayerName>
-          {recentGameResult(player.resultLog)}
-        </PlayerNameCell>
-        <TableCell>
-          <StatTitle>Wins</StatTitle>
-          <Stat>{player.numberOfWins}</Stat>
-        </TableCell>
-        <TableCell>
-          <StatTitle>PD</StatTitle>
-          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
-            {pointDifference}
-          </Stat>
-        </TableCell>
-        <TableCell>
-          <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
-          <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
-        </TableCell>
-      </TableRow>
-    );
-  };
-
-  if (playersWithUserData.length === 0) {
+  if (playersData.length === 0) {
     return (
       <View
         style={{
@@ -109,6 +97,16 @@ const PlayerPerformance = ({ playersData }) => {
           No players available for performance analysis.
         </Text>
       </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <TableContainer>
+        {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+          <PlayerPerformanceSkeleton key={i} />
+        ))}
+      </TableContainer>
     );
   }
 
@@ -138,29 +136,39 @@ const TableContainer = styled.View({
 
 const TableRow = styled.TouchableOpacity({
   flexDirection: "row",
-  // backgroundColor: "#001123",
-});
-
-const TableCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
   alignItems: "center",
   paddingTop: 15,
   paddingBottom: 15,
+  paddingLeft: 20,
   borderTopWidth: 1,
-  borderColor: "1px solid rgb(9, 33, 62)",
+  borderColor: "rgb(9, 33, 62)",
+  gap: 10,
+});
+
+const RankCell = styled.View({
+  width: 35,
+  justifyContent: "center",
+  alignItems: "flex-start",
 });
 
 const PlayerNameCell = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  paddingTop: 15,
-  paddingBottom: 15,
-  paddingRight: 5,
-  borderTopWidth: 1,
-  width: 130,
-  borderColor: "1px solid rgb(9, 33, 62)",
+  width: 110,
+});
+
+const TableCell = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const MedalCell = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  gap: 5,
 });
 
 const PlayerName = styled.Text({
@@ -184,41 +192,7 @@ const Stat = styled.Text({
   fontSize: 14,
   fontWeight: "bold",
   color: "white",
+  textAlign: "center",
 });
 
 export default PlayerPerformance;
-
-// const runcalculatePlayerPerformance = async () => {
-// Reverse the array to process the last game first
-//   const reversedGames = [...games].reverse();
-
-//   for (const game of reversedGames) {
-//     const playersToUpdate = await calculatePlayerPerformance(game, retrievePlayersFromLeague);
-//     await updatePlayers(playersToUpdate);
-//   }
-// };
-
-{
-  /* <ResetPlayerStats onPress={() => resetPlayerStats()}>
-  <Text>Reset Player Stats</Text>
-  </ResetPlayerStats>
-  <ResetPlayerStats onPress={() => resetAllPlayerStats()}>
-  <Text>Reset All Players</Text>
-  </ResetPlayerStats>
-  <ResetPlayerStats onPress={() => runcalculatePlayerPerformance()}>
-  <Text>Run New Algo</Text>
-  </ResetPlayerStats> */
-}
-
-// const ResetPlayerStats = styled.TouchableOpacity({
-//   display: "flex",
-//   justifyContent: "center",
-//   alignItems: "center",
-//   fontSize: 24,
-//   fontWeight: "bold",
-//   marginBottom: 15,
-//   marginTop: 15,
-//   padding: 10,
-//   borderRadius: 8,
-//   backgroundColor: "#00A2FF",
-// });
