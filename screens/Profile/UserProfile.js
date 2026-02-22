@@ -31,6 +31,7 @@ import RankSuffix from "../../components/RankSuffix";
 import { formatNumber } from "../../helpers/formatNumber";
 import Icon from "react-native-ico-flags";
 import { RankInformation } from "../../components/Modals/RankInformation";
+import { CircleSkeleton, SkeletonWrapper } from "../../components/Skeletons/UserProfileSkeleton";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
@@ -197,15 +198,17 @@ const UserProfile = () => {
 
           return (
             <React.Fragment key={section.title}>
-              <SectionTitle>{section.title}</SectionTitle>
-              <SectionContent>{content}</SectionContent>
+              <SkeletonWrapper show={loading} radius={8}>
+                <SectionTitle>{section.title}</SectionTitle>
+                <SectionContent>{content}</SectionContent>
+              </SkeletonWrapper>
               {index !== sections.length - 1 && <Divider />}
             </React.Fragment>
           );
         })}
       </View>
     ),
-    [sections, profile]
+    [sections, profile, loading]
   );
 
   const renderComponent = useCallback(() => {
@@ -225,14 +228,6 @@ const UserProfile = () => {
     }
   }, [selectedTab, renderProfileContent]);
 
-  if (loading || (!route.params?.userId && !profile)) {
-    return (
-      <LoadingContainer>
-        <ActivityIndicator color="#fff" size="large" />
-      </LoadingContainer>
-    );
-  }
-
   const isOwnProfile =
     !route.params?.userId || route.params?.userId === currentUser?.userId;
 
@@ -243,13 +238,26 @@ const UserProfile = () => {
   const pointDifference = profileDetail?.totalPointDifference || 0;
   const pointDifferenceMetric = pointDifference > 0 ? "+" : "";
 
-  if (!profile || !profileDetail) {
+
+
+  // if (loading || (!route.params?.userId && !profile)) {
+  //   return (
+  //     <LoadingContainer>
+  //       <ActivityIndicator color="#fff" size="large" />
+  //     </LoadingContainer>
+  //   );
+  // }
+
+
+  if (!loading && (!profile || !profileDetail)) {
     return (
       <LoadingContainer>
         <Text style={{ color: "#aaa" }}>This profile no longer exists</Text>
       </LoadingContainer>
     );
   }
+
+  // profile.headline = "This is a headline";
 
   return (
     <Container>
@@ -283,83 +291,90 @@ const UserProfile = () => {
 
       {/* Avatar & Modal */}
       <Overview>
+
+        {/* <SkeletonWrapper show={loading} radius={8}  > */}
+        <PlayerDetailContainer>
+
+          <PlayerDetail>
+            <Pressable onLongPress={() => setPreviewVisible(true)}>
+              <CircleSkeleton
+                show={loading}
+                size={AVATAR_SIZE}
+              >
+                <Avatar
+                  source={
+                    profile?.profileImage
+                      ? { uri: profile.profileImage }
+                      : CourtChampsLogo
+                  }
+                />
+              </CircleSkeleton>
+            </Pressable>
+
+            {/* <SkeletonWrapper show={loading} radius={8}> */}
+            <DetailColumn>
+              <PlayerName>{profile?.username}</PlayerName>
+              <DetailText>{profileXp ?? 0} XP</DetailText>
+              <DetailText
+                style={{
+                  fontWeight: "bold",
+                  color: pointDifference < 0 ? "red" : "green",
+                }}
+              >
+                {loading ? "..." : pointDifferenceMetric}
+                {loading ? "..." : formatNumber(pointDifference)} PD
+              </DetailText>
+            </DetailColumn>
+            {/* </SkeletonWrapper> */}
+          </PlayerDetail>
+
+        </PlayerDetailContainer>
         {profile?.headline ? (
-          <View style={{ flex: 1 }}>
-            <PlayerDetail>
-              <Pressable onLongPress={() => setPreviewVisible(true)}>
-                <Avatar
-                  source={
-                    profile?.profileImage
-                      ? { uri: profile.profileImage }
-                      : CourtChampsLogo
-                  }
-                />
-              </Pressable>
+          <Headline>
+            <Text style={{ color: "#fff", fontSize: 14 }}>
+              {profile.headline}
+            </Text>
+          </Headline>
+        ) : null}
+        {/* </SkeletonWrapper> */}
 
-              <DetailColumn>
-                <PlayerName>{profile?.username}</PlayerName>
-                <DetailText>{profileXp ?? 0} XP</DetailText>
-                <DetailText
-                  style={{
-                    fontWeight: "bold",
-                    color: pointDifference < 0 ? "red" : "green",
-                  }}
-                >
-                  {pointDifferenceMetric}
-                  {formatNumber(pointDifference)} PD
-                </DetailText>
-              </DetailColumn>
-            </PlayerDetail>
-
-            <Headline>
-              <Text style={{ color: "#fff", fontSize: 14 }}>
-                {profile.headline}
-              </Text>
-            </Headline>
-          </View>
-        ) : (
-          <>
-            <PlayerDetail>
-              <Pressable onLongPress={() => setPreviewVisible(true)}>
-                <Avatar
-                  source={
-                    profile?.profileImage
-                      ? { uri: profile.profileImage }
-                      : CourtChampsLogo
-                  }
-                />
-              </Pressable>
-
-              <DetailColumn>
-                <PlayerName>{profile?.username}</PlayerName>
-                <DetailText>{profileXp ?? 0} XP</DetailText>
-                <DetailText
-                  style={{
-                    fontWeight: "bold",
-                    color: pointDifference < 0 ? "red" : "green",
-                  }}
-                >
-                  {pointDifferenceMetric}
-                  {formatNumber(pointDifference)} PD
-                </DetailText>
-              </DetailColumn>
-            </PlayerDetail>
-          </>
-        )}
 
         {/* Medal display stays on the right */}
+        {/* <SkeletonWrapper show={loading} radius={8}> */}
+
         <MedalContainer>
-          <TouchableOpacity onPress={() => setRanksVisible(true)}>
-            <MedalDisplay
-              xp={profileDetail?.XP}
-              size={screenAdjustedMedalSize}
-            />
-          </TouchableOpacity>
-          <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
-          <MedalName style={{ fontWeight: "bold" }}>{rankLevel}</MedalName>
+          <CircleSkeleton show={loading}>
+
+            <TouchableOpacity onPress={() => setRanksVisible(true)}>
+              <MedalDisplay
+                xp={profileDetail?.XP}
+                size={screenAdjustedMedalSize}
+              />
+            </TouchableOpacity>
+          </CircleSkeleton>
+
+          <MedalNameContainer>
+            <SkeletonWrapper show={loading} width={80} >
+              <MedalName >
+                {loading ? "..." : medalNames(profileDetail?.XP)}
+              </MedalName>
+            </SkeletonWrapper>
+
+            <View style={{ alignSelf: "center" }}>
+
+              <SkeletonWrapper show={loading} width={20} >
+                <MedalName style={{ fontWeight: "bold" }}>
+                  {rankLevel}
+                </MedalName>
+              </SkeletonWrapper>
+            </View>
+          </MedalNameContainer>
         </MedalContainer>
+
+        {/* </SkeletonWrapper> */}
       </Overview>
 
+      {/* <SkeletonWrapper show={true} radius={8}> */}
       <ProfileSummary>
         <CCRankContainer>
           <Ionicons name="globe-outline" size={20} color="#aaa" />
@@ -375,7 +390,7 @@ const UserProfile = () => {
         </CCRankContainer>
         <CCRankContainer>
           {/* <XpText>🌍</XpText> */}
-          <Icon name={profile?.location.countryCode} height="20" width="20" />
+          <Icon name={profile?.location?.countryCode || "MY"} height="20" width="20" />
           <RankSuffix
             number={countryRank}
             numberStyle={{
@@ -387,11 +402,15 @@ const UserProfile = () => {
         </CCRankContainer>
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <DetailText>{formatNumber(profile?.profileViews ?? 0)}</DetailText>
+          <SkeletonWrapper show={loading}  >
+
+            <DetailText>{loading ? "000" : formatNumber(profile?.profileViews ?? 0)}</DetailText>
+          </SkeletonWrapper>
           <Ionicons name="eye" size={20} color="#aaa" />
         </View>
       </ProfileSummary>
 
+      {/* </SkeletonWrapper> */}
       <TabsContainer>
         {tabs.map((tab) => (
           <Tab
@@ -453,13 +472,21 @@ const Overview = styled.View({
   paddingLeft: 20,
   flexDirection: "row",
   justifyContent: "space-between",
-  alignItems: "center",
+  alignItems: "stretch",
+  gap: 5
 });
+
+const PlayerDetailContainer = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignSelf: "stretch",
+  width: screenWidth <= 400 ? 200 : 250
+})
 
 const PlayerDetail = styled.View({
   flexDirection: "row",
   gap: 20,
-  flex: 1,
+
 });
 
 const DetailColumn = styled.View({
@@ -511,19 +538,24 @@ const CCRankContainer = styled.View({
   alignSelf: "flex-start",
 });
 
-const XpText = styled.Text({
-  color: "#aaa",
-  fontSize: screenWidth <= 400 ? 13 : 15,
+const MedalContainer = styled.View({
+
+  alignItems: "center",
+  gap: 10,
 });
 
-const MedalContainer = styled.View({
+const MedalNameContainer = styled.View({
   alignItems: "center",
+  justifyContent: "center",
+  gap: 10,
+
+
 });
 
 const MedalName = styled.Text({
   color: "white",
-  marginTop: 10,
   fontSize: 12,
+  alignSelf: "center",
 });
 
 const TabsContainer = styled.View({

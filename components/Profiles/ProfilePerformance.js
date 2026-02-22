@@ -72,13 +72,13 @@ const ProfilePerformance = ({ profile }) => {
         <Divider />
         <Heading>League Victories</Heading>
         <CompetitionStatsDisplay
-          stats={profileDetail.leagueStats}
+          stats={profileDetail?.leagueStats}
           competitionType={COMPETITION_TYPES.LEAGUE}
         />
         <Divider />
         <Heading>Tournament Victories</Heading>
         <CompetitionStatsDisplay
-          stats={profileDetail.tournamentStats}
+          stats={profileDetail?.tournamentStats}
           competitionType={COMPETITION_TYPES.TOURNAMENT}
         />
         <PerformanceStats statData={statData} selectedPlayer={profileDetail} />
