@@ -1,18 +1,16 @@
-// Default skeleton configuration
 export const DEFAULT_SKELETON_CONFIG = {
   colorMode: "dark",
-  colors: ["#333", "#555", "#333"],
+  colors: ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"],
   transition: {
     type: "timing",
     duration: 1000,
   },
 };
 
-// Pre-configured skeleton themes
 export const SKELETON_THEMES = {
   dark: {
     colorMode: "dark",
-    colors: ["#333", "#555", "#333"],
+    colors: ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"],
   },
   light: {
     colorMode: "light",
@@ -28,7 +26,6 @@ export const SKELETON_THEMES = {
   },
 };
 
-// Utility function to create custom skeleton configurations
 export const createSkeletonConfig = (overrides = {}) => {
   return {
     ...DEFAULT_SKELETON_CONFIG,
