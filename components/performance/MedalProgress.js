@@ -1,5 +1,12 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, Animated, StyleSheet, Dimensions } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  Animated,
+  StyleSheet,
+  Dimensions,
+  InteractionManager,
+} from "react-native";
 import styled from "styled-components/native";
 import MedalDisplay from "./MedalDisplay";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,6 +14,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import AnimateNumber from "./AnimateNumber";
 import { ranks } from "../../rankingMedals/ranking/ranks";
 import { formatNumber } from "../../helpers/formatNumber";
+import MedalProgressSkeleton from "../Skeletons/MedalProgressSkeleton";
 
 const getNextRank = (xp) => {
   for (let i = 0; i < ranks.length; i++) {
@@ -18,18 +26,26 @@ const getNextRank = (xp) => {
 };
 
 const MedalProgress = ({ xp, prevGameXp }) => {
-  const currentRank = ranks.reduce((prev, current) =>
-    current.xp <= xp ? current : prev
-  );
-
-  // const xpFormmated = formatNumber(xp);
-
-  const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
-
-  const nextRank = getNextRank(xp);
+  const [mounted, setMounted] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+  const currentRank = ranks.reduce((prev, current) =>
+    current.xp <= xp ? current : prev,
+  );
+
+  const nextRank = getNextRank(xp);
+  const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
+
   useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setTimeout(() => {
+        setMounted(true);
+      }, 300);
+    });
+    return () => task.cancel();
+  }, []);
+  useEffect(() => {
+    if (!mounted) return;
     Animated.parallel([
       Animated.timing(progressAnim, {
         toValue: xp - currentRank.xp,
@@ -37,7 +53,9 @@ const MedalProgress = ({ xp, prevGameXp }) => {
         useNativeDriver: false,
       }),
     ]).start();
-  }, [xp, currentRank, progressAnim]);
+  }, [xp, currentRank, mounted]);
+
+  if (!mounted) return <MedalProgressSkeleton />;
 
   return (
     <Container>
@@ -83,7 +101,9 @@ const MedalProgress = ({ xp, prevGameXp }) => {
         <RankContainer style={{ alignItems: "flex-start" }}>
           <RankXpText>{formatNumber(currentRank.xp)} XP</RankXpText>
           <MedalDisplay xp={currentRank.xp} size={20} />
-          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>{currentRank.name}</Text>
+          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>
+            {currentRank.name}
+          </Text>
         </RankContainer>
         {previousGameXp !== null && (
           <PreviousGameXpContainer>
@@ -100,7 +120,9 @@ const MedalProgress = ({ xp, prevGameXp }) => {
         <RankContainer style={{ alignItems: "flex-end" }}>
           <RankXpText>{formatNumber(nextRank.xp)} XP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
-          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>{nextRank.name}</Text>
+          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>
+            {nextRank.name}
+          </Text>
         </RankContainer>
       </ProgressRanks>
     </Container>
