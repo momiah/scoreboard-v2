@@ -43,7 +43,7 @@ const Home = () => {
     leagueNavigationId,
     tournamentNavigationId,
   } = useContext(LeagueContext);
-  const { getAllUsers, rankSorting, currentUser } = useContext(UserContext);
+  const { getTopUsers, currentUser } = useContext(UserContext);
 
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,20 +70,15 @@ const Home = () => {
   const fetchUsers = async () => {
     try {
       if (!refreshing) setLoading(true);
-      const users = await getAllUsers();
-      const sorted = rankSorting(users).map((user, index) => ({
-        ...user,
-        globalRank: index + 1,
-      }));
-      setSortedUsers(sorted);
+      const top = await getTopUsers(5);
+      setSortedUsers(top);
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      console.error("Failed to fetch top users:", error);
     } finally {
       setRefreshing(false);
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchUsers();
   }, []);

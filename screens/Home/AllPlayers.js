@@ -9,9 +9,6 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
-  View,
-  Text,
-  TouchableOpacity,
   Alert,
 } from "react-native";
 import styled from "styled-components/native";
@@ -20,7 +17,6 @@ import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { GameContext } from "../../context/GameContext";
 import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
-import AllPlayerSkeleton from "../../components/Skeletons/AllPlayerSkeleton";
 import Icon from "react-native-ico-flags";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
 import { useImageLoader } from "../../utils/imageLoader";
@@ -28,6 +24,7 @@ import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import debounce from "lodash.debounce";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import LoadingOverlay from "../../components/LoadingOverlay";
 
 const iconSize = 40;
 
@@ -55,7 +52,7 @@ const AllPlayers = () => {
         const { users, totalUsers, totalPages } = await getAllUsersPaginated(
           page,
           PAGE_SIZE,
-          searchParam
+          searchParam,
         );
         setTotalUsers(totalUsers);
         setTotalPages(totalPages);
@@ -69,7 +66,7 @@ const AllPlayers = () => {
         setLoading(false);
       }
     },
-    [getAllUsersPaginated]
+    [getAllUsersPaginated],
   );
 
   const debouncedSearch = useMemo(
@@ -86,7 +83,7 @@ const AllPlayers = () => {
           Alert.alert("Search failed", "Could not find players");
         }
       }, 300),
-    [fetchUsers]
+    [fetchUsers],
   );
 
   const handleSearch = useCallback(
@@ -94,7 +91,7 @@ const AllPlayers = () => {
       setSearchQuery(value);
       debouncedSearch(value);
     },
-    [debouncedSearch]
+    [debouncedSearch],
   );
 
   const handleRefresh = useCallback(async () => {
@@ -113,7 +110,7 @@ const AllPlayers = () => {
         fetchUsers(page, searchQuery);
       }
     },
-    [totalPages, loading, fetchUsers, searchQuery]
+    [totalPages, loading, fetchUsers, searchQuery],
   );
 
   useEffect(() => {
@@ -210,7 +207,7 @@ const AllPlayers = () => {
       imageLoaded,
       handleImageLoad,
       handleImageError,
-    ]
+    ],
   );
 
   const renderPagination = () => {
@@ -239,7 +236,7 @@ const AllPlayers = () => {
           ) : (
             <PageText selected={false}>{i}</PageText>
           )}
-        </PageButton>
+        </PageButton>,
       );
     }
 
@@ -300,52 +297,47 @@ const AllPlayers = () => {
 
   return (
     <TableContainer>
-      {loading && (
-        <LoadingContainer>
-          <ActivityIndicator size="large" color="#00A2FF" />
-        </LoadingContainer>
-      )}
-      <Text
-        style={{
-          color: "white",
-          fontSize: 10,
-          alignSelf: "flex-end",
-          paddingRight: 20,
-          fontWeight: "bold",
-          fontStyle: "italic",
-        }}
-      >
-        {totalUsers} players
-      </Text>
+      <PlayerCountContainer>
+        {loading ? (
+          <ActivityIndicator size="small" color="#00A2FF" />
+        ) : (
+          <PlayerCountText>{totalUsers} players</PlayerCountText>
+        )}
+      </PlayerCountContainer>
       <SearchInput
         placeholder="Search players..."
         placeholderTextColor="#888"
         value={searchQuery}
         onChangeText={handleSearch}
+        editable={!loading}
+        style={{ opacity: loading ? 0.4 : 1 }}
       />
       {!loading && users.length === 0 && (
         <EmptyState>No players found</EmptyState>
       )}
-      <FlatList
-        data={users}
-        contentContainerStyle={{ paddingBottom: 30 }}
-        renderItem={renderPlayer}
-        keyExtractor={(player) => `${player.userId}-${player.globalRank}`}
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={true}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor="white"
-            colors={["white"]}
-            progressBackgroundColor="#00A2FF"
-          />
-        }
-        ListFooterComponent={totalPages > 1 ? renderPagination : null}
-      />
+      <ListContainer>
+        <LoadingOverlay visible={loading} />
+        <FlatList
+          data={users}
+          contentContainerStyle={{ paddingBottom: 30 }}
+          renderItem={renderPlayer}
+          keyExtractor={(player) => `${player.userId}-${player.globalRank}`}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="white"
+              colors={["white"]}
+              progressBackgroundColor="#00A2FF"
+            />
+          }
+          ListFooterComponent={totalPages > 1 ? renderPagination : null}
+        />
+      </ListContainer>
     </TableContainer>
   );
 };
@@ -365,6 +357,11 @@ const EmptyState = styled.Text({
   color: "white",
   textAlign: "center",
   padding: 20,
+});
+
+const ListContainer = styled.View({
+  flex: 1,
+  position: "relative",
 });
 
 const SearchInput = styled.TextInput({
@@ -440,13 +437,18 @@ const RankLevel = styled.Text({
   color: "white",
 });
 
-const LoadingContainer = styled.View({
-  position: "absolute",
-  top: 10, // Adjusts position near the top
-  left: 0,
-  right: 0,
-  alignItems: "center",
-  zIndex: 10, // Keeps it above other elements
+const PlayerCountContainer = styled.View({
+  alignSelf: "flex-end",
+  paddingRight: 20,
+  height: 16,
+  justifyContent: "center",
+});
+
+const PlayerCountText = styled.Text({
+  color: "white",
+  fontSize: 10,
+  fontWeight: "bold",
+  fontStyle: "italic",
 });
 
 const PaginationContainer = styled.View({

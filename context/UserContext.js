@@ -17,6 +17,7 @@ import {
   onSnapshot,
   deleteDoc,
   query,
+  limit as limitQuery,
   orderBy,
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase.config";
@@ -277,6 +278,31 @@ const UserProvider = ({ children }) => {
   );
 
   const [loading, setLoading] = useState(true); // Track loading state
+
+  const getTopUsers = async (limit = 5) => {
+    try {
+      const usersRef = collection(db, "users");
+      const topQuery = query(
+        usersRef,
+        orderBy("profileDetail.XP", "desc"),
+        orderBy("profileDetail.numberOfWins", "desc"),
+        orderBy("profileDetail.winPercentage", "desc"),
+        orderBy("profileDetail.totalPointDifference", "desc"),
+        orderBy("username", "asc"),
+        limitQuery(limit), // Firestore only fetches 5 docs instead of entire collection
+      );
+
+      const snapshot = await getDocs(topQuery);
+      return snapshot.docs.map((doc, index) => ({
+        userId: doc.id,
+        ...doc.data(),
+        globalRank: index + 1,
+      }));
+    } catch (error) {
+      console.error("Error fetching top users:", error);
+      return [];
+    }
+  };
 
   const getAllUsers = async () => {
     try {
@@ -906,6 +932,7 @@ const UserProvider = ({ children }) => {
         getGlobalRank,
         getCountryRank,
         getAllUsersPaginated,
+        getTopUsers,
 
         // Profile-related operations
         profileViewCount,
