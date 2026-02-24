@@ -24,7 +24,6 @@ const LogContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  backgroundColor: "#00152B",
   padding: 10,
   borderRadius: 5,
   backgroundColor: "rgba(0, 0, 0, 0.3)",

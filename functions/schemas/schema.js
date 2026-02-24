@@ -207,12 +207,10 @@ const leagueSchema = {
   leagueLengthInMonths: "",
   endDate: "",
   image: "",
-  leagueType: "",
-  prizeType: "",
+
   prizesDistributed: false,
   prizeDistributionDate: null,
-  currencyType: "",
-  entryFee: 0,
+
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
