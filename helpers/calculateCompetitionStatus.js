@@ -5,43 +5,30 @@ export const calculateCompetitionStatus = (details, type = "league") => {
   const privacy = details?.privacy;
   const endDate = details?.endDate;
   const maxPlayers = details?.maxPlayers;
+  const fixturesGenerated = details?.fixturesGenerated;
   const currentParticipants = leagueParticipants?.length || 0;
   const today = moment();
   const end = moment(endDate, "DD-MM-YYYY");
 
   if (privacy === "Private") {
-    return {
-      status: "Private",
-      color: "#FF4757",
-    };
+    return { status: "Private", color: "#FF4757" };
   }
 
   if (today.isSameOrAfter(end)) {
-    return {
-      status: "ENDED",
-      color: "#FF4757",
-    };
+    return { status: "ENDED", color: "#FF4757" };
   }
 
-  // Check if only 1 space remaining
+  if (fixturesGenerated) {
+    return { status: "STARTED", color: "#1A6B1A" };
+  }
+
   if (currentParticipants === maxPlayers - 1) {
-    return {
-      status: "1 MORE SPACE",
-      color: "#34C759", // Green
-    };
+    return { status: "1 MORE SPACE", color: "#34C759" };
   }
 
-  // Check if not full yet
   if (currentParticipants < maxPlayers) {
-    return {
-      status: "ENLISTING", // Fixed typo from "ELISTING"
-      color: "#FAB234",
-    };
+    return { status: "ENLISTING", color: "#FAB234" };
   }
 
-  // Full
-  return {
-    status: "FULL",
-    color: "#286EFA",
-  };
+  return { status: "FULL", color: "#286EFA" };
 };

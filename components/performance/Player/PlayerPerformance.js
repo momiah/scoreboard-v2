@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { FlatList, ActivityIndicator, View, Text } from "react-native";
+import { FlatList } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
@@ -7,13 +7,15 @@ import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "../../Modals/PlayerDetailsModal";
 import { enrichPlayers } from "../../../helpers/enrichPlayers";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
+import LoadingOverlay from "../../LoadingOverlay";
 
 const PlayerPerformance = ({ playersData }) => {
   const { findRankIndex, recentGameResult } = useContext(GameContext);
-  const { loading, setLoading, getUserById } = useContext(UserContext);
+  const { getUserById } = useContext(UserContext);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersWithUserData, setPlayersWithUserData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadEnrichedPlayers = async () => {
@@ -26,27 +28,6 @@ const PlayerPerformance = ({ playersData }) => {
 
     loadEnrichedPlayers();
   }, [playersData, getUserById]);
-
-  useEffect(() => {
-    if (playersData.length > 0) {
-      setLoading(false);
-    }
-  }, [playersData]);
-
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#00152B",
-        }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
 
   const renderPlayer = ({ item: player, index }) => {
     const playerXp = player.XP || 0;
@@ -68,10 +49,10 @@ const PlayerPerformance = ({ playersData }) => {
             {index === 0
               ? "st"
               : index === 1
-              ? "nd"
-              : index === 2
-              ? "rd"
-              : "th"}
+                ? "nd"
+                : index === 2
+                  ? "rd"
+                  : "th"}
           </Rank>
         </TableCell>
         <PlayerNameCell>
@@ -96,24 +77,14 @@ const PlayerPerformance = ({ playersData }) => {
     );
   };
 
-  if (playersWithUserData.length === 0) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: "#aaa", fontSize: 14, textAlign: "center" }}>
-          No players available for performance analysis.
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <TableContainer>
+      <LoadingOverlay visible={loading} />
+
+      {!loading && playersWithUserData.length === 0 && (
+        <EmptyState>No players available for performance analysis.</EmptyState>
+      )}
+
       <FlatList
         data={playersWithUserData}
         renderItem={renderPlayer}
@@ -138,7 +109,14 @@ const TableContainer = styled.View({
 
 const TableRow = styled.TouchableOpacity({
   flexDirection: "row",
-  // backgroundColor: "#001123",
+});
+
+const EmptyState = styled.Text({
+  color: "#aaa",
+  fontSize: 14,
+  textAlign: "center",
+  flex: 1,
+  marginTop: 40,
 });
 
 const TableCell = styled.View({

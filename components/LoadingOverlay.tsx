@@ -8,9 +8,13 @@ const BAR_WIDTH = width * 0.6;
 
 interface LoadingOverlayProps {
   visible: boolean;
+  loadingText?: string;
 }
 
-const LoadingOverlay = ({ visible }: LoadingOverlayProps) => {
+const LoadingOverlay = ({
+  visible,
+  loadingText = "Players",
+}: LoadingOverlayProps) => {
   const slideAnim = useRef(new Animated.Value(-BAR_WIDTH)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
@@ -39,7 +43,7 @@ const LoadingOverlay = ({ visible }: LoadingOverlayProps) => {
       style={[styles.overlay, { opacity: opacityAnim }]}
       pointerEvents={visible ? "auto" : "none"}
     >
-      <LoadingText>Loading players...</LoadingText>
+      <LoadingText>{`Loading ${loadingText}...`}</LoadingText>
       <ProgressBarBackground>
         <Animated.View
           style={{
@@ -82,6 +86,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     justifyContent: "center",
     alignItems: "center",
+    paddingBottom: 100,
   },
 });
 

@@ -42,12 +42,8 @@ const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { leagueId, tab } = route.params;
-  const {
-    fetchCompetitionById,
-    leagueById,
-    generateNewLeagueParticipants,
-    requestToJoinLeague,
-  } = useContext(LeagueContext);
+  const { fetchCompetitionById, leagueById, requestToJoinLeague } =
+    useContext(LeagueContext);
   const { checkUserRole, currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);

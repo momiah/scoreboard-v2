@@ -1,18 +1,28 @@
-import React, { useState, useEffect, useContext, useMemo } from "react";
-import { View, FlatList, Text } from "react-native";
+import React, { useState, useContext, useMemo } from "react";
+import { FlatList } from "react-native";
 import styled from "styled-components/native";
-
 import { GameContext } from "../../../context/GameContext";
-import { calculatTeamPerformance } from "../../../helpers/calculateTeamPerformance";
 import TeamDetails from "../../Modals/TeamDetailsModal";
 import { Dimensions } from "react-native";
-import { UserContext } from "../../../context/UserContext";
+import LoadingOverlay from "../../LoadingOverlay";
 
 const TeamPerformance = ({ leagueTeams }) => {
   const { recentGameResult } = useContext(GameContext);
-
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [team, setTeam] = useState({});
+
+  const loading = !leagueTeams;
+
+  const sortedTeams = useMemo(() => {
+    if (!leagueTeams) return [];
+    return [...leagueTeams].sort((a, b) => {
+      if (b.numberOfWins !== a.numberOfWins)
+        return b.numberOfWins - a.numberOfWins;
+      if (b.totalPointDifference !== a.totalPointDifference)
+        return b.totalPointDifference - a.totalPointDifference;
+      return b.averagePointDifference - a.averagePointDifference;
+    });
+  }, [leagueTeams]);
 
   const renderTeam = ({ item: team, index }) => {
     const pointDifference = team.totalPointDifference || 0;
@@ -29,10 +39,10 @@ const TeamPerformance = ({ leagueTeams }) => {
             {index === 0
               ? "st"
               : index === 1
-              ? "nd"
-              : index === 2
-              ? "rd"
-              : "th"}
+                ? "nd"
+                : index === 2
+                  ? "rd"
+                  : "th"}
           </Rank>
         </TableCell>
         <TeamCell>
@@ -53,28 +63,15 @@ const TeamPerformance = ({ leagueTeams }) => {
           <StatTitle>Wins</StatTitle>
           <Stat>{team.numberOfWins}</Stat>
         </TableCell>
-        {/* Add more TableCell components here to display other stats */}
       </TableRow>
     );
   };
 
-  const sortedTeams = useMemo(() => {
-    return [...leagueTeams].sort((a, b) => {
-      if (b.numberOfWins !== a.numberOfWins) {
-        return b.numberOfWins - a.numberOfWins;
-      }
-      if (b.totalPointDifference !== a.totalPointDifference) {
-        return b.totalPointDifference - a.totalPointDifference;
-      }
-      return b.averagePointDifference - a.averagePointDifference;
-    });
-  }, [leagueTeams]);
-
-  console.log("League Teams:", JSON.stringify(leagueTeams, null, 2));
-
   return (
     <TableContainer>
-      {leagueTeams.length === 0 ? (
+      <LoadingOverlay visible={loading} loadingText="Teams" />
+
+      {!loading && leagueTeams.length === 0 ? (
         <FallbackMessage>Add a game to see Team Performance 📈</FallbackMessage>
       ) : (
         <FlatList
@@ -83,6 +80,7 @@ const TeamPerformance = ({ leagueTeams }) => {
           keyExtractor={(team, index) => team.team.join("-") + index}
         />
       )}
+
       {showTeamDetails && (
         <TeamDetails
           showTeamDetails={showTeamDetails}

@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import {
   doc,
   setDoc,
@@ -12,7 +18,7 @@ import {
   increment,
   where,
   runTransaction,
-  count,
+  deleteDoc,
 } from "firebase/firestore";
 import moment from "moment";
 import { Alert } from "react-native";
@@ -1395,6 +1401,19 @@ const LeagueProvider = ({ children }) => {
     }
   };
 
+  const deleteCompetition = useCallback(
+    async (collectionName, competitionId) => {
+      try {
+        const competitionRef = doc(db, collectionName, competitionId);
+        await deleteDoc(competitionRef);
+      } catch (error) {
+        console.error("Error deleting competition:", error);
+        throw error;
+      }
+    },
+    [],
+  );
+
   return (
     <LeagueContext.Provider
       value={{
@@ -1455,6 +1474,9 @@ const LeagueProvider = ({ children }) => {
 
         // League Description Management
         handleLeagueDescription,
+
+        // Competition Deletion
+        deleteCompetition,
       }}
     >
       {children}
