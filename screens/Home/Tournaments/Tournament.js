@@ -37,7 +37,7 @@ const openMap = (location) => {
   const encoded = encodeURIComponent(query);
   const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
   Linking.openURL(url).catch((err) =>
-    console.error("Error opening Google Maps web:", err)
+    console.error("Error opening Google Maps web:", err),
   );
 };
 
@@ -108,7 +108,16 @@ const Tournament = () => {
     navigation.navigate("Login");
   };
 
+  const fixturesGenerated = tournamentById?.fixturesGenerated ?? false;
+
   const handleRequestToJoin = async () => {
+    if (fixturesGenerated) {
+      Alert.alert(
+        "Cannot Join Tournament",
+        "Fixtures have already been generated. No new players can join this tournament.",
+      );
+      return;
+    }
     try {
       setIsJoinRequestSending(true);
       await requestToJoinLeague({
@@ -125,7 +134,6 @@ const Tournament = () => {
     } catch (error) {
       console.error("Error sending join request:", error);
     } finally {
-      // Once backend marks requestPending, role shifts and both CTAs disable anyway.
       setIsJoinRequestSending(false);
     }
   };
