@@ -27,6 +27,7 @@ import UserRoleTag from "../../../components/UserRoleTag";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
+import LoadingOverlay from "../../../components/LoadingOverlay";
 
 const openMap = (location) => {
   const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
@@ -212,21 +213,6 @@ const League = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#00152B",
-        }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
-
   if (!leagueById || leagueNotFound) {
     return (
       <View
@@ -246,122 +232,127 @@ const League = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
-      <Overview>
-        <LeagueImage
-          source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
-        >
-          <GradientOverlay
-            colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
-            locations={[0.1, 1]}
-          />
-          <LeagueDetailsContainer>
-            {userRole === "admin" && (
-              <EditButton onPress={handleNavigate}>
-                <Ionicons name="menu" size={25} color="white" />
-              </EditButton>
-            )}
+      <LoadingOverlay visible={loading} loadingText="League" />
 
-            <View
-              style={{
-                padding: 5,
-                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                borderRadius: 5,
-                alignSelf: "flex-start",
-              }}
+      {!loading && leagueById && (
+        <>
+          <Overview>
+            <LeagueImage
+              source={leagueImage ? { uri: leagueImage } : ccDefaultImage}
             >
-              <LeagueName>{leagueName}</LeagueName>
-            </View>
-
-            {location ? (
-              <Address onPress={() => openMap(location)}>
-                <LeagueLocation>
-                  {location.courtName}, {location.city}
-                </LeagueLocation>
-                <Ionicons name="open-outline" size={20} color="#00A2FF" />
-              </Address>
-            ) : null}
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <View style={{ flexDirection: "row", gap: 5 }}>
-                <Tag name={leagueStatus?.status} color={leagueStatus?.color} />
-                <Tag
-                  name={numberOfPlayers}
-                  color={"rgba(0, 0, 0, 0.7)"}
-                  iconColor={"#00A2FF"}
-                  iconSize={15}
-                  icon={"person"}
-                  iconPosition={"right"}
-                  bold
-                />
-              </View>
-              {userRole === "admin" && (
-                <Tag
-                  name={"Admin"}
-                  color="#16181B"
-                  iconColor="#00A2FF"
-                  iconSize={15}
-                  icon={"checkmark-circle-outline"}
-                  iconPosition={"right"}
-                  bold
-                />
-              )}
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 5,
-              }}
-            >
-              <View style={{ flexDirection: "row", gap: 5 }}>
-                <Tag name={leagueType} />
-                <Tag name="TROPHY" />
-              </View>
-
-              <UserRoleTag
-                userRole={userRole}
-                onInvitePress={handleOpenInviteModal}
-                onLoginPress={handleLogin}
-                onRequestJoinPress={handleRequestToJoin}
-                isJoining={isJoinRequestSending}
+              <GradientOverlay
+                colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
+                locations={[0.1, 1]}
               />
-            </View>
-          </LeagueDetailsContainer>
-        </LeagueImage>
-      </Overview>
 
-      <TabsContainer>
-        <GradientOverlay
-          colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
-          locations={[0.1, 1]}
-          style={{ bottom: -560 }}
-        />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 10 }}
-        >
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.component}
-              onPress={() => handleTabPress(tab.component)}
-              isSelected={selectedTab === tab.component}
+              <LeagueDetailsContainer>
+                {userRole === "admin" && (
+                  <EditButton onPress={handleNavigate}>
+                    <Ionicons name="menu" size={25} color="white" />
+                  </EditButton>
+                )}
+                <View
+                  style={{
+                    padding: 5,
+                    backgroundColor: "rgba(0, 0, 0, 0.3)",
+                    borderRadius: 5,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <LeagueName>{leagueName}</LeagueName>
+                </View>
+                {location ? (
+                  <Address onPress={() => openMap(location)}>
+                    <LeagueLocation>
+                      {location.courtName}, {location.city}
+                    </LeagueLocation>
+                    <Ionicons name="open-outline" size={20} color="#00A2FF" />
+                  </Address>
+                ) : null}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag
+                      name={leagueStatus?.status}
+                      color={leagueStatus?.color}
+                    />
+                    <Tag
+                      name={numberOfPlayers}
+                      color={"rgba(0, 0, 0, 0.7)"}
+                      iconColor={"#00A2FF"}
+                      iconSize={15}
+                      icon={"person"}
+                      iconPosition={"right"}
+                      bold
+                    />
+                  </View>
+                  {userRole === "admin" && (
+                    <Tag
+                      name={"Admin"}
+                      color="#16181B"
+                      iconColor="#00A2FF"
+                      iconSize={15}
+                      icon={"checkmark-circle-outline"}
+                      iconPosition={"right"}
+                      bold
+                    />
+                  )}
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 5,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag name={leagueType} />
+                    <Tag name="TROPHY" />
+                  </View>
+                  <UserRoleTag
+                    userRole={userRole}
+                    onInvitePress={handleOpenInviteModal}
+                    onLoginPress={handleLogin}
+                    onRequestJoinPress={handleRequestToJoin}
+                    isJoining={isJoinRequestSending}
+                  />
+                </View>
+              </LeagueDetailsContainer>
+            </LeagueImage>
+          </Overview>
+
+          <TabsContainer>
+            <GradientOverlay
+              colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
+              locations={[0.1, 1]}
+              style={{ bottom: -560 }}
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 10 }}
             >
-              <TabText>{tab.component}</TabText>
-            </Tab>
-          ))}
-        </ScrollView>
-      </TabsContainer>
+              {tabs.map((tab) => (
+                <Tab
+                  key={tab.component}
+                  onPress={() => handleTabPress(tab.component)}
+                  isSelected={selectedTab === tab.component}
+                >
+                  <TabText>{tab.component}</TabText>
+                </Tab>
+              ))}
+            </ScrollView>
+          </TabsContainer>
 
-      {renderComponent()}
+          {renderComponent()}
+        </>
+      )}
 
       {invitePlayerModalVisible && (
         <InvitePlayerModel
@@ -461,6 +452,17 @@ const Tab = styled.TouchableOpacity(({ isSelected }) => ({
 const TabText = styled.Text({
   color: "white",
   fontSize: screenWidth <= 400 ? 12 : 14,
+});
+
+const ImageLoadingContainer = styled.View({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0, 21, 43, 0.8)",
 });
 
 export default League;
