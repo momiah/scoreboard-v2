@@ -277,7 +277,7 @@ const UserProvider = ({ children }) => {
     [retrievePlayersFromCompetition],
   );
 
-  const [loading, setLoading] = useState(true); // Track loading state
+  const [loading, setLoading] = useState(true);
 
   const getTopUsers = async (limit = 5) => {
     try {

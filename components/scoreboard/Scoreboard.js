@@ -20,7 +20,6 @@ const Scoreboard = ({
   leagueEndDate,
   leagueName,
   leagueParticipants = [],
-  maxPlayers = 8,
   // 🔹 New optional flag – no handler passed
   isJoinRequestSending = false,
 }) => {
@@ -42,12 +41,12 @@ const Scoreboard = ({
   const leagueState = hasLeagueEnded
     ? "ended"
     : hasLeagueStarted
-    ? "started"
-    : "not_started";
+      ? "started"
+      : "not_started";
 
   const gamesDescending = useMemo(
     () => (leagueGames || []).filter(Boolean).reverse(),
-    [leagueGames]
+    [leagueGames],
   );
   const gamesExist = gamesDescending.length > 0;
 
@@ -71,7 +70,7 @@ const Scoreboard = ({
       leagueId,
       currentUser?.userId,
       leagueOwner.userId,
-      currentUser?.username
+      currentUser?.username,
     );
     setRequestSend(false);
   }, [requestToJoinLeague, leagueId, currentUser, leagueOwner]);
@@ -89,7 +88,7 @@ const Scoreboard = ({
         handleAddGame,
         handleLogin,
         hasMinPlayers,
-        minRequired
+        minRequired,
       ),
     [
       userRole,
@@ -100,12 +99,12 @@ const Scoreboard = ({
       handleLogin,
       hasMinPlayers,
       minRequired,
-    ]
+    ],
   );
 
   const fallbackMessage = useMemo(
     () => getFallbackMessage(leagueState, gamesExist, userRole),
-    [leagueState, gamesExist, userRole]
+    [leagueState, gamesExist, userRole],
   );
 
   const uniqueDates = useMemo(() => {
@@ -178,7 +177,8 @@ const Scoreboard = ({
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => {
           const Game =
-            item.approvalStatus === "pending"
+            item.approvalStatus === "pending" ||
+            item.approvalStatus === "Pending"
               ? PendingApprovalContainer
               : GameContainer;
 

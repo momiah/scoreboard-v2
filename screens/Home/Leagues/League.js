@@ -33,7 +33,7 @@ const openMap = (location) => {
   const encoded = encodeURIComponent(query);
   const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
   Linking.openURL(url).catch((err) =>
-    console.error("Error opening Google Maps web:", err)
+    console.error("Error opening Google Maps web:", err),
   );
 };
 
@@ -41,12 +41,8 @@ const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { leagueId, tab } = route.params;
-  const {
-    fetchCompetitionById,
-    leagueById,
-    generateNewLeagueParticipants,
-    requestToJoinLeague,
-  } = useContext(LeagueContext);
+  const { fetchCompetitionById, leagueById, requestToJoinLeague } =
+    useContext(LeagueContext);
   const { checkUserRole, currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
@@ -114,7 +110,7 @@ const League = () => {
         leagueId,
         currentUser?.userId,
         leagueById?.leagueOwner?.userId,
-        currentUser?.username
+        currentUser?.username,
       );
       const refetchedLeague = await fetchCompetitionById({
         competitionId: leagueId,
