@@ -1,12 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  ScrollView,
-  Dimensions,
-  Linking,
-} from "react-native";
+import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import {
   COMPETITION_TYPES,
@@ -31,6 +24,7 @@ import Fixtures from "../../../components/Tournaments/Fixtures/Fixtures";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
+import LoadingOverlay from "../../../components/LoadingOverlay";
 
 const openMap = (location) => {
   const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
@@ -210,21 +204,6 @@ const Tournament = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#00152B",
-        }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
-
   if (!tournamentById || tournamentNotFound) {
     return (
       <View
@@ -244,125 +223,128 @@ const Tournament = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
-      <Overview>
-        <TournamentImage
-          source={tournamentImage ? { uri: tournamentImage } : ccDefaultImage}
-        >
-          <GradientOverlay
-            colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
-            locations={[0.1, 1]}
-          />
-          <TournamentDetailsContainer>
-            {userRole === "admin" && (
-              <EditButton onPress={handleNavigate}>
-                <Ionicons name="menu" size={25} color="white" />
-              </EditButton>
-            )}
+      <LoadingOverlay visible={loading} loadingText="Tournament" />
 
-            <View
-              style={{
-                padding: 5,
-                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                borderRadius: 5,
-                alignSelf: "flex-start",
-              }}
+      {!loading && tournamentById && (
+        <>
+          <Overview>
+            <TournamentImage
+              source={
+                tournamentImage ? { uri: tournamentImage } : ccDefaultImage
+              }
             >
-              <TournamentName>{tournamentName}</TournamentName>
-            </View>
-
-            {location ? (
-              <Address onPress={() => openMap(location)}>
-                <TournamentLocation>
-                  {location.courtName}, {location.city}
-                </TournamentLocation>
-                <Ionicons name="open-outline" size={20} color="#00A2FF" />
-              </Address>
-            ) : null}
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <View style={{ flexDirection: "row", gap: 5 }}>
-                <Tag
-                  name={tournamentStatus?.status}
-                  color={tournamentStatus?.color}
-                />
-                <Tag
-                  name={numberOfPlayers}
-                  color={"rgba(0, 0, 0, 0.7)"}
-                  iconColor={"#00A2FF"}
-                  iconSize={15}
-                  icon={"person"}
-                  iconPosition={"right"}
-                  bold
-                />
-              </View>
-              {userRole === "admin" && (
-                <Tag
-                  name={"Admin"}
-                  color="#16181B"
-                  iconColor="#00A2FF"
-                  iconSize={15}
-                  icon={"checkmark-circle-outline"}
-                  iconPosition={"right"}
-                  bold
-                />
-              )}
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 5,
-              }}
-            >
-              <View style={{ flexDirection: "row", gap: 5 }}>
-                <Tag name={tournamentType} />
-                <Tag name={prizeTypes.MEDAL} />
-              </View>
-
-              <UserRoleTag
-                userRole={userRole}
-                onInvitePress={handleOpenInviteModal}
-                onLoginPress={handleLogin}
-                onRequestJoinPress={handleRequestToJoin}
-                isJoining={isJoinRequestSending}
+              <GradientOverlay
+                colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
+                locations={[0.1, 1]}
               />
-            </View>
-          </TournamentDetailsContainer>
-        </TournamentImage>
-      </Overview>
+              <TournamentDetailsContainer>
+                {userRole === "admin" && (
+                  <EditButton onPress={handleNavigate}>
+                    <Ionicons name="menu" size={25} color="white" />
+                  </EditButton>
+                )}
+                <View
+                  style={{
+                    padding: 5,
+                    backgroundColor: "rgba(0, 0, 0, 0.3)",
+                    borderRadius: 5,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <TournamentName>{tournamentName}</TournamentName>
+                </View>
+                {location ? (
+                  <Address onPress={() => openMap(location)}>
+                    <TournamentLocation>
+                      {location.courtName}, {location.city}
+                    </TournamentLocation>
+                    <Ionicons name="open-outline" size={20} color="#00A2FF" />
+                  </Address>
+                ) : null}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag
+                      name={tournamentStatus?.status}
+                      color={tournamentStatus?.color}
+                    />
+                    <Tag
+                      name={numberOfPlayers}
+                      color={"rgba(0, 0, 0, 0.7)"}
+                      iconColor={"#00A2FF"}
+                      iconSize={15}
+                      icon={"person"}
+                      iconPosition={"right"}
+                      bold
+                    />
+                  </View>
+                  {userRole === "admin" && (
+                    <Tag
+                      name={"Admin"}
+                      color="#16181B"
+                      iconColor="#00A2FF"
+                      iconSize={15}
+                      icon={"checkmark-circle-outline"}
+                      iconPosition={"right"}
+                      bold
+                    />
+                  )}
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 5,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag name={tournamentType} />
+                    <Tag name={prizeTypes.MEDAL} />
+                  </View>
+                  <UserRoleTag
+                    userRole={userRole}
+                    onInvitePress={handleOpenInviteModal}
+                    onLoginPress={handleLogin}
+                    onRequestJoinPress={handleRequestToJoin}
+                    isJoining={isJoinRequestSending}
+                  />
+                </View>
+              </TournamentDetailsContainer>
+            </TournamentImage>
+          </Overview>
 
-      <TabsContainer>
-        <GradientOverlay
-          colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
-          locations={[0.1, 1]}
-          style={{ bottom: -560 }}
-        />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 10 }}
-        >
-          {tabs.map((tab) => (
-            <Tab
-              key={tab.component}
-              onPress={() => handleTabPress(tab.component)}
-              isSelected={selectedTab === tab.component}
+          <TabsContainer>
+            <GradientOverlay
+              colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
+              locations={[0.1, 1]}
+              style={{ bottom: -560 }}
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 10 }}
             >
-              <TabText>{tab.component}</TabText>
-            </Tab>
-          ))}
-        </ScrollView>
-      </TabsContainer>
+              {tabs.map((tab) => (
+                <Tab
+                  key={tab.component}
+                  onPress={() => handleTabPress(tab.component)}
+                  isSelected={selectedTab === tab.component}
+                >
+                  <TabText>{tab.component}</TabText>
+                </Tab>
+              ))}
+            </ScrollView>
+          </TabsContainer>
 
-      {renderComponent()}
+          {renderComponent()}
+        </>
+      )}
 
       {invitePlayerModalVisible && (
         <InvitePlayerModel
