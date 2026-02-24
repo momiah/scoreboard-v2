@@ -31,6 +31,7 @@ import RankSuffix from "../../components/RankSuffix";
 import { formatNumber } from "../../helpers/formatNumber";
 import Icon from "react-native-ico-flags";
 import { RankInformation } from "../../components/Modals/RankInformation";
+import LoadingOverlay from "../../components/LoadingOverlay";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
@@ -96,7 +97,7 @@ const UserProfile = () => {
       route.params.userId !== currentUser?.userId
     ) {
       profileViewCount(route.params.userId).catch((err) =>
-        console.error("Profile view tracking failed:", err)
+        console.error("Profile view tracking failed:", err),
       );
     }
   }, [profile, loading]);
@@ -108,7 +109,7 @@ const UserProfile = () => {
           const rank = await getGlobalRank(profile.userId);
           const countryRank = await getCountryRank(
             profile.userId,
-            profile.location?.countryCode
+            profile.location?.countryCode,
           );
           setCountryRank(countryRank);
           setGlobalRank(rank);
@@ -134,7 +135,7 @@ const UserProfile = () => {
       { component: "Performance" },
       { component: "Activity" },
     ],
-    []
+    [],
   );
 
   const sections = useMemo(
@@ -184,7 +185,7 @@ const UserProfile = () => {
         fallback: "Date not available",
       },
     ],
-    [profile, profileDetail]
+    [profile, profileDetail],
   );
 
   const renderProfileContent = useCallback(
@@ -205,7 +206,7 @@ const UserProfile = () => {
         })}
       </View>
     ),
-    [sections, profile]
+    [sections, profile],
   );
 
   const renderComponent = useCallback(() => {
@@ -225,14 +226,6 @@ const UserProfile = () => {
     }
   }, [selectedTab, renderProfileContent]);
 
-  if (loading || (!route.params?.userId && !profile)) {
-    return (
-      <LoadingContainer>
-        <ActivityIndicator color="#fff" size="large" />
-      </LoadingContainer>
-    );
-  }
-
   const isOwnProfile =
     !route.params?.userId || route.params?.userId === currentUser?.userId;
 
@@ -243,191 +236,196 @@ const UserProfile = () => {
   const pointDifference = profileDetail?.totalPointDifference || 0;
   const pointDifferenceMetric = pointDifference > 0 ? "+" : "";
 
-  if (!profile || !profileDetail) {
-    return (
-      <LoadingContainer>
-        <Text style={{ color: "#aaa" }}>This profile no longer exists</Text>
-      </LoadingContainer>
-    );
-  }
-
   return (
     <Container>
-      {isOwnProfile && (
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 20,
-          }}
-        >
-          <TouchableOpacity
-            style={{ alignSelf: "flex-start", paddingHorizontal: 20 }}
-            onPress={() => loadProfile()}
-            disabled={refreshing}
-          >
-            {refreshing ? (
-              <ActivityIndicator color="#aaa" size="small" />
-            ) : (
-              <Ionicons name="refresh-circle-outline" size={30} color="#aaa" />
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
-            onPress={() => navigation.navigate("ProfileMenu")}
-          >
-            <Ionicons name="menu" size={30} color="#aaa" />
-          </TouchableOpacity>
-        </View>
+      <LoadingOverlay visible={loading} loadingText="Profile" />
+
+      {!loading && !profile && (
+        <LoadingContainer>
+          <Text style={{ color: "#aaa" }}>This profile no longer exists</Text>
+        </LoadingContainer>
       )}
 
-      {/* Avatar & Modal */}
-      <Overview>
-        {profile?.headline ? (
-          <View style={{ flex: 1 }}>
-            <PlayerDetail>
-              <Pressable onLongPress={() => setPreviewVisible(true)}>
-                <Avatar
-                  source={
-                    profile?.profileImage
-                      ? { uri: profile.profileImage }
-                      : CourtChampsLogo
-                  }
+      {!loading && profile && profileDetail && (
+        <>
+          {isOwnProfile && (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 20,
+              }}
+            >
+              <TouchableOpacity
+                style={{ alignSelf: "flex-start", paddingHorizontal: 20 }}
+                onPress={() => loadProfile()}
+                disabled={refreshing}
+              >
+                {refreshing ? (
+                  <ActivityIndicator color="#aaa" size="small" />
+                ) : (
+                  <Ionicons
+                    name="refresh-circle-outline"
+                    size={30}
+                    color="#aaa"
+                  />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ alignSelf: "flex-end", paddingHorizontal: 20 }}
+                onPress={() => navigation.navigate("ProfileMenu")}
+              >
+                <Ionicons name="menu" size={30} color="#aaa" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <Overview>
+            {profile?.headline ? (
+              <View style={{ flex: 1 }}>
+                <PlayerDetail>
+                  <Pressable onLongPress={() => setPreviewVisible(true)}>
+                    <Avatar
+                      source={
+                        profile?.profileImage
+                          ? { uri: profile.profileImage }
+                          : CourtChampsLogo
+                      }
+                    />
+                  </Pressable>
+                  <DetailColumn>
+                    <PlayerName>{profile?.username}</PlayerName>
+                    <DetailText>{profileXp ?? 0} XP</DetailText>
+                    <DetailText
+                      style={{
+                        fontWeight: "bold",
+                        color: pointDifference < 0 ? "red" : "green",
+                      }}
+                    >
+                      {pointDifferenceMetric}
+                      {formatNumber(pointDifference)} PD
+                    </DetailText>
+                  </DetailColumn>
+                </PlayerDetail>
+                <Headline>
+                  <Text style={{ color: "#fff", fontSize: 14 }}>
+                    {profile.headline}
+                  </Text>
+                </Headline>
+              </View>
+            ) : (
+              <PlayerDetail>
+                <Pressable onLongPress={() => setPreviewVisible(true)}>
+                  <Avatar
+                    source={
+                      profile?.profileImage
+                        ? { uri: profile.profileImage }
+                        : CourtChampsLogo
+                    }
+                  />
+                </Pressable>
+                <DetailColumn>
+                  <PlayerName>{profile?.username}</PlayerName>
+                  <DetailText>{profileXp ?? 0} XP</DetailText>
+                  <DetailText
+                    style={{
+                      fontWeight: "bold",
+                      color: pointDifference < 0 ? "red" : "green",
+                    }}
+                  >
+                    {pointDifferenceMetric}
+                    {formatNumber(pointDifference)} PD
+                  </DetailText>
+                </DetailColumn>
+              </PlayerDetail>
+            )}
+            <MedalContainer>
+              <TouchableOpacity onPress={() => setRanksVisible(true)}>
+                <MedalDisplay
+                  xp={profileDetail?.XP}
+                  size={screenAdjustedMedalSize}
                 />
-              </Pressable>
+              </TouchableOpacity>
+              <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
+              <MedalName style={{ fontWeight: "bold" }}>{rankLevel}</MedalName>
+            </MedalContainer>
+          </Overview>
 
-              <DetailColumn>
-                <PlayerName>{profile?.username}</PlayerName>
-                <DetailText>{profileXp ?? 0} XP</DetailText>
-                <DetailText
-                  style={{
-                    fontWeight: "bold",
-                    color: pointDifference < 0 ? "red" : "green",
-                  }}
-                >
-                  {pointDifferenceMetric}
-                  {formatNumber(pointDifference)} PD
-                </DetailText>
-              </DetailColumn>
-            </PlayerDetail>
+          <ProfileSummary>
+            <CCRankContainer>
+              <Ionicons name="globe-outline" size={20} color="#aaa" />
+              <RankSuffix
+                number={globalRank}
+                numberStyle={{
+                  fontSize: screenAdjustedStatFontSize,
+                  color: "white",
+                }}
+                suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
+              />
+            </CCRankContainer>
+            <CCRankContainer>
+              <Icon
+                name={profile?.location.countryCode}
+                height="20"
+                width="20"
+              />
+              <RankSuffix
+                number={countryRank}
+                numberStyle={{
+                  fontSize: screenAdjustedStatFontSize,
+                  color: "white",
+                }}
+                suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
+              />
+            </CCRankContainer>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <DetailText>
+                {formatNumber(profile?.profileViews ?? 0)}
+              </DetailText>
+              <Ionicons name="eye" size={20} color="#aaa" />
+            </View>
+          </ProfileSummary>
 
-            <Headline>
-              <Text style={{ color: "#fff", fontSize: 14 }}>
-                {profile.headline}
-              </Text>
-            </Headline>
-          </View>
-        ) : (
-          <>
-            <PlayerDetail>
-              <Pressable onLongPress={() => setPreviewVisible(true)}>
-                <Avatar
-                  source={
-                    profile?.profileImage
-                      ? { uri: profile.profileImage }
-                      : CourtChampsLogo
-                  }
-                />
-              </Pressable>
+          <TabsContainer>
+            {tabs.map((tab) => (
+              <Tab
+                key={tab.component}
+                onPress={() => setSelectedTab(tab.component)}
+                isSelected={selectedTab === tab.component}
+              >
+                <TabText>{tab.component}</TabText>
+              </Tab>
+            ))}
+          </TabsContainer>
 
-              <DetailColumn>
-                <PlayerName>{profile?.username}</PlayerName>
-                <DetailText>{profileXp ?? 0} XP</DetailText>
-                <DetailText
-                  style={{
-                    fontWeight: "bold",
-                    color: pointDifference < 0 ? "red" : "green",
-                  }}
-                >
-                  {pointDifferenceMetric}
-                  {formatNumber(pointDifference)} PD
-                </DetailText>
-              </DetailColumn>
-            </PlayerDetail>
-          </>
-        )}
+          <ProfileContent>{renderComponent()}</ProfileContent>
 
-        {/* Medal display stays on the right */}
-        <MedalContainer>
-          <TouchableOpacity onPress={() => setRanksVisible(true)}>
-            <MedalDisplay
-              xp={profileDetail?.XP}
-              size={screenAdjustedMedalSize}
+          <Modal visible={previewVisible} transparent animationType="fade">
+            <Pressable
+              style={styles.modalBackdrop}
+              onPress={() => setPreviewVisible(false)}
+            >
+              <Image
+                source={
+                  profile?.profileImage
+                    ? { uri: profile?.profileImage }
+                    : CourtChampsLogo
+                }
+                style={styles.fullImage}
+                resizeMode="contain"
+              />
+            </Pressable>
+          </Modal>
+
+          {ranksVisible && (
+            <RankInformation
+              visible={ranksVisible}
+              onClose={() => setRanksVisible(false)}
             />
-          </TouchableOpacity>
-          <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
-          <MedalName style={{ fontWeight: "bold" }}>{rankLevel}</MedalName>
-        </MedalContainer>
-      </Overview>
-
-      <ProfileSummary>
-        <CCRankContainer>
-          <Ionicons name="globe-outline" size={20} color="#aaa" />
-
-          <RankSuffix
-            number={globalRank}
-            numberStyle={{
-              fontSize: screenAdjustedStatFontSize,
-              color: "white",
-            }}
-            suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
-          />
-        </CCRankContainer>
-        <CCRankContainer>
-          {/* <XpText>🌍</XpText> */}
-          <Icon name={profile?.location.countryCode} height="20" width="20" />
-          <RankSuffix
-            number={countryRank}
-            numberStyle={{
-              fontSize: screenAdjustedStatFontSize,
-              color: "white",
-            }}
-            suffixStyle={{ color: "rgba(255,255,255,0.7)" }}
-          />
-        </CCRankContainer>
-
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <DetailText>{formatNumber(profile?.profileViews ?? 0)}</DetailText>
-          <Ionicons name="eye" size={20} color="#aaa" />
-        </View>
-      </ProfileSummary>
-
-      <TabsContainer>
-        {tabs.map((tab) => (
-          <Tab
-            key={tab.component}
-            onPress={() => setSelectedTab(tab.component)}
-            isSelected={selectedTab === tab.component}
-          >
-            <TabText>{tab.component}</TabText>
-          </Tab>
-        ))}
-      </TabsContainer>
-
-      <ProfileContent>{renderComponent()}</ProfileContent>
-
-      {/* Image Preview Modal */}
-      <Modal visible={previewVisible} transparent animationType="fade">
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setPreviewVisible(false)}
-        >
-          <Image
-            source={
-              profile?.profileImage
-                ? { uri: profile?.profileImage }
-                : CourtChampsLogo
-            }
-            style={styles.fullImage}
-            resizeMode="contain"
-          />
-        </Pressable>
-      </Modal>
-      {ranksVisible && (
-        <RankInformation
-          visible={ranksVisible}
-          onClose={() => setRanksVisible(false)}
-        />
+          )}
+        </>
       )}
     </Container>
   );
