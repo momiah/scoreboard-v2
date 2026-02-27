@@ -1,6 +1,5 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
-const db = admin.firestore();
 
 const {
   calculatePlayerPerformance,
@@ -20,18 +19,17 @@ const moment = require("moment-timezone");
 const TZ = "Europe/London";
 
 const toMomentTz = (value) => {
-  if (value?.toDate) return moment.tz(value.toDate(), TZ); // Firestore Timestamp
-  return moment.tz(value, TZ); // Date | string | number
+  if (value?.toDate) return moment.tz(value.toDate(), TZ);
+  return moment.tz(value, TZ);
 };
 
 exports.autoApproveGames = onSchedule("every 30 minutes", async () => {
+  const db = admin.firestore(); // ← moved here, after initializeApp() has run
   try {
     console.log("🚀 Auto-approval job started");
 
     const leaguesSnap = await db.collection("leagues").get();
     console.log(`📌 Found ${leaguesSnap.size} leagues`);
-
-    const now = new Date();
 
     const leagues = leaguesSnap.docs.map((doc) => ({
       id: doc.id,
@@ -59,12 +57,12 @@ exports.autoApproveGames = onSchedule("every 30 minutes", async () => {
                 : NaN;
 
               console.log(
-                `➡️ Checking game ${game.gameId} in league ${leagueId}`
+                `➡️ Checking game ${game.gameId} in league ${leagueId}`,
               );
               console.log("   approvalStatus:", game.approvalStatus);
               console.log(
                 "   createdAt (tz):",
-                created.isValid() ? created.format() : "INVALID"
+                created.isValid() ? created.format() : "INVALID",
               );
               console.log("   hoursPassed:", hoursPassed);
 
@@ -93,16 +91,15 @@ exports.autoApproveGames = onSchedule("every 30 minutes", async () => {
                 autoApprovedAt: admin.firestore.Timestamp.now(),
               };
 
-              // Extract player userIds from the game's team objects
               const userIds = [
                 game.team1.player1?.userId,
                 game.team1.player2?.userId,
                 game.team2.player1?.userId,
                 game.team2.player2?.userId,
-              ].filter(Boolean); // Remove nulls
+              ].filter(Boolean);
 
               const playersToUpdate = leagueParticipants.filter((player) =>
-                userIds.includes(player.userId)
+                userIds.includes(player.userId),
               );
 
               const usersToUpdate = await Promise.all(userIds.map(getUserById));
@@ -110,7 +107,7 @@ exports.autoApproveGames = onSchedule("every 30 minutes", async () => {
               const playerPerformance = calculatePlayerPerformance(
                 updatedGame,
                 playersToUpdate,
-                usersToUpdate
+                usersToUpdate,
               );
 
               await updatePlayers(playerPerformance.playersToUpdate, leagueId);
@@ -129,9 +126,9 @@ exports.autoApproveGames = onSchedule("every 30 minutes", async () => {
               updatedGames[i] = updatedGame;
 
               console.log(
-                `🎯 Finished processing game: ${game.gameId} in league: ${leagueId}`
+                `🎯 Finished processing game: ${game.gameId} in league: ${leagueId}`,
               );
-            })
+            }),
           );
 
           try {
@@ -140,8 +137,8 @@ exports.autoApproveGames = onSchedule("every 30 minutes", async () => {
           } catch (error) {
             console.error(`❌ Error updating league ${leagueId}:`, error);
           }
-        }
-      )
+        },
+      ),
     );
 
     console.log("✅ Auto-approval function finished.");
