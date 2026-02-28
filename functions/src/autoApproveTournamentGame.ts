@@ -63,6 +63,8 @@ const autoApproveTournamentGames = onSchedule("every 30 minutes", async () => {
 
           console.log(`🎮 Tournament ${tournamentId} has ${games.length} games in ${fixtures.length} fixtures`);
 
+          let numberOfGamesApproved = 0;
+
           const updatedGames = [...games] as Partial<Game>[];
 
           const pendingIndexes = games
@@ -168,6 +170,7 @@ const autoApproveTournamentGames = onSchedule("every 30 minutes", async () => {
 
                   await updateTournamentTeams(teamsToUpdate, tournamentId);
                 }
+                numberOfGamesApproved++;
 
                 updatedGames[i] = updatedGame as Game;
 
@@ -197,7 +200,12 @@ const autoApproveTournamentGames = onSchedule("every 30 minutes", async () => {
           }));
 
           try {
-            await tournamentRef.update({ fixtures: updatedFixtures });
+            const updateData: Partial<Tournament> = { fixtures: updatedFixtures };
+            if (numberOfGamesApproved > 0) {
+              updateData.gamesCompleted = admin.firestore.FieldValue.increment(numberOfGamesApproved) as unknown as number;
+            }
+            await tournamentRef.update(updateData);
+
             console.log(`💾 Updated fixtures and games in tournament: ${tournamentId}`);
           } catch (error) {
             console.error(`❌ Error updating tournament ${tournamentId}:`, error);
