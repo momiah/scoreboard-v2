@@ -82,7 +82,8 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
           }
           const placementKey = placementKeys[index];
 
-          const prizeXP = Math.floor(prizePool * (DISTRIBUTION[index] || 0));
+          const teamPrize = Math.floor(prizePool * (DISTRIBUTION[index] || 0));
+          const prizeXP = isDoublesTournament ? teamPrize / 2 : teamPrize;
           const userRef = db.collection("users").doc(playerId);
 
           await userRef.update({
@@ -95,7 +96,7 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
             `+${prizeXP} XP -> user ${playerId} (${playerProfile.username}) (${placementKey})`
           );
 
-          const message = `${isDoublesTournament ? `Your team have` : `You have`} placed ${index + 1}${placementSuffix[index]} in ${tournament.tournamentName} and won ${prizeXP} XP!`;
+          const message = `${isDoublesTournament ? `Your team has` : `You have`} placed ${index + 1}${placementSuffix[index]} in ${tournament.tournamentName} and won ${prizeXP} XP!`;
 
           await sendNotification({
             createdAt: new Date(),
