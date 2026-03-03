@@ -27,12 +27,14 @@ const sendNotification = async (notification) => {
       return;
     }
 
+    const title = notification.title ?? "Court Champs";
+
     const messages = pushTokens.map((token) => ({
       to: token,
       sound: "default",
       vibrate: [200, 100, 200],
       priority: "high",
-      title: "Court Champs",
+      title: title,
       body: notification.message,
       data: {
         ...notification.data,
