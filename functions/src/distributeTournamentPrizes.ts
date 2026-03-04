@@ -73,6 +73,9 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
 
 
       for (let index = 0; index < prizeWinners.length; index++) {
+        const teamPrize = Math.floor(prizePool * (DISTRIBUTION[index] || 0));
+        const prizeXP = isDoublesTournament ? Math.floor(teamPrize / 2) : teamPrize;
+        const placementKey = placementKeys[index];
 
         for (const playerId of prizeWinners[index]) {
           const playerProfile = tournament.tournamentParticipants.find((p: ScoreboardProfile) => p.userId === playerId);
@@ -80,10 +83,7 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
             console.error(`Player profile not found for player ${playerId}`);
             continue;
           }
-          const placementKey = placementKeys[index];
 
-          const teamPrize = Math.floor(prizePool * (DISTRIBUTION[index] || 0));
-          const prizeXP = isDoublesTournament ? teamPrize / 2 : teamPrize;
           const userRef = db.collection("users").doc(playerId);
 
           await userRef.update({
