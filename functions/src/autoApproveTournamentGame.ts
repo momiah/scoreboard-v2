@@ -98,6 +98,24 @@ const autoApproveTournamentGames = onSchedule("every 30 minutes", async () => {
             .filter(({ due }: { due: boolean }) => due);
 
 
+          // Get all user ids from all games in the tournament
+          const allUserIds = [...new Set(pendingIndexes.flatMap(({ game }: { game: Game }) => [
+            game.team1.player1?.userId,
+            game.team1.player2?.userId,
+            game.team2.player1?.userId,
+            game.team2.player2?.userId,
+          ].filter(Boolean)))];
+          const allUsersRaw = await Promise.all(allUserIds.map(getUserById));
+          const allUsers = allUsersRaw.filter(
+            (user): user is NonNullable<typeof user> => user !== null
+          );
+          if (allUsers.length === 0) {
+            console.warn(
+              `⚠️ No valid users found for games in tournament ${tournamentId}`
+            );
+            return;
+          }
+
           await Promise.all(
             pendingIndexes.map(async ({ game, i }: { game: Game, i: number }) => {
               try {
@@ -132,11 +150,7 @@ const autoApproveTournamentGames = onSchedule("every 30 minutes", async () => {
                   userIds.includes(player.userId)
                 );
 
-                // Fetch users and filter out any null results
-                const usersToUpdateRaw = await Promise.all(userIds.map(getUserById));
-                const usersToUpdate = usersToUpdateRaw.filter(
-                  (user): user is NonNullable<typeof user> => user !== null
-                );
+                const usersToUpdate = allUsers.filter((user) => userIds.includes(user.userId));
 
                 // Validate we have valid data to proceed
                 if (usersToUpdate.length === 0) {
@@ -160,7 +174,7 @@ const autoApproveTournamentGames = onSchedule("every 30 minutes", async () => {
                 );
 
                 await updateTournamentPlayers(playerPerformance.playersToUpdate, tournamentId);
-                await updateUsers(playerPerformance.usersToUpdate);
+
 
                 if (tournamentType === "Doubles") {
                   const teamsToUpdate = await calculateTeamPerformance({
@@ -186,6 +200,10 @@ const autoApproveTournamentGames = onSchedule("every 30 minutes", async () => {
               }
             })
           );
+          // Update all users at the end of the tournament
+          if (allUsers.length > 0) {
+            await updateUsers(allUsers);
+          }
 
           // Create a Map for O(1) lookups instead of O(n) .find()
           const updatedGamesMap = new Map(
