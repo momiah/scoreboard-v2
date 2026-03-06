@@ -6,23 +6,17 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "android": {
-        "image": "ubuntu-20.04-jdk-11-ndk-r21e"
-      }
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "android": {
-        "image": "ubuntu-20.04-jdk-11-ndk-r21e"
-      }
+      "distribution": "internal"
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
       },
       "channel": "production",
-       "autoIncrement": true
+      "autoIncrement": true
     }
   },
   "submit": {
