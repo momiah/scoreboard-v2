@@ -8,20 +8,17 @@
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
-
     "splash": {
       "image": "./assets/court-champ-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#00152B"
     },
-
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/43db0104-f8f3-44de-b831-a74cd535baee"
     },
-
     "ios": {
       "supportsTablet": true,
       "buildNumber": "12",
@@ -55,7 +52,6 @@
         "usesNonExemptEncryption": false
       }
     },
-
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/court-champ-logo-icon-w-bg-android.png",
@@ -68,11 +64,9 @@
         "android.permission.INTERNET"
       ]
     },
-
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
     },
-
     "plugins": [
       [
         "expo-build-properties",
@@ -80,7 +74,7 @@
           "android": {
             "compileSdkVersion": 34,
             "targetSdkVersion": 35,
-            "minSdkVersion": 21,
+            "minSdkVersion": 23,
             "buildToolsVersion": "34.0.0"
           },
           "ios": {
@@ -116,14 +110,12 @@
       ],
       "expo-font"
     ],
-
     "extra": {
       "eas": {
         "projectId": "43db0104-f8f3-44de-b831-a74cd535baee"
       }
     }
   },
-
   "react-native-google-mobile-ads": {
     "android_app_id": "ca-app-pub-4901008825984109~4699811229",
     "ios_app_id": "ca-app-pub-4901008825984109~3153352304"
