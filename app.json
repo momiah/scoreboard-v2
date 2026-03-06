@@ -113,7 +113,8 @@
           "icon": "./assets/court-champ-logo-icon-w-bg.png",
           "color": "#FF231F7C"
         }
-      ]
+      ],
+      "expo-font"
     ],
 
     "extra": {
