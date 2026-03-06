@@ -72,9 +72,9 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 34,
+            "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "minSdkVersion": 23,
+            "minSdkVersion": 24,
             "buildToolsVersion": "34.0.0"
           },
           "ios": {
@@ -108,7 +108,8 @@
           "color": "#FF231F7C"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
