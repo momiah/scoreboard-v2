@@ -13,6 +13,7 @@ import {
   CollectionName,
   CourtLocation,
 } from "../types/competition";
+import { ApprovalStatus } from "@/types/game";
 import moment from "moment";
 
 export const gameTypes = ["Doubles", "Singles"];
@@ -373,8 +374,8 @@ export const notificationTypes = {
   RESPONSE: {
     ACCEPT: "accepted",
     DECLINE: "declined",
-    APPROVED_GAME: "approved",
-    REJECTED_GAME: "rejected",
+    APPROVED_GAME: "approved" as ApprovalStatus,
+    REJECTED_GAME: "declined" as ApprovalStatus,
   },
 };
 

@@ -1,12 +1,12 @@
 import React, { useContext, useState } from "react";
 import {
   Modal,
-  Text,
   View,
   TouchableOpacity,
   Keyboard,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Share,
 } from "react-native";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
@@ -76,10 +76,10 @@ const InvitePlayerModal = ({
   const hasUserConflict = (userId: string) => {
     const inLeague = competition.participants?.some((u) => u.userId === userId);
     const inPendingInvites = competition.pendingInvites?.some(
-      (u) => u.userId === userId
+      (u) => u.userId === userId,
     );
     const inPendingRequests = competition.pendingRequests?.some(
-      (u) => u.userId === userId
+      (u) => u.userId === userId,
     );
 
     return inLeague || inPendingInvites || inPendingRequests;
@@ -95,7 +95,7 @@ const InvitePlayerModal = ({
     : false;
 
   const conflictedUsers = inviteUsers.filter((user) =>
-    hasUserConflict(user.userId)
+    hasUserConflict(user.userId),
   );
   const hasConflicts = conflictedUsers.length > 0;
 
@@ -195,17 +195,17 @@ const InvitePlayerModal = ({
         const q = query(collection(db, "users"));
         const querySnapshot = await getDocs(q);
         const users = querySnapshot.docs.map(
-          (doc) => doc.data() as UserProfile
+          (doc) => doc.data() as UserProfile,
         );
 
         const filteredUsers = users.filter((user) => {
           const username = user.username.toLowerCase();
           const matchesSearch = searchWords.some((word) =>
-            username.includes(word)
+            username.includes(word),
           );
           const isCurrentUser = user.userId === currentUserId;
           const alreadySelected = inviteUsers.some(
-            (u) => u.userId === user.userId
+            (u) => u.userId === user.userId,
           );
 
           return matchesSearch && !isCurrentUser && !alreadySelected;
@@ -239,7 +239,7 @@ const InvitePlayerModal = ({
 
   const handleRemoveUser = (userToRemove: UserProfile) => {
     setInviteUsers((prevUsers) =>
-      prevUsers.filter((user) => user.userId !== userToRemove.userId)
+      prevUsers.filter((user) => user.userId !== userToRemove.userId),
     );
     setValidationError("");
   };
@@ -247,6 +247,23 @@ const InvitePlayerModal = ({
   const numberOfPlayers = `${competition.participants?.length || 0} / ${
     competition.maxPlayers
   }`;
+  const competitionVariant =
+    competition.prizeType === "Trophy" ? "League" : "Tournament";
+
+  const handleShare = async () => {
+    const type =
+      competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
+    const url = `https://courtchamps.com/join/${type}/${competition.id}`;
+
+    try {
+      await Share.share({
+        message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,
+        url,
+      });
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
+  };
 
   return (
     <View>
@@ -299,6 +316,7 @@ const InvitePlayerModal = ({
                       flexDirection: "row",
                       gap: 5,
                       marginTop: 10,
+                      alignItems: "center",
                     }}
                   >
                     <Tag
@@ -312,6 +330,12 @@ const InvitePlayerModal = ({
                     />
                     <Tag name={competition.type} />
                     <Tag name={competition.prizeType} />
+                    <ShareButton onPress={handleShare}>
+                      <AntDesign name="sharealt" size={13} color="#00A2FF" />
+                      <ShareButtonText>
+                        Share {competitionVariant}
+                      </ShareButtonText>
+                    </ShareButton>
                   </View>
                 </LeagueDetailsContainer>
                 <Label>Search Players by username</Label>
@@ -328,7 +352,7 @@ const InvitePlayerModal = ({
                       keyExtractor={(item) => item.userId}
                       renderItem={({ item }) => {
                         const isAlreadySelected = inviteUsers.some(
-                          (invitedUser) => invitedUser.userId === item.userId
+                          (invitedUser) => invitedUser.userId === item.userId,
                         );
 
                         return (
@@ -564,6 +588,25 @@ const ErrorText = styled.Text({
   fontStyle: "italic",
   textAlign: "left",
   marginVertical: 10,
+});
+
+const ShareButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  borderRadius: 5,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  marginLeft: "auto",
+});
+
+const ShareButtonText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 12,
+  fontWeight: "500",
 });
 
 export default InvitePlayerModal;

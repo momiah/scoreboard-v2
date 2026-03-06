@@ -135,6 +135,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess }) => {
       lastName: userInfo.lastName,
       userId: userInfo.userId,
       memberSince: userInfo.profileDetail?.memberSince || "",
+      profileImage: userInfo?.profileImage || "",
     };
 
     const tournamentOwner = {

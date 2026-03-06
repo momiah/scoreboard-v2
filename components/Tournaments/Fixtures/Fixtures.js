@@ -11,15 +11,15 @@ const Fixtures = ({ tournament, userRole }) => {
     useState(false);
 
   const [generatedFixtures, setGeneratedFixtures] = useState(
-    tournament?.fixtures ?? null
+    tournament?.fixtures ?? null,
   );
 
   const fixturesArray = generatedFixtures?.fixtures || generatedFixtures || [];
 
   const { currentUser } = useContext(UserContext);
 
-  const numberOfParticipants = tournament?.participants
-    ? tournament.participants.length
+  const numberOfParticipants = tournament?.tournamentParticipants
+    ? tournament.tournamentParticipants.length
     : 0;
 
   const hasFixtures = fixturesArray && fixturesArray.length > 0;
