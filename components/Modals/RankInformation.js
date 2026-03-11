@@ -60,16 +60,34 @@ export const RankInformation = ({ visible, onClose }) => {
     // const lastRank = index === group.length - 1;
     const isLastGroup = index === groupedRanks.length - 1;
     const groupText = isLastGroup ? "" : `Rank Group ${index + 1}`;
+
+    const groupLevel = isLastGroup
+      ? "Level 65"
+      : `Levels ${index * GROUP_SIZE + 1}-${index * GROUP_SIZE + group.length}`;
     return (
       <GroupContainer
         key={`group-${index}`}
         style={isLastGroup ? { alignItems: "center" } : null}
       >
-        <GroupTitle
-          style={isLastGroup ? { alignSelf: "center", marginBottom: 0 } : null}
-        >
-          {groupText}
-        </GroupTitle>
+        <GroupLevelTitle>
+          <GroupTitle
+            style={
+              isLastGroup ? { alignSelf: "center", marginBottom: 0 } : null
+            }
+          >
+            {groupText}
+          </GroupTitle>
+          <GroupLevel
+            style={
+              isLastGroup
+                ? { alignSelf: "center", marginBottom: 10, marginRight: 5 }
+                : null
+            }
+          >
+            {groupLevel}
+          </GroupLevel>
+        </GroupLevelTitle>
+
         <GroupRow>
           {group.map((item, idx) => {
             const loading = !imageLoadStatus[item.name];
@@ -100,7 +118,7 @@ export const RankInformation = ({ visible, onClose }) => {
                   )}
                 </CircleSkeleton>
                 <RankName numberOfLines={1}>{item.name}</RankName>
-                <RankXP>{item.xp} XP</RankXP>
+                <RankXP>{item.xp} CP</RankXP>
                 <RankLevel>
                   {findRankIndex(item.xp) + 1} {item.suffix}
                 </RankLevel>
@@ -188,6 +206,14 @@ const GroupTitle = styled(Text)({
   alignSelf: "flex-start",
 });
 
+const GroupLevel = styled(Text)({
+  fontSize: 12,
+  fontStyle: "italic",
+  color: "#cdcdcdff",
+  // marginTop: 2,
+  justifyContent: "flex-start",
+});
+
 const GroupRow = styled(View)({
   flexDirection: "row",
   flexWrap: "wrap",
@@ -219,6 +245,12 @@ const RankLevel = styled.Text({
   fontWeight: "bold",
   color: "white",
   marginTop: 2,
+});
+
+const GroupLevelTitle = styled(View)({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  gap: 5,
 });
 
 const RankXP = styled(Text)({

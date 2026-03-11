@@ -37,8 +37,8 @@ export type ApprovalStatus =
   | "Scheduled"
   | "Pending"
   | "pending"
-  | "Approved"
-  | "Declined";
+  | "approved"
+  | "declined";
 
 export type CompetitionTypes = "Singles" | "Doubles";
 export type GenerationType = "Random" | "Balanced";

@@ -1,12 +1,14 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import {
   Modal,
-  Text,
   View,
   TouchableOpacity,
   Keyboard,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Share,
+  KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
@@ -33,6 +35,7 @@ import {
 import { COMPETITION_TYPES, COLLECTION_NAMES } from "@/schemas/schema";
 import { UserProfile } from "@/types/player";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+import RecentPlayersModal from "../Modals/RecentPlayersModal";
 
 type InvitePlayerModalProps = {
   modalVisible: boolean;
@@ -54,6 +57,11 @@ const InvitePlayerModal = ({
   const [sendingInvite, setSendingInvite] = useState(false);
   const { sendNotification } = useContext(UserContext);
   const { updatePendingInvites } = useContext(LeagueContext);
+
+  const [activeTab, setActiveTab] = useState<"search" | "recent">("search");
+  const [recentPlayersVisible, setRecentPlayersVisible] = useState(false);
+
+  const [currentUserId, setCurrentUserId] = useState<string>("");
   const {
     handleShowPopup,
     setPopupMessage,
@@ -61,6 +69,12 @@ const InvitePlayerModal = ({
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
+
+  useEffect(() => {
+    AsyncStorage.getItem("userId").then((id) => {
+      if (id) setCurrentUserId(id);
+    });
+  }, []);
 
   const competition = normalizeCompetitionData({
     rawData: competitionDetails,
@@ -76,10 +90,10 @@ const InvitePlayerModal = ({
   const hasUserConflict = (userId: string) => {
     const inLeague = competition.participants?.some((u) => u.userId === userId);
     const inPendingInvites = competition.pendingInvites?.some(
-      (u) => u.userId === userId
+      (u) => u.userId === userId,
     );
     const inPendingRequests = competition.pendingRequests?.some(
-      (u) => u.userId === userId
+      (u) => u.userId === userId,
     );
 
     return inLeague || inPendingInvites || inPendingRequests;
@@ -95,7 +109,7 @@ const InvitePlayerModal = ({
     : false;
 
   const conflictedUsers = inviteUsers.filter((user) =>
-    hasUserConflict(user.userId)
+    hasUserConflict(user.userId),
   );
   const hasConflicts = conflictedUsers.length > 0;
 
@@ -138,8 +152,6 @@ const InvitePlayerModal = ({
         setSendingInvite(false);
         return;
       }
-
-      const currentUserId = await AsyncStorage.getItem("userId");
 
       const notificationType =
         competitionType === COMPETITION_TYPES.LEAGUE
@@ -195,17 +207,17 @@ const InvitePlayerModal = ({
         const q = query(collection(db, "users"));
         const querySnapshot = await getDocs(q);
         const users = querySnapshot.docs.map(
-          (doc) => doc.data() as UserProfile
+          (doc) => doc.data() as UserProfile,
         );
 
         const filteredUsers = users.filter((user) => {
           const username = user.username.toLowerCase();
           const matchesSearch = searchWords.some((word) =>
-            username.includes(word)
+            username.includes(word),
           );
           const isCurrentUser = user.userId === currentUserId;
           const alreadySelected = inviteUsers.some(
-            (u) => u.userId === user.userId
+            (u) => u.userId === user.userId,
           );
 
           return matchesSearch && !isCurrentUser && !alreadySelected;
@@ -239,7 +251,7 @@ const InvitePlayerModal = ({
 
   const handleRemoveUser = (userToRemove: UserProfile) => {
     setInviteUsers((prevUsers) =>
-      prevUsers.filter((user) => user.userId !== userToRemove.userId)
+      prevUsers.filter((user) => user.userId !== userToRemove.userId),
     );
     setValidationError("");
   };
@@ -247,6 +259,30 @@ const InvitePlayerModal = ({
   const numberOfPlayers = `${competition.participants?.length || 0} / ${
     competition.maxPlayers
   }`;
+  const competitionVariant =
+    competitionType === COMPETITION_TYPES.LEAGUE ? "League" : "Tournament";
+
+  const handleShare = async () => {
+    const type =
+      competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
+    const url = `https://courtchamps.com/join/${type}/${competition.id}`;
+
+    try {
+      await Share.share({
+        message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,
+        url,
+      });
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
+  };
+
+  const handleAddFromRecent = (players: UserProfile[]) => {
+    const newPlayers = players.filter(
+      (p) => !inviteUsers.some((u) => u.userId === p.userId),
+    );
+    setInviteUsers((prev) => [...prev, ...newPlayers]);
+  };
 
   return (
     <View>
@@ -280,140 +316,189 @@ const InvitePlayerModal = ({
                   <AntDesign name="closecircleo" size={30} color="red" />
                 </TouchableOpacity>
 
-                <LeagueDetailsContainer>
-                  <LeagueName>{competition.name}</LeagueName>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                    }}
-                  >
-                    <LeagueLocation>
-                      {competition.location.courtName},{" "}
-                      {competition.location.city}
-                    </LeagueLocation>
-                  </View>
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <LeagueDetailsContainer>
+                    <LeagueName>{competition.name}</LeagueName>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <LeagueLocation>
+                        {competition.location.courtName},{" "}
+                        {competition.location.city}
+                      </LeagueLocation>
+                    </View>
 
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      gap: 5,
-                      marginTop: 10,
-                    }}
-                  >
-                    <Tag
-                      name={numberOfPlayers}
-                      color={"rgba(0, 0, 0, 0.7)"}
-                      iconColor={"#00A2FF"}
-                      iconSize={15}
-                      icon={"person"}
-                      iconPosition={"right"}
-                      bold
-                    />
-                    <Tag name={competition.type} />
-                    <Tag name={competition.prizeType} />
-                  </View>
-                </LeagueDetailsContainer>
-                <Label>Search Players by username</Label>
-                <Input
-                  placeholder="Start typing to search players"
-                  placeholderTextColor="#999"
-                  value={searchUser}
-                  onChangeText={handleSearch}
-                />
-                {suggestions.length > 0 && (
-                  <DropdownContainer>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 5,
+                        marginTop: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Tag
+                        name={numberOfPlayers}
+                        color={"rgba(0, 0, 0, 0.7)"}
+                        iconColor={"#00A2FF"}
+                        iconSize={15}
+                        icon={"person"}
+                        iconPosition={"right"}
+                        bold
+                      />
+                      <Tag name={competition.type} />
+                      <Tag name={competition.prizeType} />
+                      <ShareButton onPress={handleShare}>
+                        <AntDesign name="sharealt" size={13} color="#00A2FF" />
+                        <ShareButtonText>
+                          Share {competitionVariant}
+                        </ShareButtonText>
+                      </ShareButton>
+                    </View>
+                  </LeagueDetailsContainer>
+
+                  <TabRow>
+                    <Tab
+                      active={activeTab === "search"}
+                      onPress={() => setActiveTab("search")}
+                    >
+                      <TabText active={activeTab === "search"}>Search</TabText>
+                    </Tab>
+                    <Tab
+                      active={activeTab === "recent"}
+                      onPress={() => {
+                        setActiveTab("recent");
+                        setRecentPlayersVisible(true);
+                      }}
+                    >
+                      <TabText active={activeTab === "recent"}>
+                        Recent Players
+                      </TabText>
+                    </Tab>
+                  </TabRow>
+
+                  {activeTab === "search" && (
+                    <>
+                      <Label>Search by username</Label>
+                      <Input
+                        placeholder="Start typing to search players"
+                        placeholderTextColor="#999"
+                        value={searchUser}
+                        onChangeText={handleSearch}
+                      />
+                      {suggestions.length > 0 && (
+                        <DropdownContainer>
+                          <FlatList
+                            data={suggestions}
+                            keyExtractor={(item) => item.userId}
+                            scrollEnabled={false}
+                            renderItem={({ item }) => {
+                              const isAlreadySelected = inviteUsers.some(
+                                (invitedUser) =>
+                                  invitedUser.userId === item.userId,
+                              );
+                              return (
+                                <DropdownItem
+                                  onPress={() =>
+                                    !isAlreadySelected && handleSelectUser(item)
+                                  }
+                                  disabled={isAlreadySelected}
+                                  style={{
+                                    backgroundColor: isAlreadySelected
+                                      ? "#444"
+                                      : "rgb(5, 34, 64)",
+                                    opacity: isAlreadySelected ? 0.6 : 1,
+                                  }}
+                                >
+                                  <DropdownText>
+                                    {item.username}
+                                    {isAlreadySelected && " (selected)"}
+                                  </DropdownText>
+                                </DropdownItem>
+                              );
+                            }}
+                          />
+                        </DropdownContainer>
+                      )}
+                    </>
+                  )}
+
+                  {inviteUsers?.length > 0 && (
                     <FlatList
-                      data={suggestions}
-                      keyExtractor={(item) => item.userId}
+                      style={{ marginBottom: 10, width: "100%" }}
+                      data={inviteUsers}
+                      scrollEnabled={false}
+                      keyExtractor={(item, index) =>
+                        item.userId || index.toString()
+                      }
                       renderItem={({ item }) => {
-                        const isAlreadySelected = inviteUsers.some(
-                          (invitedUser) => invitedUser.userId === item.userId
-                        );
-
+                        const hasConflict = hasUserConflict(item.userId);
                         return (
-                          <DropdownItem
-                            onPress={() =>
-                              !isAlreadySelected && handleSelectUser(item)
-                            }
-                            disabled={isAlreadySelected}
+                          <UserItem
                             style={{
-                              backgroundColor: isAlreadySelected
-                                ? "#444"
-                                : "rgb(5, 34, 64)",
-                              opacity: isAlreadySelected ? 0.6 : 1,
+                              borderColor: hasConflict ? "red" : "transparent",
+                              borderWidth: hasConflict ? 1 : 0,
                             }}
                           >
-                            <DropdownText>
-                              {item.username}
-                              {isAlreadySelected && " (selected)"}
-                            </DropdownText>
-                          </DropdownItem>
+                            <UserName>{item.username}</UserName>
+                            <AntDesign
+                              name="closecircleo"
+                              size={20}
+                              color="red"
+                              onPress={() => handleRemoveUser(item)}
+                            />
+                          </UserItem>
                         );
                       }}
                     />
-                  </DropdownContainer>
-                )}
+                  )}
 
-                {inviteUsers?.length > 0 && (
-                  <FlatList
-                    style={{ marginBottom: 10 }}
-                    data={inviteUsers}
-                    keyExtractor={(item, index) =>
-                      item.userId || index.toString()
-                    }
-                    renderItem={({ item }) => {
-                      const hasConflict = hasUserConflict(item.userId);
+                  <DisclaimerText>
+                    Please ensure you have arranged court reservation directly
+                    with the venue. Court Champs does not reserve any courts
+                    when you post a game
+                  </DisclaimerText>
 
-                      return (
-                        <UserItem
-                          style={{
-                            borderColor: hasConflict ? "red" : "transparent",
-                            borderWidth: hasConflict ? 1 : 0,
-                          }}
-                        >
-                          <UserName>{item.username}</UserName>
-                          <AntDesign
-                            name="closecircleo"
-                            size={20}
-                            color="red"
-                            onPress={() => handleRemoveUser(item)}
-                          />
-                        </UserItem>
-                      );
-                    }}
-                  />
-                )}
+                  {displayError ? (
+                    <View style={{ width: "100%" }}>
+                      <ErrorText>{displayError}</ErrorText>
+                    </View>
+                  ) : null}
 
-                <DisclaimerText>
-                  Please ensure you have arranged court reservation directly
-                  with the venue. Court Champs does not reserve any courts when
-                  you post a game
-                </DisclaimerText>
-
-                {displayError ? (
-                  <View style={{ width: "100%" }}>
-                    <ErrorText>{displayError}</ErrorText>
-                  </View>
-                ) : null}
-
-                <ButtonContainer>
-                  <InviteButton
-                    onPress={handleSendInvite}
-                    disabled={isInviteDisabled}
-                    style={{ opacity: isInviteDisabled ? 0.6 : 1 }}
-                  >
-                    {sendingInvite ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <InviteText>Invite ({inviteUsers.length})</InviteText>
-                    )}
-                  </InviteButton>
-                </ButtonContainer>
+                  <ButtonContainer>
+                    <InviteButton
+                      onPress={handleSendInvite}
+                      disabled={isInviteDisabled}
+                      style={{ opacity: isInviteDisabled ? 0.6 : 1 }}
+                    >
+                      {sendingInvite ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <InviteText>Invite ({inviteUsers.length})</InviteText>
+                      )}
+                    </InviteButton>
+                  </ButtonContainer>
+                </ScrollView>
               </ModalContent>
             </GradientOverlay>
           </ModalContainer>
         </TouchableWithoutFeedback>
+
+        <RecentPlayersModal
+          visible={recentPlayersVisible}
+          onClose={() => {
+            setRecentPlayersVisible(false);
+            setActiveTab("search");
+          }}
+          onAddPlayers={handleAddFromRecent}
+          currentUserId={currentUserId}
+          alreadySelected={inviteUsers}
+        />
       </Modal>
     </View>
   );
@@ -436,6 +521,7 @@ const ModalContent = styled.View({
   borderRadius: 10,
   width: screenWidth - 40,
   alignItems: "center",
+  maxHeight: 1000,
 });
 
 const GradientOverlay = styled(LinearGradient)({
@@ -565,5 +651,51 @@ const ErrorText = styled.Text({
   textAlign: "left",
   marginVertical: 10,
 });
+
+const ShareButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  borderRadius: 5,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  marginLeft: "auto",
+});
+
+const ShareButtonText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 12,
+  fontWeight: "500",
+});
+
+const TabRow = styled.View({
+  flexDirection: "row",
+  width: "100%",
+  marginBottom: 16,
+  borderRadius: 8,
+  backgroundColor: "rgba(255,255,255,0.05)",
+  padding: 3,
+});
+
+const Tab = styled.TouchableOpacity<{ active: boolean }>(
+  ({ active }: { active: boolean }) => ({
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 6,
+    backgroundColor: active ? "#00A2FF" : "transparent",
+  }),
+);
+
+const TabText = styled.Text<{ active: boolean }>(
+  ({ active }: { active: boolean }) => ({
+    color: active ? "white" : "#888",
+    fontSize: 13,
+    fontWeight: active ? "600" : "400",
+  }),
+);
 
 export default InvitePlayerModal;

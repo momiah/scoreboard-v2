@@ -1,12 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  ScrollView,
-  Dimensions,
-  Linking,
-} from "react-native";
+import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,7 +11,6 @@ import Scoreboard from "../../../components/scoreboard/Scoreboard";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
 import Tag from "../../../components/Tag";
-import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
@@ -48,8 +40,6 @@ const League = () => {
 
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState(tab || "Summary");
-  const [invitePlayerModalVisible, setInvitePlayerModalVisible] =
-    useState(false);
   const [userRole, setUserRole] = useState(null);
   const [leagueNotFound, setLeagueNotFound] = useState(false);
   const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
@@ -96,8 +86,11 @@ const League = () => {
     navigation.navigate("LeagueSettings", { leagueId, leagueById });
   };
 
-  const handleOpenInviteModal = () => {
-    setInvitePlayerModalVisible(true);
+  const handleOpenInviteScreen = () => {
+    navigation.navigate("InvitePlayer", {
+      competitionDetails: leagueById,
+      competitionType: COMPETITION_TYPES.LEAGUE,
+    });
   };
 
   const handleLogin = () => {
@@ -317,7 +310,7 @@ const League = () => {
                   </View>
                   <UserRoleTag
                     userRole={userRole}
-                    onInvitePress={handleOpenInviteModal}
+                    onInvitePress={handleOpenInviteScreen}
                     onLoginPress={handleLogin}
                     onRequestJoinPress={handleRequestToJoin}
                     isJoining={isJoinRequestSending}
@@ -352,15 +345,6 @@ const League = () => {
 
           {renderComponent()}
         </>
-      )}
-
-      {invitePlayerModalVisible && (
-        <InvitePlayerModel
-          modalVisible={invitePlayerModalVisible}
-          setModalVisible={setInvitePlayerModalVisible}
-          competitionDetails={leagueById}
-          competitionType={COMPETITION_TYPES.LEAGUE}
-        />
       )}
     </View>
   );
@@ -452,17 +436,6 @@ const Tab = styled.TouchableOpacity(({ isSelected }) => ({
 const TabText = styled.Text({
   color: "white",
   fontSize: screenWidth <= 400 ? 12 : 14,
-});
-
-const ImageLoadingContainer = styled.View({
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "rgba(0, 21, 43, 0.8)",
 });
 
 export default League;
