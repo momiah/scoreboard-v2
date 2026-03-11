@@ -59,13 +59,14 @@ const faqs = [
         title: "Track Stats & Climb Ranks 📈",
         lines: [
           "View your personal stats and league rankings in real-time after every game is approved.",
-          "Earn XP and medals through victories and achievements to climb the leaderboard.",
+          "Earn CP and medals through victories and achievements to climb the leaderboard.",
         ],
       },
       {
-        title: "Prize XP Distribution 🏆",
+        title: "Prize CP Distribution (Court Points) 🏆",
         lines: [
-          "Each league has its own prize pool which accumulates prize XP for every game played.",
+          "The goal of every player on Court Champs is to earn as much Court Points (CP) as possible to climb the global leaderboard.",
+          "Each league has its own prize pool which accumulates prize CP for every game played.",
           "The system considers the total number of games played, number of active players, and total winning points accumulated.",
           "The top 4 players with the most wins, followed by highest PD (points difference), will be crowned the league champions.",
           "Once the league ends, prizes are distributed to the top 4 players",
@@ -74,15 +75,106 @@ const faqs = [
     ],
   },
   {
+    question: "What is a League?",
+    answer:
+      "A league is an ongoing competition where players accumulate wins and stats over a set period (up to 3 months). It's ideal for regular badminton communities who want to track performance over time.",
+    sections: [
+      {
+        title: "Format & Structure 🏟️",
+        lines: [
+          "Leagues support Singles and Doubles formats with up to 64 players.",
+          "Players freely schedule and play matches against any opponent in the league at any time.",
+          "Standings are determined by wins, followed by points difference (PD) as a tiebreaker.",
+        ],
+      },
+      {
+        title: "Scoring & Rankings 📊",
+        lines: [
+          "Every approved game updates the live scoreboard in real-time.",
+          "Stats tracked include wins, losses, points difference, streaks, and more.",
+          "The top 4 players at the end of the league share the CP prize pool.",
+        ],
+      },
+      {
+        title: "Bulk Publishing (Admins) 📋",
+        lines: [
+          "Admins can choose to allow players to publish their own games one by one or use the Bulk Publish feature to generate multiple matchups at once.",
+          "League admins can publish multiple games at once using the Bulk Publish feature.",
+          "Select any combination of players and generate all matchups in one go.",
+          "Bulk published games are added to the scoreboard instantly, ready for players to submit scores.",
+          "This is ideal for session nights where many games are played back to back.",
+        ],
+      },
+      {
+        title: "Joining a League 🤝",
+        lines: [
+          "Leagues can be public (open requests) or private (invite only).",
+          "Request to join an open league from the league page, or accept a direct invite from a league admin.",
+          "Admins can approve or decline join requests at any time.",
+        ],
+      },
+    ],
+  },
+  {
+    question: "What is a Tournament?",
+    answer:
+      "A tournament is a structured, fixture-based competition where players are matched in organised rounds. It's ideal for one-off events or competitive sessions with a defined winner.",
+    sections: [
+      {
+        title: "Format & Fixtures 🏆",
+        lines: [
+          "Fixtures are automatically generated at the start of the tournament, scheduling every player or team against each other.",
+          "Tournaments support Singles, Fixed Doubles, and Mixed Doubles formats.",
+          "Games are played in rounds, with results tracked across all fixtures.",
+        ],
+      },
+      {
+        title: "Team Generation 🎲",
+        lines: [
+          "When generating doubles fixtures, admins choose between two team generation methods: Random or Balanced.",
+          "Random generation pairs players together randomly — great for casual, unpredictable matchups.",
+          "Balanced generation intelligently pairs the highest-ranked player with the lowest-ranked, working inward toward the middle — so 1st pairs with last, 2nd pairs with second-to-last, and so on until the middle pair (e.g. 7th with 8th in a 16-player tournament).",
+          "Balanced generation ensures every team has a mix of strong and developing players, keeping games competitive and fair across all courts.",
+        ],
+      },
+      {
+        title: "Scoring & Progression 📈",
+        lines: [
+          "Results are submitted and approved the same way as leagues — opponents must approve scores for stats to count.",
+          "Standings update in real-time after each approved game.",
+          "The top 4 players by wins and points difference are crowned the tournament champions.",
+        ],
+      },
+      {
+        title: "Bulk Publishing (Admins) 📋",
+        lines: [
+          "Admins can choose to allow players to publish their own games one by one or use the Bulk Publish feature to generate multiple matchups at once.",
+          "Tournament admins can bulk publish all fixture games for a round at once.",
+          "Once fixtures are generated, admins select a round and publish all its games simultaneously.",
+          "Players are notified and can begin submitting results straight away.",
+          "This keeps the tournament moving efficiently without admins having to publish games one by one.",
+        ],
+      },
+      {
+        title: "Joining a Tournament 🤝",
+        lines: [
+          "Tournaments can be public or private, with the same invite and request system as leagues.",
+          "Once the organiser generates fixtures, the tournament is locked and play begins.",
+          "Paid tournaments with real cash prizes are coming soon via secure in-app payments.",
+        ],
+      },
+    ],
+  },
+  {
     question: "How do ranks and medals work?",
     answer:
-      "Your rank is based on XP. You gain XP for wins and lose it for losses. Special achievements grant medals and bonus XP, while significant losses have extra penalties.",
+      "Your rank is based on CP. You gain CP for wins and lose it for losses. Special achievements grant medals and bonus CP, while significant losses have extra penalties.",
     sections: [
       {
         title: "Decisive Victory (Assassin Medal)",
         lines: [
-          "Win by 10+ points: Earn the 'Assassin' medal and bonus XP.",
-          "Lose by 10+ points: Incur an extra XP penalty.",
+          "Win by 10+ points: Earn the 'Assassin' medal and bonus CP.",
+          "Lose by 10+ points: Incur an extra CP penalty.",
         ],
       },
       {
@@ -94,8 +186,32 @@ const faqs = [
       {
         title: "Rank Difference",
         lines: [
-          "Beat a higher-ranked player: Earn bonus XP.",
-          "Lose to a lower-ranked player: Incur an extra XP penalty.",
+          "Beat a higher-ranked player: Earn bonus CP.",
+          "Lose to a lower-ranked player: Incur an extra CP penalty.",
+        ],
+      },
+    ],
+  },
+  {
+    question: "What is the Quick Add Game modal?",
+    answer:
+      "The Quick Add Game modal (accessed via the blue ⨁ tab button below) lets players rapidly submit game results without navigating deep into their competition.",
+    sections: [
+      {
+        title: "Quick Add for Leagues 🏟️",
+        lines: [
+          "Tap the Quick Add button from the home screen to instantly open your league's game submission form.",
+          "Select your opponents, enter the score, and submit for approval in seconds.",
+          "Ideal for session nights where multiple games are played back to back and you want to log results on the spot.",
+          "If you're in multiple leagues, you can select which league you're submitting the game to.",
+        ],
+      },
+      {
+        title: "Quick Add for Tournaments 🏆",
+        lines: [
+          "For tournaments, the Quick Add modal automatically surfaces your next scheduled fixture so you never have to hunt for your upcoming game.",
+          "Your next opponent, court number, and round are displayed upfront — just play and submit the result directly from the modal.",
+          "Once submitted, the result is sent for opponent approval and your next fixture will appear ready for the following round.",
         ],
       },
     ],
@@ -107,7 +223,7 @@ const faqs = [
     bullets: [
       "Match wins and losses",
       "Points scored and conceded",
-      "Player rankings and XP progression",
+      "Player rankings and CP progression",
       "Team performance and rival opponents",
     ],
   },

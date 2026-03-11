@@ -62,7 +62,7 @@ const TopPlayers = ({ topPlayers }) => {
             </Stat> */}
           </TableCell>
           <TableCell>
-            <StatTitle>XP</StatTitle>
+            <StatTitle>CP</StatTitle>
             <Stat>{playerXp.toFixed(0)}</Stat>
           </TableCell>
           <TableCell>

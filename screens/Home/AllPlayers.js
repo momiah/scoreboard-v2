@@ -190,7 +190,7 @@ const AllPlayers = () => {
             <Icon name={player.location.countryCode} height="20" width="20" />
           </TableCell>
           <TableCell>
-            <StatTitle>XP</StatTitle>
+            <StatTitle>CP</StatTitle>
             <Stat>{playerXp.toFixed(0)}</Stat>
           </TableCell>
           <TableCell>
