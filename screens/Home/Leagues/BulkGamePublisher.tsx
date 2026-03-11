@@ -144,7 +144,7 @@ const BulkGamePublisher = () => {
         result,
         numberOfApprovals: 0,
         numberOfDeclines: 0,
-        approvalStatus: "Approved",
+        approvalStatus: "approved",
         reporter: currentUser?.userId || "",
       };
 

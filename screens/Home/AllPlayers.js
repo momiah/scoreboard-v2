@@ -41,6 +41,7 @@ const AllPlayers = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const PAGE_SIZE = 25;
 
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
@@ -72,6 +73,7 @@ const AllPlayers = () => {
   const debouncedSearch = useMemo(
     () =>
       debounce(async (value) => {
+        setIsTyping(false); // user finished typing, debounce fired
         try {
           if (value.trim()) {
             await fetchUsers(1, value.trim());
@@ -82,13 +84,14 @@ const AllPlayers = () => {
           console.error("Search error:", error);
           Alert.alert("Search failed", "Could not find players");
         }
-      }, 300),
+      }, 600),
     [fetchUsers],
   );
 
   const handleSearch = useCallback(
     (value) => {
       setSearchQuery(value);
+      setIsTyping(true); // user is still typing, suppress loading
       debouncedSearch(value);
     },
     [debouncedSearch],
@@ -146,9 +149,6 @@ const AllPlayers = () => {
     ({ item: player, index }) => {
       const playerXp = player.profileDetail.XP;
       const rankLevel = findRankIndex(playerXp) + 1;
-      const winRatio =
-        player.profileDetail.numberOfWins /
-        (player.profileDetail.numberOfLosses || 1);
 
       const displayName = formatDisplayName(player);
 
@@ -190,8 +190,8 @@ const AllPlayers = () => {
             <Icon name={player.location.countryCode} height="20" width="20" />
           </TableCell>
           <TableCell>
-            <StatTitle>Wins</StatTitle>
-            <Stat>{player.profileDetail.numberOfWins}</Stat>
+            <StatTitle>CP</StatTitle>
+            <Stat>{playerXp.toFixed(0)}</Stat>
           </TableCell>
           <TableCell>
             <MedalDisplay xp={playerXp.toFixed(0)} size={iconSize} />
@@ -298,7 +298,7 @@ const AllPlayers = () => {
   return (
     <TableContainer>
       <PlayerCountContainer>
-        {loading ? (
+        {loading && !isTyping ? (
           <ActivityIndicator size="small" color="#00A2FF" />
         ) : (
           <PlayerCountText>{totalUsers} players</PlayerCountText>
@@ -316,7 +316,7 @@ const AllPlayers = () => {
         <EmptyState>No players found</EmptyState>
       )}
       <ListContainer>
-        <LoadingOverlay visible={loading} />
+        <LoadingOverlay visible={loading && !isTyping} />
         <FlatList
           data={users}
           contentContainerStyle={{ paddingBottom: 30 }}
@@ -426,7 +426,7 @@ const StatTitle = styled.Text({
 });
 
 const Stat = styled.Text({
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: "bold",
   color: "white",
 });

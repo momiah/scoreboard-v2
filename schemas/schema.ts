@@ -10,6 +10,7 @@ import {
   CollectionName,
   CourtLocation,
 } from "../types/competition";
+import { ApprovalStatus } from "@/types/game";
 import moment from "moment";
 import { Platform } from "react-native";
 
@@ -71,6 +72,9 @@ export const fallbackUrls = {
 
 export const ccImageEndpoint =
   "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
+
+export const ccMedalOutlineEndpoint =
+  "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/medal-outline.png?alt=media&token=1cbd9ff1-2211-49ec-a9f2-e9253d4f1982";
 
 export const prizeTypes = {
   TROPHY: "Trophy",
@@ -370,8 +374,8 @@ export const notificationTypes = {
   RESPONSE: {
     ACCEPT: "accepted",
     DECLINE: "declined",
-    APPROVED_GAME: "approved",
-    REJECTED_GAME: "rejected",
+    APPROVED_GAME: "approved" as ApprovalStatus,
+    REJECTED_GAME: "declined" as ApprovalStatus,
   },
 };
 

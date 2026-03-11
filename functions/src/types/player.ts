@@ -26,8 +26,6 @@ export interface ScoreboardProfile {
   firstName?: string;
   lastName?: string;
   userId?: string;
-  memberSince?: string;
-  profileImage?: string;
 }
 
 export type PlayersToUpdate = ScoreboardProfile[];

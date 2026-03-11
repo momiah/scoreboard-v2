@@ -45,10 +45,10 @@ const TopPlayers = ({ topPlayers }) => {
               {index === 0
                 ? "st"
                 : index === 1
-                ? "nd"
-                : index === 2
-                ? "rd"
-                : "th"}
+                  ? "nd"
+                  : index === 2
+                    ? "rd"
+                    : "th"}
             </Rank>
           </TableCell>
           <PlayerNameCell>
@@ -62,8 +62,8 @@ const TopPlayers = ({ topPlayers }) => {
             </Stat> */}
           </TableCell>
           <TableCell>
-            <StatTitle>Wins</StatTitle>
-            <Stat>{player.profileDetail.numberOfWins}</Stat>
+            <StatTitle>CP</StatTitle>
+            <Stat>{playerXp.toFixed(0)}</Stat>
           </TableCell>
           <TableCell>
             <MedalDisplay xp={playerXp.toFixed(0)} size={iconSize} />
@@ -72,7 +72,7 @@ const TopPlayers = ({ topPlayers }) => {
         </PlayerRow>
       );
     },
-    [findRankIndex]
+    [findRankIndex],
   );
 
   return (
@@ -145,7 +145,7 @@ const StatTitle = styled.Text({
 });
 
 const Stat = styled.Text({
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: "bold",
   color: "white",
 });

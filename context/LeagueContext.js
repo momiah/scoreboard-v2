@@ -1143,18 +1143,28 @@ const LeagueProvider = ({ children }) => {
 
   const fetchUserPendingRequests = async (userId) => {
     try {
-      const leaguesRef = collection(db, "leagues");
-      const snapshot = await getDocs(leaguesRef);
+      const [leaguesSnap, tournamentsSnap] = await Promise.all([
+        getDocs(collection(db, "leagues")),
+        getDocs(collection(db, "tournaments")),
+      ]);
 
-      const result = snapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }))
-        .filter(
-          (league) =>
-            Array.isArray(league.pendingRequests) &&
-            league.pendingRequests.some((p) => p.userId === userId),
-        );
+      const leagues = leaguesSnap.docs
+        .map((doc) => ({
+          id: doc.id,
+          collectionName: "leagues",
+          ...doc.data(),
+        }))
+        .filter((l) => l.pendingRequests?.some((p) => p.userId === userId));
 
-      return result;
+      const tournaments = tournamentsSnap.docs
+        .map((doc) => ({
+          id: doc.id,
+          collectionName: "tournaments",
+          ...doc.data(),
+        }))
+        .filter((t) => t.pendingRequests?.some((p) => p.userId === userId));
+
+      return [...leagues, ...tournaments];
     } catch (err) {
       console.error("Failed to fetch pending requests", err);
       return [];
@@ -1162,21 +1172,23 @@ const LeagueProvider = ({ children }) => {
   };
 
   // Withdraw user request from a league
-  const withdrawJoinRequest = async (leagueId, userId) => {
+  const withdrawJoinRequest = async (
+    competitionId,
+    userId,
+    collectionName = "leagues",
+  ) => {
     try {
-      const leagueRef = doc(db, "leagues", leagueId);
-      const leagueSnap = await getDoc(leagueRef);
+      const competitionRef = doc(db, collectionName, competitionId);
+      const competitionSnap = await getDoc(competitionRef);
 
-      if (!leagueSnap.exists()) return;
+      if (!competitionSnap.exists()) return;
 
-      const leagueData = leagueSnap.data();
-      const pendingRequests = leagueData.pendingRequests || [];
-
+      const pendingRequests = competitionSnap.data().pendingRequests || [];
       const updatedPending = pendingRequests.filter(
         (req) => req.userId !== userId,
       );
 
-      await updateDoc(leagueRef, { pendingRequests: updatedPending });
+      await updateDoc(competitionRef, { pendingRequests: updatedPending });
     } catch (error) {
       console.error("Error withdrawing join request:", error);
     }

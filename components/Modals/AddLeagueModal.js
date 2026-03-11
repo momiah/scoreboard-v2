@@ -132,6 +132,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
       lastName: userInfo.lastName,
       userId: userInfo.userId,
       memberSince: userInfo.profileDetail?.memberSince || "",
+      profileImage: userInfo?.profileImage || "",
     };
 
     const leagueOwner = {

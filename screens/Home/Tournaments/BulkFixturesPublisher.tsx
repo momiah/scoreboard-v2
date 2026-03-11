@@ -56,7 +56,7 @@ interface BulkScoreDisplayProps {
   onScoreChange: (
     gameId: string,
     team: "team1" | "team2",
-    score: string
+    score: string,
   ) => void;
 }
 
@@ -66,7 +66,7 @@ interface BulkGameItemProps {
   onScoreChange: (
     gameId: string,
     team: "team1" | "team2",
-    score: string
+    score: string,
   ) => void;
 }
 
@@ -164,7 +164,7 @@ const BulkFixturesPublisher = () => {
               const updated = prev.map((game) => {
                 const freshGame = updatedTournament.fixtures
                   .flatMap(
-                    (round: { round: number; games: Game[] }) => round.games
+                    (round: { round: number; games: Game[] }) => round.games,
                   )
                   .find((g: Game) => g.gameId === game.gameId);
 
@@ -186,7 +186,7 @@ const BulkFixturesPublisher = () => {
       };
 
       refreshGames();
-    }, [tournamentId])
+    }, [tournamentId]),
   );
 
   const initializeGamesWithScores = useCallback((): GameWithScores[] => {
@@ -205,7 +205,7 @@ const BulkFixturesPublisher = () => {
   }, [tournamentById?.fixtures]);
 
   const [gamesWithScores, setGamesWithScores] = useState<GameWithScores[]>(
-    initializeGamesWithScores
+    initializeGamesWithScores,
   );
   const [publishing, setPublishing] = useState<boolean>(false);
 
@@ -236,18 +236,18 @@ const BulkFixturesPublisher = () => {
               return updatedGame;
             }
             return game;
-          })
+          }),
         );
       }
     },
-    []
+    [],
   );
 
   // Group games by round for display
   const gamesByRound: Record<number, GameWithScores[]> = gamesWithScores.reduce(
     (rounds, game) => {
       const roundIndex = tournamentById?.fixtures?.findIndex((round) =>
-        round.games?.some((g) => g.gameId === game.gameId)
+        round.games?.some((g) => g.gameId === game.gameId),
       );
       if (roundIndex !== undefined && roundIndex >= 0) {
         const roundNumber = roundIndex + 1;
@@ -258,17 +258,17 @@ const BulkFixturesPublisher = () => {
       }
       return rounds;
     },
-    {} as Record<number, GameWithScores[]>
+    {} as Record<number, GameWithScores[]>,
   );
 
   const publishedGamesCount = gamesWithScores.filter(
-    (game) => game.result && game.gamescore && game.gamescore !== ""
+    (game) => game.result && game.gamescore && game.gamescore !== "",
   ).length;
 
   const gamesReadyToSubmit: GameWithScores[] = gamesWithScores.filter(
     (game) =>
       game.hasScores &&
-      !(game.result && game.gamescore && game.gamescore !== "")
+      !(game.result && game.gamescore && game.gamescore !== ""),
   );
 
   const totalCompletedCount = publishedGamesCount + gamesReadyToSubmit.length;
@@ -278,7 +278,7 @@ const BulkFixturesPublisher = () => {
     if (gamesReadyToSubmit.length === 0) {
       Alert.alert(
         "No Scores",
-        "Please add scores to at least one game before submitting."
+        "Please add scores to at least one game before submitting.",
       );
       return;
     }
@@ -311,7 +311,7 @@ const BulkFixturesPublisher = () => {
       const result = calculateWin(
         team1,
         team2,
-        tournamentById.tournamentType as CompetitionTypes
+        tournamentById.tournamentType as CompetitionTypes,
       ) as GameResult;
 
       const updatedGame: Game = {
@@ -324,7 +324,7 @@ const BulkFixturesPublisher = () => {
         result,
         numberOfApprovals: 0,
         numberOfDeclines: 0,
-        approvalStatus: "Approved",
+        approvalStatus: "approved",
         reporter: currentUser?.userId || "",
       };
 
@@ -334,7 +334,7 @@ const BulkFixturesPublisher = () => {
     if (invalidGames.length > 0) {
       Alert.alert(
         "Invalid Scores",
-        `Please fix these games:\n\n${invalidGames.join("\n")}`
+        `Please fix these games:\n\n${invalidGames.join("\n")}`,
       );
       return;
     }
@@ -382,7 +382,7 @@ const BulkFixturesPublisher = () => {
                   } else {
                     console.warn(
                       `Performance update warning for Game ${game.gameNumber}:`,
-                      performanceResult.message
+                      performanceResult.message,
                     );
                   }
 
@@ -390,7 +390,7 @@ const BulkFixturesPublisher = () => {
                 } catch (error) {
                   console.error(
                     `❌ Failed to update Game ${game.gameNumber}:`,
-                    error
+                    error,
                   );
                   failedGames.push(`Game ${game.gameNumber}`);
                 }
@@ -405,12 +405,12 @@ const BulkFixturesPublisher = () => {
                     gamesCompleted: increment(successCount),
                   });
                   console.log(
-                    `✅ Updated ${currentParticipants.length} tournament participants`
+                    `✅ Updated ${currentParticipants.length} tournament participants`,
                   );
                 } catch (error) {
                   console.error(
                     "Failed to update tournament participants:",
-                    error
+                    error,
                   );
                 }
               }
@@ -419,21 +419,21 @@ const BulkFixturesPublisher = () => {
                 handleShowPopup(
                   `Successfully submitted ${successCount} game result${
                     successCount > 1 ? "s" : ""
-                  }!`
+                  }!`,
                 );
               } else if (successCount > 0) {
                 Alert.alert(
                   "Partial Success",
                   `${successCount} game${
                     successCount > 1 ? "s" : ""
-                  } updated successfully.\n\nFailed: ${failedGames.join(", ")}`
+                  } updated successfully.\n\nFailed: ${failedGames.join(", ")}`,
                 );
               } else {
                 Alert.alert(
                   "Update Failed",
                   `Failed to update any games. Please try again.\n\nFailed: ${failedGames.join(
-                    ", "
-                  )}`
+                    ", ",
+                  )}`,
                 );
               }
             } catch (error) {
@@ -444,7 +444,7 @@ const BulkFixturesPublisher = () => {
             }
           },
         },
-      ]
+      ],
     );
   }, [
     gamesReadyToSubmit,
@@ -474,7 +474,7 @@ const BulkFixturesPublisher = () => {
           style: "destructive",
           onPress: () => navigation.goBack(),
         },
-      ]
+      ],
     );
   }, [gamesWithScores, navigation]);
 

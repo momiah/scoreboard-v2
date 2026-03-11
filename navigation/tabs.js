@@ -41,6 +41,7 @@ import AddLeagueModal from "../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../components/Modals/AddTournamentModal";
 import QuickAddModal from "../components/Modals/QuickAddModal";
 import { ADMOB_BANNER_IOS_PROD, ADMOB_BANNER_ANDROID_PROD } from "@env";
+import InvitePlayer from "../screens/InvitePlayer";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -73,6 +74,7 @@ const HomeStack = () => {
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -107,6 +109,7 @@ const ProfileStack = () => {
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
+      <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
@@ -140,6 +143,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -176,6 +180,7 @@ const ChatsStack = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />

@@ -28,7 +28,6 @@ const PendingRequests = () => {
   const loadRequests = async () => {
     setLoading(true);
     const data = await fetchUserPendingRequests(currentUser?.userId);
-    console.log("Pending requests:", data);
     setRequests(data);
     setLoading(false);
   };
@@ -37,28 +36,50 @@ const PendingRequests = () => {
     loadRequests();
   }, []);
 
-  const handleWithdraw = async (leagueId) => {
+  const handleWithdraw = async (competitionId, collectionName) => {
     try {
-      await withdrawJoinRequest(leagueId, currentUser?.userId);
+      await withdrawJoinRequest(
+        competitionId,
+        currentUser?.userId,
+        collectionName,
+      );
       loadRequests();
     } catch (err) {
       Alert.alert("Error", "Failed to withdraw request.");
     }
   };
 
-  const renderItem = ({ item }) => (
-    <Row>
-      <TouchableOpacity
-        onPress={() => navigation.navigate("League", { leagueId: item.id })}
-        style={{ flex: 1 }}
-      >
-        <LeagueName>{item.leagueName}</LeagueName>
-      </TouchableOpacity>
-      <WithdrawButton onPress={() => handleWithdraw(item.id)}>
-        <WithdrawText>Withdraw</WithdrawText>
-      </WithdrawButton>
-    </Row>
-  );
+  const handleNavigate = (item) => {
+    if (item.collectionName === "leagues") {
+      navigation.navigate("League", { leagueId: item.id });
+    } else {
+      navigation.navigate("Tournament", { tournamentId: item.id });
+    }
+  };
+
+  const renderItem = ({ item }) => {
+    const isLeague = item.collectionName === "leagues";
+    const name = isLeague ? item.leagueName : item.tournamentName;
+
+    return (
+      <Row>
+        <TouchableOpacity
+          onPress={() => handleNavigate(item)}
+          style={{ flex: 1 }}
+        >
+          <LeagueName>{name}</LeagueName>
+          <CompetitionType>
+            {isLeague ? "League" : "Tournament"}
+          </CompetitionType>
+        </TouchableOpacity>
+        <WithdrawButton
+          onPress={() => handleWithdraw(item.id, item.collectionName)}
+        >
+          <WithdrawText>Withdraw</WithdrawText>
+        </WithdrawButton>
+      </Row>
+    );
+  };
 
   if (loading) {
     return (
@@ -79,13 +100,13 @@ const PendingRequests = () => {
       </Header>
       {requests.length === 0 ? (
         <EmptyText>
-          You have no pending requests. Please check out the leagues page to
-          find leagues to join or create your own! 🏆
+          You have no pending requests. Please check out the leagues or
+          tournaments page to find ones to join or create your own! 🏆
         </EmptyText>
       ) : (
         <FlatList
           data={requests}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => `${item.collectionName}-${item.id}`}
           renderItem={renderItem}
           ItemSeparatorComponent={() => <Separator />}
         />
@@ -93,7 +114,6 @@ const PendingRequests = () => {
     </Container>
   );
 };
-
 export default PendingRequests;
 
 // Styled Components
@@ -104,11 +124,10 @@ const Container = styled.View({
   paddingTop: platformAdjustedPaddingTop,
 });
 
-const Title = styled.Text({
-  color: "white",
-  fontSize: 20,
-  fontWeight: "bold",
-  marginBottom: 20,
+const CompetitionType = styled.Text({
+  color: "#00A2FF",
+  fontSize: 11,
+  marginTop: 2,
 });
 
 const LeagueName = styled.Text({

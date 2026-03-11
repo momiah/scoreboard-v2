@@ -99,7 +99,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
       </ProgressBar>
       <ProgressRanks>
         <RankContainer style={{ alignItems: "flex-start" }}>
-          <RankXpText>{formatNumber(currentRank.xp)} XP</RankXpText>
+          <RankXpText>{formatNumber(currentRank.xp)} CP</RankXpText>
           <MedalDisplay xp={currentRank.xp} size={20} />
           <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>
             {currentRank.name}
@@ -109,8 +109,8 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           <PreviousGameXpContainer>
             <PreviousGameXp prevGameXp={previousGameXp}>
               {previousGameXp < 0
-                ? `${previousGameXp} XP`
-                : `+${previousGameXp} XP`}
+                ? `${previousGameXp} CP`
+                : `+${previousGameXp} CP`}
             </PreviousGameXp>
             <Text style={{ color: "#aaa", fontSize: 11, paddingLeft: 6 }}>
               Last Match
@@ -118,7 +118,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           </PreviousGameXpContainer>
         )}
         <RankContainer style={{ alignItems: "flex-end" }}>
-          <RankXpText>{formatNumber(nextRank.xp)} XP</RankXpText>
+          <RankXpText>{formatNumber(nextRank.xp)} CP</RankXpText>
           <MedalDisplay xp={nextRank.xp} size={20} />
           <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>
             {nextRank.name}

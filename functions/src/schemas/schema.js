@@ -7,6 +7,12 @@ const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
+
+const COMPETITION_TYPES = {
+  LEAGUE: "league",
+  TOURNAMENT: "tournament",
+};
+
 const ICON_MAP = {
   Instagram: "logo-instagram",
   TikTok: "logo-tiktok",
@@ -324,4 +330,5 @@ module.exports = {
   notificationTypes,
   notificationSchema,
   systemSenderId,
+  COMPETITION_TYPES,
 };

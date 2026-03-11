@@ -37,8 +37,8 @@ export type ApprovalStatus =
   | "Scheduled"
   | "Pending"
   | "pending"
-  | "approved"
-  | "declined";
+  | "Approved"
+  | "Declined";
 
 export type CompetitionTypes = "Singles" | "Doubles";
 export type GenerationType = "Random" | "Balanced";
@@ -64,6 +64,11 @@ export interface Game {
   reportedAt?: Date | null;
   reportedTime?: string | null;
   // status?: GameStatus;
+  approvers: Approver[];
+}
+export interface Approver {
+  userId: string;
+  username: string;
 }
 export interface Fixtures {
   round: number;

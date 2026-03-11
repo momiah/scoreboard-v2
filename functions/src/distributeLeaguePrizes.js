@@ -6,8 +6,6 @@ const {
   calculatePrizeAllocation,
 } = require("./helpers/calculatePrizeAllocation");
 
-const db = admin.firestore();
-
 const isLeagueDue = (endDateStr, tz = "Europe/London") => {
   const end = moment
     .tz(endDateStr, ["DD-MM-YYYY", "DD/MM/YYYY"], tz)
@@ -26,7 +24,7 @@ const computePrizePool = (league) => {
     0;
 
   return Math.floor(
-    (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2
+    (numberOfParticipants * numberOfGamesPlayed + totalGamePointsWon) / 2,
   );
 };
 
@@ -35,6 +33,7 @@ const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 exports.distributeLeaguePrizes = onSchedule(
   { schedule: "every 1 hours", timeZone: "Europe/London" },
   async () => {
+    const db = admin.firestore(); // ← moved here
     try {
       const snap = await db
         .collection("leagues")
@@ -71,5 +70,5 @@ exports.distributeLeaguePrizes = onSchedule(
       console.error("[prizes] error:", err);
     }
     return null;
-  }
+  },
 );

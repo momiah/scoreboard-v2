@@ -298,7 +298,7 @@ const UserProfile = () => {
                   </Pressable>
                   <DetailColumn>
                     <PlayerName>{profile?.username}</PlayerName>
-                    <DetailText>{profileXp ?? 0} XP</DetailText>
+                    <DetailText>{profileXp ?? 0} CP</DetailText>
                     <DetailText
                       style={{
                         fontWeight: "bold",
@@ -329,7 +329,7 @@ const UserProfile = () => {
                 </Pressable>
                 <DetailColumn>
                   <PlayerName>{profile?.username}</PlayerName>
-                  <DetailText>{profileXp ?? 0} XP</DetailText>
+                  <DetailText>{profileXp ?? 0} CP</DetailText>
                   <DetailText
                     style={{
                       fontWeight: "bold",
@@ -350,7 +350,15 @@ const UserProfile = () => {
                 />
               </TouchableOpacity>
               <MedalName>{medalNames(profileDetail?.XP)}</MedalName>
-              <MedalName style={{ fontWeight: "bold" }}>{rankLevel}</MedalName>
+              <MedalName
+                style={{
+                  // fontWeight: "bold",
+                  fontStyle: "italic",
+                  color: "#cdcdcdff",
+                }}
+              >
+                ( Level {rankLevel} )
+              </MedalName>
             </MedalContainer>
           </Overview>
 

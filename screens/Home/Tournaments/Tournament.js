@@ -21,7 +21,6 @@ import CompetitionSummary from "../../../components/Summary/CompetitionSummary";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
 import Tag from "../../../components/Tag";
-import InvitePlayerModel from "../../../components/Modals/InvitePlayerModal";
 import UserRoleTag from "../../../components/UserRoleTag";
 
 import { LeagueContext } from "../../../context/LeagueContext";
@@ -53,8 +52,6 @@ const Tournament = () => {
 
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState(tab || "Summary");
-  const [invitePlayerModalVisible, setInvitePlayerModalVisible] =
-    useState(false);
   const [userRole, setUserRole] = useState(null);
   const [tournamentNotFound, setTournamentNotFound] = useState(false);
   const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
@@ -101,8 +98,11 @@ const Tournament = () => {
     navigation.navigate("TournamentSettings", { tournamentId, tournamentById });
   };
 
-  const handleOpenInviteModal = () => {
-    setInvitePlayerModalVisible(true);
+  const handleOpenInviteScreen = () => {
+    navigation.navigate("InvitePlayer", {
+      competitionDetails: tournamentById,
+      competitionType: COMPETITION_TYPES.TOURNAMENT,
+    });
   };
 
   const handleLogin = () => {
@@ -316,7 +316,7 @@ const Tournament = () => {
                   </View>
                   <UserRoleTag
                     userRole={userRole}
-                    onInvitePress={handleOpenInviteModal}
+                    onInvitePress={handleOpenInviteScreen}
                     onLoginPress={handleLogin}
                     onRequestJoinPress={handleRequestToJoin}
                     isJoining={isJoinRequestSending}
@@ -351,15 +351,6 @@ const Tournament = () => {
 
           {renderComponent()}
         </>
-      )}
-
-      {invitePlayerModalVisible && (
-        <InvitePlayerModel
-          modalVisible={invitePlayerModalVisible}
-          setModalVisible={setInvitePlayerModalVisible}
-          competitionDetails={tournamentById}
-          competitionType={COMPETITION_TYPES.TOURNAMENT}
-        />
       )}
     </View>
   );

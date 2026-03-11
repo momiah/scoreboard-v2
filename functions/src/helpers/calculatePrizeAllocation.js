@@ -1,13 +1,6 @@
 const admin = require("firebase-admin");
 const { notificationTypes } = require("../schemas/schema");
 const { sendNotification } = require("./sendNotification");
-const db = admin.firestore();
-
-
-
-
-
-
 
 const calculatePrizeAllocation = async ({
   leagueParticipants,
@@ -16,10 +9,10 @@ const calculatePrizeAllocation = async ({
   leagueId,
   leagueName,
 }) => {
+  const db = admin.firestore(); // ← moved here
   try {
     console.log(`Calculating prize allocation for league ${leagueId}...`);
 
-    // sort participants by wins
     leagueParticipants.sort((a, b) => {
       if (b.numberOfWins !== a.numberOfWins) {
         return b.numberOfWins - a.numberOfWins;
@@ -48,7 +41,7 @@ const calculatePrizeAllocation = async ({
       });
 
       console.log(
-        `+${prizeXP} XP -> user ${player.userId} (${player.displayName}) (${placementKey})`
+        `+${prizeXP} XP -> user ${player.userId} (${player.displayName}) (${placementKey})`,
       );
 
       await sendNotification({
@@ -62,7 +55,6 @@ const calculatePrizeAllocation = async ({
           leagueId: leagueId,
         },
         response: "",
-
       });
     }
 

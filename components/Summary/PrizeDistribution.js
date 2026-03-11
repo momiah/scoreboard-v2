@@ -63,7 +63,7 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
           config={SKELETON_THEMES.dark}
         >
           {imageLoaded && !showSkeleton ? (
-            <PrizeText>{statValue} XP</PrizeText>
+            <PrizeText>{statValue} CP</PrizeText>
           ) : null}
         </TextSkeleton>
       </PrizeView>
