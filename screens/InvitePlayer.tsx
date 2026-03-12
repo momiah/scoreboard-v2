@@ -126,7 +126,12 @@ const InvitePlayer = () => {
       inviteUsers.length +
       competition.pendingInvites.length;
     if (totalCount > competition.maxPlayers) {
-      return `Max players reached (${competition.maxPlayers}). Remove some players to continue.`;
+      const pendingCount = competition.pendingInvites.length;
+      const pendingMessage =
+        pendingCount > 0
+          ? ` You also have ${pendingCount} pending invite(s) reserving spots.`
+          : "";
+      return `Max players reached (${competition.maxPlayers}).${pendingMessage}  Remove some players to continue.`;
     }
     if (hasConflicts) {
       return `Cannot invite: ${conflictedUsers

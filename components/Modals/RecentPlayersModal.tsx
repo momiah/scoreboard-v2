@@ -213,35 +213,36 @@ const RecentPlayersModal = ({
             {allSelected && <AntDesign name="check" size={12} color="white" />}
           </Checkbox>
         </PlayerRow>
-        <FlatList
-          data={players}
-          keyExtractor={(item) => item.userId!}
-          //   style={{ maxHeight: 200 }}
-          renderItem={({ item }) => {
-            const isChecked = !!checkedPlayers[item.userId!];
-            return (
-              <PlayerRow onPress={() => togglePlayer(item)}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    flex: 1,
-                  }}
-                >
-                  <PlayerName>{formatDisplayName(item)}</PlayerName>
-                  <PlayerName style={{ color: "#aaa", fontStyle: "italic" }}>
-                    @ {item.username}
-                  </PlayerName>
-                </View>
-                <Checkbox checked={isChecked}>
-                  {isChecked && (
-                    <AntDesign name="check" size={12} color="white" />
-                  )}
-                </Checkbox>
-              </PlayerRow>
-            );
-          }}
-        />
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={players}
+            keyExtractor={(item) => item.userId!}
+            renderItem={({ item }) => {
+              const isChecked = !!checkedPlayers[item.userId!];
+              return (
+                <PlayerRow onPress={() => togglePlayer(item)}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      flex: 1,
+                    }}
+                  >
+                    <PlayerName>{formatDisplayName(item)}</PlayerName>
+                    <PlayerName style={{ color: "#aaa", fontStyle: "italic" }}>
+                      @ {item.username}
+                    </PlayerName>
+                  </View>
+                  <Checkbox checked={isChecked}>
+                    {isChecked && (
+                      <AntDesign name="check" size={12} color="white" />
+                    )}
+                  </Checkbox>
+                </PlayerRow>
+              );
+            }}
+          />
+        </View>
       </View>
     );
   };
@@ -292,13 +293,14 @@ const ModalOverlay = styled(BlurView).attrs({
 
 const ContentArea = styled.View({
   flex: 1,
+  overflow: "hidden",
 });
 
 const GradientOverlay = styled(LinearGradient)({
   borderTopLeftRadius: 20,
   borderTopRightRadius: 20,
   padding: 2,
-  maxHeight: "80%",
+  height: "85%",
   shadowColor: "#00A2FF",
   shadowOffset: { width: 0, height: -4 },
   shadowOpacity: 0.3,
@@ -311,9 +313,9 @@ const ModalContent = styled.View({
   borderTopRightRadius: 20,
   padding: 20,
   paddingBottom: 36,
-  minHeight: 750,
-  justifyContent: "space-between",
+  flex: 1,
 });
+
 const ModalTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
