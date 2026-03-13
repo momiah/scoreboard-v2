@@ -126,7 +126,12 @@ const InvitePlayer = () => {
       inviteUsers.length +
       competition.pendingInvites.length;
     if (totalCount > competition.maxPlayers) {
-      return `Max players reached (${competition.maxPlayers}). Remove some players to continue.`;
+      const pendingCount = competition.pendingInvites.length;
+      const pendingMessage =
+        pendingCount > 0
+          ? ` You also have ${pendingCount} pending invite(s) reserving spots.`
+          : "";
+      return `Max players reached (${competition.maxPlayers}).${pendingMessage}  Remove some players to continue.`;
     }
     if (hasConflicts) {
       return `Cannot invite: ${conflictedUsers
@@ -257,7 +262,7 @@ const InvitePlayer = () => {
   const handleShare = async () => {
     const type =
       competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
-    const url = `https://courtchamps.com/join/${type}/${competition.id}`;
+    const url = `https://courtchamps.com/preview/${type}/${competition.id}`;
     try {
       await Share.share({
         message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,
