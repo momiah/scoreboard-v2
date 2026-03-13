@@ -36,7 +36,14 @@ import { autoApproveGames } from "./autoApproveGame";
 import { distributeLeaguePrizes } from "./distributeLeaguePrizes";
 import { broadcastNotification } from "./broadcastNotification";
 import { distributeTournamentPrizes } from "./distributeTournamentPrizes";
+import { ogPreview } from "./ogPreview";
 
 admin.initializeApp();
 
-export { autoApproveGames, distributeLeaguePrizes, broadcastNotification, distributeTournamentPrizes };
+export {
+  autoApproveGames,
+  distributeLeaguePrizes,
+  broadcastNotification,
+  distributeTournamentPrizes,
+  ogPreview,
+};
