@@ -1,12 +1,10 @@
 import React, { useContext, useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Modal,
   Alert,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
 import styled from "styled-components/native";
@@ -16,11 +14,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { COLLECTION_NAMES } from "../../../schemas/schema";
-import {
-  getAuth,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-} from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../../services/firebase.config";
 
 const LeagueSettings = () => {
   const route = useRoute();
@@ -105,14 +100,17 @@ const LeagueSettings = () => {
       return;
     }
 
+    if (!currentUser?.email) {
+      setPasswordError("Unable to verify your account.");
+      return;
+    }
+
     try {
       setDeleting(true);
       setPasswordError("");
 
-      const auth = getAuth();
-      const user = auth.currentUser;
-      const credential = EmailAuthProvider.credential(user.email, password);
-      await reauthenticateWithCredential(user, credential);
+      // Verifies password without relying on auth.currentUser hydration
+      await signInWithEmailAndPassword(auth, currentUser.email, password);
 
       await deleteCompetition(COLLECTION_NAMES.leagues, leagueId);
       setPasswordModalVisible(false);
@@ -125,6 +123,7 @@ const LeagueSettings = () => {
         setPasswordError("Incorrect password. Please try again.");
       } else {
         Alert.alert("Error", "Failed to delete league. Please try again.");
+        console.error("Delete league error:", error);
       }
     } finally {
       setDeleting(false);

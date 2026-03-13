@@ -262,7 +262,7 @@ const InvitePlayer = () => {
   const handleShare = async () => {
     const type =
       competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
-    const url = `https://courtchamps.com/join/${type}/${competition.id}`;
+    const url = `https://courtchamps.com/preview/${type}/${competition.id}`;
     try {
       await Share.share({
         message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,

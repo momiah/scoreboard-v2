@@ -23,6 +23,8 @@ import {
 import { db, auth } from "../services/firebase.config";
 import { deleteUser } from "firebase/auth";
 
+import { Alert } from "react-native";
+
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
