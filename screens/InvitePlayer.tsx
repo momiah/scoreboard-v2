@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useCallback } from "react";
 import {
   View,
   TouchableOpacity,
@@ -8,6 +8,7 @@ import {
   Share,
   ScrollView,
   FlatList,
+  Modal,
 } from "react-native";
 import styled from "styled-components/native";
 import { SafeAreaView } from "react-native";
@@ -40,6 +41,9 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { debounce } from "lodash";
+import QRCodeLib from "qrcode";
+import Svg, { Rect } from "react-native-svg";
 
 type RouteParams = {
   InvitePlayer: {
@@ -61,6 +65,7 @@ const InvitePlayer = () => {
   const [activeTab, setActiveTab] = useState<"search" | "recent">("search");
   const [recentPlayersVisible, setRecentPlayersVisible] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [qrVisible, setQrVisible] = useState(false);
 
   const { sendNotification } = useContext(UserContext);
   const { updatePendingInvites } = useContext(LeagueContext);
@@ -131,7 +136,7 @@ const InvitePlayer = () => {
         pendingCount > 0
           ? ` You also have ${pendingCount} pending invite(s) reserving spots.`
           : "";
-      return `Max players reached (${competition.maxPlayers}).${pendingMessage}  Remove some players to continue.`;
+      return `Max players reached (${competition.maxPlayers}).${pendingMessage} Remove some players to continue.`;
     }
     if (hasConflicts) {
       return `Cannot invite: ${conflictedUsers
@@ -202,10 +207,8 @@ const InvitePlayer = () => {
     }
   };
 
-  const handleSearch = async (value: string) => {
-    setSearchUser(value);
-
-    if (value.trim().length > 0) {
+  const fetchSuggestions = useCallback(
+    debounce(async (value: string) => {
       try {
         if (!currentUserId) return;
 
@@ -226,21 +229,25 @@ const InvitePlayer = () => {
             lastName.startsWith(searchTerm) ||
             fullName.startsWith(searchTerm);
 
-          const isCurrentUser = user.userId === currentUserId;
-          const alreadySelected = inviteUsers.some(
-            (u) => u.userId === user.userId,
+          return (
+            matchesSearch &&
+            user.userId !== currentUserId &&
+            !inviteUsers.some((u) => u.userId === user.userId)
           );
-
-          return matchesSearch && !isCurrentUser && !alreadySelected;
         });
 
         setSuggestions(filteredUsers);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
-    } else {
-      setSuggestions([]);
-    }
+    }, 400),
+    [currentUserId, inviteUsers],
+  );
+
+  const handleSearch = (value: string) => {
+    setSearchUser(value);
+    setSuggestions([]);
+    if (value.trim().length >= 2) fetchSuggestions(value);
   };
 
   const handleSelectUser = (user: UserProfile) => {
@@ -277,6 +284,10 @@ const InvitePlayer = () => {
   const competitionVariant =
     competitionType === COMPETITION_TYPES.LEAGUE ? "League" : "Tournament";
 
+  const qrUrl = `https://courtchamps.com/preview/${
+    competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament"
+  }/${competition.id}`;
+
   return (
     <Container>
       <Popup
@@ -285,6 +296,14 @@ const InvitePlayer = () => {
         onClose={handleClosePopup}
         type="success"
         height={450}
+      />
+
+      <QRModal
+        visible={qrVisible}
+        onClose={() => setQrVisible(false)}
+        competitionName={competition.name}
+        competitionVariant={competitionVariant}
+        qrUrl={qrUrl}
       />
 
       <RecentPlayersModal
@@ -298,20 +317,30 @@ const InvitePlayer = () => {
         alreadySelected={inviteUsers}
       />
 
-      {/* Header */}
       <Header>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <AntDesign name="arrowleft" size={24} color="white" />
         </TouchableOpacity>
       </Header>
 
-      {/* Fixed top section */}
       <FixedSection>
         <LeagueDetailsContainer>
           <LeagueName>{competition.name}</LeagueName>
-          <LeagueLocation>
-            {competition.location.courtName}, {competition.location.city}
-          </LeagueLocation>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
+            <LeagueLocation>
+              {competition.location.courtName}, {competition.location.city}
+            </LeagueLocation>
+            <QRButton onPress={() => setQrVisible(true)}>
+              <AntDesign name="qrcode" size={13} color="#00A2FF" />
+            </QRButton>
+          </View>
           <View
             style={{
               flexDirection: "row",
@@ -366,7 +395,6 @@ const InvitePlayer = () => {
         )}
       </FixedSection>
 
-      {/* Scrollable area below search */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -466,6 +494,91 @@ const InvitePlayer = () => {
   );
 };
 
+// ─── QR Modal ────────────────────────────────────────────────────────────────
+
+type QRModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  competitionName: string;
+  competitionVariant: string;
+  qrUrl: string;
+};
+
+const QR_SIZE = 240;
+
+const QRModal = ({
+  visible,
+  onClose,
+  competitionName,
+  competitionVariant,
+  qrUrl,
+}: QRModalProps) => {
+  const [qrData, setQrData] = useState<{
+    data: Uint8Array;
+    size: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    QRCodeLib.create(qrUrl, { errorCorrectionLevel: "M" }).then((qr) => {
+      setQrData({ data: qr.modules.data, size: qr.modules.size });
+    });
+  }, [visible, qrUrl]);
+
+  const cellSize = qrData ? QR_SIZE / qrData.size : 0;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      <QRContainer>
+        <TouchableOpacity
+          onPress={onClose}
+          style={{ position: "absolute", top: 50, right: 20, zIndex: 10 }}
+        >
+          <AntDesign name="closecircleo" size={30} color="white" />
+        </TouchableOpacity>
+
+        <QRTitle>{competitionName}</QRTitle>
+        <QRSubtitle>
+          Scan to join this {competitionVariant.toLowerCase()}
+        </QRSubtitle>
+
+        <QRCard>
+          {qrData ? (
+            <Svg width={QR_SIZE} height={QR_SIZE}>
+              {Array.from(qrData.data).map((bit, index) => {
+                if (!bit) return null;
+                const x = (index % qrData.size) * cellSize;
+                const y = Math.floor(index / qrData.size) * cellSize;
+                return (
+                  <Rect
+                    key={index}
+                    x={x}
+                    y={y}
+                    width={cellSize}
+                    height={cellSize}
+                    fill="#00152B"
+                  />
+                );
+              })}
+            </Svg>
+          ) : (
+            <ActivityIndicator color="#00152B" size="large" />
+          )}
+        </QRCard>
+
+        <QRHint>Screenshot or share this code with players</QRHint>
+      </QRContainer>
+    </Modal>
+  );
+};
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const Container = styled(SafeAreaView)({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
@@ -539,7 +652,6 @@ const DropdownText = styled.Text({
   fontWeight: "500",
 });
 
-// Selected players as tags
 const SelectedSection = styled.View({
   marginTop: 16,
   marginBottom: 12,
@@ -636,7 +748,6 @@ const TabRow = styled.View({
   marginBottom: 16,
   marginTop: 8,
   borderRadius: 8,
-  //   backgroundColor: "rgba(255,255,255,0.05)",
   padding: 4,
   gap: 6,
 });
@@ -666,6 +777,60 @@ const BottomBar = styled.View({
   borderTopWidth: 1,
   borderTopColor: "rgba(255,255,255,0.08)",
   backgroundColor: "rgb(3, 16, 31)",
+});
+
+const QRButton = styled.TouchableOpacity({
+  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  borderRadius: 5,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+});
+
+const QRContainer = styled.View({
+  flex: 1,
+  backgroundColor: "rgb(3, 16, 31)",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 30,
+});
+
+const QRTitle = styled.Text({
+  fontSize: 22,
+  fontWeight: "bold",
+  color: "white",
+  textAlign: "center",
+  marginBottom: 8,
+});
+
+const QRSubtitle = styled.Text({
+  fontSize: 14,
+  color: "#888",
+  textAlign: "center",
+  marginBottom: 40,
+});
+
+const QRCard = styled.View({
+  backgroundColor: "white",
+  padding: 24,
+  borderRadius: 16,
+  shadowColor: "#00A2FF",
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.4,
+  shadowRadius: 20,
+  width: QR_SIZE + 48,
+  height: QR_SIZE + 48,
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const QRHint = styled.Text({
+  fontSize: 13,
+  color: "#666",
+  textAlign: "center",
+  marginTop: 32,
+  fontStyle: "italic",
 });
 
 export default InvitePlayer;
