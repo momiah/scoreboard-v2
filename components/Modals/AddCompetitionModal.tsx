@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Modal, View, Text, TouchableOpacity, Image } from "react-native";
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from "react-native";
+import { UserProfile } from "@/types/player";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AddLeagueModal from "./AddLeagueModal";
@@ -12,11 +20,13 @@ import { AntDesign } from "@expo/vector-icons";
 interface AddCompetitionModalProps {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
+  currentUser?: UserProfile;
 }
 
 const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   modalVisible,
   setModalVisible,
+  currentUser,
 }) => {
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
@@ -24,6 +34,13 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
 
   const handleOptionPress = (option: "league" | "tournament" | "game") => {
+    if (!currentUser) {
+      Alert.alert(
+        `Cannot open modal 🚫`,
+        `You must be logged in to add a ${option}.`,
+      );
+      return;
+    }
     if (option === "league") {
       setAddLeagueModalVisible(true);
     } else if (option === "tournament") {
