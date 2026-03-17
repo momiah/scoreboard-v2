@@ -217,7 +217,9 @@ const Home = () => {
         ) : (
           <CompetitionPlaceholder
             message="No upcoming leagues in your area. Create one for your community!"
-            onPress={() => setAddLeagueModalVisible(true)}
+            onPress={() =>
+              currentUser ? setAddLeagueModalVisible(true) : navigateTo("Login")
+            }
           />
         )}
         <SubHeader
@@ -247,7 +249,11 @@ const Home = () => {
         ) : (
           <CompetitionPlaceholder
             message="No upcoming tournaments in your area. Create one for your community!"
-            onPress={() => setAddTournamentModalVisible(true)}
+            onPress={() =>
+              currentUser
+                ? setAddTournamentModalVisible(true)
+                : navigateTo("Login")
+            }
           />
         )}
 
