@@ -385,11 +385,14 @@ const Tabs = () => {
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
 
-      <AddCompetitionModal
-        modalVisible={addCompetitionVisible}
-        setModalVisible={setAddCompetitionVisible}
-        onOptionSelect={handleCompetitionOptionSelect}
-      />
+      {addCompetitionVisible && (
+        <AddCompetitionModal
+          modalVisible={addCompetitionVisible}
+          setModalVisible={setAddCompetitionVisible}
+          onOptionSelect={handleCompetitionOptionSelect}
+          currentUser={currentUser}
+        />
+      )}
 
       {addLeagueModalVisible && (
         <AddLeagueModal

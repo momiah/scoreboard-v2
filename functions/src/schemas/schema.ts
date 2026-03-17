@@ -7,7 +7,6 @@ const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
-
 const COMPETITION_TYPES = {
   LEAGUE: "league",
   TOURNAMENT: "tournament",
@@ -213,10 +212,8 @@ const leagueSchema = {
   leagueLengthInMonths: "",
   endDate: "",
   image: "",
-
   prizesDistributed: false,
   prizeDistributionDate: null,
-
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
@@ -286,7 +283,7 @@ const notificationTypes = {
   RESPONSE: {
     ACCEPT: "accepted",
     DECLINE: "declined",
-    APPROVE_GAME: "approved",
+    APPROVED_GAME: "approved",
     REJECT_GAME: "rejected",
   },
 };
@@ -305,7 +302,7 @@ const notificationSchema = {
 };
 
 // Export using CommonJS syntax
-module.exports = {
+export {
   gameTypes,
   privacyTypes,
   maxPlayers,
