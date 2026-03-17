@@ -1,5 +1,5 @@
 const admin = require("firebase-admin");
-const { notificationTypes } = require("../schemas/schema").default;
+const { notificationTypes } = require("../schemas/schema");
 const { sendNotification } = require("./sendNotification");
 
 const calculatePrizeAllocation = async ({
