@@ -7,7 +7,6 @@ const leagueStatus = [
   { status: "completed", color: "#167500" },
 ];
 
-
 const COMPETITION_TYPES = {
   LEAGUE: "league",
   TOURNAMENT: "tournament",
@@ -213,12 +212,8 @@ const leagueSchema = {
   leagueLengthInMonths: "",
   endDate: "",
   image: "",
-  leagueType: "",
-  prizeType: "",
   prizesDistributed: false,
   prizeDistributionDate: null,
-  currencyType: "",
-  entryFee: 0,
   maxPlayers: 0,
   privacy: "",
   playingTime: [],
@@ -288,7 +283,7 @@ const notificationTypes = {
   RESPONSE: {
     ACCEPT: "accepted",
     DECLINE: "declined",
-    APPROVE_GAME: "approved",
+    APPROVED_GAME: "approved",
     REJECT_GAME: "rejected",
   },
 };

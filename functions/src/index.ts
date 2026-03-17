@@ -32,11 +32,16 @@
 // });
 
 import * as admin from "firebase-admin";
-import { autoApproveGames } from "./autoApproveGame";
+import { autoApproveLeagueGames } from "./autoApproveLeagueGames";
 import { distributeLeaguePrizes } from "./distributeLeaguePrizes";
 import { broadcastNotification } from "./broadcastNotification";
-import { autoApproveTournamentGames } from "./autoApproveTournamentGame";
+import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 
 admin.initializeApp();
 
-export { autoApproveGames, distributeLeaguePrizes, broadcastNotification, autoApproveTournamentGames };
+export {
+  autoApproveLeagueGames,
+  distributeLeaguePrizes,
+  broadcastNotification,
+  autoApproveTournamentGames,
+};

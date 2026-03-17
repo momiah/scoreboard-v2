@@ -63,7 +63,12 @@ export interface Game {
   createdTime?: string;
   reportedAt?: Date | null;
   reportedTime?: string | null;
-  // status?: GameStatus;
+  approvers: Approver[];
+}
+
+interface Approver {
+  userId: string;
+  username: string;
 }
 export interface Fixtures {
   round: number;
