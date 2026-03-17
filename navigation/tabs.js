@@ -320,6 +320,7 @@ const Tabs = () => {
           tabBarStyle: {
             borderTopWidth: 1,
             borderTopColor: "#262626",
+            backgroundColor: "rgb(3, 16, 31)",
           },
           tabBarLabel: () => null, // Remove label
           headerShown: false, // Hide the header
