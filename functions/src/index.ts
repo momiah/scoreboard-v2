@@ -38,6 +38,7 @@ import { broadcastNotification } from "./broadcastNotification";
 import { distributeTournamentPrizes } from "./distributeTournamentPrizes";
 import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
+import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 
 admin.initializeApp();
 
@@ -48,4 +49,5 @@ export {
   ogPreview,
   autoApproveLeagueGames,
   autoApproveTournamentGames,
+  notifyOwnersToInvitePlayers,
 };
