@@ -1,8 +1,7 @@
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import { processGamePerformance } from "../helpers/processGamePerformance";
-import { Game } from "../types/game";
-import { ScoreboardProfile } from "../types/player";
+import { ScoreboardProfile, Game } from "@shared/types";
 
 interface BulkAddGamesResult {
   success: boolean;
@@ -21,7 +20,7 @@ interface BulkAddGamesResult {
 
 export const bulkAddApprovedGames = async (
   gameObjects: Game[],
-  leagueId: string
+  leagueId: string,
 ): Promise<BulkAddGamesResult> => {
   try {
     if (!gameObjects || gameObjects.length === 0) {
@@ -35,7 +34,7 @@ export const bulkAddApprovedGames = async (
     }
 
     console.log(
-      `Starting bulk add of ${gameObjects.length} games to league: ${leagueId}`
+      `Starting bulk add of ${gameObjects.length} games to league: ${leagueId}`,
     );
 
     // Step 1: Get the league document
@@ -67,12 +66,12 @@ export const bulkAddApprovedGames = async (
 
       try {
         console.log(
-          `Processing game ${i + 1}/${gameObjects.length}: ${game.gameId}`
+          `Processing game ${i + 1}/${gameObjects.length}: ${game.gameId}`,
         );
 
         const approvedGame: Game = {
           ...game,
-          approvalStatus: "Approved",
+          approvalStatus: "approved",
           createdAt: new Date(),
           numberOfApprovals: 1,
           numberOfDeclines: 0,
@@ -119,7 +118,7 @@ export const bulkAddApprovedGames = async (
     console.log(`❌ Failed to process: ${failedGames} games`);
     console.log(`📊 Total games in league: ${updatedGames.length}`);
     console.log(
-      `👥 Updated ${currentLeagueParticipants.length} league participants`
+      `👥 Updated ${currentLeagueParticipants.length} league participants`,
     );
 
     return {

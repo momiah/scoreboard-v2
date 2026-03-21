@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -19,8 +13,7 @@ import Tag from "../../../components/Tag";
 import RemovePlayerModal from "../../../components/Modals/RemovePlayerModal";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
-import { ScoreboardProfile } from "@/types/player";
-import { NormalizedCompetition } from "@/types/competition";
+import { ScoreboardProfile, NormalizedCompetition } from "@shared/types";
 
 const RemovePlayers = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -37,7 +30,7 @@ const RemovePlayers = () => {
   const { currentUser } = useContext(UserContext);
 
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
 
@@ -96,7 +89,7 @@ const RemovePlayers = () => {
   const renderItem = ({ item }: { item: ScoreboardProfile }) => {
     const isOwner = item.userId === competition?.owner?.userId;
     const isAdmin = competition?.admins?.some(
-      (admin) => admin.userId === item.userId
+      (admin) => admin.userId === item.userId,
     );
     const isSelf = item.userId === currentUser?.userId;
     const canRemove =
@@ -179,7 +172,7 @@ const RemovePlayers = () => {
           await removePlayerFromLeague(
             competitionId,
             selectedPlayer?.userId,
-            reason
+            reason,
           );
           const updated = await fetchCompetitionById({
             competitionId,

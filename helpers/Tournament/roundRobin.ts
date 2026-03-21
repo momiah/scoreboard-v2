@@ -2,7 +2,7 @@ import { generateUniqueGameId } from "../generateUniqueId";
 import { Alert } from "react-native";
 import moment from "moment";
 
-import { PlayerWithXP, GameTeam, Game } from "../../types/game";
+import { PlayerWithXP, GameTeam, Game } from "@shared/types";
 
 export const generateSinglesRoundRobinFixtures = ({
   players,
@@ -58,18 +58,18 @@ export const generateSinglesRoundRobinFixtures = ({
     const availableMatches = remainingMatches.filter(
       (match) =>
         !playersPlayedThisRound.has(match.player1Index) &&
-        !playersPlayedThisRound.has(match.player2Index)
+        !playersPlayedThisRound.has(match.player2Index),
     );
 
     // Sort by players with longest consecutive breaks (highest priority to play)
     availableMatches.sort((a, b) => {
       const aMaxBreaks = Math.max(
         playerConsecutiveBreaks[a.player1Index],
-        playerConsecutiveBreaks[a.player2Index]
+        playerConsecutiveBreaks[a.player2Index],
       );
       const bMaxBreaks = Math.max(
         playerConsecutiveBreaks[b.player1Index],
-        playerConsecutiveBreaks[b.player2Index]
+        playerConsecutiveBreaks[b.player2Index],
       );
 
       // Players with more consecutive breaks get higher priority
@@ -103,6 +103,7 @@ export const generateSinglesRoundRobinFixtures = ({
           numberOfApprovals: 0,
           numberOfDeclines: 0,
           reporter: "",
+          approvers: [],
         };
 
         roundGames.push(game);
@@ -116,7 +117,7 @@ export const generateSinglesRoundRobinFixtures = ({
         const matchIndex = remainingMatches.findIndex(
           (m) =>
             m.player1Index === match.player1Index &&
-            m.player2Index === match.player2Index
+            m.player2Index === match.player2Index,
         );
         if (matchIndex !== -1) {
           remainingMatches.splice(matchIndex, 1);
@@ -192,18 +193,18 @@ export const generateRoundRobinFixtures = ({
     const availableMatches = remainingMatches.filter(
       (match) =>
         !teamsPlayedThisRound.has(match.team1Index) &&
-        !teamsPlayedThisRound.has(match.team2Index)
+        !teamsPlayedThisRound.has(match.team2Index),
     );
 
     // Sort by teams with longest consecutive breaks (highest priority to play)
     availableMatches.sort((a, b) => {
       const aMaxBreaks = Math.max(
         teamConsecutiveBreaks[a.team1Index],
-        teamConsecutiveBreaks[a.team2Index]
+        teamConsecutiveBreaks[a.team2Index],
       );
       const bMaxBreaks = Math.max(
         teamConsecutiveBreaks[b.team1Index],
-        teamConsecutiveBreaks[b.team2Index]
+        teamConsecutiveBreaks[b.team2Index],
       );
 
       // Teams with more consecutive breaks get higher priority
@@ -237,6 +238,7 @@ export const generateRoundRobinFixtures = ({
           numberOfApprovals: 0,
           numberOfDeclines: 0,
           reporter: "",
+          approvers: [],
         };
 
         roundGames.push(game);
@@ -250,7 +252,7 @@ export const generateRoundRobinFixtures = ({
         const matchIndex = remainingMatches.findIndex(
           (m) =>
             m.team1Index === match.team1Index &&
-            m.team2Index === match.team2Index
+            m.team2Index === match.team2Index,
         );
         if (matchIndex !== -1) {
           remainingMatches.splice(matchIndex, 1);

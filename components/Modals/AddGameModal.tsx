@@ -1,8 +1,6 @@
 import React, { useState, useContext } from "react";
 import {
   Modal,
-  TextInput,
-  Button,
   View,
   Text,
   TouchableOpacity,
@@ -22,18 +20,15 @@ import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
-import { notificationSchema, notificationTypes } from "../../schemas/schema";
+import {
+  notificationSchema,
+  notificationTypes,
+  COLLECTION_NAMES,
+} from "@shared";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import {
-  GameTeam,
-  Game,
-  GameResult,
-  Player,
-  CompetitionTypes,
-} from "../../types/game";
-import { COLLECTION_NAMES } from "../../schemas/schema";
+import { GameTeam, Game, GameResult, Player } from "@shared/types";
 
 type AddGameModalProps = {
   modalVisible: boolean;
@@ -214,6 +209,7 @@ const AddGameModal = ({
       numberOfDeclines: 0,
       approvalStatus: "Pending",
       reporter: formatDisplayName(currentUser),
+      approvers: [],
     };
 
     // console.log("New Game Object:", JSON.stringify(newGame, null, 2));

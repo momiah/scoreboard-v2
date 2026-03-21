@@ -1,4 +1,4 @@
-import { GameTeam, PlayerWithXP } from "../../types/game";
+import { GameTeam, PlayerWithXP } from "@shared/types";
 
 export const generateMixedDoublesTeams = ({
   generationType,

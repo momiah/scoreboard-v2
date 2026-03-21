@@ -1,10 +1,15 @@
 // helpers/processGamePerformance.ts
 
-import { Game } from "../types/game";
-import { CollectionName } from "../types/competition";
-import { ScoreboardProfile, UserProfile } from "../types/player";
-import { calculatePlayerPerformance } from "./calculatePlayerPerformance";
-import { calculateTeamPerformance } from "./calculateTeamPerformance";
+import {
+  ScoreboardProfile,
+  UserProfile,
+  CollectionName,
+  Game,
+} from "@shared/types";
+import {
+  calculatePlayerPerformance,
+  calculateTeamPerformance,
+} from "@shared/helpers";
 import {
   getUserById,
   retrieveTeams,
@@ -38,7 +43,7 @@ export const processGamePerformance = async ({
   ].filter((id): id is string => Boolean(id));
 
   const playersToUpdate = participants.filter((player) =>
-    playerUserIds.includes(player.userId!)
+    playerUserIds.includes(player.userId!),
   );
 
   if (playersToUpdate.length === 0) {
@@ -56,12 +61,12 @@ export const processGamePerformance = async ({
   const playerPerformance = calculatePlayerPerformance(
     game,
     playersToUpdate,
-    usersToUpdate
+    usersToUpdate,
   );
 
   const updatedParticipants = participants.map((player) => {
     const updatedPlayer = playerPerformance.playersToUpdate.find(
-      (p: ScoreboardProfile) => p.userId === player.userId
+      (p: ScoreboardProfile) => p.userId === player.userId,
     );
     return updatedPlayer ? { ...player, ...updatedPlayer } : player;
   });

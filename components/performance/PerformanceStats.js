@@ -1,7 +1,5 @@
 import React from "react";
-import MedalProgress from "./MedalProgress";
-import ResultLog from "./ResultLog";
-import MatchMedals from "./MatchMedals";
+
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 
@@ -9,7 +7,7 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const screenAdjustedStatTitleFontSize = screenWidth <= 405 ? 12 : 14;
 
-const PerformanceStats = ({ statData, selectedPlayer }) => {
+const PerformanceStats = ({ statData }) => {
   return (
     <>
       {/* Player Stats */}
@@ -26,11 +24,6 @@ const PerformanceStats = ({ statData, selectedPlayer }) => {
     </>
   );
 };
-
-const Divider = styled.View({
-  borderBottomColor: "#262626",
-  borderBottomWidth: 1,
-});
 
 const PlayerStat = styled.View({
   flexDirection: "row",

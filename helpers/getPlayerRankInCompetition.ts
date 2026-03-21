@@ -1,5 +1,4 @@
-import { NormalizedCompetition } from "../types/competition";
-import { ScoreboardProfile } from "../types/player";
+import { NormalizedCompetition, ScoreboardProfile } from "@shared/types";
 
 export const getPlayerRankInCompetition = (
   competition: NormalizedCompetition,

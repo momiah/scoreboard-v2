@@ -1,5 +1,3 @@
-//
-
 export const getButtonConfig = (
   userRole,
   leagueState,
@@ -8,7 +6,7 @@ export const getButtonConfig = (
   handleAddGame,
   handleLogin,
   hasMinPlayers,
-  minRequired
+  minRequired,
 ) => {
   const baseConfig = {
     hide: {

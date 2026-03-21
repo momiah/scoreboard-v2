@@ -27,7 +27,6 @@ import { Alert } from "react-native";
 
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { profileDetailSchema } from "../schemas/schema";
 import {
   getUserById,
   retrieveTeams,
@@ -47,8 +46,6 @@ const UserProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]); // Optional: Track notifications
   const [chatSummaries, setChatSummaries] = useState([]);
 
-  const [initializing, setInitializing] = useState(true);
-
   useEffect(() => {
     const loadInitialUser = async () => {
       try {
@@ -59,8 +56,6 @@ const UserProvider = ({ children }) => {
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
-      } finally {
-        setInitializing(false);
       }
     };
 

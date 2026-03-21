@@ -3,9 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
-  Dimensions,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -21,7 +19,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import Popup from "../../../components/popup/Popup";
 import { PopupContext } from "../../../context/PopupContext";
 import * as FileSystem from "expo-file-system";
-import { COLLECTION_NAMES } from "../../../schemas/schema";
+import { COLLECTION_NAMES } from "@shared";
 
 const EditLeague = () => {
   const route = useRoute();
@@ -109,9 +107,9 @@ const EditLeague = () => {
           Alert.alert(
             "File Too Large",
             `Image size is ${(fileInfo.size / (1024 * 1024)).toFixed(
-              2
+              2,
             )}MB. Please select an image smaller than 5MB.`,
-            [{ text: "OK" }]
+            [{ text: "OK" }],
           );
           return;
         }
@@ -119,13 +117,13 @@ const EditLeague = () => {
         const cropped = await ImageManipulator.manipulateAsync(
           pickedUri,
           [{ resize: { width: 600 } }],
-          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
         );
 
         // Optional: Log the final image size
         const croppedInfo = await FileSystem.getInfoAsync(cropped.uri);
         console.log(
-          `Final image size: ${(croppedInfo.size / 1024).toFixed(1)}KB`
+          `Final image size: ${(croppedInfo.size / 1024).toFixed(1)}KB`,
         );
 
         setSelectedImage(cropped.uri);
@@ -145,7 +143,7 @@ const EditLeague = () => {
       if (selectedImage && selectedImage !== leagueById.leagueImage) {
         updatedImage = await uploadLeagueImage(
           selectedImage,
-          leagueById.leagueId
+          leagueById.leagueId,
         );
       }
 

@@ -1,12 +1,9 @@
 import React, { useContext, useState, useEffect, useCallback } from "react";
 import {
   View,
-  ScrollView,
-  TextInput,
   Alert,
   Text,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Modal,
   Pressable,
@@ -33,7 +30,7 @@ const EditProfile = ({ navigation }) => {
 
   const [countries, setCountries] = useState([]);
   const [selectedCountryCode, setSelectedCountryCode] = useState(
-    currentUser?.location?.countryCode
+    currentUser?.location?.countryCode,
   );
 
   const [cities, setCities] = useState([]);
@@ -129,7 +126,7 @@ const EditProfile = ({ navigation }) => {
       if (!permissionResult.granted) {
         Alert.alert(
           "Permission Required",
-          "You need to allow access to your media library."
+          "You need to allow access to your media library.",
         );
         return;
       }
@@ -154,9 +151,9 @@ const EditProfile = ({ navigation }) => {
           Alert.alert(
             "File Too Large",
             `Image size is ${(fileInfo.size / (1024 * 1024)).toFixed(
-              2
+              2,
             )}MB. Please select an image smaller than 5MB.`,
-            [{ text: "OK" }]
+            [{ text: "OK" }],
           );
           return;
         }
@@ -164,13 +161,13 @@ const EditProfile = ({ navigation }) => {
         const manipulated = await ImageManipulator.manipulateAsync(
           pickedUri,
           [{ resize: { width: 300, height: 300 } }],
-          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
         );
 
         // Optional: Double-check the manipulated image size
         const manipulatedInfo = await FileSystem.getInfoAsync(manipulated.uri);
         console.log(
-          `Final image size: ${(manipulatedInfo.size / 1024).toFixed(1)}KB`
+          `Final image size: ${(manipulatedInfo.size / 1024).toFixed(1)}KB`,
         );
 
         setFormData((prev) => ({ ...prev, profileImage: manipulated.uri }));
@@ -303,7 +300,7 @@ const EditProfile = ({ navigation }) => {
                 setSelected={(val) => {
                   // Find the full country object
                   const selectedCountry = countries.find(
-                    (c) => c.value === val
+                    (c) => c.value === val,
                   );
 
                   // Update form data with both country name and code

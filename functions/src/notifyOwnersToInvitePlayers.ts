@@ -2,8 +2,8 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
 import { sendNotification } from "./helpers/sendNotification";
-import { notificationTypes, notificationSchema } from "./schemas/schema";
-import { League, Tournament } from "./types/competition";
+import { notificationTypes, notificationSchema } from "@shared";
+import { League, Tournament } from "@shared/types";
 
 const TIMEZONE = "Europe/London";
 

@@ -11,7 +11,7 @@ import styled from "styled-components/native";
 import { UserContext } from "../../../context/UserContext";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
 import SelectPlayerModal from "../../Modals/SelectPlayerModal";
-import { Player } from "../../../types/game";
+import { Player } from "@shared/types";
 
 interface SelectPlayerProps {
   onSelectPlayer: (player: Player | null) => void;

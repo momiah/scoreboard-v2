@@ -10,7 +10,7 @@ import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
-import Tag from "../../components/Tag";
+
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 const PendingRequests = () => {
@@ -43,6 +43,7 @@ const PendingRequests = () => {
       loadRequests();
     } catch (err) {
       Alert.alert("Error", "Failed to withdraw request.");
+      console.error("Withdraw request error:", err);
     }
   };
 

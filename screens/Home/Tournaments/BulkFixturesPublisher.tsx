@@ -22,20 +22,19 @@ import {
   GameTeam,
   GameResult,
   CompetitionTypes,
-} from "../../../types/game";
-
-import { Tournament } from "../../../types/competition";
+  Tournament,
+  ScoreboardProfile,
+} from "@shared/types";
 import {
   FixtureGameHeader,
   FixtureTeamColumn,
   FixtureRoundHeader,
 } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
 import { LeagueContext } from "@/context/LeagueContext";
-import { COLLECTION_NAMES } from "@/schemas/schema";
+import { COLLECTION_NAMES } from "@shared";
 import { doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { processGamePerformance } from "../../../helpers/processGamePerformance";
-import { ScoreboardProfile } from "../../../types/player";
 
 const { height: screenHeight } = Dimensions.get("window");
 const popupHeight = screenHeight * 0.3;

@@ -1,8 +1,7 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-// import { Alert, Platform } from 'react-native';
-import { doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
-import { db, auth } from './firebase.config';
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
+import { db } from "./firebase.config";
 
 export async function registerForPushNotificationsAsync(userId) {
   if (!Device.isDevice) {
@@ -13,17 +12,18 @@ export async function registerForPushNotificationsAsync(userId) {
 
   try {
     // Request permissions
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     // console.log('Existing permission status:', existingStatus);
     let finalStatus = existingStatus;
 
-    if (existingStatus !== 'granted') {
+    if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
       // console.log('Requested permission status:', finalStatus);
     }
 
-    if (finalStatus !== 'granted') {
+    if (finalStatus !== "granted") {
       // console.log('Push notification permission denied');
       // Alert.alert('Error', 'Please enable notifications in device settings.');
       return null;
@@ -33,13 +33,13 @@ export async function registerForPushNotificationsAsync(userId) {
     let pushToken;
     try {
       const tokenResponse = await Notifications.getExpoPushTokenAsync({
-        projectId: '43db0104-f8f3-44de-b831-a74cd535baee',
+        projectId: "43db0104-f8f3-44de-b831-a74cd535baee",
       });
       // console.log('Push token response:', tokenResponse);
       // Alert.alert('Push Token Response', JSON.stringify(tokenResponse));
 
       // Handle different response structures
-      if (tokenResponse && typeof tokenResponse === 'object') {
+      if (tokenResponse && typeof tokenResponse === "object") {
         if (tokenResponse.data) {
           pushToken = tokenResponse.data;
         } else if (tokenResponse.token) {
@@ -56,7 +56,7 @@ export async function registerForPushNotificationsAsync(userId) {
       }
       // console.log('Push token acquired:', pushToken);
     } catch (tokenError) {
-      // console.error('getExpoPushTokenAsync error:', tokenError);
+      console.error("getExpoPushTokenAsync error:", tokenError);
       // Alert.alert('Error', `Failed to get push token: ${tokenError.message}`);
       return null;
     }
@@ -68,7 +68,7 @@ export async function registerForPushNotificationsAsync(userId) {
     }
 
     // Verify user document
-    const userRef = doc(db, 'users', userId);
+    const userRef = doc(db, "users", userId);
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists()) {
       // console.error('User document missing:', userId);
@@ -102,7 +102,7 @@ export async function registerForPushNotificationsAsync(userId) {
 
     return pushToken;
   } catch (error) {
-    // console.error('Push notification registration error:', error);
+    console.error("Push notification registration error:", error);
     // Alert.alert('Error', `Failed to register push token: ${error.message}`);
     return null;
   }

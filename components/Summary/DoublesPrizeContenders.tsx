@@ -8,14 +8,11 @@ import {
   CircleSkeleton,
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
-import {
-  SKELETON_THEMES,
-  skeletonConfig,
-} from "../../components/Skeletons/skeletonConfig";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { skeletonConfig } from "../../components/Skeletons/skeletonConfig";
+import { COMPETITION_TYPES } from "@shared";
 import TeamDetails from "../Modals/TeamDetailsModal";
 
-import { TeamStats, CompetitionType } from "../../types/competition";
+import { TeamStats, CompetitionType } from "@shared/types";
 
 interface DoublePrizeContendersProps {
   teams: TeamStats[];

@@ -1,7 +1,6 @@
 import { Location, ScoreboardProfile } from "./player";
 import { Game, Fixtures } from "./game";
-import { extend } from "lodash";
-import { COMPETITION_TYPES } from "@/schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 
 export type CollectionName = "leagues" | "tournaments";
 export type CompetitionType =
@@ -40,6 +39,11 @@ interface PendingRequests {
   userId: string;
 }
 
+interface Rival {
+  rivalKey: string;
+  rivalPlayers: string[];
+}
+
 export interface TeamStats {
   averagePointDifference: number;
   currentStreak: number;
@@ -52,7 +56,7 @@ export interface TeamStats {
   numberOfWins: number;
   pointDifferenceLog: number[];
   resultLog: string[];
-  rival: string | null;
+  rival: Rival | null;
   team: string[];
   teamKey: string;
   totalPointDifference: number;

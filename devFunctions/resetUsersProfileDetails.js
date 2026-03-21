@@ -1,7 +1,7 @@
 import { doc, collection, getDocs, updateDoc } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 
-import { profileDetailSchema } from "../schemas/schema";
+import { profileDetailSchema } from "@shared";
 
 const getAllUsers = async () => {
   try {
@@ -35,7 +35,7 @@ export const resetUsersProfileDetails = async (usernames) => {
 
     // Step 2: Filter users to get only those whose usernames match the provided array
     const usersToReset = allUsers.filter((user) =>
-      usernames.includes(user.username)
+      usernames.includes(user.username),
     );
 
     if (usersToReset.length === 0) {
@@ -45,7 +45,7 @@ export const resetUsersProfileDetails = async (usernames) => {
 
     console.log(
       `Found ${usersToReset.length} users to reset:`,
-      usersToReset.map((u) => u.username)
+      usersToReset.map((u) => u.username),
     );
 
     // Step 3: Reset each user's profileDetail using their userId
@@ -59,13 +59,13 @@ export const resetUsersProfileDetails = async (usernames) => {
         });
 
         console.log(
-          `✅ Reset profileDetail for user: ${user.username} (${user.userId})`
+          `✅ Reset profileDetail for user: ${user.username} (${user.userId})`,
         );
         return { success: true, username: user.username, userId: user.userId };
       } catch (error) {
         console.error(
           `❌ Failed to reset profileDetail for user: ${user.username}`,
-          error
+          error,
         );
         return {
           success: false,
@@ -90,14 +90,14 @@ export const resetUsersProfileDetails = async (usernames) => {
     if (successful.length > 0) {
       console.log(
         "Successfully reset users:",
-        successful.map((r) => r.username)
+        successful.map((r) => r.username),
       );
     }
 
     if (failed.length > 0) {
       console.log(
         "Failed to reset users:",
-        failed.map((r) => `${r.username} (${r.error})`)
+        failed.map((r) => `${r.username} (${r.error})`),
       );
     }
 

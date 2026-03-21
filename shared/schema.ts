@@ -1,19 +1,14 @@
-import { type } from "@testing-library/react-native/build/user-event/type";
-import { createdAt } from "expo-updates";
-import { count } from "firebase/firestore";
 import {
   ScoreboardProfile,
   ProfileDetail,
   UserProfile,
   Location,
-} from "../types/player";
-import {
   League,
   Tournament,
   CollectionName,
   CourtLocation,
-} from "../types/competition";
-import { ApprovalStatus } from "@/types/game";
+  ApprovalStatus,
+} from "./types";
 import moment from "moment";
 
 export const gameTypes = ["Doubles", "Singles"];

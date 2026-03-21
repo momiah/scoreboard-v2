@@ -6,7 +6,7 @@ import { Skeleton } from "moti/skeleton";
 const { width: screenWidth } = Dimensions.get("window");
 const colors = ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"];
 
-export const HorizontalLeagueCarouselSkeleton = ({ leagues }) => {
+export const HorizontalLeagueCarouselSkeleton = () => {
   const itemWidth = screenWidth - 80;
   const spacing = 20;
   return (

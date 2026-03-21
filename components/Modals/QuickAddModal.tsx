@@ -6,10 +6,9 @@ import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import AddGameModal from "./AddGameModal";
 import AddTournamentGameModal from "./AddTournamentGameModal";
-import { COMPETITION_TYPES } from "../../schemas/schema";
-import { NormalizedCompetition } from "../../types/competition";
+import { COMPETITION_TYPES } from "@shared";
 import CompetitionSelector from "../CompetitionSelector";
-import { Game } from "@/types/game";
+import { Game, NormalizedCompetition } from "@shared/types";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -165,7 +164,7 @@ const QuickAddModal = ({
       } else {
         // Check if all games are completed
         const hasCompletedGames = userGames.some(
-          (game) => game.approvalStatus === "Approved",
+          (game) => game.approvalStatus === "approved",
         );
 
         setGameStatus({

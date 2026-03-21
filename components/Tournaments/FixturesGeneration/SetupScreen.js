@@ -6,7 +6,7 @@ import { AntDesign } from "@expo/vector-icons";
 
 import OptionSelector from "../../OptionSelector";
 
-import { doublesModes } from "../../../schemas/schema";
+import { doublesModes } from "@shared";
 
 const mixedDoublesOptions = ["Random", "Balanced"];
 

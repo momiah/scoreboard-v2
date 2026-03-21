@@ -22,8 +22,7 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
-import { Tournament } from "../../../types/competition";
-import { UserProfile } from "../../../types/player";
+import { UserProfile, Tournament } from "@shared/types";
 import TournamentsSkeleton from "../../../components/Skeletons/TournamentsSkeleton";
 
 interface TournamentWithId extends Tournament {

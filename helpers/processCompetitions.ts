@@ -1,5 +1,5 @@
 import { getPlayerRankInCompetition } from "./getPlayerRankInCompetition";
-import { NormalizedCompetition } from "../types/competition";
+import { NormalizedCompetition } from "@shared/types";
 
 interface ProcessedCompetition extends NormalizedCompetition {
   wins?: number;
@@ -19,7 +19,6 @@ export const processCompetitions = ({
   setRankData,
   setRankLoading,
   profile,
-  competitionType,
 }: ProcessCompetitionsParams): void => {
   const processed = competitions.map((competition) => {
     // Use normalized 'participants' key

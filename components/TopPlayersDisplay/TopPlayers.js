@@ -1,6 +1,5 @@
 import React, { useContext, useCallback } from "react";
 import styled from "styled-components/native";
-import { UserContext } from "../../context/UserContext";
 import { GameContext } from "../../context/GameContext";
 import MedalDisplay from "../../components/performance/MedalDisplay";
 import { FlatList } from "react-native";
@@ -18,7 +17,6 @@ const TopPlayers = ({ topPlayers }) => {
   const renderPlayer = useCallback(
     ({ item: player, index }) => {
       const playerXp = player.profileDetail.XP;
-      const pointDifference = player.profileDetail.totalPointDifference || 0;
       const rankLevel = findRankIndex(playerXp) + 1;
 
       const displayName = formatDisplayName(player);
@@ -87,11 +85,6 @@ const TopPlayers = ({ topPlayers }) => {
     />
   );
 };
-
-// Styled components
-const Container = styled.ScrollView({
-  width: "100%",
-});
 
 const PlayerRow = styled.TouchableOpacity({
   flexDirection: "row",

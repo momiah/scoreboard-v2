@@ -3,8 +3,7 @@ import * as admin from "firebase-admin";
 import moment from "moment-timezone";
 
 import { calculatePrizeAllocation } from "./helpers/calculatePrizeAllocation";
-import { League } from "./types/competition";
-import { Game } from "./types/game";
+import { League, Game } from "@shared/types";
 
 const TIMEZONE = "Europe/London";
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];

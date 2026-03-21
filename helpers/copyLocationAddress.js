@@ -1,12 +1,4 @@
-import {
-  Modal,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Clipboard,
-} from "react-native";
-import { useRef } from "react";
+import { Clipboard } from "react-native";
 
 export const copyLocationAddress = (location, timeoutRef, setIsCopied) => {
   if (!location) return;

@@ -18,7 +18,6 @@ import {
   isActionType,
   isWelcomeType,
   getModalTypeForNotification,
-  MODAL_TYPES,
 } from "../helpers/handleNotificationAction";
 
 const Notifications = () => {
@@ -98,7 +97,7 @@ const Notifications = () => {
         currentUser={currentUser}
       />
     ),
-    [currentUser, handleNotificationAction]
+    [currentUser, handleNotificationAction],
   );
 
   if (loading) {

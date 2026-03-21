@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
 import styled from "styled-components/native";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -24,7 +24,6 @@ const LogContainer = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  backgroundColor: "#00152B",
   padding: 10,
   borderRadius: 5,
   backgroundColor: "rgba(0, 0, 0, 0.3)",

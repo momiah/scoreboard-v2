@@ -13,8 +13,8 @@ import Tag from "./Tag";
 import RankSuffix from "./RankSuffix";
 import { processCompetitions } from "../helpers/processCompetitions";
 import { sortLeaguesByEndDate } from "../helpers/sortedLeaguesByEndDate";
-import { NormalizedCompetition } from "../types/competition";
-import { COMPETITION_TYPES } from "../schemas/schema";
+import { NormalizedCompetition } from "@shared/types";
+import { COMPETITION_TYPES } from "@shared";
 import { Skeleton } from "moti/skeleton";
 
 const { width: screenWidth } = Dimensions.get("window");

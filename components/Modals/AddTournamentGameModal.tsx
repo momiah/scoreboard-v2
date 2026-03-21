@@ -6,11 +6,10 @@ import { BlurView } from "expo-blur";
 import moment from "moment";
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
-import { GameTeam, Game, GameResult } from "../../types/game";
-import { UserProfile } from "@/types/player";
+import { GameTeam, Game, GameResult, UserProfile } from "@shared/types";
 import { calculateWin } from "../../helpers/calculateWin";
 import { UserContext } from "@/context/UserContext";
-import { notificationSchema, notificationTypes } from "@/schemas/schema";
+import { notificationSchema, notificationTypes } from "@shared";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { LeagueContext } from "@/context/LeagueContext";
 
@@ -123,6 +122,7 @@ const AddTournamentGameModal = ({
       gameNumber: game?.gameNumber,
       createdAt: game?.createdAt,
       createdTime: game?.createdTime,
+      approvers: game?.approvers || [],
     };
 
     const isCurrentUserTeam1 = [

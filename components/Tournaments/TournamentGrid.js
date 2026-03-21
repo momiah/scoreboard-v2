@@ -3,7 +3,7 @@ import styled from "styled-components/native";
 import Tag from "../Tag";
 import { Skeleton } from "moti/skeleton";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
-import { COMPETITION_TYPES, ccImageEndpoint } from "../../schemas/schema";
+import { COMPETITION_TYPES, ccImageEndpoint } from "@shared";
 import { useNavigation } from "@react-navigation/native";
 
 const skeletonColors = ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"];
