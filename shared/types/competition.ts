@@ -39,6 +39,11 @@ interface PendingRequests {
   userId: string;
 }
 
+interface Rival {
+  rivalKey: string;
+  rivalPlayers: string[];
+}
+
 export interface TeamStats {
   averagePointDifference: number;
   currentStreak: number;
@@ -51,7 +56,7 @@ export interface TeamStats {
   numberOfWins: number;
   pointDifferenceLog: number[];
   resultLog: string[];
-  rival: string | null;
+  rival: Rival | null;
   team: string[];
   teamKey: string;
   totalPointDifference: number;

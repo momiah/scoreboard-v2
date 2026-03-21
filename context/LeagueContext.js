@@ -39,8 +39,10 @@ import {
   notificationSchema,
 } from "@shared";
 import { UserContext } from "./UserContext";
-import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
-import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
+import {
+  calculatePlayerPerformance,
+  calculateTeamPerformance,
+} from "@shared/helpers";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 

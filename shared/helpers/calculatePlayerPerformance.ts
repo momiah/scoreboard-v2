@@ -13,7 +13,7 @@ export const calculatePlayerPerformance = (
   playersToUpdate: PlayersToUpdate,
   usersToUpdate: UsersToUpdate,
 ) => {
-  const date = transformDate(game.date);
+  const date = transformDate(game.date ?? "");
 
   const getTeamPlayers = (teamLabel: string | undefined) =>
     teamLabel === "Team 1"

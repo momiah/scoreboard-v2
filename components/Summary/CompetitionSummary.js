@@ -13,7 +13,7 @@ import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 import { COMPETITION_TYPES } from "@shared";
-import { calculateTournamentPrizePool } from "../../helpers/Tournament/calculateTournamentPrizePool";
+import { calculateTournamentPrizePool } from "@shared/helpers";
 
 // Constants moved outside to prevent recreation
 const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({

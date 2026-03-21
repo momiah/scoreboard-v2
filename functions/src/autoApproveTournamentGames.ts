@@ -10,8 +10,8 @@ import {
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
-import { calculatePlayerPerformance } from "./helpers/calculatePlayerPerformance";
-import { calculateTeamPerformance } from "./helpers/calculateTeamPerformance";
+import { calculatePlayerPerformance } from "../../shared/helpers/calculatePlayerPerformance";
+import { calculateTeamPerformance } from "../../shared/helpers/calculateTeamPerformance";
 import {
   getUserById,
   updateTournamentPlayers,

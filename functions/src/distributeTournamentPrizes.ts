@@ -1,7 +1,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
-import { calculateTournamentPrizePool } from "./helpers/calculateTournamentPrizePool";
+import { calculateTournamentPrizePool } from "@shared/helpers";
 import { ScoreboardProfile, TeamStats, Tournament } from "@shared/types";
 import { sendNotification } from "./helpers/sendNotification";
 import { notificationTypes } from "@shared";

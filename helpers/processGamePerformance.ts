@@ -6,8 +6,10 @@ import {
   CollectionName,
   Game,
 } from "@shared/types";
-import { calculatePlayerPerformance } from "./calculatePlayerPerformance";
-import { calculateTeamPerformance } from "./calculateTeamPerformance";
+import {
+  calculatePlayerPerformance,
+  calculateTeamPerformance,
+} from "@shared/helpers";
 import {
   getUserById,
   retrieveTeams,
