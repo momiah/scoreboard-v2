@@ -1,5 +1,5 @@
 import { getPlayerRankInCompetition } from "./getPlayerRankInCompetition";
-import { NormalizedCompetition } from "../types/competition";
+import { NormalizedCompetition } from "@shared/types";
 
 interface ProcessedCompetition extends NormalizedCompetition {
   wins?: number;

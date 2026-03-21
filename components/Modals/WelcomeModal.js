@@ -6,7 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import { getSplitParagraphs } from "../../helpers/getSplitParagraphs";
-import { ICON_MAP } from "../../schemas/schema";
+import { ICON_MAP } from "@shared";
 const { width: screenWidth } = Dimensions.get("window");
 
 const WelcomeModal = ({

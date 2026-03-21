@@ -12,7 +12,7 @@ import { useContext } from "react";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 import { calculateTournamentPrizePool } from "../../helpers/Tournament/calculateTournamentPrizePool";
 
 // Constants moved outside to prevent recreation
@@ -61,7 +61,7 @@ const CompetitionSummary = memo(
           rawData: competitionDetails,
           competitionType,
         }),
-      [competitionDetails, competitionType]
+      [competitionDetails, competitionType],
     );
 
     const participants = competitionData?.participants || [];
@@ -99,7 +99,7 @@ const CompetitionSummary = memo(
         const gameMode = competitionData?.type || "Singles";
         const tournamentPrizePool = calculateTournamentPrizePool(
           numberOfMatches,
-          gameMode
+          gameMode,
         );
 
         prizePool = tournamentPrizePool;
@@ -137,14 +137,14 @@ const CompetitionSummary = memo(
         } else {
           // For Singles competitions, enrich player data
           const contendersWithWins = participants.filter(
-            (p) => p.numberOfWins > 0
+            (p) => p.numberOfWins > 0,
           );
 
           if (contendersWithWins.length > 0) {
             try {
               const enriched = await enrichPlayers(
                 getUserById,
-                contendersWithWins
+                contendersWithWins,
               );
               setTopContenders(enriched.slice(0, 4));
             } catch (error) {
@@ -267,7 +267,7 @@ const CompetitionSummary = memo(
               copyLocationAddress(
                 competitionData?.location,
                 locationCopyTimeoutRef,
-                setIsCopied
+                setIsCopied,
               )
             }
             style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
@@ -323,7 +323,7 @@ const CompetitionSummary = memo(
         </Section>
       </CompetitionSummaryContainer>
     );
-  }
+  },
 );
 
 // ✅ OPTIMIZATION 6: Add display name for better debugging

@@ -1,11 +1,12 @@
 import { transformDate } from "./dateTransform";
-import { Game } from "../types/game";
+
 import {
+  Game,
   PlayersToUpdate,
   ProfileDetail,
   ScoreboardProfile,
   UsersToUpdate,
-} from "../types/player";
+} from "@shared/types";
 
 export const calculatePlayerPerformance = (
   game: Game,

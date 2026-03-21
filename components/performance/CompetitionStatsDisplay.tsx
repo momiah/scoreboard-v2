@@ -8,7 +8,7 @@ import {
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 
 type CompetitionType =
   (typeof COMPETITION_TYPES)[keyof typeof COMPETITION_TYPES];
@@ -99,7 +99,7 @@ export default React.memo(
   CompetitionStatsDisplay,
   (prevProps, nextProps) =>
     prevProps.competitionType === nextProps.competitionType &&
-    JSON.stringify(prevProps.stats) === JSON.stringify(nextProps.stats)
+    JSON.stringify(prevProps.stats) === JSON.stringify(nextProps.stats),
 );
 
 const PrizeRow = styled.View({

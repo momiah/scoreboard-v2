@@ -2,7 +2,7 @@ import {
   notificationTypes,
   COLLECTION_NAMES,
   COMPETITION_TYPES,
-} from "@/schemas/schema";
+} from "@shared";
 
 interface CompetitionConfig {
   isLeague: boolean;
@@ -16,7 +16,7 @@ interface CompetitionConfig {
 }
 
 export const getCompetitionConfig = (
-  notificationType: string
+  notificationType: string,
 ): CompetitionConfig => {
   const isLeague: boolean =
     notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE ||

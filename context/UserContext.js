@@ -27,7 +27,6 @@ import { Alert } from "react-native";
 
 import { PopupContext } from "./PopupContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { profileDetailSchema } from "../schemas/schema";
 import {
   getUserById,
   retrieveTeams,

@@ -7,7 +7,7 @@ import {
   Image,
   Alert,
 } from "react-native";
-import { UserProfile } from "@/types/player";
+import { UserProfile } from "@shared/types";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AddLeagueModal from "./AddLeagueModal";

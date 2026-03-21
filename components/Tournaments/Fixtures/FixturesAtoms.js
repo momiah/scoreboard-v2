@@ -3,7 +3,6 @@ import styled from "styled-components/native";
 import { Dimensions } from "react-native";
 import Tag from "../../Tag";
 import AddTournamentGameModal from "../../Modals/AddTournamentGameModal";
-import { approvalStatus } from "../../../schemas/schema";
 
 const { width: screenWidth } = Dimensions.get("window");
 

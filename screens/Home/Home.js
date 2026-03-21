@@ -28,7 +28,7 @@ import {
 } from "../../components/Skeletons/HomeSkeleton";
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
+import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
 

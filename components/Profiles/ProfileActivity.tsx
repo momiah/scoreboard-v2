@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useContext,
 } from "react";
-import { View, FlatList, InteractionManager, Dimensions } from "react-native";
+import { FlatList, InteractionManager, Dimensions } from "react-native";
 import { processCompetitions } from "../../helpers/processCompetitions";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { sortLeaguesByEndDate } from "../../helpers/sortedLeaguesByEndDate";
@@ -19,13 +19,13 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import styled from "styled-components/native";
-import { UserProfile } from "../../types/player";
 import {
   League,
   Tournament,
   NormalizedCompetition,
-} from "../../types/competition";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+  UserProfile,
+} from "@shared/types";
+import { COMPETITION_TYPES } from "@shared";
 import ProfileActivitySkeleton from "../Skeletons/ProfileActivitySkeleton";
 
 const { width: screenWidth } = Dimensions.get("window");

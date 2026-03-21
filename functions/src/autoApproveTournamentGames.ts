@@ -1,6 +1,11 @@
-import { TeamStats, Tournament } from "./types/competition";
-import { Fixtures, Game } from "./types/game";
-import { ScoreboardProfile, UsersToUpdate } from "./types/player";
+import {
+  TeamStats,
+  Tournament,
+  Fixtures,
+  Game,
+  ScoreboardProfile,
+  UsersToUpdate,
+} from "@shared/types";
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
@@ -13,7 +18,7 @@ import {
   updateUsers,
   updateTournamentTeams,
 } from "./helpers/firebaseHelpers";
-import { notificationTypes } from "./schemas/schema";
+import { notificationTypes } from "@shared";
 import moment from "moment-timezone";
 
 const TIMEZONE = "Europe/London";

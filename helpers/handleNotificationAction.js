@@ -1,4 +1,4 @@
-import { notificationTypes } from "../schemas/schema";
+import { notificationTypes } from "@shared";
 
 // Notification type constants
 const ACTION_TYPES = {

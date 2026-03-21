@@ -1,6 +1,6 @@
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../services/firebase.config";
-import { scoreboardProfileSchema } from "../schemas/schema";
+import { scoreboardProfileSchema } from "@shared";
 
 export const resetLeagueParticipantStats = async (usernames, leagueId) => {
   try {
@@ -33,7 +33,7 @@ export const resetLeagueParticipantStats = async (usernames, leagueId) => {
 
     // Step 2: Filter participants to reset based on provided usernames
     const participantsToReset = leagueParticipants.filter((participant) =>
-      usernames.includes(participant.username)
+      usernames.includes(participant.username),
     );
 
     if (participantsToReset.length === 0) {
@@ -43,7 +43,7 @@ export const resetLeagueParticipantStats = async (usernames, leagueId) => {
 
     console.log(
       `Found ${participantsToReset.length} league participants to reset:`,
-      participantsToReset.map((p) => p.username)
+      participantsToReset.map((p) => p.username),
     );
 
     // Step 3: Reset the stats while keeping core info intact
@@ -68,11 +68,11 @@ export const resetLeagueParticipantStats = async (usernames, leagueId) => {
     });
 
     console.log(
-      `✅ Successfully reset league participant stats for ${participantsToReset.length} users in league: ${leagueId}`
+      `✅ Successfully reset league participant stats for ${participantsToReset.length} users in league: ${leagueId}`,
     );
     console.log(
       "Reset participants:",
-      participantsToReset.map((p) => p.username)
+      participantsToReset.map((p) => p.username),
     );
 
     return {

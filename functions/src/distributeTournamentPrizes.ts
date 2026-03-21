@@ -1,11 +1,10 @@
-import { TeamStats, Tournament } from "./types/competition";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
 import { calculateTournamentPrizePool } from "./helpers/calculateTournamentPrizePool";
-import { ScoreboardProfile } from "./types/player";
+import { ScoreboardProfile, TeamStats, Tournament } from "@shared/types";
 import { sendNotification } from "./helpers/sendNotification";
-import { notificationTypes } from "./schemas/schema";
+import { notificationTypes } from "@shared";
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 

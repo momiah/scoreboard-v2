@@ -12,10 +12,15 @@ import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { COMPETITION_TYPES } from "@/schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
-import { NormalizedCompetition, League, Tournament } from "@/types/competition";
-import { UserProfile, ScoreboardProfile } from "@/types/player";
+import {
+  NormalizedCompetition,
+  League,
+  Tournament,
+  UserProfile,
+  ScoreboardProfile,
+} from "@shared/types";
 import { UserContext } from "@/context/UserContext";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 

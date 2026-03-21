@@ -34,7 +34,8 @@ import {
   maxPlayers,
   privacyTypes,
   COMPETITION_TYPES,
-} from "../../schemas/schema";
+  prizeTypes,
+} from "@shared";
 import OptionSelector from "../OptionSelector";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
@@ -42,7 +43,6 @@ import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails";
 import AddCourtModal from "./AddCourtModal";
-import { prizeTypes } from "../../schemas/schema";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
 
 const { width: screenWidth } = Dimensions.get("window");

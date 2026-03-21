@@ -19,16 +19,16 @@ import { SetupScreen } from "../Tournaments/FixturesGeneration/SetupScreen";
 import { CreateTeamsScreen } from "../Tournaments/FixturesGeneration/CreateTeamsScreen";
 import { GeneratedFixturesScreen } from "../Tournaments/FixturesGeneration/GeneratedFixturesScreen";
 import { LeagueContext } from "../../context/LeagueContext";
-import { ScoreboardProfile } from "../../types/player";
+
 import {
   Fixtures,
   GameTeam,
-  Player,
   PlayerWithXP,
   TournamentMode,
-} from "../../types/game";
-import { UserProfile } from "../../types/player";
-import { enrichPlayers } from "../../helpers/enrichPlayers";
+  UserProfile,
+  ScoreboardProfile,
+} from "@shared/types";
+
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { UserContext } from "@/context/UserContext";
 
@@ -116,7 +116,7 @@ interface GenerateFixturesModalProps {
 
 const extractPlayersWithXp = async (
   players: ScoreboardProfile[],
-  getUserById: (id: string) => Promise<UserProfile | null>
+  getUserById: (id: string) => Promise<UserProfile | null>,
 ): Promise<PlayerWithXP[]> => {
   const enriched = await Promise.all(
     players
@@ -132,7 +132,7 @@ const extractPlayersWithXp = async (
           displayName: formatDisplayName(player),
           XP,
         };
-      })
+      }),
   );
 
   return enriched;
@@ -174,13 +174,12 @@ const GenerateFixturesModal = ({
     setLoadingParticipants(true);
     const fetchParticipants = async () => {
       try {
-        const fetchedParticipants = await fetchTournamentParticipants(
-          competitionId
-        );
+        const fetchedParticipants =
+          await fetchTournamentParticipants(competitionId);
 
         const enrichedParticipants = await extractPlayersWithXp(
           fetchedParticipants,
-          getUserById
+          getUserById,
         );
 
         setParticipants(enrichedParticipants);
@@ -214,7 +213,7 @@ const GenerateFixturesModal = ({
       () => ({
         player1: null,
         player2: null,
-      })
+      }),
     );
     setFixedDoublesTeams(initialTeams);
   }, []);
@@ -255,7 +254,7 @@ const GenerateFixturesModal = ({
         });
       } else if (mode === "Fixed Doubles") {
         teams = fixedDoublesTeams.filter(
-          (team) => team.player1 && team.player2
+          (team) => team.player1 && team.player2,
         );
       }
 
@@ -264,7 +263,7 @@ const GenerateFixturesModal = ({
           "Error",
           mode === "Fixed Doubles"
             ? "Please complete all team assignments"
-            : "No teams generated"
+            : "No teams generated",
         );
         return;
       }
@@ -321,7 +320,7 @@ const GenerateFixturesModal = ({
       Alert.alert(
         "Error",
         "Failed to save tournament fixtures. Please try again.",
-        [{ text: "OK" }]
+        [{ text: "OK" }],
       );
       console.error("Error saving tournament fixtures:", error);
     } finally {

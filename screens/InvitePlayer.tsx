@@ -17,7 +17,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../services/firebase.config";
 import { collection, query, getDocs } from "firebase/firestore";
 import { UserContext } from "../context/UserContext";
-import { notificationSchema, notificationTypes } from "../schemas/schema";
+import {
+  notificationSchema,
+  notificationTypes,
+  COMPETITION_TYPES,
+  COLLECTION_NAMES,
+} from "@shared";
 import moment from "moment";
 import { LeagueContext } from "../context/LeagueContext";
 import { PopupContext } from "../context/PopupContext";
@@ -27,9 +32,8 @@ import {
   Tournament,
   NormalizedCompetition,
   CompetitionType,
-} from "@/types/competition";
-import { COMPETITION_TYPES, COLLECTION_NAMES } from "@/schemas/schema";
-import { UserProfile } from "@/types/player";
+  UserProfile,
+} from "@shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../components/Modals/RecentPlayersModal";
 import {

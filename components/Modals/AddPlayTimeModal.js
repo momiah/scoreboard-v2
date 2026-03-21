@@ -4,7 +4,7 @@ import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { daysOfWeek } from "../../schemas/schema";
+import { daysOfWeek } from "@shared";
 import { Ionicons } from "@expo/vector-icons";
 
 const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {

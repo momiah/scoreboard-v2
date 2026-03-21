@@ -33,11 +33,12 @@ import {
   scoreboardProfileSchema,
   profileDetailSchema,
   ccImageEndpoint,
-} from "../schemas/schema";
+  notificationTypes,
+  COMPETITION_TYPES,
+  COLLECTION_NAMES,
+  notificationSchema,
+} from "@shared";
 import { UserContext } from "./UserContext";
-import { notificationTypes } from "../schemas/schema";
-import { COMPETITION_TYPES, COLLECTION_NAMES } from "../schemas/schema";
-import { notificationSchema } from "../schemas/schema";
 import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
 import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
 import { formatDisplayName } from "@/helpers/formatDisplayName";

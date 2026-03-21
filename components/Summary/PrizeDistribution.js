@@ -9,7 +9,7 @@ import {
   TextSkeleton,
   TrophyItemSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
 const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {

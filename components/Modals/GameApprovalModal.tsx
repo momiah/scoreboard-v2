@@ -11,11 +11,9 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { notificationTypes } from "../../schemas/schema";
+import { notificationTypes } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import { NormalizedCompetition } from "@/types/competition";
-import { Game } from "@/types/game";
-import { Player } from "@/types/game";
+import { NormalizedCompetition, Game, Player } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -24,7 +22,7 @@ const screenWidth = Dimensions.get("window").width;
 const findGame = (
   competition: NormalizedCompetition,
   gameId: string,
-  isLeague: boolean
+  isLeague: boolean,
 ): Game | null => {
   if (isLeague) {
     return competition.games?.find((game) => game.gameId === gameId) || null;
@@ -79,10 +77,10 @@ const GameApprovalModal = ({
   const [loading, setLoading] = useState(true);
   const [loadingDecision, setLoadingDecision] = useState(false);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
-    null
+    null,
   );
   const [senderDisplayName, setSenderDisplayName] = useState<string | null>(
-    null
+    null,
   );
   const [gameDeleted, setGameDeleted] = useState(false);
 
@@ -101,7 +99,7 @@ const GameApprovalModal = ({
       onClose();
       navigation.navigate(route, params);
     },
-    [onClose, navigation]
+    [onClose, navigation],
   );
 
   useEffect(() => {
@@ -135,10 +133,10 @@ const GameApprovalModal = ({
         }) as NormalizedCompetition;
 
         const senderParticipant = normalizedCompetition?.participants?.find(
-          (p) => p.userId === senderId
+          (p) => p.userId === senderId,
         );
         setSenderDisplayName(
-          senderParticipant ? formatDisplayName(senderParticipant) : "Unknown"
+          senderParticipant ? formatDisplayName(senderParticipant) : "Unknown",
         );
 
         const game = findGame(normalizedCompetition, gameId, config.isLeague);
@@ -471,8 +469,8 @@ const Button = styled.TouchableOpacity(
     backgroundColor: disabled
       ? "#888"
       : variant === "decline"
-      ? "red"
-      : "#00A2FF",
+        ? "red"
+        : "#00A2FF",
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 8,
@@ -480,7 +478,7 @@ const Button = styled.TouchableOpacity(
     opacity: disabled ? 0.6 : 1,
     width: 100,
     alignItems: "center",
-  })
+  }),
 );
 
 const ButtonText = styled.Text({
@@ -524,7 +522,7 @@ const TeamText = styled.Text(
     fontSize: screenWidth <= 400 ? 13 : 14,
     textAlign: position === "right" ? "right" : "left",
     flexWrap: "wrap",
-  })
+  }),
 );
 
 const ResultsContainer = styled.View({

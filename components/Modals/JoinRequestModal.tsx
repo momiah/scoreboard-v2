@@ -6,7 +6,6 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext, useCallback } from "react";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
-import { UserProfile } from "@/types/player";
 
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
@@ -16,8 +15,8 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
-import { ccImageEndpoint } from "@/schemas/schema";
-import { NormalizedCompetition } from "@/types/competition";
+import { ccImageEndpoint } from "@shared";
+import { NormalizedCompetition, UserProfile } from "@shared/types";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
@@ -53,7 +52,7 @@ const JoinRequestModal = ({
     useContext(UserContext);
   const [senderDetails, setSenderDetails] = useState(null);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [joiningCompetition, setJoiningCompetition] = useState(false);
@@ -73,7 +72,7 @@ const JoinRequestModal = ({
     competition.participants.length >= competition.maxPlayers;
 
   const userAlreadyInCompetition = competition?.participants?.some(
-    (participant) => participant.userId === senderId
+    (participant) => participant.userId === senderId,
   );
 
   const requestWithdrawn =
@@ -222,7 +221,7 @@ const JoinRequestModal = ({
         </PlayerRow>
       );
     },
-    [findRankIndex, navigateToProfile, senderId]
+    [findRankIndex, navigateToProfile, senderId],
   );
 
   return (
@@ -427,7 +426,7 @@ const Button = styled.TouchableOpacity<ButtonProps>(
     borderRadius: 8,
     marginTop: 10,
     opacity: disabled ? 0.6 : 1,
-  })
+  }),
 );
 
 const AcceptButtonText = styled.Text({

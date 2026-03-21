@@ -23,11 +23,13 @@ import {
   TeamColumn,
   ScoreDisplay,
 } from "../../../components/scoreboard/ScoreboardAtoms";
-import { notificationSchema, notificationTypes } from "../../../schemas/schema";
+import {
+  notificationSchema,
+  notificationTypes,
+  COLLECTION_NAMES,
+} from "@shared";
 import { calculateWin } from "../../../helpers/calculateWin";
-import { Game, GameTeam, SelectedPlayers } from "../../../types/game";
-import { League } from "../../../types/competition";
-import { COLLECTION_NAMES } from "../../../schemas/schema";
+import { Game, GameTeam, SelectedPlayers, League } from "@shared/types";
 
 const { height: screenHight } = Dimensions.get("window");
 const popupHeight = screenHight * 0.3; // 30% of screen height
@@ -146,6 +148,7 @@ const BulkGamePublisher = () => {
         numberOfDeclines: 0,
         approvalStatus: "approved",
         reporter: currentUser?.userId || "",
+        approvers: [],
       };
 
       setPendingGames((prev) => [...prev, newGame]);

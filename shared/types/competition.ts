@@ -1,7 +1,6 @@
 import { Location, ScoreboardProfile } from "./player";
 import { Game, Fixtures } from "./game";
-import { extend } from "lodash";
-import { COMPETITION_TYPES } from "@/schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 
 export type CollectionName = "leagues" | "tournaments";
 export type CompetitionType =

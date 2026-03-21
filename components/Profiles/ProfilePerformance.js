@@ -5,7 +5,7 @@ import MedalProgress from "../performance/MedalProgress";
 import MatchMedals from "../performance/MatchMedals";
 import CompetitionStatsDisplay from "../performance/CompetitionStatsDisplay";
 import PerformanceStats from "../performance/PerformanceStats";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 import AnimateNumber from "../performance/AnimateNumber";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -84,7 +84,7 @@ const ProfilePerformance = ({ profile }) => {
         <PerformanceStats statData={statData} selectedPlayer={profileDetail} />
       </>
     ),
-    [profileDetail, leagueStats, statData]
+    [profileDetail, leagueStats, statData],
   );
 
   return <Container>{renderPerformanceContent()}</Container>;
