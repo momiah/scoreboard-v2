@@ -2,7 +2,6 @@
 import React, { useContext } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -17,7 +16,7 @@ import { PopupContext } from "../../context/PopupContext";
 import { BlurView } from "expo-blur";
 
 const ProfileMenu = ({ navigation }) => {
-  const { Logout, currentUser, setCurrentUser, isLoggingOut, deleteAccount } =
+  const { Logout, currentUser, isLoggingOut, deleteAccount } =
     useContext(UserContext);
   const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
     useContext(PopupContext);
@@ -88,7 +87,7 @@ const ProfileMenu = ({ navigation }) => {
             onPress: handleDeleteAccount,
             style: "destructive",
           },
-        ]
+        ],
       );
     } else {
       navigation.navigate(action);

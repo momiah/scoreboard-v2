@@ -1,24 +1,15 @@
 // GameContext.js
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-  useCallback,
-} from "react";
+import React, { createContext, useState, useEffect, useCallback } from "react";
 import { Alert } from "react-native";
 import {
-  deleteDoc,
   getDoc,
   doc,
-  setDoc,
   collection,
   query,
   orderBy,
   updateDoc,
   getDocs,
 } from "firebase/firestore";
-import { PopupContext } from "./PopupContext";
 import { AntDesign } from "@expo/vector-icons";
 
 import { db } from "../services/firebase.config";
@@ -28,7 +19,6 @@ import { ranks } from "../rankingMedals/ranking/ranks";
 const GameContext = createContext();
 
 const GameProvider = ({ children }) => {
-  const { handleShowPopup } = useContext(PopupContext);
   const [games, setGames] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -118,11 +108,11 @@ const GameProvider = ({ children }) => {
 
       const sortQuery = query(
         scoreboardCollectionRef,
-        orderBy("gameId", "desc")
+        orderBy("gameId", "desc"),
       );
 
       const querySnapshot = await getDocs(
-        sortQuery ? sortQuery : scoreboardCollectionRef
+        sortQuery ? sortQuery : scoreboardCollectionRef,
       );
 
       const games = querySnapshot.docs.map((doc) => ({

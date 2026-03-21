@@ -1,16 +1,7 @@
-import React, {
-  useContext,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Modal,
   Text,
-  View,
-  TouchableOpacity,
-  Image,
   Dimensions,
   Platform,
   SafeAreaView,

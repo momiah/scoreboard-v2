@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Modal } from "react-native";
+import { View, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";

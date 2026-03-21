@@ -12,7 +12,7 @@ interface CompetitionConfig {
   participantsKey: "leagueParticipants" | "tournamentParticipants";
   collectionName: string;
   competitionType: "league" | "tournament";
-  paramKey: "leagueId" | "tournamentId"; // Add this
+  paramKey: "leagueId" | "tournamentId";
 }
 
 export const getCompetitionConfig = (
@@ -35,7 +35,7 @@ export const getCompetitionConfig = (
     competitionType: (isLeague
       ? COMPETITION_TYPES.LEAGUE
       : COMPETITION_TYPES.TOURNAMENT) as "league" | "tournament",
-    paramKey: isLeague ? "leagueId" : "tournamentId", // Add this
+    paramKey: isLeague ? "leagueId" : "tournamentId",
   };
 };
 

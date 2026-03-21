@@ -4,12 +4,9 @@ import React, {
   useRef,
   useContext,
   useCallback,
-  useMemo,
 } from "react";
 import {
   FlatList,
-  TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Keyboard,

@@ -3,9 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
-  Dimensions,
   ActivityIndicator,
   Alert,
 } from "react-native";

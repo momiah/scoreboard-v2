@@ -4,7 +4,6 @@ import styled from "styled-components/native";
 import {
   Modal,
   Dimensions,
-  SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
   View,
@@ -117,7 +116,7 @@ const AddCourtModal = ({
                   label="Country"
                   setSelected={(val) => {
                     const selectedCountry = countries.find(
-                      (c) => c.value === val
+                      (c) => c.value === val,
                     );
                     handleChange("location", {
                       ...courtDetails.location,

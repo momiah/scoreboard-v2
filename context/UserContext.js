@@ -46,8 +46,6 @@ const UserProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]); // Optional: Track notifications
   const [chatSummaries, setChatSummaries] = useState([]);
 
-  const [initializing, setInitializing] = useState(true);
-
   useEffect(() => {
     const loadInitialUser = async () => {
       try {
@@ -58,8 +56,6 @@ const UserProvider = ({ children }) => {
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
-      } finally {
-        setInitializing(false);
       }
     };
 

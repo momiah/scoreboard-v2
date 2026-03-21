@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -83,7 +77,7 @@ const ListDropdown = ({
       slideUp();
     },
 
-    [save, slideUp, onSelect]
+    [save, slideUp, onSelect],
   );
 
   const handleToggle = useCallback(() => {
@@ -113,7 +107,7 @@ const ListDropdown = ({
         />
       );
     },
-    [handleSelect, fontFamily]
+    [handleSelect, fontFamily],
   );
 
   const handleNotFoundText = () => {
@@ -232,7 +226,7 @@ const MemoizedListItem = React.memo(
         </Text>
       )}
     </TouchableOpacity>
-  )
+  ),
 );
 
 const Label = styled.Text({

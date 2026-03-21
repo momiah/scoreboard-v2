@@ -5,7 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { View, Image, ActivityIndicator } from "react-native";
+import { View, Image } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { useForm } from "react-hook-form";
@@ -182,13 +182,6 @@ const Leagues = () => {
     appliedFilters.leagueType ||
     appliedFilters.maxPlayers;
 
-  // Sort leagues by start date
-  const sortedLeagues = [...filteredLeagues].sort((a, b) => {
-    const dateA = new Date(a.startDate);
-    const dateB = new Date(b.startDate);
-    return dateA - dateB;
-  });
-
   return (
     <LeagueContainer>
       <Overview>
@@ -302,12 +295,6 @@ const Overview = styled.View({
   justifyContent: "center",
   alignItems: "center",
   paddingRight: 15,
-});
-
-const LoadingWrapper = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
 });
 
 const EmptyState = styled.View({

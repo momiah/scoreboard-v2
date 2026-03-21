@@ -22,7 +22,6 @@ import {
 } from "firebase/firestore";
 import moment from "moment";
 import { Alert } from "react-native";
-// import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
 

@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,

@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  Alert,
-} from "react-native";
+import { Modal, View, TouchableOpacity, Image, Alert } from "react-native";
 import { UserProfile } from "@shared/types";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";

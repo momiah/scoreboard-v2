@@ -30,8 +30,7 @@ const iconSize = 40;
 
 const AllPlayers = () => {
   const { findRankIndex } = useContext(GameContext);
-  const { getAllUsersPaginated, rankSortingPaginated } =
-    useContext(UserContext);
+  const { getAllUsersPaginated } = useContext(UserContext);
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);

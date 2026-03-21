@@ -19,7 +19,6 @@ export const processCompetitions = ({
   setRankData,
   setRankLoading,
   profile,
-  competitionType,
 }: ProcessCompetitionsParams): void => {
   const processed = competitions.map((competition) => {
     // Use normalized 'participants' key

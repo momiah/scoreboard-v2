@@ -1,6 +1,5 @@
 import React from "react";
 import styled from "styled-components/native";
-import { TouchableOpacity, Text } from "react-native";
 import { notificationTypes } from "@shared";
 import { useNavigation } from "@react-navigation/native";
 import Tag from "../Tag";

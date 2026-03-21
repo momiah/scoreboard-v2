@@ -1,11 +1,5 @@
 import React, { useContext, useEffect, useState, memo } from "react";
-import {
-  FlatList,
-  ActivityIndicator,
-  TouchableOpacity,
-  View,
-  Dimensions,
-} from "react-native";
+import { FlatList, ActivityIndicator, View, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
@@ -85,7 +79,7 @@ const Chats = () => {
       )}
       <FlatList
         data={[...chatSummaries].sort(
-          (a, b) => b.createdAt?.seconds - a.createdAt?.seconds
+          (a, b) => b.createdAt?.seconds - a.createdAt?.seconds,
         )}
         renderItem={renderChatRow}
         keyExtractor={(item) => item.leagueId}

@@ -7,7 +7,6 @@ import { useImageLoader } from "../../utils/imageLoader";
 import {
   CircleSkeleton,
   TextSkeleton,
-  TrophyItemSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { COMPETITION_TYPES } from "@shared";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";

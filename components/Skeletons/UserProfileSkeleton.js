@@ -1,7 +1,6 @@
 // skeletonComponents.js - Reusable skeleton components
 
 import React from "react";
-import { View } from "react-native";
 import { Skeleton } from "moti/skeleton";
 import { DEFAULT_SKELETON_CONFIG } from "./skeletonConfig";
 
