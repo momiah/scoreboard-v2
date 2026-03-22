@@ -22,7 +22,6 @@ import {
 } from "firebase/firestore";
 import moment from "moment";
 import { Alert } from "react-native";
-// import { generatedLeagues } from "../components/Leagues/leagueMocks";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
 
@@ -33,15 +32,18 @@ import {
   scoreboardProfileSchema,
   profileDetailSchema,
   ccImageEndpoint,
-} from "../schemas/schema";
+  notificationTypes,
+  COMPETITION_TYPES,
+  COLLECTION_NAMES,
+  notificationSchema,
+} from "@shared";
 import { UserContext } from "./UserContext";
-import { notificationTypes } from "../schemas/schema";
-import { COMPETITION_TYPES, COLLECTION_NAMES } from "../schemas/schema";
-import { notificationSchema } from "../schemas/schema";
-import { calculatePlayerPerformance } from "../helpers/calculatePlayerPerformance";
-import { calculateTeamPerformance } from "../helpers/calculateTeamPerformance";
-import { formatDisplayName } from "../helpers/formatDisplayName";
-import { getCompetitionConfig } from "../helpers/getCompetitionConfig";
+import {
+  calculatePlayerPerformance,
+  calculateTeamPerformance,
+} from "@shared/helpers";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 
 const LeagueContext = createContext();
 

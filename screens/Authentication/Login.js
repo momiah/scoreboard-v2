@@ -11,21 +11,14 @@ import {
   Alert,
   Keyboard,
 } from "react-native";
-import {
-  AppleLogo,
-  CourtChampLogo,
-  FacebookLogo,
-  GoogleLogo,
-} from "../../assets"; // Your image imports
+import { CourtChampLogo } from "../../assets"; // Your image imports
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { collection, where, getDocs, query } from "firebase/firestore";
 import {
-  signInWithCredential,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import { auth, db } from "../../services/firebase.config";
+import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { useContext } from "react";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
@@ -97,7 +90,7 @@ export default function Login() {
         const userCredential = await signInWithEmailAndPassword(
           auth,
           email,
-          password
+          password,
         );
         console.log("Logged in successfully");
         // setFirebaseError("");
@@ -107,7 +100,7 @@ export default function Login() {
           await auth.signOut(); // Sign them out immediately
           Alert.alert(
             "Verify Email",
-            "Please verify your email address before logging in."
+            "Please verify your email address before logging in.",
           );
           return;
         }
@@ -160,7 +153,7 @@ export default function Login() {
       await sendPasswordResetEmail(auth, email);
       Alert.alert(
         "Reset Link Sent",
-        "Check your inbox for a password reset link."
+        "Check your inbox for a password reset link.",
       );
     } catch (error) {
       const messages = {

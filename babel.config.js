@@ -9,10 +9,10 @@ module.exports = function (api) {
           root: ["./"],
           alias: {
             "@": "./",
+            "@shared": "./shared",
           },
         },
       ],
-
       [
         "module:react-native-dotenv",
         {
@@ -20,7 +20,6 @@ module.exports = function (api) {
           path: ".env",
         },
       ],
-
       "react-native-reanimated/plugin",
     ],
   };

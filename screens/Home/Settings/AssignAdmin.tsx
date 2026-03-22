@@ -10,8 +10,7 @@ import {
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
-import { NormalizedCompetition } from "@/types/competition";
-import { ScoreboardProfile } from "@/types/player";
+import { NormalizedCompetition, ScoreboardProfile } from "@shared/types";
 import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
 
@@ -38,7 +37,7 @@ const AssignAdmin = () => {
     useContext(LeagueContext);
 
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
 

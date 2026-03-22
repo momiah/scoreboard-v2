@@ -2,7 +2,7 @@ import {
   notificationTypes,
   COLLECTION_NAMES,
   COMPETITION_TYPES,
-} from "@/schemas/schema";
+} from "@shared";
 
 interface CompetitionConfig {
   isLeague: boolean;
@@ -12,11 +12,11 @@ interface CompetitionConfig {
   participantsKey: "leagueParticipants" | "tournamentParticipants";
   collectionName: string;
   competitionType: "league" | "tournament";
-  paramKey: "leagueId" | "tournamentId"; // Add this
+  paramKey: "leagueId" | "tournamentId";
 }
 
 export const getCompetitionConfig = (
-  notificationType: string
+  notificationType: string,
 ): CompetitionConfig => {
   const isLeague: boolean =
     notificationType === notificationTypes.ACTION.ADD_GAME.LEAGUE ||
@@ -35,7 +35,7 @@ export const getCompetitionConfig = (
     competitionType: (isLeague
       ? COMPETITION_TYPES.LEAGUE
       : COMPETITION_TYPES.TOURNAMENT) as "league" | "tournament",
-    paramKey: isLeague ? "leagueId" : "tournamentId", // Add this
+    paramKey: isLeague ? "leagueId" : "tournamentId",
   };
 };
 

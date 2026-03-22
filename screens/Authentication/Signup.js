@@ -34,7 +34,7 @@ import {
   notificationSchema,
   notificationTypes,
   ccImageEndpoint,
-} from "../../schemas/schema";
+} from "@shared";
 import { loadCountries, loadCities } from "../../utils/locationData";
 
 const Signup = ({ route }) => {
@@ -137,7 +137,7 @@ const Signup = ({ route }) => {
         const { user } = await createUserWithEmailAndPassword(
           auth,
           data.email,
-          password
+          password,
         );
         uid = user.uid;
 
@@ -184,14 +184,14 @@ const Signup = ({ route }) => {
 
       await addDoc(
         collection(db, "users", uid, "notifications"),
-        welcomeNotification
+        welcomeNotification,
       );
 
       // 3. Show success UI
       setPopupIcon("success");
       setPopupButtonText("Login");
       handleShowPopup(
-        "Account created successfully, please verify your email and login to continue"
+        "Account created successfully, please verify your email and login to continue",
       );
     } catch (error) {
       const messages = {
@@ -242,7 +242,7 @@ const Signup = ({ route }) => {
       const usersRef = collection(db, "users");
       const q = query(
         usersRef,
-        where("usernameLower", "==", username.toLowerCase())
+        where("usernameLower", "==", username.toLowerCase()),
       );
       const querySnapshot = await getDocs(q);
       return !querySnapshot.empty;
@@ -354,7 +354,7 @@ const Signup = ({ route }) => {
                       onChange(val);
 
                       const selectedCountry = countries.find(
-                        (c) => c.value === val
+                        (c) => c.value === val,
                       );
                       const countryCode = selectedCountry?.key;
 

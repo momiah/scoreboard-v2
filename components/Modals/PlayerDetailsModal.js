@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { View, Text, Modal, TouchableOpacity } from "react-native";
+import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import MedalDisplay from "../performance/MedalDisplay";
@@ -12,7 +12,6 @@ import { GameContext } from "../../context/GameContext";
 import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { useNavigation } from "@react-navigation/native";
 import PerformanceStats from "../performance/PerformanceStats";
-import { UserContext } from "../../context/UserContext";
 import Tag from "../Tag";
 
 // Function to calculate the current streak
@@ -48,8 +47,6 @@ const PlayerDetails = ({
   const navigation = useNavigation();
   const { medalNames } = useContext(GameContext);
   const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
-
-  const { currentUser } = useContext(UserContext);
 
   const goToProfile = () => {
     setShowPlayerDetails(false);

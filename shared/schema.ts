@@ -3,14 +3,12 @@ import {
   ProfileDetail,
   UserProfile,
   Location,
-} from "../types/player";
-import {
   League,
   Tournament,
   CollectionName,
   CourtLocation,
-} from "../types/competition";
-import { ApprovalStatus } from "@/types/game";
+  ApprovalStatus,
+} from "./types";
 import moment from "moment";
 import { Platform } from "react-native";
 

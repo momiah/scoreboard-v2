@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Alert, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { notificationSchema, socialMediaPlatforms } from "@/schemas/schema";
+import { notificationSchema, socialMediaPlatforms } from "@shared";
 
 interface BroadcastPayload {
   message: string;

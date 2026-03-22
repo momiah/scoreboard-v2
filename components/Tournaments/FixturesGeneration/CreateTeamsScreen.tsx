@@ -4,7 +4,7 @@ import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import SelectPlayerModal from "../../Modals/SelectPlayerModal";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
-import { Player, GameTeam } from "../../../types/game";
+import { Player, GameTeam } from "@shared/types";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -41,7 +41,7 @@ export const CreateTeamsScreen = ({
         username: participant.username,
         displayName: formatDisplayName(participant),
       })),
-    [participants]
+    [participants],
   );
 
   const selectedPlayers = useMemo(
@@ -51,12 +51,12 @@ export const CreateTeamsScreen = ({
         .filter(Boolean),
       team2: [],
     }),
-    [fixedDoublesTeams]
+    [fixedDoublesTeams],
   );
 
   const canGenerate = useMemo(
     () => fixedDoublesTeams.every((team) => team.player1 && team.player2),
-    [fixedDoublesTeams]
+    [fixedDoublesTeams],
   );
 
   const currentlySelected = useMemo(() => {
@@ -71,7 +71,7 @@ export const CreateTeamsScreen = ({
       setActivePlayerPosition(playerPosition);
       setModalVisible(true);
     },
-    []
+    [],
   );
 
   const closeModal = useCallback(() => {
@@ -105,7 +105,7 @@ export const CreateTeamsScreen = ({
       activePlayerPosition,
       setFixedDoublesTeams,
       closeModal,
-    ]
+    ],
   );
 
   return (
@@ -210,7 +210,7 @@ const PlayerSlotText = styled.Text(
   ({ playerSelected }: { playerSelected: boolean }) => ({
     color: playerSelected ? "white" : "grey",
     fontSize: 14,
-  })
+  }),
 );
 
 const ModalTitle = styled.Text({
@@ -270,7 +270,7 @@ const GenerateButton = styled.TouchableOpacity(
     opacity: disabled ? 0.6 : 1,
     flexDirection: "row",
     justifyContent: "center",
-  })
+  }),
 );
 
 const BackText = styled.Text({

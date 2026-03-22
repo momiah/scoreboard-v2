@@ -13,7 +13,7 @@ import { PlatformBlurView as BlurView } from "../../../components/PlatformBlurVi
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
 import { LeagueContext } from "../../../context/LeagueContext";
-import { COLLECTION_NAMES } from "../../../schemas/schema";
+import { COLLECTION_NAMES } from "@shared";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../services/firebase.config";
 

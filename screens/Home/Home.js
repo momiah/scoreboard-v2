@@ -29,9 +29,9 @@ import {
 } from "../../components/Skeletons/HomeSkeleton";
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { socialMediaPlatforms, ICON_MAP } from "../../schemas/schema";
-import AddTournamentModal from "../../components/Modals/AddTournamentModal";
+import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
+import AddTournamentModal from "../../components/Modals/AddTournamentModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedFontSize = screenWidth < 450 ? 13 : 16; // Adjust font size based on screen width

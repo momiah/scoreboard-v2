@@ -33,7 +33,6 @@ import {
   updateUsers,
   updateTeams,
 } from "../devFunctions/firebaseFunctions";
-import { Alert } from "react-native";
 
 const UserContext = createContext();
 
@@ -46,8 +45,6 @@ const UserProvider = ({ children }) => {
 
   const [notifications, setNotifications] = useState([]); // Optional: Track notifications
   const [chatSummaries, setChatSummaries] = useState([]);
-
-  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     let unsubscribe;

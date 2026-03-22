@@ -3,7 +3,7 @@ import { Modal, TouchableOpacity, View, Platform } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-const Tooltip = ({ message, iconColor = "#00A2FF", position = "right" }) => {
+const Tooltip = ({ message, iconColor = "#00A2FF" }) => {
   const [tooltipVisible, setTooltipVisible] = useState(false);
 
   return (

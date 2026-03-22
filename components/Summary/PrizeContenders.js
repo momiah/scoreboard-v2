@@ -10,7 +10,7 @@ import {
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 
 const PrizeContenders = ({
   item: player,
@@ -64,10 +64,10 @@ const PrizeContenders = ({
               {index === 0
                 ? "st"
                 : index === 1
-                ? "nd"
-                : index === 2
-                ? "rd"
-                : "th"}
+                  ? "nd"
+                  : index === 2
+                    ? "rd"
+                    : "th"}
             </Rank>
           ) : null}
         </TextSkeleton>

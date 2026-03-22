@@ -6,7 +6,6 @@ import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
-import { UserProfile } from "@/types/player";
 
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
@@ -16,8 +15,8 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
-import { ccImageEndpoint } from "@/schemas/schema";
-import { NormalizedCompetition } from "@/types/competition";
+import { ccImageEndpoint } from "@shared";
+import { NormalizedCompetition, UserProfile } from "@shared/types";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
@@ -53,7 +52,7 @@ const JoinRequestModal = ({
     useContext(UserContext);
   const [senderDetails, setSenderDetails] = useState(null);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [joiningCompetition, setJoiningCompetition] = useState(false);
@@ -72,10 +71,9 @@ const JoinRequestModal = ({
     competition?.maxPlayers !== undefined &&
     competition.participants.length >= competition.maxPlayers;
 
-  const userAlreadyInCompetition: boolean | undefined =
-    competition?.participants?.some(
-      (participant) => participant.userId === senderId
-    );
+  const userAlreadyInCompetition = competition?.participants?.some(
+    (participant) => participant.userId === senderId,
+  );
 
   interface PendingRequest {
     userId: string;
@@ -83,7 +81,7 @@ const JoinRequestModal = ({
 
   const requestWithdrawn: boolean =
     !competition?.pendingRequests?.some(
-      (req: PendingRequest) => req.userId === senderId
+      (req: PendingRequest) => req.userId === senderId,
     ) && !userAlreadyInCompetition;
 
   const resetState = useCallback(() => {
@@ -229,7 +227,7 @@ const JoinRequestModal = ({
         </PlayerRow>
       );
     },
-    [findRankIndex, navigateToProfile, senderId]
+    [findRankIndex, navigateToProfile, senderId],
   );
 
   return (
@@ -434,7 +432,7 @@ const Button = styled.TouchableOpacity<ButtonProps>(
     borderRadius: 8,
     marginTop: 10,
     opacity: disabled ? 0.6 : 1,
-  })
+  }),
 );
 
 const AcceptButtonText = styled.Text({

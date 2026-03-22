@@ -1,7 +1,6 @@
 import React from "react";
 import styled from "styled-components/native";
-import { TouchableOpacity, Text } from "react-native";
-import { notificationTypes } from "../../schemas/schema";
+import { notificationTypes } from "@shared";
 import { useNavigation } from "@react-navigation/native";
 import Tag from "../Tag";
 import { useContext } from "react";
@@ -49,15 +48,15 @@ const NotificationRow = ({
     item.response === notificationTypes.RESPONSE.ACCEPT
       ? "checkmark-circle-outline"
       : item.response === notificationTypes.RESPONSE.DECLINE
-      ? "close-circle-outline"
-      : null;
+        ? "close-circle-outline"
+        : null;
 
   const responseColor =
     item.response === notificationTypes.RESPONSE.ACCEPT
       ? "green"
       : item.response === notificationTypes.RESPONSE.DECLINE
-      ? "red"
-      : null;
+        ? "red"
+        : null;
 
   const NotificationTextStyle = {
     fontWeight: !isRead ? "bold" : "normal",
@@ -85,7 +84,7 @@ const NotificationRow = ({
     }
 
     const infoEntry = Object.values(notificationTypes.INFORMATION).find(
-      (entry) => entry.TYPE === item.type
+      (entry) => entry.TYPE === item.type,
     );
 
     if (!infoEntry) return;

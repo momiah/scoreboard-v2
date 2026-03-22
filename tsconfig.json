@@ -4,8 +4,10 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@shared": ["./shared/index.ts"],
+      "@shared/*": ["./shared/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "functions/src/schemas/schema.ts"]
+  "include": ["**/*.ts", "**/*.tsx"]
 }

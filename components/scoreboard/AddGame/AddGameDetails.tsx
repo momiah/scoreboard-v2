@@ -5,7 +5,7 @@ import SelectPlayer from "./SelectPlayer";
 import moment from "moment";
 import Tag from "../../Tag";
 import { FixtureStatusLabel } from "../../Tournaments/Fixtures/FixturesAtoms";
-import { Player } from "../../../types/game";
+import { Player } from "@shared/types";
 
 const { width: screenWidth } = Dimensions.get("window");
 

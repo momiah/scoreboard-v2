@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   TouchableWithoutFeedback,
   Share,
-  KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
 import styled from "styled-components/native";
@@ -16,12 +15,17 @@ import { AntDesign } from "@expo/vector-icons";
 import Tag from "../Tag";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../../services/firebase.config";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, getDocs } from "firebase/firestore";
 import { FlatList } from "react-native";
 import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { UserContext } from "../../context/UserContext";
-import { notificationSchema, notificationTypes } from "../../schemas/schema";
+import {
+  notificationSchema,
+  notificationTypes,
+  COMPETITION_TYPES,
+  COLLECTION_NAMES,
+} from "@shared";
 import moment from "moment";
 import { LeagueContext } from "../../context/LeagueContext";
 import { PopupContext } from "../../context/PopupContext";
@@ -31,9 +35,8 @@ import {
   Tournament,
   NormalizedCompetition,
   CompetitionType,
-} from "@/types/competition";
-import { COMPETITION_TYPES, COLLECTION_NAMES } from "@/schemas/schema";
-import { UserProfile } from "@/types/player";
+  UserProfile,
+} from "@/shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../Modals/RecentPlayersModal";
 

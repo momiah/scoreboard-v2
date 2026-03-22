@@ -1,10 +1,10 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { TouchableOpacity, Modal, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
-import { daysOfWeek } from "../../schemas/schema";
+import { daysOfWeek } from "@shared";
 import { Ionicons } from "@expo/vector-icons";
 
 const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {

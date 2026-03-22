@@ -1,8 +1,6 @@
 import React, { useState, useContext } from "react";
 import {
   View,
-  Text,
-  TextInput,
   ActivityIndicator,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -114,14 +112,6 @@ const UserFeedback = ({ navigation }) => {
 };
 
 export default UserFeedback;
-
-// Styled Components
-const Title = styled.Text({
-  fontSize: 20,
-  color: "white",
-  fontWeight: "bold",
-  marginBottom: 10,
-});
 
 const IntroText = styled.Text({
   color: "#ccc",

@@ -1,10 +1,6 @@
 import { Linking, Platform } from "react-native";
 
-import {
-  iosAppLinks,
-  androidIntentLinks,
-  fallbackUrls,
-} from "../schemas/schema";
+import { iosAppLinks, androidIntentLinks, fallbackUrls } from "@shared";
 
 export const handleSocialPress = async (platform) => {
   const appUrl =

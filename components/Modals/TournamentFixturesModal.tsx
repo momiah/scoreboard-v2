@@ -13,19 +13,10 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import AddTournamentGameModal from "./AddTournamentGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import {
-  Tournament as BaseTournament,
-  NormalizedCompetition,
-} from "../../types/competition";
-import { Game } from "@/types/game";
+import { NormalizedCompetition, Game } from "@shared/types";
 import { UserContext } from "../../context/UserContext";
 
 const { width: screenWidth } = Dimensions.get("window");
-
-// Extend Tournament to include Firestore document ID
-interface Tournament extends BaseTournament {
-  id: string;
-}
 
 interface TournamentFixturesModalProps {
   modalVisible: boolean;
@@ -67,7 +58,7 @@ const TournamentFixturesModal: React.FC<TournamentFixturesModalProps> = ({
 
   // Filter out already completed/reported games
   const pendingGames = allGames.filter(
-    (game) => game.approvalStatus !== "Approved" && !game.result,
+    (game) => game.approvalStatus !== "approved" && !game.result,
   );
 
   const renderGameItem = ({ item }: { item: Game }) => {

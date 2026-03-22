@@ -8,11 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import {
-  COMPETITION_TYPES,
-  COLLECTION_NAMES,
-  prizeTypes,
-} from "../../../schemas/schema";
+import { COMPETITION_TYPES, COLLECTION_NAMES, prizeTypes } from "@shared";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";

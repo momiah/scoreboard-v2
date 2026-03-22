@@ -1,13 +1,6 @@
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  collection,
-  runTransaction,
-} from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection } from "firebase/firestore";
 import { db } from "../services/firebase.config";
-import { Tournament, TeamStats } from "../types/competition";
-import { ScoreboardProfile, UserProfile } from "../types/player";
+import { TeamStats, UserProfile } from "@shared/types";
 
 // Helper function to get user by ID (similar to your UserContext)
 export const getUserById = async (userId: string) => {
@@ -30,7 +23,7 @@ export const getUserById = async (userId: string) => {
 // Helper function to retrieve teams from league (similar to your UserContext)
 export const retrieveTeams = async (
   competitionId: string,
-  collectionName: string
+  collectionName: string,
 ) => {
   try {
     const collectionRef = collection(db, collectionName);
@@ -110,8 +103,8 @@ export const updateTeams = async ({
     const newTeams = updatedTeams.filter(
       (updatedTeam) =>
         !existingTeams.some(
-          (team: TeamStats) => team.teamKey === updatedTeam.teamKey
-        )
+          (team: TeamStats) => team.teamKey === updatedTeam.teamKey,
+        ),
     );
 
     // Final teams list to update in Firestore

@@ -1,7 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import Tooltip from "../Tooltip"; // Import the Tooltip component
-import { trophies } from "../../mockImages/index";
+import { ScrollView } from "react-native";
 import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
@@ -34,7 +32,7 @@ const ParticipantCarousel = ({ participants, admins, owner }) => {
               {participant.userId === owner?.userId ? (
                 <RoleLabel style={{ color: "orange" }}>Owner</RoleLabel>
               ) : admins?.some(
-                  (admin) => admin.userId === participant.userId
+                  (admin) => admin.userId === participant.userId,
                 ) ? (
                 <RoleLabel style={{ color: "#00A2FF" }}>Admin</RoleLabel>
               ) : null}

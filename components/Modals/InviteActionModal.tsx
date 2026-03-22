@@ -22,7 +22,7 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { NormalizedCompetition } from "@/types/competition";
+import { NormalizedCompetition } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -52,7 +52,7 @@ const InviteActionModal = ({
   } = useContext(LeagueContext);
   const { currentUser, readNotification } = useContext(UserContext);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
@@ -73,7 +73,7 @@ const InviteActionModal = ({
     (competition?.maxPlayers ?? Infinity);
 
   const alreadyInLeague = competition?.participants?.some(
-    (p) => p.userId === currentUser?.userId
+    (p) => p.userId === currentUser?.userId,
   );
 
   const location = competition?.location;
@@ -113,7 +113,7 @@ const InviteActionModal = ({
         setCompetition(normalizedCompetition);
 
         const withdrawn = !normalizedCompetition?.pendingInvites?.some(
-          (u) => u.userId === currentUser?.userId
+          (u) => u.userId === currentUser?.userId,
         );
         setIsWithdrawn(withdrawn);
       } catch (error) {
@@ -152,7 +152,7 @@ const InviteActionModal = ({
       console.log("League is full");
       Alert.alert(
         "League Full",
-        "This invite has expired as the league is full."
+        "This invite has expired as the league is full.",
       );
       return;
     }
@@ -318,8 +318,8 @@ const InviteActionModal = ({
                   {leagueFull
                     ? "This invite has expired as the league is full"
                     : isWithdrawn
-                    ? "This invite is no longer available"
-                    : "You are already a participant in this league"}
+                      ? "This invite is no longer available"
+                      : "You are already a participant in this league"}
                 </ErrorText>
               )}
 

@@ -1,19 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Dimensions,
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { Dimensions, ActivityIndicator } from "react-native";
 import { BottomSheetView } from "@gorhom/bottom-sheet";
 import styled from "styled-components/native";
 import ListDropdown from "../ListDropdown/ListDropdown";
 import { loadCountries, loadCities } from "../../utils/locationData";
-import {
-  gameTypes,
-  maxPlayers as maxPlayersOptions,
-} from "../../schemas/schema";
+import { gameTypes, maxPlayers as maxPlayersOptions } from "@shared";
 import { Controller, useWatch } from "react-hook-form";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -108,7 +99,7 @@ const FilterSheetModal = ({
         setCountries(countryData);
         await AsyncStorage.setItem(
           COUNTRIES_STORAGE_KEY,
-          JSON.stringify(countryData)
+          JSON.stringify(countryData),
         );
       }
     } catch (error) {
@@ -207,10 +198,10 @@ const FilterSheetModal = ({
       setValue("city", "");
       setValue(
         "countryCode",
-        countries.find((c) => c.value === val)?.key || ""
+        countries.find((c) => c.value === val)?.key || "",
       );
     },
-    [setValue, countries]
+    [setValue, countries],
   );
 
   // Don't render content if not visible (helps with performance)

@@ -2,7 +2,6 @@
 import React, { useContext } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -20,7 +19,7 @@ import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView"
 const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const ProfileMenu = ({ navigation }) => {
-  const { Logout, currentUser, setCurrentUser, isLoggingOut, deleteAccount } =
+  const { Logout, currentUser, isLoggingOut, deleteAccount } =
     useContext(UserContext);
   const { showPopup, setShowPopup, popupMessage, setPopupMessage } =
     useContext(PopupContext);
@@ -91,7 +90,7 @@ const ProfileMenu = ({ navigation }) => {
             onPress: handleDeleteAccount,
             style: "destructive",
           },
-        ]
+        ],
       );
     } else {
       navigation.navigate(action);

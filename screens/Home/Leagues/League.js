@@ -11,7 +11,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { COMPETITION_TYPES, COLLECTION_NAMES } from "../../../schemas/schema";
+import { COMPETITION_TYPES, COLLECTION_NAMES } from "@shared";
 
 import CompetitionSummary from "../../../components/Summary/CompetitionSummary";
 import Scoreboard from "../../../components/scoreboard/Scoreboard";

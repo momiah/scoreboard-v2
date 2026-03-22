@@ -1,8 +1,6 @@
 import React, { useState, useContext } from "react";
 import {
   View,
-  Text,
-  TextInput,
   ActivityIndicator,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -33,7 +31,7 @@ const AccountSupport = ({ navigation }) => {
     try {
       await sendSupportRequest({ subject, message, currentUser });
       setPopupMessage(
-        "Support Request sent, we'll aim to get back to you within 72 hours"
+        "Support Request sent, we'll aim to get back to you within 72 hours",
       );
       setShowPopup(true);
       setSubject("");
@@ -110,14 +108,6 @@ const AccountSupport = ({ navigation }) => {
 };
 
 export default AccountSupport;
-
-// Styled Components
-const Title = styled.Text({
-  fontSize: 20,
-  color: "white",
-  fontWeight: "bold",
-  marginBottom: 20,
-});
 
 const Header = styled.View({
   flexDirection: "row",

@@ -4,12 +4,9 @@ import React, {
   useRef,
   useContext,
   useCallback,
-  useMemo,
 } from "react";
 import {
   FlatList,
-  TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
@@ -32,7 +29,7 @@ import {
 import { db } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
-import { COMPETITION_TYPES } from "../../schemas/schema";
+import { COMPETITION_TYPES } from "@shared";
 import moment from "moment";
 
 const ChatRoom = ({
@@ -67,7 +64,7 @@ const ChatRoom = ({
 
     const q = query(
       collection(db, collectionRef, competitionId, "chat"),
-      orderBy("createdAt", "asc")
+      orderBy("createdAt", "asc"),
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => {
@@ -98,7 +95,7 @@ const ChatRoom = ({
   // at top of component
   const leagueHasEnded = moment(endDate, "DD-MM-YYYY").isBefore(
     moment(),
-    "day"
+    "day",
   );
 
   const handleSend = async () => {
@@ -126,7 +123,7 @@ const ChatRoom = ({
     scrollToEnd(true);
 
     const recipients = competitionParticipants.filter(
-      (u) => u.userId !== currentUser?.userId
+      (u) => u.userId !== currentUser?.userId,
     );
 
     for (const recipient of recipients) {
@@ -135,7 +132,7 @@ const ChatRoom = ({
         "users",
         recipient.userId,
         "chats",
-        competitionId
+        competitionId,
       );
       const existing = await getDoc(chatRef);
 
@@ -149,7 +146,7 @@ const ChatRoom = ({
             createdAt: new Date(),
             competitionName,
           },
-          { merge: true }
+          { merge: true },
         );
       } else {
         await setDoc(chatRef, {

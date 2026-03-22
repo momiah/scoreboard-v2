@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState, memo } from "react";
 import {
   FlatList,
   ActivityIndicator,
-  TouchableOpacity,
   View,
   Dimensions,
   Platform,
@@ -86,7 +85,7 @@ const Chats = () => {
       )}
       <FlatList
         data={[...chatSummaries].sort(
-          (a, b) => b.createdAt?.seconds - a.createdAt?.seconds
+          (a, b) => b.createdAt?.seconds - a.createdAt?.seconds,
         )}
         renderItem={renderChatRow}
         keyExtractor={(item) => item.leagueId}
