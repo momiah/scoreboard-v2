@@ -2,14 +2,11 @@ import React, { useCallback, useState } from "react";
 import { FlatList, TouchableOpacity, View } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
-import { Skeleton } from "moti/skeleton";
 import Tag from "../Tag";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { ccDefaultImage } from "../../mockImages/index";
-import { SKELETON_THEMES } from "../Skeletons/skeletonConfig";
-
-const { colors: skeletonColors } = SKELETON_THEMES.dark;
+import { SkeletonPulse, SkeletonBlock } from "../Skeletons/skeletonConfig";
 
 const LeagueItem = ({ league, onPress }) => {
   const [imageLoading, setImageLoading] = useState(true);
@@ -26,12 +23,9 @@ const LeagueItem = ({ league, onPress }) => {
         <ImageWrapper>
           {imageLoading && (
             <ImageSkeletonOverlay>
-              <Skeleton
-                width="100%"
-                height={200}
-                radius={10}
-                colors={skeletonColors}
-              />
+              <SkeletonPulse>
+                <SkeletonBlock width="100%" height={200} radius={10} />
+              </SkeletonPulse>
             </ImageSkeletonOverlay>
           )}
           <LeagueImage
