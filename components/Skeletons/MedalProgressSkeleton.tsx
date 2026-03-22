@@ -1,37 +1,33 @@
-// components/Skeletons/MedalProgressSkeleton.tsx
 import React from "react";
-import { Skeleton } from "moti/skeleton";
 import styled from "styled-components/native";
-import { SKELETON_THEMES } from "./skeletonConfig";
-
-const { colors } = SKELETON_THEMES.dark;
+import { SkeletonPulse, SkeletonBlock } from "./skeletonConfig";
 
 const MedalProgressSkeleton = () => {
   return (
-    <Container>
-      <ProgressArrowPlaceholder />
-      {/* Progress bar */}
-      <Skeleton width="100%" height={20} radius={10} colors={colors} />
+    <SkeletonPulse>
+      <Container>
+        <ProgressArrowPlaceholder />
+        <SkeletonBlock width="100%" height={20} radius={10} />
 
-      {/* Rank row */}
-      <RankRow>
-        <RankBlock>
-          <Skeleton width={60} height={14} colors={colors} />
-          <Spacer />
-          <Skeleton width={20} height={20} radius="round" colors={colors} />
-          <Spacer />
-          <Skeleton width={50} height={12} colors={colors} />
-        </RankBlock>
+        <RankRow>
+          <RankBlock>
+            <SkeletonBlock width={60} height={14} />
+            <Spacer />
+            <SkeletonBlock width={20} height={20} radius={10} />
+            <Spacer />
+            <SkeletonBlock width={50} height={12} />
+          </RankBlock>
 
-        <RankBlock style={{ alignItems: "flex-end" }}>
-          <Skeleton width={60} height={14} colors={colors} />
-          <Spacer />
-          <Skeleton width={20} height={20} radius="round" colors={colors} />
-          <Spacer />
-          <Skeleton width={50} height={12} colors={colors} />
-        </RankBlock>
-      </RankRow>
-    </Container>
+          <RankBlock style={{ alignItems: "flex-end" }}>
+            <SkeletonBlock width={60} height={14} />
+            <Spacer />
+            <SkeletonBlock width={20} height={20} radius={10} />
+            <Spacer />
+            <SkeletonBlock width={50} height={12} />
+          </RankBlock>
+        </RankRow>
+      </Container>
+    </SkeletonPulse>
   );
 };
 
