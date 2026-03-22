@@ -1,9 +1,20 @@
-import React, { useEffect, useRef } from "react";
-import { View, Animated } from "react-native";
+import React, { useEffect, useRef, ReactNode } from "react";
+import { View, Animated, DimensionValue, ViewStyle } from "react-native";
 
 export const SKELETON_COLOR = "rgb(5, 26, 51)";
 
-export const SkeletonPulse = ({ children }) => {
+interface SkeletonPulseProps {
+  children: ReactNode;
+}
+
+interface SkeletonBlockProps {
+  width: DimensionValue;
+  height: number;
+  radius?: number;
+  style?: ViewStyle;
+}
+
+export const SkeletonPulse = ({ children }: SkeletonPulseProps) => {
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -28,7 +39,7 @@ export const SkeletonPulse = ({ children }) => {
   return <Animated.View style={{ opacity }}>{children}</Animated.View>;
 };
 
-export const SkeletonBlock = ({ width, height, radius = 0, style }) => (
+export const SkeletonBlock = ({ width, height, radius = 0, style }: SkeletonBlockProps) => (
   <View
     style={[
       {
@@ -70,7 +81,7 @@ export const SKELETON_THEMES = {
   },
 };
 
-export const createSkeletonConfig = (overrides = {}) => {
+export const createSkeletonConfig = (overrides: Record<string, unknown> = {}) => {
   return {
     ...DEFAULT_SKELETON_CONFIG,
     ...overrides,

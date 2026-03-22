@@ -109,4 +109,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
+  playerInfo: {
+    flex: 1,
+  },
 });
