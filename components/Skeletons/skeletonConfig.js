@@ -1,3 +1,47 @@
+import React, { useEffect, useRef } from "react";
+import { View, Animated } from "react-native";
+
+export const SKELETON_COLOR = "rgb(5, 26, 51)";
+
+export const SkeletonPulse = ({ children }) => {
+  const opacity = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, []);
+
+  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+};
+
+export const SkeletonBlock = ({ width, height, radius = 0, style }) => (
+  <View
+    style={[
+      {
+        width,
+        height,
+        borderRadius: radius,
+        backgroundColor: SKELETON_COLOR,
+      },
+      style,
+    ]}
+  />
+);
+
 export const DEFAULT_SKELETON_CONFIG = {
   colorMode: "dark",
   colors: ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"],
