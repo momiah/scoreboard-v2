@@ -17,33 +17,33 @@ interface SkeletonBlockProps {
 export const SkeletonPulse = ({ children }: SkeletonPulseProps) => {
 
 
-  return (
-    <View >
-      {children}
-    </View>
-  );
+  // return (
+  //   <View >
+  //     {children}
+  //   </View>
+  // );
 
-  // const opacity = useRef(new Animated.Value(0.4)).current;
-  // useEffect(() => {
-  //   const animation = Animated.loop(
-  //     Animated.sequence([
-  //       Animated.timing(opacity, {
-  //         toValue: 1,
-  //         duration: 800,
-  //         useNativeDriver: true,
-  //       }),
-  //       Animated.timing(opacity, {
-  //         toValue: 0.4,
-  //         duration: 800,
-  //         useNativeDriver: true,
-  //       }),
-  //     ])
-  //   );
-  //   animation.start();
-  //   return () => animation.stop();
-  // }, []);
+  const opacity = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, []);
 
-  // return <Animated.View style={{ opacity }}>{children}</Animated.View>;
+  return <Animated.View style={{ opacity }}>{children}</Animated.View>;
 };
 
 export const SkeletonBlock = ({ width, height, radius = 0, style }: SkeletonBlockProps) => (
