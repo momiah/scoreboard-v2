@@ -1,12 +1,10 @@
 import React, { useState, useCallback } from "react";
 import styled from "styled-components/native";
 import Tag from "../Tag";
-import { Skeleton } from "moti/skeleton";
+import { SkeletonPulse, SkeletonBlock } from "../Skeletons/skeletonConfig";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { COMPETITION_TYPES, ccImageEndpoint } from "@shared";
 import { useNavigation } from "@react-navigation/native";
-
-const skeletonColors = ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"];
 
 const TournamentGrid = ({ navigationRoute, tournaments }) => {
   const navigation = useNavigation();
@@ -66,12 +64,9 @@ const TournamentCardItem = ({
         <TournamentImageContainer>
           {imageLoading && (
             <ImageSkeletonOverlay>
-              <Skeleton
-                width="100%"
-                height={120}
-                radius={0}
-                colors={skeletonColors}
-              />
+              <SkeletonPulse>
+                <SkeletonBlock width="100%" height={120} />
+              </SkeletonPulse>
             </ImageSkeletonOverlay>
           )}
           <TournamentImage
