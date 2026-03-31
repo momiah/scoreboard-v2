@@ -4,13 +4,25 @@ import Tag from "../Tag";
 import { SkeletonPulse, SkeletonBlock } from "../Skeletons/skeletonConfig";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import { COMPETITION_TYPES, ccImageEndpoint } from "@shared";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
+import { NormalizedCompetition } from "@shared/types";
+interface TournamentGridProps {
+  navigationRoute: string;
+  tournaments: NormalizedCompetition[];
+}
 
-const TournamentGrid = ({ navigationRoute, tournaments }) => {
-  const navigation = useNavigation();
+const TournamentGrid = ({
+  navigationRoute,
+  tournaments,
+}: TournamentGridProps) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const navigateTo = useCallback(
-    (tournamentId) => {
+    (tournamentId: string) => {
       navigation.navigate(navigationRoute, { tournamentId });
     },
     [navigation, navigationRoute],
@@ -18,25 +30,25 @@ const TournamentGrid = ({ navigationRoute, tournaments }) => {
 
   return (
     <Container>
-      {tournaments.slice(0, 4).map((tournament) => {
+      {(tournaments ?? []).slice(0, 4).map((tournament, index) => {
         const status = calculateCompetitionStatus(
           tournament,
           COMPETITION_TYPES.TOURNAMENT,
         );
         const maxPlayers = tournament.maxPlayers;
-        const participantsLength = tournament.tournamentParticipants.length;
+        const participantsLength = (tournament.participants ?? []).length;
         const numberOfPlayers = `${participantsLength} / ${maxPlayers}`;
-        const location = `${tournament.location.city}, ${tournament.location.countryCode}`;
+        const location = `${tournament.location?.city}, ${tournament.location?.countryCode}`;
         const tournamentNameClipped =
-          tournament.tournamentName.length > 15
-            ? tournament.tournamentName.slice(0, 15) + "..."
-            : tournament.tournamentName;
+          tournament.name.length > 15
+            ? tournament.name.slice(0, 15) + "..."
+            : tournament.name;
 
         return (
           <TournamentCardItem
-            key={tournament.id || tournament.tournamentId}
+            key={tournament.id || index}
             tournament={tournament}
-            onPress={() => navigateTo(tournament.tournamentId)}
+            onPress={() => navigateTo(tournament.id)}
             status={status}
             numberOfPlayers={numberOfPlayers}
             location={location}
@@ -48,6 +60,15 @@ const TournamentGrid = ({ navigationRoute, tournaments }) => {
   );
 };
 
+interface TournamentCardItemProps {
+  tournament: NormalizedCompetition;
+  onPress: () => void;
+  status: { status: string; color: string };
+  numberOfPlayers: string;
+  location: string;
+  tournamentNameClipped: string;
+}
+
 const TournamentCardItem = ({
   tournament,
   onPress,
@@ -55,7 +76,7 @@ const TournamentCardItem = ({
   numberOfPlayers,
   location,
   tournamentNameClipped,
-}) => {
+}: TournamentCardItemProps) => {
   const [imageLoading, setImageLoading] = useState(true);
 
   return (
@@ -70,7 +91,7 @@ const TournamentCardItem = ({
             </ImageSkeletonOverlay>
           )}
           <TournamentImage
-            source={{ uri: tournament.tournamentImage || ccImageEndpoint }}
+            source={{ uri: tournament.image || ccImageEndpoint }}
             resizeMode="cover"
             onLoadEnd={() => setImageLoading(false)}
           >
@@ -99,19 +120,19 @@ const TournamentCardItem = ({
         <TournamentInfo>
           <TournamentName>{tournamentNameClipped}</TournamentName>
           <TournamentLocation>
-            {tournament.location.courtName || ""}
+            {tournament.location?.courtName || ""}
           </TournamentLocation>
           <TournamentLocation>{location || ""}</TournamentLocation>
           <BottomTags>
             <Tag
-              name={tournament.tournamentType}
+              name={tournament.type}
               color="#2F2F30"
               iconColor="white"
               iconSize={10}
               fontSize={9}
             />
             <Tag
-              name={tournament.tournamentMode}
+              name={tournament.mode}
               color="#2F2F30"
               iconColor="white"
               iconSize={10}

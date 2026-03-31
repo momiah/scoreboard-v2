@@ -30,13 +30,16 @@ export const COMPETITION_TYPES = {
 export const COLLECTION_NAMES: Record<CollectionName, string> = {
   leagues: "leagues",
   tournaments: "tournaments",
+  pendingVideoUploads: "pendingVideoUploads",
+  gameVideos: "gameVideos",
+  comments: "comments",
+  replies: "replies",
 };
 
 export const ICON_MAP = {
   Instagram: "logo-instagram",
   TikTok: "logo-tiktok",
-  // Facebook: "logo-facebook",
-};
+} as const;
 
 export const socialMediaPlatforms = [
   "Instagram",

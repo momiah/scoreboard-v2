@@ -61,8 +61,9 @@ import {
 } from "@shared/helpers";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { LeagueContextType } from "./types/LeagueContextType";
 
-const LeagueContext = createContext({});
+const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
 // ============================================
 // HELPER FUNCTIONS (for game approval)
@@ -198,10 +199,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchLeagues = (options = {}) =>
-    fetchCompetitions({ competition: "leagues", ...options });
+    fetchCompetitions({ competition: "leagues", ...options }) as Promise<
+      League[]
+    >;
 
   const fetchTournaments = (options = {}) =>
-    fetchCompetitions({ competition: "tournaments", ...options });
+    fetchCompetitions({ competition: "tournaments", ...options }) as Promise<
+      Tournament[]
+    >;
 
   const addPlaytime = async ({
     playtime,
@@ -399,7 +404,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }: {
     competitionId: string;
     collectionName: CollectionName;
-  }) => {
+  }): Promise<League | Tournament | null> => {
     try {
       const competitionDoc = await getDoc(
         doc(db, collectionName, competitionId),
@@ -424,7 +429,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         setLeagueById(competitionData as League);
       }
 
-      return competitionData;
+      return competitionData as unknown as League | Tournament;
     } catch (error) {
       console.error("Error fetching competition:", error);
       return null;
@@ -462,7 +467,10 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
   const getCourts = async () => {
     const snapshot = await getDocs(collection(db, "courts"));
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as unknown as CourtLocation[];
   };
 
   const addCourt = async (courtData: CourtLocation) => {

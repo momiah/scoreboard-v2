@@ -15,7 +15,7 @@ import moment from "moment";
 export function formatDate(
   input,
   parserFormat = "DD-MM-YYYY",
-  outputFormat = "ddd Do MMM"
+  outputFormat = "ddd Do MMM",
 ) {
   // if it’s a Firestore Timestamp, convert it first:
   const m =
@@ -25,3 +25,12 @@ export function formatDate(
 
   return m.isValid() ? m.format(outputFormat) : "";
 }
+
+export const timeAgo = (createdAt) => {
+  if (!createdAt) return "";
+  const date =
+    typeof createdAt === "object" && typeof createdAt.toDate === "function"
+      ? createdAt.toDate()
+      : moment(createdAt, "DD-MM-YYYY").toDate();
+  return moment(date).fromNow();
+};
