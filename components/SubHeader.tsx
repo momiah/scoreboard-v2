@@ -2,7 +2,22 @@ import React from "react";
 import { TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
+
+interface SubHeaderProps {
+  title: string;
+  showIcon?: boolean;
+  iconName?: keyof typeof Ionicons.glyphMap;
+  onIconPress?: () => void;
+  actionText?: string;
+  navigationRoute?: string;
+  paddingTop?: number;
+  paddingBottom?: number;
+}
 
 const SubHeader = ({
   title,
@@ -13,13 +28,11 @@ const SubHeader = ({
   navigationRoute,
   paddingTop = 35,
   paddingBottom = 20,
-}) => {
-  const navigation = useNavigation();
+}: SubHeaderProps) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
-  const navigateTo = (route) => {
-    if (route) {
-      navigation.navigate(route);
-    }
+  const navigateTo = (route: string | undefined) => {
+    navigation.navigate(route as never);
   };
 
   return (

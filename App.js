@@ -11,6 +11,7 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { recoverPendingVideoUploads } from "./helpers/recoverPendingVideoUploads";
 
 import { registerForPushNotificationsAsync } from "./services/pushNotifications";
 
@@ -82,6 +83,7 @@ export default function App() {
     };
 
     checkForUpdates();
+    recoverPendingVideoUploads();
 
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
@@ -98,7 +100,7 @@ export default function App() {
           console.log("Navigation reference is not ready");
           // Alert.alert("Error", "Navigation is not ready");
         }
-      }
+      },
     );
 
     // Listener for notifications received while the app is in the foreground
@@ -106,7 +108,7 @@ export default function App() {
       Notifications.addNotificationReceivedListener((notification) => {
         console.log(
           "Notification received in background:",
-          JSON.stringify(notification, null, 2)
+          JSON.stringify(notification, null, 2),
         );
       });
 
