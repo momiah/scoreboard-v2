@@ -5,27 +5,36 @@ import { TeamColumn } from "../../scoreboard/ScoreboardAtoms";
 import styled from "styled-components/native";
 
 import Tag from "../../Tag";
+import { FixtureMetadata, Fixtures } from "@shared/types";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 export const GeneratedFixturesScreen = ({
   generatedFixtures,
+  fixtureMetadata,
   tournamentType,
   onBack,
   onGenerateTournament,
   isGenerating,
+}: {
+  generatedFixtures: Fixtures[] | null;
+  fixtureMetadata: FixtureMetadata | null;
+  tournamentType: string;
+  onBack: () => void;
+  onGenerateTournament: () => void;
+  isGenerating: boolean;
 }) => (
   <>
     <ModalTitle>Generated Fixtures</ModalTitle>
 
     <FixturesContainer>
-      {generatedFixtures?.map((round, roundIndex) => (
+      {generatedFixtures?.map((round) => (
         <RoundContainer key={`round_${round.round}`}>
           <TitleContainer>
             <RoundTitle>ROUND {round.round}</RoundTitle>
           </TitleContainer>
 
-          {round.games.map((game, gameIndex) => (
+          {round.games.map((game) => (
             <GameCard key={game.gameId}>
               <GameHeader>
                 <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
@@ -58,6 +67,13 @@ export const GeneratedFixturesScreen = ({
         </RoundContainer>
       ))}
     </FixturesContainer>
+
+    {fixtureMetadata?.disclaimers?.map((disclaimer) => (
+      <DisclaimerBanner key={disclaimer.heading}>
+        <DisclaimerHeading>{disclaimer.heading}</DisclaimerHeading>
+        <DisclaimerBody>{disclaimer.body}</DisclaimerBody>
+      </DisclaimerBanner>
+    ))}
 
     <ButtonContainer>
       <BackButton onPress={onBack}>
@@ -149,16 +165,18 @@ const BackButton = styled.TouchableOpacity({
   alignItems: "center",
 });
 
-const ConfirmButton = styled.TouchableOpacity(({ disabled }) => ({
-  flex: 1,
-  padding: 12,
-  backgroundColor: disabled ? "#666" : "#00A2FF",
-  borderRadius: 6,
-  alignItems: "center",
-  flexDirection: "row",
-  justifyContent: "center",
-  gap: 8,
-}));
+const ConfirmButton = styled.TouchableOpacity(
+  ({ disabled }: { disabled?: boolean }) => ({
+    flex: 1,
+    padding: 12,
+    backgroundColor: disabled ? "#666" : "#00A2FF",
+    borderRadius: 6,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+  }),
+);
 
 const BackText = styled.Text({
   color: "white",
@@ -170,4 +188,25 @@ const ConfirmText = styled.Text({
   color: "white",
   fontWeight: "bold",
   fontSize: 16,
+});
+
+const DisclaimerBanner = styled.View({
+  backgroundColor: "rgba(255, 165, 0, 0.1)",
+  borderColor: "rgba(255, 165, 0, 0.4)",
+  borderWidth: 1,
+  borderRadius: 8,
+  padding: 12,
+  marginBottom: 12,
+});
+
+const DisclaimerHeading = styled.Text({
+  color: "#FFA500",
+  fontSize: 13,
+  fontWeight: "bold",
+  marginBottom: 4,
+});
+
+const DisclaimerBody = styled.Text({
+  color: "#ccc",
+  fontSize: 12,
 });

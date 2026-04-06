@@ -24,6 +24,7 @@ export const SetupScreen = ({
   onSinglesGenerate,
   isGenerating,
   participants,
+  loadingParticipants,
 }) => {
   const numberOfTeams = Math.floor(participants.length / 2);
   const numberOfPlayers = participants.length;
@@ -35,14 +36,12 @@ export const SetupScreen = ({
   const getMaxCourts = () => {
     const maxCourts =
       tournamentType === "Singles" ? numberOfPlayers / 2 : numberOfTeams / 2;
-    return Math.floor(maxCourts) || 1; // Minimum 1 court
+    return Math.floor(maxCourts) || 1;
   };
 
   return (
     <>
       <ModalTitle>Setup Tournament</ModalTitle>
-
-      {/* Mode Selection */}
 
       {tournamentType === "Doubles" && (
         <>
@@ -74,12 +73,12 @@ export const SetupScreen = ({
         </>
       )}
 
-      {/* Number of Courts */}
       <FormSection>
         <SectionTitle>Number of Courts</SectionTitle>
         <CourtsContainer>
           <CourtsButton
             onPress={() => setNumberOfCourts(Math.max(1, numberOfCourts - 1))}
+            disabled={loadingParticipants}
           >
             <AntDesign name="minus" size={20} color="#fff" />
           </CourtsButton>
@@ -90,7 +89,7 @@ export const SetupScreen = ({
             onPress={() =>
               setNumberOfCourts(Math.min(getMaxCourts(), numberOfCourts + 1))
             }
-            disabled={numberOfCourts >= getMaxCourts()}
+            disabled={numberOfCourts >= getMaxCourts() || loadingParticipants}
           >
             <AntDesign name="plus" size={20} color="#fff" />
           </CourtsButton>
@@ -102,7 +101,14 @@ export const SetupScreen = ({
 
       <ButtonContainer>
         <CancelButton onPress={onCancel}>
-          <CancelText>Cancel</CancelText>
+          {loadingParticipants ? (
+            <LoadingRow>
+              <ActivityIndicator size="small" color="#00A2FF" />
+              <LoadingText>Loading participants...</LoadingText>
+            </LoadingRow>
+          ) : (
+            <CancelText>Cancel</CancelText>
+          )}
         </CancelButton>
 
         {tournamentType === "Doubles" ? (
@@ -110,11 +116,13 @@ export const SetupScreen = ({
             {selectedMode === "Mixed Doubles" && (
               <GenerateButton
                 disabled={
+                  loadingParticipants ||
                   !(
                     selectedMode === "Mixed Doubles" &&
                     generationType &&
                     numberOfCourts >= 1
-                  ) || isGenerating
+                  ) ||
+                  isGenerating
                 }
                 onPress={onMixedDoublesGenerate}
               >
@@ -136,6 +144,7 @@ export const SetupScreen = ({
             {selectedMode === "Fixed Doubles" && (
               <CreateButton
                 disabled={
+                  loadingParticipants ||
                   !(selectedMode === "Fixed Doubles" && numberOfCourts >= 1)
                 }
                 onPress={onFixedDoublesCreateTeams}
@@ -146,7 +155,7 @@ export const SetupScreen = ({
           </>
         ) : (
           <GenerateButton
-            disabled={!numberOfCourts >= 1 || isGenerating}
+            disabled={loadingParticipants || numberOfCourts < 1 || isGenerating}
             onPress={onSinglesGenerate}
           >
             {isGenerating ? (
@@ -277,4 +286,16 @@ const CreateText = styled.Text({
   color: "white",
   fontWeight: "bold",
   fontSize: 16,
+});
+
+const LoadingRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+});
+
+const LoadingText = styled.Text({
+  color: "#ccc",
+  fontSize: 13,
 });

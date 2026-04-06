@@ -45,7 +45,8 @@ const BulkGamePublisher = () => {
   const { leagueId, leagueById } = route.params as BulkGamePublisherParams;
   const { currentUser, fetchPlayers, getUserById, sendNotification } =
     useContext(UserContext);
-  const { fetchCompetitionById } = useContext(LeagueContext);
+  // @ts-expect-error - Context is not typed
+  const { fetchCompetitionById } = useContext(LeagueContext)!;
   const {
     handleShowPopup,
     setPopupMessage,
