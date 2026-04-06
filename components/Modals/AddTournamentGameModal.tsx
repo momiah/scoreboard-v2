@@ -155,11 +155,27 @@ const AddTournamentGameModal = ({
     }
 
     // Update the game using context method
-    await updateTournamentGame({
-      tournamentId,
-      gameId: game.gameId,
-      gameResult,
-    });
+    try {
+      await updateTournamentGame({
+        tournamentId,
+        gameId: game.gameId,
+        gameResult,
+      });
+    } catch (updateError: unknown) {
+      const errorMessage =
+        updateError instanceof Error ? updateError.message : "";
+      const alreadyReported =
+        errorMessage.includes("already been reported") ||
+        errorMessage.includes("already been processed");
+
+      setLoading(false);
+      setErrorText(
+        alreadyReported
+          ? "This game has already been reported. Please refresh to see the latest status."
+          : "Failed to submit game result. Please try again.",
+      );
+      return;
+    }
 
     // Call onGameUpdated for now
     if (onGameUpdated) {
