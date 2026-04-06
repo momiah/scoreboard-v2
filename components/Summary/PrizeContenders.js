@@ -117,7 +117,7 @@ const PrizeContenders = ({
             config={SKELETON_THEMES.dark}
             style={{ marginBottom: 5 }}
           >
-            {imageLoaded && !showSkeleton ? <StatTitle>XP</StatTitle> : null}
+            {imageLoaded && !showSkeleton ? <StatTitle>CP</StatTitle> : null}
           </TextSkeleton>
 
           <TextSkeleton
