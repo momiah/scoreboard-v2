@@ -142,7 +142,7 @@ const DoublesPrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                   //   style={{ marginBottom: 5 }}
                 >
                   {imageLoaded && !showSkeleton ? (
-                    <StatTitle>XP</StatTitle>
+                    <StatTitle>CP</StatTitle>
                   ) : null}
                 </TextSkeleton>
 

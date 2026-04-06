@@ -2,148 +2,331 @@ import { generateUniqueGameId } from "../generateUniqueId";
 import { Alert } from "react-native";
 import moment from "moment";
 
-import { PlayerWithXP, GameTeam, Game } from "@shared/types";
+import {
+  PlayerWithXP,
+  GameTeam,
+  Game,
+  FixtureDisclaimer,
+  FixtureMetadata,
+  FixtureResult,
+} from "@shared/types";
 
-export const generateSinglesRoundRobinFixtures = ({
-  players,
-  numberOfCourts,
-  competitionId,
-}: {
-  players: PlayerWithXP[];
-  numberOfCourts: number;
-  competitionId: string;
-}) => {
-  const fixtures = [];
-  const numPlayers = players.length;
+// ─── Constants ───────────────────────────────────────────────────────────────
 
-  if (numPlayers < 2) {
-    Alert.alert("Error", "Need at least 2 players to generate fixtures");
-    return null;
-  }
+const MAX_DOUBLES_TEAMS = 32;
+const MAX_SINGLES_PLAYERS = 64;
+const MAX_COURTS = 32;
+const MINS_PER_GAME = 15;
+const MINS_PER_DAY = 480; // 8 hours
 
-  // Generate all possible matches
-  const allMatches: {
-    player1: PlayerWithXP;
-    player2: PlayerWithXP;
-    player1Index: number;
-    player2Index: number;
-  }[] = [];
+// ─── Metadata Builder ────────────────────────────────────────────────────────
 
-  for (let i = 0; i < numPlayers; i++) {
-    for (let j = i + 1; j < numPlayers; j++) {
-      allMatches.push({
-        player1: players[i],
-        player2: players[j],
-        player1Index: i,
-        player2Index: j,
-      });
-    }
-  }
+const buildMetadata = (
+  totalRounds: number,
+  numberOfCourts: number,
+  totalGames: number,
+  numTeams: number,
+): FixtureMetadata => {
+  const totalMatchups = (numTeams * (numTeams - 1)) / 2;
+  const estimatedMinutes = totalRounds * MINS_PER_GAME;
+  const estimatedHours = Math.ceil(estimatedMinutes / 60);
 
-  let allCreatedGames = [];
-  let roundNumber = 1;
-  let gameNumber = 1; // Add game counter
-  const remainingMatches = [...allMatches];
+  const disclaimers: FixtureDisclaimer[] = [];
 
-  // Track how many rounds each player has been sitting out consecutively
-  const playerConsecutiveBreaks = new Array(numPlayers).fill(0);
-
-  while (remainingMatches.length > 0) {
-    const roundGames = [];
-    const playersPlayedThisRound = new Set();
-    let startingCourt = ((roundNumber - 1) % numberOfCourts) + 1;
-    let court = startingCourt;
-
-    // Find players that have been sitting out the longest
-    const availableMatches = remainingMatches.filter(
-      (match) =>
-        !playersPlayedThisRound.has(match.player1Index) &&
-        !playersPlayedThisRound.has(match.player2Index),
-    );
-
-    // Sort by players with longest consecutive breaks (highest priority to play)
-    availableMatches.sort((a, b) => {
-      const aMaxBreaks = Math.max(
-        playerConsecutiveBreaks[a.player1Index],
-        playerConsecutiveBreaks[a.player2Index],
-      );
-      const bMaxBreaks = Math.max(
-        playerConsecutiveBreaks[b.player1Index],
-        playerConsecutiveBreaks[b.player2Index],
-      );
-
-      // Players with more consecutive breaks get higher priority
-      return bMaxBreaks - aMaxBreaks;
+  if (totalMatchups % numberOfCourts !== 0) {
+    disclaimers.push({
+      heading: "Uneven Final Round",
+      body: "The last round will have fewer games than the others.",
     });
 
-    // Select matches for this round
-    for (const match of availableMatches) {
-      if (roundGames.length >= numberOfCourts) break;
-
-      if (
-        !playersPlayedThisRound.has(match.player1Index) &&
-        !playersPlayedThisRound.has(match.player2Index)
-      ) {
-        const game: Game = {
-          gameId: generateUniqueGameId({
-            existingGames: allCreatedGames,
-            competitionId: competitionId,
-          }),
-          gameNumber: gameNumber, // Add sequential game number
-          team1: { player1: match.player1, player2: null },
-          team2: { player1: match.player2, player2: null },
-          court: court,
-          gamescore: "",
-          createdAt: new Date(),
-          reportedAt: null,
-          createdTime: moment().format("HH:mm"),
-          reportedTime: null,
-          approvalStatus: "Scheduled",
-          result: null,
-          numberOfApprovals: 0,
-          numberOfDeclines: 0,
-          reporter: "",
-          approvers: [],
-        };
-
-        roundGames.push(game);
-        allCreatedGames.push(game);
-        gameNumber++; // Increment game counter
-
-        playersPlayedThisRound.add(match.player1Index);
-        playersPlayedThisRound.add(match.player2Index);
-
-        // Remove this match from remaining matches
-        const matchIndex = remainingMatches.findIndex(
-          (m) =>
-            m.player1Index === match.player1Index &&
-            m.player2Index === match.player2Index,
-        );
-        if (matchIndex !== -1) {
-          remainingMatches.splice(matchIndex, 1);
-        }
-
-        court = (court % numberOfCourts) + 1;
-      }
-    }
-
-    // Update consecutive break counters
-    for (let i = 0; i < numPlayers; i++) {
-      if (playersPlayedThisRound.has(i)) {
-        playerConsecutiveBreaks[i] = 0; // Reset break counter for players that played
-      } else {
-        playerConsecutiveBreaks[i]++; // Increment break counter for players that didn't play
-      }
-    }
-
-    if (roundGames.length > 0) {
-      fixtures.push({ round: roundNumber, games: roundGames });
-      roundNumber++;
-    }
+    disclaimers.push({
+      heading: "Court Imbalance",
+      body: "One team will play on one court slightly more than the others.",
+    });
   }
 
-  return fixtures;
+  if (estimatedMinutes > MINS_PER_DAY) {
+    disclaimers.push({
+      heading: "Multiple Sessions Required",
+      body: `This tournament will take around ${estimatedHours} hours and will need multiple sessions to complete.`,
+    });
+  }
+
+  return {
+    totalRounds,
+    totalGames,
+    estimatedMinutes,
+    estimatedHours,
+    disclaimers,
+  };
 };
+
+// ─── Berger Pairing Generator ────────────────────────────────────────────────
+
+const generateAllBergerPairings = (
+  n: number,
+): { idx1: number; idx2: number }[] => {
+  const indices = Array.from({ length: n }, (_, i) => i);
+  const allPairings: { idx1: number; idx2: number }[] = [];
+
+  for (let round = 0; round < n - 1; round++) {
+    for (let match = 0; match < n / 2; match++) {
+      allPairings.push({ idx1: indices[match], idx2: indices[n - 1 - match] });
+    }
+    const last = indices[n - 1];
+    for (let i = n - 1; i > 1; i--) indices[i] = indices[i - 1];
+    indices[1] = last;
+  }
+
+  return allPairings;
+};
+
+// ─── Round Builder ───────────────────────────────────────────────────────────
+
+const buildRounds = (
+  allPairings: { idx1: number; idx2: number }[],
+  numberOfCourts: number,
+  numSlots: number,
+): { idx1: number; idx2: number }[][] => {
+  const remaining = [...allPairings];
+  const sitOutCount = new Array(numSlots).fill(0);
+  const fullRounds: { idx1: number; idx2: number }[][] = [];
+  const incompleteRounds: { idx1: number; idx2: number }[][] = [];
+
+  while (remaining.length > 0) {
+    const round: { idx1: number; idx2: number }[] = [];
+    const playingThisRound = new Set<number>();
+
+    remaining.sort((a, b) => {
+      const priorityA = Math.max(sitOutCount[a.idx1], sitOutCount[a.idx2]);
+      const priorityB = Math.max(sitOutCount[b.idx1], sitOutCount[b.idx2]);
+      return priorityB - priorityA;
+    });
+
+    const consumedIndices: number[] = [];
+
+    for (
+      let i = 0;
+      i < remaining.length && round.length < numberOfCourts;
+      i++
+    ) {
+      const { idx1, idx2 } = remaining[i];
+      if (!playingThisRound.has(idx1) && !playingThisRound.has(idx2)) {
+        round.push(remaining[i]);
+        playingThisRound.add(idx1);
+        playingThisRound.add(idx2);
+        consumedIndices.push(i);
+      }
+    }
+
+    for (let i = consumedIndices.length - 1; i >= 0; i--) {
+      remaining.splice(consumedIndices[i], 1);
+    }
+
+    for (let s = 0; s < numSlots; s++) {
+      if (!playingThisRound.has(s)) sitOutCount[s]++;
+    }
+
+    if (round.length === numberOfCourts) fullRounds.push(round);
+    else if (round.length > 0) incompleteRounds.push(round);
+  }
+
+  return [...fullRounds, ...incompleteRounds];
+};
+
+// ─── Court Assignment ────────────────────────────────────────────────────────
+
+const getPermutations = (arr: number[]): number[][] => {
+  if (arr.length <= 1) return [arr];
+  return arr.flatMap((val, i) =>
+    getPermutations([...arr.slice(0, i), ...arr.slice(i + 1)]).map((perm) => [
+      val,
+      ...perm,
+    ]),
+  );
+};
+
+const assignCourtsForRound = (
+  pairings: { idx1: number; idx2: number }[],
+  numberOfCourts: number,
+  courtPlayCount: number[][],
+  lastCourtByIndex: number[],
+  numSlots: number,
+): { idx1: number; idx2: number; court: number }[] => {
+  const courts = Array.from({ length: numberOfCourts }, (_, i) => i + 1);
+
+  // Permutation solver for ≤ 6 courts (max 720 permutations)
+  if (numberOfCourts <= 6) {
+    const permutations = getPermutations(courts);
+    let bestAssignment: { idx1: number; idx2: number; court: number }[] = [];
+    let bestPrimary = Infinity;
+    let bestSecondary = Infinity;
+
+    for (const perm of permutations) {
+      let primary = 0;
+      let secondary = 0;
+      const tempCount = courtPlayCount.map((row) => [...row]);
+
+      for (let p = 0; p < pairings.length; p++) {
+        const { idx1, idx2 } = pairings[p];
+        const court = perm[p];
+        tempCount[idx1][court]++;
+        tempCount[idx2][court]++;
+        if (lastCourtByIndex[idx1] === court) secondary++;
+        if (lastCourtByIndex[idx2] === court) secondary++;
+      }
+
+      for (let t = 0; t < numSlots; t++) {
+        for (let c = 1; c <= numberOfCourts; c++) {
+          primary += tempCount[t][c] * tempCount[t][c];
+        }
+      }
+
+      if (
+        primary < bestPrimary ||
+        (primary === bestPrimary && secondary < bestSecondary)
+      ) {
+        bestPrimary = primary;
+        bestSecondary = secondary;
+        bestAssignment = pairings.map((pairing, i) => ({
+          ...pairing,
+          court: perm[i],
+        }));
+      }
+    }
+
+    return bestAssignment;
+  }
+
+  // Greedy fallback for > 6 courts
+  const usedCourts = new Set<number>();
+  const result: { idx1: number; idx2: number; court: number }[] = [];
+  const totalGamesPlayed = courtPlayCount[0].reduce((a, b) => a + b, 0);
+  const rotateBy = pairings.length > 0 ? totalGamesPlayed % pairings.length : 0;
+  const orderedPairings = [
+    ...pairings.slice(rotateBy),
+    ...pairings.slice(0, rotateBy),
+  ];
+
+  for (const { idx1, idx2 } of orderedPairings) {
+    let bestCourt = -1;
+    let bestScore = Infinity;
+
+    for (let c = 1; c <= numberOfCourts; c++) {
+      if (usedCourts.has(c)) continue;
+      const playCount = courtPlayCount[idx1][c] + courtPlayCount[idx2][c];
+      const repeatPenalty =
+        (lastCourtByIndex[idx1] === c ? 1 : 0) +
+        (lastCourtByIndex[idx2] === c ? 1 : 0);
+      const score = playCount * 10 + repeatPenalty;
+      if (score < bestScore) {
+        bestScore = score;
+        bestCourt = c;
+      }
+    }
+
+    usedCourts.add(bestCourt);
+    result.push({ idx1, idx2, court: bestCourt });
+  }
+
+  return result;
+};
+
+// ─── Fixture Builder ─────────────────────────────────────────────────────────
+
+const buildFixtures = (
+  allRounds: { idx1: number; idx2: number }[][],
+  slots: (GameTeam | PlayerWithXP | null)[],
+  isDoubles: boolean,
+  numberOfCourts: number,
+  numTeams: number,
+  competitionId: string,
+): FixtureResult => {
+  const fixtures: { round: number; games: Game[] }[] = [];
+  const allCreatedGames: Game[] = [];
+  let gameNumber = 1;
+
+  const courtPlayCount: number[][] = Array.from({ length: slots.length }, () =>
+    new Array(numberOfCourts + 1).fill(0),
+  );
+  const lastCourtByIndex = new Array(slots.length).fill(0);
+
+  for (let roundIdx = 0; roundIdx < allRounds.length; roundIdx++) {
+    const pairings = allRounds[roundIdx];
+
+    const courtAssignments = assignCourtsForRound(
+      pairings,
+      numberOfCourts,
+      courtPlayCount,
+      lastCourtByIndex,
+      slots.length,
+    );
+
+    courtAssignments.sort((a, b) => a.court - b.court);
+
+    const roundGames: Game[] = courtAssignments.map(({ idx1, idx2, court }) => {
+      const slot1 = slots[idx1]!;
+      const slot2 = slots[idx2]!;
+
+      const team1 = isDoubles
+        ? {
+            player1: (slot1 as GameTeam).player1,
+            player2: (slot1 as GameTeam).player2,
+          }
+        : { player1: slot1 as PlayerWithXP, player2: null };
+
+      const team2 = isDoubles
+        ? {
+            player1: (slot2 as GameTeam).player1,
+            player2: (slot2 as GameTeam).player2,
+          }
+        : { player1: slot2 as PlayerWithXP, player2: null };
+
+      const game: Game = {
+        gameId: generateUniqueGameId({
+          existingGames: allCreatedGames,
+          competitionId,
+        }),
+        gameNumber: gameNumber++,
+        team1,
+        team2,
+        court,
+        gamescore: "",
+        createdAt: new Date(),
+        reportedAt: null,
+        reportedTime: null,
+        createdTime: moment().format("HH:mm"),
+        approvalStatus: "Scheduled",
+        result: null,
+        numberOfApprovals: 0,
+        numberOfDeclines: 0,
+        reporter: "",
+        approvers: [],
+      };
+
+      allCreatedGames.push(game);
+      courtPlayCount[idx1][court]++;
+      courtPlayCount[idx2][court]++;
+      lastCourtByIndex[idx1] = court;
+      lastCourtByIndex[idx2] = court;
+
+      return game;
+    });
+
+    fixtures.push({ round: roundIdx + 1, games: roundGames });
+  }
+
+  const metadata = buildMetadata(
+    allRounds.length,
+    numberOfCourts,
+    allCreatedGames.length,
+    numTeams,
+  );
+
+  return { fixtures, metadata };
+};
+
+// ─── Doubles ────────────────────────────────────────────────────────────────
 
 export const generateRoundRobinFixtures = ({
   teams,
@@ -153,8 +336,7 @@ export const generateRoundRobinFixtures = ({
   teams: GameTeam[];
   numberOfCourts: number;
   competitionId: string;
-}) => {
-  const fixtures = [];
+}): FixtureResult | null => {
   const numTeams = teams.length;
 
   if (numTeams < 2) {
@@ -162,120 +344,86 @@ export const generateRoundRobinFixtures = ({
     return null;
   }
 
-  // Generate all possible matches
-  const allMatches = [];
-  for (let i = 0; i < numTeams; i++) {
-    for (let j = i + 1; j < numTeams; j++) {
-      allMatches.push({
-        team1: teams[i],
-        team2: teams[j],
-        team1Index: i,
-        team2Index: j,
-      });
-    }
-  }
-
-  let allCreatedGames = [];
-  let roundNumber = 1;
-  let gameNumber = 1; // Add game counter
-  const remainingMatches = [...allMatches];
-
-  // Track how many rounds each team has been sitting out consecutively
-  const teamConsecutiveBreaks = new Array(numTeams).fill(0);
-
-  while (remainingMatches.length > 0) {
-    const roundGames = [];
-    const teamsPlayedThisRound = new Set();
-    let startingCourt = ((roundNumber - 1) % numberOfCourts) + 1;
-    let court = startingCourt;
-
-    // Find teams that have been sitting out the longest
-    const availableMatches = remainingMatches.filter(
-      (match) =>
-        !teamsPlayedThisRound.has(match.team1Index) &&
-        !teamsPlayedThisRound.has(match.team2Index),
+  if (numTeams > MAX_DOUBLES_TEAMS) {
+    Alert.alert(
+      "Error",
+      `Doubles tournaments support a maximum of ${MAX_DOUBLES_TEAMS} teams`,
     );
-
-    // Sort by teams with longest consecutive breaks (highest priority to play)
-    availableMatches.sort((a, b) => {
-      const aMaxBreaks = Math.max(
-        teamConsecutiveBreaks[a.team1Index],
-        teamConsecutiveBreaks[a.team2Index],
-      );
-      const bMaxBreaks = Math.max(
-        teamConsecutiveBreaks[b.team1Index],
-        teamConsecutiveBreaks[b.team2Index],
-      );
-
-      // Teams with more consecutive breaks get higher priority
-      return bMaxBreaks - aMaxBreaks;
-    });
-
-    // Select matches for this round
-    for (const match of availableMatches) {
-      if (roundGames.length >= numberOfCourts) break;
-
-      if (
-        !teamsPlayedThisRound.has(match.team1Index) &&
-        !teamsPlayedThisRound.has(match.team2Index)
-      ) {
-        const game: Game = {
-          gameId: generateUniqueGameId({
-            existingGames: allCreatedGames,
-            competitionId: competitionId,
-          }),
-          gameNumber: gameNumber, // Add sequential game number
-          team1: { player1: match.team1.player1, player2: match.team1.player2 },
-          team2: { player1: match.team2.player1, player2: match.team2.player2 },
-          court: court,
-          gamescore: "",
-          createdAt: new Date(),
-          reportedAt: null,
-          reportedTime: null,
-          createdTime: moment().format("HH:mm"),
-          approvalStatus: "Scheduled",
-          result: null,
-          numberOfApprovals: 0,
-          numberOfDeclines: 0,
-          reporter: "",
-          approvers: [],
-        };
-
-        roundGames.push(game);
-        allCreatedGames.push(game);
-        gameNumber++; // Increment game counter
-
-        teamsPlayedThisRound.add(match.team1Index);
-        teamsPlayedThisRound.add(match.team2Index);
-
-        // Remove this match from remaining matches
-        const matchIndex = remainingMatches.findIndex(
-          (m) =>
-            m.team1Index === match.team1Index &&
-            m.team2Index === match.team2Index,
-        );
-        if (matchIndex !== -1) {
-          remainingMatches.splice(matchIndex, 1);
-        }
-
-        court = (court % numberOfCourts) + 1;
-      }
-    }
-
-    // Update consecutive break counters
-    for (let i = 0; i < numTeams; i++) {
-      if (teamsPlayedThisRound.has(i)) {
-        teamConsecutiveBreaks[i] = 0; // Reset break counter for teams that played
-      } else {
-        teamConsecutiveBreaks[i]++; // Increment break counter for teams that didn't play
-      }
-    }
-
-    if (roundGames.length > 0) {
-      fixtures.push({ round: roundNumber, games: roundGames });
-      roundNumber++;
-    }
+    return null;
   }
 
-  return fixtures;
+  if (numberOfCourts > MAX_COURTS) {
+    Alert.alert("Error", `Maximum of ${MAX_COURTS} courts supported`);
+    return null;
+  }
+
+  const teamsWithBye: (GameTeam | null)[] =
+    numTeams % 2 === 1 ? [...teams, null] : [...teams];
+  const n = teamsWithBye.length;
+
+  const allPairings = generateAllBergerPairings(n).filter(
+    ({ idx1, idx2 }) => teamsWithBye[idx1] && teamsWithBye[idx2],
+  );
+
+  const rounds = buildRounds(allPairings, numberOfCourts, n);
+
+  return buildFixtures(
+    rounds,
+    teamsWithBye,
+    true,
+    numberOfCourts,
+    numTeams,
+    competitionId,
+  );
+};
+
+// ─── Singles ────────────────────────────────────────────────────────────────
+
+export const generateSinglesRoundRobinFixtures = ({
+  players,
+  numberOfCourts,
+  competitionId,
+}: {
+  players: PlayerWithXP[];
+  numberOfCourts: number;
+  competitionId: string;
+}): FixtureResult | null => {
+  const numPlayers = players.length;
+
+  if (numPlayers < 2) {
+    Alert.alert("Error", "Need at least 2 players to generate fixtures");
+    return null;
+  }
+
+  if (numPlayers > MAX_SINGLES_PLAYERS) {
+    Alert.alert(
+      "Error",
+      `Singles tournaments support a maximum of ${MAX_SINGLES_PLAYERS} players`,
+    );
+    return null;
+  }
+
+  if (numberOfCourts > MAX_COURTS) {
+    Alert.alert("Error", `Maximum of ${MAX_COURTS} courts supported`);
+    return null;
+  }
+
+  const playersWithBye: (PlayerWithXP | null)[] =
+    numPlayers % 2 === 1 ? [...players, null] : [...players];
+  const n = playersWithBye.length;
+
+  const allPairings = generateAllBergerPairings(n).filter(
+    ({ idx1, idx2 }) => playersWithBye[idx1] && playersWithBye[idx2],
+  );
+
+  const rounds = buildRounds(allPairings, numberOfCourts, n);
+
+  return buildFixtures(
+    rounds,
+    playersWithBye,
+    false,
+    numberOfCourts,
+    numPlayers,
+    competitionId,
+  );
 };

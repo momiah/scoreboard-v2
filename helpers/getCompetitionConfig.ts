@@ -2,17 +2,21 @@ import {
   notificationTypes,
   COLLECTION_NAMES,
   COMPETITION_TYPES,
+  League, Tournament,
 } from "@shared";
+
+type CompetitionKey = keyof League | keyof Tournament;
 
 interface CompetitionConfig {
   isLeague: boolean;
   navRoute: "League" | "Tournament";
-  nameKey: "leagueName" | "tournamentName";
-  typeKey: "leagueType" | "tournamentType";
-  participantsKey: "leagueParticipants" | "tournamentParticipants";
+  nameKey: CompetitionKey;
+  typeKey: CompetitionKey;
+  participantsKey: CompetitionKey;
+  teamKey: CompetitionKey;
+  paramKey: CompetitionKey;
   collectionName: string;
   competitionType: "league" | "tournament";
-  paramKey: "leagueId" | "tournamentId";
 }
 
 export const getCompetitionConfig = (
@@ -29,6 +33,7 @@ export const getCompetitionConfig = (
     nameKey: isLeague ? "leagueName" : "tournamentName",
     typeKey: isLeague ? "leagueType" : "tournamentType",
     participantsKey: isLeague ? "leagueParticipants" : "tournamentParticipants",
+    teamKey: isLeague ? "leagueTeams" : "tournamentTeams",
     collectionName: isLeague
       ? COLLECTION_NAMES.leagues
       : COLLECTION_NAMES.tournaments,
