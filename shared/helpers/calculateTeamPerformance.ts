@@ -119,29 +119,44 @@ export const calculateTeamPerformance = async ({
 }): Promise<[TeamStats, TeamStats]> => {
   const { result } = game;
 
-  const team1PlayerIds = [
-    game.team1.player1?.userId,
-    game.team1.player2?.userId,
-  ].filter((id): id is string => Boolean(id));
+  const team1Players = [game.team1.player1, game.team1.player2].filter(Boolean);
+  const team2Players = [game.team2.player1, game.team2.player2].filter(Boolean);
 
-  const team2PlayerIds = [
-    game.team2.player1?.userId,
-    game.team2.player2?.userId,
-  ].filter((id): id is string => Boolean(id));
+  const team1PlayerIds = team1Players
+    .map((p) => p?.userId)
+    .filter((id): id is string => Boolean(id));
 
-  const winnerPlayerIds = result?.winner.team === "Team 1" ? team1PlayerIds : team2PlayerIds;
-  const loserPlayerIds = result?.winner.team === "Team 1" ? team2PlayerIds : team1PlayerIds;
+  const team2PlayerIds = team2Players
+    .map((p) => p?.userId)
+    .filter((id): id is string => Boolean(id));
+
+  const team1DisplayNames = team1Players
+    .map((p) => p?.displayName ?? "")
+    .filter(Boolean);
+
+  const team2DisplayNames = team2Players
+    .map((p) => p?.displayName ?? "")
+    .filter(Boolean);
+
+  const winnerPlayerIds =
+    result?.winner.team === "Team 1" ? team1PlayerIds : team2PlayerIds;
+  const loserPlayerIds =
+    result?.winner.team === "Team 1" ? team2PlayerIds : team1PlayerIds;
+  const winnerDisplayNames =
+    result?.winner.team === "Team 1" ? team1DisplayNames : team2DisplayNames;
+  const loserDisplayNames =
+    result?.winner.team === "Team 1" ? team2DisplayNames : team1DisplayNames;
 
   const winnerTeamKey = normalizeTeamKey(winnerPlayerIds);
   const loserTeamKey = normalizeTeamKey(loserPlayerIds);
 
   let winnerTeam =
-    allTeams.find((team) => normalizeTeamKey(team.team) === winnerTeamKey) ??
-    createTeam(winnerPlayerIds, winnerTeamKey);
+    allTeams.find((team) => team.teamKey === winnerTeamKey) ??
+    createTeam(winnerDisplayNames, winnerTeamKey);
 
   let loserTeam =
-    allTeams.find((team) => normalizeTeamKey(team.team) === loserTeamKey) ??
-    createTeam(loserPlayerIds, loserTeamKey);
+    allTeams.find((team) => team.teamKey === loserTeamKey) ??
+    createTeam(loserDisplayNames, loserTeamKey);
 
   const pointDifference = result!.winner.score - result!.loser.score;
 
