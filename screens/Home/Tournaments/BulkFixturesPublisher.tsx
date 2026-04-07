@@ -149,19 +149,13 @@ const BulkFixturesPublisher = () => {
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
-  const { updateTournamentGame, fetchCompetitionById } = useContext(
-    LeagueContext,
-  ) as {
+  const { updateTournamentGame } = useContext(LeagueContext) as {
     updateTournamentGame: (params: {
       tournamentId: string;
       gameId: string;
       updatedGame: Game;
       removeGame: boolean;
     }) => Promise<void>;
-    fetchCompetitionById: (params: {
-      competitionId: string;
-      collectionName: string;
-    }) => Promise<Tournament | null>;
   };
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -379,61 +373,84 @@ const BulkFixturesPublisher = () => {
                   });
                   successCount++;
                 } catch (error) {
+                  const errorMessage =
+                    error instanceof Error ? error.message : "";
+                  const alreadyReported =
+                    errorMessage.includes("already been reported") ||
+                    errorMessage.includes("already been processed");
+
                   console.error(
                     `❌ Failed to update Game ${game.gameNumber}:`,
                     error,
                   );
-                  failedGames.push(`Game ${game.gameNumber}`);
+                  failedGames.push(
+                    alreadyReported
+                      ? `Game ${game.gameNumber}: already reported`
+                      : `Game ${game.gameNumber}`,
+                  );
                 }
               }
 
+              console.log(
+                `Bulk update completed. Success: ${successCount}, Failed: ${failedGames.length}`,
+              );
+
               // After all games written, do one single recalculation from fresh Firestore data
               if (successCount > 0) {
-                const freshTournament = await fetchCompetitionById({
-                  competitionId: tournamentId,
-                  collectionName: "tournaments",
+                const tournamentRef = doc(db, "tournaments", tournamentId);
+
+                const successfulGameIds = new Set(
+                  validatedGames.slice(0, successCount).map((g) => g.gameId),
+                );
+
+                // Merge successfully written games into current live fixtures
+                const mergedFixtures = liveTournament.fixtures.map((round) => ({
+                  ...round,
+                  games: round.games.map((game) => {
+                    if (successfulGameIds.has(game.gameId)) {
+                      const validatedGame = validatedGames.find(
+                        (g) => g.gameId === game.gameId,
+                      );
+                      return validatedGame ?? game;
+                    }
+                    return game;
+                  }),
+                }));
+
+                const isDoubles = liveTournament.tournamentType === "Doubles";
+
+                const allUsers = await Promise.all(
+                  liveTournament.tournamentParticipants
+                    .filter((p) => !!p.userId)
+                    .map((p) => getUserById(p.userId!)),
+                ).then((users) => users.filter((u): u is UserProfile => !!u));
+
+                const orderedApprovedGames =
+                  getOrderedApprovedGames(mergedFixtures);
+
+                const { updatedParticipants, updatedTeams, updatedUsers } =
+                  await recalculateParticipantsFromFixtures(
+                    orderedApprovedGames,
+                    liveTournament.tournamentParticipants,
+                    allUsers,
+                    liveTournament.tournamentTeams ?? [],
+                    isDoubles,
+                  );
+
+                await updateDoc(tournamentRef, {
+                  tournamentParticipants: updatedParticipants,
+                  ...(isDoubles && { tournamentTeams: updatedTeams }),
+                  gamesCompleted: increment(successCount),
                 });
 
-                if (freshTournament) {
-                  const isDoubles =
-                    freshTournament.tournamentType === "Doubles";
-
-                  const allUsers = await Promise.all(
-                    freshTournament.tournamentParticipants
-                      .filter((p) => !!p.userId)
-                      .map((p) => getUserById(p.userId!)),
-                  ).then((users) => users.filter((u): u is UserProfile => !!u));
-
-                  const orderedApprovedGames = getOrderedApprovedGames(
-                    freshTournament.fixtures,
-                  );
-
-                  const { updatedParticipants, updatedTeams } =
-                    await recalculateParticipantsFromFixtures(
-                      orderedApprovedGames,
-                      freshTournament.tournamentParticipants,
-                      allUsers,
-                      freshTournament.tournamentTeams ?? [],
-                      isDoubles,
-                    );
-
-                  const tournamentRef = doc(db, "tournaments", tournamentId);
-                  await updateDoc(tournamentRef, {
-                    tournamentParticipants: updatedParticipants,
-                    ...(isDoubles && { tournamentTeams: updatedTeams }),
-                    gamesCompleted: increment(successCount),
-                  });
-
-                  // Update user profiles — XP delta per game, not reset
-                  await Promise.all(
-                    allUsers.map((user) => {
-                      if (!user.userId) return;
-                      return updateDoc(doc(db, "users", user.userId), {
-                        profileDetail: user.profileDetail,
-                      });
-                    }),
-                  );
-                }
+                await Promise.all(
+                  updatedUsers.map((user) => {
+                    if (!user.userId) return;
+                    return updateDoc(doc(db, "users", user.userId), {
+                      profileDetail: user.profileDetail,
+                    });
+                  }),
+                );
               }
 
               if (successCount === validatedGames.length) {
@@ -468,7 +485,7 @@ const BulkFixturesPublisher = () => {
     currentUser,
     handleShowPopup,
     updateTournamentGame,
-    fetchCompetitionById,
+    liveTournament,
   ]);
 
   // Handle cancel

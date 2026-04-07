@@ -904,7 +904,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             const orderedApprovedGames =
               getOrderedApprovedGames(updatedFixtures);
 
-            const { updatedParticipants, updatedTeams } =
+            const { updatedParticipants, updatedTeams, updatedUsers } =
               await recalculateParticipantsFromFixtures(
                 orderedApprovedGames,
                 freshParticipants,
@@ -918,15 +918,24 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
               [config.participantsKey]: updatedParticipants,
               ...(isDoubles && { [config.teamKey]: updatedTeams }),
             });
+
+            updatedUsers.forEach((user) => {
+              if (!user.userId) return;
+              const userRef = doc(db, "users", user.userId);
+              transaction.update(userRef, {
+                profileDetail: user.profileDetail,
+              });
+            });
           } else {
             // Leagues use delta approach — no fixture replay needed
-            const { playersToUpdate } = calculatePlayerPerformance(
-              updatedGame,
-              freshParticipants.filter((p) =>
-                playerUserIds.includes(p.userId!),
-              ),
-              freshUsers,
-            );
+            const { playersToUpdate, usersToUpdate } =
+              calculatePlayerPerformance(
+                updatedGame,
+                freshParticipants.filter((p) =>
+                  playerUserIds.includes(p.userId!),
+                ),
+                freshUsers,
+              );
 
             const updatedParticipants = freshParticipants.map((p) => {
               const updated = playersToUpdate.find(
@@ -959,14 +968,15 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
                 [config.participantsKey]: updatedParticipants,
               });
             }
-          }
 
-          // User profile updates apply to both leagues and tournaments
-          freshUsers.forEach((user) => {
-            if (!user.userId) return;
-            const userRef = doc(db, "users", user.userId);
-            transaction.update(userRef, { profileDetail: user.profileDetail });
-          });
+            usersToUpdate?.forEach((user) => {
+              if (!user.userId) return;
+              const userRef = doc(db, "users", user.userId);
+              transaction.update(userRef, {
+                profileDetail: user.profileDetail,
+              });
+            });
+          }
         });
       }
 
@@ -1017,7 +1027,6 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error approving game:", error);
     }
   };
-
   const declineGame = async ({
     gameId,
     competitionId,
