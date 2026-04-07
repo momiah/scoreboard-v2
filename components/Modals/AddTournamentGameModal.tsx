@@ -37,6 +37,7 @@ const AddTournamentGameModal = ({
   tournamentId,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
+  // @ts-expect-error - updateTournamentGame may not be typed in LeagueContext
   const { updateTournamentGame } = useContext(LeagueContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
@@ -159,7 +160,7 @@ const AddTournamentGameModal = ({
       await updateTournamentGame({
         tournamentId,
         gameId: game.gameId,
-        gameResult,
+        updatedGame: gameResult,
       });
     } catch (updateError: unknown) {
       const errorMessage =
