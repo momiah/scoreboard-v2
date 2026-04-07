@@ -256,7 +256,7 @@ const UserProfile = () => {
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
-                marginTop: 20,
+                marginTop: 50,
               }}
             >
               <TouchableOpacity
