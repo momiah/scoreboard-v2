@@ -203,10 +203,11 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.7)", // Translucent dark blue
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "rgba(2, 13, 24, 0.7)", // Translucent dark blue
+  backgroundColor: "rgba(2, 13, 24, 0.9)", // Translucent dark blue
   margin: 10,
   marginVertical: 20,
   padding: screenAdjustedPadding,

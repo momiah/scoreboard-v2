@@ -599,7 +599,8 @@ const BulkFixturesPublisher = () => {
 const Container = styled.View({
   flex: 1,
   backgroundColor: "#020D18",
-  //   padding: 20,
+  padding: 10,
+  paddingTop: 20,
 });
 
 const Header = styled.View({
@@ -664,6 +665,7 @@ const SubmitButton = styled.TouchableOpacity({
   backgroundColor: "#00A2FF",
   padding: 15,
   borderRadius: 8,
+  marginHorizontal: -15,
   alignItems: "center",
 });
 

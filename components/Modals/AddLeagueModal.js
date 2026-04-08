@@ -477,10 +477,12 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
 const ScrollContainer = styled.FlatList({
   padding: "40px 20px",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const SafeAreaWrapper = styled(KeyboardAvoidingView)({
