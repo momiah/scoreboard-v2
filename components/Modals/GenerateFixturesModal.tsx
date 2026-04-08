@@ -211,16 +211,14 @@ const GenerateFixturesModal = ({
   }, [numberOfCourts, tournamentType]);
 
   useEffect(() => {
+    if (!participants.length) return;
     const numberOfTeams = Math.floor(participants.length / 2);
     const initialTeams: GameTeam[] = Array.from(
       { length: numberOfTeams },
-      () => ({
-        player1: null,
-        player2: null,
-      }),
+      () => ({ player1: null, player2: null }),
     );
     setFixedDoublesTeams(initialTeams);
-  }, []);
+  }, [participants]);
 
   const handleSinglesGeneration = async () => {
     setIsGenerating(true);
