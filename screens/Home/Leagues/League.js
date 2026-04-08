@@ -231,7 +231,13 @@ const League = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+        paddingTop: platformAdjustedPaddingTop,
+      }}
+    >
       <LoadingOverlay visible={loading} loadingText="League" />
 
       {!loading && leagueById && (

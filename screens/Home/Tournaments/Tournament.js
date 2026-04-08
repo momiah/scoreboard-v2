@@ -6,6 +6,7 @@ import {
   Dimensions,
   Linking,
   Alert,
+  Platform,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { COMPETITION_TYPES, COLLECTION_NAMES, prizeTypes } from "@shared";
@@ -225,7 +226,13 @@ const Tournament = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+        paddingTop: platformAdjustedPaddingTop,
+      }}
+    >
       <LoadingOverlay visible={loading} loadingText="Tournament" />
 
       {!loading && tournamentById && (
@@ -353,6 +360,7 @@ const Tournament = () => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 30;
 
 const Overview = styled.View({
   flexDirection: "row",
