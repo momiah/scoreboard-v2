@@ -58,7 +58,7 @@
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp",
-      "versionCode": 12,
+      "versionCode": 13,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.INTERNET"
