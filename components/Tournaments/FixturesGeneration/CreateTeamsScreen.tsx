@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
-import { ActivityIndicator, Dimensions } from "react-native";
+import { ActivityIndicator, Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import SelectPlayerModal from "../../Modals/SelectPlayerModal";
@@ -109,7 +109,7 @@ export const CreateTeamsScreen = ({
   );
 
   return (
-    <>
+    <View style={{ backgroundColor: "rgba(2, 13, 24, 0.9)" }}>
       <ModalTitle>Create Fixed Doubles Teams</ModalTitle>
 
       <FormSection>
@@ -156,7 +156,7 @@ export const CreateTeamsScreen = ({
         selectedPlayers={selectedPlayers}
         selected={currentlySelected}
       />
-    </>
+    </View>
   );
 };
 
@@ -228,6 +228,7 @@ const FormSection = styled.View({
 const FixedTeamsContainer = styled.ScrollView({
   maxHeight: screenWidth <= 405 ? 400 : 600,
   gap: 20,
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const TeamPairContainer = styled.View({
