@@ -72,9 +72,9 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 34,
+            "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "minSdkVersion": 21,
+            "minSdkVersion": 24,
             "buildToolsVersion": "34.0.0"
           },
           "ios": {
@@ -107,7 +107,9 @@
           "icon": "./assets/court-champ-logo-icon-w-bg.png",
           "color": "#FF231F7C"
         }
-      ]
+      ],
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {
