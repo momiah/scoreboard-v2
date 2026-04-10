@@ -1,6 +1,4 @@
-import React, { useState, useContext, useCallback } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-
+import React, { useState, useContext, useCallback, useEffect } from "react";
 import {
   View,
   TouchableOpacity,
@@ -23,7 +21,7 @@ import {
   GameResult,
   CompetitionTypes,
   Tournament,
-  ScoreboardProfile,
+  UserProfile,
 } from "@shared/types";
 import {
   FixtureGameHeader,
@@ -31,10 +29,14 @@ import {
   FixtureRoundHeader,
 } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
 import { LeagueContext } from "@/context/LeagueContext";
-import { COLLECTION_NAMES } from "@shared";
-import { doc, updateDoc, increment } from "firebase/firestore";
+
+import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
-import { processGamePerformance } from "../../../helpers/processGamePerformance";
+import { getUserById } from "../../../devFunctions/firebaseFunctions";
+import {
+  recalculateParticipantsFromFixtures,
+  getOrderedApprovedGames,
+} from "@shared/helpers";
 
 const { height: screenHeight } = Dimensions.get("window");
 const popupHeight = screenHeight * 0.3;
@@ -48,6 +50,7 @@ interface GameWithScores extends Game {
   inputTeam1Score: string;
   inputTeam2Score: string;
   hasScores: boolean;
+  round: number;
 }
 
 interface BulkScoreDisplayProps {
@@ -146,67 +149,79 @@ const BulkFixturesPublisher = () => {
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
-  const { updateTournamentGame, fetchCompetitionById } =
-    useContext(LeagueContext);
+  const { updateTournamentGame } = useContext(LeagueContext) as {
+    updateTournamentGame: (params: {
+      tournamentId: string;
+      gameId: string;
+      updatedGame: Game;
+      removeGame: boolean;
+    }) => Promise<void>;
+  };
 
-  useFocusEffect(
-    useCallback(() => {
-      const refreshGames = async () => {
-        try {
-          const updatedTournament = await fetchCompetitionById({
-            competitionId: tournamentId,
-            collectionName: COLLECTION_NAMES.tournaments,
-          });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [gamesWithScores, setGamesWithScores] = useState<GameWithScores[]>([]);
+  const [publishing, setPublishing] = useState<boolean>(false);
+  const [liveTournament, setLiveTournament] =
+    useState<Tournament>(tournamentById);
 
-          if (updatedTournament?.fixtures) {
-            setGamesWithScores((prev) => {
-              const updated = prev.map((game) => {
-                const freshGame = updatedTournament.fixtures
-                  .flatMap(
-                    (round: { round: number; games: Game[] }) => round.games,
-                  )
-                  .find((g: Game) => g.gameId === game.gameId);
+  useEffect(() => {
+    const tournamentRef = doc(db, "tournaments", tournamentId);
 
-                return freshGame
-                  ? {
-                      ...freshGame,
-                      inputTeam1Score: game.inputTeam1Score,
-                      inputTeam2Score: game.inputTeam2Score,
-                      hasScores: game.hasScores,
-                    }
-                  : game;
-              });
-              return updated;
-            });
-          }
-        } catch (error) {
-          console.error("❌ Error refreshing games:", error);
+    const unsubscribe = onSnapshot(tournamentRef, (snap) => {
+      if (!snap.exists()) {
+        setLoading(false);
+        return;
+      }
+      const data = snap.data() as Tournament;
+      setLiveTournament(data);
+      setLoading(false);
+
+      setGamesWithScores((prev) => {
+        const inputStateMap = new Map(
+          prev.map((game) => [
+            game.gameId,
+            {
+              inputTeam1Score: game.inputTeam1Score,
+              inputTeam2Score: game.inputTeam2Score,
+              hasScores: game.hasScores,
+            },
+          ]),
+        );
+
+        if (!data?.fixtures || data.fixtures.length === 0) {
+          return prev;
         }
-      };
 
-      refreshGames();
-    }, [tournamentId]),
-  );
+        return data.fixtures.flatMap((round) =>
+          round.games.map((game) => {
+            const isAlreadyReported =
+              game.result && game.gamescore && game.gamescore !== "";
 
-  const initializeGamesWithScores = useCallback((): GameWithScores[] => {
-    const allGames: GameWithScores[] = [];
-    tournamentById?.fixtures?.forEach((round) => {
-      round.games?.forEach((game) => {
-        allGames.push({
-          ...game,
-          inputTeam1Score: "",
-          inputTeam2Score: "",
-          hasScores: false,
-        });
+            if (isAlreadyReported) {
+              return {
+                ...game,
+                round: round.round,
+                inputTeam1Score: "",
+                inputTeam2Score: "",
+                hasScores: false,
+              };
+            }
+
+            const existingInput = inputStateMap.get(game.gameId);
+            return {
+              ...game,
+              round: round.round,
+              inputTeam1Score: existingInput?.inputTeam1Score ?? "",
+              inputTeam2Score: existingInput?.inputTeam2Score ?? "",
+              hasScores: existingInput?.hasScores ?? false,
+            };
+          }),
+        );
       });
     });
-    return allGames;
-  }, [tournamentById?.fixtures]);
 
-  const [gamesWithScores, setGamesWithScores] = useState<GameWithScores[]>(
-    initializeGamesWithScores,
-  );
-  const [publishing, setPublishing] = useState<boolean>(false);
+    return unsubscribe;
+  }, [tournamentId]);
 
   const handleClosePopup = (): void => {
     setShowPopup(false);
@@ -245,16 +260,9 @@ const BulkFixturesPublisher = () => {
   // Group games by round for display
   const gamesByRound: Record<number, GameWithScores[]> = gamesWithScores.reduce(
     (rounds, game) => {
-      const roundIndex = tournamentById?.fixtures?.findIndex((round) =>
-        round.games?.some((g) => g.gameId === game.gameId),
-      );
-      if (roundIndex !== undefined && roundIndex >= 0) {
-        const roundNumber = roundIndex + 1;
-        if (!rounds[roundNumber]) {
-          rounds[roundNumber] = [];
-        }
-        rounds[roundNumber].push(game);
-      }
+      const roundNumber = game.round;
+      if (!rounds[roundNumber]) rounds[roundNumber] = [];
+      rounds[roundNumber].push(game);
       return rounds;
     },
     {} as Record<number, GameWithScores[]>,
@@ -351,88 +359,113 @@ const BulkFixturesPublisher = () => {
           onPress: async () => {
             setPublishing(true);
             try {
-              let successCount = 0;
               const failedGames: string[] = [];
+              let successCount = 0;
 
-              // Track participants for progressive updates
-              let currentParticipants: ScoreboardProfile[] =
-                tournamentById.tournamentParticipants || [];
-
+              // Write all games to Firestore first
               for (const game of validatedGames) {
                 try {
-                  // Update the game in Firestore
                   await updateTournamentGame({
-                    tournamentId: tournamentId,
+                    tournamentId,
                     gameId: game.gameId,
-                    gameResult: game,
+                    updatedGame: game,
                     removeGame: false,
                   });
-
-                  // Process player and team performance updates
-                  const performanceResult = await processGamePerformance({
-                    game,
-                    participants: currentParticipants,
-                    competitionId: tournamentId,
-                    collectionName: "tournaments",
-                  });
-
-                  if (performanceResult.success) {
-                    currentParticipants = performanceResult.updatedParticipants;
-                  } else {
-                    console.warn(
-                      `Performance update warning for Game ${game.gameNumber}:`,
-                      performanceResult.message,
-                    );
-                  }
-
                   successCount++;
                 } catch (error) {
+                  const errorMessage =
+                    error instanceof Error ? error.message : "";
+                  const alreadyReported =
+                    errorMessage.includes("already been reported") ||
+                    errorMessage.includes("already been processed");
+
                   console.error(
                     `❌ Failed to update Game ${game.gameNumber}:`,
                     error,
                   );
-                  failedGames.push(`Game ${game.gameNumber}`);
+                  failedGames.push(
+                    alreadyReported
+                      ? `Game ${game.gameNumber}: already reported`
+                      : `Game ${game.gameNumber}`,
+                  );
                 }
               }
 
-              // Update tournament with final participant stats
+              console.log(
+                `Bulk update completed. Success: ${successCount}, Failed: ${failedGames.length}`,
+              );
+
+              // After all games written, do one single recalculation from fresh Firestore data
               if (successCount > 0) {
-                try {
-                  const tournamentRef = doc(db, "tournaments", tournamentId);
-                  await updateDoc(tournamentRef, {
-                    tournamentParticipants: currentParticipants,
-                    gamesCompleted: increment(successCount),
-                  });
-                  console.log(
-                    `✅ Updated ${currentParticipants.length} tournament participants`,
+                const tournamentRef = doc(db, "tournaments", tournamentId);
+
+                const successfulGameIds = new Set(
+                  validatedGames.slice(0, successCount).map((g) => g.gameId),
+                );
+
+                // Merge successfully written games into current live fixtures
+                const mergedFixtures = liveTournament.fixtures.map((round) => ({
+                  ...round,
+                  games: round.games.map((game) => {
+                    if (successfulGameIds.has(game.gameId)) {
+                      const validatedGame = validatedGames.find(
+                        (g) => g.gameId === game.gameId,
+                      );
+                      return validatedGame ?? game;
+                    }
+                    return game;
+                  }),
+                }));
+
+                const isDoubles = liveTournament.tournamentType === "Doubles";
+
+                const allUsers = await Promise.all(
+                  liveTournament.tournamentParticipants
+                    .filter((p) => !!p.userId)
+                    .map((p) => getUserById(p.userId!)),
+                ).then((users) => users.filter((u): u is UserProfile => !!u));
+
+                const orderedApprovedGames =
+                  getOrderedApprovedGames(mergedFixtures);
+
+                const { updatedParticipants, updatedTeams, updatedUsers } =
+                  await recalculateParticipantsFromFixtures(
+                    orderedApprovedGames,
+                    liveTournament.tournamentParticipants,
+                    allUsers,
+                    liveTournament.tournamentTeams ?? [],
+                    isDoubles,
                   );
-                } catch (error) {
-                  console.error(
-                    "Failed to update tournament participants:",
-                    error,
-                  );
-                }
+
+                await updateDoc(tournamentRef, {
+                  tournamentParticipants: updatedParticipants,
+                  ...(isDoubles && { tournamentTeams: updatedTeams }),
+                  gamesCompleted: increment(successCount),
+                });
+
+                await Promise.all(
+                  updatedUsers.map((user) => {
+                    if (!user.userId) return;
+                    return updateDoc(doc(db, "users", user.userId), {
+                      profileDetail: user.profileDetail,
+                    });
+                  }),
+                );
               }
 
               if (successCount === validatedGames.length) {
                 handleShowPopup(
-                  `Successfully submitted ${successCount} game result${
-                    successCount > 1 ? "s" : ""
-                  }!`,
+                  `Successfully submitted ${successCount} game result${successCount > 1 ? "s" : ""}!`,
                 );
               } else if (successCount > 0) {
                 Alert.alert(
                   "Partial Success",
-                  `${successCount} game${
-                    successCount > 1 ? "s" : ""
-                  } updated successfully.\n\nFailed: ${failedGames.join(", ")}`,
+                  `${successCount} game${successCount > 1 ? "s" : ""} submitted.\n\nFailed: ${failedGames.join(", ")}`,
                 );
               } else {
                 Alert.alert(
                   "Update Failed",
-                  `Failed to update any games. Please try again.\n\nFailed: ${failedGames.join(
-                    ", ",
-                  )}`,
+                  `Failed to submit any games.\n\nFailed: ${failedGames.join(", ")}`,
                 );
               }
             } catch (error) {
@@ -452,6 +485,7 @@ const BulkFixturesPublisher = () => {
     currentUser,
     handleShowPopup,
     updateTournamentGame,
+    liveTournament,
   ]);
 
   // Handle cancel
@@ -507,23 +541,37 @@ const BulkFixturesPublisher = () => {
         </SubHeaderText>
       </SubHeader>
 
-      <FixturesScrollContainer>
-        {Object.entries(gamesByRound).map(([roundNumber, games]) => (
-          <FixtureRoundContainer key={roundNumber}>
-            <FixtureRoundHeader roundNumber={parseInt(roundNumber)} />
-            {games.map((game) => (
-              <BulkGameItem
-                key={game.gameId}
-                game={game}
-                tournamentType={
-                  tournamentById.tournamentType as CompetitionTypes
-                }
-                onScoreChange={handleScoreChange}
-              />
-            ))}
-          </FixtureRoundContainer>
-        ))}
-      </FixturesScrollContainer>
+      {loading ? (
+        <LoadingContainer>
+          <ActivityIndicator size="large" color="#00A2FF" />
+          <LoadingText>Loading fixtures...</LoadingText>
+        </LoadingContainer>
+      ) : (
+        <FixturesScrollContainer>
+          {Object.keys(gamesByRound).length > 0 ? (
+            Object.entries(gamesByRound).map(([roundNumber, games]) => (
+              <FixtureRoundContainer key={roundNumber}>
+                <FixtureRoundHeader roundNumber={parseInt(roundNumber)} />
+                {games.map((game) => (
+                  <BulkGameItem
+                    key={game.gameId}
+                    game={game}
+                    tournamentType={
+                      tournamentById.tournamentType as CompetitionTypes
+                    }
+                    onScoreChange={handleScoreChange}
+                  />
+                ))}
+              </FixtureRoundContainer>
+            ))
+          ) : (
+            <NoFixturesText>
+              No Fixtures have been generated yet - You can create new fixtures
+              in the fixtures screen.
+            </NoFixturesText>
+          )}
+        </FixturesScrollContainer>
+      )}
 
       <SubmitButtons>
         <SubmitButton
@@ -669,6 +717,26 @@ const VsText = styled.Text({
   fontWeight: "bold",
   color: "#00A2FF",
   marginHorizontal: 8,
+});
+
+const NoFixturesText = styled.Text({
+  color: "red",
+  fontStyle: "italic",
+  fontSize: 15,
+  textAlign: "center",
+  marginTop: 150,
+});
+
+const LoadingContainer = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  gap: 12,
+});
+
+const LoadingText = styled.Text({
+  color: "#ccc",
+  fontSize: 14,
 });
 
 export default BulkFixturesPublisher;
