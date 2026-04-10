@@ -309,9 +309,9 @@ export default function Login() {
           <TouchableOpacity>
             <Image source={FacebookLogo} style={styles.socialIcon} />
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <Image source={AppleLogo} style={styles.socialIconApple} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Register Section */}
