@@ -29,6 +29,7 @@ import BulkFixturesPublisher from "../screens/Home/Tournaments/BulkFixturesPubli
 import EditTournament from "../screens/Home/Tournaments/EditTournament";
 import Tournaments from "../screens/Home/Tournaments/Tournaments";
 import FAQ from "../screens/Profile/FAQ";
+import LinkedAccounts from "../screens/Profile/LinkedAccounts";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
@@ -68,6 +69,7 @@ const HomeStack = () => {
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
@@ -105,6 +107,7 @@ const ProfileStack = () => {
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
+      <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
@@ -141,6 +144,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
@@ -178,6 +182,7 @@ const ChatsStack = () => {
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen
