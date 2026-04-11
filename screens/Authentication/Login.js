@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-import React, { useState } from "react";
-=======
 import { Platform } from "react-native";
 import { sha256 } from "js-sha256";
 import React, { useState, useEffect, useContext } from "react";
->>>>>>> 6502919 (handle social login for fb and google)
 import {
   View,
   Text,
@@ -17,27 +13,28 @@ import {
   Alert,
   Keyboard,
 } from "react-native";
-import { CourtChampLogo } from "../../assets"; // Your image imports
+import {
+  CourtChampLogo,
+  GoogleLogo,
+  FacebookLogo,
+  AppleLogo,
+} from "../../assets";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
-<<<<<<< HEAD
-=======
   signInWithCredential,
   GoogleAuthProvider,
   FacebookAuthProvider,
   OAuthProvider,
->>>>>>> 6502919 (handle social login for fb and google)
 } from "firebase/auth";
 import { LoginManager, AccessToken, AuthenticationToken } from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
-import { useContext } from "react";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
-// import { GoogleSignin } from '@react-native-google-signin/google-signin';
-// GoogleAuthProvider
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { GOOGLE_WEB_CLIENT_ID } from "@env";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -181,84 +178,32 @@ export default function Login() {
     }
   };
 
-  // Configure Google Sign-In
-  // React.useEffect(() => {
-  //   GoogleSignin.configure({
-  //     webClientId: "215867687150-gqh2v2j67ul3jtjce1vn4omkpmd0r0m6.apps.googleusercontent.com", // Get from Firebase console
-  //   });
-  // }, []);
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+    });
+  }, []);
 
-  // Google Sign-In Handler
-  // const handleGoogleLogin = async () => {
-  //   try {
-  //     await GoogleSignin.hasPlayServices();
-  //     await GoogleSignin.signOut();
-  //     const userInfo = await GoogleSignin.signIn();
-  //     const googleCredential = GoogleAuthProvider.credential(userInfo.data.idToken);
-  //     const userCredential = await signInWithCredential(auth, googleCredential);
-  //     const token = await userCredential.user.getIdToken();
-  //     // const methods = await auth.fetchSignInMethodsForEmail(userEmail);
-  //     const userId = userCredential.user.uid;
-  //     const userData = userInfo.data.user;
-  //     // Save the token in AsyncStorage
-  //     await AsyncStorage.setItem("userToken", token);
-  // await AsyncStorage.setItem("userId", userId);
+  const handleGoogleLogin = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signOut();
 
-  //     try {
-  //       const usersRef = collection(db, 'users');
-  //       const userQuery = query(
-  //         usersRef,
-  //         // where("provider", "==", "gmail"),
-  //         where("email", "==", userData.email)
-  //       );
+      const response = await GoogleSignin.signIn();
 
-  //       const querySnapshot = await getDocs(userQuery);
+      if (response.type !== "success") {
+        return;
+      }
 
-  //       if (!querySnapshot.empty) {
-  //         const doc = querySnapshot.docs[0];
-  //         const user = {
-  //           id: doc.id,
-  //           ...doc.data(),
-  //         };
+      const googleCredential = GoogleAuthProvider.credential(
+        response.data.idToken,
+      );
+      const userCredential = await signInWithCredential(auth, googleCredential);
 
-  //         if (user.provider == 'gmail') {
-  //           navigation.reset({
-  //             index: 0,
-  //             routes: [{ name: "Home" }], // Navigate to the main screen (Tabs)
-  //           });
-  //         } else {
-  //           Alert.alert("Error", "Error in login");
-  //         }
-  //       } else {
-  //         navigation.reset({
-  //           index: 0,
-  //           routes: [
-  //             {
-  //               name: "Signup",
-  //               params: {
-  //                 userName: userData.name,
-  //                 userEmail: userData.email,
-  //                 userId: userId,
-  //               },
-  //             },
-  //           ],
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.error('Error updating documents: ', error);
-  //     }
-  //   } catch (error) {
-  //     console.error("Google Login Error: ", error.message);
-  //   }
-  // };
+      const user = userCredential.user;
+      const token = await user.getIdToken();
+      const userId = user.uid;
 
-<<<<<<< HEAD
-  // const onSocialLogin = (type) => {
-  //   if (type === 'google') {
-  //     handleGoogleLogin();
-  //   }
-  // }
-=======
       await AsyncStorage.setItem("userToken", token);
       await AsyncStorage.setItem("userId", userId);
       await registerForPushNotificationsAsync(userId);
@@ -382,7 +327,6 @@ export default function Login() {
       handleFacebookLogin();
     }
   };
->>>>>>> 6502919 (handle social login for fb and google)
 
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
@@ -447,23 +391,6 @@ export default function Login() {
         </View>
 
         {/* Social Media Buttons */}
-<<<<<<< HEAD
-        {/* <View style={styles.socialContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                onSocialLogin("google");
-              }}
-            >
-              <Image source={GoogleLogo} style={styles.socialIcon} />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Image source={FacebookLogo} style={styles.socialIcon} />
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Image source={AppleLogo} style={styles.socialIconApple} />
-            </TouchableOpacity>
-          </View> */}
-=======
         <View style={styles.socialContainer}>
           <TouchableOpacity onPress={() => onSocialLogin("google")}>
             <Image source={GoogleLogo} style={styles.socialIcon} />
@@ -475,7 +402,6 @@ export default function Login() {
             <Image source={AppleLogo} style={styles.socialIconApple} />
           </TouchableOpacity> */}
         </View>
->>>>>>> 6502919 (handle social login for fb and google)
 
         {/* Register Section */}
         <TouchableOpacity>
@@ -600,7 +526,7 @@ const styles = StyleSheet.create({
   },
   socialContainer: {
     flexDirection: "row",
-    justifyContent: "flex-start",
+    justifyContent: "center",
     width: "85%",
     marginBottom: 30,
     marginTop: 50,
