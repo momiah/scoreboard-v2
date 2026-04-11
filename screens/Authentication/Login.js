@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 import React, { useState } from "react";
+=======
+import { Platform } from "react-native";
+import { sha256 } from "js-sha256";
+import React, { useState, useEffect, useContext } from "react";
+>>>>>>> 6502919 (handle social login for fb and google)
 import {
   View,
   Text,
@@ -17,7 +23,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+<<<<<<< HEAD
+=======
+  signInWithCredential,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  OAuthProvider,
+>>>>>>> 6502919 (handle social login for fb and google)
 } from "firebase/auth";
+import { LoginManager, AccessToken, AuthenticationToken } from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { useContext } from "react";
@@ -238,11 +252,137 @@ export default function Login() {
   //   }
   // };
 
+<<<<<<< HEAD
   // const onSocialLogin = (type) => {
   //   if (type === 'google') {
   //     handleGoogleLogin();
   //   }
   // }
+=======
+      await AsyncStorage.setItem("userToken", token);
+      await AsyncStorage.setItem("userId", userId);
+      await registerForPushNotificationsAsync(userId);
+
+      const profile = await getUserById(userId);
+
+      if (profile) {
+        setCurrentUser(profile);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Home" }],
+        });
+      } else {
+        const userData = response.data.user;
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: "Signup",
+              params: {
+                userName: userData.givenName,
+                userLastName: userData.familyName,
+                userEmail: userData.email,
+                userId: userId,
+              },
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      console.error("Google Login Error:", error.message);
+      if (error.code === "auth/account-exists-with-different-credential") {
+        Alert.alert(
+          "Account Already Exists",
+          "An account with this email already exists. Please log in with your original method.",
+        );
+      } else {
+        Alert.alert("Error", "Google sign-in failed. Please try again.");
+      }
+    }
+  };
+  const handleFacebookLogin = async () => {
+    try {
+      let credential;
+      if (Platform.OS === "ios") {
+
+        const rawNonce = Math.random().toString(36).substring(2);
+        const hashedNonce = sha256(rawNonce);
+        const result = await LoginManager.logInWithPermissions(["public_profile", "email"], "limited", hashedNonce)
+        if (result.isCancelled) {
+          Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
+          return;
+        }
+        const data = await AuthenticationToken.getAuthenticationTokenIOS();
+        if (!data) throw new Error("No access token");
+        const provider = new OAuthProvider("facebook.com");
+        credential = provider.credential({
+          idToken: data.authenticationToken,
+          rawNonce: rawNonce,
+        });
+      } else {
+        const result = await LoginManager.logInWithPermissions(["public_profile", "email"]);
+        if (result.isCancelled) {
+          Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
+          return;
+        }
+        const data = await AccessToken.getCurrentAccessToken();
+        if (!data) throw new Error("No access token");
+        credential = FacebookAuthProvider.credential(data.accessToken);
+      }
+      const userCredential = await signInWithCredential(auth, credential);
+
+      const user = userCredential.user;
+      const token = await user.getIdToken();
+      const userId = user.uid;
+
+      await AsyncStorage.setItem("userToken", token);
+      await AsyncStorage.setItem("userId", userId);
+      await registerForPushNotificationsAsync(userId);
+
+      const profile = await getUserById(userId);
+      console.log("Facebook Profile:", profile);
+
+      if (profile) {
+        setCurrentUser(profile);
+        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      } else {
+        const [firstName, ...rest] = (user.displayName || "").split(" ");
+
+        navigation.reset({
+          index: 0,
+          routes: [{
+            name: "Signup",
+            params: {
+
+              userName: firstName,
+              userLastName: rest.join(" "),
+              userEmail: user.email,
+              userId: userId,
+            },
+          }],
+        });
+      }
+    } catch (error) {
+      console.error("Facebook Login Error:", error.message);
+      if (error.code === "auth/account-exists-with-different-credential") {
+        Alert.alert(
+          "Account Already Exists",
+          "An account with this email already exists. Please log in with your original method and link Facebook from your profile.",
+        );
+      } else {
+        Alert.alert("Error", "Facebook sign-in failed. Please try again.");
+      }
+    }
+  };
+
+  const onSocialLogin = (type) => {
+    if (type === "google") {
+      handleGoogleLogin();
+    } else if (type === "facebook") {
+      handleFacebookLogin();
+    }
+  };
+>>>>>>> 6502919 (handle social login for fb and google)
 
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
@@ -307,6 +447,7 @@ export default function Login() {
         </View>
 
         {/* Social Media Buttons */}
+<<<<<<< HEAD
         {/* <View style={styles.socialContainer}>
             <TouchableOpacity
               onPress={() => {
@@ -322,6 +463,19 @@ export default function Login() {
               <Image source={AppleLogo} style={styles.socialIconApple} />
             </TouchableOpacity>
           </View> */}
+=======
+        <View style={styles.socialContainer}>
+          <TouchableOpacity onPress={() => onSocialLogin("google")}>
+            <Image source={GoogleLogo} style={styles.socialIcon} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onSocialLogin("facebook")}>
+            <Image source={FacebookLogo} style={styles.socialIcon} />
+          </TouchableOpacity>
+          {/* <TouchableOpacity>
+            <Image source={AppleLogo} style={styles.socialIconApple} />
+          </TouchableOpacity> */}
+        </View>
+>>>>>>> 6502919 (handle social login for fb and google)
 
         {/* Register Section */}
         <TouchableOpacity>
