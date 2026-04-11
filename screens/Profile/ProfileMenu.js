@@ -52,6 +52,7 @@ const ProfileMenu = ({ navigation }) => {
     },
     // FAQ
     { label: "FAQ", icon: "help-buoy-outline", action: "FAQ" },
+    { label: "Linked Accounts", icon: "link-outline", action: "LinkedAccounts" },
     { label: "Log out", icon: "log-out-outline", action: "logout" },
     {
       label: "Delete Account",
