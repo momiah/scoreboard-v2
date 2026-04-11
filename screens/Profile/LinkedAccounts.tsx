@@ -59,7 +59,7 @@ const LinkedAccounts = () => {
     const menuOptions = [
         { label: "Google", icon: "logo-google", action: "Google", isLinked: existingLinkedAccounts.includes("google.com") },
         { label: "Facebook", icon: "logo-facebook", action: "Facebook", isLinked: existingLinkedAccounts.includes("facebook.com") },
-        { label: "Apple", icon: "logo-apple", action: "Apple", isLinked: existingLinkedAccounts.includes("apple.com") },
+        // { label: "Apple", icon: "logo-apple", action: "Apple", isLinked: existingLinkedAccounts.includes("apple.com") },
     ];
 
     const handlePress = async (action: string) => {
