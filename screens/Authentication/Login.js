@@ -1,3 +1,4 @@
+
 import { Platform } from "react-native";
 import { sha256 } from "js-sha256";
 import React, { useState, useEffect, useContext } from "react";
@@ -28,6 +29,7 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider,
   OAuthProvider,
+  fetchSignInMethodsForEmail
 } from "firebase/auth";
 import { LoginManager, AccessToken, AuthenticationToken } from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
@@ -198,6 +200,16 @@ export default function Login() {
       const googleCredential = GoogleAuthProvider.credential(
         response.data.idToken,
       );
+      const email = response.data.user.email;
+      const existingMethods = await fetchSignInMethodsForEmail(auth, email);
+      if (existingMethods.length > 0 && !existingMethods.includes("google.com")) {
+        Alert.alert(
+          "Account Already Exists",
+          "An account with this email already exists. Please log in with your original method and connect Google from your profile.",
+        );
+        return;
+      }
+
       const userCredential = await signInWithCredential(auth, googleCredential);
 
       const user = userCredential.user;
@@ -272,6 +284,7 @@ export default function Login() {
         }
         const data = await AccessToken.getCurrentAccessToken();
         if (!data) throw new Error("No access token");
+
         credential = FacebookAuthProvider.credential(data.accessToken);
       }
       const userCredential = await signInWithCredential(auth, credential);
