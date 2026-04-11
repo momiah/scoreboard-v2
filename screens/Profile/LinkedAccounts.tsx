@@ -1,102 +1,55 @@
-import React, {
-    useContext,
-    useState,
-    useEffect,
-    useMemo,
-    useCallback,
-} from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
-    Text,
-    ScrollView,
-    ActivityIndicator,
-    Dimensions,
     StyleSheet,
     TouchableOpacity,
-    Modal,
-    Pressable,
     Platform,
-    Image,
+    Alert,
 } from "react-native";
 import { LoginManager, AccessToken, AuthenticationToken } from "react-native-fbsdk-next";
-import { FacebookAuthProvider, OAuthProvider, onAuthStateChanged, User } from "firebase/auth";
-import { sha256 } from "js-sha256";
 import {
-    CourtChampLogo,
-    GoogleLogo,
-    FacebookLogo,
-    AppleLogo,
-} from "../../assets";
+    FacebookAuthProvider,
+    OAuthProvider,
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    linkWithCredential,
+} from "firebase/auth";
+import { sha256 } from "js-sha256";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import { GoogleAuthProvider, linkWithCredential } from "firebase/auth";
 import { auth } from "../../services/firebase.config";
 // @ts-expect-error - GOOGLE_WEB_CLIENT_ID is defined in the .env file
 import { GOOGLE_WEB_CLIENT_ID } from "@env";
-import { UserContext } from "../../context/UserContext";
 import styled from "styled-components/native";
-const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { GameContext } from "../../context/GameContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import MedalDisplay from "../../components/performance/MedalDisplay";
+import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import ProfileActivity from "../../components/Profiles/ProfileActivity";
-import ProfilePerformance from "../../components/Profiles/ProfilePerformance";
-import RankSuffix from "../../components/RankSuffix";
-import { formatNumber } from "../../helpers/formatNumber";
-import Icon from "react-native-ico-flags";
-import { RankInformation } from "../../components/Modals/RankInformation";
-import { fetchSignInMethodsForEmail } from "firebase/auth";
 
-import { PopupContext } from "@/context/PopupContext";
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60;
 
-
-const { width: screenWidth } = Dimensions.get("window");
-const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
-const screenAdjustedStatFontSize = screenWidth <= 430 ? 15 : 18;
-const screenAdjustedPaddingTop = screenWidth <= 450 ? 6 : undefined;
-const platformAdjustedMarginTop = Platform.OS === "ios" ? 20 : 30; // Adjust for iOS platform
-const AVATAR_SIZE = screenWidth <= 400 ? 70 : 80;
-
-const LinkedAccounts: React.FC = (): JSX.Element => {
-    const route = useRoute();
+const LinkedAccounts = () => {
     const navigation = useNavigation();
-    const {
-        getUserById,
-        getGlobalRank,
-        currentUser,
-        profileViewCount,
-        getCountryRank,
-    } = useContext(UserContext);
-    const [loading, setLoading] = useState(true);
+
     const [isLinking, setIsLinking] = useState(false);
-    const { showPopup, setShowPopup, popupMessage, setPopupMessage } = useContext(PopupContext);
     const [existingLinkedAccounts, setExistingLinkedAccounts] = useState<string[]>([]);
-
-
 
     const loadExistingLinkedAccounts = async () => {
         const user = auth.currentUser;
-        console.log("Loading existing linked accounts for user:", user);
         if (user) {
             await user.reload();
-
             const providers = user.providerData.map((p) => p.providerId);
-            console.log("Setting providers:", providers);
             setExistingLinkedAccounts(providers);
         }
-        setLoading(false);
     };
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 const providers = user.providerData.map((p) => p.providerId);
                 setExistingLinkedAccounts(providers);
             }
-            setLoading(false);
         });
         return unsubscribe;
     }, []);
+
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: GOOGLE_WEB_CLIENT_ID,
@@ -115,18 +68,14 @@ const LinkedAccounts: React.FC = (): JSX.Element => {
             switch (action) {
                 case "Google":
                     if (existingLinkedAccounts.includes("google.com")) {
-                        setPopupMessage("Google account already linked.");
-                        setShowPopup(true);
-                        setIsLinking(false);
+                        Alert.alert("Already Linked", "Google account already linked.");
                         return;
                     }
                     await linkWithGoogle();
                     break;
                 case "Facebook":
                     if (existingLinkedAccounts.includes("facebook.com")) {
-                        setPopupMessage("Facebook account already linked.");
-                        setShowPopup(true);
-                        setIsLinking(false);
+                        Alert.alert("Already Linked", "Facebook account already linked.");
                         return;
                     }
                     await linkWithFacebook();
@@ -135,12 +84,14 @@ const LinkedAccounts: React.FC = (): JSX.Element => {
                     await linkWithApple();
                     break;
             }
-            loadExistingLinkedAccounts();
-
+            await loadExistingLinkedAccounts();
         } catch (error) {
             console.error("Error linking account:", error);
-            setPopupMessage("Error linking account. Please try again.");
-            setShowPopup(true);
+            if ((error as { code?: string }).code === "auth/credential-already-in-use") {
+                Alert.alert("Error", "This account is already linked to another user.");
+            } else {
+                Alert.alert("Error", "Error linking account. Please try again.");
+            }
         } finally {
             setIsLinking(false);
         }
@@ -151,21 +102,17 @@ const LinkedAccounts: React.FC = (): JSX.Element => {
         await GoogleSignin.signOut();
         const response = await GoogleSignin.signIn();
         if (response.type !== "success") {
-            setPopupMessage("Google sign-in failed. Please try again.");
-            setShowPopup(true);
+            Alert.alert("Error", "Google sign-in failed. Please try again.");
             return;
         }
         const googleCredential = GoogleAuthProvider.credential(response.data.idToken);
         const currentFirebaseUser = auth.currentUser;
         if (!currentFirebaseUser) {
-            setPopupMessage("Please login to link your Google account.");
-            setShowPopup(true);
+            Alert.alert("Error", "Please login to link your Google account.");
             return;
         }
         await linkWithCredential(currentFirebaseUser, googleCredential);
-        setPopupMessage("Google account linked successfully.");
-        setShowPopup(true);
-        loadExistingLinkedAccounts();
+        Alert.alert("Success", "Google account linked successfully.");
     };
 
     const linkWithFacebook = async () => {
@@ -201,22 +148,19 @@ const LinkedAccounts: React.FC = (): JSX.Element => {
 
         const currentFirebaseUser = auth.currentUser;
         if (!currentFirebaseUser) {
-            setPopupMessage("Please login to link your Facebook account.");
-            setShowPopup(true);
+            Alert.alert("Error", "Please login to link your Facebook account.");
             return;
         }
         await linkWithCredential(currentFirebaseUser, credential);
-        setPopupMessage("Facebook account linked successfully.");
-        setShowPopup(true);
+        Alert.alert("Success", "Facebook account linked successfully.");
     };
 
     const linkWithApple = async () => {
-        // await linkWithPopup(AppleAuthProvider.credential(token));
+        Alert.alert("Coming Soon", "Apple account linking is not available yet.");
     };
+
     return (
         <Container>
-
-
             <Header>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Ionicons name="chevron-back" size={24} color="white" />
@@ -231,21 +175,20 @@ const LinkedAccounts: React.FC = (): JSX.Element => {
                         key={option.label}
                         onPress={() => handlePress(option.action)}
                         disabled={isLinking}
-
                     >
                         <LeftContainer>
                             <Ionicons
-                                name={option.icon as keyof typeof Ionicons.glyphMap} as string
+                                name={option.icon as keyof typeof Ionicons.glyphMap}
                                 size={20}
                                 color="white"
                             />
-                            <MenuText
-                                color="white"
-                            >
-                                {option.label}
-                            </MenuText>
+                            <MenuText>{option.label}</MenuText>
                         </LeftContainer>
-                        {option.isLinked ? <Ionicons name="checkmark-circle" size={18} color="green" /> : <LinkButtonText>Link</LinkButtonText>}
+                        {option.isLinked ? (
+                            <Ionicons name="checkmark-circle" size={18} color="green" />
+                        ) : (
+                            <LinkButtonText>Link</LinkButtonText>
+                        )}
                     </MenuItem>
                 ))}
             </MenuList>
@@ -253,47 +196,12 @@ const LinkedAccounts: React.FC = (): JSX.Element => {
     );
 };
 
-// Additional styled components
-const LoadingOverlay = styled.View`
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(3, 16, 31, 0.8);
-      justify-content: center;
-      align-items: center;
-      z-index: 10;
-    `;
-
-const LoadingText = styled.Text`
-      color: white;
-      margin-top: 12px;
-      font-size: 16px;
-    `;
-
-const styles = StyleSheet.create({
-    blurContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-
-});
-
-const LinkButtonText = styled.Text({
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-});
-
-// Styled components
 const Container = styled.View`
-      flex: 1;
-      background-color: rgb(3, 16, 31);
-      padding: 20px;
-      padding-top: ${platformAdjustedPaddingTop}px;
-    `;
+    flex: 1;
+    background-color: rgb(3, 16, 31);
+    padding: 20px;
+    padding-top: ${platformAdjustedPaddingTop}px;
+`;
 
 const Header = styled.View({
     flexDirection: "row",
@@ -333,6 +241,12 @@ const LeftContainer = styled.View({
 const MenuText = styled.Text({
     color: "white",
     fontSize: 16,
+});
+
+const LinkButtonText = styled.Text({
+    color: "#00A2FF",
+    fontSize: 14,
+    fontWeight: "bold",
 });
 
 export default LinkedAccounts;
