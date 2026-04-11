@@ -1,5 +1,6 @@
 // Now, let's update the Signup component to fix the city selection bug and add loading state
 import React, { useContext, useState, useEffect, useCallback } from "react";
+import { UserContext } from "../../context/UserContext";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -36,10 +37,13 @@ import {
   ccImageEndpoint,
 } from "@shared";
 import { loadCountries, loadCities } from "../../utils/locationData";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 
 const Signup = ({ route }) => {
-  const { userId: socialId, userName, userEmail } = route.params || {};
+  const { userId: socialId, userName, userLastName, userEmail } = route.params || {};
   const isSocialSignup = !!socialId;
+  const { setCurrentUser } = useContext(UserContext);
 
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
@@ -66,6 +70,7 @@ const Signup = ({ route }) => {
     password: "",
     confirmPassword: "",
     firstName: userName || "",
+    lastName: userLastName || "",
     email: userEmail || "",
     handPreference: "Both",
   };
@@ -114,7 +119,7 @@ const Signup = ({ route }) => {
     setShowPopup(false);
     setPopupMessage("");
 
-    if (popupButtonText === "Login") {
+    if (popupButtonText === "Login" || popupButtonText === "Continue") {
       navigation.reset({
         index: 0,
         routes: [{ name: "Home" }],
@@ -186,12 +191,22 @@ const Signup = ({ route }) => {
         collection(db, "users", uid, "notifications"),
         welcomeNotification,
       );
+      if (isSocialSignup) {
+        const user = auth.currentUser;
+        if (user) {
+          const token = await user.getIdToken();
+          await AsyncStorage.setItem("userToken", token);
+          await AsyncStorage.setItem("userId", uid);
+          await registerForPushNotificationsAsync(uid);
+          setCurrentUser(profileToSave);
+        }
+      }
 
       // 3. Show success UI
       setPopupIcon("success");
-      setPopupButtonText("Login");
+      setPopupButtonText(isSocialSignup ? "Continue" : "Login");
       handleShowPopup(
-        "Account created successfully, please verify your email and login to continue",
+        isSocialSignup ? "Account created successfully!" : "Account created successfully, please verify your email and login to continue",
       );
     } catch (error) {
       const messages = {
