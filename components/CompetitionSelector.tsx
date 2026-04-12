@@ -15,7 +15,7 @@ import { processCompetitions } from "../helpers/processCompetitions";
 import { sortLeaguesByEndDate } from "../helpers/sortedLeaguesByEndDate";
 import { NormalizedCompetition } from "@shared/types";
 import { COMPETITION_TYPES } from "@shared";
-import { Skeleton } from "moti/skeleton";
+import { SkeletonPulse, SkeletonBlock } from "./Skeletons/skeletonConfig";
 
 const { width: screenWidth } = Dimensions.get("window");
 const topOffset = 20;
@@ -23,7 +23,6 @@ const leagueNameFontSize = screenWidth <= 400 ? 13 : 15;
 const statTitleFontSize = screenWidth <= 405 ? 11 : 13;
 const statValueFontSize = screenWidth <= 405 ? 18 : 20;
 const cardHeight = 120;
-const skeletonColor = ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"];
 
 interface ProcessedCompetition extends NormalizedCompetition {
   wins?: number;
@@ -130,12 +129,13 @@ const CompetitionSelector: React.FC<CompetitionSelectorProps> = ({
       if (!item || loading || processingRanks) {
         return (
           <View style={{ width: screenWidth, alignItems: "center" }}>
-            <Skeleton
-              width={screenWidth * 0.8}
-              height={cardHeight}
-              radius={8}
-              colors={skeletonColor}
-            />
+            <SkeletonPulse>
+              <SkeletonBlock
+                width={screenWidth * 0.8}
+                height={cardHeight}
+                radius={8}
+              />
+            </SkeletonPulse>
           </View>
         );
       }

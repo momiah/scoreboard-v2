@@ -20,7 +20,6 @@ import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-ico-flags";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
 import { useImageLoader } from "../../utils/imageLoader";
-import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import debounce from "lodash.debounce";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
@@ -163,7 +162,6 @@ const AllPlayers = () => {
           <CircleSkeleton
             show={!imageLoaded}
             size={iconSize}
-            config={SKELETON_THEMES.dark}
           >
             <Avatar
               onLoad={handleImageLoad}

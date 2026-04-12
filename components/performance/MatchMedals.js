@@ -8,7 +8,6 @@ import {
   CircleSkeleton,
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
-import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
 const { width: screenWidth } = Dimensions.get("window");
 const medalSize = screenWidth <= 405 ? 50 : 60;
@@ -60,7 +59,6 @@ const MatchMedals = ({
           <CircleSkeleton
             show={!imageLoaded}
             size={medalSize}
-            config={SKELETON_THEMES.dark}
           >
             <Medal
               source={medal}
@@ -75,7 +73,6 @@ const MatchMedals = ({
           show={!imageLoaded}
           height={12}
           width={60}
-          config={SKELETON_THEMES.dark}
         >
           <MedalTitle style={{ opacity: imageLoaded ? 1 : 0 }}>
             {title}
@@ -86,7 +83,6 @@ const MatchMedals = ({
           show={!imageLoaded}
           height={16}
           width={40}
-          config={SKELETON_THEMES.dark}
         >
           <MedalStat style={{ opacity: imageLoaded ? 1 : 0 }}>
             {formatNumber(stat)}

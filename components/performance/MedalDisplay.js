@@ -4,7 +4,6 @@ import { Image } from "react-native";
 import { GameContext } from "../../context/GameContext";
 import { useImageLoader } from "../../utils/imageLoader";
 import { CircleSkeleton } from "../Skeletons/UserProfileSkeleton";
-import { SKELETON_THEMES } from "../Skeletons/skeletonConfig";
 
 const MedalDisplay = ({ xp, size }) => {
   const { getRankByXP } = useContext(GameContext);
@@ -15,7 +14,6 @@ const MedalDisplay = ({ xp, size }) => {
     <CircleSkeleton
       show={!imageLoaded}
       size={size}
-      config={SKELETON_THEMES.dark}
     >
       <Image
         source={rank.icon}

@@ -1,8 +1,7 @@
 import React from "react";
 import { View, Dimensions } from "react-native";
-import { Skeleton } from "moti/skeleton";
 import styled from "styled-components/native";
-import { SKELETON_THEMES } from "../Skeletons/skeletonConfig";
+import { SkeletonPulse, SkeletonBlock } from "./skeletonConfig";
 
 const { width: screenWidth } = Dimensions.get("window");
 const itemPadding = screenWidth <= 400 ? 18 : 25;
@@ -11,81 +10,38 @@ interface ProfileActivitySkeletonProps {
   itemCount?: number;
 }
 
-const skeletonConfig = {
-  ...SKELETON_THEMES.dark,
-  transition: {
-    type: "timing" as const,
-    duration: 1500,
-  },
-  colorMode: SKELETON_THEMES.dark.colorMode as "dark" | "light",
-};
-
 const CompetitionItemSkeleton: React.FC = () => {
   return (
-    <SkeletonContainer>
-      {/* Info section */}
-      <InfoSection>
-        {/* Competition name */}
-        <Skeleton show height={16} width="80%" radius={4} {...skeletonConfig} />
+    <SkeletonPulse>
+      <SkeletonContainer>
+        <InfoSection>
+          <SkeletonBlock width="80%" height={16} radius={4} />
 
-        {/* Court name */}
-        <View style={{ marginTop: 8 }}>
-          <Skeleton
-            show
-            height={12}
-            width="50%"
-            radius={4}
-            {...skeletonConfig}
-          />
-        </View>
+          <View style={{ marginTop: 8 }}>
+            <SkeletonBlock width="50%" height={12} radius={4} />
+          </View>
 
-        {/* Tags */}
-        <TagRow>
-          <Skeleton
-            show
-            height={20}
-            width={60}
-            radius={10}
-            {...skeletonConfig}
-          />
-          <Skeleton
-            show
-            height={20}
-            width={50}
-            radius={10}
-            {...skeletonConfig}
-          />
-        </TagRow>
-      </InfoSection>
+          <TagRow>
+            <SkeletonBlock width={60} height={20} radius={10} />
+            <SkeletonBlock width={50} height={20} radius={10} />
+          </TagRow>
+        </InfoSection>
 
-      {/* Wins stat */}
-      <StatSection>
-        <Skeleton show height={12} width={30} radius={4} {...skeletonConfig} />
-        <View style={{ marginTop: 8 }}>
-          <Skeleton
-            show
-            height={25}
-            width={25}
-            radius={4}
-            {...skeletonConfig}
-          />
-        </View>
-      </StatSection>
+        <StatSection>
+          <SkeletonBlock width={30} height={12} radius={4} />
+          <View style={{ marginTop: 8 }}>
+            <SkeletonBlock width={25} height={25} radius={4} />
+          </View>
+        </StatSection>
 
-      {/* Rank stat */}
-      <StatSection>
-        <Skeleton show height={12} width={30} radius={4} {...skeletonConfig} />
-        <View style={{ marginTop: 8 }}>
-          <Skeleton
-            show
-            height={25}
-            width={35}
-            radius={4}
-            {...skeletonConfig}
-          />
-        </View>
-      </StatSection>
-    </SkeletonContainer>
+        <StatSection>
+          <SkeletonBlock width={30} height={12} radius={4} />
+          <View style={{ marginTop: 8 }}>
+            <SkeletonBlock width={35} height={25} radius={4} />
+          </View>
+        </StatSection>
+      </SkeletonContainer>
+    </SkeletonPulse>
   );
 };
 
