@@ -7,7 +7,7 @@ export type CompetitionType =
   | typeof COMPETITION_TYPES.LEAGUE
   | typeof COMPETITION_TYPES.TOURNAMENT;
 
-interface CompetitionAdmins {
+export interface CompetitionAdmins {
   userId: string;
   username: string;
 }
@@ -15,6 +15,8 @@ interface CompetitionAdmins {
 export interface CourtLocation extends Location {
   courtName: string;
   courtId: string;
+  courtImage: string;
+  courtDescription: string;
 }
 
 interface CompetitionOwner {
@@ -25,17 +27,17 @@ interface CompetitionOwner {
   location: Location;
 }
 
-interface PlayingTime {
+export interface PlayingTime {
   day: string;
   endTime: string;
   startTime: string;
 }
 
-interface PendingInvites {
+export interface PendingInvites {
   userId: string;
 }
 
-interface PendingRequests {
+export interface PendingRequests {
   userId: string;
 }
 
@@ -66,6 +68,8 @@ export interface TeamStats {
 }
 
 export interface League {
+  leagueId?: string;
+  id?: string;
   leagueParticipants: ScoreboardProfile[];
   leagueTeams: TeamStats[];
   leagueAdmins: CompetitionAdmins[];
@@ -95,6 +99,8 @@ export interface League {
 }
 
 export interface Tournament {
+  tournamentId?: string;
+  id?: string;
   tournamentParticipants: ScoreboardProfile[];
   tournamentTeams: TeamStats[];
   tournamentAdmins: CompetitionAdmins[];

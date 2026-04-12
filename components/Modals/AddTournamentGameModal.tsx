@@ -37,6 +37,7 @@ const AddTournamentGameModal = ({
   tournamentId,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
+  // @ts-expect-error - updateTournamentGame may not be typed in LeagueContext
   const { updateTournamentGame } = useContext(LeagueContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
@@ -155,11 +156,27 @@ const AddTournamentGameModal = ({
     }
 
     // Update the game using context method
-    await updateTournamentGame({
-      tournamentId,
-      gameId: game.gameId,
-      gameResult,
-    });
+    try {
+      await updateTournamentGame({
+        tournamentId,
+        gameId: game.gameId,
+        updatedGame: gameResult,
+      });
+    } catch (updateError: unknown) {
+      const errorMessage =
+        updateError instanceof Error ? updateError.message : "";
+      const alreadyReported =
+        errorMessage.includes("already been reported") ||
+        errorMessage.includes("already been processed");
+
+      setLoading(false);
+      setErrorText(
+        alreadyReported
+          ? "This game has already been reported. Please refresh to see the latest status."
+          : "Failed to submit game result. Please try again.",
+      );
+      return;
+    }
 
     // Call onGameUpdated for now
     if (onGameUpdated) {
