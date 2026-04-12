@@ -7,7 +7,6 @@ import {
   CircleSkeleton,
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
-import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import { COMPETITION_TYPES } from "@shared";
 
 type CompetitionType =
@@ -33,17 +32,9 @@ interface TrophyItemProps {
 const TrophyItem: React.FC<TrophyItemProps> = ({ imageSource, statValue }) => {
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
 
-  const skeletonConfig = {
-    ...SKELETON_THEMES.dark,
-    transition: {
-      type: "timing",
-      duration: 1500,
-    },
-  };
-
   return (
     <PrizeView>
-      <CircleSkeleton show={!imageLoaded} size={60} config={skeletonConfig}>
+      <CircleSkeleton show={!imageLoaded} size={60}>
         <PrizeImage
           source={imageSource}
           onLoad={handleImageLoad}
@@ -56,7 +47,6 @@ const TrophyItem: React.FC<TrophyItemProps> = ({ imageSource, statValue }) => {
         show={!imageLoaded}
         height={14}
         width={30}
-        config={skeletonConfig}
       >
         <PrizeText style={{ opacity: imageLoaded ? 1 : 0 }}>
           {statValue}

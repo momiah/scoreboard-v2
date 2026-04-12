@@ -9,7 +9,6 @@ import {
   CircleSkeleton,
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
-import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import { COMPETITION_TYPES } from "@shared";
 
 const PrizeContenders = ({
@@ -56,7 +55,6 @@ const PrizeContenders = ({
           show={showSkeleton}
           height={16}
           width={25}
-          config={SKELETON_THEMES.dark}
         >
           {imageLoaded && !showSkeleton ? (
             <Rank>
@@ -78,7 +76,6 @@ const PrizeContenders = ({
           show={showSkeleton}
           height={16}
           width={80}
-          config={SKELETON_THEMES.dark}
         >
           {imageLoaded && !showSkeleton ? (
             <PlayerName>{displayName}</PlayerName>
@@ -91,7 +88,6 @@ const PrizeContenders = ({
           show={showSkeleton}
           height={12}
           width={30}
-          config={SKELETON_THEMES.dark}
           style={{ marginBottom: 5 }}
         >
           {imageLoaded && !showSkeleton ? <StatTitle>Wins</StatTitle> : null}
@@ -101,7 +97,6 @@ const PrizeContenders = ({
           show={showSkeleton}
           height={16}
           width={20}
-          config={SKELETON_THEMES.dark}
         >
           {imageLoaded && !showSkeleton ? (
             <Stat>{player.numberOfWins}</Stat>
@@ -114,7 +109,6 @@ const PrizeContenders = ({
             show={showSkeleton}
             height={12}
             width={30}
-            config={SKELETON_THEMES.dark}
             style={{ marginBottom: 5 }}
           >
             {imageLoaded && !showSkeleton ? <StatTitle>CP</StatTitle> : null}
@@ -124,7 +118,6 @@ const PrizeContenders = ({
             show={showSkeleton}
             height={16}
             width={20}
-            config={SKELETON_THEMES.dark}
           >
             {imageLoaded && !showSkeleton ? (
               <PrizeText>+{prizeXP}</PrizeText>
@@ -137,7 +130,6 @@ const PrizeContenders = ({
         <CircleSkeleton
           show={showSkeleton}
           size={30}
-          config={SKELETON_THEMES.dark}
         >
           <PrizeImage
             source={prizeSource}

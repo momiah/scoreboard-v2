@@ -8,7 +8,6 @@ import {
   CircleSkeleton,
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
-import { skeletonConfig } from "../../components/Skeletons/skeletonConfig";
 import { COMPETITION_TYPES } from "@shared";
 import TeamDetails from "../Modals/TeamDetailsModal";
 
@@ -77,7 +76,6 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                 show={showSkeleton}
                 height={16}
                 width={25}
-                config={skeletonConfig}
               >
                 {imageLoaded && !showSkeleton ? (
                   <Rank>
@@ -93,7 +91,6 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                 show={showSkeleton}
                 height={16}
                 width={80}
-                config={skeletonConfig}
               >
                 {imageLoaded && !showSkeleton ? (
                   <TeamNamesContainer>
@@ -112,8 +109,7 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                 show={showSkeleton}
                 height={12}
                 width={30}
-                config={skeletonConfig}
-                // style={{ marginBottom: 5 }}
+              // style={{ marginBottom: 5 }}
               >
                 {imageLoaded && !showSkeleton ? (
                   <StatTitle>Wins</StatTitle>
@@ -124,7 +120,6 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                 show={showSkeleton}
                 height={16}
                 width={20}
-                config={skeletonConfig}
               >
                 {imageLoaded && !showSkeleton ? (
                   <Stat>{team.numberOfWins}</Stat>
@@ -138,8 +133,7 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                   show={showSkeleton}
                   height={12}
                   width={30}
-                  config={skeletonConfig}
-                  //   style={{ marginBottom: 5 }}
+                //   style={{ marginBottom: 5 }}
                 >
                   {imageLoaded && !showSkeleton ? (
                     <StatTitle>CP</StatTitle>
@@ -150,7 +144,6 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                   show={showSkeleton}
                   height={16}
                   width={20}
-                  config={skeletonConfig}
                 >
                   {imageLoaded && !showSkeleton ? (
                     <PrizeText>+{prizeXP}</PrizeText>
@@ -163,7 +156,6 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
               <CircleSkeleton
                 show={showSkeleton}
                 size={30}
-                config={skeletonConfig}
               >
                 <PrizeImage
                   source={prizeSource}
