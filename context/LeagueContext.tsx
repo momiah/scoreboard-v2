@@ -120,6 +120,35 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const COMPETITION_CONFIG = {
+    league: {
+      collectionName: "leagues",
+      idField: "leagueId",
+      nameField: "leagueName",
+      setNavigationId: (id: string) => setLeagueNavigationId(id),
+      clearNavigationId: () => setLeagueNavigationId(""),
+
+      participantsKey: "leagueParticipants",
+      adminsKey: "leagueAdmins",
+      ownerKey: "leagueOwner",
+      paramKey: "leagueId",
+      informationType: notificationTypes.INFORMATION.LEAGUE.TYPE,
+    },
+    tournament: {
+      collectionName: "tournaments",
+      idField: "tournamentId",
+      nameField: "tournamentName",
+      setNavigationId: (id: string) => setTournamentNavigationId(id),
+      clearNavigationId: () => setTournamentNavigationId(""),
+
+      participantsKey: "tournamentParticipants",
+      adminsKey: "tournamentAdmins",
+      ownerKey: "tournamentOwner",
+      paramKey: "tournamentId",
+      informationType: notificationTypes.INFORMATION.TOURNAMENT.TYPE,
+    },
+  };
+
   useEffect(() => {
     if (!currentUser?.userId) return;
     fetchUpcomingLeagues();
@@ -281,23 +310,6 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error updating league description:", error);
       Alert.alert("Error", "Unable to update the league description.");
     }
-  };
-
-  const COMPETITION_CONFIG = {
-    league: {
-      collectionName: "leagues",
-      idField: "leagueId",
-      nameField: "leagueName",
-      setNavigationId: (id: string) => setLeagueNavigationId(id),
-      clearNavigationId: () => setLeagueNavigationId(""),
-    },
-    tournament: {
-      collectionName: "tournaments",
-      idField: "tournamentId",
-      nameField: "tournamentName",
-      setNavigationId: (id: string) => setTournamentNavigationId(id),
-      clearNavigationId: () => setTournamentNavigationId(""),
-    },
   };
 
   const createWelcomeChatMessage = async ({
@@ -1307,57 +1319,58 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     reason: string;
   }
 
-  const removePlayerFromLeague = async (
-    leagueId: string,
-    userId: string,
-    reason: string,
-  ): Promise<void> => {
-    const leagueRef = doc(db, "leagues", leagueId);
-    const leagueSnap = await getDoc(leagueRef);
-    const leagueData = leagueSnap.data();
+  const removePlayerFromCompetition = async ({
+    competitionId,
+    collectionName,
+    userId,
+    reason,
+  }: {
+    competitionId: string;
+    collectionName: string;
+    userId: string;
+    reason: string;
+  }): Promise<void> => {
+    const config =
+      collectionName === COLLECTION_NAMES.leagues
+        ? COMPETITION_CONFIG.league
+        : COMPETITION_CONFIG.tournament;
 
-    const removedParticipants: RemovedParticipant[] =
-      leagueData?.removedParticipants || [];
-    const removedParticipant = leagueData?.leagueParticipants.find(
-      (participant: ScoreboardProfile) => participant.userId === userId,
+    console.log(
+      `Removing user ${userId} from ${collectionName} ${competitionId} for reason: ${reason}`,
     );
 
-    const updatedParticipants = (leagueData?.leagueParticipants || []).filter(
-      (participant: ScoreboardProfile) => participant.userId !== userId,
-    );
+    const competitionRef = doc(db, collectionName, competitionId);
+    const competitionSnap = await getDoc(competitionRef);
+    const competitionData = competitionSnap.data();
 
-    // Add user to removed participants
-    removedParticipants.push({
-      profile: removedParticipant,
-      removedAt: new Date(),
-      reason,
-    });
+    const removedParticipant = (
+      competitionData?.[config.participantsKey] || []
+    ).find((participant: ScoreboardProfile) => participant.userId === userId);
 
-    // Remove user from leagueAdmins if they are an admin
-    const updatedAdmins = (leagueData?.leagueAdmins || []).filter(
-      (admin: CompetitionAdmins) => admin.userId !== userId,
-    );
+    const removedParticipants: RemovedParticipant[] = [
+      ...(competitionData?.removedParticipants || []),
+      { profile: removedParticipant, removedAt: new Date(), reason },
+    ];
 
-    await updateDoc(leagueRef, {
-      leagueParticipants: updatedParticipants,
-      leagueAdmins: updatedAdmins,
+    await updateDoc(competitionRef, {
+      [config.participantsKey]: (
+        competitionData?.[config.participantsKey] || []
+      ).filter((p: ScoreboardProfile) => p.userId !== userId),
+      [config.adminsKey]: (competitionData?.[config.adminsKey] || []).filter(
+        (a: CompetitionAdmins) => a.userId !== userId,
+      ),
       removedParticipants,
     });
 
-    // send notification to removed user
-    const payload = {
+    await sendNotification({
       ...notificationSchema,
       createdAt: new Date(),
       recipientId: userId,
-      senderId: leagueData?.leagueOwner.userId,
-      message: `You have been removed from ${leagueData?.leagueName} for the following reason: ${reason}`,
-      type: notificationTypes.INFORMATION.LEAGUE.TYPE,
-      data: {
-        leagueId,
-      },
-    };
-    await sendNotification(payload);
-    console.log("Player removed from league successfully!");
+      senderId: competitionData?.[config.ownerKey].userId,
+      message: `You have been removed from ${competitionData?.[config.nameField]} for the following reason: ${reason}`,
+      type: config.informationType,
+      data: { [config.paramKey]: competitionId },
+    });
   };
 
   const fetchUserPendingRequests = async (userId: string) => {
@@ -1719,7 +1732,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         leagueById,
         leagueNavigationId,
         setLeagueNavigationId,
-        removePlayerFromLeague,
+        removePlayerFromCompetition,
         acceptCompetitionInvite,
         declineCompetitionInvite,
         requestToJoinLeague,

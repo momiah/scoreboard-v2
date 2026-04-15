@@ -103,3 +103,17 @@ export const addPlayerToCompetition = async ({
     throw error;
   }
 };
+
+//USAGE EXAMPLE
+// <TouchableOpacity
+//   onPress={() =>
+//     addPlayerToCompetition({
+//       userId: "USER_ID_HERE",
+//       competitionId: "COMPETITION_ID_HERE",
+//       notificationId: null,
+//       collectionName: "leagues",
+//     })
+//   }
+// >
+//   <Text style={{ color: "white" }}>Add Player</Text>
+// </TouchableOpacity>
