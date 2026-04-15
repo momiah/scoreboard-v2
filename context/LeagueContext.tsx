@@ -1278,38 +1278,55 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     await updateDoc(competitionRef, { pendingInvites: updatedPending });
   };
 
-  const assignLeagueAdmin = async (
-    leagueId: string,
-    user: { userId: string; username: string },
-  ): Promise<void> => {
-    const leagueRef = doc(db, "leagues", leagueId);
-    const leagueSnap = await getDoc(leagueRef);
-    const leagueData = leagueSnap.data();
+  const assignCompetitionAdmin = async ({
+    competitionId,
+    collectionName,
+    user,
+  }: {
+    competitionId: string;
+    collectionName: string;
+    user: { userId: string; username: string };
+  }): Promise<void> => {
+    const config =
+      collectionName === COLLECTION_NAMES.leagues
+        ? COMPETITION_CONFIG.league
+        : COMPETITION_CONFIG.tournament;
+
+    const competitionRef = doc(db, collectionName, competitionId);
+    const competitionSnap = await getDoc(competitionRef);
+    const competitionData = competitionSnap.data();
 
     const updatedAdmins: CompetitionAdmins[] = [
-      ...(leagueData?.leagueAdmins || []),
-      {
-        userId: user.userId,
-        userName: user.username,
-      },
+      ...(competitionData?.[config.adminsKey] || []),
+      { userId: user.userId, username: user.username },
     ];
 
-    await updateDoc(leagueRef, { leagueAdmins: updatedAdmins });
+    await updateDoc(competitionRef, { [config.adminsKey]: updatedAdmins });
   };
 
-  const revokeLeagueAdmin = async (
-    leagueId: string,
-    userId: string,
-  ): Promise<void> => {
-    const leagueRef = doc(db, "leagues", leagueId);
-    const leagueSnap = await getDoc(leagueRef);
-    const leagueData = leagueSnap.data();
+  const revokeCompetitionAdmin = async ({
+    competitionId,
+    collectionName,
+    userId,
+  }: {
+    competitionId: string;
+    collectionName: string;
+    userId: string;
+  }): Promise<void> => {
+    const config =
+      collectionName === COLLECTION_NAMES.leagues
+        ? COMPETITION_CONFIG.league
+        : COMPETITION_CONFIG.tournament;
 
-    const updatedAdmins = (leagueData?.leagueAdmins || []).filter(
+    const competitionRef = doc(db, collectionName, competitionId);
+    const competitionSnap = await getDoc(competitionRef);
+    const competitionData = competitionSnap.data();
+
+    const updatedAdmins = (competitionData?.[config.adminsKey] || []).filter(
       (admin: CompetitionAdmins) => admin.userId !== userId,
     );
 
-    await updateDoc(leagueRef, { leagueAdmins: updatedAdmins });
+    await updateDoc(competitionRef, { [config.adminsKey]: updatedAdmins });
   };
 
   // REMOVE PLAYER FROM LEAGUE
@@ -1706,8 +1723,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         updatePendingInvites,
         getPendingInviteUsers,
         removePendingInvite,
-        assignLeagueAdmin,
-        revokeLeagueAdmin,
+        assignCompetitionAdmin,
+        revokeCompetitionAdmin,
         fetchUserPendingRequests,
         withdrawJoinRequest,
         sendChatMessage,
