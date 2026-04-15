@@ -31,8 +31,14 @@ const AssignAdmin = () => {
   });
 
   const { currentUser } = useContext(UserContext);
-  const { assignLeagueAdmin, revokeLeagueAdmin, fetchCompetitionById } =
-    useContext(LeagueContext);
+  const {
+    // @ts-expect-error - LeagueContext type definition is incomplete
+    revokeCompetitionAdmin,
+    // @ts-expect-error - LeagueContext type definition is incomplete
+    assignCompetitionAdmin,
+    // @ts-expect-error - LeagueContext type definition is incomplete
+    fetchCompetitionById,
+  } = useContext(LeagueContext);
 
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
     null,
@@ -65,15 +71,14 @@ const AssignAdmin = () => {
   };
 
   const handleAssign = async (user: ScoreboardProfile) => {
-    await assignLeagueAdmin(competitionId, user);
+    await assignCompetitionAdmin({ competitionId, collectionName, user });
     fetchCompetition();
   };
 
   const handleRevoke = async (userId: string) => {
-    await revokeLeagueAdmin(competitionId, userId);
+    await revokeCompetitionAdmin({ competitionId, collectionName, userId });
     fetchCompetition();
   };
-
   const goToProfile = (userId: string) => {
     navigation.navigate("UserProfile", { userId });
   };
