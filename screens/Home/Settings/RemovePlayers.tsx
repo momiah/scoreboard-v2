@@ -25,7 +25,8 @@ const RemovePlayers = () => {
     collectionName: string;
   };
 
-  const { fetchCompetitionById, removePlayerFromLeague } =
+  // @ts-expect-error - LeagueContext type definition is incomplete
+  const { fetchCompetitionById, removePlayerFromCompetition } =
     useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
 
@@ -169,16 +170,22 @@ const RemovePlayers = () => {
           setSelectedPlayer(null);
         }}
         onConfirm={async (reason: string) => {
-          await removePlayerFromLeague(
+          await removePlayerFromCompetition({
             competitionId,
-            selectedPlayer?.userId,
+            collectionName,
+            userId: selectedPlayer?.userId,
             reason,
-          );
+          });
           const updated = await fetchCompetitionById({
             competitionId,
             collectionName,
           });
-          setCompetition(updated);
+          // missing normalization 👇
+          const normalizedUpdated = normalizeCompetitionData({
+            rawData: updated,
+            competitionType,
+          }) as NormalizedCompetition;
+          setCompetition(normalizedUpdated);
           setModalVisible(false);
           setSelectedPlayer(null);
         }}
