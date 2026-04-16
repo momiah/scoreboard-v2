@@ -1705,6 +1705,21 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const deleteCompetitionFixtures = async (
+    tournamentId: string,
+  ): Promise<void> => {
+    const tournamentRef = doc(db, COLLECTION_NAMES.tournaments, tournamentId);
+
+    await updateDoc(tournamentRef, {
+      fixtures: [],
+      fixturesGenerated: false,
+      numberOfGames: 0,
+      gamesCompleted: 0,
+    });
+
+    console.log("Tournament fixtures deleted successfully!");
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -1743,6 +1758,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         updateTournamentGame,
         fetchTournamentParticipants,
         fetchTournaments,
+        deleteCompetitionFixtures,
 
         // League State Management
         upcomingLeagues,

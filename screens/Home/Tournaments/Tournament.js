@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useState, useContext, useCallback } from "react";
 import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { COMPETITION_TYPES, COLLECTION_NAMES, prizeTypes } from "@shared";
 import styled from "styled-components/native";
@@ -45,9 +46,11 @@ const Tournament = () => {
   const [tournamentNotFound, setTournamentNotFound] = useState(false);
   const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (tournamentId) {
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        if (!tournamentId) return;
+        setLoading(true);
         try {
           const fetchedTournament = await fetchCompetitionById({
             competitionId: tournamentId,
@@ -60,15 +63,15 @@ const Tournament = () => {
             await getUserRole(fetchedTournament);
           }
         } catch (error) {
-          console.error("Error fetching league data:", error);
+          console.error("Error fetching tournament data:", error);
         } finally {
           setLoading(false);
         }
-      }
-    };
+      };
 
-    fetchData();
-  }, [tournamentId, currentUser]);
+      fetchData();
+    }, [tournamentId, currentUser]),
+  );
 
   const getUserRole = async (tournamentData) => {
     try {
