@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useCallback, useState, useContext } from "react";
 import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,9 +45,11 @@ const League = () => {
   const [leagueNotFound, setLeagueNotFound] = useState(false);
   const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (leagueId) {
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        if (!leagueId) return;
+        setLoading(true);
         try {
           const fetchedLeague = await fetchCompetitionById({
             competitionId: leagueId,
@@ -63,11 +66,11 @@ const League = () => {
         } finally {
           setLoading(false);
         }
-      }
-    };
+      };
 
-    fetchData();
-  }, [leagueId, currentUser]);
+      fetchData();
+    }, [leagueId, currentUser]),
+  );
 
   const getUserRole = async (leagueData) => {
     try {

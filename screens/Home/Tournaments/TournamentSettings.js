@@ -21,7 +21,8 @@ const TournamentSettings = () => {
   const route = useRoute();
   const { tournamentId, tournamentById } = route.params;
   const { currentUser } = useContext(UserContext);
-  const { deleteCompetition } = useContext(LeagueContext);
+  const { deleteCompetition, deleteCompetitionFixtures } =
+    useContext(LeagueContext);
   const navigation = useNavigation();
   const [deleting, setDeleting] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
@@ -51,6 +52,12 @@ const TournamentSettings = () => {
       action: "BulkFixturesPublisher",
     },
     {
+      label: "Delete Fixtures",
+      icon: "layers-outline",
+      action: "DeleteFixtures",
+      color: "red",
+    },
+    {
       label: "Delete Tournament",
       icon: "trash-outline",
       action: "DeleteTournament",
@@ -60,23 +67,29 @@ const TournamentSettings = () => {
 
   const isOwner =
     tournamentById?.tournamentOwner.userId === currentUser?.userId;
+
   const filteredMenuOptions = isOwner
     ? menuOptions
     : menuOptions.filter(
         (option) =>
           option.action !== "RemovePlayers" &&
-          option.action !== "DeleteTournament",
+          option.action !== "DeleteTournament" &&
+          option.action !== "DeleteFixtures",
       );
 
-  const hasGamesPlayed = () => {
+  const hasApprovedGames = () => {
     const fixtures = tournamentById?.fixtures ?? [];
     return fixtures.some((fixture) =>
-      fixture.games?.some((game) => game.approvalStatus === "approved"),
+      fixture.games?.some(
+        (game) =>
+          game.approvalStatus === "Approved" ||
+          game.approvalStatus === "approved",
+      ),
     );
   };
 
   const handleDeletePress = () => {
-    if (hasGamesPlayed()) {
+    if (hasApprovedGames()) {
       Alert.alert(
         "Cannot Delete Tournament",
         "This tournament cannot be deleted as games have already been played.",
@@ -102,6 +115,40 @@ const TournamentSettings = () => {
     );
   };
 
+  const handleDeleteFixturesPress = () => {
+    const fixtures = tournamentById?.fixtures ?? [];
+    if (!tournamentById?.fixturesGenerated || fixtures.length === 0) {
+      Alert.alert("No Fixtures", "There are no fixtures to delete.");
+      return;
+    }
+
+    if (hasApprovedGames()) {
+      Alert.alert(
+        "Cannot Delete Fixtures",
+        "Fixtures cannot be deleted as one or more games have already been reported.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Delete Fixtures",
+      `Are you sure you want to delete all fixtures for "${tournamentById?.tournamentName}"? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await deleteCompetitionFixtures(tournamentId);
+            Alert.alert("Success", "Fixtures have been deleted successfully.", [
+              { text: "OK", onPress: () => navigation.goBack() },
+            ]);
+          },
+        },
+      ],
+    );
+  };
+
   const handleConfirmDelete = async () => {
     if (!password.trim()) {
       setPasswordError("Please enter your password");
@@ -117,12 +164,16 @@ const TournamentSettings = () => {
       setDeleting(true);
       setPasswordError("");
 
-      // Verifies password without relying on auth.currentUser hydration
       await signInWithEmailAndPassword(auth, currentUser.email, password);
-
       await deleteCompetition(COLLECTION_NAMES.tournaments, tournamentId);
       setPasswordModalVisible(false);
-      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      Alert.alert("Success", "Tournament has been deleted successfully.", [
+        {
+          text: "OK",
+          onPress: () =>
+            navigation.reset({ index: 0, routes: [{ name: "Home" }] }),
+        },
+      ]);
     } catch (error) {
       if (
         error.code === "auth/wrong-password" ||
@@ -130,8 +181,8 @@ const TournamentSettings = () => {
       ) {
         setPasswordError("Incorrect password. Please try again.");
       } else {
-        Alert.alert("Error", "Failed to delete league. Please try again.");
-        console.error("Delete league error:", error);
+        Alert.alert("Error", "Failed to delete tournament. Please try again.");
+        console.error("Delete tournament error:", error);
       }
     } finally {
       setDeleting(false);
@@ -141,6 +192,10 @@ const TournamentSettings = () => {
   const handlePress = (action) => {
     if (action === "DeleteTournament") {
       handleDeletePress();
+      return;
+    }
+    if (action === "DeleteFixtures") {
+      handleDeleteFixturesPress();
       return;
     }
     navigation.navigate(action, {
@@ -231,7 +286,6 @@ const TournamentSettings = () => {
     </Container>
   );
 };
-
 const styles = StyleSheet.create({
   blurContainer: {
     flex: 1,

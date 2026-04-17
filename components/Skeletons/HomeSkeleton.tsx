@@ -1,68 +1,64 @@
 import React from "react";
 import styled from "styled-components/native";
 import { View, StyleSheet, Dimensions } from "react-native";
-import { Skeleton } from "moti/skeleton";
+import { SkeletonPulse, SkeletonBlock } from "./skeletonConfig";
 
 const { width: screenWidth } = Dimensions.get("window");
-const colors = ["rgb(5, 26, 51)", "rgb(12, 68, 133)", "rgb(5, 26, 51)"];
 
 export const HorizontalLeagueCarouselSkeleton = () => {
   const itemWidth = screenWidth - 80;
   const spacing = 20;
   return (
-    <View style={styles.container}>
-      <View style={styles.sectionContainer}>
+    <SkeletonPulse>
+      <View style={styles.container}>
         <View style={styles.horizontalList}>
           {Array.from({ length: 5 }).map((_, index) => (
             <View key={index} style={{ marginRight: spacing }}>
-              <Skeleton
-                width={itemWidth}
-                height={200}
-                radius={8}
-                colors={colors}
-              />
+              <SkeletonBlock width={itemWidth} height={200} radius={8} />
             </View>
           ))}
         </View>
       </View>
-    </View>
+    </SkeletonPulse>
   );
 };
 
 export const TopPlayersSkeleton = () => {
   return (
-    <View style={styles.verticalList}>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <View key={index} style={styles.playerItem}>
-          <View style={styles.playerInfo}>
-            <Skeleton width={"100%"} height={65} radius={10} colors={colors} />
+    <SkeletonPulse>
+      <View style={styles.verticalList}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <View key={index} style={styles.playerItem}>
+            <View style={styles.playerInfo}>
+              <SkeletonBlock width={"100%"} height={65} radius={10} />
+            </View>
           </View>
-        </View>
-      ))}
-    </View>
+        ))}
+      </View>
+    </SkeletonPulse>
   );
 };
 
 export const TournamentGridSkeleton = () => {
   return (
-    <SkeletonGridContainer>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <SkeletonTournamentContainer key={index}>
-          {/* Image area */}
-          <Skeleton width="100%" height={120} radius={0} colors={colors} />
-          {/* Info area */}
-          <SkeletonInfoContainer>
-            <Skeleton width="80%" height={16} radius={4} colors={colors} />
-            <Skeleton width="60%" height={13} radius={4} colors={colors} />
-            <Skeleton width="50%" height={13} radius={4} colors={colors} />
-            <SkeletonTagRow>
-              <Skeleton width={60} height={22} radius={4} colors={colors} />
-              <Skeleton width={60} height={22} radius={4} colors={colors} />
-            </SkeletonTagRow>
-          </SkeletonInfoContainer>
-        </SkeletonTournamentContainer>
-      ))}
-    </SkeletonGridContainer>
+    <SkeletonPulse>
+      <SkeletonGridContainer>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <SkeletonTournamentContainer key={index}>
+            <SkeletonBlock width="100%" height={120} />
+            <SkeletonInfoContainer>
+              <SkeletonBlock width="80%" height={16} radius={4} />
+              <SkeletonBlock width="60%" height={13} radius={4} />
+              <SkeletonBlock width="50%" height={13} radius={4} />
+              <SkeletonTagRow>
+                <SkeletonBlock width={60} height={22} radius={4} />
+                <SkeletonBlock width={60} height={22} radius={4} />
+              </SkeletonTagRow>
+            </SkeletonInfoContainer>
+          </SkeletonTournamentContainer>
+        ))}
+      </SkeletonGridContainer>
+    </SkeletonPulse>
   );
 };
 
@@ -100,7 +96,6 @@ const styles = StyleSheet.create({
     backgroundColor: " rgb(3, 16, 31)",
     flex: 1,
   },
-
   horizontalList: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -113,5 +108,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginTop: 10,
+  },
+  playerInfo: {
+    flex: 1,
   },
 });

@@ -9,7 +9,6 @@ import {
   TextSkeleton,
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { COMPETITION_TYPES } from "@shared";
-import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 
 const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
   const prizes = useMemo(() => {
@@ -42,7 +41,6 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
         <CircleSkeleton
           show={showSkeleton}
           size={60}
-          config={SKELETON_THEMES.dark}
         >
           <ImageWrapper>
             <PrizeImage
@@ -59,7 +57,6 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
           show={showSkeleton}
           height={14}
           width={30}
-          config={SKELETON_THEMES.dark}
         >
           {imageLoaded && !showSkeleton ? (
             <PrizeText>{statValue} CP</PrizeText>

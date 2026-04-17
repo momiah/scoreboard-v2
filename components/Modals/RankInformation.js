@@ -19,7 +19,6 @@ import { BlurView } from "expo-blur";
 import { AntDesign } from "@expo/vector-icons";
 import { ranks } from "../../rankingMedals/ranking/ranks";
 import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
-import { SKELETON_THEMES } from "../../components/Skeletons/skeletonConfig";
 import { GameContext } from "../../context/GameContext";
 
 const screenWidth = Dimensions.get("window").width;
@@ -97,7 +96,6 @@ export const RankInformation = ({ visible, onClose }) => {
                 <CircleSkeleton
                   show={loading}
                   size={isLastGroup && isLastItem ? LAST_ICON_SIZE : ICON_SIZE}
-                  config={SKELETON_THEMES.dark}
                 >
                   {shouldLoadImages && (
                     <RankImage
