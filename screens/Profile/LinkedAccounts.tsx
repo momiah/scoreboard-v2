@@ -23,7 +23,9 @@ import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60;
+// Screen padding: same intent as zinx/social-auth-google-and-fb-android — extra top offset on
+// Android only; iOS uses 0 here (nav / SafeArea). Safe to replace this file across branches.
+const LINKED_ACCOUNTS_PADDING_TOP = Platform.OS === "android" ? 60 : 0;
 
 const LinkedAccounts = () => {
     const navigation = useNavigation();
@@ -87,10 +89,33 @@ const LinkedAccounts = () => {
             await loadExistingLinkedAccounts();
         } catch (error) {
             console.error("Error linking account:", error);
-            if ((error as { code?: string }).code === "auth/credential-already-in-use") {
+            const err = error as { code?: string; message?: string };
+            if (err.code === "auth/credential-already-in-use") {
                 Alert.alert("Error", "This account is already linked to another user.");
+            } else if (err.code === "auth/requires-recent-login") {
+                Alert.alert(
+                    "Sign in again",
+                    "For security, sign out and sign back in, then try linking Facebook again.",
+                );
+            } else if (err.code === "auth/provider-already-linked") {
+                Alert.alert("Already linked", "Facebook is already linked to this account.");
+            } else if (err.code === "auth/invalid-credential") {
+                Alert.alert(
+                    "Facebook login incomplete",
+                    "Facebook did not return a valid session. Please try again.",
+                );
+            } else if (err.message === "FACEBOOK_LOGIN_CANCELLED") {
+                // already alerted in linkWithFacebook
+            } else if (err.message === "FACEBOOK_NO_AUTH_TOKEN") {
+                Alert.alert(
+                    "Facebook",
+                    "Could not read your Facebook login after returning to the app. Please try again.",
+                );
             } else {
-                Alert.alert("Error", "Error linking account. Please try again.");
+                Alert.alert(
+                    "Error",
+                    err.message || "Error linking account. Please try again.",
+                );
             }
         } finally {
             setIsLinking(false);
@@ -98,7 +123,9 @@ const LinkedAccounts = () => {
     };
 
     const linkWithGoogle = async () => {
-        await GoogleSignin.hasPlayServices();
+        if (Platform.OS === "android") {
+            await GoogleSignin.hasPlayServices();
+        }
         await GoogleSignin.signOut();
         const response = await GoogleSignin.signIn();
         if (response.type !== "success") {
@@ -116,6 +143,9 @@ const LinkedAccounts = () => {
     };
 
     const linkWithFacebook = async () => {
+        // Clear any existing FB session so linking always runs a fresh login (matches Google signOut pattern).
+        LoginManager.logOut();
+
         let credential;
 
         if (Platform.OS === "ios") {
@@ -126,10 +156,25 @@ const LinkedAccounts = () => {
                 "limited",
                 hashedNonce,
             );
-            if (result.isCancelled) return;
+            if (result.isCancelled) {
+                Alert.alert("Facebook", "Facebook login was cancelled.");
+                throw new Error("FACEBOOK_LOGIN_CANCELLED");
+            }
 
-            const data = await AuthenticationToken.getAuthenticationTokenIOS();
-            if (!data) throw new Error("No auth token");
+            // After returning from the Facebook app/Safari, the auth token is sometimes not ready on first read (device > simulator).
+            let data = null as Awaited<
+                ReturnType<typeof AuthenticationToken.getAuthenticationTokenIOS>
+            >;
+            for (let attempt = 0; attempt < 4; attempt++) {
+                if (attempt > 0) {
+                    await new Promise((r) => setTimeout(r, 300 * attempt));
+                }
+                data = await AuthenticationToken.getAuthenticationTokenIOS();
+                if (data?.authenticationToken) break;
+            }
+            if (!data?.authenticationToken) {
+                throw new Error("FACEBOOK_NO_AUTH_TOKEN");
+            }
 
             const provider = new OAuthProvider("facebook.com");
             credential = provider.credential({
@@ -138,10 +183,21 @@ const LinkedAccounts = () => {
             });
         } else {
             const result = await LoginManager.logInWithPermissions(["public_profile", "email"]);
-            if (result.isCancelled) return;
+            if (result.isCancelled) {
+                Alert.alert("Facebook", "Facebook login was cancelled.");
+                throw new Error("FACEBOOK_LOGIN_CANCELLED");
+            }
 
-            const data = await AccessToken.getCurrentAccessToken();
-            if (!data) throw new Error("No access token");
+            let data = await AccessToken.getCurrentAccessToken();
+            if (!data?.accessToken) {
+                for (let attempt = 1; attempt < 4 && !data?.accessToken; attempt++) {
+                    await new Promise((r) => setTimeout(r, 300 * attempt));
+                    data = await AccessToken.getCurrentAccessToken();
+                }
+            }
+            if (!data?.accessToken) {
+                throw new Error("FACEBOOK_NO_AUTH_TOKEN");
+            }
 
             credential = FacebookAuthProvider.credential(data.accessToken);
         }
@@ -200,7 +256,7 @@ const Container = styled.View`
     flex: 1;
     background-color: rgb(3, 16, 31);
     padding: 20px;
-    padding-top: ${platformAdjustedPaddingTop}px;
+    padding-top: ${LINKED_ACCOUNTS_PADDING_TOP}px;
 `;
 
 const Header = styled.View({
