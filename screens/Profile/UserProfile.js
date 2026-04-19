@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Platform,
   Image,
 } from "react-native";
 import { UserContext } from "../../context/UserContext";
@@ -35,8 +36,19 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
-const screenAdjustedStatFontSize = screenWidth <= 400 ? 15 : 18;
+// Breakpoint aligned with zinx/social-auth-google-and-fb-android (slightly wider “small” width).
+const screenAdjustedStatFontSize = screenWidth <= 430 ? 15 : 18;
 const AVATAR_SIZE = screenWidth <= 400 ? 70 : 80;
+
+// Toolbar top: ticket was iOS-only (“too much top padding”); SafeAreaView already insets on iOS.
+// Android keeps marginTop 50 from profile/tabs styling branch (see a7e0141 / d6fdc6).
+const PROFILE_TOOLBAR_MARGIN_TOP = Platform.OS === "ios" ? 8 : 50;
+// Overview top padding: trim on iOS only; Android unchanged at 20.
+const OVERVIEW_PADDING_TOP = Platform.OS === "ios" ? 12 : 20;
+const OVERVIEW_PADDING_HORIZONTAL = 20;
+const OVERVIEW_PADDING_BOTTOM = 20;
+// When viewing another user’s profile there is no refresh/toolbar row; extra offset on Android only.
+const OVERVIEW_MARGIN_TOP_WHEN_VIEWING_OTHER = Platform.OS === "ios" ? 0 : 30;
 
 const UserProfile = () => {
   const route = useRoute();
@@ -253,7 +265,7 @@ const UserProfile = () => {
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
-                marginTop: 20,
+                marginTop: PROFILE_TOOLBAR_MARGIN_TOP,
               }}
             >
               <TouchableOpacity
@@ -280,7 +292,7 @@ const UserProfile = () => {
             </View>
           )}
 
-          <Overview>
+          <Overview $isOwnProfile={isOwnProfile}>
             {profile?.headline ? (
               <View style={{ flex: 1 }}>
                 <PlayerDetail>
@@ -452,15 +464,19 @@ const LoadingContainer = styled.View({
   backgroundColor: "rgb(3, 16, 31)",
 });
 
-const Overview = styled.View({
-  paddingTop: 20,
-  paddingRight: 20,
-  paddingBottom: 20,
-  paddingLeft: 20,
+const Overview = styled.View(({ $isOwnProfile }) => ({
+  marginTop:
+    $isOwnProfile === false
+      ? OVERVIEW_MARGIN_TOP_WHEN_VIEWING_OTHER
+      : undefined,
+  paddingTop: OVERVIEW_PADDING_TOP,
+  paddingRight: OVERVIEW_PADDING_HORIZONTAL,
+  paddingBottom: OVERVIEW_PADDING_BOTTOM,
+  paddingLeft: OVERVIEW_PADDING_HORIZONTAL,
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-});
+}));
 
 const PlayerDetail = styled.View({
   flexDirection: "row",
@@ -515,11 +531,6 @@ const CCRankContainer = styled.View({
   alignItems: "center",
   flexDirection: "row",
   alignSelf: "flex-start",
-});
-
-const XpText = styled.Text({
-  color: "#aaa",
-  fontSize: screenWidth <= 400 ? 13 : 15,
 });
 
 const MedalContainer = styled.View({
