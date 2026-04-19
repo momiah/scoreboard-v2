@@ -36,6 +36,7 @@ import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails
 import AddCourtModal from "./AddCourtModal";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
 import OptionSelector from "../OptionSelector";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -194,6 +195,14 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess }) => {
         data: newTournament,
         competitionType: COMPETITION_TYPES.TOURNAMENT,
       });
+
+      AppEventsLogger.logEvent("CreatedCompetition", {
+        competition_type: "tournament",
+        tournament_type: data.tournamentType,
+        privacy: data.privacy,
+        max_players: data.maxPlayers,
+      });
+
       setTournamentCreationLoading(false);
       setModalVisible(false);
       if (onSuccess) {

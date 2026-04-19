@@ -1,4 +1,3 @@
-
 import { Platform } from "react-native";
 import { sha256 } from "js-sha256";
 import React, { useState, useEffect, useContext } from "react";
@@ -14,12 +13,7 @@ import {
   Alert,
   Keyboard,
 } from "react-native";
-import {
-  CourtChampLogo,
-  GoogleLogo,
-  FacebookLogo,
-  AppleLogo,
-} from "../../assets";
+import { CourtChampLogo, GoogleLogo, FacebookLogo } from "../../assets";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -29,9 +23,14 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider,
   OAuthProvider,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
 } from "firebase/auth";
-import { LoginManager, AccessToken, AuthenticationToken } from "react-native-fbsdk-next";
+import {
+  LoginManager,
+  AccessToken,
+  AuthenticationToken,
+  AppEventsLogger,
+} from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
@@ -105,12 +104,10 @@ export default function Login() {
           email,
           password,
         );
-        console.log("Logged in successfully");
-        // setFirebaseError("");
         const user = userCredential.user;
 
         if (!user.emailVerified) {
-          await auth.signOut(); // Sign them out immediately
+          await auth.signOut();
           Alert.alert(
             "Verify Email",
             "Please verify your email address before logging in.",
@@ -118,12 +115,11 @@ export default function Login() {
           return;
         }
 
-        const token = await user.getIdToken(); // Get the Firebase Auth ID token
+        const token = await user.getIdToken();
         const userId = user.uid;
 
         await AsyncStorage.setItem("userToken", token);
         await AsyncStorage.setItem("userId", userId);
-
         await registerForPushNotificationsAsync(userId);
 
         const profile = await getUserById(userId);
@@ -132,6 +128,10 @@ export default function Login() {
         } else {
           <Text>Unable to sign in...</Text>;
         }
+
+        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
+          [AppEventsLogger.AppEventParams.RegistrationMethod]: "email",
+        });
 
         navigation.reset({
           index: 0,
@@ -149,9 +149,11 @@ export default function Login() {
         };
         const errorMessage = messages[error.code] || "Login failed.";
         Alert.alert("Error", errorMessage);
-        // setFirebaseError(error.message || "Login failed.");
-        // Alert.alert(`Error", "Login failed. ${error.message}`);
-        console.log("Login Error: ", error.message);
+
+        AppEventsLogger.logEvent("LoginFailed", {
+          reason: error.code || error.message,
+          method: "email",
+        });
       }
     }
   };
@@ -202,7 +204,10 @@ export default function Login() {
       );
       const email = response.data.user.email;
       const existingMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (existingMethods.length > 0 && !existingMethods.includes("google.com")) {
+      if (
+        existingMethods.length > 0 &&
+        !existingMethods.includes("google.com")
+      ) {
         Alert.alert(
           "Account Already Exists",
           "An account with this email already exists. Please log in with your original method and connect Google from your profile.",
@@ -211,7 +216,6 @@ export default function Login() {
       }
 
       const userCredential = await signInWithCredential(auth, googleCredential);
-
       const user = userCredential.user;
       const token = await user.getIdToken();
       const userId = user.uid;
@@ -224,6 +228,11 @@ export default function Login() {
 
       if (profile) {
         setCurrentUser(profile);
+
+        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
+          [AppEventsLogger.AppEventParams.RegistrationMethod]: "google",
+        });
+
         navigation.reset({
           index: 0,
           routes: [{ name: "Home" }],
@@ -257,14 +266,18 @@ export default function Login() {
       }
     }
   };
+
   const handleFacebookLogin = async () => {
     try {
       let credential;
       if (Platform.OS === "ios") {
-
         const rawNonce = Math.random().toString(36).substring(2);
         const hashedNonce = sha256(rawNonce);
-        const result = await LoginManager.logInWithPermissions(["public_profile", "email"], "limited", hashedNonce)
+        const result = await LoginManager.logInWithPermissions(
+          ["public_profile", "email"],
+          "limited",
+          hashedNonce,
+        );
         if (result.isCancelled) {
           Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
           return;
@@ -277,18 +290,20 @@ export default function Login() {
           rawNonce: rawNonce,
         });
       } else {
-        const result = await LoginManager.logInWithPermissions(["public_profile", "email"]);
+        const result = await LoginManager.logInWithPermissions([
+          "public_profile",
+          "email",
+        ]);
         if (result.isCancelled) {
           Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
           return;
         }
         const data = await AccessToken.getCurrentAccessToken();
         if (!data) throw new Error("No access token");
-
         credential = FacebookAuthProvider.credential(data.accessToken);
       }
-      const userCredential = await signInWithCredential(auth, credential);
 
+      const userCredential = await signInWithCredential(auth, credential);
       const user = userCredential.user;
       const token = await user.getIdToken();
       const userId = user.uid;
@@ -298,26 +313,30 @@ export default function Login() {
       await registerForPushNotificationsAsync(userId);
 
       const profile = await getUserById(userId);
-      console.log("Facebook Profile:", profile);
 
       if (profile) {
         setCurrentUser(profile);
+
+        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
+          [AppEventsLogger.AppEventParams.RegistrationMethod]: "facebook",
+        });
+
         navigation.reset({ index: 0, routes: [{ name: "Home" }] });
       } else {
         const [firstName, ...rest] = (user.displayName || "").split(" ");
-
         navigation.reset({
           index: 0,
-          routes: [{
-            name: "Signup",
-            params: {
-
-              userName: firstName,
-              userLastName: rest.join(" "),
-              userEmail: user.email,
-              userId: userId,
+          routes: [
+            {
+              name: "Signup",
+              params: {
+                userName: firstName,
+                userLastName: rest.join(" "),
+                userEmail: user.email,
+                userId: userId,
+              },
             },
-          }],
+          ],
         });
       }
     } catch (error) {

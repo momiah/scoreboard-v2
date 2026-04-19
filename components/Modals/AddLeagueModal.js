@@ -35,6 +35,7 @@ import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails";
 import AddCourtModal from "./AddCourtModal";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -191,6 +192,14 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
         data: newLeague,
         competitionType: COMPETITION_TYPES.LEAGUE,
       });
+
+      AppEventsLogger.logEvent("CreatedCompetition", {
+        competition_type: "league",
+        league_type: data.leagueType,
+        privacy: data.privacy,
+        max_players: data.maxPlayers,
+      });
+
       setLeagueCreationLoading(false);
       setModalVisible(false);
       if (onSuccess) {
