@@ -65,6 +65,15 @@
     },
     "plugins": [
       [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1264178202106496",
+          "displayName": "Court Champs",
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": true
+        }
+      ],
+      [
         "react-native-google-mobile-ads",
         {
           "iosAppId": "ca-app-pub-4901008825984109~3153352304",

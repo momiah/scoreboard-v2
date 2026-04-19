@@ -28,7 +28,7 @@ import { db } from "../services/firebase.config";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
-// import { generateUniqueUserId } from "../helpers/generateUniqueUserId";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
   ccImageEndpoint,
@@ -39,7 +39,6 @@ import {
   notificationSchema,
   CollectionName,
   PlayingTime,
-  CompetitionLocation,
   Court,
   PendingInvites,
   CompetitionAdmins,
@@ -577,6 +576,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         pendingInvites: updatedPending,
       });
 
+      AppEventsLogger.logEvent("JoinedCompetition", {
+        competition_type:
+          collectionName === "leagues" ? "league" : "tournament",
+        method: "invite",
+      });
+
       // Update user's notification
       const notificationsRef = collection(db, "users", userId, "notifications");
       const notificationDocRef = doc(notificationsRef, notificationId);
@@ -696,6 +701,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
         await sendNotification(payload);
 
+        AppEventsLogger.logEvent("RequestedToJoin", {
+          competition_type:
+            collectionName === COLLECTION_NAMES.leagues
+              ? "league"
+              : "tournament",
+        });
+
         return true;
       } else {
         console.log("Competition does not exist");
@@ -762,6 +774,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       await updateDoc(competitionRef, {
         [participantsKey]: [...competitionParticipants, newParticipantProfile],
         pendingRequests: updatedPending,
+      });
+
+      AppEventsLogger.logEvent("JoinedCompetition", {
+        competition_type:
+          collectionName === "leagues" ? "league" : "tournament",
+        method: "request",
       });
 
       // Update notification
@@ -1044,10 +1062,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       });
 
       console.log("Game approved successfully!");
+
+      AppEventsLogger.logEvent("ApprovedGame", {
+        competition_type: config.isLeague ? "league" : "tournament",
+        is_fully_approved: isFullyApproved ? "true" : "false",
+      });
     } catch (error) {
       console.error("Error approving game:", error);
     }
   };
+
   const declineGame = async ({
     gameId,
     competitionId,
@@ -1210,6 +1234,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       });
 
       console.log("Game declined successfully!");
+
+      AppEventsLogger.logEvent("DeclinedGame", {
+        competition_type: config.isLeague ? "league" : "tournament",
+        is_fully_declined: isFullyDeclined ? "true" : "false",
+      });
     } catch (error) {
       console.error("Error declining game:", error);
     }
@@ -1587,6 +1616,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       }
 
       console.log("Fixtures successfully written to database");
+      AppEventsLogger.logEvent("GeneratedFixtures", {
+        number_of_games: numberOfGames,
+        number_of_courts: numberOfCourts,
+        generation_type: generationType,
+        mode,
+      });
       return { success: true };
     } catch (error) {
       console.error("Error writing fixtures to database:", error);
