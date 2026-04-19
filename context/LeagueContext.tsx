@@ -25,6 +25,7 @@ import {
 import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
+import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
 // import { generateUniqueUserId } from "../helpers/generateUniqueUserId";
@@ -38,7 +39,8 @@ import {
   notificationSchema,
   CollectionName,
   PlayingTime,
-  CourtLocation,
+  CompetitionLocation,
+  Court,
   PendingInvites,
   CompetitionAdmins,
   PendingRequests,
@@ -62,7 +64,7 @@ import {
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 
-const LeagueContext = createContext({});
+const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
 // ============================================
 // HELPER FUNCTIONS (for game approval)
@@ -198,10 +200,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchLeagues = (options = {}) =>
-    fetchCompetitions({ competition: "leagues", ...options });
+    fetchCompetitions({ competition: "leagues", ...options }) as Promise<
+      League[]
+    >;
 
   const fetchTournaments = (options = {}) =>
-    fetchCompetitions({ competition: "tournaments", ...options });
+    fetchCompetitions({ competition: "tournaments", ...options }) as Promise<
+      Tournament[]
+    >;
 
   const addPlaytime = async ({
     playtime,
@@ -399,7 +405,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }: {
     competitionId: string;
     collectionName: CollectionName;
-  }) => {
+  }): Promise<League | Tournament | null> => {
     try {
       const competitionDoc = await getDoc(
         doc(db, collectionName, competitionId),
@@ -424,7 +430,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         setLeagueById(competitionData as League);
       }
 
-      return competitionData;
+      return competitionData as unknown as League | Tournament;
     } catch (error) {
       console.error("Error fetching competition:", error);
       return null;
@@ -462,10 +468,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
   const getCourts = async () => {
     const snapshot = await getDocs(collection(db, "courts"));
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Court[];
   };
 
-  const addCourt = async (courtData: CourtLocation) => {
+  const addCourt = async (courtData: Court) => {
     try {
       const courtId = generateCourtId(courtData);
       await setDoc(doc(db, "courts", courtId), {

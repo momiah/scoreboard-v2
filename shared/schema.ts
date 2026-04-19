@@ -6,8 +6,9 @@ import {
   League,
   Tournament,
   CollectionName,
-  CourtLocation,
+  CompetitionLocation,
   ApprovalStatus,
+  Court,
 } from "./types";
 import moment from "moment";
 
@@ -94,12 +95,6 @@ export const locationSchema: Location = {
   countryCode: "",
   postCode: "",
   address: "",
-};
-
-const courtLocationSchema: CourtLocation = {
-  courtName: "",
-  courtId: "",
-  ...locationSchema,
 };
 
 export const gameSchema = {
@@ -199,6 +194,25 @@ export const chatMessageSchema = {
   },
 };
 
+const competitionLocationSchema: CompetitionLocation = {
+  courtName: "",
+  courtId: "",
+  ...locationSchema,
+};
+
+export const courtSchema: Court = {
+  courtName: "",
+  courtDescription: "",
+  courtImage: "",
+  location: locationSchema,
+  numberOfLeagues: 0,
+  numberOfCourts: 0,
+  numberOfTeams: 0,
+  numberOfPlayers: 0,
+  numberOfGames: 0,
+  numberOfTournaments: 0,
+};
+
 export const leagueSchema: League = {
   leagueParticipants: [],
   leagueTeams: [],
@@ -218,7 +232,7 @@ export const leagueSchema: League = {
   leagueImage: "",
   leagueName: "",
   leagueDescription: "",
-  location: courtLocationSchema,
+  location: competitionLocationSchema,
   countryCode: "",
   createdAt: new Date(),
   startDate: "",
@@ -255,7 +269,7 @@ export const tournamentSchema: Tournament = {
   tournamentName: "",
   tournamentDescription: "",
   fixturesGenerated: false,
-  location: courtLocationSchema,
+  location: competitionLocationSchema,
   countryCode: "",
   createdAt: new Date(),
   startDate: "",
@@ -306,19 +320,6 @@ export const fixturesSchema = {
       ],
     },
   ],
-};
-
-export const courtSchema = {
-  courtName: "",
-  courtDescription: "",
-  courtImage: "",
-  location: locationSchema,
-  numberOfLeagues: 0,
-  numberOfCourts: 0,
-  numberOfTeams: 0,
-  numberOfPlayers: 0,
-  numberOfGames: 0,
-  numberOfTournaments: 0,
 };
 
 export const notificationTypes = {
