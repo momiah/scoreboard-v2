@@ -68,6 +68,7 @@
         "react-native-fbsdk-next",
         {
           "appID": "1264178202106496",
+          "clientToken": "YOUR_FACEBOOK_CLIENT_TOKEN",
           "displayName": "Court Champs",
           "advertiserIDCollectionEnabled": false,
           "autoLogAppEventsEnabled": true
@@ -91,6 +92,16 @@
         {
           "icon": "./assets/court-champ-logo-icon-w-bg.png",
           "color": "#FF231F7C"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "35.0.0"
+          }
         }
       ]
     ],
