@@ -48,13 +48,36 @@ const UserProvider = ({ children }) => {
   const [chatSummaries, setChatSummaries] = useState([]);
 
   useEffect(() => {
+    let unsubscribe;
+    let isMounted = true;
+
     const loadInitialUser = async () => {
       try {
         const userId = await AsyncStorage.getItem("userId");
-        if (userId) {
-          const userData = await getUserById(userId);
-          setCurrentUser(userData);
-        }
+        if (!userId) return;
+
+        const userData = await getUserById(userId);
+        setCurrentUser(userData);
+
+        const userUid = userData?.userId;
+        if (!userUid) return;
+
+        const chatsRef = collection(db, "users", userUid, "chats");
+
+        unsubscribe = onSnapshot(chatsRef, (snapshot) => {
+          if (!isMounted) return;
+
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          data.sort(
+            (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+          );
+
+          setChatSummaries(data);
+        });
       } catch (error) {
         console.error("Initial user load failed:", error);
       }
@@ -97,21 +120,16 @@ const UserProvider = ({ children }) => {
       isMounted = false;
       if (unsubscribe) unsubscribe();
     };
-  }, [currentUser?.userId]);
+  }, []);
 
   useEffect(() => {
     let unsubscribe;
 
     const setupListener = async () => {
       try {
-        // const userId = await AsyncStorage.getItem("userId");
         const userUid = currentUser?.userId;
+        if (!userUid) return;
 
-        if (!currentUser) {
-          return;
-        }
-
-        // Create a reference to the user's notifications collection
         const notificationsRef = collection(
           db,
           "users",
@@ -119,7 +137,6 @@ const UserProvider = ({ children }) => {
           "notifications",
         );
 
-        // Set up the snapshot listener
         unsubscribe = onSnapshot(
           notificationsRef,
           (snapshot) => {
@@ -128,7 +145,6 @@ const UserProvider = ({ children }) => {
               ...doc.data(),
             }));
 
-            // Sort by createdAt timestamp (newest first)
             notificationsData.sort(
               (a, b) =>
                 (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
@@ -147,11 +163,8 @@ const UserProvider = ({ children }) => {
 
     setupListener();
 
-    // Clean up the listener when component unmounts
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribe) unsubscribe();
     };
   }, [currentUser?.userId]);
 
