@@ -229,6 +229,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
                 numberStyle={{
                   fontSize: screenAdjustedStatFontSize,
                   color: "white",
+                  fontWeight: "bold",
                 }}
                 suffixStyle={{
                   color: "rgba(255,255,255,0.7)",

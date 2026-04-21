@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   StyleSheet,
 } from "react-native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
@@ -486,10 +486,12 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
 const ScrollContainer = styled.FlatList({
   padding: "40px 20px",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const SafeAreaWrapper = styled(KeyboardAvoidingView)({

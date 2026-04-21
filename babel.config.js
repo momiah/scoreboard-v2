@@ -3,7 +3,16 @@ module.exports = function (api) {
   return {
     presets: ["babel-preset-expo"],
     plugins: [
-      "react-native-reanimated/plugin",
+      [
+        "module-resolver",
+        {
+          root: ["./"],
+          alias: {
+            "@": "./",
+            "@shared": "./shared",
+          },
+        },
+      ],
       [
         "module:react-native-dotenv",
         {
@@ -11,14 +20,7 @@ module.exports = function (api) {
           path: ".env",
         },
       ],
-      [
-        "module-resolver",
-        {
-          alias: {
-            "@shared": "./shared",
-          },
-        },
-      ],
+      "react-native-reanimated/plugin",
     ],
   };
 };

@@ -17,7 +17,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { generateUniqueGameId } from "../../helpers/generateUniqueId";
 import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
 
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../components/PlatformBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
 import {

@@ -1,5 +1,11 @@
 import React, { useContext, useEffect, useState, memo } from "react";
-import { FlatList, ActivityIndicator, View, Dimensions } from "react-native";
+import {
+  FlatList,
+  ActivityIndicator,
+  View,
+  Dimensions,
+  Platform,
+} from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
@@ -90,10 +96,12 @@ const Chats = () => {
 };
 
 const { width: screenWidth } = Dimensions.get("window");
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 30;
 
 const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Header = styled.Text({

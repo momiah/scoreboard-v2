@@ -13,15 +13,9 @@ import {
 } from "@react-navigation/native";
 import { notificationTypes } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import {
-  NormalizedCompetition,
-  Game,
-  Player,
-  CollectionName,
-} from "@shared/types";
+import { NormalizedCompetition, Game, Player } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
-import { Collection } from "lodash";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -120,7 +114,7 @@ const GameApprovalModal = ({
       try {
         const competition = await fetchCompetitionById({
           competitionId,
-          collectionName: config.collectionName as CollectionName,
+          collectionName: config.collectionName,
         });
 
         if (!isMounted) return;
@@ -191,7 +185,7 @@ const GameApprovalModal = ({
     setLoadingDecision(true);
     try {
       await approveGame({
-        gameId: gameDetails?.gameId ?? "",
+        gameId: gameDetails?.gameId,
         competitionId,
         userId: currentUser?.userId,
         senderId,
@@ -210,7 +204,7 @@ const GameApprovalModal = ({
     setLoadingDecision(true);
     try {
       await declineGame({
-        gameId: gameDetails?.gameId ?? "",
+        gameId: gameDetails?.gameId,
         competitionId,
         userId: currentUser?.userId,
         senderId,

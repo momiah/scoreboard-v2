@@ -298,6 +298,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: 50,
 });
 
 const Header = styled.View({

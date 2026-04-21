@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "../../../components/PlatformBlurView";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
 import { LeagueContext } from "../../../context/LeagueContext";
@@ -236,6 +236,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: 50,
 });
 
 const Header = styled.View({

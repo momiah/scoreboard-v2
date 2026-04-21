@@ -6,11 +6,11 @@ import {
   League,
   Tournament,
   CollectionName,
-  CompetitionLocation,
+  CourtLocation,
   ApprovalStatus,
-  Court,
 } from "./types";
 import moment from "moment";
+import { Platform } from "react-native";
 
 export const gameTypes = ["Doubles", "Singles"];
 export const doublesModes = ["Mixed Doubles", "Fixed Doubles"];
@@ -22,6 +22,8 @@ export const leagueStatus = [
   { status: "full", color: "#286EFA" },
   { status: "completed", color: "#167500" },
 ];
+
+const TikTokIcon = Platform.OS === "ios" ? "logo-tiktok" : "tiktok";
 
 export const COMPETITION_TYPES = {
   LEAGUE: "league",
@@ -35,7 +37,7 @@ export const COLLECTION_NAMES: Record<CollectionName, string> = {
 
 export const ICON_MAP = {
   Instagram: "logo-instagram",
-  TikTok: "logo-tiktok",
+  TikTok: TikTokIcon,
   // Facebook: "logo-facebook",
 };
 
@@ -95,6 +97,12 @@ export const locationSchema: Location = {
   countryCode: "",
   postCode: "",
   address: "",
+};
+
+const courtLocationSchema: CourtLocation = {
+  courtName: "",
+  courtId: "",
+  ...locationSchema,
 };
 
 export const gameSchema = {
@@ -194,25 +202,6 @@ export const chatMessageSchema = {
   },
 };
 
-const competitionLocationSchema: CompetitionLocation = {
-  courtName: "",
-  courtId: "",
-  ...locationSchema,
-};
-
-export const courtSchema: Court = {
-  courtName: "",
-  courtDescription: "",
-  courtImage: "",
-  location: locationSchema,
-  numberOfLeagues: 0,
-  numberOfCourts: 0,
-  numberOfTeams: 0,
-  numberOfPlayers: 0,
-  numberOfGames: 0,
-  numberOfTournaments: 0,
-};
-
 export const leagueSchema: League = {
   leagueParticipants: [],
   leagueTeams: [],
@@ -232,7 +221,7 @@ export const leagueSchema: League = {
   leagueImage: "",
   leagueName: "",
   leagueDescription: "",
-  location: competitionLocationSchema,
+  location: courtLocationSchema,
   countryCode: "",
   createdAt: new Date(),
   startDate: "",
@@ -269,7 +258,7 @@ export const tournamentSchema: Tournament = {
   tournamentName: "",
   tournamentDescription: "",
   fixturesGenerated: false,
-  location: competitionLocationSchema,
+  location: courtLocationSchema,
   countryCode: "",
   createdAt: new Date(),
   startDate: "",
@@ -320,6 +309,19 @@ export const fixturesSchema = {
       ],
     },
   ],
+};
+
+export const courtSchema = {
+  courtName: "",
+  courtDescription: "",
+  courtImage: "",
+  location: locationSchema,
+  numberOfLeagues: 0,
+  numberOfCourts: 0,
+  numberOfTeams: 0,
+  numberOfPlayers: 0,
+  numberOfGames: 0,
+  numberOfTournaments: 0,
 };
 
 export const notificationTypes = {

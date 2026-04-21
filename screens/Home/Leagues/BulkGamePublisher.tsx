@@ -475,6 +475,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: 50,
 });
 
 const Header = styled.View({
@@ -528,16 +529,18 @@ const ActionButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const AddGameButton = styled.TouchableOpacity((disabled: boolean) => ({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: disabled ? "#666" : "#00A2FF",
-  padding: 15,
-  borderRadius: 8,
-  marginBottom: 20,
-  gap: 8,
-}));
+const AddGameButton = styled.TouchableOpacity<{ disabled?: boolean }>(
+  ({ disabled }: { disabled?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: disabled ? "#666" : "#00A2FF",
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    gap: 8,
+  }),
+);
 
 const ErrorSubtext = styled.Text({
   color: "#e53935",

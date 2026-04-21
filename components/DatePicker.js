@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Modal, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
+import { PlatformBlurView as BlurView } from "./PlatformBlurView";
 import { calculateEndDate } from "../helpers/calculateEndDate";
 import { formatDateForDatePicker } from "../helpers/formatDateForDatePicker";
 import { formatDateForStorage } from "../helpers/formatDateForStorage";
-import { Ionicons } from "@expo/vector-icons";
 import OptionSelector from "./OptionSelector";
+import { Ionicons } from "@expo/vector-icons";
+
+const platformDisplay = Platform.OS === "ios" ? "spinner" : "default";
 
 const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
@@ -16,7 +18,7 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
   const startDate = watch("startDate");
   const leagueLengthInMonths = watch("leagueLengthInMonths");
 
-  const handleTempDateChange = (selectedDate) => {
+  const handleSelectedDateChange = (selectedDate) => {
     if (selectedDate) {
       setSelectedDate(selectedDate);
     }
@@ -101,52 +103,82 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
         </LengthContainer>
       )}
 
-      <Modal animationType="fade" transparent visible={datePickerVisible}>
-        <ModalContainer>
-          <DatePickerModalContent>
-            <DateTimePicker
-              value={selectedDate || new Date()}
-              mode="date"
-              dateFormat="dayofweek day month"
-              display="spinner"
-              themeVariant="dark"
-              onChange={(event, selectedDate) => {
-                handleTempDateChange(selectedDate);
-              }}
-              minimumDate={new Date()}
-              maximumDate={
-                new Date(new Date().setMonth(new Date().getMonth() + 3))
-              }
-            />
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 3,
-              }}
-            >
-              <Ionicons
-                name="information-circle-outline"
-                size={20}
-                color={"#00A2FF"}
+      {Platform.OS === "ios" ? (
+        <Modal animationType="fade" transparent visible={datePickerVisible}>
+          <ModalContainer>
+            <DatePickerModalContent>
+              <DateTimePicker
+                value={selectedDate || new Date()}
+                mode="date"
+                display={platformDisplay}
+                themeVariant="dark"
+                onChange={(event, selectedDate) => {
+                  handleSelectedDateChange(selectedDate);
+                }}
+                minimumDate={new Date()}
+                maximumDate={
+                  new Date(new Date().setMonth(new Date().getMonth() + 3))
+                }
               />
-              <DisclaimerText>
-                Please select a date within the next 3 months.
-              </DisclaimerText>
-            </View>
 
-            <ButtonContainer>
-              <CancelButton onPress={() => setDatePickerVisible(false)}>
-                <CancelText>Cancel</CancelText>
-              </CancelButton>
-              <ConfirmButton onPress={confirmDateChange}>
-                <CreateText>Confirm Date</CreateText>
-              </ConfirmButton>
-            </ButtonContainer>
-          </DatePickerModalContent>
-        </ModalContainer>
-      </Modal>
+              {/* … info text … */}
+
+              <ButtonContainer>
+                <CancelButton
+                  onPress={() => {
+                    setSelectedDate(null);
+                    setDatePickerVisible(false);
+                  }}
+                >
+                  <CancelText>Cancel</CancelText>
+                </CancelButton>
+
+                <ConfirmButton onPress={confirmDateChange}>
+                  <CreateText>Confirm Date</CreateText>
+                </ConfirmButton>
+              </ButtonContainer>
+            </DatePickerModalContent>
+          </ModalContainer>
+        </Modal>
+      ) : (
+        // Android native
+        datePickerVisible && (
+          <DateTimePicker
+            value={selectedDate || new Date()}
+            mode="date"
+            display={platformDisplay}
+            themeVariant="dark"
+            onChange={(event, selected) => {
+              if (event.type === "dismissed") {
+                // user cancelled
+                setSelectedDate(null);
+                setDatePickerVisible(false);
+              } else if (event.type === "set") {
+                // user picked—apply immediately to avoid async state lag
+                const picked = selected || selectedDate;
+                const formatted = formatDateForStorage(picked);
+
+                setValue("startDate", formatted);
+
+                if (hasEndDate) {
+                  const endDate = calculateEndDate(
+                    formatted,
+                    leagueLengthInMonths
+                  );
+                  setValue("endDate", endDate);
+                }
+
+                setSelectedDate(null);
+                setDatePickerVisible(false);
+              }
+            }}
+            minimumDate={new Date()}
+            maximumDate={
+              new Date(new Date().setMonth(new Date().getMonth() + 3))
+            }
+          />
+        )
+      )}
     </DatePickerContainer>
   );
 };
@@ -233,6 +265,31 @@ const ConfirmButton = styled.TouchableOpacity({
   borderRadius: 5,
   backgroundColor: "#00A2FF",
 });
+
+const LeagueLengthContainer = styled.View({
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "space-between",
+});
+
+const LeagueLengthButton = styled.TouchableOpacity(({ isSelected }) => ({
+  flex: 1,
+  marginHorizontal: 5,
+  aspectRatio: 1,
+  borderRadius: 9999,
+  backgroundColor: isSelected ? "#00284b" : "#00152B",
+  borderWidth: 1,
+  borderColor: isSelected ? "#004eb4" : "#414141",
+  alignItems: "center",
+  justifyContent: "center",
+}));
+
+const LeagueLengthText = styled.Text(({ isSelected }) => ({
+  fontSize: 10,
+  fontWeight: "bold",
+  textAlign: "center",
+  color: isSelected ? "white" : "#7b7b7b",
+}));
 
 const ErrorText = styled.Text({
   color: "red",

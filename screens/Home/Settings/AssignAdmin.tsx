@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { FlatList, ActivityIndicator, Platform } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -13,6 +13,8 @@ import Tag from "../../../components/Tag";
 import { NormalizedCompetition, ScoreboardProfile } from "@shared/types";
 import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
+
+const platformAdjustedPaddingTop = Platform.OS === "ios" ? undefined : 60; // Adjust for iOS platform
 
 const AssignAdmin = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -160,6 +162,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: platformAdjustedPaddingTop,
 });
 
 const Title = styled.Text({

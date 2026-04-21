@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import { Platform } from "react-native";
+
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
@@ -32,6 +32,7 @@ import FAQ from "../screens/Profile/FAQ";
 import LinkedAccounts from "../screens/Profile/LinkedAccounts";
 import Chats from "../screens/Chats";
 import { UserContext } from "../context/UserContext";
+import { Dimensions, Platform } from "react-native";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
 import { getUnitId } from "../utils/getAdMobUnitId";
@@ -40,11 +41,14 @@ import AddCompetitionModal from "../components/Modals/AddCompetitionModal";
 import AddLeagueModal from "../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../components/Modals/AddTournamentModal";
 import QuickAddModal from "../components/Modals/QuickAddModal";
+import { ADMOB_BANNER_IOS_PROD, ADMOB_BANNER_ANDROID_PROD } from "@env";
 import InvitePlayer from "../screens/InvitePlayer";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const BANNER_UNIT_ID = getUnitId();
+const { width: screenWidth } = Dimensions.get("window");
+const platformAdjustedPaddingBottom = Platform.OS === "ios" ? 0 : 10; // Adjust padding for iOS
 
 // Home Stack
 const HomeStack = () => {
@@ -271,6 +275,7 @@ const Tabs = () => {
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarActiveTintColor: "#FFD700",
           tabBarInactiveTintColor: "#A9A9A9",
+          tabBarItemStyle: { paddingBottom: platformAdjustedPaddingBottom },
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
@@ -320,6 +325,7 @@ const Tabs = () => {
           tabBarStyle: {
             borderTopWidth: 1,
             borderTopColor: "#262626",
+            backgroundColor: "rgb(3, 16, 31)",
           },
           tabBarLabel: () => null, // Remove label
           headerShown: false, // Hide the header

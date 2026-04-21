@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
   Platform,
   Linking,
 } from "react-native";
@@ -31,6 +32,10 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
+
+const { width: screenWidth } = Dimensions.get("window");
+const screenAdjustedFontSize = screenWidth < 450 ? 13 : 16; // Adjust font size based on screen width
+const platformPaddingTop = Platform.OS === "ios" ? 0 : 20; // Adjust padding for iOS
 
 const Home = () => {
   const navigation = useNavigation();
@@ -157,8 +162,17 @@ const Home = () => {
   });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+      }}
+    >
       <HomeContainer
+        contentContainerStyle={{
+          paddingTop: platformPaddingTop,
+          paddingBottom: 20,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -186,7 +200,24 @@ const Home = () => {
                 key={platform}
                 onPress={() => handleSocialPress(platform)}
               >
-                <Ionicons name={ICON_MAP[platform]} size={25} color="#00A2FF" />
+                {Platform.OS === "ios" ? (
+                  <Ionicons
+                    name={ICON_MAP[platform]}
+                    size={25}
+                    color="#00A2FF"
+                  />
+                ) : (
+                  <>
+                    <Text
+                      style={{
+                        color: "#00A2FF",
+                        fontSize: screenAdjustedFontSize,
+                      }}
+                    >
+                      {platform}
+                    </Text>
+                  </>
+                )}
               </SocialButton>
             ))}
           </SocialRow>
@@ -316,7 +347,7 @@ const Overview = styled.View({
   justifyContent: "space-between",
   alignItems: "center",
   paddingRight: 15,
-  marginTop: 10,
+  // marginTop: 10,
 });
 
 const SocialRow = styled.View({
