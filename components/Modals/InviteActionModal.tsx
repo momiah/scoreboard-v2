@@ -22,7 +22,7 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { NormalizedCompetition } from "@shared/types";
+import { CollectionName, NormalizedCompetition } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -95,7 +95,7 @@ const InviteActionModal = ({
       try {
         const competition = await fetchCompetitionById({
           competitionId: inviteId,
-          collectionName: config.collectionName,
+          collectionName: config.collectionName as CollectionName,
         });
 
         if (!competition) {
@@ -161,7 +161,7 @@ const InviteActionModal = ({
         userId: currentUser?.userId,
         competitionId: competition.id,
         notificationId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
 
       console.log("Invite accepted successfully");
@@ -182,9 +182,9 @@ const InviteActionModal = ({
     try {
       await declineCompetitionInvite({
         userId: currentUser?.userId,
-        competitionId: competition?.id,
+        competitionId: competition?.id ?? "",
         notificationId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
       console.log("Invite declined successfully");
       onClose();
@@ -357,6 +357,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

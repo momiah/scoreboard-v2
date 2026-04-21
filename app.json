@@ -68,7 +68,7 @@
         "react-native-fbsdk-next",
         {
           "appID": "1264178202106496",
-          "clientToken": "YOUR_FACEBOOK_CLIENT_TOKEN",
+          "clientToken": "924121d20d839d1a41302ec91d32346d",
           "displayName": "Court Champs",
           "advertiserIDCollectionEnabled": false,
           "autoLogAppEventsEnabled": true

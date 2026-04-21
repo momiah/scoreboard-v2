@@ -164,7 +164,6 @@ const GenerateFixturesModal = ({
   const [fixtureMetadata, setFixtureMetadata] =
     useState<FixtureMetadata | null>(null);
   const [numberOfCourts, setNumberOfCourts] = useState(1);
-  // @ts-expect-error - Context is not typed
   const { addTournamentFixtures, fetchTournamentParticipants } =
     useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -177,6 +176,11 @@ const GenerateFixturesModal = ({
   useEffect(() => {
     setLoadingParticipants(true);
     const fetchParticipants = async () => {
+      if (!competitionId) {
+        setParticipants([]);
+        setLoadingParticipants(false);
+        return;
+      }
       try {
         const fetchedParticipants =
           await fetchTournamentParticipants(competitionId);
@@ -307,10 +311,10 @@ const GenerateFixturesModal = ({
 
       // Write to database
       await addTournamentFixtures({
-        tournamentId: competitionId,
+        tournamentId: competitionId ?? "",
         fixtures: generatedFixtures,
         numberOfCourts,
-        currentUser: currentUser,
+        currentUser: currentUser as UserProfile,
         mode: tournamentType === "Doubles" ? selectedMode : "",
         generationType: tournamentType === "Doubles" ? generationType : "",
       });
@@ -411,6 +415,7 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const SafeAreaWrapper = styled(KeyboardAvoidingView)({

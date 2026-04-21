@@ -16,7 +16,11 @@ import {
 } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import { ccImageEndpoint } from "@shared";
-import { NormalizedCompetition, UserProfile } from "@shared/types";
+import {
+  CollectionName,
+  NormalizedCompetition,
+  UserProfile,
+} from "@shared/types";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
@@ -96,7 +100,7 @@ const JoinRequestModal = ({
       try {
         const competition = await fetchCompetitionById({
           competitionId: requestId,
-          collectionName: config.collectionName,
+          collectionName: config.collectionName as CollectionName,
         });
         const player = await getUserById(senderId);
         if (!competition || !player) {
@@ -144,10 +148,10 @@ const JoinRequestModal = ({
       setJoiningCompetition(true);
       await acceptCompetitionJoinRequest({
         senderId,
-        competitionId: competition?.id,
+        competitionId: competition?.id ?? "",
         notificationId,
         userId: currentUser?.userId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
 
       console.log("Invite accepted successfully");
@@ -177,10 +181,10 @@ const JoinRequestModal = ({
     try {
       await declineCompetitionJoinRequest({
         senderId,
-        competitionId: competition?.id,
+        competitionId: competition?.id ?? "",
         notificationId,
         userId: currentUser?.userId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
       console.log("Join request declined successfully");
       onClose();
@@ -322,6 +326,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 const Title = styled.Text({
   fontSize: 20,

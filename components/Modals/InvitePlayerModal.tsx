@@ -35,6 +35,7 @@ import {
   Tournament,
   NormalizedCompetition,
   CompetitionType,
+  CollectionName,
   UserProfile,
 } from "@/shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
@@ -181,7 +182,11 @@ const InvitePlayerModal = ({
         };
 
         await sendNotification(payload);
-        await updatePendingInvites(competition.id, user.userId, collectionName);
+        await updatePendingInvites(
+          competition.id,
+          user.userId,
+          collectionName as CollectionName,
+        );
       }
 
       handleShowPopup("Players invited successfully!");
@@ -516,6 +521,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

@@ -28,7 +28,13 @@ import {
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import { GameTeam, Game, GameResult, Player } from "@shared/types";
+import {
+  GameTeam,
+  Game,
+  GameResult,
+  Player,
+  CollectionName,
+} from "@shared/types";
 
 type AddGameModalProps = {
   modalVisible: boolean;
@@ -277,7 +283,7 @@ const AddGameModal = ({
     );
     await fetchCompetitionById({
       competitionId: leagueId,
-      collectionName: COLLECTION_NAMES.leagues,
+      collectionName: COLLECTION_NAMES.leagues as CollectionName,
     });
     setLoading(false);
     console.log("Game added successfully with player objects:", newGame);
@@ -374,12 +380,13 @@ const AddGameModal = ({
 const { width: screenWidth } = Dimensions.get("window");
 
 const ModalContainer = styled(BlurView).attrs({
-  intensity: 50,
+  intensity: 100,
   tint: "dark",
 })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

@@ -317,10 +317,6 @@ const Tabs = () => {
               );
             }
           },
-          tabBarStyle: {
-            borderTopWidth: 1,
-            borderTopColor: "#262626",
-          },
           tabBarLabel: () => null, // Remove label
           headerShown: false, // Hide the header
         })}
