@@ -553,7 +553,7 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const getCompetitionsForUser = async (userId, collectionName) => {
+  const getCompetitionsForUser = useCallback(async (userId, collectionName) => {
     try {
       const competitionsRef = collection(db, collectionName);
 
@@ -601,7 +601,7 @@ const UserProvider = ({ children }) => {
       );
       return [];
     }
-  };
+  }, []);
 
   const updateUserProfile = async (updatedFields) => {
     try {
