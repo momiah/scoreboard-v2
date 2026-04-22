@@ -59,7 +59,7 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 20
+      "versionCode": 21
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
