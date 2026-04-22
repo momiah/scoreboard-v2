@@ -70,7 +70,6 @@ const QuickAddModal = ({
 
       try {
         setLoading(true);
-
         const collectionName =
           activeTab === COMPETITION_TYPES.LEAGUE ? "leagues" : "tournaments";
 
@@ -96,7 +95,7 @@ const QuickAddModal = ({
     };
 
     fetchCompetitions();
-  }, [currentUser?.userId, modalVisible, activeTab, getCompetitionsForUser]);
+  }, [currentUser?.userId, modalVisible, activeTab]);
 
   // Find next game when tournament is selected
   useEffect(() => {
@@ -179,7 +178,7 @@ const QuickAddModal = ({
     };
 
     findNextGame();
-  }, [selectedCompetition, activeTab, currentUser?.userId, loading]);
+  }, [selectedCompetition, activeTab, currentUser?.userId]);
 
   const closeQuickAddModal = () => {
     setModalVisible(false);
