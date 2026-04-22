@@ -195,4 +195,11 @@ export interface LeagueContextType {
   // Mock Data
   showMockData: boolean;
   setShowMockData: (show: boolean) => void;
+
+  subscribeToCompetition: (
+    competitionId: string,
+    collectionName: CollectionName,
+    onUpdate: (data: League | Tournament | null) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
 }
