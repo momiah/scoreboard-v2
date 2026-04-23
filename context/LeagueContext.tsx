@@ -1603,6 +1603,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const addTournamentFixtures = async ({
     tournamentId,
     fixtures,
+    initialTeams,
     numberOfCourts,
     currentUser,
     mode,
@@ -1610,6 +1611,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }: {
     tournamentId: string;
     fixtures: Fixtures[];
+    initialTeams?: TeamStats[];
     numberOfCourts: number;
     currentUser: UserProfile;
     mode: string;
@@ -1638,6 +1640,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         generationType: generationType,
         numberOfGames: numberOfGames,
         gamesCompleted: 0,
+        ...(initialTeams?.length && { tournamentTeams: initialTeams }),
       });
 
       for (const participant of tournamentParticipants) {
