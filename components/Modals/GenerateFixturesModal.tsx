@@ -177,6 +177,11 @@ const GenerateFixturesModal = ({
   useEffect(() => {
     setLoadingParticipants(true);
     const fetchParticipants = async () => {
+      if (!competitionId) {
+        setParticipants([]);
+        setLoadingParticipants(false);
+        return;
+      }
       try {
         if (!competitionId) {
           throw new Error("No competition ID provided");
@@ -417,6 +422,7 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const SafeAreaWrapper = styled(KeyboardAvoidingView)({

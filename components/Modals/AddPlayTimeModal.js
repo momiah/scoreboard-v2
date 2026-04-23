@@ -172,12 +172,13 @@ const AddPlayTimeModal = ({ isVisible, onClose, onConfirm, defaultValues }) => {
 const { width: screenWidth } = Dimensions.get("window");
 
 const ModalContainer = styled(BlurView).attrs({
-  intensity: 50,
+  intensity: 80,
   tint: "dark",
 })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const GradientOverlay = styled(LinearGradient)({

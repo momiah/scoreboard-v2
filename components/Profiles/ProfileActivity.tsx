@@ -297,19 +297,18 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
           </TableCell>
           <TableCell>
             <StatTitle>Rank</StatTitle>
-            <Stat>
-              <RankSuffix
-                number={item.userRank ?? 0}
-                numberStyle={{
-                  fontSize: screenAdjustedStatFontSize,
-                  color: "white",
-                }}
-                suffixStyle={{
-                  color: "rgba(255,255,255,0.7)",
-                }}
-                style={[]}
-              />
-            </Stat>
+            <RankSuffix
+              number={item.userRank ?? 0}
+              numberStyle={{
+                fontSize: screenAdjustedStatFontSize,
+                fontWeight: "bold",
+                color: "white",
+              }}
+              suffixStyle={{
+                color: "rgba(255,255,255,0.7)",
+              }}
+              style={[]}
+            />
           </TableCell>
         </CompetitionItem>
       );

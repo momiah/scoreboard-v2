@@ -329,6 +329,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 const Title = styled.Text({
   fontSize: 20,

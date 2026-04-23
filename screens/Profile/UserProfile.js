@@ -42,7 +42,7 @@ const AVATAR_SIZE = screenWidth <= 400 ? 70 : 80;
 
 // Toolbar top: ticket was iOS-only (“too much top padding”); SafeAreaView already insets on iOS.
 // Android keeps marginTop 50 from profile/tabs styling branch (see a7e0141 / d6fdc6).
-const PROFILE_TOOLBAR_MARGIN_TOP = Platform.OS === "ios" ? 8 : 50;
+const PROFILE_TOOLBAR_MARGIN_TOP = Platform.OS === "ios" ? 8 : 20;
 // Overview top padding: trim on iOS only; Android unchanged at 20.
 const OVERVIEW_PADDING_TOP = Platform.OS === "ios" ? 12 : 20;
 const OVERVIEW_PADDING_HORIZONTAL = 20;

@@ -141,12 +141,14 @@ const AddGameDetails: React.FC<AddGameDetailsProps> = ({
               keyboardType="numeric"
               placeholder="0"
               value={team1Score}
+              placeholderTextColor="#00A2FF"
               onChangeText={handleScoreChange(setTeam1Score)}
             />
             <Text style={{ fontSize: 30, color: "#00A2FF" }}>-</Text>
             <ScoreInput
               keyboardType="numeric"
               placeholder="0"
+              placeholderTextColor="#00A2FF"
               value={team2Score}
               onChangeText={handleScoreChange(setTeam2Score)}
             />
