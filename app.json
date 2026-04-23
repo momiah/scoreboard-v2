@@ -15,11 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "19",
+      "buildNumber": "21",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "FacebookAppID": "1264178202106496",
+        "FacebookClientToken": "924121d20d839d1a41302ec91d32346d",
         "FacebookDisplayName": "Court Champs",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
@@ -38,11 +39,6 @@
           {
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
-            ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "fb1264178202106496"
             ]
           }
         ],
@@ -71,8 +67,10 @@
           "appID": "1264178202106496",
           "clientToken": "924121d20d839d1a41302ec91d32346d",
           "displayName": "Court Champs",
+          "scheme": "fb1264178202106496",
           "advertiserIDCollectionEnabled": false,
-          "autoLogAppEventsEnabled": true
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true
         }
       ],
       [

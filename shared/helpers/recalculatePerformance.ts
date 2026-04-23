@@ -1,10 +1,4 @@
-import {
-  Fixtures,
-  Game,
-  ScoreboardProfile,
-  UserProfile,
-  TeamStats,
-} from "@shared/types";
+import { Fixtures, Game, ScoreboardProfile, TeamStats } from "@shared/types";
 import { calculatePlayerPerformance, calculateTeamPerformance } from "./index";
 
 export const getOrderedApprovedGames = (fixtures: Fixtures[]): Game[] => {
@@ -21,16 +15,14 @@ export const getOrderedApprovedGames = (fixtures: Fixtures[]): Game[] => {
 
 export const recalculateParticipantsFromFixtures = async (
   orderedApprovedGames: Game[],
-  allParticipants: ScoreboardProfile[],
-  allUsers: UserProfile[],
+  participantsInTournament: ScoreboardProfile[],
   allTeams: TeamStats[],
   isDoubles: boolean,
 ): Promise<{
   updatedParticipants: ScoreboardProfile[];
   updatedTeams: TeamStats[];
-  updatedUsers: UserProfile[];
 }> => {
-  const resetParticipants: ScoreboardProfile[] = allParticipants.map(
+  const resetParticipants: ScoreboardProfile[] = participantsInTournament.map(
     (participant) => ({
       ...participant,
       numberOfWins: 0,
@@ -79,8 +71,6 @@ export const recalculateParticipantsFromFixtures = async (
 
   const teamMap = new Map(resetTeams.map((t) => [t.teamKey, { ...t }]));
 
-  const updatedUserMap = new Map(allUsers.map((u) => [u.userId, { ...u }]));
-
   for (const game of orderedApprovedGames) {
     const playerUserIds = [
       game.team1.player1?.userId,
@@ -93,22 +83,10 @@ export const recalculateParticipantsFromFixtures = async (
       .map((uid) => participantMap.get(uid))
       .filter((p): p is ScoreboardProfile => !!p);
 
-    const gameUsers = playerUserIds
-      .map((uid) => updatedUserMap.get(uid))
-      .filter((u): u is UserProfile => !!u);
-
-    const { playersToUpdate, usersToUpdate } = calculatePlayerPerformance(
-      game,
-      gamePlayers,
-      gameUsers,
-    );
+    const { playersToUpdate } = calculatePlayerPerformance(game, gamePlayers);
 
     playersToUpdate.forEach((updated) => {
       if (updated.userId) participantMap.set(updated.userId, updated);
-    });
-
-    usersToUpdate?.forEach((updated) => {
-      if (updated.userId) updatedUserMap.set(updated.userId, updated);
     });
 
     if (isDoubles) {
@@ -126,6 +104,5 @@ export const recalculateParticipantsFromFixtures = async (
   return {
     updatedParticipants: Array.from(participantMap.values()),
     updatedTeams: Array.from(teamMap.values()),
-    updatedUsers: Array.from(updatedUserMap.values()),
   };
 };

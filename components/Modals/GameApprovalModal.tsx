@@ -18,10 +18,10 @@ import {
   Game,
   Player,
   CollectionName,
+  GameTeam,
 } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
-import { Collection } from "lodash";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -348,17 +348,13 @@ const GameApprovalModal = ({
 
 interface TeamColumnProps {
   position: "left" | "right";
-  players?: {
-    player1?: Player | null;
-    player2?: Player | null;
-    score?: number;
-  };
+  players?: GameTeam;
   competitionType: string;
 }
 
 const TeamColumn = ({
   position,
-  players = {},
+  players = { player1: null, player2: null },
   competitionType,
 }: TeamColumnProps) => (
   <TeamContainer>
@@ -389,8 +385,8 @@ const ScoreDisplay = ({
   team2,
 }: {
   date: string;
-  team1: number | undefined;
-  team2: number | undefined;
+  team1: GameTeam["score"];
+  team2: GameTeam["score"];
 }) => (
   <ResultsContainer>
     <DateText>{date}</DateText>

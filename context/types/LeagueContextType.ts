@@ -8,7 +8,14 @@ import {
   Court,
 } from "@shared";
 
-import { UserProfile, League, Tournament, Fixtures, Game } from "@shared";
+import {
+  UserProfile,
+  League,
+  Tournament,
+  Fixtures,
+  Game,
+  TeamStats,
+} from "@shared";
 
 interface PendingRequestCompetition {
   id: string;
@@ -176,6 +183,7 @@ export interface LeagueContextType {
   addTournamentFixtures: (params: {
     tournamentId: string;
     fixtures: Fixtures[];
+    initialTeams?: TeamStats[];
     numberOfCourts: number;
     currentUser: UserProfile;
     mode: string;

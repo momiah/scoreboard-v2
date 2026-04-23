@@ -1,28 +1,8 @@
 import { Game, TeamStats } from "../types";
-
-const normalizeTeamKey = (key: string[]): string =>
-  key.join("-").split("-").sort().join("-");
-
-const createTeam = (players: string[], teamKey: string): TeamStats => ({
-  team: players.slice().sort(),
-  teamKey,
-  numberOfWins: 0,
-  numberOfLosses: 0,
-  numberOfGamesPlayed: 0,
-  resultLog: [],
-  pointDifferenceLog: [],
-  averagePointDifference: 0,
-  totalPointDifference: 0,
-  currentStreak: 0,
-  highestWinStreak: 0,
-  highestLossStreak: 0,
-  winStreak3: 0,
-  winStreak5: 0,
-  winStreak7: 0,
-  demonWin: 0,
-  lossesTo: {},
-  rival: null,
-});
+import {
+  normalizeTeamKey,
+  createTeam,
+} from "../../helpers/generateInitialTeamStats";
 
 function updateRival(loserTeam: TeamStats, winnerTeam: TeamStats): void {
   const lossesToValues = Object.values(loserTeam.lossesTo) as number[];

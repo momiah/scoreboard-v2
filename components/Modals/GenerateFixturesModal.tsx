@@ -31,6 +31,7 @@ import {
 } from "@shared/types";
 
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { generateInitialTeamStats } from "../../helpers/generateInitialTeamStats";
 import { UserContext } from "@/context/UserContext";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -182,6 +183,9 @@ const GenerateFixturesModal = ({
         return;
       }
       try {
+        if (!competitionId) {
+          throw new Error("No competition ID provided");
+        }
         const fetchedParticipants =
           await fetchTournamentParticipants(competitionId);
 
@@ -306,13 +310,17 @@ const GenerateFixturesModal = ({
         return;
       }
 
-      // Show loading state
       setIsGenerating(true);
 
-      // Write to database
+      const initialTeams =
+        tournamentType === "Doubles"
+          ? generateInitialTeamStats(generatedFixtures)
+          : [];
+
       await addTournamentFixtures({
         tournamentId: competitionId ?? "",
         fixtures: generatedFixtures,
+        initialTeams,
         numberOfCourts,
         currentUser: currentUser as UserProfile,
         mode: tournamentType === "Doubles" ? selectedMode : "",
@@ -323,7 +331,6 @@ const GenerateFixturesModal = ({
         { text: "OK", onPress: () => setModalVisible(false) },
       ]);
     } catch (error) {
-      // Error handling
       Alert.alert(
         "Error",
         "Failed to save tournament fixtures. Please try again.",
