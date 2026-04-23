@@ -31,6 +31,7 @@ import {
 } from "@shared/types";
 
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { generateInitialTeamStats } from "../../helpers/generateInitialTeamStats";
 import { UserContext } from "@/context/UserContext";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -164,7 +165,6 @@ const GenerateFixturesModal = ({
   const [fixtureMetadata, setFixtureMetadata] =
     useState<FixtureMetadata | null>(null);
   const [numberOfCourts, setNumberOfCourts] = useState(1);
-  // @ts-expect-error - Context is not typed
   const { addTournamentFixtures, fetchTournamentParticipants } =
     useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -178,6 +178,9 @@ const GenerateFixturesModal = ({
     setLoadingParticipants(true);
     const fetchParticipants = async () => {
       try {
+        if (!competitionId) {
+          throw new Error("No competition ID provided");
+        }
         const fetchedParticipants =
           await fetchTournamentParticipants(competitionId);
 
@@ -302,15 +305,19 @@ const GenerateFixturesModal = ({
         return;
       }
 
-      // Show loading state
       setIsGenerating(true);
 
-      // Write to database
+      const initialTeams =
+        tournamentType === "Doubles"
+          ? generateInitialTeamStats(generatedFixtures)
+          : [];
+
       await addTournamentFixtures({
-        tournamentId: competitionId,
+        tournamentId: competitionId ?? "",
         fixtures: generatedFixtures,
+        initialTeams,
         numberOfCourts,
-        currentUser: currentUser,
+        currentUser: currentUser as UserProfile,
         mode: tournamentType === "Doubles" ? selectedMode : "",
         generationType: tournamentType === "Doubles" ? generationType : "",
       });
@@ -319,7 +326,6 @@ const GenerateFixturesModal = ({
         { text: "OK", onPress: () => setModalVisible(false) },
       ]);
     } catch (error) {
-      // Error handling
       Alert.alert(
         "Error",
         "Failed to save tournament fixtures. Please try again.",

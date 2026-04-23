@@ -959,13 +959,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           const freshTeams: TeamStats[] = freshData?.[config.teamKey] ?? [];
           const isDoubles = competitionData[config.typeKey] === "Doubles";
 
+          // ── Fetch user docs for current game's players only ──
           const userRefs = playerUserIds.map((uid) => doc(db, "users", uid));
           const userSnaps = await Promise.all(
             userRefs.map((ref) => transaction.get(ref)),
           );
-          const freshUsers = userSnaps.map(
-            (snap) => snap.data() as UserProfile,
-          );
+          const freshUsers = userSnaps
+            .filter((snap) => snap.exists())
+            .map((snap) => snap.data() as UserProfile);
 
           if (isTournament) {
             const freshFixtures: Fixtures[] = freshData?.fixtures ?? [];
@@ -980,22 +981,32 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             const orderedApprovedGames =
               getOrderedApprovedGames(updatedFixtures);
 
-            const { updatedParticipants, updatedTeams, updatedUsers } =
+            // ── Replay all approved games — no users needed ──
+            const { updatedParticipants, updatedTeams } =
               await recalculateParticipantsFromFixtures(
                 orderedApprovedGames,
                 freshParticipants,
-                freshUsers,
                 freshTeams,
                 isDoubles,
               );
 
             transaction.update(competitionRef, {
               fixtures: updatedFixtures,
+              gamesCompleted: increment(1),
               [config.participantsKey]: updatedParticipants,
               ...(isDoubles && { [config.teamKey]: updatedTeams }),
             });
 
-            updatedUsers.forEach((user) => {
+            // ── User profile delta — current game's players only ──
+            const { usersToUpdate } = calculatePlayerPerformance(
+              updatedGame,
+              freshParticipants.filter((p) =>
+                playerUserIds.includes(p.userId!),
+              ),
+              freshUsers,
+            );
+
+            usersToUpdate?.forEach((user) => {
               if (!user.userId) return;
               const userRef = doc(db, "users", user.userId);
               transaction.update(userRef, {
@@ -1003,7 +1014,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
               });
             });
           } else {
-            // Leagues use delta approach — no fixture replay needed
+            // ── Leagues use delta approach — no fixture replay needed ──
             const { playersToUpdate, usersToUpdate } =
               calculatePlayerPerformance(
                 updatedGame,
@@ -1063,10 +1074,6 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             gameId,
             updatedGame,
             removeGame: false,
-          });
-        } else {
-          await updateDoc(competitionRef, {
-            gamesCompleted: increment(1),
           });
         }
       } else {
@@ -1172,28 +1179,27 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             gameId: game.gameId,
             team1: {
               player1: game.team1.player1,
-              player2: game.team1.player2 || null,
-              score: undefined,
+              player2: game.team1.player2 ?? null,
+              score: null,
             },
             team2: {
               player1: game.team2.player1,
-              player2: game.team2.player2 || null,
-              score: undefined,
+              player2: game.team2.player2 ?? null,
+              score: null,
             },
             result: null,
             approvalStatus: "Scheduled",
             numberOfApprovals: 0,
             numberOfDeclines: 0,
-            approvers: [],
             reporter: "",
             reportedAt: null,
             reportedTime: null,
             gamescore: "",
-            // Preserve fixture metadata
             court: game.court,
             gameNumber: game.gameNumber,
             createdAt: game.createdAt,
             createdTime: game.createdTime,
+            approvers: [],
           };
 
           await updateTournamentGame({
@@ -1597,6 +1603,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const addTournamentFixtures = async ({
     tournamentId,
     fixtures,
+    initialTeams,
     numberOfCourts,
     currentUser,
     mode,
@@ -1604,6 +1611,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }: {
     tournamentId: string;
     fixtures: Fixtures[];
+    initialTeams?: TeamStats[];
     numberOfCourts: number;
     currentUser: UserProfile;
     mode: string;
@@ -1632,6 +1640,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         generationType: generationType,
         numberOfGames: numberOfGames,
         gamesCompleted: 0,
+        ...(initialTeams?.length && { tournamentTeams: initialTeams }),
       });
 
       for (const participant of tournamentParticipants) {
