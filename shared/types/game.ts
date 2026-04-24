@@ -16,7 +16,7 @@ export interface PlayerWithXP extends Player {
 export interface GameTeam {
   player1: Player | null;
   player2: Player | null;
-  score?: number;
+  score?: number | null;
 }
 
 interface Teams {

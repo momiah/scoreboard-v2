@@ -16,7 +16,11 @@ import {
 } from "@react-navigation/native";
 import { GameContext } from "../../context/GameContext";
 import { ccImageEndpoint } from "@shared";
-import { NormalizedCompetition, UserProfile } from "@shared/types";
+import {
+  CollectionName,
+  NormalizedCompetition,
+  UserProfile,
+} from "@shared/types";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
@@ -43,14 +47,14 @@ const JoinRequestModal = ({
   isRead,
 }: JoinRequestModalProps) => {
   const {
-    fetchCompetitionById,
+    subscribeToCompetition,
     acceptCompetitionJoinRequest,
     declineCompetitionJoinRequest,
   } = useContext(LeagueContext);
   const { findRankIndex } = useContext(GameContext);
   const { currentUser, getUserById, readNotification } =
     useContext(UserContext);
-  const [senderDetails, setSenderDetails] = useState(null);
+  const [senderDetails, setSenderDetails] = useState<UserProfile | null>(null);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
     null,
   );
@@ -91,39 +95,42 @@ const JoinRequestModal = ({
       resetState();
       return;
     }
+
     setLoading(true);
-    const fetchDetails = async () => {
-      try {
-        const competition = await fetchCompetitionById({
-          competitionId: requestId,
-          collectionName: config.collectionName,
-        });
-        const player = await getUserById(senderId);
-        if (!competition || !player) {
-          console.error("Competition or player not found");
+
+    // One-time fetch for sender details — not competition data
+    getUserById(senderId).then((player: UserProfile | null) => {
+      if (player) setSenderDetails(player);
+    });
+
+    const unsubscribe = subscribeToCompetition(
+      requestId,
+      config.collectionName as CollectionName,
+      (data) => {
+        if (!data) {
           readNotification(notificationId, currentUser?.userId);
+          setLoading(false);
           return;
         }
 
-        const normalizedCompetition = normalizeCompetitionData({
-          rawData: competition,
+        const normalized = normalizeCompetitionData({
+          rawData: data,
           competitionType: config.competitionType,
         }) as NormalizedCompetition;
 
-        setCompetition(normalizedCompetition);
-        setSenderDetails(player);
-      } catch (error) {
-        console.error("Error fetching competition details:", error);
-      }
-    }; // Add else for tournaments in the future
+        setCompetition(normalized);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error subscribing to competition:", error);
+        setLoading(false);
+      },
+    );
 
-    fetchDetails();
-    setLoading(false);
-  }, [visible, requestId, requestType]);
+    return unsubscribe;
+  }, [visible, requestId]);
 
   useEffect(() => {
-    // const notificationExistsWithNoDetails = notificationId && !competition;
-
     if (!visible || !competition || isRead) return;
 
     if (competitionFull || requestWithdrawn) {
@@ -144,10 +151,10 @@ const JoinRequestModal = ({
       setJoiningCompetition(true);
       await acceptCompetitionJoinRequest({
         senderId,
-        competitionId: competition?.id,
+        competitionId: competition?.id ?? requestId,
         notificationId,
         userId: currentUser?.userId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
 
       console.log("Invite accepted successfully");
@@ -177,10 +184,10 @@ const JoinRequestModal = ({
     try {
       await declineCompetitionJoinRequest({
         senderId,
-        competitionId: competition?.id,
+        competitionId: competition?.id ?? requestId,
         notificationId,
         userId: currentUser?.userId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
       console.log("Join request declined successfully");
       onClose();

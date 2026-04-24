@@ -19,11 +19,23 @@ export interface CompetitionAdmins {
   username: string;
 }
 
-export interface CourtLocation extends Location {
+export interface CompetitionLocation extends Location {
   courtName: string;
   courtId: string;
-  courtImage: string;
-  courtDescription: string;
+}
+
+export interface Court {
+  id?: string;
+  courtName: string;
+  courtImage?: string;
+  courtDescription?: string;
+  location: Location;
+  numberOfLeagues?: number;
+  numberOfCourts?: number;
+  numberOfTeams?: number;
+  numberOfPlayers?: number;
+  numberOfGames?: number;
+  numberOfTournaments?: number;
 }
 
 interface CompetitionOwner {
@@ -89,7 +101,7 @@ export interface League {
   leagueImage: string;
   leagueName: string;
   leagueDescription: string;
-  location: CourtLocation;
+  location: CompetitionLocation;
   countryCode: string;
   createdAt: Date;
   startDate: string;
@@ -125,7 +137,7 @@ export interface Tournament {
   tournamentImage: string;
   tournamentName: string;
   tournamentDescription: string;
-  location: CourtLocation;
+  location: CompetitionLocation;
   countryCode: string;
   createdAt: Date;
   startDate: string;
@@ -156,7 +168,7 @@ export interface NormalizedCompetition {
   image: string;
   name: string;
   description: string;
-  location: CourtLocation;
+  location: CompetitionLocation;
   countryCode: string;
   createdAt: Date;
   startDate: string;

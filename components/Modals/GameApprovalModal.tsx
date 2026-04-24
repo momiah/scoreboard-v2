@@ -13,7 +13,13 @@ import {
 } from "@react-navigation/native";
 import { notificationTypes } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import { NormalizedCompetition, Game, Player } from "@shared/types";
+import {
+  NormalizedCompetition,
+  Game,
+  Player,
+  CollectionName,
+  GameTeam,
+} from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -114,7 +120,7 @@ const GameApprovalModal = ({
       try {
         const competition = await fetchCompetitionById({
           competitionId,
-          collectionName: config.collectionName,
+          collectionName: config.collectionName as CollectionName,
         });
 
         if (!isMounted) return;
@@ -185,7 +191,7 @@ const GameApprovalModal = ({
     setLoadingDecision(true);
     try {
       await approveGame({
-        gameId: gameDetails?.gameId,
+        gameId: gameDetails?.gameId ?? "",
         competitionId,
         userId: currentUser?.userId,
         senderId,
@@ -204,7 +210,7 @@ const GameApprovalModal = ({
     setLoadingDecision(true);
     try {
       await declineGame({
-        gameId: gameDetails?.gameId,
+        gameId: gameDetails?.gameId ?? "",
         competitionId,
         userId: currentUser?.userId,
         senderId,
@@ -342,17 +348,13 @@ const GameApprovalModal = ({
 
 interface TeamColumnProps {
   position: "left" | "right";
-  players?: {
-    player1?: Player | null;
-    player2?: Player | null;
-    score?: number;
-  };
+  players?: GameTeam;
   competitionType: string;
 }
 
 const TeamColumn = ({
   position,
-  players = {},
+  players = { player1: null, player2: null },
   competitionType,
 }: TeamColumnProps) => (
   <TeamContainer>
@@ -383,8 +385,8 @@ const ScoreDisplay = ({
   team2,
 }: {
   date: string;
-  team1: number | undefined;
-  team2: number | undefined;
+  team1: GameTeam["score"];
+  team2: GameTeam["score"];
 }) => (
   <ResultsContainer>
     <DateText>{date}</DateText>

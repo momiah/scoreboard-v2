@@ -11,6 +11,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { AntDesign } from "@expo/vector-icons";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 
 import { db } from "../services/firebase.config";
 
@@ -146,6 +147,10 @@ const GameProvider = ({ children }) => {
 
         // Update the league document with the updated games array
         await updateDoc(leagueDocRef, { games: updatedGames });
+
+        AppEventsLogger.logEvent("ReportedGame", {
+          league_id: leagueId,
+        });
       } else {
         console.error("League document not found.");
         Alert.alert("Error", "League not found.");

@@ -21,13 +21,15 @@ import {
   runTransaction,
   deleteDoc,
   QueryConstraint,
+  onSnapshot,
 } from "firebase/firestore";
 import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
+import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
-// import { generateUniqueUserId } from "../helpers/generateUniqueUserId";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
   ccImageEndpoint,
@@ -38,7 +40,7 @@ import {
   notificationSchema,
   CollectionName,
   PlayingTime,
-  CourtLocation,
+  Court,
   PendingInvites,
   CompetitionAdmins,
   PendingRequests,
@@ -61,7 +63,6 @@ import {
 } from "@shared/helpers";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
-import { LeagueContextType } from "./types/LeagueContextType";
 
 const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
@@ -470,10 +471,10 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as unknown as CourtLocation[];
+    })) as Court[];
   };
 
-  const addCourt = async (courtData: CourtLocation) => {
+  const addCourt = async (courtData: Court) => {
     try {
       const courtId = generateCourtId(courtData);
       await setDoc(doc(db, "courts", courtId), {
@@ -528,38 +529,25 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }) => {
     try {
       const competitionRef = doc(db, collectionName, competitionId);
-      const competitionDoc = await getDoc(competitionRef);
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
 
-      if (!competitionDoc.exists()) {
-        console.error("Competition does not exist or has been deleted");
-        const notificationsRef = collection(
-          db,
-          "users",
-          userId,
-          "notifications",
-        );
-        const notificationDocRef = doc(notificationsRef, notificationId);
-        await updateDoc(notificationDocRef, {
-          isRead: true,
-        });
-        return;
-      }
-
-      const competitionData = competitionDoc.data();
       const participantsKey =
         collectionName === "leagues"
           ? "leagueParticipants"
           : "tournamentParticipants";
 
-      const competitionParticipants = competitionData[participantsKey] || [];
-      const pendingInvites = competitionData.pendingInvites || [];
-
-      // Add user to competition and remove from pending invites
-      const updatedPending = pendingInvites.filter(
-        (inv: { userId: string }) => inv.userId !== userId,
-      );
-
       const newParticipant = await getUserById(userId);
+
+      if (!newParticipant) {
+        console.error("User not found:", userId);
+        return;
+      }
 
       const newParticipantProfile = {
         ...scoreboardProfileSchema,
@@ -571,17 +559,51 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
-      await updateDoc(competitionRef, {
-        [participantsKey]: [...competitionParticipants, newParticipantProfile],
-        pendingInvites: updatedPending,
+      await runTransaction(db, async (transaction) => {
+        const competitionDoc = await transaction.get(competitionRef);
+
+        if (!competitionDoc.exists()) {
+          console.error("Competition does not exist or has been deleted");
+          transaction.update(notificationDocRef, { isRead: true });
+          return;
+        }
+
+        const competitionData = competitionDoc.data();
+        const competitionParticipants = competitionData[participantsKey] || [];
+        const pendingInvites = competitionData.pendingInvites || [];
+
+        const alreadyParticipant = competitionParticipants.some(
+          (p: { userId: string }) => p.userId === userId,
+        );
+
+        if (alreadyParticipant) {
+          console.log("User is already a participant — skipping duplicate add");
+          transaction.update(notificationDocRef, { isRead: true });
+          return;
+        }
+
+        const updatedPending = pendingInvites.filter(
+          (inv: { userId: string }) => inv.userId !== userId,
+        );
+
+        transaction.update(competitionRef, {
+          [participantsKey]: [
+            ...competitionParticipants,
+            newParticipantProfile,
+          ],
+          pendingInvites: updatedPending,
+        });
+
+        transaction.update(notificationDocRef, {
+          isRead: true,
+          response: notificationTypes.RESPONSE.ACCEPT,
+        });
       });
 
-      // Update user's notification
-      const notificationsRef = collection(db, "users", userId, "notifications");
-      const notificationDocRef = doc(notificationsRef, notificationId);
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.ACCEPT,
+      AppEventsLogger.logEvent("JoinedCompetition", {
+        competition_type:
+          collectionName === "leagues" ? "league" : "tournament",
+        method: "invite",
       });
 
       console.log("Competition invite accepted successfully!");
@@ -695,6 +717,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
         await sendNotification(payload);
 
+        AppEventsLogger.logEvent("RequestedToJoin", {
+          competition_type:
+            collectionName === COLLECTION_NAMES.leagues
+              ? "league"
+              : "tournament",
+        });
+
         return true;
       } else {
         console.log("Competition does not exist");
@@ -721,32 +750,25 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }) => {
     try {
       const competitionRef = doc(db, collectionName, competitionId);
-      const competitionDoc = await getDoc(competitionRef);
-      const competitionData = competitionDoc.data();
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
 
-      // Define the field name as a string
       const participantsKey =
         collectionName === "leagues"
           ? "leagueParticipants"
           : "tournamentParticipants";
 
-      const competitionParticipants = competitionData?.[participantsKey] || [];
-      const pendingRequests = competitionData?.pendingRequests || [];
+      const newParticipant = await getUserById(senderId);
 
-      const userAlreadyInCompetition = competitionParticipants.some(
-        (participant: { userId: string }) => participant.userId === senderId,
-      );
-
-      if (userAlreadyInCompetition) {
-        console.log("User is already a participant in this competition");
+      if (!newParticipant) {
+        console.error("Sender not found:", senderId);
         return;
       }
-
-      const updatedPending = pendingRequests.filter(
-        (pen: { userId: string }) => pen.userId !== senderId,
-      );
-
-      const newParticipant = await getUserById(senderId);
 
       const newParticipantProfile = {
         ...scoreboardProfileSchema,
@@ -758,17 +780,51 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         profileImage: newParticipant.profileImage || ccImageEndpoint,
       };
 
-      await updateDoc(competitionRef, {
-        [participantsKey]: [...competitionParticipants, newParticipantProfile],
-        pendingRequests: updatedPending,
+      await runTransaction(db, async (transaction) => {
+        const competitionDoc = await transaction.get(competitionRef);
+
+        if (!competitionDoc.exists()) {
+          console.error("Competition does not exist or has been deleted");
+          transaction.update(notificationDocRef, { isRead: true });
+          return;
+        }
+
+        const competitionData = competitionDoc.data();
+        const competitionParticipants = competitionData[participantsKey] || [];
+        const pendingRequests = competitionData.pendingRequests || [];
+
+        const alreadyParticipant = competitionParticipants.some(
+          (p: { userId: string }) => p.userId === senderId,
+        );
+
+        if (alreadyParticipant) {
+          console.log("User is already a participant — skipping duplicate add");
+          transaction.update(notificationDocRef, { isRead: true });
+          return;
+        }
+
+        const updatedPending = pendingRequests.filter(
+          (pen: { userId: string }) => pen.userId !== senderId,
+        );
+
+        transaction.update(competitionRef, {
+          [participantsKey]: [
+            ...competitionParticipants,
+            newParticipantProfile,
+          ],
+          pendingRequests: updatedPending,
+        });
+
+        transaction.update(notificationDocRef, {
+          isRead: true,
+          response: notificationTypes.RESPONSE.ACCEPT,
+        });
       });
 
-      // Update notification
-      const notificationsRef = collection(db, "users", userId, "notifications");
-      const notificationDocRef = doc(notificationsRef, notificationId);
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.ACCEPT,
+      AppEventsLogger.logEvent("JoinedCompetition", {
+        competition_type:
+          collectionName === "leagues" ? "league" : "tournament",
+        method: "request",
       });
 
       console.log("Competition join request accepted successfully!");
@@ -903,13 +959,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           const freshTeams: TeamStats[] = freshData?.[config.teamKey] ?? [];
           const isDoubles = competitionData[config.typeKey] === "Doubles";
 
+          // ── Fetch user docs for current game's players only ──
           const userRefs = playerUserIds.map((uid) => doc(db, "users", uid));
           const userSnaps = await Promise.all(
             userRefs.map((ref) => transaction.get(ref)),
           );
-          const freshUsers = userSnaps.map(
-            (snap) => snap.data() as UserProfile,
-          );
+          const freshUsers = userSnaps
+            .filter((snap) => snap.exists())
+            .map((snap) => snap.data() as UserProfile);
 
           if (isTournament) {
             const freshFixtures: Fixtures[] = freshData?.fixtures ?? [];
@@ -924,22 +981,32 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             const orderedApprovedGames =
               getOrderedApprovedGames(updatedFixtures);
 
-            const { updatedParticipants, updatedTeams, updatedUsers } =
+            // ── Replay all approved games — no users needed ──
+            const { updatedParticipants, updatedTeams } =
               await recalculateParticipantsFromFixtures(
                 orderedApprovedGames,
                 freshParticipants,
-                freshUsers,
                 freshTeams,
                 isDoubles,
               );
 
             transaction.update(competitionRef, {
               fixtures: updatedFixtures,
+              gamesCompleted: increment(1),
               [config.participantsKey]: updatedParticipants,
               ...(isDoubles && { [config.teamKey]: updatedTeams }),
             });
 
-            updatedUsers.forEach((user) => {
+            // ── User profile delta — current game's players only ──
+            const { usersToUpdate } = calculatePlayerPerformance(
+              updatedGame,
+              freshParticipants.filter((p) =>
+                playerUserIds.includes(p.userId!),
+              ),
+              freshUsers,
+            );
+
+            usersToUpdate?.forEach((user) => {
               if (!user.userId) return;
               const userRef = doc(db, "users", user.userId);
               transaction.update(userRef, {
@@ -947,7 +1014,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
               });
             });
           } else {
-            // Leagues use delta approach — no fixture replay needed
+            // ── Leagues use delta approach — no fixture replay needed ──
             const { playersToUpdate, usersToUpdate } =
               calculatePlayerPerformance(
                 updatedGame,
@@ -1008,10 +1075,6 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             updatedGame,
             removeGame: false,
           });
-        } else {
-          await updateDoc(competitionRef, {
-            gamesCompleted: increment(1),
-          });
         }
       } else {
         const updatedGames = [...games];
@@ -1043,10 +1106,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       });
 
       console.log("Game approved successfully!");
+
+      AppEventsLogger.logEvent("ApprovedGame", {
+        competition_type: config.isLeague ? "league" : "tournament",
+        is_fully_approved: isFullyApproved ? "true" : "false",
+      });
     } catch (error) {
       console.error("Error approving game:", error);
     }
   };
+
   const declineGame = async ({
     gameId,
     competitionId,
@@ -1110,28 +1179,27 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             gameId: game.gameId,
             team1: {
               player1: game.team1.player1,
-              player2: game.team1.player2 || null,
-              score: undefined,
+              player2: game.team1.player2 ?? null,
+              score: null,
             },
             team2: {
               player1: game.team2.player1,
-              player2: game.team2.player2 || null,
-              score: undefined,
+              player2: game.team2.player2 ?? null,
+              score: null,
             },
             result: null,
             approvalStatus: "Scheduled",
             numberOfApprovals: 0,
             numberOfDeclines: 0,
-            approvers: [],
             reporter: "",
             reportedAt: null,
             reportedTime: null,
             gamescore: "",
-            // Preserve fixture metadata
             court: game.court,
             gameNumber: game.gameNumber,
             createdAt: game.createdAt,
             createdTime: game.createdTime,
+            approvers: [],
           };
 
           await updateTournamentGame({
@@ -1209,6 +1277,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       });
 
       console.log("Game declined successfully!");
+
+      AppEventsLogger.logEvent("DeclinedGame", {
+        competition_type: config.isLeague ? "league" : "tournament",
+        is_fully_declined: isFullyDeclined ? "true" : "false",
+      });
     } catch (error) {
       console.error("Error declining game:", error);
     }
@@ -1530,6 +1603,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const addTournamentFixtures = async ({
     tournamentId,
     fixtures,
+    initialTeams,
     numberOfCourts,
     currentUser,
     mode,
@@ -1537,6 +1611,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   }: {
     tournamentId: string;
     fixtures: Fixtures[];
+    initialTeams?: TeamStats[];
     numberOfCourts: number;
     currentUser: UserProfile;
     mode: string;
@@ -1565,6 +1640,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         generationType: generationType,
         numberOfGames: numberOfGames,
         gamesCompleted: 0,
+        ...(initialTeams?.length && { tournamentTeams: initialTeams }),
       });
 
       for (const participant of tournamentParticipants) {
@@ -1586,6 +1662,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       }
 
       console.log("Fixtures successfully written to database");
+      AppEventsLogger.logEvent("GeneratedFixtures", {
+        number_of_games: numberOfGames,
+        number_of_courts: numberOfCourts,
+        generation_type: generationType,
+        mode,
+      });
       return { success: true };
     } catch (error) {
       console.error("Error writing fixtures to database:", error);
@@ -1728,6 +1810,23 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     console.log("Tournament fixtures deleted successfully!");
   };
 
+  const subscribeToCompetition = (
+    competitionId: string,
+    collectionName: CollectionName,
+    onUpdate: (data: League | Tournament | null) => void,
+    onError?: (error: Error) => void,
+  ): (() => void) => {
+    const competitionRef = doc(db, collectionName, competitionId);
+    return onSnapshot(
+      competitionRef,
+      (snapshot) =>
+        onUpdate(
+          snapshot.exists() ? (snapshot.data() as League | Tournament) : null,
+        ),
+      onError,
+    );
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -1792,6 +1891,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
         // Competition Deletion
         deleteCompetition,
+
+        // Competition Subscription
+        subscribeToCompetition,
       }}
     >
       {children}

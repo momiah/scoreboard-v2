@@ -1,5 +1,5 @@
-// Now, let's update the Signup component to fix the city selection bug and add loading state
 import React, { useContext, useState, useEffect, useCallback } from "react";
+import { UserContext } from "../../context/UserContext";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +26,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 
 import {
   userProfileSchema,
@@ -36,10 +37,18 @@ import {
   ccImageEndpoint,
 } from "@shared";
 import { loadCountries, loadCities } from "../../utils/locationData";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 
 const Signup = ({ route }) => {
-  const { userId: socialId, userName, userEmail } = route.params || {};
+  const {
+    userId: socialId,
+    userName,
+    userLastName,
+    userEmail,
+  } = route.params || {};
   const isSocialSignup = !!socialId;
+  const { setCurrentUser } = useContext(UserContext);
 
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
@@ -66,6 +75,7 @@ const Signup = ({ route }) => {
     password: "",
     confirmPassword: "",
     firstName: userName || "",
+    lastName: userLastName || "",
     email: userEmail || "",
     handPreference: "Both",
   };
@@ -114,7 +124,7 @@ const Signup = ({ route }) => {
     setShowPopup(false);
     setPopupMessage("");
 
-    if (popupButtonText === "Login") {
+    if (popupButtonText === "Login" || popupButtonText === "Continue") {
       navigation.reset({
         index: 0,
         routes: [{ name: "Home" }],
@@ -126,7 +136,6 @@ const Signup = ({ route }) => {
     try {
       const {
         password,
-        confirmPassword,
         city: formCity,
         country: formCountry,
         ...profileFields
@@ -159,10 +168,8 @@ const Signup = ({ route }) => {
         profileImage: ccImageEndpoint,
       };
 
-      // 1. Create the user document
       await setDoc(doc(db, "users", uid), profileToSave);
 
-      // 2. Add a welcome notification as a document in the subcollection
       const welcomeNotification = {
         ...notificationSchema,
         createdAt: new Date(),
@@ -187,13 +194,40 @@ const Signup = ({ route }) => {
         welcomeNotification,
       );
 
-      // 3. Show success UI
+      // — FB App Event: Registration Complete
+      AppEventsLogger.logEvent(
+        AppEventsLogger.AppEvents.CompletedRegistration,
+        {
+          [AppEventsLogger.AppEventParams.RegistrationMethod]: isSocialSignup
+            ? "google"
+            : "email",
+        },
+      );
+
+      if (isSocialSignup) {
+        const user = auth.currentUser;
+        if (user) {
+          const token = await user.getIdToken();
+          await AsyncStorage.setItem("userToken", token);
+          await AsyncStorage.setItem("userId", uid);
+          await registerForPushNotificationsAsync(uid);
+          setCurrentUser(profileToSave);
+        }
+      }
+
       setPopupIcon("success");
-      setPopupButtonText("Login");
+      setPopupButtonText(isSocialSignup ? "Continue" : "Login");
       handleShowPopup(
-        "Account created successfully, please verify your email and login to continue",
+        isSocialSignup
+          ? "Account created successfully!"
+          : "Account created successfully, please verify your email and login to continue",
       );
     } catch (error) {
+      // — FB App Event: Registration Failed
+      AppEventsLogger.logEvent("RegistrationFailed", {
+        reason: error.code || error.message,
+      });
+
       const messages = {
         "auth/email-already-in-use": "Email already registered",
         "auth/weak-password": "Password is too weak",
@@ -205,7 +239,6 @@ const Signup = ({ route }) => {
     }
   };
 
-  // Updated password validation rules
   const passwordValidation = {
     required: "Password is required",
     minLength: {
@@ -218,7 +251,6 @@ const Signup = ({ route }) => {
     },
   };
 
-  // Add to email validation rules
   const emailValidation = {
     required: "Email is required",
     pattern: {
@@ -227,7 +259,6 @@ const Signup = ({ route }) => {
     },
   };
 
-  // Name validation rules (first name and last name)
   const nameValidation = {
     required: "This field is required",
     validate: {
@@ -252,7 +283,6 @@ const Signup = ({ route }) => {
     }
   };
 
-  // Updated username validation rules
   const usernameValidation = {
     required: "Username is required",
     minLength: {
@@ -280,7 +310,7 @@ const Signup = ({ route }) => {
         style={{ flex: 1 }}
       >
         <FlatList
-          data={[1]} // dummy item, we just want to render a scrollable container
+          data={[1]}
           keyExtractor={() => "signup-form"}
           contentContainerStyle={{ padding: 20 }}
           renderItem={() => (
@@ -341,7 +371,6 @@ const Signup = ({ route }) => {
                   passwordValidation={passwordValidation}
                 />
               )}
-
               <Controller
                 name={"country"}
                 control={control}
@@ -352,12 +381,10 @@ const Signup = ({ route }) => {
                     label="Country"
                     setSelected={(val) => {
                       onChange(val);
-
                       const selectedCountry = countries.find(
                         (c) => c.value === val,
                       );
                       const countryCode = selectedCountry?.key;
-
                       setSelectedCountryCode(countryCode);
                       setValue("city", "");
                       setCities([]);
@@ -381,7 +408,6 @@ const Signup = ({ route }) => {
                   />
                 )}
               />
-
               <Controller
                 control={control}
                 name={"city"}
@@ -392,7 +418,6 @@ const Signup = ({ route }) => {
                     label="City"
                     setSelected={(val) => {
                       onChange(val);
-                      // setSelected?.(val);
                     }}
                     data={cities}
                     save="value"
@@ -417,7 +442,6 @@ const Signup = ({ route }) => {
                   />
                 )}
               />
-
               <HandPreference control={control} />
               <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
                 <ButtonText>
@@ -477,7 +501,6 @@ const SocialControllers = ({
           />
         )}
       />
-
       <Controller
         control={control}
         name="password"
@@ -492,7 +515,6 @@ const SocialControllers = ({
           />
         )}
       />
-
       <Controller
         control={control}
         name="confirmPassword"
@@ -525,14 +547,8 @@ const InputWrapper = ({ label, error, ...props }) => (
 
 const Container = styled.View({
   flex: 1,
-  backgroundColor: "rgba(2, 13, 24, 1)", // Translucent dark blue
+  backgroundColor: "rgba(2, 13, 24, 1)",
 });
-
-const ScrollContainer = styled.ScrollView({
-  flexGrow: 1,
-  padding: 20,
-});
-
 const Title = styled.Text({
   fontSize: 24,
   fontWeight: "bold",
@@ -540,14 +556,12 @@ const Title = styled.Text({
   textAlign: "center",
   marginBottom: 20,
 });
-
 const Label = styled.Text({
   color: "#fff",
   fontWeight: "bold",
   fontSize: 14,
   marginBottom: 5,
 });
-
 const Input = styled.TextInput({
   padding: 10,
   marginBottom: 10,
@@ -555,33 +569,22 @@ const Input = styled.TextInput({
   color: "#fff",
   borderRadius: 5,
 });
-
 const ErrorText = styled.Text({
   color: "#ff7675",
   fontSize: 12,
   marginBottom: 10,
 });
-
-const RadioLabel = styled.Text({
-  color: "#fff",
-  fontWeight: "bold",
-  marginBottom: 10,
-  fontSize: 16,
-});
-
 const RadioGroup = styled.View({
   flexDirection: "row",
-  justifyContent: "space-between", // Ensures equal spacing
+  justifyContent: "space-between",
   alignItems: "center",
   marginTop: 30,
   marginBottom: 30,
 });
-
 const RadioButtonWrapper = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
 });
-
 const RadioCircle = styled.View(({ selected }) => ({
   height: 18,
   width: 18,
@@ -591,12 +594,10 @@ const RadioCircle = styled.View(({ selected }) => ({
   backgroundColor: selected ? "#fff" : "transparent",
   marginRight: 8,
 }));
-
 const RadioText = styled.Text({
   color: "#fff",
   fontSize: 14,
 });
-
 const Button = styled.TouchableOpacity({
   backgroundColor: "#3498db",
   padding: 15,
@@ -604,25 +605,13 @@ const Button = styled.TouchableOpacity({
   alignItems: "center",
   marginBottom: 20,
 });
-
 const ButtonText = styled.Text({
   color: "#fff",
   fontWeight: "bold",
   fontSize: 16,
 });
 
-const CheckingText = styled.Text({
-  color: "#fff",
-  fontSize: 12,
-  marginTop: 5,
-});
-
-//
 const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    marginBottom: 15,
-  },
   box: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 0,
@@ -630,31 +619,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
-  errorBox: {
-    borderWidth: 1,
-    borderColor: "#ff7675",
-  },
-  disabledBox: {
-    opacity: 0.6,
-  },
-  input: {
-    color: "#fff",
-    paddingRight: 10,
-  },
+  errorBox: { borderWidth: 1, borderColor: "#ff7675" },
+  disabledBox: { opacity: 0.6 },
+  input: { color: "#fff", paddingRight: 10 },
   dropdown: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderWidth: 0,
     marginTop: 5,
   },
-  dropdownText: {
-    color: "#fff",
-  },
-  dropdownButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-  },
+  dropdownText: { color: "#fff" },
 });
 
 export default Signup;

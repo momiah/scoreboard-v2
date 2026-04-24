@@ -58,7 +58,10 @@ const CompetitionSelector: React.FC<CompetitionSelectorProps> = ({
     let cancelled = false;
     const run = async () => {
       if (!competitions?.length || !profile) {
-        if (!cancelled) setProcessed([]);
+        if (!cancelled) {
+          setProcessed([]);
+          setProcessingRanks(false);
+        }
         return;
       }
 
@@ -209,9 +212,20 @@ const CompetitionSelector: React.FC<CompetitionSelectorProps> = ({
   if (!loading && !processingRanks && !sortedCompetitions?.length) {
     return (
       <Container style={{ marginTop: topOffset }}>
+        <Text
+          style={{
+            color: "#fff",
+            fontSize: 16,
+            fontWeight: "bold",
+            marginBottom: 8,
+          }}
+        >
+          No competitions found.
+        </Text>
         <NoActivityText>
-          No competitions found. Please join or create a competition to add
-          scores! 🏟️
+          All your competitions are either ended or not started yet. If you are
+          not a participant of any competition, please join or create a
+          competition to add scores! 🏟️
         </NoActivityText>
       </Container>
     );

@@ -1,10 +1,4 @@
-import {
-  Modal,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { Modal, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import styled from "styled-components/native";
@@ -22,7 +16,7 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { NormalizedCompetition } from "@shared/types";
+import { CollectionName, NormalizedCompetition } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -46,7 +40,7 @@ const InviteActionModal = ({
   isRead,
 }: InviteActionModalProps) => {
   const {
-    fetchCompetitionById,
+    subscribeToCompetition,
     acceptCompetitionInvite,
     declineCompetitionInvite,
   } = useContext(LeagueContext);
@@ -90,42 +84,41 @@ const InviteActionModal = ({
       resetState();
       return;
     }
-    setLoading(true);
-    const fetchDetails = async () => {
-      try {
-        const competition = await fetchCompetitionById({
-          competitionId: inviteId,
-          collectionName: config.collectionName,
-        });
 
-        if (!competition) {
-          console.log("Competition not found for invite ID:", inviteId);
+    setLoading(true);
+
+    const unsubscribe = subscribeToCompetition(
+      inviteId,
+      config.collectionName as CollectionName,
+      (data) => {
+        if (!data) {
           readNotification(notificationId, currentUser.userId);
           setIsWithdrawn(true);
           setLoading(false);
           return;
         }
-        const normalizedCompetition = normalizeCompetitionData({
-          rawData: competition,
+
+        const normalized = normalizeCompetitionData({
+          rawData: data,
           competitionType: config.competitionType,
         }) as NormalizedCompetition;
 
-        setCompetition(normalizedCompetition);
-
-        const withdrawn = !normalizedCompetition?.pendingInvites?.some(
-          (u) => u.userId === currentUser?.userId,
+        setCompetition(normalized);
+        setIsWithdrawn(
+          !normalized.pendingInvites?.some(
+            (u) => u.userId === currentUser?.userId,
+          ),
         );
-        setIsWithdrawn(withdrawn);
-      } catch (error) {
-        console.error("Error fetching league details:", error);
-      } finally {
         setLoading(false);
-      }
-    };
+      },
+      (error) => {
+        console.error("Error subscribing to competition:", error);
+        setLoading(false);
+      },
+    );
 
-    fetchDetails();
-    setLoading(false);
-  }, [visible, inviteId, inviteType]);
+    return unsubscribe;
+  }, [visible, inviteId]);
 
   useEffect(() => {
     if (!visible || !competition || isRead) return;
@@ -144,26 +137,15 @@ const InviteActionModal = ({
   ]);
 
   const handleAcceptInvite = async () => {
-    if (!competition) {
-      console.log("Competition not found");
-      return;
-    }
-    if (competition.participants.length >= competition.maxPlayers) {
-      console.log("League is full");
-      Alert.alert(
-        "League Full",
-        "This invite has expired as the league is full.",
-      );
-      return;
-    }
+    if (!competition) return;
+
     try {
       await acceptCompetitionInvite({
         userId: currentUser?.userId,
-        competitionId: competition.id,
+        competitionId: competition.id ?? inviteId,
         notificationId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
-
       console.log("Invite accepted successfully");
       onClose();
     } catch (error) {
@@ -182,9 +164,9 @@ const InviteActionModal = ({
     try {
       await declineCompetitionInvite({
         userId: currentUser?.userId,
-        competitionId: competition?.id,
+        competitionId: competition?.id ?? inviteId,
         notificationId,
-        collectionName: config.collectionName,
+        collectionName: config.collectionName as CollectionName,
       });
       console.log("Invite declined successfully");
       onClose();
@@ -313,7 +295,7 @@ const InviteActionModal = ({
                 ) : null}
               </LeagueDetailsContainer>
 
-              {(leagueFull || isWithdrawn || (alreadyInLeague && !isRead)) && (
+              {(leagueFull || isWithdrawn || alreadyInLeague) && (
                 <ErrorText>
                   {leagueFull
                     ? "This invite has expired as the league is full"

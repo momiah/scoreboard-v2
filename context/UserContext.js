@@ -33,6 +33,7 @@ import {
   updateUsers,
   updateTeams,
 } from "../devFunctions/firebaseFunctions";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 
 const UserContext = createContext();
 
@@ -552,7 +553,7 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const getCompetitionsForUser = async (userId, collectionName) => {
+  const getCompetitionsForUser = useCallback(async (userId, collectionName) => {
     try {
       const competitionsRef = collection(db, collectionName);
 
@@ -600,7 +601,7 @@ const UserProvider = ({ children }) => {
       );
       return [];
     }
-  };
+  }, []);
 
   const updateUserProfile = async (updatedFields) => {
     try {
@@ -611,6 +612,8 @@ const UserProvider = ({ children }) => {
 
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, updatedFields); // Surgical update
+
+      AppEventsLogger.logEvent("UpdatedProfile");
 
       setCurrentUser((prev) => ({
         ...prev,
@@ -796,6 +799,7 @@ const UserProvider = ({ children }) => {
     };
 
     await addDoc(collection(db, "feedback"), feedbackData);
+    AppEventsLogger.logEvent("SubmittedFeedback");
   };
 
   const deleteAccount = async () => {

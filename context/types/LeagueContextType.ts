@@ -2,13 +2,20 @@ import {
   CompetitionType,
   CollectionName,
   PlayingTime,
-  CourtLocation,
   PendingInvites,
   ScoreboardProfile,
   PendingRequests,
+  Court,
 } from "@shared";
 
-import { UserProfile, League, Tournament, Fixtures, Game } from "@shared";
+import {
+  UserProfile,
+  League,
+  Tournament,
+  Fixtures,
+  Game,
+  TeamStats,
+} from "@shared";
 
 interface PendingRequestCompetition {
   id: string;
@@ -52,9 +59,9 @@ export interface LeagueContextType {
     collectionName: CollectionName;
   }) => Promise<League | Tournament | null>;
 
-  getCourts: () => Promise<CourtLocation[]>;
+  getCourts: () => Promise<Court[]>;
 
-  addCourt: (courtData: CourtLocation) => Promise<string>;
+  addCourt: (courtData: Court) => Promise<string>;
   updatePendingInvites: (
     competitionId: string,
     userId: string,
@@ -147,6 +154,7 @@ export interface LeagueContextType {
     senderId: string;
     notificationId: string;
     notificationType: string;
+    videoApproved?: boolean;
   }) => Promise<void>;
   declineGame: (params: {
     gameId: string;
@@ -175,6 +183,7 @@ export interface LeagueContextType {
   addTournamentFixtures: (params: {
     tournamentId: string;
     fixtures: Fixtures[];
+    initialTeams?: TeamStats[];
     numberOfCourts: number;
     currentUser: UserProfile;
     mode: string;
@@ -194,4 +203,11 @@ export interface LeagueContextType {
   // Mock Data
   showMockData: boolean;
   setShowMockData: (show: boolean) => void;
+
+  subscribeToCompetition: (
+    competitionId: string,
+    collectionName: CollectionName,
+    onUpdate: (data: League | Tournament | null) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
 }

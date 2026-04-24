@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import * as Updates from "expo-updates";
 import { SafeAreaView, Platform } from "react-native";
 import { GameProvider } from "./context/GameContext";
@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { recoverPendingVideoUploads } from "./helpers/recoverPendingVideoUploads";
+import { Settings } from "react-native-fbsdk-next";
 
 import { registerForPushNotificationsAsync } from "./services/pushNotifications";
 
@@ -22,6 +23,8 @@ const navigationRef = React.createRef();
 
 export default function App() {
   useEffect(() => {
+    Settings.initializeSDK();
+
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -30,7 +33,6 @@ export default function App() {
       }),
     });
 
-    // request permissions and set up Android notification channel
     const setupNotifications = async () => {
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== "granted") {
@@ -38,7 +40,6 @@ export default function App() {
         return;
       }
 
-      // android notification channel
       if (Platform.OS === "android") {
         await Notifications.setNotificationChannelAsync("default", {
           name: "default",
@@ -55,13 +56,11 @@ export default function App() {
         console.log("App.js: Retrieved userId from AsyncStorage:", userId);
         if (userId) {
           await registerForPushNotificationsAsync(userId);
-          // Alert.alert("Success", "Push notifications set up successfully!");
         } else {
           console.log("App.js: No userId found in AsyncStorage");
         }
       } catch (error) {
         console.error("App.js: Error registering push notifications:", error);
-        // Alert.alert("Error", "Push notifications not set up. Please try again later." + error.message);
       }
     };
 
@@ -69,7 +68,6 @@ export default function App() {
 
     const checkForUpdates = async () => {
       if (!__DEV__) {
-        // Only check in production
         try {
           const update = await Updates.checkForUpdateAsync();
           if (update.isAvailable) {
@@ -90,7 +88,6 @@ export default function App() {
         const data = response.notification.request.content.data;
         console.log("Notification tapped:", data);
 
-        // Navigate to Notifications tab
         if (navigationRef.current) {
           navigationRef.current?.navigate("NotificationsStack", {
             screen: "Notification",
@@ -98,12 +95,10 @@ export default function App() {
           });
         } else {
           console.log("Navigation reference is not ready");
-          // Alert.alert("Error", "Navigation is not ready");
         }
       },
     );
 
-    // Listener for notifications received while the app is in the foreground
     const backgroundSubscription =
       Notifications.addNotificationReceivedListener((notification) => {
         console.log(

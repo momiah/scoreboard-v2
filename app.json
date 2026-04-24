@@ -2,7 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "3.0.3",
+    "version": "3.0.4",
     "runtimeVersion": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
@@ -15,11 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "18",
+      "buildNumber": "21",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "FacebookAppID": "1264178202106496",
+        "FacebookClientToken": "924121d20d839d1a41302ec91d32346d",
         "FacebookDisplayName": "Court Champs",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
@@ -39,11 +40,6 @@
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
             ]
-          },
-          {
-            "CFBundleURLSchemes": [
-              "fb1264178202106496"
-            ]
           }
         ],
         "LSMinimumSystemVersion": "13.0"
@@ -58,12 +54,25 @@
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
     },
     "plugins": [
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1264178202106496",
+          "clientToken": "924121d20d839d1a41302ec91d32346d",
+          "displayName": "Court Champs",
+          "scheme": "fb1264178202106496",
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {
