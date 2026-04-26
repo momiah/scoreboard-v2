@@ -1253,6 +1253,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
+      // Archive video if game had one
+      if (game.videoUrl) {
+        await updateDoc(doc(db, COLLECTION_NAMES.gameVideos, gameId), {
+          videoApproved: false,
+        });
+      }
+
       await readNotification(
         notificationId,
         userId,

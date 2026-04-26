@@ -3,7 +3,7 @@ import { Dimensions, TouchableOpacity } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
 import styled from "styled-components/native";
-import { GameVideo } from "@shared/types";
+import { GameVideo, Player } from "@shared/types";
 import {
   useNavigation,
   NavigationProp,
@@ -90,21 +90,15 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
     navigation.navigate(route, { [idKey]: video.competitionId });
   };
 
+  const handlePlayerPress = (player: Player) => {
+    navigation.navigate("UserProfile", { userId: player.userId });
+  };
+
   const displayedLikes = (() => {
     if (isLiked && !initiallyLiked) return video.likes + 1;
     if (!isLiked && initiallyLiked) return video.likes - 1;
     return video.likes;
   })();
-
-  const [score1, score2] = video.gamescore.split("-").map((s) => s.trim());
-  const team1Player1 = formatDisplayName(video.teams?.team1?.player1);
-  const team1Player2 = video.teams?.team1?.player2
-    ? formatDisplayName(video.teams.team1.player2)
-    : null;
-  const team2Player1 = formatDisplayName(video.teams?.team2?.player1);
-  const team2Player2 = video.teams?.team2?.player2
-    ? formatDisplayName(video.teams.team2.player2)
-    : null;
 
   return (
     <CardContainer>
@@ -186,25 +180,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
 
       {/* ── Footer ── */}
       <FooterRow>
-        <ScoreboardOverlay>
-          <TeamNamesColumn alignRight={false}>
-            <PlayerName numberOfLines={1}>{team1Player1}</PlayerName>
-            {team1Player2 && (
-              <PlayerName numberOfLines={1}>{team1Player2}</PlayerName>
-            )}
-          </TeamNamesColumn>
-          <ScoreRow>
-            <ScoreText>{score1}</ScoreText>
-            <ScoreDivider> - </ScoreDivider>
-            <ScoreText>{score2}</ScoreText>
-          </ScoreRow>
-          <TeamNamesColumn alignRight>
-            <PlayerName numberOfLines={1}>{team2Player1}</PlayerName>
-            {team2Player2 && (
-              <PlayerName numberOfLines={1}>{team2Player2}</PlayerName>
-            )}
-          </TeamNamesColumn>
-        </ScoreboardOverlay>
+        <Scoreboard video={video} onPlayerPress={handlePlayerPress} />
         <ActionsRow>
           <ActionButton onPress={() => onLike(video.gameId)}>
             <ActionEmoji>
@@ -247,6 +223,63 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
         />
       )}
     </CardContainer>
+  );
+};
+
+interface ScoreboardProps {
+  video: GameVideo;
+  onPlayerPress: (player: Player) => void;
+}
+
+const Scoreboard: React.FC<ScoreboardProps> = ({ video, onPlayerPress }) => {
+  const [score1, score2] = video.gamescore.split("-").map((s) => s.trim());
+  const team1Player1 = video.teams?.team1?.player1;
+  const team1Player2 = video.teams?.team1?.player2 ?? null;
+  const team2Player1 = video.teams?.team2?.player1;
+  const team2Player2 = video.teams?.team2?.player2 ?? null;
+
+  return (
+    <ScoreboardOverlay>
+      <TeamNamesColumn alignRight={false}>
+        {team1Player1 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team1Player1)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team1Player1)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+        {team1Player2 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team1Player2)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team1Player2)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+      </TeamNamesColumn>
+
+      <ScoreRow>
+        <ScoreText>{score1}</ScoreText>
+        <ScoreDivider> - </ScoreDivider>
+        <ScoreText>{score2}</ScoreText>
+      </ScoreRow>
+
+      <TeamNamesColumn alignRight>
+        {team2Player1 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team2Player1)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team2Player1)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+        {team2Player2 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team2Player2)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team2Player2)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+      </TeamNamesColumn>
+    </ScoreboardOverlay>
   );
 };
 

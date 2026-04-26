@@ -107,11 +107,14 @@ export const updateGameVideoUrl = functions.https.onCall(
     const competitionSnap = await competitionRef.get();
     const games: Game[] = competitionSnap.data()?.games ?? [];
 
+    // Set videoApproved: false on the game — awaiting opponent approval
     const updatedGames = games.map((game) =>
-      game.gameId === gameId ? { ...game, videoUrl } : game,
+      game.gameId === gameId
+        ? { ...game, videoUrl, videoApproved: true }
+        : game,
     );
 
-    // Write to gameVideos collection and patch competition in parallel
+    // Write to gameVideos with videoApproved: false — not public until approved
     const gameVideoRecord: GameVideo = {
       gameId,
       videoUrl,
@@ -127,6 +130,7 @@ export const updateGameVideoUrl = functions.https.onCall(
       views: 0,
       commentCount: 0,
       teams,
+      videoApproved: true,
     };
 
     await Promise.all([

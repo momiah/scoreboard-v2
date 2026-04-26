@@ -7,6 +7,7 @@ import {
   limit,
   startAfter,
   getDocs,
+  where,
   DocumentSnapshot,
 } from "firebase/firestore";
 import { GameVideo } from "@shared/types";
@@ -64,6 +65,7 @@ export const useGameVideoFeed = (): UseGameVideoFeedReturn => {
       const db = getFirestore();
       const videosQuery = query(
         collection(db, COLLECTION_NAMES.gameVideos),
+        where("videoApproved", "==", true),
         orderBy("createdAt", "desc"),
         limit(PAGE_SIZE),
       );
@@ -91,6 +93,7 @@ export const useGameVideoFeed = (): UseGameVideoFeedReturn => {
       const db = getFirestore();
       const videosQuery = query(
         collection(db, COLLECTION_NAMES.gameVideos),
+        where("videoApproved", "==", true),
         orderBy("createdAt", "desc"),
         startAfter(lastDoc),
         limit(PAGE_SIZE),

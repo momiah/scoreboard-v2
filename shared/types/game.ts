@@ -67,6 +67,7 @@ export interface Game {
   reportedTime?: string | null;
   approvers: Approver[];
   videoUrl?: string;
+  videoApproved?: boolean | null;
 }
 
 export interface GameVideoUploadPayload {
@@ -97,6 +98,7 @@ export interface GameVideo extends GameVideoUploadPayload {
   likedBy: string[];
   views: number;
   commentCount: number;
+  videoApproved?: boolean | null;
 }
 
 export interface Comment {

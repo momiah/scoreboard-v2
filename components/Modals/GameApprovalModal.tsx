@@ -11,19 +11,15 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { notificationTypes } from "@shared";
+import { notificationTypes, CollectionName } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import {
-  NormalizedCompetition,
-  Game,
-  Player,
-  CollectionName,
-  GameTeam,
-} from "@shared/types";
+import { NormalizedCompetition, Game, Player, GameTeam } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+import { useVideoPlayer, VideoView } from "expo-video";
 
 const screenWidth = Dimensions.get("window").width;
+const VIDEO_HEIGHT = (screenWidth - 40) * (9 / 16);
 
 const findGame = (
   competition: NormalizedCompetition,
@@ -33,12 +29,10 @@ const findGame = (
   if (isLeague) {
     return competition.games?.find((game) => game.gameId === gameId) || null;
   }
-
   for (const fixture of competition.fixtures || []) {
     const game = fixture.games?.find((game) => game.gameId === gameId);
     if (game) return game;
   }
-
   return competition.games?.find((game) => game.gameId === gameId) || null;
 };
 
@@ -62,6 +56,25 @@ interface NavigateToParams {
   competitionId?: string;
   userId?: string;
 }
+
+// ── Video Player ──────────────────────────────────────────────────────────────
+
+const GameVideoPlayer = ({ videoUrl }: { videoUrl: string }) => {
+  const player = useVideoPlayer(videoUrl, (p) => {
+    p.loop = true;
+    p.muted = false;
+  });
+
+  return (
+    <VideoWrapper>
+      <StyledVideoView
+        player={player}
+        contentFit="cover"
+        nativeControls={true}
+      />
+    </VideoWrapper>
+  );
+};
 
 const GameApprovalModal = ({
   visible,
@@ -230,12 +243,12 @@ const GameApprovalModal = ({
   const autoApproved = gameDetails?.autoApproved || false;
   const competitionName = competition?.name || "Unknown Competition";
   const competitionType = competition?.type || "Singles";
-  const isDisabled =
-    isRead ||
-    loadingDecision ||
-    gameDeleted ||
-    approvalLimitReached ||
-    autoApproved;
+
+  const isDeclineDisabled =
+    loadingDecision || gameDeleted || autoApproved || approvalLimitReached;
+
+  const isAcceptDisabled =
+    loadingDecision || gameDeleted || approvalLimitReached || autoApproved;
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -277,6 +290,11 @@ const GameApprovalModal = ({
                     </LinkText>
                   </Message>
 
+                  {/* ── Game Video ── */}
+                  {gameDetails?.videoUrl && (
+                    <GameVideoPlayer videoUrl={gameDetails.videoUrl} />
+                  )}
+
                   {!gameDeleted && (
                     <GameContainer>
                       <TeamColumn
@@ -313,20 +331,23 @@ const GameApprovalModal = ({
 
                   {approvalLimitReached && (
                     <Description>
-                      This game has already been approved by the maximum number
-                      of participants. No further actions can be taken.
+                      This game has already been approved. No further actions
+                      can be taken.
                     </Description>
                   )}
 
                   <ButtonRow>
                     <Button
                       variant="decline"
-                      disabled={isDisabled}
+                      disabled={isDeclineDisabled}
                       onPress={handleDeclineGame}
                     >
                       <ButtonText>Decline</ButtonText>
                     </Button>
-                    <Button disabled={isDisabled} onPress={handleApproveGame}>
+                    <Button
+                      disabled={isAcceptDisabled}
+                      onPress={handleApproveGame}
+                    >
                       {loadingDecision ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (
@@ -345,6 +366,8 @@ const GameApprovalModal = ({
     </Modal>
   );
 };
+
+// ─── Sub Components ───────────────────────────────────────────────────────────
 
 interface TeamColumnProps {
   position: "left" | "right";
@@ -398,7 +421,8 @@ const ScoreDisplay = ({
   </ResultsContainer>
 );
 
-// Styled Components
+// ─── Styled Components ────────────────────────────────────────────────────────
+
 const ModalContainer = styled(BlurView).attrs({
   intensity: 50,
   tint: "dark",
@@ -466,7 +490,7 @@ const Button = styled.TouchableOpacity(
     variant,
   }: {
     disabled: boolean;
-    variant: "decline" | "accept";
+    variant?: "decline" | "accept";
   }) => ({
     backgroundColor: disabled
       ? "#888"
@@ -560,6 +584,22 @@ const DateText = styled.Text({
   fontWeight: "bold",
   color: "white",
   marginBottom: 5,
+});
+
+// ── Video ─────────────────────────────────────────────────────────────────────
+
+const VideoWrapper = styled.View({
+  width: "100%",
+  marginTop: 16,
+  borderRadius: 8,
+  overflow: "hidden",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
+});
+
+const StyledVideoView = styled(VideoView)({
+  width: "100%",
+  height: VIDEO_HEIGHT,
 });
 
 export default GameApprovalModal;

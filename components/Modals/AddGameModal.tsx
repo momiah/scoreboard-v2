@@ -29,7 +29,13 @@ import {
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import { GameTeam, Game, GameResult, Player } from "@shared/types";
+import {
+  GameTeam,
+  Game,
+  GameResult,
+  Player,
+  CollectionName,
+} from "@shared/types";
 import { useVideoUpload } from "../../hooks/useVideoUpload";
 
 type AddGameModalProps = {
@@ -329,7 +335,7 @@ const AddGameModal = ({
     );
     await fetchCompetitionById({
       competitionId: leagueId,
-      collectionName: COLLECTION_NAMES.leagues,
+      collectionName: COLLECTION_NAMES.leagues as CollectionName,
     });
     setLoading(false);
   };
