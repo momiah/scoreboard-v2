@@ -19,7 +19,7 @@ export interface GameTeam {
   score?: number | null;
 }
 
-interface Teams {
+export interface Teams {
   team1: { player1: Player; player2?: Player };
   team2: { player1: Player; player2?: Player };
 }
@@ -84,6 +84,15 @@ export interface GameVideoUploadPayload {
   teams: Teams;
 }
 
+export interface PendingUpload extends Omit<
+  GameVideoUploadPayload,
+  "videoUrl"
+> {
+  status: "uploading";
+  progress: number;
+  startedAt: Date;
+  uploadId?: string;
+}
 export interface VideoPostedBy {
   userId: string;
   firstName: string;

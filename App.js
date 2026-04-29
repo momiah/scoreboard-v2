@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
 import { SafeAreaView, Platform } from "react-native";
 import { GameProvider } from "./context/GameContext";
@@ -13,13 +13,45 @@ import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { recoverPendingVideoUploads } from "./helpers/recoverPendingVideoUploads";
 import { Settings } from "react-native-fbsdk-next";
-
 import { registerForPushNotificationsAsync } from "./services/pushNotifications";
-
+import { UserContext } from "./context/UserContext";
+import { usePendingUpload } from "./hooks/usePendingUpload";
+import UploadToast from "./components/UploadToast";
 import Tabs from "./navigation/tabs";
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
+
+// ── Inner component — has access to UserContext ───────────────────────────────
+
+const AppContent = () => {
+  const { currentUser } = useContext(UserContext);
+  const { pendingUploads } = usePendingUpload(currentUser?.userId);
+
+  useEffect(() => {
+    if (currentUser?.userId) {
+      recoverPendingVideoUploads(currentUser.userId);
+    }
+  }, [currentUser?.userId]);
+
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <BottomSheetModalProvider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
+          <UploadToast pendingUploads={pendingUploads} />
+          <Stack.Navigator
+            screenOptions={{ headerShown: false }}
+            cardStyle={{ backgroundColor: "rgb(3, 16, 31)" }}
+          >
+            <Stack.Screen name="Tabs" component={Tabs} />
+          </Stack.Navigator>
+        </SafeAreaView>
+      </BottomSheetModalProvider>
+    </NavigationContainer>
+  );
+};
+
+// ── Root component ────────────────────────────────────────────────────────────
 
 export default function App() {
   useEffect(() => {
@@ -53,11 +85,8 @@ export default function App() {
 
       try {
         const userId = await AsyncStorage.getItem("userId");
-        console.log("App.js: Retrieved userId from AsyncStorage:", userId);
         if (userId) {
           await registerForPushNotificationsAsync(userId);
-        } else {
-          console.log("App.js: No userId found in AsyncStorage");
         }
       } catch (error) {
         console.error("App.js: Error registering push notifications:", error);
@@ -81,20 +110,16 @@ export default function App() {
     };
 
     checkForUpdates();
-    recoverPendingVideoUploads();
 
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
-        console.log("Notification tapped:", data);
 
         if (navigationRef.current) {
           navigationRef.current?.navigate("NotificationsStack", {
             screen: "Notification",
             params: { notificationData: data },
           });
-        } else {
-          console.log("Navigation reference is not ready");
         }
       },
     );
@@ -119,21 +144,7 @@ export default function App() {
         <UserProvider>
           <LeagueProvider>
             <GameProvider>
-              <NavigationContainer ref={navigationRef}>
-                <BottomSheetModalProvider>
-                  <SafeAreaView
-                    style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
-                  >
-                    <Stack.Navigator
-                      screenOptions={{
-                        headerShown: false,
-                      }}
-                    >
-                      <Stack.Screen name="Tabs" component={Tabs} />
-                    </Stack.Navigator>
-                  </SafeAreaView>
-                </BottomSheetModalProvider>
-              </NavigationContainer>
+              <AppContent />
             </GameProvider>
           </LeagueProvider>
         </UserProvider>

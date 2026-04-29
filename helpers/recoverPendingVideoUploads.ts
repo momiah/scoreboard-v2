@@ -3,6 +3,8 @@ import {
   collection,
   getDocs,
   deleteDoc,
+  query,
+  where,
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { COLLECTION_NAMES } from "@shared";
@@ -17,13 +19,16 @@ type CheckR2VideoResponse = {
   videoUrl: string | null;
 };
 
-// Call once in App.tsx useEffect on app launch
-export const recoverPendingVideoUploads = async () => {
+// Call once in AppContent useEffect when currentUser is available
+export const recoverPendingVideoUploads = async (userId: string) => {
   const db = getFirestore();
   const functions = getFunctions();
 
   const snapshot = await getDocs(
-    collection(db, COLLECTION_NAMES.pendingVideoUploads),
+    query(
+      collection(db, COLLECTION_NAMES.pendingVideoUploads),
+      where("postedBy.userId", "==", userId),
+    ),
   );
 
   if (snapshot.empty) return;

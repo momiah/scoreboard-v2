@@ -43,18 +43,22 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
-import { GameVideo, League, Tournament } from "@shared/types";
+import {
+  GameVideo,
+  League,
+  NormalizedCompetition,
+  Tournament,
+} from "@shared/types";
 import { getLocalFirstCompetitions } from "@/helpers/getLocalFirstCompetitions";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
-import { CARD_HEIGHT } from "../../components/Feed/GameVideoCard";
 import { useFocusEffect } from "@react-navigation/native";
 
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
 const VIEWABILITY_CONFIG: ViewabilityConfig = {
-  itemVisiblePercentThreshold: 60,
+  itemVisiblePercentThreshold: 80,
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -76,7 +80,7 @@ const Home = () => {
   const [sortedUsers, setSortedUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedVideo, setSelectedVideo] = useState<GameVideo | null>(null);
+  // const [selectedVideo, setSelectedVideo] = useState<GameVideo | null>(null);
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
@@ -136,15 +140,6 @@ const Home = () => {
     [activeVideoId, likedVideoIds, handleLike, isScreenFocused, currentUser],
   );
 
-  const getItemLayout = useCallback(
-    (_: unknown, index: number) => ({
-      length: CARD_HEIGHT + 8,
-      offset: (CARD_HEIGHT + 8) * index,
-      index,
-    }),
-    [],
-  );
-
   // ─── Home Data ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -199,7 +194,7 @@ const Home = () => {
   const publicLeagues = getLocalFirstCompetitions({
     competitions: (upcomingLeagues ?? []).map((league: League) =>
       normalizeCompetitionData({ rawData: league, competitionType: "league" }),
-    ),
+    ) as NormalizedCompetition[],
     checkEndDate: true,
     currentUser,
   });
@@ -210,7 +205,7 @@ const Home = () => {
         rawData: tournament,
         competitionType: "tournament",
       }),
-    ),
+    ) as NormalizedCompetition[],
     currentUser,
   });
 
@@ -329,7 +324,6 @@ const Home = () => {
         data={videos}
         renderItem={renderVideo}
         keyExtractor={(item) => item.gameId}
-        getItemLayout={getItemLayout}
         ListHeaderComponent={HomeHeader}
         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
         onEndReached={hasMore ? fetchMoreVideos : undefined}

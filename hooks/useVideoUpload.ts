@@ -1,11 +1,17 @@
 import { useCallback } from "react";
-import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { Alert } from "react-native";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { getFirestore, doc, setDoc, deleteDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { COLLECTION_NAMES } from "@shared";
 import { GameVideoUploadPayload } from "@shared/types";
+import Upload from "react-native-background-upload";
 
 interface R2UploadUrlResponse {
   uploadUrl: string;
@@ -19,6 +25,12 @@ type GenerateUrlParams = {
   fileType: string;
 };
 
+export interface PickedVideo {
+  uri: string;
+  duration: number | null;
+  fileSize: number | null;
+}
+
 interface UseVideoUploadOptions {
   competitionId: string;
 }
@@ -29,15 +41,16 @@ interface StartBackgroundUploadParams extends Omit<
 > {
   videoUri: string;
 }
+
 interface UseVideoUploadReturn {
-  pickVideo: () => Promise<string | null>;
+  pickVideo: () => Promise<PickedVideo | null>;
   startBackgroundUpload: (params: StartBackgroundUploadParams) => Promise<void>;
 }
 
 export const useVideoUpload = ({
   competitionId,
 }: UseVideoUploadOptions): UseVideoUploadReturn => {
-  const pickVideo = useCallback(async (): Promise<string | null> => {
+  const pickVideo = useCallback(async (): Promise<PickedVideo | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== "granted") {
@@ -49,19 +62,18 @@ export const useVideoUpload = ({
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: ["videos"],
       allowsEditing: false,
       quality: 1,
-      videoMaxDuration: 300,
     });
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      if (asset.fileSize && asset.fileSize > 500 * 1024 * 1024) {
-        Alert.alert("Video Too Large", "Please select a video under 500MB.");
-        return null;
-      }
-      return asset.uri;
+      return {
+        uri: asset.uri,
+        duration: asset.duration ?? null,
+        fileSize: asset.fileSize ?? null,
+      };
     }
 
     return null;
@@ -79,9 +91,14 @@ export const useVideoUpload = ({
       teams,
     }: StartBackgroundUploadParams) => {
       const db = getFirestore();
+      const pendingDocRef = doc(
+        db,
+        COLLECTION_NAMES.pendingVideoUploads,
+        gameId,
+      );
 
       try {
-        await setDoc(doc(db, COLLECTION_NAMES.pendingVideoUploads, gameId), {
+        await setDoc(pendingDocRef, {
           gameId,
           competitionId,
           competitionName,
@@ -91,6 +108,7 @@ export const useVideoUpload = ({
           postedBy,
           teams,
           status: "uploading",
+          progress: 0,
           startedAt: new Date(),
         });
         console.log("[VideoUpload] Pending record written:", gameId);
@@ -109,60 +127,90 @@ export const useVideoUpload = ({
             R2UploadUrlResponse
           >(functions, "generateR2UploadUrl");
 
-          console.log("[VideoUpload] Calling generateR2UploadUrl...");
           const { data } = await generateR2UploadUrl({
             competitionId,
             gameId,
             fileType: "video/mp4",
           });
-          console.log("[VideoUpload] Presigned URL received:", data.uploadUrl);
 
-          const uploadTask = FileSystem.createUploadTask(
-            data.uploadUrl,
-            videoUri,
-            {
-              httpMethod: "PUT",
-              headers: { "Content-Type": "video/mp4" },
-              uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-            },
-          );
+          let lastReportedProgress = 0;
 
-          console.log("[VideoUpload] Starting native upload...");
-          const result = await uploadTask.uploadAsync();
-          console.log("[VideoUpload] Upload result:", result?.status);
+          const uploadId = await Upload.startUpload({
+            url: data.uploadUrl,
+            path: videoUri,
+            method: "PUT",
+            type: "raw",
+            headers: { "content-type": "video/mp4" },
+            customUploadId: gameId,
+          });
 
-          if (result?.status && result.status >= 200 && result.status < 300) {
+          // ── Store real uploadId for cancellation ──────────────────────────
+          await updateDoc(pendingDocRef, { uploadId });
+
+          console.log("[VideoUpload] Native upload started, id:", uploadId);
+
+          // ── Progress — throttled to every 10% ─────────────────────────────
+          Upload.addListener("progress", uploadId, async (progressData) => {
+            const percentage = Math.round(progressData.progress);
+            if (percentage >= lastReportedProgress + 10) {
+              lastReportedProgress = percentage;
+              try {
+                await updateDoc(pendingDocRef, { progress: percentage });
+              } catch {
+                // Non-critical — silently ignore
+              }
+            }
+          });
+
+          // ── Completed ─────────────────────────────────────────────────────
+          Upload.addListener("completed", uploadId, async (completedData) => {
             console.log(
-              "[VideoUpload] Upload succeeded, patching Firestore...",
+              "[VideoUpload] Upload completed, responseCode:",
+              completedData.responseCode,
             );
 
-            const patchGameVideoUrl = httpsCallable<
-              GameVideoUploadPayload,
-              void
-            >(functions, "updateGameVideoUrl");
+            if (
+              completedData.responseCode >= 200 &&
+              completedData.responseCode < 300
+            ) {
+              const patchGameVideoUrl = httpsCallable<
+                GameVideoUploadPayload,
+                void
+              >(functions, "updateGameVideoUrl");
 
-            await patchGameVideoUrl({
-              gameId,
-              competitionId,
-              competitionName,
-              competitionType,
-              videoUrl: data.publicUrl,
-              gamescore,
-              date,
-              postedBy,
-              teams,
-            });
+              await patchGameVideoUrl({
+                gameId,
+                competitionId,
+                competitionName,
+                competitionType,
+                videoUrl: data.publicUrl,
+                gamescore,
+                date,
+                postedBy,
+                teams,
+              });
 
-            await deleteDoc(
-              doc(db, COLLECTION_NAMES.pendingVideoUploads, gameId),
-            );
-            console.log("[VideoUpload] Complete — pending record cleared");
-          } else {
-            console.error(
-              "[VideoUpload] Upload returned non-2xx status:",
-              result?.status,
-            );
-          }
+              await deleteDoc(pendingDocRef);
+              console.log("[VideoUpload] Complete — pending record cleared");
+            } else {
+              console.error(
+                "[VideoUpload] Upload returned non-2xx status:",
+                completedData.responseCode,
+              );
+            }
+          });
+
+          // ── Error ─────────────────────────────────────────────────────────
+          Upload.addListener("error", uploadId, (errorData) => {
+            console.error("[VideoUpload] Upload error:", errorData.error);
+          });
+
+          // ── Cancelled ─────────────────────────────────────────────────────
+          // ── Cancelled ─────────────────────────────────────────────────────────────
+          Upload.addListener("cancelled", uploadId, async () => {
+            console.warn("[VideoUpload] Upload cancelled:", gameId);
+            await deleteDoc(pendingDocRef);
+          });
         } catch (error) {
           console.error("[VideoUpload] Background upload failed:", error);
         }

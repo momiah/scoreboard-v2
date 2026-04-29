@@ -14,6 +14,7 @@
       "backgroundColor": "#00152B"
     },
     "ios": {
+        "backgroundColor": "#00152B",
       "supportsTablet": true,
       "buildNumber": "21",
       "bundleIdentifier": "com.courtchamp",
@@ -49,6 +50,7 @@
       }
     },
     "android": {
+        "backgroundColor": "#00152B",
       "adaptiveIcon": {
         "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
         "backgroundColor": "#00152B"
