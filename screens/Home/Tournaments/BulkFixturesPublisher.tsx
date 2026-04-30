@@ -15,6 +15,7 @@ import moment from "moment";
 import { validateBadmintonScores } from "../../../helpers/validateBadmintonScores";
 import Popup from "../../../components/popup/Popup";
 import { calculateWin } from "../../../helpers/calculateWin";
+import { calculatePlayerPerformance } from "@shared/helpers";
 import {
   Game,
   GameTeam,
@@ -37,6 +38,7 @@ import {
   recalculateParticipantsFromFixtures,
   getOrderedApprovedGames,
 } from "@shared/helpers";
+import { getPlayerUserIds } from "../../../context/LeagueContext";
 
 const { height: screenHeight } = Dimensions.get("window");
 const popupHeight = screenHeight * 0.3;
@@ -149,14 +151,7 @@ const BulkFixturesPublisher = () => {
     setShowPopup,
     showPopup,
   } = useContext(PopupContext);
-  const { updateTournamentGame } = useContext(LeagueContext) as {
-    updateTournamentGame: (params: {
-      tournamentId: string;
-      gameId: string;
-      updatedGame: Game;
-      removeGame: boolean;
-    }) => Promise<void>;
-  };
+  const { updateTournamentGame } = useContext(LeagueContext);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [gamesWithScores, setGamesWithScores] = useState<GameWithScores[]>([]);
@@ -403,7 +398,6 @@ const BulkFixturesPublisher = () => {
                   validatedGames.slice(0, successCount).map((g) => g.gameId),
                 );
 
-                // Merge successfully written games into current live fixtures
                 const mergedFixtures = liveTournament.fixtures.map((round) => ({
                   ...round,
                   games: round.games.map((game) => {
@@ -418,24 +412,33 @@ const BulkFixturesPublisher = () => {
                 }));
 
                 const isDoubles = liveTournament.tournamentType === "Doubles";
+                const orderedApprovedGames =
+                  getOrderedApprovedGames(mergedFixtures);
 
+                const { updatedParticipants, updatedTeams } =
+                  await recalculateParticipantsFromFixtures(
+                    orderedApprovedGames,
+                    liveTournament.tournamentParticipants,
+                    liveTournament.tournamentTeams ?? [],
+                    isDoubles,
+                  );
+
+                // User profile updates — fetch all participant users once
                 const allUsers = await Promise.all(
                   liveTournament.tournamentParticipants
                     .filter((p) => !!p.userId)
                     .map((p) => getUserById(p.userId!)),
                 ).then((users) => users.filter((u): u is UserProfile => !!u));
 
-                const orderedApprovedGames =
-                  getOrderedApprovedGames(mergedFixtures);
-
-                const { updatedParticipants, updatedTeams, updatedUsers } =
-                  await recalculateParticipantsFromFixtures(
-                    orderedApprovedGames,
-                    liveTournament.tournamentParticipants,
-                    allUsers,
-                    liveTournament.tournamentTeams ?? [],
-                    isDoubles,
-                  );
+                const { usersToUpdate } = calculatePlayerPerformance(
+                  validatedGames[validatedGames.length - 1],
+                  liveTournament.tournamentParticipants.filter((p) =>
+                    getPlayerUserIds(
+                      validatedGames[validatedGames.length - 1],
+                    ).includes(p.userId!),
+                  ),
+                  allUsers,
+                );
 
                 await updateDoc(tournamentRef, {
                   tournamentParticipants: updatedParticipants,
@@ -444,7 +447,7 @@ const BulkFixturesPublisher = () => {
                 });
 
                 await Promise.all(
-                  updatedUsers.map((user) => {
+                  (usersToUpdate ?? []).map((user) => {
                     if (!user.userId) return;
                     return updateDoc(doc(db, "users", user.userId), {
                       profileDetail: user.profileDetail,

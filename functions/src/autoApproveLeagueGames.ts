@@ -145,7 +145,7 @@ export const autoApproveLeagueGames = onSchedule(
                   ],
                   approvalStatus: notificationTypes.RESPONSE.APPROVED_GAME,
                   autoApproved: true,
-                  autoApprovedAt: admin.firestore.Timestamp.now(),
+                  autoApprovedAt: admin.firestore.Timestamp.now().toDate(),
                 };
 
                 const gameUserIds = [
