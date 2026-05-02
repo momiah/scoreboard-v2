@@ -31,6 +31,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
+import HomeClubsSection from "../../components/Clubs/HomeClubsSection";
 
 const Home = () => {
   const navigation = useNavigation();
@@ -39,6 +40,7 @@ const Home = () => {
     fetchUpcomingLeagues,
     upcomingLeagues,
     fetchUpcomingTournaments,
+    fetchUpcomingClubs,
     upcomingTournaments,
     leagueNavigationId,
     tournamentNavigationId,
@@ -166,6 +168,7 @@ const Home = () => {
               fetchUsers();
               fetchUpcomingLeagues();
               fetchUpcomingTournaments();
+              fetchUpcomingClubs();
             }}
             tintColor="white" // iOS
             colors={["white"]} // Android
@@ -269,6 +272,7 @@ const Home = () => {
             setModalVisible={setAddTournamentModalVisible}
           />
         )}
+        <HomeClubsSection />
       </HomeContainer>
     </SafeAreaView>
   );

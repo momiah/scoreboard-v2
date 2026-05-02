@@ -22,6 +22,7 @@ import {
   deleteDoc,
   QueryConstraint,
   onSnapshot,
+  writeBatch,
 } from "firebase/firestore";
 import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
@@ -51,6 +52,8 @@ import {
   ScoreboardProfile,
   League,
   Tournament,
+  Club,
+  Player,
   Fixtures,
   Game,
   TeamStats,
@@ -116,12 +119,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const [showMockData, setShowMockData] = useState(false);
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [tournamentNavigationId, setTournamentNavigationId] = useState("");
+  const [clubNavigationId, setClubNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState<League | null>(null);
   const [tournamentById, setTournamentById] = useState<Tournament | null>(null);
+  const [clubById, setClubById] = useState<Club | null>(null);
   const [upcomingLeagues, setUpcomingLeagues] = useState<League[]>([]);
   const [upcomingTournaments, setUpcomingTournaments] = useState<Tournament[]>(
     [],
   );
+  const [upcomingClubs, setUpcomingClubs] = useState<Club[]>([]);
+  const [upcomingClubsLoading, setUpcomingClubsLoading] = useState(false);
 
   const COMPETITION_CONFIG = {
     league: {
@@ -153,9 +160,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    if (!currentUser?.userId) return;
+    if (!currentUser?.userId) {
+      setUpcomingClubs([]);
+      setUpcomingClubsLoading(false);
+      return;
+    }
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
+    fetchUpcomingClubs();
   }, [currentUser?.userId]);
 
   const fetchCompetitions = async ({
@@ -198,6 +210,23 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       numberToLoad: 30,
     });
     setUpcomingTournaments(tournaments as unknown as Tournament[]);
+  };
+
+  const fetchUpcomingClubs = async () => {
+    setUpcomingClubsLoading(true);
+    try {
+      const rows = await fetchCompetitions({
+        competition: "clubs",
+        numberToLoad: 30,
+      });
+      const clubs = (rows as { id?: string; clubId?: string }[]).map((row) => ({
+        ...row,
+        clubId: row.clubId ?? row.id ?? "",
+      })) as Club[];
+      setUpcomingClubs(clubs);
+    } finally {
+      setUpcomingClubsLoading(false);
+    }
   };
 
   const fetchLeagues = (options = {}) =>
@@ -399,6 +428,73 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error adding competition:", error);
     }
   };
+
+  const addClub = async ({
+    data,
+    ownerParticipant,
+  }: {
+    data: Club;
+    ownerParticipant: Player;
+  }) => {
+    if (!data?.clubId) {
+      console.error("addClub: missing clubId");
+      return;
+    }
+    try {
+      const batch = writeBatch(db);
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, data.clubId);
+      batch.set(clubRef, { ...data });
+      const participantRef = doc(
+        db,
+        COLLECTION_NAMES.clubs,
+        data.clubId,
+        "participants",
+        ownerParticipant.userId,
+      );
+      batch.set(participantRef, { ...ownerParticipant });
+      await batch.commit();
+
+      await createWelcomeChatMessage({
+        collectionName: "clubs",
+        documentId: data.clubId,
+        title: data.clubName ?? "",
+      });
+
+      AppEventsLogger.logEvent("CreatedClub", {
+        club_name: data.clubName,
+      });
+
+      await fetchUpcomingClubs();
+
+      setClubNavigationId(data.clubId);
+      setTimeout(() => {
+        setClubNavigationId("");
+      }, 2500);
+    } catch (error) {
+      console.error("Error adding club:", error);
+      throw error;
+    }
+  };
+
+  const fetchClubById = useCallback(async (clubId: string): Promise<Club | null> => {
+    try {
+      const clubDoc = await getDoc(doc(db, COLLECTION_NAMES.clubs, clubId));
+      if (!clubDoc.exists()) {
+        setClubById(null);
+        return null;
+      }
+      const clubData = {
+        clubId: clubDoc.id,
+        ...clubDoc.data(),
+      } as Club;
+      setClubById(clubData);
+      return clubData;
+    } catch (error) {
+      console.error("Error fetching club:", error);
+      setClubById(null);
+      return null;
+    }
+  }, []);
 
   const fetchCompetitionById = async ({
     competitionId,
@@ -1838,6 +1934,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
         // League Data Management
         addCompetition,
+        addClub,
         updateCompetition, // Exposing the updateCompetition function
         fetchLeagues,
         fetchUpcomingLeagues,
@@ -1874,6 +1971,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         leagueById,
         leagueNavigationId,
         setLeagueNavigationId,
+        clubById,
+        clubNavigationId,
+        fetchClubById,
+        upcomingClubs,
+        upcomingClubsLoading,
+        fetchUpcomingClubs,
         removePlayerFromCompetition,
         acceptCompetitionInvite,
         declineCompetitionInvite,

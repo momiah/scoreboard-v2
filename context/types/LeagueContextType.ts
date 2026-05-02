@@ -12,6 +12,8 @@ import {
   UserProfile,
   League,
   Tournament,
+  Club,
+  Player,
   Fixtures,
   Game,
   TeamStats,
@@ -43,6 +45,11 @@ export interface LeagueContextType {
     data: League & Tournament;
     competitionType: CompetitionType;
     resetDelayMs?: number;
+  }) => Promise<void>;
+
+  addClub: (params: {
+    data: Club;
+    ownerParticipant: Player;
   }) => Promise<void>;
 
   updateCompetition: (params: {
@@ -108,6 +115,14 @@ export interface LeagueContextType {
   leagueById: League | null;
   leagueNavigationId: string;
   setLeagueNavigationId: (id: string) => void;
+
+  // Club State
+  clubById: Club | null;
+  clubNavigationId: string;
+  fetchClubById: (clubId: string) => Promise<Club | null>;
+  upcomingClubs: Club[];
+  upcomingClubsLoading: boolean;
+  fetchUpcomingClubs: () => Promise<void>;
   handleLeagueDescription: (newDescription: string) => Promise<void>;
   removePlayerFromCompetition: (params: {
     competitionId: string;
