@@ -3,15 +3,19 @@
 
 import { Country, City } from "country-state-city";
 
+/** Built once — filtering every country against all cities blocks the JS thread for seconds. */
+let cachedCountriesWithCities = null;
+
 /**
  * Returns an array of countries that have at least one city.
  * Each item is { key: isoCode, value: countryName }.
  */
 export function loadCountries() {
-  const all = Country.getAllCountries()
+  if (cachedCountriesWithCities) return cachedCountriesWithCities;
+  cachedCountriesWithCities = Country.getAllCountries()
     .map((c) => ({ key: c.isoCode, value: c.name }))
     .filter((c) => City.getCitiesOfCountry(c.key).length > 0);
-  return all;
+  return cachedCountriesWithCities;
 }
 
 /**

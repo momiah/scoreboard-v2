@@ -1,12 +1,10 @@
-import React, {
-  useContext,
-  // useState
-} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
+import Club from "../screens/Home/Clubs/Club";
 import Tournament from "../screens/Home/Tournaments/Tournament";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
@@ -36,12 +34,15 @@ import LinkedAccounts from "../screens/Profile/LinkedAccounts";
 import Chats from "../screens/Chats";
 import CompetitionsScreen from "../screens/Competition/CompetitionScreen";
 import { UserContext } from "../context/UserContext";
+import { LeagueContext } from "../context/LeagueContext";
+import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
 import InvitePlayer from "../screens/InvitePlayer";
 import GameScreen from "../screens/GameScreen";
 // import { getUnitId } from "../utils/getAdMobUnitId";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
+import { useNavigation } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -60,6 +61,7 @@ const HomeStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
@@ -99,6 +101,7 @@ const ProfileStack = () => {
     >
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -141,6 +144,7 @@ const ChatsStack = () => {
     >
       <Stack.Screen name="Chats" component={Chats} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -183,6 +187,7 @@ const CompetitionsStack = () => {
     >
       <Stack.Screen name="CompetitionsList" component={CompetitionsScreen} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -233,7 +238,33 @@ const TabIcon = ({ name, color, size }) => {
 };
 
 const Tabs = () => {
-  const { chatSummaries, notifications } = useContext(UserContext);
+  const navigation = useNavigation();
+  const { notifications, chatSummaries, currentUser } = useContext(UserContext);
+  const { clubNavigationId } = useContext(LeagueContext);
+  const [showAd, setShowAd] = useState(true);
+  const [addCompetitionVisible, setAddCompetitionVisible] = useState(false);
+  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
+  const [addTournamentModalVisible, setAddTournamentModalVisible] =
+    useState(false);
+  const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
+
+  const handleCompetitionOptionSelect = (option) => {
+    // Small delay to allow the first modal to close smoothly
+    setTimeout(() => {
+      if (option === "league") {
+        setAddLeagueModalVisible(true);
+      } else if (option === "tournament") {
+        setAddTournamentModalVisible(true);
+      } else if (option === "game") {
+        setQuickAddModalVisible(true);
+      }
+    }, 500);
+  };
+
+  const unreadNotifications = notifications.filter(
+    (notification) => notification.isRead === false,
+  ).length;
+
 
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
@@ -247,6 +278,22 @@ const Tabs = () => {
   if (notifications.length === 0 || hasUnreadNotifications) {
     initialRouteName = "Competitions";
   }
+
+  useEffect(() => {
+    if (!clubNavigationId) return;
+    // Tabs screen is registered on the root Stack as "Tabs"; `Home` lives on the inner Tab navigator.
+    navigation.navigate("Tabs", {
+      screen: "Home",
+      params: {
+        screen: "Club",
+        params: {
+          clubId: clubNavigationId,
+          primaryTab: "Club Performance",
+          performanceTab: "league_wins",
+        },
+      },
+    });
+  }, [clubNavigationId, navigation]);
 
   return (
     <>

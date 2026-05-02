@@ -43,6 +43,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
+import HomeClubsSection from "../../components/Clubs/HomeClubsSection";
 import {
   GameVideo,
   League,
@@ -71,6 +72,7 @@ const Home = () => {
     fetchUpcomingLeagues,
     upcomingLeagues,
     fetchUpcomingTournaments,
+    fetchUpcomingClubs,
     upcomingTournaments,
   } = useContext(LeagueContext);
   const { getTopUsers, currentUser } = useContext(UserContext);
@@ -207,6 +209,7 @@ const Home = () => {
     fetchUsers();
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
+    fetchUpcomingClubs();
     fetchVideos();
   };
 
@@ -395,6 +398,7 @@ const Home = () => {
           }}
         />
       )}
+      <HomeClubsSection />
     </SafeAreaView>
   );
 };

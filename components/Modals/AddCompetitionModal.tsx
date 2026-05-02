@@ -3,6 +3,7 @@ import { Modal, View, TouchableOpacity, Image, Alert } from "react-native";
 import { UserProfile } from "@shared/types";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import AddClubModal from "./AddClubModal";
 import AddLeagueModal from "./AddLeagueModal";
 import AddTournamentModal from "./AddTournamentModal";
 import { BlurView } from "expo-blur";
@@ -11,7 +12,7 @@ import { AntDesign } from "@expo/vector-icons";
 
 interface AddCompetitionModalProps {
   modalVisible: boolean;
-  setModalVisible: (visible: boolean) => void;
+  setModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   currentUser?: UserProfile;
 }
 
@@ -20,11 +21,14 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   setModalVisible,
   currentUser,
 }) => {
+  const [addClubModalVisible, setAddClubModalVisible] = useState(false);
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
 
-  const handleOptionPress = (option: "league" | "tournament") => {
+  const handleOptionPress = (
+    option: "club" | "league" | "tournament" | "game",
+  ) => {
     if (!currentUser) {
       Alert.alert(
         `Cannot open modal 🚫`,
@@ -32,7 +36,9 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
       );
       return;
     }
-    if (option === "league") {
+    if (option === "club") {
+      setAddClubModalVisible(true);
+    } else if (option === "league") {
       setAddLeagueModalVisible(true);
     } else if (option === "tournament") {
       setAddTournamentModalVisible(true);
@@ -61,6 +67,36 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
           </ModalHeader>
 
           <OptionsContainer>
+            <TouchableOpacity
+              onPress={() => handleOptionPress("club")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#0a1929",
+                borderRadius: 12,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: "#1a2b3d",
+                marginBottom: 15,
+              }}
+            >
+              <IconContainer>
+                <Ionicons
+                  name="people-circle-outline"
+                  size={32}
+                  color="#00A2FF"
+                />
+              </IconContainer>
+              <OptionContent>
+                <OptionTitle>Add Club</OptionTitle>
+                <OptionSubtitle>
+                  Add a Club for your Community where you can create Leagues,
+                  Tournaments and see accumulate Player performance
+                </OptionSubtitle>
+              </OptionContent>
+              <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
+            </TouchableOpacity>
+
             <TouchableOpacity
               onPress={() => handleOptionPress("league")}
               style={{
@@ -122,6 +158,12 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
           </OptionsContainer>
         </ModalContent>
       </ModalOverlay>
+
+      <AddClubModal
+        modalVisible={addClubModalVisible}
+        setModalVisible={setAddClubModalVisible}
+        onSuccess={handleSuccess}
+      />
 
       {addLeagueModalVisible && (
         <AddLeagueModal
