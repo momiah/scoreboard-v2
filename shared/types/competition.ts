@@ -2,7 +2,7 @@ import { Location, ScoreboardProfile } from "./player";
 import { Game, Fixtures } from "./game";
 import { COMPETITION_TYPES } from "@shared";
 
-export type CollectionName = "leagues" | "tournaments";
+export type CollectionName = "leagues" | "tournaments" | "clubs";
 export type CompetitionType =
   | typeof COMPETITION_TYPES.LEAGUE
   | typeof COMPETITION_TYPES.TOURNAMENT;
@@ -31,7 +31,7 @@ export interface Court {
   numberOfTournaments?: number;
 }
 
-interface CompetitionOwner {
+export interface CompetitionOwner {
   firstName: string;
   lastName: string;
   username: string;
@@ -82,6 +82,7 @@ export interface TeamStats {
 export interface League {
   leagueId?: string;
   id?: string;
+  clubId?: string | null;
   leagueParticipants: ScoreboardProfile[];
   leagueTeams: TeamStats[];
   leagueAdmins: CompetitionAdmins[];
@@ -113,6 +114,7 @@ export interface League {
 export interface Tournament {
   tournamentId?: string;
   id?: string;
+  clubId?: string | null;
   tournamentParticipants: ScoreboardProfile[];
   tournamentTeams: TeamStats[];
   tournamentAdmins: CompetitionAdmins[];
@@ -151,6 +153,7 @@ export interface NormalizedCompetition {
   teams: TeamStats[];
   admins: CompetitionAdmins[];
   owner: CompetitionOwner;
+  clubId?: string | null;
   games: Game[];
   fixtures: Fixtures[];
   type: string;

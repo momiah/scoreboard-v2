@@ -5,6 +5,7 @@ import {
   Location,
   League,
   Tournament,
+  Club,
   CollectionName,
   CompetitionLocation,
   ApprovalStatus,
@@ -31,6 +32,7 @@ export const COMPETITION_TYPES = {
 export const COLLECTION_NAMES: Record<CollectionName, string> = {
   leagues: "leagues",
   tournaments: "tournaments",
+  clubs: "clubs",
 };
 
 export const ICON_MAP = {
@@ -214,6 +216,7 @@ export const courtSchema: Court = {
 };
 
 export const leagueSchema: League = {
+  clubId: null,
   leagueParticipants: [],
   leagueTeams: [],
   leagueAdmins: [],
@@ -248,6 +251,7 @@ export const leagueSchema: League = {
   approvalLimit: 1,
 };
 export const tournamentSchema: Tournament = {
+  clubId: null,
   tournamentParticipants: [],
   tournamentTeams: [],
   tournamentAdmins: [],
@@ -283,6 +287,25 @@ export const tournamentSchema: Tournament = {
   pendingInvites: [],
   pendingRequests: [],
   approvalLimit: 1,
+};
+
+export const clubSchema: Club = {
+  clubId: "",
+  clubName: "",
+  clubLocation: "",
+  clubImage: "",
+  clubDescription: "",
+  clubOwner: {
+    userId: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    location: locationSchema,
+  },
+  clubAdmins: [],
+  createdAt: new Date(),
+  pendingInvites: [],
+  pendingRequests: [],
 };
 
 export const fixturesSchema = {
