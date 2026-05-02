@@ -11,7 +11,8 @@ export type CollectionName =
   | "replies"
   | "reportedVideos"
   | "savedVideos"
-  | "videoReportAppeals";
+  | "videoReportAppeals"
+  | "clubs";
 
 export type CompetitionType =
   | typeof COMPETITION_TYPES.LEAGUE
@@ -41,7 +42,7 @@ export interface Court {
   numberOfTournaments?: number;
 }
 
-interface CompetitionOwner {
+export interface CompetitionOwner {
   firstName: string;
   lastName: string;
   username: string;
@@ -92,6 +93,7 @@ export interface TeamStats {
 export interface League {
   leagueId?: string;
   id?: string;
+  clubId?: string | null;
   leagueParticipants: ScoreboardProfile[];
   leagueTeams: TeamStats[];
   leagueAdmins: CompetitionAdmins[];
@@ -124,6 +126,7 @@ export interface League {
 export interface Tournament {
   tournamentId?: string;
   id?: string;
+  clubId?: string | null;
   tournamentParticipants: ScoreboardProfile[];
   tournamentTeams: TeamStats[];
   tournamentAdmins: CompetitionAdmins[];
@@ -164,6 +167,7 @@ export interface NormalizedCompetition {
   admins: CompetitionAdmins[];
   owner: CompetitionOwner;
   participantIds?: string[];
+  clubId?: string | null;
   games: Game[];
   fixtures?: Fixtures[];
   fixturesGenerated?: boolean;
