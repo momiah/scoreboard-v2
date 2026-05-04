@@ -26,6 +26,7 @@ interface GameVideoCardProps {
   onLike: (gameId: string) => void;
   isLiked: boolean;
   initiallyLiked: boolean;
+  isSubmissionMode?: boolean;
 }
 
 const GameVideoCard: React.FC<GameVideoCardProps> = ({
@@ -34,6 +35,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   onLike,
   isLiked,
   initiallyLiked,
+  isSubmissionMode = false,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -180,7 +182,9 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
 
       {/* ── Footer ── */}
       <FooterRow>
-        <Scoreboard video={video} onPlayerPress={handlePlayerPress} />
+        {!isSubmissionMode && (
+          <Scorecard video={video} onPlayerPress={handlePlayerPress} />
+        )}
         <ActionsRow>
           <ActionButton onPress={() => onLike(video.gameId)}>
             <ActionEmoji>
@@ -212,6 +216,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
           visible={menuVisible}
           onClose={() => setMenuVisible(false)}
           video={video}
+          isSubmissionMode={isSubmissionMode}
         />
       )}
 
@@ -226,12 +231,12 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   );
 };
 
-interface ScoreboardProps {
+interface ScorecardProps {
   video: GameVideo;
   onPlayerPress: (player: Player) => void;
 }
 
-const Scoreboard: React.FC<ScoreboardProps> = ({ video, onPlayerPress }) => {
+const Scorecard: React.FC<ScorecardProps> = ({ video, onPlayerPress }) => {
   const [score1, score2] = video.gamescore.split("-").map((s) => s.trim());
   const team1Player1 = video.teams?.team1?.player1;
   const team1Player2 = video.teams?.team1?.player2 ?? null;
@@ -239,7 +244,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ video, onPlayerPress }) => {
   const team2Player2 = video.teams?.team2?.player2 ?? null;
 
   return (
-    <ScoreboardOverlay>
+    <ScorecardOverlay>
       <TeamNamesColumn alignRight={false}>
         {team1Player1 && (
           <TouchableOpacity onPress={() => onPlayerPress(team1Player1)}>
@@ -279,7 +284,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({ video, onPlayerPress }) => {
           </TouchableOpacity>
         )}
       </TeamNamesColumn>
-    </ScoreboardOverlay>
+    </ScorecardOverlay>
   );
 };
 
@@ -398,7 +403,7 @@ const ActionCount = styled.Text({
   fontWeight: "600",
 });
 
-// ── Scoreboard ───────────────────────────────────────────────────────────────
+// ── Scorecard ───────────────────────────────────────────────────────────────
 
 const PlayerName = styled.Text({
   color: "white",
@@ -415,7 +420,7 @@ const TeamNamesColumn = styled.View<{ alignRight: boolean }>(
   }),
 );
 
-const ScoreboardOverlay = styled.View({
+const ScorecardOverlay = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",

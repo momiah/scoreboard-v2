@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import {
   S3Client,
   PutObjectCommand,
+  DeleteObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -94,27 +95,65 @@ export const updateGameVideoUrl = functions.https.onCall(
       teams,
     } = request.data;
 
+    const db = admin.firestore();
+
     const collectionName =
       competitionType === COMPETITION_TYPES.TOURNAMENT
         ? COLLECTION_NAMES.tournaments
         : COLLECTION_NAMES.leagues;
 
-    const competitionRef = admin
-      .firestore()
-      .collection(collectionName)
-      .doc(competitionId);
-
+    const competitionRef = db.collection(collectionName).doc(competitionId);
     const competitionSnap = await competitionRef.get();
     const games: Game[] = competitionSnap.data()?.games ?? [];
 
-    // Set videoApproved: false on the game — awaiting opponent approval
+    // ── Check if this user already has a video for this game ─────────────
+    const docId = `${gameId}_${postedBy.userId}`;
+    const existingDoc = await db
+      .collection(COLLECTION_NAMES.gameVideos)
+      .doc(docId)
+      .get();
+
+    const isReplacing = existingDoc.exists;
+    const oldVideoUrl = existingDoc.data()?.videoUrl as string | undefined;
+
+    // ── Delete old R2 file if replacing ───────────────────────────────────
+    if (isReplacing && oldVideoUrl) {
+      try {
+        const r2Client = new S3Client({
+          region: "auto",
+          endpoint: `https://${R2_ACCOUNT_ID.value()}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId: R2_ACCESS_KEY_ID.value(),
+            secretAccessKey: R2_SECRET_ACCESS_KEY.value(),
+          },
+        });
+        const oldKey = oldVideoUrl.replace(`${R2_PUBLIC_URL.value()}/`, "");
+        await r2Client.send(
+          new DeleteObjectCommand({
+            Bucket: R2_BUCKET_NAME.value(),
+            Key: oldKey,
+          }),
+        );
+      } catch (error) {
+        console.error("[videoFunctions] Failed to delete old R2 file:", error);
+        // Non-critical — proceed with update regardless
+      }
+    }
+
+    // ── Update game document ──────────────────────────────────────────────
     const updatedGames = games.map((game) =>
       game.gameId === gameId
-        ? { ...game, videoUrl, videoApproved: true }
+        ? {
+            ...game,
+            videoUrl,
+            videoApproved: true,
+            videoCount: isReplacing
+              ? (game.videoCount ?? 1)
+              : (game.videoCount ?? 0) + 1,
+          }
         : game,
     );
 
-    // Write to gameVideos with videoApproved: false — not public until approved
     const gameVideoRecord: GameVideo = {
       gameId,
       videoUrl,
@@ -135,10 +174,9 @@ export const updateGameVideoUrl = functions.https.onCall(
 
     await Promise.all([
       competitionRef.update({ games: updatedGames }),
-      admin
-        .firestore()
+      db
         .collection(COLLECTION_NAMES.gameVideos)
-        .doc(gameId)
+        .doc(docId)
         .set(gameVideoRecord),
     ]);
   },
@@ -170,6 +208,7 @@ export const checkR2VideoExists = functions.https.onCall(
         secretAccessKey: R2_SECRET_ACCESS_KEY.value(),
       },
     });
+
     const prefix = `games/${competitionId}/${gameId}/`;
 
     try {

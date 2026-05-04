@@ -68,6 +68,7 @@ export interface Game {
   approvers: Approver[];
   videoUrl?: string;
   videoApproved?: boolean | null;
+  videoCount?: number;
 }
 
 export interface GameVideoUploadPayload {

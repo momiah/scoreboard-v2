@@ -26,7 +26,7 @@ import {
 import { validateBadmintonScores } from "../../helpers/validateBadmintonScores";
 import { calculateWin } from "../../helpers/calculateWin";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import SubmittedGameModal from "./SubmittedGameModal";
+import VideoUploadModal from "./VideoUploadModal";
 import {
   GameTeam,
   Game,
@@ -342,7 +342,7 @@ const AddGameModal = ({
       </Modal>
 
       {submittedGame && currentUser && (
-        <SubmittedGameModal
+        <VideoUploadModal
           visible={!!submittedGame}
           onClose={() => {
             setSubmittedGame(null);
@@ -356,6 +356,9 @@ const AddGameModal = ({
           date={submittedGame.date}
           teams={submittedGame.teams}
           currentUser={currentUser}
+          icon="checkmark-circle-outline"
+          iconColor="#00A2FF"
+          showAddLaterHint={true}
         />
       )}
     </View>

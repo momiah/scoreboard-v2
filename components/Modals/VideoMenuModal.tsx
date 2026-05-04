@@ -16,12 +16,14 @@ interface VideoMenuModalProps {
   visible: boolean;
   onClose: () => void;
   video: GameVideo;
+  isSubmissionMode?: boolean;
 }
 
 const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   visible,
   onClose,
   video,
+  isSubmissionMode,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
@@ -87,13 +89,15 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
             </TouchableOpacity>
           </MenuHeader>
 
-          <MenuItem onPress={handleRequestToJoin}>
-            <MenuItemIcon>
-              <Ionicons name="enter-outline" size={22} color="#00A2FF" />
-            </MenuItemIcon>
-            <MenuItemText>Request to Join Competition</MenuItemText>
-            <Ionicons name="chevron-forward" size={20} color="#555" />
-          </MenuItem>
+          {!isSubmissionMode && (
+            <MenuItem onPress={handleRequestToJoin}>
+              <MenuItemIcon>
+                <Ionicons name="enter-outline" size={22} color="#00A2FF" />
+              </MenuItemIcon>
+              <MenuItemText>Request to Join Competition</MenuItemText>
+              <Ionicons name="chevron-forward" size={20} color="#555" />
+            </MenuItem>
+          )}
 
           <MenuItem onPress={handleShareVideo}>
             <MenuItemIcon>

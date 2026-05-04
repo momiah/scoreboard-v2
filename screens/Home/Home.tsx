@@ -54,6 +54,7 @@ import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
+import ActionPlaceholder from "@/components/ActionPlaceholder";
 
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -268,8 +269,10 @@ const Home = () => {
             leagues={publicLeagues}
           />
         ) : (
-          <CompetitionPlaceholder
+          <ActionPlaceholder
             message="No upcoming leagues in your area. Create one for your community!"
+            icon="add-circle-outline"
+            height={200}
             onPress={() =>
               currentUser ? setAddLeagueModalVisible(true) : navigateTo("Login")
             }
@@ -300,8 +303,10 @@ const Home = () => {
             navigationRoute={"Tournament"}
           />
         ) : (
-          <CompetitionPlaceholder
+          <ActionPlaceholder
             message="No upcoming tournaments in your area. Create one for your community!"
+            icon="add-circle-outline"
+            height={200}
             onPress={() =>
               currentUser
                 ? setAddTournamentModalVisible(true)
@@ -375,48 +380,11 @@ const Home = () => {
   );
 };
 
-// ─── Sub Components ───────────────────────────────────────────────────────────
-
-const CompetitionPlaceholder = ({
-  message,
-  onPress,
-}: {
-  message: string;
-  onPress: () => void;
-}) => (
-  <CarouselPlaceholder onPress={onPress}>
-    <Ionicons name="add-circle-outline" size={40} color="#00A2FF" />
-    <PlaceholderText>{message}</PlaceholderText>
-  </CarouselPlaceholder>
-);
-
 // ─── Styled Components ────────────────────────────────────────────────────────
 
 const HeaderContainer = styled.View({
   paddingHorizontal: 20,
   backgroundColor: "rgb(3, 16, 31)",
-});
-
-const CarouselPlaceholder = styled.TouchableOpacity({
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "#0A1F33",
-  borderRadius: 10,
-  height: 200,
-  width: "100%",
-  marginVertical: 10,
-  borderWidth: 1,
-  borderColor: "#00A2FF",
-  borderStyle: "dashed",
-  gap: 10,
-});
-
-const PlaceholderText = styled.Text({
-  color: "#aaa",
-  fontSize: 14,
-  fontStyle: "italic",
-  textAlign: "center",
-  paddingHorizontal: 30,
 });
 
 const Overview = styled.View({

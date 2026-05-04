@@ -139,6 +139,22 @@ const UploadToast: React.FC<UploadToastProps> = ({ pendingUploads }) => {
                   <UploadName numberOfLines={1}>
                     {upload.competitionName}
                   </UploadName>
+                  <UploadMeta numberOfLines={1}>
+                    {[
+                      upload.teams?.team1?.player1?.firstName,
+                      upload.teams?.team1?.player2?.firstName,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ")}{" "}
+                    vs{" "}
+                    {[
+                      upload.teams?.team2?.player1?.firstName,
+                      upload.teams?.team2?.player2?.firstName,
+                    ]
+                      .filter(Boolean)
+                      .join(" • ")}{" "}
+                    ({upload.gamescore})
+                  </UploadMeta>
                   <UploadProgress>{upload.progress}%</UploadProgress>
                 </UploadInfo>
                 <MiniProgressTrack>
@@ -178,6 +194,12 @@ const ToastContent = styled.View({
   flexDirection: "row",
   alignItems: "center",
   gap: 12,
+});
+
+const UploadMeta = styled.Text({
+  color: "rgba(255,255,255,0.4)",
+  fontSize: 10,
+  marginBottom: 2,
 });
 
 const IconWrapper = styled.View({

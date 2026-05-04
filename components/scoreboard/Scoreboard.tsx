@@ -1,16 +1,34 @@
-// components/scoreboard/Scoreboard.tsx
 import React, { useState, useContext, useMemo, useCallback } from "react";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import { FlatList, View, ActivityIndicator } from "react-native";
 import AddGameModal from "../Modals/AddGameModal";
 import { getButtonConfig, getFallbackMessage } from "./scoreboardConfig";
 import { TeamColumn, ScoreDisplay } from "./ScoreboardAtoms";
 import moment from "moment";
 import { LeagueContext } from "../../context/LeagueContext";
+import { CollectionName, Game, ScoreboardProfile } from "@shared/types";
+import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
 
-const Scoreboard = ({
+interface ScoreboardProps {
+  leagueGames?: Game[];
+  leagueId: string;
+  userRole?: string;
+  leagueType: string;
+  leagueOwner: { userId: string; username: string };
+  leagueStartDate: string;
+  leagueEndDate: string;
+  leagueName: string;
+  leagueParticipants?: ScoreboardProfile[];
+  isJoinRequestSending?: boolean;
+}
+
+const Scoreboard: React.FC<ScoreboardProps> = ({
   leagueGames = [],
   leagueId,
   userRole = "user",
@@ -20,17 +38,15 @@ const Scoreboard = ({
   leagueEndDate,
   leagueName,
   leagueParticipants = [],
-  // 🔹 New optional flag – no handler passed
   isJoinRequestSending = false,
 }) => {
   const { fetchPlayers, currentUser } = useContext(UserContext);
   const { requestToJoinLeague } = useContext(LeagueContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-
-  const navigation = useNavigation();
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const currentDate = moment();
   const leagueStart = moment(leagueStartDate, "DD-MM-YYYY");
@@ -64,18 +80,32 @@ const Scoreboard = ({
   }, [navigation]);
 
   const handleRequestSend = useCallback(() => {
-    // ✅ Keep your original local flow
     setRequestSend(true);
-    requestToJoinLeague(
-      leagueId,
-      currentUser?.userId,
-      leagueOwner.userId,
-      currentUser?.username,
-    );
+    requestToJoinLeague({
+      competitionId: leagueId,
+      currentUser: currentUser?.userId,
+      ownerId: leagueOwner.userId,
+      collectionName: COLLECTION_NAMES.leagues as CollectionName,
+    });
     setRequestSend(false);
   }, [requestToJoinLeague, leagueId, currentUser, leagueOwner]);
 
-  // 🔹 Merge local + external (header press) flags
+  const handleGamePress = useCallback(
+    (game: Game) => {
+      navigation.navigate("GameScreen", {
+        gameId: game.gameId,
+        competitionId: leagueId,
+        competitionType: COMPETITION_TYPES.LEAGUE,
+        competitionName: leagueName,
+        gamescore: game.gamescore,
+        date: game.date ?? "",
+        team1: game.team1,
+        team2: game.team2,
+      });
+    },
+    [navigation, leagueId, leagueName],
+  );
+
   const isSending = requestSend || isJoinRequestSending;
 
   const buttonConfig = useMemo(
@@ -83,7 +113,7 @@ const Scoreboard = ({
       getButtonConfig(
         userRole,
         leagueState,
-        isSending, // <- only this changes
+        isSending,
         handleRequestSend,
         handleAddGame,
         handleLogin,
@@ -108,11 +138,11 @@ const Scoreboard = ({
   );
 
   const uniqueDates = useMemo(() => {
-    const seen = new Set();
+    const seen = new Set<string>();
     return gamesDescending
       .map((game) => game.date)
-      .filter((date) => {
-        if (seen.has(date)) return false;
+      .filter((date): date is string => {
+        if (!date || seen.has(date)) return false;
         seen.add(date);
         return true;
       });
@@ -147,21 +177,20 @@ const Scoreboard = ({
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item, index) => index.toString()}
-            contentContainerStyle={{
-              minHeight: 40,
-              marginBottom: 20,
-            }}
+            contentContainerStyle={{ minHeight: 40, marginBottom: 20 }}
             renderItem={({ item }) => (
               <DateItem
                 onPress={() => setSelectedDate(item === "All" ? null : item)}
-                item={item}
-                selectedDate={selectedDate}
+                isSelected={
+                  (selectedDate === null && item === "All") ||
+                  selectedDate === item
+                }
               >
-                <Date>
+                <DateText>
                   {item === "All"
                     ? "All Games"
                     : moment(item, "DD-MM-YYYY").format("D MMM YY")}
-                </Date>
+                </DateText>
               </DateItem>
             )}
           />
@@ -176,14 +205,15 @@ const Scoreboard = ({
         data={filteredGames}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => {
-          const Game =
+          const isPending =
             item.approvalStatus === "pending" ||
-            item.approvalStatus === "Pending"
-              ? PendingApprovalContainer
-              : GameContainer;
+            item.approvalStatus === "Pending";
 
           return (
-            <Game>
+            <GameContainer
+              onPress={() => handleGamePress(item)}
+              style={{ opacity: isPending ? 0.6 : 1 }}
+            >
               <TeamColumn
                 team="left"
                 players={item.team1}
@@ -200,7 +230,7 @@ const Scoreboard = ({
                 players={item.team2}
                 leagueType={leagueType}
               />
-            </Game>
+            </GameContainer>
           );
         }}
       />
@@ -217,10 +247,13 @@ const Scoreboard = ({
   );
 };
 
+// ─── Styled Components ────────────────────────────────────────────────────────
+
 const Container = styled.View({
   flex: 1,
   padding: 10,
 });
+
 const AddGameButton = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "center",
@@ -232,28 +265,20 @@ const AddGameButton = styled.TouchableOpacity({
   backgroundColor: "#00A2FF",
 });
 
-const Date = styled.Text({
+const DateText = styled.Text({
   fontSize: 10,
   fontWeight: "bold",
   color: "white",
 });
 
-const GameContainer = styled.View({
+const GameContainer = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "space-between",
   marginBottom: 16,
   backgroundColor: "#001123",
-  border: "1px solid rgb(9, 33, 62)",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
   borderRadius: 8,
-});
-const PendingApprovalContainer = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginBottom: 16,
-  backgroundColor: "#001123",
-  border: "1px solid rgb(9, 33, 62)",
-  borderRadius: 8,
-  opacity: 0.6,
 });
 
 const FallbackMessage = styled.Text({
@@ -263,22 +288,22 @@ const FallbackMessage = styled.Text({
   textAlign: "center",
   marginTop: 50,
 });
+
 const ButtonText = styled.Text({
   color: "white",
   fontSize: 16,
 });
 
-const DateItem = styled.TouchableOpacity(({ item, selectedDate }) => ({
-  borderBottomColor:
-    (selectedDate === null && item === "All") || selectedDate === item
-      ? "#00A2FF"
-      : "rgb(9, 33, 62)",
-  borderBottomWidth: 2,
-  paddingHorizontal: 10,
-  paddingVertical: 8,
-  marginRight: 10,
-  justifyContent: "center",
-  alignItems: "center",
-}));
+const DateItem = styled.TouchableOpacity<{ isSelected: boolean }>(
+  ({ isSelected }: { isSelected: boolean }) => ({
+    borderBottomColor: isSelected ? "#00A2FF" : "rgb(9, 33, 62)",
+    borderBottomWidth: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginRight: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  }),
+);
 
 export default React.memo(Scoreboard);

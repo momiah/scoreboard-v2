@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { ActivityIndicator, Modal, Dimensions, Animated } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { COMPETITION_TYPES } from "@shared";
 import { UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
 
-interface SubmittedGameModalProps {
+interface VideoUploadModalProps {
   visible: boolean;
   onClose: () => void;
   gameId: string;
@@ -19,9 +21,14 @@ interface SubmittedGameModalProps {
   date: string;
   teams: Teams;
   currentUser: UserProfile;
+  title?: string;
+  subtitle?: string;
+  icon?: "checkmark-circle-outline" | "videocam-outline";
+  iconColor?: string;
+  showAddLaterHint?: boolean;
 }
 
-const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
+const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   visible,
   onClose,
   gameId,
@@ -32,6 +39,11 @@ const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
   date,
   teams,
   currentUser,
+  title = "Game Submitted!",
+  subtitle = "Opponents have 24 hours to approve or it will be auto-approved.",
+  icon = "checkmark-circle-outline",
+  iconColor = "#00A2FF",
+  showAddLaterHint = true,
 }) => {
   const [pickedVideo, setPickedVideo] = useState<PickedVideo | null>(null);
   const [errorText, setErrorText] = useState("");
@@ -49,20 +61,16 @@ const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
   useEffect(() => {
     if (isProcessing) {
       progressAnim.setValue(0);
-
-      // Steady crawl from 0 → 85% over 10 minutes — always visibly moving
       const crawl = Animated.timing(progressAnim, {
         toValue: 0.85,
-        duration: 100000, // 100 seconds
+        duration: 100000,
         useNativeDriver: false,
       });
-
       animRef.current = crawl;
       crawl.start();
     }
 
     if (!isProcessing && pickedVideo) {
-      // Processing done — snap to 100% green
       animRef.current?.stop();
       Animated.timing(progressAnim, {
         toValue: 1,
@@ -76,6 +84,15 @@ const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
       progressAnim.setValue(0);
     }
   }, [isProcessing, pickedVideo]);
+
+  const handleClose = () => {
+    animRef.current?.stop();
+    progressAnim.setValue(0);
+    setPickedVideo(null);
+    setIsProcessing(false);
+    setErrorText("");
+    onClose();
+  };
 
   const handlePickVideo = async () => {
     setErrorText("");
@@ -130,15 +147,6 @@ const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
     onClose();
   };
 
-  const handleSkip = () => {
-    animRef.current?.stop();
-    progressAnim.setValue(0);
-    setPickedVideo(null);
-    setIsProcessing(false);
-    setErrorText("");
-    onClose();
-  };
-
   const hasVideo = !!pickedVideo;
   const showProgress = isProcessing || hasVideo;
 
@@ -158,24 +166,29 @@ const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
 
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <Overlay>
+      <Overlay intensity={50} tint="dark">
         <PopupContent>
-          <Ionicons name="checkmark-circle-outline" size={75} color="#00A2FF" />
+          {/* ── Close button ── */}
+          <CloseButton onPress={handleClose}>
+            <AntDesign name="closecircleo" size={30} color="red" />
+          </CloseButton>
 
-          <Title>Game Submitted!</Title>
-          <Subtitle>
-            Opponents have 24 hours to approve or it will be auto-approved.
-          </Subtitle>
+          <Ionicons name={icon} size={75} color={iconColor} />
+          <Title>{title}</Title>
+          <Subtitle>{subtitle}</Subtitle>
 
-          <Divider />
-
-          <VideoQuestion>
-            Would you like to upload a video of this game?
-          </VideoQuestion>
-
-          <Subtitle>
-            Or add later by tapping a game card on the {addLaterScreen} screen.
-          </Subtitle>
+          {showAddLaterHint && (
+            <>
+              <Divider />
+              <VideoQuestion>
+                Would you like to upload a video of this game?
+              </VideoQuestion>
+              <Subtitle>
+                Or add later by tapping a game card on the {addLaterScreen}{" "}
+                screen.
+              </Subtitle>
+            </>
+          )}
 
           <Divider />
 
@@ -218,27 +231,21 @@ const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
 
           {errorText ? <ErrorText>{errorText}</ErrorText> : null}
 
-          {/* ── Actions ── */}
-          <ButtonRow>
-            <SkipButton onPress={handleSkip}>
-              <SkipText>Skip</SkipText>
-            </SkipButton>
-
-            <UploadButton
-              onPress={handleUpload}
-              disabled={!hasVideo || isUploading}
-              style={{
-                backgroundColor: !hasVideo ? "#444" : "#00A2FF",
-                opacity: !hasVideo ? 0.6 : 1,
-              }}
-            >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <UploadText>Upload</UploadText>
-              )}
-            </UploadButton>
-          </ButtonRow>
+          {/* ── Upload button ── */}
+          <UploadButton
+            onPress={handleUpload}
+            disabled={!hasVideo || isUploading}
+            style={{
+              backgroundColor: !hasVideo ? "#444" : "#00A2FF",
+              opacity: !hasVideo ? 0.6 : 1,
+            }}
+          >
+            {isUploading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <UploadText>Upload</UploadText>
+            )}
+          </UploadButton>
         </PopupContent>
       </Overlay>
     </Modal>
@@ -249,9 +256,8 @@ const SubmittedGameModal: React.FC<SubmittedGameModalProps> = ({
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const Overlay = styled.View({
+const Overlay = styled(BlurView)({
   flex: 1,
-  backgroundColor: "rgba(0,0,0,0.6)",
   justifyContent: "center",
   alignItems: "center",
 });
@@ -264,6 +270,14 @@ const PopupContent = styled.View({
   alignItems: "center",
   borderWidth: 1,
   borderColor: "rgba(0, 162, 255, 0.15)",
+});
+
+const CloseButton = styled.TouchableOpacity({
+  alignSelf: "flex-end",
+  position: "absolute",
+  top: 10,
+  right: 10,
+  zIndex: 10,
 });
 
 const Title = styled.Text({
@@ -279,6 +293,7 @@ const Subtitle = styled.Text({
   color: "rgba(255,255,255,0.5)",
   textAlign: "center",
   lineHeight: 18,
+  marginTop: 10,
 });
 
 const Divider = styled.View({
@@ -330,8 +345,6 @@ const VideoAttachedDot = styled.View({
   backgroundColor: "#00A2FF",
 });
 
-// ── Progress ──────────────────────────────────────────────────────────────────
-
 const ProgressContainer = styled.View({
   width: "100%",
   marginTop: 16,
@@ -365,36 +378,14 @@ const ErrorText = styled.Text({
   marginBottom: 4,
 });
 
-const ButtonRow = styled.View({
-  flexDirection: "row",
-  gap: 12,
-  marginTop: 20,
-  width: "100%",
-});
-
-const SkipButton = styled.TouchableOpacity({
-  flex: 1,
-  paddingVertical: 12,
-  borderRadius: 8,
-  alignItems: "center",
-  justifyContent: "center",
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.15)",
-});
-
-const SkipText = styled.Text({
-  color: "rgba(255,255,255,0.6)",
-  fontSize: 15,
-  fontWeight: "600",
-});
-
 const UploadButton = styled.TouchableOpacity({
-  flex: 1,
+  width: "100%",
   paddingVertical: 12,
   borderRadius: 8,
   alignItems: "center",
   justifyContent: "center",
   backgroundColor: "#00A2FF",
+  marginTop: 20,
 });
 
 const UploadText = styled.Text({
@@ -403,4 +394,4 @@ const UploadText = styled.Text({
   fontWeight: "600",
 });
 
-export default SubmittedGameModal;
+export default VideoUploadModal;
