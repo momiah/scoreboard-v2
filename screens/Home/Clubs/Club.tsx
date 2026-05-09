@@ -22,24 +22,23 @@ import { COLLECTION_NAMES } from "@shared";
 import { db } from "../../../services/firebase.config";
 import type { Club } from "@shared/types";
 
+import ClubFeed from "./tabs/ClubFeed";
+import ClubPerformance from "./tabs/ClubPerformance";
+import ClubLeagues from "./tabs/ClubLeagues";
+import ClubTournaments from "./tabs/ClubTournaments";
+
 const { width: screenWidth } = Dimensions.get("window");
 
 const PRIMARY_TABS = [
-  "Summary",
-  "Teams",
-  "Stats",
+  "Feed",
   "Club Performance",
+  "Leagues",
+  "Tournaments",
 ] as const;
 
 type PrimaryTab = (typeof PRIMARY_TABS)[number];
 
-const PERFORMANCE_SUB_TABS = [
-  { key: "league_wins", label: "League Wins" },
-  { key: "tournament_wins", label: "Tournament Wins" },
-  { key: "player_performance", label: "Player Performance" },
-] as const;
-
-type PerformanceSubTab = (typeof PERFORMANCE_SUB_TABS)[number]["key"];
+type PerformanceSubTab = "player" | "team" | "league" | "tournament";
 
 type ClubRouteParams = {
   Club: {
@@ -69,10 +68,8 @@ const ClubScreen: React.FC = () => {
   const [clubNotFound, setClubNotFound] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
   const [selectedTab, setSelectedTab] = useState<PrimaryTab>(
-    primaryTab ?? "Summary",
+    primaryTab ?? "Feed",
   );
-  const [performanceSubTab, setPerformanceSubTab] =
-    useState<PerformanceSubTab>(performanceTab ?? "league_wins");
 
   const isOwner = currentUser?.userId === clubById?.clubOwner?.userId;
 
@@ -119,68 +116,16 @@ const ClubScreen: React.FC = () => {
     if (primaryTab) setSelectedTab(primaryTab);
   }, [primaryTab]);
 
-  useEffect(() => {
-    if (performanceTab) setPerformanceSubTab(performanceTab);
-  }, [performanceTab]);
-
-  const handleTabPress = (tab: PrimaryTab) => {
-    setSelectedTab(tab);
-  };
-
-  const renderPlaceholder = (message: string) => (
-    <PlaceholderWrap>
-      <PlaceholderText>{message}</PlaceholderText>
-    </PlaceholderWrap>
-  );
-
-  const renderPerformanceContent = () => {
-    switch (performanceSubTab) {
-      case "league_wins":
-        return renderPlaceholder(
-          "League wins across your club will appear here.",
-        );
-      case "tournament_wins":
-        return renderPlaceholder(
-          "Tournament wins across your club will appear here.",
-        );
-      case "player_performance":
-        return renderPlaceholder(
-          "Aggregated player performance for the club will appear here.",
-        );
-      default:
-        return null;
-    }
-  };
-
   const renderPrimaryContent = () => {
     switch (selectedTab) {
-      case "Summary":
-        return renderPlaceholder(
-          "Club summary and activity will appear here.",
-        );
-      case "Teams":
-        return renderPlaceholder("Club teams will appear here.");
-      case "Stats":
-        return renderPlaceholder("Club statistics will appear here.");
+      case "Feed":
+        return <ClubFeed />;
       case "Club Performance":
-        return (
-          <>
-            <PerformanceTabRow>
-              {PERFORMANCE_SUB_TABS.map((t) => (
-                <PerformanceTabItem
-                  key={t.key}
-                  isActive={performanceSubTab === t.key}
-                  onPress={() => setPerformanceSubTab(t.key)}
-                >
-                  <PerformanceTabText isActive={performanceSubTab === t.key}>
-                    {t.label}
-                  </PerformanceTabText>
-                </PerformanceTabItem>
-              ))}
-            </PerformanceTabRow>
-            {renderPerformanceContent()}
-          </>
-        );
+        return <ClubPerformance initialSubTab={performanceTab} />;
+      case "Leagues":
+        return <ClubLeagues />;
+      case "Tournaments":
+        return <ClubTournaments />;
       default:
         return null;
     }
@@ -303,15 +248,15 @@ const ClubScreen: React.FC = () => {
               contentContainerStyle={{ paddingHorizontal: 10 }}
             >
               {PRIMARY_TABS.map((tab) => (
-                <PrimaryTab
+                <PrimaryTabButton
                   key={tab}
-                  onPress={() => handleTabPress(tab)}
+                  onPress={() => setSelectedTab(tab)}
                   isSelected={selectedTab === tab}
                 >
-                  <PrimaryTabText isSelected={selectedTab === tab}>
+                  <PrimaryTabButtonText isSelected={selectedTab === tab}>
                     {tab}
-                  </PrimaryTabText>
-                </PrimaryTab>
+                  </PrimaryTabButtonText>
+                </PrimaryTabButton>
               ))}
             </ScrollView>
           </TabsContainer>
@@ -424,50 +369,23 @@ const TabsContainer = styled.View({
   paddingBottom: 12,
 });
 
-const PrimaryTab = styled.TouchableOpacity<{ isSelected: boolean }>(
+const PrimaryTabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
   ({ isSelected }: { isSelected: boolean }) => ({
     marginHorizontal: 5,
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 22,
     backgroundColor: isSelected ? "#00A2FF" : "rgba(255,255,255,0.08)",
-    borderWidth: isSelected ? 0 : 1,
-    borderColor: "rgba(255,255,255,0.22)",
+    borderWidth: 1,
+    borderColor: isSelected ? "#00A2FF" : "rgba(255,255,255,0.22)",
   }),
 );
 
-const PrimaryTabText = styled.Text<{ isSelected: boolean }>(
+const PrimaryTabButtonText = styled.Text<{ isSelected: boolean }>(
   ({ isSelected }: { isSelected: boolean }) => ({
     color: "#fff",
-    fontWeight: isSelected ? "700" : "500",
+    fontWeight: "600",
     fontSize: screenWidth <= 400 ? 12 : 13,
-  }),
-);
-
-/** Second-layer tabs — same interaction pattern as Profile Activity (underline). */
-const PerformanceTabRow = styled.View({
-  flexDirection: "row",
-  marginBottom: 16,
-  paddingTop: 4,
-});
-
-const PerformanceTabItem = styled.TouchableOpacity<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    flex: 1,
-    borderBottomColor: isActive ? "#00A2FF" : "rgb(9, 33, 62)",
-    borderBottomWidth: 2,
-    paddingVertical: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  }),
-);
-
-const PerformanceTabText = styled.Text<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    fontSize: 13,
-    fontWeight: "bold",
-    color: isActive ? "#fff" : "#aaa",
-    textAlign: "center",
   }),
 );
 
@@ -475,19 +393,6 @@ const ContentArea = styled.View({
   flex: 1,
   paddingHorizontal: 16,
   paddingTop: 12,
-});
-
-const PlaceholderWrap = styled.View({
-  flex: 1,
-  paddingVertical: 24,
-  justifyContent: "flex-start",
-});
-
-const PlaceholderText = styled.Text({
-  color: "#888",
-  fontStyle: "italic",
-  fontSize: 15,
-  lineHeight: 22,
 });
 
 export default ClubScreen;
