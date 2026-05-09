@@ -90,8 +90,14 @@ const Home = () => {
   const { likedVideoIds, handleLike, initLikedVideos } = useLikeVideo();
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
-  const { videos, isLoadingMore, hasMore, fetchVideos, fetchMoreVideos } =
-    useGameVideoFeed();
+  const {
+    videos,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    fetchVideos,
+    fetchMoreVideos,
+  } = useGameVideoFeed();
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -353,11 +359,30 @@ const Home = () => {
           ) : null
         }
         ListEmptyComponent={
-          <EmptyContainer>
-            <EmptyText>
-              No game videos yet. Be the first to upload one!
-            </EmptyText>
-          </EmptyContainer>
+          isLoading ? (
+            <>
+              <GameVideoCard
+                isLoading
+                isActive={false}
+                onLike={() => {}}
+                isLiked={false}
+                initiallyLiked={false}
+              />
+              <GameVideoCard
+                isLoading
+                isActive={false}
+                onLike={() => {}}
+                isLiked={false}
+                initiallyLiked={false}
+              />
+            </>
+          ) : (
+            <EmptyContainer>
+              <EmptyText>
+                No game videos yet. Be the first to upload one!
+              </EmptyText>
+            </EmptyContainer>
+          )
         }
         style={{ backgroundColor: "rgb(3, 16, 31)" }}
       />

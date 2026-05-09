@@ -44,6 +44,7 @@ import {
   PendingInvites,
   CompetitionAdmins,
   PendingRequests,
+  GameVideo,
 } from "@shared";
 import { UserContext } from "./UserContext";
 import {
@@ -1834,6 +1835,54 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const checkVideoSaved = async ({
+    videoId,
+    userId,
+  }: {
+    videoId: string;
+    userId: string;
+  }): Promise<boolean> => {
+    const docId = `${videoId}_${userId}`;
+    const snap = await getDoc(doc(db, COLLECTION_NAMES.savedVideos, docId));
+    return snap.exists();
+  };
+
+  const toggleSaveVideo = async ({
+    videoId,
+    userId,
+    username,
+    video,
+  }: {
+    videoId: string;
+    userId: string;
+    username: string;
+    video: GameVideo;
+  }): Promise<boolean> => {
+    const docId = `${videoId}_${userId}`;
+    const docRef = doc(db, COLLECTION_NAMES.savedVideos, docId);
+    const snap = await getDoc(docRef);
+
+    if (snap.exists()) {
+      await deleteDoc(docRef);
+      return false;
+    }
+
+    await setDoc(docRef, {
+      videoId,
+      savedBy: { userId, username },
+      gameId: video.gameId,
+      videoUrl: video.videoUrl,
+      competitionId: video.competitionId,
+      competitionName: video.competitionName,
+      gamescore: video.gamescore,
+      date: video.date,
+      teams: video.teams,
+      postedBy: video.postedBy,
+      savedAt: new Date(),
+    });
+    return true;
+  };
+
   return (
     <LeagueContext.Provider
       value={{
@@ -1901,6 +1950,10 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
         // Competition Subscription
         subscribeToCompetition,
+
+        // Video Management
+        checkVideoSaved,
+        toggleSaveVideo,
       }}
     >
       {children}

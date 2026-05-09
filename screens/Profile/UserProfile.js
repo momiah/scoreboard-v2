@@ -17,6 +17,7 @@ import {
   Pressable,
   Platform,
   Image,
+  FlatList,
 } from "react-native";
 import { UserContext } from "../../context/UserContext";
 import styled from "styled-components/native";
@@ -33,6 +34,7 @@ import { formatNumber } from "../../helpers/formatNumber";
 import Icon from "react-native-ico-flags";
 import { RankInformation } from "../../components/Modals/RankInformation";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import ProfileVideos from "../../components/Profiles/ProfileVideos";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;
@@ -146,6 +148,7 @@ const UserProfile = () => {
       { component: "Profile" },
       { component: "Performance" },
       { component: "Activity" },
+      { component: "Videos" },
     ],
     [],
   );
@@ -233,6 +236,14 @@ const UserProfile = () => {
         return <ProfilePerformance profile={profile} globalRank={globalRank} />;
       case "Activity":
         return <ProfileActivity profile={profile} />;
+      case "Videos":
+        return profile ? (
+          <ProfileVideos
+            userId={profile.userId}
+            isOwnProfile={isOwnProfile}
+            firstName={profile.firstName}
+          />
+        ) : null;
       default:
         return null;
     }
@@ -408,19 +419,32 @@ const UserProfile = () => {
             </View>
           </ProfileSummary>
 
-          <TabsContainer>
-            {tabs.map((tab) => (
-              <Tab
-                key={tab.component}
-                onPress={() => setSelectedTab(tab.component)}
-                isSelected={selectedTab === tab.component}
-              >
-                <TabText>{tab.component}</TabText>
-              </Tab>
-            ))}
-          </TabsContainer>
+          <View style={{ alignSelf: "stretch" }}>
+            <FlatList
+              data={tabs}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.component}
+              contentContainerStyle={{
+                paddingHorizontal: 10,
+                paddingVertical: 10,
+              }}
+              renderItem={({ item: tab }) => (
+                <Tab
+                  onPress={() => setSelectedTab(tab.component)}
+                  isSelected={selectedTab === tab.component}
+                >
+                  <TabText>{tab.component}</TabText>
+                </Tab>
+              )}
+            />
+          </View>
 
-          <ProfileContent>{renderComponent()}</ProfileContent>
+          <ProfileContent
+            style={selectedTab === "Videos" ? { paddingHorizontal: 0 } : {}}
+          >
+            {renderComponent()}
+          </ProfileContent>
 
           <Modal visible={previewVisible} transparent animationType="fade">
             <Pressable
@@ -543,22 +567,16 @@ const MedalName = styled.Text({
   fontSize: 12,
 });
 
-const TabsContainer = styled.View({
-  flexDirection: "row",
-  padding: 10,
-  borderTopLeftRadius: 30,
-  borderTopRightRadius: 30,
-});
-
 const Tab = styled.TouchableOpacity(({ isSelected }) => ({
-  flex: 1,
-  padding: 10,
+  paddingHorizontal: 16,
+  paddingVertical: 10,
   borderRadius: 20,
   borderWidth: isSelected ? 2 : 1,
   borderColor: isSelected ? "#00A2FF" : "white",
   marginHorizontal: 5,
   alignItems: "center",
   justifyContent: "center",
+  minWidth: screenWidth * 0.25,
 }));
 
 const TabText = styled.Text({

@@ -1,32 +1,36 @@
 import React, { useEffect, useCallback, useState, useRef } from "react";
-import { Dimensions, TouchableOpacity } from "react-native";
+import { Dimensions, TouchableOpacity, View } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
 import styled from "styled-components/native";
 import { GameVideo, Player } from "@shared/types";
-import {
-  useNavigation,
-  NavigationProp,
-  ParamListBase,
-} from "@react-navigation/native";
+import { useNavigation, ParamListBase } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import { ccImageEndpoint, COMPETITION_TYPES } from "@shared";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { Ionicons } from "@expo/vector-icons";
 import VideoMenuModal from "../Modals/VideoMenuModal";
 import VideoCommentsModal from "../Modals/VideoCommentsModal";
+import GameVideoCardSkeleton from "../Skeletons/GameVideoCardSkeleton";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 const VIDEO_HEIGHT = screenWidth * (9 / 16);
 const CARD_HEIGHT = VIDEO_HEIGHT + 100;
 
+type ProfileVideoTab = "Uploaded" | "Saved" | "Videos of Me";
+
 interface GameVideoCardProps {
-  video: GameVideo;
+  video?: GameVideo;
   isActive: boolean;
   onLike: (gameId: string) => void;
   isLiked: boolean;
   initiallyLiked: boolean;
   isSubmissionMode?: boolean;
+  isLoading?: boolean;
+  profilePage?: boolean;
+  profileVideoTab?: ProfileVideoTab;
+  currentUserId?: string;
 }
 
 const GameVideoCard: React.FC<GameVideoCardProps> = ({
@@ -36,14 +40,18 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   isLiked,
   initiallyLiked,
   isSubmissionMode = false,
+  isLoading = false,
+  profilePage = false,
+  profileVideoTab,
+  currentUserId,
 }) => {
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
   const [menuVisible, setMenuVisible] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [commentsVisible, setCommentsVisible] = useState(false);
   const videoRef = useRef<VideoView>(null);
 
-  const player = useVideoPlayer(video.videoUrl, (p) => {
+  const player = useVideoPlayer(video?.videoUrl ?? "", (p) => {
     p.loop = true;
     p.muted = true;
   });
@@ -77,36 +85,56 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   }, [player]);
 
   const handleProfilePress = () => {
-    navigation.navigate("UserProfile", { userId: video.postedBy.userId });
+    navigation.push("UserProfile", { userId: video?.postedBy.userId });
   };
 
   const handleCompetitionPress = () => {
     const route =
-      video.competitionType === COMPETITION_TYPES.TOURNAMENT
+      video?.competitionType === COMPETITION_TYPES.TOURNAMENT
         ? "Tournament"
         : "League";
     const idKey =
-      video.competitionType === COMPETITION_TYPES.TOURNAMENT
+      video?.competitionType === COMPETITION_TYPES.TOURNAMENT
         ? "tournamentId"
         : "leagueId";
-    navigation.navigate(route, { [idKey]: video.competitionId });
+    navigation.navigate(route, { [idKey]: video?.competitionId });
   };
 
   const handlePlayerPress = (player: Player) => {
-    navigation.navigate("UserProfile", { userId: player.userId });
+    // Don't navigate if on profile page and pressing own name
+    if (profilePage && player.userId === currentUserId) return;
+    navigation.push("UserProfile", { userId: player.userId });
   };
 
+  // ── VideoMenu visibility rules ────────────────────────────────────────────
+  const isOwnVideo = video?.postedBy.userId === currentUserId;
+  const hideSave = isOwnVideo;
+  const hideReport = isOwnVideo;
+  const hideRequestToJoin =
+    isSubmissionMode ||
+    profileVideoTab === "Uploaded" ||
+    profileVideoTab === "Videos of Me";
+
+  // ── Show header row ───────────────────────────────────────────────────────
+  const showHeader =
+    !profilePage ||
+    profileVideoTab === "Saved" ||
+    profileVideoTab === "Videos of Me";
+
   const displayedLikes = (() => {
-    if (isLiked && !initiallyLiked) return video.likes + 1;
-    if (!isLiked && initiallyLiked) return video.likes - 1;
-    return video.likes;
+    const likes = video?.likes ?? 0;
+    if (isLiked && !initiallyLiked) return likes + 1;
+    if (!isLiked && initiallyLiked) return likes - 1;
+    return likes;
   })();
+
+  if (isLoading || !video) return <GameVideoCardSkeleton />;
 
   return (
     <CardContainer>
       {/* ── Header ── */}
-      <HeaderRow>
-        <HeaderLeft>
+      {showHeader && (
+        <HeaderRow>
           <UploaderRow>
             <TouchableOpacity onPress={handleProfilePress}>
               <Avatar
@@ -130,19 +158,8 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
               </TouchableOpacity>
             </UploaderInfo>
           </UploaderRow>
-        </HeaderLeft>
-
-        <TouchableOpacity
-          onPress={() => setMenuVisible(true)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name="ellipsis-horizontal"
-            size={20}
-            color="rgba(255,255,255,0.6)"
-          />
-        </TouchableOpacity>
-      </HeaderRow>
+        </HeaderRow>
+      )}
 
       {/* ── Video ── */}
       <VideoContainer>
@@ -208,6 +225,18 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
             />
             <ActionCount>{video.commentCount}</ActionCount>
           </ActionButton>
+          <View style={{ flex: 1, alignItems: "flex-end" }}>
+            <TouchableOpacity
+              onPress={() => setMenuVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={20}
+                color="rgba(255,255,255,0.6)"
+              />
+            </TouchableOpacity>
+          </View>
         </ActionsRow>
       </FooterRow>
 
@@ -217,6 +246,9 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
           onClose={() => setMenuVisible(false)}
           video={video}
           isSubmissionMode={isSubmissionMode}
+          hideSave={hideSave}
+          hideReport={hideReport}
+          hideRequestToJoin={hideRequestToJoin}
         />
       )}
 
@@ -295,19 +327,12 @@ const CardContainer = styled.View({
   marginBottom: 50,
 });
 
-// ── Header ───────────────────────────────────────────────────────────────────
-
 const HeaderRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
   paddingHorizontal: 12,
   paddingVertical: 10,
-});
-
-const HeaderLeft = styled.View({
-  flex: 1,
-  marginRight: 10,
 });
 
 const UploaderRow = styled.View({
@@ -340,8 +365,6 @@ const CompetitionName = styled.Text({
   marginTop: 2,
 });
 
-// ── Video ────────────────────────────────────────────────────────────────────
-
 const VideoContainer = styled.View({
   position: "relative",
 });
@@ -372,8 +395,6 @@ const FullscreenButton = styled.TouchableOpacity({
   padding: 6,
 });
 
-// ── Footer ───────────────────────────────────────────────────────────────────
-
 const FooterRow = styled.View({
   flexDirection: "column",
   justifyContent: "space-between",
@@ -402,8 +423,6 @@ const ActionCount = styled.Text({
   fontSize: 12,
   fontWeight: "600",
 });
-
-// ── Scorecard ───────────────────────────────────────────────────────────────
 
 const PlayerName = styled.Text({
   color: "white",

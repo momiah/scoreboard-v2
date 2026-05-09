@@ -10,6 +10,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Game, GameVideo, GameVideoUploadPayload } from "@shared/types";
 import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
+import { sendNotification } from "./helpers/sendNotification";
 
 const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");
 const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");
@@ -170,6 +171,12 @@ export const updateGameVideoUrl = functions.https.onCall(
       commentCount: 0,
       teams,
       videoApproved: true,
+      playerIds: [
+        teams.team1?.player1?.userId,
+        teams.team1?.player2?.userId,
+        teams.team2?.player1?.userId,
+        teams.team2?.player2?.userId,
+      ].filter(Boolean) as string[],
     };
 
     await Promise.all([
@@ -179,6 +186,39 @@ export const updateGameVideoUrl = functions.https.onCall(
         .doc(docId)
         .set(gameVideoRecord),
     ]);
+
+    const playerUserIds = [
+      teams.team1?.player1?.userId,
+      teams.team1?.player2?.userId,
+      teams.team2?.player1?.userId,
+      teams.team2?.player2?.userId,
+    ].filter((uid): uid is string => !!uid && uid !== postedBy.userId);
+
+    const notificationData = {
+      gameId,
+      competitionId,
+      competitionType,
+      competitionName,
+      gamescore,
+      date,
+      team1: teams.team1,
+      team2: teams.team2,
+    };
+
+    await Promise.all(
+      playerUserIds.map((userId) =>
+        sendNotification({
+          createdAt: new Date(),
+          type: "video",
+          message: `${postedBy.firstName} uploaded a video for your game in ${competitionName}`,
+          isRead: false,
+          senderId: postedBy.userId,
+          recipientId: userId,
+          data: notificationData,
+          response: "",
+        }),
+      ),
+    );
   },
 );
 

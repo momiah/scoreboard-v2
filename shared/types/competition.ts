@@ -8,7 +8,9 @@ export type CollectionName =
   | "pendingVideoUploads"
   | "gameVideos"
   | "comments"
-  | "replies";
+  | "replies"
+  | "reportedVideos"
+  | "savedVideos";
 
 export type CompetitionType =
   | typeof COMPETITION_TYPES.LEAGUE

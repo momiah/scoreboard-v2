@@ -142,6 +142,18 @@ export const useVideoUpload = ({
             type: "raw",
             headers: { "content-type": "video/mp4" },
             customUploadId: gameId,
+            notification: {
+              enabled: true,
+              onProgressTitle: "Court Champs",
+              onProgressMessage: "Uploading game video...",
+              onCompleteTitle: "Court Champs",
+              onCompleteMessage: "Video uploaded successfully!",
+              onErrorTitle: "Court Champs",
+              onErrorMessage: "Video upload failed.",
+              onCancelledTitle: "Court Champs",
+              onCancelledMessage: "Upload cancelled.",
+              autoClear: true,
+            },
           });
 
           // ── Store real uploadId for cancellation ──────────────────────────

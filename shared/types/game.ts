@@ -109,6 +109,7 @@ export interface GameVideo extends GameVideoUploadPayload {
   views: number;
   commentCount: number;
   videoApproved?: boolean | null;
+  playerIds?: string[];
 }
 
 export interface Comment {

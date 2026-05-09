@@ -35,6 +35,8 @@ export const COLLECTION_NAMES: Record<CollectionName, string> = {
   gameVideos: "gameVideos",
   comments: "comments",
   replies: "replies",
+  reportedVideos: "reportedVideos",
+  savedVideos: "savedVideos",
 };
 
 export const ICON_MAP = {
@@ -347,6 +349,10 @@ export const notificationTypes = {
     WELCOME: {
       ROUTE: "Welcome",
       TYPE: "welcome",
+    },
+    GAME_VIDEO: {
+      ROUTE: "GameScreen",
+      TYPE: "video",
     },
   },
   WELCOME: {

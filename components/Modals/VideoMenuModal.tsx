@@ -1,9 +1,13 @@
-import React from "react";
-import { Modal, Share, Alert, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useContext } from "react";
+import {
+  Modal,
+  Share,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
-import { Ionicons } from "@expo/vector-icons";
-import { AntDesign } from "@expo/vector-icons";
+import { Ionicons, AntDesign } from "@expo/vector-icons";
 import { GameVideo } from "@shared/types";
 import { COMPETITION_TYPES } from "@shared";
 import {
@@ -11,21 +15,50 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
+import { UserContext } from "../../context/UserContext";
+import { LeagueContext } from "../../context/LeagueContext";
+import ReportVideoModal from "./ReportVideoModal";
 
 interface VideoMenuModalProps {
   visible: boolean;
   onClose: () => void;
   video: GameVideo;
   isSubmissionMode?: boolean;
+  hideSave?: boolean;
+  hideReport?: boolean;
+  hideRequestToJoin?: boolean;
 }
 
 const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   visible,
   onClose,
   video,
-  isSubmissionMode,
+  isSubmissionMode = false,
+  hideSave = false,
+  hideReport = false,
+  hideRequestToJoin = false,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { currentUser } = useContext(UserContext);
+  const { toggleSaveVideo, checkVideoSaved } = useContext(LeagueContext);
+
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCheckingSaved, setIsCheckingSaved] = useState(true);
+
+  const videoId = `${video.gameId}_${video.postedBy.userId}`;
+
+  const showRequestToJoin = !isSubmissionMode && !hideRequestToJoin;
+
+  // ── Check if already saved on open ───────────────────────────────────────
+  useEffect(() => {
+    if (!visible || !currentUser || hideSave) return;
+    setIsCheckingSaved(true);
+    checkVideoSaved({ videoId, userId: currentUser.userId })
+      .then((saved) => setIsSaved(saved))
+      .finally(() => setIsCheckingSaved(false));
+  }, [visible, currentUser]);
 
   const handleRequestToJoin = () => {
     onClose();
@@ -52,79 +85,110 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
     }
   };
 
-  const handleSaveVideo = () => {
-    onClose();
-    // TODO: implement save to camera roll using expo-media-library
-    Alert.alert("Coming Soon", "Save video will be available soon.");
+  const handleSaveVideo = async () => {
+    if (!currentUser || isSaving) return;
+    setIsSaving(true);
+    try {
+      const nowSaved = await toggleSaveVideo({
+        videoId,
+        userId: currentUser.userId,
+        username: currentUser.username,
+        video,
+      });
+      setIsSaved(nowSaved);
+    } catch (error) {
+      console.error("[VideoMenuModal] Failed to toggle save:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReport = () => {
-    onClose();
-    Alert.alert("Report Video", "Are you sure you want to report this video?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Report",
-        style: "destructive",
-        onPress: () => {
-          // TODO: write report to Firestore
-          Alert.alert("Reported", "Thank you for your report.");
-        },
-      },
-    ]);
+    setReportModalVisible(true);
   };
 
   return (
-    <Modal
-      animationType="slide"
-      transparent
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <MenuOverlay>
-        <MenuContent>
-          <MenuHeader>
-            <MenuTitle>Options</MenuTitle>
-            <TouchableOpacity onPress={onClose}>
-              <AntDesign name="closecircleo" size={26} color="red" />
-            </TouchableOpacity>
-          </MenuHeader>
+    <>
+      <Modal
+        animationType="slide"
+        transparent
+        visible={visible}
+        onRequestClose={onClose}
+      >
+        <MenuOverlay>
+          <MenuContent>
+            <MenuHeader>
+              <MenuTitle>Options</MenuTitle>
+              <TouchableOpacity onPress={onClose}>
+                <AntDesign name="closecircleo" size={26} color="red" />
+              </TouchableOpacity>
+            </MenuHeader>
 
-          {!isSubmissionMode && (
-            <MenuItem onPress={handleRequestToJoin}>
+            {/* ── Request to Join ── */}
+            {showRequestToJoin && (
+              <MenuItem onPress={handleRequestToJoin}>
+                <MenuItemIcon>
+                  <Ionicons name="enter-outline" size={22} color="#00A2FF" />
+                </MenuItemIcon>
+                <MenuItemText>Request to Join Competition</MenuItemText>
+                <Ionicons name="chevron-forward" size={20} color="#555" />
+              </MenuItem>
+            )}
+
+            {/* ── Share ── */}
+            <MenuItem onPress={handleShareVideo}>
               <MenuItemIcon>
-                <Ionicons name="enter-outline" size={22} color="#00A2FF" />
+                <Ionicons name="share-outline" size={22} color="#00A2FF" />
               </MenuItemIcon>
-              <MenuItemText>Request to Join Competition</MenuItemText>
+              <MenuItemText>Share Video</MenuItemText>
               <Ionicons name="chevron-forward" size={20} color="#555" />
             </MenuItem>
-          )}
 
-          <MenuItem onPress={handleShareVideo}>
-            <MenuItemIcon>
-              <Ionicons name="share-outline" size={22} color="#00A2FF" />
-            </MenuItemIcon>
-            <MenuItemText>Share Video</MenuItemText>
-            <Ionicons name="chevron-forward" size={20} color="#555" />
-          </MenuItem>
+            {/* ── Save ── */}
+            {!hideSave && (
+              <MenuItem onPress={handleSaveVideo}>
+                <MenuItemIcon>
+                  <Ionicons name="bookmark-outline" size={22} color="#00A2FF" />
+                </MenuItemIcon>
+                <MenuItemText>{isSaved ? "Saved" : "Save Video"}</MenuItemText>
+                {isCheckingSaved || isSaving ? (
+                  <ActivityIndicator size="small" color="#00A2FF" />
+                ) : (
+                  <Ionicons
+                    name={isSaved ? "bookmark" : "bookmark-outline"}
+                    size={22}
+                    color={isSaved ? "#00A2FF" : "#555"}
+                  />
+                )}
+              </MenuItem>
+            )}
 
-          <MenuItem onPress={handleSaveVideo}>
-            <MenuItemIcon>
-              <Ionicons name="download-outline" size={22} color="#00A2FF" />
-            </MenuItemIcon>
-            <MenuItemText>Save Video</MenuItemText>
-            <Ionicons name="chevron-forward" size={20} color="#555" />
-          </MenuItem>
+            {/* ── Report ── */}
+            {!hideReport && (
+              <MenuItem onPress={handleReport} isLast>
+                <MenuItemIcon isDestructive>
+                  <Ionicons name="flag-outline" size={22} color="#FF4B6E" />
+                </MenuItemIcon>
+                <MenuItemText isDestructive>Report Video</MenuItemText>
+                <Ionicons name="chevron-forward" size={20} color="#555" />
+              </MenuItem>
+            )}
+          </MenuContent>
+        </MenuOverlay>
+      </Modal>
 
-          <MenuItem onPress={handleReport} isLast>
-            <MenuItemIcon isDestructive>
-              <Ionicons name="flag-outline" size={22} color="#FF4B6E" />
-            </MenuItemIcon>
-            <MenuItemText isDestructive>Report Video</MenuItemText>
-            <Ionicons name="chevron-forward" size={20} color="#555" />
-          </MenuItem>
-        </MenuContent>
-      </MenuOverlay>
-    </Modal>
+      {currentUser && (
+        <ReportVideoModal
+          visible={reportModalVisible}
+          onClose={() => setReportModalVisible(false)}
+          video={video}
+          reportedBy={{
+            userId: currentUser.userId,
+            username: currentUser.username,
+          }}
+        />
+      )}
+    </>
   );
 };
 

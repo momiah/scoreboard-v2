@@ -27,6 +27,7 @@ import {
 } from "@shared/types";
 import { COMPETITION_TYPES } from "@shared";
 import ProfileActivitySkeleton from "../Skeletons/ProfileActivitySkeleton";
+import LineTabs from "../LineTabs";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
@@ -364,17 +365,11 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
 
   return (
     <Container>
-      <TabContainer>
-        {TABS.map((tab) => (
-          <TabItem
-            key={tab.key}
-            isActive={activeTab === tab.key}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <TabText isActive={activeTab === tab.key}>{tab.label}</TabText>
-          </TabItem>
-        ))}
-      </TabContainer>
+      <LineTabs
+        tabs={TABS.map((t) => ({ key: t.key, label: t.label }))}
+        activeTab={activeTab}
+        onTabPress={setActiveTab}
+      />
       {renderContent}
     </Container>
   );
@@ -385,31 +380,6 @@ export default React.memo(ProfileActivity);
 const Container = styled.View({
   flex: 1,
 });
-
-const TabContainer = styled.View({
-  flexDirection: "row",
-  marginBottom: 20,
-  paddingTop: 10,
-});
-
-const TabItem = styled.TouchableOpacity<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    flex: 1,
-    borderBottomColor: isActive ? "#00A2FF" : "rgb(9, 33, 62)",
-    borderBottomWidth: 2,
-    paddingVertical: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  }),
-);
-
-const TabText = styled.Text<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    fontSize: 14,
-    fontWeight: "bold",
-    color: isActive ? "#ffffffff" : "#aaa",
-  }),
-);
 
 const CompetitionItem = styled.TouchableOpacity({
   backgroundColor: "rgba(0, 0, 0, 0.3)",
