@@ -280,8 +280,7 @@ const Tabs = () => {
         screen: "Club",
         params: {
           clubId: clubNavigationId,
-          primaryTab: "Club Performance",
-          performanceTab: "league_wins",
+          primaryTab: "Feed",
         },
       },
     });
