@@ -15,6 +15,7 @@ import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../../services/firebase.config";
+import { COLLECTION_NAMES } from "@shared";
 import { collection, query, getDocs } from "firebase/firestore";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
@@ -45,6 +46,7 @@ const InviteClubMembersModal: React.FC<InviteClubMembersModalProps> = ({
   const [activeTab, setActiveTab] = useState<"search" | "recent">("search");
   const [recentPlayersVisible, setRecentPlayersVisible] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [participantIds, setParticipantIds] = useState<Set<string>>(new Set());
 
   const { sendNotification } = useContext(UserContext);
   const { updatePendingInvites } = useContext(LeagueContext);
@@ -69,17 +71,40 @@ const InviteClubMembersModal: React.FC<InviteClubMembersModalProps> = ({
       setInviteUsers([]);
       setValidationError("");
       setActiveTab("search");
+      setParticipantIds(new Set());
+      return;
     }
-  }, [visible]);
 
-  const participants = club.pendingInvites ?? [];
+    const loadParticipants = async () => {
+      try {
+        const snap = await getDocs(
+          collection(
+            db,
+            COLLECTION_NAMES.clubs,
+            club.clubId,
+            "participants",
+          ),
+        );
+        setParticipantIds(new Set(snap.docs.map((d) => d.id)));
+      } catch (e) {
+        console.error("Error loading club participants:", e);
+      }
+    };
+    loadParticipants();
+  }, [visible, club.clubId]);
 
   const hasConflict = useCallback(
     (userId: string) => {
-      const isPending = participants.some((u) => u.userId === userId);
-      return isPending;
+      const isParticipant = participantIds.has(userId);
+      const isPendingInvite = (club.pendingInvites ?? []).some(
+        (u) => u.userId === userId,
+      );
+      const isPendingRequest = (club.pendingRequests ?? []).some(
+        (u) => u.userId === userId,
+      );
+      return isParticipant || isPendingInvite || isPendingRequest;
     },
-    [participants],
+    [participantIds, club.pendingInvites, club.pendingRequests],
   );
 
   const conflictedUsers = inviteUsers.filter((u) => hasConflict(u.userId));
@@ -87,7 +112,7 @@ const InviteClubMembersModal: React.FC<InviteClubMembersModalProps> = ({
 
   const getBlockingError = (): string => {
     if (hasConflicts) {
-      return `Already invited: ${conflictedUsers
+      return `Cannot invite: ${conflictedUsers
         .map((u) => formatDisplayName(u))
         .join(", ")}. Remove them to continue.`;
     }
