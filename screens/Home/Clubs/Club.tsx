@@ -265,6 +265,11 @@ const ClubScreen: React.FC = () => {
           </Overview>
 
           <TabsContainer>
+            <GradientOverlay
+              colors={["rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.4)"]}
+              locations={[0.1, 1]}
+              style={{ bottom: -560 }}
+            />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -389,29 +394,25 @@ const TabsContainer = styled.View({
   backgroundColor: "#00152B",
   borderTopLeftRadius: 30,
   borderTopRightRadius: 30,
-  paddingTop: 20,
-  paddingBottom: 12,
+  paddingTop: 25,
+  paddingBottom: 10,
 });
 
 const PrimaryTabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
   ({ isSelected }: { isSelected: boolean }) => ({
     marginHorizontal: 5,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 22,
-    backgroundColor: isSelected ? "#00A2FF" : "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: isSelected ? "#00A2FF" : "rgba(255,255,255,0.22)",
+    borderRadius: 20,
+    borderWidth: isSelected ? 2 : 1,
+    borderColor: isSelected ? "#00A2FF" : "white",
   }),
 );
 
-const PrimaryTabButtonText = styled.Text<{ isSelected: boolean }>(
-  ({ isSelected }: { isSelected: boolean }) => ({
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: screenWidth <= 400 ? 12 : 13,
-  }),
-);
+const PrimaryTabButtonText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 12 : 14,
+});
 
 const ContentArea = styled.View({
   flex: 1,
