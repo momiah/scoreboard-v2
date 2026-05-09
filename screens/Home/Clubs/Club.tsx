@@ -26,6 +26,7 @@ import ClubFeed from "./tabs/ClubFeed";
 import ClubPerformance from "./tabs/ClubPerformance";
 import ClubLeagues from "./tabs/ClubLeagues";
 import ClubTournaments from "./tabs/ClubTournaments";
+import InviteClubMembersModal from "../../../components/Modals/InviteClubMembersModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -70,8 +71,13 @@ const ClubScreen: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<PrimaryTab>(
     primaryTab ?? "Feed",
   );
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
   const isOwner = currentUser?.userId === clubById?.clubOwner?.userId;
+  const isAdmin = clubById?.clubAdmins?.some(
+    (a) => a.userId === currentUser?.userId,
+  );
+  const canInvite = isOwner || isAdmin;
 
   useFocusEffect(
     useCallback(() => {
@@ -225,18 +231,35 @@ const ClubScreen: React.FC = () => {
                   </AddressRow>
                 ) : null}
 
-                <TagRow>
-                  <Tag
-                    name={`${memberCount}`}
-                    color={"rgba(0, 0, 0, 0.7)"}
-                    iconColor={"#00A2FF"}
-                    iconSize={15}
-                    icon={"person"}
-                    iconPosition={"right"}
-                    bold
-                  />
-                  <Tag name="Club" color="#FAB234" />
-                </TagRow>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag
+                      name={`${memberCount}`}
+                      color={"rgba(0, 0, 0, 0.7)"}
+                      iconColor={"#00A2FF"}
+                      iconSize={15}
+                      icon={"person"}
+                      iconPosition={"right"}
+                      bold
+                    />
+                    <Tag name="Club" color="#FAB234" />
+                  </View>
+                  {canInvite && (
+                    <Tag
+                      name="Invite Members"
+                      color="#00A2FF"
+                      icon="paper-plane-sharp"
+                      onPress={() => setInviteModalVisible(true)}
+                      bold
+                    />
+                  )}
+                </View>
               </ClubDetailsContainer>
             </ClubHeaderImage>
           </Overview>
@@ -262,6 +285,14 @@ const ClubScreen: React.FC = () => {
           </TabsContainer>
 
           <ContentArea>{renderPrimaryContent()}</ContentArea>
+
+          {club && (
+            <InviteClubMembersModal
+              visible={inviteModalVisible}
+              onClose={() => setInviteModalVisible(false)}
+              club={club}
+            />
+          )}
         </>
       )}
     </View>
@@ -351,13 +382,6 @@ const ClubLocationText = styled.Text({
   flexShrink: 1,
   fontSize: 13,
   color: "white",
-});
-
-const TagRow = styled.View({
-  flexDirection: "row",
-  gap: 8,
-  flexWrap: "wrap",
-  alignItems: "center",
 });
 
 const TabsContainer = styled.View({

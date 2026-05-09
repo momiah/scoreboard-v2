@@ -142,6 +142,16 @@ export interface LeagueContextType {
     notificationId: string;
     collectionName: CollectionName;
   }) => Promise<void>;
+  acceptClubInvite: (params: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => Promise<void>;
+  declineClubInvite: (params: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => Promise<void>;
   requestToJoinLeague: (params: {
     competitionId: string;
     currentUser: UserProfile;

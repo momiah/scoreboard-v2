@@ -765,6 +765,135 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const acceptClubInvite = async ({
+    userId,
+    clubId,
+    notificationId,
+  }: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => {
+    try {
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
+
+      const newParticipant = await getUserById(userId);
+      if (!newParticipant) {
+        console.error("User not found:", userId);
+        return;
+      }
+
+      const participantData: Player = {
+        userId: newParticipant.userId,
+        firstName: newParticipant.firstName,
+        lastName: newParticipant.lastName,
+        username: newParticipant.username,
+      };
+
+      await runTransaction(db, async (transaction) => {
+        const clubDoc = await transaction.get(clubRef);
+
+        if (!clubDoc.exists()) {
+          console.error("Club does not exist or has been deleted");
+          transaction.update(notificationDocRef, { isRead: true });
+          return;
+        }
+
+        const clubData = clubDoc.data();
+        const pendingInvites = clubData.pendingInvites || [];
+
+        const updatedPending = pendingInvites.filter(
+          (inv: { userId: string }) => inv.userId !== userId,
+        );
+
+        transaction.update(clubRef, { pendingInvites: updatedPending });
+
+        const participantRef = doc(
+          db,
+          COLLECTION_NAMES.clubs,
+          clubId,
+          "participants",
+          userId,
+        );
+        transaction.set(participantRef, participantData);
+
+        transaction.update(notificationDocRef, {
+          isRead: true,
+          response: notificationTypes.RESPONSE.ACCEPT,
+        });
+      });
+
+      AppEventsLogger.logEvent("JoinedClub", {
+        club_id: clubId,
+        method: "invite",
+      });
+
+      console.log("Club invite accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting club invite:", error);
+    }
+  };
+
+  const declineClubInvite = async ({
+    userId,
+    clubId,
+    notificationId,
+  }: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => {
+    try {
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+      const clubSnap = await getDoc(clubRef);
+
+      if (!clubSnap.exists()) {
+        console.error("Club does not exist or has been deleted");
+        const notificationDocRef = doc(
+          db,
+          "users",
+          userId,
+          "notifications",
+          notificationId,
+        );
+        await updateDoc(notificationDocRef, { isRead: true });
+        return;
+      }
+
+      const clubData = clubSnap.data();
+      const pendingInvites = clubData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv: { userId: string }) => inv.userId !== userId,
+      );
+
+      await updateDoc(clubRef, { pendingInvites: updatedPending });
+
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
+      });
+
+      console.log("Club invite declined successfully!");
+    } catch (error) {
+      console.error("Error declining club invite:", error);
+    }
+  };
+
   const requestToJoinLeague = async ({
     competitionId,
     currentUser,
@@ -1980,6 +2109,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         removePlayerFromCompetition,
         acceptCompetitionInvite,
         declineCompetitionInvite,
+        acceptClubInvite,
+        declineClubInvite,
         requestToJoinLeague,
         acceptCompetitionJoinRequest,
         declineCompetitionJoinRequest,

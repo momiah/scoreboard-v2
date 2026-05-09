@@ -67,7 +67,7 @@ const Notifications = () => {
 
   const handleNotificationAction = useCallback((item) => {
     const competitionId =
-      item.data.leagueId || item.data.tournamentId || item.data.competitionId;
+      item.data.leagueId || item.data.tournamentId || item.data.clubId || item.data.competitionId;
 
     const commonState = {
       notificationId: item.id,
