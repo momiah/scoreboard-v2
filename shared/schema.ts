@@ -389,6 +389,7 @@ export const notificationTypes = {
     INVITE: {
       LEAGUE: "invite-league",
       TOURNAMENT: "invite-tournament",
+      CLUB: "invite-club",
     },
     // Shows player card
     JOIN_REQUEST: {

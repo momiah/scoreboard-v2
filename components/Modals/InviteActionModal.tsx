@@ -17,6 +17,8 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { CollectionName, NormalizedCompetition } from "@shared/types";
+import type { Club } from "@shared/types";
+import { notificationTypes, COLLECTION_NAMES } from "@shared";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -26,7 +28,7 @@ type InviteActionModalProps = {
   visible: boolean;
   onClose: () => void;
   inviteId: string;
-  inviteType: "invite-league" | "invite-tournament";
+  inviteType: "invite-league" | "invite-tournament" | "invite-club";
   notificationId: string;
   isRead: boolean;
 };
@@ -43,41 +45,56 @@ const InviteActionModal = ({
     subscribeToCompetition,
     acceptCompetitionInvite,
     declineCompetitionInvite,
+    acceptClubInvite,
+    declineClubInvite,
   } = useContext(LeagueContext);
   const { currentUser, readNotification } = useContext(UserContext);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
     null,
   );
+  const [clubData, setClubData] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
   const [isWithdrawn, setIsWithdrawn] = useState(false);
   const [withdrawnMessage, setWithdrawnMessage] = useState("");
+  const [accepting, setAccepting] = useState(false);
+  const [declining, setDeclining] = useState(false);
 
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const timeoutRef = useRef(null);
 
-  const config = getCompetitionConfig(inviteType);
-  const navRoute = config.navRoute;
+  const isClub = inviteType === notificationTypes.ACTION.INVITE.CLUB;
+  const config = !isClub ? getCompetitionConfig(inviteType) : null;
 
-  const navigateTo = (competitionId: string) => {
-    navigation.navigate(navRoute, { [config.paramKey]: competitionId });
+  const navigateTo = (id: string) => {
+    if (isClub) {
+      navigation.navigate("Club", { clubId: id });
+    } else if (config) {
+      navigation.navigate(config.navRoute, { [config.paramKey]: id });
+    }
   };
 
   const leagueFull =
+    !isClub &&
     (competition?.participants?.length ?? 0) >=
     (competition?.maxPlayers ?? Infinity);
 
-  const alreadyInLeague = competition?.participants?.some(
-    (participant) => participant.userId === currentUser?.userId,
-  );
+  const alreadyInLeague =
+    !isClub &&
+    competition?.participants?.some(
+      (participant) => participant.userId === currentUser?.userId,
+    );
 
   const location = competition?.location;
 
   const resetState = useCallback(() => {
     setCompetition(null);
+    setClubData(null);
     setIsCopied(false);
     setIsWithdrawn(false);
     setWithdrawnMessage("");
+    setAccepting(false);
+    setDeclining(false);
     setLoading(true);
   }, []);
 
@@ -89,9 +106,13 @@ const InviteActionModal = ({
 
     setLoading(true);
 
+    const collectionName = isClub
+      ? COLLECTION_NAMES.clubs
+      : config!.collectionName;
+
     const unsubscribe = subscribeToCompetition(
       inviteId,
-      config.collectionName as CollectionName,
+      collectionName as CollectionName,
       (data) => {
         if (!data) {
           readNotification(notificationId, currentUser.userId);
@@ -101,36 +122,50 @@ const InviteActionModal = ({
           return;
         }
 
-        const normalized = normalizeCompetitionData({
-          rawData: data,
-          competitionType: config.competitionType,
-        }) as NormalizedCompetition;
-
-        setCompetition(normalized);
-
-        const notInPendingInvites = !normalized.pendingInvites?.some(
-          (pendingUser) => pendingUser.userId === currentUser?.userId,
-        );
-        const alreadyParticipant = normalized.participants?.some(
-          (participant) => participant.userId === currentUser?.userId,
-        );
-
-        // Withdrawn = removed from pending invites AND never became a participant
-        const inviteWithdrawn = notInPendingInvites && !alreadyParticipant;
-
-        if (inviteWithdrawn) {
-          setWithdrawnMessage("This invite has been withdrawn.");
-        } else if (notInPendingInvites && alreadyParticipant) {
-          setWithdrawnMessage("You are already a participant.");
+        if (isClub) {
+          const club = { clubId: inviteId, ...data } as unknown as Club;
+          setClubData(club);
+          const withdrawn = !club.pendingInvites?.some(
+            (u) => u.userId === currentUser?.userId,
+          );
+          setIsWithdrawn(withdrawn);
+          if (withdrawn) {
+            setWithdrawnMessage("This club invite is no longer available.");
+          } else {
+            setWithdrawnMessage("");
+          }
+          setLoading(false);
         } else {
-          setWithdrawnMessage("");
-        }
+          const normalized = normalizeCompetitionData({
+            rawData: data,
+            competitionType: config!.competitionType,
+          }) as NormalizedCompetition;
 
-        setIsWithdrawn(inviteWithdrawn);
-        setLoading(false);
+          setCompetition(normalized);
+
+          const notInPendingInvites = !normalized.pendingInvites?.some(
+            (pendingUser) => pendingUser.userId === currentUser?.userId,
+          );
+          const alreadyParticipant = normalized.participants?.some(
+            (participant) => participant.userId === currentUser?.userId,
+          );
+
+          const inviteWithdrawn = notInPendingInvites && !alreadyParticipant;
+
+          if (inviteWithdrawn) {
+            setWithdrawnMessage("This invite has been withdrawn.");
+          } else if (notInPendingInvites && alreadyParticipant) {
+            setWithdrawnMessage("You are already a participant.");
+          } else {
+            setWithdrawnMessage("");
+          }
+
+          setIsWithdrawn(inviteWithdrawn);
+          setLoading(false);
+        }
       },
       (error) => {
-        console.error("Error subscribing to competition:", error);
+        console.error("Error subscribing:", error);
         setLoading(false);
       },
     );
@@ -139,14 +174,21 @@ const InviteActionModal = ({
   }, [visible, inviteId]);
 
   useEffect(() => {
-    if (!visible || !competition || isRead) return;
+    if (!visible || isRead) return;
+    const hasData = isClub ? !!clubData : !!competition;
+    if (!hasData) return;
 
-    if (leagueFull || isWithdrawn || alreadyInLeague) {
-      readNotification(notificationId, currentUser.userId);
+    if (isClub) {
+      if (isWithdrawn) readNotification(notificationId, currentUser.userId);
+    } else {
+      if (leagueFull || isWithdrawn || alreadyInLeague) {
+        readNotification(notificationId, currentUser.userId);
+      }
     }
   }, [
     visible,
     competition,
+    clubData,
     isRead,
     leagueFull,
     isWithdrawn,
@@ -156,63 +198,87 @@ const InviteActionModal = ({
   ]);
 
   const handleAcceptInvite = async () => {
-    if (!competition) return;
-
+    setAccepting(true);
     try {
-      await acceptCompetitionInvite({
-        userId: currentUser?.userId,
-        competitionId: competition.id ?? inviteId,
-        notificationId,
-        collectionName: config.collectionName as CollectionName,
-      });
-      console.log("Invite accepted successfully");
-      onClose();
+      if (isClub) {
+        await acceptClubInvite({
+          userId: currentUser?.userId,
+          clubId: inviteId,
+          notificationId,
+        });
+        onClose();
+        navigateTo(inviteId);
+      } else {
+        if (!competition) return;
+        await acceptCompetitionInvite({
+          userId: currentUser?.userId,
+          competitionId: competition.id ?? inviteId,
+          notificationId,
+          collectionName: config!.collectionName as CollectionName,
+        });
+        onClose();
+      }
     } catch (error) {
       console.error("Error accepting invite:", error);
-    }
-  };
-
-  const handleLinkPress = () => {
-    if (competition) {
-      onClose();
-      navigateTo(competition.id);
+    } finally {
+      setAccepting(false);
     }
   };
 
   const handleDeclineInvite = async () => {
+    setDeclining(true);
     try {
-      await declineCompetitionInvite({
-        userId: currentUser?.userId,
-        competitionId: competition?.id ?? inviteId,
-        notificationId,
-        collectionName: config.collectionName as CollectionName,
-      });
-      console.log("Invite declined successfully");
+      if (isClub) {
+        await declineClubInvite({
+          userId: currentUser?.userId,
+          clubId: inviteId,
+          notificationId,
+        });
+      } else {
+        await declineCompetitionInvite({
+          userId: currentUser?.userId,
+          competitionId: competition?.id ?? inviteId,
+          notificationId,
+          collectionName: config!.collectionName as CollectionName,
+        });
+      }
       onClose();
     } catch (error) {
       console.error("Error declining invite:", error);
+    } finally {
+      setDeclining(false);
     }
   };
 
-  const numberOfPlayers = `${competition?.participants.length} / ${competition?.maxPlayers}`;
   const competitionType = config?.navRoute ?? "Competition";
   const actionBlocked = isWithdrawn || alreadyInLeague || leagueFull || isRead;
+  const handleLinkPress = () => {
+    const id = isClub ? clubData?.clubId : competition?.id;
+    if (id) {
+      onClose();
+      navigateTo(id);
+    }
+  };
 
-  const errorMessage = withdrawnMessage
-    ? withdrawnMessage
-    : leagueFull
-      ? "This invite has expired as the league is full."
-      : "";
+  const isBusy = accepting || declining;
+  const isDisabled =
+    isBusy ||
+    (isClub
+      ? isRead || isWithdrawn
+      : isRead || leagueFull || isWithdrawn || alreadyInLeague);
+
+  const numberOfPlayers = !isClub
+    ? `${competition?.participants?.length ?? 0} / ${competition?.maxPlayers}`
+    : null;
+
+  const title = isClub ? "Club Invite" : "League Invite";
 
   return (
     <Modal transparent visible={visible} animationType="slide">
       <ModalContainer>
         <ModalContent>
-          {/* close button always present */}
           {loading ? (
-            <>
-              <ActivityIndicator size="large" color="#fff" />
-            </>
+            <ActivityIndicator size="large" color="#fff" />
           ) : (
             <>
               <TouchableOpacity
@@ -231,12 +297,49 @@ const InviteActionModal = ({
               <LeagueDetailsContainer>
                 <Title>{competitionType} Invite</Title>
 
-                {competition ? (
+                {isClub && clubData ? (
                   <>
                     <Message>
-                      You’ve been invited to join{" "}
+                      You&apos;ve been invited to join{" "}
                       <LinkText onPress={handleLinkPress}>
-                        {competition?.name}
+                        {clubData.clubName}
+                      </LinkText>
+                    </Message>
+
+                    {clubData.clubLocation ? (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginTop: 15,
+                        }}
+                      >
+                        <LeagueLocation>{clubData.clubLocation}</LeagueLocation>
+                      </View>
+                    ) : null}
+
+                    {clubData.clubDescription ? (
+                      <Message style={{ marginTop: 10, color: "#ccc" }}>
+                        {clubData.clubDescription}
+                      </Message>
+                    ) : null}
+
+                    <View style={{ flexDirection: "row", gap: 5, marginTop: 15 }}>
+                      <Tag name="Club" color="#FAB234" />
+                      {clubData.clubOwner?.username ? (
+                        <Tag
+                          name={`By ${clubData.clubOwner.username}`}
+                          color="rgba(0,0,0,0.5)"
+                        />
+                      ) : null}
+                    </View>
+                  </>
+                ) : competition ? (
+                  <>
+                    <Message>
+                      You&apos;ve been invited to join{" "}
+                      <LinkText onPress={handleLinkPress}>
+                        {competition.name}
                       </LinkText>
                     </Message>
 
@@ -248,9 +351,9 @@ const InviteActionModal = ({
                       }}
                     >
                       <LeagueLocation>
-                        {competition?.location.courtName},{" "}
-                        {competition?.location.city},{" "}
-                        {competition?.location.postCode}
+                        {competition.location?.courtName},{" "}
+                        {competition.location?.city},{" "}
+                        {competition.location?.postCode}
                       </LeagueLocation>
                       <TouchableOpacity
                         onPress={() =>
@@ -279,7 +382,7 @@ const InviteActionModal = ({
                       }}
                     >
                       <Tag
-                        name={`Start Date - ${competition?.startDate}`}
+                        name={`Start Date - ${competition.startDate}`}
                         color="rgba(0, 0, 0, 0.7)"
                         iconColor="rgb(0, 133, 40)"
                         iconSize={15}
@@ -288,7 +391,7 @@ const InviteActionModal = ({
                         bold
                       />
                       <Tag
-                        name={`End Date - ${competition?.endDate}`}
+                        name={`End Date - ${competition.endDate}`}
                         color="rgba(0, 0, 0, 0.7)"
                         iconColor="rgb(190, 0, 0)"
                         iconSize={15}
@@ -299,14 +402,10 @@ const InviteActionModal = ({
                     </View>
 
                     <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 5,
-                        marginTop: 20,
-                      }}
+                      style={{ flexDirection: "row", gap: 5, marginTop: 20 }}
                     >
                       <Tag
-                        name={numberOfPlayers}
+                        name={numberOfPlayers!}
                         color="rgba(0, 0, 0, 0.7)"
                         iconColor="#00A2FF"
                         iconSize={15}
@@ -314,27 +413,47 @@ const InviteActionModal = ({
                         iconPosition="right"
                         bold
                       />
-                      <Tag name={competition?.type} />
-                      <Tag name={competition?.prizeType} />
+                      <Tag name={competition.type} />
+                      <Tag name={competition.prizeType} />
                     </View>
                   </>
                 ) : null}
+
+                {withdrawnMessage ? (
+                  <ErrorText>{withdrawnMessage}</ErrorText>
+                ) : leagueFull ? (
+                  <ErrorText>
+                    This invite has expired as the league is full
+                  </ErrorText>
+                ) : null}
+
+                <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
+                  <Button
+                    style={{ backgroundColor: "red" }}
+                    onPress={handleDeclineInvite}
+                    disabled={isDisabled}
+                  >
+                    <CloseButtonText>Decline</CloseButtonText>
+                    {declining && (
+                      <ActivityIndicator
+                        size="small"
+                        color="#fff"
+                        style={{ marginLeft: 8 }}
+                      />
+                    )}
+                  </Button>
+                  <Button onPress={handleAcceptInvite} disabled={isDisabled}>
+                    <AcceptButtonText>Accept</AcceptButtonText>
+                    {accepting && (
+                      <ActivityIndicator
+                        size="small"
+                        color="#fff"
+                        style={{ marginLeft: 8 }}
+                      />
+                    )}
+                  </Button>
+                </View>
               </LeagueDetailsContainer>
-
-              {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
-
-              <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
-                <Button
-                  style={{ backgroundColor: "red" }}
-                  onPress={handleDeclineInvite}
-                  disabled={actionBlocked}
-                >
-                  <CloseButtonText>Decline</CloseButtonText>
-                </Button>
-                <Button onPress={handleAcceptInvite} disabled={actionBlocked}>
-                  <AcceptButtonText>Accept</AcceptButtonText>
-                </Button>
-              </View>
             </>
           )}
         </ModalContent>
@@ -354,7 +473,7 @@ const ModalContainer = styled(BlurView).attrs({
 });
 
 const ModalContent = styled.View({
-  backgroundColor: "rgba(2, 13, 24, 1)", // Translucent dark blue
+  backgroundColor: "rgba(2, 13, 24, 1)",
   padding: 20,
   borderRadius: 10,
   width: screenWidth - 40,
@@ -417,6 +536,8 @@ interface ButtonProps {
 }
 
 const Button = styled.TouchableOpacity<ButtonProps>({
+  flexDirection: "row",
+  alignItems: "center",
   backgroundColor: (props: ButtonProps) =>
     props.disabled ? "#888" : "#00A2FF",
   paddingHorizontal: 20,
