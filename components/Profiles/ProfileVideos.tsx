@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { FlatList, ViewToken, ViewabilityConfig } from "react-native";
+import { FlatList, ViewToken, ViewabilityConfig, View } from "react-native";
 import styled from "styled-components/native";
 import {
   getFirestore,
@@ -125,11 +125,13 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
   return (
     <Container>
       {/* ── Video sub-tabs ── */}
-      <LineTabs
-        tabs={availableTabs.map((t) => ({ key: t, label: t }))}
-        activeTab={selectedVideoTab}
-        onTabPress={(tab) => setSelectedVideoTab(tab as VideoTab)}
-      />
+      <View style={{ paddingHorizontal: 16 }}>
+        <LineTabs
+          tabs={availableTabs.map((t) => ({ key: t, label: t }))}
+          activeTab={selectedVideoTab}
+          onTabPress={(tab) => setSelectedVideoTab(tab as VideoTab)}
+        />
+      </View>
 
       {/* ── Content ── */}
       {isLoading ? (

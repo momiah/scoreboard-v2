@@ -6,6 +6,7 @@ import { distributeTournamentPrizes } from "./distributeTournamentPrizes";
 import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
+import { transcodeVideo } from "./transcodeVideo";
 import {
   generateR2UploadUrl,
   updateGameVideoUrl,
@@ -25,4 +26,5 @@ export {
   generateR2UploadUrl,
   updateGameVideoUrl,
   checkR2VideoExists,
+  transcodeVideo,
 };

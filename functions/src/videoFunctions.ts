@@ -26,6 +26,34 @@ const R2_SECRETS = [
   R2_PUBLIC_URL,
 ];
 
+const PROJECT_ID = "scoreboard-app-29148";
+const REGION = "us-central1";
+const TRANSCODE_FUNCTION_URL = `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/transcodeVideo`;
+
+// ─── Helper: trigger transcodeVideo fire-and-forget ───────────────────────────
+
+const triggerTranscode = async (payload: {
+  docId: string;
+  rawVideoUrl: string;
+  rawKey: string;
+}) => {
+  try {
+    const { GoogleAuth } = require("google-auth-library");
+    const auth = new GoogleAuth();
+    const client = await auth.getIdTokenClient(TRANSCODE_FUNCTION_URL);
+    await client.request({
+      url: TRANSCODE_FUNCTION_URL,
+      method: "POST",
+      data: { data: payload },
+      headers: { "Content-Type": "application/json" },
+    });
+    console.log("[videoFunctions] Transcoding triggered for:", payload.docId);
+  } catch (error) {
+    console.error("[videoFunctions] Failed to trigger transcoding:", error);
+    // Non-critical — video still viewable in raw format
+  }
+};
+
 // ─── 1. Generate a presigned URL for the device to upload directly to R2 ──────
 
 type GenerateUrlData = {
@@ -117,7 +145,7 @@ export const updateGameVideoUrl = functions.https.onCall(
     const isReplacing = existingDoc.exists;
     const oldVideoUrl = existingDoc.data()?.videoUrl as string | undefined;
 
-    // ── Delete old R2 file if replacing ───────────────────────────────────
+    // ── Delete old raw + transcoded R2 files if replacing ─────────────────
     if (isReplacing && oldVideoUrl) {
       try {
         const r2Client = new S3Client({
@@ -129,15 +157,27 @@ export const updateGameVideoUrl = functions.https.onCall(
           },
         });
         const oldKey = oldVideoUrl.replace(`${R2_PUBLIC_URL.value()}/`, "");
-        await r2Client.send(
-          new DeleteObjectCommand({
-            Bucket: R2_BUCKET_NAME.value(),
-            Key: oldKey,
-          }),
-        );
+        const oldRawKey = oldKey.replace("_720p.mp4", ".mp4");
+        const oldTranscodedKey = oldKey.includes("_720p")
+          ? oldKey
+          : oldKey.replace(".mp4", "_720p.mp4");
+
+        await Promise.allSettled([
+          r2Client.send(
+            new DeleteObjectCommand({
+              Bucket: R2_BUCKET_NAME.value(),
+              Key: oldRawKey,
+            }),
+          ),
+          r2Client.send(
+            new DeleteObjectCommand({
+              Bucket: R2_BUCKET_NAME.value(),
+              Key: oldTranscodedKey,
+            }),
+          ),
+        ]);
       } catch (error) {
-        console.error("[videoFunctions] Failed to delete old R2 file:", error);
-        // Non-critical — proceed with update regardless
+        console.error("[videoFunctions] Failed to delete old R2 files:", error);
       }
     }
 
@@ -171,6 +211,7 @@ export const updateGameVideoUrl = functions.https.onCall(
       commentCount: 0,
       teams,
       videoApproved: true,
+      transcoded: false,
       playerIds: [
         teams.team1?.player1?.userId,
         teams.team1?.player2?.userId,
@@ -187,6 +228,7 @@ export const updateGameVideoUrl = functions.https.onCall(
         .set(gameVideoRecord),
     ]);
 
+    // ── Notify other players ──────────────────────────────────────────────
     const playerUserIds = [
       teams.team1?.player1?.userId,
       teams.team1?.player2?.userId,
@@ -219,6 +261,10 @@ export const updateGameVideoUrl = functions.https.onCall(
         }),
       ),
     );
+
+    // ── Trigger transcoding fire-and-forget ───────────────────────────────
+    const rawKey = videoUrl.replace(`${R2_PUBLIC_URL.value()}/`, "");
+    triggerTranscode({ docId, rawVideoUrl: videoUrl, rawKey });
   },
 );
 

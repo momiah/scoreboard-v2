@@ -264,7 +264,7 @@ const GameScreen: React.FC = () => {
           }}
           currentUser={currentUser}
           title="Upload Game Video"
-          subtitle="Add a video to this game for others to view on the feed."
+          subtitle="Its your time to shine ✨ Add a video to this game for others to view on the feed."
           icon="videocam-outline"
           showAddLaterHint={false}
         />

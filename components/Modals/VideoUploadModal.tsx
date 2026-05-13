@@ -95,6 +95,8 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   };
 
   const handlePickVideo = async () => {
+    if (isProcessing || isUploading) return;
+
     setErrorText("");
     setIsProcessing(true);
     const video = await pickVideo();
@@ -193,7 +195,11 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
           <Divider />
 
           {/* ── Video picker button ── */}
-          <VideoPickerButton onPress={handlePickVideo} hasVideo={hasVideo}>
+          <VideoPickerButton
+            onPress={handlePickVideo}
+            hasVideo={hasVideo}
+            disabled={isProcessing || isUploading}
+          >
             <Ionicons
               name={hasVideo ? "videocam" : "videocam-outline"}
               size={20}
@@ -234,7 +240,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
           {/* ── Upload button ── */}
           <UploadButton
             onPress={handleUpload}
-            disabled={!hasVideo || isUploading}
+            disabled={!hasVideo || isUploading || isProcessing}
             style={{
               backgroundColor: !hasVideo ? "#444" : "#00A2FF",
               opacity: !hasVideo ? 0.6 : 1,
