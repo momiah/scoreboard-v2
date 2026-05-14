@@ -216,6 +216,7 @@ const GameScreen: React.FC = () => {
               item.likedBy?.includes(currentUser?.userId ?? "") ?? false
             }
             isSubmissionMode={true}
+            onVideoDeleted={() => fetchVideos()}
           />
         )}
         ListEmptyComponent={

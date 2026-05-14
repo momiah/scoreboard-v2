@@ -295,12 +295,6 @@ const DropdownWrapper = styled(Animated.View)({
   zIndex: 9998,
 });
 
-const Divider = styled.View({
-  height: 1,
-  backgroundColor: "rgba(255,255,255,0.06)",
-  marginBottom: 8,
-});
-
 const UploadRow = styled.View({
   flexDirection: "row",
   alignItems: "center",

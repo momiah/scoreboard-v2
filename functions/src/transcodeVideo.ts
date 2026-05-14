@@ -1,4 +1,4 @@
-import { onCall } from "firebase-functions/v2/https";
+import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
@@ -40,18 +40,21 @@ if (ffmpegStatic) {
   ffmpeg.setFfmpegPath(ffmpegStatic);
 }
 
-export const transcodeVideo = onCall(
+export const transcodeVideo = onRequest(
   {
     secrets: R2_SECRETS,
-    memory: "2GiB",
-    cpu: 2,
+    memory: "16GiB",
+    cpu: 4,
     timeoutSeconds: 3600,
   },
-  async (request) => {
-    const { docId, rawVideoUrl, rawKey } = request.data as TranscodeVideoData;
+  async (req, res) => {
+    const { docId, rawVideoUrl, rawKey } = req.body.data as TranscodeVideoData;
 
     if (!docId || !rawVideoUrl || !rawKey) {
-      throw new Error("Missing required fields: docId, rawVideoUrl, rawKey");
+      res
+        .status(400)
+        .json({ error: "Missing required fields: docId, rawVideoUrl, rawKey" });
+      return;
     }
 
     const r2Client = new S3Client({
@@ -64,7 +67,7 @@ export const transcodeVideo = onCall(
     });
 
     const rawTmpPath = path.join(os.tmpdir(), `${docId}_raw.mp4`);
-    const transcodedTmpPath = path.join(os.tmpdir(), `${docId}_720p.mp4`);
+    const transcodedTmpPath = path.join(os.tmpdir(), `${docId}_compressed.mp4`);
 
     try {
       // ── 1. Generate presigned download URL for raw video ────────────────
@@ -86,12 +89,11 @@ export const transcodeVideo = onCall(
       fs.writeFileSync(rawTmpPath, Buffer.from(buffer));
       console.log("[transcodeVideo] Raw video downloaded");
 
-      // ── 3. Transcode to 720p ────────────────────────────────────────────
-      console.log("[transcodeVideo] Transcoding to 720p...");
+      // ── 3. Compress video — original resolution and orientation preserved
+      console.log("[transcodeVideo] Compressing video...");
       await new Promise<void>((resolve, reject) => {
         ffmpeg(rawTmpPath)
           .outputOptions([
-            "-vf scale=1280:720",
             "-c:v libx264",
             "-crf 23",
             "-preset fast",
@@ -108,7 +110,7 @@ export const transcodeVideo = onCall(
             ),
           )
           .on("end", () => {
-            console.log("[transcodeVideo] Transcoding complete");
+            console.log("[transcodeVideo] Compression complete");
             resolve();
           })
           .on("error", (err) => {
@@ -118,32 +120,32 @@ export const transcodeVideo = onCall(
           .run();
       });
 
-      // ── 4. Upload transcoded video to R2 ────────────────────────────────
-      const transcodedKey = rawKey.replace(".mp4", "_720p.mp4");
-      const transcodedBuffer = fs.readFileSync(transcodedTmpPath);
+      // ── 4. Upload compressed video to R2 ─────────────────────────────────
+      const compressedKey = rawKey.replace(".mp4", "_compressed.mp4");
+      const compressedBuffer = fs.readFileSync(transcodedTmpPath);
 
-      console.log("[transcodeVideo] Uploading transcoded video to R2...");
+      console.log("[transcodeVideo] Uploading compressed video to R2...");
       await r2Client.send(
         new PutObjectCommand({
           Bucket: R2_BUCKET_NAME.value(),
-          Key: transcodedKey,
-          Body: transcodedBuffer,
+          Key: compressedKey,
+          Body: compressedBuffer,
           ContentType: "video/mp4",
         }),
       );
 
-      const transcodedUrl = `${R2_PUBLIC_URL.value()}/${transcodedKey}`;
-      console.log("[transcodeVideo] Uploaded:", transcodedUrl);
+      const compressedUrl = `${R2_PUBLIC_URL.value()}/${compressedKey}`;
+      console.log("[transcodeVideo] Uploaded:", compressedUrl);
 
-      // ── 5. Update Firestore with transcoded URL ──────────────────────────
+      // ── 5. Update Firestore with compressed URL ───────────────────────────
       const db = admin.firestore();
       await db.collection(COLLECTION_NAMES.gameVideos).doc(docId).update({
-        videoUrl: transcodedUrl,
+        videoUrl: compressedUrl,
         transcoded: true,
       });
       console.log("[transcodeVideo] Firestore updated");
 
-      // ── 6. Delete raw video from R2 ─────────────────────────────────────
+      // ── 6. Delete raw video from R2 ───────────────────────────────────────
       await r2Client.send(
         new DeleteObjectCommand({
           Bucket: R2_BUCKET_NAME.value(),
@@ -152,9 +154,12 @@ export const transcodeVideo = onCall(
       );
       console.log("[transcodeVideo] Raw video deleted from R2");
 
-      return { success: true, transcodedUrl };
+      res.json({ success: true, compressedUrl });
+    } catch (error) {
+      console.error("[transcodeVideo] Error:", error);
+      res.status(500).json({ error: "Transcoding failed" });
     } finally {
-      // ── 7. Always clean up /tmp files ───────────────────────────────────
+      // ── 7. Always clean up /tmp files ─────────────────────────────────────
       if (fs.existsSync(rawTmpPath)) fs.unlinkSync(rawTmpPath);
       if (fs.existsSync(transcodedTmpPath)) fs.unlinkSync(transcodedTmpPath);
       console.log("[transcodeVideo] Temp files cleaned up");

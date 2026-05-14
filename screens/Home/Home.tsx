@@ -142,6 +142,7 @@ const Home = () => {
         initiallyLiked={
           item.likedBy?.includes(currentUser?.userId ?? "") ?? false
         }
+        onVideoDeleted={() => fetchVideos()}
       />
     ),
     [activeVideoId, likedVideoIds, handleLike, isScreenFocused, currentUser],

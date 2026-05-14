@@ -16,8 +16,10 @@ import { Settings } from "react-native-fbsdk-next";
 import { registerForPushNotificationsAsync } from "./services/pushNotifications";
 import { UserContext } from "./context/UserContext";
 import { usePendingUpload } from "./hooks/usePendingUpload";
-import UploadToast from "./components/UploadToast";
+import UploadToast from "./components/Toasts/UploadToast";
 import Tabs from "./navigation/tabs";
+import BottomToast from "./components/Toasts/BottomToast";
+import { PopupContext } from "./context/PopupContext";
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
@@ -27,6 +29,12 @@ const navigationRef = React.createRef();
 const AppContent = () => {
   const { currentUser } = useContext(UserContext);
   const { pendingUploads } = usePendingUpload(currentUser?.userId);
+  const {
+    bottomToastVisible,
+    setBottomToastVisible,
+    bottomToastMessage,
+    bottomToastType,
+  } = useContext(PopupContext);
 
   useEffect(() => {
     if (currentUser?.userId) {
@@ -39,6 +47,12 @@ const AppContent = () => {
       <BottomSheetModalProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
           <UploadToast pendingUploads={pendingUploads} />
+          <BottomToast
+            visible={bottomToastVisible}
+            message={bottomToastMessage}
+            type={bottomToastType}
+            onHide={() => setBottomToastVisible(false)}
+          />
           <Stack.Navigator
             screenOptions={{ headerShown: false }}
             cardStyle={{ backgroundColor: "rgb(3, 16, 31)" }}

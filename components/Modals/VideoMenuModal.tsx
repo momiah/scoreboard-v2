@@ -4,6 +4,7 @@ import {
   Share,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
@@ -15,9 +16,11 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import ReportVideoModal from "./ReportVideoModal";
+import { PopupContext } from "@/context/PopupContext";
 
 interface VideoMenuModalProps {
   visible: boolean;
@@ -27,6 +30,7 @@ interface VideoMenuModalProps {
   hideSave?: boolean;
   hideReport?: boolean;
   hideRequestToJoin?: boolean;
+  onVideoDeleted?: () => void;
 }
 
 const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
@@ -37,6 +41,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   hideSave = false,
   hideReport = false,
   hideRequestToJoin = false,
+  onVideoDeleted,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { currentUser } = useContext(UserContext);
@@ -46,9 +51,11 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCheckingSaved, setIsCheckingSaved] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { showBottomToast } = useContext(PopupContext);
 
   const videoId = `${video.gameId}_${video.postedBy.userId}`;
-
+  const isOwnVideo = currentUser?.userId === video.postedBy.userId;
   const showRequestToJoin = !isSubmissionMode && !hideRequestToJoin;
 
   // ── Check if already saved on open ───────────────────────────────────────
@@ -105,6 +112,48 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
 
   const handleReport = () => {
     setReportModalVisible(true);
+  };
+
+  const handleDelete = async () => {
+    if (!currentUser || isDeleting) return;
+
+    Alert.alert(
+      "Delete Video",
+      "Are you sure you want to delete this video? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              const functions = getFunctions();
+              const deleteVideoFn = httpsCallable(functions, "deleteVideo");
+              await deleteVideoFn({
+                docId: videoId,
+                videoUrl: video.videoUrl,
+                gameId: video.gameId,
+                competitionId: video.competitionId,
+                competitionType: video.competitionType,
+                requestingUserId: currentUser.userId,
+              });
+              onClose();
+              showBottomToast("Video deleted successfully", "success");
+              onVideoDeleted?.();
+            } catch (error) {
+              console.error("[VideoMenuModal] Failed to delete video:", error);
+              showBottomToast(
+                "Failed to delete video. Please try again.",
+                "error",
+              );
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -165,12 +214,29 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
 
             {/* ── Report ── */}
             {!hideReport && (
-              <MenuItem onPress={handleReport} isLast>
+              <MenuItem onPress={handleReport} isLast={!isOwnVideo}>
                 <MenuItemIcon isDestructive>
                   <Ionicons name="flag-outline" size={22} color="#FF4B6E" />
                 </MenuItemIcon>
                 <MenuItemText isDestructive>Report Video</MenuItemText>
                 <Ionicons name="chevron-forward" size={20} color="#555" />
+              </MenuItem>
+            )}
+
+            {/* ── Delete — own videos only ── */}
+            {isOwnVideo && (
+              <MenuItem onPress={handleDelete} isLast>
+                <MenuItemIcon isDestructive>
+                  <Ionicons name="trash-outline" size={22} color="#FF4B6E" />
+                </MenuItemIcon>
+                <MenuItemText isDestructive>
+                  {isDeleting ? "Deleting..." : "Delete Video"}
+                </MenuItemText>
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#FF4B6E" />
+                ) : (
+                  <Ionicons name="chevron-forward" size={20} color="#555" />
+                )}
               </MenuItem>
             )}
           </MenuContent>

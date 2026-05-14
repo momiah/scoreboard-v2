@@ -78,7 +78,7 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
           query(
             collection(db, COLLECTION_NAMES.gameVideos),
             where("postedBy.userId", "==", userId),
-            where("videoApproved", "==", true),
+            // where("videoApproved", "==", true),
           ),
         );
         fetchedVideos = snap.docs.map((doc) => doc.data() as GameVideo);
@@ -98,7 +98,9 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
             where("videoApproved", "==", true),
           ),
         );
-        fetchedVideos = snap.docs.map((doc) => doc.data() as GameVideo);
+        fetchedVideos = snap.docs
+          .map((doc) => doc.data() as GameVideo)
+          .filter((v) => v.postedBy.userId !== userId);
       }
 
       setVideos(fetchedVideos);
@@ -178,6 +180,7 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
               initiallyLiked={
                 item.likedBy?.includes(currentUser?.userId ?? "") ?? false
               }
+              onVideoDeleted={() => fetchVideos()}
             />
           )}
         />

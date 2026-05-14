@@ -31,6 +31,7 @@ interface GameVideoCardProps {
   profilePage?: boolean;
   profileVideoTab?: ProfileVideoTab;
   currentUserId?: string;
+  onVideoDeleted?: () => void;
 }
 
 const GameVideoCard: React.FC<GameVideoCardProps> = ({
@@ -44,6 +45,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   profilePage = false,
   profileVideoTab,
   currentUserId,
+  onVideoDeleted,
 }) => {
   const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -249,6 +251,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
           hideSave={hideSave}
           hideReport={hideReport}
           hideRequestToJoin={hideRequestToJoin}
+          onVideoDeleted={onVideoDeleted}
         />
       )}
 

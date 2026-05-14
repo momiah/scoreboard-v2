@@ -7,6 +7,7 @@ import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
+import { deleteVideo } from "./deleteVideo";
 import {
   generateR2UploadUrl,
   updateGameVideoUrl,
@@ -27,4 +28,5 @@ export {
   updateGameVideoUrl,
   checkR2VideoExists,
   transcodeVideo,
+  deleteVideo,
 };

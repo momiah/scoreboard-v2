@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useContext } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Alert } from "react-native";
 import { getFunctions, httpsCallable } from "firebase/functions";
@@ -12,6 +12,7 @@ import {
 import { COLLECTION_NAMES } from "@shared";
 import { GameVideoUploadPayload } from "@shared/types";
 import Upload from "react-native-background-upload";
+import { PopupContext } from "../context/PopupContext";
 
 interface R2UploadUrlResponse {
   uploadUrl: string;
@@ -50,6 +51,8 @@ interface UseVideoUploadReturn {
 export const useVideoUpload = ({
   competitionId,
 }: UseVideoUploadOptions): UseVideoUploadReturn => {
+  const { showToast } = useContext(PopupContext);
+
   const pickVideo = useCallback(async (): Promise<PickedVideo | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -158,7 +161,6 @@ export const useVideoUpload = ({
 
           // ── Store real uploadId for cancellation ──────────────────────────
           await updateDoc(pendingDocRef, { uploadId });
-
           console.log("[VideoUpload] Native upload started, id:", uploadId);
 
           // ── Progress — throttled to every 10% ─────────────────────────────
@@ -209,28 +211,30 @@ export const useVideoUpload = ({
                 "[VideoUpload] Upload returned non-2xx status:",
                 completedData.responseCode,
               );
+              showToast("Video upload failed. Please try again.", "error");
             }
           });
 
           // ── Error ─────────────────────────────────────────────────────────
           Upload.addListener("error", uploadId, (errorData) => {
             console.error("[VideoUpload] Upload error:", errorData.error);
+            showToast("Video upload failed. Please try again.", "error");
           });
 
           // ── Cancelled ─────────────────────────────────────────────────────
-          // ── Cancelled ─────────────────────────────────────────────────────────────
           Upload.addListener("cancelled", uploadId, async () => {
             console.warn("[VideoUpload] Upload cancelled:", gameId);
             await deleteDoc(pendingDocRef);
           });
         } catch (error) {
           console.error("[VideoUpload] Background upload failed:", error);
+          showToast("Video upload failed. Please try again.", "error");
         }
       };
 
       run();
     },
-    [competitionId],
+    [competitionId, showToast],
   );
 
   return { pickVideo, startBackgroundUpload };

@@ -133,7 +133,6 @@ export const updateGameVideoUrl = functions.https.onCall(
 
     const competitionRef = db.collection(collectionName).doc(competitionId);
     const competitionSnap = await competitionRef.get();
-    const games: Game[] = competitionSnap.data()?.games ?? [];
 
     // ── Check if this user already has a video for this game ─────────────
     const docId = `${gameId}_${postedBy.userId}`;
@@ -157,10 +156,13 @@ export const updateGameVideoUrl = functions.https.onCall(
           },
         });
         const oldKey = oldVideoUrl.replace(`${R2_PUBLIC_URL.value()}/`, "");
-        const oldRawKey = oldKey.replace("_720p.mp4", ".mp4");
-        const oldTranscodedKey = oldKey.includes("_720p")
-          ? oldKey
-          : oldKey.replace(".mp4", "_720p.mp4");
+        const oldRawKey = oldKey
+          .replace("_compressed.mp4", ".mp4")
+          .replace("_720p.mp4", ".mp4");
+        const oldTranscodedKey =
+          oldKey.includes("_compressed") || oldKey.includes("_720p")
+            ? oldKey
+            : oldKey.replace(".mp4", "_compressed.mp4");
 
         await Promise.allSettled([
           r2Client.send(
@@ -181,20 +183,7 @@ export const updateGameVideoUrl = functions.https.onCall(
       }
     }
 
-    // ── Update game document ──────────────────────────────────────────────
-    const updatedGames = games.map((game) =>
-      game.gameId === gameId
-        ? {
-            ...game,
-            videoUrl,
-            videoApproved: true,
-            videoCount: isReplacing
-              ? (game.videoCount ?? 1)
-              : (game.videoCount ?? 0) + 1,
-          }
-        : game,
-    );
-
+    // ── Build gameVideo record ────────────────────────────────────────────
     const gameVideoRecord: GameVideo = {
       gameId,
       videoUrl,
@@ -220,13 +209,53 @@ export const updateGameVideoUrl = functions.https.onCall(
       ].filter(Boolean) as string[],
     };
 
-    await Promise.all([
-      competitionRef.update({ games: updatedGames }),
-      db
-        .collection(COLLECTION_NAMES.gameVideos)
-        .doc(docId)
-        .set(gameVideoRecord),
-    ]);
+    // ── Update competition document ───────────────────────────────────────
+    if (competitionType === COMPETITION_TYPES.TOURNAMENT) {
+      const fixtures = competitionSnap.data()?.fixtures ?? [];
+      const updatedFixtures = fixtures.map(
+        (round: { round: number; games: Game[] }) => ({
+          ...round,
+          games: round.games.map((game: Game) =>
+            game.gameId === gameId
+              ? {
+                  ...game,
+                  videoCount: isReplacing
+                    ? (game.videoCount ?? 1)
+                    : (game.videoCount ?? 0) + 1,
+                }
+              : game,
+          ),
+        }),
+      );
+
+      await Promise.all([
+        competitionRef.update({ fixtures: updatedFixtures }),
+        db
+          .collection(COLLECTION_NAMES.gameVideos)
+          .doc(docId)
+          .set(gameVideoRecord),
+      ]);
+    } else {
+      const games: Game[] = competitionSnap.data()?.games ?? [];
+      const updatedGames = games.map((game) =>
+        game.gameId === gameId
+          ? {
+              ...game,
+              videoCount: isReplacing
+                ? (game.videoCount ?? 1)
+                : (game.videoCount ?? 0) + 1,
+            }
+          : game,
+      );
+
+      await Promise.all([
+        competitionRef.update({ games: updatedGames }),
+        db
+          .collection(COLLECTION_NAMES.gameVideos)
+          .doc(docId)
+          .set(gameVideoRecord),
+      ]);
+    }
 
     // ── Notify other players ──────────────────────────────────────────────
     const playerUserIds = [
