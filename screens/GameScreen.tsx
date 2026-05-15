@@ -33,6 +33,7 @@ import {
   ScoreDisplay,
 } from "../components/scoreboard/ScoreboardAtoms";
 import ActionPlaceholder from "../components/ActionPlaceholder";
+import { usePendingUpload } from "@/hooks/usePendingUpload";
 
 type GameScreenParams = {
   GameScreen: {
@@ -72,6 +73,7 @@ const GameScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const { pendingUploads } = usePendingUpload(currentUser?.userId);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const team1Player1 = team1?.player1;
@@ -135,6 +137,10 @@ const GameScreen: React.FC = () => {
     { viewabilityConfig: VIEWABILITY_CONFIG, onViewableItemsChanged },
   ]);
 
+  const isUploadingThisGame = pendingUploads.some(
+    (upload) => upload.gameId === gameId,
+  );
+
   // ── Placeholder logic ─────────────────────────────────────────────────────
   const renderPlaceholder = () => {
     if (isParticipant) {
@@ -142,23 +148,36 @@ const GameScreen: React.FC = () => {
         <PlaceholderWrapper>
           <ActionPlaceholder
             message={
-              hasAlreadyUploaded
-                ? "Replace your video"
-                : videos.length > 0
-                  ? "A video has been published — upload your own version!"
-                  : "Be the first to upload a video of this game!"
+              isUploadingThisGame
+                ? "Upload in progress..."
+                : hasAlreadyUploaded
+                  ? "Replace your video"
+                  : videos.length > 0
+                    ? "A video has been published — upload your own version!"
+                    : "Be the first to upload a video of this game!"
             }
-            icon="videocam-outline"
-            onPress={() => setUploadModalVisible(true)}
+            icon={
+              isUploadingThisGame ? "cloud-upload-outline" : "videocam-outline"
+            }
+            onPress={() => {
+              if (!isUploadingThisGame) setUploadModalVisible(true);
+            }}
+            disabled={isUploadingThisGame}
           />
         </PlaceholderWrapper>
       );
     }
 
-    if (!isParticipant && videos.length === 0) {
+    if (videos.length === 0) {
       return (
         <PlaceholderWrapper>
           <EmptyText>No videos have been uploaded for this game.</EmptyText>
+          <Ionicons
+            name="videocam-off-outline"
+            size={100}
+            color="rgba(255,255,255,0.2)"
+            style={{ alignSelf: "center", marginBottom: 8 }}
+          />
         </PlaceholderWrapper>
       );
     }

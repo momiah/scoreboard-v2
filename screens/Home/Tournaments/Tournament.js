@@ -21,6 +21,7 @@ import Fixtures from "../../../components/Tournaments/Fixtures/Fixtures";
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import LoadingOverlay from "../../../components/LoadingOverlay";
+import CompetitionVideos from "../../../components/Feed/CompetitionVideos";
 
 const openMap = (location) => {
   const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
@@ -148,6 +149,7 @@ const Tournament = () => {
     { component: "Chat Room" },
     { component: "Summary" },
     { component: "Fixtures" },
+    { component: "Videos" },
     { component: "Player Performance" },
     ...(tournamentById?.tournamentType !== "Singles"
       ? [{ component: "Team Performance" }]
@@ -194,6 +196,8 @@ const Tournament = () => {
         );
       case "Fixtures":
         return <Fixtures tournament={tournamentById} userRole={userRole} />;
+      case "Videos":
+        return <CompetitionVideos competitionId={tournamentId} />;
       case "Player Performance":
         return <PlayerPerformance playersData={tournamentParticipants} />;
       case "Team Performance":

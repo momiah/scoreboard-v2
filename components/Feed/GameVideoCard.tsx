@@ -32,6 +32,7 @@ interface GameVideoCardProps {
   profileVideoTab?: ProfileVideoTab;
   currentUserId?: string;
   onVideoDeleted?: () => void;
+  competitionPage?: boolean;
 }
 
 const GameVideoCard: React.FC<GameVideoCardProps> = ({
@@ -46,6 +47,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   profileVideoTab,
   currentUserId,
   onVideoDeleted,
+  competitionPage = false,
 }) => {
   const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -115,7 +117,8 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   const hideRequestToJoin =
     isSubmissionMode ||
     profileVideoTab === "Uploaded" ||
-    profileVideoTab === "Videos of Me";
+    profileVideoTab === "Videos of Me" ||
+    competitionPage;
 
   // ── Show header row ───────────────────────────────────────────────────────
   const showHeader =
@@ -153,11 +156,13 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
                   {formatDisplayName(video.postedBy)}
                 </UploaderName>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleCompetitionPress}>
-                <CompetitionName numberOfLines={1}>
-                  {video.competitionName}
-                </CompetitionName>
-              </TouchableOpacity>
+              {!competitionPage && (
+                <TouchableOpacity onPress={handleCompetitionPress}>
+                  <CompetitionName numberOfLines={1}>
+                    {video.competitionName}
+                  </CompetitionName>
+                </TouchableOpacity>
+              )}
             </UploaderInfo>
           </UploaderRow>
         </HeaderRow>

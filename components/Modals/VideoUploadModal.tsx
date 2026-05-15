@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ActivityIndicator, Modal, Dimensions, Animated } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Dimensions,
+  Animated,
+  Alert,
+} from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AntDesign } from "@expo/vector-icons";
@@ -28,6 +34,22 @@ interface VideoUploadModalProps {
   showAddLaterHint?: boolean;
 }
 
+const PROCESSING_MESSAGES = [
+  "Processing — this may take a couple of minutes",
+  "Please do not close this modal",
+  "Preparing your video for upload",
+  "Analysing video quality...",
+  "Getting your video ready for the feed",
+  "Please ensure you have a stable internet connection",
+  "Videos must be full games only - no highlights or clips",
+  "Inappropriate videos will be removed",
+  "Please ensure your video meets all guidelines",
+  "Reported videos may result in account suspension",
+  "Almost there...",
+  "Thank you for your patience!",
+  "Finalizing your upload",
+];
+
 const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   visible,
   onClose,
@@ -49,9 +71,11 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   const [errorText, setErrorText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [messageIndex, setMessageIndex] = useState(0);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const animRef = useRef<Animated.CompositeAnimation | null>(null);
+  const messageOpacity = useRef(new Animated.Value(1)).current;
 
   const { pickVideo, startBackgroundUpload } = useVideoUpload({
     competitionId,
@@ -85,7 +109,52 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     }
   }, [isProcessing, pickedVideo]);
 
+  // ── Rotating processing messages with fade ────────────────────────────────
+  useEffect(() => {
+    if (!isProcessing) {
+      setMessageIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      Animated.timing(messageOpacity, {
+        toValue: 0,
+        duration: 700,
+        useNativeDriver: true,
+      }).start(() => {
+        setMessageIndex((prev) => (prev + 1) % PROCESSING_MESSAGES.length);
+        Animated.timing(messageOpacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isProcessing]);
+
   const handleClose = () => {
+    if (isProcessing) {
+      Alert.alert(
+        "Video is processing",
+        "Are you sure you want to close? Your video is still being processed.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Close anyway",
+            style: "destructive",
+            onPress: () => {
+              animRef.current?.stop();
+              progressAnim.setValue(0);
+              setPickedVideo(null);
+              setIsProcessing(false);
+              setErrorText("");
+              onClose();
+            },
+          },
+        ],
+      );
+      return;
+    }
     animRef.current?.stop();
     progressAnim.setValue(0);
     setPickedVideo(null);
@@ -96,7 +165,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
 
   const handlePickVideo = async () => {
     if (isProcessing || isUploading) return;
-
     setErrorText("");
     setIsProcessing(true);
     const video = await pickVideo();
@@ -106,7 +174,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
 
   const handleUpload = async () => {
     if (!pickedVideo) return;
-
     setErrorText("");
 
     if (pickedVideo.fileSize && pickedVideo.fileSize > 2 * 1024 * 1024 * 1024) {
@@ -127,7 +194,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     }
 
     setIsUploading(true);
-
     startBackgroundUpload({
       gameId,
       videoUri: pickedVideo.uri,
@@ -144,7 +210,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       },
       teams,
     });
-
     setIsUploading(false);
     onClose();
   };
@@ -156,12 +221,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
   });
-
-  const progressLabel = isProcessing
-    ? "Processing — this may take a couple of minutes"
-    : hasVideo
-      ? "Ready to upload"
-      : "";
 
   const addLaterScreen =
     competitionType === COMPETITION_TYPES.LEAGUE ? "Scoreboard" : "Fixtures";
@@ -219,9 +278,24 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
           {/* ── Simulated progress bar ── */}
           {showProgress && (
             <ProgressContainer>
-              <ProgressLabel isProcessing={isProcessing}>
-                {progressLabel}
-              </ProgressLabel>
+              {isProcessing ? (
+                <Animated.Text
+                  style={{
+                    opacity: messageOpacity,
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: 12,
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  {PROCESSING_MESSAGES[messageIndex]}
+                </Animated.Text>
+              ) : (
+                <ProgressLabel isProcessing={false}>
+                  Ready to upload
+                </ProgressLabel>
+              )}
               <ProgressTrack>
                 <Animated.View
                   style={{
