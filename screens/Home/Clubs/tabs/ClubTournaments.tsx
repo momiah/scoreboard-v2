@@ -24,6 +24,9 @@ import AddTournamentModal from "../../../../components/Modals/AddTournamentModal
 import { db } from "../../../../services/firebase.config";
 import { COMPETITION_TYPES } from "@shared";
 import type { NormalizedCompetition } from "@shared/types";
+import { MOCK_TOURNAMENTS } from "../mockClubData";
+
+const USE_MOCK_DATA = true;
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -41,6 +44,17 @@ const ClubTournaments: React.FC<ClubTournamentsProps> = ({ clubId }) => {
     useState(false);
 
   const fetchClubTournaments = useCallback(async () => {
+    if (USE_MOCK_DATA) {
+      const normalized = MOCK_TOURNAMENTS.map((item) =>
+        normalizeCompetitionData({
+          rawData: item,
+          competitionType: COMPETITION_TYPES.TOURNAMENT,
+        }),
+      ) as NormalizedCompetition[];
+      setTournaments(normalized);
+      setLoading(false);
+      return;
+    }
     if (!clubId) return;
     setLoading(true);
     try {
@@ -171,7 +185,7 @@ const ClubTournaments: React.FC<ClubTournamentsProps> = ({ clubId }) => {
       <AddTournamentModal
         modalVisible={addTournamentModalVisible}
         setModalVisible={setAddTournamentModalVisible}
-        clubId={clubId}
+        clubId={clubId as never}
         onSuccess={() => {
           setAddTournamentModalVisible(false);
           fetchClubTournaments();

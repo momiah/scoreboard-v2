@@ -24,6 +24,9 @@ import AddLeagueModal from "../../../../components/Modals/AddLeagueModal";
 import { db } from "../../../../services/firebase.config";
 import { COMPETITION_TYPES } from "@shared";
 import type { NormalizedCompetition } from "@shared/types";
+import { MOCK_LEAGUES } from "../mockClubData";
+
+const USE_MOCK_DATA = true;
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -40,6 +43,17 @@ const ClubLeagues: React.FC<ClubLeaguesProps> = ({ clubId }) => {
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
 
   const fetchClubLeagues = useCallback(async () => {
+    if (USE_MOCK_DATA) {
+      const normalized = MOCK_LEAGUES.map((item) =>
+        normalizeCompetitionData({
+          rawData: item,
+          competitionType: COMPETITION_TYPES.LEAGUE,
+        }),
+      ) as NormalizedCompetition[];
+      setLeagues(normalized);
+      setLoading(false);
+      return;
+    }
     if (!clubId) return;
     setLoading(true);
     try {
@@ -165,7 +179,7 @@ const ClubLeagues: React.FC<ClubLeaguesProps> = ({ clubId }) => {
       <AddLeagueModal
         modalVisible={addLeagueModalVisible}
         setModalVisible={setAddLeagueModalVisible}
-        clubId={clubId}
+        clubId={clubId as never}
         onSuccess={() => {
           setAddLeagueModalVisible(false);
           fetchClubLeagues();

@@ -1,26 +1,19 @@
 import React from "react";
-import styled from "styled-components/native";
+import CompetitionPerformance from "./CompetitionPerformance";
+import { MOCK_LEAGUE_PERFORMANCE } from "../../mockClubData";
 
-const LeaguePerformance: React.FC = () => {
-  return (
-    <Container>
-      <PlaceholderText>
-        All wins from all leagues in this club will appear here.
-      </PlaceholderText>
-    </Container>
-  );
-};
+const USE_MOCK_DATA = true;
 
-const Container = styled.View({
-  flex: 1,
-  paddingVertical: 24,
-});
+interface LeaguePerformanceProps {
+  clubId: string;
+}
 
-const PlaceholderText = styled.Text({
-  color: "#888",
-  fontStyle: "italic",
-  fontSize: 15,
-  lineHeight: 22,
-});
+const LeaguePerformance: React.FC<LeaguePerformanceProps> = ({ clubId }) => (
+  <CompetitionPerformance
+    clubId={clubId}
+    type="league"
+    mockData={USE_MOCK_DATA ? MOCK_LEAGUE_PERFORMANCE : undefined}
+  />
+);
 
 export default LeaguePerformance;

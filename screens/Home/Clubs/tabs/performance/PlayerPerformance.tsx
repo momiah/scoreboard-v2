@@ -11,6 +11,9 @@ import { formatDisplayName } from "../../../../../helpers/formatDisplayName";
 import { enrichPlayers } from "../../../../../helpers/enrichPlayers";
 import { PlayerPerformanceIcon } from "../../../../../assets";
 import { db } from "../../../../../services/firebase.config";
+import { MOCK_PLAYERS } from "../../mockClubData";
+
+const USE_MOCK_DATA = true;
 
 interface ClubPlayerPerformanceProps {
   clubId: string;
@@ -43,6 +46,11 @@ const ClubPlayerPerformance: React.FC<ClubPlayerPerformanceProps> = ({
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
 
   const fetchAndAggregate = useCallback(async () => {
+    if (USE_MOCK_DATA) {
+      setPlayers(MOCK_PLAYERS as RawParticipant[]);
+      setLoading(false);
+      return;
+    }
     if (!clubId) {
       setLoading(false);
       return;

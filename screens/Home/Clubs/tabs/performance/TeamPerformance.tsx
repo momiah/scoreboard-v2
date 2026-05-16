@@ -8,6 +8,9 @@ import TeamDetails from "../../../../../components/Modals/TeamDetailsModal";
 import LoadingOverlay from "../../../../../components/LoadingOverlay";
 import { PlayerPerformanceIcon } from "../../../../../assets";
 import { db } from "../../../../../services/firebase.config";
+import { MOCK_TEAMS } from "../../mockClubData";
+
+const USE_MOCK_DATA = true;
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -34,6 +37,11 @@ const ClubTeamPerformance: React.FC<ClubTeamPerformanceProps> = ({
   const [showTeamDetails, setShowTeamDetails] = useState(false);
 
   const fetchAndAggregate = useCallback(async () => {
+    if (USE_MOCK_DATA) {
+      setTeams(MOCK_TEAMS as RawTeam[]);
+      setLoading(false);
+      return;
+    }
     if (!clubId) {
       setLoading(false);
       return;
