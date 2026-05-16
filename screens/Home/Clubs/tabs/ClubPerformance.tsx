@@ -36,9 +36,9 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
       case "team":
         return <TeamPerformance clubId={clubId} />;
       case "league":
-        return <LeaguePerformance />;
+        return <LeaguePerformance clubId={clubId} />;
       case "tournament":
-        return <TournamentPerformance />;
+        return <TournamentPerformance clubId={clubId} />;
       default:
         return null;
     }
