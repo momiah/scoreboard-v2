@@ -11,9 +11,7 @@ import { formatDisplayName } from "../../../../../helpers/formatDisplayName";
 import { enrichPlayers } from "../../../../../helpers/enrichPlayers";
 import { PlayerPerformanceIcon } from "../../../../../assets";
 import { db } from "../../../../../services/firebase.config";
-import { MOCK_PLAYERS } from "../../mockClubData";
-
-const USE_MOCK_DATA = true;
+import { MOCK_PLAYERS, USE_MOCK_DATA } from "../../mockClubData";
 
 interface ClubPlayerPerformanceProps {
   clubId: string;

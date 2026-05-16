@@ -1,8 +1,6 @@
 import React from "react";
 import CompetitionPerformance from "./CompetitionPerformance";
-import { MOCK_LEAGUE_PERFORMANCE } from "../../mockClubData";
-
-const USE_MOCK_DATA = true;
+import { MOCK_LEAGUE_PERFORMANCE, USE_MOCK_DATA } from "../../mockClubData";
 
 interface LeaguePerformanceProps {
   clubId: string;

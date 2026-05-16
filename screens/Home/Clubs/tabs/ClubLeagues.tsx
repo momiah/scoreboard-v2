@@ -24,9 +24,7 @@ import AddLeagueModal from "../../../../components/Modals/AddLeagueModal";
 import { db } from "../../../../services/firebase.config";
 import { COMPETITION_TYPES } from "@shared";
 import type { NormalizedCompetition } from "@shared/types";
-import { MOCK_LEAGUES } from "../mockClubData";
-
-const USE_MOCK_DATA = true;
+import { MOCK_LEAGUES, USE_MOCK_DATA } from "../mockClubData";
 
 const { width: screenWidth } = Dimensions.get("window");
 

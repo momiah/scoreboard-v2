@@ -24,9 +24,7 @@ import AddTournamentModal from "../../../../components/Modals/AddTournamentModal
 import { db } from "../../../../services/firebase.config";
 import { COMPETITION_TYPES } from "@shared";
 import type { NormalizedCompetition } from "@shared/types";
-import { MOCK_TOURNAMENTS } from "../mockClubData";
-
-const USE_MOCK_DATA = true;
+import { MOCK_TOURNAMENTS, USE_MOCK_DATA } from "../mockClubData";
 
 const { width: screenWidth } = Dimensions.get("window");
 
