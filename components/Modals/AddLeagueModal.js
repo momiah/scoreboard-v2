@@ -38,7 +38,7 @@ import { formatCourtDetailsForList } from "@/helpers/formatCourtDetails";
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
+const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = null }) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -169,6 +169,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
         countryCode: location.countryCode || "",
         leagueOwner: adminData.leagueOwner,
         leagueId,
+        clubId: clubId || null,
       };
 
       await addCompetition({

@@ -127,11 +127,13 @@ const ClubScreen: React.FC = () => {
       case "Feed":
         return <ClubFeed />;
       case "Club Performance":
-        return <ClubPerformance initialSubTab={performanceTab} />;
+        return (
+          <ClubPerformance clubId={clubId} initialSubTab={performanceTab} />
+        );
       case "Leagues":
-        return <ClubLeagues />;
+        return <ClubLeagues clubId={clubId} />;
       case "Tournaments":
-        return <ClubTournaments />;
+        return <ClubTournaments clubId={clubId} />;
       default:
         return null;
     }

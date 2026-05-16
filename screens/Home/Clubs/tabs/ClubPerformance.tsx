@@ -19,10 +19,12 @@ const PERFORMANCE_SUB_TABS = [
 type PerformanceSubTab = (typeof PERFORMANCE_SUB_TABS)[number]["key"];
 
 interface ClubPerformanceProps {
+  clubId: string;
   initialSubTab?: PerformanceSubTab;
 }
 
 const ClubPerformance: React.FC<ClubPerformanceProps> = ({
+  clubId,
   initialSubTab = "player",
 }) => {
   const [activeTab, setActiveTab] = useState<PerformanceSubTab>(initialSubTab);
@@ -30,9 +32,9 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
   const renderContent = () => {
     switch (activeTab) {
       case "player":
-        return <PlayerPerformance />;
+        return <PlayerPerformance clubId={clubId} />;
       case "team":
-        return <TeamPerformance />;
+        return <TeamPerformance clubId={clubId} />;
       case "league":
         return <LeaguePerformance />;
       case "tournament":
