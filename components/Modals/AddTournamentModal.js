@@ -41,7 +41,7 @@ import { AppEventsLogger } from "react-native-fbsdk-next";
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess }) => {
+const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId = null }) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -189,6 +189,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess }) => {
         countryCode: location.countryCode || "",
         tournamentOwner: adminData.tournamentOwner,
         tournamentId,
+        clubId: clubId || null,
       };
 
       await addCompetition({
