@@ -10,7 +10,9 @@ import {
   ActivityIndicator,
   ViewToken,
   ViewabilityConfig,
+  RefreshControl,
 } from "react-native";
+
 import styled from "styled-components/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -73,7 +75,9 @@ const GameScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { pendingUploads } = usePendingUpload(currentUser?.userId);
+  const prevUploadingRef = useRef(false);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const team1Player1 = team1?.player1;
@@ -141,6 +145,19 @@ const GameScreen: React.FC = () => {
     (upload) => upload.gameId === gameId,
   );
 
+  useEffect(() => {
+    if (prevUploadingRef.current && !isUploadingThisGame) {
+      fetchVideos();
+    }
+    prevUploadingRef.current = isUploadingThisGame;
+  }, [isUploadingThisGame]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchVideos();
+    setRefreshing(false);
+  }, [fetchVideos]);
+
   // ── Placeholder logic ─────────────────────────────────────────────────────
   const renderPlaceholder = () => {
     if (isParticipant) {
@@ -192,6 +209,15 @@ const GameScreen: React.FC = () => {
         keyExtractor={(item) => item.gameId + item.postedBy.userId}
         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="white"
+            colors={["white"]}
+            progressBackgroundColor="#00A2FF"
+          />
+        }
         ListHeaderComponent={
           <>
             {/* ── Header ── */}
@@ -236,6 +262,7 @@ const GameScreen: React.FC = () => {
             }
             isSubmissionMode={true}
             onVideoDeleted={() => fetchVideos()}
+            currentUserId={currentUser?.userId}
           />
         )}
         ListEmptyComponent={

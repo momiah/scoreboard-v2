@@ -41,6 +41,7 @@ interface StartBackgroundUploadParams extends Omit<
   "videoUrl" | "competitionId"
 > {
   videoUri: string;
+  videoLength: number | undefined;
 }
 
 interface UseVideoUploadReturn {
@@ -92,6 +93,7 @@ export const useVideoUpload = ({
       date,
       postedBy,
       teams,
+      videoLength,
     }: StartBackgroundUploadParams) => {
       const db = getFirestore();
       const pendingDocRef = doc(
@@ -202,6 +204,7 @@ export const useVideoUpload = ({
                 date,
                 postedBy,
                 teams,
+                videoLength,
               });
 
               await deleteDoc(pendingDocRef);

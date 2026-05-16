@@ -118,7 +118,8 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
     isSubmissionMode ||
     profileVideoTab === "Uploaded" ||
     profileVideoTab === "Videos of Me" ||
-    competitionPage;
+    competitionPage ||
+    isOwnVideo;
 
   // ── Show header row ───────────────────────────────────────────────────────
   const showHeader =

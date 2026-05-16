@@ -209,6 +209,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         profileImage: currentUser.profileImage,
       },
       teams,
+      videoLength: pickedVideo.duration
+        ? Math.round(pickedVideo.duration / 1000)
+        : undefined,
     });
     setIsUploading(false);
     onClose();

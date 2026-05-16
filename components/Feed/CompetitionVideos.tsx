@@ -5,7 +5,12 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import { FlatList, ViewToken, ViewabilityConfig } from "react-native";
+import {
+  FlatList,
+  ViewToken,
+  ViewabilityConfig,
+  RefreshControl,
+} from "react-native";
 import styled from "styled-components/native";
 import {
   getFirestore,
@@ -39,6 +44,7 @@ const CompetitionVideos: React.FC<CompetitionVideosProps> = ({
   const [videos, setVideos] = useState<GameVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -53,37 +59,48 @@ const CompetitionVideos: React.FC<CompetitionVideosProps> = ({
     { viewabilityConfig: VIEWABILITY_CONFIG, onViewableItemsChanged },
   ]);
 
-  const fetchVideos = useCallback(async () => {
-    setIsLoading(true);
-    setVideos([]);
-    try {
-      const db = getFirestore();
-      const snap = await getDocs(
-        query(
-          collection(db, COLLECTION_NAMES.gameVideos),
-          where("competitionId", "==", competitionId),
-          where("videoApproved", "==", true),
-          orderBy("createdAt", "desc"),
-        ),
-      );
-      const fetched = snap.docs.map((doc) => doc.data() as GameVideo);
-      setVideos(fetched);
-
-      if (currentUser && fetched.length > 0) {
-        const likedByMap = Object.fromEntries(
-          fetched.map((v) => [v.gameId, v.likedBy ?? []]),
-        );
-        initLikedVideos(likedByMap, currentUser.userId);
+  const fetchVideos = useCallback(
+    async (isRefresh = false) => {
+      if (!isRefresh) {
+        setIsLoading(true);
+        setVideos([]);
       }
-    } catch (error) {
-      console.error("[CompetitionVideos] Failed to fetch videos:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [competitionId, currentUser]);
+      try {
+        const db = getFirestore();
+        const snap = await getDocs(
+          query(
+            collection(db, COLLECTION_NAMES.gameVideos),
+            where("competitionId", "==", competitionId),
+            where("videoApproved", "==", true),
+            orderBy("createdAt", "desc"),
+          ),
+        );
+        const fetched = snap.docs.map((doc) => doc.data() as GameVideo);
+        setVideos(fetched);
+
+        if (currentUser && fetched.length > 0) {
+          const likedByMap = Object.fromEntries(
+            fetched.map((v) => [v.gameId, v.likedBy ?? []]),
+          );
+          initLikedVideos(likedByMap, currentUser.userId);
+        }
+      } catch (error) {
+        console.error("[CompetitionVideos] Failed to fetch videos:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [competitionId, currentUser],
+  );
 
   useEffect(() => {
     fetchVideos();
+  }, [fetchVideos]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchVideos(true);
+    setRefreshing(false);
   }, [fetchVideos]);
 
   if (isLoading) {
@@ -107,27 +124,21 @@ const CompetitionVideos: React.FC<CompetitionVideosProps> = ({
     );
   }
 
-  if (videos.length === 0) {
-    return (
-      <EmptyContainer>
-        <Ionicons
-          name="videocam-off-outline"
-          size={100}
-          color="rgba(255,255,255,0.2)"
-        />
-        <EmptyText>
-          No videos have been uploaded for this competition yet.
-        </EmptyText>
-      </EmptyContainer>
-    );
-  }
-
   return (
     <FlatList
       data={videos}
       keyExtractor={(item) => item.gameId + item.postedBy.userId}
       viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor="white"
+          colors={["white"]}
+          progressBackgroundColor="#00A2FF"
+        />
+      }
       renderItem={({ item }) => (
         <GameVideoCard
           video={item}
@@ -142,6 +153,18 @@ const CompetitionVideos: React.FC<CompetitionVideosProps> = ({
           competitionPage={true}
         />
       )}
+      ListEmptyComponent={
+        <EmptyContainer>
+          <Ionicons
+            name="videocam-off-outline"
+            size={100}
+            color="rgba(255,255,255,0.2)"
+          />
+          <EmptyText>
+            No videos have been uploaded for this competition yet.
+          </EmptyText>
+        </EmptyContainer>
+      }
     />
   );
 };

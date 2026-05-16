@@ -122,6 +122,7 @@ export const updateGameVideoUrl = functions.https.onCall(
       date,
       postedBy,
       teams,
+      videoLength = undefined,
     } = request.data;
 
     const db = admin.firestore();
@@ -201,6 +202,7 @@ export const updateGameVideoUrl = functions.https.onCall(
       teams,
       videoApproved: true,
       transcoded: false,
+      videoLength,
       playerIds: [
         teams.team1?.player1?.userId,
         teams.team1?.player2?.userId,

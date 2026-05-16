@@ -83,6 +83,7 @@ export interface GameVideoUploadPayload {
   date: string;
   postedBy: VideoPostedBy;
   teams: Teams;
+  videoLength?: number;
 }
 
 export interface PendingUpload extends Omit<
