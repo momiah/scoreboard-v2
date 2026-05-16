@@ -8,9 +8,7 @@ import TeamDetails from "../../../../../components/Modals/TeamDetailsModal";
 import LoadingOverlay from "../../../../../components/LoadingOverlay";
 import { PlayerPerformanceIcon } from "../../../../../assets";
 import { db } from "../../../../../services/firebase.config";
-import { MOCK_TEAMS } from "../../mockClubData";
-
-const USE_MOCK_DATA = true;
+import { MOCK_TEAMS, USE_MOCK_DATA } from "../../mockClubData";
 
 const { width: screenWidth } = Dimensions.get("window");
 

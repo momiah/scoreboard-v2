@@ -1,7 +1,9 @@
 /**
- * Mock data for Club tabs — toggle USE_MOCK_DATA in each tab component to test UI.
+ * Mock data for Club tabs.
+ * Flip USE_MOCK_DATA here to toggle all tabs at once.
  * Remove this file and all USE_MOCK_DATA references once real data is confirmed working.
  */
+export const USE_MOCK_DATA = true;
 
 // ─── Leagues ────────────────────────────────────────────────────────────────
 
@@ -171,23 +173,23 @@ export const MOCK_PLAYERS = [
 // ─── League placements (for LeaguePerformance tab) ───────────────────────────
 
 export const MOCK_LEAGUE_PERFORMANCE = [
-  { userId: "u1", firstName: "Yasin",  lastName: "Ahmed",  first: 3, second: 1, third: 0, fourth: 0 },
+  { userId: "u1", firstName: "Yasin", lastName: "Ahmed", first: 3, second: 1, third: 0, fourth: 0 },
   { userId: "u2", firstName: "Rayyan", lastName: "Rahman", first: 2, second: 2, third: 1, fourth: 0 },
-  { userId: "u3", firstName: "Saif",   lastName: "Hossain",first: 1, second: 2, third: 2, fourth: 0 },
-  { userId: "u4", firstName: "Raqeeb", lastName: "Islam",  first: 0, second: 1, third: 2, fourth: 1 },
-  { userId: "u5", firstName: "Gesh",   lastName: "Das",    first: 0, second: 0, third: 1, fourth: 3 },
-  { userId: "u6", firstName: "Max",    lastName: "Khan",   first: 0, second: 0, third: 0, fourth: 2 },
-  { userId: "u7", firstName: "Bukul",  lastName: "Mia",    first: 0, second: 0, third: 0, fourth: 1 },
+  { userId: "u3", firstName: "Saif", lastName: "Hossain", first: 1, second: 2, third: 2, fourth: 0 },
+  { userId: "u4", firstName: "Raqeeb", lastName: "Islam", first: 0, second: 1, third: 2, fourth: 1 },
+  { userId: "u5", firstName: "Gesh", lastName: "Das", first: 0, second: 0, third: 1, fourth: 3 },
+  { userId: "u6", firstName: "Max", lastName: "Khan", first: 0, second: 0, third: 0, fourth: 2 },
+  { userId: "u7", firstName: "Bukul", lastName: "Mia", first: 0, second: 0, third: 0, fourth: 1 },
 ];
 
 // ─── Tournament placements (for TournamentPerformance tab) ───────────────────
 
 export const MOCK_TOURNAMENT_PERFORMANCE = [
-  { userId: "u1", firstName: "Yasin",  lastName: "Ahmed",  first: 2, second: 0, third: 1, fourth: 0 },
-  { userId: "u3", firstName: "Saif",   lastName: "Hossain",first: 1, second: 1, third: 0, fourth: 1 },
+  { userId: "u1", firstName: "Yasin", lastName: "Ahmed", first: 2, second: 0, third: 1, fourth: 0 },
+  { userId: "u3", firstName: "Saif", lastName: "Hossain", first: 1, second: 1, third: 0, fourth: 1 },
   { userId: "u2", firstName: "Rayyan", lastName: "Rahman", first: 0, second: 2, third: 1, fourth: 0 },
-  { userId: "u5", firstName: "Gesh",   lastName: "Das",    first: 0, second: 0, third: 1, fourth: 2 },
-  { userId: "u4", firstName: "Raqeeb", lastName: "Islam",  first: 0, second: 0, third: 0, fourth: 1 },
+  { userId: "u5", firstName: "Gesh", lastName: "Das", first: 0, second: 0, third: 1, fourth: 2 },
+  { userId: "u4", firstName: "Raqeeb", lastName: "Islam", first: 0, second: 0, third: 0, fourth: 1 },
 ];
 
 // ─── Teams (for TeamPerformance tab) ─────────────────────────────────────────
