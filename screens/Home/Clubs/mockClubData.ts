@@ -3,7 +3,7 @@
  * Flip USE_MOCK_DATA here to toggle all tabs at once.
  * Remove this file and all USE_MOCK_DATA references once real data is confirmed working.
  */
-export const USE_MOCK_DATA = true;
+export const USE_MOCK_DATA = false;
 
 // ─── Leagues ────────────────────────────────────────────────────────────────
 

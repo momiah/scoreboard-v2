@@ -1,25 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { FlatList, View, Dimensions } from "react-native";
+import { FlatList, Image, Dimensions } from "react-native";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import styled from "styled-components/native";
-import Ionicons from "@expo/vector-icons/Ionicons";
 
 import LoadingOverlay from "../../../../../components/LoadingOverlay";
 import { formatDisplayName } from "../../../../../helpers/formatDisplayName";
 import { db } from "../../../../../services/firebase.config";
+import { COLLECTION_NAMES } from "@shared";
+import { trophies, medals } from "../../../../../mockImages/index";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-// ─── Trophy column config ─────────────────────────────────────────────────────
-
-const TROPHIES = [
-  { key: "first",  color: "#FFD700" },  // gold
-  { key: "second", color: "#DC143C" },  // crimson
-  { key: "third",  color: "#C0C0C0" },  // silver
-  { key: "fourth", color: "#8B5E3C" },  // bronze
-] as const;
-
-type PlacementKey = (typeof TROPHIES)[number]["key"];
+const PLACEMENT_KEYS = ["first", "second", "third", "fourth"] as const;
+type PlacementKey = (typeof PLACEMENT_KEYS)[number];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,10 +36,16 @@ interface CompetitionPerformanceProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Sort participants by wins → PD (same order as calculatePrizeAllocation) */
-const sortByPerformance = (
-  participants: { numberOfWins?: number; totalPointDifference?: number }[],
-) =>
+interface RawCompParticipant {
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  numberOfWins?: number;
+  totalPointDifference?: number;
+}
+
+const sortByPerformance = (participants: RawCompParticipant[]) =>
   [...participants].sort((a, b) => {
     const winDiff = (b.numberOfWins ?? 0) - (a.numberOfWins ?? 0);
     if (winDiff !== 0) return winDiff;
@@ -63,6 +62,9 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
   const [rows, setRows] = useState<PlacementRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Pick trophy images based on competition type
+  const icons = type === "league" ? trophies : medals;
+
   const compute = useCallback(async () => {
     if (mockData) {
       setRows(mockData);
@@ -77,47 +79,53 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
 
     setLoading(true);
     try {
-      const collectionName = type === "league" ? "leagues" : "tournaments";
+      const collectionName =
+        type === "league"
+          ? COLLECTION_NAMES.leagues
+          : COLLECTION_NAMES.tournaments;
       const participantsKey =
         type === "league" ? "leagueParticipants" : "tournamentParticipants";
 
-      const snap = await getDocs(
-        query(
-          collection(db, collectionName),
-          where("clubId", "==", clubId),
+      // Fetch all club members + all club competitions in parallel
+      const [membersSnap, competitionsSnap] = await Promise.all([
+        getDocs(
+          collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
         ),
-      );
+        getDocs(
+          query(collection(db, collectionName), where("clubId", "==", clubId)),
+        ),
+      ]);
 
-      const totals = new Map<
-        string,
-        PlacementRow & { firstName?: string; lastName?: string; username?: string }
-      >();
+      // Seed every club member with zero placements
+      const totals = new Map<string, PlacementRow>();
+      membersSnap.forEach((doc) => {
+        const m = doc.data();
+        if (!m.userId) return;
+        totals.set(m.userId, {
+          userId: m.userId,
+          firstName: m.firstName,
+          lastName: m.lastName,
+          username: m.username,
+          first: 0,
+          second: 0,
+          third: 0,
+          fourth: 0,
+        });
+      });
 
-      snap.forEach((doc) => {
+      // Tally placements from each competition
+      competitionsSnap.forEach((doc) => {
         const data = doc.data();
-        const rawParticipants: {
-          userId?: string;
-          firstName?: string;
-          lastName?: string;
-          username?: string;
-          numberOfWins?: number;
-          totalPointDifference?: number;
-        }[] = data[participantsKey] ?? data.participants ?? [];
+        const rawParticipants: RawCompParticipant[] =
+          data[participantsKey] ?? data.participants ?? [];
 
         const sorted = sortByPerformance(rawParticipants);
-        const finalists = sorted.slice(0, 4);
-        const placementKeys: PlacementKey[] = [
-          "first",
-          "second",
-          "third",
-          "fourth",
-        ];
-
-        finalists.forEach((p, idx) => {
+        sorted.slice(0, 4).forEach((p, idx) => {
           if (!p.userId) return;
-          const key = placementKeys[idx];
+          const key = PLACEMENT_KEYS[idx];
           const existing = totals.get(p.userId);
           if (!existing) {
+            // Member in competition but not yet in participants subcollection
             totals.set(p.userId, {
               userId: p.userId,
               firstName: p.firstName,
@@ -135,7 +143,7 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
         });
       });
 
-      // Sort by 1st desc → 2nd desc → 3rd desc → 4th desc
+      // Sort: 1st desc → 2nd → 3rd → 4th
       const sorted = Array.from(totals.values()).sort(
         (a, b) =>
           b.first - a.first ||
@@ -160,9 +168,16 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
     <HeaderRow>
       <RankCell />
       <NameCell />
-      {TROPHIES.map((t) => (
-        <StatCell key={t.key}>
-          <Ionicons name="trophy" size={22} color={t.color} />
+      {PLACEMENT_KEYS.map((key, idx) => (
+        <StatCell key={key}>
+          <Image
+            source={icons[idx]}
+            style={{
+              width: type === "league" ? 40 : 32,
+              height: 40,
+              resizeMode: "contain",
+            }}
+          />
         </StatCell>
       ))}
     </HeaderRow>
@@ -185,9 +200,9 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
           <NameCell>
             <NameText numberOfLines={1}>{name}</NameText>
           </NameCell>
-          {TROPHIES.map((t) => (
-            <StatCell key={t.key}>
-              <StatText>{item[t.key]}</StatText>
+          {PLACEMENT_KEYS.map((key) => (
+            <StatCell key={key}>
+              <StatText>{item[key]}</StatText>
             </StatCell>
           ))}
         </DataRow>
@@ -209,8 +224,8 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
       <Container>
         <EmptyText>
           {type === "league"
-            ? "No completed leagues in this club yet."
-            : "No completed tournaments in this club yet."}
+            ? "No leagues in this club yet."
+            : "No tournaments in this club yet."}
         </EmptyText>
       </Container>
     );
@@ -231,16 +246,16 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const Container = styled.View({
-  paddingTop: 20,
+  paddingTop: 0,
   flex: 1,
 });
 
 const HeaderRow = styled.View({
   flexDirection: "row",
-  paddingBottom: 8,
+  paddingBottom: 2,
   borderBottomWidth: 1,
   borderBottomColor: "rgb(9, 33, 62)",
-  marginBottom: 4,
+  marginBottom: 0,
 });
 
 const DataRow = styled.View({
