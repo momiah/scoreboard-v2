@@ -7,7 +7,13 @@ import {
   Linking,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
+import {
+  useRoute,
+  useNavigation,
+  RouteProp,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -59,7 +65,7 @@ const openMapsQuery = (query: string) => {
 
 const ClubScreen: React.FC = () => {
   const route = useRoute<RouteProp<ClubRouteParams, "Club">>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { clubId, primaryTab, performanceTab } = route.params ?? {};
 
   const { fetchClubById, clubById } = useContext(LeagueContext);
@@ -192,28 +198,25 @@ const ClubScreen: React.FC = () => {
               />
 
               <ClubDetailsContainer>
+                {/* Top row: back button + hamburger (owner/admin only) */}
                 <BackRow>
                   <BackButton
                     onPress={() =>
                       navigation.canGoBack()
                         ? navigation.goBack()
-                        : navigation.navigate("HomeMain" as never)
+                        : navigation.navigate("HomeMain")
                     }
                   >
                     <Ionicons name="chevron-back" size={26} color="white" />
                   </BackButton>
-                  {isOwner ? (
-                    <OwnerBadge>
-                      <Tag
-                        name="Owner"
-                        color="#16181B"
-                        iconColor="#00A2FF"
-                        iconSize={14}
-                        icon="checkmark-circle-outline"
-                        iconPosition="right"
-                        bold
-                      />
-                    </OwnerBadge>
+                  {canInvite ? (
+                    <BackButton
+                      onPress={() =>
+                        navigation.navigate("ClubSettings", { clubId, club })
+                      }
+                    >
+                      <Ionicons name="menu" size={25} color="white" />
+                    </BackButton>
                   ) : (
                     <View style={{ width: 40 }} />
                   )}
@@ -233,6 +236,7 @@ const ClubScreen: React.FC = () => {
                   </AddressRow>
                 ) : null}
 
+                {/* Row 1: member count + Club tag | Owner/Admin badge */}
                 <View
                   style={{
                     flexDirection: "row",
@@ -252,7 +256,38 @@ const ClubScreen: React.FC = () => {
                     />
                     <Tag name="Club" color="#FAB234" />
                   </View>
-                  {canInvite && (
+                  {isOwner ? (
+                    <Tag
+                      name="Owner"
+                      color="#16181B"
+                      iconColor="#00A2FF"
+                      iconSize={14}
+                      icon="checkmark-circle-outline"
+                      iconPosition="right"
+                      bold
+                    />
+                  ) : isAdmin ? (
+                    <Tag
+                      name="Admin"
+                      color="#16181B"
+                      iconColor="#00A2FF"
+                      iconSize={14}
+                      icon="checkmark-circle-outline"
+                      iconPosition="right"
+                      bold
+                    />
+                  ) : null}
+                </View>
+
+                {/* Row 2: Invite Members (right-aligned, owner/admin only) */}
+                {canInvite && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "flex-end",
+                      marginTop: 5,
+                    }}
+                  >
                     <Tag
                       name="Invite Members"
                       color="#00A2FF"
@@ -260,8 +295,8 @@ const ClubScreen: React.FC = () => {
                       onPress={() => setInviteModalVisible(true)}
                       bold
                     />
-                  )}
-                </View>
+                  </View>
+                )}
               </ClubDetailsContainer>
             </ClubHeaderImage>
           </Overview>
@@ -353,9 +388,6 @@ const BackButton = styled.TouchableOpacity({
   padding: 4,
 });
 
-const OwnerBadge = styled.View({
-  alignItems: "flex-end",
-});
 
 const TitleBlock = styled.View({
   paddingVertical: 6,
