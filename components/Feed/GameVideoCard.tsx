@@ -204,7 +204,9 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
           <Scorecard video={video} onPlayerPress={handlePlayerPress} />
         )}
         <ActionsRow>
-          <ActionButton onPress={() => onLike(video.gameId)}>
+          <ActionButton
+            onPress={() => onLike(`${video.gameId}_${video.postedBy.userId}`)}
+          >
             <ActionEmoji>
               {isLiked ? (
                 <Ionicons name="flame" size={25} color="#ff9436ff" />

@@ -29,7 +29,6 @@ import { COLLECTION_NAMES } from "@shared";
 import { UserContext } from "../../context/UserContext";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { ccImageEndpoint } from "@shared";
-
 import { timeAgo } from "@/helpers/formatDate";
 
 interface VideoCommentsModalProps {
@@ -59,6 +58,9 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
 
   const db = getFirestore();
 
+  // ── docId is the gameVideos document ID ──────────────────────────────────
+  const docId = `${video.gameId}_${video.postedBy.userId}`;
+
   const fetchComments = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -66,15 +68,15 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
         collection(
           db,
           COLLECTION_NAMES.gameVideos,
-          video.gameId,
+          docId,
           COLLECTION_NAMES.comments,
         ),
         orderBy("createdAt", "desc"),
       );
       const snapshot = await getDocs(commentsQuery);
-      const fetched = snapshot.docs.map((d) => ({
-        ...(d.data() as Comment),
-        commentId: (d.data() as Comment).commentId || d.id,
+      const fetched = snapshot.docs.map((document) => ({
+        ...(document.data() as Comment),
+        commentId: (document.data() as Comment).commentId || document.id,
       }));
       setComments(fetched);
     } catch (error) {
@@ -82,7 +84,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [video.gameId]);
+  }, [docId]);
 
   useEffect(() => {
     if (visible) fetchComments();
@@ -113,7 +115,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
         collection(
           db,
           COLLECTION_NAMES.gameVideos,
-          video.gameId,
+          docId,
           COLLECTION_NAMES.comments,
         ),
         newComment,
@@ -121,7 +123,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
 
       await updateDoc(docRef, { commentId: docRef.id });
 
-      await updateDoc(doc(db, COLLECTION_NAMES.gameVideos, video.gameId), {
+      await updateDoc(doc(db, COLLECTION_NAMES.gameVideos, docId), {
         commentCount: increment(1),
       });
 
@@ -140,23 +142,26 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
     const commentRef = doc(
       db,
       COLLECTION_NAMES.gameVideos,
-      video.gameId,
+      docId,
       COLLECTION_NAMES.comments,
       comment.commentId,
     );
 
-    // Optimistic update
     setComments((prev) =>
-      prev.map((c) =>
-        c.commentId === comment.commentId
+      prev.map((existingComment) =>
+        existingComment.commentId === comment.commentId
           ? {
-              ...c,
-              likes: isLiked ? c.likes - 1 : c.likes + 1,
+              ...existingComment,
+              likes: isLiked
+                ? existingComment.likes - 1
+                : existingComment.likes + 1,
               likedBy: isLiked
-                ? c.likedBy.filter((id) => id !== currentUser.userId)
-                : [...c.likedBy, currentUser.userId],
+                ? existingComment.likedBy.filter(
+                    (id) => id !== currentUser.userId,
+                  )
+                : [...existingComment.likedBy, currentUser.userId],
             }
-          : c,
+          : existingComment,
       ),
     );
 
@@ -169,7 +174,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
       });
     } catch (error) {
       console.error("Failed to like comment:", error);
-      fetchComments(); // revert on failure
+      fetchComments();
     }
   };
 
@@ -179,7 +184,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
         collection(
           db,
           COLLECTION_NAMES.gameVideos,
-          video.gameId,
+          docId,
           COLLECTION_NAMES.comments,
           commentId,
           COLLECTION_NAMES.replies,
@@ -187,9 +192,10 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
         orderBy("createdAt", "asc"),
       );
       const snapshot = await getDocs(repliesQuery);
-      const fetched = snapshot.docs.map((d) => ({
-        ...(d.data() as GameVideoCommentReply),
-        replyId: (d.data() as GameVideoCommentReply).replyId || d.id,
+      const fetched = snapshot.docs.map((document) => ({
+        ...(document.data() as GameVideoCommentReply),
+        replyId:
+          (document.data() as GameVideoCommentReply).replyId || document.id,
       }));
       setReplies((prev) => ({ ...prev, [commentId]: fetched }));
     } catch (error) {
@@ -233,7 +239,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
         collection(
           db,
           COLLECTION_NAMES.gameVideos,
-          video.gameId,
+          docId,
           COLLECTION_NAMES.comments,
           replyingTo.commentId,
           COLLECTION_NAMES.replies,
@@ -249,7 +255,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
         doc(
           db,
           COLLECTION_NAMES.gameVideos,
-          video.gameId,
+          docId,
           COLLECTION_NAMES.comments,
           replyingTo.commentId,
         ),
@@ -265,10 +271,10 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
       }));
 
       setComments((prev) =>
-        prev.map((c) =>
-          c.commentId === replyingTo.commentId
-            ? { ...c, replyCount: c.replyCount + 1 }
-            : c,
+        prev.map((existingComment) =>
+          existingComment.commentId === replyingTo.commentId
+            ? { ...existingComment, replyCount: existingComment.replyCount + 1 }
+            : existingComment,
         ),
       );
 
@@ -279,32 +285,36 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
       console.error("Failed to submit reply:", error);
     }
   };
+
   const handleLikeReply = async (reply: GameVideoCommentReply) => {
     if (!currentUser) return;
     const isLiked = reply.likedBy.includes(currentUser.userId);
     const replyRef = doc(
       db,
       COLLECTION_NAMES.gameVideos,
-      video.gameId,
+      docId,
       COLLECTION_NAMES.comments,
       reply.commentId,
       COLLECTION_NAMES.replies,
       reply.replyId,
     );
 
-    // Optimistic update
     setReplies((prev) => ({
       ...prev,
-      [reply.commentId]: prev[reply.commentId].map((r) =>
-        r.replyId === reply.replyId
+      [reply.commentId]: prev[reply.commentId].map((existingReply) =>
+        existingReply.replyId === reply.replyId
           ? {
-              ...r,
-              likes: isLiked ? r.likes - 1 : r.likes + 1,
+              ...existingReply,
+              likes: isLiked
+                ? existingReply.likes - 1
+                : existingReply.likes + 1,
               likedBy: isLiked
-                ? r.likedBy.filter((id) => id !== currentUser.userId)
-                : [...r.likedBy, currentUser.userId],
+                ? existingReply.likedBy.filter(
+                    (id) => id !== currentUser.userId,
+                  )
+                : [...existingReply.likedBy, currentUser.userId],
             }
-          : r,
+          : existingReply,
       ),
     }));
 
@@ -324,7 +334,6 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
     const isReplyLiked = currentUser
       ? reply.likedBy.includes(currentUser.userId)
       : false;
-
     return (
       <ReplyContainer key={reply.replyId}>
         <CommentAvatar
@@ -387,10 +396,8 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
                 <ReplyToggleText>Reply</ReplyToggleText>
               </TouchableOpacity>
             </CommentFooter>
-
             {isExpanded && replies[item.commentId]?.map(renderReply)}
           </CommentContent>
-
           <LikeButton onPress={() => handleLikeComment(item)}>
             <Ionicons
               name={isLiked ? "heart" : "heart-outline"}
@@ -414,6 +421,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
       <ModalOverlay>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1, justifyContent: "flex-end" }}
         >
           <ModalContent>
             <ModalHeader>
@@ -443,7 +451,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
               />
             )}
 
-            {/* Reply indicator */}
+            {/* ── Reply indicator ── */}
             {replyingTo && (
               <ReplyingToRow>
                 <ReplyingToText>
@@ -455,7 +463,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
               </ReplyingToRow>
             )}
 
-            {/* Input */}
+            {/* ── Input ── */}
             <InputRow>
               <CommentInput
                 placeholder={
@@ -491,7 +499,6 @@ const ModalOverlay = styled(BlurView).attrs({
   tint: "dark",
 })({
   flex: 1,
-  justifyContent: "flex-end",
 });
 
 const ModalContent = styled.View({
@@ -517,13 +524,9 @@ const ModalTitle = styled.Text({
   color: "white",
 });
 
-// ── Comment ───────────────────────────────────────────────────────────────────
-
 const CommentContainer = styled.View({
   paddingHorizontal: 16,
   paddingVertical: 12,
-  //   borderBottomWidth: 1,
-  //   borderBottomColor: "#0d1f30",
 });
 
 const CommentRow = styled.View({
@@ -588,8 +591,6 @@ const LikeCount = styled.Text({
   marginTop: 2,
 });
 
-// ── Reply ─────────────────────────────────────────────────────────────────────
-
 const ReplyContainer = styled.View({
   flexDirection: "row",
   gap: 8,
@@ -600,8 +601,6 @@ const ReplyContainer = styled.View({
 const ReplyContent = styled.View({
   flex: 1,
 });
-
-// ── Input ─────────────────────────────────────────────────────────────────────
 
 const ReplyingToRow = styled.View({
   flexDirection: "row",

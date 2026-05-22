@@ -11,42 +11,45 @@ import { COLLECTION_NAMES } from "@shared";
 
 interface UseLikeVideoReturn {
   likedVideoIds: Set<string>;
-  handleLike: (gameId: string, userId: string) => Promise<void>;
-  initLikedVideos: (likedBy: Record<string, string[]>, userId: string) => void;
+  handleLike: (docId: string, userId: string) => Promise<void>;
+  initLikedVideos: (
+    likedByMap: Record<string, string[]>,
+    userId: string,
+  ) => void;
 }
 
 export const useLikeVideo = (): UseLikeVideoReturn => {
   const [likedVideoIds, setLikedVideoIds] = useState<Set<string>>(new Set());
 
-  // Called once on feed load to seed local state from Firestore data
+  // ── Seed local state from Firestore data on feed load ─────────────────────
   const initLikedVideos = useCallback(
     (likedByMap: Record<string, string[]>, userId: string) => {
-      const liked = new Set<string>();
-      for (const [gameId, likedBy] of Object.entries(likedByMap)) {
+      const likedSet = new Set<string>();
+      for (const [docId, likedBy] of Object.entries(likedByMap)) {
         if (likedBy.includes(userId)) {
-          liked.add(gameId);
+          likedSet.add(docId);
         }
       }
-      setLikedVideoIds(liked);
+      setLikedVideoIds(likedSet);
     },
     [],
   );
 
   const handleLike = useCallback(
-    async (gameId: string, userId: string) => {
+    async (docId: string, userId: string) => {
       const db = getFirestore();
-      const videoRef = doc(db, COLLECTION_NAMES.gameVideos, gameId);
-      const isLiked = likedVideoIds.has(gameId);
+      const videoRef = doc(db, COLLECTION_NAMES.gameVideos, docId);
+      const isLiked = likedVideoIds.has(docId);
 
-      // Optimistic update — update UI immediately
-      setLikedVideoIds((prev) => {
-        const updated = new Set(prev);
+      // ── Optimistic update ─────────────────────────────────────────────────
+      setLikedVideoIds((prevIds) => {
+        const updatedIds = new Set(prevIds);
         if (isLiked) {
-          updated.delete(gameId);
+          updatedIds.delete(docId);
         } else {
-          updated.add(gameId);
+          updatedIds.add(docId);
         }
-        return updated;
+        return updatedIds;
       });
 
       try {
@@ -55,15 +58,15 @@ export const useLikeVideo = (): UseLikeVideoReturn => {
           likes: increment(isLiked ? -1 : 1),
         });
       } catch (error) {
-        // Revert optimistic update on failure
-        setLikedVideoIds((prev) => {
-          const reverted = new Set(prev);
+        // ── Revert on failure ─────────────────────────────────────────────
+        setLikedVideoIds((prevIds) => {
+          const revertedIds = new Set(prevIds);
           if (isLiked) {
-            reverted.add(gameId);
+            revertedIds.add(docId);
           } else {
-            reverted.delete(gameId);
+            revertedIds.delete(docId);
           }
-          return reverted;
+          return revertedIds;
         });
         console.error("Failed to update like:", error);
       }

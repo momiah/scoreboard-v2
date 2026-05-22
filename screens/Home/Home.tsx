@@ -127,7 +127,7 @@ const Home = () => {
   useEffect(() => {
     if (!currentUser || videos.length === 0) return;
     const likedByMap = Object.fromEntries(
-      videos.map((v) => [v.gameId, v.likedBy ?? []]),
+      videos.map((v) => [`${v.gameId}_${v.postedBy.userId}`, v.likedBy ?? []]),
     );
     initLikedVideos(likedByMap, currentUser.userId);
   }, [videos, currentUser]);
@@ -137,8 +137,8 @@ const Home = () => {
       <GameVideoCard
         video={item}
         isActive={item.gameId === activeVideoId && isScreenFocused}
-        onLike={(gameId) => handleLike(gameId, currentUser?.userId ?? "")}
-        isLiked={likedVideoIds.has(item.gameId)}
+        onLike={(docId) => handleLike(docId, currentUser?.userId ?? "")}
+        isLiked={likedVideoIds.has(`${item.gameId}_${item.postedBy.userId}`)}
         initiallyLiked={
           item.likedBy?.includes(currentUser?.userId ?? "") ?? false
         }
@@ -336,7 +336,7 @@ const Home = () => {
       <FlatList
         data={videos}
         renderItem={renderVideo}
-        keyExtractor={(item) => item.gameId}
+        keyExtractor={(item) => `${item.gameId}_${item.postedBy.userId}`}
         ListHeaderComponent={HomeHeader}
         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
         onEndReached={hasMore ? fetchMoreVideos : undefined}
