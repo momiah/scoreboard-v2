@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, useState, useRef } from "react";
-import { Dimensions, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useCallback, useState } from "react";
+import { Dimensions, TouchableOpacity, View, Modal } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
 import styled from "styled-components/native";
@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import VideoMenuModal from "../Modals/VideoMenuModal";
 import VideoCommentsModal from "../Modals/VideoCommentsModal";
 import GameVideoCardSkeleton from "../Skeletons/GameVideoCardSkeleton";
+import VideoFullscreen from "../../screens/VideoFullScreen";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -51,9 +52,8 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
 }) => {
   const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
   const [menuVisible, setMenuVisible] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [commentsVisible, setCommentsVisible] = useState(false);
-  const videoRef = useRef<VideoView>(null);
+  const [fullscreenVisible, setFullscreenVisible] = useState(false);
 
   const player = useVideoPlayer(video?.videoUrl ?? "", (p) => {
     p.loop = true;
@@ -88,6 +88,13 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
     player.muted = !player.muted;
   }, [player]);
 
+  const handleFullscreen = () => {
+    if (video?.videoUrl) {
+      player.pause();
+      setFullscreenVisible(true);
+    }
+  };
+
   const handleProfilePress = () => {
     navigation.push("UserProfile", { userId: video?.postedBy.userId });
   };
@@ -105,7 +112,6 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   };
 
   const handlePlayerPress = (player: Player) => {
-    // Don't navigate if on profile page and pressing own name
     if (profilePage && player.userId === currentUserId) return;
     navigation.push("UserProfile", { userId: player.userId });
   };
@@ -173,12 +179,9 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
       <VideoContainer>
         <TouchableOpacity onPress={handleVideoPress} activeOpacity={1}>
           <StyledVideoView
-            ref={videoRef}
             player={player}
             contentFit="cover"
-            nativeControls={isFullscreen}
-            onFullscreenEnter={() => setIsFullscreen(true)}
-            onFullscreenExit={() => setIsFullscreen(false)}
+            nativeControls={false}
           />
         </TouchableOpacity>
         <VideoControls>
@@ -189,18 +192,8 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
               color="white"
             />
           </MuteButton>
-          <FullscreenButton
-            onPress={() =>
-              isFullscreen
-                ? videoRef.current?.exitFullscreen()
-                : videoRef.current?.enterFullscreen()
-            }
-          >
-            <Ionicons
-              name={isFullscreen ? "contract-outline" : "expand-outline"}
-              size={12}
-              color="white"
-            />
+          <FullscreenButton onPress={handleFullscreen}>
+            <Ionicons name="expand-outline" size={12} color="white" />
           </FullscreenButton>
         </VideoControls>
       </VideoContainer>
@@ -247,6 +240,22 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
           </View>
         </ActionsRow>
       </FooterRow>
+
+      {/* ── Fullscreen Modal ── */}
+      <Modal
+        visible={fullscreenVisible}
+        animationType="slide"
+        statusBarTranslucent
+        presentationStyle="fullScreen"
+        supportedOrientations={["portrait", "landscape"]}
+        onRequestClose={() => setFullscreenVisible(false)}
+      >
+        <VideoFullscreen
+          videoUrl={video.videoUrl}
+          startTime={player.currentTime}
+          onClose={() => setFullscreenVisible(false)}
+        />
+      </Modal>
 
       {menuVisible && (
         <VideoMenuModal
