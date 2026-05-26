@@ -8,6 +8,7 @@ import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
+import { onVideoReported } from "./onVideoReported";
 import {
   generateR2UploadUrl,
   updateGameVideoUrl,
@@ -29,4 +30,5 @@ export {
   checkR2VideoExists,
   transcodeVideo,
   deleteVideo,
+  onVideoReported,
 };

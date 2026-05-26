@@ -130,7 +130,7 @@ export default function App() {
         const data = response.notification.request.content.data;
 
         if (navigationRef.current) {
-          navigationRef.current?.navigate("NotificationsStack", {
+          navigationRef.current?.navigate("Notifications", {
             screen: "Notification",
             params: { notificationData: data },
           });

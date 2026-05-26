@@ -13,6 +13,7 @@ import VideoMenuModal from "../Modals/VideoMenuModal";
 import VideoCommentsModal from "../Modals/VideoCommentsModal";
 import GameVideoCardSkeleton from "../Skeletons/GameVideoCardSkeleton";
 import VideoFullscreen from "../../screens/VideoFullScreen";
+import VideoRemovedModal from "../Modals/VideoRemovedModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -54,6 +55,7 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   const [menuVisible, setMenuVisible] = useState(false);
   const [commentsVisible, setCommentsVisible] = useState(false);
   const [fullscreenVisible, setFullscreenVisible] = useState(false);
+  const [removedModalVisible, setRemovedModalVisible] = useState(false);
 
   const player = useVideoPlayer(video?.videoUrl ?? "", (p) => {
     p.loop = true;
@@ -196,6 +198,12 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
             <Ionicons name="expand-outline" size={12} color="white" />
           </FullscreenButton>
         </VideoControls>
+        {video.videoApproved === false && profileVideoTab === "Uploaded" && (
+          <RemovedBadge onPress={() => setRemovedModalVisible(true)}>
+            <Ionicons name="warning-outline" size={14} color="white" />
+            <RemovedBadgeText>Removed</RemovedBadgeText>
+          </RemovedBadge>
+        )}
       </VideoContainer>
 
       {/* ── Footer ── */}
@@ -277,6 +285,15 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
           visible={commentsVisible}
           onClose={() => setCommentsVisible(false)}
           video={video}
+        />
+      )}
+
+      {removedModalVisible && (
+        <VideoRemovedModal
+          visible={removedModalVisible}
+          onClose={() => setRemovedModalVisible(false)}
+          video={video}
+          onVideoDeleted={onVideoDeleted}
         />
       )}
     </CardContainer>
@@ -486,6 +503,25 @@ const ScoreText = styled.Text({
 const ScoreDivider = styled.Text({
   color: "rgba(255,255,255,0.4)",
   fontSize: 10,
+});
+
+const RemovedBadge = styled.TouchableOpacity({
+  position: "absolute",
+  top: 10,
+  left: 10,
+  backgroundColor: "rgba(255, 50, 50, 0.85)",
+  borderRadius: 6,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+});
+
+const RemovedBadgeText = styled.Text({
+  color: "white",
+  fontSize: 11,
+  fontWeight: "600",
 });
 
 export { CARD_HEIGHT };

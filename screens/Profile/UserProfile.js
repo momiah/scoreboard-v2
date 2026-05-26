@@ -73,6 +73,12 @@ const UserProfile = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
 
+  useEffect(() => {
+    if (route.params?.tab) {
+      setSelectedTab(route.params.tab);
+    }
+  }, [route.params?.tab]);
+
   const loadProfile = async () => {
     try {
       setRefreshing(true);

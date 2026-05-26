@@ -10,7 +10,8 @@ export type CollectionName =
   | "comments"
   | "replies"
   | "reportedVideos"
-  | "savedVideos";
+  | "savedVideos"
+  | "videoReportAppeals";
 
 export type CompetitionType =
   | typeof COMPETITION_TYPES.LEAGUE

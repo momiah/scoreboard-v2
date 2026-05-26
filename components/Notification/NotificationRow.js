@@ -97,7 +97,7 @@ const NotificationRow = ({
       Tournament: {
         tournamentId: item.data?.tournamentId || item.data?.competitionId,
       },
-      UserProfile: { userId: item.data?.userId },
+      UserProfile: { userId: item.data?.userId, tab: item.data?.tab },
       GameScreen: {
         gameId: item.data?.gameId,
         competitionId: item.data?.competitionId,

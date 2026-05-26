@@ -55,7 +55,8 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0) {
-        setActiveVideoId(viewableItems[0].item.gameId);
+        const item = viewableItems[0].item as GameVideo;
+        setActiveVideoId(`${item.gameId}_${item.postedBy.userId}`);
       }
     },
     [],
@@ -78,10 +79,23 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
           query(
             collection(db, COLLECTION_NAMES.gameVideos),
             where("postedBy.userId", "==", userId),
-            // where("videoApproved", "==", true),
           ),
         );
-        fetchedVideos = snap.docs.map((doc) => doc.data() as GameVideo);
+        fetchedVideos = snap.docs
+          .map((doc) => doc.data() as GameVideo)
+          .sort((videoA, videoB) => {
+            if (
+              videoA.videoApproved === false &&
+              videoB.videoApproved !== false
+            )
+              return -1;
+            if (
+              videoA.videoApproved !== false &&
+              videoB.videoApproved === false
+            )
+              return 1;
+            return 0;
+          });
       } else if (selectedVideoTab === "Saved") {
         const snap = await getDocs(
           query(
@@ -107,7 +121,10 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
 
       if (currentUser && fetchedVideos.length > 0) {
         const likedByMap = Object.fromEntries(
-          fetchedVideos.map((v) => [v.gameId, v.likedBy ?? []]),
+          fetchedVideos.map((v) => [
+            `${v.gameId}_${v.postedBy.userId}`,
+            v.likedBy ?? [],
+          ]),
         );
         initLikedVideos(likedByMap, currentUser.userId);
       }
@@ -174,9 +191,13 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
               profileVideoTab={selectedVideoTab}
               currentUserId={currentUser?.userId}
               video={item}
-              isActive={item.gameId === activeVideoId}
+              isActive={
+                `${item.gameId}_${item.postedBy.userId}` === activeVideoId
+              }
               onLike={(id) => handleLike(id, currentUser?.userId ?? "")}
-              isLiked={likedVideoIds.has(item.gameId)}
+              isLiked={likedVideoIds.has(
+                `${item.gameId}_${item.postedBy.userId}`,
+              )}
               initiallyLiked={
                 item.likedBy?.includes(currentUser?.userId ?? "") ?? false
               }

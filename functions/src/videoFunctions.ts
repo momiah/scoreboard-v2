@@ -9,7 +9,11 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Game, GameVideo, GameVideoUploadPayload } from "@shared/types";
-import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
+import {
+  COLLECTION_NAMES,
+  COMPETITION_TYPES,
+  notificationTypes,
+} from "@shared";
 import { sendNotification } from "./helpers/sendNotification";
 
 const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");
@@ -282,7 +286,7 @@ export const updateGameVideoUrl = functions.https.onCall(
       playerUserIds.map((userId) =>
         sendNotification({
           createdAt: new Date(),
-          type: "video",
+          type: notificationTypes.INFORMATION.GAME_VIDEO.TYPE,
           message: `${postedBy.firstName} uploaded a video for your game in ${competitionName}`,
           isRead: false,
           senderId: postedBy.userId,
