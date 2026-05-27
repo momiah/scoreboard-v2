@@ -36,6 +36,7 @@ import {
   NormalizedCompetition,
   CompetitionType,
   UserProfile,
+  CollectionName,
 } from "@/shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../Modals/RecentPlayersModal";
@@ -181,7 +182,11 @@ const InvitePlayerModal = ({
         };
 
         await sendNotification(payload);
-        await updatePendingInvites(competition.id, user.userId, collectionName);
+        await updatePendingInvites(
+          competition.id,
+          user.userId,
+          collectionName as CollectionName,
+        );
       }
 
       handleShowPopup("Players invited successfully!");

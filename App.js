@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
 import { SafeAreaView, Platform } from "react-native";
 import { GameProvider } from "./context/GameContext";
@@ -11,14 +11,62 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { recoverPendingVideoUploads } from "./helpers/recoverPendingVideoUploads";
 import { Settings } from "react-native-fbsdk-next";
 
 import { registerForPushNotificationsAsync } from "./services/pushNotifications";
-
+import { UserContext } from "./context/UserContext";
+import { usePendingUpload } from "./hooks/usePendingUpload";
+import UploadToast from "./components/Toasts/UploadToast";
 import Tabs from "./navigation/tabs";
+import BottomToast from "./components/Toasts/BottomToast";
+import { PopupContext } from "./context/PopupContext";
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
+
+// ── Inner component — has access to UserContext ───────────────────────────────
+
+const AppContent = () => {
+  const { currentUser } = useContext(UserContext);
+  const { pendingUploads } = usePendingUpload(currentUser?.userId);
+  const {
+    bottomToastVisible,
+    setBottomToastVisible,
+    bottomToastMessage,
+    bottomToastType,
+  } = useContext(PopupContext);
+
+  useEffect(() => {
+    if (currentUser?.userId) {
+      recoverPendingVideoUploads(currentUser.userId);
+    }
+  }, [currentUser?.userId]);
+
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <BottomSheetModalProvider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
+          <UploadToast pendingUploads={pendingUploads} />
+          <BottomToast
+            visible={bottomToastVisible}
+            message={bottomToastMessage}
+            type={bottomToastType}
+            onHide={() => setBottomToastVisible(false)}
+          />
+          <Stack.Navigator
+            screenOptions={{ headerShown: false }}
+            cardStyle={{ backgroundColor: "rgb(3, 16, 31)" }}
+          >
+            <Stack.Screen name="Tabs" component={Tabs} />
+          </Stack.Navigator>
+        </SafeAreaView>
+      </BottomSheetModalProvider>
+    </NavigationContainer>
+  );
+};
+
+// ── Root component ────────────────────────────────────────────────────────────
 
 export default function App() {
   useEffect(() => {
@@ -52,7 +100,6 @@ export default function App() {
 
       try {
         const userId = await AsyncStorage.getItem("userId");
-        console.log("App.js: Retrieved userId from AsyncStorage:", userId);
         if (userId) {
           await registerForPushNotificationsAsync(userId);
         } else {
@@ -84,10 +131,9 @@ export default function App() {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
-        console.log("Notification tapped:", data);
 
         if (navigationRef.current) {
-          navigationRef.current?.navigate("NotificationsStack", {
+          navigationRef.current?.navigate("Notifications", {
             screen: "Notification",
             params: { notificationData: data },
           });
@@ -117,21 +163,7 @@ export default function App() {
         <UserProvider>
           <LeagueProvider>
             <GameProvider>
-              <NavigationContainer ref={navigationRef}>
-                <BottomSheetModalProvider>
-                  <SafeAreaView
-                    style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}
-                  >
-                    <Stack.Navigator
-                      screenOptions={{
-                        headerShown: false,
-                      }}
-                    >
-                      <Stack.Screen name="Tabs" component={Tabs} />
-                    </Stack.Navigator>
-                  </SafeAreaView>
-                </BottomSheetModalProvider>
-              </NavigationContainer>
+              <AppContent />
             </GameProvider>
           </LeagueProvider>
         </UserProvider>

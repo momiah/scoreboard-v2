@@ -129,7 +129,7 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
             `+${prizeXP} XP -> user ${playerId} (${playerProfile.username}) (${placementKey})`,
           );
 
-          const message = `${isDoublesTournament ? `Your team has` : `You have`} placed ${index + 1}${placementSuffix[index]} in ${tournament.tournamentName} and won ${prizeXP} XP!`;
+          const message = `${isDoublesTournament ? `Your team has` : `You have`} placed ${index + 1}${placementSuffix[index]} in ${tournament.tournamentName} and won ${prizeXP} CP!`;
 
           await sendNotification({
             createdAt: new Date(),

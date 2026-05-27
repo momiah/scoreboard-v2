@@ -97,7 +97,17 @@ const NotificationRow = ({
       Tournament: {
         tournamentId: item.data?.tournamentId || item.data?.competitionId,
       },
-      UserProfile: { userId: item.data?.userId },
+      UserProfile: { userId: item.data?.userId, tab: item.data?.tab },
+      GameScreen: {
+        gameId: item.data?.gameId,
+        competitionId: item.data?.competitionId,
+        competitionType: item.data?.competitionType,
+        competitionName: item.data?.competitionName,
+        gamescore: item.data?.gamescore,
+        date: item.data?.date,
+        team1: item.data?.team1,
+        team2: item.data?.team2,
+      },
     };
 
     navigation.navigate(infoEntry.ROUTE, routeParams[infoEntry.ROUTE] || {});

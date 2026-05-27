@@ -15,6 +15,7 @@ import {
   Fixtures,
   Game,
   TeamStats,
+  GameVideo,
 } from "@shared";
 
 interface PendingRequestCompetition {
@@ -210,4 +211,17 @@ export interface LeagueContextType {
     onUpdate: (data: League | Tournament | null) => void,
     onError?: (error: Error) => void,
   ) => () => void;
+
+  // LeagueContextType.ts
+  toggleSaveVideo: (params: {
+    videoId: string;
+    userId: string;
+    username: string;
+    video: GameVideo;
+  }) => Promise<boolean>; // returns true if now saved, false if unsaved
+
+  checkVideoSaved: (params: {
+    videoId: string;
+    userId: string;
+  }) => Promise<boolean>;
 }

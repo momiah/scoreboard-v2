@@ -1,19 +1,31 @@
 import React from "react";
 import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
-import { useNavigation } from "@react-navigation/native";
-
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { calculateCompetitionStatus } from "../../helpers/calculateCompetitionStatus";
 import Tag from "../Tag";
 import { ccDefaultImage } from "../../mockImages/index";
+import { NormalizedCompetition } from "@shared/types";
 
 const { width } = Dimensions.get("window");
 
-const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
-  const navigation = useNavigation();
+interface HorizontalLeagueCarouselProps {
+  navigationRoute: string;
+  leagues: NormalizedCompetition[];
+}
 
-  const navigateTo = (leagueId) => {
+const HorizontalLeagueCarousel = ({
+  navigationRoute,
+  leagues,
+}: HorizontalLeagueCarouselProps) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+
+  const navigateTo = (leagueId: string) => {
     navigation.navigate(navigationRoute, { leagueId });
   };
 
@@ -29,13 +41,13 @@ const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
       snapToAlignment="start"
       decelerationRate="fast"
     >
-      {leagues.map((league, index) => {
+      {(leagues ?? []).map((league, index) => {
         const leagueStatus = calculateCompetitionStatus(league);
-        const leagueParticipantsLength = league.leagueParticipants.length;
+        const participantsLength = (league.participants ?? []).length;
         const maxPlayers = league.maxPlayers;
+        const location = `${league.location?.city}, ${league.location?.countryCode}`;
+        const numberOfPlayers = `${participantsLength} / ${maxPlayers}`;
 
-        const location = `${league.location.city}, ${league.location.countryCode}`;
-        const numberOfPlayers = `${leagueParticipantsLength} / ${maxPlayers}`;
         return (
           <CarouselItem
             key={league.id || index}
@@ -44,16 +56,12 @@ const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
           >
             <ImageWrapper>
               <LeagueImage
-                source={
-                  league.leagueImage
-                    ? { uri: league.leagueImage }
-                    : ccDefaultImage
-                }
+                source={league.image ? { uri: league.image } : ccDefaultImage}
               >
                 <Overlay />
                 <LeagueDetailsContainer>
                   <TagContainer>
-                    <Tag name={league.leagueType} />
+                    <Tag name={league.type} />
                     <Tag
                       name={leagueStatus?.status}
                       color={leagueStatus?.color}
@@ -71,7 +79,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
                     />
                   </NumberOfPlayers>
 
-                  <LeagueName>{league.leagueName}</LeagueName>
+                  <LeagueName>{league.name}</LeagueName>
                   <View
                     style={{
                       flexDirection: "row",
@@ -80,7 +88,7 @@ const HorizontalLeagueCarousel = ({ navigationRoute, leagues }) => {
                     }}
                   >
                     <LeagueLocation>
-                      {league.location.courtName || ""}
+                      {league.location?.courtName || ""}
                     </LeagueLocation>
                     <View
                       style={{ flexDirection: "row", alignItems: "center" }}
@@ -134,7 +142,7 @@ const LeagueImage = styled.ImageBackground.attrs({
   },
 })({
   width: "100%",
-  height: "100%", // or any fixed height
+  height: "100%",
   justifyContent: "flex-end",
   alignItems: "center",
 });
@@ -185,7 +193,7 @@ const Overlay = styled(View)({
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.2)", // A simple semi-transparent overlay
+  backgroundColor: "rgba(0, 0, 0, 0.2)",
   borderRadius: 10,
 });
 

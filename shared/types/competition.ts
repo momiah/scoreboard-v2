@@ -2,7 +2,17 @@ import { Location, ScoreboardProfile } from "./player";
 import { Game, Fixtures } from "./game";
 import { COMPETITION_TYPES } from "@shared";
 
-export type CollectionName = "leagues" | "tournaments";
+export type CollectionName =
+  | "leagues"
+  | "tournaments"
+  | "pendingVideoUploads"
+  | "gameVideos"
+  | "comments"
+  | "replies"
+  | "reportedVideos"
+  | "savedVideos"
+  | "videoReportAppeals";
+
 export type CompetitionType =
   | typeof COMPETITION_TYPES.LEAGUE
   | typeof COMPETITION_TYPES.TOURNAMENT;

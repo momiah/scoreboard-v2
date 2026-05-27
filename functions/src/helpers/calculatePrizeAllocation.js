@@ -47,7 +47,7 @@ const calculatePrizeAllocation = async ({
       await sendNotification({
         createdAt: new Date(),
         type: notificationTypes.INFORMATION.LEAGUE.TYPE,
-        message: `You have placed ${placementKey} in ${leagueName} and won ${prizeXP} XP!`,
+        message: `You have placed ${placementKey} in ${leagueName} and won ${prizeXP} CP!`,
         isRead: false,
         senderId: "system",
         recipientId: player.userId,
