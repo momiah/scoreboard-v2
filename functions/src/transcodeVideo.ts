@@ -68,9 +68,10 @@ export const transcodeVideo = onRequest(
 
     const rawTmpPath = path.join(os.tmpdir(), `${docId}_raw.mp4`);
     const transcodedTmpPath = path.join(os.tmpdir(), `${docId}_compressed.mp4`);
+    const thumbnailTmpPath = path.join(os.tmpdir(), `${docId}_thumbnail.jpg`);
 
     try {
-      // ── 1. Generate presigned download URL for raw video ────────────────
+      // ── 1. Generate presigned download URL for raw video ──────────────────
       const getCommand = new GetObjectCommand({
         Bucket: R2_BUCKET_NAME.value(),
         Key: rawKey,
@@ -79,7 +80,7 @@ export const transcodeVideo = onRequest(
         expiresIn: 3600,
       });
 
-      // ── 2. Download raw video to /tmp ───────────────────────────────────
+      // ── 2. Download raw video to /tmp ─────────────────────────────────────
       console.log("[transcodeVideo] Downloading raw video...");
       const response = await fetch(presignedDownloadUrl);
       if (!response.ok) {
@@ -89,7 +90,44 @@ export const transcodeVideo = onRequest(
       fs.writeFileSync(rawTmpPath, Buffer.from(buffer));
       console.log("[transcodeVideo] Raw video downloaded");
 
-      // ── 3. Compress video — original resolution and orientation preserved
+      // ── 3. Generate thumbnail at 1s ───────────────────────────────────────
+      console.log("[transcodeVideo] Generating thumbnail...");
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(rawTmpPath)
+          .screenshots({
+            timestamps: [1],
+            filename: `${docId}_thumbnail.jpg`,
+            folder: os.tmpdir(),
+            size: "1280x720",
+          })
+          .on("end", () => {
+            console.log("[transcodeVideo] Thumbnail generated");
+            resolve();
+          })
+          .on("error", (err) => {
+            console.error("[transcodeVideo] Thumbnail error:", err);
+            reject(err);
+          });
+      });
+
+      // ── 4. Upload thumbnail to R2 ─────────────────────────────────────────
+      const thumbnailKey = rawKey.replace(".mp4", "_thumbnail.jpg");
+      const thumbnailBuffer = fs.readFileSync(thumbnailTmpPath);
+
+      console.log("[transcodeVideo] Uploading thumbnail to R2...");
+      await r2Client.send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET_NAME.value(),
+          Key: thumbnailKey,
+          Body: thumbnailBuffer,
+          ContentType: "image/jpeg",
+        }),
+      );
+
+      const thumbnailUrl = `${R2_PUBLIC_URL.value()}/${thumbnailKey}`;
+      console.log("[transcodeVideo] Thumbnail uploaded:", thumbnailUrl);
+
+      // ── 5. Compress video — original resolution and orientation preserved ──
       console.log("[transcodeVideo] Compressing video...");
       await new Promise<void>((resolve, reject) => {
         ffmpeg(rawTmpPath)
@@ -120,7 +158,7 @@ export const transcodeVideo = onRequest(
           .run();
       });
 
-      // ── 4. Upload compressed video to R2 ─────────────────────────────────
+      // ── 6. Upload compressed video to R2 ──────────────────────────────────
       const compressedKey = rawKey.replace(".mp4", "_compressed.mp4");
       const compressedBuffer = fs.readFileSync(transcodedTmpPath);
 
@@ -137,15 +175,16 @@ export const transcodeVideo = onRequest(
       const compressedUrl = `${R2_PUBLIC_URL.value()}/${compressedKey}`;
       console.log("[transcodeVideo] Uploaded:", compressedUrl);
 
-      // ── 5. Update Firestore with compressed URL ───────────────────────────
+      // ── 7. Update Firestore with compressed URL and thumbnail ─────────────
       const db = admin.firestore();
       await db.collection(COLLECTION_NAMES.gameVideos).doc(docId).update({
         videoUrl: compressedUrl,
+        thumbnailUrl,
         transcoded: true,
       });
       console.log("[transcodeVideo] Firestore updated");
 
-      // ── 6. Delete raw video from R2 ───────────────────────────────────────
+      // ── 8. Delete raw video from R2 ───────────────────────────────────────
       await r2Client.send(
         new DeleteObjectCommand({
           Bucket: R2_BUCKET_NAME.value(),
@@ -154,14 +193,15 @@ export const transcodeVideo = onRequest(
       );
       console.log("[transcodeVideo] Raw video deleted from R2");
 
-      res.json({ success: true, compressedUrl });
+      res.json({ success: true, compressedUrl, thumbnailUrl });
     } catch (error) {
       console.error("[transcodeVideo] Error:", error);
       res.status(500).json({ error: "Transcoding failed" });
     } finally {
-      // ── 7. Always clean up /tmp files ─────────────────────────────────────
+      // ── 9. Always clean up /tmp files ─────────────────────────────────────
       if (fs.existsSync(rawTmpPath)) fs.unlinkSync(rawTmpPath);
       if (fs.existsSync(transcodedTmpPath)) fs.unlinkSync(transcodedTmpPath);
+      if (fs.existsSync(thumbnailTmpPath)) fs.unlinkSync(thumbnailTmpPath);
       console.log("[transcodeVideo] Temp files cleaned up");
     }
   },

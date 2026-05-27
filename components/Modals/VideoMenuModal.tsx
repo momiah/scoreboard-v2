@@ -83,15 +83,15 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   const handleShareVideo = async () => {
     onClose();
     try {
+      const docId = `${video.gameId}_${video.postedBy.userId}`;
+      const shareUrl = `https://courtchamps.com/og/videos?v=${docId}`;
       await Share.share({
-        message: `Check out this game on Court Champs! ${video.videoUrl}`,
-        url: video.videoUrl,
+        message: `Check out this game on Court Champs! ${shareUrl}`,
       });
     } catch (error) {
       console.error("Share failed:", error);
     }
   };
-
   const handleSaveVideo = async () => {
     if (!currentUser || isSaving) return;
     setIsSaving(true);

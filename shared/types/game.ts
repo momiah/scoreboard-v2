@@ -112,6 +112,7 @@ export interface GameVideo extends GameVideoUploadPayload {
   videoApproved?: boolean | null;
   playerIds?: string[];
   transcoded?: boolean;
+  thumbnailUrl?: string;
 }
 
 export interface Comment {
