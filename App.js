@@ -13,6 +13,7 @@ import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { recoverPendingVideoUploads } from "./helpers/recoverPendingVideoUploads";
 import { Settings } from "react-native-fbsdk-next";
+
 import { registerForPushNotificationsAsync } from "./services/pushNotifications";
 import { UserContext } from "./context/UserContext";
 import { usePendingUpload } from "./hooks/usePendingUpload";
@@ -101,6 +102,8 @@ export default function App() {
         const userId = await AsyncStorage.getItem("userId");
         if (userId) {
           await registerForPushNotificationsAsync(userId);
+        } else {
+          console.log("App.js: No userId found in AsyncStorage");
         }
       } catch (error) {
         console.error("App.js: Error registering push notifications:", error);
@@ -134,6 +137,8 @@ export default function App() {
             screen: "Notification",
             params: { notificationData: data },
           });
+        } else {
+          console.log("Navigation reference is not ready");
         }
       },
     );

@@ -1,5 +1,6 @@
 // types/game.ts
 
+import { Timestamp } from "@google-cloud/firestore";
 import { COMPETITION_TYPES } from "@shared";
 export interface Player {
   userId: string;
@@ -69,6 +70,7 @@ export interface Game {
   videoUrl?: string;
   videoApproved?: boolean | null;
   videoCount?: number;
+  autoApprovedAt?: Date | null;
 }
 
 export interface GameVideoUploadPayload {

@@ -15,17 +15,23 @@ const TeamPerformance = ({ leagueTeams }) => {
 
   const sortedTeams = useMemo(() => {
     if (!leagueTeams) return [];
-    return [...leagueTeams].sort((a, b) => {
-      if (b.numberOfWins !== a.numberOfWins)
-        return b.numberOfWins - a.numberOfWins;
-      if (b.totalPointDifference !== a.totalPointDifference)
-        return b.totalPointDifference - a.totalPointDifference;
-      return b.averagePointDifference - a.averagePointDifference;
-    });
+    return [...leagueTeams]
+      .filter((t) => t.teamKey && Array.isArray(t.team)) // ← filters out user profiles
+      .sort((a, b) => {
+        if (b.numberOfWins !== a.numberOfWins)
+          return b.numberOfWins - a.numberOfWins;
+        if (b.totalPointDifference !== a.totalPointDifference)
+          return b.totalPointDifference - a.totalPointDifference;
+        return b.averagePointDifference - a.averagePointDifference;
+      });
   }, [leagueTeams]);
+
+  console.log("Sorted Teams:", JSON.stringify(sortedTeams, null, 2));
 
   const renderTeam = ({ item: team, index }) => {
     const pointDifference = team.totalPointDifference || 0;
+    const teamPlayers = team.team ?? [];
+
     return (
       <TableRow
         onPress={() => {
@@ -47,7 +53,7 @@ const TeamPerformance = ({ leagueTeams }) => {
         </TableCell>
         <TeamCell>
           <TeamNameCell>
-            {team.team.map((player, idx) => (
+            {teamPlayers.map((player, idx) => (
               <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
             ))}
           </TeamNameCell>
@@ -77,7 +83,7 @@ const TeamPerformance = ({ leagueTeams }) => {
         <FlatList
           data={sortedTeams}
           renderItem={renderTeam}
-          keyExtractor={(team, index) => team.team.join("-") + index}
+          keyExtractor={(team, index) => (team.team ?? []).join("-") + index}
         />
       )}
 

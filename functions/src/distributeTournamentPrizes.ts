@@ -20,12 +20,30 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
       const tournament = doc.data() as Tournament;
       const tournamentId = doc.id;
 
+      const { numberOfGames, gamesCompleted, prizesDistributed } = tournament;
+
+      // Skip if already distributed
+      if (prizesDistributed) {
+        console.log(`[prizes] ${tournamentId} already distributed`);
+        continue;
+      }
+
+      // Skip if fields are missing or invalid
       if (
-        tournament.prizesDistributed ||
-        tournament.numberOfGames !== tournament.gamesCompleted
+        typeof numberOfGames !== "number" ||
+        typeof gamesCompleted !== "number" ||
+        numberOfGames === 0
       ) {
         console.log(
-          `[prizes] ${tournamentId} already distributed or not completed`,
+          `[prizes] ${tournamentId} missing game tracking fields (numberOfGames: ${numberOfGames}, gamesCompleted: ${gamesCompleted})`,
+        );
+        continue;
+      }
+
+      // Skip if not all games completed
+      if (gamesCompleted < numberOfGames) {
+        console.log(
+          `[prizes] ${tournamentId} not complete yet (${gamesCompleted}/${numberOfGames})`,
         );
         continue;
       }

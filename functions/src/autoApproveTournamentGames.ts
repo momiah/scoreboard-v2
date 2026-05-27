@@ -4,20 +4,19 @@ import {
   Fixtures,
   Game,
   ScoreboardProfile,
-  UsersToUpdate,
+  UserProfile,
 } from "@shared/types";
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
-import { calculatePlayerPerformance } from "../../shared/helpers/calculatePlayerPerformance";
-import { calculateTeamPerformance } from "../../shared/helpers/calculateTeamPerformance";
 import {
-  getUserById,
-  updateTournamentPlayers,
-  updateUsers,
-  updateTournamentTeams,
-} from "./helpers/firebaseHelpers";
+  calculatePlayerPerformance,
+  recalculateParticipantsFromFixtures,
+  getOrderedApprovedGames,
+} from "@shared/helpers";
+
+import { getUserById } from "./helpers/firebaseHelpers";
 import { notificationTypes } from "@shared";
 import moment from "moment-timezone";
 
@@ -66,11 +65,9 @@ export const autoApproveTournamentGames = onSchedule(
             );
 
             const tournamentType = tournamentData.tournamentType || "Singles";
+            const isDoubles = tournamentType === "Doubles";
 
-            let numberOfGamesApproved = 0;
-            const updatedGames = [...allGames] as Partial<Game>[];
-
-            // Identify games that are due for auto-approval
+            // ── Identify games due for auto-approval ──
             const pendingGames = allGames
               .map((game: Game, index: number) => {
                 const createdAt = toMomentTimezone(game.createdAt);
@@ -96,185 +93,125 @@ export const autoApproveTournamentGames = onSchedule(
               return;
             }
 
-            const allUniqueUserIds = [
+            // ── Mark games as approved in memory ──
+            const updatedGamesMap = new Map(
+              allGames.map((game: Game) => [game.gameId, game]),
+            );
+
+            let numberOfGamesApproved = 0;
+            const approvedGames: Game[] = [];
+
+            for (const { game } of pendingGames) {
+              if (!game.result?.winner || !game.result?.loser) {
+                console.warn(
+                  `⚠️ Game ${game.gameId} missing result data, skipping`,
+                );
+                continue;
+              }
+
+              const updatedGame: Game = {
+                ...game,
+                approvers: [
+                  ...(game.approvers || []),
+                  { userId: "system", username: "AutoApproval" },
+                ],
+                approvalStatus: notificationTypes.RESPONSE.APPROVED_GAME,
+                autoApproved: true,
+                autoApprovedAt: admin.firestore.Timestamp.now().toDate(),
+              };
+
+              updatedGamesMap.set(game.gameId, updatedGame);
+              approvedGames.push(updatedGame);
+              numberOfGamesApproved++;
+            }
+
+            if (numberOfGamesApproved === 0) return;
+
+            // ── Reconstruct fixtures with approved games ──
+            const updatedFixtures = fixtures.map((fixture: any) => ({
+              ...fixture,
+              games: fixture.games.map(
+                (game: Game) => updatedGamesMap.get(game.gameId) ?? game,
+              ),
+            }));
+
+            // ── Replay all approved games for competition stats ──
+            const orderedApprovedGames =
+              getOrderedApprovedGames(updatedFixtures);
+
+            const { updatedParticipants, updatedTeams } =
+              await recalculateParticipantsFromFixtures(
+                orderedApprovedGames,
+                tournamentData.tournamentParticipants ?? [],
+                tournamentData.tournamentTeams ?? [],
+                isDoubles,
+              );
+
+            // ── User profile updates — only for auto-approved games' players ──
+            const allAutoApprovedUserIds = [
               ...new Set(
-                pendingGames.flatMap(({ game }: { game: Game }) =>
+                approvedGames.flatMap((game) =>
                   [
                     game.team1.player1?.userId,
                     game.team1.player2?.userId,
                     game.team2.player1?.userId,
                     game.team2.player2?.userId,
-                  ].filter(Boolean),
+                  ].filter((id): id is string => !!id),
                 ),
               ),
             ];
 
             const fetchedUsers = await Promise.all(
-              allUniqueUserIds.map(getUserById),
+              allAutoApprovedUserIds.map(getUserById),
             );
             const validUsers = fetchedUsers.filter(
-              (user): user is NonNullable<typeof user> => user !== null,
+              (u): u is UserProfile => u !== null,
             );
 
-            if (validUsers.length === 0) {
-              console.warn(
-                `⚠️ No valid users found for games in tournament ${tournamentId}`,
-              );
-              return;
-            }
-
-            const usersMap = new Map(
-              validUsers.map((user) => [user.userId, user]),
-            );
-
-            let latestParticipants = [
-              ...(tournamentData.tournamentParticipants || []),
-            ] as ScoreboardProfile[];
-            let latestTeams = [
-              ...(tournamentData.tournamentTeams || []),
-            ] as TeamStats[];
-
-            for (const { game, index } of pendingGames) {
-              try {
-                if (!game.result?.winner || !game.result?.loser) {
-                  console.warn(
-                    `⚠️ Game ${game.gameId} in tournament ${tournamentId} missing result data, skipping`,
-                  );
-                  continue;
-                }
-
-                const updatedGame = {
-                  ...game,
-                  approvers: [
-                    ...(game.approvers || []),
-                    { userId: "system", username: "AutoApproval" },
-                  ],
-                  approvalStatus: notificationTypes.RESPONSE.APPROVED_GAME,
-                  autoApproved: true,
-                  autoApprovedAt: admin.firestore.Timestamp.now(),
-                };
-
-                const gameUserIds = [
-                  game.team1.player1?.userId,
-                  game.team1.player2?.userId,
-                  game.team2.player1?.userId,
-                  game.team2.player2?.userId,
-                ].filter(Boolean);
-
-                // Read from latest in-memory state to avoid stale snapshots
-                const participantsToUpdate = latestParticipants.filter(
-                  (participant) => gameUserIds.includes(participant.userId),
-                );
-                const usersToUpdate = gameUserIds
-                  .map((userId) => usersMap.get(userId!))
-                  .filter(Boolean);
-
-                if (usersToUpdate.length === 0) {
-                  console.warn(
-                    `⚠️ No valid users found for game ${game.gameId} in tournament ${tournamentId}`,
-                  );
-                  continue;
-                }
-
-                if (participantsToUpdate.length === 0) {
-                  console.warn(
-                    `⚠️ No valid tournament participants found for game ${game.gameId} in tournament ${tournamentId}`,
-                  );
-                  continue;
-                }
-
-                const playerPerformance = calculatePlayerPerformance(
-                  updatedGame as Game,
-                  participantsToUpdate,
-                  usersToUpdate as UsersToUpdate,
-                );
-
-                await updateTournamentPlayers(
-                  playerPerformance.playersToUpdate,
-                  tournamentId,
-                );
-                await updateUsers(playerPerformance.usersToUpdate);
-
-                // Explicitly typed as ScoreboardProfile to avoid unknown[] inference error
-                const updatedParticipantsMap = new Map<
-                  string,
-                  ScoreboardProfile
-                >(
-                  playerPerformance.playersToUpdate.map((participant) => [
-                    participant.userId!,
-                    participant,
-                  ]),
-                );
-
-                // Update in-memory participants so the next game reads fresh stats
-                latestParticipants = latestParticipants.map(
-                  (participant) =>
-                    updatedParticipantsMap.get(participant.userId!) ??
-                    participant,
-                );
-
-                // Update in-memory users map so the next game reads fresh user data
-                playerPerformance.usersToUpdate.forEach((user) =>
-                  usersMap.set(user.userId, user),
-                );
-
-                if (tournamentType === "Doubles") {
-                  const teamsToUpdate = await calculateTeamPerformance({
-                    game: updatedGame,
-                    allTeams: latestTeams, // Always the latest in-memory state
-                  });
-
-                  await updateTournamentTeams(teamsToUpdate, tournamentId);
-
-                  // Update in-memory teams so the next game reads fresh team data
-                  const updatedTeamsMap = new Map<string, TeamStats>(
-                    teamsToUpdate.map((team) => [team.teamKey, team]),
-                  );
-                  latestTeams = latestTeams.map(
-                    (team) => updatedTeamsMap.get(team.teamKey) ?? team,
-                  );
-                }
-
-                numberOfGamesApproved++;
-                updatedGames[index] = updatedGame as Game;
-              } catch (error) {
-                console.error(
-                  `❌ Error processing game ${game.gameId} in tournament ${tournamentId}:`,
-                  error,
-                );
-                // Continue processing remaining games even if this one fails
-              }
-            }
-
-            // Reconstruct fixtures with updated games using a Map for O(1) lookups
-            const updatedGamesMap = new Map(
-              updatedGames.map((game) => [game.gameId, game]),
-            );
-
-            const updatedFixtures = fixtures.map((fixture: any) => ({
-              ...fixture,
-              games: fixture.games.map(
-                (game: Game) => updatedGamesMap.get(game.gameId) || game,
+            // ── Write competition document once ──
+            await tournamentRef.update({
+              fixtures: updatedFixtures,
+              tournamentParticipants: updatedParticipants,
+              ...(isDoubles && { tournamentTeams: updatedTeams }),
+              gamesCompleted: admin.firestore.FieldValue.increment(
+                numberOfGamesApproved,
               ),
-            }));
+            });
 
-            try {
-              const updateData: Partial<Tournament> = {
-                fixtures: updatedFixtures,
-              };
-              if (numberOfGamesApproved > 0) {
-                updateData.gamesCompleted =
-                  admin.firestore.FieldValue.increment(
-                    numberOfGamesApproved,
-                  ) as unknown as number;
-              }
-              await tournamentRef.update(updateData);
-            } catch (error) {
-              console.error(
-                `❌ Error updating tournament ${tournamentId}:`,
-                error,
+            // ── Write user profileDetail updates sequentially ──
+            for (const game of approvedGames) {
+              const gamePlayerIds = [
+                game.team1.player1?.userId,
+                game.team1.player2?.userId,
+                game.team2.player1?.userId,
+                game.team2.player2?.userId,
+              ].filter((id): id is string => !!id);
+
+              const gameUsers = validUsers.filter((u) =>
+                gamePlayerIds.includes(u.userId),
               );
+
+              const gameParticipants = (
+                tournamentData.tournamentParticipants ?? []
+              ).filter((p) => gamePlayerIds.includes(p.userId!));
+
+              const { usersToUpdate } = calculatePlayerPerformance(
+                game,
+                gameParticipants,
+                gameUsers,
+              );
+
+              for (const user of usersToUpdate ?? []) {
+                if (!user.userId) continue;
+                await db.doc(`users/${user.userId}`).update({
+                  profileDetail: user.profileDetail,
+                });
+              }
             }
+
+            console.log(
+              `✅ Auto-approved ${numberOfGamesApproved} games in tournament ${tournamentId}`,
+            );
           },
         ),
       );

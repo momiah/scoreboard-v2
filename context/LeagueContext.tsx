@@ -96,7 +96,7 @@ const findGameInCompetition = (
 /**
  * Get player user IDs from a game
  */
-const getPlayerUserIds = (game: Game) => {
+export const getPlayerUserIds = (game: Game) => {
   return [
     game.team1.player1?.userId,
     game.team1.player2?.userId,
@@ -104,6 +104,7 @@ const getPlayerUserIds = (game: Game) => {
     game.team2.player2?.userId,
   ].filter(Boolean);
 };
+
 const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const {
     sendNotification,
@@ -1813,6 +1814,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       fixturesGenerated: false,
       numberOfGames: 0,
       gamesCompleted: 0,
+      tournamentTeams: [], // ← clear teams on delete
     });
 
     console.log("Tournament fixtures deleted successfully!");
