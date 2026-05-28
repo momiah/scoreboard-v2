@@ -33,6 +33,7 @@ import {
   NormalizedCompetition,
   CompetitionType,
   UserProfile,
+  CollectionName,
 } from "@shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../components/Modals/RecentPlayersModal";
@@ -191,7 +192,11 @@ const InvitePlayer = () => {
         };
 
         await sendNotification(payload);
-        await updatePendingInvites(competition.id, user.userId, collectionName);
+        await updatePendingInvites(
+          competition.id,
+          user.userId,
+          collectionName as CollectionName,
+        );
       }
 
       handleShowPopup("Players invited successfully!");
@@ -270,13 +275,11 @@ const InvitePlayer = () => {
     try {
       await Share.share({
         message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,
-        url,
       });
     } catch (error) {
       console.error("Error sharing:", error);
     }
   };
-
   const numberOfPlayers = `${competition.participants?.length || 0} / ${competition.maxPlayers}`;
   const competitionVariant =
     competitionType === COMPETITION_TYPES.LEAGUE ? "League" : "Tournament";

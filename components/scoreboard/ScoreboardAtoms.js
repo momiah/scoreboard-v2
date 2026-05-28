@@ -1,6 +1,7 @@
 import styled from "styled-components/native";
 import moment from "moment";
 import { Dimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -22,6 +23,7 @@ export const TeamColumn = ({ team, players = {}, leagueType }) => (
 export const ScoreDisplay = ({ date, team1, team2, item }) => {
   const isPending =
     item.approvalStatus === "pending" || item.approvalStatus === "Pending";
+  const videoCount = item.videoCount ?? 0;
   return (
     <ResultsContainer style={!isPending ? { paddingBottom: 20 } : undefined}>
       <DateText>{moment(date, "DD-MM-YYYY").format("D MMM YY")}</DateText>
@@ -31,9 +33,33 @@ export const ScoreDisplay = ({ date, team1, team2, item }) => {
         </Score>
       </ScoreContainer>
       {isPending && <PendingLabel>Pending Approval</PendingLabel>}
+      {videoCount > 0 && (
+        <VideoIndicator>
+          <Ionicons
+            name="videocam-outline"
+            size={10}
+            color="rgba(255,255,255,0.6)"
+          />
+          <VideoIndicatorText>
+            {videoCount} {videoCount === 1 ? "video" : "videos"}
+          </VideoIndicatorText>
+        </VideoIndicator>
+      )}
     </ResultsContainer>
   );
 };
+
+const VideoIndicator = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 3,
+  marginTop: 8,
+});
+
+const VideoIndicatorText = styled.Text({
+  fontSize: 9,
+  color: "rgba(255, 255, 255, 0.6)",
+});
 
 const PendingLabel = styled.Text({
   paddingHorizontal: 6,

@@ -20,6 +20,10 @@ export interface GameTeam {
   score?: number | null;
 }
 
+export interface Teams {
+  team1: { player1: Player; player2?: Player };
+  team2: { player1: Player; player2?: Player };
+}
 export interface GameResult {
   winner: {
     team: "Team 1" | "Team 2";
@@ -65,9 +69,74 @@ export interface Game {
   approvers: Approver[];
   videoUrl?: string;
   videoApproved?: boolean | null;
+  videoCount?: number;
   autoApprovedAt?: Date | null;
 }
 
+export interface GameVideoUploadPayload {
+  gameId: string;
+  competitionId: string;
+  competitionName: string;
+  competitionType:
+    | typeof COMPETITION_TYPES.LEAGUE
+    | typeof COMPETITION_TYPES.TOURNAMENT;
+  videoUrl: string;
+  gamescore: string;
+  date: string;
+  postedBy: VideoPostedBy;
+  teams: Teams;
+  videoLength?: number;
+}
+
+export interface PendingUpload extends Omit<
+  GameVideoUploadPayload,
+  "videoUrl"
+> {
+  status: "uploading";
+  progress: number;
+  startedAt: Date;
+  uploadId?: string;
+}
+export interface VideoPostedBy {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  profileImage: string;
+}
+
+export interface GameVideo extends GameVideoUploadPayload {
+  createdAt: Date;
+  likes: number;
+  likedBy: string[];
+  views: number;
+  commentCount: number;
+  videoApproved?: boolean | null;
+  playerIds?: string[];
+  transcoded?: boolean;
+  thumbnailUrl?: string;
+}
+
+export interface Comment {
+  commentId: string;
+  gameId: string;
+  text: string;
+  createdAt: Date;
+  postedBy: VideoPostedBy;
+  likes: number;
+  likedBy: string[];
+  replyCount: number;
+}
+
+export interface GameVideoCommentReply {
+  replyId: string;
+  commentId: string;
+  text: string;
+  createdAt: Date;
+  postedBy: VideoPostedBy;
+  likes: number;
+  likedBy: string[];
+}
 interface Approver {
   userId: string;
   username: string;

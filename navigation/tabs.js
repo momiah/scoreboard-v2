@@ -41,6 +41,7 @@ import AddLeagueModal from "../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../components/Modals/AddTournamentModal";
 import QuickAddModal from "../components/Modals/QuickAddModal";
 import InvitePlayer from "../screens/InvitePlayer";
+import GameScreen from "../screens/GameScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -73,6 +74,7 @@ const HomeStack = () => {
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
+      <Stack.Screen name="GameScreen" component={GameScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -113,6 +115,7 @@ const ProfileStack = () => {
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen name="GameScreen" component={GameScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -149,6 +152,7 @@ const NotificationsStack = () => {
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen name="GameScreen" component={GameScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -185,6 +189,7 @@ const ChatsStack = () => {
       <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen name="GameScreen" component={GameScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}

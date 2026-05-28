@@ -5,6 +5,15 @@ const PopupContext = createContext();
 const PopupProvider = ({ children }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
+  const [bottomToastVisible, setBottomToastVisible] = useState(false);
+  const [bottomToastMessage, setBottomToastMessage] = useState("");
+  const [bottomToastType, setBottomToastType] = useState("success");
+
+  const showBottomToast = (message, type = "success") => {
+    setBottomToastMessage(message);
+    setBottomToastType(type);
+    setBottomToastVisible(true);
+  };
 
   const handleShowPopup = (message) => {
     setPopupMessage(message);
@@ -19,6 +28,11 @@ const PopupProvider = ({ children }) => {
         popupMessage,
         handleShowPopup,
         setPopupMessage,
+        bottomToastVisible,
+        setBottomToastVisible,
+        bottomToastMessage,
+        bottomToastType,
+        showBottomToast,
       }}
     >
       {children}

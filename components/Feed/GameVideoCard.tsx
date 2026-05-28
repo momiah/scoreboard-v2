@@ -1,0 +1,528 @@
+import React, { useEffect, useCallback, useState } from "react";
+import { Dimensions, TouchableOpacity, View, Modal } from "react-native";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useEvent } from "expo";
+import styled from "styled-components/native";
+import { GameVideo, Player } from "@shared/types";
+import { useNavigation, ParamListBase } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { ccImageEndpoint, COMPETITION_TYPES } from "@shared";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { Ionicons } from "@expo/vector-icons";
+import VideoMenuModal from "../Modals/VideoMenuModal";
+import VideoCommentsModal from "../Modals/VideoCommentsModal";
+import GameVideoCardSkeleton from "../Skeletons/GameVideoCardSkeleton";
+import VideoFullscreen from "../../screens/VideoFullScreen";
+import VideoRemovedModal from "../Modals/VideoRemovedModal";
+
+const { width: screenWidth } = Dimensions.get("window");
+
+const VIDEO_HEIGHT = screenWidth * (9 / 16);
+const CARD_HEIGHT = VIDEO_HEIGHT + 100;
+
+type ProfileVideoTab = "Uploaded" | "Saved" | "Videos of Me";
+
+interface GameVideoCardProps {
+  video?: GameVideo;
+  isActive: boolean;
+  onLike: (gameId: string) => void;
+  isLiked: boolean;
+  initiallyLiked: boolean;
+  isSubmissionMode?: boolean;
+  isLoading?: boolean;
+  profilePage?: boolean;
+  profileVideoTab?: ProfileVideoTab;
+  currentUserId?: string;
+  onVideoDeleted?: () => void;
+  competitionPage?: boolean;
+}
+
+const GameVideoCard: React.FC<GameVideoCardProps> = ({
+  video,
+  isActive,
+  onLike,
+  isLiked,
+  initiallyLiked,
+  isSubmissionMode = false,
+  isLoading = false,
+  profilePage = false,
+  profileVideoTab,
+  currentUserId,
+  onVideoDeleted,
+  competitionPage = false,
+}) => {
+  const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [commentsVisible, setCommentsVisible] = useState(false);
+  const [fullscreenVisible, setFullscreenVisible] = useState(false);
+  const [removedModalVisible, setRemovedModalVisible] = useState(false);
+
+  const player = useVideoPlayer(video?.videoUrl ?? "", (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+
+  const { isPlaying } = useEvent(player, "playingChange", {
+    isPlaying: player.playing,
+  });
+
+  const { muted } = useEvent(player, "mutedChange", {
+    muted: player.muted,
+  });
+
+  useEffect(() => {
+    if (isActive) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isActive]);
+
+  const handleVideoPress = useCallback(() => {
+    if (isPlaying) {
+      player.pause();
+    } else {
+      player.play();
+    }
+  }, [isPlaying, player]);
+
+  const handleMutePress = useCallback(() => {
+    player.muted = !player.muted;
+  }, [player]);
+
+  const handleFullscreen = () => {
+    if (video?.videoUrl) {
+      player.pause();
+      setFullscreenVisible(true);
+    }
+  };
+
+  const handleProfilePress = () => {
+    navigation.push("UserProfile", { userId: video?.postedBy.userId });
+  };
+
+  const handleCompetitionPress = () => {
+    const route =
+      video?.competitionType === COMPETITION_TYPES.TOURNAMENT
+        ? "Tournament"
+        : "League";
+    const idKey =
+      video?.competitionType === COMPETITION_TYPES.TOURNAMENT
+        ? "tournamentId"
+        : "leagueId";
+    navigation.navigate(route, { [idKey]: video?.competitionId });
+  };
+
+  const handlePlayerPress = (player: Player) => {
+    if (profilePage && player.userId === currentUserId) return;
+    navigation.push("UserProfile", { userId: player.userId });
+  };
+
+  // ── VideoMenu visibility rules ────────────────────────────────────────────
+  const isOwnVideo = video?.postedBy.userId === currentUserId;
+  const hideSave = isOwnVideo;
+  const hideReport = isOwnVideo;
+  const hideRequestToJoin =
+    isSubmissionMode ||
+    profileVideoTab === "Uploaded" ||
+    profileVideoTab === "Videos of Me" ||
+    competitionPage ||
+    isOwnVideo;
+
+  // ── Show header row ───────────────────────────────────────────────────────
+  const showHeader =
+    !profilePage ||
+    profileVideoTab === "Saved" ||
+    profileVideoTab === "Videos of Me";
+
+  const displayedLikes = (() => {
+    const likes = video?.likes ?? 0;
+    if (isLiked && !initiallyLiked) return likes + 1;
+    if (!isLiked && initiallyLiked) return likes - 1;
+    return likes;
+  })();
+
+  if (isLoading || !video) return <GameVideoCardSkeleton />;
+
+  return (
+    <CardContainer>
+      {/* ── Header ── */}
+      {showHeader && (
+        <HeaderRow>
+          <UploaderRow>
+            <TouchableOpacity onPress={handleProfilePress}>
+              <Avatar
+                source={
+                  video.postedBy.profileImage
+                    ? { uri: video.postedBy.profileImage }
+                    : { uri: ccImageEndpoint }
+                }
+              />
+            </TouchableOpacity>
+            <UploaderInfo>
+              <TouchableOpacity onPress={handleProfilePress}>
+                <UploaderName numberOfLines={1}>
+                  {formatDisplayName(video.postedBy)}
+                </UploaderName>
+              </TouchableOpacity>
+              {!competitionPage && (
+                <TouchableOpacity onPress={handleCompetitionPress}>
+                  <CompetitionName numberOfLines={1}>
+                    {video.competitionName}
+                  </CompetitionName>
+                </TouchableOpacity>
+              )}
+            </UploaderInfo>
+          </UploaderRow>
+        </HeaderRow>
+      )}
+
+      {/* ── Video ── */}
+      <VideoContainer>
+        <TouchableOpacity onPress={handleVideoPress} activeOpacity={1}>
+          <StyledVideoView
+            player={player}
+            contentFit="cover"
+            nativeControls={false}
+          />
+        </TouchableOpacity>
+        <VideoControls>
+          <MuteButton onPress={handleMutePress}>
+            <Ionicons
+              name={muted ? "volume-mute" : "volume-high"}
+              size={12}
+              color="white"
+            />
+          </MuteButton>
+          <FullscreenButton onPress={handleFullscreen}>
+            <Ionicons name="expand-outline" size={12} color="white" />
+          </FullscreenButton>
+        </VideoControls>
+        {video.videoApproved === false && profileVideoTab === "Uploaded" && (
+          <RemovedBadge onPress={() => setRemovedModalVisible(true)}>
+            <Ionicons name="warning-outline" size={14} color="white" />
+            <RemovedBadgeText>Removed</RemovedBadgeText>
+          </RemovedBadge>
+        )}
+      </VideoContainer>
+
+      {/* ── Footer ── */}
+      <FooterRow>
+        {!isSubmissionMode && (
+          <Scorecard video={video} onPlayerPress={handlePlayerPress} />
+        )}
+        <ActionsRow>
+          <ActionButton
+            onPress={() => onLike(`${video.gameId}_${video.postedBy.userId}`)}
+          >
+            <ActionEmoji>
+              {isLiked ? (
+                <Ionicons name="flame" size={25} color="#ff9436ff" />
+              ) : (
+                <Ionicons
+                  name="flame-outline"
+                  size={25}
+                  color="rgba(255,255,255,0.6)"
+                />
+              )}
+            </ActionEmoji>
+            <ActionCount>{displayedLikes}</ActionCount>
+          </ActionButton>
+          <ActionButton onPress={() => setCommentsVisible(true)}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={25}
+              color="rgba(255,255,255,0.6)"
+            />
+            <ActionCount>{video.commentCount}</ActionCount>
+          </ActionButton>
+          <View style={{ flex: 1, alignItems: "flex-end" }}>
+            <TouchableOpacity
+              onPress={() => setMenuVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={20}
+                color="rgba(255,255,255,0.6)"
+              />
+            </TouchableOpacity>
+          </View>
+        </ActionsRow>
+      </FooterRow>
+
+      {/* ── Fullscreen Modal ── */}
+      <Modal
+        visible={fullscreenVisible}
+        animationType="slide"
+        statusBarTranslucent
+        presentationStyle="fullScreen"
+        supportedOrientations={["portrait", "landscape"]}
+        onRequestClose={() => setFullscreenVisible(false)}
+      >
+        <VideoFullscreen
+          videoUrl={video.videoUrl}
+          startTime={player.currentTime}
+          onClose={() => setFullscreenVisible(false)}
+        />
+      </Modal>
+
+      {menuVisible && (
+        <VideoMenuModal
+          visible={menuVisible}
+          onClose={() => setMenuVisible(false)}
+          video={video}
+          isSubmissionMode={isSubmissionMode}
+          hideSave={hideSave}
+          hideReport={hideReport}
+          hideRequestToJoin={hideRequestToJoin}
+          onVideoDeleted={onVideoDeleted}
+        />
+      )}
+
+      {commentsVisible && (
+        <VideoCommentsModal
+          visible={commentsVisible}
+          onClose={() => setCommentsVisible(false)}
+          video={video}
+        />
+      )}
+
+      {removedModalVisible && (
+        <VideoRemovedModal
+          visible={removedModalVisible}
+          onClose={() => setRemovedModalVisible(false)}
+          video={video}
+          onVideoDeleted={onVideoDeleted}
+        />
+      )}
+    </CardContainer>
+  );
+};
+
+interface ScorecardProps {
+  video: GameVideo;
+  onPlayerPress: (player: Player) => void;
+}
+
+const Scorecard: React.FC<ScorecardProps> = ({ video, onPlayerPress }) => {
+  const [score1, score2] = video.gamescore.split("-").map((s) => s.trim());
+  const team1Player1 = video.teams?.team1?.player1;
+  const team1Player2 = video.teams?.team1?.player2 ?? null;
+  const team2Player1 = video.teams?.team2?.player1;
+  const team2Player2 = video.teams?.team2?.player2 ?? null;
+
+  return (
+    <ScorecardOverlay>
+      <TeamNamesColumn alignRight={false}>
+        {team1Player1 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team1Player1)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team1Player1)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+        {team1Player2 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team1Player2)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team1Player2)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+      </TeamNamesColumn>
+
+      <ScoreRow>
+        <ScoreText>{score1}</ScoreText>
+        <ScoreDivider> - </ScoreDivider>
+        <ScoreText>{score2}</ScoreText>
+      </ScoreRow>
+
+      <TeamNamesColumn alignRight>
+        {team2Player1 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team2Player1)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team2Player1)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+        {team2Player2 && (
+          <TouchableOpacity onPress={() => onPlayerPress(team2Player2)}>
+            <PlayerName numberOfLines={1}>
+              {formatDisplayName(team2Player2)}
+            </PlayerName>
+          </TouchableOpacity>
+        )}
+      </TeamNamesColumn>
+    </ScorecardOverlay>
+  );
+};
+
+// ─── Styled Components ────────────────────────────────────────────────────────
+
+const CardContainer = styled.View({
+  width: screenWidth,
+  marginBottom: 50,
+});
+
+const HeaderRow = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+});
+
+const UploaderRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+});
+
+const Avatar = styled.Image({
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+});
+
+const UploaderInfo = styled.View({
+  flex: 1,
+});
+
+const UploaderName = styled.Text({
+  color: "white",
+  fontSize: 14,
+  fontWeight: "bold",
+});
+
+const CompetitionName = styled.Text({
+  color: "#00A2FF",
+  fontSize: 12,
+  marginTop: 2,
+});
+
+const VideoContainer = styled.View({
+  position: "relative",
+});
+
+const StyledVideoView = styled(VideoView)({
+  width: screenWidth,
+  height: VIDEO_HEIGHT,
+});
+
+const VideoControls = styled.View({
+  position: "absolute",
+  bottom: 12,
+  right: 12,
+  flexDirection: "row",
+  gap: 8,
+  alignItems: "center",
+});
+
+const MuteButton = styled.TouchableOpacity({
+  backgroundColor: "rgba(0,0,0,0.5)",
+  borderRadius: 16,
+  padding: 6,
+});
+
+const FullscreenButton = styled.TouchableOpacity({
+  backgroundColor: "rgba(0,0,0,0.5)",
+  borderRadius: 16,
+  padding: 6,
+});
+
+const FooterRow = styled.View({
+  flexDirection: "column",
+  justifyContent: "space-between",
+  paddingHorizontal: 12,
+});
+
+const ActionsRow = styled.View({
+  paddingTop: 10,
+  flexDirection: "row",
+  gap: 16,
+  alignItems: "center",
+});
+
+const ActionButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+});
+
+const ActionEmoji = styled.Text({
+  fontSize: 20,
+});
+
+const ActionCount = styled.Text({
+  color: "white",
+  fontSize: 12,
+  fontWeight: "600",
+});
+
+const PlayerName = styled.Text({
+  color: "white",
+  fontSize: 12,
+  fontWeight: "600",
+  paddingHorizontal: 5,
+  paddingVertical: 10,
+});
+
+const TeamNamesColumn = styled.View<{ alignRight: boolean }>(
+  ({ alignRight }: { alignRight: boolean }) => ({
+    alignItems: alignRight ? "flex-end" : "flex-start",
+    flex: 1,
+  }),
+);
+
+const ScorecardOverlay = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  backgroundColor: "rgba(0, 100, 200, 0.15)",
+  paddingHorizontal: 10,
+  paddingVertical: 10,
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.2)",
+  gap: 6,
+  marginHorizontal: -15,
+});
+
+const ScoreRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+});
+
+const ScoreText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 18,
+  fontWeight: "bold",
+});
+
+const ScoreDivider = styled.Text({
+  color: "rgba(255,255,255,0.4)",
+  fontSize: 10,
+});
+
+const RemovedBadge = styled.TouchableOpacity({
+  position: "absolute",
+  top: 10,
+  left: 10,
+  backgroundColor: "rgba(255, 50, 50, 0.85)",
+  borderRadius: 6,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+});
+
+const RemovedBadgeText = styled.Text({
+  color: "white",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+export { CARD_HEIGHT };
+export default GameVideoCard;

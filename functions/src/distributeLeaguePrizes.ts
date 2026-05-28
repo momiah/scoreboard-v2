@@ -57,11 +57,6 @@ export const distributeLeaguePrizes = onSchedule(
 
         const prizePool = computePrizePool(league);
 
-        console.log("league participants:", league.leagueParticipants);
-        console.log("prize pool:", prizePool);
-        console.log("prize distribution:", DISTRIBUTION);
-        console.log(`[prizes] distributing prizes for league ${leagueId}...`);
-
         await calculatePrizeAllocation({
           leagueParticipants: league.leagueParticipants || [],
           prizePool,

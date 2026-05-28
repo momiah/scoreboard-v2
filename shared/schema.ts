@@ -31,13 +31,19 @@ export const COMPETITION_TYPES = {
 export const COLLECTION_NAMES: Record<CollectionName, string> = {
   leagues: "leagues",
   tournaments: "tournaments",
+  pendingVideoUploads: "pendingVideoUploads",
+  gameVideos: "gameVideos",
+  comments: "comments",
+  replies: "replies",
+  reportedVideos: "reportedVideos",
+  savedVideos: "savedVideos",
+  videoReportAppeals: "videoReportAppeals",
 };
 
 export const ICON_MAP = {
   Instagram: "logo-instagram",
   TikTok: "logo-tiktok",
-  // Facebook: "logo-facebook",
-};
+} as const;
 
 export const socialMediaPlatforms = [
   "Instagram",
@@ -344,6 +350,14 @@ export const notificationTypes = {
     WELCOME: {
       ROUTE: "Welcome",
       TYPE: "welcome",
+    },
+    GAME_VIDEO: {
+      ROUTE: "GameScreen",
+      TYPE: "video",
+    },
+    VIDEO_REMOVED: {
+      ROUTE: "UserProfile",
+      TYPE: "video_removed",
     },
   },
   WELCOME: {

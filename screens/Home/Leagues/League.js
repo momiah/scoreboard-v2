@@ -21,6 +21,7 @@ import UserRoleTag from "../../../components/UserRoleTag";
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import LoadingOverlay from "../../../components/LoadingOverlay";
+import CompetitionVideos from "../../../components/Feed/CompetitionVideos";
 
 const openMap = (location) => {
   const query = `${location.courtName}, ${location.address}, ${location.city} ${location.postCode}, ${location.country}`;
@@ -139,6 +140,7 @@ const League = () => {
     { component: "Chat Room" },
     { component: "Summary" },
     { component: "Scoreboard" },
+    { component: "Videos" },
     { component: "Player Performance" },
     ...(leagueById?.leagueType !== "Singles"
       ? [{ component: "Team Performance" }]
@@ -200,10 +202,22 @@ const League = () => {
             isJoinRequestSending={isJoinRequestSending}
           />
         );
+      case "Videos":
+        return (
+          <CompetitionVideos
+            competitionId={leagueId}
+            userRole={userRole}
+            competitionParticipants={leagueParticipants}
+            competitionName={leagueName}
+            endDate={endDate}
+            competitionType={COMPETITION_TYPES.LEAGUE}
+          />
+        );
       case "Player Performance":
         return <PlayerPerformance playersData={leagueParticipants} />;
       case "Team Performance":
         return <TeamPerformance leagueTeams={leagueTeams} />;
+
       default:
         return null;
     }

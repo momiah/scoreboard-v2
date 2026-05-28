@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components/native";
 import { Dimensions } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import Tag from "../../Tag";
 import AddTournamentGameModal from "../../Modals/AddTournamentGameModal";
+import { COMPETITION_TYPES } from "@shared";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-// Individual player cell for fixtures
 export const FixturePlayerCell = ({ position, player }) => (
   <FixtureTeamTextContainer position={position}>
     <FixtureTeamText position={position}>
@@ -15,7 +17,6 @@ export const FixturePlayerCell = ({ position, player }) => (
   </FixtureTeamTextContainer>
 );
 
-// Team column showing player(s)
 export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
   <FixtureTeamContainer>
     <FixturePlayerCell position={position} player={team?.player1} />
@@ -25,10 +26,10 @@ export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
   </FixtureTeamContainer>
 );
 
-// Score/status display for fixtures
 export const FixtureScoreDisplay = ({ game }) => {
   const hasResult = game?.result;
   const approvalStatus = game?.approvalStatus;
+  const videoCount = game?.videoCount ?? 0;
 
   const statusLabel =
     approvalStatus === "Scheduled"
@@ -53,11 +54,22 @@ export const FixtureScoreDisplay = ({ game }) => {
           {statusLabel}
         </FixtureStatusLabel>
       )}
+      {videoCount > 0 && (
+        <VideoIndicator>
+          <Ionicons
+            name="videocam-outline"
+            size={10}
+            color="rgba(255,255,255,0.6)"
+          />
+          <VideoIndicatorText>
+            {videoCount} {videoCount === 1 ? "video" : "videos"}
+          </VideoIndicatorText>
+        </VideoIndicator>
+      )}
     </FixtureResultsContainer>
   );
 };
 
-// Game header with tags - NEW COMPONENT
 export const FixtureGameHeader = ({ game }) => (
   <FixtureGameHeaderContainer>
     <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
@@ -65,33 +77,33 @@ export const FixtureGameHeader = ({ game }) => (
   </FixtureGameHeaderContainer>
 );
 
-// Individual fixture game item - UPDATED
-export const FixtureGameItem = ({ game, tournamentType, onPress }) => {
-  const GameContainer =
-    game.approvalStatus === "pending" || game.approvalStatus === "Pending"
-      ? PendingFixtureGameContainer
-      : FixtureGameContainer;
-  return (
-    <GameContainer onPress={() => onPress(game)}>
-      <FixtureGameHeader game={game} />
-      <FixtureTeamVsContainer>
-        <FixtureTeamColumn
-          team={game?.team1}
-          position="left"
-          tournamentType={tournamentType}
-        />
-        <FixtureScoreDisplay game={game} />
-        <FixtureTeamColumn
-          team={game?.team2}
-          position="right"
-          tournamentType={tournamentType}
-        />
-      </FixtureTeamVsContainer>
-    </GameContainer>
-  );
-};
+export const FixtureGameItem = ({ game, tournamentType, onPress }) => (
+  <FixtureGameContainer
+    onPress={() => onPress(game)}
+    style={{
+      opacity:
+        game.approvalStatus === "pending" || game.approvalStatus === "Pending"
+          ? 0.6
+          : 1,
+    }}
+  >
+    <FixtureGameHeader game={game} />
+    <FixtureTeamVsContainer>
+      <FixtureTeamColumn
+        team={game?.team1}
+        position="left"
+        tournamentType={tournamentType}
+      />
+      <FixtureScoreDisplay game={game} />
+      <FixtureTeamColumn
+        team={game?.team2}
+        position="right"
+        tournamentType={tournamentType}
+      />
+    </FixtureTeamVsContainer>
+  </FixtureGameContainer>
+);
 
-// Round header
 export const FixtureRoundHeader = ({ roundNumber }) => (
   <FixtureRoundHeaderContainer>
     <FixtureRoundHeaderText>Round {roundNumber}</FixtureRoundHeaderText>
@@ -105,26 +117,35 @@ export const FixturesDisplay = ({
   tournamentName,
   tournamentId,
 }) => {
+  const navigation = useNavigation();
   const [gameModalVisible, setGameModalVisible] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [localFixtures, setLocalFixtures] = useState(fixtures);
 
-  // Sync with prop if fixtures change externally (e.g., initial load or refetch)
   useEffect(() => {
     setLocalFixtures(fixtures);
   }, [fixtures]);
 
   const handleGamePress = (game) => {
-    if (game.approvalStatus === "approved") {
-      // Don't allow editing approved/scheduled games
+    if (game.result) {
+      navigation.navigate("GameScreen", {
+        gameId: game.gameId,
+        competitionId: tournamentId,
+        competitionType: COMPETITION_TYPES.TOURNAMENT,
+        competitionName: tournamentName,
+        gamescore: game.gamescore,
+        date: game.date ?? "",
+        team1: game.team1,
+        team2: game.team2,
+      });
       return;
     }
+
     setSelectedGame(game);
     setGameModalVisible(true);
   };
 
   const handleGameUpdated = (updatedGame) => {
-    // Optimistically update local fixtures
     setLocalFixtures((prevFixtures) =>
       prevFixtures.map((round) => ({
         ...round,
@@ -177,7 +198,7 @@ export const FixturesDisplay = ({
     </FixturesContainer>
   );
 };
-// Styled Components
+
 const FixturesContainer = styled.ScrollView({
   flex: 1,
   backgroundColor: "#020D18",
@@ -259,7 +280,6 @@ const FixtureTeamVsContainer = styled.View({
   marginBottom: 8,
 });
 
-// Update your existing FixtureGameContainer:
 const FixtureGameContainer = styled.TouchableOpacity({
   marginHorizontal: 20,
   marginBottom: 12,
@@ -268,17 +288,6 @@ const FixtureGameContainer = styled.TouchableOpacity({
   borderRadius: 8,
   backgroundColor: "rgb(3, 16, 31)",
   overflow: "hidden",
-});
-
-const PendingFixtureGameContainer = styled.View({
-  marginHorizontal: 20,
-  marginBottom: 12,
-  borderWidth: 1,
-  borderColor: "rgb(9, 33, 62)",
-  borderRadius: 8,
-  backgroundColor: "rgb(3, 16, 31)",
-  overflow: "hidden",
-  opacity: 0.6,
 });
 
 export const FixtureStatusLabel = styled.Text(({ status }) => ({
@@ -296,6 +305,18 @@ export const FixtureStatusLabel = styled.Text(({ status }) => ({
   borderRadius: 4,
   overflow: "hidden",
 }));
+
+const VideoIndicator = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 3,
+  marginTop: 8,
+});
+
+const VideoIndicatorText = styled.Text({
+  fontSize: 9,
+  color: "rgba(255,255,255,0.6)",
+});
 
 const NoFixturesContainer = styled.View({
   flex: 1,
