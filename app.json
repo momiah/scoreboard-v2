@@ -105,9 +105,10 @@
           }
         }
       ],
-      "expo-video",
-      "expo-font",
-      "expo-asset"
+  "expo-video",
+"expo-font",
+"expo-asset",
+"expo-screen-orientation"
     ],
     "extra": {
       "eas": {
