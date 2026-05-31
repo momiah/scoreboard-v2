@@ -37,7 +37,6 @@ import {
   CompetitionType,
   CollectionName,
   UserProfile,
-  CollectionName,
 } from "@/shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../Modals/RecentPlayersModal";
