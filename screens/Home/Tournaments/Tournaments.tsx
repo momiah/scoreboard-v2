@@ -22,8 +22,9 @@ import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
-import { UserProfile, Tournament } from "@shared/types";
+import { UserProfile, Tournament, NormalizedCompetition } from "@shared/types";
 import TournamentsSkeleton from "../../../components/Skeletons/TournamentsSkeleton";
+import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
 interface TournamentWithId extends Tournament {
   id?: string;
@@ -126,7 +127,7 @@ const Tournaments: React.FC = () => {
 
   // Apply filters whenever tournaments or appliedFilters change
   useEffect(() => {
-    if (tournaments.length === 0) {
+    if (!tournaments?.length) {
       setFilteredTournaments([]);
       return;
     }
@@ -222,6 +223,13 @@ const Tournaments: React.FC = () => {
     return dateA.getTime() - dateB.getTime();
   });
 
+  const normalizedTournaments = sortedTournaments.map((tournament) =>
+    normalizeCompetitionData({
+      rawData: tournament,
+      competitionType: "tournament",
+    }),
+  ) as NormalizedCompetition[];
+
   return (
     <TournamentContainer>
       <Overview>
@@ -277,7 +285,7 @@ const Tournaments: React.FC = () => {
         <ScrollView style={{ flex: 1, marginTop: 20 }}>
           <TournamentGrid
             navigationRoute="Tournament"
-            tournaments={sortedTournaments}
+            tournaments={normalizedTournaments}
           />
         </ScrollView>
       ) : (
@@ -337,6 +345,7 @@ const Overview = styled.View({
   flexDirection: "row",
   height: 100,
   width: "100%",
+  marginTop: 25,
   justifyContent: "center",
   alignItems: "center",
   paddingRight: 15,
