@@ -52,7 +52,7 @@ interface UseVideoUploadReturn {
 export const useVideoUpload = ({
   competitionId,
 }: UseVideoUploadOptions): UseVideoUploadReturn => {
-  const { showToast } = useContext(PopupContext);
+  const { showBottomToast } = useContext(PopupContext);
 
   const pickVideo = useCallback(async (): Promise<PickedVideo | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -214,14 +214,17 @@ export const useVideoUpload = ({
                 "[VideoUpload] Upload returned non-2xx status:",
                 completedData.responseCode,
               );
-              showToast("Video upload failed. Please try again.", "error");
+              showBottomToast(
+                "Video upload failed. Please try again.",
+                "error",
+              );
             }
           });
 
           // ── Error ─────────────────────────────────────────────────────────
           Upload.addListener("error", uploadId, (errorData) => {
             console.error("[VideoUpload] Upload error:", errorData.error);
-            showToast("Video upload failed. Please try again.", "error");
+            showBottomToast("Video upload failed. Please try again.", "error");
           });
 
           // ── Cancelled ─────────────────────────────────────────────────────
@@ -231,13 +234,13 @@ export const useVideoUpload = ({
           });
         } catch (error) {
           console.error("[VideoUpload] Background upload failed:", error);
-          showToast("Video upload failed. Please try again.", "error");
+          showBottomToast("Video upload failed. Please try again.", "error");
         }
       };
 
       run();
     },
-    [competitionId, showToast],
+    [competitionId, showBottomToast],
   );
 
   return { pickVideo, startBackgroundUpload };
