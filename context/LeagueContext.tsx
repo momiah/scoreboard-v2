@@ -783,6 +783,95 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Directly add players to a competition (no invite/notification).
+  // Used for club competitions where members are added straight away.
+  // Returns the userIds that were actually added.
+  const addPlayersToCompetition = async ({
+    competitionId,
+    collectionName,
+    userIds,
+  }: {
+    competitionId: string;
+    collectionName: CollectionName;
+    userIds: string[];
+  }): Promise<string[]> => {
+    try {
+      const competitionRef = doc(db, collectionName, competitionId);
+      const participantsKey =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      const competitionDoc = await getDoc(competitionRef);
+      if (!competitionDoc.exists()) {
+        throw new Error("Competition does not exist or has been deleted");
+      }
+
+      const competitionData = competitionDoc.data();
+      const existingParticipants = competitionData[participantsKey] || [];
+      const pendingInvites = competitionData.pendingInvites || [];
+      const maxPlayers = competitionData.maxPlayers;
+
+      const existingIds = new Set(
+        existingParticipants.map((p: { userId: string }) => p.userId),
+      );
+
+      // Only genuinely-new users
+      const newUserIds = userIds.filter((uid) => !existingIds.has(uid));
+      if (newUserIds.length === 0) return [];
+
+      // Guard: block the whole batch if it would exceed maxPlayers
+      if (
+        maxPlayers &&
+        existingParticipants.length + newUserIds.length > maxPlayers
+      ) {
+        throw new Error("MAX_PLAYERS_EXCEEDED");
+      }
+
+      // Build participant profiles for the new users
+      const profiles = await Promise.all(
+        newUserIds.map(async (uid) => {
+          const user = await getUserById(uid);
+          if (!user) return null;
+          return {
+            ...scoreboardProfileSchema,
+            username: user.username,
+            firstName: user.firstName.split(" ")[0],
+            lastName: user.lastName.split(" ")[0],
+            userId: user.userId,
+            memberSince: user.profileDetail?.memberSince || "",
+            profileImage: user.profileImage || ccImageEndpoint,
+          };
+        }),
+      );
+      const toAdd = profiles.filter((p) => p !== null);
+      if (toAdd.length === 0) return [];
+
+      const addedIds = toAdd.map((p) => p!.userId);
+      const addedIdSet = new Set(addedIds);
+      const updatedPending = pendingInvites.filter(
+        (inv: { userId: string }) => !addedIdSet.has(inv.userId),
+      );
+
+      await updateDoc(competitionRef, {
+        [participantsKey]: [...existingParticipants, ...toAdd],
+        pendingInvites: updatedPending,
+      });
+
+      AppEventsLogger.logEvent("JoinedCompetition", {
+        competition_type:
+          collectionName === "leagues" ? "league" : "tournament",
+        method: "club_add",
+      });
+
+      console.log("Players added to competition successfully!");
+      return addedIds;
+    } catch (error) {
+      console.error("Error adding players to competition:", error);
+      throw error;
+    }
+  };
+
   const acceptClubInvite = async ({
     userId,
     clubId,
@@ -2199,6 +2288,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         removePlayerFromCompetition,
         acceptCompetitionInvite,
         declineCompetitionInvite,
+        addPlayersToCompetition,
         acceptClubInvite,
         declineClubInvite,
         requestToJoinLeague,

@@ -12,6 +12,7 @@ import {
 import styled from "styled-components/native";
 import { SafeAreaView } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../components/Tag";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../services/firebase.config";
@@ -23,6 +24,7 @@ import {
   COMPETITION_TYPES,
   COLLECTION_NAMES,
 } from "@shared";
+import type { CollectionName } from "@shared/types";
 import moment from "moment";
 import { LeagueContext } from "../context/LeagueContext";
 import { PopupContext } from "../context/PopupContext";
@@ -53,10 +55,17 @@ type RouteParams = {
   };
 };
 
+
 const InvitePlayer = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route = useRoute<RouteProp<RouteParams, "InvitePlayer">>();
   const { competitionDetails, competitionType } = route.params;
+  // competitionDetails.clubId = null;
+
+  // Detect club competition
+  const clubId = (competitionDetails as League & { clubId?: string | null })
+    .clubId ?? null;
+  const isClubCompetition = !!clubId;
 
   const [searchUser, setSearchUser] = useState("");
   const [suggestions, setSuggestions] = useState<UserProfile[]>([]);
@@ -67,8 +76,14 @@ const InvitePlayer = () => {
   const [recentPlayersVisible, setRecentPlayersVisible] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>("");
 
+  // Club-mode: all members loaded on mount
+  const [clubMembers, setClubMembers] = useState<UserProfile[]>([]);
+  const [clubMembersLoading, setClubMembersLoading] = useState(false);
+  const [clubMembersError, setClubMembersError] = useState(false);
+
   const { sendNotification } = useContext(UserContext);
-  const { updatePendingInvites } = useContext(LeagueContext);
+  const { updatePendingInvites, addPlayersToCompetition } =
+    useContext(LeagueContext);
   const {
     handleShowPopup,
     setPopupMessage,
@@ -83,15 +98,44 @@ const InvitePlayer = () => {
     });
   }, []);
 
+  // Fetch all club members on mount when this is a club competition
+  useEffect(() => {
+    if (!isClubCompetition || !clubId) return;
+
+    const fetchClubMembers = async () => {
+      setClubMembersLoading(true);
+      setClubMembersError(false);
+      try {
+        // Read userId directly to avoid a race with the currentUserId state
+        const uid = await AsyncStorage.getItem("userId");
+        const snap = await getDocs(
+          collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
+        );
+        const members = snap.docs
+          .map((doc) => doc.data() as UserProfile)
+          .filter((m) => m.userId !== uid); // exclude self
+        setClubMembers(members);
+        setSuggestions(members); // show all members immediately
+      } catch (e) {
+        console.error("Error fetching club members:", e);
+        setClubMembersError(true);
+      } finally {
+        setClubMembersLoading(false);
+      }
+    };
+
+    fetchClubMembers();
+  }, [isClubCompetition, clubId]);
+
   const competition = normalizeCompetitionData({
     rawData: competitionDetails,
     competitionType,
   }) as NormalizedCompetition;
 
   const collectionName =
-    competitionType === COMPETITION_TYPES.LEAGUE
+    (competitionType === COMPETITION_TYPES.LEAGUE
       ? COLLECTION_NAMES.leagues
-      : COLLECTION_NAMES.tournaments;
+      : COLLECTION_NAMES.tournaments) as CollectionName;
 
   const hasUserConflict = (userId: string) => {
     const inLeague = competition.participants?.some((u) => u.userId === userId);
@@ -118,13 +162,16 @@ const InvitePlayer = () => {
   const hasConflicts = conflictedUsers.length > 0;
 
   const getBlockingError = (): string => {
+    const actionVerb = isClubCompetition ? "add" : "invite";
+    const removeVerb = isClubCompetition ? "Unselect" : "Remove";
+
     if (competitionEnded) {
       const label =
         competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
-      return `Cannot invite players as the ${label} has ended.`;
+      return `Cannot ${actionVerb} players as the ${label} has ended.`;
     }
     if (fixturesGenerated) {
-      return "Cannot invite players as fixtures have been generated for this tournament.";
+      return `Cannot ${actionVerb} players as fixtures have been generated for this tournament.`;
     }
     const totalCount =
       competition.participants.length +
@@ -136,12 +183,12 @@ const InvitePlayer = () => {
         pendingCount > 0
           ? ` You also have ${pendingCount} pending invite(s) reserving spots.`
           : "";
-      return `Max players reached (${competition.maxPlayers}).${pendingMessage}  Remove some players to continue.`;
+      return `Max players reached (${competition.maxPlayers}).${pendingMessage}  ${removeVerb} some players to continue.`;
     }
     if (hasConflicts) {
-      return `Cannot invite: ${conflictedUsers
+      return `Cannot ${actionVerb}: ${conflictedUsers
         .map((u) => formatDisplayName(u))
-        .join(", ")}. Remove them to continue.`;
+        .join(", ")}. ${removeVerb} them to continue.`;
     }
     return "";
   };
@@ -165,6 +212,74 @@ const InvitePlayer = () => {
       if (inviteUsers.length === 0) {
         setValidationError("Please select at least one player to invite");
         setSendingInvite(false);
+        return;
+      }
+
+      // Club competitions: add members directly (no invite/accept step)
+      if (isClubCompetition) {
+        let addedIds: string[] = [];
+        try {
+          addedIds = await addPlayersToCompetition({
+            competitionId: competition.id,
+            collectionName,
+            userIds: inviteUsers.map((u) => u.userId),
+          });
+        } catch (addError) {
+          const msg = (addError as Error)?.message;
+          setValidationError(
+            msg === "MAX_PLAYERS_EXCEEDED"
+              ? `Cannot add players — would exceed the max of ${competition.maxPlayers}.`
+              : "Failed to add players. Please try again.",
+          );
+          console.error("Error adding players:", addError);
+          return; // outer finally resets sendingInvite
+        }
+
+        // Nobody new was added (all already participants)
+        if (addedIds.length === 0) {
+          setValidationError(
+            "Selected players are already in this competition.",
+          );
+          return;
+        }
+
+        // Notify only the players actually added. A notification failure must
+        // NOT undo or mask the successful add, so it's caught separately.
+        try {
+          const infoType =
+            competitionType === COMPETITION_TYPES.LEAGUE
+              ? notificationTypes.INFORMATION.LEAGUE.TYPE
+              : notificationTypes.INFORMATION.TOURNAMENT.TYPE;
+          const metaDataId =
+            competitionType === COMPETITION_TYPES.LEAGUE
+              ? "leagueId"
+              : "tournamentId";
+
+          for (const uid of addedIds) {
+            const payload = {
+              ...notificationSchema,
+              createdAt: new Date(),
+              recipientId: uid,
+              senderId: currentUserId,
+              message: `You've been added to ${competition.name}`,
+              type: infoType,
+              data: {
+                [metaDataId]: competition.id,
+              },
+            };
+            await sendNotification(payload);
+          }
+        } catch (notifyError) {
+          console.error(
+            "Players added but notification failed:",
+            notifyError,
+          );
+        }
+
+        handleShowPopup("Players added successfully!");
+        setInviteUsers([]);
+        setSearchUser("");
+        setSuggestions(clubMembers);
         return;
       }
 
@@ -204,16 +319,41 @@ const InvitePlayer = () => {
       setSearchUser("");
       setSuggestions([]);
     } catch (error) {
-      setValidationError("Failed to send invites. Please try again.");
+      setValidationError(
+        isClubCompetition
+          ? "Failed to add players. Please try again."
+          : "Failed to send invites. Please try again.",
+      );
       console.error("Error sending invites:", error);
     } finally {
       setSendingInvite(false);
     }
   };
 
-  const handleSearch = async (value: string) => {
-    setSearchUser(value);
+  // ── Search handlers ──────────────────────────────────────────────────────
 
+  /** Club mode: filter already-loaded club members, no Firestore call */
+  const handleSearchClubMembers = (value: string) => {
+    if (!value.trim()) {
+      setSuggestions(clubMembers);
+      return;
+    }
+    const term = value.toLowerCase().trim();
+    const filtered = clubMembers.filter((user) => {
+      const first = (user.firstName ?? "").toLowerCase();
+      const last = (user.lastName ?? "").toLowerCase();
+      const full = `${first} ${last}`;
+      return (
+        first.startsWith(term) ||
+        last.startsWith(term) ||
+        full.startsWith(term)
+      );
+    });
+    setSuggestions(filtered);
+  };
+
+  /** Normal mode: query all users in Firestore */
+  const handleSearchAllUsers = async (value: string) => {
     if (value.trim().length > 0) {
       try {
         if (!currentUserId) return;
@@ -252,10 +392,33 @@ const InvitePlayer = () => {
     }
   };
 
+  const handleSearch = (value: string) => {
+    setSearchUser(value);
+    if (isClubCompetition) {
+      handleSearchClubMembers(value);
+    } else {
+      handleSearchAllUsers(value);
+    }
+  };
+
+  // ── Selection handlers ───────────────────────────────────────────────────
+
+  /** Normal mode: tap suggestion → add as chip */
   const handleSelectUser = (user: UserProfile) => {
     setInviteUsers((prev) => [...prev, user]);
     setSearchUser("");
     setSuggestions([]);
+    setValidationError("");
+  };
+
+  /** Club mode: toggle checkbox */
+  const handleToggleClubMember = (user: UserProfile) => {
+    const isSelected = inviteUsers.some((u) => u.userId === user.userId);
+    if (isSelected) {
+      setInviteUsers((prev) => prev.filter((u) => u.userId !== user.userId));
+    } else {
+      setInviteUsers((prev) => [...prev, user]);
+    }
     setValidationError("");
   };
 
@@ -284,6 +447,61 @@ const InvitePlayer = () => {
   const competitionVariant =
     competitionType === COMPETITION_TYPES.LEAGUE ? "League" : "Tournament";
 
+  const renderDisclaimer = () => (
+    <DisclaimerText>
+      Please ensure you have arranged court reservation directly with the venue.
+      Court Champs does not reserve any courts when you post a game
+    </DisclaimerText>
+  );
+
+  // ── Club member list row (same DropdownItem, checkbox added on right) ──────
+
+  const renderClubMemberRow = ({ item }: { item: UserProfile }) => {
+    const isSelected = inviteUsers.some((u) => u.userId === item.userId);
+    const hasConflict = hasUserConflict(item.userId);
+
+    const checkIcon: "checkbox-outline" | "checkbox" = isSelected
+      ? "checkbox"
+      : "checkbox-outline";
+    const checkColor =
+      hasConflict && isSelected ? "red" : isSelected ? "#00A2FF" : "#555";
+
+    // Already a member / pending → grayed out (still clickable for now)
+    const isGrayed = hasConflict && !isSelected;
+
+    return (
+      <DropdownItem
+        onPress={() => handleToggleClubMember(item)}
+        style={{
+          backgroundColor: "rgb(5, 34, 64)",
+          borderWidth: 1,
+          borderColor:
+            hasConflict && isSelected
+              ? "red"
+              : isSelected
+                ? "#00A2FF"
+                : "transparent",
+          opacity: isGrayed ? 0.45 : 1,
+        }}
+      >
+        <DropdownText style={{ flex: 1 }}>
+          {formatDisplayName(item)}
+        </DropdownText>
+        <DropdownText style={{ color: "#aaa", fontStyle: "italic" }}>
+          @ {item.username}
+        </DropdownText>
+        <Ionicons
+          name={checkIcon}
+          size={22}
+          color={checkColor}
+          style={{ marginLeft: 10 }}
+        />
+      </DropdownItem>
+    );
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
   return (
     <Container>
       <Popup
@@ -294,16 +512,18 @@ const InvitePlayer = () => {
         height={450}
       />
 
-      <RecentPlayersModal
-        visible={recentPlayersVisible}
-        onClose={() => {
-          setRecentPlayersVisible(false);
-          setActiveTab("search");
-        }}
-        onAddPlayers={handleAddFromRecent}
-        currentUserId={currentUserId}
-        alreadySelected={inviteUsers}
-      />
+      {!isClubCompetition && (
+        <RecentPlayersModal
+          visible={recentPlayersVisible}
+          onClose={() => {
+            setRecentPlayersVisible(false);
+            setActiveTab("search");
+          }}
+          onAddPlayers={handleAddFromRecent}
+          currentUserId={currentUserId}
+          alreadySelected={inviteUsers}
+        />
+      )}
 
       {/* Header */}
       <Header>
@@ -345,120 +565,164 @@ const InvitePlayer = () => {
           </View>
         </LeagueDetailsContainer>
 
-        <TabRow>
-          <Tab
-            active={activeTab === "search"}
-            onPress={() => setActiveTab("search")}
-          >
-            <TabText active={activeTab === "search"}>Search</TabText>
-          </Tab>
-          <Tab
-            active={activeTab === "recent"}
-            onPress={() => {
-              setActiveTab("recent");
-              setRecentPlayersVisible(true);
-            }}
-          >
-            <TabText active={activeTab === "recent"}>Recent Players</TabText>
-          </Tab>
-        </TabRow>
-
-        {activeTab === "search" && (
-          <Input
-            placeholder="Start typing to search players"
-            placeholderTextColor="#999"
-            value={searchUser}
-            onChangeText={handleSearch}
-            autoCorrect={false}
-            autoCapitalize="none"
-            autoComplete="off"
-            spellCheck={false}
-          />
+        {/* Tabs: hidden for club competitions */}
+        {!isClubCompetition && (
+          <TabRow>
+            <Tab
+              active={activeTab === "search"}
+              onPress={() => setActiveTab("search")}
+            >
+              <TabText active={activeTab === "search"}>Search</TabText>
+            </Tab>
+            <Tab
+              active={activeTab === "recent"}
+              onPress={() => {
+                setActiveTab("recent");
+                setRecentPlayersVisible(true);
+              }}
+            >
+              <TabText active={activeTab === "recent"}>Recent Players</TabText>
+            </Tab>
+          </TabRow>
         )}
+
+        {/* Search input: always shown */}
+        <Input
+          placeholder={
+            isClubCompetition
+              ? "Filter club members…"
+              : "Start typing to search players"
+          }
+          placeholderTextColor="#999"
+          value={searchUser}
+          onChangeText={handleSearch}
+          autoCorrect={false}
+          autoCapitalize="none"
+          autoComplete="off"
+          spellCheck={false}
+        />
       </FixedSection>
 
-      {/* Scrollable area below search */}
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 20, paddingBottom: 20 }}
+      {/* ── Club mode: checkbox member list ── */}
+      {isClubCompetition ? (
+        <TouchableWithoutFeedback
+          onPress={Keyboard.dismiss}
+          accessible={false}
         >
-          {activeTab === "search" && suggestions.length > 0 && (
-            <DropdownContainer>
+          <>
+            {clubMembersLoading ? (
+              <ActivityIndicator
+                color="#00A2FF"
+                style={{ marginTop: 30 }}
+              />
+            ) : clubMembersError ? (
+              <EmptyText>
+                Couldn&apos;t load club members. Please try again.
+              </EmptyText>
+            ) : (
               <FlatList
                 data={suggestions}
                 keyExtractor={(item) => item.userId}
-                scrollEnabled={false}
-                renderItem={({ item }) => {
-                  const isAlreadySelected = inviteUsers.some(
-                    (u) => u.userId === item.userId,
-                  );
-                  return (
-                    <DropdownItem
-                      onPress={() =>
-                        !isAlreadySelected && handleSelectUser(item)
-                      }
-                      disabled={isAlreadySelected}
-                      style={{
-                        backgroundColor: isAlreadySelected
-                          ? "#444"
-                          : "rgb(5, 34, 64)",
-                        opacity: isAlreadySelected ? 0.6 : 1,
-                      }}
-                    >
-                      <DropdownText>
-                        {formatDisplayName(item)}
-                        {isAlreadySelected && " (selected)"}
-                      </DropdownText>
-                      <DropdownText
-                        style={{ color: "#aaa", fontStyle: "italic" }}
-                      >
-                        @ {item.username}
-                      </DropdownText>
-                    </DropdownItem>
-                  );
-                }}
+                renderItem={renderClubMemberRow}
+                contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+                keyboardShouldPersistTaps="handled"
+                ListEmptyComponent={
+                  <EmptyText>No club members found.</EmptyText>
+                }
+                ListFooterComponent={renderDisclaimer()}
               />
-            </DropdownContainer>
-          )}
-
-          {inviteUsers.length > 0 && (
-            <SelectedSection>
-              <SelectedLabel>Selected ({inviteUsers.length})</SelectedLabel>
-              <SelectedTagsRow>
-                {inviteUsers.map((user) => {
-                  const hasConflict = hasUserConflict(user.userId);
-                  return (
-                    <PlayerTag key={user.userId} hasConflict={hasConflict}>
-                      <PlayerTagName hasConflict={hasConflict}>
-                        {formatDisplayName(user)}
-                      </PlayerTagName>
-                      <TouchableOpacity
-                        onPress={() => handleRemoveUser(user.userId)}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            )}
+            {displayError ? (
+              <ErrorText style={{ paddingHorizontal: 20 }}>
+                {displayError}
+              </ErrorText>
+            ) : null}
+          </>
+        </TouchableWithoutFeedback>
+      ) : (
+        /* ── Normal mode: search suggestions + chips ── */
+        <TouchableWithoutFeedback
+          onPress={Keyboard.dismiss}
+          accessible={false}
+        >
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: 20, paddingBottom: 20 }}
+          >
+            {activeTab === "search" && suggestions.length > 0 && (
+              <DropdownContainer>
+                <FlatList
+                  data={suggestions}
+                  keyExtractor={(item) => item.userId}
+                  scrollEnabled={false}
+                  renderItem={({ item }) => {
+                    const isAlreadySelected = inviteUsers.some(
+                      (u) => u.userId === item.userId,
+                    );
+                    return (
+                      <DropdownItem
+                        onPress={() =>
+                          !isAlreadySelected && handleSelectUser(item)
+                        }
+                        disabled={isAlreadySelected}
+                        style={{
+                          backgroundColor: isAlreadySelected
+                            ? "#444"
+                            : "rgb(5, 34, 64)",
+                          opacity: isAlreadySelected ? 0.6 : 1,
+                        }}
                       >
-                        <AntDesign
-                          name="close"
-                          size={11}
-                          color={hasConflict ? "red" : "#aaa"}
-                        />
-                      </TouchableOpacity>
-                    </PlayerTag>
-                  );
-                })}
-              </SelectedTagsRow>
-            </SelectedSection>
-          )}
+                        <DropdownText>
+                          {formatDisplayName(item)}
+                          {isAlreadySelected && " (selected)"}
+                        </DropdownText>
+                        <DropdownText
+                          style={{ color: "#aaa", fontStyle: "italic" }}
+                        >
+                          @ {item.username}
+                        </DropdownText>
+                      </DropdownItem>
+                    );
+                  }}
+                />
+              </DropdownContainer>
+            )}
 
-          <DisclaimerText>
-            Please ensure you have arranged court reservation directly with the
-            venue. Court Champs does not reserve any courts when you post a game
-          </DisclaimerText>
+            {inviteUsers.length > 0 && (
+              <SelectedSection>
+                <SelectedLabel>Selected ({inviteUsers.length})</SelectedLabel>
+                <SelectedTagsRow>
+                  {inviteUsers.map((user) => {
+                    const hasConflict = hasUserConflict(user.userId);
+                    return (
+                      <PlayerTag key={user.userId} hasConflict={hasConflict}>
+                        <PlayerTagName hasConflict={hasConflict}>
+                          {formatDisplayName(user)}
+                        </PlayerTagName>
+                        <TouchableOpacity
+                          onPress={() => handleRemoveUser(user.userId)}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        >
+                          <AntDesign
+                            name="close"
+                            size={11}
+                            color={hasConflict ? "red" : "#aaa"}
+                          />
+                        </TouchableOpacity>
+                      </PlayerTag>
+                    );
+                  })}
+                </SelectedTagsRow>
+              </SelectedSection>
+            )}
 
-          {displayError ? <ErrorText>{displayError}</ErrorText> : null}
-        </ScrollView>
-      </TouchableWithoutFeedback>
+            {renderDisclaimer()}
+
+            {displayError ? <ErrorText>{displayError}</ErrorText> : null}
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      )}
 
       <BottomBar>
         <InviteButton
@@ -469,13 +733,18 @@ const InvitePlayer = () => {
           {sendingInvite ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <InviteText>Invite ({inviteUsers.length})</InviteText>
+            <InviteText>
+              {isClubCompetition ? "Add Players" : "Invite"} (
+              {inviteUsers.length})
+            </InviteText>
           )}
         </InviteButton>
       </BottomBar>
     </Container>
   );
 };
+
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const Container = styled(SafeAreaView)({
   flex: 1,
@@ -550,7 +819,6 @@ const DropdownText = styled.Text({
   fontWeight: "500",
 });
 
-// Selected players as tags
 const SelectedSection = styled.View({
   marginTop: 16,
   marginBottom: 12,
@@ -647,7 +915,6 @@ const TabRow = styled.View({
   marginBottom: 16,
   marginTop: 8,
   borderRadius: 8,
-  //   backgroundColor: "rgba(255,255,255,0.05)",
   padding: 4,
   gap: 6,
 });
@@ -677,6 +944,14 @@ const BottomBar = styled.View({
   borderTopWidth: 1,
   borderTopColor: "rgba(255,255,255,0.08)",
   backgroundColor: "rgb(3, 16, 31)",
+});
+
+const EmptyText = styled.Text({
+  color: "#aaa",
+  fontStyle: "italic",
+  fontSize: 14,
+  textAlign: "center",
+  marginTop: 40,
 });
 
 export default InvitePlayer;

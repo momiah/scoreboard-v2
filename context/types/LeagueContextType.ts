@@ -145,6 +145,11 @@ export interface LeagueContextType {
     notificationId: string;
     collectionName: CollectionName;
   }) => Promise<void>;
+  addPlayersToCompetition: (params: {
+    competitionId: string;
+    collectionName: CollectionName;
+    userIds: string[];
+  }) => Promise<string[]>;
   acceptClubInvite: (params: {
     userId: string;
     clubId: string;
