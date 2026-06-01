@@ -207,7 +207,7 @@ const GameContainer = styled.View({
   marginBottom: 16,
   marginTop: 40,
   borderRadius: 8,
-  height: screenWidth <= 400 ? 100 : "auto",
+  height: "auto",
   borderWidth: 1,
   borderColor: "#262626",
   backgroundColor: "#001123",

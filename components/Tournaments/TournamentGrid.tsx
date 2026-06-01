@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { Dimensions } from "react-native";
 import styled from "styled-components/native";
 import Tag from "../Tag";
 import { SkeletonPulse, SkeletonBlock } from "../Skeletons/skeletonConfig";
@@ -11,12 +12,29 @@ import {
 } from "@react-navigation/native";
 import { NormalizedCompetition } from "@shared/types";
 
+// ── Constants
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const IS_SMALL_SCREEN = SCREEN_WIDTH < 375;
+const NAME_CLIP_LENGTH = IS_SMALL_SCREEN ? 11 : 15;
+
 // ── Types
 
 interface TournamentGridProps {
   navigationRoute: string;
   tournaments: NormalizedCompetition[];
 }
+
+interface TournamentCardItemProps {
+  tournament: NormalizedCompetition;
+  onPress: () => void;
+  status: { status: string; color: string };
+  numberOfPlayers: string;
+  location: string;
+  tournamentNameClipped: string;
+}
+
+// ── TournamentGrid
 
 const TournamentGrid = ({
   navigationRoute,
@@ -42,8 +60,8 @@ const TournamentGrid = ({
         const numberOfPlayers = `${participantsLength} / ${tournament.maxPlayers}`;
         const location = `${tournament.location?.city ?? ""}, ${tournament.location?.countryCode ?? ""}`;
         const tournamentNameClipped = tournament.name
-          ? tournament.name.length > 15
-            ? tournament.name.slice(0, 15) + "..."
+          ? tournament.name.length > NAME_CLIP_LENGTH
+            ? tournament.name.slice(0, NAME_CLIP_LENGTH) + "..."
             : tournament.name
           : "";
 
@@ -63,14 +81,7 @@ const TournamentGrid = ({
   );
 };
 
-interface TournamentCardItemProps {
-  tournament: NormalizedCompetition;
-  onPress: () => void;
-  status: { status: string; color: string };
-  numberOfPlayers: string;
-  location: string;
-  tournamentNameClipped: string;
-}
+// ── TournamentCardItem
 
 const TournamentCardItem = ({
   tournament,
@@ -121,25 +132,29 @@ const TournamentCardItem = ({
         </TournamentImageContainer>
 
         <TournamentInfo>
-          <TournamentName>{tournamentNameClipped}</TournamentName>
-          <TournamentLocation>
+          <TournamentName numberOfLines={1}>
+            {tournamentNameClipped}
+          </TournamentName>
+          <TournamentLocation numberOfLines={1}>
             {tournament.location?.courtName || ""}
           </TournamentLocation>
-          <TournamentLocation>{location || ""}</TournamentLocation>
+          <TournamentLocation numberOfLines={1}>
+            {location || ""}
+          </TournamentLocation>
           <BottomTags>
             <Tag
               name={tournament.type}
               color="#2F2F30"
               iconColor="white"
               iconSize={10}
-              fontSize={9}
+              fontSize={IS_SMALL_SCREEN ? 8 : 9}
             />
             <Tag
               name={tournament.mode}
               color="#2F2F30"
               iconColor="white"
               iconSize={10}
-              fontSize={9}
+              fontSize={IS_SMALL_SCREEN ? 8 : 9}
             />
           </BottomTags>
         </TournamentInfo>
@@ -154,7 +169,7 @@ const Container = styled.View({
   flexDirection: "row",
   flexWrap: "wrap",
   justifyContent: "space-between",
-  gap: 15,
+  gap: IS_SMALL_SCREEN ? 8 : 15,
   paddingHorizontal: 10,
   marginBottom: 40,
 });
@@ -211,23 +226,22 @@ const TournamentInfo = styled.View({
 
 const TournamentName = styled.Text({
   color: "white",
-  fontSize: 16,
+  fontSize: IS_SMALL_SCREEN ? 13 : 16,
   fontWeight: "bold",
   marginBottom: 4,
 });
 
 const TournamentLocation = styled.Text({
-  fontSize: 13,
+  fontSize: IS_SMALL_SCREEN ? 11 : 13,
   color: "white",
   borderRadius: 5,
 });
 
 const BottomTags = styled.View({
-  marginTop: 20,
+  marginTop: 10,
   flexDirection: "row",
-  gap: 6,
-  flexWrap: "wrap",
-  height: 22,
+  gap: IS_SMALL_SCREEN ? 4 : 6,
+  flexWrap: "nowrap",
 });
 
 export default TournamentGrid;
