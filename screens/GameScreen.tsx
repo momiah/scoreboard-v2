@@ -22,7 +22,7 @@ import {
   collection,
   query,
   where,
-  getDocs,
+  onSnapshot,
 } from "firebase/firestore";
 import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
 import { GameVideo, GameTeam, Player } from "@shared/types";
@@ -77,7 +77,6 @@ const GameScreen: React.FC = () => {
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { pendingUploads } = usePendingUpload(currentUser?.userId);
-  const prevUploadingRef = useRef(false);
 
   // ── Derived values ────────────────────────────────────────────────────────
   const team1Player1 = team1?.player1;
@@ -96,36 +95,37 @@ const GameScreen: React.FC = () => {
     (v) => v.postedBy.userId === currentUser?.userId,
   );
 
-  // ── Fetch videos ──────────────────────────────────────────────────────────
-  const fetchVideos = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const db = getFirestore();
-      const videosQuery = query(
-        collection(db, COLLECTION_NAMES.gameVideos),
-        where("gameId", "==", gameId),
-        where("videoApproved", "==", true),
-      );
-      const snapshot = await getDocs(videosQuery);
-      const fetched = snapshot.docs.map((doc) => doc.data() as GameVideo);
-      setVideos(fetched);
-
-      if (currentUser && fetched.length > 0) {
-        const likedByMap = Object.fromEntries(
-          fetched.map((v) => [v.gameId, v.likedBy ?? []]),
-        );
-        initLikedVideos(likedByMap, currentUser.userId);
-      }
-    } catch (error) {
-      console.error("[GameScreen] Failed to fetch videos:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [gameId, currentUser]);
-
+  // ── Real-time video subscription ──────────────────────────────────────────
   useEffect(() => {
-    fetchVideos();
-  }, [fetchVideos]);
+    const db = getFirestore();
+    const videosQuery = query(
+      collection(db, COLLECTION_NAMES.gameVideos),
+      where("gameId", "==", gameId),
+      where("videoApproved", "==", true),
+    );
+
+    const unsubscribe = onSnapshot(
+      videosQuery,
+      (snapshot) => {
+        const fetched = snapshot.docs.map((doc) => doc.data() as GameVideo);
+        setVideos(fetched);
+        setIsLoading(false);
+
+        if (currentUser && fetched.length > 0) {
+          const likedByMap = Object.fromEntries(
+            fetched.map((v) => [v.gameId, v.likedBy ?? []]),
+          );
+          initLikedVideos(likedByMap, currentUser.userId);
+        }
+      },
+      (error) => {
+        console.error("[GameScreen] Video subscription error:", error);
+        setIsLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [gameId, currentUser]);
 
   // ── Viewability ───────────────────────────────────────────────────────────
   const onViewableItemsChanged = useCallback(
@@ -145,18 +145,11 @@ const GameScreen: React.FC = () => {
     (upload) => upload.gameId === gameId,
   );
 
-  useEffect(() => {
-    if (prevUploadingRef.current && !isUploadingThisGame) {
-      fetchVideos();
-    }
-    prevUploadingRef.current = isUploadingThisGame;
-  }, [isUploadingThisGame]);
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchVideos();
-    setRefreshing(false);
-  }, [fetchVideos]);
+    // onSnapshot keeps data live, this is just for the pull-to-refresh UX
+    setTimeout(() => setRefreshing(false), 500);
+  }, []);
 
   // ── Placeholder logic ─────────────────────────────────────────────────────
   const renderPlaceholder = () => {
@@ -261,7 +254,6 @@ const GameScreen: React.FC = () => {
               item.likedBy?.includes(currentUser?.userId ?? "") ?? false
             }
             isSubmissionMode={true}
-            onVideoDeleted={() => fetchVideos()}
             currentUserId={currentUser?.userId}
           />
         )}
@@ -285,10 +277,7 @@ const GameScreen: React.FC = () => {
       {uploadModalVisible && currentUser && (
         <VideoUploadModal
           visible={uploadModalVisible}
-          onClose={() => {
-            setUploadModalVisible(false);
-            fetchVideos();
-          }}
+          onClose={() => setUploadModalVisible(false)}
           gameId={gameId}
           competitionId={competitionId}
           competitionName={competitionName}

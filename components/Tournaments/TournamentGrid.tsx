@@ -10,6 +10,9 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { NormalizedCompetition } from "@shared/types";
+
+// ── Types
+
 interface TournamentGridProps {
   navigationRoute: string;
   tournaments: NormalizedCompetition[];
@@ -35,14 +38,14 @@ const TournamentGrid = ({
           tournament,
           COMPETITION_TYPES.TOURNAMENT,
         );
-        const maxPlayers = tournament.maxPlayers;
         const participantsLength = (tournament.participants ?? []).length;
-        const numberOfPlayers = `${participantsLength} / ${maxPlayers}`;
-        const location = `${tournament.location?.city}, ${tournament.location?.countryCode}`;
-        const tournamentNameClipped =
-          tournament.name.length > 15
+        const numberOfPlayers = `${participantsLength} / ${tournament.maxPlayers}`;
+        const location = `${tournament.location?.city ?? ""}, ${tournament.location?.countryCode ?? ""}`;
+        const tournamentNameClipped = tournament.name
+          ? tournament.name.length > 15
             ? tournament.name.slice(0, 15) + "..."
-            : tournament.name;
+            : tournament.name
+          : "";
 
         return (
           <TournamentCardItem
@@ -144,6 +147,8 @@ const TournamentCardItem = ({
     </TournamentContainer>
   );
 };
+
+// ── Styles
 
 const Container = styled.View({
   flexDirection: "row",
