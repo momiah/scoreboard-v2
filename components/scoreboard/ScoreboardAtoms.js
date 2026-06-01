@@ -7,7 +7,9 @@ const { width: screenWidth } = Dimensions.get("window");
 
 export const PlayerCell = ({ position, player }) => (
   <TeamTextContainer position={position}>
-    <TeamText position={position}>{player?.displayName || ""}</TeamText>
+    <TeamText position={position} numberOfLines={1} ellipsizeMode="tail">
+      {player?.displayName || ""}
+    </TeamText>
   </TeamTextContainer>
 );
 
@@ -76,6 +78,7 @@ const ResultsContainer = styled.View({
   justifyContent: "space-between",
   alignItems: "center",
   padding: 10,
+  flexShrink: 0,
 });
 const Score = styled.Text({
   fontSize: 28,
@@ -98,14 +101,13 @@ const TeamContainer = styled.View({
   justifyContent: "center",
   flexDirection: "column",
   borderRadius: 8,
+  flex: 1,
 });
 const TeamTextContainer = styled.View({
   display: "flex",
   flexDirection: "column",
-  padding: 15,
-  paddingLeft: 20,
-  paddingRight: 20,
-  width: screenWidth <= 405 ? 125 : 140,
+  paddingVertical: 15,
+  paddingHorizontal: 10,
 });
 
 const DateText = styled.Text({
