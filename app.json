@@ -3,7 +3,7 @@
     "name": "Court Champs",
     "slug": "court-champs",
     "version": "3.0.4",
-    "runtimeVersion": "3.0.0",
+    "runtimeVersion": "3.0.1",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
     "userInterfaceStyle": "light",
@@ -57,7 +57,7 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 4
+      "versionCode": 22
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
@@ -95,8 +95,20 @@
           "color": "#FF231F7C"
         }
       ],
-      "expo-video",
-      "expo-font"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ],
+  "expo-video",
+"expo-font",
+"expo-asset",
+"expo-screen-orientation"
     ],
     "extra": {
       "eas": {

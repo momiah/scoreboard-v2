@@ -343,6 +343,7 @@ const Overlay = styled(BlurView)({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const PopupContent = styled.View({

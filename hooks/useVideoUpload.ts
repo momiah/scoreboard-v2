@@ -1,6 +1,6 @@
 import { useCallback, useContext } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import {
   getFirestore,
@@ -52,7 +52,7 @@ interface UseVideoUploadReturn {
 export const useVideoUpload = ({
   competitionId,
 }: UseVideoUploadOptions): UseVideoUploadReturn => {
-  const { showToast } = useContext(PopupContext);
+  const { showBottomToast } = useContext(PopupContext);
 
   const pickVideo = useCallback(async (): Promise<PickedVideo | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -140,9 +140,14 @@ export const useVideoUpload = ({
 
           let lastReportedProgress = 0;
 
+          const uploadPath =
+            Platform.OS === "android"
+              ? videoUri.replace("file://", "")
+              : videoUri;
+
           const uploadId = await Upload.startUpload({
             url: data.uploadUrl,
-            path: videoUri,
+            path: uploadPath,
             method: "PUT",
             type: "raw",
             headers: { "content-type": "video/mp4" },
@@ -214,14 +219,17 @@ export const useVideoUpload = ({
                 "[VideoUpload] Upload returned non-2xx status:",
                 completedData.responseCode,
               );
-              showToast("Video upload failed. Please try again.", "error");
+              showBottomToast(
+                "Video upload failed. Please try again.",
+                "error",
+              );
             }
           });
 
           // ── Error ─────────────────────────────────────────────────────────
           Upload.addListener("error", uploadId, (errorData) => {
             console.error("[VideoUpload] Upload error:", errorData.error);
-            showToast("Video upload failed. Please try again.", "error");
+            showBottomToast("Video upload failed. Please try again.", "error");
           });
 
           // ── Cancelled ─────────────────────────────────────────────────────
@@ -231,13 +239,13 @@ export const useVideoUpload = ({
           });
         } catch (error) {
           console.error("[VideoUpload] Background upload failed:", error);
-          showToast("Video upload failed. Please try again.", "error");
+          showBottomToast("Video upload failed. Please try again.", "error");
         }
       };
 
       run();
     },
-    [competitionId, showToast],
+    [competitionId, showBottomToast],
   );
 
   return { pickVideo, startBackgroundUpload };

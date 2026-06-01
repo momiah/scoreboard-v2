@@ -1,0 +1,13 @@
+diff --git a/node_modules/react-native-background-upload/android/build.gradle b/node_modules/react-native-background-upload/android/build.gradle
+index 4d243c3..6833283 100755
+--- a/node_modules/react-native-background-upload/android/build.gradle
++++ b/node_modules/react-native-background-upload/android/build.gradle
+@@ -64,7 +64,7 @@ dependencies {
+ 
+     implementation "org.jetbrains.kotlin:$_kotlinStdlib:$_kotlinVersion"
+ 
+-    implementation 'net.gotev:uploadservice-okhttp:4.7.0'
++    implementation 'net.gotev:uploadservice-okhttp:4.9.2'
+ 
+     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0'
+ }
