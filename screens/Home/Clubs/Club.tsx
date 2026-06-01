@@ -95,7 +95,10 @@ const ClubScreen: React.FC = () => {
           setClubNotFound(true);
           return;
         }
-        setLoading(true);
+        // Only show the loading overlay on the first load for this club.
+        // Re-focus refreshes happen silently in the background.
+        const isFirstLoad = !clubById || (clubById as Club).clubId !== clubId;
+        if (isFirstLoad) setLoading(true);
         try {
           const fetched = await fetchClubById(clubId);
           if (cancelled) return;
