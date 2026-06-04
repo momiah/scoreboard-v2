@@ -38,9 +38,9 @@ const League = () => {
   const { leagueId, tab } = route.params;
   const { fetchCompetitionById, leagueById, requestToJoinLeague } =
     useContext(LeagueContext);
-  const { checkUserRole, currentUser } = useContext(UserContext);
+  const { checkUserRole, currentUser, fetchPlayers } = useContext(UserContext);
 
-  const [loading, setLoading] = useState(true);
+  const [leagueLoading, setLeagueLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState(tab || "Summary");
   const [userRole, setUserRole] = useState(null);
   const [leagueNotFound, setLeagueNotFound] = useState(false);
@@ -50,12 +50,15 @@ const League = () => {
     useCallback(() => {
       const fetchData = async () => {
         if (!leagueId) return;
-        setLoading(true);
+        setLeagueLoading(true);
         try {
           const fetchedLeague = await fetchCompetitionById({
             competitionId: leagueId,
             collectionName: COLLECTION_NAMES.leagues,
           });
+
+          await fetchPlayers(leagueId);
+
           if (!fetchedLeague) {
             setLeagueNotFound(true);
           } else {
@@ -65,12 +68,12 @@ const League = () => {
         } catch (error) {
           console.error("Error fetching league data:", error);
         } finally {
-          setLoading(false);
+          setLeagueLoading(false);
         }
       };
 
       fetchData();
-    }, [leagueId, currentUser]),
+    }, [leagueId, currentUser, fetchPlayers]),
   );
 
   const getUserRole = async (leagueData) => {
@@ -104,12 +107,12 @@ const League = () => {
   const handleRequestToJoin = async () => {
     try {
       setIsJoinRequestSending(true);
-      await requestToJoinLeague(
-        leagueId,
-        currentUser?.userId,
-        leagueById?.leagueOwner?.userId,
-        currentUser?.username,
-      );
+      await requestToJoinLeague({
+        competitionId: leagueId,
+        currentUser,
+        ownerId: leagueById?.leagueOwner?.userId,
+        collectionName: COLLECTION_NAMES.leagues,
+      });
       const refetchedLeague = await fetchCompetitionById({
         competitionId: leagueId,
         collectionName: COLLECTION_NAMES.leagues,
@@ -118,11 +121,9 @@ const League = () => {
     } catch (error) {
       console.error("Error sending join request:", error);
     } finally {
-      // Once backend marks requestPending, role shifts and both CTAs disable anyway.
       setIsJoinRequestSending(false);
     }
   };
-
   const handleTabPress = async (tabName) => {
     setSelectedTab(tabName);
     try {
@@ -242,9 +243,9 @@ const League = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
-      <LoadingOverlay visible={loading} loadingText="League" />
+      <LoadingOverlay visible={leagueLoading} loadingText="League" />
 
-      {!loading && leagueById && (
+      {!leagueLoading && leagueById && (
         <>
           <Overview>
             <LeagueImage

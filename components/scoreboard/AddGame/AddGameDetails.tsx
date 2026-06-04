@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Text, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import SelectPlayer from "./SelectPlayer";
@@ -6,6 +6,11 @@ import moment from "moment";
 import Tag from "../../Tag";
 import { FixtureStatusLabel } from "../../Tournaments/Fixtures/FixturesAtoms";
 import { Player } from "@shared/types";
+import {
+  formatScoreDigits,
+  deriveScoresFromInput,
+  formatScoresToInput,
+} from "../../../helpers/scoreInputHelpers";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -55,13 +60,37 @@ const AddGameDetails: React.FC<AddGameDetailsProps> = ({
   court = null,
   approvalStatus = null,
 }) => {
-  const handleScoreChange =
-    (setScore: (score: string) => void) => (text: string) => {
-      const numericText = text.replace(/[^0-9]/g, "");
-      if (numericText.length <= 2) {
-        setScore(numericText);
-      }
-    };
+  const [scoreInput, setScoreInput] = React.useState(() =>
+    formatScoresToInput({ team1Score, team2Score }),
+  );
+
+  useEffect(() => {
+    const derivedScores = deriveScoresFromInput(scoreInput);
+
+    if (
+      derivedScores.team1Score !== team1Score ||
+      derivedScores.team2Score !== team2Score
+    ) {
+      setScoreInput(formatScoresToInput({ team1Score, team2Score }));
+    }
+  }, [team1Score, team2Score]);
+
+  const handleScoreInputChange = (incomingValue: string) => {
+    const isDeleting = incomingValue.length < scoreInput.length;
+    let digits = incomingValue.replace(/[^0-9]/g, "").slice(0, 4);
+
+    if (isDeleting && digits.length === 2 && !incomingValue.endsWith("-")) {
+      digits = digits.slice(0, 1);
+    }
+
+    const formattedValue = formatScoreDigits(digits);
+    const { team1Score: nextTeam1Score, team2Score: nextTeam2Score } =
+      deriveScoresFromInput(formattedValue);
+
+    setScoreInput(formattedValue);
+    setTeam1Score(nextTeam1Score);
+    setTeam2Score(nextTeam2Score);
+  };
 
   const handleSelectPlayer = (
     team: "team1" | "team2",
@@ -138,19 +167,13 @@ const AddGameDetails: React.FC<AddGameDetailsProps> = ({
         <ResultsContainer>
           <ScoreContainer>
             <ScoreInput
-              keyboardType="numeric"
-              placeholder="0"
-              value={team1Score}
-              placeholderTextColor="#00A2FF"
-              onChangeText={handleScoreChange(setTeam1Score)}
-            />
-            <Text style={{ fontSize: 30, color: "#00A2FF" }}>-</Text>
-            <ScoreInput
-              keyboardType="numeric"
-              placeholder="0"
-              placeholderTextColor="#00A2FF"
-              value={team2Score}
-              onChangeText={handleScoreChange(setTeam2Score)}
+              keyboardType="number-pad"
+              placeholder="00-00"
+              placeholderSize={20}
+              placeholderTextColor="#1d3a5f"
+              value={scoreInput}
+              onChangeText={handleScoreInputChange}
+              maxLength={5}
             />
           </ScoreContainer>
         </ResultsContainer>
@@ -245,8 +268,9 @@ const ScoreContainer = styled.View({
 const ScoreInput = styled.TextInput({
   fontSize: 25,
   fontWeight: "bold",
-  margin: "0 5px",
   textAlign: "center",
+  letterSpacing: 2,
+  width: "100%",
   color: "#00A2FF",
 });
 
