@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, memo } from "react";
 import { Dimensions } from "react-native";
 import Tooltip from "../Tooltip";
 import { trophies, medals } from "../../mockImages/index";
@@ -10,21 +10,11 @@ import {
 } from "../../components/Skeletons/UserProfileSkeleton";
 import { COMPETITION_TYPES } from "@shared";
 
-const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
-  const prizes = useMemo(() => {
-    const prizesType =
-      competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
-    return distribution.map((percentage, index) => ({
-      xp: Math.floor(prizePool * percentage),
-      trophy: prizesType[index],
-    }));
-  }, [prizePool]);
-
-  const TrophyItem = React.memo(({ trophySource, statValue, index }) => {
+const TrophyItem = memo(
+  ({ trophySource, statValue, index, competitionType }) => {
     const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
     const [showSkeleton, setShowSkeleton] = useState(true);
 
-    // Reset skeleton when image source changes or component mounts
     useEffect(() => {
       setShowSkeleton(true);
     }, [trophySource]);
@@ -38,10 +28,7 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
 
     return (
       <PrizeView>
-        <CircleSkeleton
-          show={showSkeleton}
-          size={60}
-        >
+        <CircleSkeleton show={showSkeleton} size={60}>
           <ImageWrapper>
             <PrizeImage
               source={trophySource}
@@ -53,18 +40,27 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
           </ImageWrapper>
         </CircleSkeleton>
 
-        <TextSkeleton
-          show={showSkeleton}
-          height={14}
-          width={30}
-        >
+        <TextSkeleton show={showSkeleton} height={14} width={30}>
           {imageLoaded && !showSkeleton ? (
             <PrizeText>{statValue} CP</PrizeText>
           ) : null}
         </TextSkeleton>
       </PrizeView>
     );
-  });
+  },
+);
+
+TrophyItem.displayName = "TrophyItem";
+
+const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
+  const prizes = useMemo(() => {
+    const prizesType =
+      competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
+    return distribution.map((percentage, index) => ({
+      xp: Math.floor(prizePool * percentage),
+      trophy: prizesType[index],
+    }));
+  }, [prizePool, distribution, competitionType]);
 
   return (
     <PrizeDistributionContainer>
@@ -75,10 +71,11 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
       <PrizeRow>
         {prizes.map((prize, index) => (
           <TrophyItem
-            key={index}
+            key={`trophy-${index}`}
             trophySource={prize.trophy}
             statValue={prize.xp ?? 0}
             index={index}
+            competitionType={competitionType}
           />
         ))}
       </PrizeRow>

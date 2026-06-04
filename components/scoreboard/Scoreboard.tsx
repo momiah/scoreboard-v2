@@ -40,7 +40,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
   leagueParticipants = [],
   isJoinRequestSending = false,
 }) => {
-  const { fetchPlayers, currentUser } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
   const { requestToJoinLeague } = useContext(LeagueContext);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
@@ -71,9 +71,8 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
   const hasMinPlayers = playersCount >= minRequired;
 
   const handleAddGame = useCallback(() => {
-    fetchPlayers(leagueId);
     setModalVisible(true);
-  }, [fetchPlayers, leagueId]);
+  }, [leagueId]);
 
   const handleLogin = useCallback(() => {
     navigation.navigate("Login");
