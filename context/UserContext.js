@@ -34,6 +34,7 @@ import {
   updateTeams,
 } from "../devFunctions/firebaseFunctions";
 import { AppEventsLogger } from "react-native-fbsdk-next";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
 
 const UserContext = createContext();
 
@@ -267,14 +268,18 @@ const UserProvider = ({ children }) => {
           competitionId,
           collectionName,
         );
-        setPlayers(players);
+        // Format displayNames once, here
+        const formattedPlayers = players.map((player) => ({
+          ...player,
+          displayName: formatDisplayName(player),
+        }));
+        setPlayers(formattedPlayers);
       } catch (error) {
         console.error("Error fetching players:", error);
       }
     },
     [retrievePlayersFromCompetition],
   );
-
   const [loading, setLoading] = useState(true);
 
   const getTopUsers = async (limit = 5) => {
