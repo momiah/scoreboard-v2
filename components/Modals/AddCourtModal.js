@@ -241,6 +241,7 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const CourtLocationWrapper = styled(KeyboardAvoidingView)({
@@ -253,6 +254,7 @@ const CourtLocationWrapper = styled(KeyboardAvoidingView)({
 
 const AddCourtScrollContainer = styled.FlatList({
   padding: "40px 20px",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalTitle = styled.Text({
