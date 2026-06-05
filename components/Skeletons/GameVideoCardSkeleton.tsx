@@ -5,7 +5,7 @@ import {
   CircleSkeleton,
   TextSkeleton,
   ImageSkeleton,
-} from "./UserProfileSkeleton";
+} from "./SkeletonComponents";
 
 const { width: screenWidth } = Dimensions.get("window");
 const VIDEO_HEIGHT = screenWidth * (9 / 16);

@@ -4,10 +4,7 @@ import React, { useMemo } from "react";
 import { Dimensions } from "react-native";
 import { formatNumber } from "../../helpers/formatNumber";
 import { useImageLoader } from "../../utils/imageLoader";
-import {
-  CircleSkeleton,
-  TextSkeleton,
-} from "../../components/Skeletons/UserProfileSkeleton";
+import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 
 const { width: screenWidth } = Dimensions.get("window");
 const medalSize = screenWidth <= 405 ? 50 : 60;
@@ -46,7 +43,7 @@ const MatchMedals = ({
         key: "win_streak_7",
       },
     ],
-    [demonWin, winStreak3, winStreak5, winStreak7]
+    [demonWin, winStreak3, winStreak5, winStreak7],
   );
 
   // Individual medal component
@@ -56,10 +53,7 @@ const MatchMedals = ({
     return (
       <MedalContainer>
         <MedalImageContainer>
-          <CircleSkeleton
-            show={!imageLoaded}
-            size={medalSize}
-          >
+          <CircleSkeleton show={!imageLoaded} size={medalSize}>
             <Medal
               source={medal}
               onLoad={handleImageLoad}
@@ -69,21 +63,13 @@ const MatchMedals = ({
           </CircleSkeleton>
         </MedalImageContainer>
 
-        <TextSkeleton
-          show={!imageLoaded}
-          height={12}
-          width={60}
-        >
+        <TextSkeleton show={!imageLoaded} height={12} width={60}>
           <MedalTitle style={{ opacity: imageLoaded ? 1 : 0 }}>
             {title}
           </MedalTitle>
         </TextSkeleton>
 
-        <TextSkeleton
-          show={!imageLoaded}
-          height={16}
-          width={40}
-        >
+        <TextSkeleton show={!imageLoaded} height={16} width={40}>
           <MedalStat style={{ opacity: imageLoaded ? 1 : 0 }}>
             {formatNumber(stat)}
           </MedalStat>

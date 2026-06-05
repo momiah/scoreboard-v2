@@ -4,10 +4,7 @@ import Tooltip from "../Tooltip";
 import { trophies, medals } from "../../mockImages/index";
 import styled from "styled-components/native";
 import { useImageLoader } from "../../utils/imageLoader";
-import {
-  CircleSkeleton,
-  TextSkeleton,
-} from "../../components/Skeletons/UserProfileSkeleton";
+import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 import { COMPETITION_TYPES } from "@shared";
 
 const TrophyItem = memo(
