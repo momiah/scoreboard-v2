@@ -3,7 +3,7 @@ import React, { useContext } from "react";
 import { Image } from "react-native";
 import { GameContext } from "../../context/GameContext";
 import { useImageLoader } from "../../utils/imageLoader";
-import { CircleSkeleton } from "../Skeletons/UserProfileSkeleton";
+import { CircleSkeleton } from "../Skeletons/SkeletonComponents";
 
 const MedalDisplay = ({ xp, size }) => {
   const { getRankByXP } = useContext(GameContext);
@@ -11,10 +11,7 @@ const MedalDisplay = ({ xp, size }) => {
   const rank = getRankByXP(xp);
 
   return (
-    <CircleSkeleton
-      show={!imageLoaded}
-      size={size}
-    >
+    <CircleSkeleton show={!imageLoaded} size={size}>
       <Image
         source={rank.icon}
         onLoad={handleImageLoad}

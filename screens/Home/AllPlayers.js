@@ -18,7 +18,7 @@ import { GameContext } from "../../context/GameContext";
 import { UserContext } from "../../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-ico-flags";
-import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
+import { CircleSkeleton } from "../../components/Skeletons/SkeletonComponents";
 import { useImageLoader } from "../../utils/imageLoader";
 import debounce from "lodash.debounce";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -159,10 +159,7 @@ const AllPlayers = () => {
             });
           }}
         >
-          <CircleSkeleton
-            show={!imageLoaded}
-            size={iconSize}
-          >
+          <CircleSkeleton show={!imageLoaded} size={iconSize}>
             <Avatar
               onLoad={handleImageLoad}
               onError={handleImageError}

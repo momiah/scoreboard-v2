@@ -5,10 +5,7 @@ import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { useImageLoader } from "../../utils/imageLoader";
 import { useNavigation } from "@react-navigation/native";
 
-import {
-  CircleSkeleton,
-  TextSkeleton,
-} from "../../components/Skeletons/UserProfileSkeleton";
+import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 import { COMPETITION_TYPES } from "@shared";
 
 const PrizeContenders = ({
@@ -51,11 +48,7 @@ const PrizeContenders = ({
       }}
     >
       <TableCell>
-        <TextSkeleton
-          show={showSkeleton}
-          height={16}
-          width={25}
-        >
+        <TextSkeleton show={showSkeleton} height={16} width={25}>
           {imageLoaded && !showSkeleton ? (
             <Rank>
               {index + 1}
@@ -72,11 +65,7 @@ const PrizeContenders = ({
       </TableCell>
 
       <PlayerNameCell>
-        <TextSkeleton
-          show={showSkeleton}
-          height={16}
-          width={80}
-        >
+        <TextSkeleton show={showSkeleton} height={16} width={80}>
           {imageLoaded && !showSkeleton ? (
             <PlayerName>{displayName}</PlayerName>
           ) : null}
@@ -93,11 +82,7 @@ const PrizeContenders = ({
           {imageLoaded && !showSkeleton ? <StatTitle>Wins</StatTitle> : null}
         </TextSkeleton>
 
-        <TextSkeleton
-          show={showSkeleton}
-          height={16}
-          width={20}
-        >
+        <TextSkeleton show={showSkeleton} height={16} width={20}>
           {imageLoaded && !showSkeleton ? (
             <Stat>{player.numberOfWins}</Stat>
           ) : null}
@@ -114,11 +99,7 @@ const PrizeContenders = ({
             {imageLoaded && !showSkeleton ? <StatTitle>CP</StatTitle> : null}
           </TextSkeleton>
 
-          <TextSkeleton
-            show={showSkeleton}
-            height={16}
-            width={20}
-          >
+          <TextSkeleton show={showSkeleton} height={16} width={20}>
             {imageLoaded && !showSkeleton ? (
               <PrizeText>+{prizeXP}</PrizeText>
             ) : null}
@@ -127,10 +108,7 @@ const PrizeContenders = ({
       )}
 
       <TableCell>
-        <CircleSkeleton
-          show={showSkeleton}
-          size={30}
-        >
+        <CircleSkeleton show={showSkeleton} size={30}>
           <PrizeImage
             source={prizeSource}
             onLoad={handleImageLoad}
