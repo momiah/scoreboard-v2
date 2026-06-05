@@ -4,10 +4,7 @@ import styled from "styled-components/native";
 import { trophies, medals } from "../../mockImages";
 import { useImageLoader } from "../../utils/imageLoader";
 
-import {
-  CircleSkeleton,
-  TextSkeleton,
-} from "../../components/Skeletons/UserProfileSkeleton";
+import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 import { COMPETITION_TYPES } from "@shared";
 import TeamDetails from "../Modals/TeamDetailsModal";
 
@@ -72,11 +69,7 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
         return (
           <TableRow key={team.teamKey} onPress={() => handleTeamPress(team)}>
             <TableCell>
-              <TextSkeleton
-                show={showSkeleton}
-                height={16}
-                width={25}
-              >
+              <TextSkeleton show={showSkeleton} height={16} width={25}>
                 {imageLoaded && !showSkeleton ? (
                   <Rank>
                     {index + 1}
@@ -87,11 +80,7 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
             </TableCell>
 
             <TeamNameCell>
-              <TextSkeleton
-                show={showSkeleton}
-                height={16}
-                width={80}
-              >
+              <TextSkeleton show={showSkeleton} height={16} width={80}>
                 {imageLoaded && !showSkeleton ? (
                   <TeamNamesContainer>
                     {team.team.map((playerName, idx) => (
@@ -109,18 +98,14 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                 show={showSkeleton}
                 height={12}
                 width={30}
-              // style={{ marginBottom: 5 }}
+                // style={{ marginBottom: 5 }}
               >
                 {imageLoaded && !showSkeleton ? (
                   <StatTitle>Wins</StatTitle>
                 ) : null}
               </TextSkeleton>
 
-              <TextSkeleton
-                show={showSkeleton}
-                height={16}
-                width={20}
-              >
+              <TextSkeleton show={showSkeleton} height={16} width={20}>
                 {imageLoaded && !showSkeleton ? (
                   <Stat>{team.numberOfWins}</Stat>
                 ) : null}
@@ -133,18 +118,14 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
                   show={showSkeleton}
                   height={12}
                   width={30}
-                //   style={{ marginBottom: 5 }}
+                  //   style={{ marginBottom: 5 }}
                 >
                   {imageLoaded && !showSkeleton ? (
                     <StatTitle>CP</StatTitle>
                   ) : null}
                 </TextSkeleton>
 
-                <TextSkeleton
-                  show={showSkeleton}
-                  height={16}
-                  width={20}
-                >
+                <TextSkeleton show={showSkeleton} height={16} width={20}>
                   {imageLoaded && !showSkeleton ? (
                     <PrizeText>+{prizeXP}</PrizeText>
                   ) : null}
@@ -153,10 +134,7 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
             )}
 
             <TableCell>
-              <CircleSkeleton
-                show={showSkeleton}
-                size={30}
-              >
+              <CircleSkeleton show={showSkeleton} size={30}>
                 <PrizeImage
                   source={prizeSource}
                   onLoad={handleImageLoad}

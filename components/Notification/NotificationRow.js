@@ -5,26 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import Tag from "../Tag";
 import { useContext } from "react";
 import { UserContext } from "../../context/UserContext";
-
-const timeAgo = (date) => {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  const intervals = [
-    { label: "year", seconds: 31536000 },
-    { label: "month", seconds: 2592000 },
-    { label: "day", seconds: 86400 },
-    { label: "hour", seconds: 3600 },
-    { label: "minute", seconds: 60 },
-    { label: "second", seconds: 1 },
-  ];
-
-  for (const interval of intervals) {
-    const count = Math.floor(seconds / interval.seconds);
-    if (count > 0) {
-      return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
-    }
-  }
-  return "just now";
-};
+import { timeAgo } from "../../helpers/dateTimeUtils";
 
 const NotificationRow = ({
   item,
@@ -36,9 +17,6 @@ const NotificationRow = ({
 }) => {
   const navigation = useNavigation();
   const { readNotification } = useContext(UserContext);
-  const createdAt = item.createdAt?.seconds
-    ? new Date(item.createdAt.seconds * 1000)
-    : new Date();
 
   const responseText = item.response
     ? item.response.charAt(0).toUpperCase() + item.response.slice(1)
@@ -119,7 +97,7 @@ const NotificationRow = ({
         <NotificationText style={NotificationTextStyle}>
           {item.message}
         </NotificationText>
-        <NotificationTimestamp>{timeAgo(createdAt)}</NotificationTimestamp>
+        <NotificationTimestamp>{timeAgo(item.createdAt)}</NotificationTimestamp>
       </NotificationTextContainer>
 
       {responseText && (

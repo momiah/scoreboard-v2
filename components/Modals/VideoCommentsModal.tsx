@@ -29,7 +29,7 @@ import { COLLECTION_NAMES } from "@shared";
 import { UserContext } from "../../context/UserContext";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { ccImageEndpoint } from "@shared";
-import { timeAgo } from "@/helpers/formatDate";
+import { timeAgo } from "@/helpers/dateTimeUtils";
 
 interface VideoCommentsModalProps {
   visible: boolean;

@@ -18,7 +18,7 @@ import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { AntDesign } from "@expo/vector-icons";
 import { ranks } from "../../rankingMedals/ranking/ranks";
-import { CircleSkeleton } from "../../components/Skeletons/UserProfileSkeleton";
+import { CircleSkeleton } from "../Skeletons/SkeletonComponents";
 import { GameContext } from "../../context/GameContext";
 
 const screenWidth = Dimensions.get("window").width;

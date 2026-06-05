@@ -3,10 +3,7 @@ import { View } from "react-native";
 import styled from "styled-components/native";
 import { trophies, medals } from "../../mockImages";
 import { useImageLoader } from "../../utils/imageLoader";
-import {
-  CircleSkeleton,
-  TextSkeleton,
-} from "../../components/Skeletons/UserProfileSkeleton";
+import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 import { COMPETITION_TYPES } from "@shared";
 
 type CompetitionType =
@@ -43,11 +40,7 @@ const TrophyItem: React.FC<TrophyItemProps> = ({ imageSource, statValue }) => {
         />
       </CircleSkeleton>
 
-      <TextSkeleton
-        show={!imageLoaded}
-        height={14}
-        width={30}
-      >
+      <TextSkeleton show={!imageLoaded} height={14} width={30}>
         <PrizeText style={{ opacity: imageLoaded ? 1 : 0 }}>
           {statValue}
         </PrizeText>
