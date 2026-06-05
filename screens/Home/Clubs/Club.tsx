@@ -134,7 +134,7 @@ const ClubScreen: React.FC = () => {
   const renderPrimaryContent = () => {
     switch (selectedTab) {
       case "Feed":
-        return <ClubFeed />;
+        return <ClubFeed clubId={clubId} />;
       case "Club Performance":
         return (
           <ClubPerformance clubId={clubId} initialSubTab={performanceTab} />

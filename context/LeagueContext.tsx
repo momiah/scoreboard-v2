@@ -32,6 +32,7 @@ import { db } from "../services/firebase.config";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
+import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -62,6 +63,7 @@ import {
   Game,
   TeamStats,
   Player,
+  CompetitionOwner,
 } from "@shared";
 import {
   calculatePlayerPerformance,
@@ -432,6 +434,32 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       } else {
         await fetchUpcomingTournaments();
       }
+
+      // Surface in the club feed when the competition belongs to a club.
+      if (data.clubId) {
+        const owner = data[
+          config.ownerKey as keyof (League & Tournament)
+        ] as CompetitionOwner | undefined;
+        const competitionImage =
+          competitionType === "league"
+            ? data.leagueImage
+            : data.tournamentImage;
+        await clubFeed.competitionCreated(data.clubId, {
+          name: title ?? "",
+          competitionType: competitionType as "league" | "tournament",
+          competitionId: documentId,
+          image: competitionImage ?? null,
+          actor: owner
+            ? {
+              userId: owner.userId,
+              username: owner.username,
+              firstName: owner.firstName,
+              lastName: owner.lastName,
+            }
+            : null,
+        });
+      }
+
       setNavigationId(documentId);
 
       setTimeout(() => {
@@ -940,6 +968,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       AppEventsLogger.logEvent("JoinedClub", {
         club_id: clubId,
         method: "invite",
+      });
+
+      await clubFeed.playerJoined(clubId, {
+        userId: participantData.userId,
+        username: participantData.username,
+        firstName: participantData.firstName,
+        lastName: participantData.lastName,
+        profileImage: newParticipant.profileImage,
       });
 
       console.log("Club invite accepted successfully!");
