@@ -1,6 +1,4 @@
 // types/game.ts
-
-import { Timestamp } from "@google-cloud/firestore";
 import { COMPETITION_TYPES } from "@shared";
 export interface Player {
   userId: string;

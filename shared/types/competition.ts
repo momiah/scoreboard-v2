@@ -162,7 +162,9 @@ export interface NormalizedCompetition {
   admins: CompetitionAdmins[];
   owner: CompetitionOwner;
   games: Game[];
-  fixtures: Fixtures[];
+  fixtures?: Fixtures[];
+  fixturesGenerated?: boolean;
+  fixturesGeneratedAt?: Date | string;
   type: string;
   mode: string;
   prizeType: string;

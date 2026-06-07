@@ -22,6 +22,8 @@ import {
   deleteDoc,
   QueryConstraint,
   onSnapshot,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
@@ -108,9 +110,8 @@ export const getPlayerUserIds = (game: Game) => {
 const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const {
     sendNotification,
+    sendPushNotification,
     getUserById,
-    updateTeams,
-    retrieveTeams,
     currentUser,
     readNotification,
   } = useContext(UserContext);
@@ -379,7 +380,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      await setDoc(doc(db, collectionName, documentId), { ...data });
+      const ownerId = (
+        data[config.ownerKey as keyof (League & Tournament)] as {
+          userId?: string;
+        }
+      )?.userId;
+
+      await setDoc(doc(db, collectionName, documentId), {
+        ...data,
+        participantIds: ownerId ? [ownerId] : [],
+      });
       await createWelcomeChatMessage({
         collectionName: collectionName as CollectionName,
         documentId,
@@ -594,6 +604,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             newParticipantProfile,
           ],
           pendingInvites: updatedPending,
+          participantIds: arrayUnion(userId),
         });
 
         transaction.update(notificationDocRef, {
@@ -815,6 +826,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             newParticipantProfile,
           ],
           pendingRequests: updatedPending,
+          participantIds: arrayUnion(senderId),
         });
 
         transaction.update(notificationDocRef, {
@@ -1462,13 +1474,15 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     await updateDoc(competitionRef, {
       [config.participantsKey]: (
         competitionData?.[config.participantsKey] || []
-      ).filter((p: ScoreboardProfile) => p.userId !== userId),
-      [config.adminsKey]: (competitionData?.[config.adminsKey] || []).filter(
-        (a: CompetitionAdmins) => a.userId !== userId,
+      ).filter(
+        (participant: ScoreboardProfile) => participant.userId !== userId,
       ),
+      [config.adminsKey]: (competitionData?.[config.adminsKey] || []).filter(
+        (admin: CompetitionAdmins) => admin.userId !== userId,
+      ),
+      participantIds: arrayRemove(userId),
       removedParticipants,
     });
-
     await sendNotification({
       ...notificationSchema,
       createdAt: new Date(),
@@ -1667,7 +1681,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             tournamentId,
           },
         };
-        await sendNotification(payload);
+        await sendPushNotification(payload);
       }
 
       console.log("Fixtures successfully written to database");

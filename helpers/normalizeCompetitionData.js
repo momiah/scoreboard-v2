@@ -66,6 +66,10 @@ export const normalizeCompetitionData = ({ rawData, competitionType }) => {
 
     // Fixtures (Tournaments)
     ...(rawData?.fixtures && { fixtures: rawData.fixtures }),
+    fixturesGenerated: rawData?.fixturesGenerated || false,
+    ...(rawData?.fixturesGeneratedAt && {
+      fixturesGeneratedAt: rawData.fixturesGeneratedAt,
+    }),
 
     // Metadata
     createdAt: rawData?.createdAt || new Date(),

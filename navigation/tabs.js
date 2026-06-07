@@ -1,7 +1,9 @@
-import React, { useContext, useState } from "react";
+import React, {
+  useContext,
+  // useState
+} from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
-import { Platform } from "react-native";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
 import League from "../screens/Home/Leagues/League";
@@ -10,7 +12,6 @@ import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
 import Notifications from "../screens/Notifications";
-import Schedule from "../screens/Schedule";
 import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
@@ -31,23 +32,18 @@ import Tournaments from "../screens/Home/Tournaments/Tournaments";
 import FAQ from "../screens/Profile/FAQ";
 import LinkedAccounts from "../screens/Profile/LinkedAccounts";
 import Chats from "../screens/Chats";
+import CompetitionsScreen from "../screens/Competition/CompetitionScreen";
 import { UserContext } from "../context/UserContext";
-import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
-import { getUnitId } from "../utils/getAdMobUnitId";
-import { TouchableOpacity } from "react-native";
-import AddCompetitionModal from "../components/Modals/AddCompetitionModal";
-import AddLeagueModal from "../components/Modals/AddLeagueModal";
-import AddTournamentModal from "../components/Modals/AddTournamentModal";
-import QuickAddModal from "../components/Modals/QuickAddModal";
 import InvitePlayer from "../screens/InvitePlayer";
 import GameScreen from "../screens/GameScreen";
+// import { getUnitId } from "../utils/getAdMobUnitId";
+// import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+// const BANNER_UNIT_ID = getUnitId();
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-const BANNER_UNIT_ID = getUnitId();
 
-// Home Stack
 const HomeStack = () => {
   return (
     <Stack.Navigator
@@ -126,43 +122,6 @@ const ProfileStack = () => {
   );
 };
 
-const NotificationsStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{ headerShown: false }}
-      initialRouteName="Notification"
-    >
-      <Stack.Screen name="Notification" component={Notifications} />
-      <Stack.Screen name="League" component={League} />
-      <Stack.Screen name="EditLeague" component={EditLeague} />
-      <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
-      <Stack.Screen name="PendingInvites" component={PendingInvites} />
-      <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
-      <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
-      <Stack.Screen name="UserProfile" component={UserProfile} />
-      <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
-      <Stack.Screen name="UserFeedback" component={UserFeedback} />
-      <Stack.Screen name="AccountSupport" component={AccountSupport} />
-      <Stack.Screen name="PendingRequests" component={PendingRequests} />
-      <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
-      <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
-      <Stack.Screen name="FAQ" component={FAQ} />
-      <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
-      <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
-      <Stack.Screen name="Tournament" component={Tournament} />
-      <Stack.Screen name="Tournaments" component={Tournaments} />
-      <Stack.Screen name="GameScreen" component={GameScreen} />
-      <Stack.Screen
-        name="BulkFixturesPublisher"
-        component={BulkFixturesPublisher}
-      />
-      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
-      <Stack.Screen name="EditTournament" component={EditTournament} />
-    </Stack.Navigator>
-  );
-};
-
 const ChatsStack = () => {
   return (
     <Stack.Navigator
@@ -200,7 +159,45 @@ const ChatsStack = () => {
   );
 };
 
-const TabIcon = ({ focused, name, color, size, hasNotification }) => {
+const CompetitionsStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName="CompetitionsList"
+    >
+      <Stack.Screen name="CompetitionsList" component={CompetitionsScreen} />
+      <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="EditLeague" component={EditLeague} />
+      <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
+      <Stack.Screen name="PendingInvites" component={PendingInvites} />
+      <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
+      <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
+      <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
+      <Stack.Screen name="UserFeedback" component={UserFeedback} />
+      <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="PendingRequests" component={PendingRequests} />
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
+      <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
+      <Stack.Screen name="FAQ" component={FAQ} />
+      <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
+      <Stack.Screen name="Tournament" component={Tournament} />
+      <Stack.Screen name="Tournaments" component={Tournaments} />
+      <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen
+        name="BulkFixturesPublisher"
+        component={BulkFixturesPublisher}
+      />
+      <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
+      <Stack.Screen name="EditTournament" component={EditTournament} />
+      <Stack.Screen name="Notifications" component={Notifications} />
+    </Stack.Navigator>
+  );
+};
+
+const TabIcon = ({ name, color, size }) => {
   return (
     <View
       style={{
@@ -209,59 +206,14 @@ const TabIcon = ({ focused, name, color, size, hasNotification }) => {
         marginTop: 5,
       }}
     >
-      <Ionicons
-        //  style={{ padding: 5 }}
-        name={name}
-        size={size}
-        color={color}
-      />
-      {hasNotification && (
-        <View
-          style={{
-            position: "absolute",
-            right: -6,
-            top: 0,
-            backgroundColor: "red",
-            borderRadius: 6,
-            width: 12,
-            height: 12,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        />
-      )}
+      <Ionicons name={name} size={size} color={color} />
     </View>
   );
 };
 
-const QuickAddPlaceholder = () => null;
-
-// Tabs Navigator
 const Tabs = () => {
-  const { notifications, chatSummaries, currentUser } = useContext(UserContext);
-  const [showAd, setShowAd] = useState(true);
-  const [addCompetitionVisible, setAddCompetitionVisible] = useState(false);
-  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
-  const [addTournamentModalVisible, setAddTournamentModalVisible] =
-    useState(false);
-  const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
-
-  const handleCompetitionOptionSelect = (option) => {
-    // Small delay to allow the first modal to close smoothly
-    setTimeout(() => {
-      if (option === "league") {
-        setAddLeagueModalVisible(true);
-      } else if (option === "tournament") {
-        setAddTournamentModalVisible(true);
-      } else if (option === "game") {
-        setQuickAddModalVisible(true);
-      }
-    }, 500);
-  };
-
-  const unreadNotifications = notifications.filter(
-    (notification) => notification.isRead === false,
-  ).length;
+  const { chatSummaries } = useContext(UserContext);
+  // const [showAd, setShowAd] = useState(true);
 
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
@@ -281,99 +233,29 @@ const Tabs = () => {
 
             if (route.name === "Home") {
               iconName = focused ? "home" : "home-outline";
-              return (
-                <TabIcon
-                  name={iconName}
-                  color={color}
-                  size={size}
-                  hasNotification={false}
-                />
-              );
+              return <TabIcon name={iconName} color={color} size={size} />;
+            } else if (route.name === "Competitions") {
+              iconName = focused ? "trophy" : "trophy-outline";
+              return <TabIcon name={iconName} color={color} size={size} />;
             } else if (route.name === "Profile") {
               iconName = focused ? "person" : "person-outline";
-              return (
-                <TabIcon
-                  name={iconName}
-                  color={color}
-                  size={size}
-                  hasNotification={false}
-                />
-              );
-            } else if (route.name === "Notifications") {
-              iconName = focused ? "notifications" : "notifications-outline";
-              return (
-                <TabIcon
-                  name={iconName}
-                  color={color}
-                  size={size}
-                  hasNotification={unreadNotifications > 0}
-                />
-              );
+              return <TabIcon name={iconName} color={color} size={size} />;
             } else if (route.name === "ChatsTab") {
               iconName = focused ? "chatbubbles" : "chatbubbles-outline";
 
-              return (
-                <TabIcon
-                  name={iconName}
-                  color={color}
-                  size={size}
-                  hasNotification={false}
-                />
-              );
+              return <TabIcon name={iconName} color={color} size={size} />;
             }
           },
           tabBarStyle: {
             borderTopWidth: 1,
             borderTopColor: "#262626",
           },
-          tabBarLabel: () => null, // Remove label
-          headerShown: false, // Hide the header
+          tabBarLabel: () => null,
+          headerShown: false,
         })}
       >
-        {/* Replace Home component with HomeStack */}
         <Tab.Screen name="Home" component={HomeStack} />
-        <Tab.Screen
-          name="Notifications"
-          component={NotificationsStack}
-          options={{
-            tabBarBadge: unreadNotifications > 0 ? unreadNotifications : null,
-            tabBarBadgeStyle: {
-              backgroundColor: "red",
-              color: "white",
-            },
-          }}
-        />
-
-        <Tab.Screen
-          name="QuickAdd"
-          component={QuickAddPlaceholder}
-          options={{
-            tabBarIcon: () => (
-              <TouchableOpacity
-                onPress={() => setAddCompetitionVisible(true)}
-                style={{
-                  backgroundColor: "rgb(3, 16, 31)",
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  borderWidth: 5,
-                  borderColor: "#00A2FF",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginBottom: Platform.OS === "ios" ? 10 : 0,
-                }}
-              >
-                <Ionicons name="add" size={26} color="white" />
-              </TouchableOpacity>
-            ),
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-              setAddCompetitionVisible(true);
-            },
-          }}
-        />
+        <Tab.Screen name="Competitions" component={CompetitionsStack} />
 
         <Tab.Screen
           name="ChatsTab"
@@ -386,39 +268,8 @@ const Tabs = () => {
             },
           }}
         />
-        {/* <Tab.Screen name="Schedule" component={Schedule} /> */}
         <Tab.Screen name="Profile" component={ProfileStack} />
       </Tab.Navigator>
-
-      {addCompetitionVisible && (
-        <AddCompetitionModal
-          modalVisible={addCompetitionVisible}
-          setModalVisible={setAddCompetitionVisible}
-          onOptionSelect={handleCompetitionOptionSelect}
-          currentUser={currentUser}
-        />
-      )}
-
-      {addLeagueModalVisible && (
-        <AddLeagueModal
-          modalVisible={addLeagueModalVisible}
-          setModalVisible={setAddLeagueModalVisible}
-        />
-      )}
-
-      {addTournamentModalVisible && (
-        <AddTournamentModal
-          modalVisible={addTournamentModalVisible}
-          setModalVisible={setAddTournamentModalVisible}
-        />
-      )}
-
-      {quickAddModalVisible && (
-        <QuickAddModal
-          modalVisible={quickAddModalVisible}
-          setModalVisible={setQuickAddModalVisible}
-        />
-      )}
 
       {/* {showAd && (
         <View style={{ width: "100%", alignItems: "center" }}>

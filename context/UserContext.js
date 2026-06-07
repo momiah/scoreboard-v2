@@ -687,93 +687,73 @@ const UserProvider = ({ children }) => {
     }
   };
 
-  const sendNotification = async (notification) => {
-    const error = [];
-    const success = [];
-    // console.log("Sending Notification:", JSON.stringify(notification, null, 2));
+  const saveNotification = async (notification) => {
+    const recipientId = notification.recipientId;
+    if (!recipientId) {
+      console.error("saveNotification: no recipientId");
+      return;
+    }
+    const notifRef = collection(db, "users", recipientId, "notifications");
+    await addDoc(notifRef, notification);
+    console.log("✅ Notification saved to subcollection!");
+  };
+
+  const sendPushNotification = async (notification) => {
     try {
       const recipientId = notification.recipientId;
       if (!recipientId) {
-        error.push("No recipientId");
-      } else {
-        success.push("Has recipientId");
+        console.error("sendPushNotification: no recipientId");
+        return;
       }
 
-      // 🔥 Get the subcollection reference under the user
-      const notifRef = collection(db, "users", recipientId, "notifications");
-      if (!notifRef) {
-        error.push("No notifRef");
-      } else {
-        success.push("Has notifRef");
-      }
-
-      // ➕ Add the notification as a new document
-      await addDoc(notifRef, notification);
-
-      // Lookup push tokens
       const recipientDoc = await getDoc(doc(db, "users", recipientId));
       if (!recipientDoc.exists()) {
-        error.push("No recipientDoc");
-      } else {
-        success.push("Has recipientDoc");
+        console.error("sendPushNotification: no recipientDoc");
+        return;
       }
+
       const pushTokens = recipientDoc.data()?.pushTokens || [];
-
       if (pushTokens.length === 0) {
-        error.push("No pushTokens");
-      } else {
-        success.push("Has pushTokens");
+        console.log("sendPushNotification: no pushTokens");
+        return;
       }
 
-      //send device notification
-      if (pushTokens.length > 0) {
-        const messages = pushTokens.map((token) => ({
-          to: token,
-          sound: "default",
-          vibrate: [200, 100, 200],
-          priority: "high",
-          title: `Court Champs`,
-          body: notification.message,
-          data: {
-            ...notification.data,
-            type: notification.type,
-          },
-        }));
-        if (messages.length === 0) {
-          error.push("No messages");
-        } else {
-          success.push("Has messages");
-        }
-        const response = await fetch("https://exp.host/--/api/v2/push/send", {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Accept-Encoding": "gzip, deflate",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(messages),
-        });
+      const messages = pushTokens.map((token) => ({
+        to: token,
+        sound: "default",
+        vibrate: [200, 100, 200],
+        priority: "high",
+        title: `Court Champs`,
+        body: notification.message,
+        data: {
+          ...notification.data,
+          type: notification.type,
+        },
+      }));
 
-        if (!response.ok) {
-          error.push("Push response not ok");
-          error.push(`Response status: ${JSON.stringify(response)}`);
-        } else {
-          success.push("Push response ok");
-        }
-        console.log(`Push sent to ${pushTokens.length} devices`);
+      const response = await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Accept-Encoding": "gzip, deflate",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(messages),
+      });
+
+      if (!response.ok) {
+        console.error("sendPushNotification: push response not ok");
       }
-
-      console.log("✅ Notification saved to subcollection!");
+      console.log(`Push sent to ${pushTokens.length} devices`);
     } catch (error) {
-      console.error("❌ Failed to send notification:", error);
-      // Alert.alert(
-      //   "Error",
-      //   `5. Passed notification: ${JSON.stringify(notification)}.
-      //     6. Success checks: ${success.join(",\n ")}.
-      //     7. Error checks: ${error.join(",\n ")}.
-      //    Failed to send notification: ${error.message} `
-      // );
+      console.error("❌ Failed to send push notification:", error);
     }
+  };
+
+  // Combined — saves the doc AND sends the push. Existing callers keep using this unchanged.
+  const sendNotification = async (notification) => {
+    await saveNotification(notification);
+    await sendPushNotification(notification);
   };
 
   const sendSupportRequest = async ({ subject, message, currentUser }) => {
@@ -918,6 +898,8 @@ const UserProvider = ({ children }) => {
 
         //Notification
         sendNotification,
+        saveNotification,
+        sendPushNotification,
         notifications,
         readNotification,
         chatSummaries,
