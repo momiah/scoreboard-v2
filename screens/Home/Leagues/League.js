@@ -35,7 +35,7 @@ const openMap = (location) => {
 const League = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { leagueId, tab } = route.params;
+  const { leagueId, tab, scrollToGameId } = route.params;
   const { fetchCompetitionById, leagueById, requestToJoinLeague } =
     useContext(LeagueContext);
   const { checkUserRole, currentUser, fetchPlayers } = useContext(UserContext);
@@ -201,6 +201,7 @@ const League = () => {
             leagueParticipants={leagueParticipants || []}
             maxPlayers={maxPlayers}
             isJoinRequestSending={isJoinRequestSending}
+            scrollToGameId={scrollToGameId}
           />
         );
       case "Videos":

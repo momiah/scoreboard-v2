@@ -35,7 +35,7 @@ const openMap = (location) => {
 const Tournament = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { tournamentId, tab } = route.params;
+  const { tournamentId, tab, scrollToGameId, glowColor } = route.params;
 
   const { fetchCompetitionById, tournamentById, requestToJoinLeague } =
     useContext(LeagueContext);
@@ -195,7 +195,14 @@ const Tournament = () => {
           />
         );
       case "Fixtures":
-        return <Fixtures tournament={tournamentById} userRole={userRole} />;
+        return (
+          <Fixtures
+            tournament={tournamentById}
+            userRole={userRole}
+            scrollToGameId={scrollToGameId}
+            glowColor={glowColor}
+          />
+        );
       case "Videos":
         return <CompetitionVideos competitionId={tournamentId} />;
       case "Player Performance":

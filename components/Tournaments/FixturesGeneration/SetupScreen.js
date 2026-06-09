@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, Dimensions } from "react-native";
 
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import OptionSelector from "../../OptionSelector";
 import { doublesModes } from "@shared";
 
 const mixedDoublesOptions = ["Random", "Balanced"];
+const screenWidth = Dimensions.get("window").width;
 
 export const SetupScreen = ({
   tournamentType,
@@ -192,7 +193,7 @@ const FormSection = styled.View({
 
 const SectionTitle = styled.Text({
   color: "#fff",
-  fontSize: 16,
+  fontSize: screenWidth <= 430 ? 14 : 16,
   fontWeight: "600",
   marginBottom: 12,
 });
@@ -272,20 +273,20 @@ const CreateButton = styled.TouchableOpacity(({ disabled }) => ({
 
 const CancelText = styled.Text({
   color: "white",
-  fontSize: 16,
+  fontSize: screenWidth <= 430 ? 14 : 16,
   fontWeight: "500",
 });
 
 const GenerateText = styled.Text({
   color: "white",
   fontWeight: "bold",
-  fontSize: 16,
+  fontSize: screenWidth <= 430 ? 14 : 16,
 });
 
 const CreateText = styled.Text({
   color: "white",
   fontWeight: "bold",
-  fontSize: 16,
+  fontSize: screenWidth <= 430 ? 14 : 16,
 });
 
 const LoadingRow = styled.View({

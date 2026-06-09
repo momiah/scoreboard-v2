@@ -37,11 +37,11 @@ import {
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RankSuffix from "@/components/RankSuffix";
 import { getPlayerRankInCompetition } from "@/helpers/getPlayerRankInCompetition";
-import { TextSkeleton } from "../../components/Skeletons/SkeletonComponents";
 import { getTime } from "../../helpers/dateTimeUtils";
 import AddCompetitionModal from "@/components/Modals/AddCompetitionModal";
 import AddLeagueModal from "@/components/Modals/AddLeagueModal";
 import AddTournamentModal from "@/components/Modals/AddTournamentModal";
+import CompetitionListItemSkeleton from "../../components/Skeletons/CompetitionListItemSkeleton";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -111,8 +111,16 @@ const CompetitionsScreen = memo(() => {
       const flush = (collectionName: string) => {
         reportedCollections.add(collectionName);
         const next = Array.from(competitionMap.current.values()).sort(
-          (first, second) =>
-            getTime(second.lastActivity) - getTime(first.lastActivity),
+          (first, second) => {
+            // Prize-distributed competitions sink below active ones.
+            const firstDistributed = first.prizesDistributed ? 1 : 0;
+            const secondDistributed = second.prizesDistributed ? 1 : 0;
+            if (firstDistributed !== secondDistributed) {
+              return firstDistributed - secondDistributed;
+            }
+            // Within the same group, newest activity first.
+            return getTime(second.lastActivity) - getTime(first.lastActivity);
+          },
         );
         setCompetitions(next);
         if (reportedCollections.size === COLLECTIONS.length) {
@@ -194,12 +202,43 @@ const CompetitionsScreen = memo(() => {
   const handleCompetitionPress = useCallback(
     (competition: CompetitionWithMeta) => {
       const isLeague = competition.competitionType === COMPETITION_TYPES.LEAGUE;
-      navigation.navigate(isLeague ? "League" : "Tournament", {
-        [isLeague ? "leagueId" : "tournamentId"]: competition.id,
-        tab: isLeague ? "Scoreboard" : "Fixtures",
-      });
+      const userId = currentUser?.userId;
+
+      const isUserInGame = (game: Game) =>
+        game.team1?.player1?.userId === userId ||
+        game.team1?.player2?.userId === userId ||
+        game.team2?.player1?.userId === userId ||
+        game.team2?.player2?.userId === userId;
+
+      const isPending = (game: Game) =>
+        game.approvalStatus === "pending" || game.approvalStatus === "Pending";
+
+      if (isLeague) {
+        const firstPending = (competition.games || []).find(
+          (game) => isUserInGame(game) && isPending(game),
+        );
+        navigation.navigate("League", {
+          leagueId: competition.id,
+          tab: "Scoreboard",
+          scrollToGameId: firstPending?.gameId,
+        });
+      } else {
+        const fixtureGames = (competition.fixtures || []).flatMap(
+          (fixture) => fixture.games || [],
+        );
+        const userGames = fixtureGames.filter(isUserInGame);
+        const firstPending = userGames.find(isPending);
+        const firstUnplayed = userGames.find((game) => !game.result);
+        const targetGame = firstPending || firstUnplayed;
+        navigation.navigate("Tournament", {
+          tournamentId: competition.id,
+          tab: "Fixtures",
+          scrollToGameId: targetGame?.gameId,
+          glowColor: firstPending ? "#FFA500" : "#00A2FF",
+        });
+      }
     },
-    [navigation],
+    [navigation, currentUser?.userId],
   );
 
   const renderItem = useCallback(
@@ -411,7 +450,6 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
     }, [competition.games, userId]);
 
     const activityMessage = useMemo(() => {
-      // Prizes distributed — final state, both leagues and tournaments.
       if (competition.prizesDistributed) {
         return { text: "Prizes distributed", color: "#FFD700" };
       }
@@ -462,8 +500,23 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
       isLeague,
     ]);
 
+    const isExpired = useMemo(() => {
+      if (
+        !competition.prizesDistributed ||
+        !competition.prizeDistributionDate
+      ) {
+        return false;
+      }
+      const weekAfterDistribution =
+        getTime(competition.prizeDistributionDate) + 1000 * 60 * 60 * 24 * 7;
+      return Date.now() > weekAfterDistribution;
+    }, [competition.prizesDistributed, competition.prizeDistributionDate]);
+
     return (
-      <ListItemContainer onPress={onPress}>
+      <ListItemContainer
+        onPress={onPress}
+        style={{ opacity: isExpired ? 0.5 : 1 }}
+      >
         {/* Row 1: info (left) + stats (right) */}
         <TopRow>
           <CompetitionInfo>
@@ -520,43 +573,6 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
 );
 
 CompetitionListItem.displayName = "CompetitionListItem";
-
-const CompetitionListItemSkeleton = memo(() => (
-  <ListItemContainer activeOpacity={1} disabled>
-    <TopRow>
-      <CompetitionInfo>
-        <TextSkeleton show height={isSmallScreen ? 14 : 16} width={160} />
-        <View style={{ marginTop: 6 }}>
-          <TextSkeleton show height={isSmallScreen ? 11 : 12} width={90} />
-        </View>
-      </CompetitionInfo>
-
-      <StatsRow>
-        <StatBlock>
-          <TextSkeleton show height={isSmallScreen ? 10 : 11} width={28} />
-          <View style={{ marginTop: 4 }}>
-            <TextSkeleton show height={isSmallScreen ? 20 : 24} width={24} />
-          </View>
-        </StatBlock>
-        <StatBlock>
-          <TextSkeleton show height={isSmallScreen ? 10 : 11} width={28} />
-          <View style={{ marginTop: 4 }}>
-            <TextSkeleton show height={isSmallScreen ? 20 : 24} width={24} />
-          </View>
-        </StatBlock>
-      </StatsRow>
-    </TopRow>
-
-    <MetaRow>
-      <MetaLeft>
-        <TextSkeleton show height={12} width={140} />
-      </MetaLeft>
-      <TextSkeleton show height={12} width={90} />
-    </MetaRow>
-  </ListItemContainer>
-));
-
-CompetitionListItemSkeleton.displayName = "CompetitionListItemSkeleton";
 
 const CompetitionName = styled.Text({
   fontSize: isSmallScreen ? 14 : 17,
