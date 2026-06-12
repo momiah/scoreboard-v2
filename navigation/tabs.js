@@ -212,12 +212,15 @@ const TabIcon = ({ name, color, size }) => {
 };
 
 const Tabs = () => {
-  const { chatSummaries } = useContext(UserContext);
-  // const [showAd, setShowAd] = useState(true);
+  const { chatSummaries, notifications } = useContext(UserContext);
 
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
   ).length;
+
+  const hasUnreadNotifications = notifications.some(
+    (notification) => notification.isRead === false,
+  );
 
   return (
     <>
@@ -255,7 +258,22 @@ const Tabs = () => {
         })}
       >
         <Tab.Screen name="Home" component={HomeStack} />
-        <Tab.Screen name="Competitions" component={CompetitionsStack} />
+        <Tab.Screen
+          name="Competitions"
+          component={CompetitionsStack}
+          options={{
+            tabBarBadge: hasUnreadNotifications ? "" : null,
+            tabBarBadgeStyle: {
+              backgroundColor: "red",
+              minWidth: 16,
+              maxHeight: 16,
+              borderRadius: 8,
+              borderWidth: 2,
+              borderColor: "rgb(3, 16, 31)",
+              transform: [{ translateX: -2 }, { translateY: 4 }],
+            },
+          }}
+        />
 
         <Tab.Screen
           name="ChatsTab"

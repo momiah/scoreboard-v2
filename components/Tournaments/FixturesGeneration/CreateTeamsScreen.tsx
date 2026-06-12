@@ -226,7 +226,7 @@ const FormSection = styled.View({
 });
 
 const FixedTeamsContainer = styled.ScrollView({
-  maxHeight: screenWidth <= 405 ? 400 : 600,
+  maxHeight: screenWidth <= 405 ? 500 : 600,
   gap: 20,
 });
 
@@ -275,12 +275,12 @@ const GenerateButton = styled.TouchableOpacity(
 
 const BackText = styled.Text({
   color: "white",
-  fontSize: 16,
+  fontSize: screenWidth <= 430 ? 14 : 16,
   fontWeight: "500",
 });
 
 const GenerateText = styled.Text({
   color: "white",
   fontWeight: "bold",
-  fontSize: 16,
+  fontSize: screenWidth <= 430 ? 14 : 16,
 });

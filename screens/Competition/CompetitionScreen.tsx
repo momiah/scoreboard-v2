@@ -462,17 +462,19 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
       }
 
       const playedGames = isLeague
-        ? competition.games || []
-        : (competition.fixtures || []).flatMap(
-            (fixture) => fixture.games || [],
-          );
+        ? (competition.games || []).filter(
+            (game) => game.approvalStatus === "approved",
+          )
+        : (competition.fixtures || [])
+            .flatMap((fixture) => fixture.games || [])
+            .filter((game) => game.result);
 
       if (
         !isLeague &&
         competition.fixturesGenerated &&
         playedGames.length === 0
       ) {
-        return { text: "Fixtures generated", color: "#1ED760" };
+        return { text: "Fixtures generated", color: "#00a700ff" };
       }
 
       const createdRecently =

@@ -902,7 +902,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     competitionId: string;
     userId: string;
     senderId: string;
-    notificationId: string;
+    notificationId?: string;
     notificationType: string;
   }) => {
     try {
@@ -1096,11 +1096,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         await updateDoc(competitionRef, { games: updatedGames });
       }
 
-      await readNotification(
-        notificationId,
-        userId,
-        notificationTypes.RESPONSE.ACCEPT,
-      );
+      if (notificationId) {
+        await readNotification(
+          notificationId,
+          userId,
+          notificationTypes.RESPONSE.ACCEPT,
+        );
+      }
 
       await sendNotification({
         ...notificationSchema,
@@ -1274,11 +1276,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         });
       }
 
-      await readNotification(
-        notificationId,
-        userId,
-        notificationTypes.RESPONSE.DECLINE,
-      );
+      if (notificationId) {
+        await readNotification(
+          notificationId,
+          userId,
+          notificationTypes.RESPONSE.DECLINE,
+        );
+      }
 
       await sendNotification({
         ...notificationSchema,
