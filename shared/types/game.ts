@@ -113,6 +113,7 @@ export interface GameVideo extends GameVideoUploadPayload {
   playerIds?: string[];
   transcoded?: boolean;
   thumbnailUrl?: string;
+  courtPositions?: SelectedPlayers;
 }
 
 export interface Comment {
@@ -145,10 +146,10 @@ export interface Fixtures {
   games: Game[];
 }
 
-export interface SelectedPlayers {
+export type SelectedPlayers = {
   team1: (Player | null)[];
   team2: (Player | null)[];
-}
+};
 
 export interface PresetPlayers {
   team1: GameTeam | null;
