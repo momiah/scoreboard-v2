@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
+import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
 import InviteActionModal from "../components/Modals/InviteActionModal";
@@ -110,7 +111,12 @@ const Notifications = () => {
 
   return (
     <HomeContainer>
-      <Header>Notifications</Header>
+      <HeaderRow>
+        <BackButton onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color="white" />
+        </BackButton>
+        <Header>Notifications</Header>
+      </HeaderRow>
       <FlatList
         data={notifications}
         renderItem={renderNotification}
@@ -185,13 +191,28 @@ const HomeContainer = styled.View({
   width: "100%",
 });
 
+const HeaderRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  marginTop: 20,
+  marginBottom: 10,
+  paddingHorizontal: 20,
+  gap: 12,
+});
+
+const BackButton = styled.TouchableOpacity({
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  backgroundColor: "rgba(255,255,255,0.08)",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
 const Header = styled.Text({
   fontSize: 24,
   fontWeight: "bold",
-  marginTop: 20,
-  marginBottom: 10,
   color: "white",
-  paddingHorizontal: 20,
 });
 
 export default memo(Notifications);

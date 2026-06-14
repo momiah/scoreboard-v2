@@ -5,7 +5,7 @@ import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
 import { LeagueProvider } from "./context/LeagueContext";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, CommonActions } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -151,16 +151,22 @@ export default function App() {
 
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const data = response.notification.request.content.data;
+        if (!navigationRef.current) return;
 
-        if (navigationRef.current) {
-          navigationRef.current?.navigate("Notifications", {
-            screen: "Notification",
-            params: { notificationData: data },
-          });
-        } else {
-          console.log("Navigation reference is not ready");
-        }
+        navigationRef.current.dispatch(
+          CommonActions.navigate({
+            name: "Competitions",
+            params: {
+              state: {
+                index: 1,
+                routes: [
+                  { name: "CompetitionsList" },
+                  { name: "Notifications" },
+                ],
+              },
+            },
+          }),
+        );
       },
     );
 

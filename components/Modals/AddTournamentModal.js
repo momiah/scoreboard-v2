@@ -206,7 +206,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess }) => {
       setTournamentCreationLoading(false);
       setModalVisible(false);
       if (onSuccess) {
-        onSuccess();
+        onSuccess(tournamentId);
       }
     } catch (err) {
       console.error("Error creating league:", err);

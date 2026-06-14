@@ -72,8 +72,6 @@ const Home = () => {
     upcomingLeagues,
     fetchUpcomingTournaments,
     upcomingTournaments,
-    leagueNavigationId,
-    tournamentNavigationId,
   } = useContext(LeagueContext);
   const { getTopUsers, currentUser } = useContext(UserContext);
 
@@ -150,20 +148,6 @@ const Home = () => {
   );
 
   // ─── Home Data ───────────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (leagueNavigationId) {
-      navigation.navigate("League", { leagueId: leagueNavigationId });
-    }
-  }, [leagueNavigationId]);
-
-  useEffect(() => {
-    if (tournamentNavigationId) {
-      navigation.navigate("Tournament", {
-        tournamentId: tournamentNavigationId,
-      });
-    }
-  }, [tournamentNavigationId]);
 
   const fetchUsers = async () => {
     try {
@@ -393,14 +377,22 @@ const Home = () => {
         <AddLeagueModal
           modalVisible={addLeagueModalVisible}
           setModalVisible={setAddLeagueModalVisible}
-          onSuccess={() => fetchUpcomingLeagues()}
+          onSuccess={(leagueId: string) => {
+            fetchUpcomingLeagues();
+            navigation.navigate("League", { leagueId });
+          }}
         />
       )}
       {addTournamentModalVisible && (
         <AddTournamentModal
           modalVisible={addTournamentModalVisible}
           setModalVisible={setAddTournamentModalVisible}
-          onSuccess={() => fetchUpcomingTournaments()}
+          onSuccess={(tournamentId: string) => {
+            fetchUpcomingTournaments();
+            navigation.navigate("Tournament", {
+              tournamentId,
+            });
+          }}
         />
       )}
     </SafeAreaView>

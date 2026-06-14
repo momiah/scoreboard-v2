@@ -22,6 +22,8 @@ import {
   deleteDoc,
   QueryConstraint,
   onSnapshot,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
@@ -45,6 +47,7 @@ import {
   CompetitionAdmins,
   PendingRequests,
   GameVideo,
+  SelectedPlayers,
 } from "@shared";
 import { UserContext } from "./UserContext";
 import {
@@ -55,6 +58,7 @@ import {
   Fixtures,
   Game,
   TeamStats,
+  Player,
 } from "@shared";
 import {
   calculatePlayerPerformance,
@@ -108,9 +112,8 @@ export const getPlayerUserIds = (game: Game) => {
 const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const {
     sendNotification,
+    sendPushNotification,
     getUserById,
-    updateTeams,
-    retrieveTeams,
     currentUser,
     readNotification,
   } = useContext(UserContext);
@@ -379,7 +382,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      await setDoc(doc(db, collectionName, documentId), { ...data });
+      const ownerId = (
+        data[config.ownerKey as keyof (League & Tournament)] as {
+          userId?: string;
+        }
+      )?.userId;
+
+      await setDoc(doc(db, collectionName, documentId), {
+        ...data,
+        participantIds: ownerId ? [ownerId] : [],
+      });
       await createWelcomeChatMessage({
         collectionName: collectionName as CollectionName,
         documentId,
@@ -404,9 +416,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const fetchCompetitionById = async ({
     competitionId,
     collectionName,
+    setState = true,
   }: {
     competitionId: string;
     collectionName: CollectionName;
+    setState?: boolean;
   }): Promise<League | Tournament | null> => {
     try {
       const competitionDoc = await getDoc(
@@ -426,10 +440,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         ...competitionDoc.data(),
       };
 
-      if (isTournament) {
-        setTournamentById(competitionData as Tournament);
-      } else {
-        setLeagueById(competitionData as League);
+      if (setState) {
+        if (isTournament) {
+          setTournamentById(competitionData as Tournament);
+        } else {
+          setLeagueById(competitionData as League);
+        }
       }
 
       return competitionData as unknown as League | Tournament;
@@ -594,6 +610,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             newParticipantProfile,
           ],
           pendingInvites: updatedPending,
+          participantIds: arrayUnion(userId),
         });
 
         transaction.update(notificationDocRef, {
@@ -815,6 +832,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             newParticipantProfile,
           ],
           pendingRequests: updatedPending,
+          participantIds: arrayUnion(senderId),
         });
 
         transaction.update(notificationDocRef, {
@@ -890,7 +908,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     competitionId: string;
     userId: string;
     senderId: string;
-    notificationId: string;
+    notificationId?: string;
     notificationType: string;
   }) => {
     try {
@@ -1084,11 +1102,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         await updateDoc(competitionRef, { games: updatedGames });
       }
 
-      await readNotification(
-        notificationId,
-        userId,
-        notificationTypes.RESPONSE.ACCEPT,
-      );
+      if (notificationId) {
+        await readNotification(
+          notificationId,
+          userId,
+          notificationTypes.RESPONSE.ACCEPT,
+        );
+      }
 
       await sendNotification({
         ...notificationSchema,
@@ -1262,11 +1282,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         });
       }
 
-      await readNotification(
-        notificationId,
-        userId,
-        notificationTypes.RESPONSE.DECLINE,
-      );
+      if (notificationId) {
+        await readNotification(
+          notificationId,
+          userId,
+          notificationTypes.RESPONSE.DECLINE,
+        );
+      }
 
       await sendNotification({
         ...notificationSchema,
@@ -1462,13 +1484,15 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     await updateDoc(competitionRef, {
       [config.participantsKey]: (
         competitionData?.[config.participantsKey] || []
-      ).filter((p: ScoreboardProfile) => p.userId !== userId),
-      [config.adminsKey]: (competitionData?.[config.adminsKey] || []).filter(
-        (a: CompetitionAdmins) => a.userId !== userId,
+      ).filter(
+        (participant: ScoreboardProfile) => participant.userId !== userId,
       ),
+      [config.adminsKey]: (competitionData?.[config.adminsKey] || []).filter(
+        (admin: CompetitionAdmins) => admin.userId !== userId,
+      ),
+      participantIds: arrayRemove(userId),
       removedParticipants,
     });
-
     await sendNotification({
       ...notificationSchema,
       createdAt: new Date(),
@@ -1667,7 +1691,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             tournamentId,
           },
         };
-        await sendNotification(payload);
+        await sendPushNotification(payload);
       }
 
       console.log("Fixtures successfully written to database");
@@ -1885,6 +1909,18 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     return true;
   };
 
+  const saveVideoCourtPositions = async ({
+    videoId,
+    userId,
+    courtPositions,
+  }: {
+    videoId: string;
+    userId: string;
+    courtPositions: SelectedPlayers;
+  }): Promise<void> => {
+    const videoRef = doc(db, COLLECTION_NAMES.gameVideos, videoId);
+    await updateDoc(videoRef, { courtPositions, courtPositionsSetBy: userId });
+  };
   return (
     <LeagueContext.Provider
       value={{
@@ -1956,6 +1992,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         // Video Management
         checkVideoSaved,
         toggleSaveVideo,
+        saveVideoCourtPositions,
       }}
     >
       {children}

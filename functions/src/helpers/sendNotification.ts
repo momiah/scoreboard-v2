@@ -1,20 +1,5 @@
 import * as admin from "firebase-admin";
-
-interface NotificationData {
-  [key: string]: unknown;
-}
-
-interface Notification {
-  recipientId: string;
-  title?: string;
-  message: string;
-  type: string;
-  createdAt: Date;
-  isRead: boolean;
-  senderId: string;
-  response: string;
-  data?: NotificationData;
-}
+import { Notification } from "@shared";
 
 export const sendNotification = async (
   notification: Notification,

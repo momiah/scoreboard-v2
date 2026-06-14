@@ -1,4 +1,11 @@
-import React, { useState, useContext, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useContext,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
 import {
@@ -6,10 +13,11 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { FlatList, View, ActivityIndicator } from "react-native";
+import { FlatList, View, ActivityIndicator, Animated } from "react-native";
 import AddGameModal from "../Modals/AddGameModal";
 import { getButtonConfig, getFallbackMessage } from "./scoreboardConfig";
 import { TeamColumn, ScoreDisplay } from "./ScoreboardAtoms";
+import GameGlow, { runGlow } from "./../GameCardGlow";
 import moment from "moment";
 import { LeagueContext } from "../../context/LeagueContext";
 import { CollectionName, Game, ScoreboardProfile } from "@shared/types";
@@ -26,6 +34,7 @@ interface ScoreboardProps {
   leagueName: string;
   leagueParticipants?: ScoreboardProfile[];
   isJoinRequestSending?: boolean;
+  scrollToGameId?: string;
 }
 
 const Scoreboard: React.FC<ScoreboardProps> = ({
@@ -39,6 +48,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
   leagueName,
   leagueParticipants = [],
   isJoinRequestSending = false,
+  scrollToGameId,
 }) => {
   const { currentUser } = useContext(UserContext);
   const { requestToJoinLeague } = useContext(LeagueContext);
@@ -47,6 +57,9 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [requestSend, setRequestSend] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [highlightedGameId, setHighlightedGameId] = useState<string | null>(
+    null,
+  );
 
   const currentDate = moment();
   const leagueStart = moment(leagueStartDate, "DD-MM-YYYY");
@@ -152,6 +165,32 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
     return gamesDescending.filter((game) => game.date === selectedDate);
   }, [gamesDescending, selectedDate]);
 
+  const gamesListRef = useRef<FlatList<Game>>(null);
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  const scrollIndex = useMemo(() => {
+    if (!scrollToGameId) return -1;
+    return filteredGames.findIndex((game) => game.gameId === scrollToGameId);
+  }, [scrollToGameId, filteredGames]);
+
+  useEffect(() => {
+    if (scrollToGameId) setSelectedDate(null);
+  }, [scrollToGameId]);
+
+  useEffect(() => {
+    if (scrollIndex < 0) return;
+    const timer = setTimeout(() => {
+      gamesListRef.current?.scrollToIndex({
+        index: scrollIndex,
+        animated: true,
+        viewPosition: 0,
+      });
+      setHighlightedGameId(scrollToGameId ?? null);
+      runGlow(glowAnim, () => setHighlightedGameId(null));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [scrollIndex]);
+
   return (
     <Container>
       <AddGameButton
@@ -201,35 +240,51 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
       )}
 
       <FlatList
+        ref={gamesListRef}
         data={filteredGames}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(item) => item.gameId}
+        onScrollToIndexFailed={(info) => {
+          setTimeout(() => {
+            gamesListRef.current?.scrollToIndex({
+              index: info.index,
+              animated: true,
+              viewPosition: 0,
+            });
+          }, 300);
+        }}
         renderItem={({ item }) => {
           const isPending =
             item.approvalStatus === "pending" ||
             item.approvalStatus === "Pending";
+          const isHighlighted = item.gameId === highlightedGameId;
 
           return (
-            <GameContainer
-              onPress={() => handleGamePress(item)}
-              style={{ opacity: isPending ? 0.6 : 1 }}
-            >
-              <TeamColumn
-                team="left"
-                players={item.team1}
-                leagueType={leagueType}
-              />
-              <ScoreDisplay
-                date={item.date}
-                team1={item.team1.score}
-                team2={item.team2.score}
-                item={item}
-              />
-              <TeamColumn
-                team="right"
-                players={item.team2}
-                leagueType={leagueType}
-              />
-            </GameContainer>
+            <CardWrapper>
+              {isHighlighted && (
+                <GameGlow glowAnim={glowAnim} color="#FFA500" />
+              )}
+              <GameContainer
+                onPress={() => handleGamePress(item)}
+                style={{ opacity: isPending ? 0.6 : 1 }}
+              >
+                <TeamColumn
+                  team="left"
+                  players={item.team1}
+                  leagueType={leagueType}
+                />
+                <ScoreDisplay
+                  date={item.date}
+                  team1={item.team1.score}
+                  team2={item.team2.score}
+                  item={item}
+                />
+                <TeamColumn
+                  team="right"
+                  players={item.team2}
+                  leagueType={leagueType}
+                />
+              </GameContainer>
+            </CardWrapper>
           );
         }}
       />
@@ -270,10 +325,15 @@ const DateText = styled.Text({
   color: "white",
 });
 
+const CardWrapper = styled.View({
+  position: "relative",
+  marginBottom: 16,
+  overflow: "visible",
+});
+
 const GameContainer = styled.TouchableOpacity({
   flexDirection: "row",
   justifyContent: "space-between",
-  marginBottom: 16,
   backgroundColor: "#001123",
   borderWidth: 1,
   borderColor: "rgb(9, 33, 62)",

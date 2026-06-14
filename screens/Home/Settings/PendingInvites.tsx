@@ -9,6 +9,7 @@ import {
 } from "@react-navigation/native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
+import { CollectionName } from "@/shared";
 
 type PendingInvite = {
   userId: string;
@@ -42,11 +43,17 @@ const PendingInvites = () => {
       setLoading(true);
       const competition = await fetchCompetitionById({
         competitionId,
-        collectionName,
+        collectionName: collectionName as CollectionName,
       });
 
+      if (!competition) {
+        console.warn("Competition not found for id:", competitionId);
+        setPendingUsers([]);
+        return;
+      }
+
       const users = await getPendingInviteUsers(competition);
-      setPendingUsers(users);
+      setPendingUsers(users ?? []);
     } catch (error) {
       console.error("Failed to fetch pending invites:", error);
     } finally {
@@ -60,7 +67,11 @@ const PendingInvites = () => {
 
   const handleRemove = async (userId: string): Promise<void> => {
     try {
-      await removePendingInvite(competitionId, userId, collectionName);
+      await removePendingInvite(
+        competitionId,
+        userId,
+        collectionName as CollectionName,
+      );
       setPendingUsers((prev) => prev.filter((u) => u.userId !== userId));
       fetchInvites();
     } catch (error) {

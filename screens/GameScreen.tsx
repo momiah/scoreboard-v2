@@ -19,16 +19,29 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   getFirestore,
+  doc,
   collection,
   query,
   where,
   onSnapshot,
 } from "firebase/firestore";
-import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
-import { GameVideo, GameTeam, Player } from "@shared/types";
+import {
+  COLLECTION_NAMES,
+  COMPETITION_TYPES,
+  notificationTypes,
+} from "@shared";
+import {
+  GameVideo,
+  GameTeam,
+  Player,
+  NormalizedCompetition,
+  Game,
+} from "@shared/types";
+import { buildCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { UserContext } from "../context/UserContext";
 import GameVideoCard from "../components/Feed/GameVideoCard";
 import { useLikeVideo } from "../hooks/useLikeVideo";
+import { useGameApproval } from "../hooks/useGameApproval";
 import VideoUploadModal from "../components/Modals/VideoUploadModal";
 import {
   TeamColumn,
@@ -36,6 +49,7 @@ import {
 } from "../components/scoreboard/ScoreboardAtoms";
 import ActionPlaceholder from "../components/ActionPlaceholder";
 import { usePendingUpload } from "@/hooks/usePendingUpload";
+import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
 type GameScreenParams = {
   GameScreen: {
@@ -70,13 +84,23 @@ const GameScreen: React.FC = () => {
 
   const { currentUser } = useContext(UserContext);
   const { likedVideoIds, handleLike, initLikedVideos } = useLikeVideo();
+  const { approve, decline, loadingDecision, findGameInCompetition } =
+    useGameApproval();
 
   const [videos, setVideos] = useState<GameVideo[]>([]);
+  const [liveGame, setLiveGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { pendingUploads } = usePendingUpload(currentUser?.userId);
+
+  const isLeague = competitionType === COMPETITION_TYPES.LEAGUE;
+  const config = buildCompetitionConfig(isLeague);
+
+  const approvalNotificationType = isLeague
+    ? notificationTypes.ACTION.ADD_GAME.LEAGUE
+    : notificationTypes.ACTION.ADD_GAME.TOURNAMENT;
 
   // ── Derived values ────────────────────────────────────────────────────────
   const team1Player1 = team1?.player1;
@@ -92,8 +116,56 @@ const GameScreen: React.FC = () => {
   ].includes(currentUser?.userId);
 
   const hasAlreadyUploaded = videos.some(
-    (v) => v.postedBy.userId === currentUser?.userId,
+    (video) => video.postedBy.userId === currentUser?.userId,
   );
+
+  // ── Approval eligibility ──────────────────────────────────────────────────
+  const isReporter = liveGame?.reporter === currentUser?.userId;
+  const approvalLimitReached =
+    liveGame?.approvalStatus === notificationTypes.RESPONSE.APPROVED_GAME;
+  const autoApproved = liveGame?.autoApproved ?? false;
+  const isPending =
+    liveGame?.approvalStatus === "Pending" ||
+    liveGame?.approvalStatus === "pending";
+
+  const showApproval = isParticipant && !isReporter && liveGame !== null;
+  const canApprove =
+    showApproval && isPending && !approvalLimitReached && !autoApproved;
+
+  const approvalLabel = approvalLimitReached
+    ? "Game approved"
+    : autoApproved
+      ? "Auto-approved"
+      : "Approve this game?";
+
+  // ── Live game subscription ────────────────────────────────────────────────
+  useEffect(() => {
+    const db = getFirestore();
+    const competitionRef = doc(db, config.collectionName, competitionId);
+
+    const unsubscribe = onSnapshot(
+      competitionRef,
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setLiveGame(null);
+          return;
+        }
+        const normalizedCompetition = normalizeCompetitionData({
+          rawData: snapshot.data(),
+          competitionType: config.competitionType,
+        }) as NormalizedCompetition;
+
+        setLiveGame(
+          findGameInCompetition(normalizedCompetition, gameId, config.isLeague),
+        );
+      },
+      (error) => {
+        console.error("[GameScreen] Competition subscription error:", error);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [competitionId, gameId, competitionType]);
 
   // ── Real-time video subscription ──────────────────────────────────────────
   useEffect(() => {
@@ -107,13 +179,13 @@ const GameScreen: React.FC = () => {
     const unsubscribe = onSnapshot(
       videosQuery,
       (snapshot) => {
-        const fetched = snapshot.docs.map((doc) => doc.data() as GameVideo);
+        const fetched = snapshot.docs.map((video) => video.data() as GameVideo);
         setVideos(fetched);
         setIsLoading(false);
 
         if (currentUser && fetched.length > 0) {
           const likedByMap = Object.fromEntries(
-            fetched.map((v) => [v.gameId, v.likedBy ?? []]),
+            fetched.map((video) => [video.gameId, video.likedBy ?? []]),
           );
           initLikedVideos(likedByMap, currentUser.userId);
         }
@@ -150,6 +222,27 @@ const GameScreen: React.FC = () => {
     // onSnapshot keeps data live, this is just for the pull-to-refresh UX
     setTimeout(() => setRefreshing(false), 500);
   }, []);
+
+  // ── Approval handlers ─────────────────────────────────────────────────────
+  const handleApprove = useCallback(() => {
+    if (!liveGame) return;
+    approve({
+      gameId,
+      competitionId,
+      senderId: liveGame.reporter,
+      notificationType: approvalNotificationType,
+    });
+  }, [approve, liveGame, gameId, competitionId, approvalNotificationType]);
+
+  const handleDecline = useCallback(() => {
+    if (!liveGame) return;
+    decline({
+      gameId,
+      competitionId,
+      senderId: liveGame.reporter,
+      notificationType: approvalNotificationType,
+    });
+  }, [decline, liveGame, gameId, competitionId, approvalNotificationType]);
 
   // ── Placeholder logic ─────────────────────────────────────────────────────
   const renderPlaceholder = () => {
@@ -221,27 +314,56 @@ const GameScreen: React.FC = () => {
               <CompetitionName numberOfLines={1}>
                 {competitionName}
               </CompetitionName>
-            </Header>
 
+              {showApproval && (
+                <ApprovalContainer>
+                  <ApprovalLabel disabled={!canApprove}>
+                    {approvalLabel}
+                  </ApprovalLabel>
+                  <ApprovalActions>
+                    <IconButton
+                      variant="decline"
+                      disabled={!canApprove || loadingDecision}
+                      onPress={handleDecline}
+                    >
+                      <Ionicons name="close" size={15} color="white" />
+                    </IconButton>
+                    <IconButton
+                      variant="accept"
+                      disabled={!canApprove || loadingDecision}
+                      onPress={handleApprove}
+                    >
+                      {loadingDecision ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Ionicons name="checkmark" size={15} color="white" />
+                      )}
+                    </IconButton>
+                  </ApprovalActions>
+                </ApprovalContainer>
+              )}
+            </Header>
             {/* ── Score card ── */}
-            <ScoreCard>
-              <TeamColumn
-                team="left"
-                players={team1}
-                leagueType={team1Player2 ? "Doubles" : "Singles"}
-              />
-              <ScoreDisplay
-                date={date}
-                team1={team1.score}
-                team2={team2.score}
-                item={{ approvalStatus: "approved", gamescore }}
-              />
-              <TeamColumn
-                team="right"
-                players={team2}
-                leagueType={team2Player2 ? "Doubles" : "Singles"}
-              />
-            </ScoreCard>
+            {liveGame && (
+              <ScoreCard>
+                <TeamColumn
+                  team="left"
+                  players={team1}
+                  leagueType={team1Player2 ? "Doubles" : "Singles"}
+                />
+                <ScoreDisplay
+                  date={liveGame.date ?? date}
+                  team1={liveGame.team1.score}
+                  team2={liveGame.team2.score}
+                  item={liveGame}
+                />
+                <TeamColumn
+                  team="right"
+                  players={team2}
+                  leagueType={team2Player2 ? "Doubles" : "Singles"}
+                />
+              </ScoreCard>
+            )}
           </>
         }
         renderItem={({ item }) => (
@@ -348,6 +470,45 @@ const ScoreCard = styled.View({
   paddingVertical: 16,
   paddingHorizontal: 12,
 });
+
+const ApprovalContainer = styled.View({
+  alignItems: "center",
+  flexDirection: "row",
+  gap: 10,
+});
+
+const ApprovalLabel = styled.Text(({ disabled }: { disabled: boolean }) => ({
+  color: disabled ? "rgba(255,255,255,0.4)" : "#00A2FF",
+  fontSize: 11,
+  fontWeight: "600",
+}));
+
+const ApprovalActions = styled.View({
+  flexDirection: "row",
+  gap: 8,
+});
+
+const IconButton = styled.TouchableOpacity(
+  ({
+    disabled,
+    variant,
+  }: {
+    disabled: boolean;
+    variant: "decline" | "accept";
+  }) => ({
+    width: 27,
+    height: 27,
+    borderRadius: 18,
+    backgroundColor: disabled
+      ? "#888"
+      : variant === "decline"
+        ? "red"
+        : "#00A2FF",
+    opacity: disabled ? 0.6 : 1,
+    justifyContent: "center",
+    alignItems: "center",
+  }),
+);
 
 const PlaceholderWrapper = styled.View({
   paddingHorizontal: 16,

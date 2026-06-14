@@ -5,7 +5,6 @@ import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AddLeagueModal from "./AddLeagueModal";
 import AddTournamentModal from "./AddTournamentModal";
-import QuickAddModal from "./QuickAddModal";
 import { BlurView } from "expo-blur";
 import { trophies, medals } from "../../mockImages";
 import { AntDesign } from "@expo/vector-icons";
@@ -24,9 +23,8 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
-  const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
 
-  const handleOptionPress = (option: "league" | "tournament" | "game") => {
+  const handleOptionPress = (option: "league" | "tournament") => {
     if (!currentUser) {
       Alert.alert(
         `Cannot open modal 🚫`,
@@ -38,8 +36,6 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
       setAddLeagueModalVisible(true);
     } else if (option === "tournament") {
       setAddTournamentModalVisible(true);
-    } else if (option === "game") {
-      setQuickAddModalVisible(true);
     }
   };
 
@@ -124,34 +120,6 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
                 </OptionContent>
                 <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
               </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handleOptionPress("game")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#0a1929",
-                  borderRadius: 12,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: "#1a2b3d",
-                }}
-              >
-                <IconContainer>
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={32}
-                    color="#00A2FF"
-                  />
-                </IconContainer>
-                <OptionContent>
-                  <OptionTitle>Add Game</OptionTitle>
-                  <OptionSubtitle>
-                    Quickly add a game for an existing league or tournament
-                  </OptionSubtitle>
-                </OptionContent>
-                <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
-              </TouchableOpacity>
             </OptionsContainer>
           </ModalContent>
         </ModalOverlay>
@@ -169,14 +137,6 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
         <AddTournamentModal
           modalVisible={addTournamentModalVisible}
           setModalVisible={setAddTournamentModalVisible}
-          onSuccess={handleSuccess}
-        />
-      )}
-
-      {quickAddModalVisible && (
-        <QuickAddModal
-          modalVisible={quickAddModalVisible}
-          setModalVisible={setQuickAddModalVisible}
           onSuccess={handleSuccess}
         />
       )}

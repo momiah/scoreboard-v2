@@ -51,6 +51,7 @@ const InviteActionModal = ({
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
   const [isWithdrawn, setIsWithdrawn] = useState(false);
+  const [withdrawnMessage, setWithdrawnMessage] = useState("");
 
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const timeoutRef = useRef(null);
@@ -67,7 +68,7 @@ const InviteActionModal = ({
     (competition?.maxPlayers ?? Infinity);
 
   const alreadyInLeague = competition?.participants?.some(
-    (p) => p.userId === currentUser?.userId,
+    (participant) => participant.userId === currentUser?.userId,
   );
 
   const location = competition?.location;
@@ -76,6 +77,7 @@ const InviteActionModal = ({
     setCompetition(null);
     setIsCopied(false);
     setIsWithdrawn(false);
+    setWithdrawnMessage("");
     setLoading(true);
   }, []);
 
@@ -94,6 +96,7 @@ const InviteActionModal = ({
         if (!data) {
           readNotification(notificationId, currentUser.userId);
           setIsWithdrawn(true);
+          setWithdrawnMessage("This competition no longer exists.");
           setLoading(false);
           return;
         }
@@ -104,11 +107,26 @@ const InviteActionModal = ({
         }) as NormalizedCompetition;
 
         setCompetition(normalized);
-        setIsWithdrawn(
-          !normalized.pendingInvites?.some(
-            (u) => u.userId === currentUser?.userId,
-          ),
+
+        const notInPendingInvites = !normalized.pendingInvites?.some(
+          (pendingUser) => pendingUser.userId === currentUser?.userId,
         );
+        const alreadyParticipant = normalized.participants?.some(
+          (participant) => participant.userId === currentUser?.userId,
+        );
+
+        // Withdrawn = removed from pending invites AND never became a participant
+        const inviteWithdrawn = notInPendingInvites && !alreadyParticipant;
+
+        if (inviteWithdrawn) {
+          setWithdrawnMessage("This invite has been withdrawn.");
+        } else if (notInPendingInvites && alreadyParticipant) {
+          setWithdrawnMessage("You are already a participant.");
+        } else {
+          setWithdrawnMessage("");
+        }
+
+        setIsWithdrawn(inviteWithdrawn);
         setLoading(false);
       },
       (error) => {
@@ -123,7 +141,7 @@ const InviteActionModal = ({
   useEffect(() => {
     if (!visible || !competition || isRead) return;
 
-    if (leagueFull || isWithdrawn) {
+    if (leagueFull || isWithdrawn || alreadyInLeague) {
       readNotification(notificationId, currentUser.userId);
     }
   }, [
@@ -132,6 +150,7 @@ const InviteActionModal = ({
     isRead,
     leagueFull,
     isWithdrawn,
+    alreadyInLeague,
     notificationId,
     currentUser?.userId,
   ]);
@@ -176,6 +195,16 @@ const InviteActionModal = ({
   };
 
   const numberOfPlayers = `${competition?.participants.length} / ${competition?.maxPlayers}`;
+
+  // Single source of truth for the disabled/error state.
+  // Priority: withdrawn/participant message → league full → none.
+  const actionBlocked = isWithdrawn || alreadyInLeague || leagueFull || isRead;
+
+  const errorMessage = withdrawnMessage
+    ? withdrawnMessage
+    : leagueFull
+      ? "This invite has expired as the league is full."
+      : "";
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -232,7 +261,6 @@ const InviteActionModal = ({
                         style={{ marginLeft: 5 }}
                       >
                         <Ionicons
-                          // name={"checkmark-circle-outline"}
                           name={
                             isCopied
                               ? "checkmark-circle-outline"
@@ -295,32 +323,17 @@ const InviteActionModal = ({
                 ) : null}
               </LeagueDetailsContainer>
 
-              {(leagueFull || isWithdrawn || alreadyInLeague) && (
-                <ErrorText>
-                  {leagueFull
-                    ? "This invite has expired as the league is full"
-                    : isWithdrawn
-                      ? "This invite is no longer available"
-                      : "You are already a participant in this league"}
-                </ErrorText>
-              )}
+              {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
 
               <View style={{ flexDirection: "row", gap: 15, marginTop: 10 }}>
                 <Button
                   style={{ backgroundColor: "red" }}
                   onPress={handleDeclineInvite}
-                  disabled={
-                    isRead || leagueFull || isWithdrawn || alreadyInLeague
-                  }
+                  disabled={actionBlocked}
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
-                <Button
-                  onPress={handleAcceptInvite}
-                  disabled={
-                    isRead || leagueFull || isWithdrawn || alreadyInLeague
-                  }
-                >
+                <Button onPress={handleAcceptInvite} disabled={actionBlocked}>
                   <AcceptButtonText>Accept</AcceptButtonText>
                 </Button>
               </View>
@@ -332,6 +345,7 @@ const InviteActionModal = ({
   );
 };
 
+// ── Layout
 const ModalContainer = styled(BlurView).attrs({
   intensity: 50,
   tint: "dark",
@@ -352,6 +366,15 @@ const ModalContent = styled.View({
   justifyContent: "center",
 });
 
+const LeagueDetailsContainer = styled.View({
+  paddingTop: 20,
+  paddingBottom: 25,
+  width: "100%",
+  borderRadius: 10,
+  overflow: "hidden",
+});
+
+// ── Text
 const Title = styled.Text({
   fontSize: 20,
   fontWeight: "bold",
@@ -363,25 +386,30 @@ const Message = styled.Text({
   fontSize: 14,
   color: "white",
   marginBottom: 8,
-  //   textAlign: "center",
 });
 
 const LeagueLocation = styled.Text({
   fontSize: 14,
-  //   padding: 5,
   color: "white",
   backgroundColor: "rgba(0, 0, 0, 0.3)",
   borderRadius: 5,
 });
 
-const LeagueDetailsContainer = styled.View({
-  paddingTop: 20,
-  paddingBottom: 25,
-  width: "100%",
-  borderRadius: 10,
-  overflow: "hidden",
+const LinkText = styled.Text({
+  color: "#00A2FF",
+  textDecorationLine: "underline",
+  fontWeight: "bold",
 });
 
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 12,
+  marginTop: 10,
+  fontWeight: "bold",
+  fontStyle: "italic",
+});
+
+// ── Buttons
 const CloseButtonText = styled.Text({
   color: "white",
   fontWeight: "bold",
@@ -404,20 +432,6 @@ const Button = styled.TouchableOpacity<ButtonProps>({
 const AcceptButtonText = styled.Text({
   color: "white",
   fontWeight: "bold",
-});
-
-const LinkText = styled.Text({
-  color: "#00A2FF",
-  textDecorationLine: "underline",
-  fontWeight: "bold",
-});
-
-const ErrorText = styled.Text({
-  color: "red",
-  fontSize: 12,
-  marginTop: 10,
-  fontWeight: "bold",
-  fontStyle: "italic",
 });
 
 export default InviteActionModal;
