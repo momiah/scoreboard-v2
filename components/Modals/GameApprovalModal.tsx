@@ -22,6 +22,7 @@ import {
 } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+import { useGameApproval } from "@/hooks/useGameApproval";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -74,14 +75,13 @@ const GameApprovalModal = ({
   isRead,
   response,
 }: GameApprovalModalProps) => {
-  const { fetchCompetitionById, approveGame, declineGame } =
-    useContext(LeagueContext);
+  const { fetchCompetitionById } = useContext(LeagueContext);
   const { currentUser, readNotification } = useContext(UserContext);
+  const { approve, decline, loadingDecision } = useGameApproval();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [gameDetails, setGameDetails] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingDecision, setLoadingDecision] = useState(false);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
     null,
   );
@@ -188,41 +188,25 @@ const GameApprovalModal = ({
   ]);
 
   const handleApproveGame = async () => {
-    setLoadingDecision(true);
-    try {
-      await approveGame({
-        gameId: gameDetails?.gameId ?? "",
-        competitionId,
-        userId: currentUser?.userId,
-        senderId,
-        notificationId,
-        notificationType,
-      });
-      onClose();
-    } catch (error) {
-      console.error("Error approving game:", error);
-    } finally {
-      setLoadingDecision(false);
-    }
+    await approve({
+      gameId: gameDetails?.gameId ?? "",
+      competitionId,
+      senderId,
+      notificationId,
+      notificationType,
+    });
+    onClose();
   };
 
   const handleDeclineGame = async () => {
-    setLoadingDecision(true);
-    try {
-      await declineGame({
-        gameId: gameDetails?.gameId ?? "",
-        competitionId,
-        userId: currentUser?.userId,
-        senderId,
-        notificationId,
-        notificationType,
-      });
-      onClose();
-    } catch (error) {
-      console.error("Error declining game:", error);
-    } finally {
-      setLoadingDecision(false);
-    }
+    await decline({
+      gameId: gameDetails?.gameId ?? "",
+      competitionId,
+      senderId,
+      notificationId,
+      notificationType,
+    });
+    onClose();
   };
 
   const approvalLimitReached =

@@ -13,7 +13,11 @@ import Tag from "../../../components/Tag";
 import RemovePlayerModal from "../../../components/Modals/RemovePlayerModal";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
-import { ScoreboardProfile, NormalizedCompetition } from "@shared/types";
+import {
+  ScoreboardProfile,
+  NormalizedCompetition,
+  CollectionName,
+} from "@shared/types";
 
 const RemovePlayers = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -25,7 +29,6 @@ const RemovePlayers = () => {
     collectionName: string;
   };
 
-  // @ts-expect-error - LeagueContext type definition is incomplete
   const { fetchCompetitionById, removePlayerFromCompetition } =
     useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
@@ -48,13 +51,13 @@ const RemovePlayers = () => {
   const fetchCompetition = async () => {
     setLoading(true);
     try {
-      const fetchedLeague = await fetchCompetitionById({
-        competitionId: competitionId,
-        collectionName,
+      const fetchedCompetition = await fetchCompetitionById({
+        competitionId,
+        collectionName: collectionName as CollectionName,
       });
 
       const normalizedCompetitionData = normalizeCompetitionData({
-        rawData: fetchedLeague,
+        rawData: fetchedCompetition,
         competitionType,
       }) as NormalizedCompetition;
 
@@ -65,6 +68,7 @@ const RemovePlayers = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchCompetition();
   }, []);
@@ -85,7 +89,12 @@ const RemovePlayers = () => {
     if (!isOwnerA && isOwnerB) return 1;
     return 0;
   };
-  const sortedParticipants = competition?.participants.sort(sortOwnerByFirst);
+
+  const fixturesGenerated = competition?.fixturesGenerated ?? false;
+
+  const sortedParticipants = [...(competition?.participants ?? [])].sort(
+    sortOwnerByFirst,
+  );
 
   const renderItem = ({ item }: { item: ScoreboardProfile }) => {
     const isOwner = item.userId === competition?.owner?.userId;
@@ -94,7 +103,10 @@ const RemovePlayers = () => {
     );
     const isSelf = item.userId === currentUser?.userId;
     const canRemove =
-      currentUser?.userId === competition?.owner?.userId && !isOwner && !isSelf;
+      currentUser?.userId === competition?.owner?.userId &&
+      !isOwner &&
+      !isSelf &&
+      !fixturesGenerated;
 
     return (
       <PlayerRow onPress={() => item.userId && goToProfile(item.userId)}>
@@ -162,6 +174,16 @@ const RemovePlayers = () => {
         ItemSeparatorComponent={() => <Separator />}
       />
 
+      {fixturesGenerated && (
+        <Tag
+          name="Fixtures have been generated. Players cannot be removed."
+          color="rgb(3, 16, 31)"
+          iconColor="#FF0000"
+          iconSize={15}
+          icon={"alert-circle-outline"}
+        />
+      )}
+
       <RemovePlayerModal
         visible={modalVisible}
         playerName={selectedPlayer?.username}
@@ -172,19 +194,21 @@ const RemovePlayers = () => {
         onConfirm={async (reason: string) => {
           await removePlayerFromCompetition({
             competitionId,
-            collectionName,
-            userId: selectedPlayer?.userId,
+            collectionName: collectionName as CollectionName,
+            userId: selectedPlayer?.userId ?? "",
             reason,
           });
+
           const updated = await fetchCompetitionById({
             competitionId,
-            collectionName,
+            collectionName: collectionName as CollectionName,
           });
-          // missing normalization 👇
+
           const normalizedUpdated = normalizeCompetitionData({
             rawData: updated,
             competitionType,
           }) as NormalizedCompetition;
+
           setCompetition(normalizedUpdated);
           setModalVisible(false);
           setSelectedPlayer(null);

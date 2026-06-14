@@ -6,7 +6,7 @@ import { UserContext } from "../../../context/UserContext";
 import GenerateFixturesModal from "../../Modals/GenerateFixturesModal";
 import { FixturesDisplay } from "./FixturesAtoms";
 
-const Fixtures = ({ tournament, userRole }) => {
+const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
   const [showGenerateFixturesModal, setShowGenerateFixturesModal] =
     useState(false);
 
@@ -76,6 +76,8 @@ const Fixtures = ({ tournament, userRole }) => {
           currentUser={currentUser}
           tournamentName={tournament?.tournamentName}
           tournamentId={tournament?.tournamentId}
+          scrollToGameId={scrollToGameId}
+          glowColor={glowColor}
         />
       ) : (
         <Content>

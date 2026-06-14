@@ -6,6 +6,7 @@ import {
   ScoreboardProfile,
   PendingRequests,
   Court,
+  SelectedPlayers,
 } from "@shared";
 
 import {
@@ -58,6 +59,7 @@ export interface LeagueContextType {
   fetchCompetitionById: (_: {
     competitionId: string;
     collectionName: CollectionName;
+    setState?: boolean;
   }) => Promise<League | Tournament | null>;
 
   getCourts: () => Promise<Court[]>;
@@ -224,4 +226,10 @@ export interface LeagueContextType {
     videoId: string;
     userId: string;
   }) => Promise<boolean>;
+
+  saveVideoCourtPositions: (params: {
+    videoId: string;
+    userId: string;
+    courtPositions: SelectedPlayers;
+  }) => Promise<void>;
 }

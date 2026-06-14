@@ -96,6 +96,7 @@ export interface League {
   leagueTeams: TeamStats[];
   leagueAdmins: CompetitionAdmins[];
   leagueOwner: CompetitionOwner;
+  participantIds?: string[];
   games: Game[];
   leagueType: string;
   prizeType: string;
@@ -127,6 +128,7 @@ export interface Tournament {
   tournamentTeams: TeamStats[];
   tournamentAdmins: CompetitionAdmins[];
   tournamentOwner: CompetitionOwner;
+  participantIds?: string[];
   games: Game[];
   fixtures: Fixtures[];
   fixturesGenerated: boolean;
@@ -161,8 +163,11 @@ export interface NormalizedCompetition {
   teams: TeamStats[];
   admins: CompetitionAdmins[];
   owner: CompetitionOwner;
+  participantIds?: string[];
   games: Game[];
-  fixtures: Fixtures[];
+  fixtures?: Fixtures[];
+  fixturesGenerated?: boolean;
+  fixturesGeneratedAt?: Date | string;
   type: string;
   mode: string;
   prizeType: string;

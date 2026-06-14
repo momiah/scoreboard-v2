@@ -35,6 +35,11 @@ const LeagueSettings = () => {
       icon: "person-add-outline",
       action: "PendingInvites",
     },
+    {
+      label: "Competition Pending Requests",
+      icon: "time-outline",
+      action: "CompetitionPendingRequests",
+    },
     { label: "Assign Admin", icon: "people-outline", action: "AssignAdmin" },
     {
       label: "Remove Players",

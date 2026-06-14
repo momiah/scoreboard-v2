@@ -96,7 +96,7 @@ const ModalTitle = styled.Text({
 });
 
 const FixturesContainer = styled.ScrollView({
-  maxHeight: screenWidth <= 405 ? 400 : 600,
+  maxHeight: screenWidth <= 430 ? 530 : 600,
 });
 
 const RoundContainer = styled.View({

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components/native";
-import { Dimensions } from "react-native";
+import { Dimensions, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import Tag from "../../Tag";
 import AddTournamentGameModal from "../../Modals/AddTournamentGameModal";
 import { COMPETITION_TYPES } from "@shared";
+import GameGlow, { runGlow } from "@/components/GameCardGlow";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -77,32 +78,46 @@ export const FixtureGameHeader = ({ game }) => (
   </FixtureGameHeaderContainer>
 );
 
-export const FixtureGameItem = ({ game, tournamentType, onPress }) => (
-  <FixtureGameContainer
-    onPress={() => onPress(game)}
-    style={{
-      opacity:
-        game.approvalStatus === "pending" || game.approvalStatus === "Pending"
-          ? 0.6
-          : 1,
-    }}
-  >
-    <FixtureGameHeader game={game} />
-    <FixtureTeamVsContainer>
-      <FixtureTeamColumn
-        team={game?.team1}
-        position="left"
-        tournamentType={tournamentType}
-      />
-      <FixtureScoreDisplay game={game} />
-      <FixtureTeamColumn
-        team={game?.team2}
-        position="right"
-        tournamentType={tournamentType}
-      />
-    </FixtureTeamVsContainer>
-  </FixtureGameContainer>
-);
+export const FixtureGameItem = ({
+  game,
+  tournamentType,
+  onPress,
+  innerRef,
+  glowAnim,
+  isHighlighted,
+  glowColor,
+}) => {
+  return (
+    <FixtureGameOuter ref={innerRef}>
+      <FixtureGameContainer
+        onPress={() => onPress(game)}
+        style={{
+          opacity:
+            game.approvalStatus === "pending" ||
+            game.approvalStatus === "Pending"
+              ? 0.6
+              : 1,
+        }}
+      >
+        <FixtureGameHeader game={game} />
+        <FixtureTeamVsContainer>
+          <FixtureTeamColumn
+            team={game?.team1}
+            position="left"
+            tournamentType={tournamentType}
+          />
+          <FixtureScoreDisplay game={game} />
+          <FixtureTeamColumn
+            team={game?.team2}
+            position="right"
+            tournamentType={tournamentType}
+          />
+        </FixtureTeamVsContainer>
+      </FixtureGameContainer>
+      {isHighlighted && <GameGlow glowAnim={glowAnim} color={glowColor} />}
+    </FixtureGameOuter>
+  );
+};
 
 export const FixtureRoundHeader = ({ roundNumber }) => (
   <FixtureRoundHeaderContainer>
@@ -116,15 +131,45 @@ export const FixturesDisplay = ({
   currentUser,
   tournamentName,
   tournamentId,
+  scrollToGameId,
+  glowColor = "#00A2FF",
 }) => {
   const navigation = useNavigation();
   const [gameModalVisible, setGameModalVisible] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [localFixtures, setLocalFixtures] = useState(fixtures);
+  const [highlightedGameId, setHighlightedGameId] = useState(null);
+
+  const scrollRef = useRef(null);
+  const gameRefs = useRef({});
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setLocalFixtures(fixtures);
   }, [fixtures]);
+
+  useEffect(() => {
+    if (!scrollToGameId) return;
+    const timer = setTimeout(() => {
+      const node = gameRefs.current[scrollToGameId];
+      const scrollNode = scrollRef.current?.getInnerViewNode?.();
+      if (!node || !scrollNode) return;
+
+      node.measureLayout(
+        scrollNode,
+        (_left, top) => {
+          scrollRef.current?.scrollTo({ y: top, animated: true });
+          // Glow after the scroll settles so the card is in its final position.
+          setTimeout(() => {
+            setHighlightedGameId(scrollToGameId);
+            runGlow(glowAnim, () => setHighlightedGameId(null));
+          }, 400);
+        },
+        () => {},
+      );
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [scrollToGameId, localFixtures]);
 
   const handleGamePress = (game) => {
     if (game.result) {
@@ -165,7 +210,7 @@ export const FixturesDisplay = ({
   }
 
   return (
-    <FixturesContainer>
+    <FixturesContainer ref={scrollRef}>
       {localFixtures.map((round) => (
         <FixtureRoundContainer key={round.round}>
           <FixtureRoundHeader
@@ -178,6 +223,12 @@ export const FixturesDisplay = ({
               game={game}
               tournamentType={tournamentType}
               onPress={handleGamePress}
+              glowAnim={glowAnim}
+              glowColor={glowColor}
+              isHighlighted={game.gameId === highlightedGameId}
+              innerRef={(node) => {
+                if (node) gameRefs.current[game.gameId] = node;
+              }}
             />
           ))}
         </FixtureRoundContainer>
@@ -280,14 +331,17 @@ const FixtureTeamVsContainer = styled.View({
   marginBottom: 8,
 });
 
-const FixtureGameContainer = styled.TouchableOpacity({
+const FixtureGameOuter = styled.View({
+  position: "relative",
   marginHorizontal: 20,
   marginBottom: 12,
+});
+
+const FixtureGameContainer = styled.TouchableOpacity({
   borderWidth: 1,
   borderColor: "rgb(9, 33, 62)",
   borderRadius: 8,
   backgroundColor: "rgb(3, 16, 31)",
-  overflow: "hidden",
 });
 
 export const FixtureStatusLabel = styled.Text(({ status }) => ({

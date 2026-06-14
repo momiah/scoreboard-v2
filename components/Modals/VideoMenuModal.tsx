@@ -6,20 +6,21 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import styled from "styled-components/native";
-import { BlurView } from "expo-blur";
-import { Ionicons, AntDesign } from "@expo/vector-icons";
-import { GameVideo } from "@shared/types";
-import { COMPETITION_TYPES } from "@shared";
 import {
   useNavigation,
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
+import styled from "styled-components/native";
+import { BlurView } from "expo-blur";
+import { Ionicons, AntDesign } from "@expo/vector-icons";
+import { GameVideo, Player, SelectedPlayers } from "@shared/types";
+import { COMPETITION_TYPES, COLLECTION_NAMES, CollectionName } from "@shared";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { UserContext } from "../../context/UserContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import ReportVideoModal from "./ReportVideoModal";
+import CourtPositionsModal from "./CourtPositionModal";
 import { PopupContext } from "@/context/PopupContext";
 
 interface VideoMenuModalProps {
@@ -45,18 +46,44 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { currentUser } = useContext(UserContext);
-  const { toggleSaveVideo, checkVideoSaved } = useContext(LeagueContext);
+  const {
+    toggleSaveVideo,
+    checkVideoSaved,
+    saveVideoCourtPositions,
+    requestToJoinLeague,
+    withdrawJoinRequest,
+    fetchCompetitionById,
+  } = useContext(LeagueContext);
 
   const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [courtModalVisible, setCourtModalVisible] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCheckingSaved, setIsCheckingSaved] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isParticipant, setIsParticipant] = useState(false);
+  const [isInvitePending, setIsInvitePending] = useState(false);
+  const [isRequestPending, setIsRequestPending] = useState(false);
+  const [isCheckingRequest, setIsCheckingRequest] = useState(true);
+  const [isTogglingRequest, setIsTogglingRequest] = useState(false);
   const { showBottomToast } = useContext(PopupContext);
 
   const videoId = `${video.gameId}_${video.postedBy.userId}`;
   const isOwnVideo = currentUser?.userId === video.postedBy.userId;
-  const showRequestToJoin = !isSubmissionMode && !hideRequestToJoin;
+  const showJoinRow = !isSubmissionMode && !hideRequestToJoin;
+
+  const collectionName =
+    video.competitionType === COMPETITION_TYPES.TOURNAMENT
+      ? COLLECTION_NAMES.tournaments
+      : COLLECTION_NAMES.leagues;
+
+  // ── Players available for court assignment (from the game's two teams) ───
+  const courtPlayers: Player[] = [
+    video.teams.team1?.player1,
+    video.teams.team1?.player2,
+    video.teams.team2?.player1,
+    video.teams.team2?.player2,
+  ].filter((player): player is Player => Boolean(player));
 
   // ── Check if already saved on open ───────────────────────────────────────
   useEffect(() => {
@@ -67,17 +94,86 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
       .finally(() => setIsCheckingSaved(false));
   }, [visible, currentUser]);
 
-  const handleRequestToJoin = () => {
+  // ── Check participant / invite / request state on open (single read) ─────
+  useEffect(() => {
+    if (!visible || !currentUser || !showJoinRow) return;
+    setIsCheckingRequest(true);
+    fetchCompetitionById({
+      competitionId: video.competitionId,
+      collectionName: collectionName as CollectionName,
+      setState: false,
+    })
+      .then((competition) => {
+        if (!competition) {
+          setIsParticipant(false);
+          setIsInvitePending(false);
+          setIsRequestPending(false);
+          return;
+        }
+
+        const userId = currentUser.userId;
+        const participantIds: string[] = competition.participantIds || [];
+        const pendingInvites = competition.pendingInvites || [];
+        const pendingRequests = competition.pendingRequests || [];
+
+        setIsParticipant(participantIds.includes(userId));
+        setIsInvitePending(
+          pendingInvites.some((invite) => invite.userId === userId),
+        );
+        setIsRequestPending(
+          pendingRequests.some((request) => request.userId === userId),
+        );
+      })
+      .finally(() => setIsCheckingRequest(false));
+  }, [visible, currentUser]);
+
+  const handleToggleJoinRequest = async () => {
+    if (
+      !currentUser ||
+      isTogglingRequest ||
+      isCheckingRequest ||
+      isParticipant ||
+      isInvitePending
+    )
+      return;
+    setIsTogglingRequest(true);
+    try {
+      if (isRequestPending) {
+        await withdrawJoinRequest({
+          competitionId: video.competitionId,
+          userId: currentUser.userId,
+          collectionName: collectionName as CollectionName,
+        });
+        setIsRequestPending(false);
+        showBottomToast("Request withdrawn", "success");
+      } else {
+        const requestSent = await requestToJoinLeague({
+          competitionId: video.competitionId,
+          currentUser,
+          ownerId: video.postedBy.userId,
+          collectionName: collectionName as CollectionName,
+        });
+        if (requestSent) {
+          setIsRequestPending(true);
+          showBottomToast("Request to join sent", "success");
+        } else {
+          showBottomToast("Unable to send request. Please try again.", "error");
+        }
+      }
+    } catch (error) {
+      console.error("[VideoMenuModal] Failed to toggle join request:", error);
+      showBottomToast("Something went wrong. Please try again.", "error");
+    } finally {
+      setIsTogglingRequest(false);
+    }
+  };
+
+  // ── Navigate the user to their own Pending Invites screen ────────────────
+  const handleViewPendingInvites = () => {
     onClose();
-    const route =
-      video.competitionType === COMPETITION_TYPES.TOURNAMENT
-        ? "Tournament"
-        : "League";
-    const idKey =
-      video.competitionType === COMPETITION_TYPES.TOURNAMENT
-        ? "tournamentId"
-        : "leagueId";
-    navigation.navigate(route, { [idKey]: video.competitionId });
+    navigation.navigate("UserPendingInvites", {
+      userId: currentUser?.userId,
+    });
   };
 
   const handleShareVideo = async () => {
@@ -112,6 +208,20 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
 
   const handleReport = () => {
     setReportModalVisible(true);
+  };
+
+  const handleViewCourtPositions = () => {
+    setCourtModalVisible(true);
+  };
+
+  const handleSaveCourtPositions = async (positions: SelectedPlayers) => {
+    if (!currentUser) return;
+    await saveVideoCourtPositions({
+      videoId,
+      userId: currentUser.userId,
+      courtPositions: positions,
+    });
+    showBottomToast("Court positions saved", "success");
   };
 
   const handleDelete = async () => {
@@ -156,6 +266,15 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
     );
   };
 
+  // ── Resolve the single join-row presentation ─────────────────────────────
+  const isLocked = isParticipant || isInvitePending;
+  const lockedLabel = isParticipant
+    ? "Already in Competition"
+    : "Invitation Pending";
+  const lockedIcon = isParticipant
+    ? "checkmark-circle-outline"
+    : "mail-outline";
+
   return (
     <>
       <Modal
@@ -173,16 +292,63 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
               </TouchableOpacity>
             </MenuHeader>
 
-            {/* ── Request to Join ── */}
-            {showRequestToJoin && (
-              <MenuItem onPress={handleRequestToJoin}>
-                <MenuItemIcon>
-                  <Ionicons name="enter-outline" size={22} color="#00A2FF" />
-                </MenuItemIcon>
-                <MenuItemText>Request to Join Competition</MenuItemText>
-                <Ionicons name="chevron-forward" size={20} color="#555" />
-              </MenuItem>
-            )}
+            {/* ── Join state: locked (participant/invited) / request / withdraw ── */}
+            {showJoinRow &&
+              (isLocked ? (
+                isInvitePending ? (
+                  <MenuItem onPress={handleViewPendingInvites}>
+                    <MenuItemIcon>
+                      <Ionicons name={lockedIcon} size={22} color="#00A2FF" />
+                    </MenuItemIcon>
+                    <MenuItemText style={{ color: "#00A2FF" }}>
+                      {lockedLabel}
+                    </MenuItemText>
+                    <Ionicons name="chevron-forward" size={20} color="#555" />
+                  </MenuItem>
+                ) : (
+                  <MenuItem disabled isDisabled>
+                    <MenuItemIcon isDisabled>
+                      <Ionicons name={lockedIcon} size={22} color="#4A5A6A" />
+                    </MenuItemIcon>
+                    <MenuItemText isDisabled>{lockedLabel}</MenuItemText>
+                  </MenuItem>
+                )
+              ) : (
+                <MenuItem
+                  onPress={handleToggleJoinRequest}
+                  disabled={isTogglingRequest || isCheckingRequest}
+                >
+                  <MenuItemIcon isDestructive={isRequestPending}>
+                    <Ionicons
+                      name={isRequestPending ? "exit-outline" : "enter-outline"}
+                      size={22}
+                      color={isRequestPending ? "#FF4B6E" : "#00A2FF"}
+                    />
+                  </MenuItemIcon>
+                  <MenuItemText isDestructive={isRequestPending}>
+                    {isRequestPending
+                      ? "Withdraw Request to Join"
+                      : "Request to Join Competition"}
+                  </MenuItemText>
+                  {isCheckingRequest || isTogglingRequest ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={isRequestPending ? "#FF4B6E" : "#00A2FF"}
+                    />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={20} color="#555" />
+                  )}
+                </MenuItem>
+              ))}
+
+            {/* ── Court Positions ── */}
+            <MenuItem onPress={handleViewCourtPositions}>
+              <MenuItemIcon>
+                <Ionicons name="grid-outline" size={22} color="#00A2FF" />
+              </MenuItemIcon>
+              <MenuItemText>View Court Positions</MenuItemText>
+              <Ionicons name="chevron-forward" size={20} color="#555" />
+            </MenuItem>
 
             {/* ── Share ── */}
             <MenuItem onPress={handleShareVideo}>
@@ -254,6 +420,15 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
           }}
         />
       )}
+
+      <CourtPositionsModal
+        visible={courtModalVisible}
+        onClose={() => setCourtModalVisible(false)}
+        video={video}
+        isUploader={isOwnVideo}
+        playerArray={courtPlayers}
+        onSave={handleSaveCourtPositions}
+      />
     </>
   );
 };
@@ -290,35 +465,57 @@ const MenuTitle = styled.Text({
   color: "white",
 });
 
-const MenuItem = styled.TouchableOpacity<{ isLast?: boolean }>(
-  ({ isLast }: { isLast?: boolean }) => ({
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: isLast ? 0 : 1,
-    borderBottomColor: "#1a2b3d",
-  }),
-);
+const MenuItem = styled.TouchableOpacity<{
+  isLast?: boolean;
+  isDisabled?: boolean;
+}>(({ isLast, isDisabled }: { isLast?: boolean; isDisabled?: boolean }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 20,
+  paddingVertical: 16,
+  borderBottomWidth: isLast ? 0 : 1,
+  borderBottomColor: "#1a2b3d",
+  opacity: isDisabled ? 0.45 : 1,
+}));
 
-const MenuItemIcon = styled.View<{ isDestructive?: boolean }>(
-  ({ isDestructive }: { isDestructive?: boolean }) => ({
+const MenuItemIcon = styled.View<{
+  isDestructive?: boolean;
+  isDisabled?: boolean;
+}>(
+  ({
+    isDestructive,
+    isDisabled,
+  }: {
+    isDestructive?: boolean;
+    isDisabled?: boolean;
+  }) => ({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: isDestructive
-      ? "rgba(255, 75, 110, 0.1)"
-      : "rgba(0, 162, 255, 0.1)",
+    backgroundColor: isDisabled
+      ? "rgba(74, 90, 106, 0.1)"
+      : isDestructive
+        ? "rgba(255, 75, 110, 0.1)"
+        : "rgba(0, 162, 255, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
   }),
 );
 
-const MenuItemText = styled.Text<{ isDestructive?: boolean }>(
-  ({ isDestructive }: { isDestructive?: boolean }) => ({
+const MenuItemText = styled.Text<{
+  isDestructive?: boolean;
+  isDisabled?: boolean;
+}>(
+  ({
+    isDestructive,
+    isDisabled,
+  }: {
+    isDestructive?: boolean;
+    isDisabled?: boolean;
+  }) => ({
     flex: 1,
-    color: isDestructive ? "#FF4B6E" : "white",
+    color: isDisabled ? "#4A5A6A" : isDestructive ? "#FF4B6E" : "white",
     fontSize: 16,
     fontWeight: "500",
   }),

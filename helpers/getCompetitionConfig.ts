@@ -2,7 +2,8 @@ import {
   notificationTypes,
   COLLECTION_NAMES,
   COMPETITION_TYPES,
-  League, Tournament,
+  League,
+  Tournament,
 } from "@shared";
 
 type CompetitionKey = keyof League | keyof Tournament;
@@ -19,6 +20,24 @@ interface CompetitionConfig {
   competitionType: "league" | "tournament";
 }
 
+export const buildCompetitionConfig = (
+  isLeague: boolean,
+): CompetitionConfig => ({
+  isLeague,
+  navRoute: isLeague ? "League" : "Tournament",
+  nameKey: isLeague ? "leagueName" : "tournamentName",
+  typeKey: isLeague ? "leagueType" : "tournamentType",
+  participantsKey: isLeague ? "leagueParticipants" : "tournamentParticipants",
+  teamKey: isLeague ? "leagueTeams" : "tournamentTeams",
+  collectionName: isLeague
+    ? COLLECTION_NAMES.leagues
+    : COLLECTION_NAMES.tournaments,
+  competitionType: (isLeague
+    ? COMPETITION_TYPES.LEAGUE
+    : COMPETITION_TYPES.TOURNAMENT) as "league" | "tournament",
+  paramKey: isLeague ? "leagueId" : "tournamentId",
+});
+
 export const getCompetitionConfig = (
   notificationType: string,
 ): CompetitionConfig => {
@@ -27,21 +46,7 @@ export const getCompetitionConfig = (
     notificationType === notificationTypes.ACTION.INVITE.LEAGUE ||
     notificationType === notificationTypes.ACTION.JOIN_REQUEST.LEAGUE;
 
-  return {
-    isLeague,
-    navRoute: isLeague ? "League" : "Tournament",
-    nameKey: isLeague ? "leagueName" : "tournamentName",
-    typeKey: isLeague ? "leagueType" : "tournamentType",
-    participantsKey: isLeague ? "leagueParticipants" : "tournamentParticipants",
-    teamKey: isLeague ? "leagueTeams" : "tournamentTeams",
-    collectionName: isLeague
-      ? COLLECTION_NAMES.leagues
-      : COLLECTION_NAMES.tournaments,
-    competitionType: (isLeague
-      ? COMPETITION_TYPES.LEAGUE
-      : COMPETITION_TYPES.TOURNAMENT) as "league" | "tournament",
-    paramKey: isLeague ? "leagueId" : "tournamentId",
-  };
+  return buildCompetitionConfig(isLeague);
 };
 
 export const getCompetitionTypeAndId = ({

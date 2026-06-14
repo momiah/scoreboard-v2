@@ -25,11 +25,16 @@ import {
   query,
 } from "firebase/firestore";
 import { Comment, GameVideoCommentReply, GameVideo } from "@shared/types";
-import { COLLECTION_NAMES } from "@shared";
+import { COLLECTION_NAMES, notificationTypes } from "@shared";
 import { UserContext } from "../../context/UserContext";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { ccImageEndpoint } from "@shared";
 import { timeAgo } from "@/helpers/dateTimeUtils";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 
 interface VideoCommentsModalProps {
   visible: boolean;
@@ -42,7 +47,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
   onClose,
   video,
 }) => {
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, sendNotification } = useContext(UserContext);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +60,13 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
   >({});
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [replyText, setReplyText] = useState("");
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+
+  const navigateToUserProfile = (userId: string): void => {
+    if (!userId) return;
+    onClose();
+    navigation.navigate("UserProfile", { userId });
+  };
 
   const db = getFirestore();
 
@@ -129,6 +141,31 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
 
       setComments((prev) => [{ ...newComment, commentId: docRef.id }, ...prev]);
       setCommentText("");
+
+      // ── Notify the video uploader (skip self-comments) ──
+      const uploaderId = video.postedBy.userId;
+      if (uploaderId && uploaderId !== currentUser.userId) {
+        await sendNotification({
+          recipientId: uploaderId,
+          type: notificationTypes.INFORMATION.GAME_VIDEO.TYPE,
+          message: `${formatDisplayName(currentUser)} commented on your video`,
+          createdAt: new Date(),
+          isRead: false,
+          data: {
+            route: notificationTypes.INFORMATION.GAME_VIDEO.ROUTE,
+            gameId: video.gameId,
+            competitionId: video.competitionId,
+            competitionType: video.competitionType,
+            competitionName: video.competitionName,
+            gamescore: video.gamescore,
+            date: video.date,
+            team1: video.teams.team1,
+            team2: video.teams.team2,
+            commentId: docRef.id,
+            commenterId: currentUser.userId,
+          },
+        });
+      }
     } catch (error) {
       console.error("Failed to submit comment:", error);
     } finally {
@@ -336,15 +373,23 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
       : false;
     return (
       <ReplyContainer key={reply.replyId}>
-        <CommentAvatar
-          source={
-            reply.postedBy.profileImage
-              ? { uri: reply.postedBy.profileImage }
-              : { uri: ccImageEndpoint }
-          }
-        />
+        <TouchableOpacity
+          onPress={() => navigateToUserProfile(reply.postedBy.userId)}
+        >
+          <CommentAvatar
+            source={
+              reply.postedBy.profileImage
+                ? { uri: reply.postedBy.profileImage }
+                : { uri: ccImageEndpoint }
+            }
+          />
+        </TouchableOpacity>
         <ReplyContent>
-          <CommentName>{formatDisplayName(reply.postedBy)}</CommentName>
+          <TouchableOpacity
+            onPress={() => navigateToUserProfile(reply.postedBy.userId)}
+          >
+            <CommentName>{formatDisplayName(reply.postedBy)}</CommentName>
+          </TouchableOpacity>
           <CommentText>{reply.text}</CommentText>
           <CommentTime>{timeAgo(reply.createdAt)}</CommentTime>
         </ReplyContent>
@@ -369,15 +414,23 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
     return (
       <CommentContainer>
         <CommentRow>
-          <CommentAvatar
-            source={
-              item.postedBy.profileImage
-                ? { uri: item.postedBy.profileImage }
-                : { uri: ccImageEndpoint }
-            }
-          />
+          <TouchableOpacity
+            onPress={() => navigateToUserProfile(item.postedBy.userId)}
+          >
+            <CommentAvatar
+              source={
+                item.postedBy.profileImage
+                  ? { uri: item.postedBy.profileImage }
+                  : { uri: ccImageEndpoint }
+              }
+            />
+          </TouchableOpacity>
           <CommentContent>
-            <CommentName>{formatDisplayName(item.postedBy)}</CommentName>
+            <TouchableOpacity
+              onPress={() => navigateToUserProfile(item.postedBy.userId)}
+            >
+              <CommentName>{formatDisplayName(item.postedBy)}</CommentName>
+            </TouchableOpacity>
             <CommentText>{item.text}</CommentText>
             <CommentFooter>
               <CommentTime>{timeAgo(item.createdAt)}</CommentTime>

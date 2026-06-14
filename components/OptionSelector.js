@@ -101,18 +101,17 @@ const Button = styled.TouchableOpacity(
     backgroundColor: isDisabled
       ? "#3a3a3a"
       : isSelected
-      ? "#00284b"
-      : "#00152B",
+        ? "#00284b"
+        : "#00152B",
     borderWidth: 1,
     borderColor: isDisabled ? "#666" : isSelected ? "#004eb4" : "#414141",
     marginHorizontal: 5,
     paddingVertical: 10,
-    paddingHorizontal: 15,
     aspectRatio: roundButtons ? 1 : null,
     borderRadius: roundButtons ? 100 : 5,
     justifyContent: "center",
     opacity: isDisabled ? 0.7 : 1,
-  })
+  }),
 );
 const ButtonText = styled.Text(({ isSelected, disabled }) => ({
   fontSize: 12,

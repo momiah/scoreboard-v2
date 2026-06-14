@@ -203,7 +203,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
       setLeagueCreationLoading(false);
       setModalVisible(false);
       if (onSuccess) {
-        onSuccess();
+        onSuccess(leagueId);
       }
     } catch (err) {
       console.error("Error creating league:", err);
