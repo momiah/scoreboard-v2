@@ -12,4 +12,5 @@ export interface Notification {
   senderId: string;
   response: string;
   data?: NotificationData;
+  id?: string;
 }

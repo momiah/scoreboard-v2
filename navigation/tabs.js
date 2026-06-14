@@ -18,6 +18,8 @@ import Login from "../screens/Authentication/Login";
 import Signup from "../screens/Authentication/Signup";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Settings/PendingInvites";
+import UserPendingInvites from "../screens/Profile/UserPendingInvites";
+import CompetitionPendingRequests from "../screens/Home/Settings/CompetitionPendingRequests";
 import LeagueSettings from "../screens/Home/Leagues/LeagueSettings";
 import AssignAdmin from "../screens/Home/Settings/AssignAdmin";
 import RemovePlayers from "../screens/Home/Settings/RemovePlayers";
@@ -63,6 +65,11 @@ const HomeStack = () => {
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
+      <Stack.Screen name="UserPendingInvites" component={UserPendingInvites} />
+      <Stack.Screen
+        name="CompetitionPendingRequests"
+        component={CompetitionPendingRequests}
+      />
       <Stack.Screen name="AllPlayers" component={AllPlayers} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
@@ -100,7 +107,11 @@ const ProfileStack = () => {
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="FAQ" component={FAQ} />
-
+      <Stack.Screen name="UserPendingInvites" component={UserPendingInvites} />
+      <Stack.Screen
+        name="CompetitionPendingRequests"
+        component={CompetitionPendingRequests}
+      />
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
@@ -140,6 +151,11 @@ const ChatsStack = () => {
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
+      <Stack.Screen name="UserPendingInvites" component={UserPendingInvites} />
+      <Stack.Screen
+        name="CompetitionPendingRequests"
+        component={CompetitionPendingRequests}
+      />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
@@ -176,6 +192,11 @@ const CompetitionsStack = () => {
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
+      <Stack.Screen name="UserPendingInvites" component={UserPendingInvites} />
+      <Stack.Screen
+        name="CompetitionPendingRequests"
+        component={CompetitionPendingRequests}
+      />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />

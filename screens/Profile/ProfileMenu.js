@@ -47,9 +47,18 @@ const ProfileMenu = ({ navigation }) => {
       icon: "people-outline",
       action: "PendingRequests",
     },
+    {
+      label: "Pending Invites",
+      icon: "people-outline",
+      action: "UserPendingInvites",
+    },
     // FAQ
     { label: "FAQ", icon: "help-buoy-outline", action: "FAQ" },
-    { label: "Linked Accounts", icon: "link-outline", action: "LinkedAccounts" },
+    {
+      label: "Linked Accounts",
+      icon: "link-outline",
+      action: "LinkedAccounts",
+    },
     { label: "Log out", icon: "log-out-outline", action: "logout" },
     {
       label: "Delete Account",

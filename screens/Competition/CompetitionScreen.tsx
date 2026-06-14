@@ -8,7 +8,7 @@ import React, {
   useEffect,
 } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { FlatList, View, Dimensions } from "react-native";
+import { FlatList, Dimensions } from "react-native";
 import styled from "styled-components/native";
 import {
   useFocusEffect,

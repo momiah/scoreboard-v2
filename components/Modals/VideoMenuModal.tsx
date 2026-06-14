@@ -6,6 +6,11 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Ionicons, AntDesign } from "@expo/vector-icons";
@@ -39,6 +44,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   hideRequestToJoin = false,
   onVideoDeleted,
 }) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { currentUser } = useContext(UserContext);
   const {
     toggleSaveVideo,
@@ -162,6 +168,14 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
     }
   };
 
+  // ── Navigate the user to their own Pending Invites screen ────────────────
+  const handleViewPendingInvites = () => {
+    onClose();
+    navigation.navigate("UserPendingInvites", {
+      userId: currentUser?.userId,
+    });
+  };
+
   const handleShareVideo = async () => {
     onClose();
     try {
@@ -281,12 +295,24 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
             {/* ── Join state: locked (participant/invited) / request / withdraw ── */}
             {showJoinRow &&
               (isLocked ? (
-                <MenuItem disabled isDisabled>
-                  <MenuItemIcon isDisabled>
-                    <Ionicons name={lockedIcon} size={22} color="#4A5A6A" />
-                  </MenuItemIcon>
-                  <MenuItemText isDisabled>{lockedLabel}</MenuItemText>
-                </MenuItem>
+                isInvitePending ? (
+                  <MenuItem onPress={handleViewPendingInvites}>
+                    <MenuItemIcon>
+                      <Ionicons name={lockedIcon} size={22} color="#00A2FF" />
+                    </MenuItemIcon>
+                    <MenuItemText style={{ color: "#00A2FF" }}>
+                      {lockedLabel}
+                    </MenuItemText>
+                    <Ionicons name="chevron-forward" size={20} color="#555" />
+                  </MenuItem>
+                ) : (
+                  <MenuItem disabled isDisabled>
+                    <MenuItemIcon isDisabled>
+                      <Ionicons name={lockedIcon} size={22} color="#4A5A6A" />
+                    </MenuItemIcon>
+                    <MenuItemText isDisabled>{lockedLabel}</MenuItemText>
+                  </MenuItem>
+                )
               ) : (
                 <MenuItem
                   onPress={handleToggleJoinRequest}
