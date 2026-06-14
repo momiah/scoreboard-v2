@@ -2,12 +2,17 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   TouchableOpacity,
+  Pressable,
   StatusBar,
+  StyleSheet,
+  Platform,
   Animated,
   PanResponder,
+  useWindowDimensions,
 } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
@@ -31,9 +36,13 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
   const [scrubValue, setScrubValue] = useState(startTime);
   const [muted, setMuted] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isScrubbingRef = useRef(false);
+
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
 
   const player = useVideoPlayer(videoUrl, (p) => {
     p.loop = true;
@@ -63,6 +72,19 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
     }),
   ).current;
 
+  // ── Android only: Modal supportedOrientations is iOS-only, so on Android   ──
+  // ── the activity stays portrait-locked. Unlock here, re-lock on exit.      ──
+  // ── iOS rotates for free via the Modal prop, so we leave it untouched.     ──
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    ScreenOrientation.unlockAsync();
+    return () => {
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP,
+      );
+    };
+  }, []);
+
   // ── Get duration when ready ───────────────────────────────────────────────
   useEffect(() => {
     if (status === "readyToPlay") {
@@ -85,6 +107,7 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
 
   // ── Controls fade ─────────────────────────────────────────────────────────
   const showControls = useCallback(() => {
+    setControlsVisible(true);
     Animated.timing(controlsOpacity, {
       toValue: 1,
       duration: 200,
@@ -97,7 +120,7 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
         toValue: 0,
         duration: 500,
         useNativeDriver: true,
-      }).start();
+      }).start(() => setControlsVisible(false));
     }, CONTROLS_HIDE_DELAY);
   }, [controlsOpacity]);
 
@@ -148,19 +171,18 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
     >
       <StatusBar hidden />
 
-      {/* ── Video ── */}
-      <TouchableOpacity
-        onPress={handleScreenPress}
-        activeOpacity={1}
-        style={{ flex: 1 }}
-      >
-        <VideoView
-          player={player}
-          nativeControls={false}
-          contentFit="contain"
-          style={{ flex: 1 }}
-        />
-      </TouchableOpacity>
+      {/* ── Video (base layer, no touchable wrapper) ── */}
+      <VideoView
+        player={player}
+        nativeControls={false}
+        contentFit="contain"
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* ── Transparent tap layer (sibling on top of VideoView) ── */}
+      {/* A native VideoView swallows touches on Android, so a wrapping        */}
+      {/* TouchableOpacity never fires. An overlay sibling captures taps.       */}
+      <Pressable onPress={handleScreenPress} style={StyleSheet.absoluteFill} />
 
       {/* ── Play/pause overlay ── */}
       <Animated.View
@@ -184,57 +206,71 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
       </Animated.View>
 
       {/* ── Bottom controls ── */}
-      <Animated.View style={{ opacity: controlsOpacity }}>
-        <ControlsContainer>
-          <TimeRow>
-            <TimeText>{formatTime(displayTime)}</TimeText>
-            <TimeText>{formatTime(duration)}</TimeText>
-          </TimeRow>
-          <ControlsRow>
-            <TouchableOpacity onPress={handleTogglePlay}>
-              <Ionicons
-                name={isPlaying ? "pause" : "play"}
-                size={28}
-                color="white"
+      <Animated.View
+        pointerEvents={controlsVisible ? "auto" : "none"}
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          opacity: controlsOpacity,
+        }}
+      >
+        <SafeAreaView edges={["left", "right", "bottom"]}>
+          <ControlsContainer
+            style={{ paddingHorizontal: isLandscape ? 40 : 16 }}
+          >
+            <TimeRow>
+              <TimeText>{formatTime(displayTime)}</TimeText>
+              <TimeText>{formatTime(duration)}</TimeText>
+            </TimeRow>
+            <ControlsRow>
+              <TouchableOpacity onPress={handleTogglePlay}>
+                <Ionicons
+                  name={isPlaying ? "pause" : "play"}
+                  size={28}
+                  color="white"
+                />
+              </TouchableOpacity>
+              <Slider
+                style={{ flex: 1, height: 40, marginHorizontal: 12 }}
+                minimumValue={0}
+                maximumValue={duration > 0 ? duration : 1}
+                value={displayTime}
+                minimumTrackTintColor="#00A2FF"
+                maximumTrackTintColor="rgba(255,255,255,0.3)"
+                thumbTintColor="#00A2FF"
+                onSlidingStart={(value) => {
+                  isScrubbingRef.current = true;
+                  setIsScrubbing(true);
+                  setScrubValue(value);
+                  player.pause();
+                  showControls();
+                }}
+                onValueChange={(value) => setScrubValue(value)}
+                onSlidingComplete={(value) => {
+                  player.currentTime = value;
+                  setCurrentTime(value);
+                  isScrubbingRef.current = false;
+                  setIsScrubbing(false);
+                  player.play();
+                }}
               />
-            </TouchableOpacity>
-            <Slider
-              style={{ flex: 1, height: 40, marginHorizontal: 12 }}
-              minimumValue={0}
-              maximumValue={duration > 0 ? duration : 1}
-              value={displayTime}
-              minimumTrackTintColor="#00A2FF"
-              maximumTrackTintColor="rgba(255,255,255,0.3)"
-              thumbTintColor="#00A2FF"
-              onSlidingStart={(value) => {
-                isScrubbingRef.current = true;
-                setIsScrubbing(true);
-                setScrubValue(value);
-                player.pause();
-                showControls();
-              }}
-              onValueChange={(value) => setScrubValue(value)}
-              onSlidingComplete={(value) => {
-                player.currentTime = value;
-                setCurrentTime(value);
-                isScrubbingRef.current = false;
-                setIsScrubbing(false);
-                player.play();
-              }}
-            />
-            <TouchableOpacity onPress={handleMutePress}>
-              <Ionicons
-                name={muted ? "volume-mute" : "volume-high"}
-                size={24}
-                color="white"
-              />
-            </TouchableOpacity>
-          </ControlsRow>
-        </ControlsContainer>
+              <TouchableOpacity onPress={handleMutePress}>
+                <Ionicons
+                  name={muted ? "volume-mute" : "volume-high"}
+                  size={24}
+                  color="white"
+                />
+              </TouchableOpacity>
+            </ControlsRow>
+          </ControlsContainer>
+        </SafeAreaView>
       </Animated.View>
 
       {/* ── Back button ── */}
       <Animated.View
+        pointerEvents={controlsVisible ? "auto" : "none"}
         style={{
           position: "absolute",
           top: 0,
@@ -264,11 +300,6 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
 // ─── Styled Components ────────────────────────────────────────────────────────
 
 const ControlsContainer = styled.View({
-  position: "absolute",
-  bottom: 0,
-  left: 0,
-  right: 0,
-  paddingHorizontal: 16,
   paddingBottom: 40,
   backgroundColor: "rgba(0,0,0,0.5)",
 });

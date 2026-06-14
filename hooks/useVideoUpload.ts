@@ -1,6 +1,6 @@
 import { useCallback, useContext } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import {
   getFirestore,
@@ -140,9 +140,14 @@ export const useVideoUpload = ({
 
           let lastReportedProgress = 0;
 
+          const uploadPath =
+            Platform.OS === "android"
+              ? videoUri.replace("file://", "")
+              : videoUri;
+
           const uploadId = await Upload.startUpload({
             url: data.uploadUrl,
-            path: videoUri,
+            path: uploadPath,
             method: "PUT",
             type: "raw",
             headers: { "content-type": "video/mp4" },
