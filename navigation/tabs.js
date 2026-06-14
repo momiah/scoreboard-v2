@@ -243,10 +243,12 @@ const Tabs = () => {
     (notification) => notification.isRead === false,
   );
 
+  const initialRouteName = hasUnreadNotifications ? "Competitions" : "Profile";
+
   return (
     <>
       <Tab.Navigator
-        initialRouteName="Profile"
+        initialRouteName={initialRouteName}
         screenOptions={({ route }) => ({
           tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
