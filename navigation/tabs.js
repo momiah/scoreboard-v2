@@ -276,10 +276,6 @@ const Tabs = () => {
               return <TabIcon name={iconName} color={color} size={size} />;
             }
           },
-          tabBarStyle: {
-            borderTopWidth: 1,
-            borderTopColor: "#262626",
-          },
           tabBarLabel: () => null,
           headerShown: false,
         })}

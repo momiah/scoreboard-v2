@@ -316,7 +316,7 @@ const ModalContent = styled.View({
   borderTopLeftRadius: 20,
   borderTopRightRadius: 20,
   padding: 20,
-  paddingBottom: 36,
+  paddingBottom: 70,
   minHeight: 750,
   justifyContent: "space-between",
 });
