@@ -47,6 +47,7 @@ const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
 
 const NEW_COMPETITION_WINDOW_DAYS = 3;
+const EXPIRY_WINDOW_MS = 1000 * 60 * 60 * 24 * 7;
 
 type CompetitionTypeValue =
   | typeof COMPETITION_TYPES.LEAGUE
@@ -55,6 +56,7 @@ type CompetitionTypeValue =
 interface CompetitionWithMeta extends NormalizedCompetition {
   competitionType: CompetitionTypeValue;
   lastActivity: Date | string;
+  isExpired: boolean;
 }
 
 const COLLECTIONS: {
@@ -112,13 +114,15 @@ const CompetitionsScreen = memo(() => {
         reportedCollections.add(collectionName);
         const next = Array.from(competitionMap.current.values()).sort(
           (first, second) => {
-            // Prize-distributed competitions sink below active ones.
-            const firstDistributed = first.prizesDistributed ? 1 : 0;
-            const secondDistributed = second.prizesDistributed ? 1 : 0;
-            if (firstDistributed !== secondDistributed) {
-              return firstDistributed - secondDistributed;
+            // Active (0) → prizes distributed (1) → expired (2), then newest activity first.
+            const getCompetitionStageOrder = (comp: CompetitionWithMeta) =>
+              comp.isExpired ? 2 : comp.prizesDistributed ? 1 : 0;
+
+            const firstStageOrder = getCompetitionStageOrder(first);
+            const secondStageOrder = getCompetitionStageOrder(second);
+            if (firstStageOrder !== secondStageOrder) {
+              return firstStageOrder - secondStageOrder;
             }
-            // Within the same group, newest activity first.
             return getTime(second.lastActivity) - getTime(first.lastActivity);
           },
         );
@@ -165,10 +169,17 @@ const CompetitionsScreen = memo(() => {
                 .sort((first, second) => getTime(second) - getTime(first))[0] ||
               new Date();
 
+            const isExpired =
+              !!normalized.prizesDistributed &&
+              !!normalized.prizeDistributionDate &&
+              Date.now() >
+                getTime(normalized.prizeDistributionDate) + EXPIRY_WINDOW_MS;
+
             competitionMap.current.set(doc.id, {
               ...normalized,
               competitionType: config.competitionType,
               lastActivity,
+              isExpired,
             });
           });
 
@@ -502,22 +513,10 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
       isLeague,
     ]);
 
-    const isExpired = useMemo(() => {
-      if (
-        !competition.prizesDistributed ||
-        !competition.prizeDistributionDate
-      ) {
-        return false;
-      }
-      const weekAfterDistribution =
-        getTime(competition.prizeDistributionDate) + 1000 * 60 * 60 * 24 * 7;
-      return Date.now() > weekAfterDistribution;
-    }, [competition.prizesDistributed, competition.prizeDistributionDate]);
-
     return (
       <ListItemContainer
         onPress={onPress}
-        style={{ opacity: isExpired ? 0.5 : 1 }}
+        style={{ opacity: competition.isExpired ? 0.5 : 1 }}
       >
         {/* Row 1: info (left) + stats (right) */}
         <TopRow>
@@ -575,7 +574,6 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
 );
 
 CompetitionListItem.displayName = "CompetitionListItem";
-
 const CompetitionName = styled.Text({
   fontSize: isSmallScreen ? 14 : 17,
   fontWeight: "600",
