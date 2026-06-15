@@ -193,30 +193,6 @@ const faqs = [
     ],
   },
   {
-    question: "What is the Quick Add Game modal?",
-    answer:
-      "The Quick Add Game modal (accessed via the blue ⨁ tab button below) lets players rapidly submit game results without navigating deep into their competition.",
-    sections: [
-      {
-        title: "Quick Add for Leagues 🏟️",
-        lines: [
-          "Tap the Quick Add button from the home screen to instantly open your league's game submission form.",
-          "Select your opponents, enter the score, and submit for approval in seconds.",
-          "Ideal for session nights where multiple games are played back to back and you want to log results on the spot.",
-          "If you're in multiple leagues, you can select which league you're submitting the game to.",
-        ],
-      },
-      {
-        title: "Quick Add for Tournaments 🏆",
-        lines: [
-          "For tournaments, the Quick Add modal automatically surfaces your next scheduled fixture so you never have to hunt for your upcoming game.",
-          "Your next opponent, court number, and round are displayed upfront — just play and submit the result directly from the modal.",
-          "Once submitted, the result is sent for opponent approval and your next fixture will appear ready for the following round.",
-        ],
-      },
-    ],
-  },
-  {
     question: "What stats do we track?",
     answer:
       "We track a variety of stats to help players understand their performance, including:",
