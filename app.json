@@ -50,6 +50,9 @@
       }
     },
     "android": {
+      "blockedPermissions": [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
       "backgroundColor": "#00152B",
       "adaptiveIcon": {
         "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
@@ -57,7 +60,7 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 22
+      "versionCode": 23
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
@@ -105,10 +108,10 @@
           }
         }
       ],
-  "expo-video",
-"expo-font",
-"expo-asset",
-"expo-screen-orientation"
+      "expo-video",
+      "expo-font",
+      "expo-asset",
+      "expo-screen-orientation"
     ],
     "extra": {
       "eas": {
