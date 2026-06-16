@@ -74,6 +74,7 @@ const ClubScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [clubNotFound, setClubNotFound] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
+  const [isParticipant, setIsParticipant] = useState(false);
   const [selectedTab, setSelectedTab] = useState<PrimaryTab>(
     primaryTab ?? "Feed",
   );
@@ -84,6 +85,7 @@ const ClubScreen: React.FC = () => {
     (a) => a.userId === currentUser?.userId,
   );
   const canInvite = isOwner || isAdmin;
+  const isMember = !!(isOwner || isAdmin || isParticipant);
 
   useFocusEffect(
     useCallback(() => {
@@ -110,7 +112,12 @@ const ClubScreen: React.FC = () => {
             const snap = await getDocs(
               collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
             );
-            if (!cancelled) setMemberCount(snap.size);
+            if (!cancelled) {
+              setMemberCount(snap.size);
+              setIsParticipant(
+                snap.docs.some((doc) => doc.id === currentUser?.userId),
+              );
+            }
           }
         } catch (e) {
           console.error("Club load error:", e);
@@ -140,9 +147,21 @@ const ClubScreen: React.FC = () => {
           <ClubPerformance clubId={clubId} initialSubTab={performanceTab} />
         );
       case "Leagues":
-        return <ClubLeagues clubId={clubId} />;
+        return (
+          <ClubLeagues
+            clubId={clubId}
+            isMember={isMember}
+            canManage={!!canInvite}
+          />
+        );
       case "Tournaments":
-        return <ClubTournaments clubId={clubId} />;
+        return (
+          <ClubTournaments
+            clubId={clubId}
+            isMember={isMember}
+            canManage={!!canInvite}
+          />
+        );
       default:
         return null;
     }

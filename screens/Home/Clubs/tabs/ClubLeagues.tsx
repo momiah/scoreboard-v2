@@ -30,9 +30,15 @@ const { width: screenWidth } = Dimensions.get("window");
 
 interface ClubLeaguesProps {
   clubId: string;
+  isMember: boolean;
+  canManage: boolean;
 }
 
-const ClubLeagues: React.FC<ClubLeaguesProps> = ({ clubId }) => {
+const ClubLeagues: React.FC<ClubLeaguesProps> = ({
+  clubId,
+  isMember,
+  canManage,
+}) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { currentUser } = useContext(UserContext);
 
@@ -84,7 +90,18 @@ const ClubLeagues: React.FC<ClubLeaguesProps> = ({ clubId }) => {
     fetchClubLeagues();
   }, [fetchClubLeagues]);
 
-  const sorted = useMemo(() => sortLeaguesByEndDate(leagues), [leagues]);
+  const visibleLeagues = useMemo(
+    () =>
+      isMember
+        ? leagues
+        : leagues.filter((l) => l.privacy?.toLowerCase() !== "private"),
+    [leagues, isMember],
+  );
+
+  const sorted = useMemo(
+    () => sortLeaguesByEndDate(visibleLeagues),
+    [visibleLeagues],
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: NormalizedCompetition }) => {
@@ -166,11 +183,13 @@ const ClubLeagues: React.FC<ClubLeaguesProps> = ({ clubId }) => {
 
   return (
     <Container>
-      <HeaderRow>
-        <CreateButton onPress={() => setAddLeagueModalVisible(true)}>
-          <CreateButtonText>+ Create League</CreateButtonText>
-        </CreateButton>
-      </HeaderRow>
+      {canManage && (
+        <HeaderRow>
+          <CreateButton onPress={() => setAddLeagueModalVisible(true)}>
+            <CreateButtonText>+ Create League</CreateButtonText>
+          </CreateButton>
+        </HeaderRow>
+      )}
 
       {renderContent}
 
