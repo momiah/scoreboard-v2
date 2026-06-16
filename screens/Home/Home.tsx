@@ -310,6 +310,8 @@ const Home = () => {
           />
         )}
 
+        <HomeClubsSection />
+
         <SubHeader title="Game Videos" />
       </HeaderContainer>
     ),
@@ -398,7 +400,6 @@ const Home = () => {
           }}
         />
       )}
-      <HomeClubsSection />
     </SafeAreaView>
   );
 };

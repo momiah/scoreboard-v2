@@ -122,7 +122,6 @@ const Grid = styled.View({
   flexWrap: "wrap",
   justifyContent: "space-between",
   gap: 15,
-  paddingHorizontal: 10,
   marginBottom: 40,
 });
 
@@ -163,7 +162,8 @@ const TopTag = styled.View({
 
 const Info = styled.View({
   padding: 10,
-  border: "1px solid #192336",
+  borderWidth: 1,
+  borderColor: "#192336",
 });
 
 const Name = styled.Text({
