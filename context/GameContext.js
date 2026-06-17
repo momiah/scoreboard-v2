@@ -80,7 +80,7 @@ const GameProvider = ({ children }) => {
   const recentGameResult = (resultLog) => {
     const lastResult = resultLog[resultLog.length - 1]; // Get the last element without modifying the array
 
-    const icon = lastResult === "W" ? "caretup" : "caretdown";
+    const icon = lastResult === "W" ? "caret-up" : "caret-down";
     const color = lastResult === "W" ? "green" : "red";
 
     return <AntDesign name={icon} size={10} color={color} />;

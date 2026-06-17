@@ -80,7 +80,7 @@ const SelectPlayerModal = memo<SelectPlayerModalProps>(
             <MenuHeader>
               <MenuTitle>Select Player</MenuTitle>
               <TouchableOpacity onPress={closeDropdown}>
-                <AntDesign name="closecircleo" size={30} color="red" />
+                <AntDesign name="close-circle" size={30} color="red" />
               </TouchableOpacity>
             </MenuHeader>
 

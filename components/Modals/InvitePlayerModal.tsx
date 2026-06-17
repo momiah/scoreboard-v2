@@ -321,7 +321,7 @@ const InvitePlayerModal = ({
                     zIndex: 10,
                   }}
                 >
-                  <AntDesign name="closecircleo" size={30} color="red" />
+                  <AntDesign name="close-circle" size={30} color="red" />
                 </TouchableOpacity>
 
                 <ScrollView
@@ -362,7 +362,7 @@ const InvitePlayerModal = ({
                       <Tag name={competition.type} />
                       <Tag name={competition.prizeType} />
                       <ShareButton onPress={handleShare}>
-                        <AntDesign name="sharealt" size={13} color="#00A2FF" />
+                        <AntDesign name="share-alt" size={13} color="#00A2FF" />
                         <ShareButtonText>
                           Share {competitionVariant}
                         </ShareButtonText>
@@ -455,7 +455,7 @@ const InvitePlayerModal = ({
                           >
                             <UserName>{item.username}</UserName>
                             <AntDesign
-                              name="closecircleo"
+                              name="close-circle"
                               size={20}
                               color="red"
                               onPress={() => handleRemoveUser(item)}

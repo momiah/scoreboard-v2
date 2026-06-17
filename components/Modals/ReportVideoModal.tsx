@@ -103,7 +103,7 @@ const ReportVideoModal: React.FC<ReportVideoModalProps> = ({
               {isSubmitted ? "Report Submitted" : "Report Video"}
             </ModalTitle>
             <TouchableOpacity onPress={handleClose}>
-              <AntDesign name="closecircleo" size={26} color="red" />
+              <AntDesign name="close-circle" size={26} color="red" />
             </TouchableOpacity>
           </ModalHeader>
 

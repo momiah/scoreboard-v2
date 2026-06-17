@@ -57,7 +57,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
             <ModalHeader>
               <ModalTitle>Add Competition</ModalTitle>
               <CloseButton onPress={() => setModalVisible(false)}>
-                <AntDesign name="closecircleo" size={30} color="red" />
+                <AntDesign name="close-circle" size={30} color="red" />
               </CloseButton>
             </ModalHeader>
 

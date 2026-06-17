@@ -257,12 +257,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
                     <>
                       <LeagueImage source={{ uri: selectedImage }} />
                       <OverlayIcon>
-                        <AntDesign name="pluscircleo" size={32} color="#fff" />
+                        <AntDesign name="plus-circle" size={32} color="#fff" />
                       </OverlayIcon>
                     </>
                   ) : (
                     <ImagePlaceholder>
-                      <AntDesign name="pluscircleo" size={32} color="#ccc" />
+                      <AntDesign name="plus-circle" size={32} color="#ccc" />
                       <Text style={{ color: "#ccc", marginTop: 6 }}>
                         Add Image
                       </Text>
