@@ -45,85 +45,83 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   };
 
   return (
-    <View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <ModalOverlay>
-          <ModalContent>
-            <ModalHeader>
-              <ModalTitle>Add Competition</ModalTitle>
-              <CloseButton onPress={() => setModalVisible(false)}>
-                <AntDesign name="close-circle" size={30} color="red" />
-              </CloseButton>
-            </ModalHeader>
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisible}
+      onRequestClose={() => setModalVisible(false)}
+    >
+      <ModalOverlay>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Add Competition</ModalTitle>
+            <CloseButton onPress={() => setModalVisible(false)}>
+              <AntDesign name="close-circle" size={30} color="red" />
+            </CloseButton>
+          </ModalHeader>
 
-            <OptionsContainer>
-              <TouchableOpacity
-                onPress={() => handleOptionPress("league")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#0a1929",
-                  borderRadius: 12,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: "#1a2b3d",
-                  marginBottom: 15,
-                }}
-              >
-                <IconContainer>
-                  <Image
-                    source={trophies[4]}
-                    style={{ width: 32, height: 32 }}
-                    resizeMode="contain"
-                  />
-                </IconContainer>
-                <OptionContent>
-                  <OptionTitle>Add League</OptionTitle>
-                  <OptionSubtitle>
-                    Add an open league where players report scores till an end
-                    date
-                  </OptionSubtitle>
-                </OptionContent>
-                <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
-              </TouchableOpacity>
+          <OptionsContainer>
+            <TouchableOpacity
+              onPress={() => handleOptionPress("league")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#0a1929",
+                borderRadius: 12,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: "#1a2b3d",
+                marginBottom: 15,
+              }}
+            >
+              <IconContainer>
+                <Image
+                  source={trophies[4]}
+                  style={{ width: 32, height: 32 }}
+                  resizeMode="contain"
+                />
+              </IconContainer>
+              <OptionContent>
+                <OptionTitle>Add League</OptionTitle>
+                <OptionSubtitle>
+                  Add an open league where players report scores till an end
+                  date
+                </OptionSubtitle>
+              </OptionContent>
+              <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => handleOptionPress("tournament")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#0a1929",
-                  borderRadius: 12,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: "#1a2b3d",
-                  marginBottom: 15,
-                }}
-              >
-                <IconContainer>
-                  <Image
-                    source={medals[4]}
-                    style={{ width: 32, height: 32 }}
-                    resizeMode="contain"
-                  />
-                </IconContainer>
-                <OptionContent>
-                  <OptionTitle>Add Tournament</OptionTitle>
-                  <OptionSubtitle>
-                    Add a tournament with pre generated games and teams
-                  </OptionSubtitle>
-                </OptionContent>
-                <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
-              </TouchableOpacity>
-            </OptionsContainer>
-          </ModalContent>
-        </ModalOverlay>
-      </Modal>
+            <TouchableOpacity
+              onPress={() => handleOptionPress("tournament")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#0a1929",
+                borderRadius: 12,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: "#1a2b3d",
+                marginBottom: 15,
+              }}
+            >
+              <IconContainer>
+                <Image
+                  source={medals[4]}
+                  style={{ width: 32, height: 32 }}
+                  resizeMode="contain"
+                />
+              </IconContainer>
+              <OptionContent>
+                <OptionTitle>Add Tournament</OptionTitle>
+                <OptionSubtitle>
+                  Add a tournament with pre generated games and teams
+                </OptionSubtitle>
+              </OptionContent>
+              <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
+            </TouchableOpacity>
+          </OptionsContainer>
+        </ModalContent>
+      </ModalOverlay>
 
       {addLeagueModalVisible && (
         <AddLeagueModal
@@ -140,7 +138,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
           onSuccess={handleSuccess}
         />
       )}
-    </View>
+    </Modal>
   );
 };
 

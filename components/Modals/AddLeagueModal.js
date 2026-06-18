@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
-  StyleSheet,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
@@ -20,7 +19,6 @@ import DatePicker from "../DatePicker";
 import {
   leagueSchema,
   scoreboardProfileSchema,
-  courtSchema,
   gameTypes,
   maxPlayers,
   privacyTypes,
@@ -28,14 +26,14 @@ import {
   prizeTypes,
 } from "@shared";
 import OptionSelector from "../OptionSelector";
-import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { AntDesign } from "@expo/vector-icons";
 import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails";
-import AddCourtModal from "./AddCourtModal";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
 import { AppEventsLogger } from "react-native-fbsdk-next";
+import SearchCourt from "./SearchLocationModal";
+import { formatCourtDetailsForList } from "@/helpers/formatCourtDetails";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -50,17 +48,14 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
 
   // Modal state
   const [showLeagueSettingsModal, setShowLeagueSettingsModal] = useState(false);
-  const [showAddCourtModal, setShowAddCourtModal] = useState(false);
 
   const [leagueCreationLoading, setLeagueCreationLoading] = useState(false);
 
   // Court state
   const [courtsList, setCourtsList] = useState([]);
   const [courtData, setCourtData] = useState([]);
-  const [courtDetails, setCourtDetails] = useState(courtSchema);
-  const [selectedLocation, setSelectedLocation] = useState(
-    courtDetails.location,
-  );
+  const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState({});
 
   // React Hook Form setup
   const {
@@ -82,14 +77,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
   const leagueLengthInMonths = watch("leagueLengthInMonths");
   const privacy = watch("privacy");
 
-  const formatCourtDetailsForList = (courtsList) =>
-    courtsList.map((court) => ({
-      key: court.id,
-      value: court.courtName.trim(),
-      description: `${court.location?.city}, ${court.location?.country}`,
-      countryCode: court.location?.countryCode,
-    }));
-
   // Load courts on component mount
   useEffect(() => {
     const loadCourts = async () => {
@@ -104,13 +91,9 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
   }, []);
 
   const handleCourtSelect = (key) => {
-    if (key === "add-new-court") {
-      setShowAddCourtModal(true);
-    } else {
-      // Update form value
-      setValue("location", key);
-    }
+    setValue("location", key);
   };
+
   // Get league admin information
   const assignLeagueAdmin = async () => {
     const currentUserId = await AsyncStorage.getItem("userId");
@@ -278,26 +261,16 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
                   required
                 />
 
-                <ListDropdown
-                  label="Location"
-                  data={courtsList}
-                  selectedOption={selectedLocation || {}}
-                  boxStyles={[
-                    styles.box,
-                    errors.location ? styles.errorBox : null,
-                  ]}
-                  dropdownStyles={styles.dropdown}
-                  dropdownTextStyles={styles.dropdownText}
-                  placeholder="Select or Add Court"
-                  setSelected={(key) => handleCourtSelect(key)}
-                  notFoundText="Add court location..."
-                  notFoundTextFunction={() => setShowAddCourtModal(true)}
-                  onDropdownOpen={() => [
-                    setCourtDetails(courtSchema),
-                    getCourts(),
-                  ]}
-                  save="value"
-                />
+                <Label>Location</Label>
+                <CourtSelector
+                  hasError={!!errors.location}
+                  onPress={() => setShowSearchCourtModal(true)}
+                >
+                  <CourtSelectorText selected={!!selectedLocation?.value}>
+                    {selectedLocation?.value || "Select or Add Court"}
+                  </CourtSelectorText>
+                  <AntDesign name="right" size={16} color="#888" />
+                </CourtSelector>
                 {errors.location && (
                   <ErrorText>{errors.location.message}</ErrorText>
                 )}
@@ -348,20 +321,18 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess }) => {
         />
       )}
 
-      {showAddCourtModal && (
-        <AddCourtModal
-          visible={showAddCourtModal}
-          courtDetails={courtDetails}
-          setCourtDetails={setCourtDetails}
-          onClose={() => setShowAddCourtModal(false)}
+      {showSearchCourtModal && (
+        <SearchCourt
+          visible={showSearchCourtModal}
+          onClose={() => setShowSearchCourtModal(false)}
+          courts={courtsList}
+          selectedCourtKey={selectedLocation?.key}
+          onSelectCourt={(key) => handleCourtSelect(key)}
+          getCourts={getCourts}
           addCourt={addCourt}
-          onCourtAdded={async (courtDetails) => {
-            // Refresh courts list
-            const courtData = await getCourts();
-            const formattedCourts = formatCourtDetailsForList(courtData);
-            setCourtsList(formattedCourts);
+          onCourtsRefreshed={(courtData) => {
             setCourtData(courtData);
-            handleCourtSelect(courtDetails.courtName);
+            setCourtsList(formatCourtDetailsForList(courtData));
           }}
         />
       )}
@@ -627,26 +598,22 @@ const ImagePlaceholder = styled.View({
   borderColor: "#ccc",
 });
 
-const styles = StyleSheet.create({
-  box: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 0,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  errorBox: {
-    borderWidth: 1,
-    borderColor: "#ff7675",
-  },
-  dropdown: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 0,
-    marginTop: 5,
-  },
-  dropdownText: {
-    color: "#fff",
-  },
-});
+const CourtSelector = styled.TouchableOpacity(({ hasError }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  height: 40,
+  borderRadius: 5,
+  paddingHorizontal: 12,
+  marginBottom: 16,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  borderWidth: hasError ? 1 : 0,
+  borderColor: hasError ? "#ff7675" : "transparent",
+}));
+
+const CourtSelectorText = styled.Text(({ selected }) => ({
+  color: selected ? "#fff" : "#999",
+  fontSize: 14,
+}));
 
 export default AddLeagueModal;

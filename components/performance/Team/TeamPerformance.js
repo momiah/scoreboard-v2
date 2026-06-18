@@ -26,8 +26,6 @@ const TeamPerformance = ({ leagueTeams }) => {
       });
   }, [leagueTeams]);
 
-  console.log("Sorted Teams:", JSON.stringify(sortedTeams, null, 2));
-
   const renderTeam = ({ item: team, index }) => {
     const pointDifference = team.totalPointDifference || 0;
     const teamPlayers = team.team ?? [];

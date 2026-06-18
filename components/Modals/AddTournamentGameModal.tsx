@@ -16,6 +16,7 @@ import {
 } from "@shared/types";
 import { calculateWin } from "../../helpers/calculateWin";
 import { UserContext } from "@/context/UserContext";
+import { PopupContext } from "@/context/PopupContext";
 import {
   notificationSchema,
   notificationTypes,
@@ -50,6 +51,7 @@ const AddTournamentGameModal = ({
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
   const { updateTournamentGame } = useContext(LeagueContext);
+  const { showBottomToast } = useContext(PopupContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
   const [loading, setLoading] = useState(false);
@@ -225,73 +227,71 @@ const AddTournamentGameModal = ({
   // if (!game) return null;
 
   return (
-    <View style={{ flex: 1 }}>
-      <Modal
-        animationType="slide"
-        transparent
-        visible={visible && !!game}
-        onRequestClose={handleClose}
-      >
-        <ModalContainer>
-          <ModalContent>
-            <CloseButton onPress={handleClose}>
-              <AntDesign name="close-circle" size={30} color="red" />
-            </CloseButton>
+    <Modal
+      animationType="slide"
+      transparent
+      visible={visible && !!game}
+      onRequestClose={handleClose}
+    >
+      <ModalContainer>
+        <ModalContent>
+          <CloseButton onPress={handleClose}>
+            <AntDesign name="close-circle" size={30} color="red" />
+          </CloseButton>
 
-            <AddGameDetails
-              team1Score={team1Score}
-              setTeam1Score={setTeam1Score}
-              team2Score={team2Score}
-              setTeam2Score={setTeam2Score}
-              selectedPlayers={{ team1: [null, null], team2: [null, null] }}
-              setSelectedPlayers={() => {}}
-              leagueType={tournamentType}
-              isReadOnly={true}
-              gameNumber={gameNumber}
-              court={court}
-              approvalStatus={approvalStatus}
-              presetPlayers={{
-                team1: {
-                  player1: game?.team1?.player1 ?? undefined,
-                  player2: game?.team1?.player2 ?? undefined,
-                },
-                team2: {
-                  player1: game?.team2?.player1 ?? undefined,
-                  player2: game?.team2?.player2 ?? undefined,
-                },
-              }}
-            />
+          <AddGameDetails
+            team1Score={team1Score}
+            setTeam1Score={setTeam1Score}
+            team2Score={team2Score}
+            setTeam2Score={setTeam2Score}
+            selectedPlayers={{ team1: [null, null], team2: [null, null] }}
+            setSelectedPlayers={() => {}}
+            leagueType={tournamentType}
+            isReadOnly={true}
+            gameNumber={gameNumber}
+            court={court}
+            approvalStatus={approvalStatus}
+            presetPlayers={{
+              team1: {
+                player1: game?.team1?.player1 ?? undefined,
+                player2: game?.team1?.player2 ?? undefined,
+              },
+              team2: {
+                player1: game?.team2?.player1 ?? undefined,
+                player2: game?.team2?.player2 ?? undefined,
+              },
+            }}
+          />
 
-            {errorText && <ErrorText>{errorText}</ErrorText>}
-            {!canCurrentUserReport && (
-              <ErrorText>
-                Only participants of this game can report the result.
-              </ErrorText>
+          {errorText && <ErrorText>{errorText}</ErrorText>}
+          {!canCurrentUserReport && (
+            <ErrorText>
+              Only participants of this game can report the result.
+            </ErrorText>
+          )}
+
+          <SubmitButton
+            onPress={handleSubmit}
+            disabled={loading || !areScoresEntered() || !canCurrentUserReport}
+            style={{
+              backgroundColor:
+                loading || !areScoresEntered() || !canCurrentUserReport
+                  ? "#666"
+                  : "#00A2FF",
+              opacity:
+                loading || !areScoresEntered() || !canCurrentUserReport
+                  ? 0.6
+                  : 1,
+            }}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <SubmitText>Submit</SubmitText>
             )}
-
-            <SubmitButton
-              onPress={handleSubmit}
-              disabled={loading || !areScoresEntered() || !canCurrentUserReport}
-              style={{
-                backgroundColor:
-                  loading || !areScoresEntered() || !canCurrentUserReport
-                    ? "#666"
-                    : "#00A2FF",
-                opacity:
-                  loading || !areScoresEntered() || !canCurrentUserReport
-                    ? 0.6
-                    : 1,
-              }}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <SubmitText>Submit</SubmitText>
-              )}
-            </SubmitButton>
-          </ModalContent>
-        </ModalContainer>
-      </Modal>
+          </SubmitButton>
+        </ModalContent>
+      </ModalContainer>
 
       {submittedGame && currentUser && (
         <VideoUploadModal
@@ -299,6 +299,7 @@ const AddTournamentGameModal = ({
           onClose={() => {
             setSubmittedGame(null);
             onClose();
+            showBottomToast("Game published!", "success");
           }}
           gameId={submittedGame.gameId}
           competitionId={tournamentId}
@@ -313,7 +314,7 @@ const AddTournamentGameModal = ({
           showAddLaterHint={true}
         />
       )}
-    </View>
+    </Modal>
   );
 };
 
