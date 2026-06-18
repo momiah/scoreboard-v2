@@ -259,7 +259,6 @@ const Tabs = () => {
           tabBarInactiveTintColor: "#A9A9A9",
           tabBarStyle: {
             borderColor: "rgba(9, 33, 62, 1)",
-            borderTopWidth: 1,
           },
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
