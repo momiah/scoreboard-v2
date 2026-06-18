@@ -243,7 +243,10 @@ const Tabs = () => {
     (notification) => notification.isRead === false,
   );
 
-  const initialRouteName = hasUnreadNotifications ? "Competitions" : "Profile";
+  let initialRouteName = "Profile";
+  if (notifications.length === 0 || hasUnreadNotifications) {
+    initialRouteName = "Competitions";
+  }
 
   return (
     <>

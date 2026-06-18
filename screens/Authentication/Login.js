@@ -380,6 +380,9 @@ export default function Login() {
               onBlur={validateEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              spellCheck={false}
             />
             {emailError && <Text style={styles.errorText}>{emailError}</Text>}
           </View>
@@ -395,6 +398,10 @@ export default function Login() {
               onChangeText={setPassword}
               onBlur={validatePassword}
               secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              spellCheck={false}
             />
             <TouchableOpacity
               style={styles.eyeButton}

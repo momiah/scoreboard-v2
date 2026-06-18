@@ -111,6 +111,10 @@ const AddCourtModal = ({
                 <Input
                   value={courtDetails.courtName}
                   onChangeText={(v) => handleChange("courtName", v)}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  spellCheck={false}
                 />
                 <ListDropdown
                   label="Country"

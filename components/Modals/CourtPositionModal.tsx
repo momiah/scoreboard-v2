@@ -173,6 +173,12 @@ const CourtPositionsModal = memo<CourtPositionsModalProps>(
                 </TouchableOpacity>
               </MenuHeader>
 
+              <ModalDescription>
+                {isUploader
+                  ? "Tap a position to set which side each player started on. This helps viewers recognize each player."
+                  : "Where each player started on the court."}
+              </ModalDescription>
+
               <CourtWrapper>
                 <Court>
                   {/* ── Team 1 half (top) ── */}
@@ -259,6 +265,13 @@ const MenuContent = styled.View({
   borderTopLeftRadius: 20,
   borderTopRightRadius: 20,
   paddingBottom: 40,
+});
+
+const ModalDescription = styled.Text({
+  color: "#aaa",
+  fontSize: 14,
+  marginHorizontal: 20,
+  paddingVertical: 12,
 });
 
 // ── Header

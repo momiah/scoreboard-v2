@@ -195,9 +195,7 @@ const InviteActionModal = ({
   };
 
   const numberOfPlayers = `${competition?.participants.length} / ${competition?.maxPlayers}`;
-
-  // Single source of truth for the disabled/error state.
-  // Priority: withdrawn/participant message → league full → none.
+  const competitionType = config?.navRoute ?? "Competition";
   const actionBlocked = isWithdrawn || alreadyInLeague || leagueFull || isRead;
 
   const errorMessage = withdrawnMessage
@@ -231,7 +229,7 @@ const InviteActionModal = ({
               </TouchableOpacity>
 
               <LeagueDetailsContainer>
-                <Title>League Invite</Title>
+                <Title>{competitionType} Invite</Title>
 
                 {competition ? (
                   <>

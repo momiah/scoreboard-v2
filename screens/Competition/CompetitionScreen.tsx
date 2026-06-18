@@ -39,8 +39,6 @@ import RankSuffix from "@/components/RankSuffix";
 import { getPlayerRankInCompetition } from "@/helpers/getPlayerRankInCompetition";
 import { getTime } from "../../helpers/dateTimeUtils";
 import AddCompetitionModal from "@/components/Modals/AddCompetitionModal";
-import AddLeagueModal from "@/components/Modals/AddLeagueModal";
-import AddTournamentModal from "@/components/Modals/AddTournamentModal";
 import CompetitionListItemSkeleton from "../../components/Skeletons/CompetitionListItemSkeleton";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -75,9 +73,6 @@ const CompetitionsScreen = memo(() => {
   const [competitions, setCompetitions] = useState<CompetitionWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [addCompetitionVisible, setAddCompetitionVisible] = useState(false);
-  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
-  const [addTournamentModalVisible, setAddTournamentModalVisible] =
-    useState(false);
 
   const competitionMap = useRef<Map<string, CompetitionWithMeta>>(new Map());
 
@@ -100,7 +95,6 @@ const CompetitionsScreen = memo(() => {
       const userId = currentUser?.userId;
 
       if (!userId) {
-        setLoading(false);
         return;
       }
 
@@ -299,20 +293,6 @@ const CompetitionsScreen = memo(() => {
             currentUser={currentUser}
           />
         )}
-        {addLeagueModalVisible && (
-          <AddLeagueModal
-            modalVisible={addLeagueModalVisible}
-            setModalVisible={setAddLeagueModalVisible}
-            onSuccess={() => {}}
-          />
-        )}
-        {addTournamentModalVisible && (
-          <AddTournamentModal
-            modalVisible={addTournamentModalVisible}
-            setModalVisible={setAddTournamentModalVisible}
-            onSuccess={() => {}}
-          />
-        )}
       </Container>
     );
   }
@@ -337,24 +317,6 @@ const CompetitionsScreen = memo(() => {
           modalVisible={addCompetitionVisible}
           setModalVisible={setAddCompetitionVisible}
           currentUser={currentUser}
-        />
-      )}
-      {addLeagueModalVisible && (
-        <AddLeagueModal
-          modalVisible={addLeagueModalVisible}
-          setModalVisible={setAddLeagueModalVisible}
-          onSuccess={() => {
-            // Navigate to the new league or refresh the list if needed
-          }}
-        />
-      )}
-      {addTournamentModalVisible && (
-        <AddTournamentModal
-          modalVisible={addTournamentModalVisible}
-          setModalVisible={setAddTournamentModalVisible}
-          onSuccess={() => {
-            // Navigate to the new tournament or refresh the list if needed
-          }}
         />
       )}
     </Container>

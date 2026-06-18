@@ -1,7 +1,6 @@
 import React, { useState, useContext } from "react";
 import {
   Modal,
-  View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
@@ -17,6 +16,7 @@ import AddGameDetails from "../scoreboard/AddGame/AddGameDetails";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { LeagueContext } from "../../context/LeagueContext";
+import { PopupContext } from "../../context/PopupContext";
 import {
   notificationSchema,
   notificationTypes,
@@ -68,6 +68,7 @@ const AddGameModal = ({
 }: AddGameModalProps) => {
   const { addGame } = useContext(GameContext);
   const { fetchCompetitionById } = useContext(LeagueContext);
+  const { showBottomToast } = useContext(PopupContext);
   const { getUserById, currentUser, sendNotification } =
     useContext(UserContext);
 
@@ -253,7 +254,6 @@ const AddGameModal = ({
     }
 
     await addGame(newGame, gameId, leagueId);
-
     resetForm();
     setSubmittedGame({
       gameId,
@@ -282,64 +282,62 @@ const AddGameModal = ({
   };
 
   return (
-    <View>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={handleClose}
-      >
-        <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <GradientOverlay colors={["#191b37", "#001d2e"]}>
-            <ModalContent>
-              <TouchableOpacity
-                onPress={handleClose}
-                style={{
-                  alignSelf: "flex-end",
-                  position: "absolute",
-                  top: 10,
-                  right: 10,
-                  zIndex: 10,
-                }}
-              >
-                <AntDesign name="closecircleo" size={30} color="red" />
-              </TouchableOpacity>
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisible}
+      onRequestClose={handleClose}
+    >
+      <ModalContainer style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+        <GradientOverlay colors={["#191b37", "#001d2e"]}>
+          <ModalContent>
+            <TouchableOpacity
+              onPress={handleClose}
+              style={{
+                alignSelf: "flex-end",
+                position: "absolute",
+                top: 10,
+                right: 10,
+                zIndex: 10,
+              }}
+            >
+              <AntDesign name="closecircleo" size={30} color="red" />
+            </TouchableOpacity>
 
-              <AddGameDetails
-                team1Score={team1Score}
-                setTeam1Score={setTeam1Score}
-                team2Score={team2Score}
-                setTeam2Score={setTeam2Score}
-                selectedPlayers={selectedPlayers}
-                setSelectedPlayers={setSelectedPlayers}
-                leagueType={leagueType}
-              />
+            <AddGameDetails
+              team1Score={team1Score}
+              setTeam1Score={setTeam1Score}
+              team2Score={team2Score}
+              setTeam2Score={setTeam2Score}
+              selectedPlayers={selectedPlayers}
+              setSelectedPlayers={setSelectedPlayers}
+              leagueType={leagueType}
+            />
 
-              {errorText ? <ErrorText>{errorText}</ErrorText> : null}
+            {errorText ? <ErrorText>{errorText}</ErrorText> : null}
 
-              <SubmitButton
-                onPress={handleAddGame}
-                disabled={isSubmitDisabled()}
-                style={{
-                  backgroundColor: isSubmitDisabled() ? "#666" : "#00A2FF",
-                  opacity: isSubmitDisabled() ? 0.6 : 1,
-                  marginTop: 20,
-                }}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Text
-                    style={{ fontSize: 14, fontWeight: "bold", color: "white" }}
-                  >
-                    Submit
-                  </Text>
-                )}
-              </SubmitButton>
-            </ModalContent>
-          </GradientOverlay>
-        </ModalContainer>
-      </Modal>
+            <SubmitButton
+              onPress={handleAddGame}
+              disabled={isSubmitDisabled()}
+              style={{
+                backgroundColor: isSubmitDisabled() ? "#666" : "#00A2FF",
+                opacity: isSubmitDisabled() ? 0.6 : 1,
+                marginTop: 20,
+              }}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text
+                  style={{ fontSize: 14, fontWeight: "bold", color: "white" }}
+                >
+                  Submit
+                </Text>
+              )}
+            </SubmitButton>
+          </ModalContent>
+        </GradientOverlay>
+      </ModalContainer>
 
       {submittedGame && currentUser && (
         <VideoUploadModal
@@ -347,6 +345,7 @@ const AddGameModal = ({
           onClose={() => {
             setSubmittedGame(null);
             setModalVisible(false);
+            showBottomToast("Game published!", "success");
           }}
           gameId={submittedGame.gameId}
           competitionId={leagueId}
@@ -361,7 +360,7 @@ const AddGameModal = ({
           showAddLaterHint={true}
         />
       )}
-    </View>
+    </Modal>
   );
 };
 
