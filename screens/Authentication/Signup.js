@@ -333,6 +333,7 @@ const Signup = ({ route }) => {
                     value={field.value}
                     onChangeText={field.onChange}
                     error={errors.firstName?.message}
+                    autoCapitalize="words"
                   />
                 )}
               />
@@ -346,6 +347,7 @@ const Signup = ({ route }) => {
                     value={field.value}
                     onChangeText={field.onChange}
                     error={errors.lastName?.message}
+                    autoCapitalize="words"
                   />
                 )}
               />
@@ -540,7 +542,14 @@ const SocialControllers = ({
 const InputWrapper = ({ label, error, ...props }) => (
   <>
     <Label>{label}</Label>
-    <Input {...props} placeholderTextColor="#aaa" />
+    <Input
+      placeholderTextColor="#aaa"
+      autoCorrect={false}
+      autoCapitalize="none"
+      autoComplete="off"
+      spellCheck={false}
+      {...props}
+    />
     {error && <ErrorText>{error}</ErrorText>}
   </>
 );

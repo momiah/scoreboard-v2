@@ -369,6 +369,10 @@ const InvitePlayer = () => {
             placeholderTextColor="#999"
             value={searchUser}
             onChangeText={handleSearch}
+            autoCorrect={false}
+            autoCapitalize="none"
+            autoComplete="off"
+            spellCheck={false}
           />
         )}
       </FixedSection>

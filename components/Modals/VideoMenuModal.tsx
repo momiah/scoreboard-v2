@@ -276,138 +276,136 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
     : "mail-outline";
 
   return (
-    <>
-      <Modal
-        animationType="slide"
-        transparent
-        visible={visible}
-        onRequestClose={onClose}
-      >
-        <MenuOverlay>
-          <MenuContent>
-            <MenuHeader>
-              <MenuTitle>Options</MenuTitle>
-              <TouchableOpacity onPress={onClose}>
-                <AntDesign name="close-circle" size={26} color="red" />
-              </TouchableOpacity>
-            </MenuHeader>
+    <Modal
+      animationType="slide"
+      transparent
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <MenuOverlay>
+        <MenuContent>
+          <MenuHeader>
+            <MenuTitle>Options</MenuTitle>
+            <TouchableOpacity onPress={onClose}>
+              <AntDesign name="close-circle" size={26} color="red" />
+            </TouchableOpacity>
+          </MenuHeader>
 
-            {/* ── Join state: locked (participant/invited) / request / withdraw ── */}
-            {showJoinRow &&
-              (isLocked ? (
-                isInvitePending ? (
-                  <MenuItem onPress={handleViewPendingInvites}>
-                    <MenuItemIcon>
-                      <Ionicons name={lockedIcon} size={22} color="#00A2FF" />
-                    </MenuItemIcon>
-                    <MenuItemText style={{ color: "#00A2FF" }}>
-                      {lockedLabel}
-                    </MenuItemText>
-                    <Ionicons name="chevron-forward" size={20} color="#555" />
-                  </MenuItem>
-                ) : (
-                  <MenuItem disabled isDisabled>
-                    <MenuItemIcon isDisabled>
-                      <Ionicons name={lockedIcon} size={22} color="#4A5A6A" />
-                    </MenuItemIcon>
-                    <MenuItemText isDisabled>{lockedLabel}</MenuItemText>
-                  </MenuItem>
-                )
-              ) : (
-                <MenuItem
-                  onPress={handleToggleJoinRequest}
-                  disabled={isTogglingRequest || isCheckingRequest}
-                >
-                  <MenuItemIcon isDestructive={isRequestPending}>
-                    <Ionicons
-                      name={isRequestPending ? "exit-outline" : "enter-outline"}
-                      size={22}
-                      color={isRequestPending ? "#FF4B6E" : "#00A2FF"}
-                    />
+          {/* ── Join state: locked (participant/invited) / request / withdraw ── */}
+          {showJoinRow &&
+            (isLocked ? (
+              isInvitePending ? (
+                <MenuItem onPress={handleViewPendingInvites}>
+                  <MenuItemIcon>
+                    <Ionicons name={lockedIcon} size={22} color="#00A2FF" />
                   </MenuItemIcon>
-                  <MenuItemText isDestructive={isRequestPending}>
-                    {isRequestPending
-                      ? "Withdraw Request to Join"
-                      : "Request to Join Competition"}
+                  <MenuItemText style={{ color: "#00A2FF" }}>
+                    {lockedLabel}
                   </MenuItemText>
-                  {isCheckingRequest || isTogglingRequest ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={isRequestPending ? "#FF4B6E" : "#00A2FF"}
-                    />
-                  ) : (
-                    <Ionicons name="chevron-forward" size={20} color="#555" />
-                  )}
+                  <Ionicons name="chevron-forward" size={20} color="#555" />
                 </MenuItem>
-              ))}
-
-            {/* ── Court Positions ── */}
-            <MenuItem onPress={handleViewCourtPositions}>
-              <MenuItemIcon>
-                <Ionicons name="grid-outline" size={22} color="#00A2FF" />
-              </MenuItemIcon>
-              <MenuItemText>View Court Positions</MenuItemText>
-              <Ionicons name="chevron-forward" size={20} color="#555" />
-            </MenuItem>
-
-            {/* ── Share ── */}
-            <MenuItem onPress={handleShareVideo}>
-              <MenuItemIcon>
-                <Ionicons name="share-outline" size={22} color="#00A2FF" />
-              </MenuItemIcon>
-              <MenuItemText>Share Video</MenuItemText>
-              <Ionicons name="chevron-forward" size={20} color="#555" />
-            </MenuItem>
-
-            {/* ── Save ── */}
-            {!hideSave && (
-              <MenuItem onPress={handleSaveVideo}>
-                <MenuItemIcon>
-                  <Ionicons name="bookmark-outline" size={22} color="#00A2FF" />
-                </MenuItemIcon>
-                <MenuItemText>{isSaved ? "Saved" : "Save Video"}</MenuItemText>
-                {isCheckingSaved || isSaving ? (
-                  <ActivityIndicator size="small" color="#00A2FF" />
-                ) : (
+              ) : (
+                <MenuItem disabled isDisabled>
+                  <MenuItemIcon isDisabled>
+                    <Ionicons name={lockedIcon} size={22} color="#4A5A6A" />
+                  </MenuItemIcon>
+                  <MenuItemText isDisabled>{lockedLabel}</MenuItemText>
+                </MenuItem>
+              )
+            ) : (
+              <MenuItem
+                onPress={handleToggleJoinRequest}
+                disabled={isTogglingRequest || isCheckingRequest}
+              >
+                <MenuItemIcon isDestructive={isRequestPending}>
                   <Ionicons
-                    name={isSaved ? "bookmark" : "bookmark-outline"}
+                    name={isRequestPending ? "exit-outline" : "enter-outline"}
                     size={22}
-                    color={isSaved ? "#00A2FF" : "#555"}
+                    color={isRequestPending ? "#FF4B6E" : "#00A2FF"}
                   />
-                )}
-              </MenuItem>
-            )}
-
-            {/* ── Report ── */}
-            {!hideReport && (
-              <MenuItem onPress={handleReport} isLast={!isOwnVideo}>
-                <MenuItemIcon isDestructive>
-                  <Ionicons name="flag-outline" size={22} color="#FF4B6E" />
                 </MenuItemIcon>
-                <MenuItemText isDestructive>Report Video</MenuItemText>
-                <Ionicons name="chevron-forward" size={20} color="#555" />
-              </MenuItem>
-            )}
-
-            {/* ── Delete — own videos only ── */}
-            {isOwnVideo && (
-              <MenuItem onPress={handleDelete} isLast>
-                <MenuItemIcon isDestructive>
-                  <Ionicons name="trash-outline" size={22} color="#FF4B6E" />
-                </MenuItemIcon>
-                <MenuItemText isDestructive>
-                  {isDeleting ? "Deleting..." : "Delete Video"}
+                <MenuItemText isDestructive={isRequestPending}>
+                  {isRequestPending
+                    ? "Withdraw Request to Join"
+                    : "Request to Join Competition"}
                 </MenuItemText>
-                {isDeleting ? (
-                  <ActivityIndicator size="small" color="#FF4B6E" />
+                {isCheckingRequest || isTogglingRequest ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={isRequestPending ? "#FF4B6E" : "#00A2FF"}
+                  />
                 ) : (
                   <Ionicons name="chevron-forward" size={20} color="#555" />
                 )}
               </MenuItem>
-            )}
-          </MenuContent>
-        </MenuOverlay>
-      </Modal>
+            ))}
+
+          {/* ── Court Positions ── */}
+          <MenuItem onPress={handleViewCourtPositions}>
+            <MenuItemIcon>
+              <Ionicons name="grid-outline" size={22} color="#00A2FF" />
+            </MenuItemIcon>
+            <MenuItemText>View Court Positions</MenuItemText>
+            <Ionicons name="chevron-forward" size={20} color="#555" />
+          </MenuItem>
+
+          {/* ── Share ── */}
+          <MenuItem onPress={handleShareVideo}>
+            <MenuItemIcon>
+              <Ionicons name="share-outline" size={22} color="#00A2FF" />
+            </MenuItemIcon>
+            <MenuItemText>Share Video</MenuItemText>
+            <Ionicons name="chevron-forward" size={20} color="#555" />
+          </MenuItem>
+
+          {/* ── Save ── */}
+          {!hideSave && (
+            <MenuItem onPress={handleSaveVideo}>
+              <MenuItemIcon>
+                <Ionicons name="bookmark-outline" size={22} color="#00A2FF" />
+              </MenuItemIcon>
+              <MenuItemText>{isSaved ? "Saved" : "Save Video"}</MenuItemText>
+              {isCheckingSaved || isSaving ? (
+                <ActivityIndicator size="small" color="#00A2FF" />
+              ) : (
+                <Ionicons
+                  name={isSaved ? "bookmark" : "bookmark-outline"}
+                  size={22}
+                  color={isSaved ? "#00A2FF" : "#555"}
+                />
+              )}
+            </MenuItem>
+          )}
+
+          {/* ── Report ── */}
+          {!hideReport && (
+            <MenuItem onPress={handleReport} isLast={!isOwnVideo}>
+              <MenuItemIcon isDestructive>
+                <Ionicons name="flag-outline" size={22} color="#FF4B6E" />
+              </MenuItemIcon>
+              <MenuItemText isDestructive>Report Video</MenuItemText>
+              <Ionicons name="chevron-forward" size={20} color="#555" />
+            </MenuItem>
+          )}
+
+          {/* ── Delete — own videos only ── */}
+          {isOwnVideo && (
+            <MenuItem onPress={handleDelete} isLast>
+              <MenuItemIcon isDestructive>
+                <Ionicons name="trash-outline" size={22} color="#FF4B6E" />
+              </MenuItemIcon>
+              <MenuItemText isDestructive>
+                {isDeleting ? "Deleting..." : "Delete Video"}
+              </MenuItemText>
+              {isDeleting ? (
+                <ActivityIndicator size="small" color="#FF4B6E" />
+              ) : (
+                <Ionicons name="chevron-forward" size={20} color="#555" />
+              )}
+            </MenuItem>
+          )}
+        </MenuContent>
+      </MenuOverlay>
 
       {currentUser && (
         <ReportVideoModal
@@ -429,7 +427,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
         playerArray={courtPlayers}
         onSave={handleSaveCourtPositions}
       />
-    </>
+    </Modal>
   );
 };
 

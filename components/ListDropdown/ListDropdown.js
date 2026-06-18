@@ -150,6 +150,10 @@ const ListDropdown = ({
                   editable={dropdown}
                   onChangeText={setSearchQuery}
                   pointerEvents={dropdown ? "auto" : "none"}
+                  autoCorrect={false}
+                  autoCapitalize="words"
+                  autoComplete="off"
+                  spellCheck={false}
                 />
                 <Ionicons
                   name={dropdown ? "chevron-up" : "chevron-down"}

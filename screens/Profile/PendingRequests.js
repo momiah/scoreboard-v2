@@ -35,11 +35,11 @@ const PendingRequests = () => {
 
   const handleWithdraw = async (competitionId, collectionName) => {
     try {
-      await withdrawJoinRequest(
+      await withdrawJoinRequest({
         competitionId,
-        currentUser?.userId,
+        userId: currentUser?.userId,
         collectionName,
-      );
+      });
       loadRequests();
     } catch (err) {
       Alert.alert("Error", "Failed to withdraw request.");

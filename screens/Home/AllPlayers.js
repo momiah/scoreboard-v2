@@ -305,6 +305,10 @@ const AllPlayers = () => {
         onChangeText={handleSearch}
         editable={!loading}
         style={{ opacity: loading ? 0.4 : 1 }}
+        autoCorrect={false}
+        autoCapitalize="none"
+        autoComplete="off"
+        spellCheck={false}
       />
       {!loading && users.length === 0 && (
         <EmptyState>No players found</EmptyState>
