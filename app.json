@@ -16,7 +16,7 @@
     "ios": {
       "backgroundColor": "#00152B",
       "supportsTablet": true,
-      "buildNumber": "22",
+      "buildNumber": "23",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -32,7 +32,10 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
         "NSUserNotificationUsageDescription": "This app needs permission to send you notifications.",
-        "UIBackgroundModes": ["fetch", "remote-notification"],
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -93,7 +96,8 @@
         }
       ],
       "expo-video",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

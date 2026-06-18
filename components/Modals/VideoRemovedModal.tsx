@@ -132,7 +132,7 @@ const VideoRemovedModal: React.FC<VideoRemovedModalProps> = ({
                 <ModalTitle>Video Removed</ModalTitle>
               </HeaderLeft>
               <TouchableOpacity onPress={onClose}>
-                <AntDesign name="closecircleo" size={26} color="red" />
+                <AntDesign name="close-circle" size={26} color="red" />
               </TouchableOpacity>
             </ModalHeader>
 
@@ -312,7 +312,7 @@ const VideoAppealModal: React.FC<VideoAppealModalProps> = ({
               <ModalTitle>Appeal Removal</ModalTitle>
             </HeaderLeft>
             <TouchableOpacity onPress={handleClose}>
-              <AntDesign name="closecircleo" size={26} color="red" />
+              <AntDesign name="close-circle" size={26} color="red" />
             </TouchableOpacity>
           </ModalHeader>
 

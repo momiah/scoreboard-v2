@@ -288,7 +288,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
             <MenuHeader>
               <MenuTitle>Options</MenuTitle>
               <TouchableOpacity onPress={onClose}>
-                <AntDesign name="closecircleo" size={26} color="red" />
+                <AntDesign name="close-circle" size={26} color="red" />
               </TouchableOpacity>
             </MenuHeader>
 
