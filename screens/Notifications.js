@@ -157,6 +157,7 @@ const Notifications = () => {
           notificationId={modalState.notificationId}
           senderId={modalState.senderId}
           isRead={modalState.isRead}
+          notificationData={modalState.data}
         />
       )}
 

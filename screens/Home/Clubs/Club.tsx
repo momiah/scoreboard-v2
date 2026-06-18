@@ -33,6 +33,7 @@ import ClubPerformance from "./tabs/ClubPerformance";
 import ClubLeagues from "./tabs/ClubLeagues";
 import ClubTournaments from "./tabs/ClubTournaments";
 import InviteClubMembersModal from "../../../components/Modals/InviteClubMembersModal";
+import UserRoleTag from "../../../components/UserRoleTag";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -68,13 +69,15 @@ const ClubScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { clubId, primaryTab, performanceTab } = route.params ?? {};
 
-  const { fetchClubById, clubById } = useContext(LeagueContext);
+  const { fetchClubById, clubById, requestToJoinClub } =
+    useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
 
   const [loading, setLoading] = useState(true);
   const [clubNotFound, setClubNotFound] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
   const [isParticipant, setIsParticipant] = useState(false);
+  const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
   const [selectedTab, setSelectedTab] = useState<PrimaryTab>(
     primaryTab ?? "Feed",
   );
@@ -86,6 +89,27 @@ const ClubScreen: React.FC = () => {
   );
   const canInvite = isOwner || isAdmin;
   const isMember = !!(isOwner || isAdmin || isParticipant);
+
+  const isRequestPending =
+    clubById?.pendingRequests?.some(
+      (r) => r.userId === currentUser?.userId,
+    ) ?? false;
+  const isInvitePending =
+    clubById?.pendingInvites?.some(
+      (i) => i.userId === currentUser?.userId,
+    ) ?? false;
+
+  const clubUserRole = !currentUser
+    ? "hide"
+    : isOwner || isAdmin
+      ? "admin"
+      : isParticipant
+        ? "participant"
+        : isInvitePending
+          ? "invitationPending"
+          : isRequestPending
+            ? "requestPending"
+            : "user";
 
   useFocusEffect(
     useCallback(() => {
@@ -137,6 +161,25 @@ const ClubScreen: React.FC = () => {
   useEffect(() => {
     if (primaryTab) setSelectedTab(primaryTab);
   }, [primaryTab]);
+
+  const handleLogin = () => navigation.navigate("Login");
+
+  const handleRequestToJoinClub = async () => {
+    if (!club) return;
+    try {
+      setIsJoinRequestSending(true);
+      await requestToJoinClub({
+        clubId,
+        currentUser,
+        ownerId: club.clubOwner.userId,
+      });
+      await fetchClubById(clubId);
+    } catch (e) {
+      console.error("Error sending club join request:", e);
+    } finally {
+      setIsJoinRequestSending(false);
+    }
+  };
 
   const renderPrimaryContent = () => {
     switch (selectedTab) {
@@ -301,15 +344,15 @@ const ClubScreen: React.FC = () => {
                   ) : null}
                 </View>
 
-                {/* Row 2: Invite Members (right-aligned, owner/admin only) */}
-                {canInvite && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "flex-end",
-                      marginTop: 5,
-                    }}
-                  >
+                {/* Row 2: Invite Members (admin) or role-based action (others) */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    marginTop: 5,
+                  }}
+                >
+                  {canInvite ? (
                     <Tag
                       name="Invite Members"
                       color="#00A2FF"
@@ -317,8 +360,16 @@ const ClubScreen: React.FC = () => {
                       onPress={() => setInviteModalVisible(true)}
                       bold
                     />
-                  </View>
-                )}
+                  ) : (
+                    <UserRoleTag
+                      userRole={clubUserRole}
+                      onInvitePress={() => {}}
+                      onLoginPress={handleLogin}
+                      onRequestJoinPress={handleRequestToJoinClub}
+                      isJoining={isJoinRequestSending}
+                    />
+                  )}
+                </View>
               </ClubDetailsContainer>
             </ClubHeaderImage>
           </Overview>

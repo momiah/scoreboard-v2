@@ -9,30 +9,19 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
-import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
+import { notificationTypes } from "@shared";
 import { getModalTypeForNotification } from "../../../helpers/handleNotificationAction";
 import NotificationRow from "../../../components/Notification/NotificationRow";
 import JoinRequestModal from "../../../components/Modals/JoinRequestModal";
 import { Notification } from "@/shared";
 
-const CompetitionPendingRequests = () => {
+const ClubPendingRequests = () => {
   const { currentUser, notifications } = useContext(UserContext);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const route = useRoute();
-  const { leagueId, tournamentId, collectionName } = route.params as {
-    leagueId?: string;
-    tournamentId?: string;
-    collectionName: string;
-  };
+  const { clubId } = route.params as { clubId: string };
 
-  const { competitionId, competitionType } = getCompetitionTypeAndId({
-    collectionName,
-    leagueId: leagueId ?? "",
-    tournamentId: tournamentId ?? "",
-  });
-
-  // ── Modal state mirrors the Notifications screen ──
   const [modalState, setModalState] = useState<{
     notificationId: string | null;
     notificationType: string | null;
@@ -50,34 +39,20 @@ const CompetitionPendingRequests = () => {
   });
   const [joinRequestVisible, setJoinRequestVisible] = useState(false);
 
-  // ── Only join-request notifications scoped to this competition ──
   const requestNotifications = useMemo(() => {
     return (notifications || []).filter((item: Notification) => {
-      if (getModalTypeForNotification(item.type) !== "joinRequest")
-        return false;
-      const notificationCompetitionId =
-        item.data?.leagueId ||
-        item.data?.tournamentId ||
-        item.data?.competitionId;
-      return notificationCompetitionId === competitionId;
+      if (item.type !== notificationTypes.ACTION.JOIN_REQUEST.CLUB) return false;
+      return item.data?.clubId === clubId;
     });
-  }, [notifications, competitionId]);
+  }, [notifications, clubId]);
 
   const handleNotificationAction = useCallback((item: Notification) => {
-    const rawCompetitionId =
-      item.data?.leagueId ??
-      item.data?.tournamentId ??
-      item.data?.competitionId ??
-      null;
-
-    const notificationCompetitionId =
-      typeof rawCompetitionId === "string" ? rawCompetitionId : null;
-
     setModalState({
       notificationId: item.id ?? null,
       notificationType: item.type ?? null,
       senderId: item.senderId ?? null,
-      selectedCompetitionId: notificationCompetitionId,
+      selectedCompetitionId:
+        typeof item.data?.clubId === "string" ? item.data.clubId : null,
       isRead: !!item.isRead,
       notificationData: item.data ?? null,
     });
@@ -109,8 +84,8 @@ const CompetitionPendingRequests = () => {
 
       {requestNotifications.length === 0 ? (
         <EmptyText>
-          No pending requests yet. When players request to join your{" "}
-          {competitionType}, they'll appear here for you to review
+          No pending requests yet. When players request to join your club,
+          they&apos;ll appear here for you to review.
         </EmptyText>
       ) : (
         <FlatList
@@ -140,9 +115,7 @@ const CompetitionPendingRequests = () => {
   );
 };
 
-export default CompetitionPendingRequests;
-
-// ─── Styled Components ────────────────────────────────────────────────────────
+export default ClubPendingRequests;
 
 const Container = styled.View({
   flex: 1,

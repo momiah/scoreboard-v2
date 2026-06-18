@@ -160,11 +160,29 @@ export interface LeagueContextType {
     clubId: string;
     notificationId: string;
   }) => Promise<void>;
+  requestToJoinClub: (params: {
+    clubId: string;
+    currentUser: UserProfile;
+    ownerId: string;
+  }) => Promise<boolean>;
+  acceptClubJoinRequest: (params: {
+    senderId: string;
+    clubId: string;
+    notificationId: string;
+    userId: string;
+  }) => Promise<void>;
+  declineClubJoinRequest: (params: {
+    senderId: string;
+    clubId: string;
+    notificationId: string;
+    userId: string;
+  }) => Promise<void>;
   requestToJoinLeague: (params: {
     competitionId: string;
     currentUser: UserProfile;
     ownerId: string;
     collectionName: CollectionName;
+    clubId?: string | null;
   }) => Promise<boolean>;
   acceptCompetitionJoinRequest: (params: {
     senderId: string;

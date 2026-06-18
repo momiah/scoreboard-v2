@@ -6,6 +6,7 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { useEffect, useState, useContext, useCallback } from "react";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+import { notificationTypes, COLLECTION_NAMES } from "@shared";
 
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
@@ -21,6 +22,7 @@ import {
   NormalizedCompetition,
   UserProfile,
 } from "@shared/types";
+import type { Club } from "@shared/types";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
@@ -35,6 +37,7 @@ type JoinRequestModalProps = {
   notificationId: string;
   senderId: string;
   isRead: boolean;
+  notificationData?: Record<string, unknown> | null;
 };
 
 const JoinRequestModal = ({
@@ -45,11 +48,14 @@ const JoinRequestModal = ({
   notificationId,
   senderId,
   isRead,
+  notificationData,
 }: JoinRequestModalProps) => {
   const {
     subscribeToCompetition,
     acceptCompetitionJoinRequest,
     declineCompetitionJoinRequest,
+    acceptClubJoinRequest,
+    declineClubJoinRequest,
   } = useContext(LeagueContext);
   const { findRankIndex } = useContext(GameContext);
   const { currentUser, getUserById, readNotification } =
@@ -58,33 +64,45 @@ const JoinRequestModal = ({
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
     null,
   );
+  const [clubData, setClubData] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
   const [joiningCompetition, setJoiningCompetition] = useState(false);
 
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const config = getCompetitionConfig(requestType);
-  const competitionType = config.competitionType;
-  const navRoute = config.navRoute;
 
-  const navigateTo = (competitionId: string) => {
-    navigation.navigate(navRoute, { [config.paramKey]: competitionId });
+  const isClub = requestType === notificationTypes.ACTION.JOIN_REQUEST.CLUB;
+  const config = !isClub ? getCompetitionConfig(requestType) : null;
+  const competitionType = config?.competitionType ?? "club";
+  const navRoute = config?.navRoute ?? "Club";
+
+  const navigateTo = (id: string) => {
+    if (isClub) {
+      navigation.navigate("Club", { clubId: id });
+    } else if (config) {
+      navigation.navigate(navRoute, { [config.paramKey]: id });
+    }
   };
 
   const competitionFull =
+    !isClub &&
     competition?.participants.length !== undefined &&
     competition?.maxPlayers !== undefined &&
     competition.participants.length >= competition.maxPlayers;
 
-  const userAlreadyInCompetition = competition?.participants?.some(
-    (participant) => participant.userId === senderId,
-  );
+  const userAlreadyInCompetition =
+    !isClub &&
+    competition?.participants?.some(
+      (participant) => participant.userId === senderId,
+    );
 
-  const requestWithdrawn =
-    !competition?.pendingRequests?.some((req) => req.userId === senderId) &&
-    !userAlreadyInCompetition;
+  const requestWithdrawn = isClub
+    ? !clubData?.pendingRequests?.some((r) => r.userId === senderId)
+    : !competition?.pendingRequests?.some((req) => req.userId === senderId) &&
+      !userAlreadyInCompetition;
 
   const resetState = useCallback(() => {
     setCompetition(null);
+    setClubData(null);
     setSenderDetails(null);
     setJoiningCompetition(false);
     setLoading(true);
@@ -98,14 +116,17 @@ const JoinRequestModal = ({
 
     setLoading(true);
 
-    // One-time fetch for sender details — not competition data
     getUserById(senderId).then((player: UserProfile | null) => {
       if (player) setSenderDetails(player);
     });
 
+    const collectionName = isClub
+      ? (COLLECTION_NAMES.clubs as CollectionName)
+      : (config!.collectionName as CollectionName);
+
     const unsubscribe = subscribeToCompetition(
       requestId,
-      config.collectionName as CollectionName,
+      collectionName,
       (data) => {
         if (!data) {
           readNotification(notificationId, currentUser?.userId);
@@ -113,16 +134,20 @@ const JoinRequestModal = ({
           return;
         }
 
-        const normalized = normalizeCompetitionData({
-          rawData: data,
-          competitionType: config.competitionType,
-        }) as NormalizedCompetition;
-
-        setCompetition(normalized);
-        setLoading(false);
+        if (isClub) {
+          setClubData({ clubId: requestId, ...data } as unknown as Club);
+          setLoading(false);
+        } else {
+          const normalized = normalizeCompetitionData({
+            rawData: data,
+            competitionType: config!.competitionType,
+          }) as NormalizedCompetition;
+          setCompetition(normalized);
+          setLoading(false);
+        }
       },
       (error) => {
-        console.error("Error subscribing to competition:", error);
+        console.error("Error subscribing:", error);
         setLoading(false);
       },
     );
@@ -131,14 +156,21 @@ const JoinRequestModal = ({
   }, [visible, requestId]);
 
   useEffect(() => {
-    if (!visible || !competition || isRead) return;
+    if (!visible || isRead) return;
+    const hasData = isClub ? !!clubData : !!competition;
+    if (!hasData) return;
 
-    if (competitionFull || requestWithdrawn) {
-      readNotification(notificationId, currentUser?.userId);
+    if (isClub) {
+      if (requestWithdrawn) readNotification(notificationId, currentUser?.userId);
+    } else {
+      if (competitionFull || requestWithdrawn) {
+        readNotification(notificationId, currentUser?.userId);
+      }
     }
   }, [
     visible,
     competition,
+    clubData,
     isRead,
     competitionFull,
     requestWithdrawn,
@@ -149,47 +181,61 @@ const JoinRequestModal = ({
   const handleAcceptJoinRequest = async () => {
     try {
       setJoiningCompetition(true);
-      await acceptCompetitionJoinRequest({
-        senderId,
-        competitionId: competition?.id ?? requestId,
-        notificationId,
-        userId: currentUser?.userId,
-        collectionName: config.collectionName as CollectionName,
-      });
-
-      console.log("Invite accepted successfully");
+      if (isClub) {
+        await acceptClubJoinRequest({
+          senderId,
+          clubId: requestId,
+          notificationId,
+          userId: currentUser?.userId,
+        });
+      } else {
+        await acceptCompetitionJoinRequest({
+          senderId,
+          competitionId: competition?.id ?? requestId,
+          notificationId,
+          userId: currentUser?.userId,
+          collectionName: config!.collectionName as CollectionName,
+        });
+      }
       onClose();
     } catch (error) {
-      console.error("Error accepting invite:", error);
+      console.error("Error accepting join request:", error);
     } finally {
       setJoiningCompetition(false);
     }
   };
 
   const handleLinkPress = () => {
-    if (competition) {
+    const id = isClub ? clubData?.clubId : competition?.id;
+    if (id) {
       onClose();
-      navigateTo(competition.id);
+      navigateTo(id);
     }
   };
 
   const navigateToProfile = (senderId: string) => {
     onClose();
-    navigation.navigate("UserProfile", {
-      userId: senderId,
-    });
+    navigation.navigate("UserProfile", { userId: senderId });
   };
 
   const handleDeclineJoinRequest = async () => {
     try {
-      await declineCompetitionJoinRequest({
-        senderId,
-        competitionId: competition?.id ?? requestId,
-        notificationId,
-        userId: currentUser?.userId,
-        collectionName: config.collectionName as CollectionName,
-      });
-      console.log("Join request declined successfully");
+      if (isClub) {
+        await declineClubJoinRequest({
+          senderId,
+          clubId: requestId,
+          notificationId,
+          userId: currentUser?.userId,
+        });
+      } else {
+        await declineCompetitionJoinRequest({
+          senderId,
+          competitionId: competition?.id ?? requestId,
+          notificationId,
+          userId: currentUser?.userId,
+          collectionName: config!.collectionName as CollectionName,
+        });
+      }
       onClose();
     } catch (error) {
       console.error("Error declining join request:", error);
@@ -255,12 +301,35 @@ const JoinRequestModal = ({
                 <AntDesign name="close-circle" size={30} color="red" />
               </TouchableOpacity>
 
-              <Title>Join Request</Title>
+              <Title>
+                {isClub ? "Club Join Request" : "Join Request"}
+              </Title>
               <Message>
-                A user has requested to join{" "}
-                <LinkText onPress={handleLinkPress}>
-                  {competition?.name}
-                </LinkText>
+                {isClub ? (
+                  <>
+                    A user has requested to join{" "}
+                    <LinkText onPress={handleLinkPress}>
+                      {clubData?.clubName}
+                    </LinkText>
+                  </>
+                ) : competition?.clubId ? (
+                  <>
+                    A user has requested to join{" "}
+                    <LinkText onPress={handleLinkPress}>
+                      {competition?.name}
+                    </LinkText>
+                    {notificationData?.clubName
+                      ? ` in your club "${notificationData.clubName as string}"`
+                      : " in your club"}
+                  </>
+                ) : (
+                  <>
+                    A user has requested to join{" "}
+                    <LinkText onPress={handleLinkPress}>
+                      {competition?.name}
+                    </LinkText>
+                  </>
+                )}
               </Message>
 
               {senderDetails &&
@@ -271,17 +340,19 @@ const JoinRequestModal = ({
 
               {requestWithdrawn && (
                 <DisabledText>
-                  Request to join {competitionType} has been withdrawn
+                  {isClub
+                    ? "This club join request is no longer pending"
+                    : `Request to join ${competitionType} has been withdrawn`}
                 </DisabledText>
               )}
 
-              {competitionFull && (
+              {!isClub && competitionFull && (
                 <DisabledText>
                   This invite has expired as the {competitionType} is full
                 </DisabledText>
               )}
 
-              {userAlreadyInCompetition && (
+              {!isClub && userAlreadyInCompetition && (
                 <DisabledText>
                   This user is already a participant in the {competitionType}
                 </DisabledText>
@@ -366,7 +437,8 @@ const PlayerRow = styled.TouchableOpacity({
   justifyContent: "space-between",
   alignItems: "center",
   padding: 10,
-  border: "1px solid rgb(9, 33, 62)",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
   marginTop: 10,
   borderRadius: 10,
 });

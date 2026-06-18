@@ -24,7 +24,7 @@ import {
   COMPETITION_TYPES,
   COLLECTION_NAMES,
 } from "@shared";
-import type { CollectionName } from "@shared/types";
+
 import moment from "moment";
 import { LeagueContext } from "../context/LeagueContext";
 import { PopupContext } from "../context/PopupContext";

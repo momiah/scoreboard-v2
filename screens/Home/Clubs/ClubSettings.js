@@ -21,6 +21,11 @@ const ClubSettings = () => {
       action: "ClubPendingInvites",
     },
     {
+      label: "Pending Requests",
+      icon: "time-outline",
+      action: "ClubPendingRequests",
+    },
+    {
       label: "Assign Admin",
       icon: "people-outline",
       action: "ClubAssignAdmin",
@@ -47,6 +52,15 @@ const ClubSettings = () => {
       );
 
   const handlePress = (action) => {
+    if (action === "ClubPendingRequests") {
+      navigation.navigate("ClubPendingRequests", { clubId });
+      return;
+    }
+    if (action === "ClubPendingInvites") {
+      navigation.navigate("ClubPendingInvites", { clubId });
+      return;
+    }
+    // Other actions not yet implemented
     console.log(`[ClubSettings] Pressed: ${action}`, { clubId, club });
   };
 
