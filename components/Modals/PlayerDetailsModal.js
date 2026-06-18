@@ -122,7 +122,7 @@ const PlayerDetails = ({
               <AntDesign
                 onPress={() => setShowPlayerDetails(false)}
                 name="closecircleo"
-                size={20}
+                size={26}
                 color="red"
               />
             </CloseIconContainer>
