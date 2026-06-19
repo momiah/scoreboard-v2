@@ -32,10 +32,7 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
         "NSUserNotificationUsageDescription": "This app needs permission to send you notifications.",
-        "UIBackgroundModes": [
-          "fetch",
-          "remote-notification"
-        ],
+        "UIBackgroundModes": ["fetch", "remote-notification"],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -55,7 +52,7 @@
       ],
       "backgroundColor": "#00152B",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
+        "foregroundImage": "./assets/court-champ-logo-adaptive-icon-small.png",
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp",
@@ -63,7 +60,7 @@
       "versionCode": 23
     },
     "web": {
-      "favicon": "./assets/court-champ-logo-icon-w-bg.png"
+      "favicon": "./assets/court-champ-logo-adaptive-icon-small.png"
     },
     "plugins": [
       [
