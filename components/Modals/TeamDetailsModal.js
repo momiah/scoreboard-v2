@@ -8,7 +8,10 @@ import AnimateNumber from "../performance/AnimateNumber";
 import ResultLog from "../performance/ResultLog";
 
 const TeamDetails = ({ showTeamDetails, setShowTeamDetails, teamStats }) => {
-  const winRatio = teamStats.numberOfWins / teamStats.numberOfLosses;
+  const winRatio =
+    teamStats.numberOfLosses > 0
+      ? teamStats.numberOfWins / teamStats.numberOfLosses
+      : teamStats.numberOfWins;
 
   const statData = [
     {
@@ -51,8 +54,8 @@ const TeamDetails = ({ showTeamDetails, setShowTeamDetails, teamStats }) => {
             <CloseIconContainer>
               <AntDesign
                 onPress={() => setShowTeamDetails(false)}
-                name="closecircleo"
-                size={20}
+                name="close-circle"
+                size={26}
                 color="red"
               />
             </CloseIconContainer>

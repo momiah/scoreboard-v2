@@ -52,22 +52,19 @@ export const socialMediaPlatforms = [
 ];
 
 export const iosAppLinks = {
-  Instagram: "instagram://user?username=courtchamps.io",
-  TikTok: "snssdk1128://user/profile/7507766818326840342",
-  // Facebook: "fb://page/61576837973289",
+  Instagram: "instagram://user?username=courtchamps.ig",
+  TikTok: "snssdk1128://user/@courtchamps",
 };
 
 export const androidIntentLinks = {
   Instagram:
-    "intent://user?username=courtchamps.io#Intent;package=com.instagram.android;scheme=instagram;end",
+    "intent://instagram.com/_u/courtchamps.ig#Intent;package=com.instagram.android;scheme=https;S.browser_fallback_url=https%3A%2F%2Fwww.instagram.com%2Fcourtchamps.ig;end",
   TikTok:
-    "intent://user/profile/7507766818326840342#Intent;package=com.zhiliaoapp.musically;scheme=snssdk1128;end",
-  // Facebook:
-  //   "intent://page/61576837973289#Intent;package=com.facebook.katana;scheme=fb;end",
+    "intent://www.tiktok.com/@courtchamps#Intent;package=com.zhiliaoapp.musically;scheme=https;S.browser_fallback_url=https%3A%2F%2Fwww.tiktok.com%2F%40courtchamps;end",
 };
 
 export const fallbackUrls = {
-  Instagram: "https://www.instagram.com/courtchamps.io/",
+  Instagram: "https://www.instagram.com/courtchamps.ig",
   Facebook: "https://www.facebook.com/profile.php?id=61576837973289",
   TikTok: "https://www.tiktok.com/@courtchamps",
 };

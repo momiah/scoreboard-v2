@@ -221,7 +221,7 @@ const AddGameModal = ({
       numberOfApprovals: 0,
       numberOfDeclines: 0,
       approvalStatus: "Pending",
-      reporter: formatDisplayName(currentUser),
+      reporter: currentUser?.userId || "",
       approvers: [],
     };
 
