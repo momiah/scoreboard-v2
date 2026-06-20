@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -73,6 +73,8 @@ const ClubScreen: React.FC = () => {
     useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
 
+  const hasLoadedOnce = useRef(false);
+
   const [loading, setLoading] = useState(true);
   const [clubNotFound, setClubNotFound] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
@@ -121,10 +123,10 @@ const ClubScreen: React.FC = () => {
           setClubNotFound(true);
           return;
         }
-        // Only show the loading overlay on the first load for this club.
-        // Re-focus refreshes happen silently in the background.
-        const isFirstLoad = !clubById || (clubById as Club).clubId !== clubId;
+
+        const isFirstLoad = !hasLoadedOnce.current;
         if (isFirstLoad) setLoading(true);
+
         try {
           const fetched = await fetchClubById(clubId);
           if (cancelled) return;
@@ -133,21 +135,29 @@ const ClubScreen: React.FC = () => {
             setMemberCount(0);
           } else {
             setClubNotFound(false);
-            const snap = await getDocs(
-              collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
-            );
-            if (!cancelled) {
-              setMemberCount(snap.size);
-              setIsParticipant(
-                snap.docs.some((doc) => doc.id === currentUser?.userId),
+            // Only fetch participants subcollection on first load —
+            // it's expensive and the membership data is stable enough
+            // for a background refocus (e.g. returning from a league page).
+            if (isFirstLoad) {
+              const snap = await getDocs(
+                collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
               );
+              if (!cancelled) {
+                setMemberCount(snap.size);
+                setIsParticipant(
+                  snap.docs.some((doc) => doc.id === currentUser?.userId),
+                );
+              }
             }
           }
         } catch (e) {
           console.error("Club load error:", e);
           if (!cancelled) setClubNotFound(true);
         } finally {
-          if (!cancelled) setLoading(false);
+          if (!cancelled) {
+            setLoading(false);
+            hasLoadedOnce.current = true;
+          }
         }
       };
 
