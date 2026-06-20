@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
@@ -287,6 +288,8 @@ const RecentPlayersModal = ({
   );
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+
 const ModalOverlay = styled(BlurView).attrs({
   intensity: 60,
   tint: "dark",
@@ -399,7 +402,7 @@ const AddButton = styled.TouchableOpacity({
   borderRadius: 8,
   padding: 12,
   alignItems: "center",
-  marginBottom: 60,
+  marginBottom: screenWidth < 430 ? 10 : 60,
 });
 
 const AddButtonText = styled.Text({

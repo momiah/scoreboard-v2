@@ -2,9 +2,9 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "3.0.5",
+    "version": "3.0.6",
     "runtimeVersion": "3.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
@@ -16,7 +16,7 @@
     "ios": {
       "backgroundColor": "#00152B",
       "supportsTablet": true,
-      "buildNumber": "23",
+      "buildNumber": "24",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -32,10 +32,7 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
         "NSUserNotificationUsageDescription": "This app needs permission to send you notifications.",
-        "UIBackgroundModes": [
-          "fetch",
-          "remote-notification"
-        ],
+        "UIBackgroundModes": ["fetch", "remote-notification"],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
