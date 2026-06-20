@@ -11,6 +11,7 @@ import { useEvent } from "expo";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import * as ScreenOrientation from "expo-screen-orientation";
 import styled from "styled-components/native";
 
 interface VideoFullscreenProps {
@@ -35,10 +36,10 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
   const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isScrubbingRef = useRef(false);
 
-  const player = useVideoPlayer(videoUrl, (p) => {
-    p.loop = true;
-    p.currentTime = startTime;
-    p.play();
+  const player = useVideoPlayer(videoUrl, (playerInstance) => {
+    playerInstance.loop = true;
+    playerInstance.currentTime = startTime;
+    playerInstance.play();
   });
 
   const { isPlaying } = useEvent(player, "playingChange", {
@@ -63,12 +64,28 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
     }),
   ).current;
 
+  // ── Allow rotation while fullscreen, restore portrait on exit ─────────────
+  useEffect(() => {
+    ScreenOrientation.unlockAsync();
+
+    return () => {
+      ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.PORTRAIT_UP,
+      );
+    };
+  }, []);
+
   // ── Get duration when ready ───────────────────────────────────────────────
   useEffect(() => {
     if (status === "readyToPlay") {
-      const d = player.duration;
-      if (d && !isNaN(d) && isFinite(d) && d > 0) {
-        setDuration(d);
+      const readyDuration = player.duration;
+      if (
+        readyDuration &&
+        !isNaN(readyDuration) &&
+        isFinite(readyDuration) &&
+        readyDuration > 0
+      ) {
+        setDuration(readyDuration);
       }
     }
   }, [status]);
@@ -110,9 +127,9 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
 
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   const handleScreenPress = () => {

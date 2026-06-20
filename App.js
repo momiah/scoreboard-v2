@@ -1,5 +1,6 @@
 import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { SafeAreaView, Platform } from "react-native";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
@@ -161,6 +162,10 @@ export default function App() {
       subscription.remove();
       backgroundSubscription.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
 
   return (
