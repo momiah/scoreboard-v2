@@ -1,10 +1,12 @@
 import React, { useState, useContext } from "react";
-import { SafeAreaView } from "react-native";
+import { SafeAreaView, Alert } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../../context/UserContext";
 import GenerateFixturesModal from "../../Modals/GenerateFixturesModal";
 import { FixturesDisplay } from "./FixturesAtoms";
+
+const VALID_KNOCKOUT_COUNTS = [4, 8, 16, 32, 64];
 
 const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
   const [showGenerateFixturesModal, setShowGenerateFixturesModal] =
@@ -18,10 +20,11 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
 
   const { currentUser } = useContext(UserContext);
 
-  const numberOfParticipants = tournament?.tournamentParticipants
-    ? tournament.tournamentParticipants.length
-    : 0;
+  // const numberOfParticipants = tournament?.tournamentParticipants
+  //   ? tournament.tournamentParticipants.length
+  //   : 0;
 
+  const numberOfParticipants = 16;
   const hasFixtures = fixturesArray && fixturesArray.length > 0;
   const tournamentType = tournament?.tournamentType || "Singles";
   const numberOfCourts = tournament?.numberOfCourts || 1;
@@ -52,12 +55,29 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
 
   const handleShowGenerateFixtures = () => {
     if (!isEvenNumberOfParticipants) {
-      alert("Please ensure an even number of participants.");
+      Alert.alert("Please ensure an even number of participants.");
       return;
     }
+
+    if (tournament?.tournamentMode === "Knockout") {
+      const knockoutCount =
+        tournamentType === "Singles"
+          ? numberOfParticipants
+          : Math.floor(numberOfParticipants / 2);
+
+      if (!VALID_KNOCKOUT_COUNTS.includes(knockoutCount)) {
+        const unit = tournamentType === "Singles" ? "players" : "teams";
+        Alert.alert(
+          `Knockout tournaments need ${VALID_KNOCKOUT_COUNTS.join(
+            ", ",
+          )} ${unit}. You currently have ${knockoutCount} ${unit}.`,
+        );
+        return;
+      }
+    }
+
     setShowGenerateFixturesModal(true);
   };
-
   return (
     <Container>
       {hasFixtures && (

@@ -23,69 +23,93 @@ export const GeneratedFixturesScreen = ({
   onBack: () => void;
   onGenerateTournament: () => void;
   isGenerating: boolean;
-}) => (
-  <>
-    <ModalTitle>Generated Fixtures</ModalTitle>
+}) => {
+  const isKnockout = generatedFixtures?.some((round) =>
+    round.games.some((game) => game.isThirdPlacePlayoff),
+  );
 
-    <FixturesContainer>
-      {generatedFixtures?.map((round) => (
-        <RoundContainer key={`round_${round.round}`}>
-          <TitleContainer>
-            <RoundTitle>ROUND {round.round}</RoundTitle>
-          </TitleContainer>
+  const fixturesToDisplay = isKnockout
+    ? generatedFixtures?.slice(0, 1)
+    : generatedFixtures;
 
-          {round.games.map((game) => (
-            <GameCard key={game.gameId}>
-              <GameHeader>
-                <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
-                <Tag name={`Court ${game.court}`} bold />
-              </GameHeader>
+  const knockoutDisclaimer = isKnockout
+    ? {
+        heading: "Full bracket",
+        body: "Only the first round is shown here. The complete bracket will be available in the Brackets tab once the tournament is generated.",
+      }
+    : null;
 
-              <TeamVsContainer>
-                <TeamColumn
-                  team="left"
-                  players={{
-                    player1: game.team1.player1,
-                    player2: game.team1.player2,
-                  }}
-                  leagueType={tournamentType}
-                />
+  return (
+    <>
+      <ModalTitle>Generated Fixtures</ModalTitle>
 
-                <VsText>VS</VsText>
+      <FixturesContainer>
+        {fixturesToDisplay?.map((round) => (
+          <RoundContainer key={`round_${round.round}`}>
+            <TitleContainer>
+              <RoundTitle>ROUND {round.round}</RoundTitle>
+            </TitleContainer>
 
-                <TeamColumn
-                  team="right"
-                  players={{
-                    player1: game.team2.player1,
-                    player2: game.team2.player2,
-                  }}
-                  leagueType={tournamentType}
-                />
-              </TeamVsContainer>
-            </GameCard>
-          ))}
-        </RoundContainer>
+            {round.games.map((game) => (
+              <GameCard key={game.gameId}>
+                <GameHeader>
+                  <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
+                  <Tag name={`Court ${game.court}`} bold />
+                </GameHeader>
+
+                <TeamVsContainer>
+                  <TeamColumn
+                    team="left"
+                    players={{
+                      player1: game.team1.player1,
+                      player2: game.team1.player2,
+                    }}
+                    leagueType={tournamentType}
+                  />
+
+                  <VsText>VS</VsText>
+
+                  <TeamColumn
+                    team="right"
+                    players={{
+                      player1: game.team2.player1,
+                      player2: game.team2.player2,
+                    }}
+                    leagueType={tournamentType}
+                  />
+                </TeamVsContainer>
+              </GameCard>
+            ))}
+          </RoundContainer>
+        ))}
+      </FixturesContainer>
+
+      {knockoutDisclaimer && (
+        <DisclaimerBanner>
+          <DisclaimerHeading>{knockoutDisclaimer.heading}</DisclaimerHeading>
+          <DisclaimerBody>{knockoutDisclaimer.body}</DisclaimerBody>
+        </DisclaimerBanner>
+      )}
+
+      {fixtureMetadata?.disclaimers?.map((disclaimer) => (
+        <DisclaimerBanner key={disclaimer.heading}>
+          <DisclaimerHeading>{disclaimer.heading}</DisclaimerHeading>
+          <DisclaimerBody>{disclaimer.body}</DisclaimerBody>
+        </DisclaimerBanner>
       ))}
-    </FixturesContainer>
 
-    {fixtureMetadata?.disclaimers?.map((disclaimer) => (
-      <DisclaimerBanner key={disclaimer.heading}>
-        <DisclaimerHeading>{disclaimer.heading}</DisclaimerHeading>
-        <DisclaimerBody>{disclaimer.body}</DisclaimerBody>
-      </DisclaimerBanner>
-    ))}
-
-    <ButtonContainer>
-      <BackButton onPress={onBack}>
-        <BackText>Back</BackText>
-      </BackButton>
-      <ConfirmButton onPress={onGenerateTournament} disabled={isGenerating}>
-        {isGenerating && <ActivityIndicator size="small" color="#fff" />}
-        <ConfirmText>Confirm</ConfirmText>
-      </ConfirmButton>
-    </ButtonContainer>
-  </>
-);
+      <ButtonContainer>
+        <BackButton onPress={onBack}>
+          <BackText>Back</BackText>
+        </BackButton>
+        <ConfirmButton onPress={onGenerateTournament} disabled={isGenerating}>
+          {isGenerating && <ActivityIndicator size="small" color="#fff" />}
+          <ConfirmText>Confirm</ConfirmText>
+        </ConfirmButton>
+      </ButtonContainer>
+    </>
+  );
+};
 
 const ModalTitle = styled.Text({
   fontSize: 20,

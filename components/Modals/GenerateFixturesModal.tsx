@@ -31,77 +31,78 @@ import {
 } from "@shared/types";
 
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { generateKnockoutBrackets } from "../../helpers/Tournament/knockout";
 import { generateInitialTeamStats } from "../../helpers/generateInitialTeamStats";
 import { UserContext } from "@/context/UserContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-// const participants = [
-//   {
-//     userId: "1",
-//     firstName: "Yasin",
-//     lastName: "Miah",
-//     username: "yasinm",
-//     displayName: "Yasin M.",
-//     XP: 1200,
-//   },
-//   {
-//     userId: "2",
-//     firstName: "Mohsin",
-//     lastName: "Miah",
-//     username: "mohsinm",
-//     displayName: "Mohsin M.",
-//     XP: 950,
-//   },
-//   {
-//     userId: "3",
-//     firstName: "Rayyan",
-//     lastName: "Hoque",
-//     username: "rayyanh",
-//     displayName: "Rayyan H.",
-//     XP: 1500,
-//   },
-//   {
-//     userId: "4",
-//     firstName: "Saiful",
-//     lastName: "Hoque",
-//     username: "saifulh",
-//     displayName: "Saiful H.",
-//     XP: 800,
-//   },
-//   {
-//     userId: "5",
-//     firstName: "Raqeeb",
-//     lastName: "Hossain",
-//     username: "raqeebh",
-//     displayName: "Raqeeb H.",
-//     XP: 1100,
-//   },
-//   {
-//     userId: "6",
-//     firstName: "Saz",
-//     lastName: "Hoque",
-//     username: "sazh",
-//     displayName: "Saz H.",
-//     XP: 700,
-//   },
-//   {
-//     userId: "7",
-//     firstName: "Max",
-//     lastName: "Hoque",
-//     username: "maxh",
-//     displayName: "Max H.",
-//     XP: 1300,
-//   },
-//   {
-//     userId: "8",
-//     firstName: "Babu",
-//     lastName: "Miah",
-//     username: "babum",
-//     displayName: "Babu M.",
-//     XP: 875,
-//   },
-// ];
+const participants = [
+  {
+    userId: "1",
+    firstName: "Yasin",
+    lastName: "Miah",
+    username: "yasinm",
+    displayName: "Yasin M.",
+    XP: 1200,
+  },
+  {
+    userId: "2",
+    firstName: "Mohsin",
+    lastName: "Miah",
+    username: "mohsinm",
+    displayName: "Mohsin M.",
+    XP: 950,
+  },
+  {
+    userId: "3",
+    firstName: "Rayyan",
+    lastName: "Hoque",
+    username: "rayyanh",
+    displayName: "Rayyan H.",
+    XP: 1500,
+  },
+  {
+    userId: "4",
+    firstName: "Saiful",
+    lastName: "Hoque",
+    username: "saifulh",
+    displayName: "Saiful H.",
+    XP: 800,
+  },
+  {
+    userId: "5",
+    firstName: "Raqeeb",
+    lastName: "Hossain",
+    username: "raqeebh",
+    displayName: "Raqeeb H.",
+    XP: 1100,
+  },
+  {
+    userId: "6",
+    firstName: "Saz",
+    lastName: "Hoque",
+    username: "sazh",
+    displayName: "Saz H.",
+    XP: 700,
+  },
+  {
+    userId: "7",
+    firstName: "Max",
+    lastName: "Hoque",
+    username: "maxh",
+    displayName: "Max H.",
+    XP: 1300,
+  },
+  {
+    userId: "8",
+    firstName: "Babu",
+    lastName: "Miah",
+    username: "babum",
+    displayName: "Babu M.",
+    XP: 875,
+  },
+];
 
 // Types
 interface GenerateFixturesModalProps {
@@ -110,6 +111,7 @@ interface GenerateFixturesModalProps {
   competition: {
     tournamentType?: string;
     tournamentId?: string;
+    tournamentMode?: string;
   } | null;
   currentUser: UserProfile | null;
   setGeneratedFixtures: (fixtures: Fixtures[] | null) => void;
@@ -161,7 +163,7 @@ const GenerateFixturesModal = ({
   const [selectedMode, setSelectedMode] = useState("");
   const [generationType, setGenerationType] = useState("");
   const [fixedDoublesTeams, setFixedDoublesTeams] = useState<GameTeam[]>([]);
-  const [participants, setParticipants] = useState<PlayerWithXP[]>([]);
+  // const [participants, setParticipants] = useState<PlayerWithXP[]>([]);
   const [fixtureMetadata, setFixtureMetadata] =
     useState<FixtureMetadata | null>(null);
   const [numberOfCourts, setNumberOfCourts] = useState(1);
@@ -171,6 +173,7 @@ const GenerateFixturesModal = ({
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const tournamentType = competition?.tournamentType || "Doubles";
+  const tournamentMode = competition?.tournamentMode;
   // const tournamentType = "Singles";
   const competitionId = competition?.tournamentId;
 
@@ -189,9 +192,14 @@ const GenerateFixturesModal = ({
           getUserById,
         );
 
-        setParticipants(enrichedParticipants);
+        // setParticipants(enrichedParticipants);
       } catch (error) {
-        console.error("Error fetching participants:", error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to generate fixtures";
+        console.error("Error generating fixtures:", error);
+        Alert.alert("Cannot generate fixtures", message);
       } finally {
         setLoadingParticipants(false);
       }
@@ -227,6 +235,23 @@ const GenerateFixturesModal = ({
     setIsGenerating(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      if (tournamentMode === "Knockout") {
+        const teams = participants.map((player) => ({
+          player1: player,
+          player2: null,
+        }));
+        const result = generateKnockoutBrackets({
+          teams,
+          numberOfCourts,
+          competitionId: competitionId ?? "",
+        });
+        setGeneratedFixtures(result.fixtures);
+        setFixtureMetadata(result.metadata);
+        setCurrentScreen(GENERATED_FIXTURES_SCREEN);
+        return;
+      }
+
       const result = generateSinglesRoundRobinFixtures({
         players: participants,
         numberOfCourts,
@@ -239,8 +264,10 @@ const GenerateFixturesModal = ({
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
       }
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to generate fixtures";
       console.error("Error generating fixtures:", error);
-      Alert.alert("Error", "Failed to generate fixtures");
+      Alert.alert("Cannot generate fixtures", message);
     } finally {
       setIsGenerating(false);
     }
@@ -274,6 +301,19 @@ const GenerateFixturesModal = ({
       }
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      if (tournamentMode === "Knockout") {
+        const result = generateKnockoutBrackets({
+          teams,
+          numberOfCourts,
+          competitionId: competitionId ?? "",
+        });
+        setGeneratedFixtures(result.fixtures);
+        setFixtureMetadata(result.metadata);
+        setCurrentScreen(GENERATED_FIXTURES_SCREEN);
+        return;
+      }
+
       const fixtures = generateRoundRobinFixtures({
         teams,
         numberOfCourts,
