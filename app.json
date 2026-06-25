@@ -32,10 +32,7 @@
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
         "NSUserNotificationUsageDescription": "This app needs permission to send you notifications.",
-        "UIBackgroundModes": [
-          "fetch",
-          "remote-notification"
-        ],
+        "UIBackgroundModes": ["fetch", "remote-notification"],
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": [
@@ -97,7 +94,8 @@
       ],
       "expo-video",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {
