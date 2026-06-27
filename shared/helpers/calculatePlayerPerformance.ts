@@ -1,5 +1,3 @@
-import { transformDate } from "./dateTransform";
-
 import {
   Game,
   PlayersToUpdate,
@@ -13,7 +11,7 @@ export const calculatePlayerPerformance = (
   playersToUpdate: PlayersToUpdate,
   usersToUpdate: UsersToUpdate = [],
 ) => {
-  const date = transformDate(game.date ?? "");
+  const date = game.date ?? "";
 
   const getTeamPlayers = (teamLabel: string | undefined) =>
     teamLabel === "Team 1"
@@ -237,6 +235,8 @@ export const calculatePlayerPerformance = (
     gameDate: string,
     user: ProfileDetail | undefined,
   ) => {
+    if (!gameDate) return { player, user };
+
     player.lastActive = gameDate;
     if (user) user.lastActive = gameDate;
     return { player, user };

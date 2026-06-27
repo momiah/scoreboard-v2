@@ -1,5 +1,8 @@
-import { getPlayerRankInCompetition } from "./getPlayerRankInCompetition";
-import { NormalizedCompetition } from "@shared/types";
+import {
+  getPlayerRankInCompetition,
+  getTeamRankInCompetition,
+} from "../shared/helpers/getRankInCompetition";
+import { NormalizedCompetition, COMPETITION_TYPES } from "@shared";
 
 interface ProcessedCompetition extends NormalizedCompetition {
   wins?: number;
@@ -19,25 +22,33 @@ export const processCompetitions = ({
   setRankData,
   setRankLoading,
   profile,
+  competitionType,
 }: ProcessCompetitionsParams): void => {
+  const isDoublesTournament = competitionType === COMPETITION_TYPES.TOURNAMENT;
+
   const processed = competitions.map((competition) => {
-    // Use normalized 'participants' key
-    const rank = getPlayerRankInCompetition(
-      competition,
-      profile.userId,
-      "participants", // Always use 'participants' for normalized data
-    );
+    if (isDoublesTournament && competition.type === "Doubles") {
+      const team = (competition.teams || []).find((teamItem) =>
+        teamItem.teamKey?.includes(profile.userId),
+      );
+      return {
+        ...competition,
+        userRank: getTeamRankInCompetition(competition.teams, profile.userId),
+        wins: team?.numberOfWins ?? 0,
+      };
+    }
 
     const participant = competition.participants?.find(
       (p) => p.userId === profile.userId,
     );
 
-    const wins = participant ? participant.numberOfWins : 0;
-
     return {
       ...competition,
-      userRank: rank ?? undefined,
-      wins,
+      userRank: getPlayerRankInCompetition(
+        competition.participants,
+        profile.userId,
+      ),
+      wins: participant?.numberOfWins ?? 0,
     };
   });
 

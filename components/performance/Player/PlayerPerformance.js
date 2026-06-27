@@ -21,7 +21,18 @@ const PlayerPerformance = ({ playersData }) => {
     const loadEnrichedPlayers = async () => {
       if (playersData.length > 0) {
         const enriched = await enrichPlayers(getUserById, playersData);
-        setPlayersWithUserData(enriched);
+        const sorted = [...enriched].sort((a, b) => {
+          if ((b.numberOfWins || 0) !== (a.numberOfWins || 0)) {
+            return (b.numberOfWins || 0) - (a.numberOfWins || 0);
+          }
+          if ((b.totalPointDifference || 0) !== (a.totalPointDifference || 0)) {
+            return (
+              (b.totalPointDifference || 0) - (a.totalPointDifference || 0)
+            );
+          }
+          return (b.XP || 0) - (a.XP || 0);
+        });
+        setPlayersWithUserData(sorted);
         setLoading(false);
       }
     };
