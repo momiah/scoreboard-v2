@@ -12,6 +12,7 @@ import { GameContext } from "../../context/GameContext";
 import { BlurView } from "expo-blur";
 import { useNavigation } from "@react-navigation/native";
 import PerformanceStats from "../performance/PerformanceStats";
+import { transformDate } from "../../shared/helpers/dateTransform";
 import Tag from "../Tag";
 
 // Function to calculate the current streak
@@ -144,7 +145,7 @@ const PlayerDetails = ({
                     fontSize: screenAdjustedDescriptionFontSize,
                   }}
                 >
-                  Last Active {selectedPlayer.lastActive}
+                  Last Active {transformDate(selectedPlayer.lastActive)}
                 </Text>
 
                 <View style={{ marginTop: 10, alignSelf: "flex-start" }}>

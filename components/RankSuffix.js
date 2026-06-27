@@ -20,6 +20,14 @@ const RankSuffix = ({ number, style, numberStyle, suffixStyle }) => {
     return <Text style={style}>N/A</Text>;
   }
 
+  if (number === 0) {
+    return (
+      <Text style={style}>
+        <Text style={numberStyle}>-</Text>
+      </Text>
+    );
+  }
+
   const suffix = getOrdinalSuffix(number);
   const fontSize = numberStyle?.fontSize || DEFAULT_FONT_SIZE;
   const suffixFontSize = fontSize * 0.6;

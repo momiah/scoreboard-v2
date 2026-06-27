@@ -8,7 +8,7 @@ import React, {
   useEffect,
 } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { FlatList, Dimensions } from "react-native";
+import { FlatList, Dimensions, Image } from "react-native";
 import styled from "styled-components/native";
 import {
   useFocusEffect,
@@ -36,10 +36,14 @@ import {
 } from "@shared";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RankSuffix from "@/components/RankSuffix";
-import { getPlayerRankInCompetition } from "@/helpers/getPlayerRankInCompetition";
+import {
+  getPlayerRankInCompetition,
+  getTeamRankInCompetition,
+} from "@/shared/helpers/getRankInCompetition";
 import { getTime } from "../../helpers/dateTimeUtils";
 import AddCompetitionModal from "@/components/Modals/AddCompetitionModal";
 import CompetitionListItemSkeleton from "../../components/Skeletons/CompetitionListItemSkeleton";
+import { trophies, medals } from "../../mockImages";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -67,7 +71,8 @@ const COLLECTIONS: {
 
 const CompetitionsScreen = memo(() => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { currentUser, notifications } = useContext(UserContext);
+  const { currentUser, notifications, authInitializing } =
+    useContext(UserContext);
   const { leagueNavigationId, tournamentNavigationId } =
     useContext(LeagueContext);
   const [competitions, setCompetitions] = useState<CompetitionWithMeta[]>([]);
@@ -95,12 +100,13 @@ const CompetitionsScreen = memo(() => {
       const userId = currentUser?.userId;
 
       if (!userId) {
+        competitionMap.current.clear();
+        setCompetitions([]);
+        setLoading(false);
         return;
       }
 
-      if (competitionMap.current.size === 0) {
-        setLoading(true);
-      }
+      setLoading(competitionMap.current.size === 0);
 
       const reportedCollections = new Set<string>();
 
@@ -108,7 +114,6 @@ const CompetitionsScreen = memo(() => {
         reportedCollections.add(collectionName);
         const next = Array.from(competitionMap.current.values()).sort(
           (first, second) => {
-            // Active (0) → prizes distributed (1) → expired (2), then newest activity first.
             const getCompetitionStageOrder = (comp: CompetitionWithMeta) =>
               comp.isExpired ? 2 : comp.prizesDistributed ? 1 : 0;
 
@@ -187,7 +192,9 @@ const CompetitionsScreen = memo(() => {
       };
 
       const unsubscribers = COLLECTIONS.map(subscribe);
-      return () => unsubscribers.forEach((unsub) => unsub());
+      return () => {
+        unsubscribers.forEach((unsub) => unsub());
+      };
     }, [currentUser?.userId]),
   );
 
@@ -218,13 +225,19 @@ const CompetitionsScreen = memo(() => {
       const isPending = (game: Game) =>
         game.approvalStatus === "pending" || game.approvalStatus === "Pending";
 
+      const tab = competition.prizesDistributed
+        ? "Summary"
+        : isLeague
+          ? "Scoreboard"
+          : "Fixtures";
+
       if (isLeague) {
         const firstPending = (competition.games || []).find(
           (game) => isUserInGame(game) && isPending(game),
         );
         navigation.navigate("League", {
           leagueId: competition.id,
-          tab: "Scoreboard",
+          tab,
           scrollToGameId: firstPending?.gameId,
         });
       } else {
@@ -237,7 +250,7 @@ const CompetitionsScreen = memo(() => {
         const targetGame = firstPending || firstUnplayed;
         navigation.navigate("Tournament", {
           tournamentId: competition.id,
-          tab: "Fixtures",
+          tab,
           scrollToGameId: targetGame?.gameId,
           glowColor: firstPending ? "#FFA500" : "#00A2FF",
         });
@@ -257,7 +270,7 @@ const CompetitionsScreen = memo(() => {
     [handleCompetitionPress, currentUser],
   );
 
-  if (loading && competitions.length === 0) {
+  if (authInitializing || (currentUser?.userId && loading)) {
     return (
       <Container>
         <CompetitionsHeader
@@ -265,9 +278,26 @@ const CompetitionsScreen = memo(() => {
           onAddPress={openAddCompetition}
           onNotificationsPress={goToNotifications}
         />
-        {Array.from({ length: 6 }).map((_, index) => (
+        {Array.from({ length: 8 }).map((_, index) => (
           <CompetitionListItemSkeleton key={index} />
         ))}
+      </Container>
+    );
+  }
+
+  if (!currentUser?.userId) {
+    return (
+      <Container>
+        <CompetitionsHeader
+          unreadNotifications={0}
+          onAddPress={openAddCompetition}
+          onNotificationsPress={goToNotifications}
+        />
+        <EmptyInner>
+          <EmptyText>
+            Please sign in or create an account to view your competitions
+          </EmptyText>
+        </EmptyInner>
       </Container>
     );
   }
@@ -356,6 +386,38 @@ const CompetitionsHeader = memo<CompetitionsHeaderProps>(
 
 CompetitionsHeader.displayName = "CompetitionsHeader";
 
+interface CompetitionTypeIconProps {
+  isLeague: boolean;
+  type: string;
+}
+
+const CompetitionTypeIcon = memo<CompetitionTypeIconProps>(
+  ({ isLeague, type }) => {
+    const isDoubles = type === "Doubles";
+
+    return (
+      <MetaIconRow>
+        <Image
+          source={isLeague ? trophies[4] : medals[4]}
+          style={{
+            width: isLeague ? 14 : 18,
+            height: isLeague ? 14 : 18,
+            tintColor: isLeague ? "#FFA500" : "#0099f0",
+          }}
+          resizeMode="contain"
+        />
+        <Ionicons
+          name={isDoubles ? "people-outline" : "person-outline"}
+          size={18}
+          color="#8899aa"
+        />
+      </MetaIconRow>
+    );
+  },
+);
+
+CompetitionTypeIcon.displayName = "CompetitionTypeIcon";
+
 // ── List item
 interface CompetitionListItemProps {
   competition: CompetitionWithMeta;
@@ -371,16 +433,35 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
 
     const { userRank, wins } = useMemo(() => {
       if (!userId) return { userRank: 0, wins: 0 };
-      const rank = getPlayerRankInCompetition(
-        competition,
-        userId,
-        "participants",
-      );
+
+      const isDoublesTournament =
+        competition.competitionType === COMPETITION_TYPES.TOURNAMENT &&
+        competition.type === "Doubles";
+
+      if (isDoublesTournament) {
+        const team = (competition.teams || []).find((teamItem) =>
+          teamItem.teamKey?.includes(userId),
+        );
+        return {
+          userRank: getTeamRankInCompetition(competition.teams, userId),
+          wins: team?.numberOfWins ?? 0,
+        };
+      }
+
       const participant = competition.participants?.find(
         (member) => member.userId === userId,
       );
-      return { userRank: rank, wins: participant?.numberOfWins ?? 0 };
-    }, [competition.participants, userId]);
+      return {
+        userRank: getPlayerRankInCompetition(competition.participants, userId),
+        wins: participant?.numberOfWins ?? 0,
+      };
+    }, [
+      competition.participants,
+      competition.teams,
+      competition.type,
+      competition.competitionType,
+      userId,
+    ]);
 
     const gamesCompleted = useMemo(() => {
       const isUserInGame = (game: Game) =>
@@ -424,11 +505,16 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
 
     const activityMessage = useMemo(() => {
       if (competition.prizesDistributed) {
-        return { text: "Prizes distributed", color: "#FFD700" };
+        const placementImage =
+          userRank >= 1 && userRank <= 4
+            ? (isLeague ? trophies : medals)[userRank - 1]
+            : null;
+        return { type: "prizesDistributed" as const, placementImage };
       }
 
       if (pendingApprovalCount > 0) {
         return {
+          type: "text" as const,
           text: `${pendingApprovalCount} ${pendingApprovalCount === 1 ? "game" : "games"} awaiting approval`,
           color: "#FFA500",
         };
@@ -447,7 +533,11 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
         competition.fixturesGenerated &&
         playedGames.length === 0
       ) {
-        return { text: "Fixtures generated", color: "#00a700ff" };
+        return {
+          type: "text" as const,
+          text: "Fixtures generated",
+          color: "#00a700ff",
+        };
       }
 
       const createdRecently =
@@ -459,6 +549,7 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
         createdRecently
       ) {
         return {
+          type: "text" as const,
           text: isLeague ? "New league" : "New tournament",
           color: "#8899aa",
         };
@@ -473,6 +564,7 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
       competition.fixturesGenerated,
       competition.createdAt,
       isLeague,
+      userRank,
     ]);
 
     return (
@@ -480,56 +572,101 @@ const CompetitionListItem = memo<CompetitionListItemProps>(
         onPress={onPress}
         style={{ opacity: competition.isExpired ? 0.5 : 1 }}
       >
-        {/* Row 1: info (left) + stats (right) */}
-        <TopRow>
-          <CompetitionInfo>
-            <CompetitionName numberOfLines={1}>
-              {competition.name}
-            </CompetitionName>
-            <CompetitionLocation>{location}</CompetitionLocation>
-          </CompetitionInfo>
-
-          <StatsRow>
-            <StatBlock>
-              <StatLabel>Wins</StatLabel>
-              <StatValue>{wins}</StatValue>
-            </StatBlock>
-            <StatBlock>
-              <StatLabel>Rank</StatLabel>
-              <StatValue>
-                <RankSuffix
-                  number={userRank}
-                  numberStyle={{
-                    fontSize: isSmallScreen ? 22 : 27,
-                    color: "white",
-                    fontWeight: "bold",
-                  }}
-                  suffixStyle={{
-                    color: "rgba(255,255,255,0.7)",
-                    fontSize: isSmallScreen ? 12 : 14,
-                  }}
-                  style={[]}
+        <RowContainer>
+          <LeftColumn>
+            <CompetitionAvatar>
+              {competition.image ? (
+                <AvatarImage
+                  source={{ uri: competition.image }}
+                  resizeMode="cover"
                 />
-              </StatValue>
-            </StatBlock>
-          </StatsRow>
-        </TopRow>
+              ) : (
+                <AvatarFallback>
+                  <Image
+                    source={isLeague ? trophies[4] : medals[4]}
+                    style={{
+                      width: isLeague ? 22 : 25,
+                      height: isLeague ? 22 : 25,
+                      tintColor: isLeague ? "#FFA500" : "#0099f0",
+                    }}
+                    resizeMode="contain"
+                  />
+                </AvatarFallback>
+              )}
+            </CompetitionAvatar>
+          </LeftColumn>
 
-        {/* Row 2: type · completed (left) + pending (right) */}
-        <MetaRow>
-          <MetaLeft>
-            <CompetitionType isLeague={isLeague}>
-              {isLeague ? "LEAGUE" : "TOURNAMENT"}
-            </CompetitionType>
-            <MetaSeparator>·</MetaSeparator>
-            <GamesCompletedText>{`${gamesCompleted} Games Completed`}</GamesCompletedText>
-          </MetaLeft>
-          {activityMessage && (
-            <ActivityMessageText style={{ color: activityMessage.color }}>
-              {activityMessage.text}
-            </ActivityMessageText>
-          )}
-        </MetaRow>
+          <ContentColumn>
+            {/* Row 1: info (left) + stats (right) */}
+            <TopRow>
+              <CompetitionInfo>
+                <NameRow>
+                  <CompetitionName numberOfLines={1}>
+                    {competition.name}
+                  </CompetitionName>
+                </NameRow>
+                <CompetitionLocation>{location}</CompetitionLocation>
+              </CompetitionInfo>
+
+              <StatsRow>
+                <StatBlock>
+                  <StatLabel>Wins</StatLabel>
+                  <StatValue>{wins}</StatValue>
+                </StatBlock>
+                <StatBlock>
+                  <StatLabel>Rank</StatLabel>
+                  <StatValue>
+                    <RankSuffix
+                      number={userRank}
+                      numberStyle={{
+                        fontSize: isSmallScreen ? 22 : 27,
+                        color: "white",
+                        fontWeight: "bold",
+                      }}
+                      suffixStyle={{
+                        color: "rgba(255,255,255,0.7)",
+                        fontSize: isSmallScreen ? 12 : 14,
+                      }}
+                      style={[]}
+                    />
+                  </StatValue>
+                </StatBlock>
+              </StatsRow>
+            </TopRow>
+
+            {/* Row 2: completed (left) + activity (right) */}
+            <MetaRow>
+              <MetaLeft>
+                <Ionicons
+                  name={
+                    competition.type === "Doubles"
+                      ? "people-outline"
+                      : "person-outline"
+                  }
+                  size={14}
+                  color="#8899aa"
+                />
+                <GamesCompletedText>{`${gamesCompleted} Games Completed`}</GamesCompletedText>
+              </MetaLeft>
+              {activityMessage?.type === "prizesDistributed" ? (
+                <PrizesRow>
+                  {activityMessage.placementImage && (
+                    <Image
+                      source={activityMessage.placementImage}
+                      style={{ width: 15, height: 15 }}
+                      resizeMode="contain"
+                    />
+                  )}
+                  <Ionicons name="checkmark-circle" size={15} color="green" />
+                </PrizesRow>
+              ) : activityMessage ? (
+                <ActivityMessageText style={{ color: activityMessage.color }}>
+                  {activityMessage.text}
+                </ActivityMessageText>
+              ) : null}
+            </MetaRow>
+          </ContentColumn>
+        </RowContainer>
       </ListItemContainer>
     );
   },
@@ -559,14 +696,6 @@ const StatValue = styled.Text({
   color: "white",
 });
 
-const CompetitionType = styled.Text<{ isLeague: boolean }>(
-  ({ isLeague }: { isLeague: boolean }) => ({
-    fontSize: isSmallScreen ? 10 : 12,
-    fontWeight: "600",
-    color: isLeague ? "#0099f0" : "#FFA500",
-  }),
-);
-
 const GamesCompletedText = styled.Text({
   fontSize: isSmallScreen ? 10 : 12,
   color: "#8899aa",
@@ -575,11 +704,6 @@ const GamesCompletedText = styled.Text({
 const ActivityMessageText = styled.Text({
   fontSize: isSmallScreen ? 10 : 12,
   flexShrink: 0,
-});
-
-const MetaSeparator = styled.Text({
-  fontSize: isSmallScreen ? 10 : 12,
-  color: "#8899aa",
 });
 
 const Container = styled.View({
@@ -632,13 +756,75 @@ const MetaRow = styled.View({
   justifyContent: "space-between",
   alignItems: "center",
   width: "100%",
-  marginTop: 10,
+  marginTop: 5,
 });
 
 const MetaLeft = styled.View({
   flexDirection: "row",
   alignItems: "center",
+  gap: 4,
+});
+
+const NameRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+});
+
+const PrizesRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  // gap: 2,
+});
+
+const AVATAR_SIZE = isSmallScreen ? 44 : 52;
+const MetaIconRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
   gap: 6,
+});
+
+const LeftColumn = styled.View({
+  width: AVATAR_SIZE,
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+});
+
+const CompetitionAvatar = styled.View({
+  width: AVATAR_SIZE,
+  height: AVATAR_SIZE,
+  borderRadius: AVATAR_SIZE / 2,
+  marginRight: 12,
+  overflow: "hidden",
+  backgroundColor: "rgb(9, 33, 62)",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const AvatarImage = styled.Image({
+  width: "100%",
+  height: "100%",
+});
+
+const AvatarFallback = styled.View({
+  width: "100%",
+  height: "100%",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const RowContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  width: "100%",
+  gap: 12,
+});
+
+const ContentColumn = styled.View({
+  flex: 1,
+  flexDirection: "column",
 });
 
 const HeaderRow = styled.View({

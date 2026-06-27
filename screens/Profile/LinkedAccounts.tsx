@@ -77,7 +77,6 @@ const LinkedAccounts = () => {
       action: "Facebook",
       isLinked: existingLinkedAccounts.includes("facebook.com"),
     },
-    // { label: "Apple", icon: "logo-apple", action: "Apple", isLinked: existingLinkedAccounts.includes("apple.com") },
   ];
 
   const handlePress = async (action: string) => {
@@ -97,9 +96,6 @@ const LinkedAccounts = () => {
             return;
           }
           await linkWithFacebook();
-          break;
-        case "Apple":
-          await linkWithApple();
           break;
       }
       await loadExistingLinkedAccounts();
@@ -233,10 +229,6 @@ const LinkedAccounts = () => {
     }
     await linkWithCredential(currentFirebaseUser, credential);
     Alert.alert("Success", "Facebook account linked successfully.");
-  };
-
-  const linkWithApple = async () => {
-    Alert.alert("Coming Soon", "Apple account linking is not available yet.");
   };
 
   return (

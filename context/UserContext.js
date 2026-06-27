@@ -44,6 +44,7 @@ const UserProvider = ({ children }) => {
 
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
+  const [authInitializing, setAuthInitializing] = useState(true);
 
   const [notifications, setNotifications] = useState([]); // Optional: Track notifications
   const [chatSummaries, setChatSummaries] = useState([]);
@@ -58,6 +59,8 @@ const UserProvider = ({ children }) => {
         }
       } catch (error) {
         console.error("Initial user load failed:", error);
+      } finally {
+        setAuthInitializing(false);
       }
     };
 
@@ -887,6 +890,7 @@ const UserProvider = ({ children }) => {
         // Authentication and user management
         currentUser,
         setCurrentUser,
+        authInitializing,
         Logout,
         isLoggingOut,
         setIsLoggingOut,

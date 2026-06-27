@@ -12,10 +12,10 @@ import {
 } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
-import * as ScreenOrientation from "expo-screen-orientation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import * as ScreenOrientation from "expo-screen-orientation";
 import styled from "styled-components/native";
 
 interface VideoFullscreenProps {
@@ -88,9 +88,14 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
   // ── Get duration when ready ───────────────────────────────────────────────
   useEffect(() => {
     if (status === "readyToPlay") {
-      const d = player.duration;
-      if (d && !isNaN(d) && isFinite(d) && d > 0) {
-        setDuration(d);
+      const readyDuration = player.duration;
+      if (
+        readyDuration &&
+        !isNaN(readyDuration) &&
+        isFinite(readyDuration) &&
+        readyDuration > 0
+      ) {
+        setDuration(readyDuration);
       }
     }
   }, [status]);
@@ -133,9 +138,9 @@ const VideoFullscreen: React.FC<VideoFullscreenProps> = ({
 
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   const handleScreenPress = () => {

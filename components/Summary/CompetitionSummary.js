@@ -14,6 +14,10 @@ import { UserContext } from "../../context/UserContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 import { COMPETITION_TYPES } from "@shared";
 import { calculateTournamentPrizePool } from "@shared/helpers";
+import {
+  sortPlayersByPlacement,
+  sortTeamsByPlacement,
+} from "@shared/helpers/getRankInCompetition";
 
 // Constants moved outside to prevent recreation
 const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
@@ -125,17 +129,8 @@ const CompetitionSummary = memo(
         setIsDataLoading(true);
 
         if (isDoublesTournament) {
-          // For Doubles tournaments, sort teams by wins
-          const teamsWithWins = teams.filter((t) => t.numberOfWins > 0);
-          const sortedTeams = [...teamsWithWins].sort((a, b) => {
-            if (b.numberOfWins !== a.numberOfWins) {
-              return b.numberOfWins - a.numberOfWins;
-            }
-            return b.totalPointDifference - a.totalPointDifference;
-          });
-          setTopTeams(sortedTeams.slice(0, 4));
+          setTopTeams(sortTeamsByPlacement(teams).slice(0, 4));
         } else {
-          // For Singles competitions, enrich player data
           const contendersWithWins = participants.filter(
             (p) => p.numberOfWins > 0,
           );
@@ -146,7 +141,7 @@ const CompetitionSummary = memo(
                 getUserById,
                 contendersWithWins,
               );
-              setTopContenders(enriched.slice(0, 4));
+              setTopContenders(sortPlayersByPlacement(enriched).slice(0, 4));
             } catch (error) {
               console.error("Error enriching players:", error);
               setTopContenders([]);
