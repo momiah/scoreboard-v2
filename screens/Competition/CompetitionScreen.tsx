@@ -71,7 +71,8 @@ const COLLECTIONS: {
 
 const CompetitionsScreen = memo(() => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { currentUser, notifications } = useContext(UserContext);
+  const { currentUser, notifications, authInitializing } =
+    useContext(UserContext);
   const { leagueNavigationId, tournamentNavigationId } =
     useContext(LeagueContext);
   const [competitions, setCompetitions] = useState<CompetitionWithMeta[]>([]);
@@ -105,9 +106,7 @@ const CompetitionsScreen = memo(() => {
         return;
       }
 
-      if (competitionMap.current.size === 0) {
-        setLoading(true);
-      }
+      setLoading(competitionMap.current.size === 0);
 
       const reportedCollections = new Set<string>();
 
@@ -271,6 +270,21 @@ const CompetitionsScreen = memo(() => {
     [handleCompetitionPress, currentUser],
   );
 
+  if (authInitializing || (currentUser?.userId && loading)) {
+    return (
+      <Container>
+        <CompetitionsHeader
+          unreadNotifications={unreadNotifications}
+          onAddPress={openAddCompetition}
+          onNotificationsPress={goToNotifications}
+        />
+        {Array.from({ length: 8 }).map((_, index) => (
+          <CompetitionListItemSkeleton key={index} />
+        ))}
+      </Container>
+    );
+  }
+
   if (!currentUser?.userId) {
     return (
       <Container>
@@ -284,21 +298,6 @@ const CompetitionsScreen = memo(() => {
             Please sign in or create an account to view your competitions
           </EmptyText>
         </EmptyInner>
-      </Container>
-    );
-  }
-
-  if (loading && competitions.length === 0) {
-    return (
-      <Container>
-        <CompetitionsHeader
-          unreadNotifications={unreadNotifications}
-          onAddPress={openAddCompetition}
-          onNotificationsPress={goToNotifications}
-        />
-        {Array.from({ length: 6 }).map((_, index) => (
-          <CompetitionListItemSkeleton key={index} />
-        ))}
       </Container>
     );
   }
