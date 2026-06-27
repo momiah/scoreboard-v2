@@ -28,6 +28,10 @@ const getOrdinalSuffix = (day: number): string => {
 };
 
 export const transformDate = (dateString: string): string => {
+  if (!dateString) return "";
+
   const [day, month, year] = dateString.split("-").map(Number);
+  if (!day || !month || !year) return "";
+
   return `${day}${getOrdinalSuffix(day)} ${MONTH_NAMES[month - 1]} ${year}`;
 };

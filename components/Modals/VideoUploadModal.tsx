@@ -176,8 +176,8 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     if (!pickedVideo) return;
     setErrorText("");
 
-    if (pickedVideo.fileSize && pickedVideo.fileSize > 2 * 1024 * 1024 * 1024) {
-      setErrorText("Video is too large. Please select a video under 2GB.");
+    if (pickedVideo.fileSize && pickedVideo.fileSize > 6 * 1024 * 1024 * 1024) {
+      setErrorText("Video is too large. Please select a video under 6GB.");
       return;
     }
     if (pickedVideo.duration && pickedVideo.duration < 180000) {

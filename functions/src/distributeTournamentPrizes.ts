@@ -2,6 +2,10 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
 import { calculateTournamentPrizePool } from "@shared/helpers";
+import {
+  sortPlayersByPlacement,
+  sortTeamsByPlacement,
+} from "@shared/helpers/getRankInCompetition";
 import { ScoreboardProfile, TeamStats, Tournament } from "@shared/types";
 import { sendNotification } from "./helpers/sendNotification";
 import { notificationTypes } from "@shared";
@@ -20,11 +24,22 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
       const tournament = doc.data() as Tournament;
       const tournamentId = doc.id;
 
-      const { numberOfGames, gamesCompleted, prizesDistributed } = tournament;
+      const {
+        numberOfGames,
+        gamesCompleted,
+        prizesDistributed,
+        fixturesGenerated,
+      } = tournament;
 
       // Skip if already distributed
       if (prizesDistributed) {
         console.log(`[prizes] ${tournamentId} already distributed`);
+        continue;
+      }
+
+      // Skip if fixtures haven't been generated yet
+      if (!fixturesGenerated) {
+        console.log(`[prizes] ${tournamentId} fixtures not generated yet`);
         continue;
       }
 
@@ -59,16 +74,10 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
       const isDoublesTournament = tournament.tournamentType === "Doubles";
       let prizeWinners: string[][] = [];
       if (isDoublesTournament) {
-        const teamsWithWins = tournament.tournamentTeams.filter(
-          (t: TeamStats) => t.numberOfWins > 0,
+        const topTeams = sortTeamsByPlacement(tournament.tournamentTeams).slice(
+          0,
+          4,
         );
-        const sortedTeams = [...teamsWithWins].sort((a, b) => {
-          if (b.numberOfWins !== a.numberOfWins) {
-            return b.numberOfWins - a.numberOfWins;
-          }
-          return b.totalPointDifference - a.totalPointDifference;
-        });
-        const topTeams = sortedTeams.slice(0, 4);
         for (
           let placementIndex = 0;
           placementIndex < Math.min(topTeams.length, placementKeys.length);
@@ -78,18 +87,10 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
           const [player1Id, player2Id] = team.teamKey.split("-");
           prizeWinners.push([player1Id, player2Id]);
         }
-        console.log("top teams:", topTeams);
       } else {
-        const contendersWithWins = tournament.tournamentParticipants.filter(
-          (p: ScoreboardProfile) => p.numberOfWins > 0,
-        );
-        const sortedContenders = [...contendersWithWins].sort((a, b) => {
-          if (b.numberOfWins !== a.numberOfWins) {
-            return b.numberOfWins - a.numberOfWins;
-          }
-          return b.totalPointDifference - a.totalPointDifference;
-        });
-        const topContenders = sortedContenders.slice(0, 4);
+        const topContenders = sortPlayersByPlacement(
+          tournament.tournamentParticipants,
+        ).slice(0, 4);
         for (
           let placementIndex = 0;
           placementIndex < Math.min(topContenders.length, placementKeys.length);
@@ -98,7 +99,6 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
           const player = topContenders[placementIndex];
           prizeWinners.push([player.userId!]);
         }
-        console.log("top contenders:", topContenders);
       }
 
       for (let index = 0; index < prizeWinners.length; index++) {

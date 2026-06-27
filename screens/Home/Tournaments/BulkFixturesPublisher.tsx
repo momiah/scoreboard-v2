@@ -30,6 +30,11 @@ import {
   FixtureRoundHeader,
 } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
 import { LeagueContext } from "@/context/LeagueContext";
+import {
+  formatScoreDigits,
+  deriveScoresFromInput,
+  formatScoresToInput,
+} from "../../../helpers/scoreInputHelpers";
 
 import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
@@ -57,26 +62,65 @@ interface GameWithScores extends Game {
 
 interface BulkScoreDisplayProps {
   game: GameWithScores;
-  onScoreChange: (
+  onScoresChange: (
     gameId: string,
-    team: "team1" | "team2",
-    score: string,
+    team1Score: string,
+    team2Score: string,
   ) => void;
 }
 
 interface BulkGameItemProps {
   game: GameWithScores;
   tournamentType: CompetitionTypes;
-  onScoreChange: (
+  onScoresChange: (
     gameId: string,
-    team: "team1" | "team2",
-    score: string,
+    team1Score: string,
+    team2Score: string,
   ) => void;
 }
 
-const BulkScoreDisplay = ({ game, onScoreChange }: BulkScoreDisplayProps) => {
+const BulkScoreDisplay = ({ game, onScoresChange }: BulkScoreDisplayProps) => {
   const hasReportedScore =
     game.result && game.gamescore && game.gamescore !== "";
+
+  const [scoreInput, setScoreInput] = React.useState(() =>
+    formatScoresToInput({
+      team1Score: game.inputTeam1Score,
+      team2Score: game.inputTeam2Score,
+    }),
+  );
+
+  useEffect(() => {
+    const derivedScores = deriveScoresFromInput(scoreInput);
+
+    if (
+      derivedScores.team1Score !== game.inputTeam1Score ||
+      derivedScores.team2Score !== game.inputTeam2Score
+    ) {
+      setScoreInput(
+        formatScoresToInput({
+          team1Score: game.inputTeam1Score,
+          team2Score: game.inputTeam2Score,
+        }),
+      );
+    }
+  }, [game.inputTeam1Score, game.inputTeam2Score]);
+
+  const handleScoreInputChange = (incomingValue: string) => {
+    const isDeleting = incomingValue.length < scoreInput.length;
+    let digits = incomingValue.replace(/[^0-9]/g, "").slice(0, 4);
+
+    if (isDeleting && digits.length === 2 && !incomingValue.endsWith("-")) {
+      digits = digits.slice(0, 1);
+    }
+
+    const formattedValue = formatScoreDigits(digits);
+    const { team1Score: nextTeam1Score, team2Score: nextTeam2Score } =
+      deriveScoresFromInput(formattedValue);
+
+    setScoreInput(formattedValue);
+    onScoresChange(game.gameId, nextTeam1Score, nextTeam2Score);
+  };
 
   return (
     <BulkScoreContainer>
@@ -87,28 +131,14 @@ const BulkScoreDisplay = ({ game, onScoreChange }: BulkScoreDisplayProps) => {
           <StaticScore>{game.team2.score}</StaticScore>
         </StaticScoreContainer>
       ) : (
-        // Interactive inputs for unreported games
-        <ScoreInputsContainer>
-          <ScoreInput
-            value={game.inputTeam1Score}
-            onChangeText={(text: string) =>
-              onScoreChange(game.gameId, "team1", text)
-            }
-            placeholder="0"
-            keyboardType="numeric"
-            maxLength={2}
-          />
-          <VsText>-</VsText>
-          <ScoreInput
-            value={game.inputTeam2Score}
-            onChangeText={(text: string) =>
-              onScoreChange(game.gameId, "team2", text)
-            }
-            placeholder="0"
-            keyboardType="numeric"
-            maxLength={2}
-          />
-        </ScoreInputsContainer>
+        <SingleScoreInput
+          keyboardType="number-pad"
+          placeholder="00-00"
+          placeholderTextColor="#1d3a5f"
+          value={scoreInput}
+          onChangeText={handleScoreInputChange}
+          maxLength={5}
+        />
       )}
     </BulkScoreContainer>
   );
@@ -118,7 +148,7 @@ const BulkScoreDisplay = ({ game, onScoreChange }: BulkScoreDisplayProps) => {
 const BulkGameItem = ({
   game,
   tournamentType,
-  onScoreChange,
+  onScoresChange,
 }: BulkGameItemProps) => (
   <GameCard>
     <FixtureGameHeader game={game} />
@@ -128,7 +158,7 @@ const BulkGameItem = ({
         position="left"
         tournamentType={tournamentType}
       />
-      <BulkScoreDisplay game={game} onScoreChange={onScoreChange} />
+      <BulkScoreDisplay game={game} onScoresChange={onScoresChange} />
       <FixtureTeamColumn
         team={game?.team2}
         position="right"
@@ -224,30 +254,20 @@ const BulkFixturesPublisher = () => {
     navigation.goBack();
   };
 
-  const handleScoreChange = useCallback(
-    (gameId: string, team: "team1" | "team2", score: string): void => {
-      const numericText = score.replace(/[^0-9]/g, "");
-      if (numericText.length <= 2) {
-        setGamesWithScores((prev) =>
-          prev.map((game) => {
-            if (game.gameId === gameId) {
-              const updatedGame = {
-                ...game,
-                [`input${team === "team1" ? "Team1" : "Team2"}Score`]:
-                  numericText,
-              };
-              const team1Score =
-                team === "team1" ? numericText : game.inputTeam1Score;
-              const team2Score =
-                team === "team2" ? numericText : game.inputTeam2Score;
-              updatedGame.hasScores =
-                team1Score.trim() !== "" && team2Score.trim() !== "";
-              return updatedGame;
-            }
-            return game;
-          }),
-        );
-      }
+  const handleScoresChange = useCallback(
+    (gameId: string, team1Score: string, team2Score: string): void => {
+      setGamesWithScores((prev) =>
+        prev.map((game) => {
+          if (game.gameId !== gameId) return game;
+
+          return {
+            ...game,
+            inputTeam1Score: team1Score,
+            inputTeam2Score: team2Score,
+            hasScores: team1Score.trim() !== "" && team2Score.trim() !== "",
+          };
+        }),
+      );
     },
     [],
   );
@@ -539,8 +559,8 @@ const BulkFixturesPublisher = () => {
 
       <SubHeader>
         <SubHeaderText>
-          Enter scores for games you want to publish ({totalCompletedCount}/
-          {gamesWithScores.length} completed)
+          Enter scores for games you want to publish{"\n"}({totalCompletedCount}
+          /{gamesWithScores.length} completed)
         </SubHeaderText>
       </SubHeader>
 
@@ -562,7 +582,7 @@ const BulkFixturesPublisher = () => {
                     tournamentType={
                       tournamentById.tournamentType as CompetitionTypes
                     }
-                    onScoreChange={handleScoreChange}
+                    onScoresChange={handleScoresChange}
                   />
                 ))}
               </FixtureRoundContainer>
@@ -697,19 +717,15 @@ const BulkScoreContainer = styled.View({
   padding: 10,
 });
 
-const ScoreInputsContainer = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-});
-
-const ScoreInput = styled.TextInput({
+const SingleScoreInput = styled.TextInput({
   backgroundColor: "rgba(255, 255, 255, 0.1)",
   borderRadius: 6,
-  width: 40,
+  width: 90,
   height: 40,
   textAlign: "center",
-  fontSize: 16,
+  fontSize: 18,
   fontWeight: "bold",
+  letterSpacing: 2,
   color: "#00A2FF",
   borderWidth: 1,
   borderColor: "rgba(255, 255, 255, 0.2)",
