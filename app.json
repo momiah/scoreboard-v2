@@ -2,7 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "3.0.6",
+    "version": "3.0.7",
     "runtimeVersion": "3.0.1",
     "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
@@ -60,7 +60,7 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 25
+      "versionCode": 26
     },
     "web": {
       "favicon": "./assets/court-champ-logo-adaptive-icon-small.png"
