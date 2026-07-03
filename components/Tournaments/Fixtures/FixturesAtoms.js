@@ -353,7 +353,7 @@ export const FixtureStatusLabel = styled.Text(({ status }) => ({
   backgroundColor:
     status === "Scheduled"
       ? "rgba(0, 162, 255, 0.6)"
-      : status === "Approved"
+      : status === "Approved" || status === "approved"
         ? "rgba(0, 255, 0, 0.6)"
         : "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,

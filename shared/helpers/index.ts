@@ -4,3 +4,8 @@ export { transformDate } from "./dateTransform";
 export { calculateTournamentPrizePool } from "./calculateTournamentPrizePool";
 export { recalculateParticipantsFromFixtures } from "./recalculatePerformance";
 export { getOrderedApprovedGames } from "./recalculatePerformance";
+export { advanceBrackets } from "./advanceBrackets";
+export { roundLabel } from "./advanceBrackets";
+export { assignCourtForGameIndex } from "./advanceBrackets";
+export { isKnockoutComplete } from "./knockoutTopFour";
+export { getKnockoutTopFour } from "./knockoutTopFour";

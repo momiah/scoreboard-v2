@@ -27,7 +27,7 @@ import AddTournamentGameModal from "../../Modals/AddTournamentGameModal";
 import { UserContext } from "../../../context/UserContext";
 import { Fixtures, Game } from "@shared/types";
 import { COMPETITION_TYPES } from "@shared";
-import { roundLabel } from "../../../helpers/Tournament/knockout";
+import { roundLabel } from "@shared/helpers";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 

@@ -69,7 +69,7 @@ const LeagueSettings = () => {
 
   const hasGamesPlayed = () => {
     const games = leagueById?.games ?? [];
-    return games.some((game) => game.approvalStatus === "Approved");
+    return games.some((game) => game.approvalStatus === "approved");
   };
 
   const handleDeletePress = () => {

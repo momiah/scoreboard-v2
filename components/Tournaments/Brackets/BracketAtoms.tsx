@@ -198,7 +198,7 @@ const StatusPill = styled.Text<{ status: string }>(
     backgroundColor:
       status === "Scheduled"
         ? "rgba(0, 162, 255, 0.6)"
-        : status === "Approved"
+        : status === "Approved" || status === "approved"
           ? "rgba(0, 200, 0, 0.6)"
           : "rgba(255, 165, 0, 0.6)",
   }),
