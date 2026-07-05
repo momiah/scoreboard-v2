@@ -1,4 +1,4 @@
-import { calculateTeamPerformance } from "./calculateTeamPerformance";
+import { calculateTeamPerformance } from "../calculateTeamPerformance";
 
 describe("calculateTeamPerformance (Doubles, id-based keys)", () => {
   const mockRetrieveTeams = jest.fn();

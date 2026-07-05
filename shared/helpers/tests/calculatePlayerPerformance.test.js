@@ -1,4 +1,4 @@
-import { calculatePlayerPerformance } from "./calculatePlayerPerformance";
+import { calculatePlayerPerformance } from "../calculatePlayerPerformance";
 import moment from "moment";
 
 describe("calculatePlayerPerformance function", () => {
