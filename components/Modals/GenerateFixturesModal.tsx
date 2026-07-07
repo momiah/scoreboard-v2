@@ -241,26 +241,26 @@ const GenerateFixturesModal = ({
           player1: player,
           player2: null,
         }));
-        const result = generateKnockoutBrackets({
+        const bracketResult = generateKnockoutBrackets({
           teams,
           numberOfCourts,
           competitionId: competitionId ?? "",
         });
-        setGeneratedFixtures(result.fixtures);
-        setFixtureMetadata(result.metadata);
+        setGeneratedFixtures(bracketResult.fixtures);
+        setFixtureMetadata(bracketResult.metadata);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
         return;
       }
 
-      const result = generateSinglesRoundRobinFixtures({
+      const bracketResult = generateSinglesRoundRobinFixtures({
         players: participants,
         numberOfCourts,
         competitionId: competitionId ?? "",
       });
 
-      if (result) {
-        setGeneratedFixtures(result.fixtures);
-        setFixtureMetadata(result.metadata);
+      if (bracketResult) {
+        setGeneratedFixtures(bracketResult.fixtures);
+        setFixtureMetadata(bracketResult.metadata);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
       }
     } catch (error) {
@@ -303,26 +303,26 @@ const GenerateFixturesModal = ({
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       if (tournamentMode === "Knockout") {
-        const result = generateKnockoutBrackets({
+        const bracketResult = generateKnockoutBrackets({
           teams,
           numberOfCourts,
           competitionId: competitionId ?? "",
         });
-        setGeneratedFixtures(result.fixtures);
-        setFixtureMetadata(result.metadata);
+        setGeneratedFixtures(bracketResult.fixtures);
+        setFixtureMetadata(bracketResult.metadata);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
         return;
       }
 
-      const fixtures = generateRoundRobinFixtures({
+      const fixturesResult = generateRoundRobinFixtures({
         teams,
         numberOfCourts,
         competitionId: competitionId ?? "",
       });
 
-      if (fixtures) {
-        setGeneratedFixtures(fixtures.fixtures);
-        setFixtureMetadata(fixtures.metadata);
+      if (fixturesResult) {
+        setGeneratedFixtures(fixturesResult.fixtures);
+        setFixtureMetadata(fixturesResult.metadata);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
       }
     } catch (error) {

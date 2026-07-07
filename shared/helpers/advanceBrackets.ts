@@ -13,6 +13,9 @@ export const roundLabel = (teamsInRound: number): string => {
   return `Round of ${teamsInRound}`;
 };
 
+export const isShellGame = (game: Game): boolean =>
+  !game.team1.player1 && !game.team2.player1;
+
 const teamFromWinner = (
   game: Game,
 ): {

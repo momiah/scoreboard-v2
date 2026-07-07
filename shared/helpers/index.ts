@@ -9,3 +9,4 @@ export { roundLabel } from "./advanceBrackets";
 export { assignCourtForGameIndex } from "./advanceBrackets";
 export { isKnockoutComplete } from "./knockoutTopFour";
 export { getKnockoutTopFour } from "./knockoutTopFour";
+export { isShellGame } from "./advanceBrackets";

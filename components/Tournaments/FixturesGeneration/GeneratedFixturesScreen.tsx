@@ -120,7 +120,7 @@ const ModalTitle = styled.Text({
 });
 
 const FixturesContainer = styled.ScrollView({
-  maxHeight: screenWidth <= 430 ? 530 : 600,
+  maxHeight: screenWidth <= 400 ? 490 : 600,
 });
 
 const RoundContainer = styled.View({
@@ -220,7 +220,7 @@ const DisclaimerBanner = styled.View({
   borderWidth: 1,
   borderRadius: 8,
   padding: 12,
-  marginBottom: 12,
+  marginVertical: 12,
 });
 
 const DisclaimerHeading = styled.Text({

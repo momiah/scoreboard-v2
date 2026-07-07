@@ -1,12 +1,10 @@
 import React, { useState, useContext } from "react";
 import { SafeAreaView, Alert } from "react-native";
 import styled from "styled-components/native";
-import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../../context/UserContext";
 import GenerateFixturesModal from "../../Modals/GenerateFixturesModal";
 import { FixturesDisplay } from "./FixturesAtoms";
-
-const VALID_KNOCKOUT_COUNTS = [4, 8, 16, 32, 64];
+import { EmptyStateContainer } from "../EmptyStateContainer";
 
 const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
   const [showGenerateFixturesModal, setShowGenerateFixturesModal] =
@@ -20,11 +18,10 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
 
   const { currentUser } = useContext(UserContext);
 
-  // const numberOfParticipants = tournament?.tournamentParticipants
-  //   ? tournament.tournamentParticipants.length
-  //   : 0;
+  const numberOfParticipants = tournament?.tournamentParticipants
+    ? tournament.tournamentParticipants.length
+    : 0;
 
-  const numberOfParticipants = 16;
   const hasFixtures = fixturesArray && fixturesArray.length > 0;
   const tournamentType = tournament?.tournamentType || "Singles";
   const numberOfCourts = tournament?.numberOfCourts || 1;
@@ -59,25 +56,9 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
       return;
     }
 
-    if (tournament?.tournamentMode === "Knockout") {
-      const knockoutCount =
-        tournamentType === "Singles"
-          ? numberOfParticipants
-          : Math.floor(numberOfParticipants / 2);
-
-      if (!VALID_KNOCKOUT_COUNTS.includes(knockoutCount)) {
-        const unit = tournamentType === "Singles" ? "players" : "teams";
-        Alert.alert(
-          `Knockout tournaments need ${VALID_KNOCKOUT_COUNTS.join(
-            ", ",
-          )} ${unit}. You currently have ${knockoutCount} ${unit}.`,
-        );
-        return;
-      }
-    }
-
     setShowGenerateFixturesModal(true);
   };
+
   return (
     <Container>
       {hasFixtures && (
@@ -100,26 +81,12 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
           glowColor={glowColor}
         />
       ) : (
-        <Content>
-          <EmptyStateContainer>
-            <EmptyStateIcon>
-              <AntDesign name="calendar" size={64} color="#ccc" />
-            </EmptyStateIcon>
-            <EmptyStateText>No fixtures generated yet</EmptyStateText>
-            <EmptyStateSubtext>{emptyStateMessage}</EmptyStateSubtext>
-            {userRole === "admin" && (
-              <GenerateButton onPress={handleShowGenerateFixtures}>
-                <AntDesign
-                  name="plus"
-                  size={20}
-                  color="#fff"
-                  style={{ marginRight: 8 }}
-                />
-                <GenerateButtonText>Generate Fixtures</GenerateButtonText>
-              </GenerateButton>
-            )}
-          </EmptyStateContainer>
-        </Content>
+        <EmptyStateContainer
+          emptyStateMessage={emptyStateMessage}
+          userRole={userRole}
+          handleShowGenerateFixtures={handleShowGenerateFixtures}
+          label="Fixtures"
+        />
       )}
 
       {showGenerateFixturesModal && (
@@ -151,59 +118,6 @@ const Header = styled.View({
 const FixtureDetails = styled.Text({
   fontSize: 14,
   color: "#ccc",
-});
-
-const Content = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  padding: 20,
-});
-
-const EmptyStateContainer = styled.View({
-  alignItems: "center",
-  maxWidth: 300,
-});
-
-const EmptyStateIcon = styled.View({
-  marginBottom: 20,
-  opacity: 0.6,
-});
-
-const EmptyStateText = styled.Text({
-  fontSize: 18,
-  fontWeight: "600",
-  color: "#fff",
-  textAlign: "center",
-  marginBottom: 8,
-});
-
-const EmptyStateSubtext = styled.Text({
-  fontSize: 14,
-  color: "#ccc",
-  textAlign: "center",
-  marginBottom: 32,
-  lineHeight: 20,
-});
-
-const GenerateButton = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#00A2FF",
-  paddingHorizontal: 24,
-  paddingVertical: 14,
-  borderRadius: 8,
-  shadowColor: "#00A2FF",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  elevation: 5,
-});
-
-const GenerateButtonText = styled.Text({
-  color: "#fff",
-  fontSize: 16,
-  fontWeight: "600",
 });
 
 export default Fixtures;
