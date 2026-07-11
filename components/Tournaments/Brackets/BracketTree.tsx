@@ -2,9 +2,16 @@ import React, { useState, useRef, useMemo, useCallback } from "react";
 import {
   Dimensions,
   ScrollView,
+  LayoutChangeEvent,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedProps,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 import Svg, { Path } from "react-native-svg";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,19 +26,19 @@ import {
 import { Fixtures, Game } from "@shared/types";
 import { roundLabel, isShellGame } from "@shared/helpers";
 
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const isSmallScreen = SCREEN_WIDTH <= 430;
 
-const COLUMN_WIDTH = SCREEN_WIDTH * 0.88;
+const COLUMN_WIDTH = SCREEN_WIDTH * 0.9;
 const COLUMN_GUTTER = 35;
-const STRIDE = COLUMN_WIDTH + COLUMN_GUTTER;
+const PAGE_STRIDE = COLUMN_WIDTH + COLUMN_GUTTER;
 const TREE_VERTICAL_PADDING = 20;
-const CANVAS_HORIZONTAL_PADDING = -5;
 const CONNECTOR_STROKE = "rgba(255, 255, 255, 0.25)";
 const CONNECTOR_STROKE_WIDTH = 1;
-const CARD_HEIGHT = 160;
-const CARD_MARGIN_VERTICAL = 8;
-const ROW_HEIGHT = CARD_HEIGHT + CARD_MARGIN_VERTICAL * 2;
+const FALLBACK_CARD_HEIGHT = 210;
+const CARD_GAP = 16;
 const SCROLL_TO_TOP_OFFSET = 40;
 
 type BracketViewMode = "tree" | "list";
@@ -42,6 +49,11 @@ interface BracketTreeProps {
   onGamePress: (game: Game) => void;
   scrollToGameId?: string;
   glowColor?: string;
+}
+
+interface TreeRound {
+  round: number;
+  games: Game[];
 }
 
 const headerForRound = (games: Game[]): string => {
@@ -59,24 +71,129 @@ const perGameLabel = (
   return null;
 };
 
-const cardLayout = (
+// Blend two layouts (targets for adjacent active rounds) by scroll fraction.
+// Runs in a worklet; both cards and connectors use it so lines stay attached.
+const blendY = (
+  layoutsByActive: number[][][],
   roundIndex: number,
   gameIndex: number,
-  gamesInRound: number,
-  maxGamesInAnyRound: number,
-) => {
-  const columnLeft =
-    CANVAS_HORIZONTAL_PADDING + roundIndex * STRIDE + COLUMN_GUTTER / 2;
-  const rowHeight = ROW_HEIGHT * (maxGamesInAnyRound / gamesInRound);
-  return {
-    x: columnLeft,
-    y:
-      TREE_VERTICAL_PADDING +
-      gameIndex * rowHeight +
-      (rowHeight - CARD_HEIGHT) / 2,
-    width: COLUMN_WIDTH - COLUMN_GUTTER,
-    height: CARD_HEIGHT,
-  };
+  scrollValue: number,
+): number => {
+  "worklet";
+  const lastActive = layoutsByActive.length - 1;
+  const rawActive = scrollValue / PAGE_STRIDE;
+  const lower = Math.max(0, Math.min(Math.floor(rawActive), lastActive));
+  const upper = Math.max(0, Math.min(Math.ceil(rawActive), lastActive));
+  const frac = rawActive - lower;
+  const lowerY = layoutsByActive[lower][roundIndex][gameIndex];
+  const upperY = layoutsByActive[upper][roundIndex][gameIndex];
+  return lowerY + (upperY - lowerY) * frac;
+};
+
+interface ConnectorProps {
+  fromXValue: number;
+  toXValue: number;
+  fromRound: number;
+  fromGame: number;
+  toRound: number;
+  toGame: number;
+  layoutsByActive: number[][][];
+  scrollX: Animated.SharedValue<number>;
+}
+
+const AnimatedConnector = ({
+  fromXValue,
+  toXValue,
+  fromRound,
+  fromGame,
+  toRound,
+  toGame,
+  layoutsByActive,
+  scrollX,
+}: ConnectorProps) => {
+  const animatedProps = useAnimatedProps(() => {
+    "worklet";
+    const fromY = blendY(layoutsByActive, fromRound, fromGame, scrollX.value);
+    const toY = blendY(layoutsByActive, toRound, toGame, scrollX.value);
+    const midX = (fromXValue + toXValue) / 2;
+    return {
+      d: `M ${fromXValue} ${fromY} H ${midX} V ${toY} H ${toXValue}`,
+    };
+  });
+
+  return (
+    <AnimatedPath
+      animatedProps={animatedProps}
+      stroke={CONNECTOR_STROKE}
+      strokeWidth={CONNECTOR_STROKE_WIDTH}
+      fill="none"
+    />
+  );
+};
+
+interface CardProps {
+  game: Game;
+  label: string | null;
+  tournamentType: string;
+  leftX: number;
+  cardWidth: number;
+  cardHeight: number;
+  roundIndex: number;
+  gameIndex: number;
+  layoutsByActive: number[][][];
+  scrollX: Animated.SharedValue<number>;
+  onLayout?: (event: LayoutChangeEvent) => void;
+  onPress: () => void;
+  isHighlighted: boolean;
+  glowAnim: unknown;
+  glowColor: string;
+}
+
+const AnimatedBracketCard = ({
+  game,
+  label,
+  tournamentType,
+  leftX,
+  cardWidth,
+  cardHeight,
+  roundIndex,
+  gameIndex,
+  layoutsByActive,
+  scrollX,
+  onLayout,
+  onPress,
+  isHighlighted,
+  glowAnim,
+  glowColor,
+}: CardProps) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    "worklet";
+    const centerY = blendY(
+      layoutsByActive,
+      roundIndex,
+      gameIndex,
+      scrollX.value,
+    );
+    return { transform: [{ translateY: centerY - cardHeight / 2 }] };
+  });
+
+  return (
+    <Animated.View
+      onLayout={onLayout}
+      style={[cardBaseStyle, { left: leftX, width: cardWidth }, animatedStyle]}
+    >
+      <BracketGameCard
+        game={game}
+        label={label}
+        tournamentType={tournamentType}
+        shell={isShellGame(game)}
+        onPress={onPress}
+      />
+      {isHighlighted && (
+        <GameGlow glowAnim={glowAnim as never} color={glowColor} />
+      )}
+    </Animated.View>
+  );
 };
 
 const BracketTree = ({
@@ -86,7 +203,7 @@ const BracketTree = ({
   scrollToGameId,
   glowColor = "#00A2FF",
 }: BracketTreeProps) => {
-  const treeRounds = useMemo(
+  const treeRounds: TreeRound[] = useMemo(
     () =>
       fixtures.map((round) => ({
         round: round.round,
@@ -103,7 +220,6 @@ const BracketTree = ({
     return null;
   }, [fixtures]);
 
-  // Start on the target game's round (playoff lives on the final round).
   const initialRoundIndex = useMemo(() => {
     const { roundIndex } = findGamePosition(treeRounds, scrollToGameId);
     if (roundIndex !== -1) return roundIndex;
@@ -113,9 +229,33 @@ const BracketTree = ({
 
   const [activeRoundIndex, setActiveRoundIndex] = useState(initialRoundIndex);
   const [viewMode, setViewMode] = useState<BracketViewMode>("tree");
-  const horizontalScrollRef = useRef<ScrollView>(null);
+  const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(
+    null,
+  );
+  const horizontalScrollRef = useRef<Animated.ScrollView>(null);
   const verticalScrollRef = useRef<ScrollView>(null);
   const programmaticScrollRef = useRef(false);
+  const scrollX = useSharedValue(initialRoundIndex * PAGE_STRIDE);
+  // Captured once so the ScrollView's contentOffset prop never re-applies on
+  // re-render (which would fight scrollTo and cause the double/reset tab jumps).
+  const initialContentOffset = useRef({
+    x: initialRoundIndex * PAGE_STRIDE,
+    y: 0,
+  }).current;
+
+  const cardHeight = measuredCardHeight ?? FALLBACK_CARD_HEIGHT;
+  const rowStride = cardHeight + CARD_GAP;
+  const roundCount = treeRounds.length;
+
+  const handleCardLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { height } = event.nativeEvent.layout;
+      if (height > 0 && Math.abs(height - cardHeight) > 1) {
+        setMeasuredCardHeight(height);
+      }
+    },
+    [cardHeight],
+  );
 
   const tabs = useMemo(
     () =>
@@ -131,57 +271,79 @@ const BracketTree = ({
     [treeRounds],
   );
 
-  const treeDimensions = useMemo(
-    () => ({
-      width: STRIDE * treeRounds.length + CANVAS_HORIZONTAL_PADDING * 2,
-      height: maxGamesInAnyRound * ROW_HEIGHT + TREE_VERTICAL_PADDING * 2,
-    }),
-    [treeRounds.length, maxGamesInAnyRound],
-  );
+  const spreadCenters = useMemo(() => {
+    const centers: number[][] = [];
+    treeRounds.forEach((round, roundIndex) => {
+      centers[roundIndex] = [];
+      round.games.forEach((_, gameIndex) => {
+        if (roundIndex === 0) {
+          centers[roundIndex][gameIndex] =
+            TREE_VERTICAL_PADDING + gameIndex * rowStride + cardHeight / 2;
+        } else {
+          const feederTop = centers[roundIndex - 1][gameIndex * 2];
+          const feederBottom = centers[roundIndex - 1][gameIndex * 2 + 1];
+          centers[roundIndex][gameIndex] = (feederTop + feederBottom) / 2;
+        }
+      });
+    });
+    return centers;
+  }, [treeRounds, rowStride, cardHeight]);
 
-  const connectorPaths = useMemo(() => {
-    const paths: { d: string; key: string }[] = [];
-    for (let roundIndex = 0; roundIndex < treeRounds.length - 1; roundIndex++) {
-      const currentRound = treeRounds[roundIndex];
-      const nextRound = treeRounds[roundIndex + 1];
-      currentRound.games.forEach((_, gameIndex) => {
-        const from = cardLayout(
-          roundIndex,
-          gameIndex,
-          currentRound.games.length,
-          maxGamesInAnyRound,
-        );
-        const targetIndex = Math.floor(gameIndex / 2);
-        const to = cardLayout(
-          roundIndex + 1,
-          targetIndex,
-          nextRound.games.length,
-          maxGamesInAnyRound,
-        );
-        const fromX = from.x + from.width;
-        const fromY = from.y + from.height / 2;
-        const toX = to.x;
-        const toY = to.y + to.height / 2;
-        const midX = (fromX + toX) / 2;
-        paths.push({
-          d: `M ${fromX} ${fromY} H ${midX} V ${toY} H ${toX}`,
-          key: `${roundIndex}-${gameIndex}-to-${targetIndex}`,
+  // Precompute the target layout for every possible active round. The worklet
+  // blends between two of these by scroll position.
+  const layoutsByActive = useMemo(() => {
+    const all: number[][][] = [];
+    for (let active = 0; active < roundCount; active++) {
+      const centers: number[][] = [];
+      treeRounds.forEach((round, roundIndex) => {
+        centers[roundIndex] = [];
+        round.games.forEach((_, gameIndex) => {
+          if (roundIndex < active) {
+            centers[roundIndex][gameIndex] =
+              spreadCenters[roundIndex][gameIndex];
+          } else if (roundIndex === active) {
+            centers[roundIndex][gameIndex] =
+              TREE_VERTICAL_PADDING + gameIndex * rowStride + cardHeight / 2;
+          } else {
+            const feederTop = centers[roundIndex - 1][gameIndex * 2];
+            const feederBottom = centers[roundIndex - 1][gameIndex * 2 + 1];
+            centers[roundIndex][gameIndex] = (feederTop + feederBottom) / 2;
+          }
         });
       });
+      all.push(centers);
     }
-    return paths;
-  }, [treeRounds, maxGamesInAnyRound]);
+    return all;
+  }, [treeRounds, spreadCenters, roundCount, rowStride, cardHeight]);
 
-  const scrollToRound = useCallback((roundIndex: number, animated = true) => {
-    programmaticScrollRef.current = true;
-    horizontalScrollRef.current?.scrollTo({
-      x: roundIndex * STRIDE,
-      animated,
-    });
-    setTimeout(() => {
-      programmaticScrollRef.current = false;
-    }, 400);
-  }, []);
+  const cardLayout = useCallback(
+    (roundIndex: number, gameIndex: number) => ({
+      x: COLUMN_GUTTER / 2,
+      y:
+        (layoutsByActive[roundIndex]?.[roundIndex]?.[gameIndex] ??
+          spreadCenters[roundIndex][gameIndex]) -
+        cardHeight / 2,
+      width: COLUMN_WIDTH - COLUMN_GUTTER,
+      height: cardHeight,
+    }),
+    [layoutsByActive, spreadCenters, cardHeight],
+  );
+
+  // Canvas height tracks the ACTIVE round's stack so the last game sits flush
+  // and you can't scroll past it into empty space.
+  const canvasHeight = useMemo(() => {
+    const activeGames = treeRounds[activeRoundIndex]?.games.length ?? 1;
+    return activeGames * rowStride + TREE_VERTICAL_PADDING * 2;
+  }, [treeRounds, activeRoundIndex, rowStride]);
+
+  const canvasWidth = useMemo(() => PAGE_STRIDE * roundCount, [roundCount]);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      "worklet";
+      scrollX.value = event.contentOffset.x;
+    },
+  });
 
   const { highlightedGameId, glowAnim } = useBracketScrollToGame({
     scrollToGameId,
@@ -192,6 +354,17 @@ const BracketTree = ({
     cardLayout,
     scrollTopOffset: SCROLL_TO_TOP_OFFSET,
   });
+
+  const scrollToRound = useCallback((roundIndex: number, animated = true) => {
+    programmaticScrollRef.current = true;
+    horizontalScrollRef.current?.scrollTo({
+      x: roundIndex * PAGE_STRIDE,
+      animated,
+    });
+    setTimeout(() => {
+      programmaticScrollRef.current = false;
+    }, 400);
+  }, []);
 
   const handleTabPress = useCallback(
     (key: string) => {
@@ -208,37 +381,30 @@ const BracketTree = ({
     (mode: BracketViewMode) => {
       setViewMode(mode);
       if (mode === "tree") {
-        // Tree remounts at its contentOffset round; keep tabs in sync.
-        setActiveRoundIndex(initialRoundIndex);
+        // ScrollView remounts at the frozen initial offset, so re-sync the
+        // shared value and actively scroll back to the round the user was on.
+        scrollX.value = activeRoundIndex * PAGE_STRIDE;
+        requestAnimationFrame(() => {
+          scrollToRound(activeRoundIndex, false);
+        });
       }
     },
-    [initialRoundIndex],
+    [activeRoundIndex, scrollX, scrollToRound],
   );
 
   const handleMomentumScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       if (programmaticScrollRef.current) return;
       const offsetX = event.nativeEvent.contentOffset.x;
-      const nearestIndex = Math.round(offsetX / STRIDE);
-      const clamped = Math.max(
-        0,
-        Math.min(nearestIndex, treeRounds.length - 1),
-      );
+      const nearestIndex = Math.round(offsetX / PAGE_STRIDE);
+      const clamped = Math.max(0, Math.min(nearestIndex, roundCount - 1));
       setActiveRoundIndex(clamped);
-      programmaticScrollRef.current = true;
-      horizontalScrollRef.current?.scrollTo({
-        x: clamped * STRIDE,
-        animated: true,
-      });
-      setTimeout(() => {
-        programmaticScrollRef.current = false;
-      }, 400);
     },
-    [treeRounds.length],
+    [roundCount],
   );
 
   const activeRound = treeRounds[activeRoundIndex];
-  const isFinalRoundActive = activeRoundIndex === treeRounds.length - 1;
+  const isFinalRoundActive = activeRoundIndex === roundCount - 1;
 
   return (
     <>
@@ -281,79 +447,77 @@ const BracketTree = ({
           ref={verticalScrollRef}
           showsVerticalScrollIndicator={false}
         >
-          <HorizontalScroll
+          <Animated.ScrollView
             ref={horizontalScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             decelerationRate="fast"
-            snapToInterval={STRIDE}
+            snapToInterval={PAGE_STRIDE}
             snapToAlignment="start"
-            contentOffset={{ x: initialRoundIndex * STRIDE, y: 0 }}
+            contentOffset={initialContentOffset}
+            scrollEventThrottle={16}
+            onScroll={scrollHandler}
             onMomentumScrollEnd={handleMomentumScrollEnd}
           >
-            <TreeCanvas
-              style={{
-                width: treeDimensions.width,
-                height: treeDimensions.height,
-              }}
-            >
+            <TreeCanvas style={{ width: canvasWidth, height: canvasHeight }}>
               <ConnectorLayer pointerEvents="none">
-                <Svg
-                  width={treeDimensions.width}
-                  height={treeDimensions.height}
-                >
-                  {connectorPaths.map((path) => (
-                    <Path
-                      key={path.key}
-                      d={path.d}
-                      stroke={CONNECTOR_STROKE}
-                      strokeWidth={CONNECTOR_STROKE_WIDTH}
-                      fill="none"
-                    />
-                  ))}
+                <Svg width={canvasWidth} height={canvasHeight}>
+                  {treeRounds.slice(0, -1).map((round, roundIndex) => {
+                    const pageOffsetX = roundIndex * PAGE_STRIDE;
+                    const fromX =
+                      pageOffsetX +
+                      COLUMN_GUTTER / 2 +
+                      (COLUMN_WIDTH - COLUMN_GUTTER);
+                    const toX =
+                      (roundIndex + 1) * PAGE_STRIDE + COLUMN_GUTTER / 2;
+                    return round.games.map((_, gameIndex) => {
+                      const targetIndex = Math.floor(gameIndex / 2);
+                      return (
+                        <AnimatedConnector
+                          key={`${roundIndex}-${gameIndex}`}
+                          fromXValue={fromX}
+                          toXValue={toX}
+                          fromRound={roundIndex}
+                          fromGame={gameIndex}
+                          toRound={roundIndex + 1}
+                          toGame={targetIndex}
+                          layoutsByActive={layoutsByActive}
+                          scrollX={scrollX}
+                        />
+                      );
+                    });
+                  })}
                 </Svg>
               </ConnectorLayer>
 
-              {treeRounds.map((round, roundIndex) =>
-                round.games.map((game, gameIndex) => {
-                  const layout = cardLayout(
-                    roundIndex,
-                    gameIndex,
-                    round.games.length,
-                    maxGamesInAnyRound,
-                  );
-                  const shell = isShellGame(game);
-                  const label = perGameLabel(
-                    game,
-                    roundIndex,
-                    treeRounds.length,
-                  );
+              {treeRounds.map((round, roundIndex) => {
+                const pageOffsetX = roundIndex * PAGE_STRIDE;
+                return round.games.map((game, gameIndex) => {
+                  const shouldMeasure = roundIndex === 0 && gameIndex === 0;
                   return (
-                    <PositionedCard
+                    <AnimatedBracketCard
                       key={game.gameId}
-                      style={{
-                        top: layout.y,
-                        left: layout.x,
-                        width: layout.width,
-                        height: layout.height,
-                      }}
-                    >
-                      <BracketGameCard
-                        game={game}
-                        label={label}
-                        tournamentType={tournamentType}
-                        shell={shell}
-                        onPress={() => onGamePress(game)}
-                      />
-                      {game.gameId === highlightedGameId && (
-                        <GameGlow glowAnim={glowAnim} color={glowColor} />
-                      )}
-                    </PositionedCard>
+                      game={game}
+                      label={perGameLabel(game, roundIndex, roundCount)}
+                      tournamentType={tournamentType}
+                      leftX={pageOffsetX + COLUMN_GUTTER / 2}
+                      cardWidth={COLUMN_WIDTH - COLUMN_GUTTER}
+                      cardHeight={cardHeight}
+                      roundIndex={roundIndex}
+                      gameIndex={gameIndex}
+                      layoutsByActive={layoutsByActive}
+                      scrollX={scrollX}
+                      onLayout={shouldMeasure ? handleCardLayout : undefined}
+                      onPress={() => onGamePress(game)}
+                      isHighlighted={game.gameId === highlightedGameId}
+                      glowAnim={glowAnim}
+                      glowColor={glowColor}
+                    />
                   );
-                }),
-              )}
+                });
+              })}
             </TreeCanvas>
-          </HorizontalScroll>
+          </Animated.ScrollView>
 
           {playoffGame && (
             <PlayoffSection>
@@ -380,11 +544,7 @@ const BracketTree = ({
               <ListCardWrapper key={game.gameId}>
                 <BracketGameCard
                   game={game}
-                  label={perGameLabel(
-                    game,
-                    activeRoundIndex,
-                    treeRounds.length,
-                  )}
+                  label={perGameLabel(game, activeRoundIndex, roundCount)}
                   tournamentType={tournamentType}
                   shell={isShellGame(game)}
                   onPress={() => onGamePress(game)}
@@ -445,8 +605,6 @@ const VerticalScroll = styled.ScrollView({
   flex: 1,
 });
 
-const HorizontalScroll = styled.ScrollView({});
-
 const TreeCanvas = styled.View({
   position: "relative",
 });
@@ -460,10 +618,11 @@ const ConnectorLayer = styled.View({
   zIndex: 0,
 });
 
-const PositionedCard = styled.View({
-  position: "absolute",
+const cardBaseStyle = {
+  position: "absolute" as const,
+  top: 0,
   zIndex: 1,
-});
+};
 
 // ── List
 const ListContainer = styled.View({
@@ -481,12 +640,13 @@ const ListPlayoffSection = styled.View({
 
 // ── Playoff (tree view)
 const PlayoffSection = styled.View({
-  paddingHorizontal: 16,
+  alignItems: "center",
   paddingBottom: 24,
 });
 
 const PlayoffCardWrapper = styled.View({
   position: "relative",
+  width: COLUMN_WIDTH - COLUMN_GUTTER,
 });
 
 export default BracketTree;

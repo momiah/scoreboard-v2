@@ -37,72 +37,72 @@ import { UserContext } from "@/context/UserContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-const participants = [
-  {
-    userId: "1",
-    firstName: "Yasin",
-    lastName: "Miah",
-    username: "yasinm",
-    displayName: "Yasin M.",
-    XP: 1200,
-  },
-  {
-    userId: "2",
-    firstName: "Mohsin",
-    lastName: "Miah",
-    username: "mohsinm",
-    displayName: "Mohsin M.",
-    XP: 950,
-  },
-  {
-    userId: "3",
-    firstName: "Rayyan",
-    lastName: "Hoque",
-    username: "rayyanh",
-    displayName: "Rayyan H.",
-    XP: 1500,
-  },
-  {
-    userId: "4",
-    firstName: "Saiful",
-    lastName: "Hoque",
-    username: "saifulh",
-    displayName: "Saiful H.",
-    XP: 800,
-  },
-  {
-    userId: "5",
-    firstName: "Raqeeb",
-    lastName: "Hossain",
-    username: "raqeebh",
-    displayName: "Raqeeb H.",
-    XP: 1100,
-  },
-  {
-    userId: "6",
-    firstName: "Saz",
-    lastName: "Hoque",
-    username: "sazh",
-    displayName: "Saz H.",
-    XP: 700,
-  },
-  {
-    userId: "7",
-    firstName: "Max",
-    lastName: "Hoque",
-    username: "maxh",
-    displayName: "Max H.",
-    XP: 1300,
-  },
-  {
-    userId: "8",
-    firstName: "Babu",
-    lastName: "Miah",
-    username: "babum",
-    displayName: "Babu M.",
-    XP: 875,
-  },
-];
+// const participants = [
+//   {
+//     userId: "1",
+//     firstName: "Yasin",
+//     lastName: "Miah",
+//     username: "yasinm",
+//     displayName: "Yasin M.",
+//     XP: 1200,
+//   },
+//   {
+//     userId: "2",
+//     firstName: "Mohsin",
+//     lastName: "Miah",
+//     username: "mohsinm",
+//     displayName: "Mohsin M.",
+//     XP: 950,
+//   },
+//   {
+//     userId: "3",
+//     firstName: "Rayyan",
+//     lastName: "Hoque",
+//     username: "rayyanh",
+//     displayName: "Rayyan H.",
+//     XP: 1500,
+//   },
+//   {
+//     userId: "4",
+//     firstName: "Saiful",
+//     lastName: "Hoque",
+//     username: "saifulh",
+//     displayName: "Saiful H.",
+//     XP: 800,
+//   },
+//   {
+//     userId: "5",
+//     firstName: "Raqeeb",
+//     lastName: "Hossain",
+//     username: "raqeebh",
+//     displayName: "Raqeeb H.",
+//     XP: 1100,
+//   },
+//   {
+//     userId: "6",
+//     firstName: "Saz",
+//     lastName: "Hoque",
+//     username: "sazh",
+//     displayName: "Saz H.",
+//     XP: 700,
+//   },
+//   {
+//     userId: "7",
+//     firstName: "Max",
+//     lastName: "Hoque",
+//     username: "maxh",
+//     displayName: "Max H.",
+//     XP: 1300,
+//   },
+//   {
+//     userId: "8",
+//     firstName: "Babu",
+//     lastName: "Miah",
+//     username: "babum",
+//     displayName: "Babu M.",
+//     XP: 875,
+//   },
+// ];
 
 // Types
 interface GenerateFixturesModalProps {
@@ -163,7 +163,7 @@ const GenerateFixturesModal = ({
   const [selectedMode, setSelectedMode] = useState("");
   const [generationType, setGenerationType] = useState("");
   const [fixedDoublesTeams, setFixedDoublesTeams] = useState<GameTeam[]>([]);
-  // const [participants, setParticipants] = useState<PlayerWithXP[]>([]);
+  const [participants, setParticipants] = useState<PlayerWithXP[]>([]);
   const [fixtureMetadata, setFixtureMetadata] =
     useState<FixtureMetadata | null>(null);
   const [numberOfCourts, setNumberOfCourts] = useState(1);
@@ -192,7 +192,7 @@ const GenerateFixturesModal = ({
           getUserById,
         );
 
-        // setParticipants(enrichedParticipants);
+        setParticipants(enrichedParticipants);
       } catch (error) {
         const message =
           error instanceof Error

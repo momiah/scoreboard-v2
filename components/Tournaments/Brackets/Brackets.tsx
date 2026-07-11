@@ -48,10 +48,10 @@ const Brackets = ({
   const tournamentName = tournament?.tournamentName;
   const tournamentId = tournament?.tournamentId ?? "";
 
-  // const numberOfParticipants = tournament?.tournamentParticipants
-  //   ? tournament.tournamentParticipants.length
-  //   : 0;
-  const numberOfParticipants = 32; // Hardcoded for testing purposes
+  const numberOfParticipants = tournament?.tournamentParticipants
+    ? tournament.tournamentParticipants.length
+    : 0;
+  // const numberOfParticipants = 32; // Hardcoded for testing purposes
   const isEvenNumberOfParticipants = numberOfParticipants % 2 === 0;
   const knockoutCount =
     tournamentType === "Singles"

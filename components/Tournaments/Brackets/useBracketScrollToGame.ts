@@ -17,8 +17,6 @@ interface UseBracketScrollToGameArgs {
   cardLayout: (
     roundIndex: number,
     gameIndex: number,
-    gamesInRound: number,
-    maxGamesInAnyRound: number,
   ) => { x: number; y: number; width: number; height: number };
   scrollTopOffset: number;
 }
@@ -60,19 +58,14 @@ export const useBracketScrollToGame = ({
         return true;
       }
 
-      const layout = cardLayout(
-        roundIndex,
-        gameIndex,
-        treeRounds[roundIndex].games.length,
-        maxGamesInAnyRound,
-      );
+      const layout = cardLayout(roundIndex, gameIndex);
       verticalScrollRef.current?.scrollTo({
         y: Math.max(layout.y - scrollTopOffset, 0),
         animated: true,
       });
       return true;
     },
-    [treeRounds, playoffGame, maxGamesInAnyRound],
+    [treeRounds, playoffGame, cardLayout, scrollTopOffset, verticalScrollRef],
   );
 
   return useScrollToGameGlow(scrollToGameId, scrollToGame);
