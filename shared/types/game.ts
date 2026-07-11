@@ -59,7 +59,7 @@ export interface Game {
   numberOfDeclines: number;
   approvalStatus: ApprovalStatus;
   reporter: string;
-  court?: number;
+  court?: number | null;
   gameNumber?: number;
   createdTime?: string;
   reportedAt?: Date | null;
@@ -69,6 +69,7 @@ export interface Game {
   videoApproved?: boolean | null;
   videoCount?: number;
   autoApprovedAt?: Date | null;
+  isThirdPlacePlayoff?: boolean;
 }
 
 export interface GameVideoUploadPayload {

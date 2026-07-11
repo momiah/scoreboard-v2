@@ -222,8 +222,10 @@ const CompetitionsScreen = memo(() => {
         game.team2?.player1?.userId === userId ||
         game.team2?.player2?.userId === userId;
 
-      const isPending = (game: Game) =>
-        game.approvalStatus === "pending" || game.approvalStatus === "Pending";
+      const isPendingUserApproval = (game: Game) =>
+        (game.approvalStatus === "pending" ||
+          game.approvalStatus === "Pending") &&
+        game.reporter !== userId;
 
       const tab = competition.prizesDistributed
         ? "Summary"
@@ -233,7 +235,7 @@ const CompetitionsScreen = memo(() => {
 
       if (isLeague) {
         const firstPending = (competition.games || []).find(
-          (game) => isUserInGame(game) && isPending(game),
+          (game) => isUserInGame(game) && isPendingUserApproval(game),
         );
         navigation.navigate("League", {
           leagueId: competition.id,
@@ -245,7 +247,7 @@ const CompetitionsScreen = memo(() => {
           (fixture) => fixture.games || [],
         );
         const userGames = fixtureGames.filter(isUserInGame);
-        const firstPending = userGames.find(isPending);
+        const firstPending = userGames.find(isPendingUserApproval);
         const firstUnplayed = userGames.find((game) => !game.result);
         const targetGame = firstPending || firstUnplayed;
         navigation.navigate("Tournament", {

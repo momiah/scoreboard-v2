@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing } from "react-native";
 import styled from "styled-components/native";
 
@@ -59,6 +59,38 @@ export const runGlow = (glowAnim: Animated.Value, onComplete?: () => void) => {
   ]).start(() => {
     onComplete?.();
   });
+};
+
+// Shared scroll-then-glow hook. Owns the glow anim, highlight state, and
+// scroll/glow timing so brackets and fixtures stay in sync.
+// Caller supplies its own scroll logic; return false if the game isn't found.
+export const useScrollToGameGlow = (
+  scrollToGameId: string | undefined,
+  scrollToGame: (gameId: string) => boolean,
+) => {
+  const [highlightedGameId, setHighlightedGameId] = useState<string | null>(
+    null,
+  );
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!scrollToGameId) return;
+
+    const timer = setTimeout(() => {
+      const found = scrollToGame(scrollToGameId);
+      if (!found) return;
+
+      // Glow after the scroll settles so the card is in its final position.
+      setTimeout(() => {
+        setHighlightedGameId(scrollToGameId);
+        runGlow(glowAnim, () => setHighlightedGameId(null));
+      }, 400);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [scrollToGameId]);
+
+  return { highlightedGameId, glowAnim };
 };
 
 // Convert a hex colour + alpha (0–1) to an rgba string.
