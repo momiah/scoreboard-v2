@@ -35,8 +35,8 @@ import {
   Tournament,
   NormalizedCompetition,
   CompetitionType,
-  UserProfile,
   CollectionName,
+  UserProfile,
 } from "@/shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../Modals/RecentPlayersModal";
@@ -321,7 +321,7 @@ const InvitePlayerModal = ({
                     zIndex: 10,
                   }}
                 >
-                  <AntDesign name="close-circle" size={30} color="red" />
+                  <AntDesign name="closecircleo" size={30} color="red" />
                 </TouchableOpacity>
 
                 <ScrollView
@@ -362,7 +362,7 @@ const InvitePlayerModal = ({
                       <Tag name={competition.type} />
                       <Tag name={competition.prizeType} />
                       <ShareButton onPress={handleShare}>
-                        <AntDesign name="share-alt" size={13} color="#00A2FF" />
+                        <AntDesign name="sharealt" size={13} color="#00A2FF" />
                         <ShareButtonText>
                           Share {competitionVariant}
                         </ShareButtonText>
@@ -455,7 +455,7 @@ const InvitePlayerModal = ({
                           >
                             <UserName>{item.username}</UserName>
                             <AntDesign
-                              name="close-circle"
+                              name="closecircleo"
                               size={20}
                               color="red"
                               onPress={() => handleRemoveUser(item)}
@@ -521,6 +521,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

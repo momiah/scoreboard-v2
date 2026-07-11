@@ -287,7 +287,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
           <MenuHeader>
             <MenuTitle>Options</MenuTitle>
             <TouchableOpacity onPress={onClose}>
-              <AntDesign name="close-circle" size={26} color="red" />
+              <AntDesign name="closecircleo" size={26} color="red" />
             </TouchableOpacity>
           </MenuHeader>
 
@@ -439,6 +439,7 @@ const MenuOverlay = styled(BlurView).attrs({
 })({
   flex: 1,
   justifyContent: "flex-end",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const MenuContent = styled.View({

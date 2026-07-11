@@ -257,6 +257,9 @@ const Tabs = () => {
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarActiveTintColor: "#FFD700",
           tabBarInactiveTintColor: "#A9A9A9",
+          tabBarStyle: {
+            borderColor: "rgba(9, 33, 62, 1)",
+          },
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
@@ -274,10 +277,6 @@ const Tabs = () => {
 
               return <TabIcon name={iconName} color={color} size={size} />;
             }
-          },
-          tabBarStyle: {
-            borderTopWidth: 1,
-            borderTopColor: "#262626",
           },
           tabBarLabel: () => null,
           headerShown: false,

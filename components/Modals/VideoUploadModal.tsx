@@ -234,7 +234,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         <PopupContent>
           {/* ── Close button ── */}
           <CloseButton onPress={handleClose}>
-            <AntDesign name="close-circle" size={30} color="red" />
+            <AntDesign name="closecircleo" size={30} color="red" />
           </CloseButton>
 
           <Ionicons name={icon} size={75} color={iconColor} />
@@ -343,6 +343,7 @@ const Overlay = styled(BlurView)({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const PopupContent = styled.View({

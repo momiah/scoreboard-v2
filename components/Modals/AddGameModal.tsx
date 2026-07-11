@@ -301,7 +301,7 @@ const AddGameModal = ({
                 zIndex: 10,
               }}
             >
-              <AntDesign name="close-circle" size={30} color="red" />
+              <AntDesign name="closecircleo" size={30} color="red" />
             </TouchableOpacity>
 
             <AddGameDetails
@@ -367,12 +367,13 @@ const AddGameModal = ({
 const { width: screenWidth } = Dimensions.get("window");
 
 const ModalContainer = styled(BlurView).attrs({
-  intensity: 50,
+  intensity: 100,
   tint: "dark",
 })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

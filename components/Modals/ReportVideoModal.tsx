@@ -103,7 +103,7 @@ const ReportVideoModal: React.FC<ReportVideoModalProps> = ({
               {isSubmitted ? "Report Submitted" : "Report Video"}
             </ModalTitle>
             <TouchableOpacity onPress={handleClose}>
-              <AntDesign name="close-circle" size={26} color="red" />
+              <AntDesign name="closecircleo" size={26} color="red" />
             </TouchableOpacity>
           </ModalHeader>
 
@@ -173,6 +173,7 @@ const ReportVideoModal: React.FC<ReportVideoModalProps> = ({
 const Overlay = styled(BlurView)({
   flex: 1,
   justifyContent: "flex-end",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

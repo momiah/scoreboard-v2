@@ -480,7 +480,7 @@ const VideoCommentsModal: React.FC<VideoCommentsModalProps> = ({
             <ModalHeader>
               <ModalTitle>Comments</ModalTitle>
               <TouchableOpacity onPress={onClose}>
-                <AntDesign name="close-circle" size={26} color="red" />
+                <AntDesign name="closecircleo" size={26} color="red" />
               </TouchableOpacity>
             </ModalHeader>
 
@@ -552,6 +552,7 @@ const ModalOverlay = styled(BlurView).attrs({
   tint: "dark",
 })({
   flex: 1,
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

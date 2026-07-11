@@ -122,7 +122,7 @@ const PlayerDetails = ({
             <CloseIconContainer>
               <AntDesign
                 onPress={() => setShowPlayerDetails(false)}
-                name="close-circle"
+                name="closecircleo"
                 size={26}
                 color="red"
               />
@@ -210,6 +210,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({
