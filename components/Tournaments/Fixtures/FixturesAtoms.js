@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components/native";
-import { Dimensions, Animated } from "react-native";
+import { Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import Tag from "../../Tag";
 import AddTournamentGameModal from "../../Modals/AddTournamentGameModal";
 import { COMPETITION_TYPES } from "@shared";
-import GameGlow, { runGlow } from "@/components/GameCardGlow";
+import GameGlow from "@/components/GameCardGlow";
+import { useFixturesScrollToGame } from "./useFixturesScrollToGame";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -138,38 +139,13 @@ export const FixturesDisplay = ({
   const [gameModalVisible, setGameModalVisible] = useState(false);
   const [selectedGame, setSelectedGame] = useState(null);
   const [localFixtures, setLocalFixtures] = useState(fixtures);
-  const [highlightedGameId, setHighlightedGameId] = useState(null);
 
-  const scrollRef = useRef(null);
-  const gameRefs = useRef({});
-  const glowAnim = useRef(new Animated.Value(0)).current;
+  const { scrollRef, gameRefs, highlightedGameId, glowAnim } =
+    useFixturesScrollToGame(scrollToGameId);
 
   useEffect(() => {
     setLocalFixtures(fixtures);
   }, [fixtures]);
-
-  useEffect(() => {
-    if (!scrollToGameId) return;
-    const timer = setTimeout(() => {
-      const node = gameRefs.current[scrollToGameId];
-      const scrollNode = scrollRef.current?.getInnerViewNode?.();
-      if (!node || !scrollNode) return;
-
-      node.measureLayout(
-        scrollNode,
-        (_left, top) => {
-          scrollRef.current?.scrollTo({ y: top, animated: true });
-          // Glow after the scroll settles so the card is in its final position.
-          setTimeout(() => {
-            setHighlightedGameId(scrollToGameId);
-            runGlow(glowAnim, () => setHighlightedGameId(null));
-          }, 400);
-        },
-        () => {},
-      );
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [scrollToGameId, localFixtures]);
 
   const handleGamePress = (game) => {
     if (game.result) {
@@ -353,7 +329,7 @@ export const FixtureStatusLabel = styled.Text(({ status }) => ({
   backgroundColor:
     status === "Scheduled"
       ? "rgba(0, 162, 255, 0.6)"
-      : status === "Approved"
+      : status === "Approved" || status === "approved"
         ? "rgba(0, 255, 0, 0.6)"
         : "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,

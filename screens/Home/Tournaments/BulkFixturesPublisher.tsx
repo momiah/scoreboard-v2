@@ -15,7 +15,13 @@ import moment from "moment";
 import { validateBadmintonScores } from "../../../helpers/validateBadmintonScores";
 import Popup from "../../../components/popup/Popup";
 import { calculateWin } from "../../../helpers/calculateWin";
-import { calculatePlayerPerformance } from "@shared/helpers";
+import {
+  advanceBrackets,
+  calculatePlayerPerformance,
+  calculateTeamPerformance,
+  recalculateParticipantsFromFixtures,
+  getOrderedApprovedGames,
+} from "@shared/helpers";
 import {
   Game,
   GameTeam,
@@ -23,6 +29,7 @@ import {
   CompetitionTypes,
   Tournament,
   UserProfile,
+  Fixtures,
 } from "@shared/types";
 import {
   FixtureGameHeader,
@@ -35,14 +42,11 @@ import {
   deriveScoresFromInput,
   formatScoresToInput,
 } from "../../../helpers/scoreInputHelpers";
+import { isShellGame } from "@/shared";
 
 import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { getUserById } from "../../../devFunctions/firebaseFunctions";
-import {
-  recalculateParticipantsFromFixtures,
-  getOrderedApprovedGames,
-} from "@shared/helpers";
 import { getPlayerUserIds } from "../../../context/LeagueContext";
 
 const { height: screenHeight } = Dimensions.get("window");
@@ -144,7 +148,6 @@ const BulkScoreDisplay = ({ game, onScoresChange }: BulkScoreDisplayProps) => {
   );
 };
 
-// Custom game item for bulk editing
 const BulkGameItem = ({
   game,
   tournamentType,
@@ -168,6 +171,116 @@ const BulkGameItem = ({
   </GameCard>
 );
 
+// ── Post-submit stats: knockout takes delta + advance, round-robin replays ──
+
+const applyKnockoutUpdates = async ({
+  successfulGames,
+  mergedFixtures,
+  tournament,
+  users,
+  isDoubles,
+  numberOfCourts,
+}: {
+  successfulGames: Game[];
+  mergedFixtures: Fixtures[];
+  tournament: Tournament;
+  users: UserProfile[];
+  isDoubles: boolean;
+  numberOfCourts: number;
+}) => {
+  let updatedParticipants = tournament.tournamentParticipants;
+  let updatedTeams = tournament.tournamentTeams ?? [];
+  const usersToUpdate: UserProfile[] = [];
+
+  for (const game of successfulGames) {
+    const gamePlayerIds = getPlayerUserIds(game);
+    const gameParticipants = updatedParticipants.filter((p) =>
+      gamePlayerIds.includes(p.userId!),
+    );
+    const gameUsers = users.filter((u) => gamePlayerIds.includes(u.userId));
+
+    const { playersToUpdate, usersToUpdate: gameUsersToUpdate } =
+      calculatePlayerPerformance(game, gameParticipants, gameUsers);
+
+    updatedParticipants = updatedParticipants.map(
+      (p) => playersToUpdate.find((u) => u.userId === p.userId) ?? p,
+    );
+
+    if (gameUsersToUpdate?.length) usersToUpdate.push(...gameUsersToUpdate);
+
+    if (isDoubles) {
+      const [winnerTeam, loserTeam] = await calculateTeamPerformance({
+        game,
+        allTeams: updatedTeams,
+      });
+      updatedTeams = updatedTeams.map((team) => {
+        if (team.teamKey === winnerTeam.teamKey) return winnerTeam;
+        if (team.teamKey === loserTeam.teamKey) return loserTeam;
+        return team;
+      });
+    }
+  }
+
+  return {
+    updatedFixtures: advanceBrackets({
+      fixtures: mergedFixtures,
+      numberOfCourts,
+    }),
+    updatedParticipants,
+    updatedTeams,
+    usersToUpdate,
+  };
+};
+
+const applyRoundRobinUpdates = async ({
+  successfulGames,
+  mergedFixtures,
+  tournament,
+  users,
+  isDoubles,
+}: {
+  successfulGames: Game[];
+  mergedFixtures: Fixtures[];
+  tournament: Tournament;
+  users: UserProfile[];
+  isDoubles: boolean;
+}) => {
+  const orderedApprovedGames = getOrderedApprovedGames(mergedFixtures);
+
+  const { updatedParticipants, updatedTeams } =
+    await recalculateParticipantsFromFixtures(
+      orderedApprovedGames,
+      tournament.tournamentParticipants,
+      tournament.tournamentTeams ?? [],
+      isDoubles,
+    );
+
+  // ── Pre-existing bug fix: previous code only updated the LAST game's users.
+  // Loop across all successful games so every player's profile gets its delta.
+  const usersToUpdate: UserProfile[] = [];
+  for (const game of successfulGames) {
+    const gamePlayerIds = getPlayerUserIds(game);
+    const gameParticipants = tournament.tournamentParticipants.filter((p) =>
+      gamePlayerIds.includes(p.userId!),
+    );
+    const gameUsers = users.filter((u) => gamePlayerIds.includes(u.userId));
+
+    const { usersToUpdate: gameUsersToUpdate } = calculatePlayerPerformance(
+      game,
+      gameParticipants,
+      gameUsers,
+    );
+    if (gameUsersToUpdate?.length) usersToUpdate.push(...gameUsersToUpdate);
+  }
+
+  return {
+    updatedFixtures: mergedFixtures,
+    updatedParticipants,
+    updatedTeams,
+    usersToUpdate,
+  };
+};
+
 const BulkFixturesPublisher = () => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -188,6 +301,8 @@ const BulkFixturesPublisher = () => {
   const [publishing, setPublishing] = useState<boolean>(false);
   const [liveTournament, setLiveTournament] =
     useState<Tournament>(tournamentById);
+
+  const isKnockout = liveTournament.tournamentMode === "Knockout";
 
   useEffect(() => {
     const tournamentRef = doc(db, "tournaments", tournamentId);
@@ -217,30 +332,36 @@ const BulkFixturesPublisher = () => {
           return prev;
         }
 
-        return data.fixtures.flatMap((round) =>
-          round.games.map((game) => {
-            const isAlreadyReported =
-              game.result && game.gamescore && game.gamescore !== "";
+        const isKnockoutSnap = data.tournamentMode === "Knockout";
 
-            if (isAlreadyReported) {
+        return data.fixtures.flatMap((round) =>
+          round.games
+            // For knockout: hide shell games (null players). Users can only
+            // publish games where both teams are populated.
+            .filter((game) => !isKnockoutSnap || !isShellGame(game))
+            .map((game) => {
+              const isAlreadyReported =
+                game.result && game.gamescore && game.gamescore !== "";
+
+              if (isAlreadyReported) {
+                return {
+                  ...game,
+                  round: round.round,
+                  inputTeam1Score: "",
+                  inputTeam2Score: "",
+                  hasScores: false,
+                };
+              }
+
+              const existingInput = inputStateMap.get(game.gameId);
               return {
                 ...game,
                 round: round.round,
-                inputTeam1Score: "",
-                inputTeam2Score: "",
-                hasScores: false,
+                inputTeam1Score: existingInput?.inputTeam1Score ?? "",
+                inputTeam2Score: existingInput?.inputTeam2Score ?? "",
+                hasScores: existingInput?.hasScores ?? false,
               };
-            }
-
-            const existingInput = inputStateMap.get(game.gameId);
-            return {
-              ...game,
-              round: round.round,
-              inputTeam1Score: existingInput?.inputTeam1Score ?? "",
-              inputTeam2Score: existingInput?.inputTeam2Score ?? "",
-              hasScores: existingInput?.hasScores ?? false,
-            };
-          }),
+            }),
         );
       });
     });
@@ -251,7 +372,6 @@ const BulkFixturesPublisher = () => {
   const handleClosePopup = (): void => {
     setShowPopup(false);
     setPopupMessage("");
-    navigation.goBack();
   };
 
   const handleScoresChange = useCallback(
@@ -259,7 +379,6 @@ const BulkFixturesPublisher = () => {
       setGamesWithScores((prev) =>
         prev.map((game) => {
           if (game.gameId !== gameId) return game;
-
           return {
             ...game,
             inputTeam1Score: team1Score,
@@ -272,7 +391,6 @@ const BulkFixturesPublisher = () => {
     [],
   );
 
-  // Group games by round for display
   const gamesByRound: Record<number, GameWithScores[]> = gamesWithScores.reduce(
     (rounds, game) => {
       const roundNumber = game.round;
@@ -295,7 +413,6 @@ const BulkFixturesPublisher = () => {
 
   const totalCompletedCount = publishedGamesCount + gamesReadyToSubmit.length;
 
-  // Update the handleSubmitGames function
   const handleSubmitGames = useCallback(async (): Promise<void> => {
     if (gamesReadyToSubmit.length === 0) {
       Alert.alert(
@@ -305,7 +422,7 @@ const BulkFixturesPublisher = () => {
       return;
     }
 
-    // Validate all scores
+    // ── Validate scores ──
     const invalidGames: string[] = [];
     const validatedGames: Game[] = [];
 
@@ -319,16 +436,8 @@ const BulkFixturesPublisher = () => {
         continue;
       }
 
-      // Create updated game object
-      const team1: GameTeam = {
-        ...game.team1,
-        score: score1,
-      };
-
-      const team2: GameTeam = {
-        ...game.team2,
-        score: score2,
-      };
+      const team1: GameTeam = { ...game.team1, score: score1 };
+      const team2: GameTeam = { ...game.team2, score: score2 };
 
       const result = calculateWin(
         team1,
@@ -336,7 +445,7 @@ const BulkFixturesPublisher = () => {
         tournamentById.tournamentType as CompetitionTypes,
       ) as GameResult;
 
-      const updatedGame: Game = {
+      validatedGames.push({
         ...game,
         gamescore: `${score1}-${score2}`,
         reportedAt: new Date(),
@@ -348,9 +457,7 @@ const BulkFixturesPublisher = () => {
         numberOfDeclines: 0,
         approvalStatus: "approved",
         reporter: currentUser?.userId || "",
-      };
-
-      validatedGames.push(updatedGame);
+      });
     }
 
     if (invalidGames.length > 0) {
@@ -375,9 +482,9 @@ const BulkFixturesPublisher = () => {
             setPublishing(true);
             try {
               const failedGames: string[] = [];
-              let successCount = 0;
+              const successfulGames: Game[] = [];
 
-              // Write all games to Firestore first
+              // ── Write individual games to Firestore ──
               for (const game of validatedGames) {
                 try {
                   await updateTournamentGame({
@@ -386,7 +493,7 @@ const BulkFixturesPublisher = () => {
                     updatedGame: game,
                     removeGame: false,
                   });
-                  successCount++;
+                  successfulGames.push(game);
                 } catch (error) {
                   const errorMessage =
                     error instanceof Error ? error.message : "";
@@ -407,83 +514,96 @@ const BulkFixturesPublisher = () => {
               }
 
               console.log(
-                `Bulk update completed. Success: ${successCount}, Failed: ${failedGames.length}`,
+                `Bulk update completed. Success: ${successfulGames.length}, Failed: ${failedGames.length}`,
               );
 
-              // After all games written, do one single recalculation from fresh Firestore data
-              if (successCount > 0) {
+              // ── Recalculate stats from fresh state ──
+              if (successfulGames.length > 0) {
                 const tournamentRef = doc(db, "tournaments", tournamentId);
-
                 const successfulGameIds = new Set(
-                  validatedGames.slice(0, successCount).map((g) => g.gameId),
+                  successfulGames.map((g) => g.gameId),
                 );
 
                 const mergedFixtures = liveTournament.fixtures.map((round) => ({
                   ...round,
                   games: round.games.map((game) => {
                     if (successfulGameIds.has(game.gameId)) {
-                      const validatedGame = validatedGames.find(
-                        (g) => g.gameId === game.gameId,
+                      return (
+                        successfulGames.find((g) => g.gameId === game.gameId) ??
+                        game
                       );
-                      return validatedGame ?? game;
                     }
                     return game;
                   }),
                 }));
 
                 const isDoubles = liveTournament.tournamentType === "Doubles";
-                const orderedApprovedGames =
-                  getOrderedApprovedGames(mergedFixtures);
 
-                const { updatedParticipants, updatedTeams } =
-                  await recalculateParticipantsFromFixtures(
-                    orderedApprovedGames,
-                    liveTournament.tournamentParticipants,
-                    liveTournament.tournamentTeams ?? [],
-                    isDoubles,
-                  );
-
-                // User profile updates — fetch all participant users once
-                const allUsers = await Promise.all(
-                  liveTournament.tournamentParticipants
-                    .filter((p) => !!p.userId)
-                    .map((p) => getUserById(p.userId!)),
-                ).then((users) => users.filter((u): u is UserProfile => !!u));
-
-                const { usersToUpdate } = calculatePlayerPerformance(
-                  validatedGames[validatedGames.length - 1],
-                  liveTournament.tournamentParticipants.filter((p) =>
-                    getPlayerUserIds(
-                      validatedGames[validatedGames.length - 1],
-                    ).includes(p.userId!),
+                // ── Fetch users involved in successful games only ──
+                const uniquePlayerIds = [
+                  ...new Set(
+                    successfulGames.flatMap((game) => getPlayerUserIds(game)),
                   ),
-                  allUsers,
+                ].filter((id): id is string => !!id);
+
+                const fetchedUsers = await Promise.all(
+                  uniquePlayerIds.map((id) => getUserById(id)),
                 );
+                const users = fetchedUsers.filter((u): u is UserProfile => !!u);
+
+                const numberOfCourts = liveTournament.numberOfCourts || 1;
+
+                const {
+                  updatedFixtures,
+                  updatedParticipants,
+                  updatedTeams,
+                  usersToUpdate,
+                } = isKnockout
+                  ? await applyKnockoutUpdates({
+                      successfulGames,
+                      mergedFixtures,
+                      tournament: liveTournament,
+                      users,
+                      isDoubles,
+                      numberOfCourts,
+                    })
+                  : await applyRoundRobinUpdates({
+                      successfulGames,
+                      mergedFixtures,
+                      tournament: liveTournament,
+                      users,
+                      isDoubles,
+                    });
 
                 await updateDoc(tournamentRef, {
+                  fixtures: updatedFixtures,
                   tournamentParticipants: updatedParticipants,
                   ...(isDoubles && { tournamentTeams: updatedTeams }),
-                  gamesCompleted: increment(successCount),
+                  gamesCompleted: increment(successfulGames.length),
                 });
 
                 await Promise.all(
-                  (usersToUpdate ?? []).map((user) => {
-                    if (!user.userId) return;
-                    return updateDoc(doc(db, "users", user.userId), {
+                  usersToUpdate.map((user) =>
+                    updateDoc(doc(db, "users", user.userId), {
                       profileDetail: user.profileDetail,
-                    });
-                  }),
+                    }),
+                  ),
                 );
               }
 
-              if (successCount === validatedGames.length) {
+              // ── Feedback ──
+              if (successfulGames.length === validatedGames.length) {
                 handleShowPopup(
-                  `Successfully submitted ${successCount} game result${successCount > 1 ? "s" : ""}!`,
+                  `Successfully submitted ${successfulGames.length} game result${
+                    successfulGames.length > 1 ? "s" : ""
+                  }!`,
                 );
-              } else if (successCount > 0) {
+              } else if (successfulGames.length > 0) {
                 Alert.alert(
                   "Partial Success",
-                  `${successCount} game${successCount > 1 ? "s" : ""} submitted.\n\nFailed: ${failedGames.join(", ")}`,
+                  `${successfulGames.length} game${
+                    successfulGames.length > 1 ? "s" : ""
+                  } submitted.\n\nFailed: ${failedGames.join(", ")}`,
                 );
               } else {
                 Alert.alert(
@@ -509,9 +629,9 @@ const BulkFixturesPublisher = () => {
     handleShowPopup,
     updateTournamentGame,
     liveTournament,
+    isKnockout,
   ]);
 
-  // Handle cancel
   const handleCancel = useCallback((): void => {
     const hasAnyScores = gamesWithScores.some((game) => game.hasScores);
 
@@ -553,7 +673,9 @@ const BulkFixturesPublisher = () => {
         <TouchableOpacity onPress={handleCancel}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <HeaderTitle>Bulk Publish Fixtures</HeaderTitle>
+        <HeaderTitle>
+          {isKnockout ? "Bulk Publish Brackets" : "Bulk Publish Fixtures"}
+        </HeaderTitle>
         <View style={{ width: 24 }} />
       </Header>
 
@@ -618,12 +740,7 @@ const BulkFixturesPublisher = () => {
   );
 };
 
-// Styled Components (same as before)
-const Container = styled.View({
-  flex: 1,
-  backgroundColor: "#020D18",
-  //   padding: 20,
-});
+const Container = styled.View({ flex: 1, backgroundColor: "#020D18" });
 
 const Header = styled.View({
   flexDirection: "row",
@@ -640,9 +757,7 @@ const HeaderTitle = styled.Text({
   fontWeight: "bold",
 });
 
-const SubHeader = styled.View({
-  marginBottom: 20,
-});
+const SubHeader = styled.View({ marginBottom: 20 });
 
 const SubHeaderText = styled.Text({
   color: "#ccc",
@@ -650,13 +765,9 @@ const SubHeaderText = styled.Text({
   textAlign: "center",
 });
 
-const FixturesScrollContainer = styled.ScrollView({
-  flex: 1,
-});
+const FixturesScrollContainer = styled.ScrollView({ flex: 1 });
 
-const FixtureRoundContainer = styled.View({
-  marginBottom: 20,
-});
+const FixtureRoundContainer = styled.View({ marginBottom: 20 });
 
 const GameCard = styled.View({
   marginHorizontal: 20,
@@ -696,7 +807,6 @@ const ButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-// Add these new styled components
 const StaticScoreContainer = styled.View({
   flexDirection: "row",
   alignItems: "center",

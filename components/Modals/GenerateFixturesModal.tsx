@@ -31,6 +31,7 @@ import {
 } from "@shared/types";
 
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { generateKnockoutBrackets } from "../../helpers/Tournament/knockout";
 import { generateInitialTeamStats } from "../../helpers/generateInitialTeamStats";
 import { UserContext } from "@/context/UserContext";
 
@@ -110,6 +111,7 @@ interface GenerateFixturesModalProps {
   competition: {
     tournamentType?: string;
     tournamentId?: string;
+    tournamentMode?: string;
   } | null;
   currentUser: UserProfile | null;
   setGeneratedFixtures: (fixtures: Fixtures[] | null) => void;
@@ -171,6 +173,7 @@ const GenerateFixturesModal = ({
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const tournamentType = competition?.tournamentType || "Doubles";
+  const tournamentMode = competition?.tournamentMode;
   // const tournamentType = "Singles";
   const competitionId = competition?.tournamentId;
 
@@ -196,7 +199,12 @@ const GenerateFixturesModal = ({
 
         setParticipants(enrichedParticipants);
       } catch (error) {
-        console.error("Error fetching participants:", error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to generate fixtures";
+        console.error("Error generating fixtures:", error);
+        Alert.alert("Cannot generate fixtures", message);
       } finally {
         setLoadingParticipants(false);
       }
@@ -232,20 +240,39 @@ const GenerateFixturesModal = ({
     setIsGenerating(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const result = generateSinglesRoundRobinFixtures({
+
+      if (tournamentMode === "Knockout") {
+        const teams = participants.map((player) => ({
+          player1: player,
+          player2: null,
+        }));
+        const bracketResult = generateKnockoutBrackets({
+          teams,
+          numberOfCourts,
+          competitionId: competitionId ?? "",
+        });
+        setGeneratedFixtures(bracketResult.fixtures);
+        setFixtureMetadata(bracketResult.metadata);
+        setCurrentScreen(GENERATED_FIXTURES_SCREEN);
+        return;
+      }
+
+      const bracketResult = generateSinglesRoundRobinFixtures({
         players: participants,
         numberOfCourts,
         competitionId: competitionId ?? "",
       });
 
-      if (result) {
-        setGeneratedFixtures(result.fixtures);
-        setFixtureMetadata(result.metadata);
+      if (bracketResult) {
+        setGeneratedFixtures(bracketResult.fixtures);
+        setFixtureMetadata(bracketResult.metadata);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
       }
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to generate fixtures";
       console.error("Error generating fixtures:", error);
-      Alert.alert("Error", "Failed to generate fixtures");
+      Alert.alert("Cannot generate fixtures", message);
     } finally {
       setIsGenerating(false);
     }
@@ -279,15 +306,28 @@ const GenerateFixturesModal = ({
       }
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const fixtures = generateRoundRobinFixtures({
+
+      if (tournamentMode === "Knockout") {
+        const bracketResult = generateKnockoutBrackets({
+          teams,
+          numberOfCourts,
+          competitionId: competitionId ?? "",
+        });
+        setGeneratedFixtures(bracketResult.fixtures);
+        setFixtureMetadata(bracketResult.metadata);
+        setCurrentScreen(GENERATED_FIXTURES_SCREEN);
+        return;
+      }
+
+      const fixturesResult = generateRoundRobinFixtures({
         teams,
         numberOfCourts,
         competitionId: competitionId ?? "",
       });
 
-      if (fixtures) {
-        setGeneratedFixtures(fixtures.fixtures);
-        setFixtureMetadata(fixtures.metadata);
+      if (fixturesResult) {
+        setGeneratedFixtures(fixturesResult.fixtures);
+        setFixtureMetadata(fixturesResult.metadata);
         setCurrentScreen(GENERATED_FIXTURES_SCREEN);
       }
     } catch (error) {

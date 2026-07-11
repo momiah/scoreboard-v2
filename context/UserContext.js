@@ -43,6 +43,7 @@ const UserProvider = ({ children }) => {
   const [players, setPlayers] = useState([]);
 
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
+  const [authInitializing, setAuthInitializing] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
   const [authInitializing, setAuthInitializing] = useState(true);
 

@@ -24,6 +24,8 @@ import {
   onSnapshot,
   arrayUnion,
   arrayRemove,
+  UpdateData,
+  DocumentData,
 } from "firebase/firestore";
 import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
@@ -58,14 +60,15 @@ import {
   Fixtures,
   Game,
   TeamStats,
-  Player,
 } from "@shared";
 import {
   calculatePlayerPerformance,
   calculateTeamPerformance,
   recalculateParticipantsFromFixtures,
   getOrderedApprovedGames,
+  advanceBrackets,
 } from "@shared/helpers";
+
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 
@@ -990,49 +993,108 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
           if (isTournament) {
             const freshFixtures: Fixtures[] = freshData?.fixtures ?? [];
+            const isKnockout = competitionData.tournamentMode === "Knockout";
+            const numberOfCourts = competitionData.numberOfCourts || 1;
 
-            const updatedFixtures = freshFixtures.map((round) => ({
+            const fixturesWithApprovedGame = freshFixtures.map((round) => ({
               ...round,
               games: round.games.map((g) =>
                 g.gameId === updatedGame.gameId ? updatedGame : g,
               ),
             }));
 
-            const orderedApprovedGames =
-              getOrderedApprovedGames(updatedFixtures);
+            if (isKnockout) {
+              const updatedFixtures = advanceBrackets({
+                fixtures: fixturesWithApprovedGame,
+                numberOfCourts,
+              });
 
-            // ── Replay all approved games — no users needed ──
-            const { updatedParticipants, updatedTeams } =
-              await recalculateParticipantsFromFixtures(
-                orderedApprovedGames,
-                freshParticipants,
-                freshTeams,
-                isDoubles,
+              const { playersToUpdate, usersToUpdate } =
+                calculatePlayerPerformance(
+                  updatedGame,
+                  freshParticipants.filter((p) =>
+                    playerUserIds.includes(p.userId!),
+                  ),
+                  freshUsers,
+                );
+
+              const updatedParticipants = freshParticipants.map((p) => {
+                const updated = playersToUpdate.find(
+                  (u) => u.userId === p.userId,
+                );
+                return updated ?? p;
+              });
+
+              const updatePayload: UpdateData<DocumentData> = {
+                fixtures: updatedFixtures,
+                gamesCompleted: increment(1),
+                [config.participantsKey]: updatedParticipants,
+              };
+
+              if (isDoubles) {
+                const [updatedWinnerTeam, updatedLoserTeam] =
+                  await calculateTeamPerformance({
+                    game: updatedGame,
+                    allTeams: freshTeams,
+                  });
+
+                const updatedTeams = freshTeams.map((team) => {
+                  if (team.teamKey === updatedWinnerTeam.teamKey)
+                    return updatedWinnerTeam;
+                  if (team.teamKey === updatedLoserTeam.teamKey)
+                    return updatedLoserTeam;
+                  return team;
+                });
+
+                updatePayload[config.teamKey] = updatedTeams;
+              }
+
+              transaction.update(competitionRef, updatePayload);
+
+              usersToUpdate?.forEach((user) => {
+                if (!user.userId) return;
+                const userRef = doc(db, "users", user.userId);
+                transaction.update(userRef, {
+                  profileDetail: user.profileDetail,
+                });
+              });
+            } else {
+              // ── Round-robin tournament: existing replay path ──
+              const orderedApprovedGames = getOrderedApprovedGames(
+                fixturesWithApprovedGame,
               );
 
-            transaction.update(competitionRef, {
-              fixtures: updatedFixtures,
-              gamesCompleted: increment(1),
-              [config.participantsKey]: updatedParticipants,
-              ...(isDoubles && { [config.teamKey]: updatedTeams }),
-            });
+              const { updatedParticipants, updatedTeams } =
+                await recalculateParticipantsFromFixtures(
+                  orderedApprovedGames,
+                  freshParticipants,
+                  freshTeams,
+                  isDoubles,
+                );
 
-            // ── User profile delta — current game's players only ──
-            const { usersToUpdate } = calculatePlayerPerformance(
-              updatedGame,
-              freshParticipants.filter((p) =>
-                playerUserIds.includes(p.userId!),
-              ),
-              freshUsers,
-            );
-
-            usersToUpdate?.forEach((user) => {
-              if (!user.userId) return;
-              const userRef = doc(db, "users", user.userId);
-              transaction.update(userRef, {
-                profileDetail: user.profileDetail,
+              transaction.update(competitionRef, {
+                fixtures: fixturesWithApprovedGame,
+                gamesCompleted: increment(1),
+                [config.participantsKey]: updatedParticipants,
+                ...(isDoubles && { [config.teamKey]: updatedTeams }),
               });
-            });
+
+              const { usersToUpdate } = calculatePlayerPerformance(
+                updatedGame,
+                freshParticipants.filter((p) =>
+                  playerUserIds.includes(p.userId!),
+                ),
+                freshUsers,
+              );
+
+              usersToUpdate?.forEach((user) => {
+                if (!user.userId) return;
+                const userRef = doc(db, "users", user.userId);
+                transaction.update(userRef, {
+                  profileDetail: user.profileDetail,
+                });
+              });
+            }
           } else {
             // ── Leagues use delta approach — no fixture replay needed ──
             const { playersToUpdate, usersToUpdate } =
