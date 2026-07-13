@@ -38,6 +38,7 @@ export const COLLECTION_NAMES: Record<CollectionName, string> = {
   reportedVideos: "reportedVideos",
   savedVideos: "savedVideos",
   videoReportAppeals: "videoReportAppeals",
+  failedVideoUploads: "failedVideoUploads",
 };
 
 export const ICON_MAP = {

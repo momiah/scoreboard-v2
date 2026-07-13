@@ -202,7 +202,7 @@ const EditTournament = () => {
               </ImagePlaceholder>
             )}
             <PlusIconWrapper>
-              <AntDesign name="pluscircle" size={28} color="#2196f3" />
+              <AntDesign name="plus-circle" size={28} color="#2196f3" />
             </PlusIconWrapper>
           </ImageWrapper>
         </TouchableOpacity>
@@ -333,7 +333,6 @@ const PlusIconWrapper = styled.View({
   position: "absolute",
   bottom: 10,
   right: 10,
-  backgroundColor: "white",
   borderRadius: 16,
 });
 

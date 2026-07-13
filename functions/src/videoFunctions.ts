@@ -104,7 +104,9 @@ export const generateR2UploadUrl = functions.https.onCall(
       ContentType: fileType || "video/mp4",
     });
 
-    const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 900 });
+    const uploadUrl = await getSignedUrl(r2Client, command, {
+      expiresIn: 3600,
+    });
     const publicUrl = `${R2_PUBLIC_URL.value()}/${key}`;
 
     return { uploadUrl, publicUrl, key };

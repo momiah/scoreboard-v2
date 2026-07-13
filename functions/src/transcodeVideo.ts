@@ -127,16 +127,25 @@ export const transcodeVideo = onRequest(
       const thumbnailUrl = `${R2_PUBLIC_URL.value()}/${thumbnailKey}`;
       console.log("[transcodeVideo] Thumbnail uploaded:", thumbnailUrl);
 
-      // ── 5. Compress video — original resolution and orientation preserved ──
+      // ── 5. Compress video — max compatibility, min size ───────────────────
       console.log("[transcodeVideo] Compressing video...");
       await new Promise<void>((resolve, reject) => {
         ffmpeg(rawTmpPath)
           .outputOptions([
             "-c:v libx264",
-            "-crf 23",
-            "-preset fast",
+            "-profile:v baseline",
+            "-level:v 3.0",
+            "-preset slow",
+            "-crf 28",
+            "-vf scale='min(1280,iw)':-2",
+            "-r 30",
+            "-pix_fmt yuv420p",
+            "-maxrate 1500k",
+            "-bufsize 3000k",
             "-c:a aac",
-            "-b:a 128k",
+            "-b:a 96k",
+            "-ac 2",
+            "-ar 44100",
             "-movflags +faststart",
           ])
           .output(transcodedTmpPath)

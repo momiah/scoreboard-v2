@@ -5,6 +5,7 @@ import {
   Dimensions,
   Animated,
   Alert,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,6 +38,9 @@ interface VideoUploadModalProps {
 const PROCESSING_MESSAGES = [
   "Processing — this may take a couple of minutes",
   "Please do not close this modal",
+  ...(Platform.OS === "ios"
+    ? ["Videos stored in iCloud may take longer to load - "]
+    : []),
   "Preparing your video for upload",
   "Analysing video quality...",
   "Getting your video ready for the feed",
