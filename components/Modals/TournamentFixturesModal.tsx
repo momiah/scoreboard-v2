@@ -118,7 +118,7 @@ const TournamentFixturesModal: React.FC<TournamentFixturesModalProps> = ({
                   zIndex: 10,
                 }}
               >
-                <AntDesign name="close-circle" size={30} color="red" />
+                <AntDesign name="closecircleo" size={30} color="red" />
               </TouchableOpacity>
 
               <HeaderContainer>
@@ -185,6 +185,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

@@ -168,7 +168,7 @@ const CourtPositionsModal = memo<CourtPositionsModalProps>(
             <MenuHeader>
               <MenuTitle>Court Positions</MenuTitle>
               <TouchableOpacity onPress={onClose}>
-                <AntDesign name="close-circle" size={26} color="red" />
+                <AntDesign name="closecircleo" size={26} color="red" />
               </TouchableOpacity>
             </MenuHeader>
 
@@ -270,8 +270,6 @@ const ModalDescription = styled.Text({
   fontSize: 14,
   marginHorizontal: 20,
   paddingVertical: 12,
-  //   textAlign: "center",
-  //   marginBottom: 12,
 });
 
 // ── Header

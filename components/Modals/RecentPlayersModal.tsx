@@ -267,7 +267,7 @@ const RecentPlayersModal = ({
                 onPress={onClose}
                 style={{ alignSelf: "flex-end", marginBottom: 12 }}
               >
-                <AntDesign name="close-circle" size={28} color="red" />
+                <AntDesign name="closecircleo" size={28} color="red" />
               </TouchableOpacity>
               <ModalTitle>Recent Players</ModalTitle>
               {renderCompetitionCarousel()}
@@ -296,6 +296,7 @@ const ModalOverlay = styled(BlurView).attrs({
 })({
   flex: 1,
   justifyContent: "flex-end",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ContentArea = styled.View({
@@ -318,7 +319,7 @@ const ModalContent = styled.View({
   borderTopLeftRadius: 20,
   borderTopRightRadius: 20,
   padding: 20,
-  paddingBottom: 36,
+  paddingBottom: 70,
   minHeight: 750,
   justifyContent: "space-between",
 });
@@ -402,7 +403,7 @@ const AddButton = styled.TouchableOpacity({
   borderRadius: 8,
   padding: 12,
   alignItems: "center",
-  marginBottom: screenWidth < 430 ? 60 : 10,
+  marginBottom: screenWidth < 405 ? 60 : 5,
 });
 
 const AddButtonText = styled.Text({

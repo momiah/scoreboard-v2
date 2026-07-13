@@ -1,5 +1,12 @@
 import React, { useState, useContext, useCallback } from "react";
-import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Dimensions,
+  Linking,
+  Alert,
+} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { COMPETITION_TYPES, COLLECTION_NAMES, prizeTypes } from "@shared";

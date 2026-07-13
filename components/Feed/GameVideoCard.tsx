@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, useState } from "react";
-import { Dimensions, TouchableOpacity, View, Modal } from "react-native";
+import React, { useEffect, useCallback, useState, useContext } from "react";
+import { Dimensions, TouchableOpacity, View } from "react-native";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEvent } from "expo";
 import styled from "styled-components/native";
@@ -12,8 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 import VideoMenuModal from "../Modals/VideoMenuModal";
 import VideoCommentsModal from "../Modals/VideoCommentsModal";
 import GameVideoCardSkeleton from "../Skeletons/GameVideoCardSkeleton";
-import VideoFullscreen from "../../screens/VideoFullScreen";
 import VideoRemovedModal from "../Modals/VideoRemovedModal";
+import { PopupContext } from "../../context/PopupContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -52,9 +52,9 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   competitionPage = false,
 }) => {
   const navigation = useNavigation<StackNavigationProp<ParamListBase>>();
+  const { openFullscreenVideo } = useContext(PopupContext);
   const [menuVisible, setMenuVisible] = useState(false);
   const [commentsVisible, setCommentsVisible] = useState(false);
-  const [fullscreenVisible, setFullscreenVisible] = useState(false);
   const [removedModalVisible, setRemovedModalVisible] = useState(false);
 
   const player = useVideoPlayer(video?.videoUrl ?? "", (p) => {
@@ -93,7 +93,10 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   const handleFullscreen = () => {
     if (video?.videoUrl) {
       player.pause();
-      setFullscreenVisible(true);
+      openFullscreenVideo({
+        videoUrl: video.videoUrl,
+        startTime: player.currentTime,
+      });
     }
   };
 
@@ -250,22 +253,6 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
           </View>
         </ActionsRow>
       </FooterRow>
-
-      {/* ── Fullscreen Modal ── */}
-      <Modal
-        visible={fullscreenVisible}
-        animationType="slide"
-        statusBarTranslucent
-        presentationStyle="fullScreen"
-        supportedOrientations={["portrait", "landscape"]}
-        onRequestClose={() => setFullscreenVisible(false)}
-      >
-        <VideoFullscreen
-          videoUrl={video.videoUrl}
-          startTime={player.currentTime}
-          onClose={() => setFullscreenVisible(false)}
-        />
-      </Modal>
 
       {menuVisible && (
         <VideoMenuModal

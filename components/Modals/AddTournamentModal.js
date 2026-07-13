@@ -245,12 +245,12 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess }) => {
                     <>
                       <TournamentImage source={{ uri: selectedImage }} />
                       <OverlayIcon>
-                        <AntDesign name="plus-circle" size={32} color="#fff" />
+                        <AntDesign name="pluscircleo" size={32} color="#fff" />
                       </OverlayIcon>
                     </>
                   ) : (
                     <ImagePlaceholder>
-                      <AntDesign name="plus-circle" size={32} color="#ccc" />
+                      <AntDesign name="pluscircleo" size={32} color="#ccc" />
                       <Text style={{ color: "#ccc", marginTop: 6 }}>
                         Add Image
                       </Text>
@@ -472,10 +472,12 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ScrollContainer = styled.FlatList({
   padding: "40px 20px",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const SafeAreaWrapper = styled(KeyboardAvoidingView)({

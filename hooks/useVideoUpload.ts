@@ -159,15 +159,22 @@ export const useVideoUpload = ({
             R2UploadUrlResponse
           >(functions, "generateR2UploadUrl");
 
-          const { data } = await generateR2UploadUrl({
+         const { data } = await generateR2UploadUrl({
             competitionId,
             gameId,
             fileType: "video/mp4",
           });
 
+          // Android: react-native-background-upload needs a raw path
+          // without the file:// scheme.
+          const uploadPath =
+            Platform.OS === "android"
+              ? videoUri.replace("file://", "")
+              : videoUri;
+
           const uploadId = await Upload.startUpload({
             url: data.uploadUrl,
-            path: videoUri,
+            path: uploadPath,
             method: "PUT",
             type: "raw",
             headers: { "content-type": "video/mp4" },
@@ -185,7 +192,6 @@ export const useVideoUpload = ({
               autoClear: true,
             },
           });
-
           // ── Store real uploadId for cancellation ──────────────────────────
           await updateDoc(pendingDocRef, { uploadId });
           console.log("[VideoUpload] Native upload started, id:", uploadId);

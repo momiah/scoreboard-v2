@@ -139,7 +139,7 @@ export const RankInformation = ({ visible, onClose }) => {
       <ModalContainer>
         <ModalContent>
           <CloseButton onPress={onClose}>
-            <AntDesign name="close-circle" size={30} color="red" />
+            <AntDesign name="closecircleo" size={30} color="red" />
           </CloseButton>
 
           <Title>All Ranks</Title>
@@ -166,6 +166,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

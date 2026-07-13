@@ -308,7 +308,7 @@ const InvitePlayer = () => {
       {/* Header */}
       <Header>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <AntDesign name="arrow-left" size={24} color="white" />
+          <AntDesign name="arrowleft" size={24} color="white" />
         </TouchableOpacity>
       </Header>
 
@@ -339,7 +339,7 @@ const InvitePlayer = () => {
             <Tag name={competition.type} />
             <Tag name={competition.prizeType} />
             <ShareButton onPress={handleShare}>
-              <AntDesign name="share-alt" size={13} color="#00A2FF" />
+              <AntDesign name="sharealt" size={13} color="#00A2FF" />
               <ShareButtonText>Share {competitionVariant}</ShareButtonText>
             </ShareButton>
           </View>

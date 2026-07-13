@@ -1,7 +1,6 @@
 import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
-import * as ScreenOrientation from "expo-screen-orientation";
-import { SafeAreaView, Platform } from "react-native";
+import { SafeAreaView, Platform, Modal } from "react-native";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
@@ -22,6 +21,7 @@ import UploadToast from "./components/Toasts/UploadToast";
 import Tabs from "./navigation/tabs";
 import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
+import VideoFullscreen from "./screens/VideoFullScreen";
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
@@ -36,6 +36,8 @@ const AppContent = () => {
     setBottomToastVisible,
     bottomToastMessage,
     bottomToastType,
+    fullscreenVideo,
+    closeFullscreenVideo,
   } = useContext(PopupContext);
 
   useEffect(() => {
@@ -61,6 +63,24 @@ const AppContent = () => {
           >
             <Stack.Screen name="Tabs" component={Tabs} />
           </Stack.Navigator>
+
+          {/* ── Global fullscreen video — lives above FlatList scope ── */}
+          <Modal
+            visible={!!fullscreenVideo}
+            animationType="slide"
+            statusBarTranslucent
+            presentationStyle="fullScreen"
+            supportedOrientations={["portrait", "landscape"]}
+            onRequestClose={closeFullscreenVideo}
+          >
+            {fullscreenVideo && (
+              <VideoFullscreen
+                videoUrl={fullscreenVideo.videoUrl}
+                startTime={fullscreenVideo.startTime}
+                onClose={closeFullscreenVideo}
+              />
+            )}
+          </Modal>
         </SafeAreaView>
       </BottomSheetModalProvider>
     </NavigationContainer>
@@ -162,10 +182,6 @@ export default function App() {
       subscription.remove();
       backgroundSubscription.remove();
     };
-  }, []);
-
-  useEffect(() => {
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
 
   return (

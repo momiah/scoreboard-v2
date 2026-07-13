@@ -132,7 +132,7 @@ const VideoRemovedModal: React.FC<VideoRemovedModalProps> = ({
                 <ModalTitle>Video Removed</ModalTitle>
               </HeaderLeft>
               <TouchableOpacity onPress={onClose}>
-                <AntDesign name="close-circle" size={26} color="red" />
+                <AntDesign name="closecircleo" size={26} color="red" />
               </TouchableOpacity>
             </ModalHeader>
 
@@ -312,7 +312,7 @@ const VideoAppealModal: React.FC<VideoAppealModalProps> = ({
               <ModalTitle>Appeal Removal</ModalTitle>
             </HeaderLeft>
             <TouchableOpacity onPress={handleClose}>
-              <AntDesign name="close-circle" size={26} color="red" />
+              <AntDesign name="closecircleo" size={26} color="red" />
             </TouchableOpacity>
           </ModalHeader>
 
@@ -462,6 +462,7 @@ const Overlay = styled(BlurView).attrs({
 })({
   flex: 1,
   justifyContent: "flex-end",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({
