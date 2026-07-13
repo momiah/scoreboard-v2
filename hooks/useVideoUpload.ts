@@ -1,6 +1,6 @@
 import { useCallback, useContext } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import {
   getFirestore,
@@ -68,7 +68,7 @@ export const useVideoUpload = ({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["videos"],
       allowsEditing: false,
-      quality: 1,
+      videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
     });
 
     if (!result.canceled && result.assets[0]) {
@@ -102,6 +102,29 @@ export const useVideoUpload = ({
         gameId,
       );
 
+      // ── Helper: record a failed upload for diagnostics ──────────────────────
+      const recordFailure = async (errorMessage: string, progress: number) => {
+        try {
+          const failedDocRef = doc(
+            db,
+            COLLECTION_NAMES.failedVideoUploads,
+            `${gameId}_${Date.now()}`,
+          );
+          await setDoc(failedDocRef, {
+            gameId,
+            competitionId,
+            userId: postedBy.userId,
+            errorMessage: errorMessage || "unknown",
+            lastProgress: progress,
+            platform: Platform.OS,
+            failedAt: new Date(),
+          });
+          await deleteDoc(pendingDocRef);
+        } catch {
+          // Non-critical — diagnostics/cleanup are best-effort
+        }
+      };
+
       try {
         await setDoc(pendingDocRef, {
           gameId,
@@ -114,6 +137,7 @@ export const useVideoUpload = ({
           teams,
           status: "uploading",
           progress: 0,
+          platform: Platform.OS,
           startedAt: new Date(),
         });
         console.log("[VideoUpload] Pending record written:", gameId);
@@ -124,6 +148,9 @@ export const useVideoUpload = ({
 
       const run = async () => {
         console.log("[VideoUpload] run() started:", { gameId, competitionId });
+
+        let lastReportedProgress = 0;
+
         try {
           const functions = getFunctions();
 
@@ -137,8 +164,6 @@ export const useVideoUpload = ({
             gameId,
             fileType: "video/mp4",
           });
-
-          let lastReportedProgress = 0;
 
           const uploadId = await Upload.startUpload({
             url: data.uploadUrl,
@@ -214,6 +239,10 @@ export const useVideoUpload = ({
                 "[VideoUpload] Upload returned non-2xx status:",
                 completedData.responseCode,
               );
+              await recordFailure(
+                `non-2xx: ${completedData.responseCode}`,
+                lastReportedProgress,
+              );
               showBottomToast(
                 "Video upload failed. Please try again.",
                 "error",
@@ -222,8 +251,12 @@ export const useVideoUpload = ({
           });
 
           // ── Error ─────────────────────────────────────────────────────────
-          Upload.addListener("error", uploadId, (errorData) => {
+          Upload.addListener("error", uploadId, async (errorData) => {
             console.error("[VideoUpload] Upload error:", errorData.error);
+            await recordFailure(
+              errorData.error ?? "unknown",
+              lastReportedProgress,
+            );
             showBottomToast("Video upload failed. Please try again.", "error");
           });
 
@@ -234,6 +267,10 @@ export const useVideoUpload = ({
           });
         } catch (error) {
           console.error("[VideoUpload] Background upload failed:", error);
+          await recordFailure(
+            error instanceof Error ? error.message : "setup failed",
+            lastReportedProgress,
+          );
           showBottomToast("Video upload failed. Please try again.", "error");
         }
       };
