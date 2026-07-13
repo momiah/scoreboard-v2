@@ -3,6 +3,8 @@ import {
   collection,
   getDocs,
   deleteDoc,
+  setDoc,
+  doc,
   query,
   where,
 } from "firebase/firestore";
@@ -18,6 +20,8 @@ type CheckR2VideoParams = {
 type CheckR2VideoResponse = {
   videoUrl: string | null;
 };
+
+const ABANDON_AFTER_MS = 60 * 60 * 1000; // 1 hour of no activity
 
 // Call once in AppContent useEffect when currentUser is available
 export const recoverPendingVideoUploads = async (userId: string) => {
@@ -53,12 +57,16 @@ export const recoverPendingVideoUploads = async (userId: string) => {
       date,
       postedBy,
       teams,
+      progress,
+      platform,
+      startedAt,
     } = docSnap.data();
 
     try {
       const { data } = await checkR2VideoExists({ gameId, competitionId });
 
       if (data.videoUrl) {
+        // ── File made it to R2 — finish the job the killed app didn't ────────
         await updateGameVideoUrl({
           gameId,
           competitionId,
@@ -71,8 +79,38 @@ export const recoverPendingVideoUploads = async (userId: string) => {
           teams,
         });
         await deleteDoc(docSnap.ref);
+        continue;
       }
-      // No file found means upload is still in progress — leave the record intact
+
+      // ── No file in R2 — decide: still uploading, or dead? ──────────────────
+      const startedMs =
+        startedAt?.toMillis?.() ??
+        (startedAt?.seconds ? startedAt.seconds * 1000 : null);
+
+      const isAbandoned =
+        startedMs !== null && Date.now() - startedMs > ABANDON_AFTER_MS;
+
+      if (isAbandoned) {
+        // Older than 1 hour with no file — treat as dead (app killed mid-upload).
+        // Record for diagnostics, then remove so no phantom toast remains.
+        const failedDocRef = doc(
+          db,
+          COLLECTION_NAMES.failedVideoUploads,
+          `${gameId}_${Date.now()}`,
+        );
+        await setDoc(failedDocRef, {
+          gameId,
+          competitionId,
+          userId: postedBy?.userId ?? userId,
+          errorMessage: "abandoned — app killed mid-upload (no activity 1h+)",
+          lastProgress: progress ?? 0,
+          platform: platform ?? "unknown",
+          failedAt: new Date(),
+        });
+        await deleteDoc(docSnap.ref);
+      }
+      // Younger than 1 hour with no file — genuinely may still be uploading.
+      // Leave the record intact.
     } catch (error) {
       console.error(`Failed to recover upload for game ${gameId}:`, error);
     }

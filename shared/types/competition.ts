@@ -11,7 +11,8 @@ export type CollectionName =
   | "replies"
   | "reportedVideos"
   | "savedVideos"
-  | "videoReportAppeals";
+  | "videoReportAppeals"
+  | "failedVideoUploads";
 
 export type CompetitionType =
   | typeof COMPETITION_TYPES.LEAGUE
