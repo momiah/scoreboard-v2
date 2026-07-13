@@ -1,6 +1,7 @@
 import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
 import { SafeAreaView, Platform, Modal } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
@@ -186,15 +187,17 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PopupProvider>
-        <UserProvider>
-          <LeagueProvider>
-            <GameProvider>
-              <AppContent />
-            </GameProvider>
-          </LeagueProvider>
-        </UserProvider>
-      </PopupProvider>
+      <SafeAreaProvider>
+        <PopupProvider>
+          <UserProvider>
+            <LeagueProvider>
+              <GameProvider>
+                <AppContent />
+              </GameProvider>
+            </LeagueProvider>
+          </UserProvider>
+        </PopupProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

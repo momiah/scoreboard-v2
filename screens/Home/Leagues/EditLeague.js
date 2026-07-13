@@ -202,7 +202,7 @@ const EditLeague = () => {
               </ImagePlaceholder>
             )}
             <PlusIconWrapper>
-              <AntDesign name="plus-circle" size={28} color="#2196f3" />
+              <AntDesign name="pluscircle" size={28} color="#2196f3" />
             </PlusIconWrapper>
           </ImageWrapper>
         </TouchableOpacity>

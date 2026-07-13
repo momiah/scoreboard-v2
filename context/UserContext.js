@@ -45,7 +45,6 @@ const UserProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null); // Optional: Track logged-in user
   const [authInitializing, setAuthInitializing] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Optional: Track logging out state
-  const [authInitializing, setAuthInitializing] = useState(true);
 
   const [notifications, setNotifications] = useState([]); // Optional: Track notifications
   const [chatSummaries, setChatSummaries] = useState([]);

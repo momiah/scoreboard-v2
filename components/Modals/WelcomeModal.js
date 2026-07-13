@@ -24,7 +24,7 @@ const WelcomeModal = ({
       <ModalContainer>
         <ModalContent>
           <CloseButton onPress={onClose}>
-            <AntDesign name="close-circle" size={30} color="red" />
+            <AntDesign name="closecircleo" size={30} color="red" />
           </CloseButton>
           <HeaderText>{header}</HeaderText>
 
