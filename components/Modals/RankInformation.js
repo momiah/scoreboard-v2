@@ -139,7 +139,7 @@ export const RankInformation = ({ visible, onClose }) => {
       <ModalContainer>
         <ModalContent>
           <CloseButton onPress={onClose}>
-            <AntDesign name="closecircleo" size={30} color="red" />
+            <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
           <Title>All Ranks</Title>

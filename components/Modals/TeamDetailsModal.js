@@ -54,7 +54,7 @@ const TeamDetails = ({ showTeamDetails, setShowTeamDetails, teamStats }) => {
             <CloseIconContainer>
               <AntDesign
                 onPress={() => setShowTeamDetails(false)}
-                name="closecircleo"
+                name="close-circle"
                 size={26}
                 color="red"
               />

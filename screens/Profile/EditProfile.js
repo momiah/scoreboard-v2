@@ -20,7 +20,7 @@ import { loadCountries, loadCities } from "../../utils/locationData";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../../components/popup/Popup";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);

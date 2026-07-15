@@ -230,7 +230,7 @@ const GameApprovalModal = ({
           ) : (
             <>
               <CloseButton onPress={onClose}>
-                <AntDesign name="closecircleo" size={30} color="red" />
+                <AntDesign name="close-circle" size={30} color="red" />
               </CloseButton>
 
               <Title>Game Approval Request</Title>

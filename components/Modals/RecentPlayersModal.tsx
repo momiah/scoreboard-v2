@@ -267,7 +267,7 @@ const RecentPlayersModal = ({
                 onPress={onClose}
                 style={{ alignSelf: "flex-end", marginBottom: 12 }}
               >
-                <AntDesign name="closecircleo" size={28} color="red" />
+                <AntDesign name="close-circle" size={28} color="red" />
               </TouchableOpacity>
               <ModalTitle>Recent Players</ModalTitle>
               {renderCompetitionCarousel()}

@@ -110,7 +110,7 @@ const SearchCourt = ({
       if (item.key === ADD_COURT_KEY) {
         return (
           <AddCourtItem onPress={() => setShowAddCourtModal(true)}>
-            <AntDesign name="pluscircle" size={18} color="#00A2FF" />
+            <AntDesign name="plus-circle" size={18} color="#00A2FF" />
             <AddCourtText>Add Court</AddCourtText>
           </AddCourtItem>
         );
@@ -157,7 +157,7 @@ const SearchCourt = ({
               onPress={onClose}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <AntDesign name="closecircleo" size={26} color="red" />
+              <AntDesign name="close-circle" size={26} color="red" />
             </TouchableOpacity>
           </Header>
 
