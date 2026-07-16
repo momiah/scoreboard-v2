@@ -5,7 +5,7 @@ import React, {
   useCallback,
   memo,
 } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { FlatList, ActivityIndicator, Platform } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../context/UserContext";
@@ -189,6 +189,7 @@ const HomeContainer = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   width: "100%",
+  paddingTop: Platform.OS === "android" ? 45 : 0,
 });
 
 const HeaderRow = styled.View({

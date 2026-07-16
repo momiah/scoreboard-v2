@@ -403,7 +403,7 @@ const AddButton = styled.TouchableOpacity({
   borderRadius: 8,
   padding: 12,
   alignItems: "center",
-  marginBottom: screenWidth < 405 ? 60 : 5,
+  marginBottom: screenWidth < 405 ? 60 : -35,
 });
 
 const AddButtonText = styled.Text({

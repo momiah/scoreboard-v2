@@ -1,5 +1,5 @@
 import React, { useContext, useState, useCallback, useMemo } from "react";
-import { FlatList } from "react-native";
+import { FlatList, Platform } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -144,6 +144,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   width: "100%",
+  paddingTop: Platform.OS === "android" ? 45 : 0,
 });
 
 const HeaderRow = styled.View({

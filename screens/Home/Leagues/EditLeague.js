@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 
 import { LeagueContext } from "../../../context/LeagueContext";
@@ -265,6 +266,7 @@ export default EditLeague;
 const SafeAreaWrapper = styled(SafeAreaView)({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: Platform.OS === "android" ? 45 : 0,
 });
 
 const ScrollContainer = styled.ScrollView({
