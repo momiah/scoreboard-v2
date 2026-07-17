@@ -233,7 +233,7 @@ const TabIcon = ({ name, color, size }) => {
 };
 
 const Tabs = () => {
-  const { chatSummaries, notifications } = useContext(UserContext);
+  const { chatSummaries, notifications, currentUser } = useContext(UserContext);
 
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
@@ -244,7 +244,9 @@ const Tabs = () => {
   );
 
   let initialRouteName = "Profile";
-  if (notifications.length === 0 || hasUnreadNotifications) {
+  if (!currentUser) {
+    initialRouteName = "Home";
+  } else if (notifications.length === 0 || hasUnreadNotifications) {
     initialRouteName = "Competitions";
   }
 

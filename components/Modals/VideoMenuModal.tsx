@@ -85,9 +85,20 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
     video.teams.team2?.player2,
   ].filter((player): player is Player => Boolean(player));
 
+  // ── Redirect unauthenticated users to Login ──────────────────────────────
+  const requireAuth = () => {
+    if (currentUser) return true;
+    onClose();
+    navigation.navigate("Login");
+    return false;
+  };
+
   // ── Check if already saved on open ───────────────────────────────────────
   useEffect(() => {
-    if (!visible || !currentUser || hideSave) return;
+    if (!visible || !currentUser || hideSave) {
+      setIsCheckingSaved(false);
+      return;
+    }
     setIsCheckingSaved(true);
     checkVideoSaved({ videoId, userId: currentUser.userId })
       .then((saved) => setIsSaved(saved))
@@ -96,7 +107,10 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
 
   // ── Check participant / invite / request state on open (single read) ─────
   useEffect(() => {
-    if (!visible || !currentUser || !showJoinRow) return;
+    if (!visible || !currentUser || !showJoinRow) {
+      setIsCheckingRequest(false);
+      return;
+    }
     setIsCheckingRequest(true);
     fetchCompetitionById({
       competitionId: video.competitionId,
@@ -128,8 +142,8 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   }, [visible, currentUser]);
 
   const handleToggleJoinRequest = async () => {
+    if (!requireAuth()) return;
     if (
-      !currentUser ||
       isTogglingRequest ||
       isCheckingRequest ||
       isParticipant ||
@@ -141,7 +155,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
       if (isRequestPending) {
         await withdrawJoinRequest({
           competitionId: video.competitionId,
-          userId: currentUser.userId,
+          userId: currentUser!.userId,
           collectionName: collectionName as CollectionName,
         });
         setIsRequestPending(false);
@@ -188,14 +202,16 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
       console.error("Share failed:", error);
     }
   };
+
   const handleSaveVideo = async () => {
-    if (!currentUser || isSaving) return;
+    if (!requireAuth()) return;
+    if (isSaving) return;
     setIsSaving(true);
     try {
       const nowSaved = await toggleSaveVideo({
         videoId,
-        userId: currentUser.userId,
-        username: currentUser.username,
+        userId: currentUser!.userId,
+        username: currentUser!.username,
         video,
       });
       setIsSaved(nowSaved);
@@ -267,7 +283,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
   };
 
   // ── Resolve the single join-row presentation ─────────────────────────────
-  const isLocked = isParticipant || isInvitePending;
+  const isLocked = !!currentUser && (isParticipant || isInvitePending);
   const lockedLabel = isParticipant
     ? "Already in Competition"
     : "Invitation Pending";
@@ -315,7 +331,9 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
             ) : (
               <MenuItem
                 onPress={handleToggleJoinRequest}
-                disabled={isTogglingRequest || isCheckingRequest}
+                disabled={
+                  !!currentUser && (isTogglingRequest || isCheckingRequest)
+                }
               >
                 <MenuItemIcon isDestructive={isRequestPending}>
                   <Ionicons
@@ -329,7 +347,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
                     ? "Withdraw Request to Join"
                     : "Request to Join Competition"}
                 </MenuItemText>
-                {isCheckingRequest || isTogglingRequest ? (
+                {currentUser && (isCheckingRequest || isTogglingRequest) ? (
                   <ActivityIndicator
                     size="small"
                     color={isRequestPending ? "#FF4B6E" : "#00A2FF"}
@@ -365,7 +383,7 @@ const VideoMenuModal: React.FC<VideoMenuModalProps> = ({
                 <Ionicons name="bookmark-outline" size={22} color="#00A2FF" />
               </MenuItemIcon>
               <MenuItemText>{isSaved ? "Saved" : "Save Video"}</MenuItemText>
-              {isCheckingSaved || isSaving ? (
+              {currentUser && (isCheckingSaved || isSaving) ? (
                 <ActivityIndicator size="small" color="#00A2FF" />
               ) : (
                 <Ionicons
@@ -439,6 +457,7 @@ const MenuOverlay = styled(BlurView).attrs({
 })({
   flex: 1,
   justifyContent: "flex-end",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const MenuContent = styled.View({
