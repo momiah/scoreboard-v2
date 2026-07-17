@@ -258,9 +258,6 @@ const Tabs = () => {
           tabBarActiveTintColor: "#FFD700",
           tabBarInactiveTintColor: "#A9A9A9",
           tabBarStyle: {
-            // Edge-to-edge (SDK 54): the bar pads itself below the tab items
-            // to clear the gesture area; without an explicit background that
-            // padding shows react-navigation's default white.
             backgroundColor: "rgb(3, 16, 31)",
             borderColor: "rgba(9, 33, 62, 1)",
           },
