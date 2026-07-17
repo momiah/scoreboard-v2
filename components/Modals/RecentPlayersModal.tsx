@@ -267,7 +267,7 @@ const RecentPlayersModal = ({
                 onPress={onClose}
                 style={{ alignSelf: "flex-end", marginBottom: 12 }}
               >
-                <AntDesign name="closecircleo" size={28} color="red" />
+                <AntDesign name="close-circle" size={28} color="red" />
               </TouchableOpacity>
               <ModalTitle>Recent Players</ModalTitle>
               {renderCompetitionCarousel()}
@@ -403,7 +403,7 @@ const AddButton = styled.TouchableOpacity({
   borderRadius: 8,
   padding: 12,
   alignItems: "center",
-  marginBottom: screenWidth < 405 ? 60 : 5,
+  marginBottom: screenWidth < 405 ? 60 : -35,
 });
 
 const AddButtonText = styled.Text({

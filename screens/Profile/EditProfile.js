@@ -9,6 +9,7 @@ import {
   Pressable,
   FlatList,
   Switch,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../../context/UserContext";
@@ -20,7 +21,7 @@ import { loadCountries, loadCities } from "../../utils/locationData";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../../components/popup/Popup";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
@@ -488,6 +489,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: Platform.OS === "android" ? 45 : 0,
 });
 
 const ConfirmButton = styled.TouchableOpacity({

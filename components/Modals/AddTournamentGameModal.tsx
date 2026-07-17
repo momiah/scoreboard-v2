@@ -236,7 +236,7 @@ const AddTournamentGameModal = ({
       <ModalContainer>
         <ModalContent>
           <CloseButton onPress={handleClose}>
-            <AntDesign name="closecircleo" size={30} color="red" />
+            <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
           <AddGameDetails

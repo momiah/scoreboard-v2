@@ -8,6 +8,7 @@ import {
   Share,
   ScrollView,
   FlatList,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { SafeAreaView } from "react-native";
@@ -308,7 +309,7 @@ const InvitePlayer = () => {
       {/* Header */}
       <Header>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <AntDesign name="arrowleft" size={24} color="white" />
+          <AntDesign name="arrow-left" size={24} color="white" />
         </TouchableOpacity>
       </Header>
 
@@ -339,7 +340,7 @@ const InvitePlayer = () => {
             <Tag name={competition.type} />
             <Tag name={competition.prizeType} />
             <ShareButton onPress={handleShare}>
-              <AntDesign name="sharealt" size={13} color="#00A2FF" />
+              <AntDesign name="share-alt" size={13} color="#00A2FF" />
               <ShareButtonText>Share {competitionVariant}</ShareButtonText>
             </ShareButton>
           </View>
@@ -480,6 +481,7 @@ const InvitePlayer = () => {
 const Container = styled(SafeAreaView)({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: Platform.OS === "android" ? 25 : 0,
 });
 
 const Header = styled.View({

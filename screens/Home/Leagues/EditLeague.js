@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 
 import { LeagueContext } from "../../../context/LeagueContext";
@@ -18,7 +19,7 @@ import { uploadLeagueImage } from "../../../utils/UploadLeagueImageToFirebase";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Popup from "../../../components/popup/Popup";
 import { PopupContext } from "../../../context/PopupContext";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { COLLECTION_NAMES } from "@shared";
 
 const EditLeague = () => {
@@ -202,7 +203,7 @@ const EditLeague = () => {
               </ImagePlaceholder>
             )}
             <PlusIconWrapper>
-              <AntDesign name="pluscircle" size={28} color="#2196f3" />
+              <AntDesign name="plus-circle" size={28} color="#2196f3" />
             </PlusIconWrapper>
           </ImageWrapper>
         </TouchableOpacity>
@@ -265,6 +266,7 @@ export default EditLeague;
 const SafeAreaWrapper = styled(SafeAreaView)({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: Platform.OS === "android" ? 45 : 0,
 });
 
 const ScrollContainer = styled.ScrollView({

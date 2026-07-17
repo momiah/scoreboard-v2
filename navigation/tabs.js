@@ -258,6 +258,7 @@ const Tabs = () => {
           tabBarActiveTintColor: "#FFD700",
           tabBarInactiveTintColor: "#A9A9A9",
           tabBarStyle: {
+            backgroundColor: "rgb(3, 16, 31)",
             borderColor: "rgba(9, 33, 62, 1)",
           },
           tabBarIcon: ({ focused, color, size }) => {

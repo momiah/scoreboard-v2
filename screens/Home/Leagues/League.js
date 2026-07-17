@@ -1,5 +1,12 @@
 import React, { useCallback, useState, useContext } from "react";
-import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Dimensions,
+  Linking,
+  Platform,
+} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -243,7 +250,13 @@ const League = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+        paddingTop: Platform.OS === "android" ? 50 : 0,
+      }}
+    >
       <LoadingOverlay visible={leagueLoading} loadingText="League" />
 
       {!leagueLoading && leagueById && (

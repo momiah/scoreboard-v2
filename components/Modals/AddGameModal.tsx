@@ -301,7 +301,7 @@ const AddGameModal = ({
                 zIndex: 10,
               }}
             >
-              <AntDesign name="closecircleo" size={30} color="red" />
+              <AntDesign name="close-circle" size={30} color="red" />
             </TouchableOpacity>
 
             <AddGameDetails

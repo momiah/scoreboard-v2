@@ -6,6 +6,7 @@ import {
   Dimensions,
   Linking,
   Alert,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -246,7 +247,13 @@ const Tournament = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+        paddingTop: Platform.OS === "android" ? 50 : 0,
+      }}
+    >
       <LoadingOverlay visible={loading} loadingText="Tournament" />
 
       {!loading && tournamentById && (
