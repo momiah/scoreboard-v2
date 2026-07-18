@@ -11,6 +11,7 @@ import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { File } from "expo-file-system";
 import { COMPETITION_TYPES } from "@shared";
 import { UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
@@ -71,47 +72,37 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   iconColor = "#00A2FF",
   showAddLaterHint = true,
 }) => {
+  // pickedVideo holds the ORIGINAL asset (compression input + videoLength).
+  // compressedUri is set only once compression COMPLETES — it gates the
+  // "ready"/success UI and enables the Upload button.
   const [pickedVideo, setPickedVideo] = useState<PickedVideo | null>(null);
+  const [compressedUri, setCompressedUri] = useState<string | null>(null);
   const [errorText, setErrorText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // picking OR compressing
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressPct, setCompressPct] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const animRef = useRef<Animated.CompositeAnimation | null>(null);
   const messageOpacity = useRef(new Animated.Value(1)).current;
 
-  const { pickVideo, startBackgroundUpload } = useVideoUpload({
+  // Refs mirror state for use inside async callbacks / the close handler, which
+  // can fire at any point relative to React's render cycle.
+  const compressProgressRef = useRef(0);
+  const cancellationIdRef = useRef<string | null>(null);
+  const cancelledRef = useRef(false);
+  const compressedUriRef = useRef<string | null>(null);
+
+  const {
+    pickVideo,
+    compressVideo,
+    cancelCompression,
+    recordCompressionFailure,
+    startBackgroundUpload,
+  } = useVideoUpload({
     competitionId,
   });
-
-  // ── Simulated progress animation ──────────────────────────────────────────
-  useEffect(() => {
-    if (isProcessing) {
-      progressAnim.setValue(0);
-      const crawl = Animated.timing(progressAnim, {
-        toValue: 0.85,
-        duration: 100000,
-        useNativeDriver: false,
-      });
-      animRef.current = crawl;
-      crawl.start();
-    }
-
-    if (!isProcessing && pickedVideo) {
-      animRef.current?.stop();
-      Animated.timing(progressAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
-
-    if (!isProcessing && !pickedVideo) {
-      animRef.current?.stop();
-      progressAnim.setValue(0);
-    }
-  }, [isProcessing, pickedVideo]);
 
   // ── Rotating processing messages with fade ────────────────────────────────
   useEffect(() => {
@@ -136,6 +127,101 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     return () => clearInterval(interval);
   }, [isProcessing]);
 
+  // ── Validate the ORIGINAL before compressing (duration gates game length;
+  //    size is a loose sanity bound — the COMPRESSED size is what gets uploaded).
+  const getGuardError = (video: PickedVideo): string | null => {
+    if (video.fileSize && video.fileSize > 6 * 1024 * 1024 * 1024) {
+      return "Video is too large. Please select a video under 6GB.";
+    }
+    if (video.duration && video.duration < 180000) {
+      return "Video is too short. Please upload a full game of at least 3 minutes.";
+    }
+    if (video.duration && video.duration > 900000) {
+      return "Video is too long. Please select a video under 15 minutes.";
+    }
+    return null;
+  };
+
+  // ── Delete a completed-but-not-yet-uploaded compressed file ────────────────
+  const cleanupCompressedFile = () => {
+    const uri = compressedUriRef.current;
+    if (!uri) return;
+    try {
+      const file = new File(uri);
+      if (file.exists) file.delete();
+    } catch (e) {
+      console.warn("[VideoUploadModal] Failed to delete compressed file:", e);
+    }
+    compressedUriRef.current = null;
+  };
+
+  // Reset UI state. Intentionally does NOT touch cancelledRef — that flag is
+  // owned by runCompression (reset at its start) so the cancel/failure branch
+  // in its catch can read it without a race against this reset.
+  const resetState = () => {
+    cancellationIdRef.current = null;
+    compressProgressRef.current = 0;
+    progressAnim.setValue(0);
+    setCompressPct(0);
+    setIsCompressing(false);
+    setIsProcessing(false);
+    setPickedVideo(null);
+    setCompressedUri(null);
+    setErrorText("");
+  };
+
+  const runCompression = async (video: PickedVideo) => {
+    cancelledRef.current = false;
+    cancellationIdRef.current = null;
+    compressProgressRef.current = 0;
+    setCompressPct(0);
+    progressAnim.setValue(0);
+    setIsCompressing(true);
+
+    try {
+      const uri = await compressVideo(video.uri, {
+        getCancellationId: (id) => {
+          cancellationIdRef.current = id;
+        },
+        onProgress: (p) => {
+          compressProgressRef.current = p;
+          progressAnim.setValue(p);
+          const pct = Math.round(p * 100);
+          setCompressPct((prev) => (prev !== pct ? pct : prev));
+        },
+      });
+
+      // ── Success — compression complete, ready to upload ──────────────────
+      compressedUriRef.current = uri;
+      setCompressedUri(uri);
+      setIsCompressing(false);
+      setIsProcessing(false);
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    } catch (err) {
+      setIsCompressing(false);
+      setIsProcessing(false);
+      progressAnim.setValue(0);
+
+      // User-initiated cancellation — no failure record, no error text.
+      // Any partial output cleanup is handled by the close handler / library.
+      if (cancelledRef.current) return;
+
+      // ── Genuine compression failure (OOM, unsupported codec, etc.) ───────
+      setPickedVideo(null);
+      setErrorText("Compression failed. Please try selecting the video again.");
+      await recordCompressionFailure({
+        gameId,
+        userId: currentUser.userId,
+        errorMessage: err instanceof Error ? err.message : "compression failed",
+        lastProgress: Math.round(compressProgressRef.current * 100),
+      });
+    }
+  };
+
   const handleClose = () => {
     if (isProcessing) {
       Alert.alert(
@@ -147,11 +233,13 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
             text: "Close anyway",
             style: "destructive",
             onPress: () => {
-              animRef.current?.stop();
-              progressAnim.setValue(0);
-              setPickedVideo(null);
-              setIsProcessing(false);
-              setErrorText("");
+              // Actually stop the native compressor if it's mid-flight.
+              if (isCompressing && cancellationIdRef.current) {
+                cancelledRef.current = true;
+                cancelCompression(cancellationIdRef.current);
+              }
+              cleanupCompressedFile();
+              resetState();
               onClose();
             },
           },
@@ -159,48 +247,50 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       );
       return;
     }
-    animRef.current?.stop();
-    progressAnim.setValue(0);
-    setPickedVideo(null);
-    setIsProcessing(false);
-    setErrorText("");
+    // Not processing — a completed-but-unsent compressed file gets cleaned up.
+    cleanupCompressedFile();
+    resetState();
     onClose();
   };
 
   const handlePickVideo = async () => {
     if (isProcessing || isUploading) return;
     setErrorText("");
+    // Discard any prior compressed output before starting over.
+    cleanupCompressedFile();
+    setCompressedUri(null);
+    setPickedVideo(null);
+    progressAnim.setValue(0);
+
     setIsProcessing(true);
     const video = await pickVideo();
-    setIsProcessing(false);
-    if (video) setPickedVideo(video);
+
+    if (!video) {
+      // User cancelled the system picker
+      setIsProcessing(false);
+      return;
+    }
+
+    const guardError = getGuardError(video);
+    if (guardError) {
+      setIsProcessing(false);
+      setErrorText(guardError);
+      return;
+    }
+
+    setPickedVideo(video);
+    // Compression starts automatically and drives the progress UI.
+    await runCompression(video);
   };
 
   const handleUpload = async () => {
-    if (!pickedVideo) return;
+    if (!compressedUri || !pickedVideo) return;
     setErrorText("");
-
-    if (pickedVideo.fileSize && pickedVideo.fileSize > 6 * 1024 * 1024 * 1024) {
-      setErrorText("Video is too large. Please select a video under 6GB.");
-      return;
-    }
-    if (pickedVideo.duration && pickedVideo.duration < 180000) {
-      setErrorText(
-        "Video is too short. Please upload a full game of at least 3 minutes.",
-      );
-      return;
-    }
-    if (pickedVideo.duration && pickedVideo.duration > 900000) {
-      setErrorText(
-        "Video is too long. Please select a video under 15 minutes.",
-      );
-      return;
-    }
 
     setIsUploading(true);
     startBackgroundUpload({
       gameId,
-      videoUri: pickedVideo.uri,
+      videoUri: compressedUri,
       competitionName,
       competitionType,
       gamescore,
@@ -218,10 +308,14 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         : undefined,
     });
     setIsUploading(false);
+    // Ownership of the compressed file passes to the background upload — do NOT
+    // clean it up. UploadToast now shows progress in the background.
+    compressedUriRef.current = null;
+    resetState();
     onClose();
   };
 
-  const hasVideo = !!pickedVideo;
+  const hasVideo = !!compressedUri;
   const showProgress = isProcessing || hasVideo;
 
   const progressWidth = progressAnim.interpolate({
@@ -272,32 +366,41 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
               color={hasVideo ? "#00A2FF" : "rgba(255,255,255,0.5)"}
             />
             <VideoPickerText hasVideo={hasVideo}>
-              {isProcessing
-                ? "Processing..."
-                : hasVideo
-                  ? "Video selected ✓"
-                  : "Select a video"}
+              {isCompressing
+                ? "Compressing…"
+                : isProcessing
+                  ? "Processing..."
+                  : hasVideo
+                    ? "Video ready ✓"
+                    : "Select a video"}
             </VideoPickerText>
             {isProcessing && <ActivityIndicator size="small" color="#00A2FF" />}
             {hasVideo && !isProcessing && <VideoAttachedDot />}
           </VideoPickerButton>
 
-          {/* ── Simulated progress bar ── */}
+          {/* ── Real compression progress bar ── */}
           {showProgress && (
             <ProgressContainer>
               {isProcessing ? (
-                <Animated.Text
-                  style={{
-                    opacity: messageOpacity,
-                    fontSize: 11,
-                    color: "rgba(255,255,255,0.5)",
-                    marginBottom: 12,
-                    textAlign: "center",
-                    fontStyle: "italic",
-                  }}
-                >
-                  {PROCESSING_MESSAGES[messageIndex]}
-                </Animated.Text>
+                <>
+                  {isCompressing && (
+                    <ProgressLabel isProcessing={true}>
+                      Compressing video… {compressPct}%
+                    </ProgressLabel>
+                  )}
+                  <Animated.Text
+                    style={{
+                      opacity: messageOpacity,
+                      fontSize: 11,
+                      color: "rgba(255,255,255,0.5)",
+                      marginBottom: 12,
+                      textAlign: "center",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {PROCESSING_MESSAGES[messageIndex]}
+                  </Animated.Text>
+                </>
               ) : (
                 <ProgressLabel isProcessing={false}>
                   Ready to upload
