@@ -12,6 +12,7 @@ import {
 import { COLLECTION_NAMES } from "@shared";
 import { GameVideoUploadPayload } from "@shared/types";
 import Upload from "react-native-background-upload";
+import { Video } from "react-native-compressor";
 import { PopupContext } from "../context/PopupContext";
 
 interface R2UploadUrlResponse {
@@ -44,8 +45,30 @@ interface StartBackgroundUploadParams extends Omit<
   videoLength: number | undefined;
 }
 
+interface CompressVideoOptions {
+  // Real 0..1 progress straight from the native compressor.
+  onProgress?: (progress: number) => void;
+  // Receives the id used to cancel this compression via Video.cancelCompression.
+  getCancellationId?: (cancellationId: string) => void;
+}
+
+interface RecordCompressionFailureParams {
+  gameId: string;
+  userId: string;
+  errorMessage: string;
+  lastProgress?: number;
+}
+
 interface UseVideoUploadReturn {
   pickVideo: () => Promise<PickedVideo | null>;
+  compressVideo: (
+    uri: string,
+    options?: CompressVideoOptions,
+  ) => Promise<string>;
+  cancelCompression: (cancellationId: string) => void;
+  recordCompressionFailure: (
+    params: RecordCompressionFailureParams,
+  ) => Promise<void>;
   startBackgroundUpload: (params: StartBackgroundUploadParams) => Promise<void>;
 }
 
@@ -82,6 +105,71 @@ export const useVideoUpload = ({
 
     return null;
   }, []);
+
+  // ── Compress the picked original on-device before upload ───────────────────
+  // Runs in the foreground (shown in VideoUploadModal). Returns the compressed
+  // file URI. Rejects if the compression fails OR is cancelled — the caller
+  // distinguishes the two (see VideoUploadModal's cancelledRef).
+  const compressVideo = useCallback(
+    async (uri: string, options?: CompressVideoOptions): Promise<string> => {
+      const compressedUri = await Video.compress(
+        uri,
+        {
+          // Quality is irrelevant — transcodeVideo re-encodes server-side. We
+          // only need the file small enough to reliably arrive. maxSize caps
+          // the longest edge (~720p); bitrate keeps output predictably small.
+          compressionMethod: "manual",
+          maxSize: 1280,
+          bitrate: 2_500_000,
+          minimumFileSizeForCompress: 0,
+          getCancellationId: options?.getCancellationId,
+        },
+        (progress) => {
+          options?.onProgress?.(progress);
+        },
+      );
+      return compressedUri;
+    },
+    [],
+  );
+
+  // ── Stop an in-flight compression (id from compressVideo's getCancellationId).
+  const cancelCompression = useCallback((cancellationId: string) => {
+    Video.cancelCompression(cancellationId);
+  }, []);
+
+  // ── Record a compression failure for diagnostics ───────────────────────────
+  // Mirrors the upload failure pattern (failedVideoUploads), but does NOT touch
+  // pendingVideoUploads: compression happens before any pending doc is written.
+  const recordCompressionFailure = useCallback(
+    async ({
+      gameId,
+      userId,
+      errorMessage,
+      lastProgress = 0,
+    }: RecordCompressionFailureParams) => {
+      try {
+        const db = getFirestore();
+        const failedDocRef = doc(
+          db,
+          COLLECTION_NAMES.failedVideoUploads,
+          `${gameId}_${Date.now()}`,
+        );
+        await setDoc(failedDocRef, {
+          gameId,
+          competitionId,
+          userId,
+          errorMessage: errorMessage || "compression failed",
+          lastProgress,
+          platform: Platform.OS,
+          failedAt: new Date(),
+        });
+      } catch {
+        // Non-critical — diagnostics are best-effort
+      }
+    },
+    [competitionId],
+  );
 
   const startBackgroundUpload = useCallback(
     async ({
@@ -165,9 +253,16 @@ export const useVideoUpload = ({
             fileType: "video/mp4",
           });
 
+          // react-native-background-upload on Android needs a bare filesystem
+          // path (no file:// scheme); iOS expects the URI untouched.
+          const uploadPath =
+            Platform.OS === "android" && videoUri.startsWith("file://")
+              ? videoUri.replace("file://", "")
+              : videoUri;
+
           const uploadId = await Upload.startUpload({
             url: data.uploadUrl,
-            path: videoUri,
+            path: uploadPath,
             method: "PUT",
             type: "raw",
             headers: { "content-type": "video/mp4" },
@@ -280,5 +375,11 @@ export const useVideoUpload = ({
     [competitionId, showBottomToast],
   );
 
-  return { pickVideo, startBackgroundUpload };
+  return {
+    pickVideo,
+    compressVideo,
+    cancelCompression,
+    recordCompressionFailure,
+    startBackgroundUpload,
+  };
 };
