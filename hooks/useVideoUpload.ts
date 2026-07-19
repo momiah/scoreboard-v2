@@ -13,6 +13,7 @@ import { COLLECTION_NAMES } from "@shared";
 import { GameVideoUploadPayload } from "@shared/types";
 import Upload from "react-native-background-upload";
 import { PopupContext } from "../context/PopupContext";
+import { GameContext } from "../context/GameContext";
 
 interface R2UploadUrlResponse {
   uploadUrl: string;
@@ -53,6 +54,7 @@ export const useVideoUpload = ({
   competitionId,
 }: UseVideoUploadOptions): UseVideoUploadReturn => {
   const { showBottomToast } = useContext(PopupContext);
+  const { recordVideoUploadFailure } = useContext(GameContext);
 
   const pickVideo = useCallback(async (): Promise<PickedVideo | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -102,26 +104,19 @@ export const useVideoUpload = ({
         gameId,
       );
 
-      // ── Helper: record a failed upload for diagnostics ──────────────────────
+      // ── Helper: record a failed upload for diagnostics, then clear pending ──
       const recordFailure = async (errorMessage: string, progress: number) => {
+        await recordVideoUploadFailure({
+          gameId,
+          competitionId,
+          userId: postedBy.userId,
+          errorMessage,
+          lastProgress: progress,
+        });
         try {
-          const failedDocRef = doc(
-            db,
-            COLLECTION_NAMES.failedVideoUploads,
-            `${gameId}_${Date.now()}`,
-          );
-          await setDoc(failedDocRef, {
-            gameId,
-            competitionId,
-            userId: postedBy.userId,
-            errorMessage: errorMessage || "unknown",
-            lastProgress: progress,
-            platform: Platform.OS,
-            failedAt: new Date(),
-          });
           await deleteDoc(pendingDocRef);
         } catch {
-          // Non-critical — diagnostics/cleanup are best-effort
+          // Non-critical — cleanup is best-effort
         }
       };
 
@@ -284,7 +279,7 @@ export const useVideoUpload = ({
 
       run();
     },
-    [competitionId, showBottomToast],
+    [competitionId, showBottomToast, recordVideoUploadFailure],
   );
 
   return { pickVideo, startBackgroundUpload };

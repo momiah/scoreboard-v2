@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -12,11 +12,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { File } from "expo-file-system";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { Video } from "react-native-compressor";
-import { COMPETITION_TYPES, COLLECTION_NAMES } from "@shared";
+import { COMPETITION_TYPES } from "@shared";
 import { UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
+import { GameContext } from "../../context/GameContext";
 
 // Quality is irrelevant — transcodeVideo re-encodes server-side. We only need
 // the file small enough to reliably arrive: maxSize caps the longest edge
@@ -110,6 +110,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   const { pickVideo, startBackgroundUpload } = useVideoUpload({
     competitionId,
   });
+  const { recordVideoUploadFailure } = useContext(GameContext);
 
   // ── Rotating processing messages with fade ────────────────────────────────
   useEffect(() => {
@@ -160,34 +161,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       console.warn("[VideoUploadModal] Failed to delete compressed file:", e);
     }
     compressedUriRef.current = null;
-  };
-
-  // ── Record a compression failure for diagnostics ───────────────────────────
-  // Mirrors the upload failure pattern (failedVideoUploads), but does NOT touch
-  // pendingVideoUploads: compression runs before any pending doc is written.
-  const recordCompressionFailure = async (
-    errorMessage: string,
-    lastProgress: number,
-  ) => {
-    try {
-      const db = getFirestore();
-      const failedDocRef = doc(
-        db,
-        COLLECTION_NAMES.failedVideoUploads,
-        `${gameId}_${Date.now()}`,
-      );
-      await setDoc(failedDocRef, {
-        gameId,
-        competitionId,
-        userId: currentUser.userId,
-        errorMessage: errorMessage || "compression failed",
-        lastProgress,
-        platform: Platform.OS,
-        failedAt: new Date(),
-      });
-    } catch {
-      // Non-critical — diagnostics are best-effort
-    }
   };
 
   // Reset UI state. Intentionally does NOT touch cancelledRef — that flag is
@@ -249,10 +222,13 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       // ── Genuine compression failure (OOM, unsupported codec, etc.) ───────
       setPickedVideo(null);
       setErrorText("Compression failed. Please try selecting the video again.");
-      await recordCompressionFailure(
-        err instanceof Error ? err.message : "compression failed",
-        Math.round(compressProgressRef.current * 100),
-      );
+      await recordVideoUploadFailure({
+        gameId,
+        competitionId,
+        userId: currentUser.userId,
+        errorMessage: err instanceof Error ? err.message : "compression failed",
+        lastProgress: Math.round(compressProgressRef.current * 100),
+      });
     }
   };
 
