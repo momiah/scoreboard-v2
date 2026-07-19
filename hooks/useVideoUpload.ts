@@ -12,6 +12,7 @@ import {
 import { COLLECTION_NAMES } from "@shared";
 import { GameVideoUploadPayload } from "@shared/types";
 import Upload from "react-native-background-upload";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 import { PopupContext } from "../context/PopupContext";
 import { GameContext } from "../context/GameContext";
 
@@ -236,6 +237,11 @@ export const useVideoUpload = ({
 
               await deleteDoc(pendingDocRef);
               console.log("[VideoUpload] Complete — pending record cleared");
+
+              AppEventsLogger.logEvent("UploadedGameVideo", {
+                competition_type: competitionType, // already "league" | "tournament"
+                platform: Platform.OS,
+              });
             } else {
               console.error(
                 "[VideoUpload] Upload returned non-2xx status:",
