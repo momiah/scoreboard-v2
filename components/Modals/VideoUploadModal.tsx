@@ -220,6 +220,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       if (cancelledRef.current) return;
 
       // ── Genuine compression failure (OOM, unsupported codec, etc.) ───────
+      console.error("[VideoUploadModal] Compression failed:", err, {
+        sourceUri: video.uri,
+      });
       setPickedVideo(null);
       setErrorText("Compression failed. Please try selecting the video again.");
       await recordVideoUploadFailure({
