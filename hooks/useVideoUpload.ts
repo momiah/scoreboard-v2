@@ -34,9 +34,6 @@ export interface PickedVideo {
   fileSize: number | null;
 }
 
-// Discriminated pick result so the caller can tell a deliberate cancel apart
-// from a video that couldn't be loaded (e.g. an iCloud/cloud-backed video that
-// isn't downloaded to the device).
 export type PickVideoResult =
   | { status: "picked"; video: PickedVideo }
   | { status: "cancelled" }
@@ -103,8 +100,6 @@ export const useVideoUpload = ({
         },
       };
     } catch (error) {
-      // A thrown pick most commonly means the source file couldn't be read —
-      // e.g. an iCloud/cloud-backed video that isn't downloaded to the device.
       console.error("[VideoUpload] pickVideo failed:", error);
       return { status: "failed" };
     }
@@ -129,7 +124,7 @@ export const useVideoUpload = ({
         gameId,
       );
 
-      // ── Helper: record a failed upload for diagnostics, then clear pending ──
+      // ── Helper: record a failed upload for diagnostics ──────────────────────
       const recordFailure = async (errorMessage: string, progress: number) => {
         await recordVideoUploadFailure({
           gameId,
@@ -141,7 +136,7 @@ export const useVideoUpload = ({
         try {
           await deleteDoc(pendingDocRef);
         } catch {
-          // Non-critical — cleanup is best-effort
+          // Non-critical — diagnostics/cleanup are best-effort
         }
       };
 
@@ -185,8 +180,6 @@ export const useVideoUpload = ({
             fileType: "video/mp4",
           });
 
-          // react-native-background-upload on Android needs a bare filesystem
-          // path (no file:// scheme); iOS expects the URI untouched.
           const uploadPath =
             Platform.OS === "android" && videoUri.startsWith("file://")
               ? videoUri.replace("file://", "")
@@ -263,7 +256,7 @@ export const useVideoUpload = ({
               console.log("[VideoUpload] Complete — pending record cleared");
 
               AppEventsLogger.logEvent("UploadedGameVideo", {
-                competition_type: competitionType, // already "league" | "tournament"
+                competition_type: competitionType,
                 platform: Platform.OS,
               });
             } else {

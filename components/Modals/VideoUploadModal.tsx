@@ -18,9 +18,6 @@ import { UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
 import { GameContext } from "../../context/GameContext";
 
-// Quality is irrelevant — transcodeVideo re-encodes server-side. We only need
-// the file small enough to reliably arrive: maxSize caps the longest edge
-// (~720p) and bitrate keeps the output predictably small.
 const COMPRESSION_OPTIONS = {
   compressionMethod: "manual",
   maxSize: 1280,
@@ -81,26 +78,17 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   iconColor = "#00A2FF",
   showAddLaterHint = true,
 }) => {
-  // pickedVideo holds the ORIGINAL asset (compression input + videoLength).
-  // compressedUri is set only once compression COMPLETES — it gates the
-  // "ready"/success UI and enables the Upload button. isCompressing is the
-  // modal's single processing flag: compression begins the moment a video is
-  // picked and is the only work the modal does before handing off to upload.
   const [pickedVideo, setPickedVideo] = useState<PickedVideo | null>(null);
   const [compressedUri, setCompressedUri] = useState<string | null>(null);
   const [errorText, setErrorText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressPct, setCompressPct] = useState(0);
-  // Rotation step, not a raw array index: every third slot shows the live
-  // compression %, so the percentage appears after every two status messages.
   const [messageStep, setMessageStep] = useState(0);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const messageOpacity = useRef(new Animated.Value(1)).current;
 
-  // Refs mirror state for use inside async callbacks / the close handler, which
-  // can fire at any point relative to React's render cycle.
   const compressProgressRef = useRef(0);
   const cancellationIdRef = useRef<string | null>(null);
   const cancelledRef = useRef(false);
@@ -123,9 +111,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         duration: 700,
         useNativeDriver: true,
       }).start(() => {
-        // Wrap over the full interleaved cycle (2 messages + 1 percentage per
-        // 3 steps) so both the percentage cadence and the message order stay
-        // seamless when it loops.
         setMessageStep((prev) => (prev + 1) % (PROCESSING_MESSAGES.length * 3));
         Animated.timing(messageOpacity, {
           toValue: 1,
@@ -137,8 +122,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     return () => clearInterval(interval);
   }, [isCompressing]);
 
-  // ── Validate the ORIGINAL before compressing (duration gates game length;
-  //    size is a loose sanity bound — the COMPRESSED size is what gets uploaded).
   const getGuardError = (video: PickedVideo): string | null => {
     if (video.fileSize && video.fileSize > 6 * 1024 * 1024 * 1024) {
       return "Video is too large. Please select a video under 6GB.";
@@ -152,7 +135,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     return null;
   };
 
-  // ── Delete a completed-but-not-yet-uploaded compressed file ────────────────
   const cleanupCompressedFile = () => {
     const uri = compressedUriRef.current;
     if (!uri) return;
@@ -165,9 +147,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     compressedUriRef.current = null;
   };
 
-  // Reset UI state. Intentionally does NOT touch cancelledRef — that flag is
-  // owned by runCompression (reset at its start) so the cancel/failure branch
-  // in its catch can read it without a race against this reset.
   const resetState = () => {
     cancellationIdRef.current = null;
     compressProgressRef.current = 0;
@@ -204,7 +183,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         },
       );
 
-      // ── Success — compression complete, ready to upload ──────────────────
       compressedUriRef.current = uri;
       setCompressedUri(uri);
       setIsCompressing(false);
@@ -217,11 +195,8 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       setIsCompressing(false);
       progressAnim.setValue(0);
 
-      // User-initiated cancellation — no failure record, no error text.
-      // Any partial output cleanup is handled by the close handler / library.
       if (cancelledRef.current) return;
 
-      // ── Genuine compression failure (OOM, unsupported codec, etc.) ───────
       console.error("[VideoUploadModal] Compression failed:", err, {
         sourceUri: video.uri,
       });
@@ -248,7 +223,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
             text: "Close anyway",
             style: "destructive",
             onPress: () => {
-              // Actually stop the native compressor if it's mid-flight.
               if (cancellationIdRef.current) {
                 cancelledRef.current = true;
                 Video.cancelCompression(cancellationIdRef.current);
@@ -262,7 +236,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       );
       return;
     }
-    // Not processing — a completed-but-unsent compressed file gets cleaned up.
     cleanupCompressedFile();
     resetState();
     onClose();
@@ -271,7 +244,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   const handlePickVideo = async () => {
     if (isCompressing || isUploading) return;
     setErrorText("");
-    // Discard any prior compressed output before starting over.
     cleanupCompressedFile();
     setCompressedUri(null);
     setPickedVideo(null);
@@ -279,11 +251,8 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
 
     const result = await pickVideo();
 
-    // User deliberately cancelled the system picker — stay silent.
     if (result.status === "cancelled") return;
 
-    // The picker returned without a usable video. The usual cause is a
-    // cloud-backed video that isn't downloaded to the device.
     if (result.status === "failed") {
       const cloudService = Platform.OS === "ios" ? "iCloud" : "Google Photos";
       setErrorText(
@@ -300,7 +269,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     }
 
     setPickedVideo(video);
-    // Compression starts immediately on pick and drives the progress UI.
     await runCompression(video);
   };
 
@@ -329,8 +297,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         : undefined,
     });
     setIsUploading(false);
-    // Ownership of the compressed file passes to the background upload — do NOT
-    // clean it up. UploadToast now shows progress in the background.
     compressedUriRef.current = null;
     resetState();
     onClose();
@@ -339,8 +305,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   const hasVideo = !!compressedUri;
   const showProgress = isCompressing || hasVideo;
 
-  // Rotating status text with the live compression % interleaved: every third
-  // slot is the percentage, the other two are the next status messages.
   const displayedMessage =
     messageStep % 3 === 2
       ? `Compressing video… ${compressPct}%`
@@ -407,7 +371,6 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
             {hasVideo && !isCompressing && <VideoAttachedDot />}
           </VideoPickerButton>
 
-          {/* ── Real compression progress bar ── */}
           {showProgress && (
             <ProgressContainer>
               {isCompressing ? (

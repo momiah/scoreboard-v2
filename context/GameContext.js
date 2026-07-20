@@ -163,10 +163,6 @@ const GameProvider = ({ children }) => {
     }
   };
 
-  // ── Shared video-upload failure diagnostics ────────────────────────────────
-  // Writes a record to failedVideoUploads. Used by both the compression step
-  // (VideoUploadModal) and the upload step (useVideoUpload) so the diagnostics
-  // shape stays in one place. Best-effort — never disrupts the caller.
   const recordVideoUploadFailure = async ({
     gameId,
     competitionId,
