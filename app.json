@@ -98,7 +98,8 @@
       "expo-video",
       "expo-font",
       "@react-native-community/datetimepicker",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "react-native-compressor"
     ],
     "extra": {
       "eas": {

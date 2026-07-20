@@ -1,6 +1,6 @@
 // GameContext.js
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import {
   getDoc,
   doc,
@@ -9,9 +9,11 @@ import {
   orderBy,
   updateDoc,
   getDocs,
+  setDoc,
 } from "firebase/firestore";
 import { AntDesign } from "@expo/vector-icons";
 import { AppEventsLogger } from "react-native-fbsdk-next";
+import { COLLECTION_NAMES } from "@shared";
 
 import { db } from "../services/firebase.config";
 
@@ -161,6 +163,33 @@ const GameProvider = ({ children }) => {
     }
   };
 
+  const recordVideoUploadFailure = async ({
+    gameId,
+    competitionId,
+    userId,
+    errorMessage,
+    lastProgress = 0,
+  }) => {
+    try {
+      const failedDocRef = doc(
+        db,
+        COLLECTION_NAMES.failedVideoUploads,
+        `${gameId}_${Date.now()}`,
+      );
+      await setDoc(failedDocRef, {
+        gameId,
+        competitionId,
+        userId,
+        errorMessage: errorMessage || "unknown",
+        lastProgress,
+        platform: Platform.OS,
+        failedAt: new Date(),
+      });
+    } catch (error) {
+      console.error("Error recording video upload failure:", error);
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -168,6 +197,7 @@ const GameProvider = ({ children }) => {
         setGames,
         addGame,
         retrieveGames,
+        recordVideoUploadFailure,
 
         medalNames,
         ranks,
