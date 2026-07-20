@@ -127,11 +127,6 @@ const SearchCourt = ({
             <CourtLocation isSelected={isSelected}>
               {item?.address}, {item?.city}, {item?.country}
             </CourtLocation>
-            {/* {item.description ? (
-              <CourtLocation isSelected={isSelected}>
-                {item.description}
-              </CourtLocation>
-            ) : null} */}
           </CourtTextWrap>
           <ItemRight>
             {isSelected && <AntDesign name="check" size={18} color="#00A2FF" />}
@@ -211,11 +206,12 @@ const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const Wrapper = styled.View({
   width: screenWidth - 40,
-  height: "75%",
+  height: "80%",
   margin: 20,
   borderRadius: 20,
   overflow: "hidden",

@@ -270,8 +270,6 @@ const ModalDescription = styled.Text({
   fontSize: 14,
   marginHorizontal: 20,
   paddingVertical: 12,
-  //   textAlign: "center",
-  //   marginBottom: 12,
 });
 
 // ── Header

@@ -329,7 +329,13 @@ const Home = () => {
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: "#00152B",
+        paddingTop: Platform.OS === "android" ? 45 : 0,
+      }}
+    >
       <FlatList
         data={videos}
         renderItem={renderVideo}

@@ -8,6 +8,7 @@ import {
   Share,
   ScrollView,
   FlatList,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { SafeAreaView } from "react-native";
@@ -480,6 +481,7 @@ const InvitePlayer = () => {
 const Container = styled(SafeAreaView)({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: Platform.OS === "android" ? 25 : 0,
 });
 
 const Header = styled.View({

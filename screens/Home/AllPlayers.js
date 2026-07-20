@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import MedalDisplay from "../../components/performance/MedalDisplay";
@@ -341,7 +342,7 @@ const AllPlayers = () => {
 };
 
 const TableContainer = styled.View({
-  paddingTop: 20,
+  paddingTop: Platform.OS === "android" ? 50 : 0,
   flex: 1,
   backgroundColor: " rgb(3, 16, 31)",
 });

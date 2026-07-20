@@ -46,7 +46,6 @@ const Signup = ({ route }) => {
     userName,
     userLastName,
     userEmail,
-    provider: socialProvider,
   } = route.params || {};
   const isSocialSignup = !!socialId;
   const { setCurrentUser } = useContext(UserContext);
@@ -164,9 +163,9 @@ const Signup = ({ route }) => {
           countryCode: selectedCountryCode,
         },
         userId: uid,
+        provider: isSocialSignup ? "gmail" : "email_password",
         profileDetail: profileDetailSchema,
         profileImage: ccImageEndpoint,
-        provider: isSocialSignup ? socialProvider : "email_password",
       };
 
       await setDoc(doc(db, "users", uid), profileToSave);
@@ -200,7 +199,7 @@ const Signup = ({ route }) => {
         AppEventsLogger.AppEvents.CompletedRegistration,
         {
           [AppEventsLogger.AppEventParams.RegistrationMethod]: isSocialSignup
-            ? socialProvider
+            ? "google"
             : "email",
         },
       );
