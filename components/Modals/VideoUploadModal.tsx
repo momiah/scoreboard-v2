@@ -5,6 +5,7 @@ import {
   Dimensions,
   Animated,
   Alert,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -284,9 +285,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     // The picker returned without a usable video. The usual cause is a
     // cloud-backed video that isn't downloaded to the device.
     if (result.status === "failed") {
+      const cloudService = Platform.OS === "ios" ? "iCloud" : "Google Photos";
       setErrorText(
-        "We couldn't load that video. If it's stored in iCloud or Google " +
-          "Cloud, download it to your device first, then try again.",
+        `This video is in ${cloudService} — download it to your device and try again.`,
       );
       return;
     }
