@@ -5,7 +5,6 @@ import {
   Dimensions,
   Animated,
   Alert,
-  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -51,9 +50,6 @@ interface VideoUploadModalProps {
 const PROCESSING_MESSAGES = [
   "Processing — this may take a couple of minutes",
   "Please do not close this modal",
-  ...(Platform.OS === "ios"
-    ? ["Videos stored in iCloud may take longer to load - "]
-    : []),
   "Preparing your video for upload",
   "Analysing video quality...",
   "Getting your video ready for the feed",
@@ -280,11 +276,22 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     setPickedVideo(null);
     progressAnim.setValue(0);
 
-    const video = await pickVideo();
+    const result = await pickVideo();
 
-    // User cancelled the system picker
-    if (!video) return;
+    // User deliberately cancelled the system picker — stay silent.
+    if (result.status === "cancelled") return;
 
+    // The picker returned without a usable video. The usual cause is a
+    // cloud-backed video that isn't downloaded to the device.
+    if (result.status === "failed") {
+      setErrorText(
+        "We couldn't load that video. If it's stored in iCloud or Google " +
+          "Cloud, download it to your device first, then try again.",
+      );
+      return;
+    }
+
+    const { video } = result;
     const guardError = getGuardError(video);
     if (guardError) {
       setErrorText(guardError);

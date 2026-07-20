@@ -34,6 +34,14 @@ export interface PickedVideo {
   fileSize: number | null;
 }
 
+// Discriminated pick result so the caller can tell a deliberate cancel apart
+// from a video that couldn't be loaded (e.g. an iCloud/cloud-backed video that
+// isn't downloaded to the device).
+export type PickVideoResult =
+  | { status: "picked"; video: PickedVideo }
+  | { status: "cancelled" }
+  | { status: "failed" };
+
 interface UseVideoUploadOptions {
   competitionId: string;
 }
@@ -47,7 +55,7 @@ interface StartBackgroundUploadParams extends Omit<
 }
 
 interface UseVideoUploadReturn {
-  pickVideo: () => Promise<PickedVideo | null>;
+  pickVideo: () => Promise<PickVideoResult>;
   startBackgroundUpload: (params: StartBackgroundUploadParams) => Promise<void>;
 }
 
@@ -57,7 +65,7 @@ export const useVideoUpload = ({
   const { showBottomToast } = useContext(PopupContext);
   const { recordVideoUploadFailure } = useContext(GameContext);
 
-  const pickVideo = useCallback(async (): Promise<PickedVideo | null> => {
+  const pickVideo = useCallback(async (): Promise<PickVideoResult> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== "granted") {
@@ -65,25 +73,41 @@ export const useVideoUpload = ({
         "Permission Required",
         "Please allow access to your media library to upload a video.",
       );
-      return null;
+      return { status: "cancelled" };
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["videos"],
-      allowsEditing: false,
-      videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["videos"],
+        allowsEditing: false,
+        videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
+      });
 
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
+      console.log("[VideoUpload] picker result:", {
+        canceled: result.canceled,
+        assetCount: result.canceled ? 0 : result.assets?.length,
+        firstUri: result.canceled ? null : result.assets?.[0]?.uri,
+      });
+
+      if (result.canceled) return { status: "cancelled" };
+
+      const asset = result.assets?.[0];
+      if (!asset?.uri) return { status: "failed" };
+
       return {
-        uri: asset.uri,
-        duration: asset.duration ?? null,
-        fileSize: asset.fileSize ?? null,
+        status: "picked",
+        video: {
+          uri: asset.uri,
+          duration: asset.duration ?? null,
+          fileSize: asset.fileSize ?? null,
+        },
       };
+    } catch (error) {
+      // A thrown pick most commonly means the source file couldn't be read —
+      // e.g. an iCloud/cloud-backed video that isn't downloaded to the device.
+      console.error("[VideoUpload] pickVideo failed:", error);
+      return { status: "failed" };
     }
-
-    return null;
   }, []);
 
   const startBackgroundUpload = useCallback(
