@@ -256,7 +256,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     if (result.status === "failed") {
       const cloudService = Platform.OS === "ios" ? "iCloud" : "Google Photos";
       setErrorText(
-        `This video is in ${cloudService} — download it to your device and try again.`,
+        `This video is in ${cloudService} — download it to your device and retry.`,
       );
       return;
     }
@@ -367,7 +367,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
                   ? "Video ready ✓"
                   : "Select a video"}
             </VideoPickerText>
-            {isCompressing && <ActivityIndicator size="small" color="#00A2FF" />}
+            {isCompressing && (
+              <ActivityIndicator size="small" color="#00A2FF" />
+            )}
             {hasVideo && !isCompressing && <VideoAttachedDot />}
           </VideoPickerButton>
 
