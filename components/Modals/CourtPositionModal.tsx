@@ -41,8 +41,6 @@ const buildInitialPositions = ({
   const slotsPerTeam = isDoubles ? 2 : 1;
   const existing = video.courtPositions;
 
-  // Slots start empty. Only saved positions are restored — nothing is
-  // auto-assigned from the team roster, so the uploader sets them manually.
   const fill = (teamKey: TeamKey) =>
     Array.from(
       { length: slotsPerTeam },
@@ -58,9 +56,7 @@ const buildInitialPositions = ({
 const hasAssignedPositions = (positions?: SelectedPlayers): boolean =>
   Boolean(
     positions &&
-      [...positions.team1, ...positions.team2].some(
-        (player) => player != null,
-      ),
+    [...positions.team1, ...positions.team2].some((player) => player != null),
   );
 
 const arePositionsEqual = (a: SelectedPlayers, b: SelectedPlayers): boolean => {
