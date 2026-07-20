@@ -95,7 +95,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressPct, setCompressPct] = useState(0);
-  const [messageIndex, setMessageIndex] = useState(0);
+  // Rotation step, not a raw array index: every third slot shows the live
+  // compression %, so the percentage appears after every two status messages.
+  const [messageStep, setMessageStep] = useState(0);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
   const messageOpacity = useRef(new Animated.Value(1)).current;
@@ -115,7 +117,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   // ── Rotating processing messages with fade ────────────────────────────────
   useEffect(() => {
     if (!isCompressing) {
-      setMessageIndex(0);
+      setMessageStep(0);
       return;
     }
     const interval = setInterval(() => {
@@ -124,7 +126,10 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         duration: 700,
         useNativeDriver: true,
       }).start(() => {
-        setMessageIndex((prev) => (prev + 1) % PROCESSING_MESSAGES.length);
+        // Wrap over the full interleaved cycle (2 messages + 1 percentage per
+        // 3 steps) so both the percentage cadence and the message order stay
+        // seamless when it loops.
+        setMessageStep((prev) => (prev + 1) % (PROCESSING_MESSAGES.length * 3));
         Animated.timing(messageOpacity, {
           toValue: 1,
           duration: 500,
@@ -326,6 +331,16 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   const hasVideo = !!compressedUri;
   const showProgress = isCompressing || hasVideo;
 
+  // Rotating status text with the live compression % interleaved: every third
+  // slot is the percentage, the other two are the next status messages.
+  const displayedMessage =
+    messageStep % 3 === 2
+      ? `Compressing video… ${compressPct}%`
+      : PROCESSING_MESSAGES[
+          (messageStep - Math.floor(messageStep / 3)) %
+            PROCESSING_MESSAGES.length
+        ];
+
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
@@ -388,23 +403,18 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
           {showProgress && (
             <ProgressContainer>
               {isCompressing ? (
-                <>
-                  <ProgressLabel isProcessing={true}>
-                    Compressing video… {compressPct}%
-                  </ProgressLabel>
-                  <Animated.Text
-                    style={{
-                      opacity: messageOpacity,
-                      fontSize: 11,
-                      color: "rgba(255,255,255,0.5)",
-                      marginBottom: 12,
-                      textAlign: "center",
-                      fontStyle: "italic",
-                    }}
-                  >
-                    {PROCESSING_MESSAGES[messageIndex]}
-                  </Animated.Text>
-                </>
+                <Animated.Text
+                  style={{
+                    opacity: messageOpacity,
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: 12,
+                    textAlign: "center",
+                    fontStyle: "italic",
+                  }}
+                >
+                  {displayedMessage}
+                </Animated.Text>
               ) : (
                 <ProgressLabel isProcessing={false}>
                   Ready to upload
