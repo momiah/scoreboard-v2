@@ -3,8 +3,8 @@
     "name": "Court Champs",
     "slug": "court-champs",
     "version": "3.0.7",
-    "runtimeVersion": "3.0.0",
-    "orientation": "default",
+    "runtimeVersion": "3.0.1",
+    "orientation": "portrait",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
@@ -16,7 +16,7 @@
     "ios": {
       "backgroundColor": "#00152B",
       "supportsTablet": true,
-      "buildNumber": "26",
+      "buildNumber": "21",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -50,17 +50,20 @@
       }
     },
     "android": {
+      "blockedPermissions": [
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
       "backgroundColor": "#00152B",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/court-champ-logo-icon-w-bg.png",
+        "foregroundImage": "./assets/court-champ-logo-adaptive-icon-small.png",
         "backgroundColor": "#00152B"
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 4
+      "versionCode": 26
     },
     "web": {
-      "favicon": "./assets/court-champ-logo-icon-w-bg.png"
+      "favicon": "./assets/court-champ-logo-adaptive-icon-small.png"
     },
     "plugins": [
       [
@@ -95,11 +98,23 @@
           "color": "#FF231F7C"
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
+        }
+      ],
       "expo-video",
       "expo-font",
       "@react-native-community/datetimepicker",
       "expo-apple-authentication",
       "react-native-compressor"
+      "expo-asset",
+      "expo-screen-orientation"
     ],
     "extra": {
       "eas": {

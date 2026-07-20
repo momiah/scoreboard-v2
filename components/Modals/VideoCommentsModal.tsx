@@ -552,6 +552,7 @@ const ModalOverlay = styled(BlurView).attrs({
   tint: "dark",
 })({
   flex: 1,
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

@@ -5,7 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { View, Image, ScrollView } from "react-native";
+import { View, Image, ScrollView, Platform } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { useForm, Control } from "react-hook-form";
@@ -339,6 +339,7 @@ const TournamentContainer = styled.View({
   backgroundColor: "rgb(3, 16, 31)",
   width: "100%",
   paddingHorizontal: 20,
+  paddingTop: Platform.OS === "android" ? 25 : 0,
 });
 
 const Overview = styled.View({

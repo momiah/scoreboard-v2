@@ -35,8 +35,8 @@ import {
   Tournament,
   NormalizedCompetition,
   CompetitionType,
-  UserProfile,
   CollectionName,
+  UserProfile,
 } from "@/shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../Modals/RecentPlayersModal";
@@ -521,6 +521,7 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({
