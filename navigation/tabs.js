@@ -1,4 +1,8 @@
-import React, { useContext, useEffect } from "react";
+import React, {
+  useContext,
+  useEffect,
+  //  useState
+} from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
@@ -38,7 +42,7 @@ import Chats from "../screens/Chats";
 import CompetitionsScreen from "../screens/Competition/CompetitionScreen";
 import { UserContext } from "../context/UserContext";
 import { LeagueContext } from "../context/LeagueContext";
-import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
+// import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
 import InvitePlayer from "../screens/InvitePlayer";
 import GameScreen from "../screens/GameScreen";
@@ -66,7 +70,10 @@ const HomeStack = () => {
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
-      <Stack.Screen name="ClubPendingRequests" component={ClubPendingRequests} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
@@ -109,7 +116,10 @@ const ProfileStack = () => {
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
-      <Stack.Screen name="ClubPendingRequests" component={ClubPendingRequests} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
@@ -155,7 +165,10 @@ const ChatsStack = () => {
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
-      <Stack.Screen name="ClubPendingRequests" component={ClubPendingRequests} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
@@ -201,7 +214,10 @@ const CompetitionsStack = () => {
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
-      <Stack.Screen name="ClubPendingRequests" component={ClubPendingRequests} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
@@ -256,6 +272,7 @@ const Tabs = () => {
   const navigation = useNavigation();
   const { chatSummaries, notifications, currentUser } = useContext(UserContext);
   const { clubNavigationId } = useContext(LeagueContext);
+  // const [showAd, setShowAd] = useState(true);
 
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
