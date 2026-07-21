@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, memo } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity, Dimensions } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
@@ -11,6 +12,7 @@ import { copyLocationAddress } from "../../helpers/copyLocationAddress";
 import { useContext } from "react";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
+import { LeagueContext } from "../../context/LeagueContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 import { COMPETITION_TYPES } from "@shared";
 import { calculateTournamentPrizePool } from "@shared/helpers";
@@ -52,10 +54,13 @@ const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 const CompetitionSummary = memo(
   ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
     const { getUserById } = useContext(UserContext);
+    const { fetchClubById } = useContext(LeagueContext);
+    const navigation = useNavigation();
     const [topContenders, setTopContenders] = useState([]);
     const [topTeams, setTopTeams] = useState([]);
     const [isCopied, setIsCopied] = useState(false);
     const [isDataLoading, setIsDataLoading] = useState(true);
+    const [clubName, setClubName] = useState("");
 
     const locationCopyTimeoutRef = useRef(null);
 
@@ -77,6 +82,23 @@ const CompetitionSummary = memo(
     const playtime = competitionData?.playingTime || [];
     const competitionId = competitionData.id;
     const clubId = competitionData?.clubId;
+
+    useEffect(() => {
+      if (!clubId) {
+        setClubName("");
+        return;
+      }
+
+      let active = true;
+      (async () => {
+        const club = await fetchClubById(clubId);
+        if (active) setClubName(club?.clubName || "");
+      })();
+
+      return () => {
+        active = false;
+      };
+    }, [clubId, fetchClubById]);
 
     // Determine if this is a Doubles tournament
     const isDoublesTournament =
@@ -235,7 +257,10 @@ const CompetitionSummary = memo(
     return (
       <CompetitionSummaryContainer>
         {clubId ? (
-          <ClubBadgeContainer>
+          <ClubBadgeButton
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("Club", { clubId })}
+          >
             <ClubIconCircle>
               <Ionicons name="people" size={20} color="#00A2FF" />
             </ClubIconCircle>
@@ -243,13 +268,14 @@ const CompetitionSummary = memo(
               <ClubBadgeText>
                 This{" "}
                 <ClubBadgeHighlight>{competitionType}</ClubBadgeHighlight> is
-                part of a club
+                managed by a club
               </ClubBadgeText>
-              <ClubBadgeSubtext>
-                Run as part of a club community
-              </ClubBadgeSubtext>
+              {clubName ? (
+                <ClubBadgeSubtext>{clubName}</ClubBadgeSubtext>
+              ) : null}
             </ClubBadgeTextWrap>
-          </ClubBadgeContainer>
+            <Ionicons name="chevron-forward" size={22} color="#00A2FF" />
+          </ClubBadgeButton>
         ) : null}
 
         <PrizeDistribution
@@ -358,7 +384,7 @@ const CompetitionSummaryContainer = styled.ScrollView({
   marginBottom: 20,
 });
 
-const ClubBadgeContainer = styled.View({
+const ClubBadgeButton = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   gap: 12,
