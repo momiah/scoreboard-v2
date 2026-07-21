@@ -89,7 +89,6 @@ const Signup = ({ route }) => {
       setValue("country", selectedCountry.value, { shouldValidate: true });
       setValue("city", "");
       setSelectedCountryCode(selectedCountry.key);
-      setShowCountrySelector(false);
       setShowCitySelector(true);
     },
     [setValue],
@@ -99,6 +98,7 @@ const Signup = ({ route }) => {
     (selectedCity) => {
       setValue("city", selectedCity.value, { shouldValidate: true });
       setShowCitySelector(false);
+      setShowCountrySelector(false);
     },
     [setValue],
   );
@@ -402,13 +402,14 @@ const Signup = ({ route }) => {
         visible={showCountrySelector}
         onClose={() => setShowCountrySelector(false)}
         onSelect={handleCountrySelected}
-      />
-      <CitySelector
-        visible={showCitySelector}
-        onClose={() => setShowCitySelector(false)}
-        countryCode={selectedCountryCode}
-        onSelect={handleCitySelected}
-      />
+      >
+        <CitySelector
+          visible={showCitySelector}
+          onBack={() => setShowCitySelector(false)}
+          countryCode={selectedCountryCode}
+          onSelect={handleCitySelected}
+        />
+      </CountrySelector>
     </Container>
   );
 };

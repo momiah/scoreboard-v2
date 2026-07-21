@@ -169,7 +169,6 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
       setValue("country", selectedCountry.value, { shouldValidate: true });
       setValue("city", "");
       setSelectedCountryCode(selectedCountry.key);
-      setShowCountrySelector(false);
       setShowCitySelector(true);
     },
     [setValue],
@@ -179,6 +178,7 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
     (selectedCity: LocationOption) => {
       setValue("city", selectedCity.value, { shouldValidate: true });
       setShowCitySelector(false);
+      setShowCountrySelector(false);
     },
     [setValue],
   );
@@ -386,13 +386,14 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
           visible={showCountrySelector}
           onClose={() => setShowCountrySelector(false)}
           onSelect={handleCountrySelected}
-        />
-        <CitySelector
-          visible={showCitySelector}
-          onClose={() => setShowCitySelector(false)}
-          countryCode={selectedCountryCode}
-          onSelect={handleCitySelected}
-        />
+        >
+          <CitySelector
+            visible={showCitySelector}
+            onBack={() => setShowCitySelector(false)}
+            countryCode={selectedCountryCode}
+            onSelect={handleCitySelected}
+          />
+        </CountrySelector>
       </ModalContainer>
     </Modal>
   );

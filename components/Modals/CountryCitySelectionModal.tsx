@@ -1,5 +1,5 @@
 // components/Modals/CountryCitySelectionModal.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Dimensions,
@@ -31,12 +31,18 @@ interface CountrySelectorProps {
   onClose: () => void;
   /** Fires with the chosen country. `key` is the ISO code, `value` is the name. */
   onSelect: (country: LocationOption) => void;
+  /**
+   * Rendered inside the country modal so the next step (the city selector)
+   * stacks on top of the country list instead of replacing it.
+   */
+  children?: ReactNode;
 }
 
 export const CountrySelector = ({
   visible,
   onClose,
   onSelect,
+  children,
 }: CountrySelectorProps) => {
   const [search, setSearch] = useState("");
   const [countries, setCountries] = useState<LocationOption[]>([]);
@@ -75,10 +81,10 @@ export const CountrySelector = ({
         setSearch("");
       }}
     >
+      <LocationName>{item.value}</LocationName>
       <FlagCircle>
         <Icon name={item.key} height="40" width="40" />
       </FlagCircle>
-      <LocationName>{item.value}</LocationName>
     </LocationItem>
   );
 
@@ -115,6 +121,7 @@ export const CountrySelector = ({
           {loading ? (
             <LoadingWrap>
               <ActivityIndicator size="small" color="#00A2FF" />
+              <LoadingText>Loading countries</LoadingText>
             </LoadingWrap>
           ) : (
             <FlatList
@@ -129,6 +136,8 @@ export const CountrySelector = ({
             />
           )}
         </Wrapper>
+
+        {children}
       </ModalContainer>
     </Modal>
   );
@@ -140,7 +149,8 @@ export const CountrySelector = ({
 
 interface CitySelectorProps {
   visible: boolean;
-  onClose: () => void;
+  /** Back button — returns to the country list underneath. */
+  onBack: () => void;
   /** ISO code of the previously selected country; drives which cities load. */
   countryCode: string | null;
   /** Fires with the chosen city. */
@@ -149,7 +159,7 @@ interface CitySelectorProps {
 
 export const CitySelector = ({
   visible,
-  onClose,
+  onBack,
   countryCode,
   onSelect,
 }: CitySelectorProps) => {
@@ -205,18 +215,18 @@ export const CitySelector = ({
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={onBack}
     >
       <ModalContainer behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <Wrapper>
           <Header>
-            <ModalTitle>Select City</ModalTitle>
-            <TouchableOpacity
-              onPress={onClose}
+            <BackRow
+              onPress={onBack}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <AntDesign name="close-circle" size={26} color="red" />
-            </TouchableOpacity>
+              <AntDesign name="arrow-left" size={22} color="#fff" />
+              <ModalTitle>Select City</ModalTitle>
+            </BackRow>
           </Header>
 
           <SearchInput
@@ -233,6 +243,7 @@ export const CitySelector = ({
           {loading ? (
             <LoadingWrap>
               <ActivityIndicator size="small" color="#00A2FF" />
+              <LoadingText>Loading cities</LoadingText>
             </LoadingWrap>
           ) : (
             <FlatList
@@ -279,6 +290,12 @@ const Header = styled.View({
   marginBottom: 16,
 });
 
+const BackRow = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+});
+
 const ModalTitle = styled.Text({
   fontSize: 20,
   color: "#fff",
@@ -298,6 +315,7 @@ const SearchInput = styled.TextInput({
 const LocationItem = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
+  justifyContent: "space-between",
   gap: 12,
   padding: 14,
   marginBottom: 8,
@@ -324,8 +342,15 @@ const FlagCircle = styled.View({
 
 const LoadingWrap = styled.View({
   flex: 1,
+  flexDirection: "row",
   alignItems: "center",
   justifyContent: "center",
+  gap: 10,
+});
+
+const LoadingText = styled.Text({
+  color: "#ccc",
+  fontSize: 15,
 });
 
 const EmptyText = styled.Text({

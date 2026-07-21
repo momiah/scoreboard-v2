@@ -42,7 +42,6 @@ const AddCourtModal = ({
       city: "",
     });
     setSelectedCountryCode(selectedCountry.key);
-    setShowCountrySelector(false);
     setShowCitySelector(true);
   };
 
@@ -52,6 +51,7 @@ const AddCourtModal = ({
       city: selectedCity.value,
     });
     setShowCitySelector(false);
+    setShowCountrySelector(false);
   };
 
   const allFieldsFilled = useMemo(() => {
@@ -180,13 +180,14 @@ const AddCourtModal = ({
           visible={showCountrySelector}
           onClose={() => setShowCountrySelector(false)}
           onSelect={handleCountrySelected}
-        />
-        <CitySelector
-          visible={showCitySelector}
-          onClose={() => setShowCitySelector(false)}
-          countryCode={selectedCountryCode}
-          onSelect={handleCitySelected}
-        />
+        >
+          <CitySelector
+            visible={showCitySelector}
+            onBack={() => setShowCitySelector(false)}
+            countryCode={selectedCountryCode}
+            onSelect={handleCitySelected}
+          />
+        </CountrySelector>
       </ModalContainer>
     </Modal>
   );
