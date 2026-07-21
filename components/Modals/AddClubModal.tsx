@@ -13,9 +13,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   Alert,
-  StyleSheet,
   ScrollView,
-  InteractionManager,
 } from "react-native";
 import * as FileSystem from "expo-file-system";
 import { BlurView } from "expo-blur";
@@ -36,15 +34,13 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { generateClubId } from "../../helpers/generateClubId";
 import { uploadClubImage } from "../../utils/UploadClubImageToFirebase";
-import { loadCountries, loadCities } from "../../utils/locationData";
-import ListDropdown from "../ListDropdown/ListDropdown";
+import {
+  CountrySelector,
+  CitySelector,
+  type LocationOption,
+} from "./CountryCitySelectionModal";
 
 const { width: screenWidth } = Dimensions.get("window");
-
-type LocalityOption = {
-  key: string;
-  value: string;
-};
 
 type ClubFormValues = {
   clubName: string;
@@ -77,13 +73,11 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [clubCreationLoading, setClubCreationLoading] = useState(false);
 
-  const [countries, setCountries] = useState<LocalityOption[]>([]);
   const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(
     null,
   );
-  const [cities, setCities] = useState<LocalityOption[]>([]);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [loadingCountries, setLoadingCountries] = useState(false);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [showCitySelector, setShowCitySelector] = useState(false);
 
   const {
     control,
@@ -116,21 +110,7 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
       reset(defaultValues);
       setSelectedImage(null);
       setSelectedCountryCode(null);
-      setCities([]);
     }
-
-    setLoadingCountries(true);
-    const task = InteractionManager.runAfterInteractions(() => {
-      try {
-        setCountries(loadCountries());
-      } finally {
-        setLoadingCountries(false);
-      }
-    });
-
-    return () => {
-      task.cancel();
-    };
   }, [modalVisible, reset]);
 
   const imagePickInFlightRef = useRef(false);
@@ -184,22 +164,24 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
     }
   }, []);
 
-  const handleCityDropdownOpen = useCallback(async () => {
-    if (!selectedCountryCode) {
-      setCities([]);
-      return;
-    }
+  const handleCountrySelected = useCallback(
+    (selectedCountry: LocationOption) => {
+      setValue("country", selectedCountry.value, { shouldValidate: true });
+      setValue("city", "");
+      setSelectedCountryCode(selectedCountry.key);
+      setShowCountrySelector(false);
+      setShowCitySelector(true);
+    },
+    [setValue],
+  );
 
-    setLoadingCities(true);
-    try {
-      setCities(loadCities(selectedCountryCode));
-    } catch (e) {
-      console.error(e);
-      setCities([]);
-    } finally {
-      setLoadingCities(false);
-    }
-  }, [selectedCountryCode]);
+  const handleCitySelected = useCallback(
+    (selectedCity: LocationOption) => {
+      setValue("city", selectedCity.value, { shouldValidate: true });
+      setShowCitySelector(false);
+    },
+    [setValue],
+  );
 
   const onSubmit = async (data: ClubFormValues) => {
     setClubCreationLoading(true);
@@ -271,7 +253,6 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
 
       reset(defaultValues);
       setSelectedCountryCode(null);
-      setCities([]);
       setSelectedImage(null);
       setModalVisible(false);
       onSuccess?.();
@@ -340,78 +321,38 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
                   required
                 />
 
+                <LabelContainer>
+                  <Label>
+                    Club Home Location<ErrorText>*</ErrorText>
+                  </Label>
+                  {(errors.country || errors.city) && (
+                    <ErrorText>Country and city are required</ErrorText>
+                  )}
+                </LabelContainer>
+
                 <Controller
                   control={control}
                   name="country"
                   rules={{ required: "Country is required" }}
-                  render={({ field: { onChange, value } }) => (
-                    <ListDropdown
-                      label="Country"
-                      setSelected={(val: string) => {
-                        onChange(val);
-                        const selected = countries.find((c) => c.value === val);
-                        setSelectedCountryCode(selected?.key ?? null);
-                        setValue("city", "");
-                        setCities([]);
-                      }}
-                      data={countries}
-                      save="value"
-                      placeholder={
-                        loadingCountries
-                          ? "Loading countries..."
-                          : "Select country"
-                      }
-                      selectedOption={
-                        value ? { key: value, value } : {}
-                      }
-                      boxStyles={[
-                        styles.box,
-                        errors.country ? styles.errorBox : null,
-                      ]}
-                      inputStyles={styles.input}
-                      dropdownStyles={styles.dropdown}
-                      fontFamily=""
-                      loading={loadingCountries}
-                      notFoundText="No countries found"
-                      notFoundTextFunction={() => {}}
-                      onDropdownOpen={() => {}}
-                    />
+                  render={() => (
+                    <LocationButton
+                      hasError={Boolean(errors.country || errors.city)}
+                      onPress={() => setShowCountrySelector(true)}
+                    >
+                      <LocationButtonText selected={Boolean(country && city)}>
+                        {country && city
+                          ? `${city}, ${country}`
+                          : "Select country & city"}
+                      </LocationButtonText>
+                      <AntDesign name="right" size={16} color="#888" />
+                    </LocationButton>
                   )}
                 />
                 <Controller
                   control={control}
                   name="city"
                   rules={{ required: "City is required" }}
-                  render={({ field: { onChange, value } }) => (
-                    <ListDropdown
-                      label="City"
-                      setSelected={(val: string) => onChange(val)}
-                      data={cities}
-                      save="value"
-                      placeholder={
-                        selectedCountryCode
-                          ? "Search cities..."
-                          : "Select country first"
-                      }
-                      searchPlaceholder="Start typing..."
-                      selectedOption={
-                        value ? { key: value, value } : {}
-                      }
-                      boxStyles={[
-                        styles.box,
-                        errors.city ? styles.errorBox : null,
-                        !selectedCountryCode ? styles.disabledBox : null,
-                      ]}
-                      inputStyles={styles.input}
-                      dropdownStyles={styles.dropdown}
-                      fontFamily=""
-                      loading={loadingCities}
-                      onDropdownOpen={handleCityDropdownOpen}
-                      disabled={!selectedCountryCode}
-                      notFoundText="No cities found"
-                      notFoundTextFunction={() => {}}
-                    />
-                  )}
+                  render={() => <></>}
                 />
 
                 <FormField
@@ -440,6 +381,18 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
                 </ButtonContainer>
           </ScrollContainer>
         </SafeAreaWrapper>
+
+        <CountrySelector
+          visible={showCountrySelector}
+          onClose={() => setShowCountrySelector(false)}
+          onSelect={handleCountrySelected}
+        />
+        <CitySelector
+          visible={showCitySelector}
+          onClose={() => setShowCitySelector(false)}
+          countryCode={selectedCountryCode}
+          onSelect={handleCitySelected}
+        />
       </ModalContainer>
     </Modal>
   );
@@ -638,25 +591,27 @@ const ImagePlaceholder = styled.View({
   borderColor: "#ccc",
 });
 
-const styles = StyleSheet.create({
-  box: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 0,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  errorBox: {
-    borderWidth: 1,
-    borderColor: "#ff7675",
-  },
-  disabledBox: { opacity: 0.6 },
-  input: { color: "#fff", paddingRight: 10 },
-  dropdown: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 0,
-    marginTop: 5,
-  },
-});
+const LocationButton = styled.TouchableOpacity<{ hasError?: boolean }>(
+  ({ hasError }: { hasError?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    borderWidth: hasError ? 1 : 0,
+    borderColor: hasError ? "#ff7675" : "transparent",
+  }),
+);
+
+const LocationButtonText = styled.Text<{ selected?: boolean }>(
+  ({ selected }: { selected?: boolean }) => ({
+    color: selected ? "#fff" : "#ccc",
+    fontSize: 14,
+    flexShrink: 1,
+  }),
+);
 
 export default AddClubModal;
