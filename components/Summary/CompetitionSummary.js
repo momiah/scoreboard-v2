@@ -76,6 +76,7 @@ const CompetitionSummary = memo(
     const description = competitionData?.description || "";
     const playtime = competitionData?.playingTime || [];
     const competitionId = competitionData.id;
+    const clubId = competitionData?.clubId;
 
     // Determine if this is a Doubles tournament
     const isDoublesTournament =
@@ -233,6 +234,24 @@ const CompetitionSummary = memo(
 
     return (
       <CompetitionSummaryContainer>
+        {clubId ? (
+          <ClubBadgeContainer>
+            <ClubIconCircle>
+              <Ionicons name="people" size={20} color="#00A2FF" />
+            </ClubIconCircle>
+            <ClubBadgeTextWrap>
+              <ClubBadgeText>
+                This{" "}
+                <ClubBadgeHighlight>{competitionType}</ClubBadgeHighlight> is
+                part of a club
+              </ClubBadgeText>
+              <ClubBadgeSubtext>
+                Run as part of a club community
+              </ClubBadgeSubtext>
+            </ClubBadgeTextWrap>
+          </ClubBadgeContainer>
+        ) : null}
+
         <PrizeDistribution
           prizePool={gameStats.prizePool}
           distribution={DISTRIBUTION}
@@ -337,6 +356,49 @@ const CompetitionSummaryContainer = styled.ScrollView({
   padding: 20,
   borderRadius: 12,
   marginBottom: 20,
+});
+
+const ClubBadgeContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  padding: 14,
+  marginBottom: 18,
+  borderRadius: 14,
+  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+});
+
+const ClubIconCircle = styled.View({
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(0, 162, 255, 0.18)",
+});
+
+const ClubBadgeTextWrap = styled.View({
+  flex: 1,
+});
+
+const ClubBadgeText = styled.Text({
+  color: "#ffffff",
+  fontSize: screenWidth <= 405 ? 14 : 15,
+  fontWeight: "600",
+});
+
+const ClubBadgeHighlight = styled.Text({
+  color: "#00A2FF",
+  fontWeight: "bold",
+  textTransform: "capitalize",
+});
+
+const ClubBadgeSubtext = styled.Text({
+  color: "#9fb8c8",
+  fontSize: screenWidth <= 405 ? 11 : 12,
+  marginTop: 2,
 });
 
 const SectionTitleContainer = styled.View({
