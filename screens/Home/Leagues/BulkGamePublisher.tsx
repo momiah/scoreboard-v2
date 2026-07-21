@@ -29,7 +29,13 @@ import {
   COLLECTION_NAMES,
 } from "@shared";
 import { calculateWin } from "../../../helpers/calculateWin";
-import { Game, GameTeam, SelectedPlayers, League } from "@shared/types";
+import {
+  Game,
+  GameTeam,
+  SelectedPlayers,
+  League,
+  CollectionName,
+} from "@shared/types";
 
 const { height: screenHight } = Dimensions.get("window");
 const popupHeight = screenHight * 0.3; // 30% of screen height
@@ -45,7 +51,6 @@ const BulkGamePublisher = () => {
   const { leagueId, leagueById } = route.params as BulkGamePublisherParams;
   const { currentUser, fetchPlayers, getUserById, sendNotification } =
     useContext(UserContext);
-  // @ts-expect-error - Context is not typed
   const { fetchCompetitionById } = useContext(LeagueContext)!;
   const {
     handleShowPopup,
@@ -279,7 +284,7 @@ const BulkGamePublisher = () => {
                 setPendingGames([]);
                 await fetchCompetitionById({
                   competitionId: leagueId,
-                  collectionName: COLLECTION_NAMES.leagues,
+                  collectionName: COLLECTION_NAMES.leagues as CollectionName,
                 });
               } else {
                 Alert.alert(

@@ -18,7 +18,7 @@ import { uploadLeagueImage } from "../../../utils/UploadLeagueImageToFirebase";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Popup from "../../../components/popup/Popup";
 import { PopupContext } from "../../../context/PopupContext";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import { COLLECTION_NAMES } from "@shared";
 
 const EditLeague = () => {
@@ -101,7 +101,7 @@ const EditLeague = () => {
         const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
         // Get file info to check size
-        const fileInfo = await FileSystem.getInfoAsync(pickedUri);
+        const fileInfo = new File(pickedUri);
 
         if (fileInfo.size && fileInfo.size > MAX_SIZE) {
           Alert.alert(
@@ -121,7 +121,7 @@ const EditLeague = () => {
         );
 
         // Optional: Log the final image size
-        const croppedInfo = await FileSystem.getInfoAsync(cropped.uri);
+        const croppedInfo = new File(cropped.uri);
         console.log(
           `Final image size: ${(croppedInfo.size / 1024).toFixed(1)}KB`,
         );
@@ -202,7 +202,7 @@ const EditLeague = () => {
               </ImagePlaceholder>
             )}
             <PlusIconWrapper>
-              <AntDesign name="pluscircle" size={28} color="#2196f3" />
+              <AntDesign name="plus-circle" size={28} color="#2196f3" />
             </PlusIconWrapper>
           </ImageWrapper>
         </TouchableOpacity>
@@ -333,7 +333,6 @@ const PlusIconWrapper = styled.View({
   position: "absolute",
   bottom: 10,
   right: 10,
-  backgroundColor: "white",
   borderRadius: 16,
 });
 

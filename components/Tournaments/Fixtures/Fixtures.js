@@ -1,10 +1,11 @@
 import React, { useState, useContext } from "react";
-import { SafeAreaView } from "react-native";
+import { SafeAreaView, Alert } from "react-native";
 import styled from "styled-components/native";
-import { AntDesign } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../../context/UserContext";
 import GenerateFixturesModal from "../../Modals/GenerateFixturesModal";
 import { FixturesDisplay } from "./FixturesAtoms";
+import { EmptyStateContainer } from "../EmptyStateContainer";
 
 const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
   const [showGenerateFixturesModal, setShowGenerateFixturesModal] =
@@ -25,24 +26,21 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
   const hasFixtures = fixturesArray && fixturesArray.length > 0;
   const tournamentType = tournament?.tournamentType || "Singles";
   const numberOfCourts = tournament?.numberOfCourts || 1;
-  const numberOfCourtsMessage = `${numberOfCourts} Court${
-    numberOfCourts > 1 ? "s" : ""
-  }`;
 
-  const numberOfParticipantsMessage = `${numberOfParticipants} Participant${
-    numberOfParticipants !== 1 ? "s" : ""
-  }`;
-  const numberOfTeamsMessage = `${Math.floor(numberOfParticipants / 2)} Team${
-    Math.floor(numberOfParticipants / 2) !== 1 ? "s" : ""
-  }`;
-
-  const FixtureDetailsMessage =
+  const numberOfTeams = Math.floor(numberOfParticipants / 2);
+  const participantsValue =
+    tournamentType === "Singles" ? numberOfParticipants : numberOfTeams;
+  const participantsLabel =
     tournamentType === "Singles"
-      ? numberOfParticipantsMessage
-      : numberOfTeamsMessage;
+      ? `Player${numberOfParticipants !== 1 ? "s" : ""}`
+      : `Team${numberOfTeams !== 1 ? "s" : ""}`;
 
-  const numberOfMatches =
-    fixturesArray.flatMap((round) => round.games || []).length || 0;
+  const allGames = fixturesArray.flatMap((round) => round.games || []);
+  const numberOfMatches = allGames.length;
+  const gamesCompleted = allGames.filter(
+    (game) => game.approvalStatus === "approved",
+  ).length;
+  const allGamesCompleted = gamesCompleted === numberOfMatches;
 
   const isEvenNumberOfParticipants = numberOfParticipants % 2 === 0;
   const emptyStateMessage =
@@ -52,9 +50,10 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
 
   const handleShowGenerateFixtures = () => {
     if (!isEvenNumberOfParticipants) {
-      alert("Please ensure an even number of participants.");
+      Alert.alert("Please ensure an even number of participants.");
       return;
     }
+
     setShowGenerateFixturesModal(true);
   };
 
@@ -62,10 +61,30 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
     <Container>
       {hasFixtures && (
         <Header>
-          <FixtureDetails>
-            {numberOfMatches} Matches - {numberOfCourtsMessage} -{" "}
-            {FixtureDetailsMessage}
-          </FixtureDetails>
+          <LeftGroup>
+            <DetailItem>
+              <Ionicons name="grid-outline" size={15} color="#00A2FF" />
+              <DetailText>
+                {numberOfCourts} Court{numberOfCourts > 1 ? "s" : ""}
+              </DetailText>
+            </DetailItem>
+            <DetailItem>
+              <Ionicons name="people-outline" size={15} color="#00A2FF" />
+              <DetailText>
+                {participantsValue} {participantsLabel}
+              </DetailText>
+            </DetailItem>
+          </LeftGroup>
+          <DetailItem>
+            <Ionicons
+              name="checkmark-done-outline"
+              size={15}
+              color={allGamesCompleted ? "#00A2FF" : "#ccc"}
+            />
+            <DetailText>
+              {gamesCompleted}/{numberOfMatches} Matches
+            </DetailText>
+          </DetailItem>
         </Header>
       )}
 
@@ -80,26 +99,12 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
           glowColor={glowColor}
         />
       ) : (
-        <Content>
-          <EmptyStateContainer>
-            <EmptyStateIcon>
-              <AntDesign name="calendar" size={64} color="#ccc" />
-            </EmptyStateIcon>
-            <EmptyStateText>No fixtures generated yet</EmptyStateText>
-            <EmptyStateSubtext>{emptyStateMessage}</EmptyStateSubtext>
-            {userRole === "admin" && (
-              <GenerateButton onPress={handleShowGenerateFixtures}>
-                <AntDesign
-                  name="plus"
-                  size={20}
-                  color="#fff"
-                  style={{ marginRight: 8 }}
-                />
-                <GenerateButtonText>Generate Fixtures</GenerateButtonText>
-              </GenerateButton>
-            )}
-          </EmptyStateContainer>
-        </Content>
+        <EmptyStateContainer
+          emptyStateMessage={emptyStateMessage}
+          userRole={userRole}
+          handleShowGenerateFixtures={handleShowGenerateFixtures}
+          label="Fixtures"
+        />
       )}
 
       {showGenerateFixturesModal && (
@@ -118,72 +123,34 @@ const Fixtures = ({ tournament, userRole, scrollToGameId, glowColor }) => {
 
 const Container = styled(SafeAreaView)({
   flex: 1,
-  // backgroundColor: "#020D18",
 });
 
 const Header = styled.View({
-  padding: "20px 20px 10px 20px",
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "15px 20px",
+  marginBottom: 10,
   borderBottomWidth: 1,
   borderBottomColor: "rgba(255, 255, 255, 0.1)",
-  marginBottom: 10,
 });
 
-const FixtureDetails = styled.Text({
-  fontSize: 14,
-  color: "#ccc",
-});
-
-const Content = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  padding: 20,
-});
-
-const EmptyStateContainer = styled.View({
-  alignItems: "center",
-  maxWidth: 300,
-});
-
-const EmptyStateIcon = styled.View({
-  marginBottom: 20,
-  opacity: 0.6,
-});
-
-const EmptyStateText = styled.Text({
-  fontSize: 18,
-  fontWeight: "600",
-  color: "#fff",
-  textAlign: "center",
-  marginBottom: 8,
-});
-
-const EmptyStateSubtext = styled.Text({
-  fontSize: 14,
-  color: "#ccc",
-  textAlign: "center",
-  marginBottom: 32,
-  lineHeight: 20,
-});
-
-const GenerateButton = styled.TouchableOpacity({
+const LeftGroup = styled.View({
   flexDirection: "row",
   alignItems: "center",
-  backgroundColor: "#00A2FF",
-  paddingHorizontal: 24,
-  paddingVertical: 14,
-  borderRadius: 8,
-  shadowColor: "#00A2FF",
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  elevation: 5,
+  gap: 14,
 });
 
-const GenerateButtonText = styled.Text({
-  color: "#fff",
-  fontSize: 16,
+const DetailItem = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
+});
+
+const DetailText = styled.Text({
+  fontSize: 13,
   fontWeight: "600",
+  color: "#ccc",
 });
 
 export default Fixtures;

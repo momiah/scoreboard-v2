@@ -115,6 +115,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
                   source={trophies[4]}
                   style={{ width: 32, height: 32 }}
                   resizeMode="contain"
+                  tintColor={"#FFA500"}
                 />
               </IconContainer>
               <OptionContent>

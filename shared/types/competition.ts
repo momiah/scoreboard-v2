@@ -12,6 +12,7 @@ export type CollectionName =
   | "reportedVideos"
   | "savedVideos"
   | "videoReportAppeals"
+  | "failedVideoUploads"
   | "clubs";
 
 export type CompetitionType =
@@ -159,6 +160,7 @@ export interface Tournament {
   pendingInvites: PendingInvites[];
   pendingRequests: PendingRequests[];
   approvalLimit: number;
+  numberOfCourts?: number;
 }
 
 export interface NormalizedCompetition {
@@ -195,4 +197,5 @@ export interface NormalizedCompetition {
   pendingRequests: PendingRequests[];
   approvalLimit: number;
   id: string;
+  numberOfCourts?: number;
 }

@@ -20,7 +20,7 @@ import { loadCountries, loadCities } from "../../utils/locationData";
 import ListDropdown from "../../components/ListDropdown/ListDropdown";
 import { PopupContext } from "../../context/PopupContext";
 import Popup from "../../components/popup/Popup";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 
 const EditProfile = ({ navigation }) => {
   const { currentUser, updateUserProfile } = useContext(UserContext);
@@ -145,7 +145,7 @@ const EditProfile = ({ navigation }) => {
         const MAX_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
         // Get file info to check size
-        const fileInfo = await FileSystem.getInfoAsync(pickedUri);
+        const fileInfo = new File(pickedUri);
 
         if (fileInfo.size && fileInfo.size > MAX_SIZE) {
           Alert.alert(
@@ -165,7 +165,7 @@ const EditProfile = ({ navigation }) => {
         );
 
         // Optional: Double-check the manipulated image size
-        const manipulatedInfo = await FileSystem.getInfoAsync(manipulated.uri);
+        const manipulatedInfo = new File(manipulated.uri);
         console.log(
           `Final image size: ${(manipulatedInfo.size / 1024).toFixed(1)}KB`,
         );

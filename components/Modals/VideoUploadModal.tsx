@@ -1,18 +1,29 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   ActivityIndicator,
   Modal,
   Dimensions,
   Animated,
   Alert,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { AntDesign } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { File } from "expo-file-system";
+import { Video } from "react-native-compressor";
 import { COMPETITION_TYPES } from "@shared";
 import { UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
+import { GameContext } from "../../context/GameContext";
+
+const COMPRESSION_OPTIONS = {
+  compressionMethod: "manual",
+  maxSize: 1280,
+  bitrate: 2_500_000,
+  minimumFileSizeForCompress: 0,
+} as const;
 
 interface VideoUploadModalProps {
   visible: boolean;
@@ -68,51 +79,30 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   showAddLaterHint = true,
 }) => {
   const [pickedVideo, setPickedVideo] = useState<PickedVideo | null>(null);
+  const [compressedUri, setCompressedUri] = useState<string | null>(null);
   const [errorText, setErrorText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [messageIndex, setMessageIndex] = useState(0);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressPct, setCompressPct] = useState(0);
+  const [messageStep, setMessageStep] = useState(0);
 
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const animRef = useRef<Animated.CompositeAnimation | null>(null);
   const messageOpacity = useRef(new Animated.Value(1)).current;
+
+  const compressProgressRef = useRef(0);
+  const cancellationIdRef = useRef<string | null>(null);
+  const cancelledRef = useRef(false);
+  const compressedUriRef = useRef<string | null>(null);
 
   const { pickVideo, startBackgroundUpload } = useVideoUpload({
     competitionId,
   });
-
-  // ── Simulated progress animation ──────────────────────────────────────────
-  useEffect(() => {
-    if (isProcessing) {
-      progressAnim.setValue(0);
-      const crawl = Animated.timing(progressAnim, {
-        toValue: 0.85,
-        duration: 100000,
-        useNativeDriver: false,
-      });
-      animRef.current = crawl;
-      crawl.start();
-    }
-
-    if (!isProcessing && pickedVideo) {
-      animRef.current?.stop();
-      Animated.timing(progressAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
-
-    if (!isProcessing && !pickedVideo) {
-      animRef.current?.stop();
-      progressAnim.setValue(0);
-    }
-  }, [isProcessing, pickedVideo]);
+  const { recordVideoUploadFailure } = useContext(GameContext);
 
   // ── Rotating processing messages with fade ────────────────────────────────
   useEffect(() => {
-    if (!isProcessing) {
-      setMessageIndex(0);
+    if (!isCompressing) {
+      setMessageStep(0);
       return;
     }
     const interval = setInterval(() => {
@@ -121,7 +111,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         duration: 700,
         useNativeDriver: true,
       }).start(() => {
-        setMessageIndex((prev) => (prev + 1) % PROCESSING_MESSAGES.length);
+        setMessageStep((prev) => (prev + 1) % (PROCESSING_MESSAGES.length * 3));
         Animated.timing(messageOpacity, {
           toValue: 1,
           duration: 500,
@@ -130,24 +120,115 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       });
     }, 5000);
     return () => clearInterval(interval);
-  }, [isProcessing]);
+  }, [isCompressing]);
+
+  const getGuardError = (video: PickedVideo): string | null => {
+    if (video.fileSize && video.fileSize > 6 * 1024 * 1024 * 1024) {
+      return "Video is too large. Please select a video under 6GB.";
+    }
+    if (video.duration && video.duration < 180000) {
+      return "Video is too short. Please upload a full game of at least 3 minutes.";
+    }
+    if (video.duration && video.duration > 900000) {
+      return "Video is too long. Please select a video under 15 minutes.";
+    }
+    return null;
+  };
+
+  const cleanupCompressedFile = () => {
+    const uri = compressedUriRef.current;
+    if (!uri) return;
+    try {
+      const file = new File(uri);
+      if (file.exists) file.delete();
+    } catch (e) {
+      console.warn("[VideoUploadModal] Failed to delete compressed file:", e);
+    }
+    compressedUriRef.current = null;
+  };
+
+  const resetState = () => {
+    cancellationIdRef.current = null;
+    compressProgressRef.current = 0;
+    progressAnim.setValue(0);
+    setCompressPct(0);
+    setIsCompressing(false);
+    setPickedVideo(null);
+    setCompressedUri(null);
+    setErrorText("");
+  };
+
+  const runCompression = async (video: PickedVideo) => {
+    cancelledRef.current = false;
+    cancellationIdRef.current = null;
+    compressProgressRef.current = 0;
+    setCompressPct(0);
+    progressAnim.setValue(0);
+    setIsCompressing(true);
+
+    try {
+      const uri = await Video.compress(
+        video.uri,
+        {
+          ...COMPRESSION_OPTIONS,
+          getCancellationId: (id) => {
+            cancellationIdRef.current = id;
+          },
+        },
+        (p) => {
+          compressProgressRef.current = p;
+          progressAnim.setValue(p);
+          const pct = Math.round(p * 100);
+          setCompressPct((prev) => (prev !== pct ? pct : prev));
+        },
+      );
+
+      compressedUriRef.current = uri;
+      setCompressedUri(uri);
+      setIsCompressing(false);
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    } catch (err) {
+      setIsCompressing(false);
+      progressAnim.setValue(0);
+
+      if (cancelledRef.current) return;
+
+      console.error("[VideoUploadModal] Compression failed:", err, {
+        sourceUri: video.uri,
+      });
+      setPickedVideo(null);
+      setErrorText("Compression failed. Please try selecting the video again.");
+      await recordVideoUploadFailure({
+        gameId,
+        competitionId,
+        userId: currentUser.userId,
+        errorMessage: err instanceof Error ? err.message : "compression failed",
+        lastProgress: Math.round(compressProgressRef.current * 100),
+      });
+    }
+  };
 
   const handleClose = () => {
-    if (isProcessing) {
+    if (isCompressing) {
       Alert.alert(
         "Video is processing",
-        "Are you sure you want to close? Your video is still being processed.",
+        "Are you sure you want to close? Your video is still being compressed.",
         [
           { text: "Cancel", style: "cancel" },
           {
             text: "Close anyway",
             style: "destructive",
             onPress: () => {
-              animRef.current?.stop();
-              progressAnim.setValue(0);
-              setPickedVideo(null);
-              setIsProcessing(false);
-              setErrorText("");
+              if (cancellationIdRef.current) {
+                cancelledRef.current = true;
+                Video.cancelCompression(cancellationIdRef.current);
+              }
+              cleanupCompressedFile();
+              resetState();
               onClose();
             },
           },
@@ -155,48 +236,50 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       );
       return;
     }
-    animRef.current?.stop();
-    progressAnim.setValue(0);
-    setPickedVideo(null);
-    setIsProcessing(false);
-    setErrorText("");
+    cleanupCompressedFile();
+    resetState();
     onClose();
   };
 
   const handlePickVideo = async () => {
-    if (isProcessing || isUploading) return;
+    if (isCompressing || isUploading) return;
     setErrorText("");
-    setIsProcessing(true);
-    const video = await pickVideo();
-    setIsProcessing(false);
-    if (video) setPickedVideo(video);
+    cleanupCompressedFile();
+    setCompressedUri(null);
+    setPickedVideo(null);
+    progressAnim.setValue(0);
+
+    const result = await pickVideo();
+
+    if (result.status === "cancelled") return;
+
+    if (result.status === "failed") {
+      const cloudService = Platform.OS === "ios" ? "iCloud" : "Google Photos";
+      setErrorText(
+        `This video is in ${cloudService} — download it to your device and retry.`,
+      );
+      return;
+    }
+
+    const { video } = result;
+    const guardError = getGuardError(video);
+    if (guardError) {
+      setErrorText(guardError);
+      return;
+    }
+
+    setPickedVideo(video);
+    await runCompression(video);
   };
 
   const handleUpload = async () => {
-    if (!pickedVideo) return;
+    if (!compressedUri || !pickedVideo) return;
     setErrorText("");
-
-    if (pickedVideo.fileSize && pickedVideo.fileSize > 2 * 1024 * 1024 * 1024) {
-      setErrorText("Video is too large. Please select a video under 2GB.");
-      return;
-    }
-    if (pickedVideo.duration && pickedVideo.duration < 180000) {
-      setErrorText(
-        "Video is too short. Please upload a full game of at least 3 minutes.",
-      );
-      return;
-    }
-    if (pickedVideo.duration && pickedVideo.duration > 900000) {
-      setErrorText(
-        "Video is too long. Please select a video under 15 minutes.",
-      );
-      return;
-    }
 
     setIsUploading(true);
     startBackgroundUpload({
       gameId,
-      videoUri: pickedVideo.uri,
+      videoUri: compressedUri,
       competitionName,
       competitionType,
       gamescore,
@@ -214,11 +297,21 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         : undefined,
     });
     setIsUploading(false);
+    compressedUriRef.current = null;
+    resetState();
     onClose();
   };
 
-  const hasVideo = !!pickedVideo;
-  const showProgress = isProcessing || hasVideo;
+  const hasVideo = !!compressedUri;
+  const showProgress = isCompressing || hasVideo;
+
+  const displayedMessage =
+    messageStep % 3 === 2
+      ? `Compressing video… ${compressPct}%`
+      : PROCESSING_MESSAGES[
+          (messageStep - Math.floor(messageStep / 3)) %
+            PROCESSING_MESSAGES.length
+        ];
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
@@ -260,7 +353,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
           <VideoPickerButton
             onPress={handlePickVideo}
             hasVideo={hasVideo}
-            disabled={isProcessing || isUploading}
+            disabled={isCompressing || isUploading}
           >
             <Ionicons
               name={hasVideo ? "videocam" : "videocam-outline"}
@@ -268,20 +361,21 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
               color={hasVideo ? "#00A2FF" : "rgba(255,255,255,0.5)"}
             />
             <VideoPickerText hasVideo={hasVideo}>
-              {isProcessing
-                ? "Processing..."
+              {isCompressing
+                ? "Compressing…"
                 : hasVideo
-                  ? "Video selected ✓"
+                  ? "Video ready ✓"
                   : "Select a video"}
             </VideoPickerText>
-            {isProcessing && <ActivityIndicator size="small" color="#00A2FF" />}
-            {hasVideo && !isProcessing && <VideoAttachedDot />}
+            {isCompressing && (
+              <ActivityIndicator size="small" color="#00A2FF" />
+            )}
+            {hasVideo && !isCompressing && <VideoAttachedDot />}
           </VideoPickerButton>
 
-          {/* ── Simulated progress bar ── */}
           {showProgress && (
             <ProgressContainer>
-              {isProcessing ? (
+              {isCompressing ? (
                 <Animated.Text
                   style={{
                     opacity: messageOpacity,
@@ -292,7 +386,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
                     fontStyle: "italic",
                   }}
                 >
-                  {PROCESSING_MESSAGES[messageIndex]}
+                  {displayedMessage}
                 </Animated.Text>
               ) : (
                 <ProgressLabel isProcessing={false}>
@@ -317,7 +411,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
           {/* ── Upload button ── */}
           <UploadButton
             onPress={handleUpload}
-            disabled={!hasVideo || isUploading || isProcessing}
+            disabled={!hasVideo || isUploading || isCompressing}
             style={{
               backgroundColor: !hasVideo ? "#444" : "#00A2FF",
               opacity: !hasVideo ? 0.6 : 1,

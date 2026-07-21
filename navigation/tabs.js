@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
@@ -254,32 +254,8 @@ const TabIcon = ({ name, color, size }) => {
 
 const Tabs = () => {
   const navigation = useNavigation();
-  const { notifications, chatSummaries, currentUser } = useContext(UserContext);
+  const { chatSummaries, notifications, currentUser } = useContext(UserContext);
   const { clubNavigationId } = useContext(LeagueContext);
-  const [showAd, setShowAd] = useState(true);
-  const [addCompetitionVisible, setAddCompetitionVisible] = useState(false);
-  const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
-  const [addTournamentModalVisible, setAddTournamentModalVisible] =
-    useState(false);
-  const [quickAddModalVisible, setQuickAddModalVisible] = useState(false);
-
-  const handleCompetitionOptionSelect = (option) => {
-    // Small delay to allow the first modal to close smoothly
-    setTimeout(() => {
-      if (option === "league") {
-        setAddLeagueModalVisible(true);
-      } else if (option === "tournament") {
-        setAddTournamentModalVisible(true);
-      } else if (option === "game") {
-        setQuickAddModalVisible(true);
-      }
-    }, 500);
-  };
-
-  const unreadNotifications = notifications.filter(
-    (notification) => notification.isRead === false,
-  ).length;
-
 
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
@@ -290,7 +266,9 @@ const Tabs = () => {
   );
 
   let initialRouteName = "Profile";
-  if (notifications.length === 0 || hasUnreadNotifications) {
+  if (!currentUser) {
+    initialRouteName = "Home";
+  } else if (notifications.length === 0 || hasUnreadNotifications) {
     initialRouteName = "Competitions";
   }
 

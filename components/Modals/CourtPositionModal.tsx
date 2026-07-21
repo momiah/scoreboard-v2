@@ -41,21 +41,23 @@ const buildInitialPositions = ({
   const slotsPerTeam = isDoubles ? 2 : 1;
   const existing = video.courtPositions;
 
-  const fill = (
-    teamKey: TeamKey,
-    team: { player1: Player; player2?: Player },
-  ) =>
-    Array.from({ length: slotsPerTeam }, (_, index) => {
-      const saved = existing?.[teamKey]?.[index];
-      if (saved !== undefined) return saved;
-      return index === 0 ? (team.player1 ?? null) : (team.player2 ?? null);
-    });
+  const fill = (teamKey: TeamKey) =>
+    Array.from(
+      { length: slotsPerTeam },
+      (_, index) => existing?.[teamKey]?.[index] ?? null,
+    );
 
   return {
-    team1: fill("team1", video.teams.team1),
-    team2: fill("team2", video.teams.team2),
+    team1: fill("team1"),
+    team2: fill("team2"),
   };
 };
+
+const hasAssignedPositions = (positions?: SelectedPlayers): boolean =>
+  Boolean(
+    positions &&
+    [...positions.team1, ...positions.team2].some((player) => player != null),
+  );
 
 const arePositionsEqual = (a: SelectedPlayers, b: SelectedPlayers): boolean => {
   const sameTeam = (left: (Player | null)[], right: (Player | null)[]) =>
@@ -157,79 +159,83 @@ const CourtPositionsModal = memo<CourtPositionsModalProps>(
     };
 
     return (
-      <>
-        <Modal
-          animationType="slide"
-          transparent
-          visible={visible}
-          onRequestClose={onClose}
-        >
-          <MenuOverlay>
-            <MenuContent>
-              <MenuHeader>
-                <MenuTitle>Court Positions</MenuTitle>
-                <TouchableOpacity onPress={onClose}>
-                  <AntDesign name="close-circle" size={26} color="red" />
-                </TouchableOpacity>
-              </MenuHeader>
+      <Modal
+        animationType="slide"
+        transparent
+        visible={visible}
+        onRequestClose={onClose}
+      >
+        <MenuOverlay>
+          <MenuContent>
+            <MenuHeader>
+              <MenuTitle>Court Positions</MenuTitle>
+              <TouchableOpacity onPress={onClose}>
+                <AntDesign name="close-circle" size={26} color="red" />
+              </TouchableOpacity>
+            </MenuHeader>
 
-              <ModalDescription>
-                {isUploader
-                  ? "Tap a position to set which side each player started on. This helps viewers recognize each player."
-                  : "Where each player started on the court."}
-              </ModalDescription>
-
-              <CourtWrapper>
-                <Court>
-                  {/* ── Team 1 half (top) ── */}
-                  <CourtHalf>
-                    <CenterLine />
-                    <SlotRow>
-                      {renderSlot("team1", 0)}
-                      {isDoubles && renderSlot("team1", 1)}
-                    </SlotRow>
-                  </CourtHalf>
-
-                  {/* ── Net ── */}
-                  <Net>
-                    <NetDashes>
-                      {Array.from({ length: 30 }).map((_, index) => (
-                        <NetDash key={index} />
-                      ))}
-                    </NetDashes>
-                    <NetLabel>NET</NetLabel>
-                  </Net>
-
-                  {/* ── Team 2 half (bottom) ── */}
-                  <CourtHalf>
-                    <CenterLine />
-                    <SlotRow>
-                      {renderSlot("team2", 0)}
-                      {isDoubles && renderSlot("team2", 1)}
-                    </SlotRow>
-                  </CourtHalf>
-                </Court>
-              </CourtWrapper>
-
-              {isUploader && (
-                <SaveButton
-                  onPress={handleSave}
-                  disabled={isSaving || !isDirty}
-                  isDisabled={isSaving || !isDirty}
-                >
-                  {isSaving ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark" size={20} color="#fff" />
-                      <SaveButtonText>Save Positions</SaveButtonText>
-                    </>
-                  )}
-                </SaveButton>
+            <ModalDescription>
+              {isUploader
+                ? "Tap a position to set which side each player started on. This helps viewers recognize each player."
+                : "Where each player started on the court."}
+              {!isUploader && !hasAssignedPositions(positions) && (
+                <UnassignedNote>
+                  {" "}
+                  (Uploader has not assigned court positions yet)
+                </UnassignedNote>
               )}
-            </MenuContent>
-          </MenuOverlay>
-        </Modal>
+            </ModalDescription>
+
+            <CourtWrapper>
+              <Court>
+                {/* ── Team 1 half (top) ── */}
+                <CourtHalf>
+                  <CenterLine />
+                  <SlotRow>
+                    {renderSlot("team1", 0)}
+                    {isDoubles && renderSlot("team1", 1)}
+                  </SlotRow>
+                </CourtHalf>
+
+                {/* ── Net ── */}
+                <Net>
+                  <NetDashes>
+                    {Array.from({ length: 30 }).map((_, index) => (
+                      <NetDash key={index} />
+                    ))}
+                  </NetDashes>
+                  <NetLabel>NET</NetLabel>
+                </Net>
+
+                {/* ── Team 2 half (bottom) ── */}
+                <CourtHalf>
+                  <CenterLine />
+                  <SlotRow>
+                    {renderSlot("team2", 0)}
+                    {isDoubles && renderSlot("team2", 1)}
+                  </SlotRow>
+                </CourtHalf>
+              </Court>
+            </CourtWrapper>
+
+            {isUploader && (
+              <SaveButton
+                onPress={handleSave}
+                disabled={isSaving || !isDirty}
+                isDisabled={isSaving || !isDirty}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark" size={20} color="#fff" />
+                    <SaveButtonText>Save Positions</SaveButtonText>
+                  </>
+                )}
+              </SaveButton>
+            )}
+          </MenuContent>
+        </MenuOverlay>
 
         {isUploader && (
           <SelectPlayerModal
@@ -241,7 +247,7 @@ const CourtPositionsModal = memo<CourtPositionsModalProps>(
             selected={selectedPlayer}
           />
         )}
-      </>
+      </Modal>
     );
   },
 );
@@ -274,6 +280,12 @@ const ModalDescription = styled.Text({
   paddingVertical: 12,
   //   textAlign: "center",
   //   marginBottom: 12,
+});
+
+const UnassignedNote = styled.Text({
+  color: "#aaa",
+  fontSize: 14,
+  fontStyle: "italic",
 });
 
 // ── Header

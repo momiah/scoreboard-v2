@@ -56,7 +56,7 @@ import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 import ActionPlaceholder from "@/components/ActionPlaceholder";
-
+// import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
 const VIEWABILITY_CONFIG: ViewabilityConfig = {
@@ -240,6 +240,19 @@ const Home = () => {
             ))}
           </SocialRow>
         </Overview>
+
+        {/* <TouchableOpacity
+          onPress={() =>
+            addPlayerToCompetition({
+              userId: "VXk56Lk6eITWa5aEuysyBfEVjXo2",
+              competitionId: "WNB-Week-7-24-06-2026-NLKYD",
+              notificationId: "nTwtgfOi9UyjbRkkcMiX",
+              collectionName: "tournaments",
+            })
+          }
+        >
+          <Text style={{ color: "white" }}>Add Player</Text>
+        </TouchableOpacity> */}
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>

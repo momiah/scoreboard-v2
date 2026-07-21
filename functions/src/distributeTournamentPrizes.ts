@@ -1,12 +1,103 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
-import { calculateTournamentPrizePool } from "@shared/helpers";
-import { ScoreboardProfile, TeamStats, Tournament } from "@shared/types";
+import {
+  calculateTournamentPrizePool,
+  getKnockoutTopFour,
+  isKnockoutComplete,
+} from "@shared/helpers";
+import {
+  sortPlayersByPlacement,
+  sortTeamsByPlacement,
+} from "@shared/helpers/getRankInCompetition";
+import { ScoreboardProfile, Tournament } from "@shared/types";
 import { sendNotification } from "./helpers/sendNotification";
 import { notificationTypes } from "@shared";
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
+const PLACEMENT_KEYS = ["first", "second", "third", "fourth"] as const;
+const PLACEMENT_SUFFIX = ["st", "nd", "rd", "th"] as const;
+
+interface PrizeAllocation {
+  userId: string;
+  prizeXP: number;
+  placementKey: (typeof PLACEMENT_KEYS)[number];
+  placementIndex: number;
+}
+
+const isRoundRobinComplete = (
+  tournament: Tournament,
+  tournamentId: string,
+): boolean => {
+  const { numberOfGames, gamesCompleted } = tournament;
+  if (
+    typeof numberOfGames !== "number" ||
+    typeof gamesCompleted !== "number" ||
+    numberOfGames === 0
+  ) {
+    console.log(
+      `[prizes] ${tournamentId} missing game tracking fields (numberOfGames: ${numberOfGames}, gamesCompleted: ${gamesCompleted})`,
+    );
+    return false;
+  }
+  if (gamesCompleted < numberOfGames) {
+    console.log(
+      `[prizes] ${tournamentId} not complete yet (${gamesCompleted}/${numberOfGames})`,
+    );
+    return false;
+  }
+  return true;
+};
+
+// Returns userIds grouped by placement position. prizeWinners[0] = 1st place,
+// prizeWinners[1] = 2nd, etc. Each entry holds 1 userId (singles) or 2 (doubles).
+const getPrizeWinnerIds = (tournament: Tournament): string[][] => {
+  const isKnockout = tournament.tournamentMode === "Knockout";
+  const isDoubles = tournament.tournamentType === "Doubles";
+
+  if (isKnockout) {
+    const topFour = getKnockoutTopFour(tournament.fixtures);
+    return [
+      topFour.first,
+      topFour.second,
+      topFour.third,
+      topFour.fourth,
+    ].filter((position): position is string[] => position !== null);
+  }
+
+  if (isDoubles) {
+    return sortTeamsByPlacement(tournament.tournamentTeams)
+      .slice(0, 4)
+      .map((team) => team.teamKey.split("-"));
+  }
+
+  return sortPlayersByPlacement(tournament.tournamentParticipants)
+    .slice(0, 4)
+    .map((player) => [player.userId!]);
+};
+
+const buildPrizeAllocations = (
+  prizeWinners: string[][],
+  prizePool: number,
+  isDoubles: boolean,
+): PrizeAllocation[] => {
+  const allocations: PrizeAllocation[] = [];
+  prizeWinners.forEach((userIds, placementIndex) => {
+    const positionPrize = Math.floor(
+      prizePool * (DISTRIBUTION[placementIndex] || 0),
+    );
+    const prizeXP = isDoubles ? Math.floor(positionPrize / 2) : positionPrize;
+    userIds.forEach((userId) => {
+      allocations.push({
+        userId,
+        prizeXP,
+        placementKey: PLACEMENT_KEYS[placementIndex],
+        placementIndex,
+      });
+    });
+  });
+  return allocations;
+};
 
 const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
   const db = admin.firestore();
@@ -16,35 +107,28 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
       .where("prizesDistributed", "==", false)
       .get();
 
-    for (const doc of snap.docs) {
-      const tournament = doc.data() as Tournament;
-      const tournamentId = doc.id;
+    for (const tournamentDoc of snap.docs) {
+      const tournament = tournamentDoc.data() as Tournament;
+      const tournamentId = tournamentDoc.id;
 
-      const { numberOfGames, gamesCompleted, prizesDistributed } = tournament;
-
-      // Skip if already distributed
-      if (prizesDistributed) {
+      if (tournament.prizesDistributed) {
         console.log(`[prizes] ${tournamentId} already distributed`);
         continue;
       }
-
-      // Skip if fields are missing or invalid
-      if (
-        typeof numberOfGames !== "number" ||
-        typeof gamesCompleted !== "number" ||
-        numberOfGames === 0
-      ) {
-        console.log(
-          `[prizes] ${tournamentId} missing game tracking fields (numberOfGames: ${numberOfGames}, gamesCompleted: ${gamesCompleted})`,
-        );
+      if (!tournament.fixturesGenerated) {
+        console.log(`[prizes] ${tournamentId} fixtures not generated yet`);
         continue;
       }
 
-      // Skip if not all games completed
-      if (gamesCompleted < numberOfGames) {
-        console.log(
-          `[prizes] ${tournamentId} not complete yet (${gamesCompleted}/${numberOfGames})`,
-        );
+      const isKnockout = tournament.tournamentMode === "Knockout";
+      const isDoubles = tournament.tournamentType === "Doubles";
+      const isComplete = isKnockout
+        ? isKnockoutComplete(tournament.fixtures)
+        : isRoundRobinComplete(tournament, tournamentId);
+
+      if (!isComplete) {
+        if (isKnockout)
+          console.log(`[prizes] ${tournamentId} knockout not complete yet`);
         continue;
       }
 
@@ -53,103 +137,67 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
         tournament.tournamentType as "Singles" | "Doubles",
       );
 
-      const placementKeys = ["first", "second", "third", "fourth"];
-      const placementSuffix = ["st", "nd", "rd", "th"];
+      const prizeWinners = getPrizeWinnerIds(tournament);
+      const allocations = buildPrizeAllocations(
+        prizeWinners,
+        prizePool,
+        isDoubles,
+      );
 
-      const isDoublesTournament = tournament.tournamentType === "Doubles";
-      let prizeWinners: string[][] = [];
-      if (isDoublesTournament) {
-        const teamsWithWins = tournament.tournamentTeams.filter(
-          (t: TeamStats) => t.numberOfWins > 0,
-        );
-        const sortedTeams = [...teamsWithWins].sort((a, b) => {
-          if (b.numberOfWins !== a.numberOfWins) {
-            return b.numberOfWins - a.numberOfWins;
-          }
-          return b.totalPointDifference - a.totalPointDifference;
-        });
-        const topTeams = sortedTeams.slice(0, 4);
-        for (
-          let placementIndex = 0;
-          placementIndex < Math.min(topTeams.length, placementKeys.length);
-          placementIndex++
-        ) {
-          const team = topTeams[placementIndex];
-          const [player1Id, player2Id] = team.teamKey.split("-");
-          prizeWinners.push([player1Id, player2Id]);
+      // Build player lookup once — was O(n) per player, now O(1).
+      const participantsById = new Map(
+        tournament.tournamentParticipants.map((p: ScoreboardProfile) => [
+          p.userId,
+          p,
+        ]),
+      );
+
+      // Batch user writes + fan out notifications in parallel.
+      const userWritesBatch = db.batch();
+      const notificationsToSend: Array<ReturnType<typeof buildNotification>> =
+        [];
+
+      for (const {
+        userId,
+        prizeXP,
+        placementKey,
+        placementIndex,
+      } of allocations) {
+        const playerProfile = participantsById.get(userId);
+        if (!playerProfile) {
+          console.error(`Player profile not found for player ${userId}`);
+          continue;
         }
-        console.log("top teams:", topTeams);
-      } else {
-        const contendersWithWins = tournament.tournamentParticipants.filter(
-          (p: ScoreboardProfile) => p.numberOfWins > 0,
-        );
-        const sortedContenders = [...contendersWithWins].sort((a, b) => {
-          if (b.numberOfWins !== a.numberOfWins) {
-            return b.numberOfWins - a.numberOfWins;
-          }
-          return b.totalPointDifference - a.totalPointDifference;
+
+        userWritesBatch.update(db.collection("users").doc(userId), {
+          "profileDetail.XP": admin.firestore.FieldValue.increment(prizeXP),
+          [`profileDetail.tournamentStats.${placementKey}`]:
+            admin.firestore.FieldValue.increment(1),
         });
-        const topContenders = sortedContenders.slice(0, 4);
-        for (
-          let placementIndex = 0;
-          placementIndex < Math.min(topContenders.length, placementKeys.length);
-          placementIndex++
-        ) {
-          const player = topContenders[placementIndex];
-          prizeWinners.push([player.userId!]);
-        }
-        console.log("top contenders:", topContenders);
+
+        notificationsToSend.push(
+          buildNotification({
+            userId,
+            tournamentId,
+            tournamentName: tournament.tournamentName,
+            prizeXP,
+            placementIndex,
+            isDoubles,
+          }),
+        );
+
+        console.log(
+          `+${prizeXP} XP -> user ${userId} (${playerProfile.username}) (${placementKey})`,
+        );
       }
 
-      for (let index = 0; index < prizeWinners.length; index++) {
-        const teamPrize = Math.floor(prizePool * (DISTRIBUTION[index] || 0));
-        const prizeXP = isDoublesTournament
-          ? Math.floor(teamPrize / 2)
-          : teamPrize;
-        const placementKey = placementKeys[index];
-
-        for (const playerId of prizeWinners[index]) {
-          const playerProfile = tournament.tournamentParticipants.find(
-            (p: ScoreboardProfile) => p.userId === playerId,
-          );
-          if (!playerProfile) {
-            console.error(`Player profile not found for player ${playerId}`);
-            continue;
-          }
-
-          const userRef = db.collection("users").doc(playerId);
-
-          await userRef.update({
-            "profileDetail.XP": admin.firestore.FieldValue.increment(prizeXP),
-            [`profileDetail.tournamentStats.${placementKey}`]:
-              admin.firestore.FieldValue.increment(1),
-          });
-
-          console.log(
-            `+${prizeXP} XP -> user ${playerId} (${playerProfile.username}) (${placementKey})`,
-          );
-
-          const message = `${isDoublesTournament ? `Your team has` : `You have`} placed ${index + 1}${placementSuffix[index]} in ${tournament.tournamentName} and won ${prizeXP} CP!`;
-
-          await sendNotification({
-            createdAt: new Date(),
-            type: notificationTypes.INFORMATION.TOURNAMENT.TYPE,
-            message: message,
-            isRead: false,
-            senderId: "system",
-            recipientId: playerId,
-            data: {
-              tournamentId: tournamentId,
-            },
-            response: "",
-          });
-        }
-      }
-
-      await db.collection("tournaments").doc(tournamentId).update({
+      userWritesBatch.update(db.collection("tournaments").doc(tournamentId), {
         prizesDistributed: true,
         prizeDistributionDate: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      await userWritesBatch.commit();
+      await Promise.all(notificationsToSend.map((n) => sendNotification(n)));
 
       console.log(`Prizes distributed for tournament ${tournamentId}`);
     }
@@ -158,6 +206,33 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
   } catch (err) {
     console.error("[prizes] error:", err);
   }
+});
+
+const buildNotification = ({
+  userId,
+  tournamentId,
+  tournamentName,
+  prizeXP,
+  placementIndex,
+  isDoubles,
+}: {
+  userId: string;
+  tournamentId: string;
+  tournamentName: string;
+  prizeXP: number;
+  placementIndex: number;
+  isDoubles: boolean;
+}) => ({
+  createdAt: new Date(),
+  type: notificationTypes.INFORMATION.TOURNAMENT.TYPE,
+  message: `${isDoubles ? "Your team has" : "You have"} placed ${
+    placementIndex + 1
+  }${PLACEMENT_SUFFIX[placementIndex]} in ${tournamentName} and won ${prizeXP} CP!`,
+  isRead: false,
+  senderId: "system",
+  recipientId: userId,
+  data: { tournamentId },
+  response: "",
 });
 
 export { distributeTournamentPrizes };

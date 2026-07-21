@@ -108,12 +108,20 @@ const GameScreen: React.FC = () => {
   const team2Player1 = team2?.player1;
   const team2Player2 = team2?.player2 ?? null;
 
-  const isParticipant = [
-    team1Player1?.userId,
-    team1Player2?.userId,
-    team2Player1?.userId,
-    team2Player2?.userId,
-  ].includes(currentUser?.userId);
+  // Live game data is the source of truth for participation — route param
+  // team payloads (from feed/notification docs) may lack userIds
+  const participantTeam1 = liveGame?.team1 ?? team1;
+  const participantTeam2 = liveGame?.team2 ?? team2;
+
+  const participantIds = [
+    participantTeam1?.player1?.userId,
+    participantTeam1?.player2?.userId,
+    participantTeam2?.player1?.userId,
+    participantTeam2?.player2?.userId,
+  ].filter(Boolean);
+
+  const isParticipant =
+    !!currentUser?.userId && participantIds.includes(currentUser.userId);
 
   const hasAlreadyUploaded = videos.some(
     (video) => video.postedBy.userId === currentUser?.userId,

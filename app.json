@@ -2,7 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
-    "version": "3.0.6",
+    "version": "3.0.8",
     "runtimeVersion": "3.0.0",
     "orientation": "default",
     "icon": "./assets/court-champ-logo-icon-w-bg.png",
@@ -16,7 +16,7 @@
     "ios": {
       "backgroundColor": "#00152B",
       "supportsTablet": true,
-      "buildNumber": "25",
+      "buildNumber": "27",
       "bundleIdentifier": "com.courtchamp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
@@ -97,7 +97,9 @@
       ],
       "expo-video",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-apple-authentication",
+      "react-native-compressor"
     ],
     "extra": {
       "eas": {

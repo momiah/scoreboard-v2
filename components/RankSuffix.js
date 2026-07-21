@@ -21,6 +21,14 @@ const RankSuffix = ({ number, style, numberStyle, suffixStyle }) => {
     return <Text style={style}>N/A</Text>;
   }
 
+  if (number === 0) {
+    return (
+      <Text style={style}>
+        <Text style={numberStyle}>-</Text>
+      </Text>
+    );
+  }
+
   const suffix = getOrdinalSuffix(number);
   const fontSize = numberStyle?.fontSize || defaultFontSize;
 
@@ -42,13 +50,5 @@ const RankSuffix = ({ number, style, numberStyle, suffixStyle }) => {
     </Text>
   );
 };
-
-// Optional prop types validation
-// RankSuffix.propTypes = {
-//   number: PropTypes.number,
-//   style: PropTypes.object,
-//   numberStyle: PropTypes.object,
-//   suffixStyle: PropTypes.object,
-// };
 
 export default RankSuffix;

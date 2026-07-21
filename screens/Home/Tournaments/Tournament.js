@@ -17,6 +17,7 @@ import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { calculateCompetitionStatus } from "../../../helpers/calculateCompetitionStatus";
 import Fixtures from "../../../components/Tournaments/Fixtures/Fixtures";
+import Brackets from "../../../components/Tournaments/Brackets/Brackets";
 
 import { ccDefaultImage } from "../../../mockImages/index";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
@@ -146,10 +147,13 @@ const Tournament = () => {
     }
   };
 
+  const fixturesTabLabel =
+    tournamentById?.tournamentMode === "Knockout" ? "Brackets" : "Fixtures";
+
   const tabs = [
     { component: "Chat Room" },
     { component: "Summary" },
-    { component: "Fixtures" },
+    { component: fixturesTabLabel },
     { component: "Videos" },
     { component: "Player Performance" },
     ...(tournamentById?.tournamentType !== "Singles"
@@ -196,7 +200,10 @@ const Tournament = () => {
           />
         );
       case "Fixtures":
-        return (
+      case "Brackets":
+        return tournamentById?.tournamentMode === "Knockout" ? (
+          <Brackets tournament={tournamentById} userRole={userRole} />
+        ) : (
           <Fixtures
             tournament={tournamentById}
             userRole={userRole}
