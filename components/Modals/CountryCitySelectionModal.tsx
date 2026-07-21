@@ -7,13 +7,15 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  InteractionManager,
   ListRenderItem,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import Icon from "react-native-ico-flags";
 import { loadCountries, loadCities } from "../../utils/locationData";
+import { hasFlag } from "../../utils/flagCountryCodes";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -83,7 +85,9 @@ export const CountrySelector = ({
     >
       <LocationName>{item.value}</LocationName>
       <FlagCircle>
-        <Icon name={item.key} height="40" width="40" />
+        {hasFlag(item.key) ? (
+          <Icon name={item.key} height="40" width="40" />
+        ) : null}
       </FlagCircle>
     </LocationItem>
   );
@@ -178,8 +182,11 @@ export const CitySelector = ({
       return;
     }
 
+    // Show the loading state immediately so the modal opens sharply, then do
+    // the heavy city lookup once the open animation/interactions have settled.
     setLoading(true);
-    const timeout = setTimeout(() => {
+    setCities([]);
+    const task = InteractionManager.runAfterInteractions(() => {
       try {
         setCities(loadCities(countryCode));
       } catch (e) {
@@ -188,9 +195,9 @@ export const CitySelector = ({
       } finally {
         setLoading(false);
       }
-    }, 0);
+    });
 
-    return () => clearTimeout(timeout);
+    return () => task.cancel();
   }, [visible, countryCode]);
 
   const filteredCities = useMemo(() => {
@@ -224,7 +231,7 @@ export const CitySelector = ({
               onPress={onBack}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <AntDesign name="arrow-left" size={22} color="#fff" />
+              <Ionicons name="chevron-back" size={24} color="#fff" />
               <ModalTitle>Select City</ModalTitle>
             </BackRow>
           </Header>
