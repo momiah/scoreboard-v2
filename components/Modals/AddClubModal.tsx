@@ -15,7 +15,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import * as FileSystem from "expo-file-system";
+import { File, Paths } from "expo-file-system";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
@@ -142,13 +142,16 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
             [{ resize: { width: 600 } }],
             { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
           );
-          const base =
-            FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? "";
-          if (base) {
-            const stableUri = `${base}club-draft-${Date.now()}.jpg`;
-            await FileSystem.copyAsync({ from: cropped.uri, to: stableUri });
-            setSelectedImage(stableUri);
-          } else {
+          // Copy the manipulated image into the cache directory so we hold a
+          // stable URI (the picker/manipulator temp file can be reclaimed).
+          try {
+            const stableFile = new File(
+              Paths.cache,
+              `club-draft-${Date.now()}.jpg`,
+            );
+            new File(cropped.uri).copy(stableFile);
+            setSelectedImage(stableFile.uri);
+          } catch {
             setSelectedImage(cropped.uri);
           }
         } catch (e) {
