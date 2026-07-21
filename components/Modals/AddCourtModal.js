@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
 import {
@@ -9,8 +9,10 @@ import {
   View,
   Platform,
 } from "react-native";
-import { loadCountries, loadCities } from "../../utils/locationData";
-import ListDropdown from "../ListDropdown/ListDropdown";
+import {
+  CountrySelector,
+  CitySelector,
+} from "./CountryCitySelectionModal";
 import { Ionicons } from "@expo/vector-icons";
 
 const AddCourtModal = ({
@@ -23,50 +25,33 @@ const AddCourtModal = ({
 }) => {
   const [courtCreationLoading, setCourtCreationLoading] = useState(false);
 
-  // Coutry and city state
-  const [countries, setCountries] = useState([]);
+  // Country and city state
   const [selectedCountryCode, setSelectedCountryCode] = useState(null);
-
-  const [cities, setCities] = useState([]);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [loadingCountries, setLoadingCountries] = useState(false);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    if (countries.length) return;
-
-    setLoadingCountries(true);
-    setTimeout(() => {
-      try {
-        const all = loadCountries();
-        setCountries(all);
-      } finally {
-        setLoadingCountries(false);
-      }
-    }, 0);
-  }, [visible, countries]);
-
-  const handleCityDropdownOpen = useCallback(async () => {
-    if (!selectedCountryCode) {
-      setCities([]);
-      return;
-    }
-
-    setLoadingCities(true);
-    try {
-      const list = loadCities(selectedCountryCode);
-      setCities(list);
-    } catch (e) {
-      console.error(e);
-      setCities([]);
-    } finally {
-      setLoadingCities(false);
-    }
-  }, [selectedCountryCode]);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [showCitySelector, setShowCitySelector] = useState(false);
 
   const handleChange = (key, value) => {
     setCourtDetails((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleCountrySelected = (selectedCountry) => {
+    handleChange("location", {
+      ...courtDetails.location,
+      country: selectedCountry.value,
+      countryCode: selectedCountry.key,
+      city: "",
+    });
+    setSelectedCountryCode(selectedCountry.key);
+    setShowCitySelector(true);
+  };
+
+  const handleCitySelected = (selectedCity) => {
+    handleChange("location", {
+      ...courtDetails.location,
+      city: selectedCity.value,
+    });
+    setShowCitySelector(false);
+    setShowCountrySelector(false);
   };
 
   const allFieldsFilled = useMemo(() => {
@@ -116,66 +101,22 @@ const AddCourtModal = ({
                   autoComplete="off"
                   spellCheck={false}
                 />
-                <ListDropdown
-                  label="Country"
-                  setSelected={(val) => {
-                    const selectedCountry = countries.find(
-                      (c) => c.value === val,
-                    );
-                    handleChange("location", {
-                      ...courtDetails.location,
-                      country: val,
-                      countryCode: selectedCountry?.key,
-                    });
-
-                    setSelectedCountryCode(selectedCountry?.key);
-                    setCities([]);
-                  }}
-                  data={countries}
-                  save="value"
-                  placeholder={
-                    loadingCountries ? "Loading countries..." : "Select country"
-                  }
-                  selectedOption={
-                    courtDetails.location.country
-                      ? {
-                          key: courtDetails.location.countryCode,
-                          value: courtDetails.location.country,
-                        }
-                      : null
-                  }
-                  loading={loadingCountries}
-                />
-
-                {/* City Dropdown */}
-                <ListDropdown
-                  label="City"
-                  setSelected={(val) => {
-                    handleChange("location", {
-                      ...courtDetails.location,
-                      city: val,
-                    });
-                  }}
-                  data={cities}
-                  save="value"
-                  placeholder={
-                    selectedCountryCode
-                      ? "Search cities..."
-                      : "Select country first"
-                  }
-                  searchPlaceholder="Start typing..."
-                  selectedOption={
-                    courtDetails.location.city
-                      ? {
-                          key: courtDetails.location.city,
-                          value: courtDetails.location.city,
-                        }
-                      : null
-                  }
-                  loading={loadingCities}
-                  onDropdownOpen={handleCityDropdownOpen}
-                  disabled={loadingCountries || !selectedCountryCode}
-                />
+                <Label>Country / City</Label>
+                <LocationButton onPress={() => setShowCountrySelector(true)}>
+                  <LocationButtonText
+                    selected={
+                      !!(
+                        courtDetails.location.country &&
+                        courtDetails.location.city
+                      )
+                    }
+                  >
+                    {courtDetails.location.country && courtDetails.location.city
+                      ? `${courtDetails.location.city}, ${courtDetails.location.country}`
+                      : "Select country & city"}
+                  </LocationButtonText>
+                  <Ionicons name="chevron-forward" size={18} color="#888" />
+                </LocationButton>
                 <Label>Post Code/ ZIP Code</Label>
                 <Input
                   value={courtDetails.location.postCode}
@@ -234,6 +175,19 @@ const AddCourtModal = ({
             )}
           />
         </CourtLocationWrapper>
+
+        <CountrySelector
+          visible={showCountrySelector}
+          onClose={() => setShowCountrySelector(false)}
+          onSelect={handleCountrySelected}
+        >
+          <CitySelector
+            visible={showCitySelector}
+            onBack={() => setShowCitySelector(false)}
+            countryCode={selectedCountryCode}
+            onSelect={handleCitySelected}
+          />
+        </CountrySelector>
       </ModalContainer>
     </Modal>
   );
@@ -283,6 +237,23 @@ const Input = styled.TextInput({
   paddingLeft: 12,
   marginBottom: 16,
 });
+
+const LocationButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  height: 40,
+  borderRadius: 6,
+  backgroundColor: "rgba(255, 255, 255, 0.2)",
+  paddingHorizontal: 12,
+  marginBottom: 16,
+});
+
+const LocationButtonText = styled.Text(({ selected }) => ({
+  color: selected ? "white" : "#ccc",
+  fontSize: 14,
+  flexShrink: 1,
+}));
 
 const ButtonContainer = styled.View({
   flexDirection: "row",

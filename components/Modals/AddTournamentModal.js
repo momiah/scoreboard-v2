@@ -267,7 +267,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId =
                   required
                 />
 
-                <Label>Location</Label>
+                <Label>Court Location</Label>
                 <CourtSelector
                   hasError={!!errors.location}
                   onPress={() => setShowSearchCourtModal(true)}
