@@ -119,7 +119,8 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
     if (imagePickInFlightRef.current) return;
     imagePickInFlightRef.current = true;
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
           "Photos access",
@@ -237,9 +238,7 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
           lastName: userInfo.lastName,
           location: userInfo.location ?? locationSchema,
         },
-        clubAdmins: [
-          { userId: userInfo.userId, username: userInfo.username },
-        ],
+        clubAdmins: [{ userId: userInfo.userId, username: userInfo.username }],
         createdAt: new Date(),
         pendingInvites: [],
         pendingRequests: [],
@@ -292,96 +291,96 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
           >
-                <ModalTitle>Create Club</ModalTitle>
-                <ModalSubtitle>
-                  Add a Club for your Community where you can create Leagues,
-                  Tournaments and see accumulate Player performance
-                </ModalSubtitle>
+            <ModalTitle>Create Club</ModalTitle>
+            <ModalSubtitle>
+              Add a Club for your Community where you can create Leagues,
+              Tournaments and see accumulate Player performance
+            </ModalSubtitle>
 
-                <ImagePickerContainer onPress={handleImagePick}>
-                  {selectedImage ? (
-                    <>
-                      <ClubImage source={{ uri: selectedImage }} />
-                      <OverlayIcon>
-                        <AntDesign name="pluscircleo" size={32} color="#fff" />
-                      </OverlayIcon>
-                    </>
-                  ) : (
-                    <ImagePlaceholder>
-                      <AntDesign name="pluscircleo" size={32} color="#ccc" />
-                      <Text style={{ color: "#ccc", marginTop: 6 }}>
-                        Club Image
-                      </Text>
-                    </ImagePlaceholder>
-                  )}
-                </ImagePickerContainer>
+            <ImagePickerContainer onPress={handleImagePick}>
+              {selectedImage ? (
+                <>
+                  <ClubImage source={{ uri: selectedImage }} />
+                  <OverlayIcon>
+                    <AntDesign name="plus-circle" size={32} color="#fff" />
+                  </OverlayIcon>
+                </>
+              ) : (
+                <ImagePlaceholder>
+                  <AntDesign name="plus-circle" size={32} color="#ccc" />
+                  <Text style={{ color: "#ccc", marginTop: 6 }}>
+                    Club Image
+                  </Text>
+                </ImagePlaceholder>
+              )}
+            </ImagePickerContainer>
 
-                <FormField
-                  label="Club Name"
-                  name="clubName"
-                  control={control}
-                  error={errors.clubName}
-                  required
-                />
+            <FormField
+              label="Club Name"
+              name="clubName"
+              control={control}
+              error={errors.clubName}
+              required
+            />
 
-                <LabelContainer>
-                  <Label>
-                    Club Home Location<ErrorText>*</ErrorText>
-                  </Label>
-                  {(errors.country || errors.city) && (
-                    <ErrorText>Country and city are required</ErrorText>
-                  )}
-                </LabelContainer>
+            <LabelContainer>
+              <Label>
+                Club Home Location<ErrorText>*</ErrorText>
+              </Label>
+              {(errors.country || errors.city) && (
+                <ErrorText>Country and city are required</ErrorText>
+              )}
+            </LabelContainer>
 
-                <Controller
-                  control={control}
-                  name="country"
-                  rules={{ required: "Country is required" }}
-                  render={() => (
-                    <LocationButton
-                      hasError={Boolean(errors.country || errors.city)}
-                      onPress={() => setShowCountrySelector(true)}
-                    >
-                      <LocationButtonText selected={Boolean(country && city)}>
-                        {country && city
-                          ? `${city}, ${country}`
-                          : "Select country & city"}
-                      </LocationButtonText>
-                      <AntDesign name="right" size={16} color="#888" />
-                    </LocationButton>
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="city"
-                  rules={{ required: "City is required" }}
-                  render={() => <></>}
-                />
+            <Controller
+              control={control}
+              name="country"
+              rules={{ required: "Country is required" }}
+              render={() => (
+                <LocationButton
+                  hasError={Boolean(errors.country || errors.city)}
+                  onPress={() => setShowCountrySelector(true)}
+                >
+                  <LocationButtonText selected={Boolean(country && city)}>
+                    {country && city
+                      ? `${city}, ${country}`
+                      : "Select country & city"}
+                  </LocationButtonText>
+                  <AntDesign name="right" size={16} color="#888" />
+                </LocationButton>
+              )}
+            />
+            <Controller
+              control={control}
+              name="city"
+              rules={{ required: "City is required" }}
+              render={() => <></>}
+            />
 
-                <FormField
-                  label="Club Description"
-                  name="clubDescription"
-                  control={control}
-                  error={errors.clubDescription}
-                  multiline
-                />
+            <FormField
+              label="Club Description"
+              name="clubDescription"
+              control={control}
+              error={errors.clubDescription}
+              multiline
+            />
 
-                <ButtonContainer>
-                  <CancelButton onPress={() => setModalVisible(false)}>
-                    <CancelText>Cancel</CancelText>
-                  </CancelButton>
+            <ButtonContainer>
+              <CancelButton onPress={() => setModalVisible(false)}>
+                <CancelText>Cancel</CancelText>
+              </CancelButton>
 
-                  <CreateButton
-                    disabled={!canCreate}
-                    onPress={handleSubmit(onSubmit)}
-                  >
-                    {clubCreationLoading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <CreateText>Create</CreateText>
-                    )}
-                  </CreateButton>
-                </ButtonContainer>
+              <CreateButton
+                disabled={!canCreate}
+                onPress={handleSubmit(onSubmit)}
+              >
+                {clubCreationLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <CreateText>Create</CreateText>
+                )}
+              </CreateButton>
+            </ButtonContainer>
           </ScrollContainer>
         </SafeAreaWrapper>
 
