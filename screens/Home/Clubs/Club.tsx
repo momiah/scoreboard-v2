@@ -32,7 +32,6 @@ import ClubFeed from "./tabs/ClubFeed";
 import ClubPerformance from "./tabs/ClubPerformance";
 import ClubLeagues from "./tabs/ClubLeagues";
 import ClubTournaments from "./tabs/ClubTournaments";
-import InviteClubMembersModal from "../../../components/Modals/InviteClubMembersModal";
 import UserRoleTag from "../../../components/UserRoleTag";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -83,7 +82,6 @@ const ClubScreen: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<PrimaryTab>(
     primaryTab ?? "Feed",
   );
-  const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
   const isOwner = currentUser?.userId === clubById?.clubOwner?.userId;
   const isAdmin = clubById?.clubAdmins?.some(
@@ -329,7 +327,6 @@ const ClubScreen: React.FC = () => {
                       iconPosition={"right"}
                       bold
                     />
-                    <Tag name="Club" color="#FAB234" />
                   </View>
                   {isOwner ? (
                     <Tag
@@ -354,20 +351,27 @@ const ClubScreen: React.FC = () => {
                   ) : null}
                 </View>
 
-                {/* Row 2: Invite Members (admin) or role-based action (others) */}
+                {/* Row 2: Club tag + Invite Members (admin) or role action.
+                    Mirrors the League/Tournament invite-button row. */}
                 <View
                   style={{
                     flexDirection: "row",
-                    justifyContent: "flex-end",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                     marginTop: 5,
                   }}
                 >
+                  <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag name="Club" color="#FAB234" />
+                  </View>
                   {canInvite ? (
                     <Tag
                       name="Invite Members"
                       color="#00A2FF"
                       icon="paper-plane-sharp"
-                      onPress={() => setInviteModalVisible(true)}
+                      onPress={() =>
+                        navigation.navigate("InvitePlayer", { club })
+                      }
                       bold
                     />
                   ) : (
@@ -410,14 +414,6 @@ const ClubScreen: React.FC = () => {
           </TabsContainer>
 
           <ContentArea>{renderPrimaryContent()}</ContentArea>
-
-          {club && (
-            <InviteClubMembersModal
-              visible={inviteModalVisible}
-              onClose={() => setInviteModalVisible(false)}
-              club={club}
-            />
-          )}
         </>
       )}
     </View>
