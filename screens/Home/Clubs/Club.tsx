@@ -460,21 +460,19 @@ const BackRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: 8,
 });
 
 const BackButton = styled.TouchableOpacity({
   padding: 4,
 });
 
-
+// Title / address blocks mirror the League & Tournament overview so the club
+// header sits at the same compact height (matching padding, radius, margins).
 const TitleBlock = styled.View({
-  paddingVertical: 6,
-  paddingHorizontal: 8,
-  backgroundColor: "rgba(0, 0, 0, 0.35)",
-  borderRadius: 8,
+  padding: 5,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 5,
   alignSelf: "flex-start",
-  marginBottom: 10,
 });
 
 const ClubNameText = styled.Text({
@@ -486,12 +484,12 @@ const ClubNameText = styled.Text({
 const AddressRow = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
-  gap: 6,
-  marginBottom: 12,
-  paddingVertical: 6,
-  paddingHorizontal: 8,
-  backgroundColor: "rgba(0, 0, 0, 0.35)",
-  borderRadius: 8,
+  gap: 5,
+  marginBottom: 15,
+  paddingVertical: 4,
+  paddingHorizontal: 6,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 5,
   alignSelf: "flex-start",
   maxWidth: "100%",
 });
