@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { ScrollView, Dimensions } from "react-native";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import styled from "styled-components/native";
 
+import LineTabs from "../../../../components/LineTabs";
 import PlayerPerformance from "../../../../components/performance/Player/PlayerPerformance";
 import TeamPerformance from "../../../../components/performance/Team/TeamPerformance";
 import LeaguePerformance from "./performance/LeaguePerformance";
@@ -13,8 +12,6 @@ import { enrichPlayers } from "../../../../helpers/enrichPlayers";
 import { db } from "../../../../services/firebase.config";
 import { COLLECTION_NAMES } from "@shared";
 import { USE_MOCK_DATA, MOCK_PLAYERS, MOCK_TEAMS } from "../mockClubData";
-
-const { width: screenWidth } = Dimensions.get("window");
 
 const PERFORMANCE_SUB_TABS = [
   { key: "player", label: "Player" },
@@ -260,53 +257,15 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
 
   return (
     <>
-      <TabRow>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          // contentContainerStyle={{ paddingHorizontal: 4 }}
-        >
-          {PERFORMANCE_SUB_TABS.map((t) => (
-            <SubTabItem
-              key={t.key}
-              isActive={activeTab === t.key}
-              onPress={() => setActiveTab(t.key)}
-            >
-              <SubTabText isActive={activeTab === t.key}>{t.label}</SubTabText>
-            </SubTabItem>
-          ))}
-        </ScrollView>
-      </TabRow>
+      <LineTabs
+        tabs={PERFORMANCE_SUB_TABS.map((t) => ({ key: t.key, label: t.label }))}
+        activeTab={activeTab}
+        onTabPress={setActiveTab}
+        fontSize={13}
+      />
       {renderContent()}
     </>
   );
 };
-
-const TabRow = styled.View({
-  flexDirection: "row",
-  marginBottom: 0,
-  paddingTop: 4,
-});
-
-const SubTabItem = styled.TouchableOpacity<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    flex: 1,
-    minWidth: (screenWidth - 32) / 4,
-    borderBottomColor: isActive ? "#00A2FF" : "rgb(9, 33, 62)",
-    borderBottomWidth: 2,
-    paddingVertical: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  }),
-);
-
-const SubTabText = styled.Text<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    fontSize: 13,
-    fontWeight: "bold",
-    color: isActive ? "#fff" : "#aaa",
-    textAlign: "center",
-  }),
-);
 
 export default ClubPerformance;
