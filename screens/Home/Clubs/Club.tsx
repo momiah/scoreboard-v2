@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
+import { View, Text, Dimensions, Linking } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   useRoute,
@@ -20,6 +20,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { collection, getDocs } from "firebase/firestore";
 
 import Tag from "../../../components/Tag";
+import LineTabs from "../../../components/LineTabs";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import { ccDefaultImage } from "../../../mockImages/index";
@@ -388,23 +389,13 @@ const ClubScreen: React.FC = () => {
               locations={[0.1, 1]}
               style={{ bottom: -560 }}
             />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 10 }}
-            >
-              {PRIMARY_TABS.map((tab) => (
-                <PrimaryTabButton
-                  key={tab}
-                  onPress={() => setSelectedTab(tab)}
-                  isSelected={selectedTab === tab}
-                >
-                  <PrimaryTabButtonText isSelected={selectedTab === tab}>
-                    {tab}
-                  </PrimaryTabButtonText>
-                </PrimaryTabButton>
-              ))}
-            </ScrollView>
+            <LineTabs
+              tabs={PRIMARY_TABS.map((tab) => ({ key: tab, label: tab }))}
+              activeTab={selectedTab}
+              onTabPress={setSelectedTab}
+              scrollable
+              fontSize={screenWidth <= 400 ? 12 : 14}
+            />
           </TabsContainer>
 
           <ContentArea>{renderPrimaryContent()}</ContentArea>
@@ -501,22 +492,6 @@ const TabsContainer = styled.View({
   borderTopRightRadius: 30,
   paddingTop: 25,
   paddingBottom: 10,
-});
-
-const PrimaryTabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
-  ({ isSelected }: { isSelected: boolean }) => ({
-    marginHorizontal: 5,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: isSelected ? 2 : 1,
-    borderColor: isSelected ? "#00A2FF" : "white",
-  }),
-);
-
-const PrimaryTabButtonText = styled.Text({
-  color: "white",
-  fontSize: screenWidth <= 400 ? 12 : 14,
 });
 
 const ContentArea = styled.View({
