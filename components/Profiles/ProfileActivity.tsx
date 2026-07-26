@@ -60,7 +60,7 @@ const TABS = [
 ] as const;
 
 const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
-  const { getLeaguesForUser, getTournamentsForUser, getUserById } =
+  const { getLeaguesForUser, getTournamentsForUser } =
     useContext(UserContext);
 
   const [userLeagues, setUserLeagues] = useState<League[]>([]);
@@ -159,12 +159,10 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
         const activities = await Promise.all(
           clubIds.map((clubId) =>
             // Isolate failures so one bad club doesn't drop the whole list
-            getUserClubActivity({ clubId, userId, getUserById }).catch(
-              (e) => {
-                console.error(`Error loading club activity ${clubId}:`, e);
-                return null;
-              },
-            ),
+            getUserClubActivity({ clubId, userId }).catch((e) => {
+              console.error(`Error loading club activity ${clubId}:`, e);
+              return null;
+            }),
           ),
         );
 
@@ -189,13 +187,7 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
     return () => {
       cancelled = true;
     };
-  }, [
-    activeTab,
-    profile?.userId,
-    getLeaguesForUser,
-    getTournamentsForUser,
-    getUserById,
-  ]);
+  }, [activeTab, profile?.userId, getLeaguesForUser, getTournamentsForUser]);
 
   // Single processing useEffect based on active tab
   useEffect(() => {

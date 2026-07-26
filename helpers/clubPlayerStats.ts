@@ -2,7 +2,8 @@ import { collection, getDocs, getDoc, doc, query, where } from "firebase/firesto
 
 import { db } from "../services/firebase.config";
 import { COLLECTION_NAMES } from "@shared";
-import { enrichPlayers } from "./enrichPlayers";
+import { getPlayerRankInCompetition } from "@shared/helpers/getRankInCompetition";
+import type { ScoreboardProfile } from "@shared/types";
 
 /**
  * Shared club player aggregation.
@@ -136,31 +137,15 @@ export const buildClubPlayerMap = ({
 };
 
 /**
- * Sort an aggregated player list by the same ordering PlayerPerformance uses:
- * wins → total point difference → XP. Callers must enrich (XP) first.
+ * Fetch a club's fully-accumulated player list (unsorted). Every member is
+ * seeded, then league + tournament stats are layered on. Ordering/ranking is
+ * left to the shared leaderboard helpers so it stays identical to the rest of
+ * the app (League/Tournament screens, prize distribution, etc.).
  */
-export const sortClubPlayers = (players: ClubPlayerStat[]): ClubPlayerStat[] =>
-  [...players].sort(
-    (a, b) =>
-      (b.numberOfWins || 0) - (a.numberOfWins || 0) ||
-      (b.totalPointDifference || 0) - (a.totalPointDifference || 0) ||
-      (b.XP || 0) - (a.XP || 0),
-  );
-
-type GetUserById = (
-  userId: string,
-) => Promise<{ profileDetail?: { XP?: number } } | null>;
-
-/**
- * Fetch, aggregate, enrich and rank a club's full player leaderboard.
- * The returned array is sorted so the winner is index 0 (rank = index + 1).
- */
-export const getClubPlayerLeaderboard = async ({
+export const getClubAggregatedPlayers = async ({
   clubId,
-  getUserById,
 }: {
   clubId: string;
-  getUserById: GetUserById;
 }): Promise<ClubPlayerStat[]> => {
   const clubFilter = where("clubId", "==", clubId);
 
@@ -170,18 +155,11 @@ export const getClubPlayerLeaderboard = async ({
     getDocs(query(collection(db, COLLECTION_NAMES.tournaments), clubFilter)),
   ]);
 
-  const players = buildClubPlayerMap({
+  return buildClubPlayerMap({
     members: membersSnap.docs.map((d) => d.data() as RawMember),
     leagues: leaguesSnap.docs.map((d) => d.data() as RawCompetitionData),
     tournaments: tournamentsSnap.docs.map((d) => d.data() as RawCompetitionData),
   });
-
-  const enriched = (await enrichPlayers(
-    getUserById,
-    players,
-  )) as ClubPlayerStat[];
-
-  return sortClubPlayers(enriched);
 };
 
 export interface ClubActivity {
@@ -197,20 +175,24 @@ export interface ClubActivity {
 /**
  * Resolve a single user's activity within a club: the club's name/location plus
  * the user's accumulated wins and their rank on the club leaderboard.
+ *
+ * Ranking uses the shared `getPlayerRankInCompetition` (wins → point
+ * difference) — the exact same helper that ranks a single league/tournament on
+ * the profile Activity tab, the competition screens, and the backend prize
+ * distribution — so a club's aggregated leaderboard follows the same rules.
+ *
  * Returns null if the club no longer exists.
  */
 export const getUserClubActivity = async ({
   clubId,
   userId,
-  getUserById,
 }: {
   clubId: string;
   userId: string;
-  getUserById: GetUserById;
 }): Promise<ClubActivity | null> => {
-  const [clubSnap, leaderboard] = await Promise.all([
+  const [clubSnap, players] = await Promise.all([
     getDoc(doc(db, COLLECTION_NAMES.clubs, clubId)),
-    getClubPlayerLeaderboard({ clubId, getUserById }),
+    getClubAggregatedPlayers({ clubId }),
   ]);
 
   if (!clubSnap.exists()) return null;
@@ -219,14 +201,16 @@ export const getUserClubActivity = async ({
     clubName?: string;
     clubLocation?: string;
   };
-  const index = leaderboard.findIndex((p) => p.userId === userId);
-  const userRow = index >= 0 ? leaderboard[index] : undefined;
+  const userRow = players.find((p) => p.userId === userId);
 
   return {
     clubId,
     clubName: clubData.clubName ?? "Club",
     clubLocation: clubData.clubLocation ?? "",
     wins: userRow?.numberOfWins ?? 0,
-    userRank: index >= 0 ? index + 1 : 0,
+    userRank: getPlayerRankInCompetition(
+      players as unknown as ScoreboardProfile[],
+      userId,
+    ),
   };
 };
