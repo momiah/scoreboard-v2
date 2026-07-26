@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
 import { ScrollView, Dimensions } from "react-native";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import styled from "styled-components/native";
 
 import PlayerPerformance from "../../../../components/performance/Player/PlayerPerformance";
@@ -17,11 +12,7 @@ import { UserContext } from "../../../../context/UserContext";
 import { enrichPlayers } from "../../../../helpers/enrichPlayers";
 import { db } from "../../../../services/firebase.config";
 import { COLLECTION_NAMES } from "@shared";
-import {
-  USE_MOCK_DATA,
-  MOCK_PLAYERS,
-  MOCK_TEAMS,
-} from "../mockClubData";
+import { USE_MOCK_DATA, MOCK_PLAYERS, MOCK_TEAMS } from "../mockClubData";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -66,7 +57,12 @@ interface AggregatedTeam {
 
 const mergeIntoPlayer = (
   map: Map<string, AggregatedPlayer>,
-  base: { userId?: string; firstName?: string; lastName?: string; username?: string },
+  base: {
+    userId?: string;
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+  },
   stats: {
     numberOfWins?: number;
     totalPointDifference?: number;
@@ -101,7 +97,14 @@ const mergeIntoPlayer = (
 
 const mergeIntoTeam = (
   map: Map<string, AggregatedTeam>,
-  t: { teamKey?: string; team?: string[]; numberOfWins?: number; totalPointDifference?: number; averagePointDifference?: number; resultLog?: string[] },
+  t: {
+    teamKey?: string;
+    team?: string[];
+    numberOfWins?: number;
+    totalPointDifference?: number;
+    averagePointDifference?: number;
+    resultLog?: string[];
+  },
 ) => {
   if (!t.teamKey || !Array.isArray(t.team)) return;
   const existing = map.get(t.teamKey);
@@ -152,7 +155,9 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
       const [membersSnap, leaguesSnap, tournamentsSnap] = await Promise.all([
         getDocs(collection(db, COLLECTION_NAMES.clubs, clubId, "participants")),
         getDocs(query(collection(db, COLLECTION_NAMES.leagues), clubFilter)),
-        getDocs(query(collection(db, COLLECTION_NAMES.tournaments), clubFilter)),
+        getDocs(
+          query(collection(db, COLLECTION_NAMES.tournaments), clubFilter),
+        ),
       ]);
 
       // ── Players ──────────────────────────────────────────────────────────
@@ -206,8 +211,8 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
       const teamMap = new Map<string, AggregatedTeam>();
       leaguesSnap.forEach((doc) => {
         const data = doc.data();
-        (data.leagueTeams ?? data.teams ?? []).forEach(
-          (t: AggregatedTeam) => mergeIntoTeam(teamMap, t),
+        (data.leagueTeams ?? data.teams ?? []).forEach((t: AggregatedTeam) =>
+          mergeIntoTeam(teamMap, t),
         );
       });
       tournamentsSnap.forEach((doc) => {
@@ -238,15 +243,11 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
     switch (activeTab) {
       case "player":
         return (
-          <PlayerPerformance
-            playersData={dataLoaded ? playersData : []}
-          />
+          <PlayerPerformance playersData={dataLoaded ? playersData : []} />
         );
       case "team":
         return (
-          <TeamPerformance
-            leagueTeams={dataLoaded ? teamsData : undefined}
-          />
+          <TeamPerformance leagueTeams={dataLoaded ? teamsData : undefined} />
         );
       case "league":
         return <LeaguePerformance clubId={clubId} />;
@@ -263,7 +264,7 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 4 }}
+          // contentContainerStyle={{ paddingHorizontal: 4 }}
         >
           {PERFORMANCE_SUB_TABS.map((t) => (
             <SubTabItem
@@ -271,9 +272,7 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
               isActive={activeTab === t.key}
               onPress={() => setActiveTab(t.key)}
             >
-              <SubTabText isActive={activeTab === t.key}>
-                {t.label}
-              </SubTabText>
+              <SubTabText isActive={activeTab === t.key}>{t.label}</SubTabText>
             </SubTabItem>
           ))}
         </ScrollView>

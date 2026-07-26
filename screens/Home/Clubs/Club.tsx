@@ -1,11 +1,11 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Dimensions,
-  Linking,
-} from "react-native";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   useRoute,
@@ -91,13 +91,11 @@ const ClubScreen: React.FC = () => {
   const isMember = !!(isOwner || isAdmin || isParticipant);
 
   const isRequestPending =
-    clubById?.pendingRequests?.some(
-      (r) => r.userId === currentUser?.userId,
-    ) ?? false;
+    clubById?.pendingRequests?.some((r) => r.userId === currentUser?.userId) ??
+    false;
   const isInvitePending =
-    clubById?.pendingInvites?.some(
-      (i) => i.userId === currentUser?.userId,
-    ) ?? false;
+    clubById?.pendingInvites?.some((i) => i.userId === currentUser?.userId) ??
+    false;
 
   const clubUserRole = !currentUser
     ? "hide"
@@ -300,9 +298,7 @@ const ClubScreen: React.FC = () => {
                 </TitleBlock>
 
                 {club.clubLocation ? (
-                  <AddressRow
-                    onPress={() => openMapsQuery(club.clubLocation)}
-                  >
+                  <AddressRow onPress={() => openMapsQuery(club.clubLocation)}>
                     <Ionicons name="location-outline" size={18} color="#fff" />
                     <ClubLocationText>{club.clubLocation}</ClubLocationText>
                     <Ionicons name="open-outline" size={18} color="#00A2FF" />
@@ -318,11 +314,12 @@ const ClubScreen: React.FC = () => {
                   }}
                 >
                   <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag name="Club" color="#FAB234" />
                     <Tag
-                      name={`${memberCount}`}
+                      name={`${memberCount} Members`}
                       color={"rgba(0, 0, 0, 0.7)"}
                       iconColor={"#00A2FF"}
-                      iconSize={15}
+                      iconSize={14}
                       icon={"person"}
                       iconPosition={"right"}
                       bold
@@ -356,14 +353,11 @@ const ClubScreen: React.FC = () => {
                 <View
                   style={{
                     flexDirection: "row",
-                    justifyContent: "space-between",
+                    justifyContent: "flex-end",
                     alignItems: "center",
                     marginTop: 5,
                   }}
                 >
-                  <View style={{ flexDirection: "row", gap: 5 }}>
-                    <Tag name="Club" color="#FAB234" />
-                  </View>
                   {canInvite ? (
                     <Tag
                       name="Invite Members"
@@ -527,7 +521,7 @@ const PrimaryTabButtonText = styled.Text({
 
 const ContentArea = styled.View({
   flex: 1,
-  paddingHorizontal: 16,
+  // paddingHorizontal: 16,
   paddingTop: 12,
 });
 
