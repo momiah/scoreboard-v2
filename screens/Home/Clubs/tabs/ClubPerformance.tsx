@@ -9,6 +9,10 @@ import TournamentPerformance from "./performance/TournamentPerformance";
 
 import { UserContext } from "../../../../context/UserContext";
 import { enrichPlayers } from "../../../../helpers/enrichPlayers";
+import {
+  buildClubPlayerMap,
+  ClubPlayerStat,
+} from "../../../../helpers/clubPlayerStats";
 import { db } from "../../../../services/firebase.config";
 import { COLLECTION_NAMES } from "@shared";
 import { USE_MOCK_DATA, MOCK_PLAYERS, MOCK_TEAMS } from "../mockClubData";
@@ -28,19 +32,8 @@ interface ClubPerformanceProps {
 }
 
 // ─── Aggregation helpers ──────────────────────────────────────────────────────
-
-interface AggregatedPlayer {
-  userId: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  numberOfWins: number;
-  totalPointDifference: number;
-  resultLog: string[];
-  numberOfGamesPlayed: number;
-  numberOfLosses: number;
-  [key: string]: unknown;
-}
+// Player aggregation lives in helpers/clubPlayerStats so the profile "Clubs"
+// tab can reuse the exact same accumulation. Team aggregation stays local.
 
 interface AggregatedTeam {
   teamKey: string;
@@ -51,46 +44,6 @@ interface AggregatedTeam {
   resultLog: string[];
   [key: string]: unknown;
 }
-
-const mergeIntoPlayer = (
-  map: Map<string, AggregatedPlayer>,
-  base: {
-    userId?: string;
-    firstName?: string;
-    lastName?: string;
-    username?: string;
-  },
-  stats: {
-    numberOfWins?: number;
-    totalPointDifference?: number;
-    resultLog?: string[];
-    numberOfGamesPlayed?: number;
-    numberOfLosses?: number;
-  },
-) => {
-  if (!base.userId) return;
-  const existing = map.get(base.userId);
-  if (!existing) {
-    map.set(base.userId, {
-      userId: base.userId,
-      firstName: base.firstName,
-      lastName: base.lastName,
-      username: base.username,
-      numberOfWins: stats.numberOfWins ?? 0,
-      totalPointDifference: stats.totalPointDifference ?? 0,
-      resultLog: [...(stats.resultLog ?? [])],
-      numberOfGamesPlayed: stats.numberOfGamesPlayed ?? 0,
-      numberOfLosses: stats.numberOfLosses ?? 0,
-    });
-  } else {
-    existing.numberOfWins += stats.numberOfWins ?? 0;
-    existing.totalPointDifference += stats.totalPointDifference ?? 0;
-    existing.numberOfGamesPlayed += stats.numberOfGamesPlayed ?? 0;
-    existing.numberOfLosses += stats.numberOfLosses ?? 0;
-    const combined = [...existing.resultLog, ...(stats.resultLog ?? [])];
-    existing.resultLog = combined.slice(-10);
-  }
-};
 
 const mergeIntoTeam = (
   map: Map<string, AggregatedTeam>,
@@ -131,13 +84,13 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
   const { getUserById } = useContext(UserContext);
   const [activeTab, setActiveTab] = useState<PerformanceSubTab>(initialSubTab);
 
-  const [playersData, setPlayersData] = useState<AggregatedPlayer[]>([]);
+  const [playersData, setPlayersData] = useState<ClubPlayerStat[]>([]);
   const [teamsData, setTeamsData] = useState<AggregatedTeam[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
 
   const fetchAndAggregate = useCallback(async () => {
     if (USE_MOCK_DATA) {
-      setPlayersData(MOCK_PLAYERS as unknown as AggregatedPlayer[]);
+      setPlayersData(MOCK_PLAYERS as unknown as ClubPlayerStat[]);
       setTeamsData(MOCK_TEAMS as unknown as AggregatedTeam[]);
       setDataLoaded(true);
       return;
@@ -158,50 +111,18 @@ const ClubPerformance: React.FC<ClubPerformanceProps> = ({
       ]);
 
       // ── Players ──────────────────────────────────────────────────────────
-      // Seed all club members with zero stats so they always appear
-      const playerMap = new Map<string, AggregatedPlayer>();
-      membersSnap.forEach((doc) => {
-        const m = doc.data();
-        if (!m.userId) return;
-        playerMap.set(m.userId, {
-          userId: m.userId,
-          firstName: m.firstName,
-          lastName: m.lastName,
-          username: m.username,
-          numberOfWins: 0,
-          totalPointDifference: 0,
-          resultLog: [],
-          numberOfGamesPlayed: 0,
-          numberOfLosses: 0,
-        });
+      // Accumulate every member's stats across the club's leagues + tournaments
+      const players = buildClubPlayerMap({
+        members: membersSnap.docs.map((d) => d.data()),
+        leagues: leaguesSnap.docs.map((d) => d.data()),
+        tournaments: tournamentsSnap.docs.map((d) => d.data()),
       });
 
-      // Layer league stats on top
-      leaguesSnap.forEach((doc) => {
-        const data = doc.data();
-        const participants = data.leagueParticipants ?? data.participants ?? [];
-        participants.forEach((p: AggregatedPlayer) => {
-          const base = playerMap.get(p.userId) ?? p;
-          mergeIntoPlayer(playerMap, base, p);
-        });
-      });
-
-      // Layer tournament stats on top
-      tournamentsSnap.forEach((doc) => {
-        const data = doc.data();
-        const participants =
-          data.tournamentParticipants ?? data.participants ?? [];
-        participants.forEach((p: AggregatedPlayer) => {
-          const base = playerMap.get(p.userId) ?? p;
-          mergeIntoPlayer(playerMap, base, p);
-        });
-      });
-
-      // Enrich with global XP then sort
+      // Enrich with global XP (PlayerPerformance applies the final sort)
       const enriched = (await enrichPlayers(
         getUserById,
-        Array.from(playerMap.values()),
-      )) as AggregatedPlayer[];
+        players,
+      )) as ClubPlayerStat[];
       setPlayersData(enriched);
 
       // ── Teams ─────────────────────────────────────────────────────────────
