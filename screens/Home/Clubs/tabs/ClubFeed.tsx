@@ -46,7 +46,8 @@ const timeAgo = (date: Date): string => {
   ];
   for (const interval of intervals) {
     const count = Math.floor(seconds / interval.seconds);
-    if (count > 0) return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
+    if (count > 0)
+      return `${count} ${interval.label}${count > 1 ? "s" : ""} ago`;
   }
   return "just now";
 };
@@ -265,6 +266,7 @@ const Row = styled.View({
   paddingVertical: 14,
   borderBottomWidth: 1,
   borderBottomColor: "rgb(9, 33, 62)",
+  paddingHorizontal: 16,
 });
 
 const Leading = styled.View({

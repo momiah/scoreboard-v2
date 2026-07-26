@@ -271,15 +271,6 @@ const ClubScreen: React.FC = () => {
               <ClubDetailsContainer>
                 {/* Top row: back button + hamburger (owner/admin only) */}
                 <BackRow>
-                  <BackButton
-                    onPress={() =>
-                      navigation.canGoBack()
-                        ? navigation.goBack()
-                        : navigation.navigate("HomeMain")
-                    }
-                  >
-                    <Ionicons name="chevron-back" size={26} color="white" />
-                  </BackButton>
                   {canInvite ? (
                     <BackButton
                       onPress={() =>
@@ -452,7 +443,7 @@ const ClubDetailsContainer = styled.View({
 
 const BackRow = styled.View({
   flexDirection: "row",
-  justifyContent: "space-between",
+  justifyContent: "flex-end",
   alignItems: "center",
 });
 
@@ -460,8 +451,6 @@ const BackButton = styled.TouchableOpacity({
   padding: 4,
 });
 
-// Title / address blocks mirror the League & Tournament overview so the club
-// header sits at the same compact height (matching padding, radius, margins).
 const TitleBlock = styled.View({
   padding: 5,
   backgroundColor: "rgba(0, 0, 0, 0.3)",
@@ -521,7 +510,6 @@ const PrimaryTabButtonText = styled.Text({
 
 const ContentArea = styled.View({
   flex: 1,
-  // paddingHorizontal: 16,
   paddingTop: 12,
 });
 
