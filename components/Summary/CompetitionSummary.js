@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, memo } from "react";
 import styled from "styled-components/native";
 import { TouchableOpacity, Dimensions } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import PrizeDistribution from "./PrizeDistribution";
 import ParticipantCarousel from "./ParticipantCarousel";
@@ -11,6 +12,7 @@ import { copyLocationAddress } from "../../helpers/copyLocationAddress";
 import { useContext } from "react";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { UserContext } from "../../context/UserContext";
+import { LeagueContext } from "../../context/LeagueContext";
 import { normalizeCompetitionData } from "../../helpers/normalizeCompetitionData";
 import { COMPETITION_TYPES } from "@shared";
 import { calculateTournamentPrizePool } from "@shared/helpers";
@@ -52,10 +54,13 @@ const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 const CompetitionSummary = memo(
   ({ competitionDetails, userRole, startDate, endDate, competitionType }) => {
     const { getUserById } = useContext(UserContext);
+    const { fetchClubById } = useContext(LeagueContext);
+    const navigation = useNavigation();
     const [topContenders, setTopContenders] = useState([]);
     const [topTeams, setTopTeams] = useState([]);
     const [isCopied, setIsCopied] = useState(false);
     const [isDataLoading, setIsDataLoading] = useState(true);
+    const [clubName, setClubName] = useState("");
 
     const locationCopyTimeoutRef = useRef(null);
 
@@ -76,6 +81,24 @@ const CompetitionSummary = memo(
     const description = competitionData?.description || "";
     const playtime = competitionData?.playingTime || [];
     const competitionId = competitionData.id;
+    const clubId = competitionData?.clubId;
+
+    useEffect(() => {
+      if (!clubId) {
+        setClubName("");
+        return;
+      }
+
+      let active = true;
+      (async () => {
+        const club = await fetchClubById(clubId);
+        if (active) setClubName(club?.clubName || "");
+      })();
+
+      return () => {
+        active = false;
+      };
+    }, [clubId, fetchClubById]);
 
     // Determine if this is a Doubles tournament
     const isDoublesTournament =
@@ -233,6 +256,28 @@ const CompetitionSummary = memo(
 
     return (
       <CompetitionSummaryContainer>
+        {clubId ? (
+          <ClubBadgeButton
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("Club", { clubId })}
+          >
+            <ClubIconCircle>
+              <Ionicons name="people" size={20} color="#00A2FF" />
+            </ClubIconCircle>
+            <ClubBadgeTextWrap>
+              <ClubBadgeText>
+                This{" "}
+                <ClubBadgeHighlight>{competitionType}</ClubBadgeHighlight> is
+                managed by a club
+              </ClubBadgeText>
+              {clubName ? (
+                <ClubBadgeSubtext>{clubName}</ClubBadgeSubtext>
+              ) : null}
+            </ClubBadgeTextWrap>
+            <Ionicons name="chevron-forward" size={22} color="#00A2FF" />
+          </ClubBadgeButton>
+        ) : null}
+
         <PrizeDistribution
           prizePool={gameStats.prizePool}
           distribution={DISTRIBUTION}
@@ -337,6 +382,49 @@ const CompetitionSummaryContainer = styled.ScrollView({
   padding: 20,
   borderRadius: 12,
   marginBottom: 20,
+});
+
+const ClubBadgeButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  padding: 14,
+  marginBottom: 18,
+  borderRadius: 14,
+  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+});
+
+const ClubIconCircle = styled.View({
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(0, 162, 255, 0.18)",
+});
+
+const ClubBadgeTextWrap = styled.View({
+  flex: 1,
+});
+
+const ClubBadgeText = styled.Text({
+  color: "#ffffff",
+  fontSize: screenWidth <= 405 ? 14 : 15,
+  fontWeight: "600",
+});
+
+const ClubBadgeHighlight = styled.Text({
+  color: "#00A2FF",
+  fontWeight: "bold",
+  textTransform: "capitalize",
+});
+
+const ClubBadgeSubtext = styled.Text({
+  color: "#9fb8c8",
+  fontSize: screenWidth <= 405 ? 11 : 12,
+  marginTop: 2,
 });
 
 const SectionTitleContainer = styled.View({

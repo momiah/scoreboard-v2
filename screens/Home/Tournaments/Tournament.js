@@ -128,6 +128,7 @@ const Tournament = () => {
         currentUser,
         ownerId: tournamentById?.tournamentOwner?.userId,
         collectionName: COLLECTION_NAMES.tournaments,
+        clubId: tournamentById?.clubId ?? null,
       });
       const refetchedTournament = await fetchCompetitionById({
         competitionId: tournamentId,

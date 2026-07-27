@@ -119,6 +119,7 @@ const League = () => {
         currentUser,
         ownerId: leagueById?.leagueOwner?.userId,
         collectionName: COLLECTION_NAMES.leagues,
+        clubId: leagueById?.clubId ?? null,
       });
       const refetchedLeague = await fetchCompetitionById({
         competitionId: leagueId,

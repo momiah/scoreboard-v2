@@ -171,7 +171,7 @@ const Container = styled.View({
   justifyContent: "space-between",
   gap: IS_SMALL_SCREEN ? 8 : 15,
   paddingHorizontal: 10,
-  marginBottom: 40,
+  marginBottom: 10,
 });
 
 const TournamentContainer = styled.TouchableOpacity({

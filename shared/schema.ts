@@ -5,6 +5,7 @@ import {
   Location,
   League,
   Tournament,
+  Club,
   CollectionName,
   CompetitionLocation,
   ApprovalStatus,
@@ -39,6 +40,7 @@ export const COLLECTION_NAMES: Record<CollectionName, string> = {
   savedVideos: "savedVideos",
   videoReportAppeals: "videoReportAppeals",
   failedVideoUploads: "failedVideoUploads",
+  clubs: "clubs",
 };
 
 export const ICON_MAP = {
@@ -218,6 +220,7 @@ export const courtSchema: Court = {
 };
 
 export const leagueSchema: League = {
+  clubId: null,
   leagueParticipants: [],
   leagueTeams: [],
   leagueAdmins: [],
@@ -252,6 +255,7 @@ export const leagueSchema: League = {
   approvalLimit: 1,
 };
 export const tournamentSchema: Tournament = {
+  clubId: null,
   tournamentParticipants: [],
   tournamentTeams: [],
   tournamentAdmins: [],
@@ -287,6 +291,30 @@ export const tournamentSchema: Tournament = {
   pendingInvites: [],
   pendingRequests: [],
   approvalLimit: 1,
+};
+
+export const clubSchema: Club = {
+  clubId: "",
+  clubName: "",
+  clubLocation: {
+    city: "",
+    country: "",
+    countryCode: "",
+  },
+  countryCode: "",
+  clubImage: "",
+  clubDescription: "",
+  clubOwner: {
+    userId: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    location: locationSchema,
+  },
+  clubAdmins: [],
+  createdAt: new Date(),
+  pendingInvites: [],
+  pendingRequests: [],
 };
 
 export const fixturesSchema = {
@@ -367,11 +395,13 @@ export const notificationTypes = {
     INVITE: {
       LEAGUE: "invite-league",
       TOURNAMENT: "invite-tournament",
+      CLUB: "invite-club",
     },
     // Shows player card
     JOIN_REQUEST: {
       LEAGUE: "join-league-request",
       TOURNAMENT: "join-tournament-request",
+      CLUB: "join-club-request",
     },
     // Shows game modal
     ADD_GAME: {

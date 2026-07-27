@@ -24,6 +24,10 @@ export const normalizeCompetitionData = ({ rawData, competitionType }) => {
     admins: rawData?.admins || rawData?.[`${competitionType}Admins`] || [],
     owner: rawData?.owner || rawData?.[`${competitionType}Owner`] || {},
 
+    ...("clubId" in rawData && rawData.clubId !== undefined
+      ? { clubId: rawData.clubId ? rawData.clubId : null }
+      : {}),
+
     // Basic Info
     name: rawData?.name || rawData?.[`${competitionType}Name`] || "",
     description:
