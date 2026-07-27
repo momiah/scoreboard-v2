@@ -48,6 +48,7 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
+import { formatClubLocation } from "@/helpers/formatClubLocation";
 
 // The screen supports two entry contexts:
 //   • Competition context → invite/add players to a league or tournament.
@@ -645,7 +646,7 @@ const InvitePlayer = () => {
           </LeagueName>
           <LeagueLocation>
             {isClubContext
-              ? club.clubLocation
+              ? formatClubLocation(club.clubLocation)
               : `${competition!.location.courtName}, ${competition!.location.city}`}
           </LeagueLocation>
           <View

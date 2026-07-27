@@ -296,7 +296,13 @@ export const tournamentSchema: Tournament = {
 export const clubSchema: Club = {
   clubId: "",
   clubName: "",
-  clubLocation: "",
+  clubLocation: {
+    city: "",
+    country: "",
+    countryCode: "",
+    address: "",
+  },
+  countryCode: "",
   clubImage: "",
   clubDescription: "",
   clubOwner: {

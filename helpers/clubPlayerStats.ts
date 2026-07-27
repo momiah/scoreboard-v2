@@ -4,6 +4,7 @@ import { db } from "../services/firebase.config";
 import { COLLECTION_NAMES } from "@shared";
 import { getPlayerRankInCompetition } from "@shared/helpers/getRankInCompetition";
 import type { ScoreboardProfile } from "@shared/types";
+import { formatClubLocation, type ClubLocation } from "./formatClubLocation";
 
 /**
  * Shared club player aggregation.
@@ -199,14 +200,14 @@ export const getUserClubActivity = async ({
 
   const clubData = clubSnap.data() as {
     clubName?: string;
-    clubLocation?: string;
+    clubLocation?: ClubLocation | string;
   };
   const userRow = players.find((p) => p.userId === userId);
 
   return {
     clubId,
     clubName: clubData.clubName ?? "Club",
-    clubLocation: clubData.clubLocation ?? "",
+    clubLocation: formatClubLocation(clubData.clubLocation),
     wins: userRow?.numberOfWins ?? 0,
     userRank: getPlayerRankInCompetition(
       players as unknown as ScoreboardProfile[],

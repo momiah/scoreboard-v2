@@ -21,6 +21,7 @@ import type { Club } from "@shared/types";
 import { notificationTypes, COLLECTION_NAMES } from "@shared";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+import { formatClubLocation } from "@/helpers/formatClubLocation";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -306,7 +307,7 @@ const InviteActionModal = ({
                       </LinkText>
                     </Message>
 
-                    {clubData.clubLocation ? (
+                    {formatClubLocation(clubData.clubLocation) ? (
                       <View
                         style={{
                           flexDirection: "row",
@@ -314,7 +315,9 @@ const InviteActionModal = ({
                           marginTop: 15,
                         }}
                       >
-                        <LeagueLocation>{clubData.clubLocation}</LeagueLocation>
+                        <LeagueLocation>
+                          {formatClubLocation(clubData.clubLocation)}
+                        </LeagueLocation>
                       </View>
                     ) : null}
 

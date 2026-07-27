@@ -27,6 +27,7 @@ import LoadingOverlay from "../../../components/LoadingOverlay";
 import { COLLECTION_NAMES } from "@shared";
 import { db } from "../../../services/firebase.config";
 import type { Club } from "@shared/types";
+import { formatClubLocation } from "../../../helpers/formatClubLocation";
 
 import ClubFeed from "./tabs/ClubFeed";
 import ClubPerformance from "./tabs/ClubPerformance";
@@ -252,6 +253,7 @@ const ClubScreen: React.FC = () => {
 
   const club = clubById as Club | null;
   const imageUri = club?.clubImage || undefined;
+  const clubLocationText = formatClubLocation(club?.clubLocation);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
@@ -288,10 +290,10 @@ const ClubScreen: React.FC = () => {
                   <ClubNameText>{club.clubName}</ClubNameText>
                 </TitleBlock>
 
-                {club.clubLocation ? (
-                  <AddressRow onPress={() => openMapsQuery(club.clubLocation)}>
+                {clubLocationText ? (
+                  <AddressRow onPress={() => openMapsQuery(clubLocationText)}>
                     <Ionicons name="location-outline" size={18} color="#fff" />
-                    <ClubLocationText>{club.clubLocation}</ClubLocationText>
+                    <ClubLocationText>{clubLocationText}</ClubLocationText>
                     <Ionicons name="open-outline" size={18} color="#00A2FF" />
                   </AddressRow>
                 ) : null}

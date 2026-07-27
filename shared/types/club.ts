@@ -5,13 +5,17 @@ import type {
   PendingRequests,
 } from "./competition";
 import type { Player } from "./game";
+import type { Location } from "./player";
 
 /** Root document: `clubs/{clubId}` */
 export interface Club {
   clubId: string;
   id?: string;
   clubName: string;
-  clubLocation: string;
+  /** Structured location (Location without postCode). */
+  clubLocation: Omit<Location, "postCode">;
+  /** Top-level country code, mirrors clubLocation.countryCode for querying. */
+  countryCode: string;
   clubImage: string;
   clubDescription: string;
   clubOwner: CompetitionOwner;

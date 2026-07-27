@@ -19,6 +19,7 @@ import HorizontalCardCarousel, {
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { ccImageEndpoint, type Club } from "@shared";
+import { formatClubLocation } from "../../helpers/formatClubLocation";
 
 const HomeClubsSection: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -43,9 +44,8 @@ const HomeClubsSection: React.FC = () => {
     <>
       <SubHeader
         title="Clubs"
-        onIconPress={() => {}}
-        actionText=""
-        navigationRoute=""
+        actionText="Browse Clubs"
+        navigationRoute={"Clubs"}
       />
       {upcomingClubsLoading ? (
         <HorizontalLeagueCarouselSkeleton />
@@ -64,7 +64,7 @@ const HomeClubsSection: React.FC = () => {
                 <CardTitle numberOfLines={1}>{club.clubName || ""}</CardTitle>
                 <LocationRow>
                   <CardSubtitle numberOfLines={1}>
-                    {club.clubLocation || ""}
+                    {formatClubLocation(club.clubLocation)}
                   </CardSubtitle>
                   <Ionicons
                     name="location"
