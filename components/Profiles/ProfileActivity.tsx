@@ -28,12 +28,21 @@ import {
 import { COMPETITION_TYPES } from "@shared";
 import ProfileActivitySkeleton from "../Skeletons/ProfileActivitySkeleton";
 import LineTabs from "../LineTabs";
+import {
+  getUserClubActivity,
+  ClubActivity,
+} from "../../helpers/clubPlayerStats";
+
+const CLUBS_TAB = "clubs" as const;
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
 
 type CompetitionType =
   (typeof COMPETITION_TYPES)[keyof typeof COMPETITION_TYPES];
+
+/** Tabs cover the two competition types plus the user's clubs. */
+type ActivityTab = CompetitionType | typeof CLUBS_TAB;
 
 interface ProfileActivityProps {
   profile: UserProfile;
@@ -47,10 +56,12 @@ interface ProcessedCompetition extends NormalizedCompetition {
 const TABS = [
   { key: COMPETITION_TYPES.LEAGUE, label: "Leagues" },
   { key: COMPETITION_TYPES.TOURNAMENT, label: "Tournaments" },
+  { key: CLUBS_TAB, label: "Clubs" },
 ] as const;
 
 const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
-  const { getLeaguesForUser, getTournamentsForUser } = useContext(UserContext);
+  const { getLeaguesForUser, getTournamentsForUser } =
+    useContext(UserContext);
 
   const [userLeagues, setUserLeagues] = useState<League[]>([]);
   const [userTournaments, setUserTournaments] = useState<Tournament[]>([]);
@@ -62,7 +73,9 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
   >([]);
   const [leaguesLoading, setLeaguesLoading] = useState(true);
   const [tournamentsLoading, setTournamentsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<CompetitionType>(
+  const [userClubs, setUserClubs] = useState<ClubActivity[]>([]);
+  const [clubsLoading, setClubsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<ActivityTab>(
     COMPETITION_TYPES.LEAGUE,
   );
 
@@ -77,9 +90,15 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
     },
     [navigation],
   );
+  const navigateToClub = useCallback(
+    (clubId: string) => navigation.navigate("Club", { clubId }),
+    [navigation],
+  );
 
   // Single useEffect to fetch competitions based on active tab
   useEffect(() => {
+    if (activeTab === CLUBS_TAB) return; // clubs handled by their own effect
+
     const fetchCompetitions = async () => {
       const userId = profile?.userId;
       if (!userId) return;
@@ -110,8 +129,70 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
     fetchCompetitions();
   }, [profile?.userId, activeTab, getLeaguesForUser, getTournamentsForUser]);
 
+  // Fetch the user's clubs and their per-club accumulated wins + rank.
+  // Clubs are derived from the competitions the user takes part in (each
+  // league/tournament carries the clubId of the club that manages it).
+  useEffect(() => {
+    if (activeTab !== CLUBS_TAB) return;
+
+    let cancelled = false;
+
+    const fetchClubs = async () => {
+      const userId = profile?.userId;
+      if (!userId) return;
+
+      setClubsLoading(true);
+      try {
+        const [leagues, tournaments] = await Promise.all([
+          getLeaguesForUser(userId),
+          getTournamentsForUser(userId),
+        ]);
+
+        const clubIds = Array.from(
+          new Set(
+            [...leagues, ...tournaments]
+              .map((c: { clubId?: string | null }) => c.clubId)
+              .filter((id): id is string => !!id),
+          ),
+        );
+
+        const activities = await Promise.all(
+          clubIds.map((clubId) =>
+            // Isolate failures so one bad club doesn't drop the whole list
+            getUserClubActivity({ clubId, userId }).catch((e) => {
+              console.error(`Error loading club activity ${clubId}:`, e);
+              return null;
+            }),
+          ),
+        );
+
+        if (cancelled) return;
+
+        const rows = activities
+          .filter((a): a is ClubActivity => a !== null)
+          .sort(
+            (a, b) => b.wins - a.wins || a.clubName.localeCompare(b.clubName),
+          );
+
+        setUserClubs(rows);
+      } catch (error) {
+        console.error("Error fetching clubs for user:", error);
+      } finally {
+        if (!cancelled) setClubsLoading(false);
+      }
+    };
+
+    fetchClubs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, profile?.userId, getLeaguesForUser, getTournamentsForUser]);
+
   // Single processing useEffect based on active tab
   useEffect(() => {
+    if (activeTab === CLUBS_TAB) return; // clubs don't use this pipeline
+
     let task: ReturnType<
       typeof InteractionManager.runAfterInteractions
     > | null = null;
@@ -318,7 +399,64 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
     [profile?.userId, navigateTo],
   );
 
+  // Club card: reuses the competition card styles but drops the status/type
+  // tags (not relevant for clubs). Wins is the user's accumulated wins across
+  // the club's leagues + tournaments; Rank is their club-leaderboard position.
+  const renderClubItem = useCallback(
+    ({ item }: { item: ClubActivity }) => (
+      <CompetitionItem
+        key={item.clubId}
+        onPress={() => navigateToClub(item.clubId)}
+      >
+        <InfoContainer>
+          <CompetitionName>{item.clubName}</CompetitionName>
+          <CourtName>{item.clubLocation}</CourtName>
+        </InfoContainer>
+
+        <TableCell>
+          <StatTitle>Wins</StatTitle>
+          <Stat>{item.wins}</Stat>
+        </TableCell>
+        <TableCell>
+          <StatTitle>Rank</StatTitle>
+          <Stat>
+            <RankSuffix
+              number={item.userRank ?? 0}
+              numberStyle={{
+                fontSize: screenAdjustedStatFontSize,
+                color: "white",
+              }}
+              suffixStyle={{
+                color: "rgba(255,255,255,0.7)",
+              }}
+              style={[]}
+            />
+          </Stat>
+        </TableCell>
+      </CompetitionItem>
+    ),
+    [navigateToClub],
+  );
+
   const renderContent = useMemo(() => {
+    if (activeTab === CLUBS_TAB) {
+      if (clubsLoading) {
+        return <ProfileActivitySkeleton itemCount={4} />;
+      }
+      const emptyMessage =
+        "Here you can find the clubs you are part of. Join or create a club to see it here 🏸";
+      return userClubs.length > 0 ? (
+        <FlatList
+          data={userClubs}
+          renderItem={renderClubItem}
+          keyExtractor={(item) => item.clubId}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      ) : (
+        <NoActivityText>{emptyMessage}</NoActivityText>
+      );
+    }
+
     const isLeagueTab = activeTab === COMPETITION_TYPES.LEAGUE;
     const loading = isLeagueTab ? leaguesLoading : tournamentsLoading;
 
@@ -357,10 +495,13 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
     activeTab,
     leaguesLoading,
     tournamentsLoading,
+    clubsLoading,
+    userClubs,
     sortedLeagues,
     sortedTournaments,
     renderLeagueItem,
     renderTournamentItem,
+    renderClubItem,
   ]);
 
   return (

@@ -1,12 +1,11 @@
-import React, { useContext, useState, useEffect, useCallback } from "react";
+import React, { useContext, useState, useCallback } from "react";
 import { UserContext } from "../../context/UserContext";
+import { KeyboardAvoidingView, Platform, FlatList } from "react-native";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  FlatList,
-  StyleSheet,
-} from "react-native";
-import ListDropdown from "../../components/ListDropdown/ListDropdown";
+  CountrySelector,
+  CitySelector,
+} from "../../components/Modals/CountryCitySelectionModal";
+import { AntDesign } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import styled from "styled-components/native";
 import { auth, db } from "../../services/firebase.config";
@@ -36,7 +35,6 @@ import {
   notificationTypes,
   ccImageEndpoint,
 } from "@shared";
-import { loadCountries, loadCities } from "../../utils/locationData";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 
@@ -54,12 +52,9 @@ const Signup = ({ route }) => {
   const [popupIcon, setPopupIcon] = useState("");
   const [popupButtonText, setPopupButtonText] = useState("");
 
-  const [countries, setCountries] = useState([]);
   const [selectedCountryCode, setSelectedCountryCode] = useState(null);
-
-  const [cities, setCities] = useState([]);
-  const [loadingCities, setLoadingCities] = useState(false);
-  const [loadingCountries, setLoadingCountries] = useState(false);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
+  const [showCitySelector, setShowCitySelector] = useState(false);
 
   const navigation = useNavigation();
 
@@ -89,37 +84,24 @@ const Signup = ({ route }) => {
     setValue,
   } = useForm({ defaultValues: defaults });
 
-  useEffect(() => {
-    if (countries.length) return;
+  const handleCountrySelected = useCallback(
+    (selectedCountry) => {
+      setValue("country", selectedCountry.value, { shouldValidate: true });
+      setValue("city", "");
+      setSelectedCountryCode(selectedCountry.key);
+      setShowCitySelector(true);
+    },
+    [setValue],
+  );
 
-    setLoadingCountries(true);
-    setTimeout(() => {
-      try {
-        const all = loadCountries();
-        setCountries(all);
-      } finally {
-        setLoadingCountries(false);
-      }
-    }, 0);
-  }, [countries]);
-
-  const handleCityDropdownOpen = useCallback(async () => {
-    if (!selectedCountryCode) {
-      setCities([]);
-      return;
-    }
-
-    setLoadingCities(true);
-    try {
-      const list = loadCities(selectedCountryCode);
-      setCities(list);
-    } catch (e) {
-      console.error(e);
-      setCities([]);
-    } finally {
-      setLoadingCities(false);
-    }
-  }, [selectedCountryCode]);
+  const handleCitySelected = useCallback(
+    (selectedCity) => {
+      setValue("city", selectedCity.value, { shouldValidate: true });
+      setShowCitySelector(false);
+      setShowCountrySelector(false);
+    },
+    [setValue],
+  );
 
   const handleCloseSignUpConfirmationPopup = () => {
     setShowPopup(false);
@@ -374,77 +356,37 @@ const Signup = ({ route }) => {
                   passwordValidation={passwordValidation}
                 />
               )}
+              <Label>Location</Label>
               <Controller
                 name={"country"}
                 control={control}
-                label="Country"
                 rules={{ required: "Country is required" }}
-                render={({ field: { onChange, value } }) => (
-                  <ListDropdown
-                    label="Country"
-                    setSelected={(val) => {
-                      onChange(val);
-                      const selectedCountry = countries.find(
-                        (c) => c.value === val,
-                      );
-                      const countryCode = selectedCountry?.key;
-                      setSelectedCountryCode(countryCode);
-                      setValue("city", "");
-                      setCities([]);
-                    }}
-                    data={countries}
-                    save="value"
-                    placeholder={
-                      loadingCountries
-                        ? "Loading countries..."
-                        : "Select country"
-                    }
-                    selectedOption={value ? { key: value, value } : null}
-                    boxStyles={[
-                      styles.box,
-                      errors.country ? styles.errorBox : null,
-                    ]}
-                    inputStyles={styles.input}
-                    dropdownStyles={styles.dropdown}
-                    dropdownTextStyles={styles.dropdownText}
-                    loading={loadingCountries}
+                render={({ field: { value: countryValue } }) => (
+                  <Controller
+                    control={control}
+                    name={"city"}
+                    rules={{ required: "City is required" }}
+                    render={({ field: { value: cityValue } }) => (
+                      <LocationButton
+                        hasError={!!(errors.country || errors.city)}
+                        onPress={() => setShowCountrySelector(true)}
+                      >
+                        <LocationButtonText
+                          selected={!!(countryValue && cityValue)}
+                        >
+                          {countryValue && cityValue
+                            ? `${cityValue}, ${countryValue}`
+                            : "Select country & city"}
+                        </LocationButtonText>
+                        <AntDesign name="right" size={16} color="#888" />
+                      </LocationButton>
+                    )}
                   />
                 )}
               />
-              <Controller
-                control={control}
-                name={"city"}
-                label="City"
-                rules={{ required: "City is required" }}
-                render={({ field: { onChange, value } }) => (
-                  <ListDropdown
-                    label="City"
-                    setSelected={(val) => {
-                      onChange(val);
-                    }}
-                    data={cities}
-                    save="value"
-                    placeholder={
-                      selectedCountryCode
-                        ? "Search cities..."
-                        : "Select country first"
-                    }
-                    searchPlaceholder="Start typing..."
-                    selectedOption={value ? { key: value, value } : null}
-                    boxStyles={[
-                      styles.box,
-                      errors.country ? styles.errorBox : null,
-                      !selectedCountryCode ? styles.disabledBox : null,
-                    ]}
-                    inputStyles={styles.input}
-                    dropdownStyles={styles.dropdown}
-                    dropdownTextStyles={styles.dropdownText}
-                    loading={loadingCities}
-                    onDropdownOpen={handleCityDropdownOpen}
-                    disabled={!selectedCountryCode}
-                  />
-                )}
-              />
+              {(errors.country || errors.city) && (
+                <ErrorText>Country and city are required</ErrorText>
+              )}
               <HandPreference control={control} />
               <Button onPress={handleSubmit(onSubmit)} disabled={isSubmitting}>
                 <ButtonText>
@@ -455,6 +397,19 @@ const Signup = ({ route }) => {
           )}
         />
       </KeyboardAvoidingView>
+
+      <CountrySelector
+        visible={showCountrySelector}
+        onClose={() => setShowCountrySelector(false)}
+        onSelect={handleCountrySelected}
+      >
+        <CitySelector
+          visible={showCitySelector}
+          onBack={() => setShowCitySelector(false)}
+          countryCode={selectedCountryCode}
+          onSelect={handleCitySelected}
+        />
+      </CountrySelector>
     </Container>
   );
 };
@@ -620,24 +575,21 @@ const ButtonText = styled.Text({
   fontWeight: "bold",
   fontSize: 16,
 });
-
-const styles = StyleSheet.create({
-  box: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 0,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  errorBox: { borderWidth: 1, borderColor: "#ff7675" },
-  disabledBox: { opacity: 0.6 },
-  input: { color: "#fff", paddingRight: 10 },
-  dropdown: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderWidth: 0,
-    marginTop: 5,
-  },
-  dropdownText: { color: "#fff" },
-});
+const LocationButton = styled.TouchableOpacity(({ hasError }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: 10,
+  marginBottom: 10,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  borderRadius: 5,
+  borderWidth: hasError ? 1 : 0,
+  borderColor: hasError ? "#ff7675" : "transparent",
+}));
+const LocationButtonText = styled.Text(({ selected }) => ({
+  color: selected ? "#fff" : "#aaa",
+  fontSize: 14,
+  flexShrink: 1,
+}));
 
 export default Signup;

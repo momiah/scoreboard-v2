@@ -1,12 +1,15 @@
 import React, {
   useContext,
-  // useState
+  useEffect,
+  //  useState
 } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
+import Clubs from "../screens/Home/Clubs/Clubs";
 import League from "../screens/Home/Leagues/League";
+import Club from "../screens/Home/Clubs/Club";
 import Tournament from "../screens/Home/Tournaments/Tournament";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
@@ -28,6 +31,9 @@ import UserFeedback from "../screens/Profile/UserFeedback";
 import PendingRequests from "../screens/Profile/PendingRequests";
 import BulkGamePublisher from "../screens/Home/Leagues/BulkGamePublisher";
 import TournamentSettings from "../screens/Home/Tournaments/TournamentSettings";
+import ClubSettings from "../screens/Home/Clubs/ClubSettings";
+import ClubPendingRequests from "../screens/Home/Clubs/ClubPendingRequests";
+import ClubPendingInvites from "../screens/Home/Clubs/ClubPendingInvites";
 import BulkFixturesPublisher from "../screens/Home/Tournaments/BulkFixturesPublisher";
 import EditTournament from "../screens/Home/Tournaments/EditTournament";
 import Tournaments from "../screens/Home/Tournaments/Tournaments";
@@ -36,12 +42,15 @@ import LinkedAccounts from "../screens/Profile/LinkedAccounts";
 import Chats from "../screens/Chats";
 import CompetitionsScreen from "../screens/Competition/CompetitionScreen";
 import { UserContext } from "../context/UserContext";
+import { LeagueContext } from "../context/LeagueContext";
+// import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { View } from "react-native";
 import InvitePlayer from "../screens/InvitePlayer";
 import GameScreen from "../screens/GameScreen";
 // import { getUnitId } from "../utils/getAdMobUnitId";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
+import { useNavigation } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -54,12 +63,20 @@ const HomeStack = () => {
     >
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
+      <Stack.Screen name="Clubs" component={Clubs} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
+      <Stack.Screen name="ClubSettings" component={ClubSettings} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
+      <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
@@ -99,6 +116,13 @@ const ProfileStack = () => {
     >
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
+      <Stack.Screen name="ClubSettings" component={ClubSettings} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
+      <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -141,6 +165,13 @@ const ChatsStack = () => {
     >
       <Stack.Screen name="Chats" component={Chats} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
+      <Stack.Screen name="ClubSettings" component={ClubSettings} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
+      <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -183,6 +214,13 @@ const CompetitionsStack = () => {
     >
       <Stack.Screen name="CompetitionsList" component={CompetitionsScreen} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Club" component={Club} />
+      <Stack.Screen name="ClubSettings" component={ClubSettings} />
+      <Stack.Screen
+        name="ClubPendingRequests"
+        component={ClubPendingRequests}
+      />
+      <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -233,7 +271,10 @@ const TabIcon = ({ name, color, size }) => {
 };
 
 const Tabs = () => {
+  const navigation = useNavigation();
   const { chatSummaries, notifications, currentUser } = useContext(UserContext);
+  const { clubNavigationId } = useContext(LeagueContext);
+  // const [showAd, setShowAd] = useState(true);
 
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
@@ -249,6 +290,21 @@ const Tabs = () => {
   } else if (notifications.length === 0 || hasUnreadNotifications) {
     initialRouteName = "Competitions";
   }
+
+  useEffect(() => {
+    if (!clubNavigationId) return;
+    // Tabs screen is registered on the root Stack as "Tabs"; `Home` lives on the inner Tab navigator.
+    navigation.navigate("Tabs", {
+      screen: "Home",
+      params: {
+        screen: "Club",
+        params: {
+          clubId: clubNavigationId,
+          primaryTab: "Feed",
+        },
+      },
+    });
+  }, [clubNavigationId, navigation]);
 
   return (
     <>

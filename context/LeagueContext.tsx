@@ -24,6 +24,7 @@ import {
   onSnapshot,
   arrayUnion,
   arrayRemove,
+  writeBatch,
   UpdateData,
   DocumentData,
 } from "firebase/firestore";
@@ -33,6 +34,7 @@ import { db } from "../services/firebase.config";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
+import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -57,9 +59,12 @@ import {
   ScoreboardProfile,
   League,
   Tournament,
+  Club,
+  Player,
   Fixtures,
   Game,
   TeamStats,
+  CompetitionOwner,
 } from "@shared";
 import {
   calculatePlayerPerformance,
@@ -123,12 +128,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const [showMockData, setShowMockData] = useState(false);
   const [leagueNavigationId, setLeagueNavigationId] = useState("");
   const [tournamentNavigationId, setTournamentNavigationId] = useState("");
+  const [clubNavigationId, setClubNavigationId] = useState("");
   const [leagueById, setLeagueById] = useState<League | null>(null);
   const [tournamentById, setTournamentById] = useState<Tournament | null>(null);
+  const [clubById, setClubById] = useState<Club | null>(null);
   const [upcomingLeagues, setUpcomingLeagues] = useState<League[]>([]);
   const [upcomingTournaments, setUpcomingTournaments] = useState<Tournament[]>(
     [],
   );
+  const [upcomingClubs, setUpcomingClubs] = useState<Club[]>([]);
+  const [upcomingClubsLoading, setUpcomingClubsLoading] = useState(false);
 
   const COMPETITION_CONFIG = {
     league: {
@@ -160,9 +169,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    if (!currentUser?.userId) return;
+    if (!currentUser?.userId) {
+      setUpcomingClubs([]);
+      setUpcomingClubsLoading(false);
+      return;
+    }
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
+    fetchUpcomingClubs();
   }, [currentUser?.userId]);
 
   const fetchCompetitions = async ({
@@ -207,10 +221,30 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     setUpcomingTournaments(tournaments as unknown as Tournament[]);
   };
 
+  const fetchUpcomingClubs = async () => {
+    setUpcomingClubsLoading(true);
+    try {
+      const rows = await fetchCompetitions({
+        competition: "clubs",
+        numberToLoad: 30,
+      });
+      const clubs = (rows as { id?: string; clubId?: string }[]).map((row) => ({
+        ...row,
+        clubId: row.clubId ?? row.id ?? "",
+      })) as Club[];
+      setUpcomingClubs(clubs);
+    } finally {
+      setUpcomingClubsLoading(false);
+    }
+  };
+
   const fetchLeagues = (options = {}) =>
     fetchCompetitions({ competition: "leagues", ...options }) as Promise<
       League[]
     >;
+
+  const fetchClubs = (options = {}) =>
+    fetchCompetitions({ competition: "clubs", ...options }) as Promise<Club[]>;
 
   const fetchTournaments = (options = {}) =>
     fetchCompetitions({ competition: "tournaments", ...options }) as Promise<
@@ -244,8 +278,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         if (existingPlaytime) {
           updatedPlaytime = currentPlaytime.map((time: PlayingTime) =>
             time.day === existingPlaytime.day &&
-            time.startTime === existingPlaytime.startTime &&
-            time.endTime === existingPlaytime.endTime
+              time.startTime === existingPlaytime.startTime &&
+              time.endTime === existingPlaytime.endTime
               ? playtime[0] // Replace with updated playtime
               : time,
           );
@@ -406,6 +440,32 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       } else {
         await fetchUpcomingTournaments();
       }
+
+      // Surface in the club feed when the competition belongs to a club.
+      if (data.clubId) {
+        const owner = data[
+          config.ownerKey as keyof (League & Tournament)
+        ] as CompetitionOwner | undefined;
+        const competitionImage =
+          competitionType === "league"
+            ? data.leagueImage
+            : data.tournamentImage;
+        await clubFeed.competitionCreated(data.clubId, {
+          name: title ?? "",
+          competitionType: competitionType as "league" | "tournament",
+          competitionId: documentId,
+          image: competitionImage ?? null,
+          actor: owner
+            ? {
+              userId: owner.userId,
+              username: owner.username,
+              firstName: owner.firstName,
+              lastName: owner.lastName,
+            }
+            : null,
+        });
+      }
+
       setNavigationId(documentId);
 
       setTimeout(() => {
@@ -415,6 +475,73 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error adding competition:", error);
     }
   };
+
+  const addClub = async ({
+    data,
+    ownerParticipant,
+  }: {
+    data: Club;
+    ownerParticipant: Player;
+  }) => {
+    if (!data?.clubId) {
+      console.error("addClub: missing clubId");
+      return;
+    }
+    try {
+      const batch = writeBatch(db);
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, data.clubId);
+      batch.set(clubRef, { ...data });
+      const participantRef = doc(
+        db,
+        COLLECTION_NAMES.clubs,
+        data.clubId,
+        "participants",
+        ownerParticipant.userId,
+      );
+      batch.set(participantRef, { ...ownerParticipant });
+      await batch.commit();
+
+      await createWelcomeChatMessage({
+        collectionName: "clubs",
+        documentId: data.clubId,
+        title: data.clubName ?? "",
+      });
+
+      AppEventsLogger.logEvent("CreatedClub", {
+        club_name: data.clubName,
+      });
+
+      await fetchUpcomingClubs();
+
+      setClubNavigationId(data.clubId);
+      setTimeout(() => {
+        setClubNavigationId("");
+      }, 2500);
+    } catch (error) {
+      console.error("Error adding club:", error);
+      throw error;
+    }
+  };
+
+  const fetchClubById = useCallback(async (clubId: string): Promise<Club | null> => {
+    try {
+      const clubDoc = await getDoc(doc(db, COLLECTION_NAMES.clubs, clubId));
+      if (!clubDoc.exists()) {
+        setClubById(null);
+        return null;
+      }
+      const clubData = {
+        clubId: clubDoc.id,
+        ...clubDoc.data(),
+      } as Club;
+      setClubById(clubData);
+      return clubData;
+    } catch (error) {
+      console.error("Error fetching club:", error);
+      setClubById(null);
+      return null;
+    }
+  }, []);
 
   const fetchCompetitionById = async ({
     competitionId,
@@ -690,67 +817,476 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Directly add players to a competition (no invite/notification).
+  // Used for club competitions where members are added straight away.
+  // Returns the userIds that were actually added.
+  const addPlayersToCompetition = async ({
+    competitionId,
+    collectionName,
+    userIds,
+  }: {
+    competitionId: string;
+    collectionName: CollectionName;
+    userIds: string[];
+  }): Promise<string[]> => {
+    try {
+      const competitionRef = doc(db, collectionName, competitionId);
+      const participantsKey =
+        collectionName === "leagues"
+          ? "leagueParticipants"
+          : "tournamentParticipants";
+
+      const competitionDoc = await getDoc(competitionRef);
+      if (!competitionDoc.exists()) {
+        throw new Error("Competition does not exist or has been deleted");
+      }
+
+      const competitionData = competitionDoc.data();
+      const existingParticipants = competitionData[participantsKey] || [];
+      const pendingInvites = competitionData.pendingInvites || [];
+      const maxPlayers = competitionData.maxPlayers;
+
+      const existingIds = new Set(
+        existingParticipants.map((p: { userId: string }) => p.userId),
+      );
+
+      // Only genuinely-new users
+      const newUserIds = userIds.filter((uid) => !existingIds.has(uid));
+      if (newUserIds.length === 0) return [];
+
+      // Guard: block the whole batch if it would exceed maxPlayers
+      if (
+        maxPlayers &&
+        existingParticipants.length + newUserIds.length > maxPlayers
+      ) {
+        throw new Error("MAX_PLAYERS_EXCEEDED");
+      }
+
+      // Build participant profiles for the new users
+      const profiles = await Promise.all(
+        newUserIds.map(async (uid) => {
+          const user = await getUserById(uid);
+          if (!user) return null;
+          return {
+            ...scoreboardProfileSchema,
+            username: user.username,
+            firstName: user.firstName.split(" ")[0],
+            lastName: user.lastName.split(" ")[0],
+            userId: user.userId,
+            memberSince: user.profileDetail?.memberSince || "",
+            profileImage: user.profileImage || ccImageEndpoint,
+          };
+        }),
+      );
+      const toAdd = profiles.filter((p) => p !== null);
+      if (toAdd.length === 0) return [];
+
+      const addedIds = toAdd.map((p) => p!.userId);
+      const addedIdSet = new Set(addedIds);
+      const updatedPending = pendingInvites.filter(
+        (inv: { userId: string }) => !addedIdSet.has(inv.userId),
+      );
+
+      await updateDoc(competitionRef, {
+        [participantsKey]: [...existingParticipants, ...toAdd],
+        pendingInvites: updatedPending,
+      });
+
+      AppEventsLogger.logEvent("JoinedCompetition", {
+        competition_type:
+          collectionName === "leagues" ? "league" : "tournament",
+        method: "club_add",
+      });
+
+      console.log("Players added to competition successfully!");
+      return addedIds;
+    } catch (error) {
+      console.error("Error adding players to competition:", error);
+      throw error;
+    }
+  };
+
+  const acceptClubInvite = async ({
+    userId,
+    clubId,
+    notificationId,
+  }: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => {
+    try {
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
+
+      const newParticipant = await getUserById(userId);
+      if (!newParticipant) {
+        console.error("User not found:", userId);
+        return;
+      }
+
+      const participantData: Player = {
+        userId: newParticipant.userId,
+        firstName: newParticipant.firstName,
+        lastName: newParticipant.lastName,
+        username: newParticipant.username,
+      };
+
+      await runTransaction(db, async (transaction) => {
+        const clubDoc = await transaction.get(clubRef);
+
+        if (!clubDoc.exists()) {
+          console.error("Club does not exist or has been deleted");
+          transaction.update(notificationDocRef, { isRead: true });
+          return;
+        }
+
+        const clubData = clubDoc.data();
+        const pendingInvites = clubData.pendingInvites || [];
+
+        const updatedPending = pendingInvites.filter(
+          (inv: { userId: string }) => inv.userId !== userId,
+        );
+
+        transaction.update(clubRef, { pendingInvites: updatedPending });
+
+        const participantRef = doc(
+          db,
+          COLLECTION_NAMES.clubs,
+          clubId,
+          "participants",
+          userId,
+        );
+        transaction.set(participantRef, participantData);
+
+        transaction.update(notificationDocRef, {
+          isRead: true,
+          response: notificationTypes.RESPONSE.ACCEPT,
+        });
+      });
+
+      AppEventsLogger.logEvent("JoinedClub", {
+        club_id: clubId,
+        method: "invite",
+      });
+
+      await clubFeed.playerJoined(clubId, {
+        userId: participantData.userId,
+        username: participantData.username,
+        firstName: participantData.firstName,
+        lastName: participantData.lastName,
+        profileImage: newParticipant.profileImage,
+      });
+
+      console.log("Club invite accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting club invite:", error);
+    }
+  };
+
+  const declineClubInvite = async ({
+    userId,
+    clubId,
+    notificationId,
+  }: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => {
+    try {
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+      const clubSnap = await getDoc(clubRef);
+
+      if (!clubSnap.exists()) {
+        console.error("Club does not exist or has been deleted");
+        const notificationDocRef = doc(
+          db,
+          "users",
+          userId,
+          "notifications",
+          notificationId,
+        );
+        await updateDoc(notificationDocRef, { isRead: true });
+        return;
+      }
+
+      const clubData = clubSnap.data();
+      const pendingInvites = clubData.pendingInvites || [];
+
+      const updatedPending = pendingInvites.filter(
+        (inv: { userId: string }) => inv.userId !== userId,
+      );
+
+      await updateDoc(clubRef, { pendingInvites: updatedPending });
+
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
+      });
+
+      console.log("Club invite declined successfully!");
+    } catch (error) {
+      console.error("Error declining club invite:", error);
+    }
+  };
+
+  const requestToJoinClub = async ({
+    clubId,
+    currentUser,
+    ownerId,
+  }: {
+    clubId: string;
+    currentUser: UserProfile;
+    ownerId: string;
+  }): Promise<boolean> => {
+    try {
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+      const clubSnap = await getDoc(clubRef);
+      if (!clubSnap.exists()) return false;
+
+      const data = clubSnap.data();
+      const pendingRequests = data.pendingRequests || [];
+
+      const alreadyRequested = pendingRequests.some(
+        (r: { userId: string }) => r.userId === currentUser.userId,
+      );
+      if (alreadyRequested) return false;
+
+      await updateDoc(clubRef, {
+        pendingRequests: [...pendingRequests, { userId: currentUser.userId }],
+      });
+
+      const displayName = formatDisplayName(currentUser);
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: ownerId,
+        senderId: currentUser.userId,
+        message: `${displayName} has requested to join your club!`,
+        type: notificationTypes.ACTION.JOIN_REQUEST.CLUB,
+        data: { clubId },
+      };
+
+      await sendNotification(payload);
+      return true;
+    } catch (error) {
+      console.error("Error requesting to join club:", error);
+      return false;
+    }
+  };
+
+  const acceptClubJoinRequest = async ({
+    senderId,
+    clubId,
+    notificationId,
+    userId,
+  }: {
+    senderId: string;
+    clubId: string;
+    notificationId: string;
+    userId: string;
+  }) => {
+    try {
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
+
+      const newParticipant = await getUserById(senderId);
+      if (!newParticipant) {
+        console.error("Sender not found:", senderId);
+        return;
+      }
+
+      const participantData: Player = {
+        userId: newParticipant.userId,
+        firstName: newParticipant.firstName,
+        lastName: newParticipant.lastName,
+        username: newParticipant.username,
+      };
+
+      await runTransaction(db, async (transaction) => {
+        const clubDoc = await transaction.get(clubRef);
+        if (!clubDoc.exists()) {
+          transaction.update(notificationDocRef, { isRead: true });
+          return;
+        }
+
+        const clubData = clubDoc.data();
+        const pendingRequests = clubData.pendingRequests || [];
+        const updatedPending = pendingRequests.filter(
+          (r: { userId: string }) => r.userId !== senderId,
+        );
+
+        transaction.update(clubRef, { pendingRequests: updatedPending });
+
+        const participantRef = doc(
+          db,
+          COLLECTION_NAMES.clubs,
+          clubId,
+          "participants",
+          senderId,
+        );
+        transaction.set(participantRef, participantData);
+
+        transaction.update(notificationDocRef, {
+          isRead: true,
+          response: notificationTypes.RESPONSE.ACCEPT,
+        });
+      });
+
+      await clubFeed.playerJoined(clubId, {
+        userId: participantData.userId,
+        username: participantData.username,
+        firstName: participantData.firstName,
+        lastName: participantData.lastName,
+        profileImage: newParticipant.profileImage,
+      });
+
+      console.log("Club join request accepted successfully!");
+    } catch (error) {
+      console.error("Error accepting club join request:", error);
+    }
+  };
+
+  const declineClubJoinRequest = async ({
+    senderId,
+    clubId,
+    notificationId,
+    userId,
+  }: {
+    senderId: string;
+    clubId: string;
+    notificationId: string;
+    userId: string;
+  }) => {
+    try {
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+      const clubSnap = await getDoc(clubRef);
+      const data = clubSnap.data();
+      const pendingRequests = data?.pendingRequests || [];
+      const updatedPending = pendingRequests.filter(
+        (r: { userId: string }) => r.userId !== senderId,
+      );
+
+      await updateDoc(clubRef, { pendingRequests: updatedPending });
+
+      const notificationDocRef = doc(
+        db,
+        "users",
+        userId,
+        "notifications",
+        notificationId,
+      );
+      await updateDoc(notificationDocRef, {
+        isRead: true,
+        response: notificationTypes.RESPONSE.DECLINE,
+      });
+
+      console.log("Club join request declined successfully!");
+    } catch (error) {
+      console.error("Error declining club join request:", error);
+    }
+  };
+
   const requestToJoinLeague = async ({
     competitionId,
     currentUser,
     ownerId,
     collectionName,
+    clubId,
   }: {
     competitionId: string;
     currentUser: UserProfile;
     ownerId: string;
     collectionName: CollectionName;
+    clubId?: string | null;
   }) => {
     try {
       const collectionRef = doc(db, collectionName, competitionId);
       const competitionSnap = await getDoc(collectionRef);
 
-      if (competitionSnap.exists()) {
-        const competitionData = competitionSnap.data();
-        const pendingRequests = competitionData.pendingRequests || [];
-
-        // Add user to pending invites if not already present
-        await updateDoc(collectionRef, {
-          pendingRequests: [
-            ...pendingRequests,
-            { userId: currentUser?.userId },
-          ],
-        });
-
-        const displayName = formatDisplayName(currentUser);
-        const isLeague = collectionName === COLLECTION_NAMES.leagues;
-        const paramKey = isLeague ? "leagueId" : "tournamentId";
-        const competitionType = isLeague ? "league" : "tournament";
-        const notificationType = isLeague
-          ? notificationTypes.ACTION.JOIN_REQUEST.LEAGUE
-          : notificationTypes.ACTION.JOIN_REQUEST.TOURNAMENT;
-
-        const payload = {
-          ...notificationSchema,
-          createdAt: new Date(),
-          recipientId: ownerId,
-          senderId: currentUser?.userId,
-          message: `${displayName} has requested to join your ${competitionType}!`,
-          type: notificationType,
-          data: {
-            [paramKey]: competitionId,
-          },
-        };
-
-        await sendNotification(payload);
-
-        AppEventsLogger.logEvent("RequestedToJoin", {
-          competition_type:
-            collectionName === COLLECTION_NAMES.leagues
-              ? "league"
-              : "tournament",
-        });
-
-        return true;
-      } else {
+      if (!competitionSnap.exists()) {
         console.log("Competition does not exist");
         return false;
       }
+
+      const competitionData = competitionSnap.data();
+      const pendingRequests = competitionData.pendingRequests || [];
+
+      const alreadyRequested = pendingRequests.some(
+        (r: { userId: string }) => r.userId === currentUser?.userId,
+      );
+      if (alreadyRequested) return false;
+
+      await updateDoc(collectionRef, {
+        pendingRequests: [
+          ...pendingRequests,
+          { userId: currentUser?.userId },
+        ],
+      });
+
+      const displayName = formatDisplayName(currentUser);
+      const isLeague = collectionName === COLLECTION_NAMES.leagues;
+      const paramKey = isLeague ? "leagueId" : "tournamentId";
+      const competitionType = isLeague ? "league" : "tournament";
+      const notificationType = isLeague
+        ? notificationTypes.ACTION.JOIN_REQUEST.LEAGUE
+        : notificationTypes.ACTION.JOIN_REQUEST.TOURNAMENT;
+
+      // If this competition belongs to a club, notify the club owner instead
+      let recipientId = ownerId;
+      let clubName: string | null = null;
+      if (clubId) {
+        const clubSnap = await getDoc(doc(db, COLLECTION_NAMES.clubs, clubId));
+        if (clubSnap.exists()) {
+          const clubData = clubSnap.data();
+          recipientId = clubData.clubOwner?.userId ?? ownerId;
+          clubName = clubData.clubName ?? null;
+        }
+      }
+
+      const message = clubId
+        ? `${displayName} has requested to join a ${competitionType} in your club!`
+        : `${displayName} has requested to join your ${competitionType}!`;
+
+      const payload = {
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId,
+        senderId: currentUser?.userId,
+        message,
+        type: notificationType,
+        data: {
+          [paramKey]: competitionId,
+          ...(clubId ? { clubId, clubName } : {}),
+        },
+      };
+
+      await sendNotification(payload);
+
+      AppEventsLogger.logEvent("RequestedToJoin", {
+        competition_type: competitionType,
+      });
+
+      return true;
     } catch (error) {
       console.error("Error checking pending invites:", error);
       return false;
@@ -838,11 +1374,48 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           participantIds: arrayUnion(senderId),
         });
 
+        // If the competition belongs to a club, also add the player as a club participant
+        const competitionClubId = competitionData.clubId;
+        if (competitionClubId) {
+          const clubParticipantRef = doc(
+            db,
+            COLLECTION_NAMES.clubs,
+            competitionClubId,
+            "participants",
+            senderId,
+          );
+          transaction.set(
+            clubParticipantRef,
+            {
+              userId: newParticipant.userId,
+              firstName: newParticipant.firstName,
+              lastName: newParticipant.lastName,
+              username: newParticipant.username,
+            },
+            { merge: true },
+          );
+        }
+
         transaction.update(notificationDocRef, {
           isRead: true,
           response: notificationTypes.RESPONSE.ACCEPT,
         });
       });
+
+      // If competition belongs to a club, also post a club feed event
+      const competitionSnap = await getDoc(competitionRef);
+      const competitionClubId = competitionSnap.exists()
+        ? competitionSnap.data().clubId
+        : null;
+      if (competitionClubId) {
+        await clubFeed.playerJoined(competitionClubId, {
+          userId: newParticipant.userId,
+          username: newParticipant.username,
+          firstName: newParticipant.firstName,
+          lastName: newParticipant.lastName,
+          profileImage: newParticipant.profileImage,
+        });
+      }
 
       AppEventsLogger.logEvent("JoinedCompetition", {
         competition_type:
@@ -1177,9 +1750,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date(),
         recipientId: senderId,
         senderId: userId,
-        message: `${currentUserData.username} has approved your game on ${
-          competitionData[config.nameKey]
-        }!`,
+        message: `${currentUserData.username} has approved your game on ${competitionData[config.nameKey]
+          }!`,
         type: notificationTypes.INFORMATION[
           isTournament ? "TOURNAMENT" : "LEAGUE"
         ].TYPE,
@@ -1357,9 +1929,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date(),
         recipientId: senderId,
         senderId: userId,
-        message: `${currentUserData.username} has declined your game on ${
-          competitionData[config.nameKey]
-        }!`,
+        message: `${currentUserData.username} has declined your game on ${competitionData[config.nameKey]
+          }!`,
         type: notificationTypes.INFORMATION[
           isTournament ? "TOURNAMENT" : "LEAGUE"
         ].TYPE,
@@ -1992,8 +2563,10 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
         // League Data Management
         addCompetition,
+        addClub,
         updateCompetition, // Exposing the updateCompetition function
         fetchLeagues,
+        fetchClubs,
         fetchUpcomingLeagues,
         fetchCompetitionById,
         getCourts,
@@ -2028,9 +2601,21 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         leagueById,
         leagueNavigationId,
         setLeagueNavigationId,
+        clubById,
+        clubNavigationId,
+        fetchClubById,
+        upcomingClubs,
+        upcomingClubsLoading,
+        fetchUpcomingClubs,
         removePlayerFromCompetition,
         acceptCompetitionInvite,
         declineCompetitionInvite,
+        addPlayersToCompetition,
+        acceptClubInvite,
+        declineClubInvite,
+        requestToJoinClub,
+        acceptClubJoinRequest,
+        declineClubJoinRequest,
         requestToJoinLeague,
         acceptCompetitionJoinRequest,
         declineCompetitionJoinRequest,

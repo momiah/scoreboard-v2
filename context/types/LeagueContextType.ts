@@ -13,6 +13,8 @@ import {
   UserProfile,
   League,
   Tournament,
+  Club,
+  Player,
   Fixtures,
   Game,
   TeamStats,
@@ -47,12 +49,19 @@ export interface LeagueContextType {
     resetDelayMs?: number;
   }) => Promise<void>;
 
+  addClub: (params: {
+    data: Club;
+    ownerParticipant: Player;
+  }) => Promise<void>;
+
   updateCompetition: (params: {
     competition: League | Tournament;
     collectionName: CollectionName;
   }) => Promise<void>;
 
   fetchLeagues: (options?: object) => Promise<League[]>;
+
+  fetchClubs: (options?: object) => Promise<Club[]>;
 
   fetchUpcomingLeagues: () => Promise<void>;
 
@@ -111,6 +120,14 @@ export interface LeagueContextType {
   leagueById: League | null;
   leagueNavigationId: string;
   setLeagueNavigationId: (id: string) => void;
+
+  // Club State
+  clubById: Club | null;
+  clubNavigationId: string;
+  fetchClubById: (clubId: string) => Promise<Club | null>;
+  upcomingClubs: Club[];
+  upcomingClubsLoading: boolean;
+  fetchUpcomingClubs: () => Promise<void>;
   handleLeagueDescription: (newDescription: string) => Promise<void>;
   removePlayerFromCompetition: (params: {
     competitionId: string;
@@ -130,11 +147,44 @@ export interface LeagueContextType {
     notificationId: string;
     collectionName: CollectionName;
   }) => Promise<void>;
+  addPlayersToCompetition: (params: {
+    competitionId: string;
+    collectionName: CollectionName;
+    userIds: string[];
+  }) => Promise<string[]>;
+  acceptClubInvite: (params: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => Promise<void>;
+  declineClubInvite: (params: {
+    userId: string;
+    clubId: string;
+    notificationId: string;
+  }) => Promise<void>;
+  requestToJoinClub: (params: {
+    clubId: string;
+    currentUser: UserProfile;
+    ownerId: string;
+  }) => Promise<boolean>;
+  acceptClubJoinRequest: (params: {
+    senderId: string;
+    clubId: string;
+    notificationId: string;
+    userId: string;
+  }) => Promise<void>;
+  declineClubJoinRequest: (params: {
+    senderId: string;
+    clubId: string;
+    notificationId: string;
+    userId: string;
+  }) => Promise<void>;
   requestToJoinLeague: (params: {
     competitionId: string;
     currentUser: UserProfile;
     ownerId: string;
     collectionName: CollectionName;
+    clubId?: string | null;
   }) => Promise<boolean>;
   acceptCompetitionJoinRequest: (params: {
     senderId: string;
