@@ -27,6 +27,10 @@ const FilterSheetModal = ({
   initialValues,
   isFiltering,
   isVisible,
+  // Clubs reuse this sheet but only filter by location, so the competition-only
+  // fields (league type / max players) can be hidden.
+  hideCompetitionFilters = false,
+  title = "Filter Leagues",
 }) => {
   const [countries, setCountries] = useState([]);
   const [cities, setCities] = useState([]);
@@ -212,7 +216,7 @@ const FilterSheetModal = ({
   return (
     <BottomSheetView style={{ padding: 20 }}>
       <HeaderRow>
-        <Title>Filter Leagues</Title>
+        <Title>{title}</Title>
       </HeaderRow>
 
       <Controller
@@ -259,39 +263,43 @@ const FilterSheetModal = ({
         )}
       />
 
-      <Spacer />
-      <RadioTitle>League Type</RadioTitle>
-      <Controller
-        name="leagueType"
-        control={control}
-        render={({ field }) => (
-          <RadioGroup>
-            {gameTypes.map((type) => (
-              <RadioOption key={type} onPress={() => field.onChange(type)}>
-                <RadioCircle selected={field.value === type} />
-                <RadioLabel>{type}</RadioLabel>
-              </RadioOption>
-            ))}
-          </RadioGroup>
-        )}
-      />
+      {!hideCompetitionFilters && (
+        <>
+          <Spacer />
+          <RadioTitle>League Type</RadioTitle>
+          <Controller
+            name="leagueType"
+            control={control}
+            render={({ field }) => (
+              <RadioGroup>
+                {gameTypes.map((type) => (
+                  <RadioOption key={type} onPress={() => field.onChange(type)}>
+                    <RadioCircle selected={field.value === type} />
+                    <RadioLabel>{type}</RadioLabel>
+                  </RadioOption>
+                ))}
+              </RadioGroup>
+            )}
+          />
 
-      <Spacer />
-      <RadioTitle>Max Players</RadioTitle>
-      <Controller
-        name="maxPlayers"
-        control={control}
-        render={({ field }) => (
-          <RadioGroup>
-            {maxPlayersOptions.map((num) => (
-              <RadioOption key={num} onPress={() => field.onChange(num)}>
-                <RadioCircle selected={field.value === num} />
-                <RadioLabel>{num}</RadioLabel>
-              </RadioOption>
-            ))}
-          </RadioGroup>
-        )}
-      />
+          <Spacer />
+          <RadioTitle>Max Players</RadioTitle>
+          <Controller
+            name="maxPlayers"
+            control={control}
+            render={({ field }) => (
+              <RadioGroup>
+                {maxPlayersOptions.map((num) => (
+                  <RadioOption key={num} onPress={() => field.onChange(num)}>
+                    <RadioCircle selected={field.value === num} />
+                    <RadioLabel>{num}</RadioLabel>
+                  </RadioOption>
+                ))}
+              </RadioGroup>
+            )}
+          />
+        </>
+      )}
 
       <Spacer />
       <ButtonRow>

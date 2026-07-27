@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
 import Leagues from "../screens/Home/Leagues/Leagues";
+import Clubs from "../screens/Home/Clubs/Clubs";
 import League from "../screens/Home/Leagues/League";
 import Club from "../screens/Home/Clubs/Club";
 import Tournament from "../screens/Home/Tournaments/Tournament";
@@ -62,6 +63,7 @@ const HomeStack = () => {
     >
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
+      <Stack.Screen name="Clubs" component={Clubs} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
