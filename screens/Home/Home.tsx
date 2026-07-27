@@ -21,8 +21,6 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
-import HorizontalLeagueCarousel from "../../components/Leagues/HorizontalLeagueCarousel";
-import TournamentGrid from "../../components/Tournaments/TournamentGrid";
 import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";
 import SubHeader from "../../components/SubHeader";
 import GameVideoCard from "../../components/Feed/GameVideoCard";
@@ -33,29 +31,19 @@ import {
 } from "@react-navigation/native";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
-import {
-  HorizontalLeagueCarouselSkeleton,
-  TopPlayersSkeleton,
-  TournamentGridSkeleton,
-} from "../../components/Skeletons/HomeSkeleton";
+import { TopPlayersSkeleton } from "../../components/Skeletons/HomeSkeleton";
 import { handleSocialPress } from "../../helpers/handleSocialPress";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
-import HomeClubsSection from "../../components/Clubs/HomeClubsSection";
-import {
-  GameVideo,
-  League,
-  NormalizedCompetition,
-  Tournament,
-} from "@shared/types";
-import { getLocalFirstCompetitions } from "@/helpers/getLocalFirstCompetitions";
-import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
+import HomeLeagueSection from "../../components/Home/HomeLeagueSection";
+import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
+import HomeClubsSection from "../../components/Home/HomeClubsSection";
+import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
-import ActionPlaceholder from "@/components/ActionPlaceholder";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -70,10 +58,8 @@ const Home = () => {
 
   const {
     fetchUpcomingLeagues,
-    upcomingLeagues,
     fetchUpcomingTournaments,
     fetchUpcomingClubs,
-    upcomingTournaments,
   } = useContext(LeagueContext);
   const { getTopUsers, currentUser } = useContext(UserContext);
 
@@ -186,24 +172,6 @@ const Home = () => {
 
   const topPlayers = useMemo(() => sortedUsers.slice(0, 5), [sortedUsers]);
 
-  const publicLeagues = getLocalFirstCompetitions({
-    competitions: (upcomingLeagues ?? []).map((league: League) =>
-      normalizeCompetitionData({ rawData: league, competitionType: "league" }),
-    ) as NormalizedCompetition[],
-    checkEndDate: true,
-    currentUser,
-  });
-
-  const publicTournaments = getLocalFirstCompetitions({
-    competitions: (upcomingTournaments ?? []).map((tournament: Tournament) =>
-      normalizeCompetitionData({
-        rawData: tournament,
-        competitionType: "tournament",
-      }),
-    ) as NormalizedCompetition[],
-    currentUser,
-  });
-
   const handleRefresh = () => {
     setRefreshing(true);
     fetchUsers();
@@ -264,28 +232,10 @@ const Home = () => {
           </TouchableOpacity>
         )}
 
-        <SubHeader
-          title="Upcoming Leagues"
-          actionText="Browse Leagues"
-          navigationRoute={"Leagues"}
+        <HomeLeagueSection
+          loading={loading}
+          onCreatePress={() => setAddLeagueModalVisible(true)}
         />
-        {loading ? (
-          <HorizontalLeagueCarouselSkeleton />
-        ) : publicLeagues.length > 0 ? (
-          <HorizontalLeagueCarousel
-            navigationRoute={"League"}
-            leagues={publicLeagues}
-          />
-        ) : (
-          <ActionPlaceholder
-            message="No upcoming leagues in your area. Create one for your community!"
-            icon="add-circle-outline"
-            height={200}
-            onPress={() =>
-              currentUser ? setAddLeagueModalVisible(true) : navigateTo("Login")
-            }
-          />
-        )}
 
         <SubHeader
           title="Top Players"
@@ -298,37 +248,17 @@ const Home = () => {
           <TopPlayers topPlayers={topPlayers} />
         )}
 
-        <SubHeader
-          title="Upcoming Tournaments"
-          actionText="Browse Tournaments"
-          navigationRoute={"Tournaments"}
+        <HomeTournamentSection
+          loading={loading}
+          onCreatePress={() => setAddTournamentModalVisible(true)}
         />
-        {loading ? (
-          <TournamentGridSkeleton />
-        ) : publicTournaments.length > 0 ? (
-          <TournamentGrid
-            tournaments={publicTournaments}
-            navigationRoute={"Tournament"}
-          />
-        ) : (
-          <ActionPlaceholder
-            message="No upcoming tournaments in your area. Create one for your community!"
-            icon="add-circle-outline"
-            height={200}
-            onPress={() =>
-              currentUser
-                ? setAddTournamentModalVisible(true)
-                : navigateTo("Login")
-            }
-          />
-        )}
 
         <HomeClubsSection />
 
         <SubHeader title="Game Videos" />
       </HeaderContainer>
     ),
-    [loading, publicLeagues, publicTournaments, currentUser, topPlayers],
+    [loading, currentUser, topPlayers],
   );
 
   // ─── Render ──────────────────────────────────────────────────────────────────
