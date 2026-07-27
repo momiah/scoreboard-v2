@@ -148,7 +148,7 @@ const HomeClubsSection: React.FC<HomeClubsSectionProps> = ({
           message={
             currentUser
               ? "No clubs to show yet. Create one for your community!"
-              : "No clubs yet. Sign in to make one for your community!"
+              : "Sign in to discover clubs in your area or make one!"
           }
           icon="add-circle-outline"
           height={200}
