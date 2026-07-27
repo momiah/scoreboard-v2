@@ -169,9 +169,6 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Public competitions and clubs load for everyone — including signed-out
-    // visitors — so the Home screen shows a living app instead of empty
-    // placeholders.
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
     fetchUpcomingClubs();
@@ -276,8 +273,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         if (existingPlaytime) {
           updatedPlaytime = currentPlaytime.map((time: PlayingTime) =>
             time.day === existingPlaytime.day &&
-              time.startTime === existingPlaytime.startTime &&
-              time.endTime === existingPlaytime.endTime
+            time.startTime === existingPlaytime.startTime &&
+            time.endTime === existingPlaytime.endTime
               ? playtime[0] // Replace with updated playtime
               : time,
           );
@@ -441,9 +438,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
       // Surface in the club feed when the competition belongs to a club.
       if (data.clubId) {
-        const owner = data[
-          config.ownerKey as keyof (League & Tournament)
-        ] as CompetitionOwner | undefined;
+        const owner = data[config.ownerKey as keyof (League & Tournament)] as
+          | CompetitionOwner
+          | undefined;
         const competitionImage =
           competitionType === "league"
             ? data.leagueImage
@@ -455,11 +452,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
           image: competitionImage ?? null,
           actor: owner
             ? {
-              userId: owner.userId,
-              username: owner.username,
-              firstName: owner.firstName,
-              lastName: owner.lastName,
-            }
+                userId: owner.userId,
+                username: owner.username,
+                firstName: owner.firstName,
+                lastName: owner.lastName,
+              }
             : null,
         });
       }
@@ -521,25 +518,28 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const fetchClubById = useCallback(async (clubId: string): Promise<Club | null> => {
-    try {
-      const clubDoc = await getDoc(doc(db, COLLECTION_NAMES.clubs, clubId));
-      if (!clubDoc.exists()) {
+  const fetchClubById = useCallback(
+    async (clubId: string): Promise<Club | null> => {
+      try {
+        const clubDoc = await getDoc(doc(db, COLLECTION_NAMES.clubs, clubId));
+        if (!clubDoc.exists()) {
+          setClubById(null);
+          return null;
+        }
+        const clubData = {
+          clubId: clubDoc.id,
+          ...clubDoc.data(),
+        } as Club;
+        setClubById(clubData);
+        return clubData;
+      } catch (error) {
+        console.error("Error fetching club:", error);
         setClubById(null);
         return null;
       }
-      const clubData = {
-        clubId: clubDoc.id,
-        ...clubDoc.data(),
-      } as Club;
-      setClubById(clubData);
-      return clubData;
-    } catch (error) {
-      console.error("Error fetching club:", error);
-      setClubById(null);
-      return null;
-    }
-  }, []);
+    },
+    [],
+  );
 
   const fetchCompetitionById = async ({
     competitionId,
@@ -1235,10 +1235,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       if (alreadyRequested) return false;
 
       await updateDoc(collectionRef, {
-        pendingRequests: [
-          ...pendingRequests,
-          { userId: currentUser?.userId },
-        ],
+        pendingRequests: [...pendingRequests, { userId: currentUser?.userId }],
       });
 
       const displayName = formatDisplayName(currentUser);
@@ -1748,8 +1745,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date(),
         recipientId: senderId,
         senderId: userId,
-        message: `${currentUserData.username} has approved your game on ${competitionData[config.nameKey]
-          }!`,
+        message: `${currentUserData.username} has approved your game on ${
+          competitionData[config.nameKey]
+        }!`,
         type: notificationTypes.INFORMATION[
           isTournament ? "TOURNAMENT" : "LEAGUE"
         ].TYPE,
@@ -1927,8 +1925,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         createdAt: new Date(),
         recipientId: senderId,
         senderId: userId,
-        message: `${currentUserData.username} has declined your game on ${competitionData[config.nameKey]
-          }!`,
+        message: `${currentUserData.username} has declined your game on ${
+          competitionData[config.nameKey]
+        }!`,
         type: notificationTypes.INFORMATION[
           isTournament ? "TOURNAMENT" : "LEAGUE"
         ].TYPE,
