@@ -169,17 +169,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Public competitions load for everyone — including signed-out visitors —
-    // so the Home screen shows a living app instead of empty placeholders.
+    // Public competitions and clubs load for everyone — including signed-out
+    // visitors — so the Home screen shows a living app instead of empty
+    // placeholders.
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
-
-    // Clubs stay gated on an authenticated user.
-    if (!currentUser?.userId) {
-      setUpcomingClubs([]);
-      setUpcomingClubsLoading(false);
-      return;
-    }
     fetchUpcomingClubs();
   }, [currentUser?.userId]);
 
