@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { FlatList, ActivityIndicator, Platform } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -10,7 +10,11 @@ import {
 import { LeagueContext } from "../../../context/LeagueContext";
 import { UserContext } from "../../../context/UserContext";
 import Tag from "../../../components/Tag";
-import { NormalizedCompetition, ScoreboardProfile } from "@shared/types";
+import {
+  CollectionName,
+  NormalizedCompetition,
+  ScoreboardProfile,
+} from "@shared/types";
 import { normalizeCompetitionData } from "../../../helpers/normalizeCompetitionData";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
 
@@ -32,11 +36,8 @@ const AssignAdmin = () => {
 
   const { currentUser } = useContext(UserContext);
   const {
-    // @ts-expect-error - LeagueContext type definition is incomplete
     revokeCompetitionAdmin,
-    // @ts-expect-error - LeagueContext type definition is incomplete
     assignCompetitionAdmin,
-    // @ts-expect-error - LeagueContext type definition is incomplete
     fetchCompetitionById,
   } = useContext(LeagueContext);
 
@@ -54,7 +55,7 @@ const AssignAdmin = () => {
     try {
       const fetchedLeague = await fetchCompetitionById({
         competitionId: competitionId,
-        collectionName,
+        collectionName: collectionName as CollectionName,
       });
 
       const normalizedCompetitionData = normalizeCompetitionData({
@@ -71,7 +72,16 @@ const AssignAdmin = () => {
   };
 
   const handleAssign = async (user: ScoreboardProfile) => {
-    await assignCompetitionAdmin({ competitionId, collectionName, user });
+    if (!user.userId) {
+      console.warn("Cannot assign admin: missing userId");
+      return;
+    }
+
+    await assignCompetitionAdmin({
+      competitionId,
+      collectionName,
+      user: { userId: user.userId, username: user.username ?? "" },
+    });
     fetchCompetition();
   };
 
@@ -140,9 +150,11 @@ const AssignAdmin = () => {
     );
   }
 
+  const title = competitionType === "league" ? "League" : "Tournament";
+
   return (
     <Container>
-      <Title>Assign League Admins</Title>
+      <Title>Assign {title} Admins</Title>
       <FlatList
         data={competition.participants}
         keyExtractor={(item, index) => item.userId ?? index.toString()}
@@ -160,6 +172,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: Platform.OS === "android" ? 55 : 0,
 });
 
 const Title = styled.Text({

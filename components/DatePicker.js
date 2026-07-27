@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Modal } from "react-native";
+import { View, Text, Modal, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
@@ -16,28 +16,44 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
   const startDate = watch("startDate");
   const leagueLengthInMonths = watch("leagueLengthInMonths");
 
-  const handleTempDateChange = (selectedDate) => {
-    if (selectedDate) {
-      setSelectedDate(selectedDate);
+  const commitDate = (dateToCommit) => {
+    const formattedStartDate = formatDateForStorage(dateToCommit);
+
+    setValue("startDate", formattedStartDate);
+
+    if (hasEndDate) {
+      const endDate = calculateEndDate(
+        formattedStartDate,
+        leagueLengthInMonths,
+      );
+      setValue("endDate", endDate);
+    } else {
+      setValue("endDate", null);
+    }
+  };
+
+  const handleTempDateChange = (event, nextSelectedDate) => {
+    // Android: native dialog returns a single interaction then dismisses itself
+    if (Platform.OS === "android") {
+      setDatePickerVisible(false);
+
+      if (event.type === "set" && nextSelectedDate) {
+        commitDate(nextSelectedDate);
+      }
+
+      setSelectedDate(null);
+      return;
+    }
+
+    // iOS: spinner updates live; commit happens on Confirm
+    if (nextSelectedDate) {
+      setSelectedDate(nextSelectedDate);
     }
   };
 
   const confirmDateChange = () => {
     if (selectedDate) {
-      const formattedStartDate = formatDateForStorage(selectedDate);
-
-      setValue("startDate", formattedStartDate);
-
-      if (hasEndDate) {
-        const endDate = calculateEndDate(
-          formattedStartDate,
-          leagueLengthInMonths
-        );
-        setValue("endDate", endDate);
-      } else {
-        setValue("endDate", null);
-      }
-
+      commitDate(selectedDate);
       setDatePickerVisible(false);
       setSelectedDate(null);
     }
@@ -65,6 +81,9 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
     }
   }, [hasEndDate, leagueLengthInMonths, startDate, setValue]);
 
+  const minimumDate = new Date();
+  const maximumDate = new Date(new Date().setMonth(new Date().getMonth() + 3));
+
   return (
     <DatePickerContainer>
       <DatePickerContent>
@@ -80,7 +99,7 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
           <Text style={{ color: "white", textAlign: "center" }}>
             {startDate
               ? formatDateForDatePicker(
-                  new Date(startDate.split("-").reverse().join("-"))
+                  new Date(startDate.split("-").reverse().join("-")),
                 )
               : "Select Date"}
           </Text>
@@ -101,52 +120,61 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
         </LengthContainer>
       )}
 
-      <Modal animationType="fade" transparent visible={datePickerVisible}>
-        <ModalContainer>
-          <DatePickerModalContent>
-            <DateTimePicker
-              value={selectedDate || new Date()}
-              mode="date"
-              dateFormat="dayofweek day month"
-              display="spinner"
-              themeVariant="dark"
-              onChange={(event, selectedDate) => {
-                handleTempDateChange(selectedDate);
-              }}
-              minimumDate={new Date()}
-              maximumDate={
-                new Date(new Date().setMonth(new Date().getMonth() + 3))
-              }
-            />
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 3,
-              }}
-            >
-              <Ionicons
-                name="information-circle-outline"
-                size={20}
-                color={"#00A2FF"}
+      {Platform.OS === "android" ? (
+        datePickerVisible && (
+          <DateTimePicker
+            value={selectedDate || new Date()}
+            mode="date"
+            display="default"
+            onChange={handleTempDateChange}
+            minimumDate={minimumDate}
+            maximumDate={maximumDate}
+          />
+        )
+      ) : (
+        <Modal animationType="fade" transparent visible={datePickerVisible}>
+          <ModalContainer>
+            <DatePickerModalContent>
+              <DateTimePicker
+                value={selectedDate || new Date()}
+                mode="date"
+                dateFormat="dayofweek day month"
+                display="spinner"
+                themeVariant="dark"
+                onChange={handleTempDateChange}
+                minimumDate={minimumDate}
+                maximumDate={maximumDate}
               />
-              <DisclaimerText>
-                Please select a date within the next 3 months.
-              </DisclaimerText>
-            </View>
 
-            <ButtonContainer>
-              <CancelButton onPress={() => setDatePickerVisible(false)}>
-                <CancelText>Cancel</CancelText>
-              </CancelButton>
-              <ConfirmButton onPress={confirmDateChange}>
-                <CreateText>Confirm Date</CreateText>
-              </ConfirmButton>
-            </ButtonContainer>
-          </DatePickerModalContent>
-        </ModalContainer>
-      </Modal>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 3,
+                }}
+              >
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color={"#00A2FF"}
+                />
+                <DisclaimerText>
+                  Please select a date within the next 3 months.
+                </DisclaimerText>
+              </View>
+
+              <ButtonContainer>
+                <CancelButton onPress={() => setDatePickerVisible(false)}>
+                  <CancelText>Cancel</CancelText>
+                </CancelButton>
+                <ConfirmButton onPress={confirmDateChange}>
+                  <CreateText>Confirm Date</CreateText>
+                </ConfirmButton>
+              </ButtonContainer>
+            </DatePickerModalContent>
+          </ModalContainer>
+        </Modal>
+      )}
     </DatePickerContainer>
   );
 };

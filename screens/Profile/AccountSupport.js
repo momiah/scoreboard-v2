@@ -51,6 +51,7 @@ const AccountSupport = ({ navigation }) => {
           padding: 20,
           backgroundColor: "rgb(3, 16, 31)",
           flexGrow: 1,
+          paddingTop: Platform.OS === "android" ? 55 : 0,
         }}
         keyboardShouldPersistTaps="handled"
       >

@@ -1,5 +1,11 @@
 import React, { useContext, useEffect, useState, memo } from "react";
-import { FlatList, ActivityIndicator, View, Dimensions } from "react-native";
+import {
+  FlatList,
+  ActivityIndicator,
+  View,
+  Dimensions,
+  Platform,
+} from "react-native";
 import styled from "styled-components/native";
 import { UserContext } from "../context/UserContext";
 import { useNavigation } from "@react-navigation/native";
@@ -94,6 +100,7 @@ const { width: screenWidth } = Dimensions.get("window");
 const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: Platform.OS === "android" ? 45 : 0,
 });
 
 const Header = styled.Text({

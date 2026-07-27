@@ -5,6 +5,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import styled from "styled-components/native";
 import { PendingUpload } from "@shared/types";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ interface UploadToastProps {
 }
 
 const UploadToast: React.FC<UploadToastProps> = ({ pendingUploads }) => {
+  const insets = useSafeAreaInsets();
   const [showComplete, setShowComplete] = useState(false);
   const [showCancelled, setShowCancelled] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -83,7 +85,7 @@ const UploadToast: React.FC<UploadToastProps> = ({ pendingUploads }) => {
       : `Uploading video... (${pendingCount} pending)`;
 
   return (
-    <ToastWrapper>
+    <ToastWrapper style={{ paddingTop: insets.top + 12 }}>
       {showCancelled ? (
         // ── Cancelled state ────────────────────────────────────────────────
         <ToastContent>
@@ -186,7 +188,7 @@ const ToastWrapper = styled.View({
   borderBottomWidth: 1,
   borderBottomColor: "rgba(0, 162, 255, 0.2)",
   paddingHorizontal: 16,
-  paddingVertical: 12,
+  paddingBottom: 12,
   zIndex: 9999,
 });
 

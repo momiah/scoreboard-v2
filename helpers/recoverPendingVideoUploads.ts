@@ -66,7 +66,6 @@ export const recoverPendingVideoUploads = async (userId: string) => {
       const { data } = await checkR2VideoExists({ gameId, competitionId });
 
       if (data.videoUrl) {
-        // ── File made it to R2 — finish the job the killed app didn't ────────
         await updateGameVideoUrl({
           gameId,
           competitionId,
@@ -82,7 +81,6 @@ export const recoverPendingVideoUploads = async (userId: string) => {
         continue;
       }
 
-      // ── No file in R2 — decide: still uploading, or dead? ──────────────────
       const startedMs =
         startedAt?.toMillis?.() ??
         (startedAt?.seconds ? startedAt.seconds * 1000 : null);
@@ -91,8 +89,6 @@ export const recoverPendingVideoUploads = async (userId: string) => {
         startedMs !== null && Date.now() - startedMs > ABANDON_AFTER_MS;
 
       if (isAbandoned) {
-        // Older than 1 hour with no file — treat as dead (app killed mid-upload).
-        // Record for diagnostics, then remove so no phantom toast remains.
         const failedDocRef = doc(
           db,
           COLLECTION_NAMES.failedVideoUploads,
@@ -104,13 +100,11 @@ export const recoverPendingVideoUploads = async (userId: string) => {
           userId: postedBy?.userId ?? userId,
           errorMessage: "abandoned — app killed mid-upload (no activity 1h+)",
           lastProgress: progress ?? 0,
-          platform: platform ?? "unknown",
+          platform: platform ?? "Platform not recorded",
           failedAt: new Date(),
         });
         await deleteDoc(docSnap.ref);
       }
-      // Younger than 1 hour with no file — genuinely may still be uploading.
-      // Leave the record intact.
     } catch (error) {
       console.error(`Failed to recover upload for game ${gameId}:`, error);
     }

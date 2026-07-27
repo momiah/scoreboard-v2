@@ -8,7 +8,7 @@ import React, {
   useEffect,
 } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { FlatList, Dimensions, Image } from "react-native";
+import { FlatList, Dimensions, Image, Platform } from "react-native";
 import styled from "styled-components/native";
 import {
   useFocusEffect,
@@ -711,6 +711,7 @@ const ActivityMessageText = styled.Text({
 const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
+  paddingTop: Platform.OS === "android" ? 45 : 0,
 });
 
 const EmptyInner = styled.View({

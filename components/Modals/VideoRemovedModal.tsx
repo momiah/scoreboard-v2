@@ -462,6 +462,7 @@ const Overlay = styled(BlurView).attrs({
 })({
   flex: 1,
   justifyContent: "flex-end",
+  backgroundColor: "rgba(2, 13, 24, 0.9)",
 });
 
 const ModalContent = styled.View({

@@ -5,7 +5,7 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { View, Image } from "react-native";
+import { View, Image, Platform } from "react-native";
 import styled from "styled-components/native";
 import { useNavigation } from "@react-navigation/native";
 import { useForm } from "react-hook-form";
@@ -286,6 +286,7 @@ const LeagueContainer = styled.View({
   backgroundColor: " rgb(3, 16, 31)",
   width: "100%",
   paddingHorizontal: 20,
+  paddingTop: Platform.OS === "android" ? 35 : 0,
 });
 
 const Overview = styled.View({

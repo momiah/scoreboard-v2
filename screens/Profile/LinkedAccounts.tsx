@@ -20,7 +20,6 @@ import {
 } from "firebase/auth";
 import { sha256 } from "js-sha256";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { auth } from "../../services/firebase.config";
 // @ts-expect-error - GOOGLE_WEB_CLIENT_ID is defined in the .env file
 import { GOOGLE_WEB_CLIENT_ID } from "@env";
@@ -78,16 +77,6 @@ const LinkedAccounts = () => {
       action: "Facebook",
       isLinked: existingLinkedAccounts.includes("facebook.com"),
     },
-    ...(Platform.OS === "ios"
-      ? [
-          {
-            label: "Apple",
-            icon: "logo-apple",
-            action: "Apple",
-            isLinked: existingLinkedAccounts.includes("apple.com"),
-          },
-        ]
-      : []),
   ];
 
   const handlePress = async (action: string) => {
@@ -107,13 +96,6 @@ const LinkedAccounts = () => {
             return;
           }
           await linkWithFacebook();
-          break;
-        case "Apple":
-          if (existingLinkedAccounts.includes("apple.com")) {
-            Alert.alert("Already Linked", "Apple account already linked.");
-            return;
-          }
-          await linkWithApple();
           break;
       }
       await loadExistingLinkedAccounts();
@@ -247,43 +229,6 @@ const LinkedAccounts = () => {
     }
     await linkWithCredential(currentFirebaseUser, credential);
     Alert.alert("Success", "Facebook account linked successfully.");
-  };
-
-  const linkWithApple = async () => {
-    if (Platform.OS !== "ios") {
-      Alert.alert("Unavailable", "Apple sign-in is only available on iOS.");
-      return;
-    }
-
-    const rawNonce = Math.random().toString(36).substring(2);
-    const hashedNonce = sha256(rawNonce);
-
-    const appleCredential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-      nonce: hashedNonce,
-    });
-
-    if (!appleCredential.identityToken) {
-      throw new Error("No identity token");
-    }
-
-    const provider = new OAuthProvider("apple.com");
-    const credential = provider.credential({
-      idToken: appleCredential.identityToken,
-      rawNonce: rawNonce,
-    });
-
-    const currentFirebaseUser = auth.currentUser;
-    if (!currentFirebaseUser) {
-      Alert.alert("Error", "Please login to link your Apple account.");
-      return;
-    }
-
-    await linkWithCredential(currentFirebaseUser, credential);
-    Alert.alert("Success", "Apple account linked successfully.");
   };
 
   return (

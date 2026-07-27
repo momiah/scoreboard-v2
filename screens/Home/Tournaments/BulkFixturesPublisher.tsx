@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -740,7 +741,11 @@ const BulkFixturesPublisher = () => {
   );
 };
 
-const Container = styled.View({ flex: 1, backgroundColor: "#020D18" });
+const Container = styled.View({
+  flex: 1,
+  backgroundColor: "#020D18",
+  paddingTop: Platform.OS === "android" ? 25 : 0,
+});
 
 const Header = styled.View({
   flexDirection: "row",

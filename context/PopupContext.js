@@ -8,6 +8,7 @@ const PopupProvider = ({ children }) => {
   const [bottomToastVisible, setBottomToastVisible] = useState(false);
   const [bottomToastMessage, setBottomToastMessage] = useState("");
   const [bottomToastType, setBottomToastType] = useState("success");
+  const [fullscreenVideo, setFullscreenVideo] = useState(null);
 
   const showBottomToast = (message, type = "success") => {
     setBottomToastMessage(message);
@@ -18,6 +19,14 @@ const PopupProvider = ({ children }) => {
   const handleShowPopup = (message) => {
     setPopupMessage(message);
     setShowPopup(true);
+  };
+
+  const openFullscreenVideo = ({ videoUrl, startTime = 0 }) => {
+    setFullscreenVideo({ videoUrl, startTime });
+  };
+
+  const closeFullscreenVideo = () => {
+    setFullscreenVideo(null);
   };
 
   return (
@@ -33,6 +42,9 @@ const PopupProvider = ({ children }) => {
         bottomToastMessage,
         bottomToastType,
         showBottomToast,
+        fullscreenVideo,
+        openFullscreenVideo,
+        closeFullscreenVideo,
       }}
     >
       {children}

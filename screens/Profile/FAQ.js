@@ -295,7 +295,7 @@ const FAQ = ({ navigation }) => {
 const Container = styled.ScrollView({
   flex: 1,
   paddingHorizontal: 16,
-  paddingTop: 24,
+  paddingTop: 55,
   backgroundColor: "rgb(3, 16, 31)",
 });
 

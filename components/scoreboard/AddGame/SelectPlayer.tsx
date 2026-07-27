@@ -182,4 +182,4 @@ const PlayerSelect = styled.Text<PlayerSelectProps>(
   }),
 );
 
-export default memo(SelectPlayer);
+export default SelectPlayer;

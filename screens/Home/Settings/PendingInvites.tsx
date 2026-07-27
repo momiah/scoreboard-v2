@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { FlatList, ActivityIndicator, Platform } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -123,6 +123,7 @@ const Container = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
   padding: 20,
+  paddingTop: Platform.OS === "android" ? 55 : 0,
 });
 
 const Title = styled.Text({

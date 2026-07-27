@@ -87,7 +87,7 @@ const PlayTime = ({ userRole, competitionType, playtime, competitionId }) => {
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => setShowActions(false)}>
-              <AntDesign name="closecircleo" size={25} color="red" />
+              <AntDesign name="close-circle" size={25} color="red" />
             </TouchableOpacity>
           </ActionContainer>
         ) : (

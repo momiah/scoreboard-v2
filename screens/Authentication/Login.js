@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import { sha256 } from "js-sha256";
 import React, { useState, useEffect, useContext } from "react";
 import {
@@ -11,14 +12,8 @@ import {
   Animated,
   Alert,
   Keyboard,
-  Platform,
 } from "react-native";
-import {
-  CourtChampLogo,
-  GoogleLogo,
-  FacebookLogo,
-  AppleLogo,
-} from "../../assets";
+import { CourtChampLogo, GoogleLogo, FacebookLogo } from "../../assets";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -40,7 +35,6 @@ import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { GOOGLE_WEB_CLIENT_ID } from "@env";
 
 export default function Login() {
@@ -255,7 +249,6 @@ export default function Login() {
                 userLastName: userData.familyName,
                 userEmail: userData.email,
                 userId: userId,
-                provider: "google",
               },
             },
           ],
@@ -341,7 +334,6 @@ export default function Login() {
                 userLastName: rest.join(" "),
                 userEmail: user.email,
                 userId: userId,
-                provider: "facebook",
               },
             },
           ],
@@ -360,119 +352,11 @@ export default function Login() {
     }
   };
 
-  const handleAppleLogin = async () => {
-    try {
-      const rawNonce = Math.random().toString(36).substring(2);
-      const hashedNonce = sha256(rawNonce);
-
-      const appleCredential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-        nonce: hashedNonce,
-      });
-
-      const {
-        identityToken,
-        fullName,
-        email: appleEmail,
-        user: appleUserId,
-      } = appleCredential;
-      if (!identityToken) throw new Error("No identity token");
-
-      // Apple returns name/email ONLY on first-ever sign-in. Persist it keyed by Apple user ID.
-      const storageKey = `appleUser:${appleUserId}`;
-      let cachedName = { givenName: "", familyName: "" };
-      let cachedEmail = "";
-
-      if (fullName?.givenName || appleEmail) {
-        cachedName = {
-          givenName: fullName?.givenName || "",
-          familyName: fullName?.familyName || "",
-        };
-        cachedEmail = appleEmail || "";
-        await AsyncStorage.setItem(
-          storageKey,
-          JSON.stringify({ name: cachedName, email: cachedEmail }),
-        );
-      } else {
-        const stored = await AsyncStorage.getItem(storageKey);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          cachedName = parsed.name;
-          cachedEmail = parsed.email;
-        }
-      }
-
-      const provider = new OAuthProvider("apple.com");
-      const firebaseCredential = provider.credential({
-        idToken: identityToken,
-        rawNonce: rawNonce,
-      });
-
-      const userCredential = await signInWithCredential(
-        auth,
-        firebaseCredential,
-      );
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-      const userId = user.uid;
-
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userId", userId);
-      await registerForPushNotificationsAsync(userId);
-
-      const profile = await getUserById(userId);
-
-      if (profile) {
-        setCurrentUser(profile);
-
-        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: "apple",
-        });
-
-        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Signup",
-              params: {
-                userName: cachedName.givenName,
-                userLastName: cachedName.familyName,
-                userEmail: cachedEmail || user.email || "",
-                userId: userId,
-                provider: "apple",
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      if (error.code === "ERR_REQUEST_CANCELED") {
-        return;
-      }
-      console.error("Apple Login Error:", error.message);
-      if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method.",
-        );
-      } else {
-        Alert.alert("Error", "Apple sign-in failed. Please try again.");
-      }
-    }
-  };
-
   const onSocialLogin = (type) => {
     if (type === "google") {
       handleGoogleLogin();
     } else if (type === "facebook") {
       handleFacebookLogin();
-    } else if (type === "apple") {
-      handleAppleLogin();
     }
   };
 
@@ -553,15 +437,9 @@ export default function Login() {
           <TouchableOpacity onPress={() => onSocialLogin("facebook")}>
             <Image source={FacebookLogo} style={styles.socialIcon} />
           </TouchableOpacity>
-          {Platform.OS === "ios" && (
-            <TouchableOpacity onPress={() => onSocialLogin("apple")}>
-              <Image
-                source={AppleLogo}
-                style={styles.socialIconApple}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
+          {/* <TouchableOpacity>
+            <Image source={AppleLogo} style={styles.socialIconApple} />
+          </TouchableOpacity> */}
         </View>
 
         {/* Register Section */}
@@ -698,15 +576,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   socialIconApple: {
-    width: 50,
-    height: 50,
-    marginHorizontal: 20,
-    bottom: 5,
+    width: 40,
+    height: 47,
+    marginHorizontal: 17,
   },
   registerText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
-    marginVertical: 30,
+    marginTop: 50,
   },
 });
