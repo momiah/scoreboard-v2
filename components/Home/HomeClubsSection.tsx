@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { View, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -7,6 +7,7 @@ import {
   type NavigationProp,
   type ParamListBase,
 } from "@react-navigation/native";
+import { collection, getCountFromServer } from "firebase/firestore";
 
 import SubHeader from "../SubHeader";
 import Tag from "../Tag";
@@ -18,8 +19,8 @@ import HorizontalCardCarousel, {
 } from "./HorizontalCardCarousel";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
-import { ccImageEndpoint, type Club } from "@shared";
-import { formatClubLocation } from "../../helpers/formatClubLocation";
+import { db } from "../../services/firebase.config";
+import { ccImageEndpoint, COLLECTION_NAMES, type Club } from "@shared";
 
 const HomeClubsSection: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -27,6 +28,44 @@ const HomeClubsSection: React.FC = () => {
   const { currentUser } = useContext(UserContext);
 
   const clubsToShow = useMemo(() => upcomingClubs.slice(0, 6), [upcomingClubs]);
+
+  // Member count (participants subcollection size) per club, for the card tag.
+  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCounts = async () => {
+      const entries = await Promise.all(
+        clubsToShow.map(async (club) => {
+          if (!club.clubId) return [null, 0] as const;
+          try {
+            const snap = await getCountFromServer(
+              collection(db, COLLECTION_NAMES.clubs, club.clubId, "participants"),
+            );
+            return [club.clubId, snap.data().count] as const;
+          } catch (e) {
+            console.error("Error counting club members:", e);
+            return [club.clubId, 0] as const;
+          }
+        }),
+      );
+
+      if (cancelled) return;
+      setMemberCounts(
+        Object.fromEntries(entries.filter(([id]) => id)) as Record<
+          string,
+          number
+        >,
+      );
+    };
+
+    if (clubsToShow.length > 0) fetchCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clubsToShow]);
 
   const navigateToClub = useCallback(
     (club: Club) => {
@@ -58,13 +97,21 @@ const HomeClubsSection: React.FC = () => {
             content: (
               <>
                 <CardTagContainer>
-                  <Tag name="Club" color="#FAB234" bold />
+                  <Tag
+                    name={`${memberCounts[club.clubId] ?? 0} Members`}
+                    color="rgba(0, 0, 0, 0.7)"
+                    iconColor="#00A2FF"
+                    iconSize={13}
+                    icon="person"
+                    iconPosition="right"
+                    bold
+                  />
                 </CardTagContainer>
 
                 <CardTitle numberOfLines={1}>{club.clubName || ""}</CardTitle>
                 <LocationRow>
                   <CardSubtitle numberOfLines={1}>
-                    {formatClubLocation(club.clubLocation)}
+                    {`${club.clubLocation.city}, ${club.clubLocation.country}`}
                   </CardSubtitle>
                   <Ionicons
                     name="location"

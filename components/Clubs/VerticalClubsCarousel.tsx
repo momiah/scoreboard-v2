@@ -11,7 +11,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../Tag";
 import { SkeletonPulse, SkeletonBlock } from "../Skeletons/skeletonConfig";
 import { ccImageEndpoint, type Club } from "@shared";
-import { formatClubLocation } from "../../helpers/formatClubLocation";
 
 interface ClubItemProps {
   club: Club;
@@ -46,7 +45,7 @@ const ClubItem: React.FC<ClubItemProps> = ({ club, onPress }) => {
 
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <ClubLocation numberOfLines={1}>
-                  {formatClubLocation(club.clubLocation)}
+                  {`${club.clubLocation.city}, ${club.clubLocation.country}`}
                 </ClubLocation>
                 <Ionicons
                   name="location"

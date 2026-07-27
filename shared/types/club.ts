@@ -12,8 +12,11 @@ export interface Club {
   clubId: string;
   id?: string;
   clubName: string;
-  /** Structured location (Location without postCode). */
-  clubLocation: Omit<Location, "postCode">;
+  /**
+   * Structured club location — city/country/countryCode only. No street address:
+   * a club spans multiple venues, and each competition defines its own address.
+   */
+  clubLocation: Omit<Location, "postCode" | "address">;
   /** Top-level country code, mirrors clubLocation.countryCode for querying. */
   countryCode: string;
   clubImage: string;

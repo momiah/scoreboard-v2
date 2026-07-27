@@ -230,7 +230,6 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
           city: data.city.trim(),
           country: data.country.trim(),
           countryCode: selectedCountryCode ?? "",
-          address: "",
         },
         countryCode: selectedCountryCode ?? "",
         clubDescription: data.clubDescription.trim(),

@@ -300,7 +300,6 @@ export const clubSchema: Club = {
     city: "",
     country: "",
     countryCode: "",
-    address: "",
   },
   countryCode: "",
   clubImage: "",
