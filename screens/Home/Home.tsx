@@ -37,6 +37,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { socialMediaPlatforms, ICON_MAP } from "@shared";
 import AddLeagueModal from "../../components/Modals/AddLeagueModal";
 import AddTournamentModal from "../../components/Modals/AddTournamentModal";
+import AddClubModal from "../../components/Modals/AddClubModal";
 import HomeLeagueSection from "../../components/Home/HomeLeagueSection";
 import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
 import HomeClubsSection from "../../components/Home/HomeClubsSection";
@@ -71,6 +72,7 @@ const Home = () => {
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
+  const [addClubModalVisible, setAddClubModalVisible] = useState(false);
 
   // ─── Video Feed State ────────────────────────────────────────────────────────
   const { likedVideoIds, handleLike, initLikedVideos } = useLikeVideo();
@@ -253,7 +255,9 @@ const Home = () => {
           onCreatePress={() => setAddTournamentModalVisible(true)}
         />
 
-        <HomeClubsSection />
+        <HomeClubsSection
+          onCreatePress={() => setAddClubModalVisible(true)}
+        />
 
         <SubHeader title="Game Videos" />
       </HeaderContainer>
@@ -341,6 +345,13 @@ const Home = () => {
               tournamentId,
             });
           }}
+        />
+      )}
+      {addClubModalVisible && (
+        <AddClubModal
+          modalVisible={addClubModalVisible}
+          setModalVisible={setAddClubModalVisible}
+          onSuccess={() => fetchUpcomingClubs()}
         />
       )}
     </SafeAreaView>

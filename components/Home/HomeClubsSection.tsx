@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { View, TouchableOpacity } from "react-native";
+import { View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -17,6 +17,7 @@ import { collection, getCountFromServer } from "firebase/firestore";
 
 import SubHeader from "../SubHeader";
 import Tag from "../Tag";
+import ActionPlaceholder from "../ActionPlaceholder";
 import { HorizontalLeagueCarouselSkeleton } from "../Skeletons/HomeSkeleton";
 import HorizontalCardCarousel, {
   CardTagContainer,
@@ -28,7 +29,14 @@ import { UserContext } from "../../context/UserContext";
 import { db } from "../../services/firebase.config";
 import { ccImageEndpoint, COLLECTION_NAMES, type Club } from "@shared";
 
-const HomeClubsSection: React.FC = () => {
+interface HomeClubsSectionProps {
+  /** Opens the create-club flow (already gated on being signed in). */
+  onCreatePress: () => void;
+}
+
+const HomeClubsSection: React.FC<HomeClubsSectionProps> = ({
+  onCreatePress,
+}) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { upcomingClubs, upcomingClubsLoading } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
@@ -86,10 +94,6 @@ const HomeClubsSection: React.FC = () => {
     [navigation],
   );
 
-  const placeholderAction = useCallback(() => {
-    if (!currentUser) navigation.navigate("Login");
-  }, [currentUser, navigation]);
-
   return (
     <>
       <SubHeader
@@ -140,14 +144,18 @@ const HomeClubsSection: React.FC = () => {
           }))}
         />
       ) : (
-        <EmptyArea onPress={placeholderAction}>
-          <Ionicons name="people-outline" size={40} color="#00A2FF" />
-          <EmptyText>
-            {currentUser
-              ? "No clubs to show yet. Create one from the + menu!"
-              : "Sign in to discover clubs for your community."}
-          </EmptyText>
-        </EmptyArea>
+        <ActionPlaceholder
+          message={
+            currentUser
+              ? "No clubs to show yet. Create one for your community!"
+              : "Sign in to discover clubs in your area or make one!"
+          }
+          icon="add-circle-outline"
+          height={200}
+          onPress={() =>
+            currentUser ? onCreatePress() : navigation.navigate("Login")
+          }
+        />
       )}
     </>
   );
@@ -156,29 +164,6 @@ const HomeClubsSection: React.FC = () => {
 const LocationRow = styled(View)({
   flexDirection: "row",
   alignItems: "center",
-});
-
-const EmptyArea = styled(TouchableOpacity)({
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "#0A1F33",
-  borderRadius: 10,
-  minHeight: 160,
-  width: "100%",
-  marginVertical: 10,
-  marginBottom: 40,
-  borderWidth: 1,
-  borderColor: "#00A2FF",
-  borderStyle: "dashed",
-  gap: 10,
-  paddingHorizontal: 24,
-});
-
-const EmptyText = styled.Text({
-  color: "#aaa",
-  fontSize: 14,
-  fontStyle: "italic",
-  textAlign: "center",
 });
 
 export default HomeClubsSection;
