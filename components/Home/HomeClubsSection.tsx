@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { View, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -41,7 +47,12 @@ const HomeClubsSection: React.FC = () => {
           if (!club.clubId) return [null, 0] as const;
           try {
             const snap = await getCountFromServer(
-              collection(db, COLLECTION_NAMES.clubs, club.clubId, "participants"),
+              collection(
+                db,
+                COLLECTION_NAMES.clubs,
+                club.clubId,
+                "participants",
+              ),
             );
             return [club.clubId, snap.data().count] as const;
           } catch (e) {
@@ -98,7 +109,11 @@ const HomeClubsSection: React.FC = () => {
               <>
                 <CardTagContainer>
                   <Tag
-                    name={`${memberCounts[club.clubId] ?? 0} Members`}
+                    name={`${memberCounts[club.clubId] ?? 0} ${
+                      (memberCounts[club.clubId] ?? 0) === 1
+                        ? "Member"
+                        : "Members"
+                    }`}
                     color="rgba(0, 0, 0, 0.7)"
                     iconColor="#00A2FF"
                     iconSize={13}
