@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useMemo, useState } from "react";
-import { Dimensions, TouchableOpacity } from "react-native";
+import { Dimensions, View, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -10,22 +10,23 @@ import {
 
 import SubHeader from "../SubHeader";
 import Tag from "../Tag";
-import { TournamentGridSkeleton } from "../Skeletons/HomeSkeleton";
+import { HorizontalLeagueCarouselSkeleton } from "../Skeletons/HomeSkeleton";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { ccImageEndpoint, type Club } from "@shared";
 import { SkeletonPulse, SkeletonBlock } from "../Skeletons/skeletonConfig";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const IS_SMALL_SCREEN = SCREEN_WIDTH < 375;
-const NAME_CLIP_LENGTH = IS_SMALL_SCREEN ? 11 : 15;
+// Full-width card with a peek of the next one, mirroring the league carousel.
+const ITEM_WIDTH = SCREEN_WIDTH - 80;
+const ITEM_SPACING = 20;
 
 const HomeClubsSection: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { upcomingClubs, upcomingClubsLoading } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
 
-  const clubsToShow = useMemo(() => upcomingClubs.slice(0, 4), [upcomingClubs]);
+  const clubsToShow = useMemo(() => upcomingClubs.slice(0, 6), [upcomingClubs]);
 
   const navigateToClub = useCallback(
     (club: Club) => {
@@ -48,17 +49,24 @@ const HomeClubsSection: React.FC = () => {
         navigationRoute=""
       />
       {upcomingClubsLoading ? (
-        <TournamentGridSkeleton />
+        <HorizontalLeagueCarouselSkeleton />
       ) : clubsToShow.length > 0 ? (
-        <Container>
+        <CarouselContainer
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={ITEM_WIDTH + ITEM_SPACING}
+          snapToAlignment="start"
+          decelerationRate="fast"
+        >
           {clubsToShow.map((club, index) => (
-            <ClubCardItem
+            <ClubCarouselItem
               key={club.clubId || index}
               club={club}
               onPress={() => navigateToClub(club)}
             />
           ))}
-        </Container>
+        </CarouselContainer>
       ) : (
         <EmptyArea onPress={placeholderAction}>
           <Ionicons name="people-outline" size={40} color="#00A2FF" />
@@ -73,78 +81,144 @@ const HomeClubsSection: React.FC = () => {
   );
 };
 
-// ── ClubCardItem
+// ── ClubCarouselItem
 
-interface ClubCardItemProps {
+interface ClubCarouselItemProps {
   club: Club;
   onPress: () => void;
 }
 
-const ClubCardItem: React.FC<ClubCardItemProps> = ({ club, onPress }) => {
+const ClubCarouselItem: React.FC<ClubCarouselItemProps> = ({
+  club,
+  onPress,
+}) => {
   const [imageLoading, setImageLoading] = useState(true);
 
-  const nameClipped = club.clubName
-    ? club.clubName.length > NAME_CLIP_LENGTH
-      ? club.clubName.slice(0, NAME_CLIP_LENGTH) + "..."
-      : club.clubName
-    : "";
-
   return (
-    <ClubContainer onPress={onPress}>
-      <ClubCard>
-        <ClubImageContainer>
-          {imageLoading && (
-            <ImageSkeletonOverlay>
-              <SkeletonPulse>
-                <SkeletonBlock width="100%" height={120} />
-              </SkeletonPulse>
-            </ImageSkeletonOverlay>
-          )}
-          <ClubImage
-            source={{ uri: club.clubImage || ccImageEndpoint }}
-            resizeMode="cover"
-            onLoadEnd={() => setImageLoading(false)}
-          >
-            <StatusTagContainer>
-              <Tag name="Club" color="#FAB234" fontSize={9} bold />
-            </StatusTagContainer>
-          </ClubImage>
-        </ClubImageContainer>
+    <CarouselItem
+      onPress={onPress}
+      style={{ width: ITEM_WIDTH, marginRight: ITEM_SPACING }}
+    >
+      <ImageWrapper>
+        <ClubImage
+          source={{ uri: club.clubImage || ccImageEndpoint }}
+          onLoadEnd={() => setImageLoading(false)}
+        >
+          <Overlay />
+          <ClubDetailsContainer>
+            <TagContainer>
+              <Tag name="Club" color="#FAB234" bold />
+            </TagContainer>
 
-        <ClubInfo>
-          <ClubName numberOfLines={1}>{nameClipped}</ClubName>
-          <ClubLocation numberOfLines={1}>
-            {club.clubLocation || ""}
-          </ClubLocation>
-        </ClubInfo>
-      </ClubCard>
-    </ClubContainer>
+            <ClubName numberOfLines={1}>{club.clubName || ""}</ClubName>
+            <LocationRow>
+              <ClubLocation numberOfLines={1}>
+                {club.clubLocation || ""}
+              </ClubLocation>
+              <Ionicons
+                name="location"
+                size={15}
+                color="#286EFA"
+                style={{ marginLeft: 5 }}
+              />
+            </LocationRow>
+          </ClubDetailsContainer>
+        </ClubImage>
+
+        {imageLoading && (
+          <ImageSkeletonOverlay>
+            <SkeletonPulse>
+              <SkeletonBlock width="100%" height={200} />
+            </SkeletonPulse>
+          </ImageSkeletonOverlay>
+        )}
+      </ImageWrapper>
+    </CarouselItem>
   );
 };
 
-// ── Styles
+// ── Styles (mirror the horizontal league carousel)
 
-const Container = styled.View({
-  flexDirection: "row",
-  flexWrap: "wrap",
-  justifyContent: "space-between",
-  gap: IS_SMALL_SCREEN ? 8 : 15,
-  paddingHorizontal: 10,
+const CarouselContainer = styled.ScrollView({
+  height: 200,
   marginBottom: 40,
 });
 
-const ClubContainer = styled.TouchableOpacity({
-  width: "47%",
+const CarouselItem = styled.TouchableOpacity({
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "#fff",
+  borderRadius: 10,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.8,
+  shadowRadius: 2,
+  elevation: 5,
 });
 
-const ClubCard = styled.View({
-  borderRadius: 12,
+const ImageWrapper = styled.View({
+  width: "100%",
+  height: "100%",
+  borderRadius: 10,
   overflow: "hidden",
 });
 
-const ClubImageContainer = styled.View({
-  height: 120,
-  position: "relative",
+const ClubImage = styled.ImageBackground.attrs({
+  imageStyle: {
+    resizeMode: "cover",
+  },
+})({
+  width: "100%",
+  height: "100%",
+  justifyContent: "flex-end",
+  alignItems: "center",
+});
+
+const ClubDetailsContainer = styled.View({
+  width: "100%",
+  height: "100%",
+  borderRadius: 10,
+  overflow: "hidden",
+  justifyContent: "flex-end",
+  padding: 10,
+  borderWidth: 1,
+  borderColor: "#192336",
+});
+
+const TagContainer = styled.View({
+  position: "absolute",
+  top: 10,
+  right: 10,
+  zIndex: 2,
+  flexDirection: "row",
+  gap: 5,
+});
+
+const LocationRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+});
+
+const ClubName = styled.Text({
+  fontSize: 18,
+  fontWeight: "bold",
+  color: "white",
+});
+
+const ClubLocation = styled.Text({
+  fontSize: 13,
+  color: "white",
+  borderRadius: 5,
+});
+
+const Overlay = styled(View)({
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.2)",
+  borderRadius: 10,
 });
 
 const ImageSkeletonOverlay = styled.View({
@@ -156,37 +230,6 @@ const ImageSkeletonOverlay = styled.View({
   zIndex: 1,
 });
 
-const ClubImage = styled.ImageBackground({
-  width: "100%",
-  height: "100%",
-  alignItems: "flex-end",
-});
-
-const StatusTagContainer = styled.View({
-  position: "absolute",
-  top: 8,
-  right: 8,
-});
-
-const ClubInfo = styled.View({
-  padding: 10,
-  borderWidth: 1,
-  borderColor: "#192336",
-});
-
-const ClubName = styled.Text({
-  color: "white",
-  fontSize: IS_SMALL_SCREEN ? 13 : 16,
-  fontWeight: "bold",
-  marginBottom: 4,
-});
-
-const ClubLocation = styled.Text({
-  fontSize: IS_SMALL_SCREEN ? 11 : 13,
-  color: "white",
-  borderRadius: 5,
-});
-
 const EmptyArea = styled(TouchableOpacity)({
   justifyContent: "center",
   alignItems: "center",
@@ -195,6 +238,7 @@ const EmptyArea = styled(TouchableOpacity)({
   minHeight: 160,
   width: "100%",
   marginVertical: 10,
+  marginBottom: 40,
   borderWidth: 1,
   borderColor: "#00A2FF",
   borderStyle: "dashed",
