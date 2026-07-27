@@ -1,11 +1,11 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Dimensions,
-  Linking,
-} from "react-native";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { View, Text, ScrollView, Dimensions, Linking } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   useRoute,
@@ -32,7 +32,6 @@ import ClubFeed from "./tabs/ClubFeed";
 import ClubPerformance from "./tabs/ClubPerformance";
 import ClubLeagues from "./tabs/ClubLeagues";
 import ClubTournaments from "./tabs/ClubTournaments";
-import InviteClubMembersModal from "../../../components/Modals/InviteClubMembersModal";
 import UserRoleTag from "../../../components/UserRoleTag";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -83,7 +82,6 @@ const ClubScreen: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<PrimaryTab>(
     primaryTab ?? "Feed",
   );
-  const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
   const isOwner = currentUser?.userId === clubById?.clubOwner?.userId;
   const isAdmin = clubById?.clubAdmins?.some(
@@ -93,13 +91,11 @@ const ClubScreen: React.FC = () => {
   const isMember = !!(isOwner || isAdmin || isParticipant);
 
   const isRequestPending =
-    clubById?.pendingRequests?.some(
-      (r) => r.userId === currentUser?.userId,
-    ) ?? false;
+    clubById?.pendingRequests?.some((r) => r.userId === currentUser?.userId) ??
+    false;
   const isInvitePending =
-    clubById?.pendingInvites?.some(
-      (i) => i.userId === currentUser?.userId,
-    ) ?? false;
+    clubById?.pendingInvites?.some((i) => i.userId === currentUser?.userId) ??
+    false;
 
   const clubUserRole = !currentUser
     ? "hide"
@@ -256,6 +252,9 @@ const ClubScreen: React.FC = () => {
 
   const club = clubById as Club | null;
   const imageUri = club?.clubImage || undefined;
+  const clubLocationText = club?.clubLocation
+    ? `${club.clubLocation.city}, ${club.clubLocation.country}`
+    : "";
 
   return (
     <View style={{ flex: 1, backgroundColor: "#00152B" }}>
@@ -275,15 +274,6 @@ const ClubScreen: React.FC = () => {
               <ClubDetailsContainer>
                 {/* Top row: back button + hamburger (owner/admin only) */}
                 <BackRow>
-                  <BackButton
-                    onPress={() =>
-                      navigation.canGoBack()
-                        ? navigation.goBack()
-                        : navigation.navigate("HomeMain")
-                    }
-                  >
-                    <Ionicons name="chevron-back" size={26} color="white" />
-                  </BackButton>
                   {canInvite ? (
                     <BackButton
                       onPress={() =>
@@ -301,12 +291,10 @@ const ClubScreen: React.FC = () => {
                   <ClubNameText>{club.clubName}</ClubNameText>
                 </TitleBlock>
 
-                {club.clubLocation ? (
-                  <AddressRow
-                    onPress={() => openMapsQuery(club.clubLocation)}
-                  >
+                {clubLocationText ? (
+                  <AddressRow onPress={() => openMapsQuery(clubLocationText)}>
                     <Ionicons name="location-outline" size={18} color="#fff" />
-                    <ClubLocationText>{club.clubLocation}</ClubLocationText>
+                    <ClubLocationText>{clubLocationText}</ClubLocationText>
                     <Ionicons name="open-outline" size={18} color="#00A2FF" />
                   </AddressRow>
                 ) : null}
@@ -320,16 +308,16 @@ const ClubScreen: React.FC = () => {
                   }}
                 >
                   <View style={{ flexDirection: "row", gap: 5 }}>
+                    <Tag name="Club" color="#FAB234" />
                     <Tag
-                      name={`${memberCount}`}
+                      name={`${memberCount} Members`}
                       color={"rgba(0, 0, 0, 0.7)"}
                       iconColor={"#00A2FF"}
-                      iconSize={15}
+                      iconSize={14}
                       icon={"person"}
                       iconPosition={"right"}
                       bold
                     />
-                    <Tag name="Club" color="#FAB234" />
                   </View>
                   {isOwner ? (
                     <Tag
@@ -354,11 +342,13 @@ const ClubScreen: React.FC = () => {
                   ) : null}
                 </View>
 
-                {/* Row 2: Invite Members (admin) or role-based action (others) */}
+                {/* Row 2: Club tag + Invite Members (admin) or role action.
+                    Mirrors the League/Tournament invite-button row. */}
                 <View
                   style={{
                     flexDirection: "row",
                     justifyContent: "flex-end",
+                    alignItems: "center",
                     marginTop: 5,
                   }}
                 >
@@ -367,7 +357,9 @@ const ClubScreen: React.FC = () => {
                       name="Invite Members"
                       color="#00A2FF"
                       icon="paper-plane-sharp"
-                      onPress={() => setInviteModalVisible(true)}
+                      onPress={() =>
+                        navigation.navigate("InvitePlayer", { club })
+                      }
                       bold
                     />
                   ) : (
@@ -410,14 +402,6 @@ const ClubScreen: React.FC = () => {
           </TabsContainer>
 
           <ContentArea>{renderPrimaryContent()}</ContentArea>
-
-          {club && (
-            <InviteClubMembersModal
-              visible={inviteModalVisible}
-              onClose={() => setInviteModalVisible(false)}
-              club={club}
-            />
-          )}
         </>
       )}
     </View>
@@ -462,23 +446,19 @@ const ClubDetailsContainer = styled.View({
 
 const BackRow = styled.View({
   flexDirection: "row",
-  justifyContent: "space-between",
+  justifyContent: "flex-end",
   alignItems: "center",
-  marginBottom: 8,
 });
 
 const BackButton = styled.TouchableOpacity({
   padding: 4,
 });
 
-
 const TitleBlock = styled.View({
-  paddingVertical: 6,
-  paddingHorizontal: 8,
-  backgroundColor: "rgba(0, 0, 0, 0.35)",
-  borderRadius: 8,
+  padding: 5,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 5,
   alignSelf: "flex-start",
-  marginBottom: 10,
 });
 
 const ClubNameText = styled.Text({
@@ -490,12 +470,12 @@ const ClubNameText = styled.Text({
 const AddressRow = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
-  gap: 6,
-  marginBottom: 12,
-  paddingVertical: 6,
-  paddingHorizontal: 8,
-  backgroundColor: "rgba(0, 0, 0, 0.35)",
-  borderRadius: 8,
+  gap: 5,
+  marginBottom: 15,
+  paddingVertical: 4,
+  paddingHorizontal: 6,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 5,
   alignSelf: "flex-start",
   maxWidth: "100%",
 });
@@ -533,7 +513,6 @@ const PrimaryTabButtonText = styled.Text({
 
 const ContentArea = styled.View({
   flex: 1,
-  paddingHorizontal: 16,
   paddingTop: 12,
 });
 

@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useMemo } from "react";
 import {
   View,
   TouchableOpacity,
@@ -36,6 +36,7 @@ import {
   CompetitionType,
   UserProfile,
   CollectionName,
+  Club,
 } from "@shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../components/Modals/RecentPlayersModal";
@@ -48,11 +49,23 @@ import {
 } from "@react-navigation/native";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 
+// The screen supports two entry contexts:
+//   • Competition context → invite/add players to a league or tournament.
+//   • Club context        → invite brand-new people to join a club.
+type CompetitionRouteParams = {
+  competitionDetails: League | Tournament;
+  competitionType: CompetitionType;
+  club?: undefined;
+};
+
+type ClubRouteParams = {
+  club: Club;
+  competitionDetails?: undefined;
+  competitionType?: undefined;
+};
+
 type RouteParams = {
-  InvitePlayer: {
-    competitionDetails: League | Tournament;
-    competitionType: CompetitionType;
-  };
+  InvitePlayer: CompetitionRouteParams | ClubRouteParams;
 };
 
 
@@ -60,12 +73,24 @@ const InvitePlayer = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route = useRoute<RouteProp<RouteParams, "InvitePlayer">>();
   const { competitionDetails, competitionType } = route.params;
-  // competitionDetails.clubId = null;
 
-  // Detect club competition
-  const clubId = (competitionDetails as League & { clubId?: string | null })
-    .clubId ?? null;
-  const isClubCompetition = !!clubId;
+  // Club context: inviting NEW people to join a club (a genuine invite).
+  const club = route.params.club ?? null;
+  const isClubContext = !!club;
+
+  // Detect club competition: a competition that belongs to a club, where
+  // existing club members are added directly (no invite/accept step).
+  const clubId = isClubContext
+    ? club.clubId
+    : (competitionDetails as League & { clubId?: string | null })?.clubId ??
+      null;
+  const isClubCompetition = !isClubContext && !!clubId;
+
+  // Whether the Search / Recent Players tabs (and Recent Players modal) show.
+  // Only a plain, non-club competition offers Recent Players.
+  const showTabs = !isClubCompetition && !isClubContext;
+  // No back button when opened from a Club.
+  const showBackButton = !isClubContext;
 
   const [searchUser, setSearchUser] = useState("");
   const [suggestions, setSuggestions] = useState<UserProfile[]>([]);
@@ -98,9 +123,12 @@ const InvitePlayer = () => {
     });
   }, []);
 
-  // Fetch all club members on mount when this is a club competition
+  // Fetch club members on mount whenever a club is involved:
+  //   • club competition → members become the "add" checkbox list.
+  //   • club context      → members are used only for conflict checking
+  //     (someone already in the club can't be re-invited).
   useEffect(() => {
-    if (!isClubCompetition || !clubId) return;
+    if ((!isClubCompetition && !isClubContext) || !clubId) return;
 
     const fetchClubMembers = async () => {
       setClubMembersLoading(true);
@@ -115,7 +143,9 @@ const InvitePlayer = () => {
           .map((doc) => doc.data() as UserProfile)
           .filter((m) => m.userId !== uid); // exclude self
         setClubMembers(members);
-        setSuggestions(members); // show all members immediately
+        // Only the club-competition checkbox list pre-populates suggestions.
+        // Club context searches all users, so its list starts empty.
+        if (isClubCompetition) setSuggestions(members);
       } catch (e) {
         console.error("Error fetching club members:", e);
         setClubMembersError(true);
@@ -125,12 +155,21 @@ const InvitePlayer = () => {
     };
 
     fetchClubMembers();
-  }, [isClubCompetition, clubId]);
+  }, [isClubCompetition, isClubContext, clubId]);
 
-  const competition = normalizeCompetitionData({
-    rawData: competitionDetails,
-    competitionType,
-  }) as NormalizedCompetition;
+  // Set of existing club member ids — used for club-context conflict checks.
+  const clubParticipantIds = useMemo(
+    () => new Set(clubMembers.map((m) => m.userId)),
+    [clubMembers],
+  );
+
+  // Competition is null in club context (no competition to normalize).
+  const competition = isClubContext
+    ? null
+    : (normalizeCompetitionData({
+        rawData: competitionDetails as League | Tournament,
+        competitionType: competitionType as CompetitionType,
+      }) as NormalizedCompetition);
 
   const collectionName =
     (competitionType === COMPETITION_TYPES.LEAGUE
@@ -138,23 +177,35 @@ const InvitePlayer = () => {
       : COLLECTION_NAMES.tournaments) as CollectionName;
 
   const hasUserConflict = (userId: string) => {
-    const inLeague = competition.participants?.some((u) => u.userId === userId);
-    const inPendingInvites = competition.pendingInvites?.some(
+    if (isClubContext) {
+      const isMember = clubParticipantIds.has(userId);
+      const isPendingInvite = (club.pendingInvites ?? []).some(
+        (u) => u.userId === userId,
+      );
+      const isPendingRequest = (club.pendingRequests ?? []).some(
+        (u) => u.userId === userId,
+      );
+      return isMember || isPendingInvite || isPendingRequest;
+    }
+    const inLeague = competition!.participants?.some((u) => u.userId === userId);
+    const inPendingInvites = competition!.pendingInvites?.some(
       (u) => u.userId === userId,
     );
-    const inPendingRequests = competition.pendingRequests?.some(
+    const inPendingRequests = competition!.pendingRequests?.some(
       (u) => u.userId === userId,
     );
     return inLeague || inPendingInvites || inPendingRequests;
   };
 
   const fixturesGenerated =
+    !isClubContext &&
     competitionType === COMPETITION_TYPES.TOURNAMENT &&
     (competitionDetails as Tournament).fixturesGenerated;
 
-  const competitionEnded = competition.endDate
-    ? moment(competition.endDate, "DD-MM-YYYY").isBefore(moment())
-    : false;
+  const competitionEnded =
+    !isClubContext && competition!.endDate
+      ? moment(competition!.endDate, "DD-MM-YYYY").isBefore(moment())
+      : false;
 
   const conflictedUsers = inviteUsers.filter((user) =>
     hasUserConflict(user.userId),
@@ -162,6 +213,17 @@ const InvitePlayer = () => {
   const hasConflicts = conflictedUsers.length > 0;
 
   const getBlockingError = (): string => {
+    // Club context: the only blocker is trying to invite people who are
+    // already members / already have a pending invite or request.
+    if (isClubContext) {
+      if (hasConflicts) {
+        return `Cannot invite: ${conflictedUsers
+          .map((u) => formatDisplayName(u))
+          .join(", ")}. Remove them to continue.`;
+      }
+      return "";
+    }
+
     const actionVerb = isClubCompetition ? "add" : "invite";
     const removeVerb = isClubCompetition ? "Unselect" : "Remove";
 
@@ -174,16 +236,16 @@ const InvitePlayer = () => {
       return `Cannot ${actionVerb} players as fixtures have been generated for this tournament.`;
     }
     const totalCount =
-      competition.participants.length +
+      competition!.participants.length +
       inviteUsers.length +
-      competition.pendingInvites.length;
-    if (totalCount > competition.maxPlayers) {
-      const pendingCount = competition.pendingInvites.length;
+      competition!.pendingInvites.length;
+    if (totalCount > competition!.maxPlayers) {
+      const pendingCount = competition!.pendingInvites.length;
       const pendingMessage =
         pendingCount > 0
           ? ` You also have ${pendingCount} pending invite(s) reserving spots.`
           : "";
-      return `Max players reached (${competition.maxPlayers}).${pendingMessage}  ${removeVerb} some players to continue.`;
+      return `Max players reached (${competition!.maxPlayers}).${pendingMessage}  ${removeVerb} some players to continue.`;
     }
     if (hasConflicts) {
       return `Cannot ${actionVerb}: ${conflictedUsers
@@ -215,12 +277,42 @@ const InvitePlayer = () => {
         return;
       }
 
+      // Club context: send genuine club invites (invite/accept step).
+      if (isClubContext) {
+        for (const user of inviteUsers) {
+          const payload = {
+            ...notificationSchema,
+            createdAt: new Date(),
+            recipientId: user.userId,
+            senderId: currentUserId,
+            message: `You've been invited to join ${club.clubName}`,
+            type: notificationTypes.ACTION.INVITE.CLUB,
+            data: {
+              clubId: club.clubId,
+            },
+          };
+
+          await sendNotification(payload);
+          await updatePendingInvites(
+            club.clubId,
+            user.userId,
+            COLLECTION_NAMES.clubs as CollectionName,
+          );
+        }
+
+        handleShowPopup("Members invited successfully!");
+        setInviteUsers([]);
+        setSearchUser("");
+        setSuggestions([]);
+        return;
+      }
+
       // Club competitions: add members directly (no invite/accept step)
       if (isClubCompetition) {
         let addedIds: string[] = [];
         try {
           addedIds = await addPlayersToCompetition({
-            competitionId: competition.id,
+            competitionId: competition!.id,
             collectionName,
             userIds: inviteUsers.map((u) => u.userId),
           });
@@ -228,7 +320,7 @@ const InvitePlayer = () => {
           const msg = (addError as Error)?.message;
           setValidationError(
             msg === "MAX_PLAYERS_EXCEEDED"
-              ? `Cannot add players — would exceed the max of ${competition.maxPlayers}.`
+              ? `Cannot add players — would exceed the max of ${competition!.maxPlayers}.`
               : "Failed to add players. Please try again.",
           );
           console.error("Error adding players:", addError);
@@ -261,10 +353,10 @@ const InvitePlayer = () => {
               createdAt: new Date(),
               recipientId: uid,
               senderId: currentUserId,
-              message: `You've been added to ${competition.name}`,
+              message: `You've been added to ${competition!.name}`,
               type: infoType,
               data: {
-                [metaDataId]: competition.id,
+                [metaDataId]: competition!.id,
               },
             };
             await sendNotification(payload);
@@ -299,16 +391,16 @@ const InvitePlayer = () => {
           createdAt: new Date(),
           recipientId: user.userId,
           senderId: currentUserId,
-          message: `You've been invited to join ${competition.name}`,
+          message: `You've been invited to join ${competition!.name}`,
           type: notificationType,
           data: {
-            [metaDataId]: competition.id,
+            [metaDataId]: competition!.id,
           },
         };
 
         await sendNotification(payload);
         await updatePendingInvites(
-          competition.id,
+          competition!.id,
           user.userId,
           collectionName as CollectionName,
         );
@@ -432,10 +524,18 @@ const InvitePlayer = () => {
   };
 
   const handleShare = async () => {
-    const type =
-      competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
-    const url = `https://courtchamps.com/preview/${type}/${competition.id}`;
     try {
+      if (isClubContext) {
+        const url = `https://courtchamps.com/join/club/${club.clubId}`;
+        await Share.share({
+          message: `Join my club on Court Champs! 🏸\n\n${url}`,
+          url,
+        });
+        return;
+      }
+      const type =
+        competitionType === COMPETITION_TYPES.LEAGUE ? "league" : "tournament";
+      const url = `https://courtchamps.com/preview/${type}/${competition!.id}`;
       await Share.share({
         message: `You've been invited to join my ${competitionVariant} on Court Champs! 🏸\n\n${url}`,
       });
@@ -443,7 +543,9 @@ const InvitePlayer = () => {
       console.error("Error sharing:", error);
     }
   };
-  const numberOfPlayers = `${competition.participants?.length || 0} / ${competition.maxPlayers}`;
+  const numberOfPlayers = isClubContext
+    ? ""
+    : `${competition!.participants?.length || 0} / ${competition!.maxPlayers}`;
   const competitionVariant =
     competitionType === COMPETITION_TYPES.LEAGUE ? "League" : "Tournament";
 
@@ -512,7 +614,8 @@ const InvitePlayer = () => {
         height={450}
       />
 
-      {!isClubCompetition && (
+      {/* Recent Players belongs only to a plain (non-club) competition invite */}
+      {showTabs && (
         <RecentPlayersModal
           visible={recentPlayersVisible}
           onClose={() => {
@@ -525,19 +628,25 @@ const InvitePlayer = () => {
         />
       )}
 
-      {/* Header */}
+      {/* Header — no back button in the club context */}
       <Header>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <AntDesign name="arrow-left" size={24} color="white" />
-        </TouchableOpacity>
+        {showBackButton && (
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <AntDesign name="arrow-left" size={24} color="white" />
+          </TouchableOpacity>
+        )}
       </Header>
 
       {/* Fixed top section */}
       <FixedSection>
         <LeagueDetailsContainer>
-          <LeagueName>{competition.name}</LeagueName>
+          <LeagueName>
+            {isClubContext ? club.clubName : competition!.name}
+          </LeagueName>
           <LeagueLocation>
-            {competition.location.courtName}, {competition.location.city}
+            {isClubContext
+              ? `${club.clubLocation.city}, ${club.clubLocation.country}`
+              : `${competition!.location.courtName}, ${competition!.location.city}`}
           </LeagueLocation>
           <View
             style={{
@@ -547,26 +656,34 @@ const InvitePlayer = () => {
               alignItems: "center",
             }}
           >
-            <Tag
-              name={numberOfPlayers}
-              color={"rgba(0, 0, 0, 0.7)"}
-              iconColor={"#00A2FF"}
-              iconSize={15}
-              icon={"person"}
-              iconPosition={"right"}
-              bold
-            />
-            <Tag name={competition.type} />
-            <Tag name={competition.prizeType} />
+            {isClubContext ? (
+              <Tag name="Club" color="#FAB234" bold />
+            ) : (
+              <>
+                <Tag
+                  name={numberOfPlayers}
+                  color={"rgba(0, 0, 0, 0.7)"}
+                  iconColor={"#00A2FF"}
+                  iconSize={15}
+                  icon={"person"}
+                  iconPosition={"right"}
+                  bold
+                />
+                <Tag name={competition!.type} />
+                <Tag name={competition!.prizeType} />
+              </>
+            )}
             <ShareButton onPress={handleShare}>
               <AntDesign name="share-alt" size={13} color="#00A2FF" />
-              <ShareButtonText>Share {competitionVariant}</ShareButtonText>
+              <ShareButtonText>
+                Share {isClubContext ? "Club" : competitionVariant}
+              </ShareButtonText>
             </ShareButton>
           </View>
         </LeagueDetailsContainer>
 
-        {/* Tabs: hidden for club competitions */}
-        {!isClubCompetition && (
+        {/* Tabs: only a plain (non-club) competition offers Recent Players */}
+        {showTabs && (
           <TabRow>
             <Tab
               active={activeTab === "search"}
@@ -609,7 +726,7 @@ const InvitePlayer = () => {
           onPress={Keyboard.dismiss}
           accessible={false}
         >
-          <>
+          <View style={{ flex: 1 }}>
             {clubMembersLoading ? (
               <ActivityIndicator
                 color="#00A2FF"
@@ -637,7 +754,7 @@ const InvitePlayer = () => {
                 {displayError}
               </ErrorText>
             ) : null}
-          </>
+          </View>
         </TouchableWithoutFeedback>
       ) : (
         /* ── Normal mode: search suggestions + chips ── */

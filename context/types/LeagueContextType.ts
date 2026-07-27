@@ -61,6 +61,8 @@ export interface LeagueContextType {
 
   fetchLeagues: (options?: object) => Promise<League[]>;
 
+  fetchClubs: (options?: object) => Promise<Club[]>;
+
   fetchUpcomingLeagues: () => Promise<void>;
 
   fetchCompetitionById: (_: {

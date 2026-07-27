@@ -306,7 +306,7 @@ const InviteActionModal = ({
                       </LinkText>
                     </Message>
 
-                    {clubData.clubLocation ? (
+                    {clubData.clubLocation?.city ? (
                       <View
                         style={{
                           flexDirection: "row",
@@ -314,7 +314,9 @@ const InviteActionModal = ({
                           marginTop: 15,
                         }}
                       >
-                        <LeagueLocation>{clubData.clubLocation}</LeagueLocation>
+                        <LeagueLocation>
+                          {`${clubData.clubLocation.city}, ${clubData.clubLocation.country}`}
+                        </LeagueLocation>
                       </View>
                     ) : null}
 

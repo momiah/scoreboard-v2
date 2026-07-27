@@ -210,6 +210,7 @@ export default ClubLeagues;
 
 const Container = styled.View({
   flex: 1,
+  paddingHorizontal: 20,
 });
 
 const HeaderRow = styled.View({

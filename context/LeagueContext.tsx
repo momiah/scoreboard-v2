@@ -243,6 +243,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       League[]
     >;
 
+  const fetchClubs = (options = {}) =>
+    fetchCompetitions({ competition: "clubs", ...options }) as Promise<Club[]>;
+
   const fetchTournaments = (options = {}) =>
     fetchCompetitions({ competition: "tournaments", ...options }) as Promise<
       Tournament[]
@@ -2563,6 +2566,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         addClub,
         updateCompetition, // Exposing the updateCompetition function
         fetchLeagues,
+        fetchClubs,
         fetchUpcomingLeagues,
         fetchCompetitionById,
         getCourts,

@@ -223,12 +223,15 @@ const AddClubModal: React.FC<AddClubModalProps> = ({
         }
       }
 
-      const clubLocationLabel = `${data.city.trim()}, ${data.country.trim()}`;
-
       const clubPayload: Club = {
         clubId,
         clubName: data.clubName.trim(),
-        clubLocation: clubLocationLabel,
+        clubLocation: {
+          city: data.city.trim(),
+          country: data.country.trim(),
+          countryCode: selectedCountryCode ?? "",
+        },
+        countryCode: selectedCountryCode ?? "",
         clubDescription: data.clubDescription.trim(),
         clubImage: clubImageUrl,
         clubOwner: {

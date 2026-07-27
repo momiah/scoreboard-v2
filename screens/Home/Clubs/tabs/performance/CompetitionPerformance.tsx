@@ -12,7 +12,6 @@ import { trophies, medals } from "../../../../../mockImages/index";
 const { width: screenWidth } = Dimensions.get("window");
 
 const PLACEMENT_KEYS = ["first", "second", "third", "fourth"] as const;
-type PlacementKey = (typeof PLACEMENT_KEYS)[number];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,9 +87,7 @@ const CompetitionPerformance: React.FC<CompetitionPerformanceProps> = ({
 
       // Fetch all club members + all club competitions in parallel
       const [membersSnap, competitionsSnap] = await Promise.all([
-        getDocs(
-          collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
-        ),
+        getDocs(collection(db, COLLECTION_NAMES.clubs, clubId, "participants")),
         getDocs(
           query(collection(db, collectionName), where("clubId", "==", clubId)),
         ),
@@ -256,12 +253,14 @@ const HeaderRow = styled.View({
   borderBottomWidth: 1,
   borderBottomColor: "rgb(9, 33, 62)",
   marginBottom: 0,
+  paddingHorizontal: 10,
 });
 
 const DataRow = styled.View({
   flexDirection: "row",
   borderTopWidth: 1,
   borderTopColor: "rgb(9, 33, 62)",
+  paddingHorizontal: 10,
 });
 
 const RankCell = styled.View({
