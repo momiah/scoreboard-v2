@@ -293,7 +293,6 @@ const ClubScreen: React.FC = () => {
 
                 {clubLocationText ? (
                   <AddressRow onPress={() => openMapsQuery(clubLocationText)}>
-                    <Ionicons name="location-outline" size={18} color="#fff" />
                     <ClubLocationText>{clubLocationText}</ClubLocationText>
                     <Ionicons name="open-outline" size={18} color="#00A2FF" />
                   </AddressRow>
@@ -310,7 +309,7 @@ const ClubScreen: React.FC = () => {
                   <View style={{ flexDirection: "row", gap: 5 }}>
                     <Tag name="Club" color="#FAB234" />
                     <Tag
-                      name={`${memberCount} Members`}
+                      name={`${memberCount} ${memberCount === 1 ? "Member" : "Members"}`}
                       color={"rgba(0, 0, 0, 0.7)"}
                       iconColor={"#00A2FF"}
                       iconSize={14}
