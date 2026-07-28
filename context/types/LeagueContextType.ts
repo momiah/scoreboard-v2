@@ -182,6 +182,7 @@ export interface LeagueContextType {
     userId: string;
     reason: string;
   }) => Promise<void>;
+  deleteClub: (clubId: string) => Promise<void>;
   acceptClubJoinRequest: (params: {
     senderId: string;
     clubId: string;

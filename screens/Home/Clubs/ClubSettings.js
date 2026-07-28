@@ -20,7 +20,7 @@ const ClubSettings = () => {
   const route = useRoute();
   const { clubId, club } = route.params;
   const { currentUser } = useContext(UserContext);
-  const { deleteCompetition } = useContext(LeagueContext);
+  const { deleteClub } = useContext(LeagueContext);
   const navigation = useNavigation();
   const [deleting, setDeleting] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
@@ -104,7 +104,7 @@ const ClubSettings = () => {
       // Verifies password without relying on auth.currentUser hydration
       await signInWithEmailAndPassword(auth, currentUser.email, password);
 
-      await deleteCompetition(COLLECTION_NAMES.clubs, clubId);
+      await deleteClub(clubId);
       setPasswordModalVisible(false);
       navigation.reset({ index: 0, routes: [{ name: "Home" }] });
     } catch (error) {
