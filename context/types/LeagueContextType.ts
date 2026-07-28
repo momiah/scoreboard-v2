@@ -167,6 +167,21 @@ export interface LeagueContextType {
     currentUser: UserProfile;
     ownerId: string;
   }) => Promise<boolean>;
+  updateClub: (club: Club) => Promise<void>;
+  fetchClubParticipants: (clubId: string) => Promise<Player[]>;
+  assignClubAdmin: (params: {
+    clubId: string;
+    user: { userId: string; username: string };
+  }) => Promise<void>;
+  revokeClubAdmin: (params: {
+    clubId: string;
+    userId: string;
+  }) => Promise<void>;
+  removeClubMember: (params: {
+    clubId: string;
+    userId: string;
+    reason: string;
+  }) => Promise<void>;
   acceptClubJoinRequest: (params: {
     senderId: string;
     clubId: string;

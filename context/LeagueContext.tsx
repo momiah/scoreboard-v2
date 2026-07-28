@@ -2134,6 +2134,124 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  // ---------------------------------------------------------------------------
+  // CLUB MANAGEMENT (edit / admins / members)
+  //
+  // Clubs use a different shape to competitions: `clubOwner` / `clubAdmins` live
+  // on the club doc, while members live in the `clubs/{clubId}/participants`
+  // subcollection. These helpers mirror the competition equivalents above.
+  // ---------------------------------------------------------------------------
+
+  // Update a club document (e.g. description / image edits from EditClub).
+  const updateClub = async (club: Club): Promise<void> => {
+    try {
+      if (!club?.clubId) {
+        console.error("updateClub: missing clubId");
+        return;
+      }
+      const clubRef = doc(db, COLLECTION_NAMES.clubs, club.clubId);
+      await updateDoc(clubRef, { ...club } as DocumentData);
+    } catch (error) {
+      console.error("Error updating club:", error);
+      Alert.alert("Error", "Unable to update the club.");
+    }
+  };
+
+  // Club members live in the `clubs/{clubId}/participants` subcollection.
+  const fetchClubParticipants = async (clubId: string): Promise<Player[]> => {
+    try {
+      const snap = await getDocs(
+        collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
+      );
+      return snap.docs.map(
+        (participant) =>
+          ({ userId: participant.id, ...participant.data() }) as Player,
+      );
+    } catch (error) {
+      console.error("Error fetching club participants:", error);
+      return [];
+    }
+  };
+
+  const assignClubAdmin = async ({
+    clubId,
+    user,
+  }: {
+    clubId: string;
+    user: { userId: string; username: string };
+  }): Promise<void> => {
+    const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+    const clubSnap = await getDoc(clubRef);
+    const clubData = clubSnap.data();
+
+    const updatedAdmins: CompetitionAdmins[] = [
+      ...(clubData?.clubAdmins || []),
+      { userId: user.userId, username: user.username },
+    ];
+
+    await updateDoc(clubRef, { clubAdmins: updatedAdmins });
+  };
+
+  const revokeClubAdmin = async ({
+    clubId,
+    userId,
+  }: {
+    clubId: string;
+    userId: string;
+  }): Promise<void> => {
+    const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+    const clubSnap = await getDoc(clubRef);
+    const clubData = clubSnap.data();
+
+    const updatedAdmins = (clubData?.clubAdmins || []).filter(
+      (admin: CompetitionAdmins) => admin.userId !== userId,
+    );
+
+    await updateDoc(clubRef, { clubAdmins: updatedAdmins });
+  };
+
+  const removeClubMember = async ({
+    clubId,
+    userId,
+    reason,
+  }: {
+    clubId: string;
+    userId: string;
+    reason: string;
+  }): Promise<void> => {
+    const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
+    const clubSnap = await getDoc(clubRef);
+    const clubData = clubSnap.data();
+
+    const participantRef = doc(
+      db,
+      COLLECTION_NAMES.clubs,
+      clubId,
+      "participants",
+      userId,
+    );
+
+    // Remove the participant doc and drop any admin role in one atomic write.
+    const batch = writeBatch(db);
+    batch.delete(participantRef);
+    batch.update(clubRef, {
+      clubAdmins: (clubData?.clubAdmins || []).filter(
+        (admin: CompetitionAdmins) => admin.userId !== userId,
+      ),
+    });
+    await batch.commit();
+
+    await sendNotification({
+      ...notificationSchema,
+      createdAt: new Date(),
+      recipientId: userId,
+      senderId: clubData?.clubOwner?.userId,
+      message: `You have been removed from ${clubData?.clubName} for the following reason: ${reason}`,
+      type: notificationTypes.INFORMATION.APP.TYPE,
+      data: { clubId },
+    });
+  };
+
   const fetchUserPendingRequests = async (userId: string) => {
     try {
       const [leaguesSnap, tournamentsSnap] = await Promise.all([
@@ -2613,6 +2731,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         requestToJoinClub,
         acceptClubJoinRequest,
         declineClubJoinRequest,
+        updateClub,
+        fetchClubParticipants,
+        assignClubAdmin,
+        revokeClubAdmin,
+        removeClubMember,
         requestToJoinLeague,
         acceptCompetitionJoinRequest,
         declineCompetitionJoinRequest,

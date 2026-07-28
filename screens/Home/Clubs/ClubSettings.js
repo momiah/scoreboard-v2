@@ -1,15 +1,31 @@
-import React, { useContext } from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useContext, useState } from "react";
+import {
+  View,
+  StyleSheet,
+  Modal,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { BlurView } from "expo-blur";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { UserContext } from "../../../context/UserContext";
+import { LeagueContext } from "../../../context/LeagueContext";
+import { COLLECTION_NAMES } from "@shared";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../../services/firebase.config";
 
 const ClubSettings = () => {
   const route = useRoute();
   const { clubId, club } = route.params;
   const { currentUser } = useContext(UserContext);
+  const { deleteCompetition } = useContext(LeagueContext);
   const navigation = useNavigation();
+  const [deleting, setDeleting] = useState(false);
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   const isOwner = club?.clubOwner?.userId === currentUser?.userId;
 
@@ -51,6 +67,61 @@ const ClubSettings = () => {
           option.action !== "DeleteClub",
       );
 
+  const handleDeletePress = () => {
+    Alert.alert(
+      "Delete Club",
+      `Are you sure you want to delete "${club?.clubName}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setPassword("");
+            setPasswordError("");
+            setPasswordModalVisible(true);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!password.trim()) {
+      setPasswordError("Please enter your password");
+      return;
+    }
+
+    if (!currentUser?.email) {
+      setPasswordError("Unable to verify your account.");
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      setPasswordError("");
+
+      // Verifies password without relying on auth.currentUser hydration
+      await signInWithEmailAndPassword(auth, currentUser.email, password);
+
+      await deleteCompetition(COLLECTION_NAMES.clubs, clubId);
+      setPasswordModalVisible(false);
+      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+    } catch (error) {
+      if (
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        setPasswordError("Incorrect password. Please try again.");
+      } else {
+        Alert.alert("Error", "Failed to delete club. Please try again.");
+        console.error("Delete club error:", error);
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handlePress = (action) => {
     if (action === "ClubPendingRequests") {
       navigation.navigate("ClubPendingRequests", { clubId });
@@ -60,12 +131,67 @@ const ClubSettings = () => {
       navigation.navigate("ClubPendingInvites", { clubId });
       return;
     }
-    // Other actions not yet implemented
-    console.log(`[ClubSettings] Pressed: ${action}`, { clubId, club });
+    if (action === "DeleteClub") {
+      handleDeletePress();
+      return;
+    }
+    navigation.navigate(action, {
+      clubId,
+      club,
+      collectionName: COLLECTION_NAMES.clubs,
+    });
   };
 
   return (
     <Container>
+      <Modal
+        transparent
+        animationType="fade"
+        visible={passwordModalVisible}
+        onRequestClose={() => !deleting && setPasswordModalVisible(false)}
+      >
+        <BlurView style={styles.blurContainer} intensity={50} tint="dark">
+          <PasswordModal>
+            <PasswordTitle>Confirm Deletion</PasswordTitle>
+            <PasswordSubtitle>
+              Enter your password to permanently delete this club
+            </PasswordSubtitle>
+            <PasswordInput
+              placeholder="Enter password"
+              placeholderTextColor="#666"
+              secureTextEntry
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setPasswordError("");
+              }}
+              autoFocus
+            />
+            {passwordError ? (
+              <PasswordError>{passwordError}</PasswordError>
+            ) : null}
+            <ModalButtonRow>
+              <ModalCancelButton
+                onPress={() => setPasswordModalVisible(false)}
+                disabled={deleting}
+              >
+                <ModalCancelText>Cancel</ModalCancelText>
+              </ModalCancelButton>
+              <ModalDeleteButton
+                onPress={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <ModalDeleteText>Delete</ModalDeleteText>
+                )}
+              </ModalDeleteButton>
+            </ModalButtonRow>
+          </PasswordModal>
+        </BlurView>
+      </Modal>
+
       <Header>
         <BackButton onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="white" />
@@ -97,6 +223,14 @@ const ClubSettings = () => {
     </Container>
   );
 };
+
+const styles = StyleSheet.create({
+  blurContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});
 
 const Container = styled.View({
   flex: 1,
@@ -144,6 +278,80 @@ const LeftContainer = styled.View({
 const MenuText = styled.Text({
   color: "white",
   fontSize: 16,
+});
+
+const PasswordModal = styled.View({
+  backgroundColor: "rgb(3, 16, 31)",
+  borderRadius: 16,
+  padding: 24,
+  width: "85%",
+  borderWidth: 1,
+  borderColor: "rgba(255, 59, 48, 0.3)",
+});
+
+const PasswordTitle = styled.Text({
+  color: "white",
+  fontSize: 18,
+  fontWeight: "bold",
+  marginBottom: 8,
+});
+
+const PasswordSubtitle = styled.Text({
+  color: "#aaa",
+  fontSize: 14,
+  marginBottom: 20,
+  lineHeight: 20,
+});
+
+const PasswordInput = styled.TextInput({
+  backgroundColor: "rgba(255, 255, 255, 0.08)",
+  borderRadius: 8,
+  padding: 12,
+  color: "white",
+  fontSize: 16,
+  borderWidth: 1,
+  borderColor: "rgba(255, 255, 255, 0.15)",
+  marginBottom: 8,
+});
+
+const PasswordError = styled.Text({
+  color: "#FF3B30",
+  fontSize: 13,
+  marginBottom: 12,
+});
+
+const ModalButtonRow = styled.View({
+  flexDirection: "row",
+  gap: 12,
+  marginTop: 20,
+});
+
+const ModalCancelButton = styled.TouchableOpacity({
+  flex: 1,
+  padding: 14,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 255, 255, 0.08)",
+  alignItems: "center",
+});
+
+const ModalCancelText = styled.Text({
+  color: "white",
+  fontSize: 16,
+  fontWeight: "500",
+});
+
+const ModalDeleteButton = styled.TouchableOpacity({
+  flex: 1,
+  padding: 14,
+  borderRadius: 8,
+  backgroundColor: "#FF3B30",
+  alignItems: "center",
+});
+
+const ModalDeleteText = styled.Text({
+  color: "white",
+  fontSize: 16,
+  fontWeight: "bold",
 });
 
 export default ClubSettings;

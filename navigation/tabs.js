@@ -34,6 +34,9 @@ import TournamentSettings from "../screens/Home/Tournaments/TournamentSettings";
 import ClubSettings from "../screens/Home/Clubs/ClubSettings";
 import ClubPendingRequests from "../screens/Home/Clubs/ClubPendingRequests";
 import ClubPendingInvites from "../screens/Home/Clubs/ClubPendingInvites";
+import EditClub from "../screens/Home/Clubs/EditClub";
+import ClubAssignAdmin from "../screens/Home/Settings/ClubAssignAdmin";
+import ClubRemoveMembers from "../screens/Home/Settings/ClubRemoveMembers";
 import BulkFixturesPublisher from "../screens/Home/Tournaments/BulkFixturesPublisher";
 import EditTournament from "../screens/Home/Tournaments/EditTournament";
 import Tournaments from "../screens/Home/Tournaments/Tournaments";
@@ -77,6 +80,9 @@ const HomeStack = () => {
         component={ClubPendingRequests}
       />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
+      <Stack.Screen name="EditClub" component={EditClub} />
+      <Stack.Screen name="ClubAssignAdmin" component={ClubAssignAdmin} />
+      <Stack.Screen name="ClubRemoveMembers" component={ClubRemoveMembers} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="ProfileMenu" component={ProfileMenu} />
@@ -123,6 +129,9 @@ const ProfileStack = () => {
         component={ClubPendingRequests}
       />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
+      <Stack.Screen name="EditClub" component={EditClub} />
+      <Stack.Screen name="ClubAssignAdmin" component={ClubAssignAdmin} />
+      <Stack.Screen name="ClubRemoveMembers" component={ClubRemoveMembers} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -172,6 +181,9 @@ const ChatsStack = () => {
         component={ClubPendingRequests}
       />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
+      <Stack.Screen name="EditClub" component={EditClub} />
+      <Stack.Screen name="ClubAssignAdmin" component={ClubAssignAdmin} />
+      <Stack.Screen name="ClubRemoveMembers" component={ClubRemoveMembers} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />
@@ -221,6 +233,9 @@ const CompetitionsStack = () => {
         component={ClubPendingRequests}
       />
       <Stack.Screen name="ClubPendingInvites" component={ClubPendingInvites} />
+      <Stack.Screen name="EditClub" component={EditClub} />
+      <Stack.Screen name="ClubAssignAdmin" component={ClubAssignAdmin} />
+      <Stack.Screen name="ClubRemoveMembers" component={ClubRemoveMembers} />
       <Stack.Screen name="EditLeague" component={EditLeague} />
       <Stack.Screen name="LeagueSettings" component={LeagueSettings} />
       <Stack.Screen name="PendingInvites" component={PendingInvites} />

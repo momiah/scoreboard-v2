@@ -18,7 +18,13 @@ const REASONS = [
   { key: "other", value: "Other" },
 ];
 
-const RemovePlayerModal = ({ visible, onClose, onConfirm, playerName }) => {
+const RemovePlayerModal = ({
+  visible,
+  onClose,
+  onConfirm,
+  playerName,
+  entityLabel = "league",
+}) => {
   const [selectedReasonKey, setSelectedReasonKey] = useState("");
   const [description, setDescription] = useState("");
 
@@ -43,10 +49,11 @@ const RemovePlayerModal = ({ visible, onClose, onConfirm, playerName }) => {
         >
           <ModalContent>
             <Title>
-              Are you sure you want to remove {playerName} from the league?
+              Are you sure you want to remove {playerName} from the{" "}
+              {entityLabel}?
             </Title>
             <InfoText>
-              They will lose all their league progress but their personal
+              They will lose all their {entityLabel} progress but their personal
               progress will remain intact.
             </InfoText>
 
