@@ -502,6 +502,20 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         title: data.clubName ?? "",
       });
 
+      // Record the club's creation in its feed (non-blocking).
+      await clubFeed.clubCreated(data.clubId, {
+        clubName: data.clubName ?? "",
+        actor: data.clubOwner
+          ? {
+              userId: data.clubOwner.userId,
+              username: data.clubOwner.username,
+              firstName: data.clubOwner.firstName,
+              lastName: data.clubOwner.lastName,
+            }
+          : null,
+        image: data.clubImage ?? null,
+      });
+
       AppEventsLogger.logEvent("CreatedClub", {
         club_name: data.clubName,
       });

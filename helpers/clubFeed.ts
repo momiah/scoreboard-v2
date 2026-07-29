@@ -35,6 +35,23 @@ export const addClubFeedEvent = async (
  * live here. Add a new builder per future event type.
  */
 export const clubFeed = {
+  clubCreated: (
+    clubId: string,
+    p: {
+      clubName: string;
+      actor?: ClubFeedActor | null;
+      image?: string | null;
+    },
+  ) =>
+    addClubFeedEvent(clubId, {
+      type: "club_created",
+      title: "Club created",
+      message: `${p.actor?.firstName ?? p.actor?.username ?? "The owner"} created the club "${p.clubName}"`,
+      actor: p.actor ?? null,
+      thumbnail: p.image ?? null,
+      icon: "flag-outline",
+    }),
+
   playerJoined: (clubId: string, actor: ClubFeedActor) =>
     addClubFeedEvent(clubId, {
       type: "player_joined",

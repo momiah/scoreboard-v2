@@ -47,6 +47,7 @@ export type ClubParticipantDocument = Player;
 
 /** Kinds of activity surfaced in the club feed. */
 export type ClubFeedType =
+  | "club_created"
   | "player_joined"
   | "competition_won"
   | "competition_created";

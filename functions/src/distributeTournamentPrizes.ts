@@ -12,6 +12,7 @@ import {
 } from "@shared/helpers/getRankInCompetition";
 import { ScoreboardProfile, Tournament } from "@shared/types";
 import { sendNotification } from "./helpers/sendNotification";
+import { writeClubCompetitionWon } from "./helpers/clubFeed";
 import { notificationTypes } from "@shared";
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
@@ -198,6 +199,21 @@ const distributeTournamentPrizes = onSchedule("every 1 hours", async () => {
 
       await userWritesBatch.commit();
       await Promise.all(notificationsToSend.map((n) => sendNotification(n)));
+
+      // If the tournament belongs to a club, surface the winner in its feed.
+      const winnerIds = prizeWinners[0] ?? [];
+      if (winnerIds.length > 0) {
+        const winnerName = winnerIds
+          .map((id) => participantsById.get(id)?.username ?? "A player")
+          .join(" / ");
+        await writeClubCompetitionWon({
+          clubId: (tournament as { clubId?: string | null }).clubId,
+          competitionId: tournamentId,
+          competitionType: "tournament",
+          name: tournament.tournamentName,
+          winnerName,
+        });
+      }
 
       console.log(`Prizes distributed for tournament ${tournamentId}`);
     }
