@@ -3,7 +3,30 @@ import * as admin from "firebase-admin";
 import moment from "moment-timezone";
 
 import { calculatePrizeAllocation } from "./helpers/calculatePrizeAllocation";
+import { writeClubCompetitionWon } from "./helpers/clubFeed";
 import { League, Game } from "@shared/types";
+
+interface LeagueParticipant {
+  userId?: string;
+  username?: string;
+  displayName?: string;
+  numberOfWins?: number;
+  totalPointDifference?: number;
+  XP?: number;
+}
+
+// 1st place = the same ordering the prize allocation uses (wins → point diff → XP).
+const getLeagueWinner = (
+  participants: LeagueParticipant[],
+): LeagueParticipant | null => {
+  if (!participants.length) return null;
+  return [...participants].sort(
+    (a, b) =>
+      (b.numberOfWins ?? 0) - (a.numberOfWins ?? 0) ||
+      (b.totalPointDifference ?? 0) - (a.totalPointDifference ?? 0) ||
+      (b.XP ?? 0) - (a.XP ?? 0),
+  )[0];
+};
 
 const TIMEZONE = "Europe/London";
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
@@ -64,6 +87,20 @@ export const distributeLeaguePrizes = onSchedule(
           leagueId,
           leagueName: league.leagueName,
         });
+
+        // If the league belongs to a club, surface the winner in its feed.
+        const winner = getLeagueWinner(
+          (league.leagueParticipants || []) as LeagueParticipant[],
+        );
+        if (winner) {
+          await writeClubCompetitionWon({
+            clubId: (league as { clubId?: string | null }).clubId,
+            competitionId: leagueId,
+            competitionType: "league",
+            name: league.leagueName,
+            winnerName: winner.username ?? winner.displayName ?? "A player",
+          });
+        }
       }
 
       console.log("[prizes] run complete");

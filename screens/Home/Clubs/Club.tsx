@@ -28,6 +28,7 @@ import { COLLECTION_NAMES } from "@shared";
 import { db } from "../../../services/firebase.config";
 import type { Club } from "@shared/types";
 
+import ClubSummary from "./tabs/ClubSummary";
 import ClubFeed from "./tabs/ClubFeed";
 import ClubPerformance from "./tabs/ClubPerformance";
 import ClubLeagues from "./tabs/ClubLeagues";
@@ -37,6 +38,7 @@ import UserRoleTag from "../../../components/UserRoleTag";
 const { width: screenWidth } = Dimensions.get("window");
 
 const PRIMARY_TABS = [
+  "Summary",
   "Feed",
   "Club Performance",
   "Leagues",
@@ -80,7 +82,7 @@ const ClubScreen: React.FC = () => {
   const [isParticipant, setIsParticipant] = useState(false);
   const [isJoinRequestSending, setIsJoinRequestSending] = useState(false);
   const [selectedTab, setSelectedTab] = useState<PrimaryTab>(
-    primaryTab ?? "Feed",
+    primaryTab ?? "Summary",
   );
 
   const isOwner = currentUser?.userId === clubById?.clubOwner?.userId;
@@ -131,19 +133,17 @@ const ClubScreen: React.FC = () => {
             setMemberCount(0);
           } else {
             setClubNotFound(false);
-            // Only fetch participants subcollection on first load —
-            // it's expensive and the membership data is stable enough
-            // for a background refocus (e.g. returning from a league page).
-            if (isFirstLoad) {
-              const snap = await getDocs(
-                collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
+            // Re-fetch participants on every focus so membership (member count
+            // and the join CTA) reflects a request that was accepted — or a
+            // removal — while this screen stayed mounted in the stack.
+            const snap = await getDocs(
+              collection(db, COLLECTION_NAMES.clubs, clubId, "participants"),
+            );
+            if (!cancelled) {
+              setMemberCount(snap.size);
+              setIsParticipant(
+                snap.docs.some((doc) => doc.id === currentUser?.userId),
               );
-              if (!cancelled) {
-                setMemberCount(snap.size);
-                setIsParticipant(
-                  snap.docs.some((doc) => doc.id === currentUser?.userId),
-                );
-              }
             }
           }
         } catch (e) {
@@ -189,6 +189,8 @@ const ClubScreen: React.FC = () => {
 
   const renderPrimaryContent = () => {
     switch (selectedTab) {
+      case "Summary":
+        return <ClubSummary clubId={clubId} club={clubById} />;
       case "Feed":
         return <ClubFeed clubId={clubId} />;
       case "Club Performance":
