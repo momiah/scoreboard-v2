@@ -2,7 +2,10 @@ import * as admin from "firebase-admin";
 import { autoApproveLeagueGames } from "./autoApproveLeagueGames";
 import { distributeLeaguePrizes } from "./distributeLeaguePrizes";
 import { broadcastNotification } from "./broadcastNotification";
-import { distributeTournamentPrizes } from "./distributeTournamentPrizes";
+import {
+  distributeTournamentPrizes,
+  distributeTournamentPrizesOnComplete,
+} from "./distributeTournamentPrizes";
 import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
@@ -21,6 +24,7 @@ export {
   distributeLeaguePrizes,
   broadcastNotification,
   distributeTournamentPrizes,
+  distributeTournamentPrizesOnComplete,
   ogPreview,
   autoApproveLeagueGames,
   autoApproveTournamentGames,

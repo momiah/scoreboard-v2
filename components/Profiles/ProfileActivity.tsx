@@ -30,6 +30,7 @@ import ProfileActivitySkeleton from "../Skeletons/ProfileActivitySkeleton";
 import LineTabs from "../LineTabs";
 import {
   getUserClubActivity,
+  getMemberClubIds,
   ClubActivity,
 } from "../../helpers/clubPlayerStats";
 
@@ -143,17 +144,21 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
 
       setClubsLoading(true);
       try {
-        const [leagues, tournaments] = await Promise.all([
+        const [leagues, tournaments, memberClubIds] = await Promise.all([
           getLeaguesForUser(userId),
           getTournamentsForUser(userId),
+          // Clubs the user is a direct member of — covers clubs they've joined
+          // (or own) but have no competitions in yet.
+          getMemberClubIds(userId),
         ]);
 
         const clubIds = Array.from(
-          new Set(
-            [...leagues, ...tournaments]
+          new Set([
+            ...[...leagues, ...tournaments]
               .map((c: { clubId?: string | null }) => c.clubId)
               .filter((id): id is string => !!id),
-          ),
+            ...memberClubIds,
+          ]),
         );
 
         const activities = await Promise.all(

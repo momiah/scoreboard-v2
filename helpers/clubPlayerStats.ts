@@ -1,4 +1,12 @@
-import { collection, getDocs, getDoc, doc, query, where } from "firebase/firestore";
+import {
+  collection,
+  collectionGroup,
+  getDocs,
+  getDoc,
+  doc,
+  query,
+  where,
+} from "firebase/firestore";
 
 import { db } from "../services/firebase.config";
 import { COLLECTION_NAMES } from "@shared";
@@ -160,6 +168,152 @@ export const getClubAggregatedPlayers = async ({
     leagues: leaguesSnap.docs.map((d) => d.data() as RawCompetitionData),
     tournaments: tournamentsSnap.docs.map((d) => d.data() as RawCompetitionData),
   });
+};
+
+/**
+ * All clubs a user belongs to, resolved from the `participants` subcollections
+ * directly (owner, admins and members are all stored there). This is the source
+ * of truth for membership — unlike deriving clubs from the competitions a user
+ * plays in, it also surfaces clubs the user has joined but has no games in yet.
+ *
+ * Uses a collection-group query, which needs a COLLECTION_GROUP single-field
+ * index on `participants.userId` (see firestore.indexes.json). If that index
+ * isn't deployed yet the query throws — we swallow it and return [] so callers
+ * can fall back to their competition-derived list instead of erroring.
+ */
+export const getMemberClubIds = async (userId: string): Promise<string[]> => {
+  if (!userId) return [];
+  try {
+    const snap = await getDocs(
+      query(collectionGroup(db, "participants"), where("userId", "==", userId)),
+    );
+    const ids = snap.docs
+      // participant doc → participants collection → club doc → clubs collection
+      .filter((d) => d.ref.parent.parent?.parent.id === COLLECTION_NAMES.clubs)
+      .map((d) => d.ref.parent.parent?.id)
+      .filter((id): id is string => !!id);
+    return Array.from(new Set(ids));
+  } catch (error) {
+    console.error("getMemberClubIds failed (participants index missing?):", error);
+    return [];
+  }
+};
+
+export interface ClubTeamStat {
+  teamKey: string;
+  team: string[];
+  numberOfWins: number;
+  totalPointDifference: number;
+}
+
+export interface ClubSummaryStats {
+  /** Highest-ranked player across the club's competitions (null if no games). */
+  topPlayer: ClubPlayerStat | null;
+  /** Highest-ranked team across the club's competitions (null if no games). */
+  topTeam: ClubTeamStat | null;
+  /** Approved games played across all of the club's leagues + tournaments. */
+  totalGamesPlayed: number;
+}
+
+const isApprovedGame = (game: unknown): boolean =>
+  String((game as { approvalStatus?: string })?.approvalStatus ?? "")
+    .toLowerCase() === "approved";
+
+// League games live on `games`; tournament games are nested in `fixtures[].games`.
+const countApprovedGames = (data: {
+  games?: unknown[];
+  fixtures?: { games?: unknown[] }[];
+}): number => {
+  const direct = Array.isArray(data.games) ? data.games : [];
+  const fixtureGames = Array.isArray(data.fixtures)
+    ? data.fixtures.flatMap((f) => (Array.isArray(f?.games) ? f.games : []))
+    : [];
+  return [...direct, ...fixtureGames].filter(isApprovedGame).length;
+};
+
+/**
+ * Club-level headline stats for the Summary tab: the top player, top team, and
+ * total games played, aggregated across every league + tournament the club
+ * manages. Reuses the same player accumulation as the performance/activity tabs.
+ */
+export const getClubSummaryStats = async ({
+  clubId,
+}: {
+  clubId: string;
+}): Promise<ClubSummaryStats> => {
+  const clubFilter = where("clubId", "==", clubId);
+
+  const [membersSnap, leaguesSnap, tournamentsSnap] = await Promise.all([
+    getDocs(collection(db, COLLECTION_NAMES.clubs, clubId, "participants")),
+    getDocs(query(collection(db, COLLECTION_NAMES.leagues), clubFilter)),
+    getDocs(query(collection(db, COLLECTION_NAMES.tournaments), clubFilter)),
+  ]);
+
+  const leagues = leaguesSnap.docs.map((d) => d.data() as RawCompetitionData);
+  const tournaments = tournamentsSnap.docs.map(
+    (d) => d.data() as RawCompetitionData,
+  );
+
+  // Top player — accumulate members across all comps, rank by wins → point diff.
+  const players = buildClubPlayerMap({
+    members: membersSnap.docs.map((d) => d.data() as RawMember),
+    leagues,
+    tournaments,
+  }).sort(
+    (a, b) =>
+      b.numberOfWins - a.numberOfWins ||
+      b.totalPointDifference - a.totalPointDifference,
+  );
+  const topPlayer = players.find((p) => p.numberOfWins > 0) ?? null;
+
+  // Top team — merge team stats keyed by teamKey across all comps.
+  const teamMap = new Map<string, ClubTeamStat>();
+  const mergeTeams = (
+    raw: { leagueTeams?: unknown[]; tournamentTeams?: unknown[]; teams?: unknown[] },
+  ) => {
+    const teams = (raw.leagueTeams ??
+      raw.tournamentTeams ??
+      raw.teams ??
+      []) as {
+      teamKey?: string;
+      team?: string[];
+      numberOfWins?: number;
+      totalPointDifference?: number;
+    }[];
+    teams.forEach((t) => {
+      if (!t.teamKey || !Array.isArray(t.team)) return;
+      const existing = teamMap.get(t.teamKey);
+      if (!existing) {
+        teamMap.set(t.teamKey, {
+          teamKey: t.teamKey,
+          team: t.team,
+          numberOfWins: t.numberOfWins ?? 0,
+          totalPointDifference: t.totalPointDifference ?? 0,
+        });
+      } else {
+        existing.numberOfWins += t.numberOfWins ?? 0;
+        existing.totalPointDifference += t.totalPointDifference ?? 0;
+      }
+    });
+  };
+  [...leaguesSnap.docs, ...tournamentsSnap.docs].forEach((d) =>
+    mergeTeams(d.data() as Record<string, unknown>),
+  );
+  const topTeam =
+    Array.from(teamMap.values())
+      .sort(
+        (a, b) =>
+          b.numberOfWins - a.numberOfWins ||
+          b.totalPointDifference - a.totalPointDifference,
+      )
+      .find((t) => t.numberOfWins > 0) ?? null;
+
+  const totalGamesPlayed = [...leagues, ...tournaments].reduce(
+    (sum, data) => sum + countApprovedGames(data as never),
+    0,
+  );
+
+  return { topPlayer, topTeam, totalGamesPlayed };
 };
 
 export interface ClubActivity {
