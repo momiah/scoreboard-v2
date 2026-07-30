@@ -285,8 +285,10 @@ export const useVideoUpload = ({
             fileType: "video/mp4",
           });
 
+          // Android: react-native-background-upload needs a raw path
+          // without the file:// scheme.
           const uploadPath =
-            Platform.OS === "android" && videoUri.startsWith("file://")
+            Platform.OS === "android"
               ? videoUri.replace("file://", "")
               : videoUri;
 
