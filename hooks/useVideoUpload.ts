@@ -60,10 +60,13 @@ type CheckR2VideoParams = { gameId: string; competitionId: string };
 type CheckR2VideoResponse = { videoUrl: string | null };
 
 // Android's react-native-background-upload `completed` event is unreliable — the
-// bytes land on R2 but the event never drives the finalize step. Once progress
-// reaches 100% we wait this long for `completed`; if it never finalizes we verify
-// against R2 and finish the job ourselves.
-const FINALIZE_FALLBACK_MS = 12000;
+// forked uploader can overshoot 100% and never emit `completed`, even though the
+// bytes do reach R2. When progress hits 100% we start polling R2 for the finished
+// file and finalize the moment it appears, then give up (leaving it for launch
+// recovery) after MAX_ATTEMPTS.
+const FINALIZE_FALLBACK_MS = 8000; // first R2 check after reaching 100%
+const FINALIZE_POLL_INTERVAL_MS = 6000; // gap between subsequent checks
+const FINALIZE_MAX_ATTEMPTS = 15; // ~8s + 14*6s ≈ 90s of polling
 
 export const useVideoUpload = ({
   competitionId,
@@ -184,6 +187,7 @@ export const useVideoUpload = ({
         let finalizing = false;
         let settled = false;
         let fallbackScheduled = false;
+        let overshootLogged = false;
         let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
         try {
@@ -266,17 +270,35 @@ export const useVideoUpload = ({
             return false;
           };
 
+          // Poll R2 until the finished file appears (the forked uploader may
+          // never emit `completed`), then finalize. Give up after MAX_ATTEMPTS
+          // and leave the pending record for launch recovery.
           const scheduleFinalizeFallback = () => {
             if (fallbackScheduled || finalized || settled) return;
             fallbackScheduled = true;
-            fallbackTimer = setTimeout(() => {
+            let attempts = 0;
+
+            const poll = async () => {
+              fallbackTimer = null;
               if (finalized || settled) return;
+              attempts += 1;
               console.warn(
-                "[VideoUpload] No completion event — verifying R2:",
+                `[VideoUpload] No completion event — verifying R2 (attempt ${attempts}/${FINALIZE_MAX_ATTEMPTS}):`,
                 gameId,
               );
-              finalizeFromR2IfPresent("r2-fallback");
-            }, FINALIZE_FALLBACK_MS);
+              const done = await finalizeFromR2IfPresent("r2-fallback");
+              if (done || finalized || settled) return;
+              if (attempts >= FINALIZE_MAX_ATTEMPTS) {
+                console.warn(
+                  "[VideoUpload] R2 fallback exhausted — leaving for launch recovery:",
+                  gameId,
+                );
+                return;
+              }
+              fallbackTimer = setTimeout(poll, FINALIZE_POLL_INTERVAL_MS);
+            };
+
+            fallbackTimer = setTimeout(poll, FINALIZE_FALLBACK_MS);
           };
 
           const { data } = await generateR2UploadUrl({
@@ -319,7 +341,17 @@ export const useVideoUpload = ({
 
           // ── Progress — throttled to every 10%; arm fallback at 100% ───────
           Upload.addListener("progress", uploadId, async (progressData) => {
-            const percentage = Math.round(progressData.progress);
+            const rawPercentage = Math.round(progressData.progress);
+            // The forked Android uploader can report >100%; clamp so the UI
+            // never shows a runaway percentage, but log the raw value once.
+            if (rawPercentage > 100 && !overshootLogged) {
+              overshootLogged = true;
+              console.warn(
+                "[VideoUpload] Upload progress exceeded 100%:",
+                progressData,
+              );
+            }
+            const percentage = Math.min(100, rawPercentage);
             if (percentage >= 100) scheduleFinalizeFallback();
             if (percentage >= lastReportedProgress + 10) {
               lastReportedProgress = percentage;
