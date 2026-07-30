@@ -293,7 +293,7 @@ const DropdownWrapper = styled(Animated.View)({
   borderBottomColor: "rgba(0, 162, 255, 0.2)",
   paddingHorizontal: 16,
   paddingBottom: 12,
-  marginTop: 25,
+  marginTop: 50,
   zIndex: 9998,
 });
 
