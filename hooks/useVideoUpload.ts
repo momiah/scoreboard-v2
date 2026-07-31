@@ -244,8 +244,13 @@ export const useVideoUpload = ({
                 platform: Platform.OS,
               });
             } catch (err) {
-              // Leave finalized=false so the fallback / launch-recovery retries.
-              console.error("[VideoUpload] Finalize failed:", err);
+              // Transient (e.g. deadline-exceeded when backgrounded). Leave
+              // finalized=false so the poll / launch-recovery retries — not a
+              // hard failure, so warn rather than error.
+              console.warn(
+                "[VideoUpload] Finalize attempt failed, will retry:",
+                err,
+              );
             } finally {
               finalizing = false;
             }
