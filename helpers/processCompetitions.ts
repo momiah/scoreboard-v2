@@ -1,7 +1,7 @@
 import {
   getPlayerRankInCompetition,
   getTeamRankInCompetition,
-} from "../shared/helpers/getRankInCompetition";
+} from "@shared/helpers/getRankInCompetition";
 import { NormalizedCompetition, COMPETITION_TYPES } from "@shared";
 
 interface ProcessedCompetition extends NormalizedCompetition {

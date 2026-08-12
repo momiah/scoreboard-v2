@@ -10,13 +10,9 @@
     "esModuleInterop": true,
     "allowJs": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@shared": ["../shared/index.ts"],
-      "@shared/*": ["../shared/*"]
-    }
+    "baseUrl": "."
   },
   "compileOnSave": true,
-  "include": ["src", "../shared"],
+  "include": ["src"],
   "exclude": ["node_modules"]
 }

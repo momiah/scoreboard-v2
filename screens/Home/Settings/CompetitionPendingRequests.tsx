@@ -13,7 +13,7 @@ import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
 import { getModalTypeForNotification } from "../../../helpers/handleNotificationAction";
 import NotificationRow from "../../../components/Notification/NotificationRow";
 import JoinRequestModal from "../../../components/Modals/JoinRequestModal";
-import { Notification } from "@/shared";
+import { Notification } from "@shared";
 
 const CompetitionPendingRequests = () => {
   const { currentUser, notifications } = useContext(UserContext);

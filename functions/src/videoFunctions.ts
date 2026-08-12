@@ -8,12 +8,12 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Game, GameVideo, GameVideoUploadPayload } from "@shared/types";
+import { Game, GameVideo, GameVideoUploadPayload } from "courtchamps-shared/types";
 import {
   COLLECTION_NAMES,
   COMPETITION_TYPES,
   notificationTypes,
-} from "@shared";
+} from "courtchamps-shared";
 import { sendNotification } from "./helpers/sendNotification";
 
 const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");

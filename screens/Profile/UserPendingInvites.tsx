@@ -11,7 +11,7 @@ import { UserContext } from "../../context/UserContext";
 import { getModalTypeForNotification } from "../../helpers/handleNotificationAction";
 import NotificationRow from "../../components/Notification/NotificationRow";
 import InviteActionModal from "../../components/Modals/InviteActionModal";
-import { Notification } from "../../shared";
+import { Notification } from "@shared";
 
 const UserPendingInvites = () => {
   const { currentUser, notifications } = useContext(UserContext);

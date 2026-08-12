@@ -15,7 +15,7 @@ module.exports = function (api) {
         "module-resolver",
         {
           alias: {
-            "@shared": "./shared",
+            "@shared": "./node_modules/courtchamps-shared/dist",
           },
         },
       ],

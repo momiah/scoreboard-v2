@@ -12,7 +12,7 @@ import { GameContext } from "../../context/GameContext";
 import { BlurView } from "expo-blur";
 import { useNavigation } from "@react-navigation/native";
 import PerformanceStats from "../performance/PerformanceStats";
-import { transformDate } from "../../shared/helpers/dateTransform";
+import { transformDate } from "@shared/helpers/dateTransform";
 import Tag from "../Tag";
 
 // Function to calculate the current streak

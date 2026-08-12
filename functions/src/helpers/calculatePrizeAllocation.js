@@ -1,5 +1,5 @@
 const admin = require("firebase-admin");
-const { notificationTypes } = require("@shared");
+const { notificationTypes } = require("courtchamps-shared");
 const { sendNotification } = require("./sendNotification");
 
 const calculatePrizeAllocation = async ({
