@@ -8,7 +8,7 @@ import {
   UserProfile,
   ccImageEndpoint,
   CollectionName,
-} from "@/shared";
+} from "@shared";
 import { db } from "../services/firebase.config";
 import { getUserById } from "./firebaseFunctions";
 

@@ -43,7 +43,7 @@ import {
   deriveScoresFromInput,
   formatScoresToInput,
 } from "../../../helpers/scoreInputHelpers";
-import { isShellGame } from "@/shared";
+import { isShellGame } from "@shared";
 
 import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";

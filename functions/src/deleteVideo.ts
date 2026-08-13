@@ -2,8 +2,8 @@ import * as functions from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { COLLECTION_NAMES, COMPETITION_TYPES } from "@shared";
-import { Game } from "@shared/types";
+import { COLLECTION_NAMES, COMPETITION_TYPES } from "courtchamps-shared";
+import { Game } from "courtchamps-shared/types";
 
 const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");
 const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");

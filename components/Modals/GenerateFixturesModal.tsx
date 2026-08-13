@@ -32,7 +32,7 @@ import {
 
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { generateKnockoutBrackets } from "../../helpers/Tournament/knockout";
-import { generateInitialTeamStats } from "../../helpers/generateInitialTeamStats";
+import { generateInitialTeamStats } from "@shared/helpers";
 import { UserContext } from "@/context/UserContext";
 
 const { width: screenWidth } = Dimensions.get("window");

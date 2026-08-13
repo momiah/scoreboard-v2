@@ -4,7 +4,7 @@ import moment from "moment-timezone";
 
 import { calculatePrizeAllocation } from "./helpers/calculatePrizeAllocation";
 import { writeClubCompetitionWon } from "./helpers/clubFeed";
-import { League, Game } from "@shared/types";
+import { League, Game } from "courtchamps-shared/types";
 
 interface LeagueParticipant {
   userId?: string;

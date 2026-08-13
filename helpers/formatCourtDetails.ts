@@ -3,7 +3,7 @@ import { CourtListItem } from "../components/Modals/SearchLocationModal";
 
 export const formatCourtDetailsForList = (courts: Court[]): CourtListItem[] =>
   courts.map((court) => ({
-    key: court.id as string,
+    key: court.courtId,
     value: court.courtName.trim(),
     description: `${court.location?.city}, ${court.location?.country}`,
     countryCode: court.location?.countryCode,
