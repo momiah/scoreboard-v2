@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 
-const { sendNotification } = require("./helpers/sendNotification");
+import { sendNotification } from "./helpers/sendNotification";
 
 export const broadcastNotification = onCall(async (request) => {
   const { payload, testUserId } = request.data;
