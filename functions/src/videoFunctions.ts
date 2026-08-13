@@ -42,7 +42,9 @@ const triggerTranscode = async (payload: {
   rawKey: string;
 }) => {
   try {
-    const { GoogleAuth } = require("google-auth-library");
+    // Lazy-loaded so google-auth-library isn't pulled in at cold start for
+    // functions in this file that never trigger a transcode.
+    const { GoogleAuth } = await import("google-auth-library");
     const auth = new GoogleAuth();
     const client = await auth.getIdTokenClient(TRANSCODE_FUNCTION_URL);
     await client.request({

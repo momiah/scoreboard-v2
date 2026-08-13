@@ -7,8 +7,13 @@ import moment from "moment-timezone";
 const TIMEZONE = "Europe/London";
 const AUTO_APPROVE_AFTER_HOURS = 24;
 
-export const toMomentTimezone = (value: any) => {
-  if (value?.toDate) return moment.tz(value.toDate(), TIMEZONE);
+const isTimestampLike = (v: unknown): v is { toDate: () => Date } =>
+  typeof (v as { toDate?: unknown })?.toDate === "function";
+
+export const toMomentTimezone = (
+  value: admin.firestore.Timestamp | Date | string,
+) => {
+  if (isTimestampLike(value)) return moment.tz(value.toDate(), TIMEZONE);
   return moment.tz(value, TIMEZONE);
 };
 
