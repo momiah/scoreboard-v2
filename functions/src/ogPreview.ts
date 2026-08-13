@@ -27,10 +27,10 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
       const team1 = data?.teams?.team1;
       const team2 = data?.teams?.team2;
 
-      const formatTeam = (team: any) => {
+      const formatTeam = (team: Record<string, { firstName: string; lastName: string } | undefined>) => {
         const players = [team?.player1, team?.player2]
           .filter(Boolean)
-          .map((p: any) => `${p.firstName} ${p.lastName[0]}`)
+          .map((p) => `${p!.firstName} ${p!.lastName[0]}`)
           .join(" · ");
         return players;
       };

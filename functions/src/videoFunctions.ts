@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import * as admin from "firebase-admin";
+import { GoogleAuth } from "google-auth-library";
 import {
   S3Client,
   PutObjectCommand,
@@ -42,7 +43,6 @@ const triggerTranscode = async (payload: {
   rawKey: string;
 }) => {
   try {
-    const { GoogleAuth } = require("google-auth-library");
     const auth = new GoogleAuth();
     const client = await auth.getIdTokenClient(TRANSCODE_FUNCTION_URL);
     await client.request({

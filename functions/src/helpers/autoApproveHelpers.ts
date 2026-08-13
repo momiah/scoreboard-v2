@@ -7,7 +7,7 @@ import moment from "moment-timezone";
 const TIMEZONE = "Europe/London";
 const AUTO_APPROVE_AFTER_HOURS = 24;
 
-export const toMomentTimezone = (value: any) => {
+export const toMomentTimezone = (value: admin.firestore.Timestamp | Date | string) => {
   if (value?.toDate) return moment.tz(value.toDate(), TIMEZONE);
   return moment.tz(value, TIMEZONE);
 };

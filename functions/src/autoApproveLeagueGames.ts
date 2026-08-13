@@ -30,7 +30,7 @@ export const autoApproveLeagueGames = onSchedule(
         .where("prizesDistributed", "==", false)
         .get();
 
-      const leagues = leaguesSnapshot.docs.map((doc: any) => ({
+      const leagues = leaguesSnapshot.docs.map((doc) => ({
         leagueId: doc.id,
         leagueRef: doc.ref,
         leagueData: doc.data() as League,
