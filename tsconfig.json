@@ -5,8 +5,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@shared": ["./shared/index.ts"],
-      "@shared/*": ["./shared/*"]
+      "@shared": ["./node_modules/courtchamps-shared/dist/index.d.ts"],
+      "@shared/*": ["./node_modules/courtchamps-shared/dist/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "screens/Home/Home.js"]

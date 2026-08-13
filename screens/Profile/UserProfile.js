@@ -35,7 +35,7 @@ import Icon from "react-native-ico-flags";
 import { RankInformation } from "../../components/Modals/RankInformation";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import ProfileVideos from "../../components/Profiles/ProfileVideos";
-import { transformDate } from "../../shared/helpers/dateTransform";
+import { transformDate } from "@shared/helpers/dateTransform";
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedMedalSize = screenWidth <= 400 ? 70 : 80;

@@ -6,15 +6,15 @@ import {
   calculateTournamentPrizePool,
   getKnockoutTopFour,
   isKnockoutComplete,
-} from "@shared/helpers";
+} from "courtchamps-shared/helpers";
 import {
   sortPlayersByPlacement,
   sortTeamsByPlacement,
-} from "@shared/helpers/getRankInCompetition";
-import { ScoreboardProfile, Tournament } from "@shared/types";
+} from "courtchamps-shared/helpers";
+import { ScoreboardProfile, Tournament } from "courtchamps-shared/types";
 import { sendNotification } from "./helpers/sendNotification";
 import { writeClubCompetitionWon } from "./helpers/clubFeed";
-import { notificationTypes } from "@shared";
+import { notificationTypes } from "courtchamps-shared";
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
 const PLACEMENT_KEYS = ["first", "second", "third", "fourth"] as const;

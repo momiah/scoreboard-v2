@@ -9,7 +9,7 @@ import {
 } from "@react-navigation/native";
 import { LeagueContext } from "../../../context/LeagueContext";
 import { getCompetitionTypeAndId } from "@/helpers/getCompetitionConfig";
-import { CollectionName } from "@/shared";
+import { CollectionName } from "@shared";
 
 type PendingInvite = {
   userId: string;

@@ -13,7 +13,7 @@ import { notificationTypes } from "@shared";
 import { getModalTypeForNotification } from "../../../helpers/handleNotificationAction";
 import NotificationRow from "../../../components/Notification/NotificationRow";
 import JoinRequestModal from "../../../components/Modals/JoinRequestModal";
-import { Notification } from "@/shared";
+import { Notification } from "@shared";
 
 const ClubPendingRequests = () => {
   const { currentUser, notifications } = useContext(UserContext);

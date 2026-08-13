@@ -39,7 +39,7 @@ import RankSuffix from "@/components/RankSuffix";
 import {
   getPlayerRankInCompetition,
   getTeamRankInCompetition,
-} from "@/shared/helpers/getRankInCompetition";
+} from "@shared/helpers/getRankInCompetition";
 import { getTime } from "../../helpers/dateTimeUtils";
 import AddCompetitionModal from "@/components/Modals/AddCompetitionModal";
 import CompetitionListItemSkeleton from "../../components/Skeletons/CompetitionListItemSkeleton";

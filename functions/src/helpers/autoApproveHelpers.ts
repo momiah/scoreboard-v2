@@ -1,6 +1,6 @@
 // functions/helpers/autoApproveHelpers.ts
-import { Game } from "@shared/types";
-import { notificationTypes } from "@shared";
+import { Game } from "courtchamps-shared/types";
+import { notificationTypes } from "courtchamps-shared";
 import * as admin from "firebase-admin";
 import moment from "moment-timezone";
 
