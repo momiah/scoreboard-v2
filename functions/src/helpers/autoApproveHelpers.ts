@@ -1,14 +1,19 @@
 // functions/helpers/autoApproveHelpers.ts
-import { Game } from "@shared/types";
-import { notificationTypes } from "@shared";
+import { Game } from "courtchamps-shared/types";
+import { notificationTypes } from "courtchamps-shared";
 import * as admin from "firebase-admin";
 import moment from "moment-timezone";
 
 const TIMEZONE = "Europe/London";
 const AUTO_APPROVE_AFTER_HOURS = 24;
 
-export const toMomentTimezone = (value: any) => {
-  if (value?.toDate) return moment.tz(value.toDate(), TIMEZONE);
+const isTimestampLike = (v: unknown): v is { toDate: () => Date } =>
+  typeof (v as { toDate?: unknown })?.toDate === "function";
+
+export const toMomentTimezone = (
+  value: admin.firestore.Timestamp | Date | string,
+) => {
+  if (isTimestampLike(value)) return moment.tz(value.toDate(), TIMEZONE);
   return moment.tz(value, TIMEZONE);
 };
 

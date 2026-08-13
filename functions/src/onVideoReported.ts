@@ -1,7 +1,7 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { getFirestore } from "firebase-admin/firestore";
 import { sendNotification } from "./helpers/sendNotification";
-import { notificationTypes } from "@shared";
+import { notificationTypes } from "courtchamps-shared";
 
 const REPORT_THRESHOLD = 4;
 

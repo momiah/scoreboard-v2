@@ -4,7 +4,7 @@ import {
   Game,
   ScoreboardProfile,
   UserProfile,
-} from "@shared/types";
+} from "courtchamps-shared/types";
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
@@ -12,7 +12,7 @@ import * as admin from "firebase-admin";
 import {
   calculatePlayerPerformance,
   calculateTeamPerformance,
-} from "@shared/helpers";
+} from "courtchamps-shared/helpers";
 import { getUserById } from "./helpers/firebaseHelpers";
 import {
   getGamePlayerIds,
@@ -30,7 +30,7 @@ export const autoApproveLeagueGames = onSchedule(
         .where("prizesDistributed", "==", false)
         .get();
 
-      const leagues = leaguesSnapshot.docs.map((doc: any) => ({
+      const leagues = leaguesSnapshot.docs.map((doc) => ({
         leagueId: doc.id,
         leagueRef: doc.ref,
         leagueData: doc.data() as League,

@@ -8,12 +8,12 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Game, GameVideo, GameVideoUploadPayload } from "@shared/types";
+import { Game, GameVideo, GameVideoUploadPayload } from "courtchamps-shared/types";
 import {
   COLLECTION_NAMES,
   COMPETITION_TYPES,
   notificationTypes,
-} from "@shared";
+} from "courtchamps-shared";
 import { sendNotification } from "./helpers/sendNotification";
 
 const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");
@@ -42,7 +42,9 @@ const triggerTranscode = async (payload: {
   rawKey: string;
 }) => {
   try {
-    const { GoogleAuth } = require("google-auth-library");
+    // Lazy-loaded so google-auth-library isn't pulled in at cold start for
+    // functions in this file that never trigger a transcode.
+    const { GoogleAuth } = await import("google-auth-library");
     const auth = new GoogleAuth();
     const client = await auth.getIdTokenClient(TRANSCODE_FUNCTION_URL);
     await client.request({

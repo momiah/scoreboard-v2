@@ -629,9 +629,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const getCourts = async () => {
     const snapshot = await getDocs(collection(db, "courts"));
     return snapshot.docs.map((doc) => ({
-      id: doc.id,
+      courtId: doc.id,
       ...doc.data(),
-    })) as Court[];
+    })) as unknown as Court[];
   };
 
   const addCourt = async (courtData: Court) => {

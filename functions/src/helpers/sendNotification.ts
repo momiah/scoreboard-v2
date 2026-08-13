@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { Notification } from "@shared";
+import { Notification } from "courtchamps-shared";
 
 export const sendNotification = async (
   notification: Notification,

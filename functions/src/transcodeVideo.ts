@@ -13,7 +13,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { defineSecret } from "firebase-functions/params";
-import { COLLECTION_NAMES } from "@shared";
+import { COLLECTION_NAMES } from "courtchamps-shared";
 
 const R2_ACCOUNT_ID = defineSecret("R2_ACCOUNT_ID");
 const R2_ACCESS_KEY_ID = defineSecret("R2_ACCESS_KEY_ID");
