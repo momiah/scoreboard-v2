@@ -11,6 +11,8 @@ import Clubs from "../screens/Home/Clubs/Clubs";
 import League from "../screens/Home/Leagues/League";
 import Club from "../screens/Home/Clubs/Club";
 import Tournament from "../screens/Home/Tournaments/Tournament";
+import Ladder from "../screens/Home/Ladders/Ladder";
+import LadderRules from "../screens/Home/Ladders/LadderRules";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
@@ -73,6 +75,8 @@ const HomeStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="League" component={League} />
+      <Stack.Screen name="Ladder" component={Ladder} />
+      <Stack.Screen name="LadderRules" component={LadderRules} />
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
       <Stack.Screen

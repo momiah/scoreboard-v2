@@ -6,6 +6,7 @@ import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
 import { LeagueProvider } from "./context/LeagueContext";
+import LadderProvider from "./context/LadderContext";
 import { NavigationContainer, CommonActions } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -173,9 +174,11 @@ export default function App() {
       <PopupProvider>
         <UserProvider>
           <LeagueProvider>
-            <GameProvider>
-              <AppContent />
-            </GameProvider>
+            <LadderProvider>
+              <GameProvider>
+                <AppContent />
+              </GameProvider>
+            </LadderProvider>
           </LeagueProvider>
         </UserProvider>
       </PopupProvider>

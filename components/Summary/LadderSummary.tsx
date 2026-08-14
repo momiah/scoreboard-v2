@@ -1,0 +1,322 @@
+import React, { useMemo, useState } from "react";
+import {
+  Dimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  View,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
+import styled from "styled-components/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
+import type { Ladder } from "@shared/types";
+import { calculateLadderPrizePool } from "@shared/helpers";
+
+import JoinLadderModal from "../Modals/JoinLadderModal";
+import {
+  getLadderPhases,
+  formatPhaseRange,
+  timeLeftToPlayoffs,
+  type LadderPhase,
+} from "../../helpers/ladderPhases";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  GBP: "£",
+  USD: "$",
+  EUR: "€",
+};
+
+const formatCurrency = (amount: number, currencyType: string): string => {
+  const symbol = CURRENCY_SYMBOLS[currencyType] ?? "";
+  const value = Number.isInteger(amount) ? amount : amount.toFixed(2);
+  return symbol ? `${symbol}${value}` : `${value} ${currencyType}`;
+};
+
+interface LadderSummaryProps {
+  ladder: Ladder;
+}
+
+const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const [joinModalVisible, setJoinModalVisible] = useState(false);
+  const [expandedPhase, setExpandedPhase] = useState<LadderPhase["key"] | null>(
+    null,
+  );
+
+  const isPaid = ladder.entryFee > 0;
+
+  const prizePool = useMemo(
+    () =>
+      calculateLadderPrizePool({
+        entryFee: ladder.entryFee,
+        participantCount: ladder.participantCount,
+        // No ladder games exist yet in Phase 1; the free-ladder pot grows
+        // once games are recorded.
+        numberOfGamesPlayed: 0,
+        totalGamePointsWon: 0,
+      }),
+    [ladder.entryFee, ladder.participantCount],
+  );
+
+  const phases = useMemo(() => getLadderPhases(ladder), [ladder]);
+  const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
+
+  const togglePhase = (key: LadderPhase["key"]) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedPhase((current) => (current === key ? null : key));
+  };
+
+  return (
+    <Container testID="ladder-summary">
+      {/* Total Prize Pot */}
+      <PrizePotCard>
+        <SectionTitle>Total Prize Pot</SectionTitle>
+        <PrizePotValue testID="ladder-prize-pot">
+          {formatCurrency(prizePool, ladder.currencyType)}
+        </PrizePotValue>
+        <PrizePotCaption>
+          {isPaid
+            ? "Entry fees pooled, less the platform fee"
+            : "Grows as players compete"}
+        </PrizePotCaption>
+      </PrizePotCard>
+
+      {/* Players / Entry fee / Playoffs countdown */}
+      <StatsRow testID="ladder-stats-row">
+        <StatBlock>
+          <Ionicons name="people-outline" size={18} color="#00A2FF" />
+          <StatValue testID="ladder-players">
+            {ladder.participantCount} / {ladder.maxPlayers}
+          </StatValue>
+          <StatLabel>Players</StatLabel>
+        </StatBlock>
+        <StatDivider />
+        <StatBlock>
+          <Ionicons name="cash-outline" size={18} color="#00A2FF" />
+          <StatValue testID="ladder-entry-fee">
+            {isPaid ? formatCurrency(ladder.entryFee, ladder.currencyType) : "Free"}
+          </StatValue>
+          <StatLabel>Entry Fee</StatLabel>
+        </StatBlock>
+        <StatDivider />
+        <StatBlock>
+          <Ionicons name="hourglass-outline" size={18} color="#00A2FF" />
+          <StatValue testID="ladder-playoff-countdown">
+            {playoffCountdown}
+          </StatValue>
+          <StatLabel>To Playoffs</StatLabel>
+        </StatBlock>
+      </StatsRow>
+
+      {/* Rules */}
+      <RulesButton
+        testID="ladder-rules-button"
+        activeOpacity={0.8}
+        onPress={() =>
+          navigation.navigate("LadderRules", { ladderId: ladder.ladderId })
+        }
+      >
+        <Ionicons name="book-outline" size={18} color="#ffffff" />
+        <RulesButtonText>Rules</RulesButtonText>
+        <Ionicons name="chevron-forward" size={18} color="#ffffff" />
+      </RulesButton>
+
+      {/* Phase Timeline (collapsible accordion) */}
+      <Section>
+        <SectionTitle>Phase Timeline</SectionTitle>
+        {phases.map((phase) => {
+          const expanded = expandedPhase === phase.key;
+          return (
+            <PhaseItem key={phase.key} testID={`ladder-phase-${phase.key}`}>
+              <PhaseHeader
+                activeOpacity={0.8}
+                onPress={() => togglePhase(phase.key)}
+                testID={`ladder-phase-header-${phase.key}`}
+              >
+                <PhaseLabel>{phase.label}</PhaseLabel>
+                <Ionicons
+                  name={expanded ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color="#9fb8c8"
+                />
+              </PhaseHeader>
+              {expanded && (
+                <PhaseBody testID={`ladder-phase-body-${phase.key}`}>
+                  <PhaseRange>{formatPhaseRange(phase)}</PhaseRange>
+                </PhaseBody>
+              )}
+            </PhaseItem>
+          );
+        })}
+      </Section>
+
+      {/* Join Ladder */}
+      <JoinButton
+        testID="ladder-join-button"
+        activeOpacity={0.85}
+        onPress={() => setJoinModalVisible(true)}
+      >
+        <JoinButtonText>Join Ladder</JoinButtonText>
+      </JoinButton>
+
+      {joinModalVisible && (
+        <JoinLadderModal
+          modalVisible={joinModalVisible}
+          setModalVisible={setJoinModalVisible}
+          ladder={ladder}
+        />
+      )}
+
+      <View style={{ height: 40 }} />
+    </Container>
+  );
+};
+
+export default LadderSummary;
+
+const { width: screenWidth } = Dimensions.get("window");
+
+const Container = styled.ScrollView({
+  padding: 20,
+});
+
+const Section = styled.View({
+  marginTop: 20,
+  gap: 10,
+});
+
+const SectionTitle = styled.Text({
+  fontSize: 16,
+  fontWeight: "bold",
+  color: "#ffffff",
+});
+
+const PrizePotCard = styled.View({
+  padding: 20,
+  borderRadius: 14,
+  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+  alignItems: "center",
+  gap: 6,
+});
+
+const PrizePotValue = styled.Text({
+  fontSize: screenWidth <= 405 ? 30 : 34,
+  fontWeight: "bold",
+  color: "#00A2FF",
+});
+
+const PrizePotCaption = styled.Text({
+  fontSize: 12,
+  color: "#9fb8c8",
+});
+
+const StatsRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginTop: 20,
+  padding: 16,
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.04)",
+  borderWidth: 1,
+  borderColor: "#192336",
+});
+
+const StatBlock = styled.View({
+  flex: 1,
+  alignItems: "center",
+  gap: 4,
+});
+
+const StatDivider = styled.View({
+  width: 1,
+  height: 40,
+  backgroundColor: "#192336",
+});
+
+const StatValue = styled.Text({
+  fontSize: screenWidth <= 405 ? 14 : 16,
+  fontWeight: "bold",
+  color: "#ffffff",
+});
+
+const StatLabel = styled.Text({
+  fontSize: 11,
+  color: "#9fb8c8",
+});
+
+const RulesButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  marginTop: 20,
+  paddingVertical: 14,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "#ffffff",
+});
+
+const RulesButtonText = styled.Text({
+  flex: 1,
+  textAlign: "center",
+  color: "#ffffff",
+  fontSize: 15,
+  fontWeight: "600",
+});
+
+const PhaseItem = styled.View({
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.04)",
+  borderWidth: 1,
+  borderColor: "#192336",
+  overflow: "hidden",
+});
+
+const PhaseHeader = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: 14,
+});
+
+const PhaseLabel = styled.Text({
+  color: "#ffffff",
+  fontSize: 15,
+  fontWeight: "600",
+});
+
+const PhaseBody = styled.View({
+  paddingHorizontal: 14,
+  paddingBottom: 14,
+});
+
+const PhaseRange = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+});
+
+const JoinButton = styled.TouchableOpacity({
+  marginTop: 30,
+  paddingVertical: 16,
+  borderRadius: 12,
+  backgroundColor: "#00A2FF",
+  alignItems: "center",
+});
+
+const JoinButtonText = styled.Text({
+  color: "#ffffff",
+  fontSize: 16,
+  fontWeight: "bold",
+});

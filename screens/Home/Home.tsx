@@ -41,6 +41,8 @@ import AddClubModal from "../../components/Modals/AddClubModal";
 import HomeLeagueSection from "../../components/Home/HomeLeagueSection";
 import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
 import HomeClubsSection from "../../components/Home/HomeClubsSection";
+import HomeLadderSection from "../../components/Home/HomeLadderSection";
+import { LadderContext } from "../../context/LadderContext";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
@@ -63,6 +65,7 @@ const Home = () => {
     fetchUpcomingClubs,
   } = useContext(LeagueContext);
   const { getTopUsers, currentUser } = useContext(UserContext);
+  const { fetchUpcomingLadders } = useContext(LadderContext);
 
   // ─── Home State ─────────────────────────────────────────────────────────────
   const [sortedUsers, setSortedUsers] = useState([]);
@@ -180,6 +183,7 @@ const Home = () => {
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
     fetchUpcomingClubs();
+    fetchUpcomingLadders();
     fetchVideos();
   };
 
@@ -238,6 +242,8 @@ const Home = () => {
           loading={loading}
           onCreatePress={() => setAddLeagueModalVisible(true)}
         />
+
+        <HomeLadderSection loading={loading} />
 
         <SubHeader
           title="Top Players"
