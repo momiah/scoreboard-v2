@@ -1,8 +1,6 @@
 import moment, { Moment } from "moment";
 import type { Ladder } from "@shared/types";
 
-// Ladder date fields arrive from Firestore as Timestamps, but may also be
-// serialized ({ seconds }) or already JS Dates. Coerce any of those shapes.
 type TimestampLike =
   | Date
   | string
@@ -32,7 +30,6 @@ export interface LadderPhase {
   end: Moment | null;
 }
 
-// Chronological phases built from the ladder's date fields.
 export const getLadderPhases = (ladder: Ladder): LadderPhase[] =>
   [
     {
@@ -62,7 +59,6 @@ export const formatPhaseRange = (phase: LadderPhase): string => {
   return `${start} — ${end}`;
 };
 
-// Human "time left to playoffs" countdown from now to playoffStartsAt.
 export const timeLeftToPlayoffs = (
   ladder: Ladder,
   now: Moment = moment(),

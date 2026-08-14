@@ -73,7 +73,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   return (
     <Container testID="ladder-summary">
-      {/* Total Prize Pot — paid ladders award cash + XP, free ladders XP only */}
       <PrizePotCard>
         <SectionTitle>Total Prize Pot</SectionTitle>
         <PotsRow>
@@ -97,7 +96,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         </PrizePotCaption>
       </PrizePotCard>
 
-      {/* Players / Entry fee / Playoffs countdown */}
       <StatsRow testID="ladder-stats-row">
         <StatBlock>
           <Ionicons name="people-outline" size={18} color="#00A2FF" />
@@ -124,7 +122,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         </StatBlock>
       </StatsRow>
 
-      {/* Rules */}
       <RulesButton
         testID="ladder-rules-button"
         activeOpacity={0.8}
@@ -137,7 +134,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         <Ionicons name="chevron-forward" size={18} color="#ffffff" />
       </RulesButton>
 
-      {/* Phase Timeline (collapsible accordion) */}
       <Section>
         <SectionTitle>Phase Timeline</SectionTitle>
         {phases.map((phase) => {
@@ -166,7 +162,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         })}
       </Section>
 
-      {/* Join Ladder */}
       <JoinButton
         testID="ladder-join-button"
         activeOpacity={0.85}

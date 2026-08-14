@@ -23,11 +23,6 @@ interface JoinLadderModalProps {
   ladder: Ladder;
 }
 
-/**
- * Phase 1 stub. Shows what joining will involve (entry fee for paid ladders,
- * team selection for Doubles) but does not yet wire the real payment or
- * team-creation flows.
- */
 const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   modalVisible,
   setModalVisible,
@@ -73,16 +68,12 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             </InfoRow>
           )}
 
-          {/* TODO(phase-later): render a real team selector for Doubles ladders,
-              sourced from the current user's existing teammates / a picker. */}
           {isDoubles && (
             <TeamSelectorPlaceholder testID="join-ladder-team-selector">
               <PlaceholderText>Team selector coming soon</PlaceholderText>
             </TeamSelectorPlaceholder>
           )}
 
-          {/* TODO(phase-later): wire the real payment flow for paid ladders,
-              then write the participant/team into ladders/{id} on success. */}
           <ConfirmButton
             testID="join-ladder-confirm"
             activeOpacity={0.85}
