@@ -59,10 +59,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       calculateLadderPrizePool({
         entryFee: ladder.entryFee,
         participantCount: ladder.participantCount,
-        // No ladder games exist yet in Phase 1; the free-ladder pot grows
-        // once games are recorded.
-        numberOfGamesPlayed: 0,
-        totalGamePointsWon: 0,
       }),
     [ladder.entryFee, ladder.participantCount],
   );
@@ -77,16 +73,27 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   return (
     <Container testID="ladder-summary">
-      {/* Total Prize Pot */}
+      {/* Total Prize Pot — paid ladders award cash + XP, free ladders XP only */}
       <PrizePotCard>
         <SectionTitle>Total Prize Pot</SectionTitle>
-        <PrizePotValue testID="ladder-prize-pot">
-          {formatCurrency(prizePool, ladder.currencyType)}
-        </PrizePotValue>
+        <PotsRow>
+          {isPaid && (
+            <PotColumn testID="ladder-cash-pot">
+              <PrizePotValue>
+                {formatCurrency(prizePool.cash, ladder.currencyType)}
+              </PrizePotValue>
+              <PrizePotLabel>Cash</PrizePotLabel>
+            </PotColumn>
+          )}
+          <PotColumn testID="ladder-xp-pot">
+            <PrizePotValue>{prizePool.xp} XP</PrizePotValue>
+            <PrizePotLabel>XP</PrizePotLabel>
+          </PotColumn>
+        </PotsRow>
         <PrizePotCaption>
           {isPaid
-            ? "Entry fees pooled, less the platform fee"
-            : "Grows as players compete"}
+            ? "Cash from pooled entry fees (less platform fee), plus XP"
+            : "Free ladder — XP prizes only, grows as players compete"}
         </PrizePotCaption>
       </PrizePotCard>
 
@@ -210,15 +217,35 @@ const PrizePotCard = styled.View({
   gap: 6,
 });
 
+const PotsRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 28,
+});
+
+const PotColumn = styled.View({
+  alignItems: "center",
+  gap: 2,
+});
+
 const PrizePotValue = styled.Text({
-  fontSize: screenWidth <= 405 ? 30 : 34,
+  fontSize: screenWidth <= 405 ? 26 : 30,
   fontWeight: "bold",
   color: "#00A2FF",
+});
+
+const PrizePotLabel = styled.Text({
+  fontSize: 12,
+  fontWeight: "600",
+  color: "#9fb8c8",
+  textTransform: "uppercase",
 });
 
 const PrizePotCaption = styled.Text({
   fontSize: 12,
   color: "#9fb8c8",
+  textAlign: "center",
 });
 
 const StatsRow = styled.View({
