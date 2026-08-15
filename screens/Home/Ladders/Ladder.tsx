@@ -14,33 +14,30 @@ import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { LADDER_TYPE } from "@shared/types";
-import type { Ladder as LadderType } from "@shared/types";
+// import type { Ladder as LadderType } from "@shared/types";
 
-import Tag from "../../../components/Tag";
+// import Tag from "../../../components/Tag";
 import LadderSummary from "../../../components/Summary/LadderSummary";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
 
-type LadderTab =
-  | "Summary"
-  | "Matchmaking"
-  | "Performance"
-  | "Playoff Bracket";
+type LadderTab = "Summary" | "Matchmaking" | "Performance" | "Playoff Bracket";
 
 type LadderRouteParams = { ladderId: string; tab?: LadderTab };
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  registrationOpen: { label: "Registration Open", color: "#FAB234" },
-  registrationClosed: { label: "Registration Closed", color: "#FF9800" },
-  playoffs: { label: "Playoffs", color: "#286EFA" },
-  completed: { label: "Completed", color: "#1A6B1A" },
-  cancelled: { label: "Cancelled", color: "#FF4757" },
-};
+// const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+//   registrationOpen: { label: "Registration Open", color: "#FAB234" },
+//   registrationClosed: { label: "Registration Closed", color: "#FF9800" },
+//   playoffs: { label: "Playoffs", color: "#286EFA" },
+//   completed: { label: "Completed", color: "#1A6B1A" },
+//   cancelled: { label: "Cancelled", color: "#FF4757" },
+// };
 
 const Ladder: React.FC = () => {
-  const route = useRoute<RouteProp<Record<string, LadderRouteParams>, string>>();
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const route =
+    useRoute<RouteProp<Record<string, LadderRouteParams>, string>>();
+  // const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { ladderId, tab } = route.params;
   const { fetchLadderById, ladderById } = useContext(LadderContext);
 
@@ -106,7 +103,7 @@ const Ladder: React.FC = () => {
     );
   }
 
-  const status = ladderById ? STATUS_LABELS[ladderById.status] : undefined;
+  // const status = ladderById ? STATUS_LABELS[ladderById.status] : undefined;
 
   return (
     <Screen>
@@ -120,11 +117,11 @@ const Ladder: React.FC = () => {
                 ladderById.image ? { uri: ladderById.image } : ccDefaultImage
               }
             >
-              <GradientOverlay
+              {/* <GradientOverlay
                 colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
                 locations={[0.1, 1]}
-              />
-              <DetailsContainer>
+              /> */}
+              {/* <DetailsContainer>
                 <NameBadge>
                   <LadderName>{ladderById.name}</LadderName>
                 </NameBadge>
@@ -136,7 +133,7 @@ const Ladder: React.FC = () => {
                   ) : null}
                 </TagRow>
                 <RegionText>{ladderById.region}</RegionText>
-              </DetailsContainer>
+              </DetailsContainer> */}
             </LadderImage>
           </Overview>
 

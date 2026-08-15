@@ -12,10 +12,14 @@ import medalSilver from "./medal-silver.png";
 import medalBronze from "./medal-bronze.png";
 import medalRuby from "./medal-ruby.png";
 import medalOutline from "./medal-outline.png";
-import medalGoldLow from "./medal-gold-low-q.png";
-import medalSilverLow from "./medal-silver-low-q.png";
-import medalBronzeLow from "./medal-bronze-low-q.png";
-import medalRubyLow from "./medal-ruby-low-q.png";
+import ladderGold from "./gold-ladder.png";
+import ladderSilver from "./silver-ladder.png";
+import ladderBronze from "./bronze-ladder.png";
+import ladderRuby from "./ruby-ladder.png";
+// import medalGoldLow from "./medal-gold-low-q.png";
+// import medalSilverLow from "./medal-silver-low-q.png";
+// import medalBronzeLow from "./medal-bronze-low-q.png";
+// import medalRubyLow from "./medal-ruby-low-q.png";
 
 // export const medals = {
 //   gold: { high: medalGold, low: medalGoldLow },
@@ -33,6 +37,7 @@ export const medals = [
 ]; // Change to an array
 import ccDefaultImage from "./cc-default-bg-image.jpg";
 
-export const trophies = [trophy1, trophy2, trophy3, trophy4, trophyOutline]; // Change to an array
+export const trophies = [trophy1, trophy2, trophy3, trophy4, trophyOutline];
+export const ladders = [ladderGold, ladderSilver, ladderBronze, ladderRuby];
 
 export { court1, court2, court3, court4, ccDefaultImage };
