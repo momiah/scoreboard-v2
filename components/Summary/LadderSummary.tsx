@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   LayoutAnimation,
@@ -11,10 +11,19 @@ import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import type { Ladder } from "@shared/types";
+import { LADDER_STATUS } from "@shared/types";
+import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
+import { sortPlayersByPlacement } from "@shared/helpers/getRankInCompetition";
 
 import JoinLadderModal from "../Modals/JoinLadderModal";
+import PrizeDistribution from "./PrizeDistribution";
+import PrizeContenders from "./PrizeContenders";
+import { ladders } from "../../mockImages/index";
+import { UserContext } from "../../context/UserContext";
+import { enrichPlayers } from "../../helpers/enrichPlayers";
+import { formatCurrency } from "../../helpers/formatCurrency";
+import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
 import {
   getLadderPhases,
   formatPhaseRange,
@@ -29,17 +38,14 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  GBP: "£",
-  USD: "$",
-  EUR: "€",
-};
+const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
+  userId: `placeholder-${index}`,
+  username: "",
+  numberOfWins: 0,
+})) as unknown as ScoreboardProfile[];
 
-const formatCurrency = (amount: number, currencyType: string): string => {
-  const symbol = CURRENCY_SYMBOLS[currencyType] ?? "";
-  const value = Number.isInteger(amount) ? amount : amount.toFixed(2);
-  return symbol ? `${symbol}${value}` : `${value} ${currencyType}`;
-};
+const LADDER_TOOLTIP =
+  "Court Points (CP) — and cash on paid ladders — are shared across the top finishers.";
 
 interface LadderSummaryProps {
   ladder: Ladder;
@@ -47,12 +53,19 @@ interface LadderSummaryProps {
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { getUserById } = useContext(UserContext);
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [expandedPhase, setExpandedPhase] = useState<LadderPhase["key"] | null>(
     null,
   );
+  const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   const isPaid = ladder.entryFee > 0;
+  const participants = useMemo(
+    () => ladder.ladderParticipants ?? [],
+    [ladder.ladderParticipants],
+  );
 
   const prizePool = useMemo(
     () =>
@@ -63,8 +76,42 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     [ladder.entryFee, ladder.participantCount],
   );
 
+  const hasPrizesDistributed =
+    ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
+
   const phases = useMemo(() => getLadderPhases(ladder), [ladder]);
   const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
+
+  useEffect(() => {
+    let active = true;
+    const loadContenders = async () => {
+      setIsDataLoading(true);
+      const withWins = participants.filter((p) => (p.numberOfWins ?? 0) > 0);
+      if (withWins.length === 0) {
+        if (active) setTopContenders([]);
+      } else {
+        try {
+          const enriched = (await enrichPlayers(
+            getUserById,
+            withWins,
+          )) as ScoreboardProfile[];
+          if (active) setTopContenders(sortPlayersByPlacement(enriched).slice(0, 4));
+        } catch (error) {
+          console.error("Error enriching ladder players:", error);
+          if (active) setTopContenders([]);
+        }
+      }
+      if (active) setIsDataLoading(false);
+    };
+    loadContenders();
+    return () => {
+      active = false;
+    };
+  }, [participants, getUserById]);
+
+  const renderContenders = isDataLoading
+    ? PLACEHOLDER_CONTENDERS
+    : topContenders;
 
   const togglePhase = (key: LadderPhase["key"]) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -73,28 +120,64 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   return (
     <Container testID="ladder-summary">
-      <PrizePotCard>
-        <SectionTitle>Total Prize Pot</SectionTitle>
-        <PotsRow>
-          {isPaid && (
-            <PotColumn testID="ladder-cash-pot">
-              <PrizePotValue>
-                {formatCurrency(prizePool.cash, ladder.currencyType)}
-              </PrizePotValue>
-              <PrizePotLabel>Cash</PrizePotLabel>
-            </PotColumn>
-          )}
-          <PotColumn testID="ladder-xp-pot">
-            <PrizePotValue>{prizePool.xp} XP</PrizePotValue>
-            <PrizePotLabel>XP</PrizePotLabel>
-          </PotColumn>
-        </PotsRow>
-        <PrizePotCaption>
-          {isPaid
-            ? "Cash from pooled entry fees (less platform fee), plus XP"
-            : "Free ladder — XP prizes only, grows as players compete"}
-        </PrizePotCaption>
-      </PrizePotCard>
+      {isPaid && (
+        <PrizePotCard>
+          <SectionTitle>Total Prize Pot</SectionTitle>
+          <PrizePotValue testID="ladder-cash-pot">
+            {formatCurrency(prizePool.cash, ladder.currencyType)}
+          </PrizePotValue>
+        </PrizePotCard>
+      )}
+
+      <PrizeDistribution
+        prizePool={prizePool.xp}
+        cashPool={isPaid ? prizePool.cash : undefined}
+        currencyType={ladder.currencyType}
+        distribution={LADDER_DISTRIBUTION}
+        competitionType="ladder"
+        prizeImages={ladders}
+        tooltipMessage={LADDER_TOOLTIP}
+      />
+
+      <SectionTitleRow>
+        {hasPrizesDistributed ? (
+          <>
+            <SectionTitle>Prize Winners</SectionTitle>
+            <Ionicons name="checkmark-circle" size={20} color="green" />
+          </>
+        ) : (
+          <>
+            <SectionTitle>Top Contenders</SectionTitle>
+            <Ionicons name="hourglass-outline" size={20} color="#FF9800" />
+          </>
+        )}
+      </SectionTitleRow>
+
+      <TableContainer>
+        {!isDataLoading && renderContenders.length === 0 ? (
+          <EmptyState>
+            <EmptyStateText>
+              Top contenders will appear here once players start winning games.
+            </EmptyStateText>
+          </EmptyState>
+        ) : (
+          renderContenders.map((player, index) => (
+            <PrizeContenders
+              key={player.userId}
+              item={player}
+              index={index}
+              isDataLoading={isDataLoading}
+              distribution={LADDER_DISTRIBUTION}
+              prizePool={prizePool.xp}
+              cashPool={isPaid ? prizePool.cash : undefined}
+              currencyType={ladder.currencyType}
+              hasPrizesDistributed={hasPrizesDistributed}
+              competitionType="ladder"
+              prizeImages={ladders}
+            />
+          ))
+        )}
+      </TableContainer>
 
       <StatsRow testID="ladder-stats-row">
         <StatBlock>
@@ -108,7 +191,9 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         <StatBlock>
           <Ionicons name="cash-outline" size={18} color="#00A2FF" />
           <StatValue testID="ladder-entry-fee">
-            {isPaid ? formatCurrency(ladder.entryFee, ladder.currencyType) : "Free"}
+            {isPaid
+              ? formatCurrency(ladder.entryFee, ladder.currencyType)
+              : "Free"}
           </StatValue>
           <StatLabel>Entry Fee</StatLabel>
         </StatBlock>
@@ -202,6 +287,13 @@ const SectionTitle = styled.Text({
   color: "#ffffff",
 });
 
+const SectionTitleRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  marginTop: 10,
+});
+
 const PrizePotCard = styled.View({
   padding: 20,
   borderRadius: 14,
@@ -210,36 +302,32 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
-});
-
-const PotsRow = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 28,
-});
-
-const PotColumn = styled.View({
-  alignItems: "center",
-  gap: 2,
+  marginBottom: 20,
 });
 
 const PrizePotValue = styled.Text({
-  fontSize: screenWidth <= 405 ? 26 : 30,
+  fontSize: screenWidth <= 405 ? 30 : 34,
   fontWeight: "bold",
   color: "#00A2FF",
 });
 
-const PrizePotLabel = styled.Text({
-  fontSize: 12,
-  fontWeight: "600",
-  color: "#9fb8c8",
-  textTransform: "uppercase",
+const TableContainer = styled.View({
+  paddingTop: 10,
+  paddingBottom: 10,
 });
 
-const PrizePotCaption = styled.Text({
-  fontSize: 12,
-  color: "#9fb8c8",
+const EmptyState = styled.View({
+  paddingVertical: 20,
+  paddingHorizontal: 20,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 8,
+});
+
+const EmptyStateText = styled.Text({
+  fontSize: screenWidth <= 405 ? 13 : 14,
+  color: "#aaa",
   textAlign: "center",
 });
 

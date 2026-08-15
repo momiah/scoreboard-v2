@@ -6,9 +6,13 @@ import styled from "styled-components/native";
 import { useImageLoader } from "../../utils/imageLoader";
 import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 import { COMPETITION_TYPES } from "@shared";
+import { formatCurrency } from "../../helpers/formatCurrency";
+
+const DEFAULT_TOOLTIP =
+  "Prize Distribution is calculated by the total number of games played, number of players in the league and total number of winning points accumulated in the league";
 
 const TrophyItem = memo(
-  ({ trophySource, statValue, index, competitionType }) => {
+  ({ trophySource, statValue, cashValue, currencyType, competitionType }) => {
     const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
     const [showSkeleton, setShowSkeleton] = useState(true);
 
@@ -23,6 +27,8 @@ const TrophyItem = memo(
       }
     }, [imageLoaded]);
 
+    const ready = imageLoaded && !showSkeleton;
+
     return (
       <PrizeView>
         <CircleSkeleton show={showSkeleton} size={60}>
@@ -32,15 +38,21 @@ const TrophyItem = memo(
               onLoad={handleImageLoad}
               onError={handleImageError}
               prizeType={competitionType}
-              style={{ opacity: imageLoaded && !showSkeleton ? 1 : 0 }}
+              style={{ opacity: ready ? 1 : 0 }}
             />
           </ImageWrapper>
         </CircleSkeleton>
 
+        {cashValue != null && (
+          <TextSkeleton show={showSkeleton} height={14} width={34}>
+            {ready ? (
+              <CashText>{formatCurrency(cashValue, currencyType)}</CashText>
+            ) : null}
+          </TextSkeleton>
+        )}
+
         <TextSkeleton show={showSkeleton} height={14} width={30}>
-          {imageLoaded && !showSkeleton ? (
-            <PrizeText>{statValue} CP</PrizeText>
-          ) : null}
+          {ready ? <PrizeText>{statValue} CP</PrizeText> : null}
         </TextSkeleton>
       </PrizeView>
     );
@@ -49,21 +61,31 @@ const TrophyItem = memo(
 
 TrophyItem.displayName = "TrophyItem";
 
-const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
+const PrizeDistribution = ({
+  prizePool,
+  distribution,
+  competitionType,
+  prizeImages,
+  cashPool,
+  currencyType,
+  tooltipMessage,
+}) => {
   const prizes = useMemo(() => {
     const prizesType =
-      competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
+      prizeImages ||
+      (competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals);
     return distribution.map((percentage, index) => ({
       xp: Math.floor(prizePool * percentage),
+      cash: cashPool != null ? Math.floor(cashPool * percentage) : null,
       trophy: prizesType[index],
     }));
-  }, [prizePool, distribution, competitionType]);
+  }, [prizePool, cashPool, distribution, competitionType, prizeImages]);
 
   return (
     <PrizeDistributionContainer>
       <SectionTitleContainer>
         <SectionTitle>Prize Distribution</SectionTitle>
-        <Tooltip message="Prize Distribution is calculated by the total number of games played, number of players in the league and total number of winning points accumulated in the league" />
+        <Tooltip message={tooltipMessage || DEFAULT_TOOLTIP} />
       </SectionTitleContainer>
       <PrizeRow>
         {prizes.map((prize, index) => (
@@ -71,7 +93,8 @@ const PrizeDistribution = ({ prizePool, distribution, competitionType }) => {
             key={`trophy-${index}`}
             trophySource={prize.trophy}
             statValue={prize.xp ?? 0}
-            index={index}
+            cashValue={prize.cash}
+            currencyType={currencyType}
             competitionType={competitionType}
           />
         ))}
@@ -114,16 +137,22 @@ const PrizeView = styled.View({
 });
 
 const PrizeImage = styled.Image(({ prizeType }) => ({
-  width: prizeType === "league" ? 60 : 40,
+  width: prizeType === "league" || prizeType === "ladder" ? 60 : 40,
   height: 60,
 }));
+
 const PrizeText = styled.Text({
   color: "#ccc",
   fontSize: 14,
   fontWeight: "bold",
 });
 
-// ...
+const CashText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 14,
+  fontWeight: "bold",
+  marginBottom: 2,
+});
 
 const ImageWrapper = styled.View({
   width: 60,
