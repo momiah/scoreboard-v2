@@ -1,5 +1,10 @@
 import moment, { Moment } from "moment";
-import type { Ladder } from "@shared/types";
+import type { Ladder, LadderStatus } from "@shared/types";
+import {
+  LADDER_STATUS,
+  LADDER_STATUS_SEQUENCE,
+  LADDER_STATUS_LABELS,
+} from "@shared";
 
 type TimestampLike =
   | Date
@@ -23,55 +28,62 @@ export const toMoment = (input: TimestampLike): Moment | null => {
   return parsed.isValid() ? parsed : null;
 };
 
-export type LadderPhaseStatus = "completed" | "live" | "upcoming";
-
 export interface LadderPhase {
-  key: "registration" | "season" | "playoffs";
+  status: LadderStatus;
   label: string;
   description: string;
   start: Moment | null;
   end: Moment | null;
 }
 
-export const getLadderPhases = (ladder: Ladder): LadderPhase[] =>
-  [
-    {
-      key: "registration" as const,
-      label: "Registration",
-      description: "Players sign up & pay entry.",
+const PHASE_DESCRIPTIONS: Record<LadderStatus, string> = {
+  [LADDER_STATUS.REGISTRATION_OPEN]: "Players sign up & pay entry.",
+  [LADDER_STATUS.REGISTRATION_CLOSED]:
+    "Open play — challenge players near your rank.",
+  [LADDER_STATUS.PLAYOFFS]: "Single-elim bracket to crown the champion.",
+  [LADDER_STATUS.COMPLETED]: "Season over — prizes distributed.",
+  [LADDER_STATUS.CANCELLED]: "This ladder was cancelled.",
+};
+
+export const getLadderPhases = (ladder: Ladder): LadderPhase[] => {
+  const windows: Record<
+    string,
+    { start: Moment | null; end: Moment | null }
+  > = {
+    [LADDER_STATUS.REGISTRATION_OPEN]: {
       start: toMoment(ladder.registrationOpensAt),
       end: toMoment(ladder.registrationClosesAt),
     },
-    {
-      key: "season" as const,
-      label: "Open Play",
-      description: "Challenge any player near your rank.",
+    [LADDER_STATUS.REGISTRATION_CLOSED]: {
       start: toMoment(ladder.seasonStartsAt),
       end: toMoment(ladder.seasonEndsAt),
     },
-    {
-      key: "playoffs" as const,
-      label: "Playoffs",
-      description: "Single-elim bracket to crown the champion.",
+    [LADDER_STATUS.PLAYOFFS]: {
       start: toMoment(ladder.playoffStartsAt),
       end: toMoment(ladder.playoffEndsAt),
     },
-  ].sort((a, b) => (a.start?.valueOf() ?? 0) - (b.start?.valueOf() ?? 0));
+    [LADDER_STATUS.COMPLETED]: {
+      start: toMoment(ladder.playoffEndsAt),
+      end: null,
+    },
+  };
 
-export const getLadderPhaseStatus = (
-  phase: LadderPhase,
-  now: Moment = moment(),
-): LadderPhaseStatus => {
-  if (phase.end?.isValid() && now.isAfter(phase.end)) return "completed";
-  if (phase.start?.isValid() && now.isSameOrAfter(phase.start)) return "live";
-  return "upcoming";
+  return LADDER_STATUS_SEQUENCE.map((status) => ({
+    status,
+    label: LADDER_STATUS_LABELS[status],
+    description: PHASE_DESCRIPTIONS[status],
+    start: windows[status]?.start ?? null,
+    end: windows[status]?.end ?? null,
+  }));
 };
 
 export const formatPhaseRange = (phase: LadderPhase): string => {
   const fmt = "MMM D";
-  const start = phase.start?.isValid() ? phase.start.format(fmt) : "TBC";
-  const end = phase.end?.isValid() ? phase.end.format(fmt) : "TBC";
-  return `${start} – ${end}`;
+  const start = phase.start?.isValid() ? phase.start.format(fmt) : null;
+  const end = phase.end?.isValid() ? phase.end.format(fmt) : null;
+  if (start && end) return `${start} – ${end}`;
+  if (start) return start;
+  return "TBC";
 };
 
 export const timeLeftToPlayoffs = (
