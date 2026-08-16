@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components/native";
-import { trophies, medals } from "../../mockImages";
+import { trophies, medals, ladders } from "../../mockImages";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { useImageLoader } from "../../utils/imageLoader";
 import { useNavigation } from "@react-navigation/native";
@@ -17,7 +17,6 @@ const PrizeContenders = ({
   prizePool,
   hasPrizesDistributed,
   competitionType,
-  prizeImages,
   cashPool,
   currencyType,
 }) => {
@@ -27,8 +26,11 @@ const PrizeContenders = ({
 
   const displayName = formatDisplayName(player);
   const prizesType =
-    prizeImages ||
-    (competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals);
+    competitionType === COMPETITION_TYPES.LEAGUE
+      ? trophies
+      : competitionType === COMPETITION_TYPES.LADDER
+        ? ladders
+        : medals;
   const prizeSource = prizesType[index] || prizesType[0];
 
   const prizeXP =

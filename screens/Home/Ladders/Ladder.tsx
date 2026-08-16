@@ -12,12 +12,14 @@ import type {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { LinearGradient } from "expo-linear-gradient";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LADDER_TYPE } from "@shared/types";
 // import type { Ladder as LadderType } from "@shared/types";
 
 // import Tag from "../../../components/Tag";
 import LadderSummary from "../../../components/Summary/LadderSummary";
+import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
@@ -37,13 +39,15 @@ type LadderRouteParams = { ladderId: string; tab?: LadderTab };
 const Ladder: React.FC = () => {
   const route =
     useRoute<RouteProp<Record<string, LadderRouteParams>, string>>();
-  // const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { ladderId, tab } = route.params;
   const { fetchLadderById, ladderById } = useContext(LadderContext);
 
   const [ladderLoading, setLadderLoading] = useState(true);
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [joinModalVisible, setJoinModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -117,23 +121,46 @@ const Ladder: React.FC = () => {
                 ladderById.image ? { uri: ladderById.image } : ccDefaultImage
               }
             >
-              {/* <GradientOverlay
+              <GradientOverlay
                 colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
                 locations={[0.1, 1]}
-              /> */}
-              {/* <DetailsContainer>
-                <NameBadge>
-                  <LadderName>{ladderById.name}</LadderName>
-                </NameBadge>
-                <TagRow>
-                  <Tag name={ladderById.ladderType} />
-                  <Tag name={ladderById.genderType} />
-                  {status ? (
-                    <Tag name={status.label} color={status.color} />
-                  ) : null}
-                </TagRow>
-                <RegionText>{ladderById.region}</RegionText>
-              </DetailsContainer> */}
+              />
+
+              <OverlayTop>
+                <IconButton
+                  activeOpacity={0.8}
+                  onPress={() => setMenuOpen((open) => !open)}
+                  testID="ladder-burger"
+                >
+                  <Ionicons name="menu" size={24} color="#ffffff" />
+                </IconButton>
+              </OverlayTop>
+
+              {menuOpen && (
+                <Menu testID="ladder-menu">
+                  <MenuItem
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setMenuOpen(false);
+                      navigation.navigate("LadderRules", { ladderId });
+                    }}
+                    testID="ladder-menu-rules"
+                  >
+                    <Ionicons name="book-outline" size={16} color="#ffffff" />
+                    <MenuItemText>Rules</MenuItemText>
+                  </MenuItem>
+                </Menu>
+              )}
+
+              <OverlayBottom>
+                <JoinButton
+                  activeOpacity={0.85}
+                  onPress={() => setJoinModalVisible(true)}
+                  testID="ladder-overview-join"
+                >
+                  <JoinButtonText>Join Ladder</JoinButtonText>
+                </JoinButton>
+              </OverlayBottom>
             </LadderImage>
           </Overview>
 
@@ -157,6 +184,14 @@ const Ladder: React.FC = () => {
           </TabsContainer>
 
           {renderTab()}
+
+          {joinModalVisible && (
+            <JoinLadderModal
+              modalVisible={joinModalVisible}
+              setModalVisible={setJoinModalVisible}
+              ladder={ladderById}
+            />
+          )}
         </>
       )}
     </Screen>
@@ -204,6 +239,67 @@ const GradientOverlay = styled(LinearGradient)({
   left: 0,
   right: 0,
   bottom: 0,
+});
+
+const OverlayTop = styled.View({
+  position: "absolute",
+  top: 15,
+  right: 15,
+  zIndex: 5,
+});
+
+const IconButton = styled.TouchableOpacity({
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.4)",
+});
+
+const Menu = styled.View({
+  position: "absolute",
+  top: 60,
+  right: 15,
+  zIndex: 10,
+  minWidth: 150,
+  borderRadius: 10,
+  paddingVertical: 6,
+  backgroundColor: "#0A1F33",
+  borderWidth: 1,
+  borderColor: "#192336",
+});
+
+const MenuItem = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+});
+
+const MenuItemText = styled.Text({
+  color: "#ffffff",
+  fontSize: 14,
+});
+
+const OverlayBottom = styled.View({
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  padding: 15,
+});
+
+const JoinButton = styled.TouchableOpacity({
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 20,
+  backgroundColor: "#00A2FF",
+});
+
+const JoinButtonText = styled.Text({
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: "bold",
 });
 
 const DetailsContainer = styled.View({

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, memo } from "react";
 import { Dimensions } from "react-native";
 import Tooltip from "../Tooltip";
-import { trophies, medals } from "../../mockImages/index";
+import { trophies, medals, ladders } from "../../mockImages/index";
 import styled from "styled-components/native";
 import { useImageLoader } from "../../utils/imageLoader";
 import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
@@ -10,6 +10,12 @@ import { formatCurrency } from "../../helpers/formatCurrency";
 
 const DEFAULT_TOOLTIP =
   "Prize Distribution is calculated by the total number of games played, number of players in the league and total number of winning points accumulated in the league";
+
+const resolvePrizeImages = (competitionType) => {
+  if (competitionType === COMPETITION_TYPES.LEAGUE) return trophies;
+  if (competitionType === COMPETITION_TYPES.LADDER) return ladders;
+  return medals;
+};
 
 const TrophyItem = memo(
   ({ trophySource, statValue, cashValue, currencyType, competitionType }) => {
@@ -65,27 +71,38 @@ const PrizeDistribution = ({
   prizePool,
   distribution,
   competitionType,
-  prizeImages,
   cashPool,
   currencyType,
   tooltipMessage,
+  onViewFullDistribution,
 }) => {
+  const isLadder = competitionType === COMPETITION_TYPES.LADDER;
+
   const prizes = useMemo(() => {
-    const prizesType =
-      prizeImages ||
-      (competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals);
+    const prizesType = resolvePrizeImages(competitionType);
     return distribution.map((percentage, index) => ({
       xp: Math.floor(prizePool * percentage),
       cash: cashPool != null ? Math.floor(cashPool * percentage) : null,
       trophy: prizesType[index],
     }));
-  }, [prizePool, cashPool, distribution, competitionType, prizeImages]);
+  }, [prizePool, cashPool, distribution, competitionType]);
 
   return (
     <PrizeDistributionContainer>
       <SectionTitleContainer>
-        <SectionTitle>Prize Distribution</SectionTitle>
-        <Tooltip message={tooltipMessage || DEFAULT_TOOLTIP} />
+        <TitleGroup>
+          <SectionTitle>Prize Distribution</SectionTitle>
+          <Tooltip message={tooltipMessage || DEFAULT_TOOLTIP} />
+        </TitleGroup>
+        {isLadder && (
+          <ViewAllButton
+            activeOpacity={0.7}
+            onPress={onViewFullDistribution}
+            testID="view-full-distribution"
+          >
+            <ViewAllText>View Full Distribution</ViewAllText>
+          </ViewAllButton>
+        )}
       </SectionTitleContainer>
       <PrizeRow>
         {prizes.map((prize, index) => (
@@ -118,9 +135,23 @@ const SectionTitle = styled.Text({
 const SectionTitleContainer = styled.View({
   flexDirection: "row",
   alignItems: "center",
-  justifyContent: "flex-start",
+  justifyContent: "space-between",
   gap: 10,
   marginBottom: 10,
+});
+
+const TitleGroup = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+});
+
+const ViewAllButton = styled.TouchableOpacity({});
+
+const ViewAllText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 13,
+  fontWeight: "600",
 });
 
 const PrizeRow = styled.View({

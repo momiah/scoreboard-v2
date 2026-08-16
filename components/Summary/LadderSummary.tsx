@@ -6,12 +6,10 @@ import {
   UIManager,
   View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { LADDER_STATUS } from "@shared/types";
+import { LADDER_STATUS, COMPETITION_TYPES } from "@shared";
 import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
 import { sortPlayersByPlacement } from "@shared/helpers/getRankInCompetition";
@@ -19,7 +17,7 @@ import { sortPlayersByPlacement } from "@shared/helpers/getRankInCompetition";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
-import { ladders } from "../../mockImages/index";
+import ParticipantCarousel from "./ParticipantCarousel";
 import { UserContext } from "../../context/UserContext";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
@@ -52,7 +50,6 @@ interface LadderSummaryProps {
 }
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { getUserById } = useContext(UserContext);
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [expandedPhase, setExpandedPhase] = useState<LadderPhase["key"] | null>(
@@ -135,9 +132,9 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         cashPool={isPaid ? prizePool.cash : undefined}
         currencyType={ladder.currencyType}
         distribution={LADDER_DISTRIBUTION}
-        competitionType="ladder"
-        prizeImages={ladders}
+        competitionType={COMPETITION_TYPES.LADDER}
         tooltipMessage={LADDER_TOOLTIP}
+        onViewFullDistribution={() => {}}
       />
 
       <SectionTitleRow>
@@ -173,8 +170,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
               cashPool={isPaid ? prizePool.cash : undefined}
               currencyType={ladder.currencyType}
               hasPrizesDistributed={hasPrizesDistributed}
-              competitionType="ladder"
-              prizeImages={ladders}
+              competitionType={COMPETITION_TYPES.LADDER}
             />
           ))
         )}
@@ -208,17 +204,13 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         </StatBlock>
       </StatsRow>
 
-      <RulesButton
-        testID="ladder-rules-button"
-        activeOpacity={0.8}
-        onPress={() =>
-          navigation.navigate("LadderRules", { ladderId: ladder.ladderId })
-        }
-      >
-        <Ionicons name="book-outline" size={18} color="#ffffff" />
-        <RulesButtonText>Rules</RulesButtonText>
-        <Ionicons name="chevron-forward" size={18} color="#ffffff" />
-      </RulesButton>
+      <View style={{ marginTop: 20 }}>
+        <ParticipantCarousel
+          participants={participants}
+          viewAllText="View All Participants"
+          onViewAll={() => {}}
+        />
+      </View>
 
       <Section>
         <SectionTitle>Phase Timeline</SectionTitle>
@@ -365,26 +357,6 @@ const StatValue = styled.Text({
 const StatLabel = styled.Text({
   fontSize: 11,
   color: "#9fb8c8",
-});
-
-const RulesButton = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  marginTop: 20,
-  padding: 14,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: "#ffffff",
-});
-
-const RulesButtonText = styled.Text({
-  flex: 1,
-  textAlign: "center",
-  color: "#ffffff",
-  fontSize: 15,
-  fontWeight: "600",
 });
 
 const PhaseItem = styled.View({
