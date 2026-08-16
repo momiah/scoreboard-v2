@@ -17,7 +17,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_TYPE } from "@shared/types";
 // import type { Ladder as LadderType } from "@shared/types";
 
-// import Tag from "../../../components/Tag";
+import Tag from "../../../components/Tag";
 import LadderSummary from "../../../components/Summary/LadderSummary";
 import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import LoadingOverlay from "../../../components/LoadingOverlay";
@@ -153,13 +153,16 @@ const Ladder: React.FC = () => {
               )}
 
               <OverlayBottom>
-                <JoinButton
-                  activeOpacity={0.85}
+                <Tag
+                  name="Join Ladder"
+                  color="#00A2FF"
+                  iconColor="white"
+                  iconSize={15}
+                  icon="person-add-outline"
+                  iconPosition="right"
                   onPress={() => setJoinModalVisible(true)}
-                  testID="ladder-overview-join"
-                >
-                  <JoinButtonText>Join Ladder</JoinButtonText>
-                </JoinButton>
+                  bold
+                />
               </OverlayBottom>
             </LadderImage>
           </Overview>
@@ -289,18 +292,6 @@ const OverlayBottom = styled.View({
   padding: 15,
 });
 
-const JoinButton = styled.TouchableOpacity({
-  paddingHorizontal: 20,
-  paddingVertical: 10,
-  borderRadius: 20,
-  backgroundColor: "#00A2FF",
-});
-
-const JoinButtonText = styled.Text({
-  color: "#ffffff",
-  fontSize: 14,
-  fontWeight: "bold",
-});
 
 const DetailsContainer = styled.View({
   paddingHorizontal: 15,

@@ -14,7 +14,6 @@ import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
 import { sortPlayersByPlacement } from "@shared/helpers/getRankInCompetition";
 
-import JoinLadderModal from "../Modals/JoinLadderModal";
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
 import ParticipantCarousel from "./ParticipantCarousel";
@@ -51,7 +50,6 @@ interface LadderSummaryProps {
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const { getUserById } = useContext(UserContext);
-  const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [expandedPhase, setExpandedPhase] = useState<LadderPhase["key"] | null>(
     null,
   );
@@ -240,22 +238,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         })}
       </Section>
 
-      <JoinButton
-        testID="ladder-join-button"
-        activeOpacity={0.85}
-        onPress={() => setJoinModalVisible(true)}
-      >
-        <JoinButtonText>Join Ladder</JoinButtonText>
-      </JoinButton>
-
-      {joinModalVisible && (
-        <JoinLadderModal
-          modalVisible={joinModalVisible}
-          setModalVisible={setJoinModalVisible}
-          ladder={ladder}
-        />
-      )}
-
       <View style={{ height: 40 }} />
     </Container>
   );
@@ -390,16 +372,3 @@ const PhaseRange = styled.Text({
   fontSize: 13,
 });
 
-const JoinButton = styled.TouchableOpacity({
-  marginTop: 30,
-  paddingVertical: 16,
-  borderRadius: 12,
-  backgroundColor: "#00A2FF",
-  alignItems: "center",
-});
-
-const JoinButtonText = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
-});
