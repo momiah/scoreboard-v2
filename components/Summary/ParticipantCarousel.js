@@ -6,8 +6,8 @@ import { useNavigation } from "@react-navigation/native";
 
 const ParticipantCarousel = ({
   participants,
-  admins,
-  owner,
+  admins = [],
+  owner = null,
   viewAllText,
   onViewAll,
 }) => {

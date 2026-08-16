@@ -1,11 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import {
-  Dimensions,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-  View,
-} from "react-native";
+import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -23,17 +17,10 @@ import { formatCurrency } from "../../helpers/formatCurrency";
 import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
 import {
   getLadderPhases,
+  getLadderPhaseStatus,
   formatPhaseRange,
   timeLeftToPlayoffs,
-  type LadderPhase,
 } from "../../helpers/ladderPhases";
-
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
   userId: `placeholder-${index}`,
@@ -50,9 +37,6 @@ interface LadderSummaryProps {
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const { getUserById } = useContext(UserContext);
-  const [expandedPhase, setExpandedPhase] = useState<LadderPhase["key"] | null>(
-    null,
-  );
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -108,11 +92,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const renderContenders = isDataLoading
     ? PLACEHOLDER_CONTENDERS
     : topContenders;
-
-  const togglePhase = (key: LadderPhase["key"]) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedPhase((current) => (current === key ? null : key));
-  };
 
   return (
     <Container testID="ladder-summary">
@@ -210,33 +189,35 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         />
       </View>
 
-      <Section>
-        <SectionTitle>Phase Timeline</SectionTitle>
-        {phases.map((phase) => {
-          const expanded = expandedPhase === phase.key;
+      <Timeline>
+        <TimelineHeader>Phase Timeline</TimelineHeader>
+        {phases.map((phase, index) => {
+          const status = getLadderPhaseStatus(phase);
+          const isFirst = index === 0;
+          const isLast = index === phases.length - 1;
           return (
-            <PhaseItem key={phase.key} testID={`ladder-phase-${phase.key}`}>
-              <PhaseHeader
-                activeOpacity={0.8}
-                onPress={() => togglePhase(phase.key)}
-                testID={`ladder-phase-header-${phase.key}`}
-              >
-                <PhaseLabel>{phase.label}</PhaseLabel>
-                <Ionicons
-                  name={expanded ? "chevron-up" : "chevron-down"}
-                  size={18}
-                  color="#9fb8c8"
-                />
-              </PhaseHeader>
-              {expanded && (
-                <PhaseBody testID={`ladder-phase-body-${phase.key}`}>
-                  <PhaseRange>{formatPhaseRange(phase)}</PhaseRange>
-                </PhaseBody>
-              )}
-            </PhaseItem>
+            <TimelineRow key={phase.key} testID={`ladder-phase-${phase.key}`}>
+              <Gutter>
+                {!isFirst && <LineTop />}
+                {!isLast && <LineBottom />}
+                <Dot status={status} />
+              </Gutter>
+              <PhaseContent last={isLast}>
+                <PhaseTitleRow>
+                  <PhaseLabel>{phase.label}</PhaseLabel>
+                  {status === "live" && (
+                    <LiveBadge testID={`ladder-phase-live-${phase.key}`}>
+                      <LiveText>LIVE</LiveText>
+                    </LiveBadge>
+                  )}
+                </PhaseTitleRow>
+                <PhaseRange>{formatPhaseRange(phase)}</PhaseRange>
+                <PhaseDescription>{phase.description}</PhaseDescription>
+              </PhaseContent>
+            </TimelineRow>
           );
         })}
-      </Section>
+      </Timeline>
 
       <View style={{ height: 40 }} />
     </Container>
@@ -249,11 +230,6 @@ const { width: screenWidth } = Dimensions.get("window");
 
 const Container = styled.ScrollView({
   padding: 20,
-});
-
-const Section = styled.View({
-  marginTop: 20,
-  gap: 10,
 });
 
 const SectionTitle = styled.Text({
@@ -341,34 +317,126 @@ const StatLabel = styled.Text({
   color: "#9fb8c8",
 });
 
-const PhaseItem = styled.View({
-  borderRadius: 12,
-  backgroundColor: "rgba(255, 255, 255, 0.04)",
-  borderWidth: 1,
-  borderColor: "#192336",
-  overflow: "hidden",
+const GUTTER_WIDTH = 24;
+const DOT_SIZE = 14;
+const DOT_TOP = 4;
+const DOT_CENTER_Y = DOT_TOP + DOT_SIZE / 2;
+const LINE_LEFT = GUTTER_WIDTH / 2 - 1;
+
+const DOT_STYLES: Record<
+  "completed" | "live" | "upcoming",
+  { backgroundColor: string; borderColor: string; borderWidth: number }
+> = {
+  completed: {
+    backgroundColor: "#35597e",
+    borderColor: "#35597e",
+    borderWidth: 0,
+  },
+  live: {
+    backgroundColor: "transparent",
+    borderColor: "#6aa0d6",
+    borderWidth: 3,
+  },
+  upcoming: {
+    backgroundColor: "#22384f",
+    borderColor: "#22384f",
+    borderWidth: 0,
+  },
+};
+
+const Timeline = styled.View({
+  marginTop: 30,
 });
 
-const PhaseHeader = styled.TouchableOpacity({
+const TimelineHeader = styled.Text({
+  color: "#6b8199",
+  fontSize: 12,
+  fontWeight: "600",
+  letterSpacing: 1.5,
+  textTransform: "uppercase",
+  marginBottom: 18,
+});
+
+const TimelineRow = styled.View({
+  flexDirection: "row",
+});
+
+const Gutter = styled.View({
+  width: GUTTER_WIDTH,
+  position: "relative",
+});
+
+const LineTop = styled.View({
+  position: "absolute",
+  top: 0,
+  left: LINE_LEFT,
+  width: 2,
+  height: DOT_CENTER_Y,
+  backgroundColor: "#22384f",
+});
+
+const LineBottom = styled.View({
+  position: "absolute",
+  top: DOT_CENTER_Y,
+  bottom: 0,
+  left: LINE_LEFT,
+  width: 2,
+  backgroundColor: "#22384f",
+});
+
+const Dot = styled.View<{ status: "completed" | "live" | "upcoming" }>(
+  ({ status }) => ({
+    position: "absolute",
+    top: DOT_TOP,
+    left: GUTTER_WIDTH / 2 - DOT_SIZE / 2,
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    ...DOT_STYLES[status],
+  }),
+);
+
+const PhaseContent = styled.View<{ last: boolean }>(({ last }) => ({
+  flex: 1,
+  paddingLeft: 8,
+  paddingBottom: last ? 0 : 24,
+}));
+
+const PhaseTitleRow = styled.View({
   flexDirection: "row",
   alignItems: "center",
-  justifyContent: "space-between",
-  padding: 14,
+  gap: 8,
 });
 
 const PhaseLabel = styled.Text({
   color: "#ffffff",
   fontSize: 15,
-  fontWeight: "600",
+  fontWeight: "bold",
 });
 
-const PhaseBody = styled.View({
-  paddingHorizontal: 14,
-  paddingBottom: 14,
+const LiveBadge = styled.View({
+  paddingHorizontal: 6,
+  paddingVertical: 2,
+  borderRadius: 4,
+  backgroundColor: "rgba(255, 255, 255, 0.12)",
+});
+
+const LiveText = styled.Text({
+  color: "#dbe9f5",
+  fontSize: 9,
+  fontWeight: "bold",
+  letterSpacing: 1,
 });
 
 const PhaseRange = styled.Text({
+  color: "#5f7d99",
+  fontSize: 12,
+  marginTop: 3,
+});
+
+const PhaseDescription = styled.Text({
   color: "#9fb8c8",
   fontSize: 13,
+  marginTop: 5,
 });
 

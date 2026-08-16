@@ -23,9 +23,12 @@ export const toMoment = (input: TimestampLike): Moment | null => {
   return parsed.isValid() ? parsed : null;
 };
 
+export type LadderPhaseStatus = "completed" | "live" | "upcoming";
+
 export interface LadderPhase {
   key: "registration" | "season" | "playoffs";
   label: string;
+  description: string;
   start: Moment | null;
   end: Moment | null;
 }
@@ -35,28 +38,40 @@ export const getLadderPhases = (ladder: Ladder): LadderPhase[] =>
     {
       key: "registration" as const,
       label: "Registration",
+      description: "Players sign up & pay entry.",
       start: toMoment(ladder.registrationOpensAt),
       end: toMoment(ladder.registrationClosesAt),
     },
     {
       key: "season" as const,
-      label: "Season",
+      label: "Open Play",
+      description: "Challenge any player near your rank.",
       start: toMoment(ladder.seasonStartsAt),
       end: toMoment(ladder.seasonEndsAt),
     },
     {
       key: "playoffs" as const,
       label: "Playoffs",
+      description: "Single-elim bracket to crown the champion.",
       start: toMoment(ladder.playoffStartsAt),
       end: toMoment(ladder.playoffEndsAt),
     },
   ].sort((a, b) => (a.start?.valueOf() ?? 0) - (b.start?.valueOf() ?? 0));
 
+export const getLadderPhaseStatus = (
+  phase: LadderPhase,
+  now: Moment = moment(),
+): LadderPhaseStatus => {
+  if (phase.end?.isValid() && now.isAfter(phase.end)) return "completed";
+  if (phase.start?.isValid() && now.isSameOrAfter(phase.start)) return "live";
+  return "upcoming";
+};
+
 export const formatPhaseRange = (phase: LadderPhase): string => {
-  const fmt = "Do MMM YYYY";
+  const fmt = "MMM D";
   const start = phase.start?.isValid() ? phase.start.format(fmt) : "TBC";
   const end = phase.end?.isValid() ? phase.end.format(fmt) : "TBC";
-  return `${start} — ${end}`;
+  return `${start} – ${end}`;
 };
 
 export const timeLeftToPlayoffs = (
