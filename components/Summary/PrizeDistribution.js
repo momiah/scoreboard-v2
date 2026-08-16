@@ -149,9 +149,8 @@ const TitleGroup = styled.View({
 const ViewAllButton = styled.TouchableOpacity({});
 
 const ViewAllText = styled.Text({
-  color: "#00A2FF",
-  fontSize: 13,
-  fontWeight: "600",
+  color: "white",
+  fontSize: 11,
 });
 
 const PrizeRow = styled.View({

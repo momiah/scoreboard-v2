@@ -32,6 +32,8 @@ const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
   numberOfWins: 0,
 })) as unknown as ScoreboardProfile[];
 
+const STATS_ROW_ICON_SIZE = 15;
+
 const LADDER_TOOLTIP =
   "Court Points (CP) — and cash on paid ladders — are shared across the top finishers.";
 
@@ -118,6 +120,53 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         onViewFullDistribution={() => {}}
       />
 
+      <StatsRow testID="ladder-stats-row">
+        <StatBlock>
+          <StatHeadingContainer>
+            <StatValue testID="ladder-players">
+              {ladder.participantCount} / {ladder.maxPlayers}
+            </StatValue>
+            <Ionicons
+              name="people-outline"
+              size={STATS_ROW_ICON_SIZE}
+              color="#00A2FF"
+            />
+          </StatHeadingContainer>
+          <StatLabel>Players</StatLabel>
+        </StatBlock>
+        <StatDivider />
+        <StatBlock>
+          <StatHeadingContainer>
+            <StatValue testID="ladder-entry-fee">
+              {isPaid
+                ? formatCurrency(ladder.entryFee, ladder.currencyType)
+                : "Free"}
+            </StatValue>
+
+            <Ionicons
+              name="cash-outline"
+              size={STATS_ROW_ICON_SIZE}
+              color="#00A2FF"
+            />
+          </StatHeadingContainer>
+          <StatLabel>Entry Fee</StatLabel>
+        </StatBlock>
+        <StatDivider />
+        <StatBlock>
+          <StatHeadingContainer>
+            <StatValue testID="ladder-playoff-countdown">
+              {playoffCountdown}
+            </StatValue>
+            <Ionicons
+              name="hourglass-outline"
+              size={STATS_ROW_ICON_SIZE}
+              color="#00A2FF"
+            />
+          </StatHeadingContainer>
+          <StatLabel>To Playoffs</StatLabel>
+        </StatBlock>
+      </StatsRow>
+
       <SectionTitleRow>
         {hasPrizesDistributed ? (
           <>
@@ -157,34 +206,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         )}
       </TableContainer>
 
-      <StatsRow testID="ladder-stats-row">
-        <StatBlock>
-          <Ionicons name="people-outline" size={18} color="#00A2FF" />
-          <StatValue testID="ladder-players">
-            {ladder.participantCount} / {ladder.maxPlayers}
-          </StatValue>
-          <StatLabel>Players</StatLabel>
-        </StatBlock>
-        <StatDivider />
-        <StatBlock>
-          <Ionicons name="cash-outline" size={18} color="#00A2FF" />
-          <StatValue testID="ladder-entry-fee">
-            {isPaid
-              ? formatCurrency(ladder.entryFee, ladder.currencyType)
-              : "Free"}
-          </StatValue>
-          <StatLabel>Entry Fee</StatLabel>
-        </StatBlock>
-        <StatDivider />
-        <StatBlock>
-          <Ionicons name="hourglass-outline" size={18} color="#00A2FF" />
-          <StatValue testID="ladder-playoff-countdown">
-            {playoffCountdown}
-          </StatValue>
-          <StatLabel>To Playoffs</StatLabel>
-        </StatBlock>
-      </StatsRow>
-
       <View style={{ marginTop: 20 }}>
         <ParticipantCarousel
           participants={participants}
@@ -200,10 +221,15 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           const isFirst = index === 0;
           const isLast = index === phases.length - 1;
           return (
-            <TimelineRow key={phase.status} testID={`ladder-phase-${phase.status}`}>
+            <TimelineRow
+              key={phase.status}
+              testID={`ladder-phase-${phase.status}`}
+            >
               <Gutter>
                 {!isFirst && (
-                  <LineTop filled={state === "completed" || state === "active"} />
+                  <LineTop
+                    filled={state === "completed" || state === "active"}
+                  />
                 )}
                 {!isLast && <LineBottom filled={state === "completed"} />}
                 <Dot state={state} />
@@ -252,7 +278,7 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
-  marginBottom: 20,
+  marginBottom: 40,
 });
 
 const PrizePotValue = styled.Text({
@@ -263,7 +289,7 @@ const PrizePotValue = styled.Text({
 
 const TableContainer = styled.View({
   paddingTop: 10,
-  paddingBottom: 10,
+  paddingBottom: 20,
 });
 
 const EmptyState = styled.View({
@@ -285,12 +311,18 @@ const StatsRow = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  marginTop: 20,
+  marginVertical: 20,
   padding: 16,
   borderRadius: 12,
   backgroundColor: "rgba(255, 255, 255, 0.04)",
   borderWidth: 1,
   borderColor: "#192336",
+});
+
+const StatHeadingContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
 });
 
 const StatBlock = styled.View({
@@ -352,55 +384,65 @@ const Gutter = styled.View({
   position: "relative",
 });
 
-const LineTop = styled.View<{ filled: boolean }>(({ filled }) => ({
-  position: "absolute",
-  top: 0,
-  left: LINE_LEFT,
-  width: 2,
-  height: DOT_CENTER_Y,
-  backgroundColor: filled ? LINE_FILLED : LINE_DIM,
-}));
+const LineTop = styled.View<{ filled: boolean }>(
+  ({ filled }: { filled: boolean }) => ({
+    position: "absolute",
+    top: 0,
+    left: LINE_LEFT,
+    width: 2,
+    height: DOT_CENTER_Y,
+    backgroundColor: filled ? LINE_FILLED : LINE_DIM,
+  }),
+);
 
-const LineBottom = styled.View<{ filled: boolean }>(({ filled }) => ({
-  position: "absolute",
-  top: DOT_CENTER_Y,
-  bottom: 0,
-  left: LINE_LEFT,
-  width: 2,
-  backgroundColor: filled ? LINE_FILLED : LINE_DIM,
-}));
+const LineBottom = styled.View<{ filled: boolean }>(
+  ({ filled }: { filled: boolean }) => ({
+    position: "absolute",
+    top: DOT_CENTER_Y,
+    bottom: 0,
+    left: LINE_LEFT,
+    width: 2,
+    backgroundColor: filled ? LINE_FILLED : LINE_DIM,
+  }),
+);
 
-const Dot = styled.View<{ state: LadderPhaseState }>(({ state }) => ({
-  position: "absolute",
-  top: DOT_TOP,
-  left: GUTTER_WIDTH / 2 - DOT_SIZE / 2,
-  width: DOT_SIZE,
-  height: DOT_SIZE,
-  borderRadius: DOT_SIZE / 2,
-  zIndex: 1,
-  backgroundColor: DOT_COLORS[state],
-  ...(state === "active"
-    ? {
-        shadowColor: "#FFD700",
-        shadowOpacity: 0.9,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 0 },
-        elevation: 8,
-      }
-    : {}),
-}));
+const Dot = styled.View<{ state: LadderPhaseState }>(
+  ({ state }: { state: LadderPhaseState }) => ({
+    position: "absolute",
+    top: DOT_TOP,
+    left: GUTTER_WIDTH / 2 - DOT_SIZE / 2,
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    zIndex: 1,
+    backgroundColor: DOT_COLORS[state],
+    ...(state === "active"
+      ? {
+          shadowColor: "#FFD700",
+          shadowOpacity: 0.9,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 8,
+        }
+      : {}),
+  }),
+);
 
-const PhaseContent = styled.View<{ last: boolean }>(({ last }) => ({
-  flex: 1,
-  paddingLeft: 8,
-  paddingBottom: last ? 0 : 24,
-}));
+const PhaseContent = styled.View<{ last: boolean }>(
+  ({ last }: { last: boolean }) => ({
+    flex: 1,
+    paddingLeft: 8,
+    paddingBottom: last ? 0 : 24,
+  }),
+);
 
-const PhaseLabel = styled.Text<{ state: LadderPhaseState }>(({ state }) => ({
-  color: state === "upcoming" ? "#6b8199" : "#ffffff",
-  fontSize: 15,
-  fontWeight: "bold",
-}));
+const PhaseLabel = styled.Text<{ state: LadderPhaseState }>(
+  ({ state }: { state: LadderPhaseState }) => ({
+    color: state === "upcoming" ? "#6b8199" : "#ffffff",
+    fontSize: 15,
+    fontWeight: "bold",
+  }),
+);
 
 const PhaseRange = styled.Text({
   color: "#5f7d99",
@@ -413,4 +455,3 @@ const PhaseDescription = styled.Text({
   fontSize: 13,
   marginTop: 5,
 });
-
