@@ -17,6 +17,7 @@ import {
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
+import { normalizeLadderStatus } from "@shared";
 import type { Ladder } from "@shared/types";
 import type {
   LadderContextType,
@@ -51,10 +52,14 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const snapshot = await getDocs(query(ref, ...constraints));
-        return snapshot.docs.map(
-          (docSnap) =>
-            ({ ladderId: docSnap.id, ...docSnap.data() }) as Ladder,
-        );
+        return snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            ladderId: docSnap.id,
+            ...data,
+            status: normalizeLadderStatus(data.status as string | undefined),
+          } as Ladder;
+        });
       } catch (error) {
         console.error("Error fetching ladders:", error);
         return [];
@@ -81,9 +86,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           setLadderById(null);
           return null;
         }
+        const data = ladderDoc.data();
         const ladder = {
           ladderId: ladderDoc.id,
-          ...ladderDoc.data(),
+          ...data,
+          status: normalizeLadderStatus(data.status as string | undefined),
         } as Ladder;
         setLadderById(ladder);
         return ladder;
