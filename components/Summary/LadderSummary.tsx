@@ -95,7 +95,8 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
             getUserById,
             withWins,
           )) as ScoreboardProfile[];
-          if (active) setTopContenders(sortPlayersByPlacement(enriched).slice(0, 4));
+          if (active)
+            setTopContenders(sortPlayersByPlacement(enriched).slice(0, 4));
         } catch (error) {
           console.error("Error enriching ladder players:", error);
           if (active) setTopContenders([]);
@@ -122,7 +123,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     <Container testID="ladder-summary">
       {isPaid && (
         <PrizePotCard>
-          <SectionTitle>Total Prize Pot</SectionTitle>
+          <SectionTitle>Total Prize Pool</SectionTitle>
           <PrizePotValue testID="ladder-cash-pot">
             {formatCurrency(prizePool.cash, ladder.currencyType)}
           </PrizePotValue>
@@ -297,7 +298,7 @@ const SectionTitleRow = styled.View({
 const PrizePotCard = styled.View({
   padding: 20,
   borderRadius: 14,
-  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
   borderWidth: 1,
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
@@ -308,7 +309,7 @@ const PrizePotCard = styled.View({
 const PrizePotValue = styled.Text({
   fontSize: screenWidth <= 405 ? 30 : 34,
   fontWeight: "bold",
-  color: "#00A2FF",
+  color: "#ffc800ff",
 });
 
 const TableContainer = styled.View({
@@ -372,7 +373,7 @@ const RulesButton = styled.TouchableOpacity({
   justifyContent: "center",
   gap: 8,
   marginTop: 20,
-  paddingVertical: 14,
+  padding: 14,
   borderRadius: 12,
   borderWidth: 1,
   borderColor: "#ffffff",

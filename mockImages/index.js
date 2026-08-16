@@ -38,6 +38,6 @@ export const medals = [
 import ccDefaultImage from "./cc-default-bg-image.jpg";
 
 export const trophies = [trophy1, trophy2, trophy3, trophy4, trophyOutline];
-export const ladders = [ladderGold, ladderSilver, ladderBronze, ladderRuby];
+export const ladders = [ladderGold, ladderRuby, ladderSilver, ladderBronze];
 
 export { court1, court2, court3, court4, ccDefaultImage };
