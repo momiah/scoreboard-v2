@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { Dimensions, ScrollView, Text, View } from "react-native";
+import { Dimensions, ScrollView } from "react-native";
 import {
   useFocusEffect,
   useNavigation,
@@ -11,11 +11,10 @@ import type {
   RouteProp,
 } from "@react-navigation/native";
 import styled from "styled-components/native";
-import { LinearGradient } from "expo-linear-gradient";
+
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LADDER_TYPE } from "@shared/types";
-// import type { Ladder as LadderType } from "@shared/types";
 
 import Tag from "../../../components/Tag";
 import LadderSummary from "../../../components/Summary/LadderSummary";
@@ -27,14 +26,6 @@ import { ccDefaultImage } from "../../../mockImages/index";
 type LadderTab = "Summary" | "Matchmaking" | "Performance" | "Playoff Bracket";
 
 type LadderRouteParams = { ladderId: string; tab?: LadderTab };
-
-// const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-//   registrationOpen: { label: "Registration Open", color: "#FAB234" },
-//   registrationClosed: { label: "Registration Closed", color: "#FF9800" },
-//   playoffs: { label: "Playoffs", color: "#286EFA" },
-//   completed: { label: "Completed", color: "#1A6B1A" },
-//   cancelled: { label: "Cancelled", color: "#FF4757" },
-// };
 
 const Ladder: React.FC = () => {
   const route =
@@ -121,11 +112,6 @@ const Ladder: React.FC = () => {
                 ladderById.image ? { uri: ladderById.image } : ccDefaultImage
               }
             >
-              <GradientOverlay
-                colors={["rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.7)"]}
-                locations={[0.1, 1]}
-              />
-
               <OverlayTop>
                 <IconButton
                   activeOpacity={0.8}
@@ -236,14 +222,6 @@ const LadderImage = styled.ImageBackground.attrs({
   justifyContent: "flex-end",
 });
 
-const GradientOverlay = styled(LinearGradient)({
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-});
-
 const OverlayTop = styled.View({
   position: "absolute",
   top: 15,
@@ -257,7 +235,6 @@ const IconButton = styled.TouchableOpacity({
   borderRadius: 20,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "rgba(0, 0, 0, 0.4)",
 });
 
 const Menu = styled.View({
@@ -290,37 +267,7 @@ const OverlayBottom = styled.View({
   flexDirection: "row",
   justifyContent: "flex-end",
   padding: 15,
-});
-
-
-const DetailsContainer = styled.View({
-  paddingHorizontal: 15,
-  paddingBottom: 15,
-  gap: 8,
-});
-
-const NameBadge = styled.View({
-  padding: 5,
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
-  borderRadius: 5,
-  alignSelf: "flex-start",
-});
-
-const LadderName = styled.Text({
-  fontSize: 18,
-  fontWeight: "bold",
-  color: "white",
-});
-
-const TagRow = styled.View({
-  flexDirection: "row",
-  gap: 5,
-  flexWrap: "wrap",
-});
-
-const RegionText = styled.Text({
-  color: "white",
-  fontSize: 13,
+  marginBottom: 20,
 });
 
 const TabsContainer = styled.View({
@@ -334,7 +281,7 @@ const TabsContainer = styled.View({
 });
 
 const TabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
-  ({ isSelected }) => ({
+  ({ isSelected }: { isSelected: boolean }) => ({
     marginHorizontal: 5,
     paddingHorizontal: 20,
     paddingVertical: 10,
