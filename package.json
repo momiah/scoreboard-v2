@@ -8,7 +8,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest"
+    "test": "jest",
+    "shared": "npm i courtchamps-shared@github:momiah/courtchamps-shared#main --force",
+    "shared:start": "npm run shared && expo start -c"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
