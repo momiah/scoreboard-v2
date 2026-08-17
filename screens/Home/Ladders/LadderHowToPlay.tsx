@@ -1,19 +1,11 @@
 import React, { useContext, useMemo, useRef, useState } from "react";
-import {
-  Dimensions,
-  FlatList,
-  ScrollView,
-  View,
-} from "react-native";
+import { Dimensions, FlatList, ScrollView, View } from "react-native";
 import type {
   ListRenderItemInfo,
   NativeScrollEvent,
   NativeSyntheticEvent,
 } from "react-native";
-import {
-  useNavigation,
-  useRoute,
-} from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import type {
   NavigationProp,
   ParamListBase,
@@ -42,8 +34,7 @@ interface OnboardingPage {
 
 const LadderHowToPlay: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const route =
-    useRoute<RouteProp<Record<string, HowToPlayParams>, string>>();
+  const route = useRoute<RouteProp<Record<string, HowToPlayParams>, string>>();
   const { ladderId, maxPlayers: maxPlayersParam } = route.params;
   const { ladderById } = useContext(LadderContext);
 
@@ -101,9 +92,7 @@ const LadderHowToPlay: React.FC = () => {
       },
       {
         key: "playoffs",
-        render: () => (
-          <PlayoffsPage maxPlayers={maxPlayers} />
-        ),
+        render: () => <PlayoffsPage maxPlayers={maxPlayers} />,
       },
       {
         key: "finals",
@@ -191,10 +180,9 @@ const LadderHowToPlay: React.FC = () => {
         <NavButton
           onPress={() => goTo(index - 1)}
           disabled={index === 0}
-          isHidden={index === 0}
           testID="how-to-play-back"
         >
-          <NavButtonText>Back</NavButtonText>
+          <NavButtonText disabled={index === 0}>Back</NavButtonText>
         </NavButton>
 
         {index < lastIndex ? (
@@ -228,12 +216,7 @@ interface PageBodyProps {
   children?: React.ReactNode;
 }
 
-const PageBody: React.FC<PageBodyProps> = ({
-  icon,
-  title,
-  body,
-  children,
-}) => (
+const PageBody: React.FC<PageBodyProps> = ({ icon, title, body, children }) => (
   <ScrollView
     contentContainerStyle={{
       flexGrow: 1,
@@ -474,6 +457,7 @@ const NavRow = styled.View({
 const NavButton = styled.TouchableOpacity<{
   primary?: boolean;
   isHidden?: boolean;
+  disabled?: boolean;
 }>(({ primary, isHidden }: { primary?: boolean; isHidden?: boolean }) => ({
   flex: 1,
   paddingVertical: 15,
@@ -483,8 +467,10 @@ const NavButton = styled.TouchableOpacity<{
   backgroundColor: primary ? "#00A2FF" : "#1e2b3d",
 }));
 
-const NavButtonText = styled.Text({
-  color: "#ffffff",
-  fontSize: 15,
-  fontWeight: "bold",
-});
+const NavButtonText = styled.Text<{ disabled?: boolean }>(
+  ({ disabled }: { disabled?: boolean }) => ({
+    color: disabled ? "#7f97a8" : "#ffffff",
+    fontSize: 15,
+    fontWeight: "bold",
+  }),
+);
