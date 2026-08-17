@@ -24,8 +24,6 @@ const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
   numberOfWins: 0,
 })) as unknown as ScoreboardProfile[];
 
-const STATS_ROW_ICON_SIZE = 15;
-
 const LADDER_TOOLTIP =
   "Court Points (CP) — and cash on paid ladders — are shared across the top finishers.";
 
@@ -41,14 +39,11 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
           <StatValue testID="ladder-players">
             {ladder.participantCount} / {ladder.maxPlayers}
           </StatValue>
-          {/* <Ionicons
-            name="people-outline"
-            size={STATS_ROW_ICON_SIZE}
-            color="#00A2FF"
-          /> */}
         </StatHeadingContainer>
       </StatBlock>
+
       <StatDivider />
+
       <StatBlock>
         <StatLabel>Entry Fee</StatLabel>
         <StatHeadingContainer>
@@ -57,15 +52,11 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
               ? formatCurrency(ladder.entryFee, ladder.currencyType)
               : "Free"}
           </StatValue>
-
-          {/* <Ionicons
-            name="cash-outline"
-            size={STATS_ROW_ICON_SIZE}
-            color="#00A2FF"
-          /> */}
         </StatHeadingContainer>
       </StatBlock>
+
       <StatDivider />
+
       <StatBlock>
         <StatLabel>To Playoffs</StatLabel>
 
@@ -73,11 +64,6 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
           <StatValue testID="ladder-playoff-countdown">
             {playoffCountdown}
           </StatValue>
-          {/* <Ionicons
-            name="hourglass-outline"
-            size={STATS_ROW_ICON_SIZE}
-            color="#00A2FF"
-          /> */}
         </StatHeadingContainer>
       </StatBlock>
     </StatsRow>

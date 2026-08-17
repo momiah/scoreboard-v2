@@ -140,11 +140,11 @@ const Ladder: React.FC = () => {
 
               <OverlayBottom>
                 <Tag
-                  name="Join Ladder"
+                  name="How to Play"
                   color="#00A2FF"
                   iconColor="white"
                   iconSize={15}
-                  icon="person-add-outline"
+                  icon="book-outline"
                   iconPosition="right"
                   onPress={() => setJoinModalVisible(true)}
                   bold

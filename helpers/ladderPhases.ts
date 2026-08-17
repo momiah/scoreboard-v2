@@ -37,36 +37,35 @@ export interface LadderPhase {
 }
 
 const PHASE_DESCRIPTIONS: Record<LadderStatus, string> = {
-  [LADDER_STATUS.REGISTRATION_OPEN]: "Players sign up & pay entry.",
+  [LADDER_STATUS.REGISTRATION_OPEN]:
+    "Players sign up & start posting or accepting games",
   [LADDER_STATUS.REGISTRATION_CLOSED]:
-    "Open play — challenge players near your rank.",
+    "Ladder continues with no more new players.",
   [LADDER_STATUS.PLAYOFFS]: "Single-elim bracket to crown the champion.",
   [LADDER_STATUS.COMPLETED]: "Season over — prizes distributed.",
   [LADDER_STATUS.CANCELLED]: "This ladder was cancelled.",
 };
 
 export const getLadderPhases = (ladder: Ladder): LadderPhase[] => {
-  const windows: Record<
-    string,
-    { start: Moment | null; end: Moment | null }
-  > = {
-    [LADDER_STATUS.REGISTRATION_OPEN]: {
-      start: toMoment(ladder.registrationOpensAt),
-      end: toMoment(ladder.registrationClosesAt),
-    },
-    [LADDER_STATUS.REGISTRATION_CLOSED]: {
-      start: toMoment(ladder.seasonStartsAt),
-      end: toMoment(ladder.seasonEndsAt),
-    },
-    [LADDER_STATUS.PLAYOFFS]: {
-      start: toMoment(ladder.playoffStartsAt),
-      end: toMoment(ladder.playoffEndsAt),
-    },
-    [LADDER_STATUS.COMPLETED]: {
-      start: toMoment(ladder.playoffEndsAt),
-      end: null,
-    },
-  };
+  const windows: Record<string, { start: Moment | null; end: Moment | null }> =
+    {
+      [LADDER_STATUS.REGISTRATION_OPEN]: {
+        start: toMoment(ladder.registrationOpensAt),
+        end: toMoment(ladder.registrationClosesAt),
+      },
+      [LADDER_STATUS.REGISTRATION_CLOSED]: {
+        start: toMoment(ladder.seasonStartsAt),
+        end: toMoment(ladder.seasonEndsAt),
+      },
+      [LADDER_STATUS.PLAYOFFS]: {
+        start: toMoment(ladder.playoffStartsAt),
+        end: toMoment(ladder.playoffEndsAt),
+      },
+      [LADDER_STATUS.COMPLETED]: {
+        start: toMoment(ladder.playoffEndsAt),
+        end: null,
+      },
+    };
 
   return LADDER_STATUS_SEQUENCE.map((status) => ({
     status,
