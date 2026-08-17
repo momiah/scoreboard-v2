@@ -77,7 +77,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   const handleJoinPress = () => {
     if (!acceptedTerms) return;
     if (isPaid) {
-      // Paid ladders route through the payment provider (stubbed).
       setPaymentVisible(true);
     } else {
       handleJoinFree();
@@ -153,7 +152,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
         </Sheet>
       </Backdrop>
 
-      {/* Paid ladders: payment provider integration is stubbed for now. */}
       <PaymentStubModal
         visible={paymentVisible}
         ladder={ladder}
@@ -171,11 +169,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
 
 export default JoinLadderModal;
 
-/* -------------------------------------------------------------------------- */
-/* Payment provider — STUB.                                                   */
-/* TODO: replace with the real payment provider (e.g. Stripe) checkout flow.  */
-/* No participant is written here; the join happens after payment succeeds.   */
-/* -------------------------------------------------------------------------- */
 interface PaymentStubModalProps {
   visible: boolean;
   ladder: Ladder;

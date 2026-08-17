@@ -132,7 +132,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         );
 
         if (alreadyJoined) {
-          // Keep local state in sync but skip the write / count bump.
           setLadderById((prev) =>
             prev && prev.ladderId === ladderId
               ? { ...prev, ladderParticipants: participants }
