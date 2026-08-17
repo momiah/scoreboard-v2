@@ -101,6 +101,53 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   return (
     <Container testID="ladder-summary">
+      <StatsRow testID="ladder-stats-row">
+        <StatBlock>
+          <StatLabel>Players</StatLabel>
+          <StatHeadingContainer>
+            <StatValue testID="ladder-players">
+              {ladder.participantCount} / {ladder.maxPlayers}
+            </StatValue>
+            {/* <Ionicons
+              name="people-outline"
+              size={STATS_ROW_ICON_SIZE}
+              color="#00A2FF"
+            /> */}
+          </StatHeadingContainer>
+        </StatBlock>
+        <StatDivider />
+        <StatBlock>
+          <StatLabel>Entry Fee</StatLabel>
+          <StatHeadingContainer>
+            <StatValue testID="ladder-entry-fee">
+              {isPaid
+                ? formatCurrency(ladder.entryFee, ladder.currencyType)
+                : "Free"}
+            </StatValue>
+
+            {/* <Ionicons
+              name="cash-outline"
+              size={STATS_ROW_ICON_SIZE}
+              color="#00A2FF"
+            /> */}
+          </StatHeadingContainer>
+        </StatBlock>
+        <StatDivider />
+        <StatBlock>
+          <StatLabel>To Playoffs</StatLabel>
+
+          <StatHeadingContainer>
+            <StatValue testID="ladder-playoff-countdown">
+              {playoffCountdown}
+            </StatValue>
+            {/* <Ionicons
+              name="hourglass-outline"
+              size={STATS_ROW_ICON_SIZE}
+              color="#00A2FF"
+            /> */}
+          </StatHeadingContainer>
+        </StatBlock>
+      </StatsRow>
       {isPaid && (
         <PrizePotCard>
           <SectionTitle>Total Prize Pool</SectionTitle>
@@ -119,53 +166,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         tooltipMessage={LADDER_TOOLTIP}
         onViewFullDistribution={() => {}}
       />
-
-      <StatsRow testID="ladder-stats-row">
-        <StatBlock>
-          <StatHeadingContainer>
-            <StatValue testID="ladder-players">
-              {ladder.participantCount} / {ladder.maxPlayers}
-            </StatValue>
-            <Ionicons
-              name="people-outline"
-              size={STATS_ROW_ICON_SIZE}
-              color="#00A2FF"
-            />
-          </StatHeadingContainer>
-          <StatLabel>Players</StatLabel>
-        </StatBlock>
-        <StatDivider />
-        <StatBlock>
-          <StatHeadingContainer>
-            <StatValue testID="ladder-entry-fee">
-              {isPaid
-                ? formatCurrency(ladder.entryFee, ladder.currencyType)
-                : "Free"}
-            </StatValue>
-
-            <Ionicons
-              name="cash-outline"
-              size={STATS_ROW_ICON_SIZE}
-              color="#00A2FF"
-            />
-          </StatHeadingContainer>
-          <StatLabel>Entry Fee</StatLabel>
-        </StatBlock>
-        <StatDivider />
-        <StatBlock>
-          <StatHeadingContainer>
-            <StatValue testID="ladder-playoff-countdown">
-              {playoffCountdown}
-            </StatValue>
-            <Ionicons
-              name="hourglass-outline"
-              size={STATS_ROW_ICON_SIZE}
-              color="#00A2FF"
-            />
-          </StatHeadingContainer>
-          <StatLabel>To Playoffs</StatLabel>
-        </StatBlock>
-      </StatsRow>
 
       <SectionTitleRow>
         {hasPrizesDistributed ? (
@@ -311,7 +311,7 @@ const StatsRow = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  marginVertical: 20,
+  marginBottom: 20,
   padding: 16,
   borderRadius: 12,
   backgroundColor: "rgba(255, 255, 255, 0.04)",
@@ -350,7 +350,7 @@ const StatLabel = styled.Text({
 
 const GUTTER_WIDTH = 24;
 const DOT_SIZE = 14;
-const DOT_TOP = 4;
+const DOT_TOP = 10;
 const DOT_CENTER_Y = DOT_TOP + DOT_SIZE / 2;
 const LINE_LEFT = GUTTER_WIDTH / 2 - 1;
 
@@ -418,7 +418,7 @@ const Dot = styled.View<{ state: LadderPhaseState }>(
     backgroundColor: DOT_COLORS[state],
     ...(state === "active"
       ? {
-          shadowColor: "#FFD700",
+          shadowColor: "#ffb700ff",
           shadowOpacity: 0.9,
           shadowRadius: 6,
           shadowOffset: { width: 0, height: 0 },
