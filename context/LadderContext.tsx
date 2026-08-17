@@ -10,18 +10,23 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   limit,
   orderBy,
   query,
+  updateDoc,
   where,
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import { normalizeLadderStatus } from "@shared";
 import type { Ladder } from "@shared/types";
+import { computeLadderJoin } from "../helpers/ladderParticipants";
+import type { LadderJoinUser } from "../helpers/ladderParticipants";
 import type {
   LadderContextType,
   FetchLaddersOptions,
+  LadderJoinOutcome,
 } from "./types/LadderContextType";
 
 const LADDERS_COLLECTION = "ladders";
@@ -103,6 +108,63 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const joinLadder = useCallback(
+    async (
+      ladderId: string,
+      user: LadderJoinUser,
+    ): Promise<LadderJoinOutcome> => {
+      if (!ladderId || !user?.userId) {
+        return { success: false, alreadyJoined: false };
+      }
+
+      try {
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
+        const ladderDoc = await getDoc(ladderRef);
+        if (!ladderDoc.exists()) {
+          return { success: false, alreadyJoined: false };
+        }
+
+        const data = ladderDoc.data();
+        const { alreadyJoined, participants } = computeLadderJoin(
+          data.ladderParticipants,
+          data.participantCount,
+          user,
+        );
+
+        if (alreadyJoined) {
+          // Keep local state in sync but skip the write / count bump.
+          setLadderById((prev) =>
+            prev && prev.ladderId === ladderId
+              ? { ...prev, ladderParticipants: participants }
+              : prev,
+          );
+          return { success: true, alreadyJoined: true };
+        }
+
+        await updateDoc(ladderRef, {
+          ladderParticipants: participants,
+          participantCount: increment(1),
+        });
+
+        setLadderById((prev) =>
+          prev && prev.ladderId === ladderId
+            ? {
+                ...prev,
+                ladderParticipants: participants,
+                participantCount: (prev.participantCount ?? 0) + 1,
+              }
+            : prev,
+        );
+
+        return { success: true, alreadyJoined: false };
+      } catch (error) {
+        console.error("Error joining ladder:", error);
+        return { success: false, alreadyJoined: false };
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchUpcomingLadders();
   }, [fetchUpcomingLadders]);
@@ -116,6 +178,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadders,
         ladderById,
         fetchLadderById,
+        joinLadder,
       }}
     >
       {children}
