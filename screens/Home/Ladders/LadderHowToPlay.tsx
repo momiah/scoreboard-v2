@@ -79,7 +79,17 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="add-circle-outline"
             title="Post a Game"
-            body='Post games you want to play from the "Match Making" tab. Set it up and wait for another ladder member to accept.'
+            body={
+              <>
+                {"Post games you want to play from the "}
+                <PageText style={{ fontWeight: "bold", color: "#cccccc" }}>
+                  {`Match Making`}
+                </PageText>
+                {
+                  " tab. Set it up and wait for another ladder member to accept."
+                }
+              </>
+            }
           />
         ),
       },
@@ -99,7 +109,17 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="hand-left-outline"
             title="Accept a Game"
-            body='If you rather find games you can browse games other players have posted and accept one from the "Match Making" tab to lock in your next match.'
+            body={
+              <>
+                {
+                  "If you rather find games you can browse games other players have posted and accept one from the "
+                }
+                <PageText style={{ fontWeight: "bold", color: "#cccccc" }}>
+                  {`Match Making`}
+                </PageText>
+                {" tab to lock in your next match."}
+              </>
+            }
           />
         ),
       },
@@ -244,7 +264,7 @@ export default LadderHowToPlay;
 interface PageBodyProps {
   icon?: keyof typeof Ionicons.glyphMap;
   title: string;
-  body: string;
+  body: React.ReactNode;
   children?: React.ReactNode;
   image?: ImageSourcePropType;
 }

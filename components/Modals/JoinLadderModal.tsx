@@ -20,7 +20,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   EUR: "€",
 };
 
-const SERVICE_CHARGE_RATE = 0.15;
+const SERVICE_CHARGE_RATE = 0.1;
 
 const currencySymbol = (currencyType: string): string =>
   CURRENCY_SYMBOLS[currencyType] ?? "";
@@ -139,10 +139,12 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             <PriceColumn>
               {isPaid ? (
                 <>
-                  <Price>{formatCurrency(ladder.entryFee, ladder.currencyType)}</Price>
+                  <Price>
+                    {formatCurrency(ladder.entryFee, ladder.currencyType)}
+                  </Price>
                   <ServiceNote>
                     {currencySymbol(ladder.currencyType)}
-                    {serviceCharge.toFixed(2)} service charge included
+                    {serviceCharge.toFixed(2)} platform fee included
                   </ServiceNote>
                 </>
               ) : (
@@ -221,7 +223,12 @@ const PaymentStubModal: React.FC<PaymentStubModalProps> = ({
   ladder,
   onClose,
 }) => (
-  <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+  <Modal
+    visible={visible}
+    transparent
+    animationType="fade"
+    onRequestClose={onClose}
+  >
     <ModalContainer>
       <CentredContent testID="ladder-payment-stub">
         <Ionicons name="card-outline" size={40} color="#00A2FF" />
@@ -390,6 +397,7 @@ const CheckboxRow = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   gap: 10,
+  marginTop: 25,
 });
 
 const CheckboxLabel = styled.Text({
@@ -411,7 +419,7 @@ const ErrorText = styled.Text({
 const PayNote = styled.Text({
   color: "#9fb8c8",
   fontSize: 13,
-  textAlign: "center",
+  textAlign: "start",
 });
 
 const Highlight = styled.Text({
