@@ -33,6 +33,7 @@ import { cpBoosters } from "@/rankingMedals";
 
 import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
+import { useLadderJoin } from "../../../hooks/useLadderJoin";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -60,6 +61,10 @@ const LadderHowToPlay: React.FC = () => {
 
   const ladder =
     ladderById && ladderById.ladderId === ladderId ? ladderById : null;
+
+  const { isParticipant, requestJoin } = useLadderJoin(ladder, () =>
+    setJoinVisible(true),
+  );
 
   const goToRules = () => navigation.navigate("LadderRules", { ladderId });
 
@@ -245,10 +250,20 @@ const LadderHowToPlay: React.FC = () => {
           >
             <NavButtonText>Next</NavButtonText>
           </NavButton>
+        ) : isParticipant ? (
+          <NavButton
+            participant
+            disabled
+            activeOpacity={1}
+            testID="how-to-play-participant"
+          >
+            <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+            <NavButtonText>Participant</NavButtonText>
+          </NavButton>
         ) : (
           <NavButton
             primary
-            onPress={() => setJoinVisible(true)}
+            onPress={requestJoin}
             testID="how-to-play-join"
           >
             <NavButtonText>Join Now</NavButtonText>
@@ -601,14 +616,28 @@ const NavButton = styled.TouchableOpacity<{
   primary?: boolean;
   isHidden?: boolean;
   disabled?: boolean;
-}>(({ primary, isHidden }: { primary?: boolean; isHidden?: boolean }) => ({
-  flex: 1,
-  paddingVertical: 15,
-  borderRadius: 12,
-  alignItems: "center",
-  opacity: isHidden ? 0 : 1,
-  backgroundColor: primary ? "#00A2FF" : "#1e2b3d",
-}));
+  participant?: boolean;
+}>(
+  ({
+    primary,
+    isHidden,
+    participant,
+  }: {
+    primary?: boolean;
+    isHidden?: boolean;
+    participant?: boolean;
+  }) => ({
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 15,
+    borderRadius: 12,
+    opacity: isHidden ? 0 : 1,
+    backgroundColor: participant ? "#2b3440" : primary ? "#00A2FF" : "#1e2b3d",
+  }),
+);
 
 const NavButtonText = styled.Text<{ disabled?: boolean }>(
   ({ disabled }: { disabled?: boolean }) => ({
