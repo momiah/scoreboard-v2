@@ -102,6 +102,11 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
     });
   };
 
+  const goToTerms = () => {
+    setModalVisible(false);
+    navigation.navigate("LadderTerms", { ladderId: ladder.ladderId });
+  };
+
   const actionLabel = processing ? "Processing…" : isPaid ? "Pay" : "Join";
 
   return (
@@ -160,20 +165,27 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             </TeamSelect>
           )}
 
-          <CheckboxRow
-            testID="join-ladder-terms"
-            activeOpacity={0.7}
-            onPress={() => setAcceptedTerms((prev) => !prev)}
-          >
-            <Ionicons
-              name={acceptedTerms ? "checkbox" : "square-outline"}
-              size={22}
-              color={acceptedTerms ? "#00A2FF" : "#64748b"}
-            />
-            <CheckboxLabel>
-              I accept the <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
-            </CheckboxLabel>
-          </CheckboxRow>
+          <TermsRow>
+            <CheckboxToggle
+              testID="join-ladder-terms"
+              activeOpacity={0.7}
+              onPress={() => setAcceptedTerms((prev) => !prev)}
+            >
+              <Ionicons
+                name={acceptedTerms ? "checkbox" : "square-outline"}
+                size={22}
+                color={acceptedTerms ? "#00A2FF" : "#64748b"}
+              />
+              <CheckboxLabel>I accept the</CheckboxLabel>
+            </CheckboxToggle>
+            <TermsLink
+              testID="join-ladder-terms-link"
+              activeOpacity={0.7}
+              onPress={goToTerms}
+            >
+              <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
+            </TermsLink>
+          </TermsRow>
 
           {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
 
@@ -393,12 +405,21 @@ const TeamSelectText = styled.Text({
   fontSize: 15,
 });
 
-const CheckboxRow = styled.TouchableOpacity({
+const TermsRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: 6,
+  marginTop: 25,
+});
+
+const CheckboxToggle = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   gap: 10,
-  marginTop: 25,
 });
+
+const TermsLink = styled.TouchableOpacity({});
 
 const CheckboxLabel = styled.Text({
   color: "#cccccc",

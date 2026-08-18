@@ -133,6 +133,21 @@ const Ladder: React.FC = () => {
                     <Ionicons name="book-outline" size={16} color="#ffffff" />
                     <MenuItemText>Rules</MenuItemText>
                   </MenuItem>
+                  <MenuItem
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setMenuOpen(false);
+                      navigation.navigate("LadderTerms", { ladderId });
+                    }}
+                    testID="ladder-menu-terms"
+                  >
+                    <Ionicons
+                      name="document-text-outline"
+                      size={16}
+                      color="#ffffff"
+                    />
+                    <MenuItemText>Terms &amp; Conditions</MenuItemText>
+                  </MenuItem>
                 </Menu>
               )}
 

@@ -12,7 +12,9 @@ import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
+import JoinLadderModal from "../Modals/JoinLadderModal";
 import { UserContext } from "../../context/UserContext";
+import { isLadderParticipant } from "../../helpers/ladderParticipants";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
@@ -75,15 +77,20 @@ interface LadderSummaryProps {
 }
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
-  const { getUserById } = useContext(UserContext);
+  const { getUserById, currentUser } = useContext(UserContext);
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [joinVisible, setJoinVisible] = useState(false);
 
   const isPaid = ladder.entryFee > 0;
   const participants = useMemo(
     () => ladder.ladderParticipants ?? [],
     [ladder.ladderParticipants],
   );
+
+  const registrationOpen = ladder.status === LADDER_STATUS.REGISTRATION_OPEN;
+  const alreadyJoined = isLadderParticipant(participants, currentUser?.userId);
+  const canJoin = registrationOpen && !alreadyJoined;
 
   const prizePool = useMemo(
     () =>
@@ -132,6 +139,18 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   return (
     <Container testID="ladder-summary">
       <LadderStatsRow ladder={ladder} />
+
+      {canJoin && (
+        <JoinNowButton
+          testID="ladder-summary-join"
+          activeOpacity={0.85}
+          onPress={() => setJoinVisible(true)}
+        >
+          <Ionicons name="arrow-forward" size={18} color="#ffffff" />
+          <JoinNowText>Join Now</JoinNowText>
+        </JoinNowButton>
+      )}
+
       {isPaid && (
         <PrizePotCard>
           <SectionTitle>Total Prize Pool</SectionTitle>
@@ -190,6 +209,13 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         )}
       </TableContainer>
 
+      {!!ladder.description && (
+        <DescriptionSection testID="ladder-description">
+          <SectionTitle>About this Ladder</SectionTitle>
+          <DescriptionText>{ladder.description}</DescriptionText>
+        </DescriptionSection>
+      )}
+
       <View style={{ marginTop: 20 }}>
         <ParticipantCarousel
           participants={participants}
@@ -201,6 +227,14 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       <PhaseTimeline ladder={ladder} />
 
       <View style={{ height: 40 }} />
+
+      {joinVisible && (
+        <JoinLadderModal
+          modalVisible={joinVisible}
+          setModalVisible={setJoinVisible}
+          ladder={ladder}
+        />
+      )}
     </Container>
   );
 };
@@ -217,6 +251,34 @@ const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   color: "#ffffff",
+});
+
+const JoinNowButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  paddingVertical: 15,
+  borderRadius: 12,
+  backgroundColor: "#007AFF",
+  marginBottom: 20,
+});
+
+const JoinNowText = styled.Text({
+  color: "#ffffff",
+  fontSize: 16,
+  fontWeight: "bold",
+});
+
+const DescriptionSection = styled.View({
+  marginTop: 10,
+  gap: 8,
+});
+
+const DescriptionText = styled.Text({
+  fontSize: 14,
+  lineHeight: 20,
+  color: "#cccccc",
 });
 
 const SectionTitleRow = styled.View({

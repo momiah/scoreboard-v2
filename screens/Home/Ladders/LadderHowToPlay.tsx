@@ -24,7 +24,9 @@ import { AntDesign } from "@expo/vector-icons";
 import {
   LADDER_PLAYOFF_SIZES,
   LADDER_PLAYOFF_STRUCTURE,
-  getLadderPlayoffStructure,
+  LADDER_MIN_PLAYOFF_SIZE,
+  getEffectiveLadderSize,
+  getLadderPlayoffStructureForRegistrations,
   ccImageEndpoint,
 } from "@shared";
 import { cpBoosters } from "@/rankingMedals";
@@ -139,7 +141,12 @@ const LadderHowToPlay: React.FC = () => {
       },
       {
         key: "playoffs",
-        render: () => <PlayoffsPage maxPlayers={maxPlayers} />,
+        render: () => (
+          <PlayoffsPage
+            maxPlayers={maxPlayers}
+            registeredCount={ladder?.participantCount ?? 0}
+          />
+        ),
       },
       {
         key: "finals",
@@ -161,7 +168,7 @@ const LadderHowToPlay: React.FC = () => {
         ),
       },
     ],
-    [maxPlayers, ladderId],
+    [maxPlayers, ladderId, ladder?.participantCount],
   );
 
   const lastIndex = pages.length - 1;
@@ -303,10 +310,18 @@ const PageBody: React.FC<PageBodyProps> = ({
 
 interface PlayoffsPageProps {
   maxPlayers: number;
+  registeredCount: number;
 }
 
-const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ maxPlayers }) => {
-  const structure = getLadderPlayoffStructure(maxPlayers);
+const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
+  maxPlayers,
+  registeredCount,
+}) => {
+  const effectiveSize = getEffectiveLadderSize(registeredCount, maxPlayers);
+  const structure = getLadderPlayoffStructureForRegistrations(
+    registeredCount,
+    maxPlayers,
+  );
   const hasStructure = structure.playoffSpots > 0;
 
   return (
@@ -330,29 +345,47 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ maxPlayers }) => {
         knockout. Each round must be played within 1 week to progress to the
         next round.
       </PageText>
+      <PageText>
+        It&apos;s a tiered system. Prizes scale to the ladder&apos;s{" "}
+        <PageText style={{ fontWeight: "bold", color: "#ffffff" }}>
+          final size when registration closes
+        </PageText>{" "}
+        — not the {maxPlayers}-player capacity. If a 2048 ladder only fills to
+        512, it pays out at the 512 tier (32 in playoffs, 16 in the money).
+      </PageText>
 
-      {hasStructure && (
-        <Highlight testID="how-to-play-playoff-highlight">
-          <HighlightText>
-            This ladder ({maxPlayers} players):{" "}
-            <HighlightStrong>{structure.playoffSpots}</HighlightStrong> playoff
-            spots, <HighlightStrong>{structure.inTheMoney}</HighlightStrong> in
-            the money.
-          </HighlightText>
-        </Highlight>
-      )}
+      <Highlight testID="how-to-play-playoff-highlight">
+        <HighlightText>
+          <HighlightStrong>{registeredCount}</HighlightStrong> registered so
+          far.{" "}
+          {hasStructure ? (
+            <>
+              At the <HighlightStrong>{effectiveSize}</HighlightStrong> tier
+              that&apos;s <HighlightStrong>{structure.playoffSpots}</HighlightStrong>{" "}
+              playoff spots and{" "}
+              <HighlightStrong>{structure.inTheMoney}</HighlightStrong> in the
+              money.
+            </>
+          ) : (
+            <>
+              At least <HighlightStrong>{LADDER_MIN_PLAYOFF_SIZE}</HighlightStrong>{" "}
+              players are needed before playoff places are allocated.
+            </>
+          )}
+        </HighlightText>
+      </Highlight>
 
       <Table>
         <TableRow header>
           <TableCell header flex={1.2}>
-            Ladder size
+            Final ladder size
           </TableCell>
           <TableCell header>Playoff spots</TableCell>
           <TableCell header>In the money</TableCell>
         </TableRow>
         {LADDER_PLAYOFF_SIZES.map((size) => {
           const row = LADDER_PLAYOFF_STRUCTURE[size];
-          const isCurrent = size === maxPlayers;
+          const isCurrent = size === effectiveSize;
           return (
             <TableRow key={size} highlighted={isCurrent}>
               <TableCell flex={1.2} highlighted={isCurrent}>
@@ -364,6 +397,9 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ maxPlayers }) => {
           );
         })}
       </Table>
+      <FootNote>
+        Payouts lock to the tier the ladder reaches at registration close.
+      </FootNote>
     </ScrollView>
   );
 };
