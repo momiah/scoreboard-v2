@@ -1,9 +1,15 @@
 import React, { useContext, useMemo, useRef, useState } from "react";
-import { Dimensions, FlatList, ScrollView, View } from "react-native";
+import {
+  Dimensions,
+  FlatList,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import type {
   ListRenderItemInfo,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  ImageSourcePropType,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type {
@@ -13,12 +19,15 @@ import type {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { AntDesign } from "@expo/vector-icons";
 
 import {
   LADDER_PLAYOFF_SIZES,
   LADDER_PLAYOFF_STRUCTURE,
   getLadderPlayoffStructure,
+  ccImageEndpoint,
 } from "@shared";
+import { cpBoosters } from "@/rankingMedals";
 
 import Tag from "../../../components/Tag";
 import { LadderContext } from "../../../context/LadderContext";
@@ -54,8 +63,8 @@ const LadderHowToPlay: React.FC = () => {
         key: "intro",
         render: () => (
           <PageBody
-            icon="trophy-outline"
-            title="Welcome to the Ladder"
+            image={{ uri: ccImageEndpoint }}
+            title={"Welcome to the official \n Court Champs Ladder"}
             body="Climb the ranks by playing other members. This quick guide shows you how games work, how you earn Court Points, and how the season ends in the playoffs."
           />
         ),
@@ -71,12 +80,22 @@ const LadderHowToPlay: React.FC = () => {
         ),
       },
       {
+        key: "challenge-accepted",
+        render: () => (
+          <PageBody
+            icon="checkmark-circle-outline"
+            title="Challenge Accepted"
+            body="When someone accepts your game you must check in at your chosen court, play your opponent and publish your results"
+          />
+        ),
+      },
+      {
         key: "accept-game",
         render: () => (
           <PageBody
             icon="hand-left-outline"
             title="Accept a Game"
-            body='Browse games other players have posted and accept one from the "Match Making" tab to lock in your next match.'
+            body='If you rather find games you can browse games other players have posted and accept one from the "Match Making" tab to lock in your next match.'
           />
         ),
       },
@@ -91,6 +110,10 @@ const LadderHowToPlay: React.FC = () => {
         ),
       },
       {
+        key: "cp-boosters",
+        render: () => <AchievementMedalsPage />,
+      },
+      {
         key: "playoffs",
         render: () => <PlayoffsPage maxPlayers={maxPlayers} />,
       },
@@ -100,22 +123,15 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="ribbon-outline"
             title="Winning the Final"
-            body="The knockout ends in a single final — win it to be crowned champion and take the top share of the prize pot."
+            body="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
           >
-            <Tag
-              name="Read the full rules"
-              color="#00A2FF"
-              icon="book-outline"
-              iconColor="white"
-              iconSize={15}
-              iconPosition="right"
-              bold
-              width="100%"
-              onPress={goToRules}
-            />
+            <ReadRulesButton onPress={goToRules}>
+              <AntDesign name="book" size={15} color="white" />
+              <ButtonText>Read the full rules</ButtonText>
+            </ReadRulesButton>
             <FootNote>
               You can also open the rules anytime from the ladder page&apos;s
-              menu (☰).
+              menu.
             </FootNote>
           </PageBody>
         ),
@@ -144,15 +160,20 @@ const LadderHowToPlay: React.FC = () => {
   return (
     <Screen>
       <TopBar>
-        <BackButton
-          onPress={() => navigation.goBack()}
-          testID="how-to-play-close"
-        >
-          <Ionicons name="close" size={26} color="#ffffff" />
-        </BackButton>
         <TopBarTitle>How to Play</TopBarTitle>
-        <View style={{ width: 26 }} />
       </TopBar>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={{
+          alignSelf: "flex-end",
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 10,
+        }}
+      >
+        <AntDesign name="close-circle" size={30} color="red" />
+      </TouchableOpacity>
 
       <FlatList
         ref={listRef}
@@ -208,15 +229,21 @@ const LadderHowToPlay: React.FC = () => {
 };
 
 export default LadderHowToPlay;
-
 interface PageBodyProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
   title: string;
   body: string;
   children?: React.ReactNode;
+  image?: ImageSourcePropType;
 }
 
-const PageBody: React.FC<PageBodyProps> = ({ icon, title, body, children }) => (
+const PageBody: React.FC<PageBodyProps> = ({
+  icon,
+  title,
+  body,
+  children,
+  image,
+}) => (
   <ScrollView
     contentContainerStyle={{
       flexGrow: 1,
@@ -226,9 +253,16 @@ const PageBody: React.FC<PageBodyProps> = ({ icon, title, body, children }) => (
       paddingHorizontal: 30,
     }}
   >
-    <IconCircle>
-      <Ionicons name={icon} size={44} color="#00A2FF" />
-    </IconCircle>
+    {icon && (
+      <IconCircle>
+        <Ionicons name={icon} size={44} color="#00A2FF" />
+      </IconCircle>
+    )}
+    {image && (
+      <ImageContainer>
+        <Image source={image} resizeMode="contain" />
+      </ImageContainer>
+    )}
     <PageTitle>{title}</PageTitle>
     <PageText>{body}</PageText>
     {children}
@@ -261,8 +295,8 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ maxPlayers }) => {
       </CenteredHeader>
       <PageText>
         When the season ends, the top players advance to a single-elimination
-        knockout. How many advance — and how many finish in the money — scales
-        with the ladder size.
+        knockout. Each round must be played within 1 week to progress to the
+        next round.
       </PageText>
 
       {hasStructure && (
@@ -302,6 +336,32 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ maxPlayers }) => {
   );
 };
 
+const AchievementMedalsPage: React.FC = () => {
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: "center",
+        gap: 18,
+        paddingHorizontal: 24,
+        paddingVertical: 30,
+      }}
+    >
+      <ImageContainer>
+        <Image source={cpBoosters} resizeMode="contain" />
+      </ImageContainer>
+      <CenteredHeader style={{ marginTop: -40 }}>
+        <PageTitle>Achievement Medals</PageTitle>
+      </CenteredHeader>
+      <PageText>
+        Achievement Medals are awarded when you are performing your best - you
+        are awarded CP bonuses for win streaks, decisive victories and long
+        distant wins.
+      </PageText>
+    </ScrollView>
+  );
+};
+
 const Screen = styled.View({
   flex: 1,
   backgroundColor: "#00152B",
@@ -310,13 +370,9 @@ const Screen = styled.View({
 const TopBar = styled.View({
   flexDirection: "row",
   alignItems: "center",
-  justifyContent: "space-between",
+  justifyContent: "center",
   paddingHorizontal: 15,
   paddingVertical: 15,
-});
-
-const BackButton = styled.TouchableOpacity({
-  padding: 2,
 });
 
 const TopBarTitle = styled.Text({
@@ -405,6 +461,24 @@ const TableRow = styled.View<{ header?: boolean; highlighted?: boolean }>(
   }),
 );
 
+const ReadRulesButton = styled.TouchableOpacity({
+  padding: 20,
+  borderRadius: 14,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+  alignItems: "center",
+  flexDirection: "row",
+  gap: 6,
+  marginBottom: 40,
+});
+
+const ButtonText = styled.Text({
+  color: "white",
+  fontSize: 14,
+  fontWeight: "bold",
+});
+
 const TableCell = styled.Text<{
   header?: boolean;
   highlighted?: boolean;
@@ -474,3 +548,15 @@ const NavButtonText = styled.Text<{ disabled?: boolean }>(
     fontWeight: "bold",
   }),
 );
+
+const ImageContainer = styled.View({
+  width: "100%",
+  height: 200,
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const Image = styled.Image({
+  width: "90%",
+  height: "90%",
+});
