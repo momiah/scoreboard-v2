@@ -29,6 +29,7 @@ import {
 } from "@shared";
 import { cpBoosters } from "@/rankingMedals";
 
+import Tag from "../../../components/Tag";
 import { LadderContext } from "../../../context/LadderContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -506,8 +507,7 @@ const Dots = styled.View({
   flexDirection: "row",
   justifyContent: "center",
   gap: 8,
-  paddingTop: 8,
-  paddingBottom: 32,
+  paddingVertical: 16,
 });
 
 const Dot = styled.View<{ active: boolean }>(

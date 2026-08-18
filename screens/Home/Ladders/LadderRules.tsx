@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type {
@@ -8,7 +8,6 @@ import type {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import type { Ladder } from "@shared/types";
 
 import Tag from "../../../components/Tag";
 import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
@@ -49,31 +48,12 @@ const LadderRules: React.FC = () => {
   const route =
     useRoute<RouteProp<Record<string, LadderRulesParams>, string>>();
   const ladderId = route.params?.ladderId;
-  const { ladderById, fetchLadderById } = useContext(LadderContext);
+  const { ladderById } = useContext(LadderContext);
 
   const [joinVisible, setJoinVisible] = useState(false);
-  const [ladder, setLadder] = useState<Ladder | null>(
-    ladderById && ladderById.ladderId === ladderId ? ladderById : null,
-  );
 
-  useEffect(() => {
-    if (!ladderId) {
-      setLadder(null);
-      return;
-    }
-    if (ladderById && ladderById.ladderId === ladderId) {
-      setLadder(ladderById);
-      return;
-    }
-
-    let active = true;
-    fetchLadderById(ladderId).then((fetched) => {
-      if (active) setLadder(fetched);
-    });
-    return () => {
-      active = false;
-    };
-  }, [ladderId, ladderById, fetchLadderById]);
+  const ladder =
+    ladderById && ladderById.ladderId === ladderId ? ladderById : null;
 
   return (
     <Screen>
