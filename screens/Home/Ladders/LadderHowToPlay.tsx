@@ -62,7 +62,7 @@ const LadderHowToPlay: React.FC = () => {
   const ladder =
     ladderById && ladderById.ladderId === ladderId ? ladderById : null;
 
-  const { isParticipant, requestJoin } = useLadderJoin(ladder, () =>
+  const { mode, requestJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
   );
 
@@ -250,23 +250,23 @@ const LadderHowToPlay: React.FC = () => {
           >
             <NavButtonText>Next</NavButtonText>
           </NavButton>
-        ) : isParticipant ? (
+        ) : mode === "join" ? (
+          <NavButton primary onPress={requestJoin} testID="how-to-play-join">
+            <NavButtonText>Join Now</NavButtonText>
+          </NavButton>
+        ) : (
           <NavButton
             participant
             disabled
             activeOpacity={1}
             testID="how-to-play-participant"
           >
-            <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
-            <NavButtonText>Participant</NavButtonText>
-          </NavButton>
-        ) : (
-          <NavButton
-            primary
-            onPress={requestJoin}
-            testID="how-to-play-join"
-          >
-            <NavButtonText>Join Now</NavButtonText>
+            {mode === "participant" && (
+              <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+            )}
+            <NavButtonText>
+              {mode === "participant" ? "Participant" : "Registration Closed"}
+            </NavButtonText>
           </NavButton>
         )}
       </NavRow>

@@ -88,11 +88,9 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     [ladder.ladderParticipants],
   );
 
-  const registrationOpen = ladder.status === LADDER_STATUS.REGISTRATION_OPEN;
-  const { isParticipant, requestJoin } = useLadderJoin(ladder, () =>
+  const { mode, requestJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
   );
-  const showJoinButton = isParticipant || registrationOpen;
 
   const prizePool = useMemo(
     () =>
@@ -217,25 +215,28 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
       <PhaseTimeline ladder={ladder} />
 
-      {showJoinButton &&
-        (isParticipant ? (
-          <ParticipantButton
-            testID="ladder-summary-join"
-            disabled
-            activeOpacity={1}
-          >
+      {mode === "join" ? (
+        <JoinNowButton
+          testID="ladder-summary-join"
+          activeOpacity={0.85}
+          onPress={requestJoin}
+        >
+          <JoinNowText>Join Now</JoinNowText>
+        </JoinNowButton>
+      ) : (
+        <ParticipantButton
+          testID="ladder-summary-join"
+          disabled
+          activeOpacity={1}
+        >
+          {mode === "participant" && (
             <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
-            <ParticipantText>Participant</ParticipantText>
-          </ParticipantButton>
-        ) : (
-          <JoinNowButton
-            testID="ladder-summary-join"
-            activeOpacity={0.85}
-            onPress={requestJoin}
-          >
-            <JoinNowText>Join Now</JoinNowText>
-          </JoinNowButton>
-        ))}
+          )}
+          <ParticipantText>
+            {mode === "participant" ? "Participant" : "Registration Closed"}
+          </ParticipantText>
+        </ParticipantButton>
+      )}
 
       <View style={{ height: 40 }} />
 
