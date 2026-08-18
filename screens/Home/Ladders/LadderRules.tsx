@@ -1,17 +1,9 @@
-import React, { useContext, useState } from "react";
+import React from "react";
 import { ScrollView, View } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import type {
-  NavigationProp,
-  ParamListBase,
-  RouteProp,
-} from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-
-import Tag from "../../../components/Tag";
-import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
-import { LadderContext } from "../../../context/LadderContext";
 
 interface RuleSection {
   title: string;
@@ -41,19 +33,8 @@ const RULES: RuleSection[] = [
   },
 ];
 
-type LadderRulesParams = { ladderId?: string };
-
 const LadderRules: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const route =
-    useRoute<RouteProp<Record<string, LadderRulesParams>, string>>();
-  const ladderId = route.params?.ladderId;
-  const { ladderById } = useContext(LadderContext);
-
-  const [joinVisible, setJoinVisible] = useState(false);
-
-  const ladder =
-    ladderById && ladderById.ladderId === ladderId ? ladderById : null;
 
   return (
     <Screen>
@@ -73,30 +54,6 @@ const LadderRules: React.FC = () => {
           </RuleCard>
         ))}
       </ScrollView>
-
-      {ladder && (
-        <JoinBar testID="ladder-rules-join-bar">
-          <Tag
-            name="Join Now"
-            color="#00A2FF"
-            icon="arrow-forward"
-            iconColor="white"
-            iconSize={16}
-            iconPosition="right"
-            bold
-            width="100%"
-            onPress={() => setJoinVisible(true)}
-          />
-        </JoinBar>
-      )}
-
-      {ladder && joinVisible && (
-        <JoinLadderModal
-          modalVisible={joinVisible}
-          setModalVisible={setJoinVisible}
-          ladder={ladder}
-        />
-      )}
     </Screen>
   );
 };
@@ -124,15 +81,6 @@ const TopBarTitle = styled.Text({
   color: "#ffffff",
   fontSize: 18,
   fontWeight: "bold",
-});
-
-const JoinBar = styled.View({
-  paddingHorizontal: 20,
-  paddingTop: 12,
-  paddingBottom: 28,
-  borderTopWidth: 1,
-  borderTopColor: "#192336",
-  backgroundColor: "#00152B",
 });
 
 const RuleCard = styled.View({

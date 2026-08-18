@@ -29,7 +29,7 @@ import {
 } from "@shared";
 import { cpBoosters } from "@/rankingMedals";
 
-import Tag from "../../../components/Tag";
+import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -54,6 +54,10 @@ const LadderHowToPlay: React.FC = () => {
 
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
+  const [joinVisible, setJoinVisible] = useState(false);
+
+  const ladder =
+    ladderById && ladderById.ladderId === ladderId ? ladderById : null;
 
   const goToRules = () => navigation.navigate("LadderRules", { ladderId });
 
@@ -217,13 +221,21 @@ const LadderHowToPlay: React.FC = () => {
         ) : (
           <NavButton
             primary
-            onPress={() => navigation.goBack()}
-            testID="how-to-play-done"
+            onPress={() => setJoinVisible(true)}
+            testID="how-to-play-join"
           >
-            <NavButtonText>Got it</NavButtonText>
+            <NavButtonText>Join Now</NavButtonText>
           </NavButton>
         )}
       </NavRow>
+
+      {ladder && joinVisible && (
+        <JoinLadderModal
+          modalVisible={joinVisible}
+          setModalVisible={setJoinVisible}
+          ladder={ladder}
+        />
+      )}
     </Screen>
   );
 };
@@ -507,7 +519,8 @@ const Dots = styled.View({
   flexDirection: "row",
   justifyContent: "center",
   gap: 8,
-  paddingVertical: 16,
+  paddingTop: 8,
+  paddingBottom: 32,
 });
 
 const Dot = styled.View<{ active: boolean }>(
