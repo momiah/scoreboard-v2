@@ -14,22 +14,26 @@ import {
   limit,
   orderBy,
   query,
+  setDoc,
   updateDoc,
   where,
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import { normalizeLadderStatus } from "@shared";
-import type { Ladder } from "@shared/types";
+import type { Ladder, LadderGame, LadderGameInput } from "@shared/types";
 import { computeLadderJoin } from "../helpers/ladderParticipants";
 import type { LadderJoinUser } from "../helpers/ladderParticipants";
+import { buildLadderGameDocument } from "../helpers/ladderGameDocument";
 import type {
   LadderContextType,
   FetchLaddersOptions,
   LadderJoinOutcome,
+  CreateLadderGameOutcome,
 } from "./types/LadderContextType";
 
 const LADDERS_COLLECTION = "ladders";
+const LADDER_GAMES_COLLECTION = "ladderGames";
 
 export const LadderContext = createContext<LadderContextType>(
   {} as LadderContextType,
@@ -164,6 +168,70 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const createLadderGame = useCallback(
+    async (
+      ladderId: string,
+      input: LadderGameInput,
+      userId: string,
+    ): Promise<CreateLadderGameOutcome> => {
+      if (!ladderId || !userId) {
+        return { success: false, ladderGame: null };
+      }
+
+      try {
+        const gamesRef = collection(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_GAMES_COLLECTION,
+        );
+        const gameRef = doc(gamesRef);
+        const document = buildLadderGameDocument({ input, userId });
+        const ladderGame: LadderGame = {
+          ladderGameId: gameRef.id,
+          ...document,
+        };
+
+        await setDoc(gameRef, ladderGame);
+
+        return { success: true, ladderGame };
+      } catch (error) {
+        console.error("Error creating ladder game:", error);
+        return { success: false, ladderGame: null };
+      }
+    },
+    [],
+  );
+
+  const fetchLadderGames = useCallback(
+    async (ladderId: string): Promise<LadderGame[]> => {
+      if (!ladderId) return [];
+
+      try {
+        const gamesRef = collection(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_GAMES_COLLECTION,
+        );
+        const snapshot = await getDocs(
+          query(gamesRef, orderBy("createdAt", "desc")),
+        );
+        return snapshot.docs.map(
+          (docSnap) =>
+            ({
+              ...docSnap.data(),
+              ladderGameId: docSnap.id,
+            }) as LadderGame,
+        );
+      } catch (error) {
+        console.error("Error fetching ladder games:", error);
+        return [];
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchUpcomingLadders();
   }, [fetchUpcomingLadders]);
@@ -178,6 +246,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         ladderById,
         fetchLadderById,
         joinLadder,
+        createLadderGame,
+        fetchLadderGames,
       }}
     >
       {children}

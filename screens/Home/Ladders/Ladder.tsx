@@ -21,6 +21,7 @@ import LadderSummary from "../../../components/Summary/LadderSummary";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
+import Matchmaking from "./tabs/Matchmaking";
 
 type LadderTab = "Summary" | "Matchmaking" | "Performance" | "Playoff Bracket";
 
@@ -76,6 +77,7 @@ const Ladder: React.FC = () => {
       case "Summary":
         return <LadderSummary ladder={ladderById} />;
       case "Matchmaking":
+        return <Matchmaking ladder={ladderById} />;
       case "Performance":
       case "Playoff Bracket":
         return (
