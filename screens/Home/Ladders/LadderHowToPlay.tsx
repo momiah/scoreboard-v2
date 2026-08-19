@@ -25,6 +25,7 @@ import {
   LADDER_PLAYOFF_SIZES,
   LADDER_PLAYOFF_STRUCTURE,
   getEffectiveLadderSize,
+  calculateLadderPrizePool,
   ccImageEndpoint,
 } from "@shared";
 import { cpBoosters } from "@/rankingMedals";
@@ -32,6 +33,7 @@ import { cpBoosters } from "@/rankingMedals";
 import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
 import { useLadderJoin } from "../../../hooks/useLadderJoin";
+import { formatCurrency } from "../../../helpers/formatCurrency";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -148,6 +150,8 @@ const LadderHowToPlay: React.FC = () => {
           <PlayoffsPage
             maxPlayers={maxPlayers}
             registeredCount={ladder?.participantCount ?? 0}
+            entryFee={ladder?.entryFee ?? 0}
+            currencyType={ladder?.currencyType ?? "GBP"}
           />
         ),
       },
@@ -171,7 +175,13 @@ const LadderHowToPlay: React.FC = () => {
         ),
       },
     ],
-    [maxPlayers, ladderId, ladder?.participantCount],
+    [
+      maxPlayers,
+      ladderId,
+      ladder?.participantCount,
+      ladder?.entryFee,
+      ladder?.currencyType,
+    ],
   );
 
   const lastIndex = pages.length - 1;
@@ -324,13 +334,22 @@ const PageBody: React.FC<PageBodyProps> = ({
 interface PlayoffsPageProps {
   maxPlayers: number;
   registeredCount: number;
+  entryFee: number;
+  currencyType: string;
 }
 
 const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   maxPlayers,
   registeredCount,
+  entryFee,
+  currencyType,
 }) => {
   const effectiveSize = getEffectiveLadderSize(registeredCount, maxPlayers);
+  const isPaid = entryFee > 0;
+  const prizePool = calculateLadderPrizePool({
+    entryFee,
+    participantCount: registeredCount,
+  });
 
   return (
     <ScrollView
@@ -384,9 +403,15 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
         })}
       </Table>
       <FootNote>
-        Current ladder size: {registeredCount} / {maxPlayers} with a total cash
-        prize pool of [Insert prize pool amount if its cash ladder] and CP prize
-        pool of [Insert CP prize pool amount].
+        Current ladder size: {registeredCount} / {maxPlayers}
+        {isPaid && (
+          <>
+            {" "}
+            with a total cash prize pool of{" "}
+            {formatCurrency(prizePool.cash, currencyType)}
+          </>
+        )}{" "}
+        {isPaid ? "and a" : "with a"} CP prize pool of {prizePool.xp} CP.
       </FootNote>
     </ScrollView>
   );
