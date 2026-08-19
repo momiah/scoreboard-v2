@@ -24,9 +24,7 @@ import { AntDesign } from "@expo/vector-icons";
 import {
   LADDER_PLAYOFF_SIZES,
   LADDER_PLAYOFF_STRUCTURE,
-  LADDER_MIN_PLAYOFF_SIZE,
   getEffectiveLadderSize,
-  getLadderPlayoffStructureForRegistrations,
   ccImageEndpoint,
 } from "@shared";
 import { cpBoosters } from "@/rankingMedals";
@@ -333,11 +331,6 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   registeredCount,
 }) => {
   const effectiveSize = getEffectiveLadderSize(registeredCount, maxPlayers);
-  const structure = getLadderPlayoffStructureForRegistrations(
-    registeredCount,
-    maxPlayers,
-  );
-  const hasStructure = structure.playoffSpots > 0;
 
   return (
     <ScrollView
@@ -360,33 +353,11 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
         knockout. Each round must be played within 1 week to progress to the
         next round.
       </PageText>
-      <PageText>
-        It&apos;s a tiered system. Prizes scale to the ladder&apos;s{" "}
-        <PageText style={{ fontWeight: "bold", color: "#ffffff" }}>
-          final size when registration closes
-        </PageText>{" "}
-        — not the {maxPlayers}-player capacity. If a 2048 ladder only fills to
-        512, it pays out at the 512 tier (32 in playoffs, 16 in the money).
-      </PageText>
 
       <Highlight testID="how-to-play-playoff-highlight">
         <HighlightText>
-          <HighlightStrong>{registeredCount}</HighlightStrong> registered so
-          far.{" "}
-          {hasStructure ? (
-            <>
-              At the <HighlightStrong>{effectiveSize}</HighlightStrong> tier
-              that&apos;s <HighlightStrong>{structure.playoffSpots}</HighlightStrong>{" "}
-              playoff spots and{" "}
-              <HighlightStrong>{structure.inTheMoney}</HighlightStrong> in the
-              money.
-            </>
-          ) : (
-            <>
-              At least <HighlightStrong>{LADDER_MIN_PLAYOFF_SIZE}</HighlightStrong>{" "}
-              players are needed before playoff places are allocated.
-            </>
-          )}
+          The final playoff structure is determined by the number of players
+          registered when registration closes.
         </HighlightText>
       </Highlight>
 
@@ -413,7 +384,9 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
         })}
       </Table>
       <FootNote>
-        Payouts lock to the tier the ladder reaches at registration close.
+        Current ladder size: {registeredCount} / {maxPlayers} with a total cash
+        prize pool of [Insert prize pool amount if its cash ladder] and CP prize
+        pool of [Insert CP prize pool amount].
       </FootNote>
     </ScrollView>
   );

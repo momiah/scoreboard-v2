@@ -272,7 +272,7 @@ const JoinNowButton = styled.TouchableOpacity({
   gap: 8,
   paddingVertical: 15,
   borderRadius: 12,
-  backgroundColor: "#007AFF",
+  backgroundColor: "#00A2FF",
   marginTop: 20,
 });
 

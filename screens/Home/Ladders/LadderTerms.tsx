@@ -33,7 +33,7 @@ const TERMS: TermsSection[] = [
   },
   {
     title: "6. Refunds & cancellations",
-    body: "If a ladder is cancelled before it begins, paid entry fees are refunded. Once a ladder has started, entry fees are generally non-refundable except where required by law.",
+    body: "If a ladder is cancelled before it begins, paid entry fees are refunded. Once a ladder has started, you have the right for refund before you play your first match. After that, entry fees are generally non-refundable except where required by law.",
   },
   {
     title: "7. Changes",
@@ -47,7 +47,10 @@ const LadderTerms: React.FC = () => {
   return (
     <Screen>
       <TopBar>
-        <BackButton onPress={() => navigation.goBack()} testID="ladder-terms-back">
+        <BackButton
+          onPress={() => navigation.goBack()}
+          testID="ladder-terms-back"
+        >
           <Ionicons name="chevron-back" size={26} color="#ffffff" />
         </BackButton>
         <TopBarTitle>Terms &amp; Conditions</TopBarTitle>
