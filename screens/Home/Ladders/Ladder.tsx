@@ -18,7 +18,6 @@ import { LADDER_TYPE } from "@shared/types";
 
 import Tag from "../../../components/Tag";
 import LadderSummary from "../../../components/Summary/LadderSummary";
-import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
@@ -38,7 +37,6 @@ const Ladder: React.FC = () => {
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [joinModalVisible, setJoinModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -135,6 +133,21 @@ const Ladder: React.FC = () => {
                     <Ionicons name="book-outline" size={16} color="#ffffff" />
                     <MenuItemText>Rules</MenuItemText>
                   </MenuItem>
+                  <MenuItem
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setMenuOpen(false);
+                      navigation.navigate("LadderTerms", { ladderId });
+                    }}
+                    testID="ladder-menu-terms"
+                  >
+                    <Ionicons
+                      name="document-text-outline"
+                      size={16}
+                      color="#ffffff"
+                    />
+                    <MenuItemText>Terms &amp; Conditions</MenuItemText>
+                  </MenuItem>
                 </Menu>
               )}
 
@@ -146,7 +159,12 @@ const Ladder: React.FC = () => {
                   iconSize={15}
                   icon="book-outline"
                   iconPosition="right"
-                  onPress={() => setJoinModalVisible(true)}
+                  onPress={() =>
+                    navigation.navigate("LadderHowToPlay", {
+                      ladderId,
+                      maxPlayers: ladderById.maxPlayers,
+                    })
+                  }
                   bold
                 />
               </OverlayBottom>
@@ -173,14 +191,6 @@ const Ladder: React.FC = () => {
           </TabsContainer>
 
           {renderTab()}
-
-          {joinModalVisible && (
-            <JoinLadderModal
-              modalVisible={joinModalVisible}
-              setModalVisible={setJoinModalVisible}
-              ladder={ladderById}
-            />
-          )}
         </>
       )}
     </Screen>
