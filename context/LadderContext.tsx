@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import {
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -203,6 +204,34 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const addCourtToLadder = useCallback(
+    async (ladderId: string, courtId: string): Promise<boolean> => {
+      if (!ladderId || !courtId) return false;
+
+      try {
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
+        await updateDoc(ladderRef, { courtIds: arrayUnion(courtId) });
+
+        setLadderById((prev) =>
+          prev && prev.ladderId === ladderId
+            ? {
+                ...prev,
+                courtIds: prev.courtIds?.includes(courtId)
+                  ? prev.courtIds
+                  : [...(prev.courtIds ?? []), courtId],
+              }
+            : prev,
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Error adding court to ladder:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
   const fetchLadderGames = useCallback(
     async (ladderId: string): Promise<LadderGame[]> => {
       if (!ladderId) return [];
@@ -248,6 +277,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         joinLadder,
         createLadderGame,
         fetchLadderGames,
+        addCourtToLadder,
       }}
     >
       {children}

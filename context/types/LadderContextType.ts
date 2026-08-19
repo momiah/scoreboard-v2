@@ -28,6 +28,7 @@ export interface LadderContextType {
     userId: string,
   ) => Promise<CreateLadderGameOutcome>;
   fetchLadderGames: (ladderId: string) => Promise<LadderGame[]>;
+  addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 
 export interface FetchLaddersOptions {

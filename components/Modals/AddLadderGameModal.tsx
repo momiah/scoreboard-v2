@@ -3,6 +3,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Dimensions, Modal } from "react-native";
@@ -69,17 +70,21 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   setModalVisible,
   ladder,
 }) => {
-  const { createLadderGame } = useContext(LadderContext);
+  const { createLadderGame, addCourtToLadder } = useContext(LadderContext);
   const { getCourts, addCourt } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
-  const [courts, setCourts] = useState<Court[]>([]);
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Courts allowed for this ladder. Kept in refs so the add-court flow can
+  // read the freshly-updated set synchronously (avoids stale-closure lookups).
+  const allowedCourtIdsRef = useRef<string[]>([]);
+  const courtsRef = useRef<Court[]>([]);
 
   const { watch, setValue, handleSubmit, reset } =
     useForm<AddLadderGameFormValues>({
@@ -92,17 +97,18 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
 
   const courtFee = watch("courtFee");
 
-  const applyLadderCourts = useCallback(
-    (allCourts: Court[]): Court[] => {
-      const ladderCourts = allCourts.filter((court) =>
-        ladder.courtIds?.includes(court.courtId),
-      );
-      setCourts(ladderCourts);
-      setCourtsList(formatCourtDetailsForList(ladderCourts));
-      return ladderCourts;
-    },
-    [ladder.courtIds],
-  );
+  useEffect(() => {
+    allowedCourtIdsRef.current = ladder.courtIds ? [...ladder.courtIds] : [];
+  }, [ladder.courtIds]);
+
+  const applyLadderCourts = useCallback((allCourts: Court[]): Court[] => {
+    const ladderCourts = allCourts.filter((court) =>
+      allowedCourtIdsRef.current.includes(court.courtId),
+    );
+    courtsRef.current = ladderCourts;
+    setCourtsList(formatCourtDetailsForList(ladderCourts));
+    return ladderCourts;
+  }, []);
 
   useEffect(() => {
     if (!modalVisible) return;
@@ -114,7 +120,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
       } catch (error) {
         console.error("Error loading ladder courts:", error);
         if (active) {
-          setCourts([]);
+          courtsRef.current = [];
           setCourtsList([]);
         }
       }
@@ -126,12 +132,28 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   }, [modalVisible, getCourts, applyLadderCourts]);
 
   const handleCourtSelect = (value: string) => {
-    const item = courtsList.find((court) => court.value === value);
-    const court = item
-      ? courts.find((c) => c.courtId === item.key)
-      : undefined;
+    const court = courtsRef.current.find((c) => c.courtName.trim() === value);
     setSelectedCourt(court ?? null);
     if (court) setErrorMessage(null);
+  };
+
+  // Adding a court from the ladder route: create it unverified (submitted by
+  // the current user), attach it to this ladder's courtIds so it's selectable
+  // straight away, and flag it for later verification.
+  const handleAddCourt = async (
+    courtDetails: CourtDetails,
+  ): Promise<string | null> => {
+    const payload = {
+      ...(courtDetails as Court),
+      submittedBy: currentUser?.userId ?? "",
+      verified: false,
+    };
+    const newCourtId = await addCourt(payload);
+    if (newCourtId) {
+      allowedCourtIdsRef.current = [...allowedCourtIdsRef.current, newCourtId];
+      await addCourtToLadder(ladder.ladderId, newCourtId);
+    }
+    return newCourtId;
   };
 
   const feeAmount = useMemo(() => {
@@ -225,6 +247,15 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
               </CourtSelectorText>
               <AntDesign name="right" size={16} color="#9fb8c8" />
             </CourtSelector>
+            {!!selectedCourt && !selectedCourt.verified && (
+              <PendingTag testID="add-ladder-game-court-pending">
+                <AntDesign name="clock-circle" size={12} color="#f5a623" />
+                <PendingTagText>
+                  Pending verification — usable once an admin verifies this
+                  court.
+                </PendingTagText>
+              </PendingTag>
+            )}
           </Section>
 
           <OptionSelector
@@ -301,9 +332,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
           selectedCourtKey={selectedCourt?.courtId}
           onSelectCourt={handleCourtSelect}
           getCourts={getCourts}
-          addCourt={(courtDetails: CourtDetails) =>
-            addCourt(courtDetails as Court)
-          }
+          addCourt={handleAddCourt}
           onCourtsRefreshed={(rawCourtData: Court[]) =>
             applyLadderCourts(rawCourtData)
           }
@@ -381,6 +410,22 @@ const CourtSelectorText = styled.Text<{ selected: boolean }>(
     fontSize: 15,
   }),
 );
+
+const PendingTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 8,
+  backgroundColor: "rgba(245, 166, 35, 0.12)",
+});
+
+const PendingTagText = styled.Text({
+  color: "#f5a623",
+  fontSize: 12,
+  flexShrink: 1,
+});
 
 const FeeRow = styled.View({
   flexDirection: "row",
