@@ -14,6 +14,8 @@ const court = {
 const input = {
   court,
   bestOf: 5,
+  matchDate: "2025-05-01",
+  matchTime: { start: "18:00", end: "20:00" },
   courtFee: 20,
   currencyType: "GBP",
   shuttleType: "Feather",
@@ -49,6 +51,12 @@ describe("buildLadderGameDocument", () => {
     expect(doc.courtFee).toBe(20);
     expect(doc.currencyType).toBe("GBP");
     expect(doc.shuttleType).toBe("Feather");
+  });
+
+  it("carries the scheduled match date and time through", () => {
+    const doc = buildLadderGameDocument({ input, userId: "u1" });
+    expect(doc.matchDate).toBe("2025-05-01");
+    expect(doc.matchTime).toEqual({ start: "18:00", end: "20:00" });
   });
 
   it("uses the provided createdAt when given", () => {

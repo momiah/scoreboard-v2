@@ -11,4 +11,5 @@ export const formatCourtDetailsForList = (courts: Court[]): CourtListItem[] =>
     country: court.location?.country,
     address: court.location?.address,
     postCode: court.location?.postCode,
+    verified: court.verified,
   }));

@@ -20,6 +20,8 @@ export const buildLadderGameDocument = ({
 }: BuildLadderGameArgs): Omit<LadderGame, "ladderGameId"> => ({
   court: input.court,
   bestOf: input.bestOf,
+  matchDate: input.matchDate,
+  matchTime: input.matchTime,
   courtFee: input.courtFee,
   currencyType: input.currencyType,
   shuttleType: input.shuttleType,
