@@ -1,8 +1,13 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Dimensions, Modal } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 import { useForm } from "react-hook-form";
 
@@ -19,6 +24,9 @@ import type {
 } from "@shared/types";
 
 import OptionSelector from "../OptionSelector";
+import SearchCourt from "./SearchLocationModal";
+import type { CourtDetails, CourtListItem } from "./SearchLocationModal";
+import { formatCourtDetailsForList } from "../../helpers/formatCourtDetails";
 import { LadderContext } from "../../context/LadderContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
@@ -45,7 +53,6 @@ const formatCurrency = (amount: number, currencyType: string): string => {
 const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE * 100);
 
 interface AddLadderGameFormValues {
-  courtId: string;
   bestOf: number;
   courtFee: string;
   shuttleType: ShuttleType;
@@ -63,51 +70,69 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   ladder,
 }) => {
   const { createLadderGame } = useContext(LadderContext);
-  const { getCourts } = useContext(LeagueContext);
+  const { getCourts, addCourt } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
   const [courts, setCourts] = useState<Court[]>([]);
-  const [courtsLoading, setCourtsLoading] = useState(false);
+  const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { watch, setValue, handleSubmit, reset } =
     useForm<AddLadderGameFormValues>({
-    defaultValues: {
-      courtId: "",
-      bestOf: 5,
-      courtFee: "",
-      shuttleType: SHUTTLE_TYPE.FEATHER,
-    },
-  });
+      defaultValues: {
+        bestOf: 5,
+        courtFee: "",
+        shuttleType: SHUTTLE_TYPE.FEATHER,
+      },
+    });
 
-  const courtId = watch("courtId");
   const courtFee = watch("courtFee");
+
+  const applyLadderCourts = useCallback(
+    (allCourts: Court[]): Court[] => {
+      const ladderCourts = allCourts.filter((court) =>
+        ladder.courtIds?.includes(court.courtId),
+      );
+      setCourts(ladderCourts);
+      setCourtsList(formatCourtDetailsForList(ladderCourts));
+      return ladderCourts;
+    },
+    [ladder.courtIds],
+  );
 
   useEffect(() => {
     if (!modalVisible) return;
     let active = true;
     const loadCourts = async () => {
-      setCourtsLoading(true);
       try {
         const allCourts = await getCourts();
-        const ladderCourts = allCourts.filter((court) =>
-          ladder.courtIds?.includes(court.courtId),
-        );
-        if (active) setCourts(ladderCourts);
+        if (active) applyLadderCourts(allCourts);
       } catch (error) {
         console.error("Error loading ladder courts:", error);
-        if (active) setCourts([]);
-      } finally {
-        if (active) setCourtsLoading(false);
+        if (active) {
+          setCourts([]);
+          setCourtsList([]);
+        }
       }
     };
     loadCourts();
     return () => {
       active = false;
     };
-  }, [modalVisible, getCourts, ladder.courtIds]);
+  }, [modalVisible, getCourts, applyLadderCourts]);
+
+  const handleCourtSelect = (value: string) => {
+    const item = courtsList.find((court) => court.value === value);
+    const court = item
+      ? courts.find((c) => c.courtId === item.key)
+      : undefined;
+    setSelectedCourt(court ?? null);
+    if (court) setErrorMessage(null);
+  };
 
   const feeAmount = useMemo(() => {
     const parsed = Number(courtFee);
@@ -116,6 +141,8 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
 
   const resetAndClose = () => {
     reset();
+    setSelectedCourt(null);
+    setShowSearchCourtModal(false);
     setErrorMessage(null);
     setSubmitting(false);
     setModalVisible(false);
@@ -129,9 +156,6 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
       return;
     }
 
-    const selectedCourt = courts.find(
-      (court) => court.courtId === values.courtId,
-    );
     if (!selectedCourt) {
       setErrorMessage("Please select a court.");
       return;
@@ -191,50 +215,16 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
 
           <Section>
             <SectionLabel>Court</SectionLabel>
-            {courtsLoading ? (
-              <HelperText>Loading courts…</HelperText>
-            ) : courts.length === 0 ? (
-              <HelperText>No courts available for this ladder.</HelperText>
-            ) : (
-              <CourtList>
-                {courts.map((court) => {
-                  const isSelected = court.courtId === courtId;
-                  return (
-                    <CourtOption
-                      key={court.courtId}
-                      testID={`add-ladder-game-court-${court.courtId}`}
-                      activeOpacity={0.8}
-                      isSelected={isSelected}
-                      onPress={() =>
-                        setValue("courtId", court.courtId, {
-                          shouldValidate: true,
-                          shouldDirty: true,
-                        })
-                      }
-                    >
-                      <CourtInfo>
-                        <CourtName>{court.courtName}</CourtName>
-                        {!!court.location?.city && (
-                          <CourtMeta>
-                            {court.location.city}
-                            {court.location?.country
-                              ? `, ${court.location.country}`
-                              : ""}
-                          </CourtMeta>
-                        )}
-                      </CourtInfo>
-                      <Ionicons
-                        name={
-                          isSelected ? "radio-button-on" : "radio-button-off"
-                        }
-                        size={20}
-                        color={isSelected ? "#00A2FF" : "#64748b"}
-                      />
-                    </CourtOption>
-                  );
-                })}
-              </CourtList>
-            )}
+            <CourtSelector
+              testID="add-ladder-game-court-selector"
+              activeOpacity={0.8}
+              onPress={() => setShowSearchCourtModal(true)}
+            >
+              <CourtSelectorText selected={!!selectedCourt}>
+                {selectedCourt?.courtName || "Select Court"}
+              </CourtSelectorText>
+              <AntDesign name="right" size={16} color="#9fb8c8" />
+            </CourtSelector>
           </Section>
 
           <OptionSelector
@@ -302,6 +292,23 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
           </ActionButton>
         </ModalContent>
       </ModalContainer>
+
+      {showSearchCourtModal && (
+        <SearchCourt
+          visible={showSearchCourtModal}
+          onClose={() => setShowSearchCourtModal(false)}
+          courts={courtsList}
+          selectedCourtKey={selectedCourt?.courtId}
+          onSelectCourt={handleCourtSelect}
+          getCourts={getCourts}
+          addCourt={(courtDetails: CourtDetails) =>
+            addCourt(courtDetails as Court)
+          }
+          onCourtsRefreshed={(rawCourtData: Court[]) =>
+            applyLadderCourts(rawCourtData)
+          }
+        />
+      )}
     </Modal>
   );
 };
@@ -356,39 +363,24 @@ const SectionLabel = styled.Text({
   fontWeight: "bold",
 });
 
-const CourtList = styled.View({
-  gap: 8,
+const CourtSelector = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingHorizontal: 14,
+  paddingVertical: 14,
+  borderRadius: 10,
+  backgroundColor: "#00152B",
+  borderWidth: 1,
+  borderColor: "#414141",
 });
 
-const CourtOption = styled.TouchableOpacity<{ isSelected: boolean }>(
-  ({ isSelected }: { isSelected: boolean }) => ({
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: isSelected ? "#00284b" : "#00152B",
-    borderWidth: 1,
-    borderColor: isSelected ? "#004eb4" : "#414141",
+const CourtSelectorText = styled.Text<{ selected: boolean }>(
+  ({ selected }: { selected: boolean }) => ({
+    color: selected ? "#ffffff" : "#5b7488",
+    fontSize: 15,
   }),
 );
-
-const CourtInfo = styled.View({
-  flexShrink: 1,
-  paddingRight: 10,
-});
-
-const CourtName = styled.Text({
-  color: "#ffffff",
-  fontSize: 14,
-  fontWeight: "500",
-});
-
-const CourtMeta = styled.Text({
-  color: "#7f97a8",
-  fontSize: 12,
-});
 
 const FeeRow = styled.View({
   flexDirection: "row",
