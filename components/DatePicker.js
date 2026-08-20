@@ -15,7 +15,7 @@ const DatePicker = ({
   errorText,
   hasEndDate = true,
   labelStyle,
-  ladderEndDate,
+  playoffStartDate,
 }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -72,7 +72,15 @@ const DatePicker = ({
     }
   }, [hasEndDate, leagueLengthInMonths, startDate, setValue]);
 
-  console.log("ladderEndDate", ladderEndDate);
+  // Matches must be posted BEFORE playoffs begin, so cap selection at the day
+  // before the playoff start; otherwise fall back to the next 3 months.
+  const maxSelectableDate = playoffStartDate
+    ? new Date(
+        playoffStartDate.getFullYear(),
+        playoffStartDate.getMonth(),
+        playoffStartDate.getDate() - 1,
+      )
+    : new Date(new Date().setMonth(new Date().getMonth() + 3));
 
   return (
     <DatePickerContainer>
@@ -123,9 +131,7 @@ const DatePicker = ({
                 handleTempDateChange(selectedDate);
               }}
               minimumDate={new Date()}
-              maximumDate={
-                new Date(new Date().setMonth(new Date().getMonth() + 3))
-              }
+              maximumDate={maxSelectableDate}
             />
 
             <View
@@ -140,13 +146,13 @@ const DatePicker = ({
                 size={20}
                 color={"#00A2FF"}
               />
-              {/* <DisclaimerText>
-                {ladderEndDate
-                  ? `Season ends on ${formatDateForDatePicker(
-                      new Date(ladderEndDate.split("-").reverse().join("-")),
+              <DisclaimerText>
+                {playoffStartDate
+                  ? `Please select a date before ${formatDateForDatePicker(
+                      playoffStartDate,
                     )}.`
-                  : "Please select a date within the next 3 months."}{" "}
-              </DisclaimerText> */}
+                  : "Please select a date within the next 3 months."}
+              </DisclaimerText>
             </View>
 
             <ButtonContainer>

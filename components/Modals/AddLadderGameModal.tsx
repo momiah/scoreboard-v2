@@ -16,6 +16,9 @@ import {
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { AntDesign } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useForm, Controller } from "react-hook-form";
 
 import {
@@ -40,7 +43,7 @@ import { LadderContext } from "../../context/LadderContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
-import { formatDateForDatePicker } from "@/helpers/formatDateForDatePicker";
+import { toMoment } from "../../helpers/ladderPhases";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -80,12 +83,17 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   const { getCourts, addCourt } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Matches can only be posted before the ladder's playoffs begin.
+  const playoffStartDate = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
 
   // Courts allowed for this ladder. Kept in refs so the add-court flow can
   // read the freshly-updated set synchronously (avoids stale-closure lookups).
@@ -176,9 +184,15 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     reset();
     setSelectedCourt(null);
     setShowSearchCourtModal(false);
+    setAcceptedTerms(false);
     setErrorMessage(null);
     setSubmitting(false);
     setModalVisible(false);
+  };
+
+  const goToTerms = () => {
+    setModalVisible(false);
+    navigation.navigate("LadderTerms", { ladderId: ladder.ladderId });
   };
 
   const onSubmit = async (data: AddLadderGameFormValues) => {
@@ -232,7 +246,8 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     }
   };
 
-  const confirmDisabled = submitting || !selectedCourt || !startDate;
+  const confirmDisabled =
+    submitting || !selectedCourt || !startDate || !acceptedTerms;
 
   return (
     <Modal
@@ -282,7 +297,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   errorText={errors.startDate?.message}
                   hasEndDate={false}
                   labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
-                  ladderEndDate={ladder.seasonEndsAt}
+                  playoffStartDate={playoffStartDate}
                 />
 
                 <Label style={{ marginTop: 15, marginLeft: 5 }}>
@@ -362,6 +377,28 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                 <DisclaimerText>
                   A {PLATFORM_FEE_PERCENT}% platform fee will be deducted.
                 </DisclaimerText>
+
+                <TermsRow>
+                  <CheckboxToggle
+                    testID="add-ladder-game-terms"
+                    activeOpacity={0.7}
+                    onPress={() => setAcceptedTerms((prev) => !prev)}
+                  >
+                    <Ionicons
+                      name={acceptedTerms ? "checkbox" : "square-outline"}
+                      size={22}
+                      color={acceptedTerms ? "#00A2FF" : "#64748b"}
+                    />
+                    <CheckboxLabel>I accept the</CheckboxLabel>
+                  </CheckboxToggle>
+                  <TermsLink
+                    testID="add-ladder-game-terms-link"
+                    activeOpacity={0.7}
+                    onPress={goToTerms}
+                  >
+                    <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
+                  </TermsLink>
+                </TermsRow>
 
                 {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
 
@@ -525,6 +562,33 @@ const DisclaimerText = styled.Text({
   fontStyle: "italic",
   fontSize: 12,
   marginBottom: 6,
+});
+
+const TermsRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: 6,
+  marginTop: 20,
+});
+
+const CheckboxToggle = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+});
+
+const CheckboxLabel = styled.Text({
+  color: "#cccccc",
+  fontSize: 14,
+  flexShrink: 1,
+});
+
+const TermsLink = styled.TouchableOpacity({});
+
+const CheckboxLink = styled.Text({
+  color: "#00A2FF",
+  fontWeight: "bold",
 });
 
 const ButtonContainer = styled.View({
