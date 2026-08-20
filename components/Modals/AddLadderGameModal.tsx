@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -10,15 +9,14 @@ import {
   Dimensions,
   Modal,
   Platform,
-  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
   TouchableOpacity,
 } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { AntDesign } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 
 import {
   LADDER_GAME_BEST_OF_OPTIONS,
@@ -30,10 +28,10 @@ import type {
   Court,
   Ladder,
   LadderGameInput,
-  MatchTime,
   ShuttleType,
 } from "@shared/types";
 
+import DatePicker from "../DatePicker";
 import OptionSelector from "../OptionSelector";
 import SearchCourt from "./SearchLocationModal";
 import type { CourtDetails, CourtListItem } from "./SearchLocationModal";
@@ -43,46 +41,13 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 
-const screenWidth = Dimensions.get("window").width;
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  GBP: "£",
-  USD: "$",
-  EUR: "€",
-};
-
-const currencySymbol = (currencyType: string): string =>
-  CURRENCY_SYMBOLS[currencyType] ?? "";
-
-const formatCurrency = (amount: number, currencyType: string): string => {
-  const symbol = currencySymbol(currencyType);
-  return symbol
-    ? `${symbol}${amount.toFixed(2)}`
-    : `${amount.toFixed(2)} ${currencyType}`;
-};
+const { width: screenWidth } = Dimensions.get("window");
 
 const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE * 100);
-
 const TIME_STEP_MINUTES = 15;
 const MINUTES_IN_DAY = 24 * 60;
 
 const pad = (n: number): string => n.toString().padStart(2, "0");
-
-const toIsoDate = (date: Date): string =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-
-const parseIsoDate = (iso: string): Date => {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
-};
-
-const formatMatchDate = (iso: string): string =>
-  parseIsoDate(iso).toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 
 const shiftTime = (time: string, deltaMinutes: number): string => {
   const [hours, minutes] = time.split(":").map(Number);
@@ -91,15 +56,12 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 };
 
-const toMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-};
-
 interface AddLadderGameFormValues {
+  startDate: string;
+  startTime: string;
   bestOf: number;
-  courtFee: string;
   shuttleType: ShuttleType;
+  courtFee: string;
 }
 
 interface AddLadderGameModalProps {
@@ -121,13 +83,6 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
-  const [matchDate, setMatchDate] = useState("");
-  const [matchTime, setMatchTime] = useState<MatchTime>({
-    start: "18:00",
-    end: "20:00",
-  });
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [tempDate, setTempDate] = useState<Date>(new Date());
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -136,16 +91,25 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   const allowedCourtIdsRef = useRef<string[]>([]);
   const courtsRef = useRef<Court[]>([]);
 
-  const { watch, setValue, handleSubmit, reset } =
-    useForm<AddLadderGameFormValues>({
-      defaultValues: {
-        bestOf: 5,
-        courtFee: "",
-        shuttleType: SHUTTLE_TYPE.FEATHER,
-      },
-    });
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<AddLadderGameFormValues>({
+    defaultValues: {
+      startDate: "",
+      startTime: "18:00",
+      bestOf: 5,
+      shuttleType: SHUTTLE_TYPE.FEATHER,
+      courtFee: "",
+    },
+  });
 
-  const courtFee = watch("courtFee");
+  const startDate = watch("startDate");
+  const startTime = watch("startTime");
 
   useEffect(() => {
     allowedCourtIdsRef.current = ladder.courtIds ? [...ladder.courtIds] : [];
@@ -207,77 +171,32 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     return newCourtId;
   };
 
-  const openDatePicker = () => {
-    setTempDate(matchDate ? parseIsoDate(matchDate) : new Date());
-    setShowDatePicker(true);
-  };
-
-  const onDateChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === "android") {
-      setShowDatePicker(false);
-      if (event.type === "set" && selected) {
-        setMatchDate(toIsoDate(selected));
-        setErrorMessage(null);
-      }
-      return;
-    }
-    if (selected) setTempDate(selected);
-  };
-
-  const confirmIosDate = () => {
-    setMatchDate(toIsoDate(tempDate));
-    setShowDatePicker(false);
-    setErrorMessage(null);
-  };
-
-  const adjustTime = (key: keyof MatchTime, deltaMinutes: number) => {
-    setMatchTime((prev) => ({
-      ...prev,
-      [key]: shiftTime(prev[key], deltaMinutes),
-    }));
-  };
-
-  const feeAmount = useMemo(() => {
-    const parsed = Number(courtFee);
-    return Number.isFinite(parsed) ? parsed : NaN;
-  }, [courtFee]);
-
   const resetAndClose = () => {
     reset();
     setSelectedCourt(null);
     setShowSearchCourtModal(false);
-    setShowDatePicker(false);
-    setMatchDate("");
-    setMatchTime({ start: "18:00", end: "20:00" });
     setErrorMessage(null);
     setSubmitting(false);
     setModalVisible(false);
   };
 
-  const onSubmit = async (values: AddLadderGameFormValues) => {
+  const onSubmit = async (data: AddLadderGameFormValues) => {
     if (submitting) return;
 
     if (!currentUser?.userId) {
       setErrorMessage("You need to be signed in to post a match.");
       return;
     }
-
     if (!selectedCourt) {
       setErrorMessage("Please select a court.");
       return;
     }
-
-    if (!matchDate) {
+    if (!data.startDate) {
       setErrorMessage("Please pick a match date.");
       return;
     }
 
-    if (toMinutes(matchTime.end) <= toMinutes(matchTime.start)) {
-      setErrorMessage("Match end time must be after the start time.");
-      return;
-    }
-
-    const parsedFee = Number(values.courtFee || "0");
+    const parsedFee = Number(data.courtFee || "0");
     if (!Number.isFinite(parsedFee) || parsedFee < 0) {
       setErrorMessage("Please enter a valid court fee.");
       return;
@@ -285,12 +204,12 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
 
     const input: LadderGameInput = {
       court: selectedCourt,
-      bestOf: values.bestOf,
-      matchDate,
-      matchTime,
+      bestOf: data.bestOf,
+      matchDate: data.startDate,
+      matchTime: { start: data.startTime },
       courtFee: parsedFee,
       currencyType: ladder.currencyType,
-      shuttleType: values.shuttleType,
+      shuttleType: data.shuttleType,
     };
 
     setErrorMessage(null);
@@ -312,217 +231,142 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     }
   };
 
-  const submitLabel = submitting ? "Posting…" : "Post Match";
+  const confirmDisabled = submitting || !selectedCourt || !startDate;
 
   return (
     <Modal
-      visible={modalVisible}
-      transparent
       animationType="slide"
+      transparent
+      visible={modalVisible}
       onRequestClose={resetAndClose}
     >
       <ModalContainer>
-        <ModalContent testID="add-ladder-game-modal">
-          <CloseButton onPress={resetAndClose} testID="add-ladder-game-close">
-            <AntDesign name="close-circle" size={30} color="red" />
-          </CloseButton>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
+        <SafeAreaWrapper
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollContainer
+            data={[1]}
+            keyExtractor={() => "main"}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ gap: 16, paddingBottom: 4 }}
-          >
-            <Header>
-              <Title>Post a Match</Title>
-              <Subtitle>{ladder.name}</Subtitle>
-            </Header>
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            renderItem={() => (
+              <>
+                <ModalTitle>Post a Match</ModalTitle>
+                <Subtitle>{ladder.name}</Subtitle>
 
-            <Field>
-              <Label>Court</Label>
-              <Selector
-                testID="add-ladder-game-court-selector"
-                activeOpacity={0.8}
-                onPress={() => setShowSearchCourtModal(true)}
-              >
-                <SelectorText selected={!!selectedCourt}>
-                  {selectedCourt?.courtName || "Select Court"}
-                </SelectorText>
-                <AntDesign name="right" size={16} color="#9fb8c8" />
-              </Selector>
-              {!!selectedCourt && !selectedCourt.verified && (
-                <WarningTag testID="add-ladder-game-court-pending">
-                  <AntDesign name="clock-circle" size={12} color="#f5a623" />
-                  <WarningText>
-                    Pending verification — usable once an admin verifies this
-                    court.
-                  </WarningText>
-                </WarningTag>
-              )}
-            </Field>
-
-            <Field>
-              <Label>Match Date</Label>
-              <Selector
-                testID="add-ladder-game-date"
-                activeOpacity={0.8}
-                onPress={openDatePicker}
-              >
-                <SelectorText selected={!!matchDate}>
-                  {matchDate ? formatMatchDate(matchDate) : "Select date"}
-                </SelectorText>
-                <AntDesign name="calendar" size={16} color="#9fb8c8" />
-              </Selector>
-            </Field>
-
-            <Field>
-              <Label>Match Time</Label>
-              <TimeRow>
-                <TimeColumn>
-                  <TimeCaption>Start</TimeCaption>
-                  <TimeStepper>
-                    <TouchableOpacity
-                      testID="add-ladder-game-start-minus"
-                      onPress={() => adjustTime("start", -TIME_STEP_MINUTES)}
-                    >
-                      <AntDesign name="minus" size={18} color="#ffffff" />
-                    </TouchableOpacity>
-                    <TimeText>{matchTime.start}</TimeText>
-                    <TouchableOpacity
-                      testID="add-ladder-game-start-plus"
-                      onPress={() => adjustTime("start", TIME_STEP_MINUTES)}
-                    >
-                      <AntDesign name="plus" size={18} color="#ffffff" />
-                    </TouchableOpacity>
-                  </TimeStepper>
-                </TimeColumn>
-
-                <TimeColumn>
-                  <TimeCaption>End</TimeCaption>
-                  <TimeStepper>
-                    <TouchableOpacity
-                      testID="add-ladder-game-end-minus"
-                      onPress={() => adjustTime("end", -TIME_STEP_MINUTES)}
-                    >
-                      <AntDesign name="minus" size={18} color="#ffffff" />
-                    </TouchableOpacity>
-                    <TimeText>{matchTime.end}</TimeText>
-                    <TouchableOpacity
-                      testID="add-ladder-game-end-plus"
-                      onPress={() => adjustTime("end", TIME_STEP_MINUTES)}
-                    >
-                      <AntDesign name="plus" size={18} color="#ffffff" />
-                    </TouchableOpacity>
-                  </TimeStepper>
-                </TimeColumn>
-              </TimeRow>
-            </Field>
-
-            <OptionSelector
-              name="bestOf"
-              label="Best of"
-              watch={watch}
-              setValue={setValue}
-              options={[...LADDER_GAME_BEST_OF_OPTIONS]}
-              keyExtractor={(opt: number) => opt}
-              display={(opt: number) => `Best of ${opt}`}
-              errorText=""
-            />
-
-            <OptionSelector
-              name="shuttleType"
-              label="Shuttle Type"
-              watch={watch}
-              setValue={setValue}
-              options={[SHUTTLE_TYPE.FEATHER, SHUTTLE_TYPE.PLASTIC]}
-              keyExtractor={(opt: string) => opt}
-              display={(opt: string) => opt}
-              errorText=""
-            />
-
-            <Field>
-              <Label>Court Fee</Label>
-              <FeeRow>
-                {!!currencySymbol(ladder.currencyType) && (
-                  <FeePrefix>{currencySymbol(ladder.currencyType)}</FeePrefix>
+                <Label>Court</Label>
+                <CourtSelector
+                  testID="add-ladder-game-court-selector"
+                  onPress={() => setShowSearchCourtModal(true)}
+                >
+                  <CourtSelectorText selected={!!selectedCourt}>
+                    {selectedCourt?.courtName || "Select Court"}
+                  </CourtSelectorText>
+                  <AntDesign name="right" size={16} color="#888" />
+                </CourtSelector>
+                {!!selectedCourt && !selectedCourt.verified && (
+                  <WarningTag testID="add-ladder-game-court-pending">
+                    <AntDesign name="clock-circle" size={12} color="#f5a623" />
+                    <WarningText>
+                      Pending verification — usable once an admin verifies this
+                      court.
+                    </WarningText>
+                  </WarningTag>
                 )}
-                <FeeInput
-                  testID="add-ladder-game-fee"
-                  keyboardType="numeric"
-                  placeholder="0.00"
-                  placeholderTextColor="#5b7488"
-                  value={courtFee}
-                  onChangeText={(text: string) =>
-                    setValue("courtFee", text, { shouldValidate: true })
-                  }
+
+                <DatePicker
+                  setValue={setValue}
+                  watch={watch}
+                  errorText={errors.startDate?.message}
+                  hasEndDate={false}
                 />
-                <FeeCurrency>{ladder.currencyType}</FeeCurrency>
-              </FeeRow>
-              <HelperText>
-                Matches posted with no court fee tend to get accepted faster. If
-                you&apos;d prefer to split the venue cost, set a court fee for
-                this match.
-              </HelperText>
-              <HelperText>A {PLATFORM_FEE_PERCENT}% platform fee will be deducted.</HelperText>
-              {Number.isFinite(feeAmount) && feeAmount > 0 && (
-                <HelperText>
-                  Platform fee:{" "}
-                  {formatCurrency(feeAmount * PLATFORM_FEE, ladder.currencyType)}
-                </HelperText>
-              )}
-            </Field>
 
-            {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+                <Label>Start Time</Label>
+                <TimeStepper>
+                  <TouchableOpacity
+                    testID="add-ladder-game-start-minus"
+                    onPress={() =>
+                      setValue("startTime", shiftTime(startTime, -TIME_STEP_MINUTES))
+                    }
+                  >
+                    <AntDesign name="minus" size={20} color="#ffffff" />
+                  </TouchableOpacity>
+                  <TimeText>{startTime}</TimeText>
+                  <TouchableOpacity
+                    testID="add-ladder-game-start-plus"
+                    onPress={() =>
+                      setValue("startTime", shiftTime(startTime, TIME_STEP_MINUTES))
+                    }
+                  >
+                    <AntDesign name="plus" size={20} color="#ffffff" />
+                  </TouchableOpacity>
+                </TimeStepper>
 
-            <ActionButton
-              testID="add-ladder-game-submit"
-              activeOpacity={0.85}
-              disabled={submitting}
-              isDisabled={submitting}
-              onPress={handleSubmit(onSubmit)}
-            >
-              <ActionButtonText>{submitLabel}</ActionButtonText>
-            </ActionButton>
-          </ScrollView>
-        </ModalContent>
+                <OptionSelector
+                  setValue={setValue}
+                  watch={watch}
+                  name="bestOf"
+                  label="Best of"
+                  options={[...LADDER_GAME_BEST_OF_OPTIONS]}
+                />
+
+                <OptionSelector
+                  setValue={setValue}
+                  watch={watch}
+                  name="shuttleType"
+                  label="Shuttle Type"
+                  options={[SHUTTLE_TYPE.FEATHER, SHUTTLE_TYPE.PLASTIC]}
+                />
+
+                <Label>Court Fee ({ladder.currencyType})</Label>
+                <Controller
+                  control={control}
+                  name="courtFee"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <Input
+                      testID="add-ladder-game-fee"
+                      placeholder="0.00"
+                      placeholderTextColor="#ccc"
+                      keyboardType="numeric"
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                    />
+                  )}
+                />
+                <DisclaimerText>
+                  Matches posted with no court fee tend to get accepted faster.
+                  If you&apos;d prefer to split the venue cost, set a court fee
+                  for this match.
+                </DisclaimerText>
+                <DisclaimerText>
+                  A {PLATFORM_FEE_PERCENT}% platform fee will be deducted.
+                </DisclaimerText>
+
+                {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+
+                <ButtonContainer>
+                  <CancelButton onPress={resetAndClose}>
+                    <CancelText>Cancel</CancelText>
+                  </CancelButton>
+                  <CreateButton
+                    testID="add-ladder-game-submit"
+                    disabled={confirmDisabled}
+                    onPress={handleSubmit(onSubmit)}
+                  >
+                    {submitting ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <CreateText>Post Match</CreateText>
+                    )}
+                  </CreateButton>
+                </ButtonContainer>
+              </>
+            )}
+          />
+        </SafeAreaWrapper>
       </ModalContainer>
-
-      {showDatePicker && Platform.OS === "android" && (
-        <DateTimePicker
-          value={tempDate}
-          mode="date"
-          onChange={onDateChange}
-        />
-      )}
-
-      {showDatePicker && Platform.OS === "ios" && (
-        <Modal transparent animationType="fade">
-          <PickerBackdrop>
-            <PickerCard>
-              <DateTimePicker
-                value={tempDate}
-                mode="date"
-                display="spinner"
-                onChange={onDateChange}
-                themeVariant="dark"
-              />
-              <PickerActions>
-                <PickerAction
-                  onPress={() => setShowDatePicker(false)}
-                  testID="add-ladder-game-date-cancel"
-                >
-                  <PickerActionText muted>Cancel</PickerActionText>
-                </PickerAction>
-                <PickerAction
-                  onPress={confirmIosDate}
-                  testID="add-ladder-game-date-done"
-                >
-                  <PickerActionText>Done</PickerActionText>
-                </PickerAction>
-              </PickerActions>
-            </PickerCard>
-          </PickerBackdrop>
-        </Modal>
-      )}
 
       {showSearchCourtModal && (
         <SearchCourt
@@ -546,75 +390,97 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
 
 export default AddLadderGameModal;
 
-const ModalContainer = styled(BlurView).attrs({
-  intensity: 50,
-  tint: "dark",
-})({
+const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
 });
 
-const ModalContent = styled.View({
+const SafeAreaWrapper = styled(KeyboardAvoidingView)({
   width: screenWidth - 40,
-  maxHeight: "85%",
-  backgroundColor: "rgba(2, 13, 24, 1)",
-  borderRadius: 16,
-  padding: 24,
+  maxHeight: "90%",
+  margin: 20,
+  borderRadius: 20,
+  overflow: "hidden",
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
 });
 
-const CloseButton = styled.TouchableOpacity({
-  position: "absolute",
-  top: 12,
-  right: 12,
-  zIndex: 10,
-  padding: 2,
+const ScrollContainer = styled.FlatList({
+  padding: "40px 20px",
 });
 
-const Header = styled.View({
-  gap: 2,
-});
-
-const Title = styled.Text({
-  color: "#ffffff",
-  fontSize: 24,
+const ModalTitle = styled.Text({
+  fontSize: 20,
+  color: "#fff",
   fontWeight: "bold",
-  paddingRight: 30,
+  textAlign: "center",
 });
 
 const Subtitle = styled.Text({
   color: "#9fb8c8",
-  fontSize: 14,
-});
-
-const Field = styled.View({
-  gap: 8,
+  fontSize: 13,
+  textAlign: "center",
+  marginTop: 4,
+  marginBottom: 20,
 });
 
 const Label = styled.Text({
   color: "#ccc",
+  alignSelf: "flex-start",
   fontSize: 14,
   fontWeight: "bold",
+  marginBottom: 6,
 });
 
-const Selector = styled.TouchableOpacity({
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 12,
+  marginTop: 4,
+});
+
+const Input = styled.TextInput({
+  height: 40,
+  borderRadius: 6,
+  backgroundColor: "rgba(255, 255, 255, 0.2)",
+  color: "white",
+  paddingLeft: 12,
+  marginBottom: 16,
+});
+
+const CourtSelector = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  paddingHorizontal: 14,
-  paddingVertical: 14,
-  borderRadius: 10,
-  backgroundColor: "#00152B",
-  borderWidth: 1,
-  borderColor: "#414141",
+  height: 40,
+  borderRadius: 5,
+  paddingHorizontal: 12,
+  marginBottom: 16,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
 });
 
-const SelectorText = styled.Text<{ selected: boolean }>(
+const CourtSelectorText = styled.Text<{ selected: boolean }>(
   ({ selected }: { selected: boolean }) => ({
-    color: selected ? "#ffffff" : "#5b7488",
-    fontSize: 15,
+    color: selected ? "#fff" : "#999",
+    fontSize: 14,
   }),
 );
+
+const TimeStepper = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  height: 44,
+  borderRadius: 6,
+  paddingHorizontal: 16,
+  marginBottom: 16,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+});
+
+const TimeText = styled.Text({
+  color: "#ffffff",
+  fontSize: 16,
+  fontWeight: "bold",
+});
 
 const WarningTag = styled.View({
   flexDirection: "row",
@@ -623,6 +489,7 @@ const WarningTag = styled.View({
   paddingHorizontal: 10,
   paddingVertical: 6,
   borderRadius: 8,
+  marginBottom: 16,
   backgroundColor: "rgba(245, 166, 35, 0.12)",
 });
 
@@ -632,126 +499,45 @@ const WarningText = styled.Text({
   flexShrink: 1,
 });
 
-const TimeRow = styled.View({
-  flexDirection: "row",
-  gap: 12,
-});
-
-const TimeColumn = styled.View({
-  flex: 1,
-  gap: 6,
-});
-
-const TimeCaption = styled.Text({
-  color: "#7f97a8",
+const DisclaimerText = styled.Text({
+  color: "white",
+  fontStyle: "italic",
   fontSize: 12,
+  marginBottom: 6,
 });
 
-const TimeStepper = styled.View({
+const ButtonContainer = styled.View({
   flexDirection: "row",
-  alignItems: "center",
   justifyContent: "space-between",
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-  borderRadius: 10,
-  backgroundColor: "#00152B",
-  borderWidth: 1,
-  borderColor: "#414141",
+  marginTop: 20,
 });
 
-const TimeText = styled.Text({
-  color: "#ffffff",
+const CancelButton = styled.TouchableOpacity({
+  width: "45%",
+  padding: 12,
+  backgroundColor: "#9e9e9e",
+  borderRadius: 6,
+});
+
+const CancelText = styled.Text({
+  textAlign: "center",
+  color: "white",
   fontSize: 16,
-  fontWeight: "bold",
 });
 
-const FeeRow = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 8,
-  paddingHorizontal: 14,
-  borderRadius: 10,
-  backgroundColor: "#00152B",
-  borderWidth: 1,
-  borderColor: "#414141",
-});
-
-const FeePrefix = styled.Text({
-  color: "#bcdcf0",
-  fontSize: 18,
-  fontWeight: "bold",
-});
-
-const FeeInput = styled.TextInput({
-  flex: 1,
-  color: "#ffffff",
-  fontSize: 16,
-  paddingVertical: 12,
-});
-
-const FeeCurrency = styled.Text({
-  color: "#7f97a8",
-  fontSize: 13,
-});
-
-const HelperText = styled.Text({
-  color: "#7f97a8",
-  fontSize: 12,
-  lineHeight: 17,
-});
-
-const ErrorText = styled.Text({
-  color: "#f87171",
-  fontSize: 13,
-});
-
-const ActionButton = styled.TouchableOpacity<{ isDisabled: boolean }>(
-  ({ isDisabled }: { isDisabled: boolean }) => ({
-    width: "100%",
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: isDisabled ? "#1e3a52" : "#007AFF",
-    alignItems: "center",
-    opacity: isDisabled ? 0.7 : 1,
-    marginTop: 4,
+const CreateButton = styled.TouchableOpacity<{ disabled: boolean }>(
+  ({ disabled }: { disabled: boolean }) => ({
+    width: "45%",
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: disabled ? "#9e9e9e" : "#00A2FF",
+    opacity: disabled ? 0.6 : 1,
   }),
 );
 
-const ActionButtonText = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
+const CreateText = styled.Text({
+  textAlign: "center",
+  color: "white",
   fontWeight: "bold",
+  fontSize: 16,
 });
-
-const PickerBackdrop = styled.View({
-  flex: 1,
-  justifyContent: "flex-end",
-  backgroundColor: "rgba(0, 0, 0, 0.5)",
-});
-
-const PickerCard = styled.View({
-  backgroundColor: "rgba(2, 13, 24, 1)",
-  borderTopLeftRadius: 16,
-  borderTopRightRadius: 16,
-  padding: 16,
-});
-
-const PickerActions = styled.View({
-  flexDirection: "row",
-  justifyContent: "flex-end",
-  gap: 12,
-  marginTop: 8,
-});
-
-const PickerAction = styled.TouchableOpacity({
-  paddingHorizontal: 16,
-  paddingVertical: 10,
-});
-
-const PickerActionText = styled.Text<{ muted?: boolean }>(
-  ({ muted }: { muted?: boolean }) => ({
-    color: muted ? "#7f97a8" : "#00A2FF",
-    fontSize: 16,
-    fontWeight: "bold",
-  }),
-);
