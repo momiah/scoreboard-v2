@@ -25,7 +25,7 @@ import {
   LADDER_GAME_BEST_OF_OPTIONS,
   SHUTTLE_TYPE,
   PLATFORM_FEE,
-  COURT_SOURCE,
+  COMPETITION_TYPES,
 } from "@shared";
 import type {
   Court,
@@ -169,7 +169,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     const payload = {
       ...(courtDetails as Court),
       submittedBy: currentUser?.userId ?? "",
-      submittedVia: COURT_SOURCE.LADDER,
+      submittedVia: COMPETITION_TYPES.LADDER,
       verified: false,
     };
     const newCourtId = await addCourt(payload);
