@@ -14,6 +14,7 @@ import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import { UserContext } from "../../context/UserContext";
+import { LadderContext } from "../../context/LadderContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
@@ -78,15 +79,25 @@ interface LadderSummaryProps {
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const { getUserById } = useContext(UserContext);
+  const { fetchLadderParticipants } = useContext(LadderContext);
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
+  const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [joinVisible, setJoinVisible] = useState(false);
 
   const isPaid = ladder.entryFee > 0;
-  const participants = useMemo(
-    () => ladder.ladderParticipants ?? [],
-    [ladder.ladderParticipants],
-  );
+  const ladderId = ladder.ladderId;
+
+  // Participants live in the ladderParticipants subcollection.
+  useEffect(() => {
+    let active = true;
+    fetchLadderParticipants(ladderId).then((list) => {
+      if (active) setParticipants(list);
+    });
+    return () => {
+      active = false;
+    };
+  }, [ladderId, fetchLadderParticipants]);
 
   const { mode, requestJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),

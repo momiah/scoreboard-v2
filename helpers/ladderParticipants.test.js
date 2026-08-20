@@ -1,8 +1,4 @@
-import {
-  isLadderParticipant,
-  buildLadderParticipant,
-  computeLadderJoin,
-} from "./ladderParticipants";
+import { buildLadderParticipant } from "./ladderParticipants";
 
 const user = {
   userId: "u1",
@@ -12,23 +8,6 @@ const user = {
   profileImage: "https://example.com/moe.png",
   profileDetail: { memberSince: "Jan 2024" },
 };
-
-describe("isLadderParticipant", () => {
-  it("is true when the userId is present", () => {
-    expect(isLadderParticipant([{ userId: "u1" }, { userId: "u2" }], "u1")).toBe(
-      true,
-    );
-  });
-
-  it("is false when the userId is absent", () => {
-    expect(isLadderParticipant([{ userId: "u2" }], "u1")).toBe(false);
-  });
-
-  it("is false for missing participants or userId", () => {
-    expect(isLadderParticipant(undefined, "u1")).toBe(false);
-    expect(isLadderParticipant([{ userId: "u1" }], undefined)).toBe(false);
-  });
-});
 
 describe("buildLadderParticipant", () => {
   it("seeds identity fields and takes only the first name token", () => {
@@ -59,38 +38,5 @@ describe("buildLadderParticipant", () => {
     });
     expect(participant.profileImage).toBeTruthy();
     expect(participant.memberSince).toBe("");
-  });
-});
-
-describe("computeLadderJoin", () => {
-  it("appends a new participant and increments the count", () => {
-    const result = computeLadderJoin([{ userId: "u2" }], 1, user);
-    expect(result.alreadyJoined).toBe(false);
-    expect(result.participantCount).toBe(2);
-    expect(result.participants).toHaveLength(2);
-    expect(result.added?.userId).toBe("u1");
-    expect(result.participants[1].userId).toBe("u1");
-  });
-
-  it("is a no-op when the user has already joined", () => {
-    const existing = [{ ...buildLadderParticipant(user) }];
-    const result = computeLadderJoin(existing, 1, user);
-    expect(result.alreadyJoined).toBe(true);
-    expect(result.participantCount).toBe(1);
-    expect(result.participants).toHaveLength(1);
-    expect(result.added).toBeNull();
-  });
-
-  it("handles an empty/undefined ladder (first participant)", () => {
-    const result = computeLadderJoin(undefined, undefined, user);
-    expect(result.alreadyJoined).toBe(false);
-    expect(result.participantCount).toBe(1);
-    expect(result.participants).toHaveLength(1);
-  });
-
-  it("does not mutate the original participants array", () => {
-    const original = [{ userId: "u2" }];
-    computeLadderJoin(original, 1, user);
-    expect(original).toHaveLength(1);
   });
 });

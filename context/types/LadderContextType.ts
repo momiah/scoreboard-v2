@@ -1,4 +1,10 @@
-import type { Ladder, LadderMatch, LadderMatchInput } from "@shared/types";
+import type {
+  Ladder,
+  LadderMatch,
+  LadderMatchInput,
+  ScoreboardProfile,
+  TeamStats,
+} from "@shared/types";
 import type { LadderJoinUser } from "../../helpers/ladderParticipants";
 
 export interface LadderJoinOutcome {
@@ -22,6 +28,11 @@ export interface LadderContextType {
     ladderId: string,
     user: LadderJoinUser,
   ) => Promise<LadderJoinOutcome>;
+  joinedLadderIds: string[];
+  checkLadderMembership: (ladderId: string, userId: string) => Promise<boolean>;
+  fetchLadderParticipants: (ladderId: string) => Promise<ScoreboardProfile[]>;
+  addLadderTeam: (ladderId: string, team: TeamStats) => Promise<boolean>;
+  fetchLadderTeams: (ladderId: string) => Promise<TeamStats[]>;
   createLadderMatch: (
     ladderId: string,
     input: LadderMatchInput,

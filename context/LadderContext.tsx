@@ -18,12 +18,19 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import { normalizeLadderStatus } from "@shared";
-import type { Ladder, LadderMatch, LadderMatchInput } from "@shared/types";
-import { computeLadderJoin } from "../helpers/ladderParticipants";
+import type {
+  Ladder,
+  LadderMatch,
+  LadderMatchInput,
+  ScoreboardProfile,
+  TeamStats,
+} from "@shared/types";
+import { buildLadderParticipant } from "../helpers/ladderParticipants";
 import type { LadderJoinUser } from "../helpers/ladderParticipants";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import type {
@@ -35,6 +42,8 @@ import type {
 
 const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
+const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
+const LADDER_TEAMS_COLLECTION = "ladderTeams";
 
 export const LadderContext = createContext<LadderContextType>(
   {} as LadderContextType,
@@ -44,6 +53,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   const [upcomingLadders, setUpcomingLadders] = useState<Ladder[]>([]);
   const [upcomingLaddersLoading, setUpcomingLaddersLoading] = useState(false);
   const [ladderById, setLadderById] = useState<Ladder | null>(null);
+  // Ladder ids the current user has joined this session — optimistic cache so
+  // gating flips to "participant" immediately after a join without re-reading
+  // the ladderParticipants subcollection.
+  const [joinedLadderIds, setJoinedLadderIds] = useState<string[]>([]);
 
   const fetchLadders = useCallback(
     async ({
@@ -124,39 +137,34 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
-        const ladderDoc = await getDoc(ladderRef);
-        if (!ladderDoc.exists()) {
-          return { success: false, alreadyJoined: false };
-        }
-
-        const data = ladderDoc.data();
-        const { alreadyJoined, participants } = computeLadderJoin(
-          data.ladderParticipants,
-          data.participantCount,
-          user,
+        const participantRef = doc(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_PARTICIPANTS_COLLECTION,
+          user.userId,
         );
 
-        if (alreadyJoined) {
-          setLadderById((prev) =>
-            prev && prev.ladderId === ladderId
-              ? { ...prev, ladderParticipants: participants }
-              : prev,
+        const existing = await getDoc(participantRef);
+        if (existing.exists()) {
+          setJoinedLadderIds((prev) =>
+            prev.includes(ladderId) ? prev : [...prev, ladderId],
           );
           return { success: true, alreadyJoined: true };
         }
 
-        await updateDoc(ladderRef, {
-          ladderParticipants: participants,
-          participantCount: increment(1),
-        });
+        // Write the participant doc and bump the aggregate count atomically.
+        const batch = writeBatch(db);
+        batch.set(participantRef, buildLadderParticipant(user));
+        batch.update(ladderRef, { participantCount: increment(1) });
+        await batch.commit();
 
+        setJoinedLadderIds((prev) =>
+          prev.includes(ladderId) ? prev : [...prev, ladderId],
+        );
         setLadderById((prev) =>
           prev && prev.ladderId === ladderId
-            ? {
-                ...prev,
-                ladderParticipants: participants,
-                participantCount: (prev.participantCount ?? 0) + 1,
-              }
+            ? { ...prev, participantCount: (prev.participantCount ?? 0) + 1 }
             : prev,
         );
 
@@ -164,6 +172,95 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error("Error joining ladder:", error);
         return { success: false, alreadyJoined: false };
+      }
+    },
+    [],
+  );
+
+  const checkLadderMembership = useCallback(
+    async (ladderId: string, userId: string): Promise<boolean> => {
+      if (!ladderId || !userId) return false;
+      try {
+        const participantRef = doc(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_PARTICIPANTS_COLLECTION,
+          userId,
+        );
+        const snap = await getDoc(participantRef);
+        return snap.exists();
+      } catch (error) {
+        console.error("Error checking ladder membership:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const fetchLadderParticipants = useCallback(
+    async (ladderId: string): Promise<ScoreboardProfile[]> => {
+      if (!ladderId) return [];
+      try {
+        const snapshot = await getDocs(
+          collection(
+            db,
+            LADDERS_COLLECTION,
+            ladderId,
+            LADDER_PARTICIPANTS_COLLECTION,
+          ),
+        );
+        return snapshot.docs.map((docSnap) => docSnap.data() as ScoreboardProfile);
+      } catch (error) {
+        console.error("Error fetching ladder participants:", error);
+        return [];
+      }
+    },
+    [],
+  );
+
+  // Teams scaffold: writes/reads the ladders/{id}/ladderTeams subcollection.
+  // No caller yet — ready for the doubles team-join flow.
+  const addLadderTeam = useCallback(
+    async (ladderId: string, team: TeamStats): Promise<boolean> => {
+      if (!ladderId || !team?.teamKey) return false;
+      try {
+        const teamRef = doc(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_TEAMS_COLLECTION,
+          team.teamKey,
+        );
+        const existing = await getDoc(teamRef);
+        const batch = writeBatch(db);
+        batch.set(teamRef, team);
+        if (!existing.exists()) {
+          batch.update(doc(db, LADDERS_COLLECTION, ladderId), {
+            participantCount: increment(1),
+          });
+        }
+        await batch.commit();
+        return true;
+      } catch (error) {
+        console.error("Error adding ladder team:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const fetchLadderTeams = useCallback(
+    async (ladderId: string): Promise<TeamStats[]> => {
+      if (!ladderId) return [];
+      try {
+        const snapshot = await getDocs(
+          collection(db, LADDERS_COLLECTION, ladderId, LADDER_TEAMS_COLLECTION),
+        );
+        return snapshot.docs.map((docSnap) => docSnap.data() as TeamStats);
+      } catch (error) {
+        console.error("Error fetching ladder teams:", error);
+        return [];
       }
     },
     [],
@@ -275,6 +372,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         ladderById,
         fetchLadderById,
         joinLadder,
+        joinedLadderIds,
+        checkLadderMembership,
+        fetchLadderParticipants,
+        addLadderTeam,
+        fetchLadderTeams,
         createLadderMatch,
         fetchLadderMatches,
         addCourtToLadder,
