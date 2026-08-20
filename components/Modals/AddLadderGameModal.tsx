@@ -40,6 +40,7 @@ import { LadderContext } from "../../context/LadderContext";
 import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
+import { formatDateForDatePicker } from "@/helpers/formatDateForDatePicker";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -281,6 +282,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   errorText={errors.startDate?.message}
                   hasEndDate={false}
                   labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
+                  ladderEndDate={ladder.seasonEndsAt}
                 />
 
                 <Label style={{ marginTop: 15, marginLeft: 5 }}>

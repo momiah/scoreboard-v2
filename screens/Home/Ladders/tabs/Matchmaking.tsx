@@ -21,7 +21,9 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   );
 
   const nonParticipant = isSignedIn && !isParticipant;
-  const buttonLabel = nonParticipant ? "Join the ladder to post" : "Post a Game";
+  const buttonLabel = nonParticipant
+    ? "Join the ladder to post"
+    : "Post a Game";
 
   const handlePostGame = () => {
     if (!isSignedIn) {
@@ -63,9 +65,9 @@ const Container = styled.View({
 const PostButton = styled.TouchableOpacity<{ isDisabled: boolean }>(
   ({ isDisabled }: { isDisabled: boolean }) => ({
     width: "100%",
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: isDisabled ? "#1e3a52" : "#007AFF",
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: isDisabled ? "#1e3a52" : "#00A2FF",
     alignItems: "center",
     opacity: isDisabled ? 0.7 : 1,
   }),

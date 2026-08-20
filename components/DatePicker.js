@@ -15,6 +15,7 @@ const DatePicker = ({
   errorText,
   hasEndDate = true,
   labelStyle,
+  ladderEndDate,
 }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -70,6 +71,8 @@ const DatePicker = ({
       setValue("endDate", nextEndDate);
     }
   }, [hasEndDate, leagueLengthInMonths, startDate, setValue]);
+
+  console.log("ladderEndDate", ladderEndDate);
 
   return (
     <DatePickerContainer>
@@ -137,9 +140,13 @@ const DatePicker = ({
                 size={20}
                 color={"#00A2FF"}
               />
-              <DisclaimerText>
-                Please select a date within the next 3 months.
-              </DisclaimerText>
+              {/* <DisclaimerText>
+                {ladderEndDate
+                  ? `Season ends on ${formatDateForDatePicker(
+                      new Date(ladderEndDate.split("-").reverse().join("-")),
+                    )}.`
+                  : "Please select a date within the next 3 months."}{" "}
+              </DisclaimerText> */}
             </View>
 
             <ButtonContainer>
