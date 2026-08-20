@@ -255,7 +255,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                 <ModalTitle>Post a Match</ModalTitle>
                 <Subtitle>{ladder.name}</Subtitle>
 
-                <Label>Court</Label>
+                <Label style={{ marginLeft: 5 }}>Court</Label>
                 <CourtSelector
                   testID="add-ladder-game-court-selector"
                   onPress={() => setShowSearchCourtModal(true)}
@@ -280,14 +280,20 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   watch={watch}
                   errorText={errors.startDate?.message}
                   hasEndDate={false}
+                  labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
                 />
 
-                <Label>Start Time</Label>
+                <Label style={{ marginTop: 15, marginLeft: 5 }}>
+                  Start Time
+                </Label>
                 <TimeStepper>
                   <TouchableOpacity
                     testID="add-ladder-game-start-minus"
                     onPress={() =>
-                      setValue("startTime", shiftTime(startTime, -TIME_STEP_MINUTES))
+                      setValue(
+                        "startTime",
+                        shiftTime(startTime, -TIME_STEP_MINUTES),
+                      )
                     }
                   >
                     <AntDesign name="minus" size={20} color="#ffffff" />
@@ -296,7 +302,10 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   <TouchableOpacity
                     testID="add-ladder-game-start-plus"
                     onPress={() =>
-                      setValue("startTime", shiftTime(startTime, TIME_STEP_MINUTES))
+                      setValue(
+                        "startTime",
+                        shiftTime(startTime, TIME_STEP_MINUTES),
+                      )
                     }
                   >
                     <AntDesign name="plus" size={20} color="#ffffff" />
@@ -319,7 +328,9 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   options={[SHUTTLE_TYPE.FEATHER, SHUTTLE_TYPE.PLASTIC]}
                 />
 
-                <Label>Court Fee ({ladder.currencyType})</Label>
+                <Label style={{ marginTop: 15, marginLeft: 5 }}>
+                  Court Fee ({ladder.currencyType})
+                </Label>
                 <Controller
                   control={control}
                   name="courtFee"
@@ -332,6 +343,12 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
+                      style={{
+                        // marginTop: 40,
+                        marginBottom: 16,
+                        marginHorizontal: 10,
+                        backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      }}
                     />
                   )}
                 />
@@ -441,7 +458,7 @@ const ErrorText = styled.Text({
 const Input = styled.TextInput({
   height: 40,
   borderRadius: 6,
-  backgroundColor: "rgba(255, 255, 255, 0.2)",
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
   color: "white",
   paddingLeft: 12,
   marginBottom: 16,
@@ -454,6 +471,7 @@ const CourtSelector = styled.TouchableOpacity({
   height: 40,
   borderRadius: 5,
   paddingHorizontal: 12,
+  marginHorizontal: 9,
   marginBottom: 16,
   backgroundColor: "rgba(255, 255, 255, 0.1)",
 });
@@ -469,10 +487,11 @@ const TimeStepper = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
-  height: 44,
+  height: 40,
   borderRadius: 6,
   paddingHorizontal: 16,
-  marginBottom: 16,
+  marginBottom: 10,
+  marginHorizontal: 10,
   backgroundColor: "rgba(255, 255, 255, 0.1)",
 });
 
