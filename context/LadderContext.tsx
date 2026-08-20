@@ -22,19 +22,19 @@ import {
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
 import { normalizeLadderStatus } from "@shared";
-import type { Ladder, LadderGame, LadderGameInput } from "@shared/types";
+import type { Ladder, LadderMatch, LadderMatchInput } from "@shared/types";
 import { computeLadderJoin } from "../helpers/ladderParticipants";
 import type { LadderJoinUser } from "../helpers/ladderParticipants";
-import { buildLadderGameDocument } from "../helpers/ladderGameDocument";
+import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import type {
   LadderContextType,
   FetchLaddersOptions,
   LadderJoinOutcome,
-  CreateLadderGameOutcome,
+  CreateLadderMatchOutcome,
 } from "./types/LadderContextType";
 
 const LADDERS_COLLECTION = "ladders";
-const LADDER_GAMES_COLLECTION = "ladderGames";
+const LADDER_MATCHES_COLLECTION = "ladderMatches";
 
 export const LadderContext = createContext<LadderContextType>(
   {} as LadderContextType,
@@ -169,36 +169,36 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const createLadderGame = useCallback(
+  const createLadderMatch = useCallback(
     async (
       ladderId: string,
-      input: LadderGameInput,
+      input: LadderMatchInput,
       userId: string,
-    ): Promise<CreateLadderGameOutcome> => {
+    ): Promise<CreateLadderMatchOutcome> => {
       if (!ladderId || !userId) {
-        return { success: false, ladderGame: null };
+        return { success: false, ladderMatch: null };
       }
 
       try {
-        const gamesRef = collection(
+        const matchesRef = collection(
           db,
           LADDERS_COLLECTION,
           ladderId,
-          LADDER_GAMES_COLLECTION,
+          LADDER_MATCHES_COLLECTION,
         );
-        const gameRef = doc(gamesRef);
-        const document = buildLadderGameDocument({ input, userId });
-        const ladderGame: LadderGame = {
-          ladderGameId: gameRef.id,
+        const matchRef = doc(matchesRef);
+        const document = buildLadderMatchDocument({ input, userId });
+        const ladderMatch: LadderMatch = {
+          ladderMatchId: matchRef.id,
           ...document,
         };
 
-        await setDoc(gameRef, ladderGame);
+        await setDoc(matchRef, ladderMatch);
 
-        return { success: true, ladderGame };
+        return { success: true, ladderMatch };
       } catch (error) {
-        console.error("Error creating ladder game:", error);
-        return { success: false, ladderGame: null };
+        console.error("Error creating ladder match:", error);
+        return { success: false, ladderMatch: null };
       }
     },
     [],
@@ -232,29 +232,29 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const fetchLadderGames = useCallback(
-    async (ladderId: string): Promise<LadderGame[]> => {
+  const fetchLadderMatches = useCallback(
+    async (ladderId: string): Promise<LadderMatch[]> => {
       if (!ladderId) return [];
 
       try {
-        const gamesRef = collection(
+        const matchesRef = collection(
           db,
           LADDERS_COLLECTION,
           ladderId,
-          LADDER_GAMES_COLLECTION,
+          LADDER_MATCHES_COLLECTION,
         );
         const snapshot = await getDocs(
-          query(gamesRef, orderBy("createdAt", "desc")),
+          query(matchesRef, orderBy("createdAt", "desc")),
         );
         return snapshot.docs.map(
           (docSnap) =>
             ({
               ...docSnap.data(),
-              ladderGameId: docSnap.id,
-            }) as LadderGame,
+              ladderMatchId: docSnap.id,
+            }) as LadderMatch,
         );
       } catch (error) {
-        console.error("Error fetching ladder games:", error);
+        console.error("Error fetching ladder matches:", error);
         return [];
       }
     },
@@ -275,8 +275,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         ladderById,
         fetchLadderById,
         joinLadder,
-        createLadderGame,
-        fetchLadderGames,
+        createLadderMatch,
+        fetchLadderMatches,
         addCourtToLadder,
       }}
     >

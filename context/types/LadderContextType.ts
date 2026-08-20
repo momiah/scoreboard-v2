@@ -1,4 +1,4 @@
-import type { Ladder, LadderGame, LadderGameInput } from "@shared/types";
+import type { Ladder, LadderMatch, LadderMatchInput } from "@shared/types";
 import type { LadderJoinUser } from "../../helpers/ladderParticipants";
 
 export interface LadderJoinOutcome {
@@ -6,9 +6,9 @@ export interface LadderJoinOutcome {
   alreadyJoined: boolean;
 }
 
-export interface CreateLadderGameOutcome {
+export interface CreateLadderMatchOutcome {
   success: boolean;
-  ladderGame: LadderGame | null;
+  ladderMatch: LadderMatch | null;
 }
 
 export interface LadderContextType {
@@ -22,12 +22,12 @@ export interface LadderContextType {
     ladderId: string,
     user: LadderJoinUser,
   ) => Promise<LadderJoinOutcome>;
-  createLadderGame: (
+  createLadderMatch: (
     ladderId: string,
-    input: LadderGameInput,
+    input: LadderMatchInput,
     userId: string,
-  ) => Promise<CreateLadderGameOutcome>;
-  fetchLadderGames: (ladderId: string) => Promise<LadderGame[]>;
+  ) => Promise<CreateLadderMatchOutcome>;
+  fetchLadderMatches: (ladderId: string) => Promise<LadderMatch[]>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 

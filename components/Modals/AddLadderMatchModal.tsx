@@ -22,7 +22,7 @@ import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useForm, Controller } from "react-hook-form";
 
 import {
-  LADDER_GAME_BEST_OF_OPTIONS,
+  LADDER_MATCH_BEST_OF_OPTIONS,
   SHUTTLE_TYPE,
   PLATFORM_FEE,
   COMPETITION_TYPES,
@@ -30,7 +30,7 @@ import {
 import type {
   Court,
   Ladder,
-  LadderGameInput,
+  LadderMatchInput,
   ShuttleType,
 } from "@shared/types";
 
@@ -60,7 +60,7 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 };
 
-interface AddLadderGameFormValues {
+interface AddLadderMatchFormValues {
   startDate: string;
   startTime: string;
   bestOf: number;
@@ -68,18 +68,18 @@ interface AddLadderGameFormValues {
   courtFee: string;
 }
 
-interface AddLadderGameModalProps {
+interface AddLadderMatchModalProps {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
   ladder: Ladder;
 }
 
-const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
+const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   modalVisible,
   setModalVisible,
   ladder,
 }) => {
-  const { createLadderGame, addCourtToLadder } = useContext(LadderContext);
+  const { createLadderMatch, addCourtToLadder } = useContext(LadderContext);
   const { getCourts, addCourt } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
@@ -107,7 +107,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     watch,
     reset,
     formState: { errors },
-  } = useForm<AddLadderGameFormValues>({
+  } = useForm<AddLadderMatchFormValues>({
     defaultValues: {
       startDate: "",
       startTime: "18:00",
@@ -195,7 +195,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     navigation.navigate("LadderTerms", { ladderId: ladder.ladderId });
   };
 
-  const onSubmit = async (data: AddLadderGameFormValues) => {
+  const onSubmit = async (data: AddLadderMatchFormValues) => {
     if (submitting) return;
 
     if (!currentUser?.userId) {
@@ -217,7 +217,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
       return;
     }
 
-    const input: LadderGameInput = {
+    const input: LadderMatchInput = {
       court: selectedCourt,
       bestOf: data.bestOf,
       matchDate: data.startDate,
@@ -230,7 +230,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
     setErrorMessage(null);
     setSubmitting(true);
     try {
-      const { success } = await createLadderGame(
+      const { success } = await createLadderMatch(
         ladder.ladderId,
         input,
         currentUser.userId,
@@ -273,7 +273,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
 
                 <Label style={{ marginLeft: 5 }}>Court</Label>
                 <CourtSelector
-                  testID="add-ladder-game-court-selector"
+                  testID="add-ladder-match-court-selector"
                   onPress={() => setShowSearchCourtModal(true)}
                 >
                   <CourtSelectorText selected={!!selectedCourt}>
@@ -282,7 +282,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   <AntDesign name="right" size={16} color="#888" />
                 </CourtSelector>
                 {!!selectedCourt && !selectedCourt.verified && (
-                  <WarningTag testID="add-ladder-game-court-pending">
+                  <WarningTag testID="add-ladder-match-court-pending">
                     <AntDesign name="clock-circle" size={12} color="#f5a623" />
                     <WarningText>
                       Pending verification — usable once an admin verifies this
@@ -305,7 +305,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                 </Label>
                 <TimeStepper>
                   <TouchableOpacity
-                    testID="add-ladder-game-start-minus"
+                    testID="add-ladder-match-start-minus"
                     onPress={() =>
                       setValue(
                         "startTime",
@@ -317,7 +317,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   </TouchableOpacity>
                   <TimeText>{startTime}</TimeText>
                   <TouchableOpacity
-                    testID="add-ladder-game-start-plus"
+                    testID="add-ladder-match-start-plus"
                     onPress={() =>
                       setValue(
                         "startTime",
@@ -334,7 +334,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   watch={watch}
                   name="bestOf"
                   label="Best of"
-                  options={[...LADDER_GAME_BEST_OF_OPTIONS]}
+                  options={[...LADDER_MATCH_BEST_OF_OPTIONS]}
                 />
 
                 <OptionSelector
@@ -353,7 +353,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                   name="courtFee"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <Input
-                      testID="add-ladder-game-fee"
+                      testID="add-ladder-match-fee"
                       placeholder="0.00"
                       placeholderTextColor="#ccc"
                       keyboardType="numeric"
@@ -380,7 +380,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
 
                 <TermsRow>
                   <CheckboxToggle
-                    testID="add-ladder-game-terms"
+                    testID="add-ladder-match-terms"
                     activeOpacity={0.7}
                     onPress={() => setAcceptedTerms((prev) => !prev)}
                   >
@@ -392,7 +392,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                     <CheckboxLabel>I accept the</CheckboxLabel>
                   </CheckboxToggle>
                   <TermsLink
-                    testID="add-ladder-game-terms-link"
+                    testID="add-ladder-match-terms-link"
                     activeOpacity={0.7}
                     onPress={goToTerms}
                   >
@@ -407,7 +407,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
                     <CancelText>Cancel</CancelText>
                   </CancelButton>
                   <CreateButton
-                    testID="add-ladder-game-submit"
+                    testID="add-ladder-match-submit"
                     disabled={confirmDisabled}
                     onPress={handleSubmit(onSubmit)}
                   >
@@ -444,7 +444,7 @@ const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   );
 };
 
-export default AddLadderGameModal;
+export default AddLadderMatchModal;
 
 const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,

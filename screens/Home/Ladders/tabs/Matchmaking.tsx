@@ -6,7 +6,7 @@ import styled from "styled-components/native";
 import type { Ladder } from "@shared/types";
 
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
-import AddLadderGameModal from "../../../../components/Modals/AddLadderGameModal";
+import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
 
 interface MatchmakingProps {
   ladder: Ladder;
@@ -23,9 +23,9 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const nonParticipant = isSignedIn && !isParticipant;
   const buttonLabel = nonParticipant
     ? "Join the ladder to post"
-    : "Post a Game";
+    : "Post a Match";
 
-  const handlePostGame = () => {
+  const handlePostMatch = () => {
     if (!isSignedIn) {
       navigation.navigate("Login");
       return;
@@ -37,16 +37,16 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   return (
     <Container testID="ladder-matchmaking">
       <PostButton
-        testID="matchmaking-post-game"
+        testID="matchmaking-post-match"
         activeOpacity={0.85}
         disabled={nonParticipant}
         isDisabled={nonParticipant}
-        onPress={handlePostGame}
+        onPress={handlePostMatch}
       >
         <PostButtonText>{buttonLabel}</PostButtonText>
       </PostButton>
 
-      <AddLadderGameModal
+      <AddLadderMatchModal
         modalVisible={postModalVisible}
         setModalVisible={setPostModalVisible}
         ladder={ladder}
