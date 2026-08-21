@@ -598,7 +598,7 @@ const ButtonContainer = styled.View({
 });
 
 const CancelButton = styled.TouchableOpacity({
-  width: "45%",
+  width: "48%",
   padding: 12,
   backgroundColor: "#9e9e9e",
   borderRadius: 6,
@@ -612,7 +612,7 @@ const CancelText = styled.Text({
 
 const CreateButton = styled.TouchableOpacity<{ disabled: boolean }>(
   ({ disabled }: { disabled: boolean }) => ({
-    width: "45%",
+    width: "48%",
     padding: 12,
     borderRadius: 6,
     backgroundColor: disabled ? "#9e9e9e" : "#00A2FF",
