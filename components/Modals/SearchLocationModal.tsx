@@ -29,6 +29,7 @@ export interface CourtListItem {
   country?: string;
   address?: string;
   postCode?: string;
+  verified?: boolean;
 }
 
 export type CourtDetails = Pick<Court, "courtName" | "location">;
@@ -42,6 +43,10 @@ interface SearchCourtProps {
   getCourts: () => Promise<Court[]>;
   addCourt: (courtDetails: CourtDetails) => Promise<string | null>;
   onCourtsRefreshed: (rawCourtData: Court[]) => void;
+  /** Render the country flag icon (default true). Ladders (UK-only) pass false. */
+  showCountryIcon?: boolean;
+  /** Flag unverified courts with a warning (ladders require verified courts). */
+  highlightUnverified?: boolean;
 }
 
 const SearchCourt = ({
@@ -53,6 +58,8 @@ const SearchCourt = ({
   getCourts,
   addCourt,
   onCourtsRefreshed,
+  showCountryIcon = true,
+  highlightUnverified = false,
 }: SearchCourtProps) => {
   const [search, setSearch] = useState("");
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
@@ -117,6 +124,7 @@ const SearchCourt = ({
       }
 
       const isSelected = item.key === selectedCourtKey;
+      const showUnverified = highlightUnverified && item.verified === false;
       return (
         <CourtItem
           isSelected={isSelected}
@@ -127,15 +135,16 @@ const SearchCourt = ({
             <CourtLocation isSelected={isSelected}>
               {item?.address}, {item?.city}, {item?.country}
             </CourtLocation>
-            {/* {item.description ? (
-              <CourtLocation isSelected={isSelected}>
-                {item.description}
-              </CourtLocation>
-            ) : null} */}
+            {showUnverified ? (
+              <UnverifiedTag>
+                <AntDesign name="exclamation-circle" size={11} color="#f5a623" />
+                <UnverifiedText>Unverified court</UnverifiedText>
+              </UnverifiedTag>
+            ) : null}
           </CourtTextWrap>
           <ItemRight>
             {isSelected && <AntDesign name="check" size={18} color="#00A2FF" />}
-            {item.countryCode ? (
+            {showCountryIcon && item.countryCode ? (
               <FlagCircle>
                 <Icon name={item.countryCode} height="40" width="40" />
               </FlagCircle>
@@ -144,7 +153,7 @@ const SearchCourt = ({
         </CourtItem>
       );
     },
-    [selectedCourtKey, handleSelect],
+    [selectedCourtKey, handleSelect, showCountryIcon, highlightUnverified],
   );
 
   return (
@@ -281,6 +290,24 @@ const CourtLocation = styled.Text<{ isSelected: boolean }>(
     marginTop: 2,
   }),
 );
+
+const UnverifiedTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+  marginTop: 6,
+  alignSelf: "flex-start",
+  paddingHorizontal: 8,
+  paddingVertical: 3,
+  borderRadius: 6,
+  backgroundColor: "rgba(245, 166, 35, 0.12)",
+});
+
+const UnverifiedText = styled.Text({
+  color: "#f5a623",
+  fontSize: 11,
+  fontWeight: "600",
+});
 
 const AddCourtItem = styled.TouchableOpacity({
   flexDirection: "row",

@@ -9,7 +9,14 @@ import { formatDateForStorage } from "../helpers/formatDateForStorage";
 import { Ionicons } from "@expo/vector-icons";
 import OptionSelector from "./OptionSelector";
 
-const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
+const DatePicker = ({
+  setValue,
+  watch,
+  errorText,
+  hasEndDate = true,
+  labelStyle,
+  playoffStartDate,
+}) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -31,7 +38,7 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
       if (hasEndDate) {
         const endDate = calculateEndDate(
           formattedStartDate,
-          leagueLengthInMonths
+          leagueLengthInMonths,
         );
         setValue("endDate", endDate);
       } else {
@@ -65,11 +72,21 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
     }
   }, [hasEndDate, leagueLengthInMonths, startDate, setValue]);
 
+  // Matches must be posted BEFORE playoffs begin, so cap selection at the day
+  // before the playoff start; otherwise fall back to the next 3 months.
+  const maxSelectableDate = playoffStartDate
+    ? new Date(
+        playoffStartDate.getFullYear(),
+        playoffStartDate.getMonth(),
+        playoffStartDate.getDate() - 1,
+      )
+    : new Date(new Date().setMonth(new Date().getMonth() + 3));
+
   return (
     <DatePickerContainer>
       <DatePickerContent>
         <LabelContainer>
-          <Label>Start Date</Label>
+          <Label style={labelStyle}>Start Date</Label>
           {errorText && <ErrorText>{errorText}</ErrorText>}
         </LabelContainer>
 
@@ -80,7 +97,7 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
           <Text style={{ color: "white", textAlign: "center" }}>
             {startDate
               ? formatDateForDatePicker(
-                  new Date(startDate.split("-").reverse().join("-"))
+                  new Date(startDate.split("-").reverse().join("-")),
                 )
               : "Select Date"}
           </Text>
@@ -114,9 +131,7 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
                 handleTempDateChange(selectedDate);
               }}
               minimumDate={new Date()}
-              maximumDate={
-                new Date(new Date().setMonth(new Date().getMonth() + 3))
-              }
+              maximumDate={maxSelectableDate}
             />
 
             <View
@@ -132,7 +147,11 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
                 color={"#00A2FF"}
               />
               <DisclaimerText>
-                Please select a date within the next 3 months.
+                {playoffStartDate
+                  ? `Please select a date before ${formatDateForDatePicker(
+                      playoffStartDate,
+                    )}.`
+                  : "Please select a date within the next 3 months."}
               </DisclaimerText>
             </View>
 
@@ -177,7 +196,7 @@ const DatePickerModalContent = styled.View({
 const DatePickerButton = styled.TouchableOpacity(({ isVisible }) => ({
   width: "100%",
   padding: 10,
-  backgroundColor: isVisible ? "#003366" : "#243237",
+  backgroundColor: isVisible ? "#003366" : "rgba(255, 255, 255, 0.1)",
   borderRadius: 5,
   alignItems: "center",
 }));

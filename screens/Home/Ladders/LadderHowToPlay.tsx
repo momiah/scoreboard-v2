@@ -268,9 +268,18 @@ const LadderHowToPlay: React.FC = () => {
             disabled
             activeOpacity={1}
             testID="how-to-play-participant"
+            style={{
+              backgroundColor: "#16181B",
+              borderWidth: 2,
+              borderColor: "#272727ff",
+            }}
           >
             {mode === "participant" && (
-              <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={16}
+                color="#22c55e"
+              />
             )}
             <NavButtonText>
               {mode === "participant" ? "Participant" : "Registration Closed"}
@@ -517,10 +526,10 @@ const HighlightText = styled.Text({
   textAlign: "center",
 });
 
-const HighlightStrong = styled.Text({
-  color: "#00A2FF",
-  fontWeight: "bold",
-});
+// const HighlightStrong = styled.Text({
+//   color: "#00A2FF",
+//   fontWeight: "bold",
+// });
 
 const Table = styled.View({
   borderRadius: 12,

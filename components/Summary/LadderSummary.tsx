@@ -14,6 +14,7 @@ import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import { UserContext } from "../../context/UserContext";
+import { LadderContext } from "../../context/LadderContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
@@ -78,15 +79,25 @@ interface LadderSummaryProps {
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const { getUserById } = useContext(UserContext);
+  const { fetchLadderParticipants } = useContext(LadderContext);
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
+  const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [joinVisible, setJoinVisible] = useState(false);
 
   const isPaid = ladder.entryFee > 0;
-  const participants = useMemo(
-    () => ladder.ladderParticipants ?? [],
-    [ladder.ladderParticipants],
-  );
+  const ladderId = ladder.ladderId;
+
+  // Participants live in the ladderParticipants subcollection.
+  useEffect(() => {
+    let active = true;
+    fetchLadderParticipants(ladderId).then((list) => {
+      if (active) setParticipants(list);
+    });
+    return () => {
+      active = false;
+    };
+  }, [ladderId, fetchLadderParticipants]);
 
   const { mode, requestJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
@@ -230,7 +241,11 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           activeOpacity={1}
         >
           {mode === "participant" && (
-            <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={18}
+              color="#22c55e"
+            />
           )}
           <ParticipantText>
             {mode === "participant" ? "Participant" : "Registration Closed"}
@@ -289,7 +304,9 @@ const ParticipantButton = styled.TouchableOpacity({
   gap: 8,
   paddingVertical: 15,
   borderRadius: 12,
-  backgroundColor: "#2b3440",
+  backgroundColor: "#16181B",
+  borderWidth: 2,
+  borderColor: "#272727ff",
   marginTop: 20,
 });
 

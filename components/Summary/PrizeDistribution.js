@@ -167,7 +167,7 @@ const PrizeView = styled.View({
 });
 
 const PrizeImage = styled.Image(({ prizeType }) => ({
-  width: prizeType === "league" || prizeType === "ladder" ? 60 : 40,
+  width: prizeType === "league" ? 60 : 40,
   height: 60,
 }));
 

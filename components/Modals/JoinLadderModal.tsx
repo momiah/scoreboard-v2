@@ -142,7 +142,7 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             </TagsColumn>
 
             <PriceColumn>
-              {isPaid ? (
+              {isPaid && (
                 <>
                   <Price>
                     {formatCurrency(ladder.entryFee, ladder.currencyType)}
@@ -152,8 +152,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
                     {serviceCharge.toFixed(2)} platform fee included
                   </ServiceNote>
                 </>
-              ) : (
-                <Price>Free</Price>
               )}
             </PriceColumn>
           </TopRow>
@@ -278,7 +276,7 @@ const JoinConfirmationModal: React.FC<JoinConfirmationModalProps> = ({
   <Modal visible={visible} transparent animationType="fade">
     <ModalContainer>
       <CentredContent testID="join-ladder-confirmation">
-        <Ionicons name="checkmark-circle" size={56} color="#22c55e" />
+        <Ionicons name="checkmark-circle-outline" size={56} color="#00A2FF" />
         <CentredTitle>You&apos;re in!</CentredTitle>
         <CentredBody>
           You&apos;ve joined <Highlight>{ladderName}</Highlight>. Head to Match
@@ -479,7 +477,7 @@ const ActionButton = styled.TouchableOpacity<{ isDisabled: boolean }>(
     width: "100%",
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: isDisabled ? "#1e3a52" : "#007AFF",
+    backgroundColor: isDisabled ? "#1e3a52" : "#00A2FF",
     alignItems: "center",
     opacity: isDisabled ? 0.7 : 1,
   }),

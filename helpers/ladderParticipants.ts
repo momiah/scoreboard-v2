@@ -8,14 +8,11 @@ export type LadderJoinUser = Pick<
   profileDetail?: Pick<UserProfile["profileDetail"], "memberSince">;
 };
 
-export const isLadderParticipant = (
-  participants: ScoreboardProfile[] | undefined,
-  userId: string | undefined,
-): boolean => {
-  if (!userId || !participants) return false;
-  return participants.some((participant) => participant.userId === userId);
-};
-
+/**
+ * Build the ScoreboardProfile document written to the
+ * `ladders/{ladderId}/ladderParticipants/{userId}` subcollection when a player
+ * joins a ladder.
+ */
 export const buildLadderParticipant = (
   user: LadderJoinUser,
 ): ScoreboardProfile => ({
@@ -27,37 +24,3 @@ export const buildLadderParticipant = (
   memberSince: user.profileDetail?.memberSince || "",
   profileImage: user.profileImage || ccImageEndpoint,
 });
-
-export interface LadderJoinResult {
-  alreadyJoined: boolean;
-  participants: ScoreboardProfile[];
-  participantCount: number;
-  added: ScoreboardProfile | null;
-}
-
-export const computeLadderJoin = (
-  existingParticipants: ScoreboardProfile[] | undefined,
-  existingCount: number | undefined,
-  user: LadderJoinUser,
-): LadderJoinResult => {
-  const participants = existingParticipants ?? [];
-  const count =
-    typeof existingCount === "number" ? existingCount : participants.length;
-
-  if (isLadderParticipant(participants, user.userId)) {
-    return {
-      alreadyJoined: true,
-      participants,
-      participantCount: count,
-      added: null,
-    };
-  }
-
-  const added = buildLadderParticipant(user);
-  return {
-    alreadyJoined: false,
-    participants: [...participants, added],
-    participantCount: count + 1,
-    added,
-  };
-};
