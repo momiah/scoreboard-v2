@@ -114,8 +114,6 @@ const MatchDetails: React.FC = () => {
     );
   }
 
-  const courtLabel = match.court?.courtName ?? "";
-
   return (
     <Screen testID="match-details">
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
@@ -152,12 +150,12 @@ const MatchDetails: React.FC = () => {
           <MatchCard match={match} testID="match-details-card" />
         </Section>
 
-        <Section>
-          <SectionTitle>Games</SectionTitle>
+        <GamesSection>
+          <GamesTitle>Games</GamesTitle>
           {match.games.map((game) => (
             <FixtureGameItem
               key={game.gameNumber}
-              game={{ ...game, court: courtLabel }}
+              game={game}
               tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
               onPress={handleGamePress}
               innerRef={undefined}
@@ -166,7 +164,7 @@ const MatchDetails: React.FC = () => {
               glowColor="#00A2FF"
             />
           ))}
-        </Section>
+        </GamesSection>
       </ScrollView>
 
       <AddLadderGameModal
@@ -198,6 +196,18 @@ const SectionTitle = styled.Text({
   color: "#ffffff",
   fontSize: 16,
   fontWeight: "bold",
+});
+
+const GamesSection = styled.View({
+  paddingTop: 20,
+});
+
+const GamesTitle = styled.Text({
+  color: "#ffffff",
+  fontSize: 16,
+  fontWeight: "bold",
+  marginHorizontal: 20,
+  marginBottom: 12,
 });
 
 const OpponentRow = styled.View({

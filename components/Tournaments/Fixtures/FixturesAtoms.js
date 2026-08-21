@@ -22,7 +22,7 @@ export const FixturePlayerCell = ({ position, player }) => (
 export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
   <FixtureTeamContainer>
     <FixturePlayerCell position={position} player={team?.player1} />
-    {tournamentType === "Doubles" && team?.player2 && (
+    {tournamentType === "Doubles" && (
       <FixturePlayerCell position={position} player={team?.player2} />
     )}
   </FixtureTeamContainer>
@@ -75,7 +75,9 @@ export const FixtureScoreDisplay = ({ game }) => {
 export const FixtureGameHeader = ({ game }) => (
   <FixtureGameHeaderContainer>
     <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
-    <Tag name={`Court ${game.court}`} bold color="#005322ff" />
+    {(game.court ?? "") !== "" && (
+      <Tag name={`Court ${game.court}`} bold color="#005322ff" />
+    )}
   </FixtureGameHeaderContainer>
 );
 
