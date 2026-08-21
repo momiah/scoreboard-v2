@@ -24,6 +24,11 @@ interface AcceptLadderMatchModalProps {
   match: LadderMatch | null;
   /** Called after a successful accept so the caller can drop it from its list. */
   onAccepted?: (match: LadderMatch) => void;
+  /**
+   * Called when the accept lost the race (someone else took the match). The
+   * caller should drop it from its list too, since it's no longer available.
+   */
+  onUnavailable?: (match: LadderMatch) => void;
 }
 
 const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
@@ -32,6 +37,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   ladder,
   match,
   onAccepted,
+  onUnavailable,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { acceptLadderMatch } = useContext(LadderContext);
@@ -80,7 +86,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     setErrorMessage(null);
     setProcessing(true);
     try {
-      const { success } = await acceptLadderMatch(
+      const { success, reason } = await acceptLadderMatch(
         ladder.ladderId,
         match.ladderMatchId,
         userId,
@@ -89,8 +95,16 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
         onAccepted?.(match);
         resetAndClose();
         showBottomToast("Match accepted — see it in your Schedule", "success");
+      } else if (reason === "unavailable") {
+        // Lost the race — another player accepted this match first.
+        onUnavailable?.(match);
+        resetAndClose();
+        showBottomToast(
+          "This game has been accepted by someone else",
+          "error",
+        );
       } else {
-        setErrorMessage("This match can no longer be accepted.");
+        setErrorMessage("Something went wrong. Please try again.");
       }
     } finally {
       setProcessing(false);

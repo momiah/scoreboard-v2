@@ -81,11 +81,12 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     setAcceptModalVisible(true);
   };
 
-  // Once accepted, the match is no longer "posted" — drop it from the list
-  // straight away rather than waiting for the next focus refetch.
-  const handleAccepted = (accepted: LadderMatch) => {
+  // Drop a match from the open list straight away rather than waiting for the
+  // next focus refetch — used both when this user accepts it and when they lose
+  // the race to someone else (either way it's no longer available).
+  const handleMatchGone = (gone: LadderMatch) => {
     setMatches((prev) =>
-      prev.filter((m) => m.ladderMatchId !== accepted.ladderMatchId),
+      prev.filter((m) => m.ladderMatchId !== gone.ladderMatchId),
     );
   };
 
@@ -161,7 +162,8 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
         setModalVisible={setAcceptModalVisible}
         ladder={ladder}
         match={selectedMatch}
-        onAccepted={handleAccepted}
+        onAccepted={handleMatchGone}
+        onUnavailable={handleMatchGone}
       />
     </Container>
   );

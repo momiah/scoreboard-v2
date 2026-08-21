@@ -20,6 +20,7 @@ import {
   updateDoc,
   where,
   writeBatch,
+  DocumentReference,
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
@@ -378,13 +379,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: false };
       }
 
+      // Typed ref so the transaction read yields a LadderMatch and the update
+      // is checked against real LadderMatch fields (no casting of the payload).
       const matchRef = doc(
         db,
         LADDERS_COLLECTION,
         ladderId,
         LADDER_MATCHES_COLLECTION,
         matchId,
-      );
+      ) as DocumentReference<LadderMatch, LadderMatch>;
 
       try {
         // Run the read + guard + write inside a Firestore transaction so two
@@ -397,33 +400,29 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             throw new AcceptLadderMatchError("MATCH_NOT_FOUND");
           }
 
-          const match = {
+          const match: LadderMatch = {
             ...snap.data(),
             ladderMatchId: snap.id,
-          } as LadderMatch;
+          };
 
           // Single source of truth for whether this accept is allowed.
           if (!canAcceptLadderMatch(match, userId)) {
             throw new AcceptLadderMatchError("CANNOT_ACCEPT");
           }
 
-          transaction.update(
-            matchRef,
-            buildAcceptedLadderMatch(match, userId) as unknown as Record<
-              string,
-              unknown
-            >,
-          );
+          transaction.update(matchRef, buildAcceptedLadderMatch(match, userId));
         });
 
         return { success: true };
       } catch (error) {
         // Guard failures (match gone / already accepted / full) are expected
-        // race outcomes, not bugs — surface them as success:false, log the rest.
-        if (!(error instanceof AcceptLadderMatchError)) {
-          console.error("Error accepting ladder match:", error);
+        // race outcomes — the match was taken by someone else. Surface them so
+        // the UI can tell the user, and log only genuine errors.
+        if (error instanceof AcceptLadderMatchError) {
+          return { success: false, reason: "unavailable" };
         }
-        return { success: false };
+        console.error("Error accepting ladder match:", error);
+        return { success: false, reason: "error" };
       }
     },
     [],
