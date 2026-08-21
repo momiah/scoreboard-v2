@@ -164,6 +164,10 @@ const MatchDetails: React.FC = () => {
               game={{ ...game, court: courtLabel }}
               tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
               onPress={handleGamePress}
+              innerRef={undefined}
+              glowAnim={undefined}
+              isHighlighted={false}
+              glowColor="#00A2FF"
             />
           ))}
         </Section>

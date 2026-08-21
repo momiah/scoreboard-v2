@@ -81,6 +81,14 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     setAcceptModalVisible(true);
   };
 
+  // Once accepted, the match is no longer "posted" — drop it from the list
+  // straight away rather than waiting for the next focus refetch.
+  const handleAccepted = (accepted: LadderMatch) => {
+    setMatches((prev) =>
+      prev.filter((m) => m.ladderMatchId !== accepted.ladderMatchId),
+    );
+  };
+
   const renderMatches = () => {
     if (matchesLoading) {
       return (
@@ -153,6 +161,7 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
         setModalVisible={setAcceptModalVisible}
         ladder={ladder}
         match={selectedMatch}
+        onAccepted={handleAccepted}
       />
     </Container>
   );

@@ -22,6 +22,8 @@ interface AcceptLadderMatchModalProps {
   setModalVisible: (visible: boolean) => void;
   ladder: Ladder;
   match: LadderMatch | null;
+  /** Called after a successful accept so the caller can drop it from its list. */
+  onAccepted?: (match: LadderMatch) => void;
 }
 
 const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
@@ -29,6 +31,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   setModalVisible,
   ladder,
   match,
+  onAccepted,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { acceptLadderMatch } = useContext(LadderContext);
@@ -83,6 +86,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
         userId,
       );
       if (success) {
+        onAccepted?.(match);
         resetAndClose();
         showBottomToast("Match accepted — see it in your Schedule", "success");
       } else {

@@ -15,6 +15,7 @@ import {
   limit,
   orderBy,
   query,
+  runTransaction,
   setDoc,
   updateDoc,
   where,
@@ -44,6 +45,10 @@ import type {
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
 } from "./types/LadderContextType";
+
+// Thrown inside the accept transaction for expected guard failures (match
+// missing, already accepted, or full) so they can be told apart from real errors.
+class AcceptLadderMatchError extends Error {}
 
 const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
@@ -373,33 +378,51 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: false };
       }
 
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+
       try {
-        const matchRef = doc(
-          db,
-          LADDERS_COLLECTION,
-          ladderId,
-          LADDER_MATCHES_COLLECTION,
-          matchId,
-        );
-        const snap = await getDoc(matchRef);
-        if (!snap.exists()) {
-          return { success: false };
-        }
+        // Run the read + guard + write inside a Firestore transaction so two
+        // players accepting the same match at once can't both succeed: the
+        // second attempt re-reads the now-accepted match, fails
+        // canAcceptLadderMatch, and is rejected.
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            throw new AcceptLadderMatchError("MATCH_NOT_FOUND");
+          }
 
-        const match = {
-          ...snap.data(),
-          ladderMatchId: snap.id,
-        } as LadderMatch;
+          const match = {
+            ...snap.data(),
+            ladderMatchId: snap.id,
+          } as LadderMatch;
 
-        // Single source of truth for whether this accept is allowed.
-        if (!canAcceptLadderMatch(match, userId)) {
-          return { success: false };
-        }
+          // Single source of truth for whether this accept is allowed.
+          if (!canAcceptLadderMatch(match, userId)) {
+            throw new AcceptLadderMatchError("CANNOT_ACCEPT");
+          }
 
-        await updateDoc(matchRef, buildAcceptedLadderMatch(match, userId));
+          transaction.update(
+            matchRef,
+            buildAcceptedLadderMatch(match, userId) as unknown as Record<
+              string,
+              unknown
+            >,
+          );
+        });
+
         return { success: true };
       } catch (error) {
-        console.error("Error accepting ladder match:", error);
+        // Guard failures (match gone / already accepted / full) are expected
+        // race outcomes, not bugs — surface them as success:false, log the rest.
+        if (!(error instanceof AcceptLadderMatchError)) {
+          console.error("Error accepting ladder match:", error);
+        }
         return { success: false };
       }
     },
