@@ -38,8 +38,6 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
 
   const userId = currentUser?.userId;
 
-  // Reload the posted-match list whenever this tab gains focus (which includes
-  // the first mount when it becomes the selected tab).
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -81,9 +79,6 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     setAcceptModalVisible(true);
   };
 
-  // Drop a match from the open list straight away rather than waiting for the
-  // next focus refetch — used both when this user accepts it and when they lose
-  // the race to someone else (either way it's no longer available).
   const handleMatchGone = (gone: LadderMatch) => {
     setMatches((prev) =>
       prev.filter((m) => m.ladderMatchId !== gone.ladderMatchId),

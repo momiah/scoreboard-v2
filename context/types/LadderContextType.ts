@@ -17,10 +17,6 @@ export interface CreateLadderMatchOutcome {
   ladderMatch: LadderMatch | null;
 }
 
-/**
- * Why an accept failed. "unavailable" = lost the race (someone else took the
- * match, or it's no longer posted); "error" = an unexpected failure.
- */
 export type AcceptLadderMatchFailureReason = "unavailable" | "error";
 
 export interface AcceptLadderMatchOutcome {

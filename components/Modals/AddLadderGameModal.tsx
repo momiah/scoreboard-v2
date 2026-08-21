@@ -15,12 +15,6 @@ interface AddLadderGameModalProps {
   onClose: () => void;
 }
 
-/**
- * Ladder game shell modal. Modelled on AddTournamentGameModal's centred dark
- * card, but scoring is intentionally NOT wired up yet — recording ladder game
- * results is the next phase. For now this only confirms which game shell was
- * tapped and closes.
- */
 const AddLadderGameModal: React.FC<AddLadderGameModalProps> = ({
   visible,
   game,

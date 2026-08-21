@@ -12,7 +12,6 @@ export type LadderJoinMode = "join" | "participant" | "closed";
 interface UseLadderJoinResult {
   isSignedIn: boolean;
   isParticipant: boolean;
-  /** True until the first membership read resolves (false when signed-out / no ladder). */
   membershipChecking: boolean;
   mode: LadderJoinMode;
   requestJoin: () => void;
@@ -33,8 +32,6 @@ export const useLadderJoin = (
   // Membership lives in the ladderParticipants subcollection, so read it once
   // per ladder/user and fall back to the optimistic session cache.
   const [remoteParticipant, setRemoteParticipant] = useState(false);
-  // True while the first membership read for the current ladder/user is in
-  // flight, so callers can hold a skeleton instead of flashing a wrong label.
   const [membershipChecking, setMembershipChecking] = useState(false);
 
   useEffect(() => {

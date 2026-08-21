@@ -22,12 +22,7 @@ interface AcceptLadderMatchModalProps {
   setModalVisible: (visible: boolean) => void;
   ladder: Ladder;
   match: LadderMatch | null;
-  /** Called after a successful accept so the caller can drop it from its list. */
   onAccepted?: (match: LadderMatch) => void;
-  /**
-   * Called when the accept lost the race (someone else took the match). The
-   * caller should drop it from its list too, since it's no longer available.
-   */
   onUnavailable?: (match: LadderMatch) => void;
 }
 
@@ -48,7 +43,6 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Reset the form each time the modal is opened for a match.
   useEffect(() => {
     if (modalVisible) {
       setAcceptedTerms(false);
@@ -96,7 +90,6 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
         resetAndClose();
         showBottomToast("Match accepted — see it in your Schedule", "success");
       } else if (reason === "unavailable") {
-        // Lost the race — another player accepted this match first.
         onUnavailable?.(match);
         resetAndClose();
         showBottomToast(

@@ -21,7 +21,6 @@ interface MatchDetailsParams {
   ladderType?: LadderType;
 }
 
-// getUserById returns a raw Firestore user document; we only read display fields.
 interface OpponentProfile {
   userId?: string;
   firstName?: string;
@@ -54,7 +53,6 @@ const MatchDetails: React.FC = () => {
   const userId = currentUser?.userId;
   const isDoubles = ladderType === LADDER_TYPE.DOUBLES;
 
-  // Resolve the match (if not passed) and load the opponent profile(s).
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -116,8 +114,6 @@ const MatchDetails: React.FC = () => {
     );
   }
 
-  // Ladder games are played at the match's court; surface that on the reused
-  // fixture game header (which renders a "Court …" tag).
   const courtLabel = match.court?.courtName ?? "";
 
   return (

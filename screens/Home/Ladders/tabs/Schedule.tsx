@@ -27,7 +27,6 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder }) => {
 
   const userId = currentUser?.userId;
 
-  // Reload the user's scheduled matches on focus / when this tab is selected.
   useFocusEffect(
     useCallback(() => {
       let active = true;

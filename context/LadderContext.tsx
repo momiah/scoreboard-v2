@@ -47,8 +47,6 @@ import type {
   AcceptLadderMatchOutcome,
 } from "./types/LadderContextType";
 
-// Thrown inside the accept transaction for expected guard failures (match
-// missing, already accepted, or full) so they can be told apart from real errors.
 class AcceptLadderMatchError extends Error {}
 
 const LADDERS_COLLECTION = "ladders";
@@ -379,8 +377,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: false };
       }
 
-      // Typed ref so the transaction read yields a LadderMatch and the update
-      // is checked against real LadderMatch fields (no casting of the payload).
       const matchRef = doc(
         db,
         LADDERS_COLLECTION,
@@ -390,10 +386,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       ) as DocumentReference<LadderMatch, LadderMatch>;
 
       try {
-        // Run the read + guard + write inside a Firestore transaction so two
-        // players accepting the same match at once can't both succeed: the
-        // second attempt re-reads the now-accepted match, fails
-        // canAcceptLadderMatch, and is rejected.
         await runTransaction(db, async (transaction) => {
           const snap = await transaction.get(matchRef);
           if (!snap.exists()) {
@@ -405,7 +397,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             ladderMatchId: snap.id,
           };
 
-          // Single source of truth for whether this accept is allowed.
           if (!canAcceptLadderMatch(match, userId)) {
             throw new AcceptLadderMatchError("CANNOT_ACCEPT");
           }
@@ -415,9 +406,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
         return { success: true };
       } catch (error) {
-        // Guard failures (match gone / already accepted / full) are expected
-        // race outcomes — the match was taken by someone else. Surface them so
-        // the UI can tell the user, and log only genuine errors.
         if (error instanceof AcceptLadderMatchError) {
           return { success: false, reason: "unavailable" };
         }

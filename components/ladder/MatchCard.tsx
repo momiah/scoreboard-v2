@@ -13,12 +13,7 @@ const isSmallScreen = screenWidth < 400;
 interface MatchCardProps {
   match: LadderMatch;
   onPress?: (match: LadderMatch) => void;
-  /**
-   * Renders the card dimmed and non-interactive — used for the user's own
-   * posted matches in Matchmaking (you can't accept your own match).
-   */
   disabled?: boolean;
-  /** Optional caption shown on a disabled card, e.g. "Your match". */
   disabledLabel?: string;
   testID?: string;
 }
@@ -34,7 +29,6 @@ const locationLabel = (match: LadderMatch): string => {
   return city ? `${courtName}, ${city}` : courtName;
 };
 
-// Blind matchmaking card: venue + format only, never player identities.
 const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onPress,
