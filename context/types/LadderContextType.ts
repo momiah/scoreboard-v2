@@ -17,6 +17,10 @@ export interface CreateLadderMatchOutcome {
   ladderMatch: LadderMatch | null;
 }
 
+export interface AcceptLadderMatchOutcome {
+  success: boolean;
+}
+
 export interface LadderContextType {
   upcomingLadders: Ladder[];
   upcomingLaddersLoading: boolean;
@@ -39,6 +43,11 @@ export interface LadderContextType {
     userId: string,
   ) => Promise<CreateLadderMatchOutcome>;
   fetchLadderMatches: (ladderId: string) => Promise<LadderMatch[]>;
+  acceptLadderMatch: (
+    ladderId: string,
+    matchId: string,
+    userId: string,
+  ) => Promise<AcceptLadderMatchOutcome>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 

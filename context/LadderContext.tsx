@@ -22,7 +22,11 @@ import {
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
-import { normalizeLadderStatus } from "@shared";
+import {
+  normalizeLadderStatus,
+  canAcceptLadderMatch,
+  buildAcceptedLadderMatch,
+} from "@shared";
 import type {
   Ladder,
   LadderMatch,
@@ -38,6 +42,7 @@ import type {
   FetchLaddersOptions,
   LadderJoinOutcome,
   CreateLadderMatchOutcome,
+  AcceptLadderMatchOutcome,
 } from "./types/LadderContextType";
 
 const LADDERS_COLLECTION = "ladders";
@@ -358,6 +363,49 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const acceptLadderMatch = useCallback(
+    async (
+      ladderId: string,
+      matchId: string,
+      userId: string,
+    ): Promise<AcceptLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false };
+      }
+
+      try {
+        const matchRef = doc(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_MATCHES_COLLECTION,
+          matchId,
+        );
+        const snap = await getDoc(matchRef);
+        if (!snap.exists()) {
+          return { success: false };
+        }
+
+        const match = {
+          ...snap.data(),
+          ladderMatchId: snap.id,
+        } as LadderMatch;
+
+        // Single source of truth for whether this accept is allowed.
+        if (!canAcceptLadderMatch(match, userId)) {
+          return { success: false };
+        }
+
+        await updateDoc(matchRef, buildAcceptedLadderMatch(match, userId));
+        return { success: true };
+      } catch (error) {
+        console.error("Error accepting ladder match:", error);
+        return { success: false };
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchUpcomingLadders();
   }, [fetchUpcomingLadders]);
@@ -379,6 +427,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderTeams,
         createLadderMatch,
         fetchLadderMatches,
+        acceptLadderMatch,
         addCourtToLadder,
       }}
     >

@@ -22,8 +22,14 @@ import LoadingOverlay from "../../../components/LoadingOverlay";
 import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
 import Matchmaking from "./tabs/Matchmaking";
+import Schedule from "./tabs/Schedule";
 
-type LadderTab = "Summary" | "Matchmaking" | "Performance" | "Playoff Bracket";
+type LadderTab =
+  | "Summary"
+  | "Matchmaking"
+  | "Schedule"
+  | "Performance"
+  | "Playoff Bracket";
 
 type LadderRouteParams = { ladderId: string; tab?: LadderTab };
 
@@ -67,6 +73,7 @@ const Ladder: React.FC = () => {
   const tabs: { key: LadderTab; label: string }[] = [
     { key: "Summary", label: "Summary" },
     { key: "Matchmaking", label: "Matchmaking" },
+    { key: "Schedule", label: "Schedule" },
     { key: performanceLabel, label: performanceDisplay },
     { key: "Playoff Bracket", label: "Playoff Bracket" },
   ];
@@ -78,6 +85,8 @@ const Ladder: React.FC = () => {
         return <LadderSummary ladder={ladderById} />;
       case "Matchmaking":
         return <Matchmaking ladder={ladderById} />;
+      case "Schedule":
+        return <Schedule ladder={ladderById} />;
       case "Performance":
       case "Playoff Bracket":
         return (
