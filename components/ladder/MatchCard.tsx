@@ -56,8 +56,8 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <TagText>Best of {match.bestOf}</TagText>
           </Tag>
           <Tag>
-            <Ionicons name="tennisball-outline" size={13} color="#9fb8c8" />
-            <TagText>{match.shuttleType}</TagText>
+            {/* <Ionicons name="tennisball-outline" size={13} color="#9fb8c8" /> */}
+            <TagText>🏸 {match.shuttleType}</TagText>
           </Tag>
         </TagRow>
       </Info>
