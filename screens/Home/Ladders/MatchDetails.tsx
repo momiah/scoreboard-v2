@@ -3,15 +3,21 @@ import { ScrollView } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import styled from "styled-components/native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { LADDER_TYPE } from "@shared/types";
 import type { Game, LadderMatch, LadderType } from "@shared/types";
 
 import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
+import { PopupContext } from "../../../context/PopupContext";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { FixtureGameItem } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
 import AddLadderGameModal from "../../../components/Modals/AddLadderGameModal";
+import {
+  isMatchStarted,
+  formatMatchDateShort,
+} from "../../../helpers/ladderMatchTime";
 import { ccDefaultImage } from "../../../mockImages/index";
 
 interface MatchDetailsParams {
@@ -44,6 +50,7 @@ const MatchDetails: React.FC = () => {
 
   const { currentUser, getUserById } = useContext(UserContext);
   const { fetchLadderMatches } = useContext(LadderContext);
+  const { showBottomToast } = useContext(PopupContext);
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [opponents, setOpponents] = useState<OpponentProfile[]>([]);
@@ -99,7 +106,17 @@ const MatchDetails: React.FC = () => {
     }, [ladderId, matchId, matchParam, userId, fetchLadderMatches, getUserById]),
   );
 
+  const started = match ? isMatchStarted(match) : false;
+
   const handleGamePress = (game: Game) => {
+    if (!match) return;
+    if (!started) {
+      showBottomToast(
+        `This match starts ${formatMatchDateShort(match.matchDate)} at ${match.matchTime?.start}`,
+        "info",
+      );
+      return;
+    }
     setSelectedGame(game);
     setGameModalVisible(true);
   };
@@ -151,19 +168,32 @@ const MatchDetails: React.FC = () => {
         </Section>
 
         <GamesSection>
-          <GamesTitle>Games</GamesTitle>
-          {match.games.map((game) => (
-            <FixtureGameItem
-              key={game.gameNumber}
-              game={game}
-              tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
-              onPress={handleGamePress}
-              innerRef={undefined}
-              glowAnim={undefined}
-              isHighlighted={false}
-              glowColor="#00A2FF"
-            />
-          ))}
+          <GamesHeader>
+            <GamesTitle>Games</GamesTitle>
+            {!started && (
+              <LockChip testID="match-details-games-locked">
+                <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
+                <LockChipText>
+                  Unlocks {formatMatchDateShort(match.matchDate)} ·{" "}
+                  {match.matchTime?.start}
+                </LockChipText>
+              </LockChip>
+            )}
+          </GamesHeader>
+          <GamesList isLocked={!started}>
+            {match.games.map((game) => (
+              <FixtureGameItem
+                key={game.gameNumber}
+                game={game}
+                tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
+                onPress={handleGamePress}
+                innerRef={undefined}
+                glowAnim={undefined}
+                isHighlighted={false}
+                glowColor="#00A2FF"
+              />
+            ))}
+          </GamesList>
         </GamesSection>
       </ScrollView>
 
@@ -202,13 +232,41 @@ const GamesSection = styled.View({
   paddingTop: 20,
 });
 
+const GamesHeader = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginHorizontal: 20,
+  marginBottom: 12,
+});
+
 const GamesTitle = styled.Text({
   color: "#ffffff",
   fontSize: 16,
   fontWeight: "bold",
-  marginHorizontal: 20,
-  marginBottom: 12,
 });
+
+const LockChip = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 10,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 255, 255, 0.06)",
+});
+
+const LockChipText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const GamesList = styled.View<{ isLocked: boolean }>(
+  ({ isLocked }: { isLocked: boolean }) => ({
+    opacity: isLocked ? 0.5 : 1,
+  }),
+);
 
 const OpponentRow = styled.View({
   flexDirection: "row",

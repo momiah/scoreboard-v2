@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import type { LadderMatch } from "@shared/types";
 
-import { formatCurrency } from "../../helpers/formatCurrency";
+import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -17,17 +17,6 @@ interface MatchCardProps {
   disabledLabel?: string;
   testID?: string;
 }
-
-const feeLabel = (match: LadderMatch): string =>
-  match.courtFee > 0
-    ? formatCurrency(match.courtFee, match.currencyType)
-    : "Free";
-
-const locationLabel = (match: LadderMatch): string => {
-  const city = match.court?.location?.city;
-  const courtName = match.court?.courtName ?? "";
-  return city ? `${courtName}, ${city}` : courtName;
-};
 
 const MatchCard: React.FC<MatchCardProps> = ({
   match,
@@ -41,6 +30,9 @@ const MatchCard: React.FC<MatchCardProps> = ({
     onPress?.(match);
   };
 
+  const city = match.court?.location?.city;
+  const courtName = match.court?.courtName ?? "";
+
   return (
     <Card
       testID={testID}
@@ -49,40 +41,31 @@ const MatchCard: React.FC<MatchCardProps> = ({
       disabled={disabled || !onPress}
       onPress={handlePress}
     >
-      <TopRow>
-        <LocationRow>
-          <Ionicons name="location-outline" size={16} color="#00A2FF" />
-          <LocationText numberOfLines={1}>{locationLabel(match)}</LocationText>
-        </LocationRow>
-        <FeeTag isFree={match.courtFee <= 0}>
-          <FeeText isFree={match.courtFee <= 0}>{feeLabel(match)}</FeeText>
-        </FeeTag>
-      </TopRow>
-
-      <DetailsGrid>
-        <DetailItem>
-          <Ionicons name="calendar-outline" size={14} color="#9fb8c8" />
-          <DetailText>{match.matchDate}</DetailText>
-        </DetailItem>
-        <DetailItem>
-          <Ionicons name="time-outline" size={14} color="#9fb8c8" />
-          <DetailText>{match.matchTime?.start}</DetailText>
-        </DetailItem>
-        <DetailItem>
-          <Ionicons name="trophy-outline" size={14} color="#9fb8c8" />
-          <DetailText>Best of {match.bestOf}</DetailText>
-        </DetailItem>
-        <DetailItem>
-          <Ionicons name="tennisball-outline" size={14} color="#9fb8c8" />
-          <DetailText>{match.shuttleType}</DetailText>
-        </DetailItem>
-      </DetailsGrid>
-
       {disabled && !!disabledLabel && (
         <DisabledBadge testID={testID ? `${testID}-disabled` : undefined}>
           <DisabledBadgeText>{disabledLabel}</DisabledBadgeText>
         </DisabledBadge>
       )}
+
+      <Info>
+        <Title numberOfLines={1}>{courtName}</Title>
+        {!!city && <Subtitle numberOfLines={1}>{city}</Subtitle>}
+        <TagRow>
+          <Tag>
+            <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+            <TagText>Best of {match.bestOf}</TagText>
+          </Tag>
+          <Tag>
+            <Ionicons name="tennisball-outline" size={13} color="#9fb8c8" />
+            <TagText>{match.shuttleType}</TagText>
+          </Tag>
+        </TagRow>
+      </Info>
+
+      <StatCell>
+        <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
+        <StatTime>{match.matchTime?.start}</StatTime>
+      </StatCell>
     </Card>
   );
 };
@@ -91,74 +74,83 @@ export default MatchCard;
 
 const Card = styled.TouchableOpacity<{ isDisabled: boolean }>(
   ({ isDisabled }: { isDisabled: boolean }) => ({
-    padding: 15,
-    borderRadius: 10,
-    backgroundColor: "rgb(3, 16, 31)",
-    borderWidth: 1,
-    borderColor: "rgb(9, 33, 62)",
+    position: "relative",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     gap: 12,
+    padding: isSmallScreen ? 13 : 15,
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderWidth: 1,
+    borderColor: "rgb(26, 28, 54)",
     opacity: isDisabled ? 0.55 : 1,
   }),
 );
 
-const TopRow = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 10,
+const Info = styled.View({
+  flex: 1,
+  minWidth: 0,
 });
 
-const LocationRow = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 6,
-  flexShrink: 1,
-});
-
-const LocationText = styled.Text({
+const Title = styled.Text({
   color: "#ffffff",
-  fontSize: isSmallScreen ? 14 : 15,
   fontWeight: "bold",
-  flexShrink: 1,
+  fontSize: isSmallScreen ? 15 : 16,
 });
 
-const FeeTag = styled.View<{ isFree: boolean }>(
-  ({ isFree }: { isFree: boolean }) => ({
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: isFree ? "rgba(0, 200, 120, 0.15)" : "rgba(0, 162, 255, 0.15)",
-  }),
-);
+const Subtitle = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 12,
+  marginTop: 3,
+});
 
-const FeeText = styled.Text<{ isFree: boolean }>(
-  ({ isFree }: { isFree: boolean }) => ({
-    color: isFree ? "#22c58a" : "#00A2FF",
-    fontSize: 12,
-    fontWeight: "bold",
-  }),
-);
-
-const DetailsGrid = styled.View({
+const TagRow = styled.View({
   flexDirection: "row",
   flexWrap: "wrap",
-  rowGap: 8,
+  gap: 8,
+  marginTop: 12,
 });
 
-const DetailItem = styled.View({
+const Tag = styled.View({
   flexDirection: "row",
   alignItems: "center",
-  gap: 6,
-  width: "50%",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "#152534",
 });
 
-const DetailText = styled.Text({
+const TagText = styled.Text({
   color: "#cbd5e1",
-  fontSize: isSmallScreen ? 12 : 13,
+  fontSize: 11,
+  fontWeight: "500",
+});
+
+const StatCell = styled.View({
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 66,
+});
+
+const StatDate = styled.Text({
+  color: "#aab7c4",
+  fontSize: 11,
+});
+
+const StatTime = styled.Text({
+  color: "#ffffff",
+  fontSize: 20,
+  fontWeight: "bold",
+  marginTop: 2,
 });
 
 const DisabledBadge = styled.View({
-  alignSelf: "flex-start",
+  position: "absolute",
+  top: 10,
+  right: 10,
+  zIndex: 1,
   paddingHorizontal: 8,
   paddingVertical: 3,
   borderRadius: 8,
