@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import type { LadderMatch } from "@shared/types";
 
 import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
+import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -32,6 +33,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
 
   const city = match.court?.location?.city;
   const courtName = match.court?.courtName ?? "";
+  const progress = getLadderMatchProgress(match);
 
   return (
     <Card
@@ -52,12 +54,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
         {!!city && <Subtitle numberOfLines={1}>{city}</Subtitle>}
         <TagRow>
           <Tag>
-            <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
-            <TagText>Best of {match.bestOf}</TagText>
+            <TagText>🏸 {match.shuttleType}</TagText>
           </Tag>
           <Tag>
-            {/* <Ionicons name="tennisball-outline" size={13} color="#9fb8c8" /> */}
-            <TagText>🏸 {match.shuttleType}</TagText>
+            <TagText>
+              {progress.completed}/{progress.total} games completed
+            </TagText>
           </Tag>
         </TagRow>
       </Info>
@@ -65,6 +67,19 @@ const MatchCard: React.FC<MatchCardProps> = ({
       <StatCell>
         <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
         <StatTime>{match.matchTime?.start}</StatTime>
+        {progress.allCompleted ? (
+          <Ionicons
+            name="checkmark-circle"
+            size={16}
+            color="green"
+            style={{ marginTop: 6 }}
+          />
+        ) : progress.pendingApproval > 0 ? (
+          <AwaitingText>
+            {progress.pendingApproval}{" "}
+            {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
+          </AwaitingText>
+        ) : null}
       </StatCell>
     </Card>
   );
@@ -131,7 +146,8 @@ const TagText = styled.Text({
 const StatCell = styled.View({
   alignItems: "center",
   justifyContent: "center",
-  minWidth: 66,
+  minWidth: 72,
+  maxWidth: 96,
 });
 
 const StatDate = styled.Text({
@@ -144,6 +160,14 @@ const StatTime = styled.Text({
   fontSize: 20,
   fontWeight: "bold",
   marginTop: 2,
+});
+
+const AwaitingText = styled.Text({
+  color: "#FFA500",
+  fontSize: 10,
+  fontWeight: "600",
+  textAlign: "center",
+  marginTop: 6,
 });
 
 const DisabledBadge = styled.View({

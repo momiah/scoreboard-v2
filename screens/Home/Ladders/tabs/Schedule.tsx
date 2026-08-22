@@ -8,6 +8,7 @@ import type { Ladder, LadderMatch } from "@shared/types";
 import { UserContext } from "../../../../context/UserContext";
 import { LadderContext } from "../../../../context/LadderContext";
 import { getMyScheduleMatches } from "../../../../helpers/ladderScheduleMatches";
+import { getNextLadderGame } from "../../../../helpers/ladderMatchProgress";
 import MatchCard from "../../../../components/ladder/MatchCard";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
 
@@ -50,11 +51,14 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder }) => {
   );
 
   const handleOpenMatch = (match: LadderMatch) => {
+    const { gameId, glowColor } = getNextLadderGame(match);
     navigation.navigate("MatchDetails", {
       ladderId: ladder.ladderId,
       matchId: match.ladderMatchId,
       match,
       ladderType: ladder.ladderType,
+      scrollToGameId: gameId ?? undefined,
+      glowColor,
     });
   };
 
