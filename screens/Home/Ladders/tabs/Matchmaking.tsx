@@ -6,7 +6,6 @@ import styled from "styled-components/native";
 import type { Ladder, LadderMatch } from "@shared/types";
 
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
-import { UserContext } from "../../../../context/UserContext";
 import { LadderContext } from "../../../../context/LadderContext";
 import { getOpenMatchmakingMatches } from "../../../../helpers/ladderScheduleMatches";
 import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
@@ -22,7 +21,6 @@ const SKELETON_ROWS = [0, 1, 2];
 
 const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { currentUser } = useContext(UserContext);
   const { fetchLadderMatches } = useContext(LadderContext);
 
   const [postModalVisible, setPostModalVisible] = useState(false);
@@ -35,8 +33,6 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     ladder,
     () => setPostModalVisible(true),
   );
-
-  const userId = currentUser?.userId;
 
   useFocusEffect(
     useCallback(() => {
@@ -109,19 +105,14 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
 
     return (
       <List testID="matchmaking-list">
-        {matches.map((match) => {
-          const isOwn = !!userId && match.participants.includes(userId);
-          return (
-            <MatchCard
-              key={match.ladderMatchId}
-              testID={`matchmaking-card-${match.ladderMatchId}`}
-              match={match}
-              disabled={isOwn}
-              disabledLabel={isOwn ? "Your match" : undefined}
-              onPress={handleAcceptPress}
-            />
-          );
-        })}
+        {matches.map((match) => (
+          <MatchCard
+            key={match.ladderMatchId}
+            testID={`matchmaking-card-${match.ladderMatchId}`}
+            match={match}
+            onPress={handleAcceptPress}
+          />
+        ))}
       </List>
     );
   };

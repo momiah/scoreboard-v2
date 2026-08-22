@@ -1,5 +1,5 @@
 import React from "react";
-import { Dimensions } from "react-native";
+import { Dimensions, TouchableOpacity } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -7,6 +7,7 @@ import type { LadderMatch } from "@shared/types";
 
 import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
 import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
+import { formatCurrency } from "../../helpers/formatCurrency";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -14,27 +15,26 @@ const isSmallScreen = screenWidth < 400;
 interface MatchCardProps {
   match: LadderMatch;
   onPress?: (match: LadderMatch) => void;
-  disabled?: boolean;
-  disabledLabel?: string;
   // Show game progress (x/total completed + awaiting-approval / done state).
   // Only meaningful once a match is accepted, so it's off for Matchmaking.
   showProgress?: boolean;
+  // When set, an external-link icon next to the location opens it (e.g. in maps).
+  onLocationPress?: () => void;
   testID?: string;
 }
+
+const feeLabel = (match: LadderMatch): string =>
+  match.courtFee > 0
+    ? `Court Fee - ${formatCurrency(match.courtFee, match.currencyType)}`
+    : "No court fee";
 
 const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onPress,
-  disabled = false,
-  disabledLabel,
   showProgress = false,
+  onLocationPress,
   testID,
 }) => {
-  const handlePress = () => {
-    if (disabled) return;
-    onPress?.(match);
-  };
-
   const city = match.court?.location?.city;
   const courtName = match.court?.courtName ?? "";
   const progress = getLadderMatchProgress(match);
@@ -42,19 +42,23 @@ const MatchCard: React.FC<MatchCardProps> = ({
   return (
     <Card
       testID={testID}
-      activeOpacity={disabled ? 1 : 0.8}
-      isDisabled={disabled}
-      disabled={disabled || !onPress}
-      onPress={handlePress}
+      activeOpacity={0.8}
+      disabled={!onPress}
+      onPress={() => onPress?.(match)}
     >
-      {disabled && !!disabledLabel && (
-        <DisabledBadge testID={testID ? `${testID}-disabled` : undefined}>
-          <DisabledBadgeText>{disabledLabel}</DisabledBadgeText>
-        </DisabledBadge>
-      )}
-
       <Info>
-        <Title numberOfLines={1}>{courtName}</Title>
+        <TitleRow>
+          <Title numberOfLines={1}>{courtName}</Title>
+          {!!onLocationPress && (
+            <LocationLink
+              testID={testID ? `${testID}-map-link` : undefined}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={onLocationPress}
+            >
+              <Ionicons name="open-outline" size={16} color="#00A2FF" />
+            </LocationLink>
+          )}
+        </TitleRow>
         {!!city && <Subtitle numberOfLines={1}>{city}</Subtitle>}
         <TagRow>
           {showProgress ? (
@@ -71,11 +75,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
           ) : (
             <>
               <Tag>
-                <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
-                <TagText>Best of {match.bestOf}</TagText>
+                <TagText>🏸 {match.shuttleType}</TagText>
               </Tag>
               <Tag>
-                <TagText>🏸 {match.shuttleType}</TagText>
+                <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+                <TagText>Best of {match.bestOf}</TagText>
               </Tag>
             </>
           )}
@@ -85,19 +89,26 @@ const MatchCard: React.FC<MatchCardProps> = ({
       <StatCell>
         <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
         <StatTime>{match.matchTime?.start}</StatTime>
-        {showProgress && progress.allCompleted ? (
-          <Ionicons
-            name="checkmark-circle"
-            size={16}
-            color="green"
-            style={{ marginTop: 6 }}
-          />
-        ) : showProgress && progress.pendingApproval > 0 ? (
-          <AwaitingText>
-            {progress.pendingApproval}{" "}
-            {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
-          </AwaitingText>
-        ) : null}
+        {showProgress ? (
+          progress.allCompleted ? (
+            <Ionicons
+              name="checkmark-circle"
+              size={16}
+              color="green"
+              style={{ marginTop: 6 }}
+            />
+          ) : progress.pendingApproval > 0 ? (
+            <AwaitingText>
+              {progress.pendingApproval}{" "}
+              {progress.pendingApproval === 1 ? "game" : "games"} awaiting
+              approval
+            </AwaitingText>
+          ) : null
+        ) : (
+          <FeeTag>
+            <FeeText>{feeLabel(match)}</FeeText>
+          </FeeTag>
+        )}
       </StatCell>
     </Card>
   );
@@ -105,31 +116,38 @@ const MatchCard: React.FC<MatchCardProps> = ({
 
 export default MatchCard;
 
-const Card = styled.TouchableOpacity<{ isDisabled: boolean }>(
-  ({ isDisabled }: { isDisabled: boolean }) => ({
-    position: "relative",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-    padding: isSmallScreen ? 13 : 15,
-    borderRadius: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    borderWidth: 1,
-    borderColor: "rgb(26, 28, 54)",
-    opacity: isDisabled ? 0.55 : 1,
-  }),
-);
+const Card = styled.TouchableOpacity({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  padding: isSmallScreen ? 13 : 15,
+  borderRadius: 8,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderWidth: 1,
+  borderColor: "rgb(26, 28, 54)",
+});
 
 const Info = styled.View({
   flex: 1,
   minWidth: 0,
 });
 
+const TitleRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+});
+
 const Title = styled.Text({
   color: "#ffffff",
   fontWeight: "bold",
   fontSize: isSmallScreen ? 15 : 16,
+  flexShrink: 1,
+});
+
+const LocationLink = styled.TouchableOpacity({
+  padding: 2,
 });
 
 const Subtitle = styled.Text({
@@ -165,7 +183,7 @@ const StatCell = styled.View({
   alignItems: "center",
   justifyContent: "center",
   minWidth: 72,
-  maxWidth: 96,
+  maxWidth: 100,
 });
 
 const StatDate = styled.Text({
@@ -188,19 +206,17 @@ const AwaitingText = styled.Text({
   marginTop: 6,
 });
 
-const DisabledBadge = styled.View({
-  position: "absolute",
-  top: 10,
-  right: 10,
-  zIndex: 1,
+const FeeTag = styled.View({
+  marginTop: 8,
   paddingHorizontal: 8,
-  paddingVertical: 3,
+  paddingVertical: 4,
   borderRadius: 8,
-  backgroundColor: "rgba(255, 255, 255, 0.08)",
+  backgroundColor: "#152534",
 });
 
-const DisabledBadgeText = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 11,
-  fontWeight: "bold",
+const FeeText = styled.Text({
+  color: "#cbd5e1",
+  fontSize: 10,
+  fontWeight: "600",
+  textAlign: "center",
 });

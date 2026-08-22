@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Dimensions, Modal, ActivityIndicator } from "react-native";
+import { Dimensions, Modal, ActivityIndicator, Linking } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -13,6 +13,7 @@ import type { Ladder, LadderMatch } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
+import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
 import MatchCard from "../ladder/MatchCard";
 
 const screenWidth = Dimensions.get("window").width;
@@ -64,7 +65,16 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   };
 
   const userId = currentUser?.userId;
+  const isOwnMatch =
+    !!match && !!userId && match.participants.includes(userId);
   const canAccept = !!match && !!userId && canAcceptLadderMatch(match, userId);
+
+  const handleOpenMap = () => {
+    if (!match) return;
+    Linking.openURL(buildCourtMapsUrl(match.court)).catch((err) =>
+      console.error("Error opening Google Maps:", err),
+    );
+  };
 
   const handleAccept = async () => {
     if (!acceptedTerms || processing || !match) return;
@@ -104,7 +114,8 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     }
   };
 
-  const disableAccept = !acceptedTerms || processing || !canAccept;
+  const disableAccept =
+    isOwnMatch || !acceptedTerms || processing || !canAccept;
 
   return (
     <Modal
@@ -122,29 +133,48 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
           <Title>Accept Match</Title>
           <Subtitle>{ladder.name}</Subtitle>
 
-          {match && <MatchCard match={match} testID="accept-ladder-match-card" />}
+          {match && (
+            <MatchCard
+              match={match}
+              testID="accept-ladder-match-card"
+              onLocationPress={handleOpenMap}
+            />
+          )}
 
-          <TermsRow>
-            <CheckboxToggle
-              testID="accept-ladder-match-terms"
-              activeOpacity={0.7}
-              onPress={() => setAcceptedTerms((prev) => !prev)}
-            >
+          {isOwnMatch ? (
+            <Disclaimer testID="accept-ladder-own-match">
               <Ionicons
-                name={acceptedTerms ? "checkbox" : "square-outline"}
-                size={22}
-                color={acceptedTerms ? "#00A2FF" : "#64748b"}
+                name="information-circle-outline"
+                size={18}
+                color="#FFA500"
               />
-              <CheckboxLabel>I accept the</CheckboxLabel>
-            </CheckboxToggle>
-            <TermsLink
-              testID="accept-ladder-match-terms-link"
-              activeOpacity={0.7}
-              onPress={goToTerms}
-            >
-              <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
-            </TermsLink>
-          </TermsRow>
+              <DisclaimerText>
+                You cannot accept your own match.
+              </DisclaimerText>
+            </Disclaimer>
+          ) : (
+            <TermsRow>
+              <CheckboxToggle
+                testID="accept-ladder-match-terms"
+                activeOpacity={0.7}
+                onPress={() => setAcceptedTerms((prev) => !prev)}
+              >
+                <Ionicons
+                  name={acceptedTerms ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={acceptedTerms ? "#00A2FF" : "#64748b"}
+                />
+                <CheckboxLabel>I accept the</CheckboxLabel>
+              </CheckboxToggle>
+              <TermsLink
+                testID="accept-ladder-match-terms-link"
+                activeOpacity={0.7}
+                onPress={goToTerms}
+              >
+                <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
+              </TermsLink>
+            </TermsRow>
+          )}
 
           {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
 
@@ -236,6 +266,23 @@ const CheckboxLink = styled.Text({
 const ErrorText = styled.Text({
   color: "#f87171",
   fontSize: 13,
+});
+
+const Disclaimer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  borderRadius: 10,
+  backgroundColor: "rgba(255, 165, 0, 0.12)",
+});
+
+const DisclaimerText = styled.Text({
+  color: "#FFA500",
+  fontSize: 13,
+  fontWeight: "600",
+  flexShrink: 1,
 });
 
 const ActionButton = styled.TouchableOpacity<{ isDisabled: boolean }>(
