@@ -91,6 +91,7 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder }) => {
           testID={`schedule-card-${match.ladderMatchId}`}
           match={match}
           onPress={handleOpenMatch}
+          showProgress
         />
       ))}
     </Container>

@@ -176,7 +176,7 @@ const MatchDetails: React.FC = () => {
 
         <Section>
           <SectionTitle>Match details</SectionTitle>
-          <MatchCard match={match} testID="match-details-card" />
+          <MatchCard match={match} testID="match-details-card" showProgress />
         </Section>
 
         <GamesSection>

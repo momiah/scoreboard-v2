@@ -16,6 +16,9 @@ interface MatchCardProps {
   onPress?: (match: LadderMatch) => void;
   disabled?: boolean;
   disabledLabel?: string;
+  // Show game progress (x/total completed + awaiting-approval / done state).
+  // Only meaningful once a match is accepted, so it's off for Matchmaking.
+  showProgress?: boolean;
   testID?: string;
 }
 
@@ -24,6 +27,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   onPress,
   disabled = false,
   disabledLabel,
+  showProgress = false,
   testID,
 }) => {
   const handlePress = () => {
@@ -53,28 +57,42 @@ const MatchCard: React.FC<MatchCardProps> = ({
         <Title numberOfLines={1}>{courtName}</Title>
         {!!city && <Subtitle numberOfLines={1}>{city}</Subtitle>}
         <TagRow>
-          <Tag>
-            <TagText>🏸 {match.shuttleType}</TagText>
-          </Tag>
-          <Tag>
-            <TagText>
-              {progress.completed}/{progress.total} games completed
-            </TagText>
-          </Tag>
+          {showProgress ? (
+            <>
+              <Tag>
+                <TagText>🏸 {match.shuttleType}</TagText>
+              </Tag>
+              <Tag>
+                <TagText>
+                  {progress.completed}/{progress.total} games completed
+                </TagText>
+              </Tag>
+            </>
+          ) : (
+            <>
+              <Tag>
+                <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+                <TagText>Best of {match.bestOf}</TagText>
+              </Tag>
+              <Tag>
+                <TagText>🏸 {match.shuttleType}</TagText>
+              </Tag>
+            </>
+          )}
         </TagRow>
       </Info>
 
       <StatCell>
         <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
         <StatTime>{match.matchTime?.start}</StatTime>
-        {progress.allCompleted ? (
+        {showProgress && progress.allCompleted ? (
           <Ionicons
             name="checkmark-circle"
             size={16}
             color="green"
             style={{ marginTop: 6 }}
           />
-        ) : progress.pendingApproval > 0 ? (
+        ) : showProgress && progress.pendingApproval > 0 ? (
           <AwaitingText>
             {progress.pendingApproval}{" "}
             {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
