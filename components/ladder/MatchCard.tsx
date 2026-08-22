@@ -1,14 +1,14 @@
 import React from "react";
-import { Dimensions, TouchableOpacity } from "react-native";
+import { Dimensions } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
 import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
 import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
 import { formatCurrency } from "../../helpers/formatCurrency";
-import { has } from "lodash";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -40,6 +40,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const courtName = match.court?.courtName ?? "";
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
+  const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
 
   return (
     <Card
@@ -63,28 +64,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </TitleRow>
         {!!city && <Subtitle numberOfLines={1}>{city}</Subtitle>}
         <TagRow>
-          {showProgress ? (
-            <>
-              <Tag>
-                <TagText>🏸 {match.shuttleType}</TagText>
-              </Tag>
-              <Tag>
-                <TagText>
-                  {progress.completed}/{progress.total} games completed
-                </TagText>
-              </Tag>
-            </>
-          ) : (
-            <>
-              <Tag>
-                <TagText>🏸 {match.shuttleType}</TagText>
-              </Tag>
-              <Tag>
-                <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
-                <TagText>Best of {match.bestOf}</TagText>
-              </Tag>
-            </>
-          )}
+          <Tag>
+            <TagText>🏸 {match.shuttleType}</TagText>
+          </Tag>
+          <Tag>
+            <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+            <TagText>Best of {match.bestOf}</TagText>
+          </Tag>
         </TagRow>
       </Info>
 
@@ -92,7 +78,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
         <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
         <StatTime>{match.matchTime?.start}</StatTime>
         {showProgress ? (
-          progress.allCompleted ? (
+          isCompleted ? (
             <Ionicons
               name="checkmark-circle"
               size={16}
