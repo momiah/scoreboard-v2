@@ -7,13 +7,18 @@ import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
-import { canAcceptLadderMatch } from "@shared";
+import {
+  canAcceptLadderMatch,
+  notificationSchema,
+  notificationTypes,
+} from "@shared";
 import type { Ladder, LadderMatch } from "@shared/types";
 
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 import MatchCard from "../ladder/MatchCard";
 
 const screenWidth = Dimensions.get("window").width;
@@ -37,7 +42,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { acceptLadderMatch } = useContext(LadderContext);
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, sendNotification } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -76,6 +81,32 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     );
   };
 
+  // Tell the poster their match was accepted. Fire-and-forget: a notification
+  // failure must not break the accept flow.
+  const notifyPosterOfAccept = async (accepted: LadderMatch) => {
+    const posterId = accepted.createdBy;
+    if (!posterId || posterId === userId) return;
+    try {
+      await sendNotification({
+        ...notificationSchema,
+        createdAt: new Date(),
+        recipientId: posterId,
+        senderId: userId,
+        message: `${formatDisplayName(currentUser)} accepted your ladder match at ${
+          accepted.court?.courtName ?? "your court"
+        }`,
+        type: notificationTypes.INFORMATION.LADDER_MATCH_ACCEPTED.TYPE,
+        data: {
+          ladderId: ladder.ladderId,
+          matchId: accepted.ladderMatchId,
+          ladderType: ladder.ladderType,
+        },
+      });
+    } catch (error) {
+      console.error("Error sending ladder accept notification:", error);
+    }
+  };
+
   const handleAccept = async () => {
     if (!acceptedTerms || processing || !match) return;
     if (!userId) {
@@ -97,6 +128,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
       );
       if (success) {
         onAccepted?.(match);
+        void notifyPosterOfAccept(match);
         resetAndClose();
         showBottomToast("Match accepted — see it in your Schedule", "success");
       } else if (reason === "unavailable") {
