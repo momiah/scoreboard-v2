@@ -8,6 +8,7 @@ import type { LadderMatch } from "@shared/types";
 import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
 import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
 import { formatCurrency } from "../../helpers/formatCurrency";
+import { has } from "lodash";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -38,6 +39,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const city = match.court?.location?.city;
   const courtName = match.court?.courtName ?? "";
   const progress = getLadderMatchProgress(match);
+  const hasCourtFee = match.courtFee > 0;
 
   return (
     <Card
@@ -105,8 +107,8 @@ const MatchCard: React.FC<MatchCardProps> = ({
             </AwaitingText>
           ) : null
         ) : (
-          <FeeTag>
-            <FeeText>{feeLabel(match)}</FeeText>
+          <FeeTag hasCourtFee={hasCourtFee}>
+            <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
           </FeeTag>
         )}
       </StatCell>
@@ -206,17 +208,21 @@ const AwaitingText = styled.Text({
   marginTop: 6,
 });
 
-const FeeTag = styled.View({
-  marginTop: 8,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 8,
-  backgroundColor: "#152534",
-});
+const FeeTag = styled.View<{ hasCourtFee: boolean }>(
+  ({ hasCourtFee }: { hasCourtFee: boolean }) => ({
+    marginTop: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: hasCourtFee ? "#003362ff" : "#1b4600ff",
+  }),
+);
 
-const FeeText = styled.Text({
-  color: "#cbd5e1",
-  fontSize: 10,
-  fontWeight: "600",
-  textAlign: "center",
-});
+const FeeText = styled.Text<{ hasCourtFee: boolean }>(
+  ({ hasCourtFee }: { hasCourtFee: boolean }) => ({
+    color: hasCourtFee ? "#4dbeffff" : "#00FF00",
+    fontSize: 10,
+    fontWeight: "600",
+    textAlign: "center",
+  }),
+);
