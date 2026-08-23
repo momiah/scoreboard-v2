@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { ScrollView } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -13,7 +13,6 @@ import { LadderContext } from "../../../context/LadderContext";
 import { PopupContext } from "../../../context/PopupContext";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { FixtureGameItem } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
-import { useFixturesScrollToGame } from "../../../components/Tournaments/Fixtures/useFixturesScrollToGame";
 import AddLadderGameModal from "../../../components/Modals/AddLadderGameModal";
 import {
   isMatchStarted,
@@ -26,8 +25,6 @@ interface MatchDetailsParams {
   matchId: string;
   match?: LadderMatch;
   ladderType?: LadderType;
-  scrollToGameId?: string;
-  glowColor?: string;
 }
 
 interface OpponentProfile {
@@ -49,20 +46,11 @@ const opponentName = (opponent: OpponentProfile): string => {
 const MatchDetails: React.FC = () => {
   const route =
     useRoute<RouteProp<Record<string, MatchDetailsParams>, string>>();
-  const {
-    ladderId,
-    matchId,
-    match: matchParam,
-    ladderType,
-    scrollToGameId,
-    glowColor,
-  } = route.params;
+  const { ladderId, matchId, match: matchParam, ladderType } = route.params;
 
   const { currentUser, getUserById } = useContext(UserContext);
   const { fetchLadderMatches } = useContext(LadderContext);
   const { showBottomToast } = useContext(PopupContext);
-  const { scrollRef, gameRefs, highlightedGameId, glowAnim } =
-    useFixturesScrollToGame(scrollToGameId);
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [opponents, setOpponents] = useState<OpponentProfile[]>([]);
@@ -145,7 +133,7 @@ const MatchDetails: React.FC = () => {
 
   return (
     <Screen testID="match-details">
-      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <Section>
           <SectionTitle>
             {isDoubles ? "Your opponents" : "Your opponent"}
@@ -176,7 +164,12 @@ const MatchDetails: React.FC = () => {
 
         <Section>
           <SectionTitle>Match details</SectionTitle>
-          <MatchCard match={match} testID="match-details-card" showProgress />
+          <MatchCard
+            match={match}
+            testID="match-details-card"
+            showProgress
+            currentUserId={userId}
+          />
         </Section>
 
         <GamesSection>
@@ -193,23 +186,18 @@ const MatchDetails: React.FC = () => {
             )}
           </GamesHeader>
           <GamesList isLocked={!started}>
-            {match.games.map((game) => {
-              const gameKey = String(game.gameNumber);
-              return (
-                <FixtureGameItem
-                  key={gameKey}
-                  game={game}
-                  tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
-                  onPress={handleGamePress}
-                  innerRef={(node: View | null) => {
-                    if (node) gameRefs.current[gameKey] = node;
-                  }}
-                  glowAnim={glowAnim}
-                  isHighlighted={gameKey === highlightedGameId}
-                  glowColor={glowColor ?? "#00A2FF"}
-                />
-              );
-            })}
+            {match.games.map((game) => (
+              <FixtureGameItem
+                key={game.gameNumber}
+                game={game}
+                tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
+                onPress={handleGamePress}
+                innerRef={undefined}
+                glowAnim={undefined}
+                isHighlighted={false}
+                glowColor="#00A2FF"
+              />
+            ))}
           </GamesList>
         </GamesSection>
       </ScrollView>

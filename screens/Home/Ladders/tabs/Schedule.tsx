@@ -1,4 +1,11 @@
-import React, { useCallback, useContext, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Animated } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -8,25 +15,30 @@ import type { Ladder, LadderMatch } from "@shared/types";
 import { UserContext } from "../../../../context/UserContext";
 import { LadderContext } from "../../../../context/LadderContext";
 import { getMyScheduleMatches } from "../../../../helpers/ladderScheduleMatches";
-import { getNextLadderGame } from "../../../../helpers/ladderMatchProgress";
 import MatchCard from "../../../../components/ladder/MatchCard";
+import GameGlow, { runGlow } from "../../../../components/GameCardGlow";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
 
 interface ScheduleProps {
   ladder: Ladder;
+  // Match to highlight with a blue glow (e.g. arriving from an accept notification).
+  highlightMatchId?: string;
 }
 
 const SKELETON_ROWS = [0, 1, 2];
 
-const Schedule: React.FC<ScheduleProps> = ({ ladder }) => {
+const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { currentUser } = useContext(UserContext);
   const { fetchLadderMatches } = useContext(LadderContext);
 
   const [matches, setMatches] = useState<LadderMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [glowMatchId, setGlowMatchId] = useState<string | null>(null);
 
   const userId = currentUser?.userId;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const glowedFor = useRef<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,15 +62,26 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder }) => {
     }, [fetchLadderMatches, ladder.ladderId, userId]),
   );
 
+  // Glow the highlighted match once it's in the list (fires a single time).
+  useEffect(() => {
+    if (
+      !highlightMatchId ||
+      glowedFor.current === highlightMatchId ||
+      !matches.some((m) => m.ladderMatchId === highlightMatchId)
+    ) {
+      return;
+    }
+    glowedFor.current = highlightMatchId;
+    setGlowMatchId(highlightMatchId);
+    runGlow(glowAnim, () => setGlowMatchId(null));
+  }, [highlightMatchId, matches, glowAnim]);
+
   const handleOpenMatch = (match: LadderMatch) => {
-    const { gameId, glowColor } = getNextLadderGame(match);
     navigation.navigate("MatchDetails", {
       ladderId: ladder.ladderId,
       matchId: match.ladderMatchId,
       match,
       ladderType: ladder.ladderType,
-      scrollToGameId: gameId ?? undefined,
-      glowColor,
     });
   };
 
@@ -86,13 +109,18 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder }) => {
   return (
     <Container testID="schedule-list">
       {matches.map((match) => (
-        <MatchCard
-          key={match.ladderMatchId}
-          testID={`schedule-card-${match.ladderMatchId}`}
-          match={match}
-          onPress={handleOpenMatch}
-          showProgress
-        />
+        <CardWrap key={match.ladderMatchId}>
+          <MatchCard
+            testID={`schedule-card-${match.ladderMatchId}`}
+            match={match}
+            onPress={handleOpenMatch}
+            showProgress
+            currentUserId={userId}
+          />
+          {glowMatchId === match.ladderMatchId && (
+            <GameGlow glowAnim={glowAnim} color="#00A2FF" />
+          )}
+        </CardWrap>
       ))}
     </Container>
   );
@@ -103,6 +131,10 @@ export default Schedule;
 const Container = styled.View({
   padding: 20,
   gap: 12,
+});
+
+const CardWrap = styled.View({
+  position: "relative",
 });
 
 const EmptyState = styled.View({

@@ -1,6 +1,6 @@
 import {
   getLadderMatchProgress,
-  getNextLadderGame,
+  getLadderMatchScore,
 } from "./ladderMatchProgress";
 
 const game = (overrides = {}) => ({
@@ -8,6 +8,27 @@ const game = (overrides = {}) => ({
   gameNumber: 1,
   result: null,
   approvalStatus: "",
+  ...overrides,
+});
+
+const ME = "me";
+const OPP = "opp";
+
+// A decided, approved game where `winnerUserId` (me or opp) won.
+const scoredGame = (winnerUserId, overrides = {}) => ({
+  gameId: "",
+  gameNumber: 1,
+  approvalStatus: "approved",
+  team1: { player1: { userId: ME } },
+  team2: { player1: { userId: OPP } },
+  result: {
+    winner: {
+      team: winnerUserId === ME ? "Team 1" : "Team 2",
+      players: [winnerUserId],
+      score: 21,
+    },
+    loser: { team: winnerUserId === ME ? "Team 2" : "Team 1", players: [], score: 0 },
+  },
   ...overrides,
 });
 
@@ -53,41 +74,64 @@ describe("getLadderMatchProgress", () => {
   });
 });
 
-describe("getNextLadderGame", () => {
-  it("targets the first awaiting-approval game with an orange glow", () => {
-    const match = {
-      games: [
-        game({ gameNumber: 1, approvalStatus: "approved", result: "team1" }),
-        game({ gameNumber: 2, approvalStatus: "pending" }),
-        game({ gameNumber: 3 }),
-      ],
-    };
-    expect(getNextLadderGame(match)).toEqual({
-      gameId: "2",
-      glowColor: "#FFA500",
+describe("getLadderMatchScore", () => {
+  it("starts 0-0 undecided for fresh shells", () => {
+    const match = { bestOf: 5, games: [game(), game(), game(), game(), game()] };
+    expect(getLadderMatchScore(match, ME)).toEqual({
+      mine: 0,
+      theirs: 0,
+      outcome: "undecided",
     });
   });
 
-  it("targets the first unplayed game with a blue glow when none are pending", () => {
+  it("counts my wins on the left and reports a win at the majority", () => {
     const match = {
+      bestOf: 5,
       games: [
-        game({ gameNumber: 1, approvalStatus: "approved", result: "team1" }),
-        game({ gameNumber: 2 }),
+        scoredGame(ME, { gameNumber: 1 }),
+        scoredGame(OPP, { gameNumber: 2 }),
+        scoredGame(ME, { gameNumber: 3 }),
+        scoredGame(OPP, { gameNumber: 4 }),
+        scoredGame(ME, { gameNumber: 5 }),
       ],
     };
-    expect(getNextLadderGame(match)).toEqual({
-      gameId: "2",
-      glowColor: "#00A2FF",
+    expect(getLadderMatchScore(match, ME)).toEqual({
+      mine: 3,
+      theirs: 2,
+      outcome: "win",
     });
   });
 
-  it("returns a null gameId when every game has a result", () => {
+  it("reports a loss when the opponent reaches the majority", () => {
     const match = {
+      bestOf: 5,
       games: [
-        game({ gameNumber: 1, approvalStatus: "approved", result: "team1" }),
-        game({ gameNumber: 2, approvalStatus: "approved", result: "team2" }),
+        scoredGame(OPP, { gameNumber: 1 }),
+        scoredGame(ME, { gameNumber: 2 }),
+        scoredGame(OPP, { gameNumber: 3 }),
+        scoredGame(OPP, { gameNumber: 4 }),
       ],
     };
-    expect(getNextLadderGame(match).gameId).toBeNull();
+    expect(getLadderMatchScore(match, ME)).toEqual({
+      mine: 1,
+      theirs: 3,
+      outcome: "loss",
+    });
+  });
+
+  it("ignores unapproved games", () => {
+    const match = {
+      bestOf: 5,
+      games: [
+        scoredGame(ME, { gameNumber: 1, approvalStatus: "pending" }),
+        scoredGame(ME, { gameNumber: 2 }),
+      ],
+    };
+    expect(getLadderMatchScore(match, ME)).toMatchObject({ mine: 1, theirs: 0 });
+  });
+
+  it("returns 0-0 without a userId", () => {
+    const match = { bestOf: 5, games: [scoredGame(ME), scoredGame(OPP)] };
+    expect(getLadderMatchScore(match, "")).toMatchObject({ mine: 0, theirs: 0 });
   });
 });

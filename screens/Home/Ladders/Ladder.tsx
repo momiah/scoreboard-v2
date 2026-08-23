@@ -31,13 +31,17 @@ type LadderTab =
   | "Performance"
   | "Playoff Bracket";
 
-type LadderRouteParams = { ladderId: string; tab?: LadderTab };
+type LadderRouteParams = {
+  ladderId: string;
+  tab?: LadderTab;
+  highlightMatchId?: string;
+};
 
 const Ladder: React.FC = () => {
   const route =
     useRoute<RouteProp<Record<string, LadderRouteParams>, string>>();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { ladderId, tab } = route.params;
+  const { ladderId, tab, highlightMatchId } = route.params;
   const { fetchLadderById, ladderById } = useContext(LadderContext);
 
   const [ladderLoading, setLadderLoading] = useState(true);
@@ -86,7 +90,9 @@ const Ladder: React.FC = () => {
       case "Matchmaking":
         return <Matchmaking ladder={ladderById} />;
       case "Schedule":
-        return <Schedule ladder={ladderById} />;
+        return (
+          <Schedule ladder={ladderById} highlightMatchId={highlightMatchId} />
+        );
       case "Performance":
       case "Playoff Bracket":
         return (

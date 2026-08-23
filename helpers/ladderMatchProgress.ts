@@ -1,4 +1,4 @@
-import type { Game, LadderMatch } from "@shared/types";
+import type { Game, GameTeam, LadderMatch } from "@shared/types";
 
 const isApproved = (game: Game): boolean => game.approvalStatus === "approved";
 
@@ -27,27 +27,51 @@ export const getLadderMatchProgress = (
   };
 };
 
-export interface NextLadderGame {
-  gameId: string | null;
-  glowColor: string;
+const teamHasUser = (team: GameTeam | undefined, userId: string): boolean =>
+  team?.player1?.userId === userId || team?.player2?.userId === userId;
+
+export type LadderMatchOutcome = "win" | "loss" | "undecided";
+
+export interface LadderMatchScore {
+  /** Games won by the current user's team. */
+  mine: number;
+  /** Games won by the opponent(s). */
+  theirs: number;
+  /** Whether the match is won, lost, or still undecided for the current user. */
+  outcome: LadderMatchOutcome;
 }
 
-// The game the player should act on next: the first one awaiting approval
-// (orange), otherwise the first unplayed game (blue). Ladder shells share an
-// empty gameId, so we key on the stable per-match gameNumber instead.
-export const getNextLadderGame = (
-  match: Pick<LadderMatch, "games">,
-): NextLadderGame => {
+/**
+ * Current games-won score for the match from the current user's perspective
+ * (mine on the left). Only approved games with a decided result count. The
+ * outcome is "win"/"loss" once either side reaches the best-of majority, else
+ * "undecided".
+ */
+export const getLadderMatchScore = (
+  match: Pick<LadderMatch, "games" | "bestOf">,
+  userId: string,
+): LadderMatchScore => {
   const games = match.games ?? [];
+  let mine = 0;
+  let theirs = 0;
 
-  const pending = games.find(isPendingApproval);
-  if (pending) {
-    return { gameId: String(pending.gameNumber), glowColor: "#FFA500" };
+  if (userId) {
+    for (const game of games) {
+      if (!isApproved(game) || !game.result) continue;
+      const mySide = teamHasUser(game.team1, userId)
+        ? "Team 1"
+        : teamHasUser(game.team2, userId)
+          ? "Team 2"
+          : null;
+      if (!mySide) continue;
+      if (game.result.winner.team === mySide) mine += 1;
+      else theirs += 1;
+    }
   }
 
-  const unplayed = games.find((game) => !game.result);
-  return {
-    gameId: unplayed ? String(unplayed.gameNumber) : null,
-    glowColor: "#00A2FF",
-  };
+  const majority = Math.floor((match.bestOf ?? games.length) / 2) + 1;
+  const outcome: LadderMatchOutcome =
+    mine >= majority ? "win" : theirs >= majority ? "loss" : "undecided";
+
+  return { mine, theirs, outcome };
 };
