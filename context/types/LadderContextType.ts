@@ -46,6 +46,11 @@ export interface LadderContextType {
     userId: string,
   ) => Promise<CreateLadderMatchOutcome>;
   fetchLadderMatches: (ladderId: string) => Promise<LadderMatch[]>;
+  subscribeToLadderMatches: (
+    ladderId: string,
+    onUpdate: (matches: LadderMatch[]) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
   acceptLadderMatch: (
     ladderId: string,
     matchId: string,

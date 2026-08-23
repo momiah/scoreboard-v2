@@ -13,6 +13,7 @@ import {
   getDocs,
   increment,
   limit,
+  onSnapshot,
   orderBy,
   query,
   runTransaction,
@@ -367,6 +368,45 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const subscribeToLadderMatches = useCallback(
+    (
+      ladderId: string,
+      onUpdate: (matches: LadderMatch[]) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!ladderId) {
+        onUpdate([]);
+        return () => {};
+      }
+
+      const matchesRef = collection(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+      );
+
+      return onSnapshot(
+        query(matchesRef, orderBy("createdAt", "desc")),
+        (snapshot) =>
+          onUpdate(
+            snapshot.docs.map(
+              (docSnap) =>
+                ({
+                  ...docSnap.data(),
+                  ladderMatchId: docSnap.id,
+                }) as LadderMatch,
+            ),
+          ),
+        (error) => {
+          console.error("Error subscribing to ladder matches:", error);
+          onError?.(error);
+        },
+      );
+    },
+    [],
+  );
+
   const acceptLadderMatch = useCallback(
     async (
       ladderId: string,
@@ -437,6 +477,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderTeams,
         createLadderMatch,
         fetchLadderMatches,
+        subscribeToLadderMatches,
         acceptLadderMatch,
         addCourtToLadder,
       }}

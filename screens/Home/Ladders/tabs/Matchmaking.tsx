@@ -21,7 +21,7 @@ const SKELETON_ROWS = [0, 1, 2];
 
 const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { fetchLadderMatches } = useContext(LadderContext);
+  const { subscribeToLadderMatches } = useContext(LadderContext);
 
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [acceptModalVisible, setAcceptModalVisible] = useState(false);
@@ -34,26 +34,24 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     () => setPostModalVisible(true),
   );
 
+  // Subscribe in realtime so a freshly posted match (or one that's just been
+  // accepted) appears/disappears without needing to refetch on focus.
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-      const loadMatches = async () => {
-        setMatchesLoading(true);
-        try {
-          const all = await fetchLadderMatches(ladder.ladderId);
-          if (active) setMatches(getOpenMatchmakingMatches(all));
-        } catch (error) {
-          console.error("Error loading matchmaking matches:", error);
-          if (active) setMatches([]);
-        } finally {
-          if (active) setMatchesLoading(false);
-        }
-      };
-      loadMatches();
-      return () => {
-        active = false;
-      };
-    }, [fetchLadderMatches, ladder.ladderId]),
+      setMatchesLoading(true);
+      const unsubscribe = subscribeToLadderMatches(
+        ladder.ladderId,
+        (all) => {
+          setMatches(getOpenMatchmakingMatches(all));
+          setMatchesLoading(false);
+        },
+        () => {
+          setMatches([]);
+          setMatchesLoading(false);
+        },
+      );
+      return unsubscribe;
+    }, [subscribeToLadderMatches, ladder.ladderId]),
   );
 
   const nonParticipant = isSignedIn && !isParticipant;
