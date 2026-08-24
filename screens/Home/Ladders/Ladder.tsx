@@ -11,8 +11,7 @@ import type {
   RouteProp,
 } from "@react-navigation/native";
 import styled from "styled-components/native";
-
-import LadderMenu from "../../../components/ladder/LadderMenu";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LADDER_TYPE } from "@shared/types";
 
@@ -126,7 +125,17 @@ const Ladder: React.FC = () => {
                 ladderById.image ? { uri: ladderById.image } : ccDefaultImage
               }
             >
-              <LadderMenu ladderId={ladderId} />
+              <OverlayTop>
+                <IconButton
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    navigation.navigate("LadderMenu", { ladderId })
+                  }
+                  testID="ladder-burger"
+                >
+                  <Ionicons name="menu" size={24} color="#ffffff" />
+                </IconButton>
+              </OverlayTop>
 
               <OverlayBottom>
                 <Tag
@@ -207,6 +216,21 @@ const LadderImage = styled.ImageBackground.attrs({
   width: "100%",
   height: "100%",
   justifyContent: "flex-end",
+});
+
+const OverlayTop = styled.View({
+  position: "absolute",
+  top: 15,
+  right: 15,
+  zIndex: 5,
+});
+
+const IconButton = styled.TouchableOpacity({
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 const OverlayBottom = styled.View({

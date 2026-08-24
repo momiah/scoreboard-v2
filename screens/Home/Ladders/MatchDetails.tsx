@@ -1,8 +1,17 @@
 import React, { useCallback, useContext, useMemo, useState } from "react";
 import { Dimensions, Linking } from "react-native";
-import { useFocusEffect, useRoute } from "@react-navigation/native";
-import type { RouteProp } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
+import type {
+  NavigationProp,
+  ParamListBase,
+  RouteProp,
+} from "@react-navigation/native";
 import styled from "styled-components/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { COMPETITION_TYPES } from "@shared";
 import type { LadderMatch, LadderType } from "@shared/types";
@@ -12,7 +21,6 @@ import { LadderContext } from "../../../context/LadderContext";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
-import MatchDetailsMenu from "../../../components/ladder/MatchDetailsMenu";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -29,9 +37,10 @@ interface MatchDetailsParams {
 const TABS: LobbyTab[] = ["Chat Room", "Game Lobby"];
 
 const MatchDetails: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route =
     useRoute<RouteProp<Record<string, MatchDetailsParams>, string>>();
-  const { ladderId, matchId, match: matchParam } = route.params;
+  const { ladderId, matchId, match: matchParam, ladderType } = route.params;
 
   const { currentUser } = useContext(UserContext);
   const { fetchLadderMatches } = useContext(LadderContext);
@@ -91,7 +100,20 @@ const MatchDetails: React.FC = () => {
     <Screen testID="match-details">
       <Header>
         <TopBar>
-          <MatchDetailsMenu ladderId={ladderId} />
+          <IconButton
+            activeOpacity={0.8}
+            onPress={() =>
+              navigation.navigate("MatchDetailsMenu", {
+                ladderId,
+                matchId,
+                match,
+                ladderType,
+              })
+            }
+            testID="match-details-burger"
+          >
+            <Ionicons name="menu" size={24} color="#ffffff" />
+          </IconButton>
         </TopBar>
         <MatchCard
           match={match}
@@ -151,6 +173,14 @@ const TopBar = styled.View({
   flexDirection: "row",
   justifyContent: "flex-end",
   marginBottom: 8,
+});
+
+const IconButton = styled.TouchableOpacity({
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 const Tabs = styled.View({
