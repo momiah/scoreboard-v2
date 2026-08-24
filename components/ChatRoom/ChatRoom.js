@@ -39,6 +39,10 @@ const ChatRoom = ({
   competitionName,
   endDate,
   competitionType,
+  // Optional explicit chat collection path (segments) — used for match-scoped
+  // ladder chats, e.g. ["ladders", ladderId, "ladderMatches", matchId, "chat"].
+  // When omitted, falls back to the league/tournament path.
+  chatPath,
 }) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
@@ -62,10 +66,12 @@ const ChatRoom = ({
         ? "tournaments"
         : "leagues";
 
-    const q = query(
-      collection(db, collectionRef, competitionId, "chat"),
-      orderBy("createdAt", "asc"),
-    );
+    const chatCollection =
+      chatPath && chatPath.length > 0
+        ? collection(db, ...chatPath)
+        : collection(db, collectionRef, competitionId, "chat");
+
+    const q = query(chatCollection, orderBy("createdAt", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -115,6 +121,7 @@ const ChatRoom = ({
       message: newMessage,
       competitionId,
       competitionType,
+      chatPath,
     });
     setInputText("");
     Keyboard.dismiss();

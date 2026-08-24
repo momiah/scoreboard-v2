@@ -1966,6 +1966,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     message,
     competitionId,
     competitionType = COMPETITION_TYPES.LEAGUE,
+    chatPath,
   }: {
     message: {
       text: string;
@@ -1974,15 +1975,18 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     };
     competitionId: string;
     competitionType?: string;
+    chatPath?: string[];
   }) => {
     const collectionRef =
       competitionType === COMPETITION_TYPES.TOURNAMENT
         ? "tournaments"
         : "leagues";
     try {
-      const messageRef = doc(
-        collection(db, collectionRef, competitionId, "chat"),
-      );
+      const chatCollection =
+        chatPath && chatPath.length > 0
+          ? collection(db, chatPath[0], ...chatPath.slice(1))
+          : collection(db, collectionRef, competitionId, "chat");
+      const messageRef = doc(chatCollection);
       const messageToSend = {
         _id: messageRef.id,
         text: message.text,

@@ -1,24 +1,25 @@
-import React, { useCallback, useContext, useState } from "react";
-import { ScrollView } from "react-native";
+import React, {
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
+import { Dimensions } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import styled from "styled-components/native";
-import { Ionicons } from "@expo/vector-icons";
 
-import { LADDER_TYPE } from "@shared/types";
-import type { Game, LadderMatch, LadderType } from "@shared/types";
+import { COMPETITION_TYPES } from "@shared";
+import type { LadderMatch, LadderType } from "@shared/types";
 
 import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
-import { PopupContext } from "../../../context/PopupContext";
-import MatchCard from "../../../components/ladder/MatchCard";
-import { FixtureGameItem } from "../../../components/Tournaments/Fixtures/FixturesAtoms";
-import AddLadderGameModal from "../../../components/Modals/AddLadderGameModal";
-import {
-  isMatchStarted,
-  formatMatchDateShort,
-} from "../../../helpers/ladderMatchTime";
-import { ccDefaultImage } from "../../../mockImages/index";
+import ChatRoom from "../../../components/ChatRoom/ChatRoom";
+import GameLobby from "../../../components/ladder/GameLobby";
+
+const { width: screenWidth } = Dimensions.get("window");
+
+type LobbyTab = "Game Lobby" | "Chat Room";
 
 interface MatchDetailsParams {
   ladderId: string;
@@ -27,43 +28,25 @@ interface MatchDetailsParams {
   ladderType?: LadderType;
 }
 
-interface OpponentProfile {
-  userId?: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  profileImage?: string;
-}
-
-const opponentName = (opponent: OpponentProfile): string => {
-  const full = [opponent.firstName, opponent.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-  return full || opponent.username || "Unknown player";
-};
+const TABS: LobbyTab[] = ["Game Lobby", "Chat Room"];
 
 const MatchDetails: React.FC = () => {
   const route =
     useRoute<RouteProp<Record<string, MatchDetailsParams>, string>>();
   const { ladderId, matchId, match: matchParam, ladderType } = route.params;
 
-  const { currentUser, getUserById } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
   const { fetchLadderMatches } = useContext(LadderContext);
-  const { showBottomToast } = useContext(PopupContext);
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
-  const [opponents, setOpponents] = useState<OpponentProfile[]>([]);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [gameModalVisible, setGameModalVisible] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<LobbyTab>("Game Lobby");
 
   const userId = currentUser?.userId;
-  const isDoubles = ladderType === LADDER_TYPE.DOUBLES;
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-
       const load = async () => {
         let resolved = matchParam ?? null;
         if (!resolved) {
@@ -74,54 +57,24 @@ const MatchDetails: React.FC = () => {
             console.error("Error loading match details:", error);
           }
         }
-        if (active) setMatch(resolved);
-
-        if (!resolved) {
-          if (active) setOpponents([]);
-          return;
-        }
-
-        const otherIds = resolved.participants.filter((id) => id !== userId);
-        try {
-          const profiles = await Promise.all(
-            otherIds.map((id) => getUserById(id)),
-          );
-          if (active) {
-            setOpponents(
-              profiles.filter(
-                (profile): profile is OpponentProfile => !!profile,
-              ),
-            );
-          }
-        } catch (error) {
-          console.error("Error loading opponents:", error);
-          if (active) setOpponents([]);
+        if (active) {
+          setMatch(resolved);
+          setNotFound(!resolved);
         }
       };
-
       load();
       return () => {
         active = false;
       };
-    }, [ladderId, matchId, matchParam, userId, fetchLadderMatches, getUserById]),
+    }, [ladderId, matchId, matchParam, fetchLadderMatches]),
   );
 
-  const started = match ? isMatchStarted(match) : false;
+  const chatPath = useMemo(
+    () => ["ladders", ladderId, "ladderMatches", matchId, "chat"],
+    [ladderId, matchId],
+  );
 
-  const handleGamePress = (game: Game) => {
-    if (!match) return;
-    if (!started) {
-      showBottomToast(
-        `This match starts ${formatMatchDateShort(match.matchDate)} at ${match.matchTime?.start}`,
-        "info",
-      );
-      return;
-    }
-    setSelectedGame(game);
-    setGameModalVisible(true);
-  };
-
-  if (!match) {
+  if (notFound || !match) {
     return (
       <Screen>
         <NotFound testID="match-details-not-found">
@@ -133,78 +86,39 @@ const MatchDetails: React.FC = () => {
 
   return (
     <Screen testID="match-details">
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <Section>
-          <SectionTitle>
-            {isDoubles ? "Your opponents" : "Your opponent"}
-          </SectionTitle>
-          {opponents.length === 0 ? (
-            <MutedText testID="match-details-opponent-pending">
-              Waiting for an opponent to accept.
-            </MutedText>
-          ) : (
-            <OpponentRow testID="match-details-opponents">
-              {opponents.map((opponent, index) => (
-                <OpponentCard key={opponent.userId ?? index}>
-                  <OpponentAvatar
-                    source={
-                      opponent.profileImage
-                        ? { uri: opponent.profileImage }
-                        : ccDefaultImage
-                    }
-                  />
-                  <OpponentName numberOfLines={1}>
-                    {opponentName(opponent)}
-                  </OpponentName>
-                </OpponentCard>
-              ))}
-            </OpponentRow>
-          )}
-        </Section>
+      <Tabs>
+        {TABS.map((tab) => (
+          <TabButton
+            key={tab}
+            isSelected={selectedTab === tab}
+            activeOpacity={0.85}
+            onPress={() => setSelectedTab(tab)}
+            testID={`match-details-tab-${tab}`}
+          >
+            <TabText>{tab}</TabText>
+          </TabButton>
+        ))}
+      </Tabs>
 
-        <Section>
-          <SectionTitle>Match details</SectionTitle>
-          <MatchCard match={match} testID="match-details-card" showProgress />
-        </Section>
-
-        <GamesSection>
-          <GamesHeader>
-            <GamesTitle>Games</GamesTitle>
-            {!started && (
-              <LockChip testID="match-details-games-locked">
-                <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
-                <LockChipText>
-                  Unlocks {formatMatchDateShort(match.matchDate)} ·{" "}
-                  {match.matchTime?.start}
-                </LockChipText>
-              </LockChip>
-            )}
-          </GamesHeader>
-          <GamesList isLocked={!started}>
-            {match.games.map((game) => (
-              <FixtureGameItem
-                key={game.gameNumber}
-                game={game}
-                tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
-                onPress={handleGamePress}
-                innerRef={undefined}
-                glowAnim={undefined}
-                isHighlighted={false}
-                glowColor="#00A2FF"
-              />
-            ))}
-          </GamesList>
-        </GamesSection>
-      </ScrollView>
-
-      <AddLadderGameModal
-        visible={gameModalVisible}
-        game={selectedGame}
-        onClose={() => {
-          setGameModalVisible(false);
-          setSelectedGame(null);
-        }}
-      />
+      {selectedTab === "Game Lobby" ? (
+        <GameLobby
+          match={match}
+          ladderType={ladderType}
+          currentUserId={userId}
+        />
+      ) : (
+        <ChatRoom
+          competitionId={matchId}
+          chatPath={chatPath}
+          competitionType={COMPETITION_TYPES.LADDER}
+          userRole="participant"
+          endDate={undefined}
+          competitionName={`Ladder match at ${match.court?.courtName ?? "court"}`}
+          competitionParticipants={match.participants.map((id) => ({
+            userId: id,
+          }))}
+        />
+      )}
     </Screen>
   );
 };
@@ -216,93 +130,27 @@ const Screen = styled.View({
   backgroundColor: "#00152B",
 });
 
-const Section = styled.View({
-  paddingHorizontal: 20,
-  paddingTop: 20,
-  gap: 12,
-});
-
-const SectionTitle = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
-});
-
-const GamesSection = styled.View({
-  paddingTop: 20,
-});
-
-const GamesHeader = styled.View({
+const Tabs = styled.View({
   flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  marginHorizontal: 20,
-  marginBottom: 12,
+  gap: 10,
+  paddingHorizontal: 16,
+  paddingTop: 16,
+  paddingBottom: 6,
 });
 
-const GamesTitle = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
-});
-
-const LockChip = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 5,
-  paddingHorizontal: 10,
-  paddingVertical: 5,
-  borderRadius: 8,
-  backgroundColor: "rgba(255, 255, 255, 0.06)",
-});
-
-const LockChipText = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 11,
-  fontWeight: "600",
-});
-
-const GamesList = styled.View<{ isLocked: boolean }>(
-  ({ isLocked }: { isLocked: boolean }) => ({
-    opacity: isLocked ? 0.5 : 1,
+const TabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
+  ({ isSelected }: { isSelected: boolean }) => ({
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: isSelected ? 2 : 1,
+    borderColor: isSelected ? "#00A2FF" : "white",
   }),
 );
 
-const OpponentRow = styled.View({
-  flexDirection: "row",
-  flexWrap: "wrap",
-  gap: 12,
-});
-
-const OpponentCard = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 10,
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  borderRadius: 10,
-  backgroundColor: "rgb(3, 16, 31)",
-  borderWidth: 1,
-  borderColor: "rgb(9, 33, 62)",
-});
-
-const OpponentAvatar = styled.Image({
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: "rgb(9, 33, 62)",
-});
-
-const OpponentName = styled.Text({
-  color: "#ffffff",
-  fontSize: 14,
-  fontWeight: "bold",
-  maxWidth: 180,
-});
-
-const MutedText = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 13,
+const TabText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 12 : 14,
 });
 
 const NotFound = styled.View({
