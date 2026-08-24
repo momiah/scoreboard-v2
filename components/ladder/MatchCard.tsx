@@ -19,6 +19,9 @@ interface MatchCardProps {
   // Show game progress (x/total completed + awaiting-approval / done state).
   // Only meaningful once a match is accepted, so it's off for Matchmaking.
   showProgress?: boolean;
+  // Renders with no card background/border/padding and no text clipping — for
+  // embedding the match details flat on a parent surface.
+  flat?: boolean;
   // When set, an external-link icon next to the location opens it (e.g. in maps).
   onLocationPress?: () => void;
   testID?: string;
@@ -33,6 +36,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onPress,
   showProgress = false,
+  flat = false,
   onLocationPress,
   testID,
 }) => {
@@ -46,12 +50,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
     <Card
       testID={testID}
       activeOpacity={0.8}
+      isFlat={flat}
       disabled={!onPress}
       onPress={() => onPress?.(match)}
     >
       <Info>
         <TitleRow>
-          <Title numberOfLines={1}>{courtName}</Title>
+          <Title numberOfLines={flat ? undefined : 1}>{courtName}</Title>
           {!!onLocationPress && (
             <LocationLink
               testID={testID ? `${testID}-map-link` : undefined}
@@ -62,7 +67,9 @@ const MatchCard: React.FC<MatchCardProps> = ({
             </LocationLink>
           )}
         </TitleRow>
-        {!!city && <Subtitle numberOfLines={1}>{city}</Subtitle>}
+        {!!city && (
+          <Subtitle numberOfLines={flat ? undefined : 1}>{city}</Subtitle>
+        )}
         <TagRow>
           <Tag>
             <TagText>🏸 {match.shuttleType}</TagText>
@@ -104,17 +111,19 @@ const MatchCard: React.FC<MatchCardProps> = ({
 
 export default MatchCard;
 
-const Card = styled.TouchableOpacity({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-  padding: isSmallScreen ? 13 : 15,
-  borderRadius: 8,
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
-  borderWidth: 1,
-  borderColor: "rgb(26, 28, 54)",
-});
+const Card = styled.TouchableOpacity<{ isFlat: boolean }>(
+  ({ isFlat }: { isFlat: boolean }) => ({
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: isFlat ? "flex-start" : "center",
+    gap: 12,
+    padding: isFlat ? 0 : isSmallScreen ? 13 : 15,
+    borderRadius: isFlat ? 0 : 8,
+    backgroundColor: isFlat ? "transparent" : "rgba(0, 0, 0, 0.3)",
+    borderWidth: isFlat ? 0 : 1,
+    borderColor: "rgb(26, 28, 54)",
+  }),
+);
 
 const Info = styled.View({
   flex: 1,

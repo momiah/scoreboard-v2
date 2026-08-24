@@ -4,7 +4,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { Dimensions } from "react-native";
+import { Dimensions, Linking } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -16,6 +16,8 @@ import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import GameLobby from "../../../components/ladder/GameLobby";
+import MatchCard from "../../../components/ladder/MatchCard";
+import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -84,8 +86,23 @@ const MatchDetails: React.FC = () => {
     );
   }
 
+  const openMap = () =>
+    Linking.openURL(buildCourtMapsUrl(match.court)).catch((err) =>
+      console.error("Error opening Google Maps:", err),
+    );
+
   return (
     <Screen testID="match-details">
+      <Header>
+        <MatchCard
+          match={match}
+          flat
+          showProgress
+          onLocationPress={openMap}
+          testID="match-details-card"
+        />
+      </Header>
+
       <Tabs>
         {TABS.map((tab) => (
           <TabButton
@@ -128,6 +145,11 @@ export default MatchDetails;
 const Screen = styled.View({
   flex: 1,
   backgroundColor: "#00152B",
+});
+
+const Header = styled.View({
+  paddingHorizontal: 20,
+  paddingTop: 20,
 });
 
 const Tabs = styled.View({
