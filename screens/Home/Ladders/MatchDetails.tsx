@@ -12,6 +12,7 @@ import { LadderContext } from "../../../context/LadderContext";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
+import MatchDetailsMenu from "../../../components/ladder/MatchDetailsMenu";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -89,6 +90,9 @@ const MatchDetails: React.FC = () => {
   return (
     <Screen testID="match-details">
       <Header>
+        <TopBar>
+          <MatchDetailsMenu ladderId={ladderId} />
+        </TopBar>
         <MatchCard
           match={match}
           flat
@@ -141,6 +145,12 @@ const Screen = styled.View({
 const Header = styled.View({
   paddingHorizontal: 20,
   paddingTop: 20,
+});
+
+const TopBar = styled.View({
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  marginBottom: 8,
 });
 
 const Tabs = styled.View({

@@ -12,7 +12,7 @@ import type {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 
-import Ionicons from "@expo/vector-icons/Ionicons";
+import LadderMenu from "../../../components/ladder/LadderMenu";
 
 import { LADDER_TYPE } from "@shared/types";
 
@@ -47,7 +47,6 @@ const Ladder: React.FC = () => {
   const [ladderLoading, setLadderLoading] = useState(true);
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -127,46 +126,7 @@ const Ladder: React.FC = () => {
                 ladderById.image ? { uri: ladderById.image } : ccDefaultImage
               }
             >
-              <OverlayTop>
-                <IconButton
-                  activeOpacity={0.8}
-                  onPress={() => setMenuOpen((open) => !open)}
-                  testID="ladder-burger"
-                >
-                  <Ionicons name="menu" size={24} color="#ffffff" />
-                </IconButton>
-              </OverlayTop>
-
-              {menuOpen && (
-                <Menu testID="ladder-menu">
-                  <MenuItem
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setMenuOpen(false);
-                      navigation.navigate("LadderRules", { ladderId });
-                    }}
-                    testID="ladder-menu-rules"
-                  >
-                    <Ionicons name="book-outline" size={16} color="#ffffff" />
-                    <MenuItemText>Rules</MenuItemText>
-                  </MenuItem>
-                  <MenuItem
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setMenuOpen(false);
-                      navigation.navigate("LadderTerms", { ladderId });
-                    }}
-                    testID="ladder-menu-terms"
-                  >
-                    <Ionicons
-                      name="document-text-outline"
-                      size={16}
-                      color="#ffffff"
-                    />
-                    <MenuItemText>Terms &amp; Conditions</MenuItemText>
-                  </MenuItem>
-                </Menu>
-              )}
+              <LadderMenu ladderId={ladderId} />
 
               <OverlayBottom>
                 <Tag
@@ -247,47 +207,6 @@ const LadderImage = styled.ImageBackground.attrs({
   width: "100%",
   height: "100%",
   justifyContent: "flex-end",
-});
-
-const OverlayTop = styled.View({
-  position: "absolute",
-  top: 15,
-  right: 15,
-  zIndex: 5,
-});
-
-const IconButton = styled.TouchableOpacity({
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  alignItems: "center",
-  justifyContent: "center",
-});
-
-const Menu = styled.View({
-  position: "absolute",
-  top: 60,
-  right: 15,
-  zIndex: 10,
-  minWidth: 150,
-  borderRadius: 10,
-  paddingVertical: 6,
-  backgroundColor: "#0A1F33",
-  borderWidth: 1,
-  borderColor: "#192336",
-});
-
-const MenuItem = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 10,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-});
-
-const MenuItemText = styled.Text({
-  color: "#ffffff",
-  fontSize: 14,
 });
 
 const OverlayBottom = styled.View({
