@@ -34,7 +34,7 @@ interface GameLobbyProps {
 }
 
 const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
-  win: "#00C853",
+  win: "#19a800ff",
   loss: "#FF4B6E",
   undecided: "#64748b",
 };
@@ -107,9 +107,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({
             <BlockTitle>Check-in</BlockTitle>
             {meCheckedIn ? (
               <Ionicons
-                name="checkmark-circle"
+                name="checkmark-circle-outline"
                 size={24}
-                color="#00C853"
+                color="#008c13ff"
                 testID="checkin-self-done"
               />
             ) : (
@@ -270,6 +270,8 @@ const PlayerRow = styled.View({
   paddingVertical: 10,
   borderBottomWidth: 1,
   borderBottomColor: "rgb(9, 33, 62)",
+  borderTopWidth: 1,
+  borderTopColor: "rgb(9, 33, 62)",
 });
 
 const Avatar = styled.Image({

@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import { Dimensions, Linking } from "react-native";
 import { useFocusEffect, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
@@ -21,7 +16,7 @@ import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-type LobbyTab = "Game Lobby" | "Chat Room";
+type LobbyTab = "Chat Room" | "Game Lobby";
 
 interface MatchDetailsParams {
   ladderId: string;
@@ -30,7 +25,7 @@ interface MatchDetailsParams {
   ladderType?: LadderType;
 }
 
-const TABS: LobbyTab[] = ["Game Lobby", "Chat Room"];
+const TABS: LobbyTab[] = ["Chat Room", "Game Lobby"];
 
 const MatchDetails: React.FC = () => {
   const route =

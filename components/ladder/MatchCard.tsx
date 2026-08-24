@@ -56,21 +56,23 @@ const MatchCard: React.FC<MatchCardProps> = ({
     >
       <Info>
         <TitleRow>
-          <Title numberOfLines={flat ? undefined : 1}>{courtName}</Title>
-          {!!onLocationPress && (
-            <LocationLink
-              testID={testID ? `${testID}-map-link` : undefined}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              onPress={onLocationPress}
-            >
-              <Ionicons name="open-outline" size={16} color="#00A2FF" />
-            </LocationLink>
-          )}
+          <Title numberOfLines={flat ? undefined : 1} flat={flat}>
+            {courtName}{" "}
+            {!!onLocationPress && (
+              <LocationLink
+                testID={testID ? `${testID}-map-link` : undefined}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                onPress={onLocationPress}
+              >
+                <Ionicons name="open-outline" size={16} color="#00A2FF" />
+              </LocationLink>
+            )}
+          </Title>
         </TitleRow>
         {!!city && (
           <Subtitle numberOfLines={flat ? undefined : 1}>{city}</Subtitle>
         )}
-        <TagRow>
+        <TagRow flat={flat}>
           <Tag>
             <TagText>🏸 {match.shuttleType}</TagText>
           </Tag>
@@ -87,7 +89,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
         {showProgress ? (
           isCompleted ? (
             <Ionicons
-              name="checkmark-circle"
+              name="checkmark-circle-outline"
               size={16}
               color="green"
               style={{ marginTop: 6 }}
@@ -136,12 +138,14 @@ const TitleRow = styled.View({
   gap: 8,
 });
 
-const Title = styled.Text({
-  color: "#ffffff",
-  fontWeight: "bold",
-  fontSize: isSmallScreen ? 15 : 16,
-  flexShrink: 1,
-});
+const Title = styled.Text<{ flat?: boolean }>(
+  ({ flat }: { flat?: boolean }) => ({
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: flat ? (isSmallScreen ? 20 : 22) : isSmallScreen ? 14 : 15,
+    flexShrink: 1,
+  }),
+);
 
 const LocationLink = styled.TouchableOpacity({
   padding: 2,
@@ -153,12 +157,14 @@ const Subtitle = styled.Text({
   marginTop: 3,
 });
 
-const TagRow = styled.View({
-  flexDirection: "row",
-  flexWrap: "wrap",
-  gap: 8,
-  marginTop: 12,
-});
+const TagRow = styled.View<{ flat?: boolean }>(
+  ({ flat }: { flat?: boolean }) => ({
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: flat ? 32 : 12,
+  }),
+);
 
 const Tag = styled.View({
   flexDirection: "row",
