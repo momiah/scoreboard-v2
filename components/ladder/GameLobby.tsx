@@ -3,16 +3,13 @@ import { ScrollView } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { LADDER_MATCH_STATUS } from "@shared";
+import { LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
 import type { LadderMatch, Game } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
-import {
-  FixtureGameHeader,
-  FixtureScoreDisplay,
-} from "../Tournaments/Fixtures/FixturesAtoms";
+import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
 import AddLadderGameModal from "../Modals/AddLadderGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
@@ -81,9 +78,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
 
-  // Matchup names for the score card — current user's side on the left. Each
-  // side is a stack of names (doubles shows two names, like the fixture team
-  // column) rather than a joined string.
   const mine = players.find((p) => p.userId === currentUserId);
   const opponents = players.filter((p) => p.userId !== currentUserId);
   const leftNames = mine ? [formatDisplayName(mine)] : ["You"];
@@ -213,15 +207,16 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
 
         <GamesList isLocked={gamesLocked}>
           {match.games.map((game) => (
-            <GameCard
+            <FixtureGameItem
               key={game.gameNumber}
-              activeOpacity={0.85}
-              onPress={() => handleGamePress(game)}
-              testID={`lobby-game-${game.gameNumber}`}
-            >
-              <FixtureGameHeader game={game} />
-              <FixtureScoreDisplay game={game} />
-            </GameCard>
+              game={game}
+              tournamentType={LADDER_TYPE.SINGLES}
+              onPress={handleGamePress}
+              innerRef={undefined}
+              glowAnim={undefined}
+              isHighlighted={false}
+              glowColor="#00A2FF"
+            />
           ))}
         </GamesList>
       </ScrollView>
@@ -428,13 +423,3 @@ const GamesList = styled.View<{ isLocked: boolean }>(
     opacity: isLocked ? 0.5 : 1,
   }),
 );
-
-const GameCard = styled.TouchableOpacity({
-  marginHorizontal: 20,
-  marginBottom: 12,
-  borderWidth: 1,
-  borderColor: "rgb(9, 33, 62)",
-  borderRadius: 8,
-  backgroundColor: "rgb(3, 16, 31)",
-  paddingBottom: 10,
-});

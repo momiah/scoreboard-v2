@@ -48,7 +48,7 @@ export const FixtureScoreDisplay = ({ game }) => {
             {game.team1.score} - {game.team2.score}
           </FixtureScore>
         ) : (
-          <FixtureScore>-</FixtureScore>
+          <FixtureScore>00-00</FixtureScore>
         )}
       </FixtureScoreContainer>
       {statusLabel && (
