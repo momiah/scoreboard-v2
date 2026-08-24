@@ -164,12 +164,7 @@ const MatchDetails: React.FC = () => {
 
         <Section>
           <SectionTitle>Match details</SectionTitle>
-          <MatchCard
-            match={match}
-            testID="match-details-card"
-            showProgress
-            currentUserId={userId}
-          />
+          <MatchCard match={match} testID="match-details-card" showProgress />
         </Section>
 
         <GamesSection>

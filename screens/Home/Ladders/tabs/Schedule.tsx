@@ -115,7 +115,6 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
             match={match}
             onPress={handleOpenMatch}
             showProgress
-            currentUserId={userId}
           />
           {glowMatchId === match.ladderMatchId && (
             <GameGlow glowAnim={glowAnim} color="#00A2FF" />

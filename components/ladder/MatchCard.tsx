@@ -7,17 +7,8 @@ import { LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
 import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
-import {
-  getLadderMatchProgress,
-  getLadderMatchScore,
-} from "../../helpers/ladderMatchProgress";
+import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
 import { formatCurrency } from "../../helpers/formatCurrency";
-
-const SCORE_COLORS = {
-  win: "#00C853",
-  loss: "#FF4B6E",
-  undecided: "#64748b",
-} as const;
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
@@ -28,8 +19,6 @@ interface MatchCardProps {
   // Show game progress (x/total completed + awaiting-approval / done state).
   // Only meaningful once a match is accepted, so it's off for Matchmaking.
   showProgress?: boolean;
-  // Current user, used with showProgress to render the games-won score.
-  currentUserId?: string;
   // When set, an external-link icon next to the location opens it (e.g. in maps).
   onLocationPress?: () => void;
   testID?: string;
@@ -44,7 +33,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onPress,
   showProgress = false,
-  currentUserId,
   onLocationPress,
   testID,
 }) => {
@@ -53,8 +41,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  const showScore = showProgress && !!currentUserId;
-  const score = getLadderMatchScore(match, currentUserId ?? "");
 
   return (
     <Card
@@ -87,15 +73,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
           </Tag>
         </TagRow>
       </Info>
-
-      {showScore && (
-        <ScoreCell testID={testID ? `${testID}-score` : undefined}>
-          <ScoreLabel>Score</ScoreLabel>
-          <ScoreValue outcome={score.outcome}>
-            {score.mine} - {score.theirs}
-          </ScoreValue>
-        </ScoreCell>
-      )}
 
       <StatCell>
         <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
@@ -189,27 +166,6 @@ const TagText = styled.Text({
   fontSize: 11,
   fontWeight: "500",
 });
-
-const ScoreCell = styled.View({
-  alignItems: "center",
-  justifyContent: "center",
-  minWidth: 52,
-});
-
-const ScoreLabel = styled.Text({
-  color: "#aab7c4",
-  fontSize: 11,
-});
-
-const ScoreValue = styled.Text<{ outcome: keyof typeof SCORE_COLORS }>(
-  ({ outcome }: { outcome: keyof typeof SCORE_COLORS }) => ({
-    color: SCORE_COLORS[outcome],
-    fontSize: 20,
-    fontWeight: "bold",
-    fontVariant: ["tabular-nums"],
-    marginTop: 2,
-  }),
-);
 
 const StatCell = styled.View({
   alignItems: "center",
