@@ -4,7 +4,7 @@ import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
-import type { LadderMatch, Game } from "@shared/types";
+import type { LadderMatch, Game, Player } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
@@ -85,6 +85,40 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
     opponents.length > 0
       ? opponents.map((p) => formatDisplayName(p))
       : ["Opponent"];
+
+  const isDoubles = match.participants.length > 2;
+
+  // Game shells are created with empty teams. Seed each side with the match
+  // participants so the fixture cards show the players' names instead of "TBD"
+  // (current user on the left). Once a game is actually recorded it carries its
+  // own players, so leave those untouched.
+  const toPlayerCell = (p?: ParticipantProfile): Player | null =>
+    p
+      ? {
+          userId: p.userId,
+          firstName: p.firstName ?? "",
+          lastName: p.lastName ?? "",
+          username: p.username ?? "",
+          displayName: formatDisplayName(p),
+        }
+      : null;
+
+  const gamesWithPlayers: Game[] = match.games.map((game) => {
+    if (game.team1?.player1 || game.team2?.player1) return game;
+    return {
+      ...game,
+      team1: {
+        ...game.team1,
+        player1: toPlayerCell(mine),
+        player2: null,
+      },
+      team2: {
+        ...game.team2,
+        player1: toPlayerCell(opponents[0]),
+        player2: isDoubles ? toPlayerCell(opponents[1]) : null,
+      },
+    };
+  });
 
   const handleGamePress = (game: Game) => {
     if (isCompleted) return;
@@ -206,11 +240,11 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
         </GamesHeader>
 
         <GamesList isLocked={gamesLocked}>
-          {match.games.map((game) => (
+          {gamesWithPlayers.map((game) => (
             <FixtureGameItem
               key={game.gameNumber}
               game={game}
-              tournamentType={LADDER_TYPE.SINGLES}
+              tournamentType={isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES}
               onPress={handleGamePress}
               innerRef={undefined}
               glowAnim={undefined}
