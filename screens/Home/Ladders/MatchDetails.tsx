@@ -30,7 +30,7 @@ const TABS: LobbyTab[] = ["Chat Room", "Game Lobby"];
 const MatchDetails: React.FC = () => {
   const route =
     useRoute<RouteProp<Record<string, MatchDetailsParams>, string>>();
-  const { ladderId, matchId, match: matchParam, ladderType } = route.params;
+  const { ladderId, matchId, match: matchParam } = route.params;
 
   const { currentUser } = useContext(UserContext);
   const { fetchLadderMatches } = useContext(LadderContext);
@@ -113,11 +113,7 @@ const MatchDetails: React.FC = () => {
       </Tabs>
 
       {selectedTab === "Game Lobby" ? (
-        <GameLobby
-          match={match}
-          ladderType={ladderType}
-          currentUserId={userId}
-        />
+        <GameLobby match={match} currentUserId={userId} />
       ) : (
         <ChatRoom
           competitionId={matchId}

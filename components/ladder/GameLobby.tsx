@@ -3,13 +3,16 @@ import { ScrollView } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
-import type { LadderMatch, LadderType, Game } from "@shared/types";
+import { LADDER_MATCH_STATUS } from "@shared";
+import type { LadderMatch, Game } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
-import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
+import {
+  FixtureGameHeader,
+  FixtureScoreDisplay,
+} from "../Tournaments/Fixtures/FixturesAtoms";
 import AddLadderGameModal from "../Modals/AddLadderGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
@@ -29,7 +32,6 @@ interface ParticipantProfile {
 
 interface GameLobbyProps {
   match: LadderMatch;
-  ladderType?: LadderType;
   currentUserId?: string;
 }
 
@@ -39,11 +41,7 @@ const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
   undecided: "#64748b",
 };
 
-const GameLobby: React.FC<GameLobbyProps> = ({
-  match,
-  ladderType,
-  currentUserId,
-}) => {
+const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
   const { getUserById } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
@@ -74,9 +72,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     };
   }, [match.participants, getUserById]);
 
-  const toggleCheckIn = (userId: string) =>
-    setCheckedIn((prev) => ({ ...prev, [userId]: !prev[userId] }));
-
   const meCheckedIn = !!currentUserId && !!checkedIn[currentUserId];
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
@@ -85,6 +80,15 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   const gamesLocked = isCompleted || !allCheckedIn;
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
+
+  // Matchup names for the score card — current user on the left.
+  const mine = players.find((p) => p.userId === currentUserId);
+  const opponents = players.filter((p) => p.userId !== currentUserId);
+  const leftName = mine ? formatDisplayName(mine) : "You";
+  const rightName =
+    opponents.length > 0
+      ? opponents.map((p) => formatDisplayName(p)).join(" & ")
+      : "Opponent";
 
   const handleGamePress = (game: Game) => {
     if (isCompleted) return;
@@ -134,8 +138,11 @@ const GameLobby: React.FC<GameLobbyProps> = ({
                 const xp = player.profileDetail?.XP ?? 0;
                 const isIn = !!checkedIn[player.userId];
                 return (
+                  // Row becomes a button to PlayerLadderDetails / TeamLadderDetails
+                  // in the next commit.
                   <PlayerRow
                     key={player.userId}
+                    activeOpacity={0.7}
                     testID={`checkin-${player.userId}`}
                   >
                     <Avatar
@@ -148,17 +155,12 @@ const GameLobby: React.FC<GameLobbyProps> = ({
                     <PlayerName numberOfLines={1}>
                       {formatDisplayName(player)}
                     </PlayerName>
-                    <CheckChip
-                      isIn={isIn}
-                      activeOpacity={0.8}
-                      onPress={() => toggleCheckIn(player.userId)}
-                      testID={`checkin-toggle-${player.userId}`}
-                    >
+                    <StatusBadge isIn={isIn}>
                       <Dot isIn={isIn} />
                       <CheckText isIn={isIn}>
                         {isIn ? "Checked In" : "Not checked In"}
                       </CheckText>
-                    </CheckChip>
+                    </StatusBadge>
                     <MedalDisplay xp={xp} size={42} />
                   </PlayerRow>
                 );
@@ -170,9 +172,15 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         {/* Total score */}
         <ScoreBar>
           <ScoreLabel>Total score</ScoreLabel>
-          <ScoreValue outcome={score.outcome}>
-            {score.mine} - {score.theirs}
-          </ScoreValue>
+          <ScoreRow>
+            <SideName numberOfLines={1}>{leftName}</SideName>
+            <ScoreValue outcome={score.outcome}>
+              {score.mine} - {score.theirs}
+            </ScoreValue>
+            <SideName numberOfLines={1} align="right">
+              {rightName}
+            </SideName>
+          </ScoreRow>
         </ScoreBar>
 
         {/* Games */}
@@ -193,16 +201,15 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
         <GamesList isLocked={gamesLocked}>
           {match.games.map((game) => (
-            <FixtureGameItem
+            <GameCard
               key={game.gameNumber}
-              game={game}
-              tournamentType={ladderType ?? LADDER_TYPE.SINGLES}
-              onPress={handleGamePress}
-              innerRef={undefined}
-              glowAnim={undefined}
-              isHighlighted={false}
-              glowColor="#00A2FF"
-            />
+              activeOpacity={0.85}
+              onPress={() => handleGamePress(game)}
+              testID={`lobby-game-${game.gameNumber}`}
+            >
+              <FixtureGameHeader game={game} />
+              <FixtureScoreDisplay game={game} />
+            </GameCard>
           ))}
         </GamesList>
       </ScrollView>
@@ -263,7 +270,7 @@ const MutedText = styled.Text({
 
 const PlayerList = styled.View({});
 
-const PlayerRow = styled.View({
+const PlayerRow = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   gap: 12,
@@ -289,7 +296,7 @@ const PlayerName = styled.Text({
   fontWeight: "bold",
 });
 
-const CheckChip = styled.TouchableOpacity<{ isIn: boolean }>(
+const StatusBadge = styled.View<{ isIn: boolean }>(
   ({ isIn }: { isIn: boolean }) => ({
     flexDirection: "row",
     alignItems: "center",
@@ -340,12 +347,30 @@ const ScoreLabel = styled.Text({
   textTransform: "uppercase",
 });
 
+const ScoreRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  alignSelf: "stretch",
+  paddingHorizontal: 14,
+  marginTop: 6,
+});
+
+const SideName = styled.Text<{ align?: "left" | "right" }>(
+  ({ align }: { align?: "left" | "right" }) => ({
+    flex: 1,
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: align === "right" ? "right" : "left",
+  }),
+);
+
 const ScoreValue = styled.Text<{ outcome: LadderMatchOutcome }>(
   ({ outcome }: { outcome: LadderMatchOutcome }) => ({
     color: SCORE_COLORS[outcome],
     fontSize: 32,
     fontWeight: "bold",
-    marginTop: 2,
+    marginHorizontal: 12,
     fontVariant: ["tabular-nums"],
   }),
 );
@@ -383,3 +408,13 @@ const GamesList = styled.View<{ isLocked: boolean }>(
     opacity: isLocked ? 0.5 : 1,
   }),
 );
+
+const GameCard = styled.TouchableOpacity({
+  marginHorizontal: 20,
+  marginBottom: 12,
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
+  borderRadius: 8,
+  backgroundColor: "rgb(3, 16, 31)",
+  paddingBottom: 10,
+});
