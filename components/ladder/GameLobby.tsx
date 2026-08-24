@@ -81,14 +81,16 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
 
-  // Matchup names for the score card — current user on the left.
+  // Matchup names for the score card — current user's side on the left. Each
+  // side is a stack of names (doubles shows two names, like the fixture team
+  // column) rather than a joined string.
   const mine = players.find((p) => p.userId === currentUserId);
   const opponents = players.filter((p) => p.userId !== currentUserId);
-  const leftName = mine ? formatDisplayName(mine) : "You";
-  const rightName =
+  const leftNames = mine ? [formatDisplayName(mine)] : ["You"];
+  const rightNames =
     opponents.length > 0
-      ? opponents.map((p) => formatDisplayName(p)).join(" & ")
-      : "Opponent";
+      ? opponents.map((p) => formatDisplayName(p))
+      : ["Opponent"];
 
   const handleGamePress = (game: Game) => {
     if (isCompleted) return;
@@ -173,13 +175,23 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
         <ScoreBar>
           <ScoreLabel>Total score</ScoreLabel>
           <ScoreRow>
-            <SideName numberOfLines={1}>{leftName}</SideName>
+            <SideCol>
+              {leftNames.map((name, i) => (
+                <SideName key={`${i}-${name}`} numberOfLines={1}>
+                  {name}
+                </SideName>
+              ))}
+            </SideCol>
             <ScoreValue outcome={score.outcome}>
               {score.mine} - {score.theirs}
             </ScoreValue>
-            <SideName numberOfLines={1} align="right">
-              {rightName}
-            </SideName>
+            <SideCol align="right">
+              {rightNames.map((name, i) => (
+                <SideName key={`${i}-${name}`} numberOfLines={1} align="right">
+                  {name}
+                </SideName>
+              ))}
+            </SideCol>
           </ScoreRow>
         </ScoreBar>
 
@@ -355,9 +367,17 @@ const ScoreRow = styled.View({
   marginTop: 6,
 });
 
-const SideName = styled.Text<{ align?: "left" | "right" }>(
+const SideCol = styled.View<{ align?: "left" | "right" }>(
   ({ align }: { align?: "left" | "right" }) => ({
     flex: 1,
+    gap: 2,
+    alignItems: align === "right" ? "flex-end" : "flex-start",
+  }),
+);
+
+const SideName = styled.Text<{ align?: "left" | "right" }>(
+  ({ align }: { align?: "left" | "right" }) => ({
+    maxWidth: "100%",
     color: "#ffffff",
     fontSize: 13,
     fontWeight: "600",
