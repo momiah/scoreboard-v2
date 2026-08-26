@@ -22,8 +22,8 @@ type MatchMenuAction =
   | "LadderRules"
   | "LadderTerms"
   | "RescheduleMatch"
-  | "CancelMatch"
-  | "Support";
+  | "Support"
+  | "CancelMatch";
 
 interface MatchDetailsMenuParams {
   ladderId: string;
@@ -51,13 +51,13 @@ const MENU_OPTIONS: MenuOption[] = [
     icon: "calendar-outline",
     action: "RescheduleMatch",
   },
+  { label: "Support", icon: "help-buoy-outline", action: "Support" },
   {
     label: "Cancel Match",
     icon: "close-circle-outline",
     action: "CancelMatch",
     color: "#FF4B6E",
   },
-  { label: "Support", icon: "help-buoy-outline", action: "Support" },
 ];
 
 const MatchDetailsMenu: React.FC = () => {
@@ -104,11 +104,11 @@ const MatchDetailsMenu: React.FC = () => {
       case "RescheduleMatch":
         handleReschedule();
         return;
-      case "CancelMatch":
-        handleCancel();
-        return;
       case "Support":
         handleSupport();
+        return;
+      case "CancelMatch":
+        handleCancel();
         return;
       default:
         return;

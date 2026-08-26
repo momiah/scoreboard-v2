@@ -166,7 +166,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
             <PlayerList>
               {players.map((player) => {
                 const xp = player.profileDetail?.XP ?? 0;
-                const isIn = !!checkedIn[player.userId];
+                const isCheckedIn = !!checkedIn[player.userId];
                 return (
                   // Row becomes a button to PlayerLadderDetails / TeamLadderDetails
                   // in the next commit.
@@ -185,10 +185,10 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
                     <PlayerName numberOfLines={1}>
                       {formatDisplayName(player)}
                     </PlayerName>
-                    <StatusBadge isIn={isIn}>
-                      <Dot isIn={isIn} />
-                      <CheckText isIn={isIn}>
-                        {isIn ? "Checked In" : "Not checked In"}
+                    <StatusBadge isCheckedIn={isCheckedIn}>
+                      <Dot isCheckedIn={isCheckedIn} />
+                      <CheckText isCheckedIn={isCheckedIn}>
+                        {isCheckedIn ? "Checked In" : "Not checked In"}
                       </CheckText>
                     </StatusBadge>
                     <MedalDisplay xp={xp} size={42} />
@@ -234,7 +234,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
           ) : !allCheckedIn ? (
             <StatusChip testID="lobby-games-locked">
               <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
-              <StatusChipText>Locked until both check in</StatusChipText>
+              <StatusChipText>Locked until all players check in</StatusChipText>
             </StatusChip>
           ) : null}
         </GamesHeader>
@@ -244,7 +244,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
             <FixtureGameItem
               key={game.gameNumber}
               game={game}
-              tournamentType={isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES}
+              tournamentType={
+                isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES
+              }
               onPress={handleGamePress}
               innerRef={undefined}
               glowAnim={undefined}
@@ -337,37 +339,41 @@ const PlayerName = styled.Text({
   fontWeight: "bold",
 });
 
-const StatusBadge = styled.View<{ isIn: boolean }>(
-  ({ isIn }: { isIn: boolean }) => ({
+const StatusBadge = styled.View<{ isCheckedIn: boolean }>(
+  ({ isCheckedIn }: { isCheckedIn: boolean }) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: isIn ? "#0c3d24" : "#3d2c07",
+    borderWidth: 2,
+    borderColor: isCheckedIn ? "#0c3d24" : "#3d2c07",
+    // backgroundColor: isCheckedIn ? "#0c3d24" : "#3d2c07",
   }),
 );
 
-const CheckText = styled.Text<{ isIn: boolean }>(
-  ({ isIn }: { isIn: boolean }) => ({
-    color: isIn ? "#5ef0a6" : "#ffc266",
-    fontSize: 11,
+const CheckText = styled.Text<{ isCheckedIn: boolean }>(
+  ({ isCheckedIn }: { isCheckedIn: boolean }) => ({
+    color: isCheckedIn ? "#5ef0a6" : "#ffc266",
+    fontSize: 9,
     fontWeight: "700",
   }),
 );
 
-const Dot = styled.View<{ isIn: boolean }>(({ isIn }: { isIn: boolean }) => ({
-  width: 9,
-  height: 9,
-  borderRadius: 5,
-  backgroundColor: isIn ? "#00C853" : "#FFA500",
-  shadowColor: isIn ? "#00C853" : "#FFA500",
-  shadowOpacity: 0.9,
-  shadowRadius: 4,
-  shadowOffset: { width: 0, height: 0 },
-  elevation: 4,
-}));
+const Dot = styled.View<{ isCheckedIn: boolean }>(
+  ({ isCheckedIn }: { isCheckedIn: boolean }) => ({
+    width: 8,
+    height: 8,
+    borderRadius: 5,
+    backgroundColor: isCheckedIn ? "#00C853" : "#FFA500",
+    shadowColor: isCheckedIn ? "#00C853" : "#FFA500",
+    shadowOpacity: 0.9,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  }),
+);
 
 const ScoreBar = styled.View({
   marginHorizontal: 20,

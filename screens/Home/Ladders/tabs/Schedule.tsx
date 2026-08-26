@@ -89,7 +89,13 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
     return (
       <Container testID="schedule-loading">
         {SKELETON_ROWS.map((row) => (
-          <SkeletonWrapper key={row} show height={116} width="100%" radius={10} />
+          <SkeletonWrapper
+            key={row}
+            show
+            height={116}
+            width="100%"
+            radius={10}
+          />
         ))}
       </Container>
     );
