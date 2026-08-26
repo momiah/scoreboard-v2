@@ -61,6 +61,37 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
 
+  // Details variant: the tag row carries the check-in control / awaiting-approval
+  // indicator at its far right, and the stat column shows only date + time.
+  const isDetails = !!checkin || awaitingInTags;
+
+  // Far-right slot of the tag row: check-in button until checked in, then the
+  // awaiting-approval chip while games are pending, otherwise a checked-in tick.
+  const tagStatus =
+    checkin && !checkin.checkedIn ? (
+      <CheckinButton
+        activeOpacity={0.85}
+        onPress={checkin.onPress}
+        testID={testID ? `${testID}-checkin-button` : undefined}
+      >
+        <CheckinButtonText>Press here to checkin</CheckinButtonText>
+      </CheckinButton>
+    ) : awaitingInTags && progress.pendingApproval > 0 ? (
+      <AwaitingTag testID={testID ? `${testID}-awaiting` : undefined}>
+        <AwaitingTagText numberOfLines={1}>
+          {progress.pendingApproval}{" "}
+          {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
+        </AwaitingTagText>
+      </AwaitingTag>
+    ) : checkin && checkin.checkedIn ? (
+      <Ionicons
+        name="checkmark-circle-outline"
+        size={22}
+        color="#008c13ff"
+        testID={testID ? `${testID}-checkin-done` : undefined}
+      />
+    ) : null;
+
   return (
     <Card
       testID={testID}
@@ -88,47 +119,23 @@ const MatchCard: React.FC<MatchCardProps> = ({
           <Subtitle numberOfLines={flat ? undefined : 1}>{city}</Subtitle>
         )}
         <TagRow flat={flat}>
-          <Tag>
-            <TagText>🏸 {match.shuttleType}</TagText>
-          </Tag>
-          <Tag>
-            <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
-            <TagText>Best of {match.bestOf}</TagText>
-          </Tag>
-          {awaitingInTags && progress.pendingApproval > 0 && (
-            <AwaitingTag testID={testID ? `${testID}-awaiting` : undefined}>
-              <AwaitingTagText numberOfLines={1}>
-                {progress.pendingApproval}{" "}
-                {progress.pendingApproval === 1 ? "game" : "games"} awaiting
-                approval
-              </AwaitingTagText>
-            </AwaitingTag>
-          )}
+          <TagGroup>
+            <Tag>
+              <TagText>🏸 {match.shuttleType}</TagText>
+            </Tag>
+            <Tag>
+              <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+              <TagText>Best of {match.bestOf}</TagText>
+            </Tag>
+          </TagGroup>
+          {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
         </TagRow>
       </Info>
 
       <StatCell>
         <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
         <StatTime>{match.matchTime?.start}</StatTime>
-        {checkin ? (
-          checkin.checkedIn ? (
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={26}
-              color="#008c13ff"
-              style={{ marginTop: 8 }}
-              testID={testID ? `${testID}-checkin-done` : undefined}
-            />
-          ) : (
-            <CheckinButton
-              activeOpacity={0.85}
-              onPress={checkin.onPress}
-              testID={testID ? `${testID}-checkin-button` : undefined}
-            >
-              <CheckinButtonText>Press here to checkin</CheckinButtonText>
-            </CheckinButton>
-          )
-        ) : showProgress ? (
+        {showProgress ? (
           isCompleted ? (
             <Ionicons
               name="checkmark-circle-outline"
@@ -143,7 +150,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
               approval
             </AwaitingText>
           ) : null
-        ) : (
+        ) : isDetails ? null : (
           <FeeTag hasCourtFee={hasCourtFee}>
             <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
           </FeeTag>
@@ -203,10 +210,25 @@ const TagRow = styled.View<{ flat?: boolean }>(
   ({ flat }: { flat?: boolean }) => ({
     flexDirection: "row",
     flexWrap: "wrap",
+    alignItems: "center",
     gap: 8,
     marginTop: flat ? 32 : 12,
   }),
 );
+
+const TagGroup = styled.View({
+  flexDirection: "row",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: 8,
+  flexShrink: 1,
+});
+
+// Pushes the check-in / awaiting-approval status to the far right of the tag row.
+const TagStatus = styled.View({
+  marginLeft: "auto",
+  flexShrink: 0,
+});
 
 const Tag = styled.View({
   flexDirection: "row",
@@ -247,7 +269,6 @@ const StatCell = styled.View({
 });
 
 const CheckinButton = styled.TouchableOpacity({
-  marginTop: 8,
   paddingHorizontal: 12,
   paddingVertical: 7,
   borderRadius: 8,
