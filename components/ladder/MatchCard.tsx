@@ -94,47 +94,51 @@ const MatchCard: React.FC<MatchCardProps> = ({
       disabled={!onPress}
       onPress={() => onPress?.(match)}
     >
-      <Info>
-        <TitleRow>
-          <Title numberOfLines={flat ? undefined : 1} flat={flat}>
-            {courtName}{" "}
-            {!!onLocationPress && (
-              <LocationLink
-                testID={testID ? `${testID}-map-link` : undefined}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                onPress={onLocationPress}
-              >
-                <Ionicons name="open-outline" size={16} color="#00A2FF" />
-              </LocationLink>
-            )}
-          </Title>
-        </TitleRow>
-        {!!city && (
-          <Subtitle numberOfLines={flat ? undefined : 1}>{city}</Subtitle>
-        )}
-        <TagRow flat={flat}>
-          <TagGroup>
-            <Tag>
-              <TagText>🏸 {match.shuttleType}</TagText>
-            </Tag>
-            <Tag>
-              <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
-              <TagText>Best of {match.bestOf}</TagText>
-            </Tag>
-          </TagGroup>
-          {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
-        </TagRow>
-      </Info>
+      <HeaderRow flat={flat}>
+        <Info>
+          <TitleRow>
+            <Title numberOfLines={flat ? undefined : 1} flat={flat}>
+              {courtName}{" "}
+              {!!onLocationPress && (
+                <LocationLink
+                  testID={testID ? `${testID}-map-link` : undefined}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={onLocationPress}
+                >
+                  <Ionicons name="open-outline" size={16} color="#00A2FF" />
+                </LocationLink>
+              )}
+            </Title>
+          </TitleRow>
+          {!!city && (
+            <Subtitle numberOfLines={flat ? undefined : 1}>{city}</Subtitle>
+          )}
+        </Info>
 
-      <StatCell>
-        <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
-        <StatTime>{match.matchTime?.start}</StatTime>
-        {!showStatus && (
-          <FeeTag hasCourtFee={hasCourtFee}>
-            <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
-          </FeeTag>
-        )}
-      </StatCell>
+        <StatCell>
+          <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
+          <StatTime>{match.matchTime?.start}</StatTime>
+          {!showStatus && (
+            <FeeTag hasCourtFee={hasCourtFee}>
+              <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
+            </FeeTag>
+          )}
+        </StatCell>
+      </HeaderRow>
+
+      {/* Full-width row: tags on the left, status on the far right. */}
+      <TagRow flat={flat}>
+        <TagGroup>
+          <Tag>
+            <TagText>🏸 {match.shuttleType}</TagText>
+          </Tag>
+          <Tag>
+            <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+            <TagText>Best of {match.bestOf}</TagText>
+          </Tag>
+        </TagGroup>
+        {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
+      </TagRow>
     </Card>
   );
 };
@@ -143,15 +147,21 @@ export default MatchCard;
 
 const Card = styled.TouchableOpacity<{ isFlat: boolean }>(
   ({ isFlat }: { isFlat: boolean }) => ({
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: isFlat ? "flex-start" : "center",
-    gap: 12,
+    flexDirection: "column",
     padding: isFlat ? 0 : isSmallScreen ? 13 : 15,
     borderRadius: isFlat ? 0 : 8,
     backgroundColor: isFlat ? "transparent" : "rgba(0, 0, 0, 0.3)",
     borderWidth: isFlat ? 0 : 1,
     borderColor: "rgb(26, 28, 54)",
+  }),
+);
+
+const HeaderRow = styled.View<{ flat?: boolean }>(
+  ({ flat }: { flat?: boolean }) => ({
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: flat ? "flex-start" : "center",
+    gap: 12,
   }),
 );
 
