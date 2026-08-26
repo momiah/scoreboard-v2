@@ -13,7 +13,7 @@ import type {
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { COMPETITION_TYPES } from "@shared";
+import { COMPETITION_TYPES, LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch, LadderType } from "@shared/types";
 
 import { UserContext } from "../../../context/UserContext";
@@ -48,6 +48,9 @@ const MatchDetails: React.FC = () => {
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LobbyTab>("Game Lobby");
+  // Temporary local check-in state — the real check-in system lands later.
+  // Owned here so the card's check-in button and the Game Lobby list stay in sync.
+  const [checkedIn, setCheckedIn] = useState<Record<string, boolean>>({});
 
   const userId = currentUser?.userId;
 
@@ -96,6 +99,12 @@ const MatchDetails: React.FC = () => {
       console.error("Error opening Google Maps:", err),
     );
 
+  const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
+  const meCheckedIn = isCompleted || (!!userId && !!checkedIn[userId]);
+  const handleCheckin = () => {
+    if (userId) setCheckedIn((prev) => ({ ...prev, [userId]: true }));
+  };
+
   return (
     <Screen testID="match-details">
       <Header>
@@ -118,7 +127,8 @@ const MatchDetails: React.FC = () => {
         <MatchCard
           match={match}
           flat
-          showProgress
+          awaitingInTags
+          checkin={{ checkedIn: meCheckedIn, onPress: handleCheckin }}
           onLocationPress={openMap}
           testID="match-details-card"
         />
@@ -139,7 +149,11 @@ const MatchDetails: React.FC = () => {
       </Tabs>
 
       {selectedTab === "Game Lobby" ? (
-        <GameLobby match={match} currentUserId={userId} />
+        <GameLobby
+          match={match}
+          currentUserId={userId}
+          checkedIn={checkedIn}
+        />
       ) : (
         <ChatRoom
           competitionId={matchId}

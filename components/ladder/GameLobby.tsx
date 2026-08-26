@@ -30,6 +30,9 @@ interface ParticipantProfile {
 interface GameLobbyProps {
   match: LadderMatch;
   currentUserId?: string;
+  // Check-in state is owned by the parent screen (the check-in button lives on
+  // the match card). The lobby reads it to show statuses and lock the games.
+  checkedIn: Record<string, boolean>;
 }
 
 const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
@@ -38,13 +41,15 @@ const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
   undecided: "#64748b",
 };
 
-const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
+const GameLobby: React.FC<GameLobbyProps> = ({
+  match,
+  currentUserId,
+  checkedIn,
+}) => {
   const { getUserById } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
   const [players, setPlayers] = useState<ParticipantProfile[]>([]);
-  // Temporary local check-in state — the real check-in system lands later.
-  const [checkedIn, setCheckedIn] = useState<Record<string, boolean>>({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
 
@@ -68,8 +73,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
       active = false;
     };
   }, [match.participants, getUserById]);
-
-  const meCheckedIn = !!currentUserId && !!checkedIn[currentUserId];
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const allCheckedIn =
@@ -139,25 +142,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({ match, currentUserId }) => {
         <PaddedBlock>
           <CheckinHeader>
             <BlockTitle>Check-in</BlockTitle>
-            {meCheckedIn ? (
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={24}
-                color="#008c13ff"
-                testID="checkin-self-done"
-              />
-            ) : (
-              <CheckinButton
-                activeOpacity={0.85}
-                onPress={() =>
-                  currentUserId &&
-                  setCheckedIn((prev) => ({ ...prev, [currentUserId]: true }))
-                }
-                testID="checkin-self-button"
-              >
-                <CheckinButtonText>Press here to checkin</CheckinButtonText>
-              </CheckinButton>
-            )}
           </CheckinHeader>
 
           {players.length === 0 ? (
@@ -291,19 +275,6 @@ const BlockTitle = styled.Text({
   color: "#ffffff",
   fontSize: 16,
   fontWeight: "bold",
-});
-
-const CheckinButton = styled.TouchableOpacity({
-  paddingHorizontal: 12,
-  paddingVertical: 7,
-  borderRadius: 8,
-  backgroundColor: "#00A2FF",
-});
-
-const CheckinButtonText = styled.Text({
-  color: "#ffffff",
-  fontSize: 12,
-  fontWeight: "700",
 });
 
 const MutedText = styled.Text({

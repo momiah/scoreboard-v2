@@ -13,12 +13,25 @@ import { formatCurrency } from "../../helpers/formatCurrency";
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
 
+interface CheckinControl {
+  checkedIn: boolean;
+  onPress: () => void;
+}
+
 interface MatchCardProps {
   match: LadderMatch;
   onPress?: (match: LadderMatch) => void;
-  // Show game progress (x/total completed + awaiting-approval / done state).
-  // Only meaningful once a match is accepted, so it's off for Matchmaking.
+  // Show game progress (x/total completed + awaiting-approval / done state) in
+  // the stat column. Only meaningful once a match is accepted, so it's off for
+  // Matchmaking. Used as a preview in the Schedule list.
   showProgress?: boolean;
+  // Render the awaiting-approval indicator inline in the tag row (kept to one
+  // line) instead of the stat column. Used on the match details screen, where
+  // the stat column carries the check-in control instead.
+  awaitingInTags?: boolean;
+  // When set, renders the self check-in control (button → green tick) in the
+  // stat column. Used on the match details screen.
+  checkin?: CheckinControl;
   // Renders with no card background/border/padding and no text clipping — for
   // embedding the match details flat on a parent surface.
   flat?: boolean;
@@ -36,6 +49,8 @@ const MatchCard: React.FC<MatchCardProps> = ({
   match,
   onPress,
   showProgress = false,
+  awaitingInTags = false,
+  checkin,
   flat = false,
   onLocationPress,
   testID,
@@ -80,13 +95,40 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
             <TagText>Best of {match.bestOf}</TagText>
           </Tag>
+          {awaitingInTags && progress.pendingApproval > 0 && (
+            <AwaitingTag testID={testID ? `${testID}-awaiting` : undefined}>
+              <AwaitingTagText numberOfLines={1}>
+                {progress.pendingApproval}{" "}
+                {progress.pendingApproval === 1 ? "game" : "games"} awaiting
+                approval
+              </AwaitingTagText>
+            </AwaitingTag>
+          )}
         </TagRow>
       </Info>
 
       <StatCell>
         <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
         <StatTime>{match.matchTime?.start}</StatTime>
-        {showProgress ? (
+        {checkin ? (
+          checkin.checkedIn ? (
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={26}
+              color="#008c13ff"
+              style={{ marginTop: 8 }}
+              testID={testID ? `${testID}-checkin-done` : undefined}
+            />
+          ) : (
+            <CheckinButton
+              activeOpacity={0.85}
+              onPress={checkin.onPress}
+              testID={testID ? `${testID}-checkin-button` : undefined}
+            >
+              <CheckinButtonText>Press here to checkin</CheckinButtonText>
+            </CheckinButton>
+          )
+        ) : showProgress ? (
           isCompleted ? (
             <Ionicons
               name="checkmark-circle-outline"
@@ -182,11 +224,41 @@ const TagText = styled.Text({
   fontWeight: "500",
 });
 
+const AwaitingTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 165, 0, 0.15)",
+});
+
+const AwaitingTagText = styled.Text({
+  color: "#FFA500",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
 const StatCell = styled.View({
   alignItems: "center",
   justifyContent: "center",
   minWidth: 72,
   maxWidth: 100,
+});
+
+const CheckinButton = styled.TouchableOpacity({
+  marginTop: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 7,
+  borderRadius: 8,
+  backgroundColor: "#00A2FF",
+});
+
+const CheckinButtonText = styled.Text({
+  color: "#ffffff",
+  fontSize: 12,
+  fontWeight: "700",
+  textAlign: "center",
 });
 
 const StatDate = styled.Text({
