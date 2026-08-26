@@ -189,6 +189,7 @@ const TagRow = styled.View<{ flat?: boolean }>(
   ({ flat }: { flat?: boolean }) => ({
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
     marginTop: flat ? 32 : 12,
   }),
@@ -201,9 +202,8 @@ const TagGroup = styled.View({
   flexShrink: 1,
 });
 
-// Pushes the check-in / awaiting-approval status to the far right of the tag row.
+// Sits at the far right of the tag row (tags on the left via space-between).
 const TagStatus = styled.View({
-  marginLeft: "auto",
   flexShrink: 0,
 });
 
