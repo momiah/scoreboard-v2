@@ -127,7 +127,6 @@ const MatchDetails: React.FC = () => {
         <MatchCard
           match={match}
           flat
-          awaitingInTags
           checkin={{ checkedIn: meCheckedIn, onPress: handleCheckin }}
           onLocationPress={openMap}
           testID="match-details-card"
