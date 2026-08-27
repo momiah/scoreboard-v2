@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Dimensions, Modal } from "react-native";
+import { ActivityIndicator, Dimensions, Linking, Modal } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -10,6 +10,7 @@ import {
   useCameraPermissions,
   type BarcodeScanningResult,
 } from "expo-camera";
+import * as Location from "expo-location";
 
 import {
   buildLadderCheckInPayload,
@@ -21,9 +22,212 @@ import type { LadderMatch } from "@shared/types";
 
 import { LadderContext } from "../../context/LadderContext";
 import { PopupContext } from "../../context/PopupContext";
+import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
+import {
+  formatCourtAddress,
+  getCourtCoords,
+  isWithinCheckInRadius,
+} from "../../helpers/locationCheckIn";
 
 const screenWidth = Dimensions.get("window").width;
 const QR_SIZE = Math.min(screenWidth - 120, 240);
+
+// Shown on the location step so players know how to get verified.
+const CHECKIN_TIPS = [
+  "Make sure you've actually arrived at the court.",
+  "Turn your device location / GPS on and allow access.",
+  "Turn off any VPN — it can place you in the wrong location.",
+];
+
+/* -------------------------------------------------------------------------- */
+/*  Location verifier — the entry point for check-in                          */
+/* -------------------------------------------------------------------------- */
+
+type VerifyStatus = "checking" | "verified" | "failed";
+
+interface LocationVerifierModalProps {
+  visible: boolean;
+  onClose: () => void;
+  match: LadderMatch;
+  ladderId: string;
+  currentUserId?: string;
+  // Called once check-in is persisted (via the check-in modal opened from here).
+  onCheckedIn: () => void;
+}
+
+export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
+  visible,
+  onClose,
+  match,
+  ladderId,
+  currentUserId,
+  onCheckedIn,
+}) => {
+  const [status, setStatus] = useState<VerifyStatus>("checking");
+  const [showCheckin, setShowCheckin] = useState(false);
+
+  const address = formatCourtAddress(match.court);
+
+  const verify = async () => {
+    setStatus("checking");
+    try {
+      // The court must have coordinates to verify against.
+      if (!getCourtCoords(match.court)) {
+        setStatus("failed");
+        return;
+      }
+
+      const { granted } = await Location.requestForegroundPermissionsAsync();
+      if (!granted) {
+        setStatus("failed");
+        return;
+      }
+
+      const position = await Location.getCurrentPositionAsync({});
+      const withinRange = isWithinCheckInRadius(
+        {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        },
+        match.court,
+      );
+      setStatus(withinRange ? "verified" : "failed");
+    } catch (error) {
+      console.error("Error verifying check-in location:", error);
+      setStatus("failed");
+    }
+  };
+
+  // Verify whenever the modal opens.
+  useEffect(() => {
+    if (visible) {
+      setShowCheckin(false);
+      verify();
+    }
+  }, [visible, match.ladderMatchId]);
+
+  const closeAll = () => {
+    setShowCheckin(false);
+    onClose();
+  };
+
+  const openMap = () =>
+    Linking.openURL(buildCourtMapsUrl(match.court)).catch((err) =>
+      console.error("Error opening Google Maps:", err),
+    );
+
+  const verified = status === "verified";
+
+  return (
+    <>
+      <Modal
+        visible={visible && !showCheckin}
+        transparent
+        animationType="slide"
+        onRequestClose={closeAll}
+      >
+        <ModalContainer>
+          <ModalContent testID="location-verifier-modal">
+            <CloseButton onPress={closeAll} testID="location-verifier-close">
+              <AntDesign name="close-circle" size={30} color="red" />
+            </CloseButton>
+
+            {status === "checking" && (
+              <StatusBlock testID="location-verifier-checking">
+                <ActivityIndicator size="large" color="#00A2FF" />
+                <SectionTitle>Checking your location…</SectionTitle>
+                <Helper>Making sure you&apos;ve arrived at the court.</Helper>
+              </StatusBlock>
+            )}
+
+            {verified && (
+              <StatusBlock testID="location-verifier-verified">
+                <Ionicons
+                  name="checkmark-circle"
+                  size={56}
+                  color="#00C853"
+                />
+                <SectionTitle>You&apos;re at the venue</SectionTitle>
+                <Helper>Location confirmed — you can check in now.</Helper>
+              </StatusBlock>
+            )}
+
+            {status === "failed" && (
+              <StatusBlock testID="location-verifier-failed">
+                <Ionicons name="location-outline" size={48} color="#FF4B6E" />
+                <SectionTitle>Location not verified</SectionTitle>
+                <ErrorText>
+                  You are not in the right location to check in, please ensure
+                  you have arrived at the correct address
+                </ErrorText>
+                {!!address && (
+                  <AddressLink
+                    onPress={openMap}
+                    testID="location-verifier-address"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="location" size={14} color="#00A2FF" />
+                    <AddressLinkText numberOfLines={2}>
+                      {address}
+                    </AddressLinkText>
+                    <Ionicons name="open-outline" size={14} color="#00A2FF" />
+                  </AddressLink>
+                )}
+                <RetryButton
+                  onPress={verify}
+                  activeOpacity={0.8}
+                  testID="location-verifier-retry"
+                >
+                  <Ionicons name="refresh" size={16} color="#00A2FF" />
+                  <RetryText>Check again</RetryText>
+                </RetryButton>
+              </StatusBlock>
+            )}
+
+            {!verified && (
+              <TipsCard>
+                <TipsTitle>Tips to check in</TipsTitle>
+                {CHECKIN_TIPS.map((tip) => (
+                  <TipRow key={tip}>
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={14}
+                      color="#9fb8c8"
+                    />
+                    <TipText>{tip}</TipText>
+                  </TipRow>
+                ))}
+              </TipsCard>
+            )}
+
+            <ActionButton
+              testID="location-verifier-checkin"
+              activeOpacity={0.85}
+              disabled={!verified}
+              isDisabled={!verified}
+              onPress={() => verified && setShowCheckin(true)}
+            >
+              <ActionButtonText>Checkin</ActionButtonText>
+            </ActionButton>
+          </ModalContent>
+        </ModalContainer>
+      </Modal>
+
+      <MatchCheckinModal
+        visible={visible && showCheckin}
+        onClose={closeAll}
+        match={match}
+        ladderId={ladderId}
+        currentUserId={currentUserId}
+        onCheckedIn={onCheckedIn}
+      />
+    </>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/*  Check-in modal — poster shows QR, accepter scans                          */
+/* -------------------------------------------------------------------------- */
 
 interface MatchCheckinModalProps {
   visible: boolean;
@@ -130,10 +334,6 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
 
   const renderPoster = () => (
     <>
-      <SectionTitle>Show this to your opponent</SectionTitle>
-      <Helper>
-        They scan this code to check you both in and unlock the games.
-      </Helper>
       <QRFrame>
         <QRCode value={qrValue} size={QR_SIZE} />
       </QRFrame>
@@ -202,8 +402,6 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
-          <Title>Match Check-in</Title>
-
           {succeeded ? (
             <SuccessBlock testID="match-checkin-success">
               <Ionicons
@@ -228,16 +426,10 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             <>
               {isPoster ? renderPoster() : renderScanner()}
 
-              <ReferenceCard>
-                <ReferenceLabel>Reference</ReferenceLabel>
-                <ReferenceCode testID="match-checkin-reference">
-                  {reference}
-                </ReferenceCode>
-                <ReferenceHint>
-                  Both players see this code — use it to confirm you&apos;re on
-                  the same match.
-                </ReferenceHint>
-              </ReferenceCard>
+              <EmergencyRow testID="match-checkin-reference">
+                <EmergencyLabel>Emergency code</EmergencyLabel>
+                <EmergencyCode>{reference}</EmergencyCode>
+              </EmergencyRow>
             </>
           )}
         </ModalContent>
@@ -274,14 +466,6 @@ const CloseButton = styled.TouchableOpacity({
   padding: 2,
 });
 
-const Title = styled.Text({
-  color: "#ffffff",
-  fontSize: 22,
-  fontWeight: "bold",
-  alignSelf: "flex-start",
-  paddingRight: 30,
-});
-
 const SectionTitle = styled.Text({
   color: "#ffffff",
   fontSize: 16,
@@ -294,6 +478,83 @@ const Helper = styled.Text({
   fontSize: 13,
   lineHeight: 19,
   textAlign: "center",
+});
+
+const StatusBlock = styled.View({
+  alignItems: "center",
+  gap: 10,
+  paddingTop: 8,
+});
+
+const ErrorText = styled.Text({
+  color: "#FF4B6E",
+  fontSize: 13,
+  lineHeight: 19,
+  textAlign: "center",
+});
+
+const AddressLink = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  borderRadius: 8,
+  backgroundColor: "rgba(0, 162, 255, 0.08)",
+});
+
+const AddressLinkText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 13,
+  fontWeight: "600",
+  flexShrink: 1,
+  textAlign: "center",
+});
+
+const RetryButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
+  paddingVertical: 4,
+});
+
+const RetryText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 13,
+  fontWeight: "600",
+});
+
+const TipsCard = styled.View({
+  alignSelf: "stretch",
+  gap: 8,
+  paddingVertical: 12,
+  paddingHorizontal: 14,
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.04)",
+  borderWidth: 1,
+  borderColor: "rgb(26, 28, 54)",
+});
+
+const TipsTitle = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 11,
+  fontWeight: "700",
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+});
+
+const TipRow = styled.View({
+  flexDirection: "row",
+  alignItems: "flex-start",
+  gap: 8,
+});
+
+const TipText = styled.Text({
+  color: "#cbd5e1",
+  fontSize: 12,
+  lineHeight: 17,
+  flexShrink: 1,
 });
 
 const QRFrame = styled.View({
@@ -340,38 +601,25 @@ const WaitingText = styled.Text({
   fontWeight: "600",
 });
 
-const ReferenceCard = styled.View({
-  alignSelf: "stretch",
+// Small, subtle fallback — the QR/scan is the primary path; the reference is
+// only for emergencies (e.g. a camera that won't scan).
+const EmergencyRow = styled.View({
+  flexDirection: "row",
   alignItems: "center",
-  gap: 4,
-  paddingVertical: 14,
-  paddingHorizontal: 16,
-  borderRadius: 12,
-  backgroundColor: "rgba(0, 162, 255, 0.08)",
-  borderWidth: 1,
-  borderColor: "rgb(26, 28, 54)",
+  gap: 6,
 });
 
-const ReferenceLabel = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 11,
-  fontWeight: "600",
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-});
-
-const ReferenceCode = styled.Text({
-  color: "#ffffff",
-  fontSize: 28,
-  fontWeight: "bold",
-  letterSpacing: 4,
-  fontVariant: ["tabular-nums"],
-});
-
-const ReferenceHint = styled.Text({
+const EmergencyLabel = styled.Text({
   color: "#7f97a8",
   fontSize: 11,
-  textAlign: "center",
+});
+
+const EmergencyCode = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 12,
+  fontWeight: "700",
+  letterSpacing: 1.5,
+  fontVariant: ["tabular-nums"],
 });
 
 const SuccessBlock = styled.View({

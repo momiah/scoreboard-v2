@@ -25,7 +25,7 @@ import { LadderContext } from "../../../context/LadderContext";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
-import MatchCheckinModal from "../../../components/Modals/MatchCheckinModal";
+import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -192,7 +192,7 @@ const MatchDetails: React.FC = () => {
         />
       )}
 
-      <MatchCheckinModal
+      <LocationVerifierModal
         visible={checkinModalVisible}
         onClose={() => setCheckinModalVisible(false)}
         match={match}
