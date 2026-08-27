@@ -13,7 +13,11 @@ import type {
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { COMPETITION_TYPES, LADDER_MATCH_STATUS } from "@shared";
+import {
+  COMPETITION_TYPES,
+  LADDER_MATCH_STATUS,
+  isLadderMatchCheckedIn,
+} from "@shared";
 import type { LadderMatch, LadderType } from "@shared/types";
 
 import { UserContext } from "../../../context/UserContext";
@@ -21,6 +25,7 @@ import { LadderContext } from "../../../context/LadderContext";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
+import MatchCheckinModal from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -48,11 +53,23 @@ const MatchDetails: React.FC = () => {
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LobbyTab>("Game Lobby");
-  // Temporary local check-in state — the real check-in system lands later.
-  // Owned here so the card's check-in button and the Game Lobby list stay in sync.
-  const [checkedIn, setCheckedIn] = useState<Record<string, boolean>>({});
+  // Check-in is persisted on the match (a QR handshake). The modal drives it;
+  // the card button and Game Lobby derive their state from match.checkIn.
+  const [checkinModalVisible, setCheckinModalVisible] = useState(false);
 
   const userId = currentUser?.userId;
+
+  // Re-fetch the match from Firestore (used on focus and after check-in, so the
+  // persisted check-in state and unlocked games are reflected authoritatively).
+  const refreshMatch = useCallback(async () => {
+    try {
+      const all = await fetchLadderMatches(ladderId);
+      const resolved = all.find((m) => m.ladderMatchId === matchId) ?? null;
+      if (resolved) setMatch(resolved);
+    } catch (error) {
+      console.error("Error refreshing match details:", error);
+    }
+  }, [ladderId, matchId, fetchLadderMatches]);
 
   useFocusEffect(
     useCallback(() => {
@@ -100,10 +117,22 @@ const MatchDetails: React.FC = () => {
     );
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  const meCheckedIn = isCompleted || (!!userId && !!checkedIn[userId]);
+  const isAccepted = match.matchStatus === LADDER_MATCH_STATUS.ACCEPTED;
+  const checkedIn = isCompleted || isLadderMatchCheckedIn(match);
   const handleCheckin = () => {
-    if (userId) setCheckedIn((prev) => ({ ...prev, [userId]: true }));
+    if (!checkedIn) setCheckinModalVisible(true);
   };
+  // Re-fetch so both the card status and the Game Lobby pick up the handshake.
+  const handleCheckedIn = () => {
+    refreshMatch();
+  };
+  // Check-in only exists once a match is accepted (and stays as a tick when
+  // completed). Before that there's no opponent to check in with, so the card
+  // shows no check-in control.
+  const checkinControl =
+    isAccepted || isCompleted
+      ? { checkedIn, onPress: handleCheckin }
+      : undefined;
 
   return (
     <Screen testID="match-details">
@@ -127,7 +156,7 @@ const MatchDetails: React.FC = () => {
         <MatchCard
           match={match}
           flat
-          checkin={{ checkedIn: meCheckedIn, onPress: handleCheckin }}
+          checkin={checkinControl}
           onLocationPress={openMap}
           testID="match-details-card"
         />
@@ -148,11 +177,7 @@ const MatchDetails: React.FC = () => {
       </Tabs>
 
       {selectedTab === "Game Lobby" ? (
-        <GameLobby
-          match={match}
-          currentUserId={userId}
-          checkedIn={checkedIn}
-        />
+        <GameLobby match={match} currentUserId={userId} checkedIn={checkedIn} />
       ) : (
         <ChatRoom
           competitionId={matchId}
@@ -166,6 +191,15 @@ const MatchDetails: React.FC = () => {
           }))}
         />
       )}
+
+      <MatchCheckinModal
+        visible={checkinModalVisible}
+        onClose={() => setCheckinModalVisible(false)}
+        match={match}
+        ladderId={ladderId}
+        currentUserId={userId}
+        onCheckedIn={handleCheckedIn}
+      />
     </Screen>
   );
 };

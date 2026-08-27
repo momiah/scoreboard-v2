@@ -57,7 +57,10 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 4
+      "versionCode": 4,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/court-champ-logo-icon-w-bg.png"
@@ -93,6 +96,12 @@
         {
           "icon": "./assets/court-champ-logo-icon-w-bg.png",
           "color": "#FF231F7C"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "This app needs access to your camera to scan match check-in QR codes."
         }
       ],
       "expo-video",

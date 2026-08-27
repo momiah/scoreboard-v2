@@ -29,6 +29,8 @@ import {
   normalizeLadderStatus,
   canAcceptLadderMatch,
   buildAcceptedLadderMatch,
+  buildLadderMatchCheckIn,
+  isLadderMatchCheckedIn,
 } from "@shared";
 import type {
   Ladder,
@@ -46,9 +48,11 @@ import type {
   LadderJoinOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
+  CheckInLadderMatchOutcome,
 } from "./types/LadderContextType";
 
 class AcceptLadderMatchError extends Error {}
+class CheckInLadderMatchError extends Error {}
 
 const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
@@ -456,6 +460,62 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const checkInLadderMatch = useCallback(
+    async (
+      ladderId: string,
+      matchId: string,
+      userId: string,
+    ): Promise<CheckInLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      ) as DocumentReference<LadderMatch, LadderMatch>;
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            throw new CheckInLadderMatchError("MATCH_NOT_FOUND");
+          }
+
+          const match: LadderMatch = {
+            ...snap.data(),
+            ladderMatchId: snap.id,
+          };
+
+          // Only an accepted match can be checked in.
+          if (!match.acceptedBy) {
+            throw new CheckInLadderMatchError("NOT_ACCEPTED");
+          }
+          // Idempotent: a completed handshake stays completed.
+          if (isLadderMatchCheckedIn(match)) {
+            return;
+          }
+
+          transaction.update(matchRef, {
+            checkIn: buildLadderMatchCheckIn(userId),
+          });
+        });
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof CheckInLadderMatchError) {
+          return { success: false, reason: "unavailable" };
+        }
+        console.error("Error checking in ladder match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchUpcomingLadders();
   }, [fetchUpcomingLadders]);
@@ -479,6 +539,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderMatches,
         subscribeToLadderMatches,
         acceptLadderMatch,
+        checkInLadderMatch,
         addCourtToLadder,
       }}
     >

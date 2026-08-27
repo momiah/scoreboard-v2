@@ -30,9 +30,11 @@ interface ParticipantProfile {
 interface GameLobbyProps {
   match: LadderMatch;
   currentUserId?: string;
-  // Check-in state is owned by the parent screen (the check-in button lives on
-  // the match card). The lobby reads it to show statuses and lock the games.
-  checkedIn: Record<string, boolean>;
+  // Whether this match's check-in handshake is complete (derived from the
+  // persisted match.checkIn by the parent). Check-in is mutual, so a single
+  // flag covers both players: the lobby reads it to show statuses and lock
+  // the games.
+  checkedIn: boolean;
 }
 
 const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
@@ -75,8 +77,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   }, [match.participants, getUserById]);
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  const allCheckedIn =
-    players.length > 0 && players.every((p) => checkedIn[p.userId]);
+  // Check-in is a single mutual handshake, so once complete every player counts
+  // as checked in. Still require an opponent (2+ players) before unlocking.
+  const allCheckedIn = players.length > 0 && checkedIn;
   const gamesLocked = isCompleted || !allCheckedIn;
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
@@ -150,7 +153,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
             <PlayerList>
               {players.map((player) => {
                 const xp = player.profileDetail?.XP ?? 0;
-                const isCheckedIn = !!checkedIn[player.userId];
+                const isCheckedIn = checkedIn;
                 return (
                   // Row becomes a button to PlayerLadderDetails / TeamLadderDetails
                   // in the next commit.

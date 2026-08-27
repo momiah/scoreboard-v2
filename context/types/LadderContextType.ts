@@ -24,6 +24,13 @@ export interface AcceptLadderMatchOutcome {
   reason?: AcceptLadderMatchFailureReason;
 }
 
+export type CheckInLadderMatchFailureReason = "unavailable" | "error";
+
+export interface CheckInLadderMatchOutcome {
+  success: boolean;
+  reason?: CheckInLadderMatchFailureReason;
+}
+
 export interface LadderContextType {
   upcomingLadders: Ladder[];
   upcomingLaddersLoading: boolean;
@@ -56,6 +63,11 @@ export interface LadderContextType {
     matchId: string,
     userId: string,
   ) => Promise<AcceptLadderMatchOutcome>;
+  checkInLadderMatch: (
+    ladderId: string,
+    matchId: string,
+    userId: string,
+  ) => Promise<CheckInLadderMatchOutcome>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 
