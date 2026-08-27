@@ -11,7 +11,6 @@ import type {
   RouteProp,
 } from "@react-navigation/native";
 import styled from "styled-components/native";
-
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LADDER_TYPE } from "@shared/types";
@@ -22,22 +21,31 @@ import LoadingOverlay from "../../../components/LoadingOverlay";
 import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
 import Matchmaking from "./tabs/Matchmaking";
+import Schedule from "./tabs/Schedule";
 
-type LadderTab = "Summary" | "Matchmaking" | "Performance" | "Playoff Bracket";
+type LadderTab =
+  | "Summary"
+  | "Matchmaking"
+  | "Schedule"
+  | "Performance"
+  | "Playoff Bracket";
 
-type LadderRouteParams = { ladderId: string; tab?: LadderTab };
+type LadderRouteParams = {
+  ladderId: string;
+  tab?: LadderTab;
+  highlightMatchId?: string;
+};
 
 const Ladder: React.FC = () => {
   const route =
     useRoute<RouteProp<Record<string, LadderRouteParams>, string>>();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { ladderId, tab } = route.params;
+  const { ladderId, tab, highlightMatchId } = route.params;
   const { fetchLadderById, ladderById } = useContext(LadderContext);
 
   const [ladderLoading, setLadderLoading] = useState(true);
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -67,6 +75,7 @@ const Ladder: React.FC = () => {
   const tabs: { key: LadderTab; label: string }[] = [
     { key: "Summary", label: "Summary" },
     { key: "Matchmaking", label: "Matchmaking" },
+    { key: "Schedule", label: "Schedule" },
     { key: performanceLabel, label: performanceDisplay },
     { key: "Playoff Bracket", label: "Playoff Bracket" },
   ];
@@ -78,6 +87,10 @@ const Ladder: React.FC = () => {
         return <LadderSummary ladder={ladderById} />;
       case "Matchmaking":
         return <Matchmaking ladder={ladderById} />;
+      case "Schedule":
+        return (
+          <Schedule ladder={ladderById} highlightMatchId={highlightMatchId} />
+        );
       case "Performance":
       case "Playoff Bracket":
         return (
@@ -115,43 +128,14 @@ const Ladder: React.FC = () => {
               <OverlayTop>
                 <IconButton
                   activeOpacity={0.8}
-                  onPress={() => setMenuOpen((open) => !open)}
+                  onPress={() =>
+                    navigation.navigate("LadderMenu", { ladderId })
+                  }
                   testID="ladder-burger"
                 >
                   <Ionicons name="menu" size={24} color="#ffffff" />
                 </IconButton>
               </OverlayTop>
-
-              {menuOpen && (
-                <Menu testID="ladder-menu">
-                  <MenuItem
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setMenuOpen(false);
-                      navigation.navigate("LadderRules", { ladderId });
-                    }}
-                    testID="ladder-menu-rules"
-                  >
-                    <Ionicons name="book-outline" size={16} color="#ffffff" />
-                    <MenuItemText>Rules</MenuItemText>
-                  </MenuItem>
-                  <MenuItem
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setMenuOpen(false);
-                      navigation.navigate("LadderTerms", { ladderId });
-                    }}
-                    testID="ladder-menu-terms"
-                  >
-                    <Ionicons
-                      name="document-text-outline"
-                      size={16}
-                      color="#ffffff"
-                    />
-                    <MenuItemText>Terms &amp; Conditions</MenuItemText>
-                  </MenuItem>
-                </Menu>
-              )}
 
               <OverlayBottom>
                 <Tag
@@ -247,32 +231,6 @@ const IconButton = styled.TouchableOpacity({
   borderRadius: 20,
   alignItems: "center",
   justifyContent: "center",
-});
-
-const Menu = styled.View({
-  position: "absolute",
-  top: 60,
-  right: 15,
-  zIndex: 10,
-  minWidth: 150,
-  borderRadius: 10,
-  paddingVertical: 6,
-  backgroundColor: "#0A1F33",
-  borderWidth: 1,
-  borderColor: "#192336",
-});
-
-const MenuItem = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 10,
-  paddingHorizontal: 14,
-  paddingVertical: 10,
-});
-
-const MenuItemText = styled.Text({
-  color: "#ffffff",
-  fontSize: 14,
 });
 
 const OverlayBottom = styled.View({

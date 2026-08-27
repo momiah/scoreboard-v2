@@ -28,8 +28,10 @@ import {
   calculateLadderPrizePool,
   ccImageEndpoint,
 } from "@shared";
-import { cpBoosters } from "@/rankingMedals";
+import gameMedals from "@/rankingMedals";
+import { ladders } from "@/mockImages";
 
+import ImageMapper from "../../../components/ImageMapper";
 import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
 import { useLadderJoin } from "../../../hooks/useLadderJoin";
@@ -76,7 +78,7 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             image={{ uri: ccImageEndpoint }}
             title={"Welcome to the official \n Court Champs Ladder"}
-            body="Climb the ranks by playing other members. This quick guide shows you how games work, how you earn Court Points, and how the season ends in the playoffs."
+            body="Climb the ranks by playing other members. This quick guide shows you how games work, how you earn Court Points (CP), and how the season ends in the playoffs."
           />
         ),
       },
@@ -93,7 +95,7 @@ const LadderHowToPlay: React.FC = () => {
                   {`Match Making`}
                 </PageText>
                 {
-                  " tab. Set it up and wait for another ladder member to accept."
+                  " tab. Set it up and wait for another ladder member to accept. We operate a blind matchmaking system, so you won't know who your opponent is until they accept your game."
                 }
               </>
             }
@@ -158,10 +160,11 @@ const LadderHowToPlay: React.FC = () => {
       {
         key: "finals",
         render: () => (
-          <PageBody
-            icon="ribbon-outline"
+          <ImageMapper
+            images={ladders}
+            imageSize={72}
             title="Winning the Final"
-            body="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
+            description="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
           >
             <ReadRulesButton onPress={goToRules}>
               <AntDesign name="book" size={15} color="white" />
@@ -171,7 +174,7 @@ const LadderHowToPlay: React.FC = () => {
               You can also open the rules anytime from the ladder page&apos;s
               menu.
             </FootNote>
-          </PageBody>
+          </ImageMapper>
         ),
       },
     ],
@@ -426,31 +429,14 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   );
 };
 
-const AchievementMedalsPage: React.FC = () => {
-  return (
-    <ScrollView
-      contentContainerStyle={{
-        flexGrow: 1,
-        justifyContent: "center",
-        gap: 18,
-        paddingHorizontal: 24,
-        paddingVertical: 30,
-      }}
-    >
-      <ImageContainer>
-        <Image source={cpBoosters} resizeMode="contain" />
-      </ImageContainer>
-      <CenteredHeader style={{ marginTop: -40 }}>
-        <PageTitle>Achievement Medals</PageTitle>
-      </CenteredHeader>
-      <PageText>
-        Achievement Medals are awarded when you are performing your best - you
-        are awarded CP bonuses for win streaks, decisive victories and long
-        distant wins.
-      </PageText>
-    </ScrollView>
-  );
-};
+const AchievementMedalsPage: React.FC = () => (
+  <ImageMapper
+    images={gameMedals}
+    imageSize={72}
+    title="Achievement Medals"
+    description="Achievement Medals are awarded when you are performing your best - you are awarded CP bonuses for win streaks, decisive victories and long distant wins."
+  />
+);
 
 const Screen = styled.View({
   flex: 1,

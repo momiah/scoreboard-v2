@@ -75,6 +75,11 @@ const NotificationRow = ({
       Tournament: {
         tournamentId: item.data?.tournamentId || item.data?.competitionId,
       },
+      Ladder: {
+        ladderId: item.data?.ladderId,
+        tab: "Schedule",
+        highlightMatchId: item.data?.matchId,
+      },
       UserProfile: { userId: item.data?.userId, tab: item.data?.tab },
       GameScreen: {
         gameId: item.data?.gameId,

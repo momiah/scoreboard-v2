@@ -13,16 +13,23 @@ import {
   getDocs,
   increment,
   limit,
+  onSnapshot,
   orderBy,
   query,
+  runTransaction,
   setDoc,
   updateDoc,
   where,
   writeBatch,
+  DocumentReference,
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
-import { normalizeLadderStatus } from "@shared";
+import {
+  normalizeLadderStatus,
+  canAcceptLadderMatch,
+  buildAcceptedLadderMatch,
+} from "@shared";
 import type {
   Ladder,
   LadderMatch,
@@ -38,7 +45,10 @@ import type {
   FetchLaddersOptions,
   LadderJoinOutcome,
   CreateLadderMatchOutcome,
+  AcceptLadderMatchOutcome,
 } from "./types/LadderContextType";
+
+class AcceptLadderMatchError extends Error {}
 
 const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
@@ -358,6 +368,94 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const subscribeToLadderMatches = useCallback(
+    (
+      ladderId: string,
+      onUpdate: (matches: LadderMatch[]) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!ladderId) {
+        onUpdate([]);
+        return () => {};
+      }
+
+      const matchesRef = collection(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+      );
+
+      return onSnapshot(
+        query(matchesRef, orderBy("createdAt", "desc")),
+        (snapshot) =>
+          onUpdate(
+            snapshot.docs.map(
+              (docSnap) =>
+                ({
+                  ...docSnap.data(),
+                  ladderMatchId: docSnap.id,
+                }) as LadderMatch,
+            ),
+          ),
+        (error) => {
+          console.error("Error subscribing to ladder matches:", error);
+          onError?.(error);
+        },
+      );
+    },
+    [],
+  );
+
+  const acceptLadderMatch = useCallback(
+    async (
+      ladderId: string,
+      matchId: string,
+      userId: string,
+    ): Promise<AcceptLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      ) as DocumentReference<LadderMatch, LadderMatch>;
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            throw new AcceptLadderMatchError("MATCH_NOT_FOUND");
+          }
+
+          const match: LadderMatch = {
+            ...snap.data(),
+            ladderMatchId: snap.id,
+          };
+
+          if (!canAcceptLadderMatch(match, userId)) {
+            throw new AcceptLadderMatchError("CANNOT_ACCEPT");
+          }
+
+          transaction.update(matchRef, buildAcceptedLadderMatch(match, userId));
+        });
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof AcceptLadderMatchError) {
+          return { success: false, reason: "unavailable" };
+        }
+        console.error("Error accepting ladder match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchUpcomingLadders();
   }, [fetchUpcomingLadders]);
@@ -379,6 +477,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderTeams,
         createLadderMatch,
         fetchLadderMatches,
+        subscribeToLadderMatches,
+        acceptLadderMatch,
         addCourtToLadder,
       }}
     >
