@@ -22,7 +22,7 @@ const isImageObject = (
 const toSource = (img: ImageEntry): ImageSourcePropType =>
   isImageObject(img) ? img.source : img;
 
-// Renders a grid of images (2 per row) with a title and description beneath.
+// Renders a row of images (evenly sized) with a title and description beneath.
 const ImageMapper: React.FC<ImageMapperProps> = ({
   images,
   title,
@@ -59,14 +59,13 @@ export default ImageMapper;
 
 const Grid = styled.View({
   flexDirection: "row",
-  flexWrap: "wrap",
-  justifyContent: "center",
   alignItems: "center",
-  gap: 12,
+  justifyContent: "center",
+  gap: 8,
 });
 
 const GridImage = styled.Image({
-  width: "42%",
+  flex: 1,
   aspectRatio: 1,
 });
 
