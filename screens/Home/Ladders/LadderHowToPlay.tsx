@@ -28,7 +28,7 @@ import {
   calculateLadderPrizePool,
   ccImageEndpoint,
 } from "@shared";
-import { cpBoosters } from "@/rankingMedals";
+import gameMedals from "@/rankingMedals";
 
 import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
@@ -76,7 +76,7 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             image={{ uri: ccImageEndpoint }}
             title={"Welcome to the official \n Court Champs Ladder"}
-            body="Climb the ranks by playing other members. This quick guide shows you how games work, how you earn Court Points, and how the season ends in the playoffs."
+            body="Climb the ranks by playing other members. This quick guide shows you how games work, how you earn Court Points (CP), and how the season ends in the playoffs."
           />
         ),
       },
@@ -93,7 +93,7 @@ const LadderHowToPlay: React.FC = () => {
                   {`Match Making`}
                 </PageText>
                 {
-                  " tab. Set it up and wait for another ladder member to accept."
+                  " tab. Set it up and wait for another ladder member to accept. We operate a blind matchmaking system, so you won't know who your opponent is until they accept your game."
                 }
               </>
             }
@@ -142,7 +142,15 @@ const LadderHowToPlay: React.FC = () => {
       },
       {
         key: "cp-boosters",
-        render: () => <AchievementMedalsPage />,
+        render: () => (
+          <ImageMapper
+            images={gameMedals}
+            title="Achievement Medals"
+            description="Achievement Medals are awarded when you are performing your best - you
+        are awarded CP bonuses for win streaks, decisive victories and long
+        distant wins."
+          />
+        ),
       },
       {
         key: "playoffs",
@@ -426,7 +434,24 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   );
 };
 
-const AchievementMedalsPage: React.FC = () => {
+type ImageEntry = ImageSourcePropType | { source: ImageSourcePropType };
+
+interface ImageMapperProps {
+  images: Record<string, ImageEntry>;
+  title: string;
+  description: string;
+}
+
+const isImageObject = (
+  img: ImageEntry,
+): img is { source: ImageSourcePropType } =>
+  typeof img === "object" && img !== null && "source" in img;
+
+const ImageMapper: React.FC<ImageMapperProps> = ({
+  images,
+  title,
+  description,
+}) => {
   return (
     <ScrollView
       contentContainerStyle={{
@@ -437,17 +462,23 @@ const AchievementMedalsPage: React.FC = () => {
         paddingVertical: 30,
       }}
     >
-      <ImageContainer>
-        <Image source={cpBoosters} resizeMode="contain" />
+      <ImageContainer style={{ flexDirection: "row" }}>
+        {Object.entries(images).map(([key, img]) => {
+          const src = isImageObject(img) ? img.source : img;
+          return (
+            <Image
+              key={key}
+              source={src}
+              resizeMode="contain"
+              style={{ width: "50%", height: "50%", margin: 8 }}
+            />
+          );
+        })}
       </ImageContainer>
       <CenteredHeader style={{ marginTop: -40 }}>
-        <PageTitle>Achievement Medals</PageTitle>
+        <PageTitle>{title}</PageTitle>
       </CenteredHeader>
-      <PageText>
-        Achievement Medals are awarded when you are performing your best - you
-        are awarded CP bonuses for win streaks, decisive victories and long
-        distant wins.
-      </PageText>
+      <PageText>{description}</PageText>
     </ScrollView>
   );
 };
