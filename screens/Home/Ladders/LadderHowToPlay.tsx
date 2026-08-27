@@ -162,6 +162,7 @@ const LadderHowToPlay: React.FC = () => {
         render: () => (
           <ImageMapper
             images={ladders}
+            imageSize={72}
             title="Winning the Final"
             description="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
           >
@@ -431,6 +432,7 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
 const AchievementMedalsPage: React.FC = () => (
   <ImageMapper
     images={gameMedals}
+    imageSize={72}
     title="Achievement Medals"
     description="Achievement Medals are awarded when you are performing your best - you are awarded CP bonuses for win streaks, decisive victories and long distant wins."
   />

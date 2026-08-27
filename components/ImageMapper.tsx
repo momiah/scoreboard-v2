@@ -10,6 +10,9 @@ interface ImageMapperProps {
   images: ImageEntry[] | Record<string, ImageEntry>;
   title: string;
   description: string;
+  // Fixed width/height (px) per image. When omitted, images share the row
+  // evenly. Set this to keep large images from overflowing the page.
+  imageSize?: number;
   // Optional footer rendered below the description (e.g. a "Read the rules" button).
   children?: React.ReactNode;
 }
@@ -27,6 +30,7 @@ const ImageMapper: React.FC<ImageMapperProps> = ({
   images,
   title,
   description,
+  imageSize,
   children,
 }) => {
   const entries = Array.isArray(images)
@@ -45,7 +49,12 @@ const ImageMapper: React.FC<ImageMapperProps> = ({
     >
       <Grid>
         {entries.map(([key, img]) => (
-          <GridImage key={key} source={toSource(img)} resizeMode="contain" />
+          <GridImage
+            key={key}
+            source={toSource(img)}
+            resizeMode="contain"
+            size={imageSize}
+          />
         ))}
       </Grid>
       <Title>{title}</Title>
@@ -59,15 +68,19 @@ export default ImageMapper;
 
 const Grid = styled.View({
   flexDirection: "row",
+  flexWrap: "wrap",
   alignItems: "center",
   justifyContent: "center",
   gap: 8,
 });
 
-const GridImage = styled.Image({
-  flex: 1,
-  aspectRatio: 1,
-});
+const GridImage = styled.Image<{ size?: number }>(
+  ({ size }: { size?: number }) =>
+    size
+      ? { width: size, height: size }
+      : // No fixed size: share the row evenly.
+        { flex: 1, aspectRatio: 1 },
+);
 
 const Title = styled.Text({
   color: "#ffffff",
