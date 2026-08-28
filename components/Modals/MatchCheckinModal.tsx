@@ -504,8 +504,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               <EmergencyRow testID="match-checkin-reference">
                 <EmergencyLabel>
                   {isPoster
-                    ? "If you cannot scan, show this code to your opponent"
-                    : "If your QR cannot be scanned, input the code here"}
+                    ? "If your QR cannot be scanned, input the code here"
+                    : "If you cannot scan, show this code to your opponent"}
                 </EmergencyLabel>
                 <EmergencyCode>{reference}</EmergencyCode>
               </EmergencyRow>
