@@ -32,6 +32,10 @@ import {
 const screenWidth = Dimensions.get("window").width;
 const QR_SIZE = Math.min(screenWidth - 120, 240);
 
+// Always show the "checking" state for at least this long so a fast result
+// (or an immediate failure) doesn't flash an error that looks broken.
+const MIN_CHECK_MS = 1200;
+
 // Shown on the location step so players know how to get verified.
 const CHECKIN_TIPS = [
   "Make sure you've actually arrived at the court.",
@@ -65,36 +69,52 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 }) => {
   const [status, setStatus] = useState<VerifyStatus>("checking");
   const [showCheckin, setShowCheckin] = useState(false);
+  // Bumped on each verify run so a stale/slow run can't overwrite a newer one
+  // (e.g. the modal was reopened, or the user tapped "Check again").
+  const runIdRef = useRef(0);
 
   const address = formatCourtAddress(match.court);
 
   const verify = async () => {
+    const runId = ++runIdRef.current;
     setStatus("checking");
+    const startedAt = Date.now();
+
+    let result: VerifyStatus = "failed";
     try {
       // The court must have coordinates to verify against.
-      if (!getCourtCoords(match.court)) {
-        setStatus("failed");
-        return;
+      if (getCourtCoords(match.court)) {
+        const { granted } = await Location.requestForegroundPermissionsAsync();
+        if (granted) {
+          const position = await Location.getCurrentPositionAsync({});
+          result = isWithinCheckInRadius(
+            {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            },
+            match.court,
+          )
+            ? "verified"
+            : "failed";
+        }
       }
-
-      const { granted } = await Location.requestForegroundPermissionsAsync();
-      if (!granted) {
-        setStatus("failed");
-        return;
-      }
-
-      const position = await Location.getCurrentPositionAsync({});
-      const withinRange = isWithinCheckInRadius(
-        {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        },
-        match.court,
-      );
-      setStatus(withinRange ? "verified" : "failed");
     } catch (error) {
       console.error("Error verifying check-in location:", error);
-      setStatus("failed");
+      result = "failed";
+    }
+
+    // Keep the spinner up for a minimum beat so the result never appears
+    // instantly (which reads as a broken/error screen).
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < MIN_CHECK_MS) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, MIN_CHECK_MS - elapsed),
+      );
+    }
+
+    // Only apply the result if this is still the latest run.
+    if (runIdRef.current === runId) {
+      setStatus(result);
     }
   };
 
