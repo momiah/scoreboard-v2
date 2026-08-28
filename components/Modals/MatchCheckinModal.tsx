@@ -32,7 +32,11 @@ import {
 import type { Court } from "@shared/types";
 
 const screenWidth = Dimensions.get("window").width;
+const screenHeight = Dimensions.get("window").height;
 const QR_SIZE = Math.min(screenWidth - 120, 240);
+// Fixed height for the location verifier so the modal doesn't shrink when the
+// tips / error content disappears on a successful check.
+const VERIFIER_HEIGHT = Math.min(screenHeight * 0.62, 520);
 
 // Always show the "checking" state for at least this long so a fast result
 // (or an immediate failure) doesn't flash an error that looks broken.
@@ -187,82 +191,86 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       onRequestClose={closeAll}
     >
       <ModalContainer>
-        <ModalContent testID="location-verifier-modal">
+        <VerifierContent testID="location-verifier-modal">
           <CloseButton onPress={closeAll} testID="location-verifier-close">
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
-          {status === "checking" && (
-            <StatusBlock testID="location-verifier-checking">
-              <ActivityIndicator size="large" color="#00A2FF" />
-              <SectionTitle>Checking your location…</SectionTitle>
-              <Helper>Making sure you&apos;ve arrived at the court.</Helper>
-            </StatusBlock>
-          )}
+          <VerifierBody>
+            {status === "checking" && (
+              <StatusBlock testID="location-verifier-checking">
+                <ActivityIndicator size="large" color="#00A2FF" />
+                <SectionTitle>Checking your location…</SectionTitle>
+                <Helper>Making sure you&apos;ve arrived at the court.</Helper>
+              </StatusBlock>
+            )}
 
-          {verified && (
-            <StatusBlock testID="location-verifier-verified">
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={56}
-                color="#00C853"
-              />
-              <SectionTitle>You&apos;re at the venue</SectionTitle>
-              <Helper>Location confirmed — you can check in now.</Helper>
-            </StatusBlock>
-          )}
+            {verified && (
+              <StatusBlock testID="location-verifier-verified">
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={56}
+                  color="#00C853"
+                />
+                <SectionTitle>You&apos;re at the venue</SectionTitle>
+                <Helper>Location confirmed — you can check in now.</Helper>
+              </StatusBlock>
+            )}
 
-          {status === "failed" && (
-            <StatusBlock testID="location-verifier-failed">
-              <Ionicons name="location-outline" size={48} color="#FF4B6E" />
-              <SectionTitle>Location not verified</SectionTitle>
-              <ErrorText>
-                You are not in the right location to check in, please ensure you
-                have arrived at the correct address
-              </ErrorText>
-              {!!address && (
-                <AddressLink
-                  onPress={openMap}
-                  testID="location-verifier-address"
-                  activeOpacity={0.7}
+            {status === "failed" && (
+              <StatusBlock testID="location-verifier-failed">
+                <Ionicons name="location-outline" size={48} color="#FF4B6E" />
+                <SectionTitle>Location not verified</SectionTitle>
+                <ErrorText>
+                  You are not in the right location to check in, please ensure
+                  you have arrived at the correct address
+                </ErrorText>
+                {!!address && (
+                  <AddressLink
+                    onPress={openMap}
+                    testID="location-verifier-address"
+                    activeOpacity={0.7}
+                  >
+                    <AddressLinkText numberOfLines={2}>
+                      {address}
+                    </AddressLinkText>
+                    <Ionicons name="open-outline" size={14} color="#00A2FF" />
+                  </AddressLink>
+                )}
+                <RetryButton
+                  onPress={verify}
+                  activeOpacity={0.8}
+                  testID="location-verifier-retry"
                 >
-                  <AddressLinkText numberOfLines={2}>{address}</AddressLinkText>
-                  <Ionicons name="open-outline" size={14} color="#00A2FF" />
-                </AddressLink>
-              )}
-              <RetryButton
-                onPress={verify}
-                activeOpacity={0.8}
-                testID="location-verifier-retry"
-              >
-                <Ionicons name="refresh" size={16} color="#00A2FF" />
-                <RetryText>Check again</RetryText>
-              </RetryButton>
-            </StatusBlock>
-          )}
+                  <Ionicons name="refresh" size={16} color="#00A2FF" />
+                  <RetryText>Check again</RetryText>
+                </RetryButton>
+              </StatusBlock>
+            )}
 
-          {!verified && (
-            <>
-              <TipsCard>
-                <TipsTitle>Tips to check in</TipsTitle>
-                {CHECKIN_TIPS.map((tip) => (
-                  <TipRow key={tip}>
-                    <Ionicons
-                      name="checkmark-circle-outline"
-                      size={14}
-                      color="#9fb8c8"
-                    />
-                    <TipText>{tip}</TipText>
-                  </TipRow>
-                ))}
-              </TipsCard>
-              <ErrorText style={{ color: "#71b5ffff" }}>
-                If you are sure you are in the right location and still cannot
-                check in, please play your games and send your scores to support
-                (Video evidence of your games are recommended).
-              </ErrorText>
-            </>
-          )}
+            {!verified && (
+              <>
+                <TipsCard>
+                  <TipsTitle>Tips to check in</TipsTitle>
+                  {CHECKIN_TIPS.map((tip) => (
+                    <TipRow key={tip}>
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={14}
+                        color="#9fb8c8"
+                      />
+                      <TipText>{tip}</TipText>
+                    </TipRow>
+                  ))}
+                </TipsCard>
+                <ErrorText style={{ color: "#71b5ffff" }}>
+                  If you are sure you are in the right location and still cannot
+                  check in, please play your games and send your scores to
+                  support (Video evidence of your games are recommended).
+                </ErrorText>
+              </>
+            )}
+          </VerifierBody>
 
           <ActionButton
             testID="location-verifier-checkin"
@@ -273,7 +281,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
           >
             <ActionButtonText>Checkin</ActionButtonText>
           </ActionButton>
-        </ModalContent>
+        </VerifierContent>
       </ModalContainer>
 
       {/* Nested so the check-in modal stacks ABOVE the verifier (which stays
@@ -494,7 +502,11 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               {isPoster ? renderPoster() : renderScanner()}
 
               <EmergencyRow testID="match-checkin-reference">
-                <EmergencyLabel>Emergency code</EmergencyLabel>
+                <EmergencyLabel>
+                  {isPoster
+                    ? "If you cannot scan, show this code to your opponent"
+                    : "If your QR cannot be scanned, input the code here"}
+                </EmergencyLabel>
                 <EmergencyCode>{reference}</EmergencyCode>
               </EmergencyRow>
             </>
@@ -523,6 +535,31 @@ const ModalContent = styled.View({
   padding: 24,
   alignItems: "center",
   gap: 14,
+});
+
+// Fixed-height verifier card: the body flexes/centres so shorter states
+// (checking / verified) don't shrink the modal, and the button stays pinned
+// to the bottom across every state.
+const VerifierContent = styled(ModalContent)({
+  height: VERIFIER_HEIGHT,
+  justifyContent: "space-between",
+});
+
+// A ScrollView so the tallest state (failed: tips + support text) can scroll
+// within the fixed height instead of clipping, while shorter states stay
+// vertically centred.
+const VerifierBody = styled.ScrollView.attrs({
+  contentContainerStyle: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+    paddingVertical: 4,
+  },
+  showsVerticalScrollIndicator: false,
+})({
+  flex: 1,
+  alignSelf: "stretch",
 });
 
 const CloseButton = styled.TouchableOpacity({
@@ -671,14 +708,14 @@ const WaitingText = styled.Text({
 // Small, subtle fallback — the QR/scan is the primary path; the reference is
 // only for emergencies (e.g. a camera that won't scan).
 const EmergencyRow = styled.View({
-  flexDirection: "row",
   alignItems: "center",
-  gap: 6,
+  gap: 4,
 });
 
 const EmergencyLabel = styled.Text({
   color: "#7f97a8",
   fontSize: 11,
+  textAlign: "center",
 });
 
 const EmergencyCode = styled.Text({
