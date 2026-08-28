@@ -334,6 +334,9 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
 
   const [processing, setProcessing] = useState(false);
   const [succeeded, setSucceeded] = useState(false);
+  // The accepter's manual fallback: the code read out by the poster when the
+  // QR can't be scanned.
+  const [code, setCode] = useState("");
   // Guards against the camera firing onBarcodeScanned repeatedly for one code.
   const handledRef = useRef(false);
 
@@ -343,6 +346,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       handledRef.current = false;
       setProcessing(false);
       setSucceeded(false);
+      setCode("");
     }
   }, [visible]);
 
@@ -376,14 +380,9 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     onClose();
   };
 
-  const handleScan = async (result: BarcodeScanningResult) => {
+  // Shared completion path for both a successful scan and a valid manual code.
+  const completeCheckIn = async () => {
     if (handledRef.current || processing) return;
-
-    if (!isValidLadderCheckInScan(match, result.data)) {
-      showBottomToast("That QR code is for a different match", "error");
-      return;
-    }
-
     handledRef.current = true;
     setProcessing(true);
     if (!currentUserId) {
@@ -405,6 +404,27 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       showBottomToast("Couldn't complete check-in. Please try again.", "error");
       handledRef.current = false;
     }
+  };
+
+  const handleScan = (result: BarcodeScanningResult) => {
+    if (handledRef.current || processing) return;
+    if (!isValidLadderCheckInScan(match, result.data)) {
+      showBottomToast("That QR code is for a different match", "error");
+      return;
+    }
+    completeCheckIn();
+  };
+
+  const handleSubmitCode = () => {
+    if (processing) return;
+    if (code.trim().toUpperCase() !== reference) {
+      showBottomToast(
+        "That code doesn't match. Check it with your opponent.",
+        "error",
+      );
+      return;
+    }
+    completeCheckIn();
   };
 
   const renderPoster = () => (
@@ -501,14 +521,46 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             <>
               {isPoster ? renderPoster() : renderScanner()}
 
-              <EmergencyRow testID="match-checkin-reference">
-                <EmergencyLabel>
-                  {isPoster
-                    ? "If your QR cannot be scanned, input the code here"
-                    : "If you cannot scan, show this code to your opponent"}
-                </EmergencyLabel>
-                <EmergencyCode>{reference}</EmergencyCode>
-              </EmergencyRow>
+              {isPoster ? (
+                <EmergencyRow testID="match-checkin-reference">
+                  <EmergencyLabel>
+                    If your QR cannot be scanned, give this code to your opponent
+                  </EmergencyLabel>
+                  <EmergencyCode>{reference}</EmergencyCode>
+                </EmergencyRow>
+              ) : (
+                <EmergencyRow testID="match-checkin-reference">
+                  <EmergencyLabel>
+                    Can&apos;t scan? Enter the code from your opponent
+                  </EmergencyLabel>
+                  <CodeInputRow>
+                    <CodeInput
+                      value={code}
+                      onChangeText={(text: string) =>
+                        setCode(text.toUpperCase())
+                      }
+                      placeholder="CODE"
+                      placeholderTextColor="#5b7183"
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      maxLength={reference.length}
+                      editable={!processing}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSubmitCode}
+                      testID="match-checkin-code-input"
+                    />
+                    <CodeSubmit
+                      onPress={handleSubmitCode}
+                      activeOpacity={0.85}
+                      disabled={processing || code.trim().length === 0}
+                      isDisabled={processing || code.trim().length === 0}
+                      testID="match-checkin-code-submit"
+                    >
+                      <CodeSubmitText>Submit</CodeSubmitText>
+                    </CodeSubmit>
+                  </CodeInputRow>
+                </EmergencyRow>
+              )}
             </>
           )}
         </ModalContent>
@@ -724,6 +776,44 @@ const EmergencyCode = styled.Text({
   fontWeight: "700",
   letterSpacing: 1.5,
   fontVariant: ["tabular-nums"],
+});
+
+const CodeInputRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  marginTop: 2,
+});
+
+const CodeInput = styled.TextInput({
+  minWidth: 120,
+  paddingHorizontal: 14,
+  paddingVertical: 10,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: "rgb(26, 28, 54)",
+  backgroundColor: "rgba(255, 255, 255, 0.04)",
+  color: "#ffffff",
+  fontSize: 16,
+  fontWeight: "700",
+  letterSpacing: 3,
+  textAlign: "center",
+});
+
+const CodeSubmit = styled.TouchableOpacity<{ isDisabled: boolean }>(
+  ({ isDisabled }: { isDisabled: boolean }) => ({
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 10,
+    backgroundColor: isDisabled ? "#1e3a52" : "#00A2FF",
+    opacity: isDisabled ? 0.7 : 1,
+  }),
+);
+
+const CodeSubmitText = styled.Text({
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: "700",
 });
 
 const SuccessBlock = styled.View({
