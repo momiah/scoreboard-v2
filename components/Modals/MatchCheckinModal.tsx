@@ -24,10 +24,12 @@ import { LadderContext } from "../../context/LadderContext";
 import { PopupContext } from "../../context/PopupContext";
 import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
 import {
+  CHECKIN_RADIUS_METERS,
+  distanceInMeters,
   formatCourtAddress,
   getCourtCoords,
-  isWithinCheckInRadius,
 } from "../../helpers/locationCheckIn";
+import type { Court } from "@shared/types";
 
 const screenWidth = Dimensions.get("window").width;
 const QR_SIZE = Math.min(screenWidth - 120, 240);
@@ -67,13 +69,18 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   currentUserId,
   onCheckedIn,
 }) => {
+  const { fetchLadderMatches } = useContext(LadderContext);
+
   const [status, setStatus] = useState<VerifyStatus>("checking");
   const [showCheckin, setShowCheckin] = useState(false);
+  // The court we verify against. Defaults to the match prop, but each check
+  // re-fetches the match so edits to its coordinates are picked up live.
+  const [court, setCourt] = useState<Court>(match.court);
   // Bumped on each verify run so a stale/slow run can't overwrite a newer one
   // (e.g. the modal was reopened, or the user tapped "Check again").
   const runIdRef = useRef(0);
 
-  const address = formatCourtAddress(match.court);
+  const address = formatCourtAddress(court);
 
   const verify = async () => {
     const runId = ++runIdRef.current;
@@ -82,20 +89,46 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 
     let result: VerifyStatus = "failed";
     try {
-      // The court must have coordinates to verify against.
-      if (getCourtCoords(match.court)) {
+      // Re-fetch the match so we compare against the latest court coordinates
+      // (the court is stored on the match, so a Firestore edit only shows up
+      // after a fresh read). Fall back to the prop if the fetch fails.
+      let targetCourt = match.court;
+      try {
+        const matches = await fetchLadderMatches(ladderId);
+        const latest = matches.find(
+          (m) => m.ladderMatchId === match.ladderMatchId,
+        );
+        if (latest?.court) {
+          targetCourt = latest.court;
+          setCourt(latest.court);
+        }
+      } catch (fetchError) {
+        console.error("Error refreshing court for check-in:", fetchError);
+      }
+
+      const courtCoords = getCourtCoords(targetCourt);
+      if (courtCoords) {
         const { granted } = await Location.requestForegroundPermissionsAsync();
         if (granted) {
-          const position = await Location.getCurrentPositionAsync({});
-          result = isWithinCheckInRadius(
-            {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            },
-            match.court,
-          )
-            ? "verified"
-            : "failed";
+          // Force a fresh, high-accuracy fix rather than a cached last-known
+          // position, so moving/opening again re-checks the real location.
+          const position = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+          const device = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          const distance = distanceInMeters(device, courtCoords);
+          if (__DEV__) {
+            console.log("[check-in] location verify", {
+              device,
+              court: courtCoords,
+              distanceMeters: Math.round(distance),
+              radiusMeters: CHECKIN_RADIUS_METERS,
+            });
+          }
+          result = distance <= CHECKIN_RADIUS_METERS ? "verified" : "failed";
         }
       }
     } catch (error) {
@@ -132,7 +165,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   };
 
   const openMap = () =>
-    Linking.openURL(buildCourtMapsUrl(match.court)).catch((err) =>
+    Linking.openURL(buildCourtMapsUrl(court)).catch((err) =>
       console.error("Error opening Google Maps:", err),
     );
 
