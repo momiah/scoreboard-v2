@@ -213,7 +213,9 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                   color="#00C853"
                 />
                 <SectionTitle>You&apos;re at the venue</SectionTitle>
-                <Helper>Location confirmed — you can check in now.</Helper>
+                <Helper>
+                  Location confirmed — you can check in now below.
+                </Helper>
               </StatusBlock>
             )}
 
@@ -524,7 +526,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               {isPoster ? (
                 <EmergencyRow testID="match-checkin-reference">
                   <EmergencyLabel>
-                    If your QR cannot be scanned, give this code to your opponent
+                    If your QR cannot be scanned, give this code to your
+                    opponent
                   </EmergencyLabel>
                   <EmergencyCode>{reference}</EmergencyCode>
                 </EmergencyRow>
