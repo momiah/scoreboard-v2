@@ -248,7 +248,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
               </StatusBlock>
             )}
 
-            {!verified && (
+            {status === "failed" && (
               <>
                 <TipsCard>
                   <TipsTitle>Tips to check in</TipsTitle>
