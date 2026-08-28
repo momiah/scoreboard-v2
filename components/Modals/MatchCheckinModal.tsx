@@ -186,64 +186,63 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       animationType="slide"
       onRequestClose={closeAll}
     >
-        <ModalContainer>
-          <ModalContent testID="location-verifier-modal">
-            <CloseButton onPress={closeAll} testID="location-verifier-close">
-              <AntDesign name="close-circle" size={30} color="red" />
-            </CloseButton>
+      <ModalContainer>
+        <ModalContent testID="location-verifier-modal">
+          <CloseButton onPress={closeAll} testID="location-verifier-close">
+            <AntDesign name="close-circle" size={30} color="red" />
+          </CloseButton>
 
-            {status === "checking" && (
-              <StatusBlock testID="location-verifier-checking">
-                <ActivityIndicator size="large" color="#00A2FF" />
-                <SectionTitle>Checking your location…</SectionTitle>
-                <Helper>Making sure you&apos;ve arrived at the court.</Helper>
-              </StatusBlock>
-            )}
+          {status === "checking" && (
+            <StatusBlock testID="location-verifier-checking">
+              <ActivityIndicator size="large" color="#00A2FF" />
+              <SectionTitle>Checking your location…</SectionTitle>
+              <Helper>Making sure you&apos;ve arrived at the court.</Helper>
+            </StatusBlock>
+          )}
 
-            {verified && (
-              <StatusBlock testID="location-verifier-verified">
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={56}
-                  color="#00C853"
-                />
-                <SectionTitle>You&apos;re at the venue</SectionTitle>
-                <Helper>Location confirmed — you can check in now.</Helper>
-              </StatusBlock>
-            )}
+          {verified && (
+            <StatusBlock testID="location-verifier-verified">
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={56}
+                color="#00C853"
+              />
+              <SectionTitle>You&apos;re at the venue</SectionTitle>
+              <Helper>Location confirmed — you can check in now.</Helper>
+            </StatusBlock>
+          )}
 
-            {status === "failed" && (
-              <StatusBlock testID="location-verifier-failed">
-                <Ionicons name="location-outline" size={48} color="#FF4B6E" />
-                <SectionTitle>Location not verified</SectionTitle>
-                <ErrorText>
-                  You are not in the right location to check in, please ensure
-                  you have arrived at the correct address
-                </ErrorText>
-                {!!address && (
-                  <AddressLink
-                    onPress={openMap}
-                    testID="location-verifier-address"
-                    activeOpacity={0.7}
-                  >
-                    <AddressLinkText numberOfLines={2}>
-                      {address}
-                    </AddressLinkText>
-                    <Ionicons name="open-outline" size={14} color="#00A2FF" />
-                  </AddressLink>
-                )}
-                <RetryButton
-                  onPress={verify}
-                  activeOpacity={0.8}
-                  testID="location-verifier-retry"
+          {status === "failed" && (
+            <StatusBlock testID="location-verifier-failed">
+              <Ionicons name="location-outline" size={48} color="#FF4B6E" />
+              <SectionTitle>Location not verified</SectionTitle>
+              <ErrorText>
+                You are not in the right location to check in, please ensure you
+                have arrived at the correct address
+              </ErrorText>
+              {!!address && (
+                <AddressLink
+                  onPress={openMap}
+                  testID="location-verifier-address"
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="refresh" size={16} color="#00A2FF" />
-                  <RetryText>Check again</RetryText>
-                </RetryButton>
-              </StatusBlock>
-            )}
+                  <AddressLinkText numberOfLines={2}>{address}</AddressLinkText>
+                  <Ionicons name="open-outline" size={14} color="#00A2FF" />
+                </AddressLink>
+              )}
+              <RetryButton
+                onPress={verify}
+                activeOpacity={0.8}
+                testID="location-verifier-retry"
+              >
+                <Ionicons name="refresh" size={16} color="#00A2FF" />
+                <RetryText>Check again</RetryText>
+              </RetryButton>
+            </StatusBlock>
+          )}
 
-            {!verified && (
+          {!verified && (
+            <>
               <TipsCard>
                 <TipsTitle>Tips to check in</TipsTitle>
                 {CHECKIN_TIPS.map((tip) => (
@@ -257,39 +256,39 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                   </TipRow>
                 ))}
               </TipsCard>
-            )}
+              <ErrorText style={{ color: "#71b5ffff" }}>
+                If you are sure you are in the right location and still cannot
+                check in, please play your games and send your scores to support
+                (Video evidence of your games are recommended).
+              </ErrorText>
+            </>
+          )}
 
-            <ErrorText style={{ color: "#71b5ffff" }}>
-              If you are sure you are in the right location and still cannot
-              check in, please play your games and send your scores to support
-              (Video evidence of your games are recommended).
-            </ErrorText>
+          <ActionButton
+            testID="location-verifier-checkin"
+            activeOpacity={0.85}
+            disabled={!verified}
+            isDisabled={!verified}
+            onPress={() => verified && setShowCheckin(true)}
+          >
+            <ActionButtonText>Checkin</ActionButtonText>
+          </ActionButton>
+        </ModalContent>
+      </ModalContainer>
 
-            <ActionButton
-              testID="location-verifier-checkin"
-              activeOpacity={0.85}
-              disabled={!verified}
-              isDisabled={!verified}
-              onPress={() => verified && setShowCheckin(true)}
-            >
-              <ActionButtonText>Checkin</ActionButtonText>
-            </ActionButton>
-          </ModalContent>
-        </ModalContainer>
-
-        {/* Nested so the check-in modal stacks ABOVE the verifier (which stays
+      {/* Nested so the check-in modal stacks ABOVE the verifier (which stays
             mounted underneath), matching the AddLeagueModal pattern. */}
-        {showCheckin && (
-          <MatchCheckinModal
-            visible={showCheckin}
-            onClose={closeAll}
-            match={match}
-            ladderId={ladderId}
-            currentUserId={currentUserId}
-            onCheckedIn={onCheckedIn}
-          />
-        )}
-      </Modal>
+      {showCheckin && (
+        <MatchCheckinModal
+          visible={showCheckin}
+          onClose={closeAll}
+          match={match}
+          ladderId={ladderId}
+          currentUserId={currentUserId}
+          onCheckedIn={onCheckedIn}
+        />
+      )}
+    </Modal>
   );
 };
 
