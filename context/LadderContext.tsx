@@ -494,6 +494,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (!match.acceptedBy) {
             throw new CheckInLadderMatchError("NOT_ACCEPTED");
           }
+          // Only a participant of THIS match may check it in — blocks a
+          // bystander (or a different match's player) who is shown/handed the
+          // code. Combined with the location gate, check-in stays locked to the
+          // actual players at the court.
+          if (!match.participants.includes(userId)) {
+            throw new CheckInLadderMatchError("NOT_A_PARTICIPANT");
+          }
           // Idempotent: a completed handshake stays completed.
           if (isLadderMatchCheckedIn(match)) {
             return;

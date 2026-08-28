@@ -385,14 +385,18 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   // Shared completion path for both a successful scan and a valid manual code.
   const completeCheckIn = async () => {
     if (handledRef.current || processing) return;
-    handledRef.current = true;
-    setProcessing(true);
     if (!currentUserId) {
       showBottomToast("You need to be signed in to check in", "error");
-      handledRef.current = false;
-      setProcessing(false);
       return;
     }
+    // Fast-fail if the scanner isn't in this match (the write enforces this too,
+    // but this gives immediate, clearer feedback to a non-participant).
+    if (!match.participants.includes(currentUserId)) {
+      showBottomToast("This code isn't for a match you're in", "error");
+      return;
+    }
+    handledRef.current = true;
+    setProcessing(true);
 
     const { success } = await checkInLadderMatch(
       ladderId,
