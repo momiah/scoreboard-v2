@@ -151,11 +151,19 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
     }
   };
 
-  // Verify whenever the modal opens.
+  // The flow is always verify-location → check-in, with NO persistence of the
+  // location result: every open starts a fresh verification. This prevents a
+  // player verifying at the court, leaving, then checking in later.
   useEffect(() => {
     if (visible) {
       setShowCheckin(false);
       verify();
+    } else {
+      // Closing resets everything and invalidates any in-flight verify, so a
+      // stale "verified" state can never show on the next open.
+      runIdRef.current++;
+      setStatus("checking");
+      setShowCheckin(false);
     }
   }, [visible, match.ladderMatchId]);
 
@@ -172,13 +180,12 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   const verified = status === "verified";
 
   return (
-    <>
-      <Modal
-        visible={visible && !showCheckin}
-        transparent
-        animationType="slide"
-        onRequestClose={closeAll}
-      >
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={closeAll}
+    >
         <ModalContainer>
           <ModalContent testID="location-verifier-modal">
             <CloseButton onPress={closeAll} testID="location-verifier-close">
@@ -195,7 +202,11 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 
             {verified && (
               <StatusBlock testID="location-verifier-verified">
-                <Ionicons name="checkmark-circle" size={56} color="#00C853" />
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={56}
+                  color="#00C853"
+                />
                 <SectionTitle>You&apos;re at the venue</SectionTitle>
                 <Helper>Location confirmed — you can check in now.</Helper>
               </StatusBlock>
@@ -265,17 +276,20 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
             </ActionButton>
           </ModalContent>
         </ModalContainer>
-      </Modal>
 
-      <MatchCheckinModal
-        visible={visible && showCheckin}
-        onClose={closeAll}
-        match={match}
-        ladderId={ladderId}
-        currentUserId={currentUserId}
-        onCheckedIn={onCheckedIn}
-      />
-    </>
+        {/* Nested so the check-in modal stacks ABOVE the verifier (which stays
+            mounted underneath), matching the AddLeagueModal pattern. */}
+        {showCheckin && (
+          <MatchCheckinModal
+            visible={showCheckin}
+            onClose={closeAll}
+            match={match}
+            ladderId={ladderId}
+            currentUserId={currentUserId}
+            onCheckedIn={onCheckedIn}
+          />
+        )}
+      </Modal>
   );
 };
 
