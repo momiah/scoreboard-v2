@@ -142,11 +142,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 
             {verified && (
               <StatusBlock testID="location-verifier-verified">
-                <Ionicons
-                  name="checkmark-circle"
-                  size={56}
-                  color="#00C853"
-                />
+                <Ionicons name="checkmark-circle" size={56} color="#00C853" />
                 <SectionTitle>You&apos;re at the venue</SectionTitle>
                 <Helper>Location confirmed — you can check in now.</Helper>
               </StatusBlock>
@@ -166,7 +162,6 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                     testID="location-verifier-address"
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="location" size={14} color="#00A2FF" />
                     <AddressLinkText numberOfLines={2}>
                       {address}
                     </AddressLinkText>
@@ -199,6 +194,12 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                 ))}
               </TipsCard>
             )}
+
+            <ErrorText style={{ color: "#71b5ffff" }}>
+              If you are sure you are in the right location and still cannot
+              check in, please play your games and send your scores to support
+              (Video evidence of your games are recommended).
+            </ErrorText>
 
             <ActionButton
               testID="location-verifier-checkin"
@@ -490,7 +491,7 @@ const ErrorText = styled.Text({
   color: "#FF4B6E",
   fontSize: 13,
   lineHeight: 19,
-  textAlign: "center",
+  textAlign: "left",
 });
 
 const AddressLink = styled.TouchableOpacity({
@@ -509,14 +510,14 @@ const AddressLinkText = styled.Text({
   fontSize: 13,
   fontWeight: "600",
   flexShrink: 1,
-  textAlign: "center",
+  textAlign: "left",
 });
 
 const RetryButton = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   gap: 6,
-  paddingVertical: 4,
+  paddingVertical: 14,
 });
 
 const RetryText = styled.Text({
