@@ -445,6 +445,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
 
   const renderPoster = () => (
     <>
+      <PosterHeading>Show this QR code to your opponent</PosterHeading>
       <QRFrame>
         <QRCode value={qrValue} size={QR_SIZE} />
       </QRFrame>
@@ -669,6 +670,10 @@ const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   textAlign: "center",
+});
+
+const PosterHeading = styled(SectionTitle)({
+  marginTop: 8,
 });
 
 const Helper = styled.Text({
