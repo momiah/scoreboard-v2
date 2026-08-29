@@ -16,6 +16,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   COMPETITION_TYPES,
   LADDER_MATCH_STATUS,
+  hasUserCheckedIn,
   isLadderMatchCheckedIn,
 } from "@shared";
 import type { LadderMatch, LadderType } from "@shared/types";
@@ -105,9 +106,14 @@ const MatchDetails: React.FC = () => {
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const isAccepted = match.matchStatus === LADDER_MATCH_STATUS.ACCEPTED;
+  // Match-level: all participants in (drives the Game Lobby lock).
   const checkedIn = isCompleted || isLadderMatchCheckedIn(match);
+  // This player's own status (drives the card button → "Checked in" tick, even
+  // in doubles while waiting on the others).
+  const selfCheckedIn =
+    isCompleted || (!!userId && hasUserCheckedIn(match, userId));
   const handleCheckin = () => {
-    if (!checkedIn) setCheckinModalVisible(true);
+    if (!selfCheckedIn) setCheckinModalVisible(true);
   };
   // The live subscription already reflects the check-in; nothing to refresh.
   const handleCheckedIn = () => {};
@@ -116,7 +122,7 @@ const MatchDetails: React.FC = () => {
   // shows no check-in control.
   const checkinControl =
     isAccepted || isCompleted
-      ? { checkedIn, onPress: handleCheckin }
+      ? { checkedIn: selfCheckedIn, onPress: handleCheckin }
       : undefined;
 
   return (

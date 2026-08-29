@@ -77,7 +77,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
         {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
       </AwaitingTagText>
     </AwaitingTag>
-  ) : isCompleted || checkin ? (
+  ) : checkin && checkin.checkedIn ? (
+    <CheckedInTag testID={testID ? `${testID}-checked-in` : undefined}>
+      <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
+      <CheckedInTagText>Checked in</CheckedInTagText>
+    </CheckedInTag>
+  ) : isCompleted ? (
     <Ionicons
       name="checkmark-circle-outline"
       size={22}
@@ -244,6 +249,22 @@ const AwaitingTag = styled.View({
 
 const AwaitingTagText = styled.Text({
   color: "#FFA500",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const CheckedInTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(0, 200, 83, 0.15)",
+});
+
+const CheckedInTagText = styled.Text({
+  color: "#5ef0a6",
   fontSize: 11,
   fontWeight: "600",
 });
