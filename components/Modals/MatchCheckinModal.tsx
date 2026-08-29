@@ -445,16 +445,13 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
 
   const renderPoster = () => (
     <>
-      <PosterHeading>Show this QR code to your opponent</PosterHeading>
+      <PosterHeading>Show this QR code to all players</PosterHeading>
       <QRFrame>
         <QRCode value={qrValue} size={QR_SIZE} />
       </QRFrame>
       <WaitingRow testID="match-checkin-waiting">
         <Ionicons name="hourglass-outline" size={16} color="#9fb8c8" />
-        <WaitingText>
-          Waiting for the others to scan… ({progress.checkedIn} of{" "}
-          {progress.total} checked in)
-        </WaitingText>
+        <WaitingText>Waiting for the others to scan…</WaitingText>
       </WaitingRow>
     </>
   );
