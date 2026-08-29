@@ -3,7 +3,7 @@ import { ScrollView } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
+import { hasUserCheckedIn, LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
 import type { LadderMatch, Game, Player } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
@@ -153,7 +153,10 @@ const GameLobby: React.FC<GameLobbyProps> = ({
             <PlayerList>
               {players.map((player) => {
                 const xp = player.profileDetail?.XP ?? 0;
-                const isCheckedIn = checkedIn;
+                // Per-player status from the persisted set (a completed match
+                // counts everyone as in).
+                const isCheckedIn =
+                  isCompleted || hasUserCheckedIn(match, player.userId);
                 return (
                   // Row becomes a button to PlayerLadderDetails / TeamLadderDetails
                   // in the next commit.

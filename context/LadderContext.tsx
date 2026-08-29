@@ -29,8 +29,8 @@ import {
   normalizeLadderStatus,
   canAcceptLadderMatch,
   buildAcceptedLadderMatch,
-  buildLadderMatchCheckIn,
-  isLadderMatchCheckedIn,
+  addLadderMatchCheckIn,
+  getLadderCheckedInUserIds,
 } from "@shared";
 import type {
   Ladder,
@@ -501,13 +501,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (!match.participants.includes(userId)) {
             throw new CheckInLadderMatchError("NOT_A_PARTICIPANT");
           }
-          // Idempotent: a completed handshake stays completed.
-          if (isLadderMatchCheckedIn(match)) {
+          // Idempotent: nothing to do once this player is already checked in.
+          if (getLadderCheckedInUserIds(match).includes(userId)) {
             return;
           }
 
-          transaction.update(matchRef, {
-            checkIn: buildLadderMatchCheckIn(userId),
+          // Add just this player's check-in; the games unlock only once the
+          // helper marks the match complete (all participants in). Cast the ref
+          // to loosen Firestore's typed update for the nested checkIn object.
+          transaction.update(matchRef as DocumentReference, {
+            checkIn: addLadderMatchCheckIn(match, userId),
           });
         });
 

@@ -14,7 +14,9 @@ import * as Location from "expo-location";
 
 import {
   buildLadderCheckInPayload,
+  getLadderCheckInProgress,
   getLadderMatchReference,
+  hasUserCheckedIn,
   isLadderMatchCheckedIn,
   isValidLadderCheckInScan,
 } from "@shared";
@@ -335,61 +337,61 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const qrValue = JSON.stringify(buildLadderCheckInPayload(match));
 
   const [processing, setProcessing] = useState(false);
-  const [succeeded, setSucceeded] = useState(false);
   // The accepter's manual fallback: the code read out by the poster when the
   // QR can't be scanned.
   const [code, setCode] = useState("");
+  // Live match, refreshed by the subscription so every device sees who has
+  // checked in and when the match becomes complete.
+  const [liveMatch, setLiveMatch] = useState<LadderMatch>(match);
   // Guards against the camera firing onBarcodeScanned repeatedly for one code.
   const handledRef = useRef(false);
+
+  // Everyone checks in from their own device; games unlock only once all
+  // participants are in. Derived live from the subscription.
+  const selfCheckedIn =
+    !!currentUserId && hasUserCheckedIn(liveMatch, currentUserId);
+  const matchComplete = isLadderMatchCheckedIn(liveMatch);
+  const progress = getLadderCheckInProgress(liveMatch);
 
   // Reset transient state whenever the modal is (re)opened.
   useEffect(() => {
     if (visible) {
       handledRef.current = false;
       setProcessing(false);
-      setSucceeded(false);
       setCode("");
+      setLiveMatch(match);
     }
-  }, [visible]);
+  }, [visible, match]);
 
-  // Poster waits for the accepter's scan: watch the persisted state and finish
-  // when the handshake completes.
+  // Watch the match so both sides see check-ins land and the completion flip.
   useEffect(() => {
-    if (!visible || !isPoster) return;
+    if (!visible) return;
     const unsubscribe = subscribeToLadderMatches(
       ladderId,
       (matches: LadderMatch[]) => {
         const updated = matches.find(
           (m) => m.ladderMatchId === match.ladderMatchId,
         );
-        if (updated && isLadderMatchCheckedIn(updated) && !handledRef.current) {
-          handledRef.current = true;
-          setSucceeded(true);
-        }
+        if (updated) setLiveMatch(updated);
       },
     );
     return unsubscribe;
-  }, [
-    visible,
-    isPoster,
-    ladderId,
-    match.ladderMatchId,
-    subscribeToLadderMatches,
-  ]);
+  }, [visible, ladderId, match.ladderMatchId, subscribeToLadderMatches]);
 
   const finishAndClose = () => {
     onCheckedIn();
     onClose();
   };
 
-  // Shared completion path for both a successful scan and a valid manual code.
-  const completeCheckIn = async () => {
+  // Records the current user's own check-in. Shared by the scan, the manual
+  // code, and the poster's automatic check-in on open.
+  const recordCheckIn = async () => {
     if (handledRef.current || processing) return;
     if (!currentUserId) {
       showBottomToast("You need to be signed in to check in", "error");
       return;
     }
-    // Fast-fail if the scanner isn't in this match (the write enforces this too,
+    // Fast-fail if the user isn't in this match (the write enforces this too,
     // but this gives immediate, clearer feedback to a non-participant).
     if (!match.participants.includes(currentUserId)) {
       showBottomToast("This code isn't for a match you're in", "error");
@@ -404,13 +406,21 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       currentUserId,
     );
     setProcessing(false);
-    if (success) {
-      setSucceeded(true);
-    } else {
+    // On success the subscription reflects the new state (self checked in, and
+    // completion once everyone is in). handledRef stays set to stop re-scans.
+    if (!success) {
       showBottomToast("Couldn't complete check-in. Please try again.", "error");
       handledRef.current = false;
     }
   };
+
+  // The poster shows the QR but must also count as present — they reached this
+  // screen through the location gate, so check them in automatically on open.
+  useEffect(() => {
+    if (visible && isPoster && !selfCheckedIn) {
+      recordCheckIn();
+    }
+  }, [visible, isPoster]);
 
   const handleScan = (result: BarcodeScanningResult) => {
     if (handledRef.current || processing) return;
@@ -418,7 +428,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       showBottomToast("That QR code is for a different match", "error");
       return;
     }
-    completeCheckIn();
+    recordCheckIn();
   };
 
   const handleSubmitCode = () => {
@@ -430,7 +440,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       );
       return;
     }
-    completeCheckIn();
+    recordCheckIn();
   };
 
   const renderPoster = () => (
@@ -440,7 +450,10 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       </QRFrame>
       <WaitingRow testID="match-checkin-waiting">
         <Ionicons name="hourglass-outline" size={16} color="#9fb8c8" />
-        <WaitingText>Waiting for your opponent to scan…</WaitingText>
+        <WaitingText>
+          Waiting for the others to scan… ({progress.checkedIn} of{" "}
+          {progress.total} checked in)
+        </WaitingText>
       </WaitingRow>
     </>
   );
@@ -503,7 +516,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
-          {succeeded ? (
+          {matchComplete ? (
             <SuccessBlock testID="match-checkin-success">
               <Ionicons
                 name="checkmark-circle-outline"
@@ -512,10 +525,32 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               />
               <SectionTitle>Checked in!</SectionTitle>
               <Helper>
-                You&apos;re both checked in. The games are now unlocked.
+                Everyone&apos;s checked in. The games are now unlocked.
               </Helper>
               <ActionButton
                 testID="match-checkin-done"
+                activeOpacity={0.85}
+                isDisabled={false}
+                onPress={finishAndClose}
+              >
+                <ActionButtonText>Done</ActionButtonText>
+              </ActionButton>
+            </SuccessBlock>
+          ) : selfCheckedIn && !isPoster ? (
+            <SuccessBlock testID="match-checkin-waiting-self">
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={56}
+                color="#00C853"
+              />
+              <SectionTitle>You&apos;re checked in</SectionTitle>
+              <Helper>
+                Waiting for the others… ({progress.checkedIn} of{" "}
+                {progress.total} checked in). The games unlock once everyone is
+                in.
+              </Helper>
+              <ActionButton
+                testID="match-checkin-waiting-done"
                 activeOpacity={0.85}
                 isDisabled={false}
                 onPress={finishAndClose}
