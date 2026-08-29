@@ -37,8 +37,11 @@ const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 const QR_SIZE = Math.min(screenWidth - 120, 240);
 // Fixed height for the location verifier so the modal doesn't shrink when the
-// tips / error content disappears on a successful check.
+// tips / error content disappears on a successful check. The failed state has
+// the most content (error + address + tips + support note), so it gets a
+// taller box that fits everything without scrolling.
 const VERIFIER_HEIGHT = Math.min(screenHeight * 0.62, 520);
+const VERIFIER_HEIGHT_FAILED = Math.min(screenHeight * 0.85, 680);
 
 // Always show the "checking" state for at least this long so a fast result
 // (or an immediate failure) doesn't flash an error that looks broken.
@@ -193,22 +196,15 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       onRequestClose={closeAll}
     >
       <ModalContainer>
-        <VerifierContent testID="location-verifier-modal">
+        <VerifierContent
+          tall={status === "failed"}
+          testID="location-verifier-modal"
+        >
           <CloseButton onPress={closeAll} testID="location-verifier-close">
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
-          <VerifierBody
-            contentContainerStyle={{
-              flexGrow: 1,
-              alignItems: "center",
-              gap: 14,
-              paddingVertical: 4,
-              // Centre short states; top-align the tall failed state so its
-              // support note stays scrollable/visible instead of being clipped.
-              justifyContent: status === "failed" ? "flex-start" : "center",
-            }}
-          >
+          <VerifierBody>
             {status === "checking" && (
               <StatusBlock testID="location-verifier-checking">
                 <ActivityIndicator size="large" color="#00A2FF" />
@@ -642,15 +638,24 @@ const ModalContent = styled.View({
 // Fixed-height verifier card: the body flexes/centres so shorter states
 // (checking / verified) don't shrink the modal, and the button stays pinned
 // to the bottom across every state.
-const VerifierContent = styled(ModalContent)({
-  height: VERIFIER_HEIGHT,
-  justifyContent: "space-between",
-});
+const VerifierContent = styled(ModalContent)<{ tall?: boolean }>(
+  ({ tall }: { tall?: boolean }) => ({
+    height: tall ? VERIFIER_HEIGHT_FAILED : VERIFIER_HEIGHT,
+    justifyContent: "space-between",
+  }),
+);
 
 // A ScrollView so the tallest state (failed: tips + support text) can scroll
 // within the fixed height instead of clipping, while shorter states stay
 // vertically centred.
 const VerifierBody = styled.ScrollView.attrs({
+  contentContainerStyle: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+    paddingVertical: 4,
+  },
   showsVerticalScrollIndicator: false,
 })({
   flex: 1,
