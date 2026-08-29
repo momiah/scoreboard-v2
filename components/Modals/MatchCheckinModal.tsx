@@ -350,7 +350,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   // participants are in. Derived live from the subscription.
   const selfCheckedIn =
     !!currentUserId && hasUserCheckedIn(liveMatch, currentUserId);
-  const matchComplete = isLadderMatchCheckedIn(liveMatch);
+  const checkinComplete = isLadderMatchCheckedIn(liveMatch);
   const progress = getLadderCheckInProgress(liveMatch);
 
   // Reset transient state whenever the modal is (re)opened.
@@ -514,7 +514,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
-          {matchComplete ? (
+          {checkinComplete ? (
             <SuccessBlock testID="match-checkin-success">
               <Ionicons
                 name="checkmark-circle-outline"

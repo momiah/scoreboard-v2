@@ -48,7 +48,7 @@ const MatchDetails: React.FC = () => {
   const { ladderId, matchId, match: matchParam, ladderType } = route.params;
 
   const { currentUser } = useContext(UserContext);
-  const { fetchLadderMatches } = useContext(LadderContext);
+  const { subscribeToLadderMatches } = useContext(LadderContext);
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
@@ -59,41 +59,28 @@ const MatchDetails: React.FC = () => {
 
   const userId = currentUser?.userId;
 
-  // Re-fetch the match from Firestore (used on focus and after check-in, so the
-  // persisted check-in state and unlocked games are reflected authoritatively).
-  const refreshMatch = useCallback(async () => {
-    try {
-      const all = await fetchLadderMatches(ladderId);
-      const resolved = all.find((m) => m.ladderMatchId === matchId) ?? null;
-      if (resolved) setMatch(resolved);
-    } catch (error) {
-      console.error("Error refreshing match details:", error);
-    }
-  }, [ladderId, matchId, fetchLadderMatches]);
-
+  // Live-subscribe to the match while the screen is focused, so check-ins (and
+  // any other change) update the card status and Game Lobby in realtime on
+  // every device — no manual refresh needed.
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-      const load = async () => {
-        let resolved = matchParam ?? null;
-        if (!resolved) {
-          try {
-            const all = await fetchLadderMatches(ladderId);
-            resolved = all.find((m) => m.ladderMatchId === matchId) ?? null;
-          } catch (error) {
-            console.error("Error loading match details:", error);
+      const unsubscribe = subscribeToLadderMatches(
+        ladderId,
+        (matches) => {
+          const resolved =
+            matches.find((m) => m.ladderMatchId === matchId) ?? null;
+          if (resolved) {
+            setMatch(resolved);
+            setNotFound(false);
+          } else {
+            // Missing from the ladder: only "not found" when we had no seed.
+            setNotFound(!matchParam);
           }
-        }
-        if (active) {
-          setMatch(resolved);
-          setNotFound(!resolved);
-        }
-      };
-      load();
-      return () => {
-        active = false;
-      };
-    }, [ladderId, matchId, matchParam, fetchLadderMatches]),
+        },
+        (error) => console.error("Error loading match details:", error),
+      );
+      return unsubscribe;
+    }, [ladderId, matchId, matchParam, subscribeToLadderMatches]),
   );
 
   const chatPath = useMemo(
@@ -122,10 +109,8 @@ const MatchDetails: React.FC = () => {
   const handleCheckin = () => {
     if (!checkedIn) setCheckinModalVisible(true);
   };
-  // Re-fetch so both the card status and the Game Lobby pick up the handshake.
-  const handleCheckedIn = () => {
-    refreshMatch();
-  };
+  // The live subscription already reflects the check-in; nothing to refresh.
+  const handleCheckedIn = () => {};
   // Check-in only exists once a match is accepted (and stays as a tick when
   // completed). Before that there's no opponent to check in with, so the card
   // shows no check-in control.
