@@ -198,7 +198,17 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
-          <VerifierBody>
+          <VerifierBody
+            contentContainerStyle={{
+              flexGrow: 1,
+              alignItems: "center",
+              gap: 14,
+              paddingVertical: 4,
+              // Centre short states; top-align the tall failed state so its
+              // support note stays scrollable/visible instead of being clipped.
+              justifyContent: status === "failed" ? "flex-start" : "center",
+            }}
+          >
             {status === "checking" && (
               <StatusBlock testID="location-verifier-checking">
                 <ActivityIndicator size="large" color="#00A2FF" />
@@ -641,13 +651,6 @@ const VerifierContent = styled(ModalContent)({
 // within the fixed height instead of clipping, while shorter states stay
 // vertically centred.
 const VerifierBody = styled.ScrollView.attrs({
-  contentContainerStyle: {
-    flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
-    paddingVertical: 4,
-  },
   showsVerticalScrollIndicator: false,
 })({
   flex: 1,
