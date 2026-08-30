@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -15,7 +16,13 @@ import type { Ladder, LadderMatch } from "@shared/types";
 import { UserContext } from "../../../../context/UserContext";
 import { LadderContext } from "../../../../context/LadderContext";
 import { getMyScheduleMatches } from "../../../../helpers/ladderScheduleMatches";
+import {
+  ALL_DAYS_KEY,
+  buildScheduleDayTabs,
+  filterMatchesByDay,
+} from "../../../../helpers/ladderDayTabs";
 import MatchCard from "../../../../components/ladder/MatchCard";
+import LineTabs from "../../../../components/LineTabs";
 import GameGlow, { runGlow } from "../../../../components/GameCardGlow";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
 
@@ -35,6 +42,14 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const [matches, setMatches] = useState<LadderMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [glowMatchId, setGlowMatchId] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS_KEY);
+
+  // Only the days the user actually has matches on, to keep the strip tidy.
+  const dayTabs = useMemo(() => buildScheduleDayTabs(matches), [matches]);
+  const visibleMatches = useMemo(
+    () => filterMatchesByDay(matches, selectedDay),
+    [matches, selectedDay],
+  );
 
   const userId = currentUser?.userId;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -114,7 +129,14 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
 
   return (
     <Container testID="schedule-list">
-      {matches.map((match) => (
+      <LineTabs
+        scrollable
+        fontSize={13}
+        tabs={dayTabs}
+        activeTab={selectedDay}
+        onTabPress={setSelectedDay}
+      />
+      {visibleMatches.map((match) => (
         <CardWrap key={match.ladderMatchId}>
           <MatchCard
             testID={`schedule-card-${match.ladderMatchId}`}

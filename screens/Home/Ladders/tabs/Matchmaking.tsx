@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -8,9 +8,15 @@ import type { Ladder, LadderMatch } from "@shared/types";
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
 import { LadderContext } from "../../../../context/LadderContext";
 import { getOpenMatchmakingMatches } from "../../../../helpers/ladderScheduleMatches";
+import {
+  ALL_DAYS_KEY,
+  buildMatchmakingDayTabs,
+  filterMatchesByDay,
+} from "../../../../helpers/ladderDayTabs";
 import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
 import AcceptLadderMatchModal from "../../../../components/Modals/AcceptLadderMatchModal";
 import MatchCard from "../../../../components/ladder/MatchCard";
+import LineTabs from "../../../../components/LineTabs";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
 
 interface MatchmakingProps {
@@ -28,6 +34,14 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const [selectedMatch, setSelectedMatch] = useState<LadderMatch | null>(null);
   const [matches, setMatches] = useState<LadderMatch[]>([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS_KEY);
+
+  // Every day up to the end of the matchmaking window, for quick date picking.
+  const dayTabs = useMemo(() => buildMatchmakingDayTabs(ladder), [ladder]);
+  const visibleMatches = useMemo(
+    () => filterMatchesByDay(matches, selectedDay),
+    [matches, selectedDay],
+  );
 
   const { isSignedIn, isParticipant, membershipChecking } = useLadderJoin(
     ladder,
@@ -90,12 +104,19 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
       );
     }
 
-    if (matches.length === 0) {
+    if (visibleMatches.length === 0) {
+      const dayFiltered = selectedDay !== ALL_DAYS_KEY;
       return (
         <EmptyState testID="matchmaking-empty">
-          <EmptyTitle>No open matches right now</EmptyTitle>
+          <EmptyTitle>
+            {dayFiltered
+              ? "No open matches on this day"
+              : "No open matches right now"}
+          </EmptyTitle>
           <EmptyBody>
-            Check back soon or post a match to get a game going.
+            {dayFiltered
+              ? "Try another day, or post a match to get a game going."
+              : "Check back soon or post a match to get a game going."}
           </EmptyBody>
         </EmptyState>
       );
@@ -103,7 +124,7 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
 
     return (
       <List testID="matchmaking-list">
-        {matches.map((match) => (
+        {visibleMatches.map((match) => (
           <MatchCard
             key={match.ladderMatchId}
             testID={`matchmaking-card-${match.ladderMatchId}`}
@@ -132,6 +153,14 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
           <PostButtonText>{buttonLabel}</PostButtonText>
         </PostButton>
       )}
+
+      <LineTabs
+        scrollable
+        fontSize={13}
+        tabs={dayTabs}
+        activeTab={selectedDay}
+        onTabPress={setSelectedDay}
+      />
 
       {renderMatches()}
 
