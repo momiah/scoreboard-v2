@@ -138,13 +138,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
           </Tag>
           {/* Fee sits inline with the other tags, only on Matchmaking (before
               a match is accepted, i.e. no status column). */}
-          {!showStatus && (
-            <FeeTag hasCourtFee={hasCourtFee}>
-              <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
-            </FeeTag>
-          )}
         </TagGroup>
         {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
+        {!showStatus && (
+          <FeeTag hasCourtFee={hasCourtFee}>
+            <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
+          </FeeTag>
+        )}
       </TagRow>
     </Card>
   );
