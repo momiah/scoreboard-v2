@@ -136,19 +136,24 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
         activeTab={selectedDay}
         onTabPress={setSelectedDay}
       />
-      {visibleMatches.map((match) => (
-        <CardWrap key={match.ladderMatchId}>
-          <MatchCard
-            testID={`schedule-card-${match.ladderMatchId}`}
-            match={match}
-            onPress={handleOpenMatch}
-            showProgress
-          />
-          {glowMatchId === match.ladderMatchId && (
-            <GameGlow glowAnim={glowAnim} color="#00A2FF" />
-          )}
-        </CardWrap>
-      ))}
+      <ListScroll
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
+      >
+        {visibleMatches.map((match) => (
+          <CardWrap key={match.ladderMatchId}>
+            <MatchCard
+              testID={`schedule-card-${match.ladderMatchId}`}
+              match={match}
+              onPress={handleOpenMatch}
+              showProgress
+            />
+            {glowMatchId === match.ladderMatchId && (
+              <GameGlow glowAnim={glowAnim} color="#00A2FF" />
+            )}
+          </CardWrap>
+        ))}
+      </ListScroll>
     </Container>
   );
 };
@@ -156,8 +161,14 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
 export default Schedule;
 
 const Container = styled.View({
+  flex: 1,
   padding: 20,
   gap: 12,
+});
+
+// Scrolls the schedule list while the day strip stays pinned above.
+const ListScroll = styled.ScrollView({
+  flex: 1,
 });
 
 const CardWrap = styled.View({

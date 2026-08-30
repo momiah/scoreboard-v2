@@ -162,7 +162,12 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
         onTabPress={setSelectedDay}
       />
 
-      {renderMatches()}
+      <ListScroll
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      >
+        {renderMatches()}
+      </ListScroll>
 
       <AddLadderMatchModal
         modalVisible={postModalVisible}
@@ -185,8 +190,14 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
 export default Matchmaking;
 
 const Container = styled.View({
+  flex: 1,
   padding: 20,
   gap: 12,
+});
+
+// Scrolls the match list while the post button + day strip stay pinned above.
+const ListScroll = styled.ScrollView({
+  flex: 1,
 });
 
 const List = styled.View({
