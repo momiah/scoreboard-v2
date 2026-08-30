@@ -41,7 +41,7 @@ const QR_SIZE = Math.min(screenWidth - 120, 240);
 // the most content (error + address + tips + support note), so it gets a
 // taller box that fits everything without scrolling.
 const VERIFIER_HEIGHT = Math.min(screenHeight * 0.62, 520);
-const VERIFIER_HEIGHT_FAILED = Math.min(screenHeight * 0.85, 680);
+const VERIFIER_HEIGHT_FAILED = Math.min(screenHeight * 0.85, 600);
 
 // Always show the "checking" state for at least this long so a fast result
 // (or an immediate failure) doesn't flash an error that looks broken.

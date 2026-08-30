@@ -123,11 +123,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
         <StatCell>
           <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
           <StatTime>{match.matchTime?.start}</StatTime>
-          {!showStatus && (
-            <FeeTag hasCourtFee={hasCourtFee}>
-              <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
-            </FeeTag>
-          )}
         </StatCell>
       </HeaderRow>
 
@@ -142,7 +137,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <TagText>Best of {match.bestOf}</TagText>
           </Tag>
         </TagGroup>
-        {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
+        {tagStatus ? (
+          <TagStatus>{tagStatus}</TagStatus>
+        ) : (
+          <FeeTag hasCourtFee={hasCourtFee}>
+            <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
+          </FeeTag>
+        )}
       </TagRow>
     </Card>
   );
@@ -244,7 +245,6 @@ const AwaitingTag = styled.View({
   paddingHorizontal: 9,
   paddingVertical: 5,
   borderRadius: 8,
-  backgroundColor: "rgba(255, 165, 0, 0.15)",
 });
 
 const AwaitingTagText = styled.Text({
@@ -304,7 +304,7 @@ const StatTime = styled.Text({
 
 const FeeTag = styled.View<{ hasCourtFee: boolean }>(
   ({ hasCourtFee }: { hasCourtFee: boolean }) => ({
-    marginTop: 8,
+    // marginTop: 8,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 8,
