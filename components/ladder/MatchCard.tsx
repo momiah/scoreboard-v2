@@ -136,14 +136,15 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
             <TagText>Best of {match.bestOf}</TagText>
           </Tag>
+          {/* Fee sits inline with the other tags, only on Matchmaking (before
+              a match is accepted, i.e. no status column). */}
+          {!showStatus && (
+            <FeeTag hasCourtFee={hasCourtFee}>
+              <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
+            </FeeTag>
+          )}
         </TagGroup>
-        {tagStatus ? (
-          <TagStatus>{tagStatus}</TagStatus>
-        ) : (
-          <FeeTag hasCourtFee={hasCourtFee}>
-            <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
-          </FeeTag>
-        )}
+        {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
       </TagRow>
     </Card>
   );
