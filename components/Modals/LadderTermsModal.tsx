@@ -11,10 +11,6 @@ interface LadderTermsModalProps {
   onClose: () => void;
 }
 
-// Terms shown as an overlay ON TOP of the post/accept-match modal instead of a
-// navigation route. Rendering it as a nested Modal keeps the parent modal (and
-// all its form state) mounted, so closing Terms returns the user to exactly
-// what they had entered.
 const LadderTermsModal: React.FC<LadderTermsModalProps> = ({
   visible,
   onClose,

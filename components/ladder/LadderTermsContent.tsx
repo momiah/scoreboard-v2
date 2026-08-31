@@ -37,8 +37,6 @@ export const LADDER_TERMS: TermsSection[] = [
   },
 ];
 
-// The intro + terms cards, without any surrounding scroll/header — so it can be
-// rendered both on the full-screen Terms route and inside the Terms modal.
 const LadderTermsList: React.FC = () => (
   <>
     <Intro>
