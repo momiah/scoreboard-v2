@@ -67,9 +67,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   const [upcomingLadders, setUpcomingLadders] = useState<Ladder[]>([]);
   const [upcomingLaddersLoading, setUpcomingLaddersLoading] = useState(false);
   const [ladderById, setLadderById] = useState<Ladder | null>(null);
-  // Ladder ids the current user has joined this session — optimistic cache so
-  // gating flips to "participant" immediately after a join without re-reading
-  // the ladderParticipants subcollection.
   const [joinedLadderIds, setJoinedLadderIds] = useState<string[]>([]);
 
   const fetchLadders = useCallback(
@@ -167,7 +164,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           return { success: true, alreadyJoined: true };
         }
 
-        // Write the participant doc and bump the aggregate count atomically.
         const batch = writeBatch(db);
         batch.set(participantRef, buildLadderParticipant(user));
         batch.update(ladderRef, { participantCount: increment(1) });
@@ -233,8 +229,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  // Teams scaffold: writes/reads the ladders/{id}/ladderTeams subcollection.
-  // No caller yet — ready for the doubles team-join flow.
   const addLadderTeam = useCallback(
     async (ladderId: string, team: TeamStats): Promise<boolean> => {
       if (!ladderId || !team?.teamKey) return false;
@@ -490,25 +484,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             ladderMatchId: snap.id,
           };
 
-          // Only an accepted match can be checked in.
           if (!match.acceptedBy) {
             throw new CheckInLadderMatchError("NOT_ACCEPTED");
           }
-          // Only a participant of THIS match may check it in — blocks a
-          // bystander (or a different match's player) who is shown/handed the
-          // code. Combined with the location gate, check-in stays locked to the
-          // actual players at the court.
           if (!match.participants.includes(userId)) {
             throw new CheckInLadderMatchError("NOT_A_PARTICIPANT");
           }
-          // Idempotent: nothing to do once this player is already checked in.
           if (getLadderCheckedInUserIds(match).includes(userId)) {
             return;
           }
 
-          // Add just this player's check-in; the games unlock only once the
-          // helper marks the match complete (all participants in). Cast the ref
-          // to loosen Firestore's typed update for the nested checkIn object.
           transaction.update(matchRef as DocumentReference, {
             checkIn: addLadderMatchCheckIn(match, userId),
           });

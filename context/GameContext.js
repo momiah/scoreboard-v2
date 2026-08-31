@@ -88,9 +88,6 @@ const GameProvider = ({ children }) => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  // Same indicator as recentGameResult, but keyed off the per-MATCH log
-  // (ladderResultLog) rather than the per-game resultLog. Green if the last
-  // match was a win, red otherwise. Colours intentionally unchanged.
   const recentMatchResult = (ladderResultLog = []) => {
     const lastResult = ladderResultLog[ladderResultLog.length - 1];
 

@@ -1,10 +1,5 @@
 import type { Court } from "@shared/types";
 
-/**
- * How close (in metres) a player's device must be to the court to be allowed to
- * check in. Deliberately generous to allow for GPS drift indoors / near
- * buildings while still proving the player has actually arrived at the venue.
- */
 export const CHECKIN_RADIUS_METERS = 500;
 
 export interface LatLng {
@@ -15,9 +10,6 @@ export interface LatLng {
 const EARTH_RADIUS_METERS = 6371000;
 const toRadians = (deg: number): number => (deg * Math.PI) / 180;
 
-/**
- * Great-circle (haversine) distance in metres between two coordinates.
- */
 export const distanceInMeters = (a: LatLng, b: LatLng): number => {
   const dLat = toRadians(b.latitude - a.latitude);
   const dLon = toRadians(b.longitude - a.longitude);
@@ -29,7 +21,6 @@ export const distanceInMeters = (a: LatLng, b: LatLng): number => {
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
 };
 
-/** Pull the court's coordinates, or `null` when the court has no geocode. */
 export const getCourtCoords = (court?: Court | null): LatLng | null => {
   const latitude = court?.location?.latitude;
   const longitude = court?.location?.longitude;
@@ -39,10 +30,6 @@ export const getCourtCoords = (court?: Court | null): LatLng | null => {
   return { latitude, longitude };
 };
 
-/**
- * True when `device` is within {@link CHECKIN_RADIUS_METERS} of `court`. Returns
- * `false` when the court has no coordinates (can't be verified).
- */
 export const isWithinCheckInRadius = (
   device: LatLng,
   court?: Court | null,
@@ -52,7 +39,6 @@ export const isWithinCheckInRadius = (
   return distanceInMeters(device, courtCoords) <= CHECKIN_RADIUS_METERS;
 };
 
-/** Human-readable single-line address for a court (for display / map links). */
 export const formatCourtAddress = (court?: Court | null): string =>
   [
     court?.courtName,

@@ -7,8 +7,6 @@ import PerformanceRow from "./PerformanceRow";
 import { enrichPlayers } from "../../../helpers/enrichPlayers";
 import LoadingOverlay from "../../LoadingOverlay";
 
-// `ladder` (optional): when provided, rows show a CP cell and the per-match
-// recent-result caret.
 /**
  * @param {{ playersData: any[], ladder?: any }} props
  */

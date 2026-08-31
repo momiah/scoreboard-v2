@@ -15,15 +15,6 @@ const getOrdinalSuffix = (num) => {
 };
 
 /**
- * A single performance-table row: rank · name (+recent-result caret) · Wins ·
- * PD · [CP on ladders] · rank medal. Shared by PlayerPerformance (list) and the
- * ladder Summary (single row).
- *
- * - `rank`: 1-based position; 0 renders as a "-" dash (unranked, no wins yet).
- * - `ladder`: when set, uses the per-MATCH result caret and shows a CP cell.
- * - `cp`: the per-ladder Court Points value shown in the CP cell.
- */
-/**
  * @param {{ player: any, rank: number, onPress?: any, ladder?: any, cp?: number }} props
  */
 const PerformanceRow = ({

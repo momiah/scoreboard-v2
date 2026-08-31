@@ -91,11 +91,8 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [termsVisible, setTermsVisible] = useState(false);
 
-  // Matches can only be posted before the ladder's playoffs begin.
   const playoffStartDate = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
 
-  // Courts allowed for this ladder. Kept in refs so the add-court flow can
-  // read the freshly-updated set synchronously (avoids stale-closure lookups).
   const allowedCourtIdsRef = useRef<string[]>([]);
   const courtsRef = useRef<Court[]>([]);
 
@@ -159,9 +156,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     if (court) setErrorMessage(null);
   };
 
-  // Adding a court from the ladder route: create it unverified (submitted by
-  // the current user, tagged as ladder-submitted), attach it to this ladder's
-  // courtIds so it's selectable straight away, and flag it for verification.
   const handleAddCourt = async (
     courtDetails: CourtDetails,
   ): Promise<string | null> => {
@@ -355,7 +349,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                       onChangeText={onChange}
                       onBlur={onBlur}
                       style={{
-                        // marginTop: 40,
                         marginBottom: 16,
                         marginHorizontal: 10,
                         backgroundColor: "rgba(255, 255, 255, 0.1)",

@@ -39,9 +39,6 @@ const ChatRoom = ({
   competitionName,
   endDate,
   competitionType,
-  // Optional explicit chat collection path (segments) — used for match-scoped
-  // ladder chats, e.g. ["ladders", ladderId, "ladderMatches", matchId, "chat"].
-  // When omitted, falls back to the league/tournament path.
   chatPath,
 }) => {
   const { currentUser } = useContext(UserContext);

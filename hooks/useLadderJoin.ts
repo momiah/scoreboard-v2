@@ -29,8 +29,6 @@ export const useLadderJoin = (
   const ladderId = ladder?.ladderId;
   const userId = currentUser?.userId;
 
-  // Membership lives in the ladderParticipants subcollection, so read it once
-  // per ladder/user and fall back to the optimistic session cache.
   const [remoteParticipant, setRemoteParticipant] = useState(false);
   const [membershipChecking, setMembershipChecking] = useState(false);
 

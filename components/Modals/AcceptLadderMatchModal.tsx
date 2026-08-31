@@ -63,7 +63,6 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     setModalVisible(false);
   };
 
-
   const userId = currentUser?.userId;
   const isOwnMatch =
     !!match && !!userId && match.participants.includes(userId);
@@ -76,8 +75,6 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     );
   };
 
-  // Tell the poster their match was accepted. Fire-and-forget: a notification
-  // failure must not break the accept flow.
   const notifyPosterOfAccept = async (accepted: LadderMatch) => {
     const posterId = accepted.createdBy;
     if (!posterId || posterId === userId) return;

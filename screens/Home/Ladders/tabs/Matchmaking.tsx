@@ -36,7 +36,6 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS_KEY);
 
-  // Every day up to the end of the matchmaking window, for quick date picking.
   const dayTabs = useMemo(() => buildMatchmakingDayTabs(ladder), [ladder]);
   const visibleMatches = useMemo(
     () => filterMatchesByDay(matches, selectedDay),
@@ -48,8 +47,6 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     () => setPostModalVisible(true),
   );
 
-  // Subscribe in realtime so a freshly posted match (or one that's just been
-  // accepted) appears/disappears without needing to refetch on focus.
   useFocusEffect(
     useCallback(() => {
       setMatchesLoading(true);
@@ -195,7 +192,6 @@ const Container = styled.View({
   gap: 12,
 });
 
-// Scrolls the match list while the post button + day strip stay pinned above.
 const ListScroll = styled.ScrollView({
   flex: 1,
 });

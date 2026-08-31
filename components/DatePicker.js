@@ -72,8 +72,6 @@ const DatePicker = ({
     }
   }, [hasEndDate, leagueLengthInMonths, startDate, setValue]);
 
-  // Matches must be posted BEFORE playoffs begin, so cap selection at the day
-  // before the playoff start; otherwise fall back to the next 3 months.
   const maxSelectableDate = playoffStartDate
     ? new Date(
         playoffStartDate.getFullYear(),

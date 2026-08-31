@@ -21,17 +21,9 @@ interface CheckinControl {
 interface MatchCardProps {
   match: LadderMatch;
   onPress?: (match: LadderMatch) => void;
-  // Show the match status (awaiting-approval / completed) at the far right of
-  // the tag row. Only meaningful once a match is accepted, so it's off for
-  // Matchmaking. Used as a preview in the Schedule list.
   showProgress?: boolean;
-  // When set, renders the self check-in control at the far right of the tag row
-  // (button → awaiting-approval / tick). Used on the match details screen.
   checkin?: CheckinControl;
-  // Renders with no card background/border/padding and no text clipping — for
-  // embedding the match details flat on a parent surface.
   flat?: boolean;
-  // When set, an external-link icon next to the location opens it (e.g. in maps).
   onLocationPress?: () => void;
   testID?: string;
 }
@@ -56,9 +48,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
 
-  // The far-right slot of the tag row (the stat column only ever shows date +
-  // time, plus the fee tag on Matchmaking). One place, one status:
-  //   check-in button → awaiting-approval chip → completed / checked-in tick.
   const showStatus = showProgress || !!checkin;
   const tagStatus = !showStatus ? null : checkin &&
     !checkin.checkedIn &&
@@ -126,7 +115,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </StatCell>
       </HeaderRow>
 
-      {/* Full-width row: tags on the left, status on the far right. */}
       <TagRow flat={flat}>
         <TagGroup>
           <Tag>
@@ -136,8 +124,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
             <TagText>Best of {match.bestOf}</TagText>
           </Tag>
-          {/* Fee sits inline with the other tags, only on Matchmaking (before
-              a match is accepted, i.e. no status column). */}
         </TagGroup>
         {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
         {!showStatus && (
@@ -219,7 +205,6 @@ const TagGroup = styled.View({
   flexShrink: 1,
 });
 
-// Sits at the far right of the tag row (tags on the left via space-between).
 const TagStatus = styled.View({
   flexShrink: 0,
 });
@@ -305,7 +290,6 @@ const StatTime = styled.Text({
 
 const FeeTag = styled.View<{ hasCourtFee: boolean }>(
   ({ hasCourtFee }: { hasCourtFee: boolean }) => ({
-    // marginTop: 8,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 8,

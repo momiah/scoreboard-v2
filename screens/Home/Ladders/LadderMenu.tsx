@@ -57,7 +57,6 @@ const LadderMenu: React.FC = () => {
         {
           text: "Leave",
           style: "destructive",
-          // TODO: wire up leaveLadder once the backend action exists.
           onPress: () =>
             showBottomToast("Leaving a ladder is coming soon", "info"),
         },

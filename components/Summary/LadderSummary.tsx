@@ -94,7 +94,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const isPaid = ladder.entryFee > 0;
   const ladderId = ladder.ladderId;
 
-  // Participants live in the ladderParticipants subcollection.
   useEffect(() => {
     let active = true;
     fetchLadderParticipants(ladderId).then((list) => {
@@ -121,9 +120,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const hasPrizesDistributed =
     ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
 
-  // The signed-in participant's own performance row: the enriched player (for
-  // the global rank medal), their ladder rank (0 = unranked → dash), and their
-  // per-ladder CP. Null when the user isn't a participant.
   const [userSummaryRow, setUserSummaryRow] = useState<{
     player: EnrichedPlayer;
     rank: number;
@@ -147,10 +143,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         const [enrichedMe] = (await enrichPlayers(getUserById, [
           me,
         ])) as EnrichedPlayer[];
-        // Rank from per-ladder wins (0 when the user hasn't won a game yet).
         const rank = getPlayerRankInCompetition(participants, uid);
-        // Per-ladder CP is the participant record's own XP (global XP is what
-        // enrichPlayers injects and drives the medal, so read the raw record).
         const cp = me.XP ?? 0;
         if (active) setUserSummaryRow({ player: enrichedMe, rank, cp });
       } catch (error) {
@@ -404,7 +397,6 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
-  // marginBottom: 40,
 });
 
 const PrizePotValue = styled.Text({
@@ -440,9 +432,6 @@ const StatsRow = styled.View({
   marginBottom: 20,
   padding: 16,
   borderRadius: 12,
-  // backgroundColor: "rgba(255, 255, 255, 0.04)",
-  // borderWidth: 1,
-  // borderColor: "#192336",
 });
 
 const StatHeadingContainer = styled.View({
@@ -479,9 +468,6 @@ const MySummarySection = styled.View({
   marginBottom: 20,
 });
 
-// Full-bleed wrapper: negative margins cancel the Container's 20px padding so
-// the reused PerformanceRow spans the full screen width; the inner padding
-// keeps the content inset.
 const MySummaryCard = styled.View({
   marginHorizontal: -20,
   paddingHorizontal: 20,

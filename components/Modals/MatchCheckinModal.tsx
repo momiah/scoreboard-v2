@@ -36,27 +36,16 @@ import type { Court } from "@shared/types";
 const screenWidth = Dimensions.get("window").width;
 const screenHeight = Dimensions.get("window").height;
 const QR_SIZE = Math.min(screenWidth - 120, 240);
-// Fixed height for the location verifier so the modal doesn't shrink when the
-// tips / error content disappears on a successful check. The failed state has
-// the most content (error + address + tips + support note), so it gets a
-// taller box that fits everything without scrolling.
 const VERIFIER_HEIGHT = Math.min(screenHeight * 0.62, 520);
 const VERIFIER_HEIGHT_FAILED = Math.min(screenHeight * 0.85, 600);
 
-// Always show the "checking" state for at least this long so a fast result
-// (or an immediate failure) doesn't flash an error that looks broken.
 const MIN_CHECK_MS = 1200;
 
-// Shown on the location step so players know how to get verified.
 const CHECKIN_TIPS = [
   "Make sure you've actually arrived at the court.",
   "Turn your device location / GPS on and allow access.",
   "Turn off any VPN — it can place you in the wrong location.",
 ];
-
-/* -------------------------------------------------------------------------- */
-/*  Location verifier — the entry point for check-in                          */
-/* -------------------------------------------------------------------------- */
 
 type VerifyStatus = "checking" | "verified" | "failed";
 
@@ -66,7 +55,6 @@ interface LocationVerifierModalProps {
   match: LadderMatch;
   ladderId: string;
   currentUserId?: string;
-  // Called once check-in is persisted (via the check-in modal opened from here).
   onCheckedIn: () => void;
 }
 
@@ -82,11 +70,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 
   const [status, setStatus] = useState<VerifyStatus>("checking");
   const [showCheckin, setShowCheckin] = useState(false);
-  // The court we verify against. Defaults to the match prop, but each check
-  // re-fetches the match so edits to its coordinates are picked up live.
   const [court, setCourt] = useState<Court>(match.court);
-  // Bumped on each verify run so a stale/slow run can't overwrite a newer one
-  // (e.g. the modal was reopened, or the user tapped "Check again").
   const runIdRef = useRef(0);
 
   const address = formatCourtAddress(court);
@@ -98,9 +82,6 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 
     let result: VerifyStatus = "failed";
     try {
-      // Re-fetch the match so we compare against the latest court coordinates
-      // (the court is stored on the match, so a Firestore edit only shows up
-      // after a fresh read). Fall back to the prop if the fetch fails.
       let targetCourt = match.court;
       try {
         const matches = await fetchLadderMatches(ladderId);
@@ -119,8 +100,6 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       if (courtCoords) {
         const { granted } = await Location.requestForegroundPermissionsAsync();
         if (granted) {
-          // Force a fresh, high-accuracy fix rather than a cached last-known
-          // position, so moving/opening again re-checks the real location.
           const position = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.High,
           });
@@ -145,8 +124,6 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       result = "failed";
     }
 
-    // Keep the spinner up for a minimum beat so the result never appears
-    // instantly (which reads as a broken/error screen).
     const elapsed = Date.now() - startedAt;
     if (elapsed < MIN_CHECK_MS) {
       await new Promise((resolve) =>
@@ -154,22 +131,16 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       );
     }
 
-    // Only apply the result if this is still the latest run.
     if (runIdRef.current === runId) {
       setStatus(result);
     }
   };
 
-  // The flow is always verify-location → check-in, with NO persistence of the
-  // location result: every open starts a fresh verification. This prevents a
-  // player verifying at the court, leaving, then checking in later.
   useEffect(() => {
     if (visible) {
       setShowCheckin(false);
       verify();
     } else {
-      // Closing resets everything and invalidates any in-flight verify, so a
-      // stale "verified" state can never show on the next open.
       runIdRef.current++;
       setStatus("checking");
       setShowCheckin(false);
@@ -294,8 +265,6 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
         </VerifierContent>
       </ModalContainer>
 
-      {/* Nested so the check-in modal stacks ABOVE the verifier (which stays
-            mounted underneath), matching the AddLeagueModal pattern. */}
       {showCheckin && (
         <MatchCheckinModal
           visible={showCheckin}
@@ -310,18 +279,12 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*  Check-in modal — poster shows QR, accepter scans                          */
-/* -------------------------------------------------------------------------- */
-
 interface MatchCheckinModalProps {
   visible: boolean;
   onClose: () => void;
   match: LadderMatch;
   ladderId: string;
   currentUserId?: string;
-  // Called once check-in is persisted (accepter scans, or poster's screen sees
-  // the persisted handshake). The parent refreshes the match and unlocks games.
   onCheckedIn: () => void;
 }
 
@@ -343,23 +306,15 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const qrValue = JSON.stringify(buildLadderCheckInPayload(match));
 
   const [processing, setProcessing] = useState(false);
-  // The accepter's manual fallback: the code read out by the poster when the
-  // QR can't be scanned.
   const [code, setCode] = useState("");
-  // Live match, refreshed by the subscription so every device sees who has
-  // checked in and when the match becomes complete.
   const [liveMatch, setLiveMatch] = useState<LadderMatch>(match);
-  // Guards against the camera firing onBarcodeScanned repeatedly for one code.
   const handledRef = useRef(false);
 
-  // Everyone checks in from their own device; games unlock only once all
-  // participants are in. Derived live from the subscription.
   const selfCheckedIn =
     !!currentUserId && hasUserCheckedIn(liveMatch, currentUserId);
   const checkinComplete = isLadderMatchCheckedIn(liveMatch);
   const progress = getLadderCheckInProgress(liveMatch);
 
-  // Reset transient state whenever the modal is (re)opened.
   useEffect(() => {
     if (visible) {
       handledRef.current = false;
@@ -369,7 +324,6 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     }
   }, [visible, match]);
 
-  // Watch the match so both sides see check-ins land and the completion flip.
   useEffect(() => {
     if (!visible) return;
     const unsubscribe = subscribeToLadderMatches(
@@ -389,16 +343,12 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     onClose();
   };
 
-  // Records the current user's own check-in. Shared by the scan, the manual
-  // code, and the poster's automatic check-in on open.
   const recordCheckIn = async () => {
     if (handledRef.current || processing) return;
     if (!currentUserId) {
       showBottomToast("You need to be signed in to check in", "error");
       return;
     }
-    // Fast-fail if the user isn't in this match (the write enforces this too,
-    // but this gives immediate, clearer feedback to a non-participant).
     if (!match.participants.includes(currentUserId)) {
       showBottomToast("This code isn't for a match you're in", "error");
       return;
@@ -412,16 +362,12 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       currentUserId,
     );
     setProcessing(false);
-    // On success the subscription reflects the new state (self checked in, and
-    // completion once everyone is in). handledRef stays set to stop re-scans.
     if (!success) {
       showBottomToast("Couldn't complete check-in. Please try again.", "error");
       handledRef.current = false;
     }
   };
 
-  // The poster shows the QR but must also count as present — they reached this
-  // screen through the location gate, so check them in automatically on open.
   useEffect(() => {
     if (visible && isPoster && !selfCheckedIn) {
       recordCheckIn();
@@ -635,9 +581,6 @@ const ModalContent = styled.View({
   gap: 14,
 });
 
-// Fixed-height verifier card: the body flexes/centres so shorter states
-// (checking / verified) don't shrink the modal, and the button stays pinned
-// to the bottom across every state.
 const VerifierContent = styled(ModalContent)<{ tall?: boolean }>(
   ({ tall }: { tall?: boolean }) => ({
     height: tall ? VERIFIER_HEIGHT_FAILED : VERIFIER_HEIGHT,
@@ -645,9 +588,6 @@ const VerifierContent = styled(ModalContent)<{ tall?: boolean }>(
   }),
 );
 
-// A ScrollView so the tallest state (failed: tips + support text) can scroll
-// within the fixed height instead of clipping, while shorter states stay
-// vertically centred.
 const VerifierBody = styled.ScrollView.attrs({
   contentContainerStyle: {
     flexGrow: 1,
@@ -809,8 +749,6 @@ const WaitingText = styled.Text({
   fontWeight: "600",
 });
 
-// Small, subtle fallback — the QR/scan is the primary path; the reference is
-// only for emergencies (e.g. a camera that won't scan).
 const EmergencyRow = styled.View({
   alignItems: "center",
   gap: 4,

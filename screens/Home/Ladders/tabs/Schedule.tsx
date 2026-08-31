@@ -28,7 +28,6 @@ import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonCompon
 
 interface ScheduleProps {
   ladder: Ladder;
-  // Match to highlight with a blue glow (e.g. arriving from an accept notification).
   highlightMatchId?: string;
 }
 
@@ -44,7 +43,6 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const [glowMatchId, setGlowMatchId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS_KEY);
 
-  // Only the days the user actually has matches on, to keep the strip tidy.
   const dayTabs = useMemo(() => buildScheduleDayTabs(matches), [matches]);
   const visibleMatches = useMemo(
     () => filterMatchesByDay(matches, selectedDay),
@@ -77,7 +75,6 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
     }, [fetchLadderMatches, ladder.ladderId, userId]),
   );
 
-  // Glow the highlighted match once it's in the list (fires a single time).
   useEffect(() => {
     if (
       !highlightMatchId ||
@@ -166,7 +163,6 @@ const Container = styled.View({
   gap: 12,
 });
 
-// Scrolls the schedule list while the day strip stays pinned above.
 const ListScroll = styled.ScrollView({
   flex: 1,
 });

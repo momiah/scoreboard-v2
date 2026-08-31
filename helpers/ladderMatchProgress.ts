@@ -33,20 +33,11 @@ const teamHasUser = (team: GameTeam | undefined, userId: string): boolean =>
 export type LadderMatchOutcome = "win" | "loss" | "undecided";
 
 export interface LadderMatchScore {
-  /** Games won by the current user's team. */
   mine: number;
-  /** Games won by the opponent(s). */
   theirs: number;
-  /** Whether the match is won, lost, or still undecided for the current user. */
   outcome: LadderMatchOutcome;
 }
 
-/**
- * Current games-won score for the match from the current user's perspective
- * (mine on the left). Only approved games with a decided result count. The
- * outcome is "win"/"loss" once either side reaches the best-of majority, else
- * "undecided".
- */
 export const getLadderMatchScore = (
   match: Pick<LadderMatch, "games" | "bestOf">,
   userId: string,

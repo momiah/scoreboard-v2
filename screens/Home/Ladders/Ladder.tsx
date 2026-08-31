@@ -111,8 +111,6 @@ const Ladder: React.FC = () => {
     );
   }
 
-  // const status = ladderById ? STATUS_LABELS[ladderById.status] : undefined;
-
   return (
     <Screen>
       <LoadingOverlay visible={ladderLoading} loadingText="Ladder" />

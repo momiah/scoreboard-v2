@@ -54,15 +54,10 @@ const MatchDetails: React.FC = () => {
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LobbyTab>("Game Lobby");
-  // Check-in is persisted on the match (a QR handshake). The modal drives it;
-  // the card button and Game Lobby derive their state from match.checkIn.
   const [checkinModalVisible, setCheckinModalVisible] = useState(false);
 
   const userId = currentUser?.userId;
 
-  // Live-subscribe to the match while the screen is focused, so check-ins (and
-  // any other change) update the card status and Game Lobby in realtime on
-  // every device — no manual refresh needed.
   useFocusEffect(
     useCallback(() => {
       const unsubscribe = subscribeToLadderMatches(
@@ -74,7 +69,6 @@ const MatchDetails: React.FC = () => {
             setMatch(resolved);
             setNotFound(false);
           } else {
-            // Missing from the ladder: only "not found" when we had no seed.
             setNotFound(!matchParam);
           }
         },
@@ -106,20 +100,13 @@ const MatchDetails: React.FC = () => {
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const isAccepted = match.matchStatus === LADDER_MATCH_STATUS.ACCEPTED;
-  // Match-level: all participants in (drives the Game Lobby lock).
   const checkedIn = isCompleted || isLadderMatchCheckedIn(match);
-  // This player's own status (drives the card button → "Checked in" tick, even
-  // in doubles while waiting on the others).
   const selfCheckedIn =
     isCompleted || (!!userId && hasUserCheckedIn(match, userId));
   const handleCheckin = () => {
     if (!selfCheckedIn) setCheckinModalVisible(true);
   };
-  // The live subscription already reflects the check-in; nothing to refresh.
   const handleCheckedIn = () => {};
-  // Check-in only exists once a match is accepted (and stays as a tick when
-  // completed). Before that there's no opponent to check in with, so the card
-  // shows no check-in control.
   const checkinControl =
     isAccepted || isCompleted
       ? { checkedIn: selfCheckedIn, onPress: handleCheckin }

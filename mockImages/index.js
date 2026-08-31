@@ -16,10 +16,6 @@ import ladderGold from "./gold-ladder-v2.png";
 import ladderSilver from "./silver-ladder-v2.png";
 import ladderBronze from "./bronze-ladder-v2.png";
 import ladderRuby from "./ruby-ladder-v2.png";
-// import medalGoldLow from "./medal-gold-low-q.png";
-// import medalSilverLow from "./medal-silver-low-q.png";
-// import medalBronzeLow from "./medal-bronze-low-q.png";
-// import medalRubyLow from "./medal-ruby-low-q.png";
 
 // export const medals = {
 //   gold: { high: medalGold, low: medalGoldLow },
