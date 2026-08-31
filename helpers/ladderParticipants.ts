@@ -8,11 +8,6 @@ export type LadderJoinUser = Pick<
   profileDetail?: Pick<UserProfile["profileDetail"], "memberSince">;
 };
 
-/**
- * Build the ScoreboardProfile document written to the
- * `ladders/{ladderId}/ladderParticipants/{userId}` subcollection when a player
- * joins a ladder.
- */
 export const buildLadderParticipant = (
   user: LadderJoinUser,
 ): ScoreboardProfile => ({

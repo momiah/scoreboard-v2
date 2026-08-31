@@ -21,17 +21,9 @@ interface CheckinControl {
 interface MatchCardProps {
   match: LadderMatch;
   onPress?: (match: LadderMatch) => void;
-  // Show the match status (awaiting-approval / completed) at the far right of
-  // the tag row. Only meaningful once a match is accepted, so it's off for
-  // Matchmaking. Used as a preview in the Schedule list.
   showProgress?: boolean;
-  // When set, renders the self check-in control at the far right of the tag row
-  // (button → awaiting-approval / tick). Used on the match details screen.
   checkin?: CheckinControl;
-  // Renders with no card background/border/padding and no text clipping — for
-  // embedding the match details flat on a parent surface.
   flat?: boolean;
-  // When set, an external-link icon next to the location opens it (e.g. in maps).
   onLocationPress?: () => void;
   testID?: string;
 }
@@ -56,9 +48,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
 
-  // The far-right slot of the tag row (the stat column only ever shows date +
-  // time, plus the fee tag on Matchmaking). One place, one status:
-  //   check-in button → awaiting-approval chip → completed / checked-in tick.
   const showStatus = showProgress || !!checkin;
   const tagStatus = !showStatus ? null : checkin &&
     !checkin.checkedIn &&
@@ -77,7 +66,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
         {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
       </AwaitingTagText>
     </AwaitingTag>
-  ) : isCompleted || checkin ? (
+  ) : checkin && checkin.checkedIn ? (
+    <CheckedInTag testID={testID ? `${testID}-checked-in` : undefined}>
+      <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
+      <CheckedInTagText>Checked in</CheckedInTagText>
+    </CheckedInTag>
+  ) : isCompleted ? (
     <Ionicons
       name="checkmark-circle-outline"
       size={22}
@@ -118,15 +112,9 @@ const MatchCard: React.FC<MatchCardProps> = ({
         <StatCell>
           <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
           <StatTime>{match.matchTime?.start}</StatTime>
-          {!showStatus && (
-            <FeeTag hasCourtFee={hasCourtFee}>
-              <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
-            </FeeTag>
-          )}
         </StatCell>
       </HeaderRow>
 
-      {/* Full-width row: tags on the left, status on the far right. */}
       <TagRow flat={flat}>
         <TagGroup>
           <Tag>
@@ -138,6 +126,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
           </Tag>
         </TagGroup>
         {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
+        {!showStatus && (
+          <FeeTag hasCourtFee={hasCourtFee}>
+            <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
+          </FeeTag>
+        )}
       </TagRow>
     </Card>
   );
@@ -212,7 +205,6 @@ const TagGroup = styled.View({
   flexShrink: 1,
 });
 
-// Sits at the far right of the tag row (tags on the left via space-between).
 const TagStatus = styled.View({
   flexShrink: 0,
 });
@@ -239,11 +231,26 @@ const AwaitingTag = styled.View({
   paddingHorizontal: 9,
   paddingVertical: 5,
   borderRadius: 8,
-  backgroundColor: "rgba(255, 165, 0, 0.15)",
 });
 
 const AwaitingTagText = styled.Text({
   color: "#FFA500",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const CheckedInTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(0, 200, 83, 0.15)",
+});
+
+const CheckedInTagText = styled.Text({
+  color: "#5ef0a6",
   fontSize: 11,
   fontWeight: "600",
 });
@@ -283,7 +290,6 @@ const StatTime = styled.Text({
 
 const FeeTag = styled.View<{ hasCourtFee: boolean }>(
   ({ hasCourtFee }: { hasCourtFee: boolean }) => ({
-    marginTop: 8,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 8,

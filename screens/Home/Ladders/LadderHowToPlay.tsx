@@ -512,11 +512,6 @@ const HighlightText = styled.Text({
   textAlign: "center",
 });
 
-// const HighlightStrong = styled.Text({
-//   color: "#00A2FF",
-//   fontWeight: "bold",
-// });
-
 const Table = styled.View({
   borderRadius: 12,
   borderWidth: 1,

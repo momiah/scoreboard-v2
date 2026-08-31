@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useContext } from "react";
 import { FlatList } from "react-native";
 import styled from "styled-components/native";
-import { GameContext } from "../../../context/GameContext";
 import { UserContext } from "../../../context/UserContext";
-import MedalDisplay from "../MedalDisplay";
 import PlayerDetails from "../../Modals/PlayerDetailsModal";
+import PerformanceRow from "./PerformanceRow";
 import { enrichPlayers } from "../../../helpers/enrichPlayers";
-import { formatDisplayName } from "../../../helpers/formatDisplayName";
 import LoadingOverlay from "../../LoadingOverlay";
 
-const PlayerPerformance = ({ playersData }) => {
-  const { findRankIndex, recentGameResult } = useContext(GameContext);
+/**
+ * @param {{ playersData: any[], ladder?: any }} props
+ */
+const PlayerPerformance = ({ playersData, ladder = null }) => {
   const { getUserById } = useContext(UserContext);
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -40,53 +40,19 @@ const PlayerPerformance = ({ playersData }) => {
     loadEnrichedPlayers();
   }, [playersData, getUserById]);
 
-  const renderPlayer = ({ item: player, index }) => {
-    const playerXp = player.XP || 0;
-    const pointDifference = player.totalPointDifference || 0;
-    const rankLevel = findRankIndex(playerXp) + 1;
-    const displayName = formatDisplayName(player);
-
-    return (
-      <TableRow
-        key={player.userId}
-        onPress={() => {
-          setShowPlayerDetails(true);
-          setSelectedPlayer(player);
-        }}
-      >
-        <TableCell>
-          <Rank>
-            {index + 1}
-            {index === 0
-              ? "st"
-              : index === 1
-                ? "nd"
-                : index === 2
-                  ? "rd"
-                  : "th"}
-          </Rank>
-        </TableCell>
-        <PlayerNameCell>
-          <PlayerName>{displayName}</PlayerName>
-          {recentGameResult(player.resultLog)}
-        </PlayerNameCell>
-        <TableCell>
-          <StatTitle>Wins</StatTitle>
-          <Stat>{player.numberOfWins}</Stat>
-        </TableCell>
-        <TableCell>
-          <StatTitle>PD</StatTitle>
-          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
-            {pointDifference}
-          </Stat>
-        </TableCell>
-        <TableCell>
-          <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
-          <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
-        </TableCell>
-      </TableRow>
-    );
-  };
+  const renderPlayer = ({ item: player, index }) => (
+    <PerformanceRow
+      key={player.userId}
+      player={player}
+      rank={index + 1}
+      ladder={ladder}
+      cp={player.cp}
+      onPress={(p) => {
+        setSelectedPlayer(p);
+        setShowPlayerDetails(true);
+      }}
+    />
+  );
 
   return (
     <TableContainer>
@@ -118,61 +84,12 @@ const TableContainer = styled.View({
   flex: 1,
 });
 
-const TableRow = styled.TouchableOpacity({
-  flexDirection: "row",
-});
-
 const EmptyState = styled.Text({
   color: "#aaa",
   fontSize: 14,
   textAlign: "center",
   flex: 1,
   marginTop: 40,
-});
-
-const TableCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  paddingTop: 15,
-  paddingBottom: 15,
-  borderTopWidth: 1,
-  borderColor: "1px solid rgb(9, 33, 62)",
-});
-
-const PlayerNameCell = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingTop: 15,
-  paddingBottom: 15,
-  paddingRight: 5,
-  borderTopWidth: 1,
-  width: 130,
-  borderColor: "1px solid rgb(9, 33, 62)",
-});
-
-const PlayerName = styled.Text({
-  fontSize: 14,
-  fontWeight: "bold",
-  color: "white",
-});
-
-const Rank = styled.Text({
-  fontSize: 14,
-  color: "#00A2FF",
-  fontWeight: "bold",
-});
-
-const StatTitle = styled.Text({
-  fontSize: 12,
-  color: "#aaa",
-});
-
-const Stat = styled.Text({
-  fontSize: 14,
-  fontWeight: "bold",
-  color: "white",
 });
 
 export default PlayerPerformance;

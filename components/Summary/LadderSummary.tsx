@@ -6,13 +6,17 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_STATUS, COMPETITION_TYPES } from "@shared";
 import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
-import { sortPlayersByPlacement } from "@shared/helpers/getRankInCompetition";
+import {
+  sortPlayersByPlacement,
+  getPlayerRankInCompetition,
+} from "@shared/helpers/getRankInCompetition";
 
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
 import JoinLadderModal from "../Modals/JoinLadderModal";
+import PerformanceRow from "../performance/Player/PerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
@@ -77,8 +81,10 @@ interface LadderSummaryProps {
   ladder: Ladder;
 }
 
+type EnrichedPlayer = ScoreboardProfile & { XP?: number };
+
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
-  const { getUserById } = useContext(UserContext);
+  const { getUserById, currentUser } = useContext(UserContext);
   const { fetchLadderParticipants } = useContext(LadderContext);
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
@@ -88,7 +94,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const isPaid = ladder.entryFee > 0;
   const ladderId = ladder.ladderId;
 
-  // Participants live in the ladderParticipants subcollection.
   useEffect(() => {
     let active = true;
     fetchLadderParticipants(ladderId).then((list) => {
@@ -114,6 +119,43 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   const hasPrizesDistributed =
     ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
+
+  const [userSummaryRow, setUserSummaryRow] = useState<{
+    player: EnrichedPlayer;
+    rank: number;
+    cp: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const uid = currentUser?.userId;
+    if (!uid || participants.length === 0) {
+      setUserSummaryRow(null);
+      return;
+    }
+    const me = participants.find((p) => p.userId === uid);
+    if (!me) {
+      setUserSummaryRow(null);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      try {
+        const [enrichedMe] = (await enrichPlayers(getUserById, [
+          me,
+        ])) as EnrichedPlayer[];
+        const rank = getPlayerRankInCompetition(participants, uid);
+        const cp = me.XP ?? 0;
+        if (active) setUserSummaryRow({ player: enrichedMe, rank, cp });
+      } catch (error) {
+        console.error("Error building ladder summary row:", error);
+        if (active) setUserSummaryRow(null);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [participants, currentUser?.userId, getUserById]);
 
   useEffect(() => {
     let active = true;
@@ -149,8 +191,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   return (
     <Container testID="ladder-summary">
-      <LadderStatsRow ladder={ladder} />
-
       {isPaid && (
         <PrizePotCard>
           <SectionTitle>Total Prize Pool</SectionTitle>
@@ -158,6 +198,21 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
             {formatCurrency(prizePool.cash, ladder.currencyType)}
           </PrizePotValue>
         </PrizePotCard>
+      )}
+      <LadderStatsRow ladder={ladder} />
+
+      {userSummaryRow && (
+        <MySummarySection testID="my-ladder-summary">
+          <SectionTitle>Current Position</SectionTitle>
+          <MySummaryCard>
+            <PerformanceRow
+              player={userSummaryRow.player}
+              rank={userSummaryRow.rank}
+              ladder={ladder}
+              cp={userSummaryRow.cp}
+            />
+          </MySummaryCard>
+        </MySummarySection>
       )}
 
       <PrizeDistribution
@@ -342,7 +397,6 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
-  marginBottom: 40,
 });
 
 const PrizePotValue = styled.Text({
@@ -378,9 +432,6 @@ const StatsRow = styled.View({
   marginBottom: 20,
   padding: 16,
   borderRadius: 12,
-  backgroundColor: "rgba(255, 255, 255, 0.04)",
-  borderWidth: 1,
-  borderColor: "#192336",
 });
 
 const StatHeadingContainer = styled.View({
@@ -410,4 +461,14 @@ const StatValue = styled.Text({
 const StatLabel = styled.Text({
   fontSize: 11,
   color: "#9fb8c8",
+});
+
+const MySummarySection = styled.View({
+  gap: 10,
+  marginBottom: 20,
+});
+
+const MySummaryCard = styled.View({
+  marginHorizontal: -20,
+  paddingHorizontal: 20,
 });

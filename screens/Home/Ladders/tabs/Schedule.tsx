@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -15,13 +16,18 @@ import type { Ladder, LadderMatch } from "@shared/types";
 import { UserContext } from "../../../../context/UserContext";
 import { LadderContext } from "../../../../context/LadderContext";
 import { getMyScheduleMatches } from "../../../../helpers/ladderScheduleMatches";
+import {
+  ALL_DAYS_KEY,
+  buildScheduleDayTabs,
+  filterMatchesByDay,
+} from "../../../../helpers/ladderDayTabs";
 import MatchCard from "../../../../components/ladder/MatchCard";
+import LineTabs from "../../../../components/LineTabs";
 import GameGlow, { runGlow } from "../../../../components/GameCardGlow";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
 
 interface ScheduleProps {
   ladder: Ladder;
-  // Match to highlight with a blue glow (e.g. arriving from an accept notification).
   highlightMatchId?: string;
 }
 
@@ -35,6 +41,13 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const [matches, setMatches] = useState<LadderMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [glowMatchId, setGlowMatchId] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS_KEY);
+
+  const dayTabs = useMemo(() => buildScheduleDayTabs(matches), [matches]);
+  const visibleMatches = useMemo(
+    () => filterMatchesByDay(matches, selectedDay),
+    [matches, selectedDay],
+  );
 
   const userId = currentUser?.userId;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -62,7 +75,6 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
     }, [fetchLadderMatches, ladder.ladderId, userId]),
   );
 
-  // Glow the highlighted match once it's in the list (fires a single time).
   useEffect(() => {
     if (
       !highlightMatchId ||
@@ -114,19 +126,31 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
 
   return (
     <Container testID="schedule-list">
-      {matches.map((match) => (
-        <CardWrap key={match.ladderMatchId}>
-          <MatchCard
-            testID={`schedule-card-${match.ladderMatchId}`}
-            match={match}
-            onPress={handleOpenMatch}
-            showProgress
-          />
-          {glowMatchId === match.ladderMatchId && (
-            <GameGlow glowAnim={glowAnim} color="#00A2FF" />
-          )}
-        </CardWrap>
-      ))}
+      <LineTabs
+        scrollable
+        fontSize={13}
+        tabs={dayTabs}
+        activeTab={selectedDay}
+        onTabPress={setSelectedDay}
+      />
+      <ListScroll
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
+      >
+        {visibleMatches.map((match) => (
+          <CardWrap key={match.ladderMatchId}>
+            <MatchCard
+              testID={`schedule-card-${match.ladderMatchId}`}
+              match={match}
+              onPress={handleOpenMatch}
+              showProgress
+            />
+            {glowMatchId === match.ladderMatchId && (
+              <GameGlow glowAnim={glowAnim} color="#00A2FF" />
+            )}
+          </CardWrap>
+        ))}
+      </ListScroll>
     </Container>
   );
 };
@@ -134,8 +158,13 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
 export default Schedule;
 
 const Container = styled.View({
+  flex: 1,
   padding: 20,
   gap: 12,
+});
+
+const ListScroll = styled.ScrollView({
+  flex: 1,
 });
 
 const CardWrap = styled.View({

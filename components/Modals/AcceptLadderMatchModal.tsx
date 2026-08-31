@@ -1,7 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Dimensions, Modal, ActivityIndicator, Linking } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -20,6 +18,7 @@ import { PopupContext } from "../../context/PopupContext";
 import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import MatchCard from "../ladder/MatchCard";
+import LadderTermsModal from "./LadderTermsModal";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -40,7 +39,6 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   onAccepted,
   onUnavailable,
 }) => {
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { acceptLadderMatch } = useContext(LadderContext);
   const { currentUser, sendNotification } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
@@ -48,6 +46,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [termsVisible, setTermsVisible] = useState(false);
 
   useEffect(() => {
     if (modalVisible) {
@@ -64,11 +63,6 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     setModalVisible(false);
   };
 
-  const goToTerms = () => {
-    setModalVisible(false);
-    navigation.navigate("LadderTerms", { ladderId: ladder.ladderId });
-  };
-
   const userId = currentUser?.userId;
   const isOwnMatch =
     !!match && !!userId && match.participants.includes(userId);
@@ -81,8 +75,6 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     );
   };
 
-  // Tell the poster their match was accepted. Fire-and-forget: a notification
-  // failure must not break the accept flow.
   const notifyPosterOfAccept = async (accepted: LadderMatch) => {
     const posterId = accepted.createdBy;
     if (!posterId || posterId === userId) return;
@@ -201,7 +193,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
               <TermsLink
                 testID="accept-ladder-match-terms-link"
                 activeOpacity={0.7}
-                onPress={goToTerms}
+                onPress={() => setTermsVisible(true)}
               >
                 <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
               </TermsLink>
@@ -225,6 +217,11 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
           </ActionButton>
         </ModalContent>
       </ModalContainer>
+
+      <LadderTermsModal
+        visible={termsVisible}
+        onClose={() => setTermsVisible(false)}
+      />
     </Modal>
   );
 };

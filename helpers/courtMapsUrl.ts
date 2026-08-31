@@ -1,7 +1,5 @@
 import type { Court } from "@shared/types";
 
-// Build a Google Maps search URL for a court: prefer precise lat/lng, else fall
-// back to a human-readable address query.
 export const buildCourtMapsUrl = (court?: Court | null): string => {
   const lat = court?.location?.latitude;
   const lng = court?.location?.longitude;

@@ -7,12 +7,6 @@ export interface BuildLadderMatchArgs {
   createdAt?: Date;
 }
 
-/**
- * Build the LadderMatch document body for a freshly posted match (everything
- * except the Firestore-assigned `ladderMatchId`). The poster is seeded as the
- * sole participant/creator, the games are derived as `bestOf` shells and the
- * status starts as "posted".
- */
 export const buildLadderMatchDocument = ({
   input,
   userId,

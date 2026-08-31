@@ -6,14 +6,10 @@ import styled from "styled-components/native";
 type ImageEntry = ImageSourcePropType | { source: ImageSourcePropType };
 
 interface ImageMapperProps {
-  // Accepts an array (e.g. the ladder trophies) or a keyed map (e.g. gameMedals).
   images: ImageEntry[] | Record<string, ImageEntry>;
   title: string;
   description: string;
-  // Fixed width/height (px) per image. When omitted, images share the row
-  // evenly. Set this to keep large images from overflowing the page.
   imageSize?: number;
-  // Optional footer rendered below the description (e.g. a "Read the rules" button).
   children?: React.ReactNode;
 }
 
@@ -25,7 +21,6 @@ const isImageObject = (
 const toSource = (img: ImageEntry): ImageSourcePropType =>
   isImageObject(img) ? img.source : img;
 
-// Renders a row of images (evenly sized) with a title and description beneath.
 const ImageMapper: React.FC<ImageMapperProps> = ({
   images,
   title,
@@ -78,8 +73,7 @@ const GridImage = styled.Image<{ size?: number }>(
   ({ size }: { size?: number }) =>
     size
       ? { width: size, height: size }
-      : // No fixed size: share the row evenly.
-        { flex: 1, aspectRatio: 1 },
+      : { flex: 1, aspectRatio: 1 },
 );
 
 const Title = styled.Text({

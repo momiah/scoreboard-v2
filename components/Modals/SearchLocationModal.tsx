@@ -43,9 +43,7 @@ interface SearchCourtProps {
   getCourts: () => Promise<Court[]>;
   addCourt: (courtDetails: CourtDetails) => Promise<string | null>;
   onCourtsRefreshed: (rawCourtData: Court[]) => void;
-  /** Render the country flag icon (default true). Ladders (UK-only) pass false. */
   showCountryIcon?: boolean;
-  /** Flag unverified courts with a warning (ladders require verified courts). */
   highlightUnverified?: boolean;
 }
 

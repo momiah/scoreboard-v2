@@ -29,6 +29,8 @@ import {
   normalizeLadderStatus,
   canAcceptLadderMatch,
   buildAcceptedLadderMatch,
+  addLadderMatchCheckIn,
+  getLadderCheckedInUserIds,
 } from "@shared";
 import type {
   Ladder,
@@ -46,9 +48,11 @@ import type {
   LadderJoinOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
+  CheckInLadderMatchOutcome,
 } from "./types/LadderContextType";
 
 class AcceptLadderMatchError extends Error {}
+class CheckInLadderMatchError extends Error {}
 
 const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
@@ -63,9 +67,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   const [upcomingLadders, setUpcomingLadders] = useState<Ladder[]>([]);
   const [upcomingLaddersLoading, setUpcomingLaddersLoading] = useState(false);
   const [ladderById, setLadderById] = useState<Ladder | null>(null);
-  // Ladder ids the current user has joined this session — optimistic cache so
-  // gating flips to "participant" immediately after a join without re-reading
-  // the ladderParticipants subcollection.
   const [joinedLadderIds, setJoinedLadderIds] = useState<string[]>([]);
 
   const fetchLadders = useCallback(
@@ -163,7 +164,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           return { success: true, alreadyJoined: true };
         }
 
-        // Write the participant doc and bump the aggregate count atomically.
         const batch = writeBatch(db);
         batch.set(participantRef, buildLadderParticipant(user));
         batch.update(ladderRef, { participantCount: increment(1) });
@@ -229,8 +229,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  // Teams scaffold: writes/reads the ladders/{id}/ladderTeams subcollection.
-  // No caller yet — ready for the doubles team-join flow.
   const addLadderTeam = useCallback(
     async (ladderId: string, team: TeamStats): Promise<boolean> => {
       if (!ladderId || !team?.teamKey) return false;
@@ -456,6 +454,63 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const checkInLadderMatch = useCallback(
+    async (
+      ladderId: string,
+      matchId: string,
+      userId: string,
+    ): Promise<CheckInLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      ) as DocumentReference<LadderMatch, LadderMatch>;
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            throw new CheckInLadderMatchError("MATCH_NOT_FOUND");
+          }
+
+          const match: LadderMatch = {
+            ...snap.data(),
+            ladderMatchId: snap.id,
+          };
+
+          if (!match.acceptedBy) {
+            throw new CheckInLadderMatchError("NOT_ACCEPTED");
+          }
+          if (!match.participants.includes(userId)) {
+            throw new CheckInLadderMatchError("NOT_A_PARTICIPANT");
+          }
+          if (getLadderCheckedInUserIds(match).includes(userId)) {
+            return;
+          }
+
+          transaction.update(matchRef as DocumentReference, {
+            checkIn: addLadderMatchCheckIn(match, userId),
+          });
+        });
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof CheckInLadderMatchError) {
+          return { success: false, reason: "unavailable" };
+        }
+        console.error("Error checking in ladder match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchUpcomingLadders();
   }, [fetchUpcomingLadders]);
@@ -479,6 +534,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderMatches,
         subscribeToLadderMatches,
         acceptLadderMatch,
+        checkInLadderMatch,
         addCourtToLadder,
       }}
     >

@@ -15,7 +15,6 @@ import { PopupContext } from "../../../context/PopupContext";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-// TODO: confirm the live support address before release.
 const SUPPORT_EMAIL = "support@courtchamps.com";
 
 type MatchMenuAction =
@@ -68,7 +67,6 @@ const MatchDetailsMenu: React.FC = () => {
   const { showBottomToast } = useContext(PopupContext);
 
   const handleReschedule = () => {
-    // TODO: wire up rescheduleMatch once the backend action exists.
     showBottomToast("Rescheduling a match is coming soon", "info");
   };
 
@@ -81,7 +79,6 @@ const MatchDetailsMenu: React.FC = () => {
         {
           text: "Cancel Match",
           style: "destructive",
-          // TODO: wire up cancelMatch once the backend action exists.
           onPress: () =>
             showBottomToast("Cancelling a match is coming soon", "info"),
         },

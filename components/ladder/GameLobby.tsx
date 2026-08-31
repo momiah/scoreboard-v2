@@ -3,7 +3,7 @@ import { ScrollView } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
+import { hasUserCheckedIn, LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
 import type { LadderMatch, Game, Player } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
@@ -30,9 +30,7 @@ interface ParticipantProfile {
 interface GameLobbyProps {
   match: LadderMatch;
   currentUserId?: string;
-  // Check-in state is owned by the parent screen (the check-in button lives on
-  // the match card). The lobby reads it to show statuses and lock the games.
-  checkedIn: Record<string, boolean>;
+  checkedIn: boolean;
 }
 
 const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
@@ -75,8 +73,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   }, [match.participants, getUserById]);
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  const allCheckedIn =
-    players.length > 0 && players.every((p) => checkedIn[p.userId]);
+  const allCheckedIn = players.length > 0 && checkedIn;
   const gamesLocked = isCompleted || !allCheckedIn;
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
@@ -91,10 +88,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
   const isDoubles = match.participants.length > 2;
 
-  // Game shells are created with empty teams. Seed each side with the match
-  // participants so the fixture cards show the players' names instead of "TBD"
-  // (current user on the left). Once a game is actually recorded it carries its
-  // own players, so leave those untouched.
   const toPlayerCell = (p?: ParticipantProfile): Player | null =>
     p
       ? {
@@ -138,7 +131,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
       <ScrollView
         contentContainerStyle={{ paddingVertical: 20, paddingBottom: 40 }}
       >
-        {/* Check-in */}
         <PaddedBlock>
           <CheckinHeader>
             <BlockTitle>Check-in</BlockTitle>
@@ -150,10 +142,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({
             <PlayerList>
               {players.map((player) => {
                 const xp = player.profileDetail?.XP ?? 0;
-                const isCheckedIn = !!checkedIn[player.userId];
+                const isCheckedIn =
+                  isCompleted || hasUserCheckedIn(match, player.userId);
                 return (
-                  // Row becomes a button to PlayerLadderDetails / TeamLadderDetails
-                  // in the next commit.
                   <PlayerRow
                     key={player.userId}
                     activeOpacity={0.7}
@@ -183,7 +174,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           )}
         </PaddedBlock>
 
-        {/* Total score */}
         <ScoreBar>
           <ScoreLabel>Total score</ScoreLabel>
           <ScoreRow>
@@ -207,7 +197,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           </ScoreRow>
         </ScoreBar>
 
-        {/* Games */}
         <GamesHeader>
           <BlockTitle>Games</BlockTitle>
           {isCompleted ? (
@@ -320,7 +309,6 @@ const StatusBadge = styled.View<{ isCheckedIn: boolean }>(
     borderRadius: 6,
     borderWidth: 2,
     borderColor: isCheckedIn ? "#0c3d24" : "#3d2c07",
-    // backgroundColor: isCheckedIn ? "#0c3d24" : "#3d2c07",
   }),
 );
 
