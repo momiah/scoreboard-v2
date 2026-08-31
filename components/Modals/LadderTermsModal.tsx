@@ -28,7 +28,7 @@ const LadderTermsModal: React.FC<LadderTermsModalProps> = ({
     <Backdrop>
       <TopBar>
         <BackButton onPress={onClose} testID="ladder-terms-modal-back">
-          <Ionicons name="chevron-back" size={26} color="#ffffff" />
+          <Ionicons name="chevron-down" size={26} color="#ffffff" />
         </BackButton>
         <TopBarTitle>Terms &amp; Conditions</TopBarTitle>
         <Spacer />
