@@ -6,21 +6,22 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_STATUS, COMPETITION_TYPES } from "@shared";
 import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
-import { sortPlayersByPlacement } from "@shared/helpers/getRankInCompetition";
+import {
+  sortPlayersByPlacement,
+  getPlayerRankInCompetition,
+} from "@shared/helpers/getRankInCompetition";
 
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
 import JoinLadderModal from "../Modals/JoinLadderModal";
-import MedalDisplay from "../performance/MedalDisplay";
+import PerformanceRow from "../performance/Player/PerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
-import { GameContext } from "../../context/GameContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
-import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
 import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
 
@@ -80,26 +81,10 @@ interface LadderSummaryProps {
   ladder: Ladder;
 }
 
-const ordinalSuffix = (n: number): string => {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 13) return "th";
-  switch (n % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    default:
-      return "th";
-  }
-};
-
 type EnrichedPlayer = ScoreboardProfile & { XP?: number };
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const { getUserById, currentUser } = useContext(UserContext);
-  const { findRankIndex, recentGameResult } = useContext(GameContext);
   const { fetchLadderParticipants } = useContext(LadderContext);
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
@@ -136,44 +121,41 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const hasPrizesDistributed =
     ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
 
-  // The signed-in participant's own row (same enrich + ranking as the
-  // performance table), or null when the user isn't a participant.
-  const [myRow, setMyRow] = useState<{
+  // The signed-in participant's own performance row: the enriched player (for
+  // the global rank medal), their ladder rank (0 = unranked → dash), and their
+  // per-ladder CP. Null when the user isn't a participant.
+  const [userSummaryRow, setUserSummaryRow] = useState<{
     player: EnrichedPlayer;
-    index: number;
+    rank: number;
+    cp: number;
   } | null>(null);
 
   useEffect(() => {
     const uid = currentUser?.userId;
     if (!uid || participants.length === 0) {
-      setMyRow(null);
+      setUserSummaryRow(null);
+      return;
+    }
+    const me = participants.find((p) => p.userId === uid);
+    if (!me) {
+      setUserSummaryRow(null);
       return;
     }
     let active = true;
     const load = async () => {
       try {
-        const enriched = (await enrichPlayers(
-          getUserById,
-          participants,
-        )) as EnrichedPlayer[];
-        const sorted = [...enriched].sort((a, b) => {
-          if ((b.numberOfWins || 0) !== (a.numberOfWins || 0)) {
-            return (b.numberOfWins || 0) - (a.numberOfWins || 0);
-          }
-          if ((b.totalPointDifference || 0) !== (a.totalPointDifference || 0)) {
-            return (
-              (b.totalPointDifference || 0) - (a.totalPointDifference || 0)
-            );
-          }
-          return (b.XP || 0) - (a.XP || 0);
-        });
-        const index = sorted.findIndex((p) => p.userId === uid);
-        if (active) {
-          setMyRow(index >= 0 ? { player: sorted[index], index } : null);
-        }
+        const [enrichedMe] = (await enrichPlayers(getUserById, [
+          me,
+        ])) as EnrichedPlayer[];
+        // Rank from per-ladder wins (0 when the user hasn't won a game yet).
+        const rank = getPlayerRankInCompetition(participants, uid);
+        // Per-ladder CP is the participant record's own XP (global XP is what
+        // enrichPlayers injects and drives the medal, so read the raw record).
+        const cp = me.XP ?? 0;
+        if (active) setUserSummaryRow({ player: enrichedMe, rank, cp });
       } catch (error) {
         console.error("Error building ladder summary row:", error);
-        if (active) setMyRow(null);
+        if (active) setUserSummaryRow(null);
       }
     };
     load();
@@ -226,53 +208,19 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       )}
       <LadderStatsRow ladder={ladder} />
 
-      {myRow &&
-        (() => {
-          const playerXp = myRow.player.XP || 0;
-          const pointDifference = myRow.player.totalPointDifference || 0;
-          const rankLevel = findRankIndex(playerXp) + 1;
-          const position = myRow.index + 1;
-          return (
-            <MySummarySection testID="my-ladder-summary">
-              <SectionTitle>Current Position</SectionTitle>
-              <MySummaryCard>
-                <SummaryCell>
-                  <Rank testID="my-ladder-position">
-                    {position}
-                    {ordinalSuffix(position)}
-                  </Rank>
-                </SummaryCell>
-                <PlayerNameCell>
-                  <PlayerName testID="my-ladder-name" numberOfLines={1}>
-                    {formatDisplayName(myRow.player) ||
-                      myRow.player.username ||
-                      "You"}
-                  </PlayerName>
-                  {recentGameResult(myRow.player.resultLog ?? [])}
-                </PlayerNameCell>
-                <SummaryCell>
-                  <StatTitle>Wins</StatTitle>
-                  <Stat testID="my-ladder-wins">
-                    {myRow.player.numberOfWins ?? 0}
-                  </Stat>
-                </SummaryCell>
-                <SummaryCell>
-                  <StatTitle>PD</StatTitle>
-                  <Stat
-                    testID="my-ladder-pd"
-                    style={{ color: pointDifference < 0 ? "red" : "green" }}
-                  >
-                    {pointDifference}
-                  </Stat>
-                </SummaryCell>
-                <SummaryCell>
-                  <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
-                  <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
-                </SummaryCell>
-              </MySummaryCard>
-            </MySummarySection>
-          );
-        })()}
+      {userSummaryRow && (
+        <MySummarySection testID="my-ladder-summary">
+          <SectionTitle>Current Position</SectionTitle>
+          <MySummaryCard>
+            <PerformanceRow
+              player={userSummaryRow.player}
+              rank={userSummaryRow.rank}
+              ladder={ladder}
+              cp={userSummaryRow.cp}
+            />
+          </MySummaryCard>
+        </MySummarySection>
+      )}
 
       <PrizeDistribution
         prizePool={prizePool.xp}
@@ -531,57 +479,10 @@ const MySummarySection = styled.View({
   marginBottom: 20,
 });
 
-// A full-bleed performance-style row (rank · name+result · Wins · PD · medal).
-// Negative margins cancel the Container's 20px padding so it spans the full
-// screen width; the inner padding keeps the content inset.
+// Full-bleed wrapper: negative margins cancel the Container's 20px padding so
+// the reused PerformanceRow spans the full screen width; the inner padding
+// keeps the content inset.
 const MySummaryCard = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
   marginHorizontal: -20,
-  paddingVertical: 10,
   paddingHorizontal: 20,
-  // backgroundColor: "rgba(0, 0, 0, 0.3)",
-  borderTopWidth: 1,
-  borderBottomWidth: 1,
-  borderColor: "rgba(0, 56, 88, 0.35)",
-  borderRadius: 12,
-});
-
-const SummaryCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  gap: 4,
-});
-
-const PlayerNameCell = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingRight: 5,
-  width: 130,
-});
-
-const PlayerName = styled.Text({
-  fontSize: 14,
-  fontWeight: "bold",
-  color: "white",
-  flexShrink: 1,
-});
-
-const Rank = styled.Text({
-  fontSize: 14,
-  color: "#00A2FF",
-  fontWeight: "bold",
-});
-
-const StatTitle = styled.Text({
-  fontSize: 12,
-  color: "#aaa",
-});
-
-const Stat = styled.Text({
-  fontSize: 14,
-  fontWeight: "bold",
-  color: "white",
 });
