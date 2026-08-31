@@ -17,8 +17,6 @@ import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { AntDesign } from "@expo/vector-icons";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useNavigation } from "@react-navigation/native";
-import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import { useForm, Controller } from "react-hook-form";
 
 import {
@@ -38,6 +36,7 @@ import DatePicker from "../DatePicker";
 import OptionSelector from "../OptionSelector";
 import SearchCourt from "./SearchLocationModal";
 import type { CourtDetails, CourtListItem } from "./SearchLocationModal";
+import LadderTermsModal from "./LadderTermsModal";
 import { formatCourtDetailsForList } from "../../helpers/formatCourtDetails";
 import { LadderContext } from "../../context/LadderContext";
 import { LeagueContext } from "../../context/LeagueContext";
@@ -83,7 +82,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const { getCourts, addCourt } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
@@ -91,6 +89,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [termsVisible, setTermsVisible] = useState(false);
 
   // Matches can only be posted before the ladder's playoffs begin.
   const playoffStartDate = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
@@ -188,11 +187,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     setErrorMessage(null);
     setSubmitting(false);
     setModalVisible(false);
-  };
-
-  const goToTerms = () => {
-    setModalVisible(false);
-    navigation.navigate("LadderTerms", { ladderId: ladder.ladderId });
   };
 
   const onSubmit = async (data: AddLadderMatchFormValues) => {
@@ -394,7 +388,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   <TermsLink
                     testID="add-ladder-match-terms-link"
                     activeOpacity={0.7}
-                    onPress={goToTerms}
+                    onPress={() => setTermsVisible(true)}
                   >
                     <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
                   </TermsLink>
@@ -440,6 +434,11 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
           highlightUnverified
         />
       )}
+
+      <LadderTermsModal
+        visible={termsVisible}
+        onClose={() => setTermsVisible(false)}
+      />
     </Modal>
   );
 };
