@@ -216,6 +216,16 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   return (
     <Container testID="ladder-summary">
+      {isPaid && (
+        <PrizePotCard>
+          <SectionTitle>Total Prize Pool</SectionTitle>
+          <PrizePotValue testID="ladder-cash-pot">
+            {formatCurrency(prizePool.cash, ladder.currencyType)}
+          </PrizePotValue>
+        </PrizePotCard>
+      )}
+      <LadderStatsRow ladder={ladder} />
+
       {myRow &&
         (() => {
           const playerXp = myRow.player.XP || 0;
@@ -224,7 +234,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           const position = myRow.index + 1;
           return (
             <MySummarySection testID="my-ladder-summary">
-              <SectionTitle>Your Ladder Summary</SectionTitle>
+              <SectionTitle>Current Position</SectionTitle>
               <MySummaryCard>
                 <SummaryCell>
                   <Rank testID="my-ladder-position">
@@ -263,17 +273,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
             </MySummarySection>
           );
         })()}
-
-      <LadderStatsRow ladder={ladder} />
-
-      {isPaid && (
-        <PrizePotCard>
-          <SectionTitle>Total Prize Pool</SectionTitle>
-          <PrizePotValue testID="ladder-cash-pot">
-            {formatCurrency(prizePool.cash, ladder.currencyType)}
-          </PrizePotValue>
-        </PrizePotCard>
-      )}
 
       <PrizeDistribution
         prizePool={prizePool.xp}
@@ -457,7 +456,7 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
-  marginBottom: 40,
+  // marginBottom: 40,
 });
 
 const PrizePotValue = styled.Text({
@@ -493,9 +492,9 @@ const StatsRow = styled.View({
   marginBottom: 20,
   padding: 16,
   borderRadius: 12,
-  backgroundColor: "rgba(255, 255, 255, 0.04)",
-  borderWidth: 1,
-  borderColor: "#192336",
+  // backgroundColor: "rgba(255, 255, 255, 0.04)",
+  // borderWidth: 1,
+  // borderColor: "#192336",
 });
 
 const StatHeadingContainer = styled.View({
@@ -541,7 +540,11 @@ const MySummaryCard = styled.View({
   marginHorizontal: -20,
   paddingVertical: 10,
   paddingHorizontal: 20,
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  // backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderTopWidth: 1,
+  borderBottomWidth: 1,
+  borderColor: "rgba(0, 56, 88, 0.35)",
+  borderRadius: 12,
 });
 
 const SummaryCell = styled.View({
