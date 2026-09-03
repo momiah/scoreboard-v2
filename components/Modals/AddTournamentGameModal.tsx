@@ -24,9 +24,21 @@ import {
 } from "@shared";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { LeagueContext } from "@/context/LeagueContext";
+import { LadderContext } from "@/context/LadderContext";
 import VideoUploadModal from "./VideoUploadModal";
 
 const { width: screenWidth } = Dimensions.get("window");
+
+/**
+ * When supplied, the modal publishes into a ladder match's shell game (via
+ * `updateLadderGame`) instead of a tournament fixture. `tournamentId`/
+ * `tournamentName` are ignored in that case.
+ */
+export type LadderGameContext = {
+  ladderId: string;
+  matchId: string;
+  name: string;
+};
 
 type AddTournamentGameModalProps = {
   visible: boolean;
@@ -37,6 +49,7 @@ type AddTournamentGameModalProps = {
   currentUser: UserProfile | null;
   tournamentName: string;
   tournamentId: string;
+  ladder?: LadderGameContext | null;
 };
 
 const AddTournamentGameModal = ({
@@ -48,9 +61,11 @@ const AddTournamentGameModal = ({
   currentUser,
   tournamentName,
   tournamentId,
+  ladder = null,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
   const { updateTournamentGame } = useContext(LeagueContext);
+  const { updateLadderGame } = useContext(LadderContext);
   const { showBottomToast } = useContext(PopupContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
@@ -166,25 +181,47 @@ const AddTournamentGameModal = ({
       opponentUserIds.map(getUserById),
     )) as Array<{ userId: string; [key: string]: unknown }>;
 
+    const competitionLabel = ladder ? "ladder" : "tournament";
     for (const user of requestForOpponentApprovals) {
       const payload = {
         ...notificationSchema,
         createdAt: new Date(),
         recipientId: user.userId,
         senderId: currentUser?.userId,
-        message: `${formatDisplayName(currentUser)} has just reported a score in ${tournamentName} tournament`,
-        type: notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
-        data: { tournamentId, gameId: game.gameId },
+        message: `${formatDisplayName(currentUser)} has just reported a score in ${
+          ladder ? ladder.name : tournamentName
+        } ${competitionLabel}`,
+        type: ladder
+          ? notificationTypes.ACTION.ADD_GAME.LADDER
+          : notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
+        data: ladder
+          ? { ladderId: ladder.ladderId, matchId: ladder.matchId, gameId: game.gameId }
+          : { tournamentId, gameId: game.gameId },
       };
       await sendNotification(payload);
     }
 
     try {
-      await updateTournamentGame({
-        tournamentId,
-        gameId: game.gameId,
-        updatedGame: gameResult,
-      });
+      if (ladder) {
+        const outcome = await updateLadderGame({
+          ladderId: ladder.ladderId,
+          matchId: ladder.matchId,
+          updatedGame: gameResult,
+        });
+        if (!outcome.success) {
+          throw new Error(
+            outcome.reason === "unavailable"
+              ? "already been reported"
+              : "Failed to submit ladder game result.",
+          );
+        }
+      } else {
+        await updateTournamentGame({
+          tournamentId,
+          gameId: game.gameId,
+          updatedGame: gameResult,
+        });
+      }
     } catch (updateError: unknown) {
       const errorMessage =
         updateError instanceof Error ? updateError.message : "";
@@ -207,6 +244,16 @@ const AddTournamentGameModal = ({
 
     setLoading(false);
     resetForm();
+
+    // The tournament flow follows submit with an optional video upload; the
+    // ladder video pipeline is wired in a later phase, so for ladders we just
+    // confirm the report and close.
+    if (ladder) {
+      onClose();
+      showBottomToast("Score sent to your opponent for approval", "success");
+      return;
+    }
+
     setSubmittedGame({
       gameId: game.gameId,
       gamescore,

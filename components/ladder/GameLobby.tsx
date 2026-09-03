@@ -10,7 +10,7 @@ import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
-import AddLadderGameModal from "../Modals/AddLadderGameModal";
+import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   getLadderMatchScore,
@@ -28,6 +28,7 @@ interface ParticipantProfile {
 }
 
 interface GameLobbyProps {
+  ladderId: string;
   match: LadderMatch;
   currentUserId?: string;
   checkedIn: boolean;
@@ -40,11 +41,12 @@ const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
 };
 
 const GameLobby: React.FC<GameLobbyProps> = ({
+  ladderId,
   match,
   currentUserId,
   checkedIn,
 }) => {
-  const { getUserById } = useContext(UserContext);
+  const { getUserById, currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
   const [players, setPlayers] = useState<ParticipantProfile[]>([]);
@@ -230,9 +232,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         </GamesList>
       </ScrollView>
 
-      <AddLadderGameModal
+      <AddTournamentGameModal
         visible={gameModalVisible}
         game={selectedGame}
+        tournamentType={isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES}
+        currentUser={currentUser ?? null}
+        tournamentName={match.court?.courtName ?? "Ladder match"}
+        tournamentId=""
+        ladder={{
+          ladderId,
+          matchId: match.ladderMatchId,
+          name: match.court?.courtName ?? "Ladder match",
+        }}
         onClose={() => {
           setGameModalVisible(false);
           setSelectedGame(null);
