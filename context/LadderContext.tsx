@@ -518,17 +518,19 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  // Mutual check-in handshake: a single successful QR scan (or reference-code
-  // entry) checks in EVERY participant at once, so no one is marked present
-  // just for opening the check-in sheet. Guards on the match being accepted and
-  // the acting user being a participant.
-  const completeLadderMatchCheckIn = useCallback(
+  // Mutual check-in handshake: one participant scans another's QR, which checks
+  // in BOTH the scanner and the QR's owner at once — so no one is marked present
+  // just for displaying their code. Singles complete in one handshake; doubles
+  // in two independent pairs. Guards on the match being accepted and both users
+  // being participants; idempotent per user.
+  const checkInLadderMatchHandshake = useCallback(
     async (
       ladderId: string,
       matchId: string,
-      userId: string,
+      scannerId: string,
+      displayerId: string,
     ): Promise<CheckInLadderMatchOutcome> => {
-      if (!ladderId || !matchId || !userId) {
+      if (!ladderId || !matchId || !scannerId || !displayerId) {
         return { success: false, reason: "error" };
       }
 
@@ -555,12 +557,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (!match.acceptedBy) {
             throw new CheckInLadderMatchError("NOT_ACCEPTED");
           }
-          if (!match.participants.includes(userId)) {
+          if (
+            !match.participants.includes(scannerId) ||
+            !match.participants.includes(displayerId)
+          ) {
             throw new CheckInLadderMatchError("NOT_A_PARTICIPANT");
           }
 
           let checkIn = match.checkIn;
-          for (const participantId of match.participants) {
+          for (const participantId of [scannerId, displayerId]) {
             checkIn = addLadderMatchCheckIn(
               { participants: match.participants, checkIn },
               participantId,
@@ -675,7 +680,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         subscribeToLadderMatches,
         acceptLadderMatch,
         checkInLadderMatch,
-        completeLadderMatchCheckIn,
+        checkInLadderMatchHandshake,
         updateLadderGame,
         addCourtToLadder,
       }}

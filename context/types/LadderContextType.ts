@@ -76,10 +76,11 @@ export interface LadderContextType {
     matchId: string,
     userId: string,
   ) => Promise<CheckInLadderMatchOutcome>;
-  completeLadderMatchCheckIn: (
+  checkInLadderMatchHandshake: (
     ladderId: string,
     matchId: string,
-    userId: string,
+    scannerId: string,
+    displayerId: string,
   ) => Promise<CheckInLadderMatchOutcome>;
   updateLadderGame: (args: {
     ladderId: string;
