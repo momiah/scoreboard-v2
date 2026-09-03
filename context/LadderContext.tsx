@@ -518,6 +518,70 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  // Mutual check-in handshake: a single successful QR scan (or reference-code
+  // entry) checks in EVERY participant at once, so no one is marked present
+  // just for opening the check-in sheet. Guards on the match being accepted and
+  // the acting user being a participant.
+  const completeLadderMatchCheckIn = useCallback(
+    async (
+      ladderId: string,
+      matchId: string,
+      userId: string,
+    ): Promise<CheckInLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      ) as DocumentReference<LadderMatch, LadderMatch>;
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            throw new CheckInLadderMatchError("MATCH_NOT_FOUND");
+          }
+
+          const match: LadderMatch = {
+            ...snap.data(),
+            ladderMatchId: snap.id,
+          };
+
+          if (!match.acceptedBy) {
+            throw new CheckInLadderMatchError("NOT_ACCEPTED");
+          }
+          if (!match.participants.includes(userId)) {
+            throw new CheckInLadderMatchError("NOT_A_PARTICIPANT");
+          }
+
+          let checkIn = match.checkIn;
+          for (const participantId of match.participants) {
+            checkIn = addLadderMatchCheckIn(
+              { participants: match.participants, checkIn },
+              participantId,
+            );
+          }
+
+          transaction.update(matchRef as DocumentReference, { checkIn });
+        });
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof CheckInLadderMatchError) {
+          return { success: false, reason: "unavailable" };
+        }
+        console.error("Error completing ladder match check-in:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
   const updateLadderGame = useCallback(
     async ({
       ladderId,
@@ -611,6 +675,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         subscribeToLadderMatches,
         acceptLadderMatch,
         checkInLadderMatch,
+        completeLadderMatchCheckIn,
         updateLadderGame,
         addCourtToLadder,
       }}
