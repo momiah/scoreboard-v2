@@ -28,6 +28,10 @@ describe("buildLadderParticipant", () => {
     expect(participant.resultLog).toEqual([]);
   });
 
+  it("seeds ladder CP (XP) at 20 to keep CP maths safe and non-negative", () => {
+    expect(buildLadderParticipant(user).XP).toBe(20);
+  });
+
   it("falls back to the default image and empty memberSince", () => {
     const participant = buildLadderParticipant({
       userId: "u9",

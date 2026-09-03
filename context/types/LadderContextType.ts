@@ -2,6 +2,7 @@ import type {
   Ladder,
   LadderMatch,
   LadderMatchInput,
+  Game,
   ScoreboardProfile,
   TeamStats,
 } from "@shared/types";
@@ -29,6 +30,13 @@ export type CheckInLadderMatchFailureReason = "unavailable" | "error";
 export interface CheckInLadderMatchOutcome {
   success: boolean;
   reason?: CheckInLadderMatchFailureReason;
+}
+
+export type UpdateLadderGameFailureReason = "unavailable" | "error";
+
+export interface UpdateLadderGameOutcome {
+  success: boolean;
+  reason?: UpdateLadderGameFailureReason;
 }
 
 export interface LadderContextType {
@@ -68,6 +76,11 @@ export interface LadderContextType {
     matchId: string,
     userId: string,
   ) => Promise<CheckInLadderMatchOutcome>;
+  updateLadderGame: (args: {
+    ladderId: string;
+    matchId: string;
+    updatedGame: Game;
+  }) => Promise<UpdateLadderGameOutcome>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 

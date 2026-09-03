@@ -46,7 +46,7 @@ const PerformanceRow = ({
       <PlayerNameCell>
         <PlayerName numberOfLines={1}>{displayName}</PlayerName>
         {isLadder
-          ? recentMatchResult(player.ladderResultLog ?? [])
+          ? recentMatchResult(player.matchResultLog ?? [])
           : recentGameResult(player.resultLog ?? [])}
       </PlayerNameCell>
 

@@ -155,7 +155,12 @@ const MatchDetails: React.FC = () => {
       </Tabs>
 
       {selectedTab === "Game Lobby" ? (
-        <GameLobby match={match} currentUserId={userId} checkedIn={checkedIn} />
+        <GameLobby
+          ladderId={ladderId}
+          match={match}
+          currentUserId={userId}
+          checkedIn={checkedIn}
+        />
       ) : (
         <ChatRoom
           competitionId={matchId}
