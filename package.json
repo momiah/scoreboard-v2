@@ -9,7 +9,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest",
-    "shared": "npm i courtchamps-shared@github:momiah/courtchamps-shared#claude/ladder-add-game-flow-bo72pr --force",
+    "shared": "npm i courtchamps-shared@github:momiah/courtchamps-shared#main --force",
     "shared:start": "npm run shared && expo start -c"
   },
   "dependencies": {
@@ -26,7 +26,7 @@
     "@types/react": "~19.0.10",
     "base-64": "^1.0.0",
     "country-state-city": "^3.2.1",
-    "courtchamps-shared": "github:momiah/courtchamps-shared#claude/ladder-add-game-flow-bo72pr",
+    "courtchamps-shared": "github:momiah/courtchamps-shared#main",
     "crypto": "^1.0.1",
     "dotenv": "^16.5.0",
     "expo": "^54.0.0",
