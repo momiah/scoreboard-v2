@@ -296,7 +296,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   currentUserId,
   onCheckedIn,
 }) => {
-  const { checkInLadderMatch, subscribeToLadderMatches } =
+  const { completeLadderMatchCheckIn, subscribeToLadderMatches } =
     useContext(LadderContext);
   const { showBottomToast } = useContext(PopupContext);
   const [permission, requestPermission] = useCameraPermissions();
@@ -356,7 +356,9 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     handledRef.current = true;
     setProcessing(true);
 
-    const { success } = await checkInLadderMatch(
+    // A single successful handshake checks in the whole match as a unit, so the
+    // poster is never marked present just for displaying their QR code.
+    const { success } = await completeLadderMatchCheckIn(
       ladderId,
       match.ladderMatchId,
       currentUserId,
@@ -367,12 +369,6 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       handledRef.current = false;
     }
   };
-
-  useEffect(() => {
-    if (visible && isPoster && !selfCheckedIn) {
-      recordCheckIn();
-    }
-  }, [visible, isPoster]);
 
   const handleScan = (result: BarcodeScanningResult) => {
     if (handledRef.current || processing) return;
