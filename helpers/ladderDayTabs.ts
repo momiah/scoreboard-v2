@@ -92,10 +92,12 @@ export const buildMatchmakingDayTabs = (
 export const buildScheduleDayTabs = (
   matches: LadderMatch[],
 ): LadderDayTab[] => {
+  // Most-immediate date first (next to "All"): future dates sit to its left
+  // (slide left), older dates extend to the right back to the ladder's start.
   const keys = Array.from(
     new Set(matches.map((m) => normalizeDayKey(m.matchDate)).filter(Boolean)),
   ).sort(
-    (a, b) => (dayKeyToDate(a)?.getTime() ?? 0) - (dayKeyToDate(b)?.getTime() ?? 0),
+    (a, b) => (dayKeyToDate(b)?.getTime() ?? 0) - (dayKeyToDate(a)?.getTime() ?? 0),
   );
   return [allTab, ...keys.map((key) => ({ key, label: labelForKey(key) }))];
 };
