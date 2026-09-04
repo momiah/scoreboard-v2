@@ -631,8 +631,17 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             updatedGame.approvalStatus,
           );
 
+          // Firestore rejects undefined field values; ladder shells omit
+          // tournament-only fields (court/createdAt/createdTime), so drop any
+          // undefined keys before writing.
+          const sanitizedGame = Object.fromEntries(
+            Object.entries(updatedGame).filter(
+              ([, value]) => value !== undefined,
+            ),
+          ) as Game;
+
           const nextGames = [...games];
-          nextGames[index] = updatedGame;
+          nextGames[index] = sanitizedGame;
 
           transaction.update(matchRef, {
             games: nextGames,
