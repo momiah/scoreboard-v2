@@ -597,7 +597,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       matchId: string;
       updatedGame: Game;
     }): Promise<UpdateLadderGameOutcome> => {
-      if (!ladderId || !matchId || !updatedGame?.gameId) {
+      // Games are located within a match by gameNumber (always present and
+      // unique per match); gameId is the cross-app identity and is backfilled on
+      // write so matches created before stable gameIds still publish correctly.
+      if (!ladderId || !matchId || updatedGame?.gameNumber == null) {
         return { success: false, reason: "error" };
       }
 
@@ -619,7 +622,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           const match = snap.data() as LadderMatch;
           const games = match.games ?? [];
           const index = games.findIndex(
-            (game) => game.gameId === updatedGame.gameId,
+            (game) => game.gameNumber === updatedGame.gameNumber,
           );
 
           if (index === -1) {
@@ -631,8 +634,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             updatedGame.approvalStatus,
           );
 
+          const gameId =
+            updatedGame.gameId ||
+            games[index].gameId ||
+            `${matchId}-g${updatedGame.gameNumber}`;
+
           const nextGames = [...games];
-          nextGames[index] = updatedGame;
+          nextGames[index] = { ...updatedGame, gameId };
 
           transaction.update(matchRef, {
             games: nextGames,

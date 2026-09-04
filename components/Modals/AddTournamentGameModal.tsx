@@ -148,8 +148,17 @@ const AddTournamentGameModal = ({
     const gamescore = `${score1}-${score2}`;
     const date = moment().format("DD-MM-YYYY");
 
+    // Ladder shells created before stable gameIds carry an empty gameId; derive
+    // a deterministic one so the write and the approval notification reference
+    // the same game.
+    const resolvedGameId =
+      game.gameId ||
+      (ladder && game.gameNumber != null
+        ? `${ladder.matchId}-g${game.gameNumber}`
+        : game.gameId);
+
     const gameResult: Game = {
-      gameId: game.gameId,
+      gameId: resolvedGameId,
       gamescore,
       date,
       reportedAt: new Date(),
@@ -195,7 +204,11 @@ const AddTournamentGameModal = ({
           ? notificationTypes.ACTION.ADD_GAME.LADDER
           : notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
         data: ladder
-          ? { ladderId: ladder.ladderId, matchId: ladder.matchId, gameId: game.gameId }
+          ? {
+              ladderId: ladder.ladderId,
+              matchId: ladder.matchId,
+              gameId: resolvedGameId,
+            }
           : { tournamentId, gameId: game.gameId },
       };
       await sendNotification(payload);
