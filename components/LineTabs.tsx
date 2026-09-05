@@ -17,6 +17,8 @@ interface LineTabsProps<T extends string> {
   highlightKey?: T;
   /** Scroll this tab into view on mount, independent of the active tab. */
   scrollToKey?: T;
+  /** Tabs to mark with a dot (e.g. days the user has a game on). */
+  dotKeys?: T[];
 }
 
 function LineTabs<T extends string>({
@@ -27,7 +29,9 @@ function LineTabs<T extends string>({
   fontSize = 14,
   highlightKey,
   scrollToKey,
+  dotKeys,
 }: LineTabsProps<T>) {
+  const dotSet = new Set(dotKeys ?? []);
   const scrollRef = useRef<ScrollView>(null);
   const tabPositionsRef = useRef<Record<string, number>>({});
   const didAnchorRef = useRef(false);
@@ -80,6 +84,7 @@ function LineTabs<T extends string>({
         >
           {tab.label}
         </TabText>
+        {dotSet.has(tab.key) && <Dot />}
       </TabItem>
     ));
 
@@ -145,3 +150,12 @@ const TabText = styled.Text<{
     color: isHighlight ? "#FFD700" : isActive ? "#fff" : "#aaa",
   }),
 );
+
+const Dot = styled.View({
+  position: "absolute",
+  bottom: 4,
+  width: 4,
+  height: 4,
+  borderRadius: 2,
+  backgroundColor: "#00A2FF",
+});

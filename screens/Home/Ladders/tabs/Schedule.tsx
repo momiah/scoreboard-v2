@@ -20,6 +20,7 @@ import {
   ALL_DAYS_KEY,
   buildScheduleDayTabs,
   filterMatchesByDay,
+  getMatchDayKeys,
   todayDayKey,
 } from "../../../../helpers/ladderDayTabs";
 import MatchCard from "../../../../components/ladder/MatchCard";
@@ -44,7 +45,8 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const [glowMatchId, setGlowMatchId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS_KEY);
 
-  const dayTabs = useMemo(() => buildScheduleDayTabs(matches), [matches]);
+  const dayTabs = useMemo(() => buildScheduleDayTabs(ladder), [ladder]);
+  const gameDayKeys = useMemo(() => getMatchDayKeys(matches), [matches]);
   const todayKey = useMemo(() => todayDayKey(), []);
   const visibleMatches = useMemo(
     () => filterMatchesByDay(matches, selectedDay),
@@ -146,6 +148,7 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
             onTabPress={setSelectedDay}
             highlightKey={todayKey}
             scrollToKey={todayKey}
+            dotKeys={gameDayKeys}
           />
         </DayTabsWrap>
       </TabsRow>

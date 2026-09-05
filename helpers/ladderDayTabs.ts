@@ -54,28 +54,17 @@ const labelForKey = (key: string): string => {
   return d ? labelForDate(d) : key;
 };
 
-const allTab: LadderDayTab = { key: ALL_DAYS_KEY, label: "All" };
-
 const MAX_DAYS = 400;
 
-export const buildMatchmakingDayTabs = (
-  ladder: Ladder,
-  now: Date = new Date(),
+/** Date-only day tabs for every day in [start, end], chronological order. */
+const dayTabsBetween = (
+  start: Date | null,
+  end: Date | null,
 ): LadderDayTab[] => {
-  const seasonStart = toMoment(ladder.seasonStartsAt)?.toDate() ?? null;
-  const end =
-    toMoment(ladder.playoffStartsAt)?.toDate() ??
-    toMoment(ladder.seasonEndsAt)?.toDate() ??
-    null;
-  if (!end) return [allTab];
-
-  let cursor = startOfDay(now);
-  if (seasonStart && startOfDay(seasonStart).getTime() > cursor.getTime()) {
-    cursor = startOfDay(seasonStart);
-  }
+  if (!start || !end) return [];
+  let cursor = startOfDay(start);
   const last = startOfDay(end);
-
-  const tabs: LadderDayTab[] = [allTab];
+  const tabs: LadderDayTab[] = [];
   let guard = 0;
   while (cursor.getTime() <= last.getTime() && guard < MAX_DAYS) {
     tabs.push({ key: dateToKey(cursor), label: labelForDate(cursor) });
@@ -89,28 +78,50 @@ export const buildMatchmakingDayTabs = (
   return tabs;
 };
 
-/** The day key for today, used to highlight it on the schedule strip. */
+const ladderStart = (ladder: Ladder): Date | null =>
+  toMoment(ladder.seasonStartsAt)?.toDate() ?? null;
+
+const ladderEnd = (ladder: Ladder): Date | null =>
+  toMoment(ladder.playoffStartsAt)?.toDate() ??
+  toMoment(ladder.seasonEndsAt)?.toDate() ??
+  null;
+
+/** The day key for today, used to anchor/highlight the strips. */
 export const todayDayKey = (now: Date = new Date()): string =>
   dateToKey(startOfDay(now));
 
-// Date-only tabs for the schedule strip, in chronological order (past -> today
-// -> future) so the strip anchors on today with past to the left (slide right)
-// and future to the right (slide left). Today is always included so the strip
-// can start on it even with no match that day. "All" is rendered separately as a
-// pinned button, so it is NOT included here.
-export const buildScheduleDayTabs = (
-  matches: LadderMatch[],
+// Matchmaking strip: today -> ladder end only (no past). "All" is rendered
+// separately as a pinned button, so it is NOT included here.
+export const buildMatchmakingDayTabs = (
+  ladder: Ladder,
   now: Date = new Date(),
 ): LadderDayTab[] => {
-  const keySet = new Set(
-    matches.map((m) => normalizeDayKey(m.matchDate)).filter(Boolean),
-  );
-  keySet.add(todayDayKey(now));
-  const keys = Array.from(keySet).sort(
-    (a, b) => (dayKeyToDate(a)?.getTime() ?? 0) - (dayKeyToDate(b)?.getTime() ?? 0),
-  );
-  return keys.map((key) => ({ key, label: labelForKey(key) }));
+  const seasonStart = ladderStart(ladder);
+  let from = startOfDay(now);
+  if (seasonStart && startOfDay(seasonStart).getTime() > from.getTime()) {
+    from = startOfDay(seasonStart);
+  }
+  return dayTabsBetween(from, ladderEnd(ladder));
 };
+
+// Schedule strip: every day of the ladder (start -> end), chronological, so the
+// strip anchors on today with past to the left (slide right) and future to the
+// right (slide left). "All" is rendered separately as a pinned button.
+export const buildScheduleDayTabs = (
+  ladder: Ladder,
+  now: Date = new Date(),
+): LadderDayTab[] => {
+  const tabs = dayTabsBetween(ladderStart(ladder), ladderEnd(ladder));
+  if (tabs.length) return tabs;
+  const key = todayDayKey(now);
+  return [{ key, label: labelForKey(key) }];
+};
+
+/** Day keys the current user has matches on (for the schedule game dots). */
+export const getMatchDayKeys = (matches: LadderMatch[]): string[] =>
+  Array.from(
+    new Set(matches.map((m) => normalizeDayKey(m.matchDate)).filter(Boolean)),
+  );
 
 export const filterMatchesByDay = (
   matches: LadderMatch[],
