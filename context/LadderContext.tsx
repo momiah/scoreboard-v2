@@ -36,12 +36,14 @@ import type {
   Ladder,
   LadderMatch,
   LadderMatchInput,
+  Game,
   ScoreboardProfile,
   TeamStats,
 } from "@shared/types";
 import { buildLadderParticipant } from "../helpers/ladderParticipants";
 import type { LadderJoinUser } from "../helpers/ladderParticipants";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
+import { assertGameTransition } from "../helpers/assertGameTransition";
 import type {
   LadderContextType,
   FetchLaddersOptions,
@@ -49,6 +51,7 @@ import type {
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
   CheckInLadderMatchOutcome,
+  UpdateLadderGameOutcome,
 } from "./types/LadderContextType";
 
 class AcceptLadderMatchError extends Error {}
@@ -292,7 +295,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           LADDER_MATCHES_COLLECTION,
         );
         const matchRef = doc(matchesRef);
-        const document = buildLadderMatchDocument({ input, userId });
+        const document = buildLadderMatchDocument({
+          input,
+          userId,
+          ladderMatchId: matchRef.id,
+        });
         const ladderMatch: LadderMatch = {
           ladderMatchId: matchRef.id,
           ...document,
@@ -511,6 +518,153 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  // Mutual check-in handshake: one participant scans another's QR, which checks
+  // in BOTH the scanner and the QR's owner at once — so no one is marked present
+  // just for displaying their code. Singles complete in one handshake; doubles
+  // in two independent pairs. Guards on the match being accepted and both users
+  // being participants; idempotent per user.
+  const checkInLadderMatchHandshake = useCallback(
+    async (
+      ladderId: string,
+      matchId: string,
+      scannerId: string,
+      displayerId: string,
+    ): Promise<CheckInLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !scannerId || !displayerId) {
+        return { success: false, reason: "error" };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      ) as DocumentReference<LadderMatch, LadderMatch>;
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            throw new CheckInLadderMatchError("MATCH_NOT_FOUND");
+          }
+
+          const match: LadderMatch = {
+            ...snap.data(),
+            ladderMatchId: snap.id,
+          };
+
+          if (!match.acceptedBy) {
+            throw new CheckInLadderMatchError("NOT_ACCEPTED");
+          }
+          if (
+            !match.participants.includes(scannerId) ||
+            !match.participants.includes(displayerId)
+          ) {
+            throw new CheckInLadderMatchError("NOT_A_PARTICIPANT");
+          }
+
+          let checkIn = match.checkIn;
+          for (const participantId of [scannerId, displayerId]) {
+            checkIn = addLadderMatchCheckIn(
+              { participants: match.participants, checkIn },
+              participantId,
+            );
+          }
+
+          transaction.update(matchRef as DocumentReference, { checkIn });
+        });
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof CheckInLadderMatchError) {
+          return { success: false, reason: "unavailable" };
+        }
+        console.error("Error completing ladder match check-in:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const updateLadderGame = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      updatedGame,
+    }: {
+      ladderId: string;
+      matchId: string;
+      updatedGame: Game;
+    }): Promise<UpdateLadderGameOutcome> => {
+      if (!ladderId || !matchId || !updatedGame?.gameId) {
+        return { success: false, reason: "error" };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            throw new Error("Ladder match not found");
+          }
+
+          const match = snap.data() as LadderMatch;
+          const games = match.games ?? [];
+          const index = games.findIndex(
+            (game) => game.gameId === updatedGame.gameId,
+          );
+
+          if (index === -1) {
+            throw new Error("Game not found in ladder match");
+          }
+
+          assertGameTransition(
+            games[index].approvalStatus,
+            updatedGame.approvalStatus,
+          );
+
+          // Firestore rejects undefined field values; ladder shells omit
+          // tournament-only fields (court/createdAt/createdTime), so drop any
+          // undefined keys before writing.
+          const sanitizedGame = Object.fromEntries(
+            Object.entries(updatedGame).filter(
+              ([, value]) => value !== undefined,
+            ),
+          ) as Game;
+
+          const nextGames = [...games];
+          nextGames[index] = sanitizedGame;
+
+          transaction.update(matchRef, {
+            games: nextGames,
+            lastUpdated: new Date(),
+          });
+        });
+
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        const alreadyReported =
+          message.includes("already been reported") ||
+          message.includes("already been processed");
+        if (alreadyReported) {
+          return { success: false, reason: "unavailable" };
+        }
+        console.error("Error updating ladder game:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     fetchUpcomingLadders();
   }, [fetchUpcomingLadders]);
@@ -535,6 +689,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         subscribeToLadderMatches,
         acceptLadderMatch,
         checkInLadderMatch,
+        checkInLadderMatchHandshake,
+        updateLadderGame,
         addCourtToLadder,
       }}
     >
