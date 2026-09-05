@@ -89,17 +89,22 @@ export const buildMatchmakingDayTabs = (
   return tabs;
 };
 
+/** The day key for today, used to anchor/highlight the schedule strip. */
+export const todayDayKey = (now: Date = new Date()): string =>
+  dateToKey(startOfDay(now));
+
+// Date-only tabs for the schedule strip, in chronological order (past → today →
+// future). "All" is rendered separately as a pinned button, so it is NOT
+// included here.
 export const buildScheduleDayTabs = (
   matches: LadderMatch[],
 ): LadderDayTab[] => {
-  // Most-immediate date first (next to "All"): future dates sit to its left
-  // (slide left), older dates extend to the right back to the ladder's start.
   const keys = Array.from(
     new Set(matches.map((m) => normalizeDayKey(m.matchDate)).filter(Boolean)),
   ).sort(
-    (a, b) => (dayKeyToDate(b)?.getTime() ?? 0) - (dayKeyToDate(a)?.getTime() ?? 0),
+    (a, b) => (dayKeyToDate(a)?.getTime() ?? 0) - (dayKeyToDate(b)?.getTime() ?? 0),
   );
-  return [allTab, ...keys.map((key) => ({ key, label: labelForKey(key) }))];
+  return keys.map((key) => ({ key, label: labelForKey(key) }));
 };
 
 export const filterMatchesByDay = (
