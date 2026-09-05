@@ -128,27 +128,14 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
 
   return (
     <Container testID="schedule-list">
-      <TabsRow>
-        <AllTab
-          isActive={selectedDay === ALL_DAYS_KEY}
-          activeOpacity={0.8}
-          onPress={() => setSelectedDay(ALL_DAYS_KEY)}
-          testID="schedule-all-tab"
-        >
-          <AllTabText isActive={selectedDay === ALL_DAYS_KEY}>All</AllTabText>
-        </AllTab>
-        <DayTabsWrap>
-          <LineTabs
-            scrollable
-            fontSize={13}
-            tabs={dayTabs}
-            activeTab={selectedDay}
-            onTabPress={setSelectedDay}
-            scrollToKey={todayKey}
-            highlightKey={todayKey}
-          />
-        </DayTabsWrap>
-      </TabsRow>
+      <LineTabs
+        scrollable
+        fontSize={13}
+        tabs={dayTabs}
+        activeTab={selectedDay}
+        onTabPress={setSelectedDay}
+        highlightKey={todayKey}
+      />
       <ListScroll
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
@@ -178,36 +165,6 @@ const Container = styled.View({
   padding: 20,
   gap: 12,
 });
-
-const TabsRow = styled.View({
-  flexDirection: "row",
-  alignItems: "flex-start",
-});
-
-const DayTabsWrap = styled.View({
-  flex: 1,
-  minWidth: 0,
-});
-
-const AllTab = styled.TouchableOpacity<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    marginTop: 10,
-    borderBottomWidth: 2,
-    borderBottomColor: isActive ? "#00A2FF" : "rgb(9, 33, 62)",
-    justifyContent: "center",
-    alignItems: "center",
-  }),
-);
-
-const AllTabText = styled.Text<{ isActive: boolean }>(
-  ({ isActive }: { isActive: boolean }) => ({
-    fontSize: 13,
-    fontWeight: "bold",
-    color: isActive ? "#fff" : "#aaa",
-  }),
-);
 
 const ListScroll = styled.ScrollView({
   flex: 1,

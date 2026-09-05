@@ -13,8 +13,6 @@ interface LineTabsProps<T extends string> {
   onTabPress: (tab: T) => void;
   scrollable?: boolean;
   fontSize?: number;
-  /** Scroll this tab into view on mount/layout, independent of the active tab. */
-  scrollToKey?: T;
   /** Render this tab's label in gold (e.g. today on the schedule strip). */
   highlightKey?: T;
 }
@@ -25,29 +23,18 @@ function LineTabs<T extends string>({
   onTabPress,
   scrollable = false,
   fontSize = 14,
-  scrollToKey,
   highlightKey,
 }: LineTabsProps<T>) {
   const scrollRef = useRef<ScrollView>(null);
   const tabPositionsRef = useRef<Record<string, number>>({});
-  const didInitialScrollRef = useRef(false);
-
-  const scrollToTab = (key: string | undefined) => {
-    if (!scrollable || key == null) return;
-    const tabX = tabPositionsRef.current[key];
-    if (tabX == null) return;
-    scrollRef.current?.scrollTo({ x: Math.max(tabX - 40, 0), animated: true });
-  };
 
   // Slide the active tab into view whenever it changes (tree swipes included).
   useEffect(() => {
-    scrollToTab(activeTab);
+    if (!scrollable) return;
+    const tabX = tabPositionsRef.current[activeTab];
+    if (tabX == null) return;
+    scrollRef.current?.scrollTo({ x: Math.max(tabX - 40, 0), animated: true });
   }, [activeTab, scrollable]);
-
-  // Anchor the strip on scrollToKey (e.g. today) once on mount.
-  useEffect(() => {
-    didInitialScrollRef.current = false;
-  }, [scrollToKey]);
 
   const renderTabs = () =>
     tabs.map((tab) => (
@@ -60,10 +47,6 @@ function LineTabs<T extends string>({
           scrollable
             ? (event: LayoutChangeEvent) => {
                 tabPositionsRef.current[tab.key] = event.nativeEvent.layout.x;
-                if (tab.key === scrollToKey && !didInitialScrollRef.current) {
-                  didInitialScrollRef.current = true;
-                  scrollToTab(scrollToKey);
-                }
               }
             : undefined
         }
