@@ -316,7 +316,6 @@ const LadderGameApprovalModal = ({
   notificationId,
   senderId,
   gameId,
-  isRead,
   data,
 }: GameApprovalModalProps) => {
   const { currentUser, readNotification, getUserById, sendNotification } =
@@ -392,7 +391,10 @@ const LadderGameApprovalModal = ({
 
   const alreadyApproved =
     game?.approvalStatus === notificationTypes.RESPONSE.APPROVED_GAME;
-  const isDisabled = isRead || submitting || gameGone || alreadyApproved;
+  // Gate on the game's own state, not the notification's read flag — reading a
+  // notification doesn't resolve the game, and approveLadderGame is the final
+  // guard against a double approval.
+  const isDisabled = submitting || gameGone || alreadyApproved;
 
   const handleApprove = async () => {
     if (!currentUser?.userId || !game) return;

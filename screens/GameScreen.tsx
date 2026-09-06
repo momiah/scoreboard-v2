@@ -29,6 +29,7 @@ import {
   COLLECTION_NAMES,
   COMPETITION_TYPES,
   notificationTypes,
+  notificationSchema,
 } from "@shared";
 import {
   GameVideo,
@@ -36,9 +37,12 @@ import {
   Player,
   NormalizedCompetition,
   Game,
+  LadderMatch,
 } from "@shared/types";
 import { buildCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { UserContext } from "../context/UserContext";
+import { LadderContext } from "../context/LadderContext";
 import GameVideoCard from "../components/Feed/GameVideoCard";
 import { useLikeVideo } from "../hooks/useLikeVideo";
 import { useGameApproval } from "../hooks/useGameApproval";
@@ -61,6 +65,9 @@ type GameScreenParams = {
     date: string;
     team1: GameTeam;
     team2: GameTeam;
+    /** Ladder games live in a match subcollection, addressed by these. */
+    ladderId?: string;
+    matchId?: string;
   };
 };
 
@@ -80,12 +87,18 @@ const GameScreen: React.FC = () => {
     date,
     team1,
     team2,
+    ladderId,
+    matchId,
   } = route.params;
 
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, sendNotification } = useContext(UserContext);
+  const { approveLadderGame } = useContext(LadderContext);
   const { likedVideoIds, handleLike, initLikedVideos } = useLikeVideo();
   const { approve, decline, loadingDecision, findGameInCompetition } =
     useGameApproval();
+
+  const isLadder = competitionType === COMPETITION_TYPES.LADDER;
+  const [ladderSubmitting, setLadderSubmitting] = useState(false);
 
   const [videos, setVideos] = useState<GameVideo[]>([]);
   const [liveGame, setLiveGame] = useState<Game | null>(null);
@@ -139,6 +152,7 @@ const GameScreen: React.FC = () => {
   const showApproval = isParticipant && !isReporter && liveGame !== null;
   const canApprove =
     showApproval && isPending && !approvalLimitReached && !autoApproved;
+  const decisionPending = isLadder ? ladderSubmitting : loadingDecision;
 
   const approvalLabel = approvalLimitReached
     ? "Game approved"
@@ -149,6 +163,28 @@ const GameScreen: React.FC = () => {
   // ── Live game subscription ────────────────────────────────────────────────
   useEffect(() => {
     const db = getFirestore();
+
+    // Ladder games live in a match subcollection, not a competition doc.
+    if (isLadder) {
+      if (!ladderId || !matchId) return;
+      const matchRef = doc(db, "ladders", ladderId, "ladderMatches", matchId);
+      const unsubscribe = onSnapshot(
+        matchRef,
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            setLiveGame(null);
+            return;
+          }
+          const match = snapshot.data() as LadderMatch;
+          setLiveGame(match.games?.find((g) => g.gameId === gameId) ?? null);
+        },
+        (error) => {
+          console.error("[GameScreen] Ladder match subscription error:", error);
+        },
+      );
+      return () => unsubscribe();
+    }
+
     const competitionRef = doc(db, config.collectionName, competitionId);
 
     const unsubscribe = onSnapshot(
@@ -173,7 +209,7 @@ const GameScreen: React.FC = () => {
     );
 
     return () => unsubscribe();
-  }, [competitionId, gameId, competitionType]);
+  }, [competitionId, gameId, competitionType, isLadder, ladderId, matchId]);
 
   // ── Real-time video subscription ──────────────────────────────────────────
   useEffect(() => {
@@ -232,29 +268,88 @@ const GameScreen: React.FC = () => {
   }, []);
 
   // ── Approval handlers ─────────────────────────────────────────────────────
-  const handleApprove = useCallback(() => {
-    if (!liveGame) return;
+  const handleApprove = useCallback(async () => {
+    if (!liveGame || !currentUser?.userId) return;
+
+    if (isLadder) {
+      if (!ladderId || !matchId) return;
+      setLadderSubmitting(true);
+      const outcome = await approveLadderGame({
+        ladderId,
+        matchId,
+        gameId,
+        userId: currentUser.userId,
+        approver: {
+          userId: currentUser.userId,
+          username: currentUser.username,
+        },
+      });
+      setLadderSubmitting(false);
+      if (outcome.success) {
+        sendNotification({
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: liveGame.reporter,
+          senderId: currentUser.userId,
+          message: `${formatDisplayName(currentUser)} approved your game in ${competitionName}`,
+          type: notificationTypes.INFORMATION.LADDER.TYPE,
+          data: { ladderId, matchId, gameId },
+        });
+      }
+      return;
+    }
+
     approve({
       gameId,
       competitionId,
       senderId: liveGame.reporter,
       notificationType: approvalNotificationType,
     });
-  }, [approve, liveGame, gameId, competitionId, approvalNotificationType]);
+  }, [
+    approve,
+    approveLadderGame,
+    isLadder,
+    ladderId,
+    matchId,
+    currentUser,
+    competitionName,
+    sendNotification,
+    liveGame,
+    gameId,
+    competitionId,
+    approvalNotificationType,
+  ]);
 
   const handleDecline = useCallback(() => {
     if (!liveGame) return;
+
+    // ── Ladder decline (ready to implement) ──────────────────────────────────
+    // Wire this to declineLadderGame (see LadderContext) when the reject flow
+    // is built out; the decline button is disabled for ladder until then.
+    if (isLadder) return;
+
     decline({
       gameId,
       competitionId,
       senderId: liveGame.reporter,
       notificationType: approvalNotificationType,
     });
-  }, [decline, liveGame, gameId, competitionId, approvalNotificationType]);
+  }, [
+    decline,
+    isLadder,
+    liveGame,
+    gameId,
+    competitionId,
+    approvalNotificationType,
+  ]);
 
   // ── Placeholder logic ─────────────────────────────────────────────────────
   const renderPlaceholder = () => {
-    if (isParticipant) {
+    // Ladder video upload persists through a Cloud Function that only knows
+    // league/tournament today, so the upload entry is hidden for ladder until
+    // that pipeline is wired (video display already works via the gameVideos
+    // subscription). Participants fall through to the read-only empty state.
+    if (isParticipant && !isLadder) {
       return (
         <PlaceholderWrapper>
           <ActionPlaceholder
@@ -331,17 +426,17 @@ const GameScreen: React.FC = () => {
                   <ApprovalActions>
                     <IconButton
                       variant="decline"
-                      disabled={!canApprove || loadingDecision}
+                      disabled={!canApprove || decisionPending || isLadder}
                       onPress={handleDecline}
                     >
                       <Ionicons name="close" size={15} color="white" />
                     </IconButton>
                     <IconButton
                       variant="accept"
-                      disabled={!canApprove || loadingDecision}
+                      disabled={!canApprove || decisionPending}
                       onPress={handleApprove}
                     >
-                      {loadingDecision ? (
+                      {decisionPending ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (
                         <Ionicons name="checkmark" size={15} color="white" />
@@ -403,8 +498,8 @@ const GameScreen: React.FC = () => {
         }
       />
 
-      {/* ── Upload modal ── */}
-      {uploadModalVisible && currentUser && (
+      {/* ── Upload modal (competition only until ladder video is wired) ── */}
+      {uploadModalVisible && currentUser && !isLadder && (
         <VideoUploadModal
           visible={uploadModalVisible}
           onClose={() => setUploadModalVisible(false)}

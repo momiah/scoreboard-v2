@@ -1,9 +1,16 @@
 import React, { useContext, useEffect, useState } from "react";
 import { ScrollView } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { hasUserCheckedIn, LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
+import {
+  hasUserCheckedIn,
+  LADDER_MATCH_STATUS,
+  LADDER_TYPE,
+  COMPETITION_TYPES,
+} from "@shared";
 import type { LadderMatch, Game, Player } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
@@ -48,6 +55,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 }) => {
   const { getUserById, currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [players, setPlayers] = useState<ParticipantProfile[]>([]);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
@@ -119,11 +127,35 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   });
 
   const handleGamePress = (game: Game) => {
-    if (isCompleted) return;
-    if (!allCheckedIn) {
+    if (!allCheckedIn && !isCompleted) {
       showBottomToast("All players must check in to start the games", "info");
       return;
     }
+
+    // A reported game (score submitted) opens the shared GameScreen to
+    // view/approve/watch, exactly like League/Tournament. An unreported shell
+    // opens the report modal so a player can submit the score.
+    const isReported =
+      !!game.result || (game.approvalStatus ?? "") !== "";
+
+    if (isReported) {
+      navigation.navigate("GameScreen", {
+        gameId: game.gameId,
+        competitionId: ladderId,
+        competitionType: COMPETITION_TYPES.LADDER,
+        competitionName: match.court?.courtName ?? "Ladder match",
+        gamescore: game.gamescore ?? "",
+        date: game.date ?? "",
+        team1: game.team1,
+        team2: game.team2,
+        ladderId,
+        matchId: match.ladderMatchId,
+      });
+      return;
+    }
+
+    if (isCompleted) return;
+
     setSelectedGame(game);
     setGameModalVisible(true);
   };
