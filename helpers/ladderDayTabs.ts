@@ -49,11 +49,6 @@ const startOfDay = (d: Date): Date =>
 const labelForDate = (d: Date): string =>
   `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
 
-const labelForKey = (key: string): string => {
-  const d = dayKeyToDate(key);
-  return d ? labelForDate(d) : key;
-};
-
 const MAX_DAYS = 400;
 
 /** Date-only day tabs for every day in [start, end], chronological order. */
@@ -78,43 +73,42 @@ const dayTabsBetween = (
   return tabs;
 };
 
-const ladderStart = (ladder: Ladder): Date | null =>
-  toMoment(ladder.seasonStartsAt)?.toDate() ?? null;
-
 const ladderEnd = (ladder: Ladder): Date | null =>
   toMoment(ladder.playoffStartsAt)?.toDate() ??
   toMoment(ladder.seasonEndsAt)?.toDate() ??
   null;
 
-/** The day key for today, used to anchor/highlight the strips. */
+const ladderRegistrationOpens = (ladder: Ladder): Date | null =>
+  toMoment(ladder.registrationOpensAt)?.toDate() ?? null;
+
+/** The day key for today, used to highlight it on the strips. */
 export const todayDayKey = (now: Date = new Date()): string =>
   dateToKey(startOfDay(now));
 
-// Matchmaking strip: today -> ladder end only (no past). "All" is rendered
-// separately as a pinned button, so it is NOT included here.
+// Matchmaking strip: TODAY -> ladder end, chronological, so today is the FIRST
+// tab (leftmost) and sliding forward reveals future days to the end of the
+// ladder. "All" is a pinned button, so it is NOT included here.
 export const buildMatchmakingDayTabs = (
   ladder: Ladder,
   now: Date = new Date(),
-): LadderDayTab[] => {
-  const seasonStart = ladderStart(ladder);
-  let from = startOfDay(now);
-  if (seasonStart && startOfDay(seasonStart).getTime() > from.getTime()) {
-    from = startOfDay(seasonStart);
-  }
-  return dayTabsBetween(from, ladderEnd(ladder));
-};
+): LadderDayTab[] =>
+  dayTabsBetween(startOfDay(now), ladderEnd(ladder) ?? startOfDay(now));
 
-// Schedule strip: every day of the ladder (start -> end), chronological, so the
-// strip anchors on today with past to the left (slide right) and future to the
-// right (slide left). "All" is rendered separately as a pinned button.
+// Schedule strip: TODAY first, then previous days back to registrationOpensAt
+// (descending), so today is always the first tab (leftmost) and sliding forward
+// reveals earlier days back to when registration opened. "All" is a pinned
+// button, so it is NOT included here.
 export const buildScheduleDayTabs = (
   ladder: Ladder,
   now: Date = new Date(),
 ): LadderDayTab[] => {
-  const tabs = dayTabsBetween(ladderStart(ladder), ladderEnd(ladder));
-  if (tabs.length) return tabs;
-  const key = todayDayKey(now);
-  return [{ key, label: labelForKey(key) }];
+  const today = startOfDay(now);
+  const regOpens = ladderRegistrationOpens(ladder);
+  const from =
+    regOpens && startOfDay(regOpens).getTime() <= today.getTime()
+      ? startOfDay(regOpens)
+      : today;
+  return dayTabsBetween(from, today).reverse();
 };
 
 /** Day keys the current user has matches on (for the schedule game dots). */
