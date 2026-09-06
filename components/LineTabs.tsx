@@ -17,8 +17,6 @@ interface LineTabsProps<T extends string> {
   highlightKey?: T;
   /** Scroll this tab into view on mount, independent of the active tab. */
   scrollToKey?: T;
-  /** Tabs to mark with a dot (e.g. days the user has a game on). */
-  dotKeys?: T[];
 }
 
 function LineTabs<T extends string>({
@@ -29,9 +27,7 @@ function LineTabs<T extends string>({
   fontSize = 14,
   highlightKey,
   scrollToKey,
-  dotKeys,
 }: LineTabsProps<T>) {
-  const dotSet = new Set(dotKeys ?? []);
   const scrollRef = useRef<ScrollView>(null);
   const tabPositionsRef = useRef<Record<string, number>>({});
   const didAnchorRef = useRef(false);
@@ -54,12 +50,20 @@ function LineTabs<T extends string>({
   }, [scrollToKey, tabs.length]);
 
   // Positions are only known once children have laid out; onContentSizeChange
-  // fires after that, so anchor there for a reliable initial scroll.
+  // fires after that. Retry across a few frames in case a child's onLayout
+  // hasn't landed yet, so the initial anchor is reliable.
   const handleContentSizeChange = () => {
     if (didAnchorRef.current || scrollToKey == null) return;
-    if (tabPositionsRef.current[scrollToKey] == null) return;
-    didAnchorRef.current = true;
-    scrollToTab(scrollToKey, false);
+    const tryAnchor = (attempt: number) => {
+      if (didAnchorRef.current) return;
+      if (tabPositionsRef.current[scrollToKey] == null) {
+        if (attempt < 6) requestAnimationFrame(() => tryAnchor(attempt + 1));
+        return;
+      }
+      didAnchorRef.current = true;
+      scrollToTab(scrollToKey, false);
+    };
+    tryAnchor(0);
   };
 
   const renderTabs = () =>
@@ -84,7 +88,6 @@ function LineTabs<T extends string>({
         >
           {tab.label}
         </TabText>
-        {dotSet.has(tab.key) && <Dot />}
       </TabItem>
     ));
 
@@ -150,12 +153,3 @@ const TabText = styled.Text<{
     color: isHighlight ? "#FFD700" : isActive ? "#fff" : "#aaa",
   }),
 );
-
-const Dot = styled.View({
-  position: "absolute",
-  bottom: 4,
-  width: 4,
-  height: 4,
-  borderRadius: 2,
-  backgroundColor: "#00A2FF",
-});

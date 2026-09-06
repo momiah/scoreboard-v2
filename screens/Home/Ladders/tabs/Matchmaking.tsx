@@ -7,11 +7,13 @@ import type { Ladder, LadderMatch } from "@shared/types";
 
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
 import { LadderContext } from "../../../../context/LadderContext";
+import { PopupContext } from "../../../../context/PopupContext";
 import { getOpenMatchmakingMatches } from "../../../../helpers/ladderScheduleMatches";
 import {
   ALL_DAYS_KEY,
   buildMatchmakingDayTabs,
   filterMatchesByDay,
+  ladderRegistrationOpen,
   todayDayKey,
 } from "../../../../helpers/ladderDayTabs";
 import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
@@ -29,6 +31,7 @@ const SKELETON_ROWS = [0, 1, 2];
 const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { subscribeToLadderMatches } = useContext(LadderContext);
+  const { showBottomToast } = useContext(PopupContext);
 
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [acceptModalVisible, setAcceptModalVisible] = useState(false);
@@ -67,14 +70,22 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     }, [subscribeToLadderMatches, ladder.ladderId]),
   );
 
+  const registrationOpen = useMemo(() => ladderRegistrationOpen(ladder), [ladder]);
   const nonParticipant = isSignedIn && !isParticipant;
-  const buttonLabel = nonParticipant
-    ? "Join the ladder to post"
-    : "Post a Match";
+  const cannotPost = nonParticipant || !registrationOpen;
+  const buttonLabel = !registrationOpen
+    ? "Registration not open yet"
+    : nonParticipant
+      ? "Join the ladder to post"
+      : "Post a Match";
 
   const handlePostMatch = () => {
     if (!isSignedIn) {
       navigation.navigate("Login");
+      return;
+    }
+    if (!registrationOpen) {
+      showBottomToast("Registration is not open yet", "error");
       return;
     }
     if (!isParticipant) return;
@@ -145,8 +156,8 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
         <PostButton
           testID="matchmaking-post-match"
           activeOpacity={0.85}
-          disabled={nonParticipant}
-          isDisabled={nonParticipant}
+          disabled={cannotPost}
+          isDisabled={cannotPost}
           onPress={handlePostMatch}
         >
           <PostButtonText>{buttonLabel}</PostButtonText>
