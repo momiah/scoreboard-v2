@@ -36,7 +36,7 @@ function LineTabs<T extends string>({
     if (!scrollable || key == null) return;
     const tabX = tabPositionsRef.current[key];
     if (tabX == null) return;
-    scrollRef.current?.scrollTo({ x: Math.max(tabX - 40, 0), animated });
+    scrollRef.current?.scrollTo({ x: Math.max(tabX, 0), animated });
   };
 
   // Slide the active tab into view whenever it changes (tree swipes included).
