@@ -22,6 +22,7 @@ import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
 import Matchmaking from "./tabs/Matchmaking";
 import Schedule from "./tabs/Schedule";
+import Performance from "./tabs/Performance";
 
 type LadderTab =
   | "Summary"
@@ -92,6 +93,7 @@ const Ladder: React.FC = () => {
           <Schedule ladder={ladderById} highlightMatchId={highlightMatchId} />
         );
       case "Performance":
+        return <Performance ladder={ladderById} />;
       case "Playoff Bracket":
         return (
           <ComingSoon testID="ladder-coming-soon">

@@ -172,6 +172,7 @@ const Notifications = () => {
           competitionId={modalState.selectedCompetitionId || ""}
           isRead={modalState.isRead}
           response={modalState.response}
+          data={modalState.data}
         />
       )}
     </HomeContainer>

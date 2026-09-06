@@ -39,6 +39,17 @@ export interface UpdateLadderGameOutcome {
   reason?: UpdateLadderGameFailureReason;
 }
 
+export type ApproveLadderGameFailureReason = "unavailable" | "error";
+
+export interface ApproveLadderGameOutcome {
+  success: boolean;
+  reason?: ApproveLadderGameFailureReason;
+  /** True once the game reached its approval limit and was scored. */
+  fullyApproved?: boolean;
+  /** True when this approval also completed the match (recent-form written). */
+  matchCompleted?: boolean;
+}
+
 export interface LadderContextType {
   upcomingLadders: Ladder[];
   upcomingLaddersLoading: boolean;
@@ -87,6 +98,13 @@ export interface LadderContextType {
     matchId: string;
     updatedGame: Game;
   }) => Promise<UpdateLadderGameOutcome>;
+  approveLadderGame: (args: {
+    ladderId: string;
+    matchId: string;
+    gameId: string;
+    userId: string;
+    approver: { userId: string; username: string };
+  }) => Promise<ApproveLadderGameOutcome>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 

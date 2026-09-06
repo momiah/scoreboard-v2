@@ -3,6 +3,7 @@ import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
+import { LadderContext } from "../../context/LadderContext";
 import { useEffect, useState, useContext, useCallback } from "react";
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
@@ -11,7 +12,7 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { notificationTypes } from "@shared";
+import { notificationTypes, notificationSchema, LADDER_TYPE } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   NormalizedCompetition,
@@ -19,6 +20,7 @@ import {
   Player,
   CollectionName,
   GameTeam,
+  LadderMatch,
 } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
@@ -57,14 +59,31 @@ interface GameApprovalModalProps {
   competitionId: string;
   isRead: boolean;
   response: GameApprovalResponse | null;
+  /** Ladder notifications carry { ladderId, matchId, gameId } here. */
+  data?: {
+    ladderId?: string;
+    matchId?: string;
+    gameId?: string;
+  } | null;
 }
+
+// Ladder games live in a match subcollection, not a competition doc, so they
+// approve through their own view. Everything else keeps the competition path.
+const GameApprovalModal = (props: GameApprovalModalProps) => {
+  if (props.notificationType === notificationTypes.ACTION.ADD_GAME.LADDER) {
+    return <LadderGameApprovalModal {...props} />;
+  }
+  return <CompetitionGameApprovalModal {...props} />;
+};
+
+export default GameApprovalModal;
 
 interface NavigateToParams {
   competitionId?: string;
   userId?: string;
 }
 
-const GameApprovalModal = ({
+const CompetitionGameApprovalModal = ({
   visible,
   onClose,
   notificationId,
@@ -330,6 +349,220 @@ const GameApprovalModal = ({
   );
 };
 
+const LadderGameApprovalModal = ({
+  visible,
+  onClose,
+  notificationId,
+  senderId,
+  gameId,
+  isRead,
+  data,
+}: GameApprovalModalProps) => {
+  const { currentUser, readNotification, getUserById, sendNotification } =
+    useContext(UserContext);
+  const { fetchLadderById, fetchLadderMatches, approveLadderGame } =
+    useContext(LadderContext);
+
+  const ladderId = data?.ladderId ?? "";
+  const matchId = data?.matchId ?? "";
+
+  const [game, setGame] = useState<Game | null>(null);
+  const [ladderName, setLadderName] = useState("this ladder");
+  const [competitionType, setCompetitionType] = useState("Singles");
+  const [senderDisplayName, setSenderDisplayName] = useState("Unknown");
+  const [loading, setLoading] = useState(true);
+  const [gameGone, setGameGone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setGame(null);
+      setLoading(true);
+      setGameGone(false);
+      setSubmitting(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [ladder, matches, sender] = await Promise.all([
+          fetchLadderById(ladderId),
+          fetchLadderMatches(ladderId),
+          getUserById(senderId),
+        ]);
+
+        if (!isMounted) return;
+
+        const match =
+          matches.find((m: LadderMatch) => m.ladderMatchId === matchId) ?? null;
+        const found = match?.games.find((g) => g.gameId === gameId) ?? null;
+
+        setLadderName(ladder?.name ?? "this ladder");
+        setCompetitionType(
+          ladder?.ladderType === LADDER_TYPE.DOUBLES ? "Doubles" : "Singles",
+        );
+        setSenderDisplayName(sender ? formatDisplayName(sender) : "Unknown");
+        setGame(found);
+
+        if (!found) {
+          setGameGone(true);
+          readNotification(notificationId, currentUser?.userId);
+        }
+      } catch (error) {
+        console.error("Error loading ladder game approval:", error);
+        if (isMounted) {
+          setGame(null);
+          setGameGone(true);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [visible, ladderId, matchId, gameId, senderId]);
+
+  const alreadyApproved =
+    game?.approvalStatus === notificationTypes.RESPONSE.APPROVED_GAME;
+  const isDisabled = isRead || submitting || gameGone || alreadyApproved;
+
+  const handleApprove = async () => {
+    if (!currentUser?.userId || !game) return;
+
+    setSubmitting(true);
+    const outcome = await approveLadderGame({
+      ladderId,
+      matchId,
+      gameId: game.gameId,
+      userId: currentUser.userId,
+      approver: {
+        userId: currentUser.userId,
+        username: currentUser.username,
+      },
+    });
+    setSubmitting(false);
+
+    if (!outcome.success) {
+      onClose();
+      return;
+    }
+
+    await readNotification(
+      notificationId,
+      currentUser.userId,
+      notificationTypes.RESPONSE.ACCEPT,
+    );
+    await sendNotification({
+      ...notificationSchema,
+      createdAt: new Date(),
+      recipientId: senderId,
+      senderId: currentUser.userId,
+      message: `${formatDisplayName(currentUser)} approved your game in ${ladderName}`,
+      type: notificationTypes.INFORMATION.LADDER.TYPE,
+      data: { ladderId, matchId, gameId: game.gameId },
+    });
+    onClose();
+  };
+
+  // ── Decline (ready to implement) ──────────────────────────────────────────
+  // Wire this to declineLadderGame (see LadderContext) and the Decline button
+  // below when the reject flow is built out.
+  //
+  // const handleDecline = async () => {
+  //   if (!currentUser?.userId || !game) return;
+  //   setSubmitting(true);
+  //   await declineLadderGame({
+  //     ladderId,
+  //     matchId,
+  //     gameId: game.gameId,
+  //     userId: currentUser.userId,
+  //   });
+  //   setSubmitting(false);
+  //   await readNotification(
+  //     notificationId,
+  //     currentUser.userId,
+  //     notificationTypes.RESPONSE.DECLINE,
+  //   );
+  //   onClose();
+  // };
+
+  return (
+    <Modal transparent visible={visible} animationType="slide">
+      <ModalContainer>
+        <ModalContent>
+          {loading ? (
+            <ActivityIndicator size="large" color="#fff" />
+          ) : (
+            <>
+              <CloseButton onPress={onClose}>
+                <AntDesign name="close-circle" size={30} color="red" />
+              </CloseButton>
+
+              <Title>Game Approval Request</Title>
+              <Message>A game has been reported in {ladderName}</Message>
+              <Message>Reporter: {senderDisplayName}</Message>
+
+              {!gameGone && game && (
+                <GameContainer>
+                  <TeamColumn
+                    position="left"
+                    players={game.team1}
+                    competitionType={competitionType}
+                  />
+                  <ScoreDisplay
+                    date={game.date || "TBD"}
+                    team1={game.team1?.score}
+                    team2={game.team2?.score}
+                  />
+                  <TeamColumn
+                    position="right"
+                    players={game.team2}
+                    competitionType={competitionType}
+                  />
+                </GameContainer>
+              )}
+
+              {gameGone && (
+                <Description>
+                  This game no longer exists. Please agree on the scores and
+                  report again.
+                </Description>
+              )}
+
+              {alreadyApproved && (
+                <Description>
+                  This game has already been approved.
+                </Description>
+              )}
+
+              <ButtonRow>
+                {/* Decline is wired for a later phase; see handleDecline. */}
+                <Button variant="decline" disabled onPress={onClose}>
+                  <ButtonText>Decline</ButtonText>
+                </Button>
+                <Button disabled={isDisabled} onPress={handleApprove}>
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <ButtonText>Accept</ButtonText>
+                  )}
+                </Button>
+              </ButtonRow>
+            </>
+          )}
+        </ModalContent>
+      </ModalContainer>
+    </Modal>
+  );
+};
+
 interface TeamColumnProps {
   position: "left" | "right";
   players?: GameTeam;
@@ -545,5 +778,3 @@ const DateText = styled.Text({
   color: "white",
   marginBottom: 5,
 });
-
-export default GameApprovalModal;
