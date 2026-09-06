@@ -99,20 +99,14 @@ export const buildMatchmakingDayTabs = (
 // into view (scrollToKey), so sliding right reveals earlier matches and sliding
 // left reveals upcoming ones. "All" is a pinned button, so it is NOT included
 // here.
-export const buildScheduleDayTabs = (
-  ladder: Ladder,
-  now: Date = new Date(),
-): LadderDayTab[] => {
-  const today = startOfDay(now);
-  const regOpens = ladderRegistrationOpens(ladder);
-  const start =
-    regOpens && startOfDay(regOpens).getTime() <= today.getTime()
-      ? startOfDay(regOpens)
-      : today;
-  const end = ladderEnd(ladder);
-  const last = end && startOfDay(end).getTime() > today.getTime() ? end : today;
-  return dayTabsBetween(start, last);
-};
+export const buildScheduleDayTabs = (matches: LadderMatch[]): LadderDayTab[] =>
+  Array.from(
+    new Set(matches.map((m) => normalizeDayKey(m.matchDate)).filter(Boolean)),
+  )
+    .map((key) => ({ key, date: dayKeyToDate(key) }))
+    .filter((entry): entry is { key: string; date: Date } => entry.date != null)
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .map(({ key, date }) => ({ key, label: labelForDate(date) }));
 
 /** True once matches can be posted (from registrationOpensAt onward). */
 export const ladderRegistrationOpen = (

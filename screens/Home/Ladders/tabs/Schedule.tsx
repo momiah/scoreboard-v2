@@ -44,7 +44,7 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const [glowMatchId, setGlowMatchId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>(ALL_DAYS_KEY);
 
-  const dayTabs = useMemo(() => buildScheduleDayTabs(ladder), [ladder]);
+  const dayTabs = useMemo(() => buildScheduleDayTabs(matches), [matches]);
   const todayKey = useMemo(() => todayDayKey(), []);
   const visibleMatches = useMemo(
     () => filterMatchesByDay(matches, selectedDay),

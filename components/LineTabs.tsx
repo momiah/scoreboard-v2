@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { ScrollView, LayoutChangeEvent } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ScrollView, LayoutChangeEvent, Dimensions } from "react-native";
 import styled from "styled-components/native";
 
 interface Tab<T extends string> {
@@ -30,7 +30,25 @@ function LineTabs<T extends string>({
 }: LineTabsProps<T>) {
   const scrollRef = useRef<ScrollView>(null);
   const tabPositionsRef = useRef<Record<string, number>>({});
+  const tabWidthsRef = useRef<Record<string, number>>({});
+  const viewportWidthRef = useRef(0);
   const didAnchorRef = useRef(false);
+
+  // Trailing space so the anchor can pull a tab to the left edge, sized to the
+  // viewport minus the last tab's width. That makes the last day the hard
+  // left-edge stop: scrolling can't go past it into empty space.
+  const [trailingSpace, setTrailingSpace] = useState(
+    Dimensions.get("window").width,
+  );
+
+  const recomputeTrailingSpace = () => {
+    const viewport = viewportWidthRef.current;
+    const lastKey = tabs[tabs.length - 1]?.key;
+    const lastWidth = lastKey != null ? tabWidthsRef.current[lastKey] : null;
+    if (!viewport || lastWidth == null) return;
+    const next = Math.max(0, viewport - lastWidth);
+    setTrailingSpace((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+  };
 
   const scrollToTab = (key: string | undefined, animated: boolean) => {
     if (!scrollable || key == null) return;
@@ -77,6 +95,8 @@ function LineTabs<T extends string>({
           scrollable
             ? (event: LayoutChangeEvent) => {
                 tabPositionsRef.current[tab.key] = event.nativeEvent.layout.x;
+                tabWidthsRef.current[tab.key] = event.nativeEvent.layout.width;
+                recomputeTrailingSpace();
               }
             : undefined
         }
@@ -98,6 +118,11 @@ function LineTabs<T extends string>({
         horizontal
         showsHorizontalScrollIndicator={false}
         onContentSizeChange={handleContentSizeChange}
+        onLayout={(event: LayoutChangeEvent) => {
+          viewportWidthRef.current = event.nativeEvent.layout.width;
+          recomputeTrailingSpace();
+        }}
+        contentContainerStyle={{ paddingRight: trailingSpace }}
       >
         {renderTabs()}
       </ScrollContainer>
