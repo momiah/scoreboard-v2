@@ -2,6 +2,7 @@ import type {
   Ladder,
   LadderMatch,
   LadderMatchInput,
+  Game,
   ScoreboardProfile,
   TeamStats,
 } from "@shared/types";
@@ -29,6 +30,24 @@ export type CheckInLadderMatchFailureReason = "unavailable" | "error";
 export interface CheckInLadderMatchOutcome {
   success: boolean;
   reason?: CheckInLadderMatchFailureReason;
+}
+
+export type UpdateLadderGameFailureReason = "unavailable" | "error";
+
+export interface UpdateLadderGameOutcome {
+  success: boolean;
+  reason?: UpdateLadderGameFailureReason;
+}
+
+export type ApproveLadderGameFailureReason = "unavailable" | "error";
+
+export interface ApproveLadderGameOutcome {
+  success: boolean;
+  reason?: ApproveLadderGameFailureReason;
+  /** True once the game reached its approval limit and was scored. */
+  fullyApproved?: boolean;
+  /** True when this approval also completed the match (recent-form written). */
+  matchCompleted?: boolean;
 }
 
 export interface LadderContextType {
@@ -68,6 +87,24 @@ export interface LadderContextType {
     matchId: string,
     userId: string,
   ) => Promise<CheckInLadderMatchOutcome>;
+  checkInLadderMatchHandshake: (
+    ladderId: string,
+    matchId: string,
+    scannerId: string,
+    displayerId: string,
+  ) => Promise<CheckInLadderMatchOutcome>;
+  updateLadderGame: (args: {
+    ladderId: string;
+    matchId: string;
+    updatedGame: Game;
+  }) => Promise<UpdateLadderGameOutcome>;
+  approveLadderGame: (args: {
+    ladderId: string;
+    matchId: string;
+    gameId: string;
+    userId: string;
+    approver: { userId: string; username: string };
+  }) => Promise<ApproveLadderGameOutcome>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 

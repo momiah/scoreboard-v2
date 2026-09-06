@@ -76,6 +76,7 @@ import {
 
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { assertGameTransition } from "@/helpers/assertGameTransition";
 
 const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
@@ -2552,25 +2553,10 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             games: round.games.filter((game: Game) => game.gameId !== gameId),
           }));
         } else {
-          const newStatus = updatedGame.approvalStatus;
-
-          if (
-            (newStatus === "Pending" || newStatus === "pending") &&
-            currentGame.approvalStatus !== "Scheduled"
-          ) {
-            throw new Error(
-              "This game has already been reported. Please refresh to see the latest status.",
-            );
-          }
-
-          if (
-            (newStatus === "approved" || newStatus === "declined") &&
-            currentGame.approvalStatus !== "Pending" &&
-            currentGame.approvalStatus !== "pending" &&
-            currentGame.approvalStatus !== "Scheduled"
-          ) {
-            throw new Error("This game has already been processed.");
-          }
+          assertGameTransition(
+            currentGame.approvalStatus,
+            updatedGame.approvalStatus,
+          );
 
           updatedFixtures = fixtures.map((round: Fixtures) => ({
             ...round,

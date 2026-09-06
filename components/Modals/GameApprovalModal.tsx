@@ -3,7 +3,9 @@ import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
+import { LadderContext } from "../../context/LadderContext";
 import { useEffect, useState, useContext, useCallback } from "react";
+import type { ReactNode } from "react";
 import { AntDesign } from "@expo/vector-icons";
 import { UserContext } from "../../context/UserContext";
 import {
@@ -11,7 +13,7 @@ import {
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
-import { notificationTypes } from "@shared";
+import { notificationTypes, notificationSchema, LADDER_TYPE } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   NormalizedCompetition,
@@ -19,6 +21,7 @@ import {
   Player,
   CollectionName,
   GameTeam,
+  LadderMatch,
 } from "@shared/types";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
@@ -57,14 +60,31 @@ interface GameApprovalModalProps {
   competitionId: string;
   isRead: boolean;
   response: GameApprovalResponse | null;
+  /** Ladder notifications carry { ladderId, matchId, gameId } here. */
+  data?: {
+    ladderId?: string;
+    matchId?: string;
+    gameId?: string;
+  } | null;
 }
+
+// Ladder games live in a match subcollection, not a competition doc, so they
+// approve through their own view. Everything else keeps the competition path.
+const GameApprovalModal = (props: GameApprovalModalProps) => {
+  if (props.notificationType === notificationTypes.ACTION.ADD_GAME.LADDER) {
+    return <LadderGameApprovalModal {...props} />;
+  }
+  return <CompetitionGameApprovalModal {...props} />;
+};
+
+export default GameApprovalModal;
 
 interface NavigateToParams {
   competitionId?: string;
   userId?: string;
 }
 
-const GameApprovalModal = ({
+const CompetitionGameApprovalModal = ({
   visible,
   onClose,
   notificationId,
@@ -222,111 +242,249 @@ const GameApprovalModal = ({
     autoApproved;
 
   return (
-    <Modal transparent visible={visible} animationType="slide">
-      <ModalContainer>
-        <ModalContent>
-          {loading ? (
-            <ActivityIndicator size="large" color="#fff" />
-          ) : (
-            <>
-              <CloseButton onPress={onClose}>
-                <AntDesign name="close-circle" size={30} color="red" />
-              </CloseButton>
+    <GameApprovalShell visible={visible} onClose={onClose} loading={loading}>
+      {competition ? (
+        <>
+          <Message>
+            A game has been reported on{" "}
+            <LinkText
+              onPress={() =>
+                navigateTo(config.navRoute, {
+                  [config.paramKey]: competitionId,
+                })
+              }
+            >
+              {competitionName}
+            </LinkText>
+          </Message>
 
-              <Title>Game Approval Request</Title>
+          <Message>
+            Reporter:{" "}
+            <LinkText
+              onPress={() => navigateTo("UserProfile", { userId: senderId })}
+            >
+              {senderDisplayName}
+            </LinkText>
+          </Message>
 
-              {competition ? (
-                <>
-                  <Message>
-                    A game has been reported on{" "}
-                    <LinkText
-                      onPress={() =>
-                        navigateTo(config.navRoute, {
-                          [config.paramKey]: competitionId,
-                        })
-                      }
-                    >
-                      {competitionName}
-                    </LinkText>
-                  </Message>
-
-                  <Message>
-                    Reporter:{" "}
-                    <LinkText
-                      onPress={() =>
-                        navigateTo("UserProfile", { userId: senderId })
-                      }
-                    >
-                      {senderDisplayName}
-                    </LinkText>
-                  </Message>
-
-                  {!gameDeleted && (
-                    <GameContainer>
-                      <TeamColumn
-                        position="left"
-                        players={gameDetails?.team1}
-                        competitionType={competitionType}
-                      />
-                      <ScoreDisplay
-                        date={gameDetails?.date || "TBD"}
-                        team1={gameDetails?.team1?.score}
-                        team2={gameDetails?.team2?.score}
-                      />
-                      <TeamColumn
-                        position="right"
-                        players={gameDetails?.team2}
-                        competitionType={competitionType}
-                      />
-                    </GameContainer>
-                  )}
-
-                  {autoApproved && (
-                    <Description>
-                      This game was auto-approved by the system after 24 hours
-                      of no declines.
-                    </Description>
-                  )}
-
-                  {gameDeleted && (
-                    <Description>
-                      This game has been declined and no longer exists. Please
-                      agree on the scores and report again.
-                    </Description>
-                  )}
-
-                  {approvalLimitReached && (
-                    <Description>
-                      This game has already been approved by the maximum number
-                      of participants. No further actions can be taken.
-                    </Description>
-                  )}
-
-                  <ButtonRow>
-                    <Button
-                      variant="decline"
-                      disabled={isDisabled}
-                      onPress={handleDeclineGame}
-                    >
-                      <ButtonText>Decline</ButtonText>
-                    </Button>
-                    <Button disabled={isDisabled} onPress={handleApproveGame}>
-                      {loadingDecision ? (
-                        <ActivityIndicator size="small" color="white" />
-                      ) : (
-                        <ButtonText>Accept</ButtonText>
-                      )}
-                    </Button>
-                  </ButtonRow>
-                </>
-              ) : (
-                <Description>This competition no longer exists.</Description>
-              )}
-            </>
+          {!gameDeleted && (
+            <GameScoreCard
+              game={gameDetails}
+              competitionType={competitionType}
+            />
           )}
-        </ModalContent>
-      </ModalContainer>
-    </Modal>
+
+          {autoApproved && (
+            <Description>
+              This game was auto-approved by the system after 24 hours of no
+              declines.
+            </Description>
+          )}
+
+          {gameDeleted && (
+            <Description>
+              This game has been declined and no longer exists. Please agree on
+              the scores and report again.
+            </Description>
+          )}
+
+          {approvalLimitReached && (
+            <Description>
+              This game has already been approved by the maximum number of
+              participants. No further actions can be taken.
+            </Description>
+          )}
+
+          <ApprovalButtons
+            onDecline={handleDeclineGame}
+            onAccept={handleApproveGame}
+            declineDisabled={isDisabled}
+            acceptDisabled={isDisabled}
+            submitting={loadingDecision}
+          />
+        </>
+      ) : (
+        <Description>This competition no longer exists.</Description>
+      )}
+    </GameApprovalShell>
+  );
+};
+
+const LadderGameApprovalModal = ({
+  visible,
+  onClose,
+  notificationId,
+  senderId,
+  gameId,
+  data,
+}: GameApprovalModalProps) => {
+  const { currentUser, readNotification, getUserById, sendNotification } =
+    useContext(UserContext);
+  const { fetchLadderById, fetchLadderMatches, approveLadderGame } =
+    useContext(LadderContext);
+
+  const ladderId = data?.ladderId ?? "";
+  const matchId = data?.matchId ?? "";
+
+  const [game, setGame] = useState<Game | null>(null);
+  const [ladderName, setLadderName] = useState("this ladder");
+  const [competitionType, setCompetitionType] = useState("Singles");
+  const [senderDisplayName, setSenderDisplayName] = useState("Unknown");
+  const [loading, setLoading] = useState(true);
+  const [gameGone, setGameGone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setGame(null);
+      setLoading(true);
+      setGameGone(false);
+      setSubmitting(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [ladder, matches, sender] = await Promise.all([
+          fetchLadderById(ladderId),
+          fetchLadderMatches(ladderId),
+          getUserById(senderId),
+        ]);
+
+        if (!isMounted) return;
+
+        const match =
+          matches.find((m: LadderMatch) => m.ladderMatchId === matchId) ?? null;
+        const found = match?.games.find((g) => g.gameId === gameId) ?? null;
+
+        setLadderName(ladder?.name ?? "this ladder");
+        setCompetitionType(
+          ladder?.ladderType === LADDER_TYPE.DOUBLES ? "Doubles" : "Singles",
+        );
+        setSenderDisplayName(sender ? formatDisplayName(sender) : "Unknown");
+        setGame(found);
+
+        if (!found) {
+          setGameGone(true);
+          readNotification(notificationId, currentUser?.userId);
+        }
+      } catch (error) {
+        console.error("Error loading ladder game approval:", error);
+        if (isMounted) {
+          setGame(null);
+          setGameGone(true);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [visible, ladderId, matchId, gameId, senderId]);
+
+  const alreadyApproved =
+    game?.approvalStatus === notificationTypes.RESPONSE.APPROVED_GAME;
+  // Gate on the game's own state, not the notification's read flag — reading a
+  // notification doesn't resolve the game, and approveLadderGame is the final
+  // guard against a double approval.
+  const isDisabled = submitting || gameGone || alreadyApproved;
+
+  const handleApprove = async () => {
+    if (!currentUser?.userId || !game) return;
+
+    setSubmitting(true);
+    const outcome = await approveLadderGame({
+      ladderId,
+      matchId,
+      gameId: game.gameId,
+      userId: currentUser.userId,
+      approver: {
+        userId: currentUser.userId,
+        username: currentUser.username,
+      },
+    });
+    setSubmitting(false);
+
+    if (!outcome.success) {
+      onClose();
+      return;
+    }
+
+    await readNotification(
+      notificationId,
+      currentUser.userId,
+      notificationTypes.RESPONSE.ACCEPT,
+    );
+    await sendNotification({
+      ...notificationSchema,
+      createdAt: new Date(),
+      recipientId: senderId,
+      senderId: currentUser.userId,
+      message: `${formatDisplayName(currentUser)} approved your game in ${ladderName}`,
+      type: notificationTypes.INFORMATION.LADDER.TYPE,
+      data: { ladderId, matchId, gameId: game.gameId },
+    });
+    onClose();
+  };
+
+  // ── Decline (ready to implement) ──────────────────────────────────────────
+  // Wire this to declineLadderGame (see LadderContext) and the Decline button
+  // below when the reject flow is built out.
+  //
+  // const handleDecline = async () => {
+  //   if (!currentUser?.userId || !game) return;
+  //   setSubmitting(true);
+  //   await declineLadderGame({
+  //     ladderId,
+  //     matchId,
+  //     gameId: game.gameId,
+  //     userId: currentUser.userId,
+  //   });
+  //   setSubmitting(false);
+  //   await readNotification(
+  //     notificationId,
+  //     currentUser.userId,
+  //     notificationTypes.RESPONSE.DECLINE,
+  //   );
+  //   onClose();
+  // };
+
+  return (
+    <GameApprovalShell visible={visible} onClose={onClose} loading={loading}>
+      <Message>A game has been reported in {ladderName}</Message>
+      <Message>Reporter: {senderDisplayName}</Message>
+
+      {!gameGone && game && (
+        <GameScoreCard game={game} competitionType={competitionType} />
+      )}
+
+      {gameGone && (
+        <Description>
+          This game no longer exists. Please agree on the scores and report
+          again.
+        </Description>
+      )}
+
+      {alreadyApproved && (
+        <Description>This game has already been approved.</Description>
+      )}
+
+      <ApprovalButtons
+        // Decline is wired for a later phase; see handleDecline above.
+        onDecline={onClose}
+        onAccept={handleApprove}
+        declineDisabled
+        acceptDisabled={isDisabled}
+        submitting={submitting}
+      />
+    </GameApprovalShell>
   );
 };
 
@@ -380,6 +538,91 @@ const ScoreDisplay = ({
       <ScoreNumber>{team2 ?? "-"}</ScoreNumber>
     </ScoreContainer>
   </ResultsContainer>
+);
+
+// ── Shared presentation (competition + ladder approval both render these) ──
+
+const GameApprovalShell = ({
+  visible,
+  onClose,
+  loading,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  loading: boolean;
+  children: ReactNode;
+}) => (
+  <Modal transparent visible={visible} animationType="slide">
+    <ModalContainer>
+      <ModalContent>
+        {loading ? (
+          <ActivityIndicator size="large" color="#fff" />
+        ) : (
+          <>
+            <CloseButton onPress={onClose}>
+              <AntDesign name="close-circle" size={30} color="red" />
+            </CloseButton>
+            <Title>Game Approval Request</Title>
+            {children}
+          </>
+        )}
+      </ModalContent>
+    </ModalContainer>
+  </Modal>
+);
+
+const GameScoreCard = ({
+  game,
+  competitionType,
+}: {
+  game?: Game | null;
+  competitionType: string;
+}) => (
+  <GameContainer>
+    <TeamColumn
+      position="left"
+      players={game?.team1}
+      competitionType={competitionType}
+    />
+    <ScoreDisplay
+      date={game?.date || "TBD"}
+      team1={game?.team1?.score}
+      team2={game?.team2?.score}
+    />
+    <TeamColumn
+      position="right"
+      players={game?.team2}
+      competitionType={competitionType}
+    />
+  </GameContainer>
+);
+
+const ApprovalButtons = ({
+  onDecline,
+  onAccept,
+  declineDisabled,
+  acceptDisabled,
+  submitting,
+}: {
+  onDecline: () => void;
+  onAccept: () => void;
+  declineDisabled: boolean;
+  acceptDisabled: boolean;
+  submitting: boolean;
+}) => (
+  <ButtonRow>
+    <Button variant="decline" disabled={declineDisabled} onPress={onDecline}>
+      <ButtonText>Decline</ButtonText>
+    </Button>
+    <Button disabled={acceptDisabled} onPress={onAccept}>
+      {submitting ? (
+        <ActivityIndicator size="small" color="white" />
+      ) : (
+        <ButtonText>Accept</ButtonText>
+      )}
+    </Button>
+  </ButtonRow>
 );
 
 // Styled Components
@@ -545,5 +788,3 @@ const DateText = styled.Text({
   color: "white",
   marginBottom: 5,
 });
-
-export default GameApprovalModal;

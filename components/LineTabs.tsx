@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { ScrollView, LayoutChangeEvent } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ScrollView, LayoutChangeEvent, Dimensions } from "react-native";
 import styled from "styled-components/native";
 
 interface Tab<T extends string> {
@@ -13,6 +13,10 @@ interface LineTabsProps<T extends string> {
   onTabPress: (tab: T) => void;
   scrollable?: boolean;
   fontSize?: number;
+  /** Render this tab's label in gold (e.g. today on the schedule strip). */
+  highlightKey?: T;
+  /** Scroll this tab into view on mount, independent of the active tab. */
+  scrollToKey?: T;
 }
 
 function LineTabs<T extends string>({
@@ -21,17 +25,64 @@ function LineTabs<T extends string>({
   onTabPress,
   scrollable = false,
   fontSize = 14,
+  highlightKey,
+  scrollToKey,
 }: LineTabsProps<T>) {
   const scrollRef = useRef<ScrollView>(null);
   const tabPositionsRef = useRef<Record<string, number>>({});
+  const tabWidthsRef = useRef<Record<string, number>>({});
+  const viewportWidthRef = useRef(0);
+  const didAnchorRef = useRef(false);
+
+  // Trailing space so the anchor can pull a tab to the left edge, sized to the
+  // viewport minus the last tab's width. That makes the last day the hard
+  // left-edge stop: scrolling can't go past it into empty space.
+  const [trailingSpace, setTrailingSpace] = useState(
+    Dimensions.get("window").width,
+  );
+
+  const recomputeTrailingSpace = () => {
+    const viewport = viewportWidthRef.current;
+    const lastKey = tabs[tabs.length - 1]?.key;
+    const lastWidth = lastKey != null ? tabWidthsRef.current[lastKey] : null;
+    if (!viewport || lastWidth == null) return;
+    const next = Math.max(0, viewport - lastWidth);
+    setTrailingSpace((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+  };
+
+  const scrollToTab = (key: string | undefined, animated: boolean) => {
+    if (!scrollable || key == null) return;
+    const tabX = tabPositionsRef.current[key];
+    if (tabX == null) return;
+    scrollRef.current?.scrollTo({ x: Math.max(tabX, 0), animated });
+  };
 
   // Slide the active tab into view whenever it changes (tree swipes included).
   useEffect(() => {
-    if (!scrollable) return;
-    const tabX = tabPositionsRef.current[activeTab];
-    if (tabX == null) return;
-    scrollRef.current?.scrollTo({ x: Math.max(tabX - 40, 0), animated: true });
+    scrollToTab(activeTab, true);
   }, [activeTab, scrollable]);
+
+  // Re-anchor to scrollToKey (e.g. today) when the tab set changes.
+  useEffect(() => {
+    didAnchorRef.current = false;
+  }, [scrollToKey, tabs.length]);
+
+  // Positions are only known once children have laid out; onContentSizeChange
+  // fires after that. Retry across a few frames in case a child's onLayout
+  // hasn't landed yet, so the initial anchor is reliable.
+  const handleContentSizeChange = () => {
+    if (didAnchorRef.current || scrollToKey == null) return;
+    const tryAnchor = (attempt: number) => {
+      if (didAnchorRef.current) return;
+      if (tabPositionsRef.current[scrollToKey] == null) {
+        if (attempt < 6) requestAnimationFrame(() => tryAnchor(attempt + 1));
+        return;
+      }
+      didAnchorRef.current = true;
+      scrollToTab(scrollToKey, false);
+    };
+    tryAnchor(0);
+  };
 
   const renderTabs = () =>
     tabs.map((tab) => (
@@ -44,11 +95,17 @@ function LineTabs<T extends string>({
           scrollable
             ? (event: LayoutChangeEvent) => {
                 tabPositionsRef.current[tab.key] = event.nativeEvent.layout.x;
+                tabWidthsRef.current[tab.key] = event.nativeEvent.layout.width;
+                recomputeTrailingSpace();
               }
             : undefined
         }
       >
-        <TabText isActive={activeTab === tab.key} fontSize={fontSize}>
+        <TabText
+          isActive={activeTab === tab.key}
+          isHighlight={tab.key === highlightKey}
+          fontSize={fontSize}
+        >
           {tab.label}
         </TabText>
       </TabItem>
@@ -60,6 +117,12 @@ function LineTabs<T extends string>({
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
+        onContentSizeChange={handleContentSizeChange}
+        onLayout={(event: LayoutChangeEvent) => {
+          viewportWidthRef.current = event.nativeEvent.layout.width;
+          recomputeTrailingSpace();
+        }}
+        contentContainerStyle={{ paddingRight: trailingSpace }}
       >
         {renderTabs()}
       </ScrollContainer>
@@ -96,10 +159,22 @@ const TabItem = styled.TouchableOpacity<{
   alignItems: "center",
 }));
 
-const TabText = styled.Text<{ isActive: boolean; fontSize: number }>(
-  ({ isActive, fontSize }: { isActive: boolean; fontSize: number }) => ({
+const TabText = styled.Text<{
+  isActive: boolean;
+  isHighlight?: boolean;
+  fontSize: number;
+}>(
+  ({
+    isActive,
+    isHighlight,
+    fontSize,
+  }: {
+    isActive: boolean;
+    isHighlight?: boolean;
+    fontSize: number;
+  }) => ({
     fontSize,
     fontWeight: "bold",
-    color: isActive ? "#fff" : "#aaa",
+    color: isHighlight ? "#FFD700" : isActive ? "#fff" : "#aaa",
   }),
 );
