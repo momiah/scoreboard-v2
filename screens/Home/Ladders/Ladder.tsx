@@ -14,15 +14,17 @@ import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { LADDER_TYPE } from "@shared/types";
+import type { ScoreboardProfile, TeamStats } from "@shared/types";
 
 import Tag from "../../../components/Tag";
 import LadderSummary from "../../../components/Summary/LadderSummary";
 import LoadingOverlay from "../../../components/LoadingOverlay";
+import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
+import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
 import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
 import Matchmaking from "./tabs/Matchmaking";
 import Schedule from "./tabs/Schedule";
-import Performance from "./tabs/Performance";
 
 type LadderTab =
   | "Summary"
@@ -42,29 +44,49 @@ const Ladder: React.FC = () => {
     useRoute<RouteProp<Record<string, LadderRouteParams>, string>>();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { ladderId, tab, highlightMatchId } = route.params;
-  const { fetchLadderById, ladderById } = useContext(LadderContext);
+  const { fetchLadderById, fetchLadderParticipants, fetchLadderTeams, ladderById } =
+    useContext(LadderContext);
 
   const [ladderLoading, setLadderLoading] = useState(true);
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
+  const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
+  const [teams, setTeams] = useState<TeamStats[]>([]);
 
   useFocusEffect(
     useCallback(() => {
+      let active = true;
       const fetchData = async () => {
         if (!ladderId) return;
         setLadderLoading(true);
         try {
           const fetched = await fetchLadderById(ladderId);
+          if (!active) return;
           setLadderNotFound(!fetched);
+
+          // Standings data comes from the ladder subcollections (League/
+          // Tournament get theirs off the competition doc). Doubles reads teams,
+          // singles reads participants — same data PlayerPerformance/
+          // TeamPerformance already render.
+          if (fetched?.ladderType === LADDER_TYPE.DOUBLES) {
+            const rows = await fetchLadderTeams(ladderId);
+            if (active) setTeams(rows);
+          } else {
+            const rows = await fetchLadderParticipants(ladderId);
+            if (active) setParticipants(rows);
+          }
         } catch (error) {
           console.error("Error fetching ladder data:", error);
-          setLadderNotFound(true);
+          if (active) setLadderNotFound(true);
         } finally {
-          setLadderLoading(false);
+          if (active) setLadderLoading(false);
         }
       };
       fetchData();
-    }, [ladderId, fetchLadderById]),
+      return () => {
+        active = false;
+      };
+    }, [ladderId, fetchLadderById, fetchLadderParticipants, fetchLadderTeams]),
   );
 
   const performanceLabel: LadderTab = "Performance";
@@ -93,7 +115,14 @@ const Ladder: React.FC = () => {
           <Schedule ladder={ladderById} highlightMatchId={highlightMatchId} />
         );
       case "Performance":
-        return <Performance ladder={ladderById} />;
+        // Reuse the competition performance components directly, exactly as
+        // League/Tournament do. Doubles renders team standings; singles renders
+        // player standings (with the ladder for its per-ladder CP column).
+        return ladderById.ladderType === LADDER_TYPE.DOUBLES ? (
+          <TeamPerformance leagueTeams={teams} />
+        ) : (
+          <PlayerPerformance playersData={participants} ladder={ladderById} />
+        );
       case "Playoff Bracket":
         return (
           <ComingSoon testID="ladder-coming-soon">
