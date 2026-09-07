@@ -794,9 +794,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           };
 
           if (fullyApproved) {
-            // Per-game performance: mutates the ladder participants (per-ladder
-            // CP + stats) and the global user profileDetail (rank-medal XP).
+            // Per-game performance: updates the ladder participant stats and the
+            // global user profileDetail (the rank-medal XP the app runs on). It
+            // records each game's XP delta on the participant's prevGameXP but
+            // only accumulates the global XP, so the ladder participant's own XP
+            // — the per-ladder CP shown in the standings — is accumulated here
+            // from that delta, floored at the 20 starting CP.
             calculatePlayerPerformance(updatedGame, participants, users);
+            participants.forEach((p) => {
+              p.XP = Math.max(20, (p.XP ?? 20) + (p.prevGameXP ?? 0));
+            });
 
             // Recent form: push the match result once, when the match is first
             // decided (best-of clinched).
