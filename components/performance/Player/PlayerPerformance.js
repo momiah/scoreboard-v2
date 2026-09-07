@@ -21,6 +21,7 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
     const loadEnrichedPlayers = async () => {
       if (playersData.length > 0) {
         const enriched = await enrichPlayers(getUserById, playersData);
+        const isLadder = !!ladder;
         const sorted = [...enriched].sort((a, b) => {
           if ((b.numberOfWins || 0) !== (a.numberOfWins || 0)) {
             return (b.numberOfWins || 0) - (a.numberOfWins || 0);
@@ -30,7 +31,11 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
               (b.totalPointDifference || 0) - (a.totalPointDifference || 0)
             );
           }
-          return (b.XP || 0) - (a.XP || 0);
+          // Final tiebreak: per-ladder CP for ladders; global rank XP otherwise
+          // (enrichPlayers has overwritten XP with the global profile XP).
+          const aTie = isLadder ? a.cp || 0 : a.XP || 0;
+          const bTie = isLadder ? b.cp || 0 : b.XP || 0;
+          return bTie - aTie;
         });
         setPlayersWithUserData(sorted);
         setLoading(false);
