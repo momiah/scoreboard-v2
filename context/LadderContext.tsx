@@ -799,10 +799,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             // records each game's XP delta on the participant's prevGameXP but
             // only accumulates the global XP, so the ladder participant's own XP
             // — the per-ladder CP shown in the standings — is accumulated here
-            // from that delta, floored at the 20 starting CP.
+            // from that delta, floored at 0 (no negative ladder CP).
             calculatePlayerPerformance(updatedGame, participants, users);
             participants.forEach((p) => {
-              p.XP = Math.max(20, (p.XP ?? 20) + (p.prevGameXP ?? 0));
+              p.XP = Math.max(0, (p.XP ?? 0) + (p.prevGameXP ?? 0));
             });
 
             // Recent form: push the match result once, when the match is first

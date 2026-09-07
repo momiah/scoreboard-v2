@@ -79,7 +79,7 @@ const Ladder: React.FC = () => {
             // `cp` so it survives enrichPlayers overwriting XP with the global
             // rank XP the medal needs.
             if (active)
-              setParticipants(rows.map((r) => ({ ...r, cp: r.XP ?? 20 })));
+              setParticipants(rows.map((r) => ({ ...r, cp: r.XP ?? 0 })));
           }
         } catch (error) {
           console.error("Error fetching ladder data:", error);

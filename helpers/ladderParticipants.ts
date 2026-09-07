@@ -12,9 +12,10 @@ export const buildLadderParticipant = (
   user: LadderJoinUser,
 ): ScoreboardProfile => ({
   ...scoreboardProfileSchema,
-  // Ladder CP starts at 20 (like the global profile) so per-ladder XP maths
-  // never divides by zero and the CP floor never goes negative.
-  XP: 20,
+  // Per-ladder CP starts at 0: it's a display-only accumulator (the CP shown in
+  // the ladder standings), never fed into the XP maths — those use the global
+  // profile XP — so it needs no non-zero seed.
+  XP: 0,
   username: user.username,
   firstName: user.firstName ? user.firstName.split(" ")[0] : "",
   lastName: user.lastName ? user.lastName.split(" ")[0] : "",
