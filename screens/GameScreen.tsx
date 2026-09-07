@@ -345,11 +345,7 @@ const GameScreen: React.FC = () => {
 
   // ── Placeholder logic ─────────────────────────────────────────────────────
   const renderPlaceholder = () => {
-    // Ladder video upload persists through a Cloud Function that only knows
-    // league/tournament today, so the upload entry is hidden for ladder until
-    // that pipeline is wired (video display already works via the gameVideos
-    // subscription). Participants fall through to the read-only empty state.
-    if (isParticipant && !isLadder) {
+    if (isParticipant) {
       return (
         <PlaceholderWrapper>
           <ActionPlaceholder
@@ -498,8 +494,8 @@ const GameScreen: React.FC = () => {
         }
       />
 
-      {/* ── Upload modal (competition only until ladder video is wired) ── */}
-      {uploadModalVisible && currentUser && !isLadder && (
+      {/* ── Upload modal ── */}
+      {uploadModalVisible && currentUser && (
         <VideoUploadModal
           visible={uploadModalVisible}
           onClose={() => setUploadModalVisible(false)}
@@ -510,7 +506,9 @@ const GameScreen: React.FC = () => {
             competitionType as
               | typeof COMPETITION_TYPES.LEAGUE
               | typeof COMPETITION_TYPES.TOURNAMENT
+              | typeof COMPETITION_TYPES.LADDER
           }
+          matchId={matchId}
           gamescore={gamescore}
           date={date}
           teams={{

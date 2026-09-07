@@ -131,16 +131,29 @@ export const updateGameVideoUrl = functions.https.onCall(
       postedBy,
       teams,
       videoLength = undefined,
+      matchId = undefined,
     } = request.data;
 
     const db = admin.firestore();
 
-    const collectionName =
-      competitionType === COMPETITION_TYPES.TOURNAMENT
-        ? COLLECTION_NAMES.tournaments
-        : COLLECTION_NAMES.leagues;
+    const isTournament = competitionType === COMPETITION_TYPES.TOURNAMENT;
+    const isLadder = competitionType === COMPETITION_TYPES.LADDER;
 
-    const competitionRef = db.collection(collectionName).doc(competitionId);
+    // Ladder games live in a match subcollection; league/tournament games live
+    // on the competition doc. Resolve the doc that holds this game's array.
+    const competitionRef = isLadder
+      ? db
+          .collection("ladders")
+          .doc(competitionId)
+          .collection("ladderMatches")
+          .doc(matchId as string)
+      : db
+          .collection(
+            isTournament
+              ? COLLECTION_NAMES.tournaments
+              : COLLECTION_NAMES.leagues,
+          )
+          .doc(competitionId);
     const competitionSnap = await competitionRef.get();
 
     // ── Check if this user already has a video for this game ─────────────
