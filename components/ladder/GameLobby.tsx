@@ -88,9 +88,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
 
-  const mine = players.find((p) => p.userId === currentUserId);
+  const user = players.find((p) => p.userId === currentUserId);
   const opponents = players.filter((p) => p.userId !== currentUserId);
-  const leftNames = mine ? [formatDisplayName(mine)] : ["You"];
+  const leftNames = user ? [formatDisplayName(user)] : ["You"];
   const rightNames =
     opponents.length > 0
       ? opponents.map((p) => formatDisplayName(p))
@@ -115,7 +115,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
       ...game,
       team1: {
         ...game.team1,
-        player1: toPlayerCell(mine),
+        player1: toPlayerCell(user),
         player2: null,
       },
       team2: {
@@ -219,7 +219,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
               ))}
             </SideCol>
             <ScoreValue outcome={score.outcome}>
-              {score.mine} - {score.theirs}
+              {score.user} - {score.opponent}
             </ScoreValue>
             <SideCol align="right">
               {rightNames.map((name, i) => (

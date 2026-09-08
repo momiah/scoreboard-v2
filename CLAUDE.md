@@ -30,3 +30,5 @@ merged (the pinned commit must exist on `main` first).
 - No pull requests unless explicitly asked (the shared PR above is the exception,
   since landing shared changes requires one).
 - No explanatory code comments unless they are load-bearing or marking a stub.
+- Naming: use `user` for the current user and `opponent` for the other
+  player/team. Do not use `me`/`mine` or `them`/`theirs`.

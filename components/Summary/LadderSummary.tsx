@@ -129,16 +129,16 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       setUserSummaryRow(null);
       return;
     }
-    const me = participants.find((p) => p.userId === uid);
-    if (!me) {
+    const user = participants.find((p) => p.userId === uid);
+    if (!user) {
       setUserSummaryRow(null);
       return;
     }
     let active = true;
     const load = async () => {
       try {
-        const [enrichedMe] = (await enrichPlayers(getUserById, [
-          me,
+        const [enrichedUser] = (await enrichPlayers(getUserById, [
+          user,
         ])) as EnrichedPlayer[];
         // Rank on the raw participants (per-ladder XP = CP) via the ladder
         // comparator; 0 means unranked (no wins).
@@ -146,8 +146,8 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           sortLadderParticipantsByPlacement(participants).findIndex(
             (p) => p.userId === uid,
           ) + 1;
-        const cp = me.XP ?? 0;
-        if (active) setUserSummaryRow({ player: enrichedMe, rank, cp });
+        const cp = user.XP ?? 0;
+        if (active) setUserSummaryRow({ player: enrichedUser, rank, cp });
       } catch (error) {
         console.error("Error building ladder summary row:", error);
         if (active) setUserSummaryRow(null);
