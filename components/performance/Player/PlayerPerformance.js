@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { FlatList } from "react-native";
 import styled from "styled-components/native";
+import { sortLadderParticipantsByPlacement } from "@shared/helpers";
 import { UserContext } from "../../../context/UserContext";
 import PlayerDetails from "../../Modals/PlayerDetailsModal";
 import PerformanceRow from "./PerformanceRow";
@@ -15,13 +16,29 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersWithUserData, setPlayersWithUserData] = useState([]);
+  const [rankedCount, setRankedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadEnrichedPlayers = async () => {
-      if (playersData.length > 0) {
+      if (playersData.length === 0) return;
+      const isLadder = !!ladder;
+
+      if (isLadder) {
+        // Rank on the raw participants (their per-ladder XP is the CP) via the
+        // shared comparator, before enrichPlayers overwrites XP with the global
+        // rank XP the medal needs. 0-win players are unranked, listed below.
+        const ranked = sortLadderParticipantsByPlacement(playersData);
+        const rankedIds = new Set(ranked.map((p) => p.userId));
+        const unranked = playersData.filter((p) => !rankedIds.has(p.userId));
+        const enriched = await enrichPlayers(getUserById, [
+          ...ranked,
+          ...unranked,
+        ]);
+        setRankedCount(ranked.length);
+        setPlayersWithUserData(enriched);
+      } else {
         const enriched = await enrichPlayers(getUserById, playersData);
-        const isLadder = !!ladder;
         const sorted = [...enriched].sort((a, b) => {
           if ((b.numberOfWins || 0) !== (a.numberOfWins || 0)) {
             return (b.numberOfWins || 0) - (a.numberOfWins || 0);
@@ -31,25 +48,22 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
               (b.totalPointDifference || 0) - (a.totalPointDifference || 0)
             );
           }
-          // Final tiebreak: per-ladder CP for ladders; global rank XP otherwise
-          // (enrichPlayers has overwritten XP with the global profile XP).
-          const aTie = isLadder ? a.cp || 0 : a.XP || 0;
-          const bTie = isLadder ? b.cp || 0 : b.XP || 0;
-          return bTie - aTie;
+          return (b.XP || 0) - (a.XP || 0);
         });
+        setRankedCount(sorted.length);
         setPlayersWithUserData(sorted);
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     loadEnrichedPlayers();
-  }, [playersData, getUserById]);
+  }, [playersData, getUserById, ladder]);
 
   const renderPlayer = ({ item: player, index }) => (
     <PerformanceRow
       key={player.userId}
       player={player}
-      rank={index + 1}
+      rank={index < rankedCount ? index + 1 : 0}
       ladder={ladder}
       cp={player.cp}
       onPress={(p) => {

@@ -6,10 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_STATUS, COMPETITION_TYPES } from "@shared";
 import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
-import {
-  sortPlayersByPlacement,
-  getPlayerRankInCompetition,
-} from "@shared/helpers/getRankInCompetition";
+import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
 
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
@@ -143,7 +140,12 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         const [enrichedMe] = (await enrichPlayers(getUserById, [
           me,
         ])) as EnrichedPlayer[];
-        const rank = getPlayerRankInCompetition(participants, uid);
+        // Rank on the raw participants (per-ladder XP = CP) via the ladder
+        // comparator; 0 means unranked (no wins).
+        const rank =
+          sortLadderParticipantsByPlacement(participants).findIndex(
+            (p) => p.userId === uid,
+          ) + 1;
         const cp = me.XP ?? 0;
         if (active) setUserSummaryRow({ player: enrichedMe, rank, cp });
       } catch (error) {
@@ -161,17 +163,18 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     let active = true;
     const loadContenders = async () => {
       setIsDataLoading(true);
-      const withWins = participants.filter((p) => (p.numberOfWins ?? 0) > 0);
-      if (withWins.length === 0) {
+      // Rank raw participants (per-ladder XP = CP) with the ladder comparator,
+      // then enrich the top few for display (order preserved).
+      const ranked = sortLadderParticipantsByPlacement(participants);
+      if (ranked.length === 0) {
         if (active) setTopContenders([]);
       } else {
         try {
           const enriched = (await enrichPlayers(
             getUserById,
-            withWins,
+            ranked,
           )) as ScoreboardProfile[];
-          if (active)
-            setTopContenders(sortPlayersByPlacement(enriched).slice(0, 4));
+          if (active) setTopContenders(enriched.slice(0, 4));
         } catch (error) {
           console.error("Error enriching ladder players:", error);
           if (active) setTopContenders([]);
