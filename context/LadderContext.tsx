@@ -33,6 +33,7 @@ import {
   getLadderCheckedInUserIds,
   notificationTypes,
   LADDER_MATCH_STATUS,
+  COMPETITION_TYPES,
 } from "@shared";
 import { calculatePlayerPerformance } from "@shared/helpers";
 import type {
@@ -794,13 +795,17 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           };
 
           if (fullyApproved) {
-            // Per-game performance: updates the ladder participant stats and the
-            // global user profileDetail (the rank-medal XP the app runs on). It
-            // records each game's XP delta on the participant's prevGameXP but
-            // only accumulates the global XP, so the ladder participant's own XP
-            // — the per-ladder CP shown in the standings — is accumulated here
-            // from that delta, floored at 0 (no negative ladder CP).
-            calculatePlayerPerformance(updatedGame, participants, users);
+            // Passing the ladder competitionType makes the upset multiplier use
+            // each participant's per-ladder CP as the basis (not global XP), so
+            // prevGameXP is the CP this game earned in THIS ladder. Global
+            // profileDetail XP still accumulates that same delta. The per-ladder
+            // CP is accumulated here, floored at 0 (no negative ladder CP).
+            calculatePlayerPerformance(
+              updatedGame,
+              participants,
+              users,
+              COMPETITION_TYPES.LADDER,
+            );
             participants.forEach((p) => {
               p.XP = Math.max(0, (p.XP ?? 0) + (p.prevGameXP ?? 0));
             });
