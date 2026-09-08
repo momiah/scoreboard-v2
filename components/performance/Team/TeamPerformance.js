@@ -1,15 +1,18 @@
-import React, { useState, useContext, useMemo } from "react";
-import { FlatList } from "react-native";
+import React, { useState, useContext, useEffect, useMemo } from "react";
+import { ActivityIndicator, FlatList } from "react-native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import TeamDetails from "../../Modals/TeamDetailsModal";
 import { Dimensions } from "react-native";
 import LoadingOverlay from "../../LoadingOverlay";
 
+const PAGE_SIZE = 25;
+
 const TeamPerformance = ({ leagueTeams }) => {
   const { recentGameResult } = useContext(GameContext);
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [team, setTeam] = useState({});
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const loading = !leagueTeams;
 
@@ -25,6 +28,23 @@ const TeamPerformance = ({ leagueTeams }) => {
         return b.averagePointDifference - a.averagePointDifference;
       });
   }, [leagueTeams]);
+
+  // Render 25 rows at a time and reveal more on scroll, so a 2000+ team ladder
+  // doesn't mount every row at once.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [sortedTeams]);
+
+  const visibleTeams = useMemo(
+    () => sortedTeams.slice(0, visibleCount),
+    [sortedTeams, visibleCount],
+  );
+
+  const handleLoadMore = () => {
+    setVisibleCount((count) =>
+      count < sortedTeams.length ? count + PAGE_SIZE : count,
+    );
+  };
 
   const renderTeam = ({ item: team, index }) => {
     const pointDifference = team.totalPointDifference || 0;
@@ -79,9 +99,16 @@ const TeamPerformance = ({ leagueTeams }) => {
         <FallbackMessage>Add a game to see Team Performance 📈</FallbackMessage>
       ) : (
         <FlatList
-          data={sortedTeams}
+          data={visibleTeams}
           renderItem={renderTeam}
           keyExtractor={(team, index) => (team.team ?? []).join("-") + index}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            visibleTeams.length < sortedTeams.length ? (
+              <FooterSpinner color="#00A2FF" />
+            ) : null
+          }
         />
       )}
 
@@ -167,6 +194,10 @@ const FallbackMessage = styled.Text({
   fontSize: 16,
   textAlign: "center",
   marginTop: 50,
+});
+
+const FooterSpinner = styled(ActivityIndicator)({
+  paddingVertical: 16,
 });
 
 export default TeamPerformance;

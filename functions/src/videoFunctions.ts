@@ -280,6 +280,20 @@ export const updateGameVideoUrl = functions.https.onCall(
       ]);
     }
 
+    // ── Remove the pending-upload record now the video is attached ─────────
+    // The client also deletes this, but only after this callable resolves
+    // on-device — which can be delayed or skipped when the app is backgrounded,
+    // leaving the upload toast stuck at 100%. Deleting server-side clears it as
+    // soon as the attach is confirmed, regardless of client lifecycle.
+    try {
+      await db
+        .collection(COLLECTION_NAMES.pendingVideoUploads)
+        .doc(gameId)
+        .delete();
+    } catch (error) {
+      console.error("[videoFunctions] Failed to delete pending record:", error);
+    }
+
     // ── Notify other players ──────────────────────────────────────────────
     const playerUserIds = [
       teams.team1?.player1?.userId,

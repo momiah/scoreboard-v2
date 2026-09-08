@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from "react";
-import { FlatList } from "react-native";
+import React, { useState, useEffect, useContext, useMemo, useRef } from "react";
+import { ActivityIndicator, FlatList } from "react-native";
 import styled from "styled-components/native";
 import { sortLadderParticipantsByPlacement } from "@shared/helpers";
 import { UserContext } from "../../../context/UserContext";
@@ -7,6 +7,8 @@ import PlayerDetails from "../../Modals/PlayerDetailsModal";
 import PerformanceRow from "./PerformanceRow";
 import { enrichPlayers } from "../../../helpers/enrichPlayers";
 import LoadingOverlay from "../../LoadingOverlay";
+
+const PAGE_SIZE = 25;
 
 /**
  * @param {{ playersData: any[], ladder?: any }} props
@@ -18,46 +20,92 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
   const [playersWithUserData, setPlayersWithUserData] = useState([]);
   const [rankedCount, setRankedCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [requestedCount, setRequestedCount] = useState(PAGE_SIZE);
+
+  // Rank the raw participants once. For a ladder the per-ladder XP is the CP, so
+  // the shared comparator ranks on raw data before enrichPlayers overwrites XP
+  // with the global rank XP the medal needs; 0-win players are unranked below.
+  // Sorting on raw data (no per-player fetch) lets us enrich only the visible
+  // page — enrichPlayers reads one user doc per player, so enriching all of a
+  // 2000+ ladder up front is what makes the tab lag.
+  const sorted = useMemo(() => {
+    if (!playersData || playersData.length === 0) {
+      return { list: [], rankedCount: 0 };
+    }
+    if (ladder) {
+      const ranked = sortLadderParticipantsByPlacement(playersData);
+      const rankedIds = new Set(ranked.map((p) => p.userId));
+      const unranked = playersData.filter((p) => !rankedIds.has(p.userId));
+      return { list: [...ranked, ...unranked], rankedCount: ranked.length };
+    }
+    const list = [...playersData].sort((a, b) => {
+      if ((b.numberOfWins || 0) !== (a.numberOfWins || 0)) {
+        return (b.numberOfWins || 0) - (a.numberOfWins || 0);
+      }
+      if ((b.totalPointDifference || 0) !== (a.totalPointDifference || 0)) {
+        return (b.totalPointDifference || 0) - (a.totalPointDifference || 0);
+      }
+      return (b.XP || 0) - (a.XP || 0);
+    });
+    return { list, rankedCount: list.length };
+  }, [playersData, ladder]);
+
+  // Cursor tracks which dataset we've enriched and how far into it, so a data
+  // change restarts from the top and scrolling only fetches the new slice.
+  const cursorRef = useRef({ key: null, count: 0 });
 
   useEffect(() => {
-    const loadEnrichedPlayers = async () => {
-      if (playersData.length === 0) return;
-      const isLadder = !!ladder;
+    let cancelled = false;
 
-      if (isLadder) {
-        // Rank on the raw participants (their per-ladder XP is the CP) via the
-        // shared comparator, before enrichPlayers overwrites XP with the global
-        // rank XP the medal needs. 0-win players are unranked, listed below.
-        const ranked = sortLadderParticipantsByPlacement(playersData);
-        const rankedIds = new Set(ranked.map((p) => p.userId));
-        const unranked = playersData.filter((p) => !rankedIds.has(p.userId));
-        const enriched = await enrichPlayers(getUserById, [
-          ...ranked,
-          ...unranked,
-        ]);
-        setRankedCount(ranked.length);
-        setPlayersWithUserData(enriched);
-      } else {
-        const enriched = await enrichPlayers(getUserById, playersData);
-        const sorted = [...enriched].sort((a, b) => {
-          if ((b.numberOfWins || 0) !== (a.numberOfWins || 0)) {
-            return (b.numberOfWins || 0) - (a.numberOfWins || 0);
-          }
-          if ((b.totalPointDifference || 0) !== (a.totalPointDifference || 0)) {
-            return (
-              (b.totalPointDifference || 0) - (a.totalPointDifference || 0)
-            );
-          }
-          return (b.XP || 0) - (a.XP || 0);
-        });
-        setRankedCount(sorted.length);
-        setPlayersWithUserData(sorted);
+    const load = async () => {
+      if (cursorRef.current.key !== sorted) {
+        cursorRef.current = { key: sorted, count: 0 };
+        setPlayersWithUserData([]);
+        setRankedCount(sorted.rankedCount);
+        setLoading(true);
       }
+
+      if (sorted.list.length === 0) {
+        setLoading(false);
+        setLoadingMore(false);
+        return;
+      }
+
+      const from = cursorRef.current.count;
+      const target = Math.min(requestedCount, sorted.list.length);
+      if (target <= from) {
+        setLoading(false);
+        setLoadingMore(false);
+        return;
+      }
+
+      const chunk = await enrichPlayers(
+        getUserById,
+        sorted.list.slice(from, target),
+      );
+      if (cancelled) return;
+
+      cursorRef.current.count = target;
+      setPlayersWithUserData((prev) =>
+        from === 0 ? chunk : [...prev, ...chunk],
+      );
       setLoading(false);
+      setLoadingMore(false);
     };
 
-    loadEnrichedPlayers();
-  }, [playersData, getUserById, ladder]);
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [sorted, requestedCount, getUserById]);
+
+  const handleLoadMore = () => {
+    if (loading || loadingMore) return;
+    if (cursorRef.current.count >= sorted.list.length) return;
+    setLoadingMore(true);
+    setRequestedCount((count) => count + PAGE_SIZE);
+  };
 
   const renderPlayer = ({ item: player, index }) => (
     <PerformanceRow
@@ -85,6 +133,11 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
         data={playersWithUserData}
         renderItem={renderPlayer}
         keyExtractor={(player) => player.userId}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? <FooterSpinner color="#00A2FF" /> : null
+        }
       />
 
       {showPlayerDetails && (
@@ -109,6 +162,10 @@ const EmptyState = styled.Text({
   textAlign: "center",
   flex: 1,
   marginTop: 40,
+});
+
+const FooterSpinner = styled(ActivityIndicator)({
+  paddingVertical: 16,
 });
 
 export default PlayerPerformance;
