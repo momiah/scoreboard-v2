@@ -71,15 +71,20 @@ const Ladder: React.FC = () => {
           // singles reads participants — same data PlayerPerformance/
           // TeamPerformance already render.
           if (fetched?.ladderType === LADDER_TYPE.DOUBLES) {
-            const rows = await fetchLadderTeams(ladderId);
-            if (active) setTeams(rows);
+            const teamRows = await fetchLadderTeams(ladderId);
+            if (active) setTeams(teamRows);
           } else {
-            const rows = await fetchLadderParticipants(ladderId);
+            const participantRows = await fetchLadderParticipants(ladderId);
             // The participant's own XP is its per-ladder value. Copy it to
             // `ladderXP` so it survives enrichPlayers overwriting XP with the
             // global profile XP the Rank Medal needs. Displayed as "CP".
             if (active)
-              setParticipants(rows.map((r) => ({ ...r, ladderXP: r.XP ?? 0 })));
+              setParticipants(
+                participantRows.map((participantRow) => ({
+                  ...participantRow,
+                  ladderXP: participantRow.XP ?? 0,
+                })),
+              );
           }
         } catch (error) {
           console.error("Error fetching ladder data:", error);
