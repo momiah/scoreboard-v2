@@ -36,6 +36,7 @@ interface ParticipantProfile {
 
 interface GameLobbyProps {
   ladderId: string;
+  ladderName?: string;
   match: LadderMatch;
   currentUserId?: string;
   checkedIn: boolean;
@@ -49,6 +50,7 @@ const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
 
 const GameLobby: React.FC<GameLobbyProps> = ({
   ladderId,
+  ladderName,
   match,
   currentUserId,
   checkedIn,
@@ -143,7 +145,8 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         gameId: game.gameId,
         competitionId: ladderId,
         competitionType: COMPETITION_TYPES.LADDER,
-        competitionName: match.court?.courtName ?? "Ladder match",
+        competitionName:
+          ladderName ?? match.court?.courtName ?? "Ladder match",
         gamescore: game.gamescore ?? "",
         date: game.date ?? "",
         team1: game.team1,

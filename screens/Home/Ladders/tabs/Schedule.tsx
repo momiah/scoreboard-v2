@@ -96,6 +96,7 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
       matchId: match.ladderMatchId,
       match,
       ladderType: ladder.ladderType,
+      ladderName: ladder.name,
     });
   };
 
