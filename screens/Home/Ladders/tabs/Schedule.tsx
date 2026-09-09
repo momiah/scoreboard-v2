@@ -176,7 +176,9 @@ export default Schedule;
 
 const Container = styled.View({
   flex: 1,
-  padding: 20,
+  paddingHorizontal: 20,
+  paddingTop: 4,
+  paddingBottom: 20,
   gap: 12,
 });
 
@@ -212,6 +214,9 @@ const AllTabText = styled.Text<{ isActive: boolean }>(
 
 const ListScroll = styled.ScrollView({
   flex: 1,
+  // Pull the cards up under the day strip: LineTabs adds its own marginBottom
+  // (a shared component we don't touch), which left too big a gap here.
+  marginTop: -20,
 });
 
 const CardWrap = styled.View({
