@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect, useMemo } from "react";
 import { ActivityIndicator, FlatList } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { GameContext } from "../../../context/GameContext";
 import TeamDetails from "../../Modals/TeamDetailsModal";
@@ -8,8 +9,12 @@ import LoadingOverlay from "../../LoadingOverlay";
 
 const PAGE_SIZE = 25;
 
-const TeamPerformance = ({ leagueTeams }) => {
+/**
+ * @param {{ leagueTeams?: any, ladder?: any }} props
+ */
+const TeamPerformance = ({ leagueTeams, ladder = null }) => {
   const { recentGameResult } = useContext(GameContext);
+  const navigation = useNavigation();
   const [showTeamDetails, setShowTeamDetails] = useState(false);
   const [team, setTeam] = useState({});
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -44,6 +49,18 @@ const TeamPerformance = ({ leagueTeams }) => {
     setVisibleCount((count) =>
       count < sortedTeams.length ? count + PAGE_SIZE : count,
     );
+  };
+
+  // On a ladder the tab shows only the top page; the full standings open in a
+  // dedicated paginated screen. Leagues/tournaments keep loading inline.
+  const showViewAll = !!ladder && sortedTeams.length > PAGE_SIZE;
+
+  const handleViewAll = () => {
+    navigation.navigate("LadderStandings", {
+      ladderId: ladder.ladderId,
+      mode: "teams",
+      ladderName: ladder.name,
+    });
   };
 
   const renderTeam = ({ item: team, index }) => {
@@ -102,10 +119,14 @@ const TeamPerformance = ({ leagueTeams }) => {
           data={visibleTeams}
           renderItem={renderTeam}
           keyExtractor={(team, index) => (team.team ?? []).join("-") + index}
-          onEndReached={handleLoadMore}
+          onEndReached={showViewAll ? undefined : handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
-            visibleTeams.length < sortedTeams.length ? (
+            showViewAll ? (
+              <ViewAllButton onPress={handleViewAll} activeOpacity={0.85}>
+                <ViewAllText>View all teams</ViewAllText>
+              </ViewAllButton>
+            ) : visibleTeams.length < sortedTeams.length ? (
               <FooterSpinner color="#00A2FF" />
             ) : null
           }
@@ -198,6 +219,22 @@ const FallbackMessage = styled.Text({
 
 const FooterSpinner = styled(ActivityIndicator)({
   paddingVertical: 16,
+});
+
+const ViewAllButton = styled.TouchableOpacity({
+  marginTop: 12,
+  marginHorizontal: 20,
+  paddingVertical: 12,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  alignItems: "center",
+});
+
+const ViewAllText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 14,
+  fontWeight: "bold",
 });
 
 export default TeamPerformance;

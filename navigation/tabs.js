@@ -16,6 +16,7 @@ import LadderRules from "../screens/Home/Ladders/LadderRules";
 import LadderHowToPlay from "../screens/Home/Ladders/LadderHowToPlay";
 import LadderTerms from "../screens/Home/Ladders/LadderTerms";
 import MatchDetails from "../screens/Home/Ladders/MatchDetails";
+import LadderStandings from "../screens/Home/Ladders/LadderStandings";
 import LadderMenu from "../screens/Home/Ladders/LadderMenu";
 import MatchDetailsMenu from "../screens/Home/Ladders/MatchDetailsMenu";
 import UserProfile from "../screens/Profile/UserProfile";
@@ -75,6 +76,7 @@ const renderLadderScreens = () => (
     <Stack.Screen name="LadderHowToPlay" component={LadderHowToPlay} />
     <Stack.Screen name="LadderTerms" component={LadderTerms} />
     <Stack.Screen name="MatchDetails" component={MatchDetails} />
+    <Stack.Screen name="LadderStandings" component={LadderStandings} />
     <Stack.Screen name="LadderMenu" component={LadderMenu} />
     <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
   </>

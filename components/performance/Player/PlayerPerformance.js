@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useMemo, useRef } from "react";
 import { ActivityIndicator, FlatList } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { sortLadderParticipantsByPlacement } from "@shared/helpers";
 import { UserContext } from "../../../context/UserContext";
@@ -15,6 +16,7 @@ const PAGE_SIZE = 25;
  */
 const PlayerPerformance = ({ playersData, ladder = null }) => {
   const { getUserById } = useContext(UserContext);
+  const navigation = useNavigation();
   const [showPlayerDetails, setShowPlayerDetails] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [playersWithUserData, setPlayersWithUserData] = useState([]);
@@ -107,6 +109,18 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
     setRequestedCount((count) => count + PAGE_SIZE);
   };
 
+  // On a ladder the tab shows only the top page; the full standings open in a
+  // dedicated paginated screen. Leagues/tournaments keep loading inline.
+  const showViewAll = !!ladder && sorted.list.length > PAGE_SIZE;
+
+  const handleViewAll = () => {
+    navigation.navigate("LadderStandings", {
+      ladderId: ladder.ladderId,
+      mode: "players",
+      ladderName: ladder.name,
+    });
+  };
+
   const renderPlayer = ({ item: player, index }) => (
     <PerformanceRow
       key={player.userId}
@@ -133,10 +147,16 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
         data={playersWithUserData}
         renderItem={renderPlayer}
         keyExtractor={(player) => player.userId}
-        onEndReached={handleLoadMore}
+        onEndReached={showViewAll ? undefined : handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
-          loadingMore ? <FooterSpinner color="#00A2FF" /> : null
+          showViewAll ? (
+            <ViewAllButton onPress={handleViewAll} activeOpacity={0.85}>
+              <ViewAllText>View all players</ViewAllText>
+            </ViewAllButton>
+          ) : loadingMore ? (
+            <FooterSpinner color="#00A2FF" />
+          ) : null
         }
       />
 
@@ -166,6 +186,22 @@ const EmptyState = styled.Text({
 
 const FooterSpinner = styled(ActivityIndicator)({
   paddingVertical: 16,
+});
+
+const ViewAllButton = styled.TouchableOpacity({
+  marginTop: 12,
+  marginHorizontal: 20,
+  paddingVertical: 12,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  alignItems: "center",
+});
+
+const ViewAllText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 14,
+  fontWeight: "bold",
 });
 
 export default PlayerPerformance;

@@ -125,7 +125,7 @@ const Ladder: React.FC = () => {
         // League/Tournament do. Doubles renders team standings; singles renders
         // player standings (with the ladder for its per-ladder CP column).
         return ladderById.ladderType === LADDER_TYPE.DOUBLES ? (
-          <TeamPerformance leagueTeams={teams} />
+          <TeamPerformance leagueTeams={teams} ladder={ladderById} />
         ) : (
           <PlayerPerformance playersData={participants} ladder={ladderById} />
         );
