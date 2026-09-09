@@ -127,7 +127,7 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
       player={player}
       rank={index < rankedCount ? index + 1 : 0}
       ladder={ladder}
-      cp={player.cp}
+      ladderXP={player.ladderXP}
       onPress={(p) => {
         setSelectedPlayer(p);
         setShowPlayerDetails(true);

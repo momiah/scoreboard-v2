@@ -51,7 +51,7 @@ const Ladder: React.FC = () => {
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
   const [participants, setParticipants] = useState<
-    Array<ScoreboardProfile & { cp: number }>
+    Array<ScoreboardProfile & { ladderXP: number }>
   >([]);
   const [teams, setTeams] = useState<TeamStats[]>([]);
 
@@ -75,11 +75,11 @@ const Ladder: React.FC = () => {
             if (active) setTeams(rows);
           } else {
             const rows = await fetchLadderParticipants(ladderId);
-            // The ladder participant's own XP is its per-ladder CP. Copy it to
-            // `cp` so it survives enrichPlayers overwriting XP with the global
-            // rank XP the medal needs.
+            // The participant's own XP is its per-ladder value. Copy it to
+            // `ladderXP` so it survives enrichPlayers overwriting XP with the
+            // global profile XP the Rank Medal needs. Displayed as "CP".
             if (active)
-              setParticipants(rows.map((r) => ({ ...r, cp: r.XP ?? 0 })));
+              setParticipants(rows.map((r) => ({ ...r, ladderXP: r.XP ?? 0 })));
           }
         } catch (error) {
           console.error("Error fetching ladder data:", error);

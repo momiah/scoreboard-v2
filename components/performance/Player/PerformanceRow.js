@@ -15,14 +15,14 @@ const getOrdinalSuffix = (num) => {
 };
 
 /**
- * @param {{ player: any, rank: number, onPress?: any, ladder?: any, cp?: number }} props
+ * @param {{ player: any, rank: number, onPress?: any, ladder?: any, ladderXP?: number }} props
  */
 const PerformanceRow = ({
   player,
   rank,
   onPress = null,
   ladder = null,
-  cp = 0,
+  ladderXP = 0,
 }) => {
   const { findRankIndex, recentGameResult, recentMatchResult } =
     useContext(GameContext);
@@ -65,7 +65,7 @@ const PerformanceRow = ({
       {isLadder && (
         <TableCell>
           <StatTitle>CP</StatTitle>
-          <Stat>{cp ?? 0}</Stat>
+          <Stat>{ladderXP ?? 0}</Stat>
         </TableCell>
       )}
 

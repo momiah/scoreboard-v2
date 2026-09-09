@@ -120,7 +120,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const [userSummaryRow, setUserSummaryRow] = useState<{
     player: EnrichedPlayer;
     rank: number;
-    cp: number;
+    ladderXP: number;
   } | null>(null);
 
   useEffect(() => {
@@ -146,8 +146,8 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           sortLadderParticipantsByPlacement(participants).findIndex(
             (p) => p.userId === uid,
           ) + 1;
-        const cp = user.XP ?? 0;
-        if (active) setUserSummaryRow({ player: enrichedUser, rank, cp });
+        const ladderXP = user.XP ?? 0;
+        if (active) setUserSummaryRow({ player: enrichedUser, rank, ladderXP });
       } catch (error) {
         console.error("Error building ladder summary row:", error);
         if (active) setUserSummaryRow(null);
@@ -212,7 +212,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
               player={userSummaryRow.player}
               rank={userSummaryRow.rank}
               ladder={ladder}
-              cp={userSummaryRow.cp}
+              ladderXP={userSummaryRow.ladderXP}
             />
           </MySummaryCard>
         </MySummarySection>
