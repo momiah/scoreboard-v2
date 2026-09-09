@@ -1,5 +1,5 @@
-import React, { useContext } from "react";
-import { View, Alert, StyleSheet } from "react-native";
+import React, { useContext, useState } from "react";
+import { View, Alert, StyleSheet, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -10,6 +10,7 @@ import type {
 } from "@react-navigation/native";
 
 import { PopupContext } from "../../../context/PopupContext";
+import { backfillCompetitionXP } from "../../../helpers/backfillCompetitionXP";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -47,6 +48,24 @@ const LadderMenu: React.FC = () => {
     useRoute<RouteProp<Record<string, LadderMenuParams>, string>>();
   const { ladderId } = route.params;
   const { showBottomToast } = useContext(PopupContext);
+  const [backfilling, setBackfilling] = useState(false);
+
+  const handleBackfill = async () => {
+    if (backfilling) return;
+    setBackfilling(true);
+    try {
+      const { ladders, participantsUpdated } = await backfillCompetitionXP();
+      Alert.alert(
+        "Backfill complete",
+        `Ladders scanned: ${ladders}\nParticipants updated: ${participantsUpdated}`,
+      );
+    } catch (error) {
+      console.error("[LadderMenu] Backfill failed:", error);
+      Alert.alert("Backfill failed", "Could not migrate competitionXP.");
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   const handleLeaveLadder = () => {
     Alert.alert(
@@ -106,6 +125,19 @@ const LadderMenu: React.FC = () => {
           </MenuItem>
         ))}
       </MenuList>
+
+      {/* One-off migration: XP -> competitionXP on ladder participant docs. */}
+      <BackfillButton
+        onPress={handleBackfill}
+        disabled={backfilling}
+        testID="ladder-menu-backfill"
+      >
+        {backfilling ? (
+          <ActivityIndicator size="small" color="#00A2FF" />
+        ) : (
+          <BackfillText>Backfill competitionXP</BackfillText>
+        )}
+      </BackfillButton>
     </Container>
   );
 };
@@ -158,4 +190,19 @@ const LeftContainer = styled.View({
 const MenuText = styled.Text({
   color: "white",
   fontSize: 16,
+});
+
+const BackfillButton = styled.TouchableOpacity({
+  marginTop: 20,
+  paddingVertical: 14,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  alignItems: "center",
+});
+
+const BackfillText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 14,
+  fontWeight: "bold",
 });

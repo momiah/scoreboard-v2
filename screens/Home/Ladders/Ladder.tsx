@@ -50,9 +50,7 @@ const Ladder: React.FC = () => {
   const [ladderLoading, setLadderLoading] = useState(true);
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
-  const [participants, setParticipants] = useState<
-    Array<ScoreboardProfile & { ladderXP: number }>
-  >([]);
+  const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [teams, setTeams] = useState<TeamStats[]>([]);
 
   useFocusEffect(
@@ -75,16 +73,7 @@ const Ladder: React.FC = () => {
             if (active) setTeams(teamRows);
           } else {
             const participantRows = await fetchLadderParticipants(ladderId);
-            // The participant's own XP is its per-ladder value. Copy it to
-            // `ladderXP` so it survives enrichPlayers overwriting XP with the
-            // global profile XP the Rank Medal needs. Displayed as "CP".
-            if (active)
-              setParticipants(
-                participantRows.map((participantRow) => ({
-                  ...participantRow,
-                  ladderXP: participantRow.XP ?? 0,
-                })),
-              );
+            if (active) setParticipants(participantRows);
           }
         } catch (error) {
           console.error("Error fetching ladder data:", error);

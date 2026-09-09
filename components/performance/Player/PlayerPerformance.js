@@ -48,7 +48,7 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
       if ((b.totalPointDifference || 0) !== (a.totalPointDifference || 0)) {
         return (b.totalPointDifference || 0) - (a.totalPointDifference || 0);
       }
-      return (b.XP || 0) - (a.XP || 0);
+      return (b.competitionXP || 0) - (a.competitionXP || 0);
     });
     return { list, rankedCount: list.length };
   }, [playersData, ladder]);
@@ -127,7 +127,6 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
       player={player}
       rank={index < rankedCount ? index + 1 : 0}
       ladder={ladder}
-      ladderXP={player.ladderXP}
       onPress={(p) => {
         setSelectedPlayer(p);
         setShowPlayerDetails(true);

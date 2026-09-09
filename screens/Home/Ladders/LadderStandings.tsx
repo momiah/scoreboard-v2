@@ -39,7 +39,7 @@ interface LadderStandingsParams {
   ladderName?: string;
 }
 
-type RankedParticipant = ScoreboardProfile & { ladderXP: number; rank: number };
+type RankedParticipant = ScoreboardProfile & { rank: number };
 type RankedTeam = TeamStats & { rank: number };
 
 const getOrdinalSuffix = (num: number): string => {
@@ -102,7 +102,6 @@ const LadderStandings: React.FC = () => {
     const unranked = participants.filter((p) => !rankedIds.has(p.userId));
     return [...ranked, ...unranked].map((p, index) => ({
       ...p,
-      ladderXP: p.XP ?? 0,
       rank: index < ranked.length ? index + 1 : 0,
     }));
   }, [participants]);
@@ -164,7 +163,6 @@ const LadderStandings: React.FC = () => {
         player={item}
         rank={item.rank}
         ladder
-        ladderXP={item.ladderXP}
         onPress={(p: ScoreboardProfile) => setSelectedPlayer(p)}
       />
     ),

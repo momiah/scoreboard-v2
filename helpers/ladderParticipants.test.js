@@ -29,7 +29,7 @@ describe("buildLadderParticipant", () => {
   });
 
   it("seeds ladder CP (XP) at 0 — it's a display-only accumulator", () => {
-    expect(buildLadderParticipant(user).XP).toBe(0);
+    expect(buildLadderParticipant(user).competitionXP).toBe(0);
   });
 
   it("falls back to the default image and empty memberSince", () => {

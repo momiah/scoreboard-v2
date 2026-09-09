@@ -807,7 +807,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               COMPETITION_TYPES.LADDER,
             );
             participants.forEach((p) => {
-              p.XP = Math.max(0, (p.XP ?? 0) + (p.prevGameXP ?? 0));
+              p.competitionXP = Math.max(
+                0,
+                (p.competitionXP ?? 0) + (p.prevGameXP ?? 0),
+              );
             });
 
             // Recent form: push the match result once, when the match is first
