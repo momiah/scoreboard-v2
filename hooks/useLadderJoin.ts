@@ -14,7 +14,7 @@ interface UseLadderJoinResult {
   isParticipant: boolean;
   membershipChecking: boolean;
   mode: LadderJoinMode;
-  requestJoin: () => void;
+  openJoin: () => void;
 }
 
 export const useLadderJoin = (
@@ -64,7 +64,7 @@ export const useLadderJoin = (
       ? "closed"
       : "join";
 
-  const requestJoin = () => {
+  const openJoin = () => {
     if (mode !== "join") return;
     if (!isSignedIn) {
       navigation.navigate("Login");
@@ -74,5 +74,5 @@ export const useLadderJoin = (
     onOpenModal();
   };
 
-  return { isSignedIn, isParticipant, membershipChecking, mode, requestJoin };
+  return { isSignedIn, isParticipant, membershipChecking, mode, openJoin };
 };

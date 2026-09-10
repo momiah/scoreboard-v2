@@ -101,7 +101,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     };
   }, [ladderId, fetchLadderParticipants]);
 
-  const { mode, requestJoin } = useLadderJoin(ladder, () =>
+  const { mode, openJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
   );
 
@@ -285,7 +285,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         <JoinNowButton
           testID="ladder-summary-join"
           activeOpacity={0.85}
-          onPress={requestJoin}
+          onPress={openJoin}
         >
           <JoinNowText>Join Now</JoinNowText>
         </JoinNowButton>

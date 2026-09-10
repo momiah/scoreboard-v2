@@ -64,7 +64,7 @@ const LadderHowToPlay: React.FC = () => {
   const ladder =
     ladderById && ladderById.ladderId === ladderId ? ladderById : null;
 
-  const { mode, requestJoin } = useLadderJoin(ladder, () =>
+  const { mode, openJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
   );
 
@@ -262,7 +262,7 @@ const LadderHowToPlay: React.FC = () => {
             <NavButtonText>Next</NavButtonText>
           </NavButton>
         ) : mode === "join" ? (
-          <NavButton primary onPress={requestJoin} testID="how-to-play-join">
+          <NavButton primary onPress={openJoin} testID="how-to-play-join">
             <NavButtonText>Join Now</NavButtonText>
           </NavButton>
         ) : (
