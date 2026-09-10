@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { FlatList, ActivityIndicator, Alert } from "react-native";
+import { ActivityIndicator, Alert } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -88,10 +88,11 @@ const SelectDoublesTeam: React.FC = () => {
     }
   };
 
-  const renderTeam = ({ item }: { item: TeamStats }) => {
+  const renderTeam = (item: TeamStats) => {
     const isSelected = item.teamKey === selectedKey;
     return (
       <TeamRow
+        key={item.teamKey}
         isSelected={isSelected}
         activeOpacity={0.85}
         onPress={() => setSelectedKey(item.teamKey)}
@@ -129,45 +130,50 @@ const SelectDoublesTeam: React.FC = () => {
         <HeaderSpacer />
       </Header>
 
-      <LadderName numberOfLines={1}>{ladder.name}</LadderName>
-      <SubText>Pick the team you want to enter into this doubles ladder.</SubText>
-
-      {loading ? (
-        <LoadingWrap>
-          <ActivityIndicator size="small" color="#00A2FF" />
-        </LoadingWrap>
-      ) : teams.length === 0 ? (
-        <EmptyText>
-          You don&apos;t have any teams yet. Create one to get started.
-        </EmptyText>
-      ) : (
-        <FlatList
-          data={teams}
-          keyExtractor={(item) => item.teamKey}
-          renderItem={renderTeam}
-          contentContainerStyle={{ paddingVertical: 12, gap: 10 }}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      <CreateLink
-        onPress={() => setCreateVisible(true)}
-        activeOpacity={0.85}
-        testID="select-team-create"
+      <Body
+        contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
       >
-        <Ionicons name="add" size={18} color="#00A2FF" />
-        <CreateLinkText>Create new team</CreateLinkText>
-      </CreateLink>
+        <LadderName numberOfLines={1}>{ladder.name}</LadderName>
+        <SubText>
+          Pick the team you want to enter into this doubles ladder.
+        </SubText>
 
-      <JoinButton
-        onPress={handleJoin}
-        disabled={!selectedTeam || joining}
-        isDisabled={!selectedTeam || joining}
-        activeOpacity={0.85}
-        testID="select-team-join"
-      >
-        <JoinButtonText>{joining ? "Joining…" : "Join Ladder"}</JoinButtonText>
-      </JoinButton>
+        {loading ? (
+          <LoadingWrap>
+            <ActivityIndicator size="small" color="#00A2FF" />
+          </LoadingWrap>
+        ) : teams.length === 0 ? (
+          <EmptyText>
+            You don&apos;t have any teams yet. Create one to get started.
+          </EmptyText>
+        ) : (
+          <TeamList>{teams.map(renderTeam)}</TeamList>
+        )}
+
+        <CreateLink
+          onPress={() => setCreateVisible(true)}
+          activeOpacity={0.85}
+          testID="select-team-create"
+        >
+          <Ionicons name="add" size={18} color="#00A2FF" />
+          <CreateLinkText>Create new team</CreateLinkText>
+        </CreateLink>
+      </Body>
+
+      <Footer>
+        <JoinButton
+          onPress={handleJoin}
+          disabled={!selectedTeam || joining}
+          isDisabled={!selectedTeam || joining}
+          activeOpacity={0.85}
+          testID="select-team-join"
+        >
+          <JoinButtonText>
+            {joining ? "Joining…" : "Join Ladder"}
+          </JoinButtonText>
+        </JoinButton>
+      </Footer>
 
       {createVisible && (
         <CreateDoublesTeamModal
@@ -197,6 +203,20 @@ const Header = styled.View({
   justifyContent: "space-between",
   paddingTop: 20,
   paddingBottom: 12,
+});
+
+const Body = styled.ScrollView({
+  flex: 1,
+});
+
+const TeamList = styled.View({
+  paddingVertical: 12,
+  gap: 10,
+});
+
+const Footer = styled.View({
+  paddingTop: 12,
+  paddingBottom: 28,
 });
 
 const BackButton = styled.TouchableOpacity({
@@ -286,7 +306,7 @@ const CreateLink = styled.TouchableOpacity({
   justifyContent: "center",
   gap: 8,
   paddingVertical: 14,
-  marginTop: 4,
+  marginTop: 16,
   borderRadius: 12,
   borderWidth: 1,
   borderColor: "#00A2FF",
@@ -305,8 +325,6 @@ const JoinButton = styled.TouchableOpacity<{ isDisabled: boolean }>(
     borderRadius: 12,
     backgroundColor: isDisabled ? "#1e3a52" : "#00A2FF",
     alignItems: "center",
-    marginTop: 12,
-    marginBottom: 24,
     opacity: isDisabled ? 0.7 : 1,
   }),
 );
