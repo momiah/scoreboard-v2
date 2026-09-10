@@ -8,9 +8,10 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
 import { LADDER_TYPE } from "@shared/types";
-import type { Ladder } from "@shared/types";
+import type { Ladder, TeamStats } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
+import TeamSelectorModal from "./TeamSelectorModal";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -42,7 +43,7 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   ladder,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { joinLadder } = useContext(LadderContext);
+  const { joinLadder, joinLadderAsTeam } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
 
   const isPaid = ladder.entryFee > 0;
@@ -54,6 +55,11 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [paymentVisible, setPaymentVisible] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
+  const [teamSelectorVisible, setTeamSelectorVisible] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<TeamStats | null>(null);
+
+  const missingTeam = isDoubles && !selectedTeam;
+  const canJoin = acceptedTerms && !processing && !missingTeam;
 
   const resetAndClose = () => {
     setAcceptedTerms(false);
@@ -61,6 +67,8 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
     setErrorMessage(null);
     setPaymentVisible(false);
     setConfirmationVisible(false);
+    setTeamSelectorVisible(false);
+    setSelectedTeam(null);
     setModalVisible(false);
   };
 
@@ -70,11 +78,18 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
       setErrorMessage("You need to be signed in to join.");
       return;
     }
+    if (isDoubles && !selectedTeam) {
+      setErrorMessage("Select a team to join this doubles ladder.");
+      return;
+    }
 
     setErrorMessage(null);
     setProcessing(true);
     try {
-      const { success } = await joinLadder(ladder.ladderId, currentUser);
+      const { success } =
+        isDoubles && selectedTeam
+          ? await joinLadderAsTeam(ladder.ladderId, selectedTeam)
+          : await joinLadder(ladder.ladderId, currentUser);
       if (success) {
         setConfirmationVisible(true);
       } else {
@@ -86,7 +101,7 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   };
 
   const handleActionPress = () => {
-    if (!acceptedTerms) return;
+    if (!canJoin) return;
     if (isPaid) {
       setPaymentVisible(true);
     } else {
@@ -157,8 +172,17 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
           </TopRow>
 
           {isDoubles && (
-            <TeamSelect testID="join-ladder-team-selector" activeOpacity={0.8}>
-              <TeamSelectText>Select Team</TeamSelectText>
+            <TeamSelect
+              testID="join-ladder-team-selector"
+              activeOpacity={0.8}
+              onPress={() => setTeamSelectorVisible(true)}
+            >
+              <TeamSelectText>
+                {selectedTeam
+                  ? selectedTeam.teamName?.trim() ||
+                    (selectedTeam.team ?? []).join(" & ")
+                  : "Select Team"}
+              </TeamSelectText>
               <Ionicons name="chevron-down" size={20} color="#9fb8c8" />
             </TeamSelect>
           )}
@@ -196,14 +220,24 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
           <ActionButton
             testID="join-ladder-confirm"
             activeOpacity={0.85}
-            disabled={!acceptedTerms || processing}
-            isDisabled={!acceptedTerms || processing}
+            disabled={!canJoin}
+            isDisabled={!canJoin}
             onPress={handleActionPress}
           >
             <ActionButtonText>{actionLabel}</ActionButtonText>
           </ActionButton>
         </ModalContent>
       </ModalContainer>
+
+      <TeamSelectorModal
+        visible={teamSelectorVisible}
+        onClose={() => setTeamSelectorVisible(false)}
+        onSelect={(team) => {
+          setSelectedTeam(team);
+          setErrorMessage(null);
+          setTeamSelectorVisible(false);
+        }}
+      />
 
       <PaymentStubModal
         visible={paymentVisible}

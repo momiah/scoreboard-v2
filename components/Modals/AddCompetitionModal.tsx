@@ -6,6 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import AddClubModal from "./AddClubModal";
 import AddLeagueModal from "./AddLeagueModal";
 import AddTournamentModal from "./AddTournamentModal";
+import CreateDoublesTeamModal from "./CreateDoublesTeamModal";
 import { BlurView } from "expo-blur";
 import { trophies, medals } from "../../mockImages";
 import { AntDesign } from "@expo/vector-icons";
@@ -25,9 +26,10 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
+  const [createTeamModalVisible, setCreateTeamModalVisible] = useState(false);
 
   const handleOptionPress = (
-    option: "club" | "league" | "tournament" | "game",
+    option: "club" | "league" | "tournament" | "game" | "team",
   ) => {
     if (!currentUser) {
       Alert.alert(
@@ -42,6 +44,8 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
       setAddLeagueModalVisible(true);
     } else if (option === "tournament") {
       setAddTournamentModalVisible(true);
+    } else if (option === "team") {
+      setCreateTeamModalVisible(true);
     }
   };
 
@@ -156,6 +160,32 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
               </OptionContent>
               <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleOptionPress("team")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#0a1929",
+                borderRadius: 12,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: "#1a2b3d",
+                marginBottom: 15,
+              }}
+            >
+              <IconContainer>
+                <Ionicons name="people" size={30} color="#00A2FF" />
+              </IconContainer>
+              <OptionContent>
+                <OptionTitle>Create a Team</OptionTitle>
+                <OptionSubtitle>
+                  Pair up with a partner to form a doubles team you can enter
+                  into ladders
+                </OptionSubtitle>
+              </OptionContent>
+              <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
+            </TouchableOpacity>
           </OptionsContainer>
         </ModalContent>
       </ModalOverlay>
@@ -179,6 +209,14 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
           modalVisible={addTournamentModalVisible}
           setModalVisible={setAddTournamentModalVisible}
           onSuccess={handleSuccess}
+        />
+      )}
+
+      {createTeamModalVisible && (
+        <CreateDoublesTeamModal
+          visible={createTeamModalVisible}
+          onClose={() => setCreateTeamModalVisible(false)}
+          onCreated={handleSuccess}
         />
       )}
     </Modal>

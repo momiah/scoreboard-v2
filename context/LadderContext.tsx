@@ -35,7 +35,7 @@ import {
   LADDER_MATCH_STATUS,
   COMPETITION_TYPES,
 } from "@shared";
-import { calculatePlayerPerformance } from "@shared/helpers";
+import { calculatePlayerPerformance, createRootTeam } from "@shared/helpers";
 import type {
   Ladder,
   LadderMatch,
@@ -43,6 +43,7 @@ import type {
   Game,
   ScoreboardProfile,
   TeamStats,
+  TeamMember,
   UserProfile,
 } from "@shared/types";
 import { buildLadderParticipant } from "../helpers/ladderParticipants";
@@ -57,6 +58,7 @@ import type {
   LadderContextType,
   FetchLaddersOptions,
   LadderJoinOutcome,
+  CreateTeamOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
   CheckInLadderMatchOutcome,
@@ -77,6 +79,7 @@ const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
+const TEAMS_COLLECTION = "teams";
 
 export const LadderContext = createContext<LadderContextType>(
   {} as LadderContextType,
@@ -291,6 +294,98 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     [],
+  );
+
+  const createTeam = useCallback(
+    async (
+      players: TeamMember[],
+      createdBy: string,
+      teamName?: string,
+    ): Promise<CreateTeamOutcome> => {
+      if (players.length < 2 || !createdBy) {
+        return { success: false, alreadyExists: false, team: null };
+      }
+      try {
+        const team = createRootTeam({ players, createdBy, teamName });
+        const teamRef = doc(db, TEAMS_COLLECTION, team.teamKey);
+        const existing = await getDoc(teamRef);
+        if (existing.exists()) {
+          return {
+            success: false,
+            alreadyExists: true,
+            team: existing.data() as TeamStats,
+          };
+        }
+        await setDoc(teamRef, team);
+        return { success: true, alreadyExists: false, team };
+      } catch (error) {
+        console.error("Error creating team:", error);
+        return { success: false, alreadyExists: false, team: null };
+      }
+    },
+    [],
+  );
+
+  const fetchUserTeams = useCallback(
+    async (userId: string): Promise<TeamStats[]> => {
+      if (!userId) return [];
+      try {
+        const snapshot = await getDocs(
+          query(
+            collection(db, TEAMS_COLLECTION),
+            where("playerIds", "array-contains", userId),
+          ),
+        );
+        return snapshot.docs.map((docSnap) => docSnap.data() as TeamStats);
+      } catch (error) {
+        console.error("Error fetching user teams:", error);
+        return [];
+      }
+    },
+    [],
+  );
+
+  const joinLadderAsTeam = useCallback(
+    async (
+      ladderId: string,
+      rootTeam: TeamStats,
+    ): Promise<LadderJoinOutcome> => {
+      if (!ladderId || !rootTeam?.teamKey) {
+        return { success: false, alreadyJoined: false };
+      }
+      try {
+        const teamRef = doc(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_TEAMS_COLLECTION,
+          rootTeam.teamKey,
+        );
+        const existing = await getDoc(teamRef);
+        if (existing.exists()) {
+          setJoinedLadderIds((prev) =>
+            prev.includes(ladderId) ? prev : [...prev, ladderId],
+          );
+          return { success: true, alreadyJoined: true };
+        }
+        const ladderTeam = createRootTeam({
+          players: rootTeam.players ?? [],
+          createdBy: rootTeam.createdBy ?? "",
+          teamName: rootTeam.teamName,
+        });
+        const added = await addLadderTeam(ladderId, ladderTeam);
+        if (added) {
+          setJoinedLadderIds((prev) =>
+            prev.includes(ladderId) ? prev : [...prev, ladderId],
+          );
+        }
+        return { success: added, alreadyJoined: false };
+      } catch (error) {
+        console.error("Error joining ladder as team:", error);
+        return { success: false, alreadyJoined: false };
+      }
+    },
+    [addLadderTeam],
   );
 
   const createLadderMatch = useCallback(
@@ -956,6 +1051,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderParticipants,
         addLadderTeam,
         fetchLadderTeams,
+        createTeam,
+        fetchUserTeams,
+        joinLadderAsTeam,
         createLadderMatch,
         fetchLadderMatches,
         subscribeToLadderMatches,
