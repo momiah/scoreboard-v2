@@ -360,6 +360,20 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const fetchTeam = useCallback(
+    async (teamKey: string): Promise<TeamStats | null> => {
+      if (!teamKey) return null;
+      try {
+        const snap = await getDoc(doc(db, TEAMS_COLLECTION, teamKey));
+        return snap.exists() ? (snap.data() as TeamStats) : null;
+      } catch (error) {
+        console.error("Error fetching team:", error);
+        return null;
+      }
+    },
+    [],
+  );
+
   const fetchUserTeams = useCallback(
     async (userId: string): Promise<TeamStats[]> => {
       if (!userId) return [];
@@ -1088,6 +1102,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         createTeam,
         acceptTeamInvite,
         declineTeamInvite,
+        fetchTeam,
         fetchUserTeams,
         joinLadderAsTeam,
         createLadderMatch,
