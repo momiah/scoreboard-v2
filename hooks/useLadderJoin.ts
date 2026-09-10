@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 
-import { LADDER_STATUS } from "@shared";
+import { LADDER_STATUS, LADDER_TYPE } from "@shared";
 import type { Ladder } from "@shared/types";
 import { UserContext } from "../context/UserContext";
 import { LadderContext } from "../context/LadderContext";
@@ -71,6 +71,10 @@ export const useLadderJoin = (
       return;
     }
     if (!ladder) return;
+    if (ladder.ladderType === LADDER_TYPE.DOUBLES) {
+      navigation.navigate("SelectDoublesTeam", { ladder });
+      return;
+    }
     onOpenModal();
   };
 
