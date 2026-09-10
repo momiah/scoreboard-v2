@@ -7,11 +7,9 @@ import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
-import { LADDER_TYPE } from "@shared/types";
-import type { Ladder, TeamStats } from "@shared/types";
+import type { Ladder } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
-import TeamSelectorModal from "./TeamSelectorModal";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -43,11 +41,10 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   ladder,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { joinLadder, joinLadderAsTeam } = useContext(LadderContext);
+  const { joinLadder } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
 
   const isPaid = ladder.entryFee > 0;
-  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const serviceCharge = ladder.entryFee * SERVICE_CHARGE_RATE;
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -55,11 +52,8 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [paymentVisible, setPaymentVisible] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
-  const [teamSelectorVisible, setTeamSelectorVisible] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<TeamStats | null>(null);
 
-  const missingTeam = isDoubles && !selectedTeam;
-  const canJoin = acceptedTerms && !processing && !missingTeam;
+  const canJoin = acceptedTerms && !processing;
 
   const resetAndClose = () => {
     setAcceptedTerms(false);
@@ -67,8 +61,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
     setErrorMessage(null);
     setPaymentVisible(false);
     setConfirmationVisible(false);
-    setTeamSelectorVisible(false);
-    setSelectedTeam(null);
     setModalVisible(false);
   };
 
@@ -78,18 +70,11 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
       setErrorMessage("You need to be signed in to join.");
       return;
     }
-    if (isDoubles && !selectedTeam) {
-      setErrorMessage("Select a team to join this doubles ladder.");
-      return;
-    }
 
     setErrorMessage(null);
     setProcessing(true);
     try {
-      const { success } =
-        isDoubles && selectedTeam
-          ? await joinLadderAsTeam(ladder.ladderId, selectedTeam)
-          : await joinLadder(ladder.ladderId, currentUser);
+      const { success } = await joinLadder(ladder.ladderId, currentUser);
       if (success) {
         setConfirmationVisible(true);
       } else {
@@ -171,22 +156,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             </PriceColumn>
           </TopRow>
 
-          {isDoubles && (
-            <TeamSelect
-              testID="join-ladder-team-selector"
-              activeOpacity={0.8}
-              onPress={() => setTeamSelectorVisible(true)}
-            >
-              <TeamSelectText>
-                {selectedTeam
-                  ? selectedTeam.teamName?.trim() ||
-                    (selectedTeam.team ?? []).join(" & ")
-                  : "Select Team"}
-              </TeamSelectText>
-              <Ionicons name="chevron-down" size={20} color="#9fb8c8" />
-            </TeamSelect>
-          )}
-
           <TermsRow>
             <CheckboxToggle
               testID="join-ladder-terms"
@@ -228,16 +197,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
           </ActionButton>
         </ModalContent>
       </ModalContainer>
-
-      <TeamSelectorModal
-        visible={teamSelectorVisible}
-        onClose={() => setTeamSelectorVisible(false)}
-        onSelect={(team) => {
-          setSelectedTeam(team);
-          setErrorMessage(null);
-          setTeamSelectorVisible(false);
-        }}
-      />
 
       <PaymentStubModal
         visible={paymentVisible}
@@ -420,21 +379,6 @@ const ServiceNote = styled.Text({
   color: "#7f97a8",
   fontSize: 11,
   textAlign: "right",
-});
-
-const TeamSelect = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingHorizontal: 18,
-  paddingVertical: 16,
-  borderRadius: 30,
-  backgroundColor: "#1e2b3d",
-});
-
-const TeamSelectText = styled.Text({
-  color: "#cbd5e1",
-  fontSize: 15,
 });
 
 const TermsRow = styled.View({

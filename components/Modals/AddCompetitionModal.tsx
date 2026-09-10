@@ -3,10 +3,14 @@ import { Modal, View, TouchableOpacity, Image, Alert } from "react-native";
 import { UserProfile } from "@shared/types";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import AddClubModal from "./AddClubModal";
 import AddLeagueModal from "./AddLeagueModal";
 import AddTournamentModal from "./AddTournamentModal";
-import CreateDoublesTeamModal from "./CreateDoublesTeamModal";
 import { BlurView } from "expo-blur";
 import { trophies, medals } from "../../mockImages";
 import { AntDesign } from "@expo/vector-icons";
@@ -22,11 +26,11 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   setModalVisible,
   currentUser,
 }) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [addClubModalVisible, setAddClubModalVisible] = useState(false);
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
-  const [createTeamModalVisible, setCreateTeamModalVisible] = useState(false);
 
   const handleOptionPress = (
     option: "club" | "league" | "tournament" | "game" | "team",
@@ -45,7 +49,8 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
     } else if (option === "tournament") {
       setAddTournamentModalVisible(true);
     } else if (option === "team") {
-      setCreateTeamModalVisible(true);
+      setModalVisible(false);
+      navigation.navigate("InvitePlayer", { team: true });
     }
   };
 
@@ -212,13 +217,6 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
         />
       )}
 
-      {createTeamModalVisible && (
-        <CreateDoublesTeamModal
-          visible={createTeamModalVisible}
-          onClose={() => setCreateTeamModalVisible(false)}
-          onCreated={handleSuccess}
-        />
-      )}
     </Modal>
   );
 };

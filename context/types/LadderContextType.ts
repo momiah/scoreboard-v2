@@ -6,6 +6,7 @@ import type {
   ScoreboardProfile,
   TeamStats,
   TeamMember,
+  TeamStatus,
 } from "@shared/types";
 import type { LadderJoinUser } from "../../helpers/ladderParticipants";
 
@@ -77,7 +78,10 @@ export interface LadderContextType {
     players: TeamMember[],
     createdBy: string,
     teamName?: string,
+    status?: TeamStatus,
   ) => Promise<CreateTeamOutcome>;
+  acceptTeamInvite: (teamKey: string) => Promise<boolean>;
+  declineTeamInvite: (teamKey: string) => Promise<boolean>;
   fetchUserTeams: (userId: string) => Promise<TeamStats[]>;
   joinLadderAsTeam: (
     ladderId: string,

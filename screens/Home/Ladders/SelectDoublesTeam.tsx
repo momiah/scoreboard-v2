@@ -11,11 +11,11 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 
+import { TEAM_STATUS } from "@shared";
 import type { Ladder, TeamStats } from "@shared/types";
 import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
 import { PopupContext } from "../../../context/PopupContext";
-import CreateDoublesTeamModal from "../../../components/Modals/CreateDoublesTeamModal";
 
 interface SelectDoublesTeamParams {
   ladder: Ladder;
@@ -38,7 +38,6 @@ const SelectDoublesTeam: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
-  const [createVisible, setCreateVisible] = useState(false);
 
   const loadTeams = useCallback(async () => {
     if (!currentUser?.userId) {
@@ -89,13 +88,16 @@ const SelectDoublesTeam: React.FC = () => {
   };
 
   const renderTeam = (item: TeamStats) => {
+    const isPending = item.status === TEAM_STATUS.PENDING;
     const isSelected = item.teamKey === selectedKey;
     return (
       <TeamRow
         key={item.teamKey}
         isSelected={isSelected}
-        activeOpacity={0.85}
-        onPress={() => setSelectedKey(item.teamKey)}
+        isPending={isPending}
+        activeOpacity={isPending ? 1 : 0.85}
+        disabled={isPending}
+        onPress={() => !isPending && setSelectedKey(item.teamKey)}
         testID={`select-team-${item.teamKey}`}
       >
         <TeamIcon>
@@ -104,14 +106,20 @@ const SelectDoublesTeam: React.FC = () => {
         <TeamInfo>
           <TeamName numberOfLines={1}>{teamLabel(item)}</TeamName>
           <TeamMembers numberOfLines={1}>
-            {(item.team ?? []).join(" • ")}
+            {isPending
+              ? "Waiting for partner to accept"
+              : (item.team ?? []).join(" • ")}
           </TeamMembers>
         </TeamInfo>
-        <Ionicons
-          name={isSelected ? "radio-button-on" : "radio-button-off"}
-          size={22}
-          color={isSelected ? "#00A2FF" : "#4A5A6A"}
-        />
+        {isPending ? (
+          <Ionicons name="time-outline" size={20} color="#FAB234" />
+        ) : (
+          <Ionicons
+            name={isSelected ? "radio-button-on" : "radio-button-off"}
+            size={22}
+            color={isSelected ? "#00A2FF" : "#4A5A6A"}
+          />
+        )}
       </TeamRow>
     );
   };
@@ -152,7 +160,7 @@ const SelectDoublesTeam: React.FC = () => {
         )}
 
         <CreateLink
-          onPress={() => setCreateVisible(true)}
+          onPress={() => navigation.navigate("InvitePlayer", { team: true })}
           activeOpacity={0.85}
           testID="select-team-create"
         >
@@ -174,17 +182,6 @@ const SelectDoublesTeam: React.FC = () => {
           </JoinButtonText>
         </JoinButton>
       </Footer>
-
-      {createVisible && (
-        <CreateDoublesTeamModal
-          visible={createVisible}
-          onClose={() => setCreateVisible(false)}
-          onCreated={() => {
-            setCreateVisible(false);
-            loadTeams();
-          }}
-        />
-      )}
     </Screen>
   );
 };
@@ -261,19 +258,21 @@ const EmptyText = styled.Text({
   paddingVertical: 24,
 });
 
-const TeamRow = styled.TouchableOpacity<{ isSelected: boolean }>(
-  ({ isSelected }: { isSelected: boolean }) => ({
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: "#0a1929",
-    borderWidth: 1,
-    borderColor: isSelected ? "#00A2FF" : "#1a2b3d",
-  }),
-);
+const TeamRow = styled.TouchableOpacity<{
+  isSelected: boolean;
+  isPending: boolean;
+}>(({ isSelected, isPending }: { isSelected: boolean; isPending: boolean }) => ({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  paddingVertical: 14,
+  paddingHorizontal: 14,
+  borderRadius: 12,
+  backgroundColor: "#0a1929",
+  borderWidth: 1,
+  borderColor: isSelected ? "#00A2FF" : "#1a2b3d",
+  opacity: isPending ? 0.55 : 1,
+}));
 
 const TeamIcon = styled.View({
   width: 36,

@@ -8,6 +8,7 @@ import React, {
 import {
   arrayUnion,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -34,6 +35,7 @@ import {
   notificationTypes,
   LADDER_MATCH_STATUS,
   COMPETITION_TYPES,
+  TEAM_STATUS,
 } from "@shared";
 import { calculatePlayerPerformance, createRootTeam } from "@shared/helpers";
 import type {
@@ -44,6 +46,7 @@ import type {
   ScoreboardProfile,
   TeamStats,
   TeamMember,
+  TeamStatus,
   UserProfile,
 } from "@shared/types";
 import { buildLadderParticipant } from "../helpers/ladderParticipants";
@@ -301,12 +304,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       players: TeamMember[],
       createdBy: string,
       teamName?: string,
+      status?: TeamStatus,
     ): Promise<CreateTeamOutcome> => {
       if (players.length < 2 || !createdBy) {
         return { success: false, alreadyExists: false, team: null };
       }
       try {
-        const team = createRootTeam({ players, createdBy, teamName });
+        const team = createRootTeam({ players, createdBy, teamName, status });
         const teamRef = doc(db, TEAMS_COLLECTION, team.teamKey);
         const existing = await getDoc(teamRef);
         if (existing.exists()) {
@@ -321,6 +325,36 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error("Error creating team:", error);
         return { success: false, alreadyExists: false, team: null };
+      }
+    },
+    [],
+  );
+
+  const acceptTeamInvite = useCallback(
+    async (teamKey: string): Promise<boolean> => {
+      if (!teamKey) return false;
+      try {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamKey), {
+          status: TEAM_STATUS.ACTIVE,
+        });
+        return true;
+      } catch (error) {
+        console.error("Error accepting team invite:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const declineTeamInvite = useCallback(
+    async (teamKey: string): Promise<boolean> => {
+      if (!teamKey) return false;
+      try {
+        await deleteDoc(doc(db, TEAMS_COLLECTION, teamKey));
+        return true;
+      } catch (error) {
+        console.error("Error declining team invite:", error);
+        return false;
       }
     },
     [],
@@ -1052,6 +1086,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         addLadderTeam,
         fetchLadderTeams,
         createTeam,
+        acceptTeamInvite,
+        declineTeamInvite,
         fetchUserTeams,
         joinLadderAsTeam,
         createLadderMatch,
