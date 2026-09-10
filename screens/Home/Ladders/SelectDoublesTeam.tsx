@@ -6,6 +6,7 @@ import {
   useNavigation,
   useRoute,
   useFocusEffect,
+  StackActions,
   RouteProp,
   NavigationProp,
   ParamListBase,
@@ -72,13 +73,23 @@ const SelectDoublesTeam: React.FC = () => {
     }
     setJoining(true);
     try {
-      const { success } = await joinLadderAsTeam(ladder.ladderId, selectedTeam);
+      const { success, conflict } = await joinLadderAsTeam(
+        ladder.ladderId,
+        selectedTeam,
+      );
       if (success) {
         showBottomToast("Joined the ladder", "success");
-        navigation.navigate("Ladder", {
-          ladderId: ladder.ladderId,
-          tab: "Matchmaking",
-        });
+        navigation.dispatch(
+          StackActions.replace("Ladder", {
+            ladderId: ladder.ladderId,
+            tab: "Matchmaking",
+          }),
+        );
+      } else if (conflict) {
+        showBottomToast(
+          "A member of this team is already in the ladder.",
+          "error",
+        );
       } else {
         showBottomToast("Couldn't join. Please try again.", "error");
       }
@@ -160,7 +171,7 @@ const SelectDoublesTeam: React.FC = () => {
         )}
 
         <CreateLink
-          onPress={() => navigation.navigate("InvitePlayer", { team: true })}
+          onPress={() => navigation.navigate("InvitePlayer", { team: true, ladder })}
           activeOpacity={0.85}
           testID="select-team-create"
         >

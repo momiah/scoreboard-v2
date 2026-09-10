@@ -40,6 +40,7 @@ import {
   CollectionName,
   Club,
   TeamMember,
+  Ladder,
 } from "@shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../components/Modals/RecentPlayersModal";
@@ -69,6 +70,7 @@ type ClubRouteParams = {
 
 type TeamRouteParams = {
   team: true;
+  ladder?: Ladder;
   competitionDetails?: undefined;
   competitionType?: undefined;
   club?: undefined;
@@ -87,6 +89,9 @@ const InvitePlayer = () => {
   // Team context: inviting one partner to form a doubles team (pending until
   // they accept).
   const isTeamContext = (route.params as TeamRouteParams).team === true;
+  const teamLadder = isTeamContext
+    ? ((route.params as TeamRouteParams).ladder ?? null)
+    : null;
 
   // Club context: inviting NEW people to join a club (a genuine invite).
   const club = route.params.club ?? null;
@@ -123,7 +128,10 @@ const InvitePlayer = () => {
   const { sendNotification, currentUser } = useContext(UserContext);
   const { updatePendingInvites, addPlayersToCompetition } =
     useContext(LeagueContext);
-  const { createTeam } = useContext(LadderContext);
+  const { createTeam, fetchLadderMemberIds } = useContext(LadderContext);
+  const [ladderMemberIds, setLadderMemberIds] = useState<Set<string>>(
+    new Set(),
+  );
   const {
     handleShowPopup,
     setPopupMessage,
@@ -138,6 +146,19 @@ const InvitePlayer = () => {
       if (id) setCurrentUserId(id);
     });
   }, []);
+
+  // Team context opened from a ladder join: load who is already in the ladder
+  // so a partner already participating can't be invited into the team.
+  useEffect(() => {
+    if (!isTeamContext || !teamLadder?.ladderId) return;
+    let active = true;
+    fetchLadderMemberIds(teamLadder.ladderId).then((ids) => {
+      if (active) setLadderMemberIds(new Set(ids));
+    });
+    return () => {
+      active = false;
+    };
+  }, [isTeamContext, teamLadder?.ladderId, fetchLadderMemberIds]);
 
   // Fetch club members on mount whenever a club is involved:
   //   • club competition → members become the "add" checkbox list.
@@ -194,7 +215,7 @@ const InvitePlayer = () => {
       : COLLECTION_NAMES.tournaments) as CollectionName;
 
   const hasUserConflict = (userId: string) => {
-    if (isTeamContext) return false;
+    if (isTeamContext) return ladderMemberIds.has(userId);
     if (isClubContext) {
       const isMember = clubParticipantIds.has(userId);
       const isPendingInvite = (club.pendingInvites ?? []).some(
@@ -235,6 +256,9 @@ const InvitePlayer = () => {
     if (isTeamContext) {
       if (inviteUsers.length > 1) {
         return "Cannot invite more than one player for your doubles team.";
+      }
+      if (hasConflicts) {
+        return "This user is already a participant in the ladder";
       }
       return "";
     }

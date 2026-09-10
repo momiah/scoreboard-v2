@@ -51,6 +51,10 @@ import type {
 } from "@shared/types";
 import { buildLadderParticipant } from "../helpers/ladderParticipants";
 import type { LadderJoinUser } from "../helpers/ladderParticipants";
+import {
+  teamMemberIds,
+  findLadderMemberConflicts,
+} from "../helpers/ladderTeamMembership";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
 import {
@@ -61,6 +65,7 @@ import type {
   LadderContextType,
   FetchLaddersOptions,
   LadderJoinOutcome,
+  JoinLadderAsTeamOutcome,
   CreateTeamOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
@@ -393,28 +398,67 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const fetchLadderMemberIds = useCallback(
+    async (ladderId: string): Promise<string[]> => {
+      if (!ladderId) return [];
+      try {
+        const [participantSnap, teamSnap] = await Promise.all([
+          getDocs(
+            collection(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_PARTICIPANTS_COLLECTION,
+            ),
+          ),
+          getDocs(
+            collection(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+            ),
+          ),
+        ]);
+        const ids = new Set<string>(participantSnap.docs.map((d) => d.id));
+        teamSnap.docs.forEach((d) => {
+          teamMemberIds(d.data() as TeamStats).forEach((id) => ids.add(id));
+        });
+        return Array.from(ids);
+      } catch (error) {
+        console.error("Error fetching ladder member ids:", error);
+        return [];
+      }
+    },
+    [],
+  );
+
   const joinLadderAsTeam = useCallback(
     async (
       ladderId: string,
       rootTeam: TeamStats,
-    ): Promise<LadderJoinOutcome> => {
+    ): Promise<JoinLadderAsTeamOutcome> => {
       if (!ladderId || !rootTeam?.teamKey) {
-        return { success: false, alreadyJoined: false };
+        return {
+          success: false,
+          alreadyJoined: false,
+          conflict: false,
+          conflictUserIds: [],
+        };
       }
       try {
-        const teamRef = doc(
-          db,
-          LADDERS_COLLECTION,
-          ladderId,
-          LADDER_TEAMS_COLLECTION,
-          rootTeam.teamKey,
+        const memberIds = await fetchLadderMemberIds(ladderId);
+        const conflictUserIds = findLadderMemberConflicts(
+          teamMemberIds(rootTeam),
+          memberIds,
         );
-        const existing = await getDoc(teamRef);
-        if (existing.exists()) {
-          setJoinedLadderIds((prev) =>
-            prev.includes(ladderId) ? prev : [...prev, ladderId],
-          );
-          return { success: true, alreadyJoined: true };
+        if (conflictUserIds.length > 0) {
+          return {
+            success: false,
+            alreadyJoined: false,
+            conflict: true,
+            conflictUserIds,
+          };
         }
         const ladderTeam = createRootTeam({
           players: rootTeam.players ?? [],
@@ -427,13 +471,23 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             prev.includes(ladderId) ? prev : [...prev, ladderId],
           );
         }
-        return { success: added, alreadyJoined: false };
+        return {
+          success: added,
+          alreadyJoined: false,
+          conflict: false,
+          conflictUserIds: [],
+        };
       } catch (error) {
         console.error("Error joining ladder as team:", error);
-        return { success: false, alreadyJoined: false };
+        return {
+          success: false,
+          alreadyJoined: false,
+          conflict: false,
+          conflictUserIds: [],
+        };
       }
     },
-    [addLadderTeam],
+    [addLadderTeam, fetchLadderMemberIds],
   );
 
   const createLadderMatch = useCallback(
@@ -1104,6 +1158,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         declineTeamInvite,
         fetchTeam,
         fetchUserTeams,
+        fetchLadderMemberIds,
         joinLadderAsTeam,
         createLadderMatch,
         fetchLadderMatches,

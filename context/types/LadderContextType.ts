@@ -21,6 +21,13 @@ export interface CreateTeamOutcome {
   team: TeamStats | null;
 }
 
+export interface JoinLadderAsTeamOutcome {
+  success: boolean;
+  alreadyJoined: boolean;
+  conflict: boolean;
+  conflictUserIds: string[];
+}
+
 export interface CreateLadderMatchOutcome {
   success: boolean;
   ladderMatch: LadderMatch | null;
@@ -84,10 +91,11 @@ export interface LadderContextType {
   declineTeamInvite: (teamKey: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;
   fetchUserTeams: (userId: string) => Promise<TeamStats[]>;
+  fetchLadderMemberIds: (ladderId: string) => Promise<string[]>;
   joinLadderAsTeam: (
     ladderId: string,
     rootTeam: TeamStats,
-  ) => Promise<LadderJoinOutcome>;
+  ) => Promise<JoinLadderAsTeamOutcome>;
   createLadderMatch: (
     ladderId: string,
     input: LadderMatchInput,
