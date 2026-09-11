@@ -28,7 +28,6 @@ import { formatDisplayName } from "../../../helpers/formatDisplayName";
 import PaginatedList from "../../../components/PaginatedList";
 import PerformanceRow from "../../../components/performance/Player/PerformanceRow";
 import PlayerDetails from "../../../components/Modals/PlayerDetailsModal";
-import TeamDetails from "../../../components/Modals/TeamDetailsModal";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 
 type StandingsMode = "players" | "teams";
@@ -68,7 +67,6 @@ const LadderStandings: React.FC = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<ScoreboardProfile | null>(
     null,
   );
-  const [selectedTeam, setSelectedTeam] = useState<TeamStats | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -173,7 +171,11 @@ const LadderStandings: React.FC = () => {
     ({ item }: { item: RankedTeam }) => {
       const pointDifference = item.totalPointDifference || 0;
       return (
-        <TeamRow onPress={() => setSelectedTeam(item)}>
+        <TeamRow
+          onPress={() =>
+            navigation.navigate("TeamDetails", { team: item })
+          }
+        >
           <TableCell>
             <Rank>
               {item.rank > 0 ? `${item.rank}${getOrdinalSuffix(item.rank)}` : "-"}
@@ -251,13 +253,6 @@ const LadderStandings: React.FC = () => {
         />
       )}
 
-      {selectedTeam && (
-        <TeamDetails
-          showTeamDetails={!!selectedTeam}
-          setShowTeamDetails={() => setSelectedTeam(null)}
-          teamStats={selectedTeam}
-        />
-      )}
     </Screen>
   );
 };

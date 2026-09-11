@@ -22,8 +22,8 @@ interface TeamDetailsModalProps {
   showTeamDetails?: boolean;
   setShowTeamDetails?: (value: boolean) => void;
   teamStats?: TeamStats;
-  // Screen mode (Ladder team home) — injected by React Navigation
-  route?: { params?: { teamId?: string; ladder?: Ladder } };
+  // Screen mode (Ladder team home / standings) — injected by React Navigation
+  route?: { params?: { teamId?: string; team?: TeamStats; ladder?: Ladder } };
 }
 
 const memberName = (member: TeamMember): string =>
@@ -101,10 +101,11 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const { fetchTeam } = useContext(LadderContext);
 
   const teamId = route?.params?.teamId;
+  const passedTeam = route?.params?.team ?? null;
   const ladder = route?.params?.ladder;
 
   const [fetchedTeam, setFetchedTeam] = useState<TeamStats | null>(null);
-  const [loading, setLoading] = useState(!isModal);
+  const [loading, setLoading] = useState(!isModal && !passedTeam);
 
   const load = useCallback(async () => {
     if (!teamId) return;
@@ -121,8 +122,8 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
 
   useFocusEffect(
     useCallback(() => {
-      if (!isModal) load();
-    }, [isModal, load]),
+      if (!isModal && !passedTeam && teamId) load();
+    }, [isModal, passedTeam, teamId, load]),
   );
 
   // ── Modal mode: the read-only stats popup (Leagues / Tournaments) ──
@@ -173,7 +174,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   }
 
   // ── Screen mode: the Ladder team home (identity + members + invite + stats) ──
-  const team = fetchedTeam;
+  const team = passedTeam ?? fetchedTeam;
   const members = team?.players ?? [];
   const isActive = team?.status === TEAM_STATUS.ACTIVE;
   const hasPartner = members.length >= 2;

@@ -70,8 +70,12 @@ const TeamPerformance = ({ leagueTeams, ladder = null }) => {
     return (
       <TableRow
         onPress={() => {
-          setShowTeamDetails(true);
-          setTeam(team);
+          if (ladder) {
+            navigation.navigate("TeamDetails", { team });
+          } else {
+            setShowTeamDetails(true);
+            setTeam(team);
+          }
         }}
       >
         <TableCell>
