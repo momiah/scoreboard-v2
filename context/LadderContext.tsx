@@ -8,7 +8,6 @@ import React, {
 import {
   arrayUnion,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -46,7 +45,6 @@ import type {
   ScoreboardProfile,
   TeamStats,
   TeamMember,
-  TeamStatus,
   UserProfile,
 } from "@shared/types";
 import { buildLadderParticipant } from "../helpers/ladderParticipants";
@@ -55,6 +53,7 @@ import {
   teamMemberIds,
   findLadderMemberConflicts,
 } from "../helpers/ladderTeamMembership";
+import { addMember, removeMember } from "../helpers/teamRoster";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
 import {
@@ -306,40 +305,71 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
   const createTeam = useCallback(
     async (
-      players: TeamMember[],
-      createdBy: string,
-      teamName?: string,
-      status?: TeamStatus,
+      creator: TeamMember,
+      details: { teamName: string; teamProfilePic?: string },
     ): Promise<CreateTeamOutcome> => {
-      if (players.length < 2 || !createdBy) {
-        return { success: false, alreadyExists: false, team: null };
+      if (!creator?.userId || !details?.teamName?.trim()) {
+        return { success: false, team: null };
       }
       try {
-        const team = createRootTeam({ players, createdBy, teamName, status });
-        const teamRef = doc(db, TEAMS_COLLECTION, team.teamKey);
-        const existing = await getDoc(teamRef);
-        if (existing.exists()) {
-          return {
-            success: false,
-            alreadyExists: true,
-            team: existing.data() as TeamStats,
-          };
-        }
-        await setDoc(teamRef, team);
-        return { success: true, alreadyExists: false, team };
+        const teamId = doc(collection(db, TEAMS_COLLECTION)).id;
+        const team = createRootTeam({
+          players: [creator],
+          createdBy: creator.userId,
+          teamId,
+          teamName: details.teamName,
+          teamProfilePic: details.teamProfilePic,
+          status: TEAM_STATUS.PENDING,
+        });
+        await setDoc(doc(db, TEAMS_COLLECTION, teamId), team);
+        return { success: true, team };
       } catch (error) {
         console.error("Error creating team:", error);
-        return { success: false, alreadyExists: false, team: null };
+        return { success: false, team: null };
+      }
+    },
+    [],
+  );
+
+  const addTeamPartner = useCallback(
+    async (teamId: string, partner: TeamMember): Promise<boolean> => {
+      if (!teamId || !partner?.userId) return false;
+      try {
+        const teamRef = doc(db, TEAMS_COLLECTION, teamId);
+        const snap = await getDoc(teamRef);
+        if (!snap.exists()) return false;
+        await updateDoc(teamRef, {
+          ...addMember(snap.data() as TeamStats, partner),
+          status: TEAM_STATUS.PENDING,
+        });
+        return true;
+      } catch (error) {
+        console.error("Error adding team partner:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const updateTeamProfilePic = useCallback(
+    async (teamId: string, teamProfilePic: string): Promise<boolean> => {
+      if (!teamId || !teamProfilePic) return false;
+      try {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamId), { teamProfilePic });
+        return true;
+      } catch (error) {
+        console.error("Error updating team profile pic:", error);
+        return false;
       }
     },
     [],
   );
 
   const acceptTeamInvite = useCallback(
-    async (teamKey: string): Promise<boolean> => {
-      if (!teamKey) return false;
+    async (teamId: string): Promise<boolean> => {
+      if (!teamId) return false;
       try {
-        await updateDoc(doc(db, TEAMS_COLLECTION, teamKey), {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamId), {
           status: TEAM_STATUS.ACTIVE,
         });
         return true;
@@ -352,10 +382,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const declineTeamInvite = useCallback(
-    async (teamKey: string): Promise<boolean> => {
-      if (!teamKey) return false;
+    async (teamId: string, partnerId: string): Promise<boolean> => {
+      if (!teamId || !partnerId) return false;
       try {
-        await deleteDoc(doc(db, TEAMS_COLLECTION, teamKey));
+        const teamRef = doc(db, TEAMS_COLLECTION, teamId);
+        const snap = await getDoc(teamRef);
+        if (!snap.exists()) return true;
+        await updateDoc(teamRef, {
+          ...removeMember(snap.data() as TeamStats, partnerId),
+          status: TEAM_STATUS.PENDING,
+        });
         return true;
       } catch (error) {
         console.error("Error declining team invite:", error);
@@ -463,7 +499,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         const ladderTeam = createRootTeam({
           players: rootTeam.players ?? [],
           createdBy: rootTeam.createdBy ?? "",
+          teamId: rootTeam.teamId,
           teamName: rootTeam.teamName,
+          teamProfilePic: rootTeam.teamProfilePic,
         });
         const added = await addLadderTeam(ladderId, ladderTeam);
         if (added) {
@@ -1154,6 +1192,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         addLadderTeam,
         fetchLadderTeams,
         createTeam,
+        addTeamPartner,
+        updateTeamProfilePic,
         acceptTeamInvite,
         declineTeamInvite,
         fetchTeam,

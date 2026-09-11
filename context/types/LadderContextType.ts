@@ -6,7 +6,6 @@ import type {
   ScoreboardProfile,
   TeamStats,
   TeamMember,
-  TeamStatus,
 } from "@shared/types";
 import type { LadderJoinUser } from "../../helpers/ladderParticipants";
 
@@ -17,7 +16,6 @@ export interface LadderJoinOutcome {
 
 export interface CreateTeamOutcome {
   success: boolean;
-  alreadyExists: boolean;
   team: TeamStats | null;
 }
 
@@ -82,13 +80,16 @@ export interface LadderContextType {
   addLadderTeam: (ladderId: string, team: TeamStats) => Promise<boolean>;
   fetchLadderTeams: (ladderId: string) => Promise<TeamStats[]>;
   createTeam: (
-    players: TeamMember[],
-    createdBy: string,
-    teamName?: string,
-    status?: TeamStatus,
+    creator: TeamMember,
+    details: { teamName: string; teamProfilePic?: string },
   ) => Promise<CreateTeamOutcome>;
-  acceptTeamInvite: (teamKey: string) => Promise<boolean>;
-  declineTeamInvite: (teamKey: string) => Promise<boolean>;
+  addTeamPartner: (teamId: string, partner: TeamMember) => Promise<boolean>;
+  updateTeamProfilePic: (
+    teamId: string,
+    teamProfilePic: string,
+  ) => Promise<boolean>;
+  acceptTeamInvite: (teamId: string) => Promise<boolean>;
+  declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;
   fetchUserTeams: (userId: string) => Promise<TeamStats[]>;
   fetchLadderMemberIds: (ladderId: string) => Promise<string[]>;

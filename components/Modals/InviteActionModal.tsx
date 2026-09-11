@@ -121,8 +121,12 @@ const InviteActionModal = ({
       fetchTeam(inviteId)
         .then((team) => {
           if (!active) return;
-          if (!team) {
+          const stillInvited = (team?.playerIds ?? []).includes(
+            currentUser?.userId,
+          );
+          if (!team || !stillInvited) {
             readNotification(notificationId, currentUser.userId);
+            setTeamData(null);
             setIsWithdrawn(true);
             setWithdrawnMessage("This team invite is no longer available.");
           } else if (team.status !== TEAM_STATUS.PENDING) {
@@ -276,7 +280,7 @@ const InviteActionModal = ({
     setDeclining(true);
     try {
       if (isTeam) {
-        await declineTeamInvite(inviteId);
+        await declineTeamInvite(inviteId, currentUser?.userId);
         readNotification(notificationId, currentUser?.userId);
         onClose();
         return;

@@ -23,7 +23,6 @@ import {
   notificationTypes,
   COMPETITION_TYPES,
   COLLECTION_NAMES,
-  TEAM_STATUS,
 } from "@shared";
 
 import moment from "moment";
@@ -70,6 +69,7 @@ type ClubRouteParams = {
 
 type TeamRouteParams = {
   team: true;
+  teamId: string;
   ladder?: Ladder;
   competitionDetails?: undefined;
   competitionType?: undefined;
@@ -89,6 +89,9 @@ const InvitePlayer = () => {
   // Team context: inviting one partner to form a doubles team (pending until
   // they accept).
   const isTeamContext = (route.params as TeamRouteParams).team === true;
+  const teamId = isTeamContext
+    ? (route.params as TeamRouteParams).teamId
+    : null;
   const teamLadder = isTeamContext
     ? ((route.params as TeamRouteParams).ladder ?? null)
     : null;
@@ -128,7 +131,7 @@ const InvitePlayer = () => {
   const { sendNotification, currentUser } = useContext(UserContext);
   const { updatePendingInvites, addPlayersToCompetition } =
     useContext(LeagueContext);
-  const { createTeam, fetchLadderMemberIds } = useContext(LadderContext);
+  const { addTeamPartner, fetchLadderMemberIds } = useContext(LadderContext);
   const [ladderMemberIds, setLadderMemberIds] = useState<Set<string>>(
     new Set(),
   );
@@ -215,7 +218,9 @@ const InvitePlayer = () => {
       : COLLECTION_NAMES.tournaments) as CollectionName;
 
   const hasUserConflict = (userId: string) => {
-    if (isTeamContext) return ladderMemberIds.has(userId);
+    if (isTeamContext) {
+      return userId === currentUser?.userId || ladderMemberIds.has(userId);
+    }
     if (isClubContext) {
       const isMember = clubParticipantIds.has(userId);
       const isPendingInvite = (club.pendingInvites ?? []).some(
@@ -258,7 +263,12 @@ const InvitePlayer = () => {
         return "Cannot invite more than one player for your doubles team.";
       }
       if (hasConflicts) {
-        return "This user is already a participant in the ladder";
+        const selfConflict = conflictedUsers.some(
+          (u) => u.userId === currentUser?.userId,
+        );
+        return selfConflict
+          ? "You're already on this team."
+          : "This user is already a participant in the ladder";
       }
       return "";
     }
@@ -327,7 +337,7 @@ const InvitePlayer = () => {
         return;
       }
 
-      // Team context: create a pending team and invite the one partner.
+      // Team context: invite the one partner into the existing (owned) team.
       if (isTeamContext) {
         if (inviteUsers.length > 1) {
           setValidationError(
@@ -336,35 +346,25 @@ const InvitePlayer = () => {
           setSendingInvite(false);
           return;
         }
-        if (!currentUser?.userId) {
-          setValidationError("You need to be signed in to create a team.");
+        if (!currentUser?.userId || !teamId) {
+          setValidationError("You need to be signed in to invite a partner.");
           setSendingInvite(false);
           return;
         }
 
         const partner = inviteUsers[0];
-        const toTeamMember = (user: UserProfile): TeamMember => ({
-          userId: user.userId,
-          username: user.username,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          displayName: formatDisplayName(user),
-          profileImage: user.profileImage,
-        });
+        const partnerMember: TeamMember = {
+          userId: partner.userId,
+          username: partner.username,
+          firstName: partner.firstName,
+          lastName: partner.lastName,
+          displayName: formatDisplayName(partner),
+          profileImage: partner.profileImage,
+        };
 
-        const { success, alreadyExists, team } = await createTeam(
-          [toTeamMember(currentUser), toTeamMember(partner)],
-          currentUser.userId,
-          undefined,
-          TEAM_STATUS.PENDING,
-        );
-
-        if (alreadyExists) {
-          setValidationError("You already have a team with this player.");
-          return;
-        }
-        if (!success || !team) {
-          setValidationError("Couldn't create the team. Please try again.");
+        const added = await addTeamPartner(teamId, partnerMember);
+        if (!added) {
+          setValidationError("Couldn't send the invite. Please try again.");
           return;
         }
 
@@ -377,7 +377,7 @@ const InvitePlayer = () => {
             currentUser,
           )} invited you to form a doubles team`,
           type: notificationTypes.ACTION.INVITE.TEAM,
-          data: { teamKey: team.teamKey },
+          data: { teamId },
         });
 
         showBottomToast("Invite sent", "success");

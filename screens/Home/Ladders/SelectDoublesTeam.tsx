@@ -171,7 +171,7 @@ const SelectDoublesTeam: React.FC = () => {
         )}
 
         <CreateLink
-          onPress={() => navigation.navigate("InvitePlayer", { team: true, ladder })}
+          onPress={() => navigation.navigate("CreateTeam", { ladder })}
           activeOpacity={0.85}
           testID="select-team-create"
         >

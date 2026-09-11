@@ -45,7 +45,7 @@ const UserPendingInvites = () => {
       item.data?.tournamentId ??
       item.data?.competitionId ??
       item.data?.clubId ??
-      item.data?.teamKey;
+      item.data?.teamId;
 
     const notificationCompetitionId =
       typeof rawCompetitionId === "string" ||

@@ -72,7 +72,7 @@ const Notifications = () => {
       item.data.tournamentId ||
       item.data.clubId ||
       item.data.competitionId ||
-      item.data.teamKey;
+      item.data.teamId;
 
     const commonState = {
       notificationId: item.id,

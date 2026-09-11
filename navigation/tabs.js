@@ -18,6 +18,8 @@ import LadderTerms from "../screens/Home/Ladders/LadderTerms";
 import MatchDetails from "../screens/Home/Ladders/MatchDetails";
 import LadderStandings from "../screens/Home/Ladders/LadderStandings";
 import SelectDoublesTeam from "../screens/Home/Ladders/SelectDoublesTeam";
+import CreateTeam from "../screens/Home/Ladders/CreateTeam";
+import TeamDetails from "../screens/Home/Ladders/TeamDetails";
 import LadderMenu from "../screens/Home/Ladders/LadderMenu";
 import MatchDetailsMenu from "../screens/Home/Ladders/MatchDetailsMenu";
 import UserProfile from "../screens/Profile/UserProfile";
@@ -79,6 +81,8 @@ const renderLadderScreens = () => (
     <Stack.Screen name="MatchDetails" component={MatchDetails} />
     <Stack.Screen name="LadderStandings" component={LadderStandings} />
     <Stack.Screen name="SelectDoublesTeam" component={SelectDoublesTeam} />
+    <Stack.Screen name="CreateTeam" component={CreateTeam} />
+    <Stack.Screen name="TeamDetails" component={TeamDetails} />
     <Stack.Screen name="LadderMenu" component={LadderMenu} />
     <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
   </>

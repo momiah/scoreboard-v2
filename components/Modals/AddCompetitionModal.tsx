@@ -50,7 +50,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
       setAddTournamentModalVisible(true);
     } else if (option === "team") {
       setModalVisible(false);
-      navigation.navigate("InvitePlayer", { team: true });
+      navigation.navigate("CreateTeam");
     }
   };
 
