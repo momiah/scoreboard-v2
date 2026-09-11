@@ -19,7 +19,7 @@ import MatchDetails from "../screens/Home/Ladders/MatchDetails";
 import LadderStandings from "../screens/Home/Ladders/LadderStandings";
 import SelectDoublesTeam from "../screens/Home/Ladders/SelectDoublesTeam";
 import CreateTeam from "../screens/Home/Ladders/CreateTeam";
-import TeamDetails from "../screens/Home/Ladders/TeamDetails";
+import TeamDetails from "../components/Modals/TeamDetailsModal";
 import LadderMenu from "../screens/Home/Ladders/LadderMenu";
 import MatchDetailsMenu from "../screens/Home/Ladders/MatchDetailsMenu";
 import UserProfile from "../screens/Profile/UserProfile";

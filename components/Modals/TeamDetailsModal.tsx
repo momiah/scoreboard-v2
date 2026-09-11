@@ -1,23 +1,29 @@
 import React, { useCallback, useContext, useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { View, Modal, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
-import { Ionicons } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import {
   useNavigation,
-  useRoute,
   useFocusEffect,
-  RouteProp,
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
 
 import { TEAM_STATUS } from "@shared";
 import type { Ladder, TeamStats, TeamMember } from "@shared/types";
-import { LadderContext } from "../../../context/LadderContext";
+import { LadderContext } from "../../context/LadderContext";
+import MatchMedals from "../performance/MatchMedals";
+import AnimateNumber from "../performance/AnimateNumber";
+import ResultLog from "../performance/ResultLog";
 
-interface TeamDetailsParams {
-  teamId: string;
-  ladder?: Ladder;
+interface TeamDetailsModalProps {
+  // Modal mode (Leagues / Tournaments / tapping a team in standings)
+  showTeamDetails?: boolean;
+  setShowTeamDetails?: (value: boolean) => void;
+  teamStats?: TeamStats;
+  // Screen mode (Ladder team home) — injected by React Navigation
+  route?: { params?: { teamId?: string; ladder?: Ladder } };
 }
 
 const memberName = (member: TeamMember): string =>
@@ -25,24 +31,89 @@ const memberName = (member: TeamMember): string =>
   [member.firstName, member.lastName].filter(Boolean).join(" ").trim() ||
   member.username;
 
-const TeamDetails: React.FC = () => {
-  const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const route =
-    useRoute<RouteProp<Record<string, TeamDetailsParams>, string>>();
-  const { teamId, ladder } = route.params;
+const StatsBlock: React.FC<{ team: TeamStats }> = ({ team }) => {
+  const winRatio =
+    team.numberOfLosses > 0
+      ? team.numberOfWins / team.numberOfLosses
+      : team.numberOfWins;
 
+  const statData = [
+    {
+      statTitle: "Wins",
+      stat: <AnimateNumber number={team.numberOfWins} fontSize={25} />,
+    },
+    {
+      statTitle: "Losses",
+      stat: <AnimateNumber number={team.numberOfLosses} fontSize={25} />,
+    },
+    {
+      statTitle: "Win Ratio",
+      stat: <Stat>{winRatio.toFixed(2)}</Stat>,
+    },
+    {
+      statTitle: "Avg Point Difference",
+      stat: (
+        <AnimateNumber
+          number={Number(team.averagePointDifference.toFixed(0))}
+          fontSize={25}
+        />
+      ),
+    },
+    {
+      statTitle: "Current Streak",
+      stat: <AnimateNumber number={team.currentStreak} fontSize={25} />,
+    },
+    {
+      statTitle: "Highest Streak",
+      stat: <AnimateNumber number={team.highestWinStreak} fontSize={25} />,
+    },
+  ];
+
+  return (
+    <>
+      <ResultLog resultLog={team.resultLog} />
+      <MatchMedals
+        demonWin={team.demonWin}
+        winStreak3={team.winStreak3}
+        winStreak5={team.winStreak5}
+        winStreak7={team.winStreak7}
+      />
+      <TeamStat>
+        {statData.map((data, index) => (
+          <TableCell key={index}>
+            <StatTitle>{data.statTitle}</StatTitle>
+            {data.stat}
+          </TableCell>
+        ))}
+      </TeamStat>
+    </>
+  );
+};
+
+const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
+  showTeamDetails,
+  setShowTeamDetails,
+  teamStats,
+  route,
+}) => {
+  const isModal = showTeamDetails !== undefined;
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { fetchTeam } = useContext(LadderContext);
 
-  const [team, setTeam] = useState<TeamStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const teamId = route?.params?.teamId;
+  const ladder = route?.params?.ladder;
+
+  const [fetchedTeam, setFetchedTeam] = useState<TeamStats | null>(null);
+  const [loading, setLoading] = useState(!isModal);
 
   const load = useCallback(async () => {
+    if (!teamId) return;
     setLoading(true);
     try {
-      setTeam(await fetchTeam(teamId));
+      setFetchedTeam(await fetchTeam(teamId));
     } catch (error) {
       console.error("[TeamDetails] Failed to load team:", error);
-      setTeam(null);
+      setFetchedTeam(null);
     } finally {
       setLoading(false);
     }
@@ -50,16 +121,66 @@ const TeamDetails: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      load();
-    }, [load]),
+      if (!isModal) load();
+    }, [isModal, load]),
   );
 
+  // ── Modal mode: the read-only stats popup (Leagues / Tournaments) ──
+  if (isModal) {
+    if (!teamStats) return null;
+    return (
+      <View>
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={showTeamDetails}
+        >
+          <ModalContainer>
+            <ModalContent>
+              <CloseIconContainer>
+                <AntDesign
+                  onPress={() => setShowTeamDetails?.(false)}
+                  name="close-circle"
+                  size={26}
+                  color="red"
+                />
+              </CloseIconContainer>
+
+              <TeamDetail>
+                <View>
+                  <StatTitle>Team</StatTitle>
+                  <PlayerName>{teamStats.team?.[0]}</PlayerName>
+                  <PlayerName>{teamStats.team?.[1]}</PlayerName>
+                </View>
+
+                <RivalContainer>
+                  {teamStats.rival?.rivalPlayers ? (
+                    <>
+                      <StatTitle>Rival</StatTitle>
+                      <PlayerName>{teamStats.rival.rivalPlayers[0]}</PlayerName>
+                      <PlayerName>{teamStats.rival.rivalPlayers[1]}</PlayerName>
+                    </>
+                  ) : null}
+                </RivalContainer>
+              </TeamDetail>
+              <Divider />
+              <StatsBlock team={teamStats} />
+            </ModalContent>
+          </ModalContainer>
+        </Modal>
+      </View>
+    );
+  }
+
+  // ── Screen mode: the Ladder team home (identity + members + invite + stats) ──
+  const team = fetchedTeam;
   const members = team?.players ?? [];
   const isActive = team?.status === TEAM_STATUS.ACTIVE;
   const hasPartner = members.length >= 2;
   const partner = members.find((m) => m.userId !== team?.createdBy);
 
   const handleInvite = () => {
+    if (!teamId) return;
     navigation.navigate("InvitePlayer", { team: true, teamId, ladder });
   };
 
@@ -124,9 +245,9 @@ const TeamDetails: React.FC = () => {
                   <MemberIcon>
                     <Ionicons name="person" size={18} color="#00A2FF" />
                   </MemberIcon>
-                  <MemberName numberOfLines={1}>
+                  <MemberNameText numberOfLines={1}>
                     {memberName(member)}
-                  </MemberName>
+                  </MemberNameText>
                   {isOwner && (
                     <OwnerTag>
                       <OwnerTagText>Owner</OwnerTagText>
@@ -157,14 +278,96 @@ const TeamDetails: React.FC = () => {
               the invite before this team can join a ladder.
             </Hint>
           )}
+
+          <SectionLabel style={{ marginTop: 24 }}>Team stats</SectionLabel>
+          <StatsBlock team={team} />
         </Body>
       )}
     </Screen>
   );
 };
 
-export default TeamDetails;
+export default TeamDetailsModal;
 
+// ── Modal-mode styles (unchanged) ──
+const Divider = styled.View({
+  borderBottomColor: "#262626",
+  borderBottomWidth: 1,
+});
+
+const ModalContainer = styled(BlurView).attrs({
+  intensity: 80,
+  tint: "dark",
+})({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const ModalContent = styled.View({
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
+  margin: 10,
+  padding: 20,
+  paddingLeft: 25,
+  paddingRight: 25,
+  borderRadius: 20,
+});
+
+const CloseIconContainer = styled.View({
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  padding: 5,
+  marginBottom: 20,
+});
+
+const PlayerName = styled.Text({
+  fontSize: 25,
+  color: "white",
+  fontWeight: "bold",
+});
+
+const TeamStat = styled.View({
+  flexDirection: "row",
+  flexWrap: "wrap",
+});
+
+const TeamDetail = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  borderBottomColor: "#262626",
+  borderBottomWidth: 1,
+  paddingBottom: 30,
+});
+
+const RivalContainer = styled.View({
+  flexDirection: "column",
+  alignItems: "flex-end",
+});
+
+const TableCell = styled.View({
+  width: "50%",
+  justifyContent: "center",
+  alignItems: "center",
+  paddingTop: 20,
+  paddingBottom: 20,
+  borderTopWidth: 1,
+  borderColor: "#262626",
+});
+
+const StatTitle = styled.Text({
+  fontSize: 14,
+  color: "#aaa",
+});
+
+const Stat = styled.Text({
+  fontSize: 25,
+  fontWeight: "bold",
+  color: "white",
+});
+
+// ── Screen-mode styles (Ladder team home) ──
 const Screen = styled.View({
   flex: 1,
   backgroundColor: "rgb(3, 16, 31)",
@@ -299,7 +502,7 @@ const MemberIcon = styled.View({
   alignItems: "center",
 });
 
-const MemberName = styled.Text({
+const MemberNameText = styled.Text({
   flex: 1,
   color: "#e2e8f0",
   fontSize: 15,
