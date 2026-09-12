@@ -228,7 +228,22 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           userId,
         );
         const snap = await getDoc(participantRef);
-        return snap.exists();
+        if (snap.exists()) return true;
+
+        // Also count as a member when the user joined as part of a team.
+        const teamSnap = await getDocs(
+          query(
+            collection(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+            ),
+            where("playerIds", "array-contains", userId),
+            limit(1),
+          ),
+        );
+        return !teamSnap.empty;
       } catch (error) {
         console.error("Error checking ladder membership:", error);
         return false;
