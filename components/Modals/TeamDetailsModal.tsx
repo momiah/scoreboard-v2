@@ -16,6 +16,7 @@ import { LadderContext } from "../../context/LadderContext";
 import MatchMedals from "../performance/MatchMedals";
 import AnimateNumber from "../performance/AnimateNumber";
 import ResultLog from "../performance/ResultLog";
+import MedalProgress from "../performance/MedalProgress";
 
 interface TeamDetailsModalProps {
   // Modal mode (Leagues / Tournaments / tapping a team in standings)
@@ -295,6 +296,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
           )}
 
           <SectionLabel style={{ marginTop: 24 }}>Team stats</SectionLabel>
+          <MedalProgress xp={team.XP ?? 0} prevGameXp={undefined} />
           <StatsBlock team={team} />
         </Body>
       )}
