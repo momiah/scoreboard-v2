@@ -20,6 +20,7 @@ import HorizontalCardCarousel, {
 import { LadderContext } from "../../context/LadderContext";
 import { ccDefaultImage } from "../../mockImages/index";
 import type { Ladder } from "@shared/types";
+import { LADDER_TYPE } from "@shared";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   registrationOpen: { label: "Registration Open", color: "#FAB234" },
@@ -68,7 +69,11 @@ const HomeLadderSection: React.FC<HomeLadderSectionProps> = ({ loading }) => {
                       color="rgba(0, 0, 0, 0.7)"
                       iconColor="#00A2FF"
                       iconSize={15}
-                      icon="person"
+                      icon={
+                        ladder.ladderType === LADDER_TYPE.DOUBLES
+                          ? "people"
+                          : "person"
+                      }
                       iconPosition="right"
                       bold
                     />

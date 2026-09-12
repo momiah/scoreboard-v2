@@ -24,8 +24,10 @@ import {
   Tournament,
   NormalizedCompetition,
   UserProfile,
+  TeamStats,
 } from "@shared/types";
-import { COMPETITION_TYPES } from "@shared";
+import { COMPETITION_TYPES, TEAM_STATUS } from "@shared";
+import { LadderContext } from "../../context/LadderContext";
 import ProfileActivitySkeleton from "../Skeletons/ProfileActivitySkeleton";
 import LineTabs from "../LineTabs";
 import {
@@ -35,6 +37,7 @@ import {
 } from "../../helpers/clubPlayerStats";
 
 const CLUBS_TAB = "clubs" as const;
+const TEAMS_TAB = "teams" as const;
 
 const { width: screenWidth } = Dimensions.get("window");
 const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
@@ -42,8 +45,8 @@ const screenAdjustedStatFontSize = screenWidth <= 400 ? 20 : 25;
 type CompetitionType =
   (typeof COMPETITION_TYPES)[keyof typeof COMPETITION_TYPES];
 
-/** Tabs cover the two competition types plus the user's clubs. */
-type ActivityTab = CompetitionType | typeof CLUBS_TAB;
+/** Tabs cover the two competition types plus the user's clubs and teams. */
+type ActivityTab = CompetitionType | typeof CLUBS_TAB | typeof TEAMS_TAB;
 
 interface ProfileActivityProps {
   profile: UserProfile;
@@ -58,11 +61,13 @@ const TABS = [
   { key: COMPETITION_TYPES.LEAGUE, label: "Leagues" },
   { key: COMPETITION_TYPES.TOURNAMENT, label: "Tournaments" },
   { key: CLUBS_TAB, label: "Clubs" },
+  { key: TEAMS_TAB, label: "Teams" },
 ] as const;
 
 const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
   const { getLeaguesForUser, getTournamentsForUser } =
     useContext(UserContext);
+  const { fetchUserTeams } = useContext(LadderContext);
 
   const [userLeagues, setUserLeagues] = useState<League[]>([]);
   const [userTournaments, setUserTournaments] = useState<Tournament[]>([]);
@@ -76,6 +81,8 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
   const [tournamentsLoading, setTournamentsLoading] = useState(true);
   const [userClubs, setUserClubs] = useState<ClubActivity[]>([]);
   const [clubsLoading, setClubsLoading] = useState(true);
+  const [userTeams, setUserTeams] = useState<TeamStats[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActivityTab>(
     COMPETITION_TYPES.LEAGUE,
   );
@@ -93,6 +100,14 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
   );
   const navigateToClub = useCallback(
     (clubId: string) => navigation.navigate("Club", { clubId }),
+    [navigation],
+  );
+  const navigateToTeam = useCallback(
+    (team: TeamStats) =>
+      navigation.navigate(
+        "TeamDetails",
+        team.teamId ? { teamId: team.teamId } : { team },
+      ),
     [navigation],
   );
 
@@ -193,6 +208,34 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
       cancelled = true;
     };
   }, [activeTab, profile?.userId, getLeaguesForUser, getTournamentsForUser]);
+
+  // Fetch the teams the user is a member of (owned or joined).
+  useEffect(() => {
+    if (activeTab !== TEAMS_TAB) return;
+
+    let cancelled = false;
+
+    const fetchTeams = async () => {
+      const userId = profile?.userId;
+      if (!userId) return;
+
+      setTeamsLoading(true);
+      try {
+        const teams = await fetchUserTeams(userId);
+        if (!cancelled) setUserTeams(teams);
+      } catch (error) {
+        console.error("Error fetching teams for user:", error);
+      } finally {
+        if (!cancelled) setTeamsLoading(false);
+      }
+    };
+
+    fetchTeams();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, profile?.userId, fetchUserTeams]);
 
   // Single processing useEffect based on active tab
   useEffect(() => {
@@ -443,7 +486,71 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
     [navigateToClub],
   );
 
+  const renderTeamItem = useCallback(
+    ({ item }: { item: TeamStats }) => {
+      const isOwner = item.createdBy === profile?.userId;
+      const isActive = item.status === TEAM_STATUS.ACTIVE;
+      const label = item.teamName?.trim() || (item.team ?? []).join(" & ");
+      return (
+        <CompetitionItem
+          key={item.teamId ?? item.teamKey}
+          onPress={() => navigateToTeam(item)}
+        >
+          <RoleBadgeContainer>
+            {isOwner ? (
+              <Tag
+                name="Owner"
+                color="rgb(3, 16, 31)"
+                iconColor="#FFD700"
+                iconSize={10}
+                fontSize={8}
+                icon="star-outline"
+                iconPosition="right"
+                bold
+              />
+            ) : null}
+          </RoleBadgeContainer>
+
+          <InfoContainer>
+            <CompetitionName>{label}</CompetitionName>
+            <CourtName>{(item.team ?? []).join(" • ")}</CourtName>
+            <TagRow>
+              <Tag
+                name={isActive ? "Active" : "Pending"}
+                color={isActive ? "#0b3b23" : "#3d3413"}
+              />
+            </TagRow>
+          </InfoContainer>
+
+          <TableCell>
+            <StatTitle>Wins</StatTitle>
+            <Stat>{item.numberOfWins}</Stat>
+          </TableCell>
+        </CompetitionItem>
+      );
+    },
+    [profile?.userId, navigateToTeam],
+  );
+
   const renderContent = useMemo(() => {
+    if (activeTab === TEAMS_TAB) {
+      if (teamsLoading) {
+        return <ProfileActivitySkeleton itemCount={4} />;
+      }
+      const emptyMessage =
+        "Here you can find your doubles teams. Create a team to enter doubles ladders 🎾";
+      return userTeams.length > 0 ? (
+        <FlatList
+          data={userTeams}
+          renderItem={renderTeamItem}
+          keyExtractor={(item) => item.teamId ?? item.teamKey}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      ) : (
+        <NoActivityText>{emptyMessage}</NoActivityText>
+      );
+    }
+
     if (activeTab === CLUBS_TAB) {
       if (clubsLoading) {
         return <ProfileActivitySkeleton itemCount={4} />;
@@ -501,12 +608,15 @@ const ProfileActivity: React.FC<ProfileActivityProps> = ({ profile }) => {
     leaguesLoading,
     tournamentsLoading,
     clubsLoading,
+    teamsLoading,
     userClubs,
+    userTeams,
     sortedLeagues,
     sortedTournaments,
     renderLeagueItem,
     renderTournamentItem,
     renderClubItem,
+    renderTeamItem,
   ]);
 
   return (

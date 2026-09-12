@@ -180,9 +180,14 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const hasPartner = members.length >= 2;
   const partner = members.find((m) => m.userId !== team?.createdBy);
 
+  const effectiveTeamId = teamId ?? team?.teamId;
   const handleInvite = () => {
-    if (!teamId) return;
-    navigation.navigate("InvitePlayer", { team: true, teamId, ladder });
+    if (!effectiveTeamId) return;
+    navigation.navigate("InvitePlayer", {
+      team: true,
+      teamId: effectiveTeamId,
+      ladder,
+    });
   };
 
   return (
@@ -195,8 +200,6 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
         >
           <Ionicons name="chevron-back" size={24} color="white" />
         </BackButton>
-        <HeaderTitle numberOfLines={1}>Team</HeaderTitle>
-        <HeaderSpacer />
       </Header>
 
       {loading ? (
@@ -242,7 +245,17 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
             {members.map((member) => {
               const isOwner = member.userId === team.createdBy;
               return (
-                <MemberRow key={member.userId}>
+                <MemberRow
+                  key={member.userId}
+                  activeOpacity={0.85}
+                  onPress={() =>
+                    member.userId &&
+                    navigation.navigate("UserProfile", {
+                      userId: member.userId,
+                    })
+                  }
+                  testID={`team-member-${member.userId}`}
+                >
                   <MemberIcon>
                     <Ionicons name="person" size={18} color="#00A2FF" />
                   </MemberIcon>
@@ -254,6 +267,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
                       <OwnerTagText>Owner</OwnerTagText>
                     </OwnerTag>
                   )}
+                  <Ionicons name="chevron-forward" size={18} color="#4A5A6A" />
                 </MemberRow>
               );
             })}
@@ -392,18 +406,6 @@ const BackButton = styled.TouchableOpacity({
   justifyContent: "center",
 });
 
-const HeaderTitle = styled.Text({
-  flex: 1,
-  textAlign: "center",
-  color: "white",
-  fontSize: 18,
-  fontWeight: "bold",
-});
-
-const HeaderSpacer = styled.View({
-  width: 32,
-});
-
 const LoadingWrap = styled.View({
   paddingVertical: 40,
 });
@@ -482,7 +484,7 @@ const MemberList = styled.View({
   gap: 10,
 });
 
-const MemberRow = styled.View({
+const MemberRow = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   gap: 12,

@@ -3,7 +3,7 @@ import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { LADDER_STATUS, COMPETITION_TYPES } from "@shared";
+import { LADDER_STATUS, COMPETITION_TYPES, LADDER_TYPE } from "@shared";
 import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
 import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
@@ -33,12 +33,13 @@ const LADDER_TOOLTIP =
 
 const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
   const isPaid = ladder.entryFee > 0;
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
 
   return (
     <StatsRow testID="ladder-stats-row">
       <StatBlock>
-        <StatLabel>Players</StatLabel>
+        <StatLabel>{isDoubles ? "Teams" : "Players"}</StatLabel>
         <StatHeadingContainer>
           <StatValue testID="ladder-players">
             {ladder.participantCount} / {ladder.maxPlayers}

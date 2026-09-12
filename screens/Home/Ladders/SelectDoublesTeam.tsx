@@ -107,7 +107,6 @@ const SelectDoublesTeam: React.FC = () => {
         isSelected={isSelected}
         isPending={isPending}
         activeOpacity={isPending ? 1 : 0.85}
-        disabled={isPending}
         onPress={() => !isPending && setSelectedKey(item.teamKey)}
         testID={`select-team-${item.teamKey}`}
       >
@@ -131,6 +130,20 @@ const SelectDoublesTeam: React.FC = () => {
             color={isSelected ? "#00A2FF" : "#4A5A6A"}
           />
         )}
+        <OpenTeamButton
+          onPress={() =>
+            navigation.navigate(
+              "TeamDetails",
+              item.teamId
+                ? { teamId: item.teamId, ladder }
+                : { team: item, ladder },
+            )
+          }
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID={`open-team-${item.teamKey}`}
+        >
+          <Ionicons name="chevron-forward" size={20} color="#4A5A6A" />
+        </OpenTeamButton>
       </TeamRow>
     );
   };
@@ -284,6 +297,11 @@ const TeamRow = styled.TouchableOpacity<{
   borderColor: isSelected ? "#00A2FF" : "#1a2b3d",
   opacity: isPending ? 0.55 : 1,
 }));
+
+const OpenTeamButton = styled.TouchableOpacity({
+  paddingLeft: 4,
+  justifyContent: "center",
+});
 
 const TeamIcon = styled.View({
   width: 36,
