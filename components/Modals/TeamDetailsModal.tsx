@@ -272,21 +272,23 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
                 </MemberRow>
               );
             })}
-          </MemberList>
 
-          {!hasPartner && (
-            <>
-              <Hint>Invite a partner to complete your doubles team.</Hint>
-              <InviteButton
+            {!hasPartner && (
+              <InviteRow
                 onPress={handleInvite}
                 activeOpacity={0.85}
                 testID="team-details-invite"
               >
-                <Ionicons name="person-add" size={18} color="#ffffff" />
-                <InviteButtonText>Invite Partner</InviteButtonText>
-              </InviteButton>
-            </>
-          )}
+                <MemberIcon>
+                  <Ionicons name="person-add" size={18} color="#00A2FF" />
+                </MemberIcon>
+                <MemberNameText numberOfLines={1}>
+                  Invite Partner
+                </MemberNameText>
+                <Ionicons name="add" size={20} color="#00A2FF" />
+              </InviteRow>
+            )}
+          </MemberList>
 
           {hasPartner && !isActive && (
             <Hint>
@@ -296,7 +298,11 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
           )}
 
           <SectionLabel style={{ marginTop: 24 }}>Team stats</SectionLabel>
-          <MedalProgress xp={team.XP ?? 0} prevGameXp={undefined} />
+          <MedalProgress
+            xp={team.XP ?? 0}
+            prevGameXp={undefined}
+            showMedals={false}
+          />
           <StatsBlock team={team} />
         </Body>
       )}
@@ -498,6 +504,19 @@ const MemberRow = styled.TouchableOpacity({
   borderColor: "#1a2b3d",
 });
 
+const InviteRow = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  paddingVertical: 14,
+  paddingHorizontal: 14,
+  borderRadius: 12,
+  backgroundColor: "#0a1f33",
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+  borderStyle: "dashed",
+});
+
 const MemberIcon = styled.View({
   width: 34,
   height: 34,
@@ -535,18 +554,3 @@ const Hint = styled.Text({
   marginBottom: 12,
 });
 
-const InviteButton = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  paddingVertical: 16,
-  borderRadius: 12,
-  backgroundColor: "#00A2FF",
-});
-
-const InviteButtonText = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
-});
