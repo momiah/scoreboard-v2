@@ -18,6 +18,7 @@ import type { TeamStats } from "@shared/types";
 import { LadderContext } from "../../../context/LadderContext";
 import { PopupContext } from "../../../context/PopupContext";
 import { uploadTeamImage } from "../../../utils/UploadTeamImageToFirebase";
+import TeamSettingsSkeleton from "../../../components/Skeletons/TeamSettingsSkeleton";
 
 interface TeamSettingsParams {
   teamId: string;
@@ -174,9 +175,7 @@ const TeamSettings: React.FC = () => {
       </Header>
 
       {loading ? (
-        <LoadingWrap>
-          <ActivityIndicator size="small" color="#00A2FF" />
-        </LoadingWrap>
+        <TeamSettingsSkeleton />
       ) : !team ? (
         <EmptyText>This team could not be found.</EmptyText>
       ) : (
@@ -284,10 +283,6 @@ const HeaderTitle = styled.Text({
 
 const HeaderSpacer = styled.View({
   width: 32,
-});
-
-const LoadingWrap = styled.View({
-  paddingVertical: 40,
 });
 
 const EmptyText = styled.Text({

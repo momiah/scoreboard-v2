@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from "react";
-import { ActivityIndicator, Alert } from "react-native";
+import { Alert } from "react-native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -17,6 +17,7 @@ import type { Ladder, TeamStats } from "@shared/types";
 import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
 import { PopupContext } from "../../../context/PopupContext";
+import TeamListSkeleton from "../../../components/Skeletons/TeamListSkeleton";
 
 interface SelectDoublesTeamParams {
   ladder: Ladder;
@@ -180,9 +181,7 @@ const SelectDoublesTeam: React.FC = () => {
         </SubText>
 
         {loading ? (
-          <LoadingWrap>
-            <ActivityIndicator size="small" color="#00A2FF" />
-          </LoadingWrap>
+          <TeamListSkeleton />
         ) : teams.length === 0 ? (
           <EmptyText>
             You don&apos;t have any teams yet. Create one to get started.
@@ -277,10 +276,6 @@ const SubText = styled.Text({
   fontSize: 13,
   marginTop: 6,
   marginBottom: 8,
-});
-
-const LoadingWrap = styled.View({
-  paddingVertical: 30,
 });
 
 const EmptyText = styled.Text({

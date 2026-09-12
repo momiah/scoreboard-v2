@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, Modal, ActivityIndicator, Alert } from "react-native";
+import { View, Modal, Alert } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -19,6 +19,7 @@ import MatchMedals from "../performance/MatchMedals";
 import AnimateNumber from "../performance/AnimateNumber";
 import ResultLog from "../performance/ResultLog";
 import MedalProgress from "../performance/MedalProgress";
+import TeamDetailsSkeleton from "../Skeletons/TeamDetailsSkeleton";
 
 interface TeamDetailsModalProps {
   // Modal mode (Leagues / Tournaments / tapping a team in standings)
@@ -298,9 +299,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
       </Header>
 
       {loading ? (
-        <LoadingWrap>
-          <ActivityIndicator size="small" color="#00A2FF" />
-        </LoadingWrap>
+        <TeamDetailsSkeleton />
       ) : !team ? (
         <EmptyText>This team could not be found.</EmptyText>
       ) : (
@@ -534,10 +533,6 @@ const BackButton = styled.TouchableOpacity({
 
 const HeaderSpacer = styled.View({
   width: 32,
-});
-
-const LoadingWrap = styled.View({
-  paddingVertical: 40,
 });
 
 const EmptyText = styled.Text({
