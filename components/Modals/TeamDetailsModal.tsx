@@ -1,11 +1,10 @@
-import React, { useCallback, useContext, useState } from "react";
-import { View, Modal, ActivityIndicator } from "react-native";
+import React, { useContext, useEffect, useState } from "react";
+import { View, Modal, ActivityIndicator, Alert } from "react-native";
 import styled from "styled-components/native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import {
   useNavigation,
-  useFocusEffect,
   NavigationProp,
   ParamListBase,
 } from "@react-navigation/native";
@@ -102,36 +101,48 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
 }) => {
   const isModal = showTeamDetails !== undefined;
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { fetchTeam } = useContext(LadderContext);
+  const {
+    subscribeToTeam,
+    requestToJoinTeam,
+    withdrawTeamJoinRequest,
+    subscribeToTeamJoinRequest,
+  } = useContext(LadderContext);
   const { currentUser, sendNotification } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
-  const [requestSent, setRequestSent] = useState(false);
 
   const teamId = route?.params?.teamId;
   const passedTeam = route?.params?.team ?? null;
   const ladder = route?.params?.ladder;
+  // Subscribe only in the management path (opened by teamId). A passed team
+  // object (from ladder standings) carries per-competition stats, so it stays
+  // as given rather than being overwritten by the root team doc.
+  const subscribeId = teamId;
 
   const [fetchedTeam, setFetchedTeam] = useState<TeamStats | null>(null);
-  const [loading, setLoading] = useState(!isModal && !passedTeam);
+  const [loading, setLoading] = useState(!isModal && !passedTeam && !!teamId);
+  const [requestSent, setRequestSent] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!teamId) return;
-    setLoading(true);
-    try {
-      setFetchedTeam(await fetchTeam(teamId));
-    } catch (error) {
-      console.error("[TeamDetails] Failed to load team:", error);
-      setFetchedTeam(null);
-    } finally {
+  // Live team doc so member/status changes (an accepted request/invite) show
+  // in realtime rather than needing a refresh.
+  useEffect(() => {
+    if (isModal || !subscribeId) return;
+    const unsubscribe = subscribeToTeam(subscribeId, (team) => {
+      setFetchedTeam(team);
       setLoading(false);
-    }
-  }, [teamId, fetchTeam]);
+    });
+    return unsubscribe;
+  }, [isModal, subscribeId, subscribeToTeam]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!isModal && !passedTeam && teamId) load();
-    }, [isModal, passedTeam, teamId, load]),
-  );
+  // Live "have I already requested to join" state for the request button.
+  useEffect(() => {
+    if (isModal || !subscribeId || !currentUser?.userId) return;
+    const unsubscribe = subscribeToTeamJoinRequest(
+      subscribeId,
+      currentUser.userId,
+      setRequestSent,
+    );
+    return unsubscribe;
+  }, [isModal, subscribeId, currentUser?.userId, subscribeToTeamJoinRequest]);
 
   // ── Modal mode: the read-only stats popup (Leagues / Tournaments) ──
   if (isModal) {
@@ -181,7 +192,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   }
 
   // ── Screen mode: the Ladder team home (identity + members + invite + stats) ──
-  const team = passedTeam ?? fetchedTeam;
+  const team = fetchedTeam ?? passedTeam;
   const members = team?.players ?? [];
   const isActive = team?.status === TEAM_STATUS.ACTIVE;
   const hasPartner = members.length >= 2;
@@ -199,10 +210,23 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     });
   };
 
-  const handleRequestToJoin = async () => {
+  const sendJoinRequest = async () => {
     if (!effectiveTeamId || !currentUser?.userId || !team?.createdBy) return;
-    if (requestSent) return;
     setRequestSent(true);
+    const requester: TeamMember = {
+      userId: currentUser.userId,
+      username: currentUser.username,
+      firstName: currentUser.firstName,
+      lastName: currentUser.lastName,
+      displayName: formatDisplayName(currentUser),
+      profileImage: currentUser.profileImage,
+    };
+    const ok = await requestToJoinTeam(effectiveTeamId, requester);
+    if (!ok) {
+      setRequestSent(false);
+      showBottomToast("Couldn't send request. Please try again.", "error");
+      return;
+    }
     await sendNotification({
       ...notificationSchema,
       createdAt: new Date(),
@@ -213,6 +237,39 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
       data: { teamId: effectiveTeamId },
     });
     showBottomToast("Request sent", "success");
+  };
+
+  const withdrawJoinRequest = () => {
+    if (!effectiveTeamId || !currentUser?.userId) return;
+    Alert.alert(
+      "Withdraw request",
+      "Are you sure you want to withdraw this request?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Withdraw",
+          style: "destructive",
+          onPress: async () => {
+            setRequestSent(false);
+            const ok = await withdrawTeamJoinRequest(
+              effectiveTeamId,
+              currentUser.userId,
+            );
+            if (ok) {
+              showBottomToast("Request withdrawn", "success");
+            } else {
+              setRequestSent(true);
+              showBottomToast("Couldn't withdraw. Please try again.", "error");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleRequestPress = () => {
+    if (requestSent) withdrawJoinRequest();
+    else sendJoinRequest();
   };
 
   return (
@@ -328,9 +385,8 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
 
             {!hasPartner && !isOwner && (
               <InviteRow
-                onPress={handleRequestToJoin}
-                activeOpacity={requestSent ? 1 : 0.85}
-                disabled={requestSent}
+                onPress={handleRequestPress}
+                activeOpacity={0.85}
                 testID="team-details-request"
               >
                 <MemberIcon>
@@ -343,9 +399,11 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
                 <MemberNameText numberOfLines={1}>
                   {requestSent ? "Request sent" : "Request to Join"}
                 </MemberNameText>
-                {!requestSent && (
-                  <Ionicons name="add" size={20} color="#00A2FF" />
-                )}
+                <Ionicons
+                  name={requestSent ? "close" : "add"}
+                  size={20}
+                  color="#00A2FF"
+                />
               </InviteRow>
             )}
           </MemberList>

@@ -53,7 +53,7 @@ const InviteActionModal = ({
     acceptClubInvite,
     declineClubInvite,
   } = useContext(LeagueContext);
-  const { fetchTeam, acceptTeamInvite, declineTeamInvite } =
+  const { subscribeToTeam, acceptTeamInvite, declineTeamInvite } =
     useContext(LadderContext);
   const { currentUser, readNotification } = useContext(UserContext);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
@@ -117,37 +117,27 @@ const InviteActionModal = ({
     setLoading(true);
 
     if (isTeam) {
-      let active = true;
-      fetchTeam(inviteId)
-        .then((team) => {
-          if (!active) return;
-          const stillInvited = (team?.playerIds ?? []).includes(
-            currentUser?.userId,
-          );
-          if (!team || !stillInvited) {
-            readNotification(notificationId, currentUser.userId);
-            setTeamData(null);
-            setIsWithdrawn(true);
-            setWithdrawnMessage("This team invite is no longer available.");
-          } else if (team.status !== TEAM_STATUS.PENDING) {
-            setTeamData(team);
-            setIsWithdrawn(true);
-            setWithdrawnMessage("This team invite has already been accepted.");
-          } else {
-            setTeamData(team);
-            setIsWithdrawn(false);
-            setWithdrawnMessage("");
-          }
-        })
-        .catch((error) => {
-          console.error("Error loading team invite:", error);
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
-      return () => {
-        active = false;
-      };
+      const unsubscribe = subscribeToTeam(inviteId, (team) => {
+        const stillInvited = (team?.playerIds ?? []).includes(
+          currentUser?.userId,
+        );
+        if (!team || !stillInvited) {
+          readNotification(notificationId, currentUser.userId);
+          setTeamData(null);
+          setIsWithdrawn(true);
+          setWithdrawnMessage("This team invite is no longer available.");
+        } else if (team.status !== TEAM_STATUS.PENDING) {
+          setTeamData(team);
+          setIsWithdrawn(true);
+          setWithdrawnMessage("This team invite has already been accepted.");
+        } else {
+          setTeamData(team);
+          setIsWithdrawn(false);
+          setWithdrawnMessage("");
+        }
+        setLoading(false);
+      });
+      return unsubscribe;
     }
 
     const collectionName = isClub

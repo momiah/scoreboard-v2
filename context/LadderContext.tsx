@@ -91,6 +91,7 @@ const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
 const TEAMS_COLLECTION = "teams";
+const TEAM_REQUESTS_SUBCOLLECTION = "requests";
 
 export const LadderContext = createContext<LadderContextType>(
   {} as LadderContextType,
@@ -404,10 +405,35 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           ...addMember(team, requester),
           status: TEAM_STATUS.ACTIVE,
         });
+        await deleteDoc(
+          doc(
+            db,
+            TEAMS_COLLECTION,
+            teamId,
+            TEAM_REQUESTS_SUBCOLLECTION,
+            requester.userId,
+          ),
+        );
         return { success: true, full: false };
       } catch (error) {
         console.error("Error accepting team join request:", error);
         return { success: false, full: false };
+      }
+    },
+    [],
+  );
+
+  const declineTeamJoinRequest = useCallback(
+    async (teamId: string, userId: string): Promise<boolean> => {
+      if (!teamId || !userId) return false;
+      try {
+        await deleteDoc(
+          doc(db, TEAMS_COLLECTION, teamId, TEAM_REQUESTS_SUBCOLLECTION, userId),
+        );
+        return true;
+      } catch (error) {
+        console.error("Error declining team join request:", error);
+        return false;
       }
     },
     [],
@@ -459,6 +485,89 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         console.error("Error fetching team:", error);
         return null;
       }
+    },
+    [],
+  );
+
+  const subscribeToTeam = useCallback(
+    (
+      teamId: string,
+      onUpdate: (team: TeamStats | null) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!teamId) {
+        onUpdate(null);
+        return () => {};
+      }
+      return onSnapshot(
+        doc(db, TEAMS_COLLECTION, teamId),
+        (snap) => onUpdate(snap.exists() ? (snap.data() as TeamStats) : null),
+        (error) => {
+          console.error("Error subscribing to team:", error);
+          onError?.(error);
+        },
+      );
+    },
+    [],
+  );
+
+  const requestToJoinTeam = useCallback(
+    async (teamId: string, requester: TeamMember): Promise<boolean> => {
+      if (!teamId || !requester?.userId) return false;
+      try {
+        await setDoc(
+          doc(
+            db,
+            TEAMS_COLLECTION,
+            teamId,
+            TEAM_REQUESTS_SUBCOLLECTION,
+            requester.userId,
+          ),
+          { ...requester, createdAt: new Date() },
+        );
+        return true;
+      } catch (error) {
+        console.error("Error requesting to join team:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const withdrawTeamJoinRequest = useCallback(
+    async (teamId: string, userId: string): Promise<boolean> => {
+      if (!teamId || !userId) return false;
+      try {
+        await deleteDoc(
+          doc(db, TEAMS_COLLECTION, teamId, TEAM_REQUESTS_SUBCOLLECTION, userId),
+        );
+        return true;
+      } catch (error) {
+        console.error("Error withdrawing team join request:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const subscribeToTeamJoinRequest = useCallback(
+    (
+      teamId: string,
+      userId: string,
+      onUpdate: (exists: boolean) => void,
+    ): (() => void) => {
+      if (!teamId || !userId) {
+        onUpdate(false);
+        return () => {};
+      }
+      return onSnapshot(
+        doc(db, TEAMS_COLLECTION, teamId, TEAM_REQUESTS_SUBCOLLECTION, userId),
+        (snap) => onUpdate(snap.exists()),
+        (error) => {
+          console.error("Error subscribing to team join request:", error);
+          onUpdate(false);
+        },
+      );
     },
     [],
   );
@@ -1318,6 +1427,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         createTeam,
         addTeamPartner,
         acceptTeamJoinRequest,
+        declineTeamJoinRequest,
+        requestToJoinTeam,
+        withdrawTeamJoinRequest,
+        subscribeToTeamJoinRequest,
+        subscribeToTeam,
         updateTeamProfilePic,
         updateTeamDetails,
         isTeamActivelyPlaying,

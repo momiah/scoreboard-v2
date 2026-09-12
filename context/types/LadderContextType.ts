@@ -98,6 +98,22 @@ export interface LadderContextType {
     teamId: string,
     requester: TeamMember,
   ) => Promise<AcceptTeamJoinRequestOutcome>;
+  declineTeamJoinRequest: (teamId: string, userId: string) => Promise<boolean>;
+  requestToJoinTeam: (
+    teamId: string,
+    requester: TeamMember,
+  ) => Promise<boolean>;
+  withdrawTeamJoinRequest: (teamId: string, userId: string) => Promise<boolean>;
+  subscribeToTeamJoinRequest: (
+    teamId: string,
+    userId: string,
+    onUpdate: (exists: boolean) => void,
+  ) => () => void;
+  subscribeToTeam: (
+    teamId: string,
+    onUpdate: (team: TeamStats | null) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
   updateTeamProfilePic: (
     teamId: string,
     teamProfilePic: string,

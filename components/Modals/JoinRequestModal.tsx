@@ -59,7 +59,12 @@ const JoinRequestModal = ({
     acceptClubJoinRequest,
     declineClubJoinRequest,
   } = useContext(LeagueContext);
-  const { fetchTeam, acceptTeamJoinRequest } = useContext(LadderContext);
+  const {
+    subscribeToTeam,
+    subscribeToTeamJoinRequest,
+    acceptTeamJoinRequest,
+    declineTeamJoinRequest,
+  } = useContext(LadderContext);
   const { findRankIndex } = useContext(GameContext);
   const { currentUser, getUserById, readNotification } =
     useContext(UserContext);
@@ -69,6 +74,7 @@ const JoinRequestModal = ({
   );
   const [clubData, setClubData] = useState<Club | null>(null);
   const [teamData, setTeamData] = useState<TeamStats | null>(null);
+  const [teamRequestExists, setTeamRequestExists] = useState(true);
   const [loading, setLoading] = useState(true);
   const [joiningCompetition, setJoiningCompetition] = useState(false);
 
@@ -101,12 +107,10 @@ const JoinRequestModal = ({
     );
 
   const teamGone = isTeam && !loading && !teamData;
-  const teamAlreadyMember =
-    isTeam && (teamData?.playerIds ?? []).includes(senderId);
   const teamFull = isTeam && (teamData?.players?.length ?? 0) >= 2;
 
   const requestWithdrawn = isTeam
-    ? teamGone || teamAlreadyMember
+    ? teamGone || !teamRequestExists
     : isClub
       ? !clubData?.pendingRequests?.some((r) => r.userId === senderId)
       : !competition?.pendingRequests?.some((req) => req.userId === senderId) &&
@@ -116,6 +120,7 @@ const JoinRequestModal = ({
     setCompetition(null);
     setClubData(null);
     setTeamData(null);
+    setTeamRequestExists(true);
     setSenderDetails(null);
     setJoiningCompetition(false);
     setLoading(true);
@@ -134,19 +139,18 @@ const JoinRequestModal = ({
     });
 
     if (isTeam) {
-      let active = true;
-      fetchTeam(requestId)
-        .then((team) => {
-          if (active) setTeamData(team);
-        })
-        .catch((error) => {
-          console.error("Error loading team join request:", error);
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
+      const unsubTeam = subscribeToTeam(requestId, (team) => {
+        setTeamData(team);
+        setLoading(false);
+      });
+      const unsubRequest = subscribeToTeamJoinRequest(
+        requestId,
+        senderId,
+        setTeamRequestExists,
+      );
       return () => {
-        active = false;
+        unsubTeam();
+        unsubRequest();
       };
     }
 
@@ -274,6 +278,7 @@ const JoinRequestModal = ({
   const handleDeclineJoinRequest = async () => {
     try {
       if (isTeam) {
+        await declineTeamJoinRequest(requestId, senderId);
         readNotification(notificationId, currentUser?.userId);
         onClose();
         return;
