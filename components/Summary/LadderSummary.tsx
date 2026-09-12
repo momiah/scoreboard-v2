@@ -20,6 +20,7 @@ import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import PerformanceRow from "../performance/Player/PerformanceRow";
+import TeamPerformanceRow from "../performance/Team/TeamPerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
@@ -187,12 +188,12 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         );
         const ranked = sortTeamsByPlacement(valid);
         const idx = ranked.findIndex((t) => teamMemberIds(t).includes(uid));
-        const myTeam =
+        const userTeam =
           idx >= 0
             ? ranked[idx]
             : (valid.find((t) => teamMemberIds(t).includes(uid)) ?? null);
         if (active) {
-          setUserTeamRow(myTeam ? { team: myTeam, rank: idx + 1 } : null);
+          setUserTeamRow(userTeam ? { team: userTeam, rank: idx + 1 } : null);
         }
       } catch (error) {
         console.error("Error building ladder team summary row:", error);
@@ -252,46 +253,30 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
       {isDoubles
         ? userTeamRow && (
-            <MySummarySection testID="my-ladder-team-summary">
+            <PositionSection testID="ladder-team-summary">
               <SectionTitle>Current Position</SectionTitle>
-              <TeamPositionCard
-                activeOpacity={0.85}
-                onPress={() =>
-                  navigation.navigate("TeamDetails", { team: userTeamRow.team })
-                }
-                testID="my-ladder-team-card"
-              >
-                <RankBadge>
-                  <RankText>
-                    {userTeamRow.rank > 0 ? `${userTeamRow.rank}` : "-"}
-                  </RankText>
-                </RankBadge>
-                <TeamNames>
-                  {(userTeamRow.team.team ?? []).map((name, idx) => (
-                    <TeamMemberName key={`${name}-${idx}`} numberOfLines={1}>
-                      {name}
-                    </TeamMemberName>
-                  ))}
-                </TeamNames>
-                <TeamStatCell>
-                  <TeamStatLabel>Wins</TeamStatLabel>
-                  <TeamStatValue>{userTeamRow.team.numberOfWins}</TeamStatValue>
-                </TeamStatCell>
-                <Ionicons name="chevron-forward" size={20} color="#4A5A6A" />
-              </TeamPositionCard>
-            </MySummarySection>
+              <PositionCard>
+                <TeamPerformanceRow
+                  team={userTeamRow.team}
+                  rank={userTeamRow.rank}
+                  onPress={(team: TeamStats) =>
+                    navigation.navigate("TeamDetails", { team })
+                  }
+                />
+              </PositionCard>
+            </PositionSection>
           )
         : userSummaryRow && (
-            <MySummarySection testID="my-ladder-summary">
+            <PositionSection testID="ladder-position-summary">
               <SectionTitle>Current Position</SectionTitle>
-              <MySummaryCard>
+              <PositionCard>
                 <PerformanceRow
                   player={userSummaryRow.player}
                   rank={userSummaryRow.rank}
                   ladder={ladder}
                 />
-              </MySummaryCard>
-            </MySummarySection>
+              </PositionCard>
+            </PositionSection>
           )}
 
       <PrizeDistribution
@@ -542,65 +527,13 @@ const StatLabel = styled.Text({
   color: "#9fb8c8",
 });
 
-const MySummarySection = styled.View({
+const PositionSection = styled.View({
   gap: 10,
   marginBottom: 20,
 });
 
-const TeamPositionCard = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 12,
-  paddingVertical: 14,
-  paddingHorizontal: 14,
-  borderRadius: 12,
-  backgroundColor: "#0a1929",
-  borderWidth: 1,
-  borderColor: "#1a2b3d",
-});
 
-const RankBadge = styled.View({
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  backgroundColor: "rgba(0, 162, 255, 0.1)",
-  justifyContent: "center",
-  alignItems: "center",
-});
-
-const RankText = styled.Text({
-  color: "#00A2FF",
-  fontSize: 15,
-  fontWeight: "bold",
-});
-
-const TeamNames = styled.View({
-  flex: 1,
-  gap: 2,
-});
-
-const TeamMemberName = styled.Text({
-  color: "#e2e8f0",
-  fontSize: 14,
-  fontWeight: "600",
-});
-
-const TeamStatCell = styled.View({
-  alignItems: "center",
-});
-
-const TeamStatLabel = styled.Text({
-  color: "#7f97a8",
-  fontSize: 11,
-});
-
-const TeamStatValue = styled.Text({
-  color: "#e2e8f0",
-  fontSize: 18,
-  fontWeight: "bold",
-});
-
-const MySummaryCard = styled.View({
+const PositionCard = styled.View({
   marginHorizontal: -20,
   paddingHorizontal: 20,
 });
