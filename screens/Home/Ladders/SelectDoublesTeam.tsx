@@ -100,6 +100,8 @@ const SelectDoublesTeam: React.FC = () => {
 
   const renderTeam = (item: TeamStats) => {
     const isPending = item.status === TEAM_STATUS.PENDING;
+    const hasPartner =
+      (item.playerIds?.length ?? (item.team ?? []).length) >= 2;
     const isSelected = item.teamKey === selectedKey;
     return (
       <TeamRow
@@ -117,12 +119,18 @@ const SelectDoublesTeam: React.FC = () => {
           <TeamName numberOfLines={1}>{teamLabel(item)}</TeamName>
           <TeamMembers numberOfLines={1}>
             {isPending
-              ? "Waiting for partner to accept"
+              ? hasPartner
+                ? "Waiting for partner to accept"
+                : "No partner yet"
               : (item.team ?? []).join(" • ")}
           </TeamMembers>
         </TeamInfo>
         {isPending ? (
-          <Ionicons name="time-outline" size={20} color="#FAB234" />
+          <Ionicons
+            name={hasPartner ? "time-outline" : "person-add-outline"}
+            size={20}
+            color="#FAB234"
+          />
         ) : (
           <Ionicons
             name={isSelected ? "radio-button-on" : "radio-button-off"}
