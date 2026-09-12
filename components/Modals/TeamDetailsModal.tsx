@@ -13,6 +13,7 @@ import {
 import { TEAM_STATUS } from "@shared";
 import type { Ladder, TeamStats, TeamMember } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
+import { UserContext } from "../../context/UserContext";
 import MatchMedals from "../performance/MatchMedals";
 import AnimateNumber from "../performance/AnimateNumber";
 import ResultLog from "../performance/ResultLog";
@@ -100,6 +101,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const isModal = showTeamDetails !== undefined;
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { fetchTeam } = useContext(LadderContext);
+  const { currentUser } = useContext(UserContext);
 
   const teamId = route?.params?.teamId;
   const passedTeam = route?.params?.team ?? null;
@@ -180,6 +182,8 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const isActive = team?.status === TEAM_STATUS.ACTIVE;
   const hasPartner = members.length >= 2;
   const partner = members.find((m) => m.userId !== team?.createdBy);
+  const isOwner =
+    !!currentUser?.userId && currentUser.userId === team?.createdBy;
 
   const effectiveTeamId = teamId ?? team?.teamId;
   const handleInvite = () => {
@@ -273,7 +277,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
               );
             })}
 
-            {!hasPartner && (
+            {!hasPartner && isOwner && (
               <InviteRow
                 onPress={handleInvite}
                 activeOpacity={0.85}
