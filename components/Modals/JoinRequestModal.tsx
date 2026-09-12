@@ -3,6 +3,7 @@ import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
+import { LadderContext } from "../../context/LadderContext";
 import { useEffect, useState, useContext, useCallback } from "react";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
@@ -22,7 +23,8 @@ import {
   NormalizedCompetition,
   UserProfile,
 } from "@shared/types";
-import type { Club } from "@shared/types";
+import type { Club, TeamStats, TeamMember } from "@shared/types";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
 
 import MedalDisplay from "../performance/MedalDisplay";
 
@@ -57,6 +59,7 @@ const JoinRequestModal = ({
     acceptClubJoinRequest,
     declineClubJoinRequest,
   } = useContext(LeagueContext);
+  const { fetchTeam, acceptTeamJoinRequest } = useContext(LadderContext);
   const { findRankIndex } = useContext(GameContext);
   const { currentUser, getUserById, readNotification } =
     useContext(UserContext);
@@ -65,13 +68,15 @@ const JoinRequestModal = ({
     null,
   );
   const [clubData, setClubData] = useState<Club | null>(null);
+  const [teamData, setTeamData] = useState<TeamStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [joiningCompetition, setJoiningCompetition] = useState(false);
 
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const isClub = requestType === notificationTypes.ACTION.JOIN_REQUEST.CLUB;
-  const config = !isClub ? getCompetitionConfig(requestType) : null;
+  const isTeam = requestType === notificationTypes.ACTION.JOIN_REQUEST.TEAM;
+  const config = !isClub && !isTeam ? getCompetitionConfig(requestType) : null;
   const competitionType = config?.competitionType ?? "club";
   const navRoute = config?.navRoute ?? "Club";
 
@@ -95,14 +100,22 @@ const JoinRequestModal = ({
       (participant) => participant.userId === senderId,
     );
 
-  const requestWithdrawn = isClub
-    ? !clubData?.pendingRequests?.some((r) => r.userId === senderId)
-    : !competition?.pendingRequests?.some((req) => req.userId === senderId) &&
-      !userAlreadyInCompetition;
+  const teamGone = isTeam && !loading && !teamData;
+  const teamAlreadyMember =
+    isTeam && (teamData?.playerIds ?? []).includes(senderId);
+  const teamFull = isTeam && (teamData?.players?.length ?? 0) >= 2;
+
+  const requestWithdrawn = isTeam
+    ? teamGone || teamAlreadyMember
+    : isClub
+      ? !clubData?.pendingRequests?.some((r) => r.userId === senderId)
+      : !competition?.pendingRequests?.some((req) => req.userId === senderId) &&
+        !userAlreadyInCompetition;
 
   const resetState = useCallback(() => {
     setCompetition(null);
     setClubData(null);
+    setTeamData(null);
     setSenderDetails(null);
     setJoiningCompetition(false);
     setLoading(true);
@@ -119,6 +132,23 @@ const JoinRequestModal = ({
     getUserById(senderId).then((player: UserProfile | null) => {
       if (player) setSenderDetails(player);
     });
+
+    if (isTeam) {
+      let active = true;
+      fetchTeam(requestId)
+        .then((team) => {
+          if (active) setTeamData(team);
+        })
+        .catch((error) => {
+          console.error("Error loading team join request:", error);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+      return () => {
+        active = false;
+      };
+    }
 
     const collectionName = isClub
       ? (COLLECTION_NAMES.clubs as CollectionName)
@@ -157,10 +187,14 @@ const JoinRequestModal = ({
 
   useEffect(() => {
     if (!visible || isRead) return;
-    const hasData = isClub ? !!clubData : !!competition;
+    const hasData = isTeam ? !!teamData : isClub ? !!clubData : !!competition;
     if (!hasData) return;
 
-    if (isClub) {
+    if (isTeam) {
+      if (teamFull || requestWithdrawn) {
+        readNotification(notificationId, currentUser?.userId);
+      }
+    } else if (isClub) {
       if (requestWithdrawn) readNotification(notificationId, currentUser?.userId);
     } else {
       if (competitionFull || requestWithdrawn) {
@@ -171,8 +205,10 @@ const JoinRequestModal = ({
     visible,
     competition,
     clubData,
+    teamData,
     isRead,
     competitionFull,
+    teamFull,
     requestWithdrawn,
     notificationId,
     currentUser?.userId,
@@ -181,6 +217,23 @@ const JoinRequestModal = ({
   const handleAcceptJoinRequest = async () => {
     try {
       setJoiningCompetition(true);
+      if (isTeam) {
+        if (!senderDetails) return;
+        const requester: TeamMember = {
+          userId: senderId,
+          username: senderDetails?.username ?? "",
+          firstName: senderDetails?.firstName,
+          lastName: senderDetails?.lastName,
+          displayName: senderDetails
+            ? formatDisplayName(senderDetails)
+            : undefined,
+          profileImage: senderDetails?.profileImage,
+        };
+        await acceptTeamJoinRequest(requestId, requester);
+        readNotification(notificationId, currentUser?.userId);
+        onClose();
+        return;
+      }
       if (isClub) {
         await acceptClubJoinRequest({
           senderId,
@@ -220,6 +273,11 @@ const JoinRequestModal = ({
 
   const handleDeclineJoinRequest = async () => {
     try {
+      if (isTeam) {
+        readNotification(notificationId, currentUser?.userId);
+        onClose();
+        return;
+      }
       if (isClub) {
         await declineClubJoinRequest({
           senderId,
@@ -302,10 +360,21 @@ const JoinRequestModal = ({
               </TouchableOpacity>
 
               <Title>
-                {isClub ? "Club Join Request" : "Join Request"}
+                {isTeam
+                  ? "Team Join Request"
+                  : isClub
+                    ? "Club Join Request"
+                    : "Join Request"}
               </Title>
               <Message>
-                {isClub ? (
+                {isTeam ? (
+                  <>
+                    A user has requested to join your team
+                    {teamData?.teamName?.trim()
+                      ? ` "${teamData.teamName.trim()}"`
+                      : ""}
+                  </>
+                ) : isClub ? (
                   <>
                     A user has requested to join{" "}
                     <LinkText onPress={handleLinkPress}>
@@ -340,10 +409,16 @@ const JoinRequestModal = ({
 
               {requestWithdrawn && (
                 <DisabledText>
-                  {isClub
-                    ? "This club join request is no longer pending"
-                    : `Request to join ${competitionType} has been withdrawn`}
+                  {isTeam
+                    ? "This team join request is no longer available"
+                    : isClub
+                      ? "This club join request is no longer pending"
+                      : `Request to join ${competitionType} has been withdrawn`}
                 </DisabledText>
+              )}
+
+              {isTeam && teamFull && !requestWithdrawn && (
+                <DisabledText>This team already has a partner</DisabledText>
               )}
 
               {!isClub && competitionFull && (
@@ -364,6 +439,7 @@ const JoinRequestModal = ({
                   disabled={
                     isRead ||
                     competitionFull ||
+                    teamFull ||
                     requestWithdrawn ||
                     userAlreadyInCompetition ||
                     joiningCompetition
@@ -377,6 +453,7 @@ const JoinRequestModal = ({
                   disabled={
                     isRead ||
                     competitionFull ||
+                    teamFull ||
                     requestWithdrawn ||
                     userAlreadyInCompetition ||
                     joiningCompetition

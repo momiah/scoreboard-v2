@@ -68,6 +68,7 @@ import type {
   LadderJoinOutcome,
   JoinLadderAsTeamOutcome,
   DisbandTeamOutcome,
+  AcceptTeamJoinRequestOutcome,
   CreateTeamOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
@@ -378,6 +379,35 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error("Error updating team profile pic:", error);
         return false;
+      }
+    },
+    [],
+  );
+
+  const acceptTeamJoinRequest = useCallback(
+    async (
+      teamId: string,
+      requester: TeamMember,
+    ): Promise<AcceptTeamJoinRequestOutcome> => {
+      if (!teamId || !requester?.userId) {
+        return { success: false, full: false };
+      }
+      try {
+        const teamRef = doc(db, TEAMS_COLLECTION, teamId);
+        const snap = await getDoc(teamRef);
+        if (!snap.exists()) return { success: false, full: false };
+        const team = snap.data() as TeamStats;
+        if ((team.players ?? []).length >= 2) {
+          return { success: false, full: true };
+        }
+        await updateDoc(teamRef, {
+          ...addMember(team, requester),
+          status: TEAM_STATUS.ACTIVE,
+        });
+        return { success: true, full: false };
+      } catch (error) {
+        console.error("Error accepting team join request:", error);
+        return { success: false, full: false };
       }
     },
     [],
@@ -1287,6 +1317,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderTeams,
         createTeam,
         addTeamPartner,
+        acceptTeamJoinRequest,
         updateTeamProfilePic,
         updateTeamDetails,
         isTeamActivelyPlaying,

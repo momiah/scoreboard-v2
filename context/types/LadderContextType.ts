@@ -31,6 +31,11 @@ export interface DisbandTeamOutcome {
   activelyPlaying: boolean;
 }
 
+export interface AcceptTeamJoinRequestOutcome {
+  success: boolean;
+  full: boolean;
+}
+
 export interface CreateLadderMatchOutcome {
   success: boolean;
   ladderMatch: LadderMatch | null;
@@ -89,6 +94,10 @@ export interface LadderContextType {
     details: { teamName: string; teamProfilePic?: string },
   ) => Promise<CreateTeamOutcome>;
   addTeamPartner: (teamId: string, partner: TeamMember) => Promise<boolean>;
+  acceptTeamJoinRequest: (
+    teamId: string,
+    requester: TeamMember,
+  ) => Promise<AcceptTeamJoinRequestOutcome>;
   updateTeamProfilePic: (
     teamId: string,
     teamProfilePic: string,

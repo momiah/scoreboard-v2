@@ -10,10 +10,12 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 
-import { TEAM_STATUS } from "@shared";
+import { TEAM_STATUS, notificationTypes, notificationSchema } from "@shared";
 import type { Ladder, TeamStats, TeamMember } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
+import { PopupContext } from "../../context/PopupContext";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
 import MatchMedals from "../performance/MatchMedals";
 import AnimateNumber from "../performance/AnimateNumber";
 import ResultLog from "../performance/ResultLog";
@@ -101,7 +103,9 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const isModal = showTeamDetails !== undefined;
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { fetchTeam } = useContext(LadderContext);
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, sendNotification } = useContext(UserContext);
+  const { showBottomToast } = useContext(PopupContext);
+  const [requestSent, setRequestSent] = useState(false);
 
   const teamId = route?.params?.teamId;
   const passedTeam = route?.params?.team ?? null;
@@ -193,6 +197,22 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
       teamId: effectiveTeamId,
       ladder,
     });
+  };
+
+  const handleRequestToJoin = async () => {
+    if (!effectiveTeamId || !currentUser?.userId || !team?.createdBy) return;
+    if (requestSent) return;
+    setRequestSent(true);
+    await sendNotification({
+      ...notificationSchema,
+      createdAt: new Date(),
+      recipientId: team.createdBy,
+      senderId: currentUser.userId,
+      message: `${formatDisplayName(currentUser)} wants to join your team`,
+      type: notificationTypes.ACTION.JOIN_REQUEST.TEAM,
+      data: { teamId: effectiveTeamId },
+    });
+    showBottomToast("Request sent", "success");
   };
 
   return (
@@ -303,6 +323,29 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
                   Invite Partner
                 </MemberNameText>
                 <Ionicons name="add" size={20} color="#00A2FF" />
+              </InviteRow>
+            )}
+
+            {!hasPartner && !isOwner && (
+              <InviteRow
+                onPress={handleRequestToJoin}
+                activeOpacity={requestSent ? 1 : 0.85}
+                disabled={requestSent}
+                testID="team-details-request"
+              >
+                <MemberIcon>
+                  <Ionicons
+                    name={requestSent ? "checkmark" : "person-add"}
+                    size={18}
+                    color="#00A2FF"
+                  />
+                </MemberIcon>
+                <MemberNameText numberOfLines={1}>
+                  {requestSent ? "Request sent" : "Request to Join"}
+                </MemberNameText>
+                {!requestSent && (
+                  <Ionicons name="add" size={20} color="#00A2FF" />
+                )}
               </InviteRow>
             )}
           </MemberList>
