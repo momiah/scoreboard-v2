@@ -300,7 +300,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
           <SectionLabel style={{ marginTop: 24 }}>Team stats</SectionLabel>
           <MedalProgress
             xp={team.XP ?? 0}
-            prevGameXp={undefined}
+            prevGameXp={team.prevGameXP}
             showMedals={false}
           />
           <StatsBlock team={team} />
