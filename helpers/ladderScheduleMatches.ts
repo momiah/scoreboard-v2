@@ -18,7 +18,26 @@ export const getMyScheduleMatches = (
   );
 };
 
+const matchDayStartMs = (matchDate: string): number | null => {
+  const [day, month, year] = (matchDate ?? "").split("-").map(Number);
+  if (![day, month, year].every(Number.isFinite) || !day || !month || !year) {
+    return null;
+  }
+  return new Date(year, month - 1, day).getTime();
+};
+
 export const getOpenMatchmakingMatches = (
   matches: LadderMatch[],
-): LadderMatch[] =>
-  matches.filter((match) => match.matchStatus === LADDER_MATCH_STATUS.POSTED);
+  now: Date = new Date(),
+): LadderMatch[] => {
+  const todayStartMs = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  return matches.filter((match) => {
+    if (match.matchStatus !== LADDER_MATCH_STATUS.POSTED) return false;
+    const dayStartMs = matchDayStartMs(match.matchDate);
+    return dayStartMs == null || dayStartMs >= todayStartMs;
+  });
+};

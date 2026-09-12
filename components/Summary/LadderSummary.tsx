@@ -3,13 +3,10 @@ import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { LADDER_STATUS, COMPETITION_TYPES } from "@shared";
+import { LADDER_STATUS, COMPETITION_TYPES, LADDER_TYPE } from "@shared";
 import type { Ladder, ScoreboardProfile } from "@shared/types";
 import { calculateLadderPrizePool } from "@shared/helpers";
-import {
-  sortPlayersByPlacement,
-  getPlayerRankInCompetition,
-} from "@shared/helpers/getRankInCompetition";
+import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
 
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
@@ -36,12 +33,13 @@ const LADDER_TOOLTIP =
 
 const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
   const isPaid = ladder.entryFee > 0;
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
 
   return (
     <StatsRow testID="ladder-stats-row">
       <StatBlock>
-        <StatLabel>Players</StatLabel>
+        <StatLabel>{isDoubles ? "Teams" : "Players"}</StatLabel>
         <StatHeadingContainer>
           <StatValue testID="ladder-players">
             {ladder.participantCount} / {ladder.maxPlayers}
@@ -104,7 +102,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     };
   }, [ladderId, fetchLadderParticipants]);
 
-  const { mode, requestJoin } = useLadderJoin(ladder, () =>
+  const { mode, openJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
   );
 
@@ -123,7 +121,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const [userSummaryRow, setUserSummaryRow] = useState<{
     player: EnrichedPlayer;
     rank: number;
-    cp: number;
   } | null>(null);
 
   useEffect(() => {
@@ -132,20 +129,24 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       setUserSummaryRow(null);
       return;
     }
-    const me = participants.find((p) => p.userId === uid);
-    if (!me) {
+    const participant = participants.find((p) => p.userId === uid);
+    if (!participant) {
       setUserSummaryRow(null);
       return;
     }
     let active = true;
     const load = async () => {
       try {
-        const [enrichedMe] = (await enrichPlayers(getUserById, [
-          me,
+        const [enrichedPlayer] = (await enrichPlayers(getUserById, [
+          participant,
         ])) as EnrichedPlayer[];
-        const rank = getPlayerRankInCompetition(participants, uid);
-        const cp = me.XP ?? 0;
-        if (active) setUserSummaryRow({ player: enrichedMe, rank, cp });
+        // Rank on the raw participants (per-ladder XP = CP) via the ladder
+        // comparator; 0 means unranked (no wins).
+        const rank =
+          sortLadderParticipantsByPlacement(participants).findIndex(
+            (p) => p.userId === uid,
+          ) + 1;
+        if (active) setUserSummaryRow({ player: enrichedPlayer, rank });
       } catch (error) {
         console.error("Error building ladder summary row:", error);
         if (active) setUserSummaryRow(null);
@@ -161,17 +162,18 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     let active = true;
     const loadContenders = async () => {
       setIsDataLoading(true);
-      const withWins = participants.filter((p) => (p.numberOfWins ?? 0) > 0);
-      if (withWins.length === 0) {
+      // Rank raw participants (per-ladder XP = CP) with the ladder comparator,
+      // then enrich the top few for display (order preserved).
+      const ranked = sortLadderParticipantsByPlacement(participants);
+      if (ranked.length === 0) {
         if (active) setTopContenders([]);
       } else {
         try {
           const enriched = (await enrichPlayers(
             getUserById,
-            withWins,
+            ranked,
           )) as ScoreboardProfile[];
-          if (active)
-            setTopContenders(sortPlayersByPlacement(enriched).slice(0, 4));
+          if (active) setTopContenders(enriched.slice(0, 4));
         } catch (error) {
           console.error("Error enriching ladder players:", error);
           if (active) setTopContenders([]);
@@ -209,7 +211,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
               player={userSummaryRow.player}
               rank={userSummaryRow.rank}
               ladder={ladder}
-              cp={userSummaryRow.cp}
             />
           </MySummaryCard>
         </MySummarySection>
@@ -285,7 +286,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         <JoinNowButton
           testID="ladder-summary-join"
           activeOpacity={0.85}
-          onPress={requestJoin}
+          onPress={openJoin}
         >
           <JoinNowText>Join Now</JoinNowText>
         </JoinNowButton>

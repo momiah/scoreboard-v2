@@ -16,6 +16,11 @@ import LadderRules from "../screens/Home/Ladders/LadderRules";
 import LadderHowToPlay from "../screens/Home/Ladders/LadderHowToPlay";
 import LadderTerms from "../screens/Home/Ladders/LadderTerms";
 import MatchDetails from "../screens/Home/Ladders/MatchDetails";
+import LadderStandings from "../screens/Home/Ladders/LadderStandings";
+import SelectDoublesTeam from "../screens/Home/Ladders/SelectDoublesTeam";
+import CreateTeam from "../screens/Home/Ladders/CreateTeam";
+import TeamDetails from "../components/Modals/TeamDetailsModal";
+import TeamSettings from "../screens/Home/Ladders/TeamSettings";
 import LadderMenu from "../screens/Home/Ladders/LadderMenu";
 import MatchDetailsMenu from "../screens/Home/Ladders/MatchDetailsMenu";
 import UserProfile from "../screens/Profile/UserProfile";
@@ -65,6 +70,26 @@ import { useNavigation } from "@react-navigation/native";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// Ladder screens are reachable from notifications/chats/profile, so they must be
+// registered in every stack (like League/Tournament). Centralised here to avoid
+// per-stack drift.
+const renderLadderScreens = () => (
+  <>
+    <Stack.Screen name="Ladder" component={Ladder} />
+    <Stack.Screen name="LadderRules" component={LadderRules} />
+    <Stack.Screen name="LadderHowToPlay" component={LadderHowToPlay} />
+    <Stack.Screen name="LadderTerms" component={LadderTerms} />
+    <Stack.Screen name="MatchDetails" component={MatchDetails} />
+    <Stack.Screen name="LadderStandings" component={LadderStandings} />
+    <Stack.Screen name="SelectDoublesTeam" component={SelectDoublesTeam} />
+    <Stack.Screen name="CreateTeam" component={CreateTeam} />
+    <Stack.Screen name="TeamDetails" component={TeamDetails} />
+    <Stack.Screen name="TeamSettings" component={TeamSettings} />
+    <Stack.Screen name="LadderMenu" component={LadderMenu} />
+    <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
+  </>
+);
+
 const HomeStack = () => {
   return (
     <Stack.Navigator
@@ -80,13 +105,7 @@ const HomeStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="League" component={League} />
-      <Stack.Screen name="Ladder" component={Ladder} />
-      <Stack.Screen name="LadderRules" component={LadderRules} />
-      <Stack.Screen name="LadderHowToPlay" component={LadderHowToPlay} />
-      <Stack.Screen name="LadderTerms" component={LadderTerms} />
-      <Stack.Screen name="MatchDetails" component={MatchDetails} />
-      <Stack.Screen name="LadderMenu" component={LadderMenu} />
-      <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
+      {renderLadderScreens()}
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
       <Stack.Screen
@@ -160,6 +179,7 @@ const ProfileStack = () => {
         component={CompetitionPendingRequests}
       />
       <Stack.Screen name="EditProfile" component={EditProfile} />
+      {renderLadderScreens()}
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
@@ -187,6 +207,7 @@ const ChatsStack = () => {
       initialRouteName="Chats"
     >
       <Stack.Screen name="Chats" component={Chats} />
+      {renderLadderScreens()}
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
@@ -281,6 +302,7 @@ const CompetitionsStack = () => {
       <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
       <Stack.Screen name="EditTournament" component={EditTournament} />
       <Stack.Screen name="Notifications" component={Notifications} />
+      {renderLadderScreens()}
     </Stack.Navigator>
   );
 };

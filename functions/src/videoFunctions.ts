@@ -131,16 +131,29 @@ export const updateGameVideoUrl = functions.https.onCall(
       postedBy,
       teams,
       videoLength = undefined,
+      matchId = undefined,
     } = request.data;
 
     const db = admin.firestore();
 
-    const collectionName =
-      competitionType === COMPETITION_TYPES.TOURNAMENT
-        ? COLLECTION_NAMES.tournaments
-        : COLLECTION_NAMES.leagues;
+    const isTournament = competitionType === COMPETITION_TYPES.TOURNAMENT;
+    const isLadder = competitionType === COMPETITION_TYPES.LADDER;
 
-    const competitionRef = db.collection(collectionName).doc(competitionId);
+    // Ladder games live in a match subcollection; league/tournament games live
+    // on the competition doc. Resolve the doc that holds this game's array.
+    const competitionRef = isLadder
+      ? db
+          .collection("ladders")
+          .doc(competitionId)
+          .collection("ladderMatches")
+          .doc(matchId as string)
+      : db
+          .collection(
+            isTournament
+              ? COLLECTION_NAMES.tournaments
+              : COLLECTION_NAMES.leagues,
+          )
+          .doc(competitionId);
     const competitionSnap = await competitionRef.get();
 
     // ── Check if this user already has a video for this game ─────────────
@@ -265,6 +278,20 @@ export const updateGameVideoUrl = functions.https.onCall(
           .doc(docId)
           .set(gameVideoRecord),
       ]);
+    }
+
+    // ── Remove the pending-upload record now the video is attached ─────────
+    // The client also deletes this, but only after this callable resolves
+    // on-device — which can be delayed or skipped when the app is backgrounded,
+    // leaving the upload toast stuck at 100%. Deleting server-side clears it as
+    // soon as the attach is confirmed, regardless of client lifecycle.
+    try {
+      await db
+        .collection(COLLECTION_NAMES.pendingVideoUploads)
+        .doc(gameId)
+        .delete();
+    } catch (error) {
+      console.error("[videoFunctions] Failed to delete pending record:", error);
     }
 
     // ── Notify other players ──────────────────────────────────────────────

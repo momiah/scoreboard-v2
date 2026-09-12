@@ -27,6 +27,7 @@ import {
 
 import moment from "moment";
 import { LeagueContext } from "../context/LeagueContext";
+import { LadderContext } from "../context/LadderContext";
 import { PopupContext } from "../context/PopupContext";
 import Popup from "../components/popup/Popup";
 import {
@@ -37,6 +38,8 @@ import {
   UserProfile,
   CollectionName,
   Club,
+  TeamMember,
+  Ladder,
 } from "@shared/types";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import RecentPlayersModal from "../components/Modals/RecentPlayersModal";
@@ -64,8 +67,17 @@ type ClubRouteParams = {
   competitionType?: undefined;
 };
 
+type TeamRouteParams = {
+  team: true;
+  teamId: string;
+  ladder?: Ladder;
+  competitionDetails?: undefined;
+  competitionType?: undefined;
+  club?: undefined;
+};
+
 type RouteParams = {
-  InvitePlayer: CompetitionRouteParams | ClubRouteParams;
+  InvitePlayer: CompetitionRouteParams | ClubRouteParams | TeamRouteParams;
 };
 
 
@@ -73,6 +85,16 @@ const InvitePlayer = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route = useRoute<RouteProp<RouteParams, "InvitePlayer">>();
   const { competitionDetails, competitionType } = route.params;
+
+  // Team context: inviting one partner to form a doubles team (pending until
+  // they accept).
+  const isTeamContext = (route.params as TeamRouteParams).team === true;
+  const teamId = isTeamContext
+    ? (route.params as TeamRouteParams).teamId
+    : null;
+  const teamLadder = isTeamContext
+    ? ((route.params as TeamRouteParams).ladder ?? null)
+    : null;
 
   // Club context: inviting NEW people to join a club (a genuine invite).
   const club = route.params.club ?? null;
@@ -88,7 +110,7 @@ const InvitePlayer = () => {
 
   // Whether the Search / Recent Players tabs (and Recent Players modal) show.
   // Only a plain, non-club competition offers Recent Players.
-  const showTabs = !isClubCompetition && !isClubContext;
+  const showTabs = !isClubCompetition && !isClubContext && !isTeamContext;
   // No back button when opened from a Club.
   const showBackButton = !isClubContext;
 
@@ -106,15 +128,20 @@ const InvitePlayer = () => {
   const [clubMembersLoading, setClubMembersLoading] = useState(false);
   const [clubMembersError, setClubMembersError] = useState(false);
 
-  const { sendNotification } = useContext(UserContext);
+  const { sendNotification, currentUser } = useContext(UserContext);
   const { updatePendingInvites, addPlayersToCompetition } =
     useContext(LeagueContext);
+  const { addTeamPartner, fetchLadderMemberIds } = useContext(LadderContext);
+  const [ladderMemberIds, setLadderMemberIds] = useState<Set<string>>(
+    new Set(),
+  );
   const {
     handleShowPopup,
     setPopupMessage,
     popupMessage,
     setShowPopup,
     showPopup,
+    showBottomToast,
   } = useContext(PopupContext);
 
   useEffect(() => {
@@ -122,6 +149,19 @@ const InvitePlayer = () => {
       if (id) setCurrentUserId(id);
     });
   }, []);
+
+  // Team context opened from a ladder join: load who is already in the ladder
+  // so a partner already participating can't be invited into the team.
+  useEffect(() => {
+    if (!isTeamContext || !teamLadder?.ladderId) return;
+    let active = true;
+    fetchLadderMemberIds(teamLadder.ladderId).then((ids) => {
+      if (active) setLadderMemberIds(new Set(ids));
+    });
+    return () => {
+      active = false;
+    };
+  }, [isTeamContext, teamLadder?.ladderId, fetchLadderMemberIds]);
 
   // Fetch club members on mount whenever a club is involved:
   //   • club competition → members become the "add" checkbox list.
@@ -163,13 +203,14 @@ const InvitePlayer = () => {
     [clubMembers],
   );
 
-  // Competition is null in club context (no competition to normalize).
-  const competition = isClubContext
-    ? null
-    : (normalizeCompetitionData({
-        rawData: competitionDetails as League | Tournament,
-        competitionType: competitionType as CompetitionType,
-      }) as NormalizedCompetition);
+  // Competition is null in club and team contexts (no competition to normalize).
+  const competition =
+    isClubContext || isTeamContext
+      ? null
+      : (normalizeCompetitionData({
+          rawData: competitionDetails as League | Tournament,
+          competitionType: competitionType as CompetitionType,
+        }) as NormalizedCompetition);
 
   const collectionName =
     (competitionType === COMPETITION_TYPES.LEAGUE
@@ -177,6 +218,9 @@ const InvitePlayer = () => {
       : COLLECTION_NAMES.tournaments) as CollectionName;
 
   const hasUserConflict = (userId: string) => {
+    if (isTeamContext) {
+      return userId === currentUser?.userId || ladderMemberIds.has(userId);
+    }
     if (isClubContext) {
       const isMember = clubParticipantIds.has(userId);
       const isPendingInvite = (club.pendingInvites ?? []).some(
@@ -203,7 +247,7 @@ const InvitePlayer = () => {
     (competitionDetails as Tournament).fixturesGenerated;
 
   const competitionEnded =
-    !isClubContext && competition!.endDate
+    !isClubContext && !isTeamContext && competition!.endDate
       ? moment(competition!.endDate, "DD-MM-YYYY").isBefore(moment())
       : false;
 
@@ -213,6 +257,22 @@ const InvitePlayer = () => {
   const hasConflicts = conflictedUsers.length > 0;
 
   const getBlockingError = (): string => {
+    // Team context: a doubles team is exactly two players (you + one partner).
+    if (isTeamContext) {
+      if (inviteUsers.length > 1) {
+        return "Cannot invite more than one player for your doubles team.";
+      }
+      if (hasConflicts) {
+        const selfConflict = conflictedUsers.some(
+          (u) => u.userId === currentUser?.userId,
+        );
+        return selfConflict
+          ? "You're already on this team."
+          : "This user is already a participant in the ladder";
+      }
+      return "";
+    }
+
     // Club context: the only blocker is trying to invite people who are
     // already members / already have a pending invite or request.
     if (isClubContext) {
@@ -274,6 +334,54 @@ const InvitePlayer = () => {
       if (inviteUsers.length === 0) {
         setValidationError("Please select at least one player to invite");
         setSendingInvite(false);
+        return;
+      }
+
+      // Team context: invite the one partner into the existing (owned) team.
+      if (isTeamContext) {
+        if (inviteUsers.length > 1) {
+          setValidationError(
+            "Cannot invite more than one player for your doubles team.",
+          );
+          setSendingInvite(false);
+          return;
+        }
+        if (!currentUser?.userId || !teamId) {
+          setValidationError("You need to be signed in to invite a partner.");
+          setSendingInvite(false);
+          return;
+        }
+
+        const partner = inviteUsers[0];
+        const partnerMember: TeamMember = {
+          userId: partner.userId,
+          username: partner.username,
+          firstName: partner.firstName,
+          lastName: partner.lastName,
+          displayName: formatDisplayName(partner),
+          profileImage: partner.profileImage,
+        };
+
+        const added = await addTeamPartner(teamId, partnerMember);
+        if (!added) {
+          setValidationError("Couldn't send the invite. Please try again.");
+          return;
+        }
+
+        await sendNotification({
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: partner.userId,
+          senderId: currentUser.userId,
+          message: `${formatDisplayName(
+            currentUser,
+          )} invited you to form a doubles team`,
+          type: notificationTypes.ACTION.INVITE.TEAM,
+          data: { teamId },
+        });
+
+        showBottomToast("Invite sent", "success");
+        navigation.goBack();
         return;
       }
 
@@ -543,9 +651,10 @@ const InvitePlayer = () => {
       console.error("Error sharing:", error);
     }
   };
-  const numberOfPlayers = isClubContext
-    ? ""
-    : `${competition!.participants?.length || 0} / ${competition!.maxPlayers}`;
+  const numberOfPlayers =
+    isClubContext || isTeamContext
+      ? ""
+      : `${competition!.participants?.length || 0} / ${competition!.maxPlayers}`;
   const competitionVariant =
     competitionType === COMPETITION_TYPES.LEAGUE ? "League" : "Tournament";
 
@@ -641,45 +750,53 @@ const InvitePlayer = () => {
       <FixedSection>
         <LeagueDetailsContainer>
           <LeagueName>
-            {isClubContext ? club.clubName : competition!.name}
+            {isTeamContext
+              ? "Create a Team"
+              : isClubContext
+                ? club.clubName
+                : competition!.name}
           </LeagueName>
           <LeagueLocation>
-            {isClubContext
-              ? `${club.clubLocation.city}, ${club.clubLocation.country}`
-              : `${competition!.location.courtName}, ${competition!.location.city}`}
+            {isTeamContext
+              ? "Invite a partner to form your doubles team"
+              : isClubContext
+                ? `${club.clubLocation.city}, ${club.clubLocation.country}`
+                : `${competition!.location.courtName}, ${competition!.location.city}`}
           </LeagueLocation>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 5,
-              marginTop: 10,
-              alignItems: "center",
-            }}
-          >
-            {isClubContext ? (
-              <Tag name="Club" color="#FAB234" bold />
-            ) : (
-              <>
-                <Tag
-                  name={numberOfPlayers}
-                  color={"rgba(0, 0, 0, 0.7)"}
-                  iconColor={"#00A2FF"}
-                  iconSize={15}
-                  icon={"person"}
-                  iconPosition={"right"}
-                  bold
-                />
-                <Tag name={competition!.type} />
-                <Tag name={competition!.prizeType} />
-              </>
-            )}
-            <ShareButton onPress={handleShare}>
-              <AntDesign name="share-alt" size={13} color="#00A2FF" />
-              <ShareButtonText>
-                Share {isClubContext ? "Club" : competitionVariant}
-              </ShareButtonText>
-            </ShareButton>
-          </View>
+          {!isTeamContext && (
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 5,
+                marginTop: 10,
+                alignItems: "center",
+              }}
+            >
+              {isClubContext ? (
+                <Tag name="Club" color="#FAB234" bold />
+              ) : (
+                <>
+                  <Tag
+                    name={numberOfPlayers}
+                    color={"rgba(0, 0, 0, 0.7)"}
+                    iconColor={"#00A2FF"}
+                    iconSize={15}
+                    icon={"person"}
+                    iconPosition={"right"}
+                    bold
+                  />
+                  <Tag name={competition!.type} />
+                  <Tag name={competition!.prizeType} />
+                </>
+              )}
+              <ShareButton onPress={handleShare}>
+                <AntDesign name="share-alt" size={13} color="#00A2FF" />
+                <ShareButtonText>
+                  Share {isClubContext ? "Club" : competitionVariant}
+                </ShareButtonText>
+              </ShareButton>
+            </View>
+          )}
         </LeagueDetailsContainer>
 
         {/* Tabs: only a plain (non-club) competition offers Recent Players */}

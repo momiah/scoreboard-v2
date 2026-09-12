@@ -5,6 +5,7 @@ import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import { Dimensions } from "react-native";
 import { LeagueContext } from "../../context/LeagueContext";
+import { LadderContext } from "../../context/LadderContext";
 import { useEffect, useState, useContext, useCallback } from "react";
 import Tag from "../Tag";
 import { AntDesign } from "@expo/vector-icons";
@@ -17,8 +18,8 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { CollectionName, NormalizedCompetition } from "@shared/types";
-import type { Club } from "@shared/types";
-import { notificationTypes, COLLECTION_NAMES } from "@shared";
+import type { Club, TeamStats } from "@shared/types";
+import { notificationTypes, COLLECTION_NAMES, TEAM_STATUS } from "@shared";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 
@@ -28,7 +29,11 @@ type InviteActionModalProps = {
   visible: boolean;
   onClose: () => void;
   inviteId: string;
-  inviteType: "invite-league" | "invite-tournament" | "invite-club";
+  inviteType:
+    | "invite-league"
+    | "invite-tournament"
+    | "invite-club"
+    | "invite-team";
   notificationId: string;
   isRead: boolean;
 };
@@ -48,11 +53,14 @@ const InviteActionModal = ({
     acceptClubInvite,
     declineClubInvite,
   } = useContext(LeagueContext);
+  const { subscribeToTeam, acceptTeamInvite, declineTeamInvite } =
+    useContext(LadderContext);
   const { currentUser, readNotification } = useContext(UserContext);
   const [competition, setCompetition] = useState<NormalizedCompetition | null>(
     null,
   );
   const [clubData, setClubData] = useState<Club | null>(null);
+  const [teamData, setTeamData] = useState<TeamStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
   const [isWithdrawn, setIsWithdrawn] = useState(false);
@@ -64,7 +72,8 @@ const InviteActionModal = ({
   const timeoutRef = useRef(null);
 
   const isClub = inviteType === notificationTypes.ACTION.INVITE.CLUB;
-  const config = !isClub ? getCompetitionConfig(inviteType) : null;
+  const isTeam = inviteType === notificationTypes.ACTION.INVITE.TEAM;
+  const config = !isClub && !isTeam ? getCompetitionConfig(inviteType) : null;
 
   const navigateTo = (id: string) => {
     if (isClub) {
@@ -90,6 +99,7 @@ const InviteActionModal = ({
   const resetState = useCallback(() => {
     setCompetition(null);
     setClubData(null);
+    setTeamData(null);
     setIsCopied(false);
     setIsWithdrawn(false);
     setWithdrawnMessage("");
@@ -105,6 +115,30 @@ const InviteActionModal = ({
     }
 
     setLoading(true);
+
+    if (isTeam) {
+      const unsubscribe = subscribeToTeam(inviteId, (team) => {
+        const stillInvited = (team?.playerIds ?? []).includes(
+          currentUser?.userId,
+        );
+        if (!team || !stillInvited) {
+          readNotification(notificationId, currentUser.userId);
+          setTeamData(null);
+          setIsWithdrawn(true);
+          setWithdrawnMessage("This team invite is no longer available.");
+        } else if (team.status !== TEAM_STATUS.PENDING) {
+          setTeamData(team);
+          setIsWithdrawn(true);
+          setWithdrawnMessage("This team invite has already been accepted.");
+        } else {
+          setTeamData(team);
+          setIsWithdrawn(false);
+          setWithdrawnMessage("");
+        }
+        setLoading(false);
+      });
+      return unsubscribe;
+    }
 
     const collectionName = isClub
       ? COLLECTION_NAMES.clubs
@@ -175,10 +209,12 @@ const InviteActionModal = ({
 
   useEffect(() => {
     if (!visible || isRead) return;
-    const hasData = isClub ? !!clubData : !!competition;
+    const hasData = isTeam ? !!teamData : isClub ? !!clubData : !!competition;
     if (!hasData) return;
 
-    if (isClub) {
+    if (isTeam) {
+      if (isWithdrawn) readNotification(notificationId, currentUser.userId);
+    } else if (isClub) {
       if (isWithdrawn) readNotification(notificationId, currentUser.userId);
     } else {
       if (leagueFull || isWithdrawn || alreadyInLeague) {
@@ -189,6 +225,7 @@ const InviteActionModal = ({
     visible,
     competition,
     clubData,
+    teamData,
     isRead,
     leagueFull,
     isWithdrawn,
@@ -200,7 +237,11 @@ const InviteActionModal = ({
   const handleAcceptInvite = async () => {
     setAccepting(true);
     try {
-      if (isClub) {
+      if (isTeam) {
+        await acceptTeamInvite(inviteId);
+        readNotification(notificationId, currentUser?.userId);
+        onClose();
+      } else if (isClub) {
         await acceptClubInvite({
           userId: currentUser?.userId,
           clubId: inviteId,
@@ -228,6 +269,12 @@ const InviteActionModal = ({
   const handleDeclineInvite = async () => {
     setDeclining(true);
     try {
+      if (isTeam) {
+        await declineTeamInvite(inviteId, currentUser?.userId);
+        readNotification(notificationId, currentUser?.userId);
+        onClose();
+        return;
+      }
       if (isClub) {
         await declineClubInvite({
           userId: currentUser?.userId,
@@ -250,7 +297,7 @@ const InviteActionModal = ({
     }
   };
 
-  const competitionType = config?.navRoute ?? "Competition";
+  const competitionType = isTeam ? "Team" : config?.navRoute ?? "Competition";
   const actionBlocked = isWithdrawn || alreadyInLeague || leagueFull || isRead;
   const handleLinkPress = () => {
     const id = isClub ? clubData?.clubId : competition?.id;
@@ -263,15 +310,17 @@ const InviteActionModal = ({
   const isBusy = accepting || declining;
   const isDisabled =
     isBusy ||
-    (isClub
+    (isClub || isTeam
       ? isRead || isWithdrawn
       : isRead || leagueFull || isWithdrawn || alreadyInLeague);
 
-  const numberOfPlayers = !isClub
-    ? `${competition?.participants?.length ?? 0} / ${competition?.maxPlayers}`
-    : null;
+  const numberOfPlayers =
+    !isClub && !isTeam
+      ? `${competition?.participants?.length ?? 0} / ${competition?.maxPlayers}`
+      : null;
 
-  const title = isClub ? "Club Invite" : "League Invite";
+  const teamLabel =
+    teamData?.teamName?.trim() || (teamData?.team ?? []).join(" & ");
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -297,7 +346,51 @@ const InviteActionModal = ({
               <LeagueDetailsContainer>
                 <Title>{competitionType} Invite</Title>
 
-                {isClub && clubData ? (
+                {isTeam ? (
+                  teamData ? (
+                    <>
+                      <Message>
+                        You&apos;ve been invited to form a doubles team
+                        {teamLabel ? (
+                          <>
+                            {" "}
+                            <LinkText>{teamLabel}</LinkText>
+                          </>
+                        ) : null}
+                      </Message>
+
+                      {(teamData.team ?? []).length ? (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            flexWrap: "wrap",
+                            gap: 5,
+                            marginTop: 15,
+                          }}
+                        >
+                          {(teamData.team ?? []).map((memberName) => (
+                            <Tag
+                              key={memberName}
+                              name={memberName}
+                              color="rgba(0, 0, 0, 0.7)"
+                              iconColor="#00A2FF"
+                              iconSize={15}
+                              icon="person"
+                              iconPosition="left"
+                              bold
+                            />
+                          ))}
+                        </View>
+                      ) : null}
+
+                      <View
+                        style={{ flexDirection: "row", gap: 5, marginTop: 15 }}
+                      >
+                        <Tag name="Doubles" color="#FAB234" />
+                      </View>
+                    </>
+                  ) : null
+                ) : isClub && clubData ? (
                   <>
                     <Message>
                       You&apos;ve been invited to join{" "}

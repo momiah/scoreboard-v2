@@ -12,6 +12,9 @@ export const buildLadderParticipant = (
   user: LadderJoinUser,
 ): ScoreboardProfile => ({
   ...scoreboardProfileSchema,
+  // Per-ladder CP starts at 0 (the CP shown in the ladder standings), separate
+  // from the global profile XP that drives the rank medal.
+  competitionXP: 0,
   username: user.username,
   firstName: user.firstName ? user.firstName.split(" ")[0] : "",
   lastName: user.lastName ? user.lastName.split(" ")[0] : "",

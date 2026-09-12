@@ -1,16 +1,23 @@
 import React, { useContext, useEffect, useState } from "react";
 import { ScrollView } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { hasUserCheckedIn, LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
+import {
+  hasUserCheckedIn,
+  LADDER_MATCH_STATUS,
+  LADDER_TYPE,
+  COMPETITION_TYPES,
+} from "@shared";
 import type { LadderMatch, Game, Player } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
-import AddLadderGameModal from "../Modals/AddLadderGameModal";
+import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   getLadderMatchScore,
@@ -28,6 +35,8 @@ interface ParticipantProfile {
 }
 
 interface GameLobbyProps {
+  ladderId: string;
+  ladderName?: string;
   match: LadderMatch;
   currentUserId?: string;
   checkedIn: boolean;
@@ -40,12 +49,15 @@ const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
 };
 
 const GameLobby: React.FC<GameLobbyProps> = ({
+  ladderId,
+  ladderName,
   match,
   currentUserId,
   checkedIn,
 }) => {
-  const { getUserById } = useContext(UserContext);
+  const { getUserById, currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [players, setPlayers] = useState<ParticipantProfile[]>([]);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
@@ -78,9 +90,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
 
-  const mine = players.find((p) => p.userId === currentUserId);
+  const user = players.find((p) => p.userId === currentUserId);
   const opponents = players.filter((p) => p.userId !== currentUserId);
-  const leftNames = mine ? [formatDisplayName(mine)] : ["You"];
+  const leftNames = user ? [formatDisplayName(user)] : ["You"];
   const rightNames =
     opponents.length > 0
       ? opponents.map((p) => formatDisplayName(p))
@@ -105,7 +117,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
       ...game,
       team1: {
         ...game.team1,
-        player1: toPlayerCell(mine),
+        player1: toPlayerCell(user),
         player2: null,
       },
       team2: {
@@ -117,11 +129,36 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   });
 
   const handleGamePress = (game: Game) => {
-    if (isCompleted) return;
-    if (!allCheckedIn) {
+    if (!allCheckedIn && !isCompleted) {
       showBottomToast("All players must check in to start the games", "info");
       return;
     }
+
+    // A reported game (score submitted) opens the shared GameScreen to
+    // view/approve/watch, exactly like League/Tournament. An unreported shell
+    // opens the report modal so a player can submit the score.
+    const isReported =
+      !!game.result || (game.approvalStatus ?? "") !== "";
+
+    if (isReported) {
+      navigation.navigate("GameScreen", {
+        gameId: game.gameId,
+        competitionId: ladderId,
+        competitionType: COMPETITION_TYPES.LADDER,
+        competitionName:
+          ladderName ?? match.court?.courtName ?? "Ladder match",
+        gamescore: game.gamescore ?? "",
+        date: game.date ?? "",
+        team1: game.team1,
+        team2: game.team2,
+        ladderId,
+        matchId: match.ladderMatchId,
+      });
+      return;
+    }
+
+    if (isCompleted) return;
+
     setSelectedGame(game);
     setGameModalVisible(true);
   };
@@ -185,7 +222,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
               ))}
             </SideCol>
             <ScoreValue outcome={score.outcome}>
-              {score.mine} - {score.theirs}
+              {score.user} - {score.opponent}
             </ScoreValue>
             <SideCol align="right">
               {rightNames.map((name, i) => (
@@ -230,9 +267,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         </GamesList>
       </ScrollView>
 
-      <AddLadderGameModal
+      <AddTournamentGameModal
         visible={gameModalVisible}
         game={selectedGame}
+        tournamentType={isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES}
+        currentUser={currentUser ?? null}
+        tournamentName={match.court?.courtName ?? "Ladder match"}
+        tournamentId=""
+        ladder={{
+          ladderId,
+          matchId: match.ladderMatchId,
+          name: match.court?.courtName ?? "Ladder match",
+        }}
         onClose={() => {
           setGameModalVisible(false);
           setSelectedGame(null);

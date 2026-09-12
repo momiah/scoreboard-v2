@@ -2,14 +2,38 @@ import type {
   Ladder,
   LadderMatch,
   LadderMatchInput,
+  Game,
   ScoreboardProfile,
   TeamStats,
+  TeamMember,
 } from "@shared/types";
 import type { LadderJoinUser } from "../../helpers/ladderParticipants";
 
 export interface LadderJoinOutcome {
   success: boolean;
   alreadyJoined: boolean;
+}
+
+export interface CreateTeamOutcome {
+  success: boolean;
+  team: TeamStats | null;
+}
+
+export interface JoinLadderAsTeamOutcome {
+  success: boolean;
+  alreadyJoined: boolean;
+  conflict: boolean;
+  conflictUserIds: string[];
+}
+
+export interface DisbandTeamOutcome {
+  success: boolean;
+  activelyPlaying: boolean;
+}
+
+export interface AcceptTeamJoinRequestOutcome {
+  success: boolean;
+  full: boolean;
 }
 
 export interface CreateLadderMatchOutcome {
@@ -31,6 +55,24 @@ export interface CheckInLadderMatchOutcome {
   reason?: CheckInLadderMatchFailureReason;
 }
 
+export type UpdateLadderGameFailureReason = "unavailable" | "error";
+
+export interface UpdateLadderGameOutcome {
+  success: boolean;
+  reason?: UpdateLadderGameFailureReason;
+}
+
+export type ApproveLadderGameFailureReason = "unavailable" | "error";
+
+export interface ApproveLadderGameOutcome {
+  success: boolean;
+  reason?: ApproveLadderGameFailureReason;
+  /** True once the game reached its approval limit and was scored. */
+  fullyApproved?: boolean;
+  /** True when this approval also completed the match (recent-form written). */
+  matchCompleted?: boolean;
+}
+
 export interface LadderContextType {
   upcomingLadders: Ladder[];
   upcomingLaddersLoading: boolean;
@@ -47,6 +89,50 @@ export interface LadderContextType {
   fetchLadderParticipants: (ladderId: string) => Promise<ScoreboardProfile[]>;
   addLadderTeam: (ladderId: string, team: TeamStats) => Promise<boolean>;
   fetchLadderTeams: (ladderId: string) => Promise<TeamStats[]>;
+  createTeam: (
+    creator: TeamMember,
+    details: { teamName: string; teamProfilePic?: string },
+  ) => Promise<CreateTeamOutcome>;
+  addTeamPartner: (teamId: string, partner: TeamMember) => Promise<boolean>;
+  acceptTeamJoinRequest: (
+    teamId: string,
+    requester: TeamMember,
+  ) => Promise<AcceptTeamJoinRequestOutcome>;
+  declineTeamJoinRequest: (teamId: string, userId: string) => Promise<boolean>;
+  requestToJoinTeam: (
+    teamId: string,
+    requester: TeamMember,
+  ) => Promise<boolean>;
+  withdrawTeamJoinRequest: (teamId: string, userId: string) => Promise<boolean>;
+  subscribeToTeamJoinRequest: (
+    teamId: string,
+    userId: string,
+    onUpdate: (exists: boolean) => void,
+  ) => () => void;
+  subscribeToTeam: (
+    teamId: string,
+    onUpdate: (team: TeamStats | null) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
+  updateTeamProfilePic: (
+    teamId: string,
+    teamProfilePic: string,
+  ) => Promise<boolean>;
+  updateTeamDetails: (
+    teamId: string,
+    updates: { teamName?: string; teamProfilePic?: string },
+  ) => Promise<boolean>;
+  isTeamActivelyPlaying: (team: TeamStats) => Promise<boolean>;
+  disbandTeam: (team: TeamStats) => Promise<DisbandTeamOutcome>;
+  acceptTeamInvite: (teamId: string) => Promise<boolean>;
+  declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
+  fetchTeam: (teamKey: string) => Promise<TeamStats | null>;
+  fetchUserTeams: (userId: string) => Promise<TeamStats[]>;
+  fetchLadderMemberIds: (ladderId: string) => Promise<string[]>;
+  joinLadderAsTeam: (
+    ladderId: string,
+    rootTeam: TeamStats,
+  ) => Promise<JoinLadderAsTeamOutcome>;
   createLadderMatch: (
     ladderId: string,
     input: LadderMatchInput,
@@ -68,6 +154,24 @@ export interface LadderContextType {
     matchId: string,
     userId: string,
   ) => Promise<CheckInLadderMatchOutcome>;
+  checkInLadderMatchHandshake: (
+    ladderId: string,
+    matchId: string,
+    scannerId: string,
+    displayerId: string,
+  ) => Promise<CheckInLadderMatchOutcome>;
+  updateLadderGame: (args: {
+    ladderId: string;
+    matchId: string;
+    updatedGame: Game;
+  }) => Promise<UpdateLadderGameOutcome>;
+  approveLadderGame: (args: {
+    ladderId: string;
+    matchId: string;
+    gameId: string;
+    userId: string;
+    approver: { userId: string; username: string };
+  }) => Promise<ApproveLadderGameOutcome>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 
