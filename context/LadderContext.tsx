@@ -8,6 +8,7 @@ import React, {
 import {
   arrayUnion,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -54,6 +55,7 @@ import {
   findLadderMemberConflicts,
 } from "../helpers/ladderTeamMembership";
 import { addMember, removeMember } from "../helpers/teamRoster";
+import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
 import {
@@ -65,6 +67,7 @@ import type {
   FetchLaddersOptions,
   LadderJoinOutcome,
   JoinLadderAsTeamOutcome,
+  DisbandTeamOutcome,
   CreateTeamOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
@@ -520,6 +523,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         });
         const added = await addLadderTeam(ladderId, ladderTeam);
         if (added) {
+          if (rootTeam.teamId) {
+            await updateDoc(doc(db, TEAMS_COLLECTION, rootTeam.teamId), {
+              ladderIds: arrayUnion(ladderId),
+            });
+          }
           setJoinedLadderIds((prev) =>
             prev.includes(ladderId) ? prev : [...prev, ladderId],
           );
@@ -637,6 +645,77 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     [],
+  );
+
+  const updateTeamDetails = useCallback(
+    async (
+      teamId: string,
+      updates: { teamName?: string; teamProfilePic?: string },
+    ): Promise<boolean> => {
+      if (!teamId) return false;
+      const patch: Record<string, string> = {};
+      if (updates.teamName !== undefined)
+        patch.teamName = updates.teamName.trim();
+      if (updates.teamProfilePic !== undefined)
+        patch.teamProfilePic = updates.teamProfilePic;
+      if (Object.keys(patch).length === 0) return true;
+      try {
+        await updateDoc(doc(db, TEAMS_COLLECTION, teamId), patch);
+        return true;
+      } catch (error) {
+        console.error("Error updating team details:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const isTeamActivelyPlaying = useCallback(
+    async (team: TeamStats): Promise<boolean> => {
+      const ladderIds = team.ladderIds ?? [];
+      const playerIds = teamMemberIds(team);
+      if (ladderIds.length === 0 || playerIds.length === 0) return false;
+      const matchLists = await Promise.all(
+        ladderIds.map((ladderId) => fetchLadderMatches(ladderId)),
+      );
+      return matchLists.some((matches) =>
+        teamHasLadderMatch(matches, playerIds),
+      );
+    },
+    [fetchLadderMatches],
+  );
+
+  const disbandTeam = useCallback(
+    async (team: TeamStats): Promise<DisbandTeamOutcome> => {
+      if (!team?.teamId) return { success: false, activelyPlaying: false };
+      try {
+        if (await isTeamActivelyPlaying(team)) {
+          return { success: false, activelyPlaying: true };
+        }
+        const batch = writeBatch(db);
+        (team.ladderIds ?? []).forEach((ladderId) => {
+          batch.delete(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+              team.teamKey,
+            ),
+          );
+          batch.update(doc(db, LADDERS_COLLECTION, ladderId), {
+            participantCount: increment(-1),
+          });
+        });
+        await batch.commit();
+        await deleteDoc(doc(db, TEAMS_COLLECTION, team.teamId));
+        return { success: true, activelyPlaying: false };
+      } catch (error) {
+        console.error("Error disbanding team:", error);
+        return { success: false, activelyPlaying: false };
+      }
+    },
+    [isTeamActivelyPlaying],
   );
 
   const subscribeToLadderMatches = useCallback(
@@ -1209,6 +1288,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         createTeam,
         addTeamPartner,
         updateTeamProfilePic,
+        updateTeamDetails,
+        isTeamActivelyPlaying,
+        disbandTeam,
         acceptTeamInvite,
         declineTeamInvite,
         fetchTeam,

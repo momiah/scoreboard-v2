@@ -26,6 +26,11 @@ export interface JoinLadderAsTeamOutcome {
   conflictUserIds: string[];
 }
 
+export interface DisbandTeamOutcome {
+  success: boolean;
+  activelyPlaying: boolean;
+}
+
 export interface CreateLadderMatchOutcome {
   success: boolean;
   ladderMatch: LadderMatch | null;
@@ -88,6 +93,12 @@ export interface LadderContextType {
     teamId: string,
     teamProfilePic: string,
   ) => Promise<boolean>;
+  updateTeamDetails: (
+    teamId: string,
+    updates: { teamName?: string; teamProfilePic?: string },
+  ) => Promise<boolean>;
+  isTeamActivelyPlaying: (team: TeamStats) => Promise<boolean>;
+  disbandTeam: (team: TeamStats) => Promise<DisbandTeamOutcome>;
   acceptTeamInvite: (teamId: string) => Promise<boolean>;
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;

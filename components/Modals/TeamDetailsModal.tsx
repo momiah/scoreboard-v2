@@ -205,6 +205,19 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
         >
           <Ionicons name="chevron-back" size={24} color="white" />
         </BackButton>
+        {isOwner && effectiveTeamId ? (
+          <BackButton
+            onPress={() =>
+              navigation.navigate("TeamSettings", { teamId: effectiveTeamId })
+            }
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID="team-details-menu"
+          >
+            <Ionicons name="ellipsis-horizontal" size={22} color="white" />
+          </BackButton>
+        ) : (
+          <HeaderSpacer />
+        )}
       </Header>
 
       {loading ? (
@@ -416,6 +429,10 @@ const Body = styled.ScrollView({
 const BackButton = styled.TouchableOpacity({
   width: 32,
   justifyContent: "center",
+});
+
+const HeaderSpacer = styled.View({
+  width: 32,
 });
 
 const LoadingWrap = styled.View({
