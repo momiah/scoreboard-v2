@@ -3,10 +3,16 @@ import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import { LADDER_STATUS, COMPETITION_TYPES, LADDER_TYPE } from "@shared";
-import type { Ladder, ScoreboardProfile } from "@shared/types";
-import { calculateLadderPrizePool } from "@shared/helpers";
+import type { Ladder, ScoreboardProfile, TeamStats } from "@shared/types";
+import { calculateLadderPrizePool, sortTeamsByPlacement } from "@shared/helpers";
 import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
+import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
@@ -83,7 +89,10 @@ type EnrichedPlayer = ScoreboardProfile & { XP?: number };
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const { getUserById, currentUser } = useContext(UserContext);
-  const { fetchLadderParticipants } = useContext(LadderContext);
+  const { fetchLadderParticipants, fetchLadderTeams } =
+    useContext(LadderContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -158,6 +167,44 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     };
   }, [participants, currentUser?.userId, getUserById]);
 
+  const [userTeamRow, setUserTeamRow] = useState<{
+    team: TeamStats;
+    rank: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const uid = currentUser?.userId;
+    if (!isDoubles || !uid) {
+      setUserTeamRow(null);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      try {
+        const teams = await fetchLadderTeams(ladderId);
+        const valid = teams.filter(
+          (t) => t.teamKey && Array.isArray(t.team),
+        );
+        const ranked = sortTeamsByPlacement(valid);
+        const idx = ranked.findIndex((t) => teamMemberIds(t).includes(uid));
+        const myTeam =
+          idx >= 0
+            ? ranked[idx]
+            : (valid.find((t) => teamMemberIds(t).includes(uid)) ?? null);
+        if (active) {
+          setUserTeamRow(myTeam ? { team: myTeam, rank: idx + 1 } : null);
+        }
+      } catch (error) {
+        console.error("Error building ladder team summary row:", error);
+        if (active) setUserTeamRow(null);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [isDoubles, ladderId, currentUser?.userId, fetchLadderTeams]);
+
   useEffect(() => {
     let active = true;
     const loadContenders = async () => {
@@ -203,18 +250,49 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       )}
       <LadderStatsRow ladder={ladder} />
 
-      {userSummaryRow && (
-        <MySummarySection testID="my-ladder-summary">
-          <SectionTitle>Current Position</SectionTitle>
-          <MySummaryCard>
-            <PerformanceRow
-              player={userSummaryRow.player}
-              rank={userSummaryRow.rank}
-              ladder={ladder}
-            />
-          </MySummaryCard>
-        </MySummarySection>
-      )}
+      {isDoubles
+        ? userTeamRow && (
+            <MySummarySection testID="my-ladder-team-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <TeamPositionCard
+                activeOpacity={0.85}
+                onPress={() =>
+                  navigation.navigate("TeamDetails", { team: userTeamRow.team })
+                }
+                testID="my-ladder-team-card"
+              >
+                <RankBadge>
+                  <RankText>
+                    {userTeamRow.rank > 0 ? `${userTeamRow.rank}` : "-"}
+                  </RankText>
+                </RankBadge>
+                <TeamNames>
+                  {(userTeamRow.team.team ?? []).map((name, idx) => (
+                    <TeamMemberName key={`${name}-${idx}`} numberOfLines={1}>
+                      {name}
+                    </TeamMemberName>
+                  ))}
+                </TeamNames>
+                <TeamStatCell>
+                  <TeamStatLabel>Wins</TeamStatLabel>
+                  <TeamStatValue>{userTeamRow.team.numberOfWins}</TeamStatValue>
+                </TeamStatCell>
+                <Ionicons name="chevron-forward" size={20} color="#4A5A6A" />
+              </TeamPositionCard>
+            </MySummarySection>
+          )
+        : userSummaryRow && (
+            <MySummarySection testID="my-ladder-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <MySummaryCard>
+                <PerformanceRow
+                  player={userSummaryRow.player}
+                  rank={userSummaryRow.rank}
+                  ladder={ladder}
+                />
+              </MySummaryCard>
+            </MySummarySection>
+          )}
 
       <PrizeDistribution
         prizePool={prizePool.xp}
@@ -467,6 +545,59 @@ const StatLabel = styled.Text({
 const MySummarySection = styled.View({
   gap: 10,
   marginBottom: 20,
+});
+
+const TeamPositionCard = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  paddingVertical: 14,
+  paddingHorizontal: 14,
+  borderRadius: 12,
+  backgroundColor: "#0a1929",
+  borderWidth: 1,
+  borderColor: "#1a2b3d",
+});
+
+const RankBadge = styled.View({
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  backgroundColor: "rgba(0, 162, 255, 0.1)",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const RankText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 15,
+  fontWeight: "bold",
+});
+
+const TeamNames = styled.View({
+  flex: 1,
+  gap: 2,
+});
+
+const TeamMemberName = styled.Text({
+  color: "#e2e8f0",
+  fontSize: 14,
+  fontWeight: "600",
+});
+
+const TeamStatCell = styled.View({
+  alignItems: "center",
+});
+
+const TeamStatLabel = styled.Text({
+  color: "#7f97a8",
+  fontSize: 11,
+});
+
+const TeamStatValue = styled.Text({
+  color: "#e2e8f0",
+  fontSize: 18,
+  fontWeight: "bold",
 });
 
 const MySummaryCard = styled.View({
