@@ -374,10 +374,17 @@ const JoinRequestModal = ({
               <Message>
                 {isTeam ? (
                   <>
-                    A user has requested to join your team
-                    {teamData?.teamName?.trim()
-                      ? ` "${teamData.teamName.trim()}"`
-                      : ""}
+                    A user has requested to join your team{" "}
+                    <LinkText
+                      onPress={() => {
+                        onClose();
+                        navigation.navigate("TeamDetails", {
+                          teamId: requestId,
+                        });
+                      }}
+                    >
+                      {teamData?.teamName?.trim() || "team"}
+                    </LinkText>
                   </>
                 ) : isClub ? (
                   <>

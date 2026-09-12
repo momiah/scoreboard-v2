@@ -81,6 +81,7 @@ export default GameApprovalModal;
 
 interface NavigateToParams {
   competitionId?: string;
+  ladderId?: string;
   userId?: string;
 }
 
@@ -322,9 +323,15 @@ const LadderGameApprovalModal = ({
     useContext(UserContext);
   const { fetchLadderById, fetchLadderMatches, approveLadderGame } =
     useContext(LadderContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const ladderId = data?.ladderId ?? "";
   const matchId = data?.matchId ?? "";
+
+  const navigateTo = (route: string, params: NavigateToParams) => {
+    onClose();
+    navigation.navigate(route, params);
+  };
 
   const [game, setGame] = useState<Game | null>(null);
   const [ladderName, setLadderName] = useState("this ladder");
@@ -458,8 +465,18 @@ const LadderGameApprovalModal = ({
 
   return (
     <GameApprovalShell visible={visible} onClose={onClose} loading={loading}>
-      <Message>A game has been reported in {ladderName}</Message>
-      <Message>Reporter: {senderDisplayName}</Message>
+      <Message>
+        A game has been reported in{" "}
+        <LinkText onPress={() => navigateTo("Ladder", { ladderId })}>
+          {ladderName}
+        </LinkText>
+      </Message>
+      <Message>
+        Reporter:{" "}
+        <LinkText onPress={() => navigateTo("UserProfile", { userId: senderId })}>
+          {senderDisplayName}
+        </LinkText>
+      </Message>
 
       {!gameGone && game && (
         <GameScoreCard game={game} competitionType={competitionType} />

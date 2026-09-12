@@ -6,7 +6,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
-import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
+import {
+  formatMatchDateShort,
+  isMatchStarted,
+} from "../../helpers/ladderMatchTime";
 import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
@@ -47,6 +50,10 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
+  // Completed matches, or ones whose play date/time has passed, read as done:
+  // dimmed but still pressable (view result / report late). The flat header
+  // variant keeps full contrast.
+  const dimmed = !flat && (isCompleted || isMatchStarted(match));
 
   const showStatus = showProgress || !!checkin;
   const tagStatus = !showStatus ? null : checkin &&
@@ -83,10 +90,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
   return (
     <Card
       testID={testID}
-      activeOpacity={0.8}
+      activeOpacity={dimmed ? 0.55 : 0.8}
       isFlat={flat}
       disabled={!onPress}
       onPress={() => onPress?.(match)}
+      style={dimmed ? { opacity: 0.55 } : undefined}
     >
       <HeaderRow flat={flat}>
         <Info>

@@ -320,7 +320,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
             </TeamName>
             <StatusPill isActive={isActive}>
               <Ionicons
-                name={isActive ? "checkmark-circle" : "time-outline"}
+                name={isActive ? "checkmark-circle-outline" : "time-outline"}
                 size={14}
                 color={isActive ? "#22c55e" : "#FAB234"}
               />
