@@ -36,11 +36,8 @@ const PerformanceRow = ({
   const entity = team || player;
   const isLadder = !!ladder;
   const pointDifference = entity.totalPointDifference || 0;
-  // Ladders name their teams; leagues/tournaments don't, so show the players.
   const displayName = isTeam
-    ? isLadder
-      ? teamLabel(team)
-      : (team.team ?? []).join(" & ")
+    ? teamLabel(team)
     : formatDisplayName(player) || player.username || "";
   const playerXp = player?.XP || 0;
   const rankLevel = findRankIndex(playerXp) + 1;
