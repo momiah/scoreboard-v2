@@ -205,7 +205,6 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
     ? fetchedTeam.status === TEAM_STATUS.ACTIVE
     : !!passedTeam || team?.status === TEAM_STATUS.ACTIVE;
   const hasPartner = members.length >= 2;
-  const partner = members.find((m) => m.userId !== team?.createdBy);
   const isOwner =
     !!currentUser?.userId && currentUser.userId === team?.createdBy;
 
@@ -416,13 +415,6 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
               </InviteRow>
             )}
           </MemberList>
-
-          {hasPartner && !isActive && (
-            <Hint>
-              {partner ? memberName(partner) : "Your partner"} needs to accept
-              the invite before this team can join a ladder.
-            </Hint>
-          )}
 
           <SectionLabel style={{ marginTop: 24 }}>Team stats</SectionLabel>
           <MedalProgress
@@ -686,11 +678,4 @@ const PendingTagText = styled.Text({
   fontWeight: "bold",
 });
 
-const Hint = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 13,
-  textAlign: "center",
-  marginTop: 20,
-  marginBottom: 12,
-});
 
