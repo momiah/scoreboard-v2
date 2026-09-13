@@ -161,6 +161,7 @@ const LadderStandings: React.FC = () => {
       <PerformanceRow
         team={item}
         rank={item.rank}
+        ladder
         onPress={(team: TeamStats) =>
           navigation.navigate("TeamDetails", { team })
         }

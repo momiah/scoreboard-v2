@@ -258,6 +258,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
                 <PerformanceRow
                   team={userTeamRow.team}
                   rank={userTeamRow.rank}
+                  ladder={ladder}
                   onPress={(team: TeamStats) =>
                     navigation.navigate("TeamDetails", { team })
                   }
