@@ -114,10 +114,11 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   const teamId = route?.params?.teamId;
   const passedTeam = route?.params?.team ?? null;
   const ladder = route?.params?.ladder;
-  // Subscribe only in the management path (opened by teamId). A passed team
-  // object (from ladder standings) carries per-competition stats, so it stays
-  // as given rather than being overwritten by the root team doc.
-  const subscribeId = teamId;
+  // Subscribe to the root team doc whenever its id is resolvable (opened by
+  // teamId, or a team passed from ladder standings). The root doc is
+  // authoritative for status/members; the passed team keeps its
+  // per-competition stats (see statsTeam below).
+  const subscribeId = teamId ?? passedTeam?.teamId;
 
   const [fetchedTeam, setFetchedTeam] = useState<TeamStats | null>(null);
   const [loading, setLoading] = useState(!isModal && !passedTeam && !!teamId);
@@ -193,9 +194,16 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   }
 
   // ── Screen mode: the Ladder team home (identity + members + invite + stats) ──
+  // Identity/status/members come from the live root doc; the passed ladder
+  // team carries only per-competition stats and a stale status, so a team
+  // shown in ladder standings (always an active team) reads active until the
+  // authoritative doc loads.
   const team = fetchedTeam ?? passedTeam;
+  const statsTeam = passedTeam ?? team;
   const members = team?.players ?? [];
-  const isActive = team?.status === TEAM_STATUS.ACTIVE;
+  const isActive = fetchedTeam
+    ? fetchedTeam.status === TEAM_STATUS.ACTIVE
+    : !!passedTeam || team?.status === TEAM_STATUS.ACTIVE;
   const hasPartner = members.length >= 2;
   const partner = members.find((m) => m.userId !== team?.createdBy);
   const isOwner =
@@ -318,20 +326,18 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
             <TeamName numberOfLines={2}>
               {team.teamName?.trim() || (team.team ?? []).join(" & ")}
             </TeamName>
-            <StatusPill isActive={isActive}>
-              <Ionicons
-                name={isActive ? "checkmark-circle-outline" : "time-outline"}
-                size={14}
-                color={isActive ? "#22c55e" : "#FAB234"}
-              />
-              <StatusPillText isActive={isActive}>
-                {isActive
-                  ? "Active team"
-                  : hasPartner
-                    ? "Waiting for partner to accept"
-                    : "No partner yet"}
-              </StatusPillText>
-            </StatusPill>
+            {(isActive || !hasPartner) && (
+              <StatusPill isActive={isActive}>
+                <Ionicons
+                  name={isActive ? "checkmark-circle-outline" : "time-outline"}
+                  size={14}
+                  color={isActive ? "#22c55e" : "#FAB234"}
+                />
+                <StatusPillText isActive={isActive}>
+                  {isActive ? "Active team" : "No partner yet"}
+                </StatusPillText>
+              </StatusPill>
+            )}
           </TeamHero>
 
           <SectionLabel>Members</SectionLabel>
@@ -356,11 +362,15 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
                   <MemberNameText numberOfLines={1}>
                     {memberName(member)}
                   </MemberNameText>
-                  {isOwner && (
+                  {isOwner ? (
                     <OwnerTag>
                       <OwnerTagText>Owner</OwnerTagText>
                     </OwnerTag>
-                  )}
+                  ) : !isActive ? (
+                    <PendingTag>
+                      <PendingTagText>Pending</PendingTagText>
+                    </PendingTag>
+                  ) : null}
                   <Ionicons name="chevron-forward" size={18} color="#4A5A6A" />
                 </MemberRow>
               );
@@ -416,11 +426,11 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
 
           <SectionLabel style={{ marginTop: 24 }}>Team stats</SectionLabel>
           <MedalProgress
-            xp={team.XP ?? 0}
-            prevGameXp={team.prevGameXP}
+            xp={(statsTeam ?? team).XP ?? 0}
+            prevGameXp={(statsTeam ?? team).prevGameXP}
             showMedals={false}
           />
-          <StatsBlock team={team} />
+          <StatsBlock team={statsTeam ?? team} />
         </Body>
       )}
     </Screen>
@@ -659,6 +669,19 @@ const OwnerTag = styled.View({
 
 const OwnerTagText = styled.Text({
   color: "#00A2FF",
+  fontSize: 11,
+  fontWeight: "bold",
+});
+
+const PendingTag = styled.View({
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 10,
+  backgroundColor: "rgba(250, 178, 52, 0.15)",
+});
+
+const PendingTagText = styled.Text({
+  color: "#FAB234",
   fontSize: 11,
   fontWeight: "bold",
 });
