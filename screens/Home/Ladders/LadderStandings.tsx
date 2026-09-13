@@ -22,7 +22,6 @@ import type { ScoreboardProfile, TeamStats } from "@shared/types";
 
 import { LadderContext } from "../../../context/LadderContext";
 import { UserContext } from "../../../context/UserContext";
-import { GameContext } from "../../../context/GameContext";
 import { enrichPlayers } from "../../../helpers/enrichPlayers";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
 import PaginatedList from "../../../components/PaginatedList";
@@ -41,15 +40,6 @@ interface LadderStandingsParams {
 type RankedParticipant = ScoreboardProfile & { rank: number };
 type RankedTeam = TeamStats & { rank: number };
 
-const getOrdinalSuffix = (num: number): string => {
-  const j = num % 10;
-  const k = num % 100;
-  if (j === 1 && k !== 11) return "st";
-  if (j === 2 && k !== 12) return "nd";
-  if (j === 3 && k !== 13) return "rd";
-  return "th";
-};
-
 const LadderStandings: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route =
@@ -59,7 +49,6 @@ const LadderStandings: React.FC = () => {
   const { fetchLadderParticipants, fetchLadderTeams } =
     useContext(LadderContext);
   const { getUserById } = useContext(UserContext);
-  const { recentGameResult } = useContext(GameContext);
 
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [teams, setTeams] = useState<TeamStats[]>([]);
@@ -168,41 +157,16 @@ const LadderStandings: React.FC = () => {
   );
 
   const renderTeam = useCallback(
-    ({ item }: { item: RankedTeam }) => {
-      const pointDifference = item.totalPointDifference || 0;
-      return (
-        <TeamRow
-          onPress={() =>
-            navigation.navigate("TeamDetails", { team: item })
-          }
-        >
-          <TableCell>
-            <Rank>
-              {item.rank > 0 ? `${item.rank}${getOrdinalSuffix(item.rank)}` : "-"}
-            </Rank>
-          </TableCell>
-          <TeamCell>
-            <TeamNameCell>
-              {(item.team ?? []).map((player, idx) => (
-                <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
-              ))}
-            </TeamNameCell>
-            {recentGameResult(item.resultLog)}
-          </TeamCell>
-          <TableCell>
-            <StatTitle>PD</StatTitle>
-            <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
-              {pointDifference}
-            </Stat>
-          </TableCell>
-          <TableCell>
-            <StatTitle>Wins</StatTitle>
-            <Stat>{item.numberOfWins}</Stat>
-          </TableCell>
-        </TeamRow>
-      );
-    },
-    [recentGameResult],
+    ({ item }: { item: RankedTeam }) => (
+      <PerformanceRow
+        team={item}
+        rank={item.rank}
+        onPress={(team: TeamStats) =>
+          navigation.navigate("TeamDetails", { team })
+        }
+      />
+    ),
+    [navigation],
   );
 
   const isTeams = mode === "teams";
@@ -286,64 +250,6 @@ const HeaderTitle = styled.Text({
 
 const HeaderSpacer = styled.View({
   width: 32,
-});
-
-const TeamRow = styled.TouchableOpacity({
-  flexDirection: "row",
-  backgroundColor: "#001123",
-});
-
-const TableCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  paddingTop: 20,
-  paddingBottom: 20,
-  borderTopWidth: 1,
-  borderColor: "#262626",
-});
-
-const TeamCell = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingRight: 40,
-  width: 150,
-  borderTopWidth: 1,
-  borderColor: "#262626",
-});
-
-const TeamNameCell = styled.View({
-  justifyContent: "flex-start",
-  alignItems: "flex-start",
-  paddingTop: 20,
-  paddingBottom: 20,
-  paddingRight: 20,
-  width: 130,
-  gap: 20,
-});
-
-const PlayerName = styled.Text({
-  fontSize: 14,
-  fontWeight: "bold",
-  color: "white",
-});
-
-const Rank = styled.Text({
-  fontSize: 14,
-  color: "#00A2FF",
-  fontWeight: "bold",
-});
-
-const StatTitle = styled.Text({
-  fontSize: 14,
-  color: "#aaa",
-});
-
-const Stat = styled.Text({
-  fontSize: 20,
-  fontWeight: "bold",
-  color: "white",
 });
 
 export default LadderStandings;

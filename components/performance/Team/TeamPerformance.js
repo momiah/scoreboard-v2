@@ -66,6 +66,11 @@ const TeamPerformance = ({ leagueTeams, ladder = null }) => {
   const renderTeam = ({ item: team, index }) => {
     const pointDifference = team.totalPointDifference || 0;
     const teamPlayers = team.team ?? [];
+    // Ladders name their teams; leagues/tournaments don't, so show the
+    // players' names there.
+    const teamName = ladder
+      ? team.teamName?.trim() || teamPlayers.join(" & ")
+      : null;
 
     return (
       <TableRow
@@ -92,9 +97,13 @@ const TeamPerformance = ({ leagueTeams, ladder = null }) => {
         </TableCell>
         <TeamCell>
           <TeamNameCell>
-            {teamPlayers.map((player, idx) => (
-              <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
-            ))}
+            {ladder ? (
+              <PlayerName numberOfLines={1}>{teamName}</PlayerName>
+            ) : (
+              teamPlayers.map((player, idx) => (
+                <PlayerName key={`${player}-${idx}`}>{player}</PlayerName>
+              ))
+            )}
           </TeamNameCell>
           {recentGameResult(team.resultLog)}
         </TeamCell>

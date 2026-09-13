@@ -20,7 +20,6 @@ import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import PerformanceRow from "../performance/Player/PerformanceRow";
-import TeamPerformanceRow from "../performance/Team/TeamPerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
@@ -256,7 +255,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
             <PositionSection testID="ladder-team-summary">
               <SectionTitle>Current Position</SectionTitle>
               <PositionCard>
-                <TeamPerformanceRow
+                <PerformanceRow
                   team={userTeamRow.team}
                   rank={userTeamRow.rank}
                   onPress={(team: TeamStats) =>
