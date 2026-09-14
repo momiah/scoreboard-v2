@@ -274,6 +274,9 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
                   player={userSummaryRow.player}
                   rank={userSummaryRow.rank}
                   ladder={ladder}
+                  onPress={(selectedPlayer: ScoreboardProfile) =>
+                    navigation.navigate("PlayerDetails", { selectedPlayer })
+                  }
                 />
               </PositionCard>
             </PositionSection>
