@@ -42,6 +42,7 @@ import type {
   Ladder,
   LadderMatch,
   LadderMatchInput,
+  MatchTeam,
   Game,
   ScoreboardProfile,
   TeamStats,
@@ -695,6 +696,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       ladderId: string,
       input: LadderMatchInput,
       userId: string,
+      team?: MatchTeam,
     ): Promise<CreateLadderMatchOutcome> => {
       if (!ladderId || !userId) {
         return { success: false, ladderMatch: null };
@@ -712,6 +714,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           input,
           userId,
           ladderMatchId: matchRef.id,
+          team,
         });
         const ladderMatch: LadderMatch = {
           ladderMatchId: matchRef.id,

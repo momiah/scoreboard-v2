@@ -2,6 +2,7 @@ import type {
   Ladder,
   LadderMatch,
   LadderMatchInput,
+  MatchTeam,
   Game,
   ScoreboardProfile,
   TeamStats,
@@ -137,6 +138,7 @@ export interface LadderContextType {
     ladderId: string,
     input: LadderMatchInput,
     userId: string,
+    team?: MatchTeam,
   ) => Promise<CreateLadderMatchOutcome>;
   fetchLadderMatches: (ladderId: string) => Promise<LadderMatch[]>;
   subscribeToLadderMatches: (
