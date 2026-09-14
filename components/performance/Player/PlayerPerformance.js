@@ -128,8 +128,12 @@ const PlayerPerformance = ({ playersData, ladder = null }) => {
       rank={index < rankedCount ? index + 1 : 0}
       ladder={ladder}
       onPress={(p) => {
-        setSelectedPlayer(p);
-        setShowPlayerDetails(true);
+        if (ladder) {
+          navigation.navigate("PlayerDetails", { selectedPlayer: p });
+        } else {
+          setSelectedPlayer(p);
+          setShowPlayerDetails(true);
+        }
       }}
     />
   );
