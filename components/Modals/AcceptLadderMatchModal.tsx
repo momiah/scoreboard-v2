@@ -42,7 +42,8 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   onAccepted,
   onUnavailable,
 }) => {
-  const { acceptLadderMatch, fetchUserTeams } = useContext(LadderContext);
+  const { acceptLadderMatch, fetchUserTeams, checkLadderMembership } =
+    useContext(LadderContext);
   const { currentUser, sendNotification } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
@@ -51,6 +52,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [termsVisible, setTermsVisible] = useState(false);
   const [accepterTeam, setAccepterTeam] = useState<TeamStats | null>(null);
+  const [isLadderMember, setIsLadderMember] = useState(false);
 
   const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
 
@@ -61,6 +63,26 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
       setErrorMessage(null);
     }
   }, [modalVisible]);
+
+  // Only ladder members may accept a match. Membership is a separate join
+  // (doubles members join via their team; checkLadderMembership covers both).
+  useEffect(() => {
+    if (!modalVisible || !currentUser?.userId) {
+      setIsLadderMember(false);
+      return;
+    }
+    let active = true;
+    checkLadderMembership(ladder.ladderId, currentUser.userId)
+      .then((member) => {
+        if (active) setIsLadderMember(member);
+      })
+      .catch(() => {
+        if (active) setIsLadderMember(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [modalVisible, currentUser?.userId, ladder.ladderId, checkLadderMembership]);
 
   // Doubles accepts as a team: resolve the user's active team in this ladder.
   useEffect(() => {
@@ -110,6 +132,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   const canAccept =
     !!match &&
     !!userId &&
+    isLadderMember &&
     (isDoubles
       ? !!accepterMatchTeam &&
         canAcceptLadderMatch(match, userId, accepterMatchTeam)
@@ -150,6 +173,10 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     if (!acceptedTerms || processing || !match) return;
     if (!userId) {
       setErrorMessage("You need to be signed in to accept a match.");
+      return;
+    }
+    if (!isLadderMember) {
+      setErrorMessage("You need to join the ladder to accept a match.");
       return;
     }
 
@@ -230,6 +257,17 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
               />
               <DisclaimerText>
                 You cannot accept your own match.
+              </DisclaimerText>
+            </Disclaimer>
+          ) : !isLadderMember ? (
+            <Disclaimer testID="accept-ladder-not-member">
+              <Ionicons
+                name="information-circle-outline"
+                size={18}
+                color="#FFA500"
+              />
+              <DisclaimerText>
+                You need to join the ladder to accept a match.
               </DisclaimerText>
             </Disclaimer>
           ) : isDoubles && !accepterTeam ? (

@@ -93,6 +93,14 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   };
 
   const handleAcceptPress = (match: LadderMatch) => {
+    if (!isSignedIn) {
+      navigation.navigate("Login");
+      return;
+    }
+    if (!isParticipant && !membershipChecking) {
+      showBottomToast("Join the ladder to accept a match", "info");
+      return;
+    }
     setSelectedMatch(match);
     setAcceptModalVisible(true);
   };
