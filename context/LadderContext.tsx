@@ -30,6 +30,8 @@ import {
   normalizeLadderStatus,
   canAcceptLadderMatch,
   buildAcceptedLadderMatch,
+  canTeamAcceptLadderMatch,
+  buildTeamAcceptedLadderMatch,
   addLadderMatchCheckIn,
   getLadderCheckedInUserIds,
   notificationTypes,
@@ -904,6 +906,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       ladderId: string,
       matchId: string,
       userId: string,
+      team?: MatchTeam,
     ): Promise<AcceptLadderMatchOutcome> => {
       if (!ladderId || !matchId || !userId) {
         return { success: false };
@@ -929,11 +932,24 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             ladderMatchId: snap.id,
           };
 
-          if (!canAcceptLadderMatch(match, userId)) {
-            throw new AcceptLadderMatchError("CANNOT_ACCEPT");
+          if (team) {
+            // Doubles: the accepting team joins as the second side.
+            if (!canTeamAcceptLadderMatch(match, team.playerIds)) {
+              throw new AcceptLadderMatchError("CANNOT_ACCEPT");
+            }
+            transaction.update(
+              matchRef,
+              buildTeamAcceptedLadderMatch(match, team, userId),
+            );
+          } else {
+            if (!canAcceptLadderMatch(match, userId)) {
+              throw new AcceptLadderMatchError("CANNOT_ACCEPT");
+            }
+            transaction.update(
+              matchRef,
+              buildAcceptedLadderMatch(match, userId),
+            );
           }
-
-          transaction.update(matchRef, buildAcceptedLadderMatch(match, userId));
         });
 
         return { success: true };

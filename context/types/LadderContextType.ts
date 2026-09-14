@@ -150,6 +150,7 @@ export interface LadderContextType {
     ladderId: string,
     matchId: string,
     userId: string,
+    team?: MatchTeam,
   ) => Promise<AcceptLadderMatchOutcome>;
   checkInLadderMatch: (
     ladderId: string,

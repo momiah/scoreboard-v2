@@ -50,10 +50,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  // Completed matches, or ones whose play date/time has passed, read as done:
-  // dimmed but still pressable (view result / report late). The flat header
-  // variant keeps full contrast.
-  const dimmed = !flat && (isCompleted || isMatchStarted(match));
+  const isPosted = match.matchStatus === LADDER_MATCH_STATUS.POSTED;
+  // Completed matches, or accepted ones whose play date/time has passed, read as
+  // done: dimmed but still pressable (view result / report late). A still-open
+  // posted match stays full contrast even past its time so it reads as
+  // acceptable. The flat header variant always keeps full contrast.
+  const dimmed = !flat && (isCompleted || (isMatchStarted(match) && !isPosted));
 
   const showStatus = showProgress || !!checkin;
   const tagStatus = !showStatus ? null : checkin &&

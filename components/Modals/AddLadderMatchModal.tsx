@@ -316,17 +316,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                 <ModalTitle>Post a Match</ModalTitle>
                 <Subtitle>{ladder.name}</Subtitle>
 
-                {isDoubles && (
-                  <TeamPostingRow testID="add-ladder-match-team">
-                    <Ionicons name="people" size={16} color="#00A2FF" />
-                    <TeamPostingText numberOfLines={1}>
-                      {posterTeam
-                        ? `Posting as ${posterTeam.teamName?.trim() || (posterTeam.team ?? []).join(" & ")}`
-                        : "You need an active team in this ladder to post"}
-                    </TeamPostingText>
-                  </TeamPostingRow>
-                )}
-
                 <Label style={{ marginLeft: 5 }}>Court</Label>
                 <CourtSelector
                   testID="add-ladder-match-court-selector"
@@ -546,25 +535,6 @@ const Label = styled.Text({
   fontSize: 14,
   fontWeight: "bold",
   marginBottom: 6,
-});
-
-const TeamPostingRow = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 8,
-  paddingHorizontal: 12,
-  paddingVertical: 8,
-  marginHorizontal: 9,
-  marginBottom: 16,
-  borderRadius: 8,
-  backgroundColor: "rgba(0, 162, 255, 0.1)",
-});
-
-const TeamPostingText = styled.Text({
-  color: "#cbd5e1",
-  fontSize: 13,
-  fontWeight: "600",
-  flexShrink: 1,
 });
 
 const ErrorText = styled.Text({
