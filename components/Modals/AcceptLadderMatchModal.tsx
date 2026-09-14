@@ -7,7 +7,6 @@ import { AntDesign } from "@expo/vector-icons";
 
 import {
   canAcceptLadderMatch,
-  canTeamAcceptLadderMatch,
   notificationSchema,
   notificationTypes,
   LADDER_TYPE,
@@ -98,14 +97,22 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
 
   const userId = currentUser?.userId;
   const accepterPlayerIds = accepterTeam ? teamMemberIds(accepterTeam) : [];
+  const accepterMatchTeam: MatchTeam | undefined =
+    isDoubles && accepterTeam?.teamId && accepterPlayerIds.length >= 2
+      ? {
+          teamId: accepterTeam.teamId,
+          teamKey: accepterTeam.teamKey,
+          playerIds: accepterPlayerIds,
+        }
+      : undefined;
   const isOwnMatch =
     !!match && !!userId && match.participants.includes(userId);
   const canAccept =
     !!match &&
     !!userId &&
     (isDoubles
-      ? accepterPlayerIds.length >= 2 &&
-        canTeamAcceptLadderMatch(match, accepterPlayerIds)
+      ? !!accepterMatchTeam &&
+        canAcceptLadderMatch(match, userId, accepterMatchTeam)
       : canAcceptLadderMatch(match, userId));
 
   const handleOpenMap = () => {
@@ -146,24 +153,14 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
       return;
     }
 
-    let matchTeam: MatchTeam | undefined;
-    if (isDoubles) {
-      if (!accepterTeam?.teamId || accepterPlayerIds.length < 2) {
-        setErrorMessage(
-          "You need an active team in this ladder to accept this match.",
-        );
-        return;
-      }
-      if (!canTeamAcceptLadderMatch(match, accepterPlayerIds)) {
-        setErrorMessage("This match can no longer be accepted.");
-        return;
-      }
-      matchTeam = {
-        teamId: accepterTeam.teamId,
-        teamKey: accepterTeam.teamKey,
-        playerIds: accepterPlayerIds,
-      };
-    } else if (!canAcceptLadderMatch(match, userId)) {
+    const matchTeam = isDoubles ? accepterMatchTeam : undefined;
+    if (isDoubles && !matchTeam) {
+      setErrorMessage(
+        "You need an active team in this ladder to accept this match.",
+      );
+      return;
+    }
+    if (!canAcceptLadderMatch(match, userId, matchTeam)) {
       setErrorMessage("This match can no longer be accepted.");
       return;
     }
