@@ -11,9 +11,10 @@ import {
   LADDER_TYPE,
   COMPETITION_TYPES,
 } from "@shared";
-import type { LadderMatch, Game, Player } from "@shared/types";
+import type { LadderMatch, Game, GameTeam, Player } from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
+import { LadderContext } from "../../context/LadderContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
@@ -48,6 +49,12 @@ const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
   undecided: "#64748b",
 };
 
+type LobbyGameTeam = GameTeam & { teamName?: string };
+type LobbyGame = Omit<Game, "team1" | "team2"> & {
+  team1: LobbyGameTeam;
+  team2: LobbyGameTeam;
+};
+
 const GameLobby: React.FC<GameLobbyProps> = ({
   ladderId,
   ladderName,
@@ -56,10 +63,12 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   checkedIn,
 }) => {
   const { getUserById, currentUser } = useContext(UserContext);
+  const { fetchLadderTeams } = useContext(LadderContext);
   const { showBottomToast } = useContext(PopupContext);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [players, setPlayers] = useState<ParticipantProfile[]>([]);
+  const [teamNameByKey, setTeamNameByKey] = useState<Record<string, string>>({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
 
@@ -90,15 +99,39 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
 
-  const user = players.find((p) => p.userId === currentUserId);
-  const opponents = players.filter((p) => p.userId !== currentUserId);
-  const leftNames = user ? [formatDisplayName(user)] : ["You"];
-  const rightNames =
-    opponents.length > 0
-      ? opponents.map((p) => formatDisplayName(p))
-      : ["Opponent"];
+  const isDoubles =
+    match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
+  const matchTeams = match.teams ?? [];
+  const hasTwoTeams = isDoubles && matchTeams.length === 2;
 
-  const isDoubles = match.participants.length > 2;
+  // Doubles: fetch the ladder's team names so the score bar and shells show the
+  // team, not the players (MatchTeam carries only ids).
+  useEffect(() => {
+    if (!isDoubles || matchTeams.length === 0) {
+      setTeamNameByKey({});
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const teams = await fetchLadderTeams(ladderId);
+        const map: Record<string, string> = {};
+        teams.forEach((t) => {
+          if (t.teamKey) {
+            map[t.teamKey] =
+              t.teamName?.trim() || (t.team ?? []).join(" & ");
+          }
+        });
+        if (active) setTeamNameByKey(map);
+      } catch (error) {
+        console.error("Error loading ladder team names:", error);
+        if (active) setTeamNameByKey({});
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [isDoubles, matchTeams.length, ladderId, fetchLadderTeams]);
 
   const toPlayerCell = (p?: ParticipantProfile): Player | null =>
     p
@@ -111,20 +144,88 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         }
       : null;
 
-  const gamesWithPlayers: Game[] = match.games.map((game) => {
-    if (game.team1?.player1 || game.team2?.player1) return game;
+  const profileById = new Map(players.map((p) => [p.userId, p]));
+  const teamKeyByPlayer = new Map<string, string>();
+  matchTeams.forEach((t) =>
+    t.playerIds.forEach((id) => teamKeyByPlayer.set(id, t.teamKey)),
+  );
+  const teamNameForCells = (team?: GameTeam): string => {
+    const uid = team?.player1?.userId ?? team?.player2?.userId ?? undefined;
+    const key = uid ? teamKeyByPlayer.get(uid) : undefined;
+    return key ? (teamNameByKey[key] ?? "Team") : "";
+  };
+
+  // Group the two sides. Doubles shows the current user's team on the left
+  // (matching the viewer-relative score), the opponent team on the right.
+  const userTeamIdx = hasTwoTeams
+    ? Math.max(
+        0,
+        matchTeams.findIndex((t) =>
+          t.playerIds.includes(currentUserId ?? ""),
+        ),
+      )
+    : -1;
+  const userTeam = hasTwoTeams ? matchTeams[userTeamIdx] : undefined;
+  const opponentTeam = hasTwoTeams
+    ? matchTeams[userTeamIdx === 0 ? 1 : 0]
+    : undefined;
+  const teamNameByKeyLookup = (key?: string): string =>
+    key ? (teamNameByKey[key] ?? "Team") : "";
+
+  const user = players.find((p) => p.userId === currentUserId);
+  const opponents = players.filter((p) => p.userId !== currentUserId);
+  const leftNames = hasTwoTeams
+    ? [teamNameByKeyLookup(userTeam?.teamKey)]
+    : user
+      ? [formatDisplayName(user)]
+      : ["You"];
+  const rightNames = hasTwoTeams
+    ? [teamNameByKeyLookup(opponentTeam?.teamKey)]
+    : opponents.length > 0
+      ? opponents.map((p) => formatDisplayName(p))
+      : ["Opponent"];
+
+  const gamesWithPlayers: LobbyGame[] = match.games.map((game) => {
+    const filled = !!(game.team1?.player1 || game.team2?.player1);
+
+    let team1: GameTeam = game.team1;
+    let team2: GameTeam = game.team2;
+    if (!filled) {
+      if (hasTwoTeams) {
+        const userCells = (userTeam?.playerIds ?? []).map((id) =>
+          toPlayerCell(profileById.get(id)),
+        );
+        const oppCells = (opponentTeam?.playerIds ?? []).map((id) =>
+          toPlayerCell(profileById.get(id)),
+        );
+        team1 = {
+          ...game.team1,
+          player1: userCells[0] ?? null,
+          player2: userCells[1] ?? null,
+        };
+        team2 = {
+          ...game.team2,
+          player1: oppCells[0] ?? null,
+          player2: oppCells[1] ?? null,
+        };
+      } else {
+        team1 = { ...game.team1, player1: toPlayerCell(user), player2: null };
+        team2 = {
+          ...game.team2,
+          player1: toPlayerCell(opponents[0]),
+          player2: isDoubles ? toPlayerCell(opponents[1]) : null,
+        };
+      }
+    }
+
     return {
       ...game,
-      team1: {
-        ...game.team1,
-        player1: toPlayerCell(user),
-        player2: null,
-      },
-      team2: {
-        ...game.team2,
-        player1: toPlayerCell(opponents[0]),
-        player2: isDoubles ? toPlayerCell(opponents[1]) : null,
-      },
+      team1: hasTwoTeams
+        ? { ...team1, teamName: teamNameForCells(team1) }
+        : team1,
+      team2: hasTwoTeams
+        ? { ...team2, teamName: teamNameForCells(team2) }
+        : team2,
     };
   });
 

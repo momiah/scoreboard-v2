@@ -8,7 +8,7 @@ import type { LadderMatch } from "@shared/types";
 
 import {
   formatMatchDateShort,
-  isMatchStarted,
+  isMatchDayPassed,
 } from "../../helpers/ladderMatchTime";
 import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
 import { formatCurrency } from "../../helpers/formatCurrency";
@@ -51,11 +51,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const isPosted = match.matchStatus === LADDER_MATCH_STATUS.POSTED;
-  // Completed matches, or accepted ones whose play date/time has passed, read as
-  // done: dimmed but still pressable (view result / report late). A still-open
-  // posted match stays full contrast even past its time so it reads as
-  // acceptable. The flat header variant always keeps full contrast.
-  const dimmed = !flat && (isCompleted || (isMatchStarted(match) && !isPosted));
+  // Completed matches, or accepted ones whose play date has passed (a prior
+  // day), read as done: dimmed but still pressable (view result / report late).
+  // A match scheduled for today stays full contrast all day, and a still-open
+  // posted match never dims. The flat header variant always keeps full contrast.
+  const dimmed = !flat && (isCompleted || (isMatchDayPassed(match) && !isPosted));
 
   const showStatus = showProgress || !!checkin;
   const tagStatus = !showStatus ? null : checkin &&
