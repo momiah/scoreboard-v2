@@ -73,6 +73,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   const [showCheckin, setShowCheckin] = useState(false);
   const [court, setCourt] = useState<Court>(match.court);
   const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const runIdRef = useRef(0);
 
   const address = formatCourtAddress(court);
@@ -84,6 +85,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 
     let result: VerifyStatus = "failed";
     let measured: number | null = null;
+    let denied = false;
     try {
       let targetCourt = match.court;
       try {
@@ -106,7 +108,9 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
         result = "verified";
       } else {
         const { granted } = await Location.requestForegroundPermissionsAsync();
-        if (granted) {
+        if (!granted) {
+          denied = true;
+        } else {
           const position = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.High,
           });
@@ -141,6 +145,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
 
     if (runIdRef.current === runId) {
       setDistanceMeters(measured);
+      setPermissionDenied(denied);
       setStatus(result);
     }
   };
@@ -210,13 +215,19 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
             {status === "failed" && (
               <StatusBlock testID="location-verifier-failed">
                 <Ionicons name="location-outline" size={48} color="#FF4B6E" />
-                <SectionTitle>Location not verified</SectionTitle>
+                <SectionTitle>
+                  {permissionDenied
+                    ? "Location access needed"
+                    : "Location not verified"}
+                </SectionTitle>
                 <ErrorText>
-                  You are not in the right location to check in, please ensure
-                  you have arrived at the correct address
-                  {distanceMeters !== null
-                    ? ` — you're about ${distanceMeters}m away (need to be within ${CHECKIN_RADIUS_METERS}m).`
-                    : "."}
+                  {permissionDenied
+                    ? "Allow location access for this app, then check again — we use it to confirm you've arrived at the court."
+                    : `You are not in the right location to check in, please ensure you have arrived at the correct address${
+                        distanceMeters !== null
+                          ? ` — you're about ${distanceMeters}m away (need to be within ${CHECKIN_RADIUS_METERS}m).`
+                          : "."
+                      }`}
                 </ErrorText>
                 {!!address && (
                   <AddressLink
@@ -238,6 +249,18 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                   <Ionicons name="refresh" size={16} color="#00A2FF" />
                   <RetryText>Check again</RetryText>
                 </RetryButton>
+                {__DEV__ && (
+                  <RetryButton
+                    onPress={() => setStatus("verified")}
+                    activeOpacity={0.8}
+                    testID="location-verifier-dev-bypass"
+                  >
+                    <Ionicons name="construct-outline" size={16} color="#FFA500" />
+                    <RetryText style={{ color: "#FFA500" }}>
+                      Check in anyway (dev only)
+                    </RetryText>
+                  </RetryButton>
+                )}
               </StatusBlock>
             )}
 
