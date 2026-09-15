@@ -14,30 +14,39 @@ const getOrdinalSuffix = (num) => {
   return "th";
 };
 
+const teamLabel = (team) =>
+  team.teamName?.trim() || (team.team ?? []).join(" & ");
+
 /**
- * @param {{ player: any, rank: number, onPress?: any, ladder?: any, cp?: number }} props
+ * Ladder/competition standings row, rendered for either a player or a team.
+ * A team shows its name and no rank medal (teams only earn per-ladder CP).
+ * @param {{ player?: any, team?: any, rank: number, onPress?: any, ladder?: any }} props
  */
 const PerformanceRow = ({
   player,
+  team,
   rank,
   onPress = null,
   ladder = null,
-  cp = 0,
 }) => {
   const { findRankIndex, recentGameResult, recentMatchResult } =
     useContext(GameContext);
 
+  const isTeam = !!team;
+  const entity = team || player;
   const isLadder = !!ladder;
-  const playerXp = player.XP || 0;
-  const pointDifference = player.totalPointDifference || 0;
+  const pointDifference = entity.totalPointDifference || 0;
+  const displayName = isTeam
+    ? teamLabel(team)
+    : formatDisplayName(player) || player.username || "";
+  const playerXp = player?.XP || 0;
   const rankLevel = findRankIndex(playerXp) + 1;
-  const displayName = formatDisplayName(player) || player.username || "";
 
   return (
     <TableRow
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
-      onPress={onPress ? () => onPress(player) : undefined}
+      onPress={onPress ? () => onPress(entity) : undefined}
     >
       <TableCell>
         <Rank>{rank > 0 ? `${rank}${getOrdinalSuffix(rank)}` : "-"}</Rank>
@@ -46,13 +55,13 @@ const PerformanceRow = ({
       <PlayerNameCell>
         <PlayerName numberOfLines={1}>{displayName}</PlayerName>
         {isLadder
-          ? recentMatchResult(player.ladderResultLog ?? [])
-          : recentGameResult(player.resultLog ?? [])}
+          ? recentMatchResult(entity.matchResultLog ?? [])
+          : recentGameResult(entity.resultLog ?? [])}
       </PlayerNameCell>
 
       <TableCell>
         <StatTitle>Wins</StatTitle>
-        <Stat>{player.numberOfWins ?? 0}</Stat>
+        <Stat>{entity.numberOfWins ?? 0}</Stat>
       </TableCell>
 
       <TableCell>
@@ -65,14 +74,16 @@ const PerformanceRow = ({
       {isLadder && (
         <TableCell>
           <StatTitle>CP</StatTitle>
-          <Stat>{cp ?? 0}</Stat>
+          <Stat>{entity.competitionXP ?? 0}</Stat>
         </TableCell>
       )}
 
-      <TableCell>
-        <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
-        <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
-      </TableCell>
+      {!isTeam && (
+        <TableCell>
+          <MedalDisplay xp={playerXp.toFixed(0)} size={45} />
+          <Stat style={{ fontSize: 12 }}>{rankLevel}</Stat>
+        </TableCell>
+      )}
     </TableRow>
   );
 };

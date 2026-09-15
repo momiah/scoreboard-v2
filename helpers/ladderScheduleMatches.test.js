@@ -75,15 +75,48 @@ describe("getMyScheduleMatches", () => {
 });
 
 describe("getOpenMatchmakingMatches", () => {
+  const NOW = new Date(2025, 4, 10, 12, 0, 0); // 10-05-2025 midday
+
   it("keeps only posted matches, preserving order", () => {
     const matches = [
-      makeMatch({ ladderMatchId: "p1", matchStatus: "posted" }),
-      makeMatch({ ladderMatchId: "a1", matchStatus: "accepted" }),
-      makeMatch({ ladderMatchId: "p2", matchStatus: "posted" }),
+      makeMatch({ ladderMatchId: "p1", matchStatus: "posted", matchDate: "10-05-2025" }),
+      makeMatch({ ladderMatchId: "a1", matchStatus: "accepted", matchDate: "10-05-2025" }),
+      makeMatch({ ladderMatchId: "p2", matchStatus: "posted", matchDate: "11-05-2025" }),
     ];
-    expect(getOpenMatchmakingMatches(matches).map((m) => m.ladderMatchId)).toEqual([
-      "p1",
-      "p2",
-    ]);
+    expect(
+      getOpenMatchmakingMatches(matches, NOW).map((m) => m.ladderMatchId),
+    ).toEqual(["p1", "p2"]);
+  });
+
+  it("hides posted matches whose day is in the past", () => {
+    const matches = [
+      makeMatch({ ladderMatchId: "yesterday", matchDate: "09-05-2025" }),
+      makeMatch({ ladderMatchId: "today", matchDate: "10-05-2025" }),
+      makeMatch({ ladderMatchId: "tomorrow", matchDate: "11-05-2025" }),
+    ];
+    expect(
+      getOpenMatchmakingMatches(matches, NOW).map((m) => m.ladderMatchId),
+    ).toEqual(["today", "tomorrow"]);
+  });
+
+  it("keeps a match posted for today all day, regardless of start time", () => {
+    const matches = [
+      makeMatch({
+        ladderMatchId: "today-morning-slot",
+        matchDate: "10-05-2025",
+        matchTime: { start: "08:00" },
+      }),
+    ];
+    // NOW is midday, past the 08:00 slot, but it is still today → visible.
+    expect(
+      getOpenMatchmakingMatches(matches, NOW).map((m) => m.ladderMatchId),
+    ).toEqual(["today-morning-slot"]);
+  });
+
+  it("keeps posted matches with an unparseable date (defensive)", () => {
+    const matches = [makeMatch({ ladderMatchId: "bad", matchDate: "" })];
+    expect(
+      getOpenMatchmakingMatches(matches, NOW).map((m) => m.ladderMatchId),
+    ).toEqual(["bad"]);
   });
 });

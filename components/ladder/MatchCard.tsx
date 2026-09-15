@@ -6,7 +6,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
-import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
+import {
+  formatMatchDateShort,
+  isMatchDayPassed,
+} from "../../helpers/ladderMatchTime";
 import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
@@ -47,6 +50,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
+  const isPosted = match.matchStatus === LADDER_MATCH_STATUS.POSTED;
+  // Completed matches, or accepted ones whose play date has passed (a prior
+  // day), read as done: dimmed but still pressable (view result / report late).
+  // A match scheduled for today stays full contrast all day, and a still-open
+  // posted match never dims. The flat header variant always keeps full contrast.
+  const dimmed = !flat && (isCompleted || (isMatchDayPassed(match) && !isPosted));
 
   const showStatus = showProgress || !!checkin;
   const tagStatus = !showStatus ? null : checkin &&
@@ -83,10 +92,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
   return (
     <Card
       testID={testID}
-      activeOpacity={0.8}
+      activeOpacity={dimmed ? 0.55 : 0.8}
       isFlat={flat}
       disabled={!onPress}
       onPress={() => onPress?.(match)}
+      style={dimmed ? { opacity: 0.55 } : undefined}
     >
       <HeaderRow flat={flat}>
         <Info>

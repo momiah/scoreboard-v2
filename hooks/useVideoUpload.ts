@@ -128,6 +128,7 @@ export const useVideoUpload = ({
       postedBy,
       teams,
       videoLength,
+      matchId,
     }: StartBackgroundUploadParams) => {
       const db = getFirestore();
       const pendingDocRef = doc(
@@ -163,6 +164,7 @@ export const useVideoUpload = ({
           postedBy,
           teams,
           videoLength: videoLength ?? null,
+          ...(matchId ? { matchId } : {}),
           status: "uploading",
           progress: 0,
           platform: Platform.OS,
@@ -234,6 +236,7 @@ export const useVideoUpload = ({
                 postedBy,
                 teams,
                 videoLength,
+                ...(matchId ? { matchId } : {}),
               });
               await deleteDoc(pendingDocRef);
               finalized = true;

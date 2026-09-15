@@ -24,12 +24,16 @@ import {
   SHUTTLE_TYPE,
   PLATFORM_FEE,
   COMPETITION_TYPES,
+  LADDER_TYPE,
+  TEAM_STATUS,
 } from "@shared";
 import type {
   Court,
   Ladder,
   LadderMatchInput,
+  MatchTeam,
   ShuttleType,
+  TeamStats,
 } from "@shared/types";
 
 import DatePicker from "../DatePicker";
@@ -43,6 +47,7 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { toMoment } from "../../helpers/ladderPhases";
+import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -78,7 +83,8 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   setModalVisible,
   ladder,
 }) => {
-  const { createLadderMatch, addCourtToLadder } = useContext(LadderContext);
+  const { createLadderMatch, addCourtToLadder, fetchUserTeams } =
+    useContext(LadderContext);
   const { getCourts, addCourt } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
@@ -90,8 +96,38 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [termsVisible, setTermsVisible] = useState(false);
+  const [posterTeam, setPosterTeam] = useState<TeamStats | null>(null);
+
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
 
   const playoffStartDate = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
+
+  // Doubles posts on behalf of the user's active team in this ladder. Resolve it
+  // when the modal opens so the fixture can record both sides.
+  useEffect(() => {
+    if (!modalVisible || !isDoubles || !currentUser?.userId) {
+      setPosterTeam(null);
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const teams = await fetchUserTeams(currentUser.userId);
+        const team = teams.find(
+          (t) =>
+            t.status === TEAM_STATUS.ACTIVE &&
+            (t.ladderIds ?? []).includes(ladder.ladderId),
+        );
+        if (active) setPosterTeam(team ?? null);
+      } catch (error) {
+        console.error("Error resolving poster team:", error);
+        if (active) setPosterTeam(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [modalVisible, isDoubles, currentUser?.userId, ladder.ladderId, fetchUserTeams]);
 
   const allowedCourtIdsRef = useRef<string[]>([]);
   const courtsRef = useRef<Court[]>([]);
@@ -205,6 +241,22 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       return;
     }
 
+    let matchTeam: MatchTeam | undefined;
+    if (isDoubles) {
+      const playerIds = posterTeam ? teamMemberIds(posterTeam) : [];
+      if (!posterTeam?.teamId || playerIds.length < 2) {
+        setErrorMessage(
+          "You need an active team in this ladder to post a doubles match.",
+        );
+        return;
+      }
+      matchTeam = {
+        teamId: posterTeam.teamId,
+        teamKey: posterTeam.teamKey,
+        playerIds,
+      };
+    }
+
     const input: LadderMatchInput = {
       court: selectedCourt,
       bestOf: data.bestOf,
@@ -222,6 +274,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
         ladder.ladderId,
         input,
         currentUser.userId,
+        matchTeam,
       );
       if (success) {
         showBottomToast("Match posted", "success");
@@ -235,7 +288,11 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   };
 
   const confirmDisabled =
-    submitting || !selectedCourt || !startDate || !acceptedTerms;
+    submitting ||
+    !selectedCourt ||
+    !startDate ||
+    !acceptedTerms ||
+    (isDoubles && !posterTeam);
 
   return (
     <Modal

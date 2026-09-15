@@ -102,6 +102,10 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
   };
 
   const handleCompetitionPress = () => {
+    if (video?.competitionType === COMPETITION_TYPES.LADDER) {
+      navigation.navigate("Ladder", { ladderId: video?.competitionId });
+      return;
+    }
     const route =
       video?.competitionType === COMPETITION_TYPES.TOURNAMENT
         ? "Tournament"
@@ -127,7 +131,8 @@ const GameVideoCard: React.FC<GameVideoCardProps> = ({
     profileVideoTab === "Uploaded" ||
     profileVideoTab === "Videos of Me" ||
     competitionPage ||
-    isOwnVideo;
+    isOwnVideo ||
+    video?.competitionType === COMPETITION_TYPES.LADDER;
 
   // ── Show header row ───────────────────────────────────────────────────────
   const showHeader =

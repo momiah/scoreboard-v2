@@ -69,4 +69,34 @@ describe("buildLadderMatchDocument", () => {
     const doc = buildLadderMatchDocument({ input, userId: "u1" });
     expect("ladderMatchId" in doc).toBe(false);
   });
+
+  it("singles: no teams or ladderType fields", () => {
+    const doc = buildLadderMatchDocument({ input, userId: "u1" });
+    expect("teams" in doc).toBe(false);
+    expect("ladderType" in doc).toBe(false);
+  });
+
+  const team = {
+    teamId: "team-a",
+    teamKey: "u1_u2",
+    playerIds: ["u1", "u2"],
+  };
+
+  it("doubles: seeds the team's players as participants", () => {
+    const doc = buildLadderMatchDocument({ input, userId: "u1", team });
+    expect(doc.participants).toEqual(["u1", "u2"]);
+    expect(doc.createdBy).toBe("u1");
+  });
+
+  it("doubles: records teams[0] and Doubles ladderType", () => {
+    const doc = buildLadderMatchDocument({ input, userId: "u1", team });
+    expect(doc.teams).toEqual([team]);
+    expect(doc.ladderType).toBe("Doubles");
+  });
+
+  it("doubles: does not mutate the team's playerIds", () => {
+    const doc = buildLadderMatchDocument({ input, userId: "u1", team });
+    doc.participants.push("u3");
+    expect(team.playerIds).toEqual(["u1", "u2"]);
+  });
 });
