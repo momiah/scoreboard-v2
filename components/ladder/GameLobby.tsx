@@ -11,10 +11,18 @@ import {
   LADDER_TYPE,
   COMPETITION_TYPES,
 } from "@shared";
-import type { LadderMatch, Game, GameTeam, Player } from "@shared/types";
+import type {
+  LadderMatch,
+  Game,
+  GameTeam,
+  Player,
+  ScoreboardProfile,
+  TeamStats,
+} from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
+import { GameContext } from "../../context/GameContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
@@ -63,12 +71,19 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   checkedIn,
 }) => {
   const { getUserById, currentUser } = useContext(UserContext);
-  const { fetchLadderTeams } = useContext(LadderContext);
+  const { fetchLadderTeams, fetchLadderParticipants } =
+    useContext(LadderContext);
+  const { findRankIndex } = useContext(GameContext);
   const { showBottomToast } = useContext(PopupContext);
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [players, setPlayers] = useState<ParticipantProfile[]>([]);
-  const [teamNameByKey, setTeamNameByKey] = useState<Record<string, string>>({});
+  const [ladderTeamByKey, setLadderTeamByKey] = useState<
+    Record<string, TeamStats>
+  >({});
+  const [participantByUserId, setParticipantByUserId] = useState<
+    Record<string, ScoreboardProfile>
+  >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
 
@@ -104,34 +119,61 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   const matchTeams = match.teams ?? [];
   const hasTwoTeams = isDoubles && matchTeams.length === 2;
 
-  // Doubles: fetch the ladder's team names so the score bar and shells show the
-  // team, not the players (MatchTeam carries only ids).
+  // Doubles: fetch the ladder's teams (by teamKey) so the score bar, shells and
+  // team headers can show the team name/photo and link to the team page —
+  // MatchTeam carries only ids.
   useEffect(() => {
     if (!isDoubles || matchTeams.length === 0) {
-      setTeamNameByKey({});
+      setLadderTeamByKey({});
       return;
     }
     let active = true;
     (async () => {
       try {
         const teams = await fetchLadderTeams(ladderId);
-        const map: Record<string, string> = {};
+        const map: Record<string, TeamStats> = {};
         teams.forEach((t) => {
-          if (t.teamKey) {
-            map[t.teamKey] =
-              t.teamName?.trim() || (t.team ?? []).join(" & ");
-          }
+          if (t.teamKey) map[t.teamKey] = t;
         });
-        if (active) setTeamNameByKey(map);
+        if (active) setLadderTeamByKey(map);
       } catch (error) {
-        console.error("Error loading ladder team names:", error);
-        if (active) setTeamNameByKey({});
+        console.error("Error loading ladder teams:", error);
+        if (active) setLadderTeamByKey({});
       }
     })();
     return () => {
       active = false;
     };
   }, [isDoubles, matchTeams.length, ladderId, fetchLadderTeams]);
+
+  // Singles: fetch the ladder participant docs so a check-in row can open the
+  // player's ladder profile (per-ladder stats), not their global profile.
+  useEffect(() => {
+    if (isDoubles) {
+      setParticipantByUserId({});
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const rows = await fetchLadderParticipants(ladderId);
+        const map: Record<string, ScoreboardProfile> = {};
+        rows.forEach((p) => {
+          if (p.userId) map[p.userId] = p;
+        });
+        if (active) setParticipantByUserId(map);
+      } catch (error) {
+        console.error("Error loading ladder participants:", error);
+        if (active) setParticipantByUserId({});
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [isDoubles, ladderId, fetchLadderParticipants]);
+
+  const teamName = (t?: TeamStats): string =>
+    t ? t.teamName?.trim() || (t.team ?? []).join(" & ") : "Team";
 
   const toPlayerCell = (p?: ParticipantProfile): Player | null =>
     p
@@ -152,7 +194,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   const teamNameForCells = (team?: GameTeam): string => {
     const uid = team?.player1?.userId ?? team?.player2?.userId ?? undefined;
     const key = uid ? teamKeyByPlayer.get(uid) : undefined;
-    return key ? (teamNameByKey[key] ?? "Team") : "";
+    return key ? teamName(ladderTeamByKey[key]) : "";
   };
 
   // Group the two sides. Doubles shows the current user's team on the left
@@ -169,18 +211,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   const opponentTeam = hasTwoTeams
     ? matchTeams[userTeamIdx === 0 ? 1 : 0]
     : undefined;
-  const teamNameByKeyLookup = (key?: string): string =>
-    key ? (teamNameByKey[key] ?? "Team") : "";
+  const teamForKey = (key?: string): TeamStats | undefined =>
+    key ? ladderTeamByKey[key] : undefined;
 
   const user = players.find((p) => p.userId === currentUserId);
   const opponents = players.filter((p) => p.userId !== currentUserId);
   const leftNames = hasTwoTeams
-    ? [teamNameByKeyLookup(userTeam?.teamKey)]
+    ? [teamName(teamForKey(userTeam?.teamKey))]
     : user
       ? [formatDisplayName(user)]
       : ["You"];
   const rightNames = hasTwoTeams
-    ? [teamNameByKeyLookup(opponentTeam?.teamKey)]
+    ? [teamName(teamForKey(opponentTeam?.teamKey))]
     : opponents.length > 0
       ? opponents.map((p) => formatDisplayName(p))
       : ["Opponent"];
@@ -264,6 +306,62 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     setGameModalVisible(true);
   };
 
+  // A check-in row opens a player's profile: doubles → global profile (the
+  // ladder ranks the team), singles → their ladder profile.
+  const openPlayer = (userId?: string) => {
+    if (!userId) return;
+    if (!isDoubles) {
+      const participant = participantByUserId[userId];
+      if (participant) {
+        navigation.navigate("PlayerDetails", { selectedPlayer: participant });
+        return;
+      }
+    }
+    navigation.navigate("UserProfile", { userId });
+  };
+
+  const openTeam = (teamId?: string) => {
+    if (teamId) navigation.navigate("TeamDetails", { teamId });
+  };
+
+  const renderCheckinRow = (
+    player: ParticipantProfile,
+    onPress: () => void,
+    nested = false,
+  ) => {
+    const xp = player.profileDetail?.XP ?? 0;
+    const rankLevel = findRankIndex(xp) + 1;
+    const isCheckedIn =
+      isCompleted || hasUserCheckedIn(match, player.userId);
+    return (
+      <PlayerRow
+        key={player.userId}
+        activeOpacity={0.7}
+        nested={nested}
+        onPress={onPress}
+        testID={`checkin-${player.userId}`}
+      >
+        <Avatar
+          source={
+            player.profileImage ? { uri: player.profileImage } : ccDefaultImage
+          }
+        />
+        <PlayerName numberOfLines={1}>{formatDisplayName(player)}</PlayerName>
+        <StatusBadge isCheckedIn={isCheckedIn}>
+          <Dot isCheckedIn={isCheckedIn} />
+          <CheckText isCheckedIn={isCheckedIn}>
+            {isCheckedIn ? "Checked In" : "Not checked In"}
+          </CheckText>
+        </StatusBadge>
+        <MedalCol>
+          <MedalDisplay xp={xp} size={40} />
+          <RankLevel>{rankLevel}</RankLevel>
+        </MedalCol>
+        <Ionicons name="chevron-forward" size={16} color="#46596e" />
+      </PlayerRow>
+    );
+  };
+
   return (
     <Screen>
       <ScrollView
@@ -276,38 +374,52 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
           {players.length === 0 ? (
             <MutedText>Waiting for an opponent to accept.</MutedText>
-          ) : (
+          ) : hasTwoTeams ? (
             <PlayerList>
-              {players.map((player) => {
-                const xp = player.profileDetail?.XP ?? 0;
-                const isCheckedIn =
-                  isCompleted || hasUserCheckedIn(match, player.userId);
+              {matchTeams.map((mt) => {
+                const teamDoc = ladderTeamByKey[mt.teamKey];
+                const roster = mt.playerIds
+                  .map((id) => players.find((p) => p.userId === id))
+                  .filter((p): p is ParticipantProfile => !!p);
                 return (
-                  <PlayerRow
-                    key={player.userId}
-                    activeOpacity={0.7}
-                    testID={`checkin-${player.userId}`}
-                  >
-                    <Avatar
-                      source={
-                        player.profileImage
-                          ? { uri: player.profileImage }
-                          : ccDefaultImage
-                      }
-                    />
-                    <PlayerName numberOfLines={1}>
-                      {formatDisplayName(player)}
-                    </PlayerName>
-                    <StatusBadge isCheckedIn={isCheckedIn}>
-                      <Dot isCheckedIn={isCheckedIn} />
-                      <CheckText isCheckedIn={isCheckedIn}>
-                        {isCheckedIn ? "Checked In" : "Not checked In"}
-                      </CheckText>
-                    </StatusBadge>
-                    <MedalDisplay xp={xp} size={42} />
-                  </PlayerRow>
+                  <TeamGroup key={mt.teamKey}>
+                    <TeamHeader
+                      activeOpacity={0.8}
+                      onPress={() => openTeam(mt.teamId)}
+                      testID={`checkin-team-${mt.teamId}`}
+                    >
+                      {teamDoc?.teamProfilePic ? (
+                        <TeamAvatar source={{ uri: teamDoc.teamProfilePic }} />
+                      ) : (
+                        <TeamAvatarPlaceholder>
+                          <Ionicons name="people" size={18} color="#00A2FF" />
+                        </TeamAvatarPlaceholder>
+                      )}
+                      <TeamHeaderName numberOfLines={1}>
+                        {teamName(teamDoc)}
+                      </TeamHeaderName>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={18}
+                        color="#46596e"
+                      />
+                    </TeamHeader>
+                    {roster.map((player) =>
+                      renderCheckinRow(
+                        player,
+                        () => openPlayer(player.userId),
+                        true,
+                      ),
+                    )}
+                  </TeamGroup>
                 );
               })}
+            </PlayerList>
+          ) : (
+            <PlayerList>
+              {players.map((player) =>
+                renderCheckinRow(player, () => openPlayer(player.userId)),
+              )}
             </PlayerList>
           )}
         </PaddedBlock>
@@ -420,15 +532,64 @@ const MutedText = styled.Text({
 
 const PlayerList = styled.View({});
 
-const PlayerRow = styled.TouchableOpacity({
+const PlayerRow = styled.TouchableOpacity<{ nested?: boolean }>(
+  ({ nested }: { nested?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingLeft: nested ? 12 : 0,
+    marginLeft: nested ? 8 : 0,
+    borderLeftWidth: nested ? 2 : 0,
+    borderLeftColor: "#1b2c40",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgb(9, 33, 62)",
+    borderTopWidth: nested ? 0 : 1,
+    borderTopColor: "rgb(9, 33, 62)",
+  }),
+);
+
+const TeamGroup = styled.View({
+  marginBottom: 8,
+});
+
+const TeamHeader = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
-  gap: 12,
-  paddingVertical: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: "rgb(9, 33, 62)",
-  borderTopWidth: 1,
-  borderTopColor: "rgb(9, 33, 62)",
+  gap: 11,
+  paddingVertical: 11,
+  paddingHorizontal: 12,
+  marginTop: 8,
+  borderRadius: 12,
+  backgroundColor: "rgba(0, 162, 255, 0.07)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+});
+
+const TeamAvatar = styled.Image({
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+  backgroundColor: "#0a1929",
+});
+
+const TeamAvatarPlaceholder = styled.View({
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+  backgroundColor: "#0a1929",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const TeamHeaderName = styled.Text({
+  flex: 1,
+  minWidth: 0,
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: "bold",
 });
 
 const Avatar = styled.Image({
@@ -436,6 +597,18 @@ const Avatar = styled.Image({
   height: 42,
   borderRadius: 21,
   backgroundColor: "rgb(9, 33, 62)",
+});
+
+const MedalCol = styled.View({
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const RankLevel = styled.Text({
+  fontSize: 10,
+  fontWeight: "bold",
+  color: "#ffffff",
+  marginTop: 2,
 });
 
 const PlayerName = styled.Text({
