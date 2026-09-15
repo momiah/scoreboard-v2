@@ -72,6 +72,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   const [status, setStatus] = useState<VerifyStatus>("checking");
   const [showCheckin, setShowCheckin] = useState(false);
   const [court, setCourt] = useState<Court>(match.court);
+  const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
   const runIdRef = useRef(0);
 
   const address = formatCourtAddress(court);
@@ -82,6 +83,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
     const startedAt = Date.now();
 
     let result: VerifyStatus = "failed";
+    let measured: number | null = null;
     try {
       let targetCourt = match.court;
       try {
@@ -98,7 +100,11 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       }
 
       const courtCoords = getCourtCoords(targetCourt);
-      if (courtCoords) {
+      if (!courtCoords) {
+        // No coordinates on file for this court, so location can't be verified
+        // — allow the check-in rather than blocking it forever.
+        result = "verified";
+      } else {
         const { granted } = await Location.requestForegroundPermissionsAsync();
         if (granted) {
           const position = await Location.getCurrentPositionAsync({
@@ -109,11 +115,12 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
             longitude: position.coords.longitude,
           };
           const distance = distanceInMeters(device, courtCoords);
+          measured = Math.round(distance);
           if (__DEV__) {
             console.log("[check-in] location verify", {
               device,
               court: courtCoords,
-              distanceMeters: Math.round(distance),
+              distanceMeters: measured,
               radiusMeters: CHECKIN_RADIUS_METERS,
             });
           }
@@ -133,6 +140,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
     }
 
     if (runIdRef.current === runId) {
+      setDistanceMeters(measured);
       setStatus(result);
     }
   };
@@ -206,6 +214,9 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                 <ErrorText>
                   You are not in the right location to check in, please ensure
                   you have arrived at the correct address
+                  {distanceMeters !== null
+                    ? ` — you're about ${distanceMeters}m away (need to be within ${CHECKIN_RADIUS_METERS}m).`
+                    : "."}
                 </ErrorText>
                 {!!address && (
                   <AddressLink
@@ -308,12 +319,18 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     buildLadderCheckInPayload(match, currentUserId ?? ""),
   );
 
-  // Any participant can either show their own QR or scan another's; the scanner
-  // and the QR's owner both get checked in. Default to showing for the poster,
-  // scanning for everyone else, but either can switch.
-  const [mode, setMode] = useState<"show" | "scan">(
-    isPoster ? "show" : "scan",
-  );
+  // Fixed roles: one side shows QRs, the other scans — so a doubles match can't
+  // end up with both teams scanning (or both showing). The poster's side shows;
+  // in doubles that's every player on teams[0], and the opposing team scans.
+  // Each scan checks in the scanner and the QR's owner together, so two scans
+  // (one per opposing player) check all four in.
+  const teams = match.teams ?? [];
+  const showRole =
+    teams.length >= 2
+      ? teams[0].playerIds.includes(currentUserId ?? "")
+      : isPoster;
+  const mode: "show" | "scan" = showRole ? "show" : "scan";
+
   const [processing, setProcessing] = useState(false);
   const [code, setCode] = useState("");
   const [liveMatch, setLiveMatch] = useState<LadderMatch>(match);
@@ -330,9 +347,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       setProcessing(false);
       setCode("");
       setLiveMatch(match);
-      setMode(isPoster ? "show" : "scan");
     }
-  }, [visible, match, isPoster]);
+  }, [visible, match]);
 
   useEffect(() => {
     if (!visible) return;
@@ -420,6 +436,13 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       showBottomToast("That code isn't for a player in this match", "error");
       return;
     }
+    if (hasUserCheckedIn(liveMatch, payload.userId)) {
+      showBottomToast(
+        "That player is already checked in — scan the other player's QR",
+        "info",
+      );
+      return;
+    }
     recordHandshake(payload.userId);
   };
 
@@ -443,16 +466,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       </QRFrame>
       <WaitingRow testID="match-checkin-waiting">
         <Ionicons name="hourglass-outline" size={16} color="#9fb8c8" />
-        <WaitingText>Waiting for someone to scan…</WaitingText>
+        <WaitingText>Waiting for an opponent to scan…</WaitingText>
       </WaitingRow>
-      <ModeToggle
-        activeOpacity={0.8}
-        onPress={() => setMode("scan")}
-        testID="match-checkin-switch-scan"
-      >
-        <Ionicons name="scan-outline" size={16} color="#00A2FF" />
-        <ModeToggleText>Scan a code instead</ModeToggleText>
-      </ModeToggle>
       <EmergencyRow testID="match-checkin-reference">
         <EmergencyLabel>
           If your QR cannot be scanned, give this code to another player
@@ -503,14 +518,6 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             </ScannerOverlay>
           )}
         </ScannerFrame>
-        <ModeToggle
-          activeOpacity={0.8}
-          onPress={() => setMode("show")}
-          testID="match-checkin-switch-show"
-        >
-          <Ionicons name="qr-code-outline" size={16} color="#00A2FF" />
-          <ModeToggleText>Show my QR instead</ModeToggleText>
-        </ModeToggle>
         <EmergencyRow testID="match-checkin-reference">
           <EmergencyLabel>
             Can&apos;t scan? Enter the match code to check in
@@ -794,19 +801,6 @@ const WaitingRow = styled.View({
 
 const WaitingText = styled.Text({
   color: "#9fb8c8",
-  fontSize: 13,
-  fontWeight: "600",
-});
-
-const ModeToggle = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 6,
-  paddingVertical: 8,
-});
-
-const ModeToggleText = styled.Text({
-  color: "#00A2FF",
   fontSize: 13,
   fontWeight: "600",
 });
