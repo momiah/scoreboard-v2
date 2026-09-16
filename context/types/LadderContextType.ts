@@ -49,6 +49,11 @@ export interface AcceptLadderMatchOutcome {
   reason?: AcceptLadderMatchFailureReason;
 }
 
+export interface CreateNoShowClaimOutcome {
+  success: boolean;
+  reason?: "exists" | "invalid" | "error";
+}
+
 export type CheckInLadderMatchFailureReason = "unavailable" | "error";
 
 export interface CheckInLadderMatchOutcome {
@@ -152,6 +157,11 @@ export interface LadderContextType {
     userId: string,
     team?: MatchTeam,
   ) => Promise<AcceptLadderMatchOutcome>;
+  createNoShowClaim: (
+    ladderId: string,
+    match: LadderMatch,
+    claimantUserId: string,
+  ) => Promise<CreateNoShowClaimOutcome>;
   checkInLadderMatch: (
     ladderId: string,
     matchId: string,

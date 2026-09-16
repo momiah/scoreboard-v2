@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
   ScrollView,
-  TouchableOpacity,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -397,24 +396,17 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           <CheckinHeader>
             <BlockTitle>Check-in</BlockTitle>
             {isDoubles ? (
-              <TouchableOpacity
+              <CollapseToggle
                 activeOpacity={0.7}
                 onPress={toggleCheckin}
                 testID="checkin-collapse-toggle"
-                style={{
-                  marginRight: 4,
-                  borderWidth: 1,
-                  borderColor: "#9fb8c8",
-                  padding: 4,
-                  borderRadius: 20,
-                }}
               >
                 <Ionicons
                   name={checkinCollapsed ? "chevron-down" : "chevron-up"}
                   size={20}
                   color="#9fb8c8"
                 />
-              </TouchableOpacity>
+              </CollapseToggle>
             ) : null}
           </CheckinHeader>
 
@@ -565,6 +557,14 @@ const CheckinHeader = styled.View({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
+});
+
+const CollapseToggle = styled.TouchableOpacity({
+  marginRight: 4,
+  padding: 4,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: "#9fb8c8",
 });
 
 const BlockTitle = styled.Text({

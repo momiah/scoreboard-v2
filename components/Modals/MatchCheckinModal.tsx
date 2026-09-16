@@ -1,5 +1,11 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Dimensions, Linking, Modal } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Linking,
+  Modal,
+} from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -20,6 +26,7 @@ import {
   isLadderMatchCheckedIn,
   isValidLadderCheckInScan,
   parseLadderCheckInPayload,
+  NO_SHOW_GRACE_MINUTES,
 } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
@@ -32,6 +39,7 @@ import {
   formatCourtAddress,
   getCourtCoords,
 } from "../../helpers/locationCheckIn";
+import { getMatchStart } from "../../helpers/ladderMatchTime";
 import type { Court } from "@shared/types";
 
 const screenWidth = Dimensions.get("window").width;
@@ -331,10 +339,15 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   currentUserId,
   onCheckedIn,
 }) => {
-  const { checkInLadderMatch, checkInLadderMatchHandshake, subscribeToLadderMatches } =
-    useContext(LadderContext);
+  const {
+    checkInLadderMatch,
+    checkInLadderMatchHandshake,
+    subscribeToLadderMatches,
+    createNoShowClaim,
+  } = useContext(LadderContext);
   const { showBottomToast } = useContext(PopupContext);
   const [permission, requestPermission] = useCameraPermissions();
+  const [noShowReported, setNoShowReported] = useState(false);
 
   const isPoster = !!currentUserId && currentUserId === match.createdBy;
   const reference = getLadderMatchReference(match.ladderMatchId);
@@ -364,12 +377,60 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const checkinComplete = isLadderMatchCheckedIn(liveMatch);
   const progress = getLadderCheckInProgress(liveMatch);
 
+  // A blocked player can report the opponent's no-show once the grace period
+  // after the scheduled start has passed and check-in still isn't complete.
+  const matchStart = getMatchStart(match);
+  const graceElapsed = matchStart
+    ? Date.now() >= matchStart.getTime() + NO_SHOW_GRACE_MINUTES * 60_000
+    : false;
+  const canReportNoShow =
+    !!currentUserId &&
+    match.participants.includes(currentUserId) &&
+    !checkinComplete &&
+    graceElapsed &&
+    !noShowReported;
+
+  const handleReportNoShow = () => {
+    if (!currentUserId) return;
+    Alert.alert(
+      "Report a no-show",
+      "Only do this if an opponent hasn't arrived and you can't check in. A ladder admin reviews it before the walkover is awarded.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Report no-show",
+          style: "destructive",
+          onPress: async () => {
+            const { success, reason } = await createNoShowClaim(
+              ladderId,
+              match,
+              currentUserId,
+            );
+            if (success || reason === "exists") {
+              setNoShowReported(true);
+              showBottomToast(
+                "No-show reported — an admin will review it",
+                "success",
+              );
+            } else {
+              showBottomToast(
+                "Couldn't report the no-show. Please try again.",
+                "error",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
   useEffect(() => {
     if (visible) {
       handledRef.current = false;
       setProcessing(false);
       setCode("");
       setLiveMatch(match);
+      setNoShowReported(false);
     }
   }, [visible, match]);
 
@@ -634,6 +695,31 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
           ) : (
             renderScan()
           )}
+
+          {canReportNoShow && (
+            <NoShowButton
+              onPress={handleReportNoShow}
+              activeOpacity={0.85}
+              testID="match-checkin-report-no-show"
+            >
+              <Ionicons
+                name="alert-circle-outline"
+                size={16}
+                color="#FFA500"
+              />
+              <NoShowButtonText>
+                Can&apos;t check in? Report a no-show
+              </NoShowButtonText>
+            </NoShowButton>
+          )}
+          {noShowReported && (
+            <NoShowNote testID="match-checkin-no-show-reported">
+              <Ionicons name="time-outline" size={16} color="#9fb8c8" />
+              <NoShowNoteText>
+                No-show reported — an admin will review it.
+              </NoShowNoteText>
+            </NoShowNote>
+          )}
         </ModalContent>
       </ModalContainer>
     </Modal>
@@ -831,6 +917,39 @@ const WaitingText = styled.Text({
 const EmergencyRow = styled.View({
   alignItems: "center",
   gap: 4,
+});
+
+const NoShowButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  marginTop: 18,
+  paddingVertical: 12,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "rgba(255, 165, 0, 0.4)",
+  backgroundColor: "rgba(255, 165, 0, 0.08)",
+});
+
+const NoShowButtonText = styled.Text({
+  color: "#FFA500",
+  fontSize: 14,
+  fontWeight: "700",
+});
+
+const NoShowNote = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  marginTop: 18,
+});
+
+const NoShowNoteText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+  fontWeight: "600",
 });
 
 const EmergencyLabel = styled.Text({

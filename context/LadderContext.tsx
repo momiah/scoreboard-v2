@@ -36,6 +36,7 @@ import {
   LADDER_MATCH_STATUS,
   COMPETITION_TYPES,
   TEAM_STATUS,
+  NO_SHOW_STATUS,
 } from "@shared";
 import { calculatePlayerPerformance, createRootTeam } from "@shared/helpers";
 import type {
@@ -73,6 +74,7 @@ import type {
   CreateTeamOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
+  CreateNoShowClaimOutcome,
   CheckInLadderMatchOutcome,
   UpdateLadderGameOutcome,
   ApproveLadderGameOutcome,
@@ -92,6 +94,7 @@ const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
 const TEAMS_COLLECTION = "teams";
+const NO_SHOW_CLAIMS_COLLECTION = "noShowClaims";
 const TEAM_REQUESTS_SUBCOLLECTION = "requests";
 
 export const LadderContext = createContext<LadderContextType>(
@@ -952,6 +955,76 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  // A blocked player (opponent didn't show) reports a no-show after the grace
+  // period. Writes one pending claim per match to a top-level collection the
+  // website admin panel reviews; the claimant's side is the walkover winner.
+  const createNoShowClaim = useCallback(
+    async (
+      ladderId: string,
+      match: LadderMatch,
+      claimantUserId: string,
+    ): Promise<CreateNoShowClaimOutcome> => {
+      if (!ladderId || !match?.ladderMatchId || !claimantUserId) {
+        return { success: false, reason: "error" };
+      }
+
+      const teams = match.teams ?? [];
+      let claimantTeam: MatchTeam;
+      let noShowTeam: MatchTeam;
+      if (teams.length === 2) {
+        const mine = teams.find((t) => t.playerIds.includes(claimantUserId));
+        const theirs = teams.find((t) => !t.playerIds.includes(claimantUserId));
+        if (!mine || !theirs) return { success: false, reason: "invalid" };
+        claimantTeam = mine;
+        noShowTeam = theirs;
+      } else {
+        // Singles: synthesise single-player sides (no team docs).
+        const others = match.participants.filter((id) => id !== claimantUserId);
+        if (others.length === 0) return { success: false, reason: "invalid" };
+        claimantTeam = { teamId: "", teamKey: "", playerIds: [claimantUserId] };
+        noShowTeam = { teamId: "", teamKey: "", playerIds: others };
+      }
+
+      const claimRef = doc(
+        db,
+        NO_SHOW_CLAIMS_COLLECTION,
+        match.ladderMatchId,
+      );
+
+      try {
+        const existing = await getDoc(claimRef);
+        if (
+          existing.exists() &&
+          (existing.data() as { status?: string }).status !==
+            NO_SHOW_STATUS.REJECTED
+        ) {
+          return { success: false, reason: "exists" };
+        }
+
+        await setDoc(claimRef, {
+          claimId: match.ladderMatchId,
+          ladderId,
+          ladderMatchId: match.ladderMatchId,
+          matchDate: match.matchDate,
+          matchTime: match.matchTime?.start ?? "",
+          courtName: match.court?.courtName ?? "",
+          claimantTeam,
+          noShowTeam,
+          createdBy: claimantUserId,
+          status: NO_SHOW_STATUS.PENDING,
+          createdAt: new Date(),
+          resolvedAt: null,
+          resolvedBy: null,
+        });
+        return { success: true };
+      } catch (error) {
+        console.error("Error creating no-show claim:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
   const checkInLadderMatch = useCallback(
     async (
       ladderId: string,
@@ -1453,6 +1526,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         fetchLadderMatches,
         subscribeToLadderMatches,
         acceptLadderMatch,
+        createNoShowClaim,
         checkInLadderMatch,
         checkInLadderMatchHandshake,
         updateLadderGame,
