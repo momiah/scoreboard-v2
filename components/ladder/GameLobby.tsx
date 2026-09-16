@@ -1,5 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
-import { ScrollView } from "react-native";
+import {
+  ScrollView,
+  TouchableOpacity,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -86,6 +92,42 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
+  const [checkinCollapsed, setCheckinCollapsed] = useState(false);
+
+  const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
+  const allCheckedIn = players.length > 0 && checkedIn;
+  const gamesLocked = isCompleted || !allCheckedIn;
+
+  const score = getLadderMatchScore(match, currentUserId ?? "");
+
+  const isDoubles =
+    match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
+  const matchTeams = match.teams ?? [];
+  const hasTwoTeams = isDoubles && matchTeams.length === 2;
+
+  // enable LayoutAnimation on Android
+  useEffect(() => {
+    if (
+      Platform.OS === "android" &&
+      UIManager.setLayoutAnimationEnabledExperimental
+    ) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  // toggle check-in collapse with animated layout change
+  const toggleCheckin = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCheckinCollapsed((s) => !s);
+  };
+
+  // ensure collapse is reset when switching to singles
+  useEffect(() => {
+    if (!isDoubles && checkinCollapsed) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setCheckinCollapsed(false);
+    }
+  }, [isDoubles, checkinCollapsed]);
 
   useEffect(() => {
     let active = true;
@@ -107,17 +149,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
       active = false;
     };
   }, [match.participants, getUserById]);
-
-  const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  const allCheckedIn = players.length > 0 && checkedIn;
-  const gamesLocked = isCompleted || !allCheckedIn;
-
-  const score = getLadderMatchScore(match, currentUserId ?? "");
-
-  const isDoubles =
-    match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
-  const matchTeams = match.teams ?? [];
-  const hasTwoTeams = isDoubles && matchTeams.length === 2;
 
   // Doubles: fetch the ladder's teams (by teamKey) so the score bar, shells and
   // team headers can show the team name/photo and link to the team page —
@@ -202,9 +233,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   const userTeamIdx = hasTwoTeams
     ? Math.max(
         0,
-        matchTeams.findIndex((t) =>
-          t.playerIds.includes(currentUserId ?? ""),
-        ),
+        matchTeams.findIndex((t) => t.playerIds.includes(currentUserId ?? "")),
       )
     : -1;
   const userTeam = hasTwoTeams ? matchTeams[userTeamIdx] : undefined;
@@ -280,16 +309,14 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     // A reported game (score submitted) opens the shared GameScreen to
     // view/approve/watch, exactly like League/Tournament. An unreported shell
     // opens the report modal so a player can submit the score.
-    const isReported =
-      !!game.result || (game.approvalStatus ?? "") !== "";
+    const isReported = !!game.result || (game.approvalStatus ?? "") !== "";
 
     if (isReported) {
       navigation.navigate("GameScreen", {
         gameId: game.gameId,
         competitionId: ladderId,
         competitionType: COMPETITION_TYPES.LADDER,
-        competitionName:
-          ladderName ?? match.court?.courtName ?? "Ladder match",
+        competitionName: ladderName ?? match.court?.courtName ?? "Ladder match",
         gamescore: game.gamescore ?? "",
         date: game.date ?? "",
         team1: game.team1,
@@ -331,8 +358,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   ) => {
     const xp = player.profileDetail?.XP ?? 0;
     const rankLevel = findRankIndex(xp) + 1;
-    const isCheckedIn =
-      isCompleted || hasUserCheckedIn(match, player.userId);
+    const isCheckedIn = isCompleted || hasUserCheckedIn(match, player.userId);
     return (
       <PlayerRow
         key={player.userId}
@@ -370,6 +396,26 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         <PaddedBlock>
           <CheckinHeader>
             <BlockTitle>Check-in</BlockTitle>
+            {isDoubles ? (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={toggleCheckin}
+                testID="checkin-collapse-toggle"
+                style={{
+                  marginRight: 4,
+                  borderWidth: 1,
+                  borderColor: "#9fb8c8",
+                  padding: 4,
+                  borderRadius: 20,
+                }}
+              >
+                <Ionicons
+                  name={checkinCollapsed ? "chevron-down" : "chevron-up"}
+                  size={20}
+                  color="#9fb8c8"
+                />
+              </TouchableOpacity>
+            ) : null}
           </CheckinHeader>
 
           {players.length === 0 ? (
@@ -404,18 +450,20 @@ const GameLobby: React.FC<GameLobbyProps> = ({
                         color="#46596e"
                       />
                     </TeamHeader>
-                    {roster.map((player) =>
-                      renderCheckinRow(
-                        player,
-                        () => openPlayer(player.userId),
-                        true,
-                      ),
-                    )}
+                    {!checkinCollapsed
+                      ? roster.map((player) =>
+                          renderCheckinRow(
+                            player,
+                            () => openPlayer(player.userId),
+                            true,
+                          ),
+                        )
+                      : null}
                   </TeamGroup>
                 );
               })}
             </PlayerList>
-          ) : (
+          ) : checkinCollapsed ? null : (
             <PlayerList>
               {players.map((player) =>
                 renderCheckinRow(player, () => openPlayer(player.userId)),
