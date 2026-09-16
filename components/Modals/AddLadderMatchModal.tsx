@@ -48,6 +48,7 @@ import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { toMoment } from "../../helpers/ladderPhases";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
+import { getMatchStart } from "../../helpers/ladderMatchTime";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -238,6 +239,15 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     const parsedFee = Number(data.courtFee || "0");
     if (!Number.isFinite(parsedFee) || parsedFee < 0) {
       setErrorMessage("Please enter a valid court fee.");
+      return;
+    }
+
+    const start = getMatchStart({
+      matchDate: data.startDate,
+      matchTime: { start: data.startTime },
+    });
+    if (start && start.getTime() <= Date.now()) {
+      setErrorMessage("Please choose a date and time in the future.");
       return;
     }
 

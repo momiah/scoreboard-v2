@@ -1,6 +1,8 @@
 import { LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
+import { getMatchStart } from "./ladderMatchTime";
+
 const SCHEDULE_STATUSES: readonly string[] = [
   LADDER_MATCH_STATUS.ACCEPTED,
   LADDER_MATCH_STATUS.COMPLETED,
@@ -37,6 +39,11 @@ export const getOpenMatchmakingMatches = (
   ).getTime();
   return matches.filter((match) => {
     if (match.matchStatus !== LADDER_MATCH_STATUS.POSTED) return false;
+    // Drop an open post once its start time is reached — a match nobody
+    // accepted in time leaves matchmaking. Fall back to the day when the time
+    // can't be parsed.
+    const start = getMatchStart(match);
+    if (start) return start.getTime() > now.getTime();
     const dayStartMs = matchDayStartMs(match.matchDate);
     return dayStartMs == null || dayStartMs >= todayStartMs;
   });

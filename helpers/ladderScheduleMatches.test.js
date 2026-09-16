@@ -99,18 +99,22 @@ describe("getOpenMatchmakingMatches", () => {
     ).toEqual(["today", "tomorrow"]);
   });
 
-  it("keeps a match posted for today all day, regardless of start time", () => {
+  it("removes a today match once its start time has passed", () => {
     const matches = [
       makeMatch({
-        ladderMatchId: "today-morning-slot",
+        ladderMatchId: "past-slot",
         matchDate: "10-05-2025",
-        matchTime: { start: "08:00" },
+        matchTime: { start: "08:00" }, // NOW is midday → passed
+      }),
+      makeMatch({
+        ladderMatchId: "future-slot",
+        matchDate: "10-05-2025",
+        matchTime: { start: "18:00" }, // still ahead of NOW
       }),
     ];
-    // NOW is midday, past the 08:00 slot, but it is still today → visible.
     expect(
       getOpenMatchmakingMatches(matches, NOW).map((m) => m.ladderMatchId),
-    ).toEqual(["today-morning-slot"]);
+    ).toEqual(["future-slot"]);
   });
 
   it("keeps posted matches with an unparseable date (defensive)", () => {
