@@ -263,7 +263,11 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                     activeOpacity={0.8}
                     testID="location-verifier-dev-bypass"
                   >
-                    <Ionicons name="construct-outline" size={16} color="#FFA500" />
+                    <Ionicons
+                      name="construct-outline"
+                      size={16}
+                      color="#FFA500"
+                    />
                     <RetryText style={{ color: "#FFA500" }}>
                       Check in anyway (dev only)
                     </RetryText>
@@ -394,7 +398,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     if (!currentUserId) return;
     Alert.alert(
       "Report a no-show",
-      "Only do this if an opponent hasn't arrived and you can't check in. A ladder admin reviews it before the walkover is awarded.",
+      "Only do this if an opponent hasn't arrived and you can't check in. A ladder admin reviews it before the forfeit is awarded.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -702,11 +706,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               activeOpacity={0.85}
               testID="match-checkin-report-no-show"
             >
-              <Ionicons
-                name="alert-circle-outline"
-                size={16}
-                color="#FFA500"
-              />
+              <Ionicons name="alert-circle-outline" size={16} color="#FFA500" />
               <NoShowButtonText>
                 Can&apos;t check in? Report a no-show
               </NoShowButtonText>
@@ -925,7 +925,7 @@ const NoShowButton = styled.TouchableOpacity({
   justifyContent: "center",
   gap: 8,
   marginTop: 18,
-  paddingVertical: 12,
+  padding: 12,
   borderRadius: 12,
   borderWidth: 1,
   borderColor: "rgba(255, 165, 0, 0.4)",
