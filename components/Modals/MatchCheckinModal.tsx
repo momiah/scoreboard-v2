@@ -326,6 +326,13 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   );
 };
 
+const formatNoShowCountdown = (ms: number): string => {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
 interface MatchCheckinModalProps {
   visible: boolean;
   onClose: () => void;
@@ -383,16 +390,37 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
 
   // A blocked player can report the opponent's no-show once the grace period
   // after the scheduled start has passed and check-in still isn't complete.
+  // Until then the button is shown dimmed with a live countdown.
   const matchStart = getMatchStart(match);
-  const graceElapsed = matchStart
-    ? Date.now() >= matchStart.getTime() + NO_SHOW_GRACE_MINUTES * 60_000
-    : false;
-  const canReportNoShow =
+  const noShowUnlockMs = matchStart
+    ? matchStart.getTime() + NO_SHOW_GRACE_MINUTES * 60_000
+    : null;
+
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!visible || noShowUnlockMs == null) return;
+    setNowMs(Date.now());
+    if (Date.now() >= noShowUnlockMs) return;
+    const id = setInterval(() => {
+      const tick = Date.now();
+      setNowMs(tick);
+      if (tick >= noShowUnlockMs) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [visible, noShowUnlockMs]);
+
+  const graceElapsed = noShowUnlockMs != null && nowMs >= noShowUnlockMs;
+  const noShowCountdownMs =
+    noShowUnlockMs != null ? Math.max(0, noShowUnlockMs - nowMs) : 0;
+
+  const showNoShowSection =
     !!currentUserId &&
     match.participants.includes(currentUserId) &&
     !checkinComplete &&
-    graceElapsed &&
-    !noShowReported;
+    !noShowReported &&
+    noShowUnlockMs != null;
+  const canReportNoShow = showNoShowSection && graceElapsed;
 
   const handleReportNoShow = () => {
     if (!currentUserId) return;
@@ -700,15 +728,25 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             renderScan()
           )}
 
-          {canReportNoShow && (
+          {showNoShowSection && (
             <NoShowButton
-              onPress={handleReportNoShow}
+              onPress={canReportNoShow ? handleReportNoShow : undefined}
+              disabled={!canReportNoShow}
+              isDisabled={!canReportNoShow}
               activeOpacity={0.85}
               testID="match-checkin-report-no-show"
             >
-              <Ionicons name="alert-circle-outline" size={16} color="#FFA500" />
+              <Ionicons
+                name={
+                  canReportNoShow ? "alert-circle-outline" : "time-outline"
+                }
+                size={16}
+                color="#FFA500"
+              />
               <NoShowButtonText>
-                Can&apos;t check in? Report a no-show
+                {canReportNoShow
+                  ? "Can't check in? Report a no-show"
+                  : `Report no-show in ${formatNoShowCountdown(noShowCountdownMs)}`}
               </NoShowButtonText>
             </NoShowButton>
           )}
@@ -919,18 +957,21 @@ const EmergencyRow = styled.View({
   gap: 4,
 });
 
-const NoShowButton = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  marginTop: 18,
-  padding: 12,
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: "rgba(255, 165, 0, 0.4)",
-  backgroundColor: "rgba(255, 165, 0, 0.08)",
-});
+const NoShowButton = styled.TouchableOpacity<{ isDisabled?: boolean }>(
+  ({ isDisabled }: { isDisabled?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 18,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 165, 0, 0.4)",
+    backgroundColor: "rgba(255, 165, 0, 0.08)",
+    opacity: isDisabled ? 0.5 : 1,
+  }),
+);
 
 const NoShowButtonText = styled.Text({
   color: "#FFA500",
