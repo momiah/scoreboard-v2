@@ -63,6 +63,10 @@ const PlayerDetails = ({
   const player = selectedPlayer ?? route?.params?.selectedPlayer ?? null;
   if (!player) return null;
 
+  // Enriched callers flatten XP to the top level; a raw ladder participant
+  // keeps it nested under profileDetail. Read whichever is present.
+  const playerXp = player.XP ?? player.profileDetail?.XP;
+
   const winRatio = player.numberOfWins / player.numberOfLosses;
 
   const goToProfile = () => {
@@ -163,13 +167,13 @@ const PlayerDetails = ({
         </View>
 
         <MedalContainer>
-          <MedalDisplay xp={player.XP} size={screenAdjustedMedalSize} />
+          <MedalDisplay xp={playerXp} size={screenAdjustedMedalSize} />
           <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
-            {medalNames(player.XP)}
+            {medalNames(playerXp)}
           </Text>
         </MedalContainer>
       </PlayerDetail>
-      <MedalProgress xp={player.XP} prevGameXp={player.prevGameXP} />
+      <MedalProgress xp={playerXp} prevGameXp={player.prevGameXP} />
       <Divider />
       <ResultLog resultLog={player.resultLog} />
       <MatchMedals

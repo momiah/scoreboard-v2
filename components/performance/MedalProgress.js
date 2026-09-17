@@ -28,11 +28,13 @@ const MedalProgress = ({ xp, prevGameXp, showMedals = true }) => {
   const [mounted, setMounted] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+  const safeXp = Number.isFinite(xp) ? xp : 0;
+
   const currentRank = ranks.reduce((prev, current) =>
-    current.xp <= xp ? current : prev,
+    current.xp <= safeXp ? current : prev,
   );
 
-  const nextRank = getNextRank(xp);
+  const nextRank = getNextRank(safeXp);
   const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
 
   useEffect(() => {
@@ -47,12 +49,12 @@ const MedalProgress = ({ xp, prevGameXp, showMedals = true }) => {
     if (!mounted) return;
     Animated.parallel([
       Animated.timing(progressAnim, {
-        toValue: xp - currentRank.xp,
+        toValue: safeXp - currentRank.xp,
         duration: 1000,
         useNativeDriver: false,
       }),
     ]).start();
-  }, [xp, currentRank, mounted]);
+  }, [safeXp, currentRank, mounted]);
 
   if (!mounted) return <MedalProgressSkeleton />;
 
@@ -71,7 +73,7 @@ const MedalProgress = ({ xp, prevGameXp, showMedals = true }) => {
           ]}
         >
           <ProgressArrowContainer>
-            <AnimateNumber number={xp} progressBar />
+            <AnimateNumber number={safeXp} progressBar />
             <FontAwesome name="caret-down" size={16} color="white" />
           </ProgressArrowContainer>
         </Animated.View>
