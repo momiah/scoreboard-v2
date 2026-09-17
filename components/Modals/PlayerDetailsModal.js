@@ -187,7 +187,11 @@ const PlayerDetails = ({
         />
       )}
       <Divider />
-      <ResultLog resultLog={player.resultLog} />
+      <ResultLog
+        resultLog={
+          isModal ? player.resultLog : player.matchResultLog ?? player.resultLog
+        }
+      />
       <MatchMedals
         demonWin={player.demonWin}
         winStreak3={player.winStreak3}

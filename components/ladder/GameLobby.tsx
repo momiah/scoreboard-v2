@@ -255,6 +255,38 @@ const GameLobby: React.FC<GameLobbyProps> = ({
       ? opponents.map((p) => formatDisplayName(p))
       : ["Opponent"];
 
+  // A forfeit completes the match with no games. The walkover fields are
+  // written by the No Shows admin flow; `walkoverReason` names why (e.g. a no
+  // show) so the pill can distinguish it from other forfeit types later.
+  const walkoverMatch = match as LadderMatch & {
+    walkover?: boolean;
+    walkoverWinner?: string;
+    walkoverReason?: string;
+  };
+  const isWalkover = walkoverMatch.walkover === true;
+  const walkoverReason = walkoverMatch.walkoverReason ?? "No show";
+  const namePlayer = (found?: ParticipantProfile): string =>
+    found ? formatDisplayName(found) : "";
+  const walkoverWinnerLabel = !isWalkover
+    ? ""
+    : hasTwoTeams
+      ? teamName(ladderTeamByKey[walkoverMatch.walkoverWinner ?? ""])
+      : namePlayer(
+          players.find((p) => p.userId === walkoverMatch.walkoverWinner),
+        );
+  const walkoverLoserLabel = !isWalkover
+    ? ""
+    : hasTwoTeams
+      ? teamName(
+          ladderTeamByKey[
+            matchTeams.find((t) => t.teamKey !== walkoverMatch.walkoverWinner)
+              ?.teamKey ?? ""
+          ],
+        )
+      : namePlayer(
+          players.find((p) => p.userId !== walkoverMatch.walkoverWinner),
+        );
+
   const gamesWithPlayers: LobbyGame[] = match.games.map((game) => {
     const filled = !!(game.team1?.player1 || game.team2?.player1);
 
@@ -357,7 +389,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   ) => {
     const xp = player.profileDetail?.XP ?? 0;
     const rankLevel = findRankIndex(xp) + 1;
-    const isCheckedIn = isCompleted || hasUserCheckedIn(match, player.userId);
+    // Reflect the real check-in record — a walkover completes the match without
+    // anyone checking in, so completion alone must not imply checked-in.
+    const isCheckedIn = hasUserCheckedIn(match, player.userId);
     return (
       <PlayerRow
         key={player.userId}
@@ -489,7 +523,12 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
         <GamesHeader>
           <BlockTitle>Games</BlockTitle>
-          {isCompleted ? (
+          {isWalkover ? (
+            <StatusChip forfeit testID="lobby-games-forfeit">
+              <Ionicons name="flag" size={12} color="#FFA500" />
+              <StatusChipText forfeit>Forfeit ({walkoverReason})</StatusChipText>
+            </StatusChip>
+          ) : isCompleted ? (
             <StatusChip completed testID="lobby-games-completed">
               <Ionicons name="checkmark-circle" size={13} color="#5ef0a6" />
               <StatusChipText completed>Completed</StatusChipText>
@@ -501,6 +540,12 @@ const GameLobby: React.FC<GameLobbyProps> = ({
             </StatusChip>
           ) : null}
         </GamesHeader>
+        {isWalkover && walkoverWinnerLabel ? (
+          <ForfeitNote testID="lobby-forfeit-note">
+            {walkoverWinnerLabel} won by walkover
+            {walkoverLoserLabel ? ` — ${walkoverLoserLabel} didn't check in` : ""}
+          </ForfeitNote>
+        ) : null}
 
         <GamesList isLocked={gamesLocked}>
           {gamesWithPlayers.map((game) => (
@@ -765,25 +810,37 @@ const GamesHeader = styled.View({
   justifyContent: "space-between",
 });
 
-const StatusChip = styled.View<{ completed?: boolean }>(
-  ({ completed }: { completed?: boolean }) => ({
+const StatusChip = styled.View<{ completed?: boolean; forfeit?: boolean }>(
+  ({ completed, forfeit }: { completed?: boolean; forfeit?: boolean }) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: completed ? "#0c3d24" : "rgba(255, 255, 255, 0.06)",
+    backgroundColor: forfeit
+      ? "rgba(255, 165, 0, 0.12)"
+      : completed
+        ? "#0c3d24"
+        : "rgba(255, 255, 255, 0.06)",
   }),
 );
 
-const StatusChipText = styled.Text<{ completed?: boolean }>(
-  ({ completed }: { completed?: boolean }) => ({
-    color: completed ? "#5ef0a6" : "#9fb8c8",
+const StatusChipText = styled.Text<{ completed?: boolean; forfeit?: boolean }>(
+  ({ completed, forfeit }: { completed?: boolean; forfeit?: boolean }) => ({
+    color: forfeit ? "#FFA500" : completed ? "#5ef0a6" : "#9fb8c8",
     fontSize: 11,
     fontWeight: "600",
   }),
 );
+
+const ForfeitNote = styled.Text({
+  marginHorizontal: 20,
+  marginTop: -4,
+  marginBottom: 12,
+  color: "#9fb8c8",
+  fontSize: 12,
+});
 
 const GamesList = styled.View<{ isLocked: boolean }>(
   ({ isLocked }: { isLocked: boolean }) => ({

@@ -34,12 +34,12 @@ import {
   getLadderCheckedInUserIds,
   notificationTypes,
   LADDER_MATCH_STATUS,
-  COMPETITION_TYPES,
   TEAM_STATUS,
   NO_SHOW_STATUS,
 } from "@shared";
-import { calculatePlayerPerformance, createRootTeam } from "@shared/helpers";
+import { createRootTeam } from "@shared/helpers";
 import { scoreDoublesLadderGame } from "../helpers/scoreDoublesLadderGame";
+import { scoreSinglesLadderGame } from "../helpers/scoreSinglesLadderGame";
 import type {
   Ladder,
   LadderMatch,
@@ -61,10 +61,7 @@ import { addMember, removeMember } from "../helpers/teamRoster";
 import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
-import {
-  resolveLadderMatchOutcome,
-  teamUserIds,
-} from "../helpers/ladderMatchResult";
+import { resolveLadderMatchOutcome } from "../helpers/ladderMatchResult";
 import type {
   LadderContextType,
   FetchLaddersOptions,
@@ -1429,33 +1426,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
                 );
               });
             } else {
-              // Singles: passing the ladder competitionType makes the upset
-              // multiplier use each participant's per-ladder CP as the basis (not
-              // global XP), so prevGameXP is the CP this game earned in THIS
-              // ladder. Global profileDetail XP still accumulates that same delta.
-              // The per-ladder CP is accumulated here, floored at 0.
-              calculatePlayerPerformance(
-                updatedGame,
+              // Singles scoring is a pure helper (per-player ladder CP + global
+              // XP); the transaction just persists what it mutates.
+              const { matchCompleted: done } = scoreSinglesLadderGame({
+                game: updatedGame,
                 participants,
                 users,
-                COMPETITION_TYPES.LADDER,
-              );
-              participants.forEach((p) => {
-                p.competitionXP = Math.max(
-                  0,
-                  (p.competitionXP ?? 0) + (p.prevGameXP ?? 0),
-                );
+                matchDecided,
+                matchWinnerSide: outcome.winnerTeam,
               });
-
-              if (matchDecided && outcome.winnerTeam) {
-                const winnerIds = teamUserIds(updatedGame, outcome.winnerTeam);
-                participants.forEach((p) => {
-                  const won = p.userId ? winnerIds.includes(p.userId) : false;
-                  p.matchResultLog = [
-                    ...(p.matchResultLog ?? []),
-                    won ? "W" : "L",
-                  ].slice(-20);
-                });
+              if (done) {
                 matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
                 matchCompleted = true;
               }

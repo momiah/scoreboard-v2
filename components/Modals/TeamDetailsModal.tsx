@@ -35,7 +35,10 @@ const memberName = (member: TeamMember): string =>
   [member.firstName, member.lastName].filter(Boolean).join(" ").trim() ||
   member.username;
 
-const StatsBlock: React.FC<{ team: TeamStats }> = ({ team }) => {
+const StatsBlock: React.FC<{ team: TeamStats; useMatchLog?: boolean }> = ({
+  team,
+  useMatchLog = false,
+}) => {
   const winRatio =
     team.numberOfLosses > 0
       ? team.numberOfWins / team.numberOfLosses
@@ -75,7 +78,11 @@ const StatsBlock: React.FC<{ team: TeamStats }> = ({ team }) => {
 
   return (
     <>
-      <ResultLog resultLog={team.resultLog} />
+      <ResultLog
+        resultLog={
+          useMatchLog ? team.matchResultLog ?? team.resultLog : team.resultLog
+        }
+      />
       <MatchMedals
         demonWin={team.demonWin}
         winStreak3={team.winStreak3}
@@ -422,7 +429,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
             prevGameXp={(statsTeam ?? team).prevGameXP}
             showMedals={false}
           />
-          <StatsBlock team={statsTeam ?? team} />
+          <StatsBlock team={statsTeam ?? team} useMatchLog />
         </Body>
       )}
     </Screen>
