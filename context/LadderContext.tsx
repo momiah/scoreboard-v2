@@ -38,13 +38,8 @@ import {
   TEAM_STATUS,
   NO_SHOW_STATUS,
 } from "@shared";
-import {
-  calculatePlayerPerformance,
-  calculateTeamPerformance,
-  createRootTeam,
-  normalizeTeamKey,
-} from "@shared/helpers";
-import { applyLadderTeamGameXp } from "../helpers/ladderTeamScoring";
+import { calculatePlayerPerformance, createRootTeam } from "@shared/helpers";
+import { scoreDoublesLadderGame } from "../helpers/scoreDoublesLadderGame";
 import type {
   Ladder,
   LadderMatch,
@@ -1391,39 +1386,18 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               });
 
             if (isDoubles) {
-              // Doubles: the team earns the per-ladder CP (team standings) and
-              // each player earns global rank XP + achievement medals. Global
-              // scoring needs a participant doc per player as its streak carrier;
-              // seed one from the user profile when the player hasn't scored in
-              // this ladder before.
-              const participantById = new Map(
-                participants.map((p) => [p.userId, p]),
-              );
-              const scoringParticipants = users
-                .filter((u) => u.userId)
-                .map(
-                  (u) => participantById.get(u.userId) ?? buildLadderParticipant(u),
-                );
-
-              calculatePlayerPerformance(updatedGame, scoringParticipants, users);
-
-              const [winnerTeam, loserTeam] = await calculateTeamPerformance({
-                game: updatedGame,
-                allTeams: ladderTeams,
-              });
-              applyLadderTeamGameXp(winnerTeam, loserTeam, updatedGame);
-
-              if (matchDecided && outcome.winnerTeam) {
-                const matchWinnerKey = normalizeTeamKey(
-                  teamUserIds(updatedGame, outcome.winnerTeam),
-                );
-                [winnerTeam, loserTeam].forEach((team) => {
-                  const won = team.teamKey === matchWinnerKey;
-                  team.matchResultLog = [
-                    ...(team.matchResultLog ?? []),
-                    won ? "W" : "L",
-                  ].slice(-20);
+              // Doubles scoring is a pure helper (team CP + player global XP and
+              // medals); the transaction just persists what it returns.
+              const { scoringParticipants, teams, matchCompleted: done } =
+                await scoreDoublesLadderGame({
+                  game: updatedGame,
+                  participants,
+                  users,
+                  ladderTeams,
+                  matchDecided,
+                  matchWinnerSide: outcome.winnerTeam,
                 });
+              if (done) {
                 matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
                 matchCompleted = true;
               }
@@ -1442,7 +1416,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
                 );
               });
               persistUsers();
-              [winnerTeam, loserTeam].forEach((team) => {
+              teams.forEach((team) => {
                 transaction.set(
                   doc(
                     db,
