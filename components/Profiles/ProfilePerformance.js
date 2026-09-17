@@ -53,13 +53,12 @@ const ProfilePerformance = ({ profile }) => {
     ];
   }, [profileDetail]);
 
+  const roundedXP = Math.round(profileDetail?.XP ?? 0);
+
   const renderPerformanceContent = useCallback(
     () => (
       <>
-        <MedalProgress
-          xp={profileDetail?.XP}
-          prevGameXp={profileDetail?.prevGameXP}
-        />
+        <MedalProgress xp={roundedXP} prevGameXp={profileDetail?.prevGameXP} />
         <Divider />
 
         <Heading>Match Medals</Heading>
