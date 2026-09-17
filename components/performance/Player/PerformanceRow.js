@@ -74,7 +74,7 @@ const PerformanceRow = ({
       {isLadder && (
         <TableCell>
           <StatTitle>CP</StatTitle>
-          <Stat>{entity.competitionXP ?? 0}</Stat>
+          <Stat>{(isTeam ? entity.XP : entity.competitionXP) ?? 0}</Stat>
         </TableCell>
       )}
 

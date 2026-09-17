@@ -38,7 +38,13 @@ import {
   TEAM_STATUS,
   NO_SHOW_STATUS,
 } from "@shared";
-import { calculatePlayerPerformance, createRootTeam } from "@shared/helpers";
+import {
+  calculatePlayerPerformance,
+  calculateTeamPerformance,
+  createRootTeam,
+  normalizeTeamKey,
+} from "@shared/helpers";
+import { applyLadderTeamGameXp } from "../helpers/ladderTeamScoring";
 import type {
   Ladder,
   LadderMatch,
@@ -1298,9 +1304,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             game.team2.player2?.userId,
           ].filter((id): id is string => Boolean(id));
 
+          const matchTeams = match.teams ?? [];
+          const isDoubles = matchTeams.length >= 2;
+
           // Only read participant/global-user docs when we're about to score.
           let participants: ScoreboardProfile[] = [];
           let users: UserProfile[] = [];
+          let ladderTeams: TeamStats[] = [];
           if (fullyApproved) {
             const participantSnaps = await Promise.all(
               playerUserIds.map((uid) =>
@@ -1327,6 +1337,25 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             users = userSnaps
               .filter((snap) => snap.exists())
               .map((snap) => snap.data() as UserProfile);
+
+            if (isDoubles) {
+              const teamSnaps = await Promise.all(
+                matchTeams.map((t) =>
+                  transaction.get(
+                    doc(
+                      db,
+                      LADDERS_COLLECTION,
+                      ladderId,
+                      LADDER_TEAMS_COLLECTION,
+                      t.teamKey,
+                    ),
+                  ),
+                ),
+              );
+              ladderTeams = teamSnaps
+                .filter((snap) => snap.exists())
+                .map((snap) => snap.data() as TeamStats);
+            }
           }
 
           // ── Writes ──
@@ -1343,95 +1372,135 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           };
 
           if (fullyApproved) {
-            // Passing the ladder competitionType makes the upset multiplier use
-            // each participant's per-ladder CP as the basis (not global XP), so
-            // prevGameXP is the CP this game earned in THIS ladder. Global
-            // profileDetail XP still accumulates that same delta. The per-ladder
-            // CP is accumulated here, floored at 0 (no negative ladder CP).
-            calculatePlayerPerformance(
-              updatedGame,
-              participants,
-              users,
-              COMPETITION_TYPES.LADDER,
-            );
-            participants.forEach((p) => {
-              p.competitionXP = Math.max(
-                0,
-                (p.competitionXP ?? 0) + (p.prevGameXP ?? 0),
-              );
-            });
-
-            // Recent form: push the match result once, when the match is first
-            // decided (best-of clinched).
+            // Recent form is pushed once, when the match is first decided.
             const alreadyCompleted =
               match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
             const outcome = resolveLadderMatchOutcome(
               nextGames,
               match.bestOf ?? nextGames.length,
             );
-            if (!alreadyCompleted && outcome.decided && outcome.winnerTeam) {
-              const winnerIds = teamUserIds(updatedGame, outcome.winnerTeam);
-              participants.forEach((p) => {
-                const won = p.userId ? winnerIds.includes(p.userId) : false;
-                p.matchResultLog = [
-                  ...(p.matchResultLog ?? []),
-                  won ? "W" : "L",
-                ].slice(-20);
-              });
-              matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
-              matchCompleted = true;
-            }
+            const matchDecided =
+              !alreadyCompleted && outcome.decided && !!outcome.winnerTeam;
 
-            // Persist per-ladder participant docs.
-            participants.forEach((p) => {
-              if (!p.userId) return;
-              transaction.set(
-                doc(
-                  db,
-                  LADDERS_COLLECTION,
-                  ladderId,
-                  LADDER_PARTICIPANTS_COLLECTION,
-                  p.userId,
-                ),
-                p,
+            const persistUsers = () =>
+              users.forEach((u) => {
+                if (!u.userId) return;
+                transaction.update(doc(db, "users", u.userId), {
+                  profileDetail: u.profileDetail,
+                });
+              });
+
+            if (isDoubles) {
+              // Doubles: the team earns the per-ladder CP (team standings) and
+              // each player earns global rank XP + achievement medals. Global
+              // scoring needs a participant doc per player as its streak carrier;
+              // seed one from the user profile when the player hasn't scored in
+              // this ladder before.
+              const participantById = new Map(
+                participants.map((p) => [p.userId, p]),
               );
-            });
+              const scoringParticipants = users
+                .filter((u) => u.userId)
+                .map(
+                  (u) => participantById.get(u.userId) ?? buildLadderParticipant(u),
+                );
 
-            // Persist global profileDetail (rank medal XP + streaks).
-            users.forEach((u) => {
-              if (!u.userId) return;
-              transaction.update(doc(db, "users", u.userId), {
-                profileDetail: u.profileDetail,
+              calculatePlayerPerformance(updatedGame, scoringParticipants, users);
+
+              const [winnerTeam, loserTeam] = await calculateTeamPerformance({
+                game: updatedGame,
+                allTeams: ladderTeams,
               });
-            });
+              applyLadderTeamGameXp(winnerTeam, loserTeam, updatedGame);
 
-            // ── DOUBLES (write + flag for later) ───────────────────────────
-            // Doubles matchmaking doesn't exist yet (singles cap = 2), so this
-            // is unreachable today. When doubles ships, raise the approval limit
-            // to 2, recompute team stats and mirror them to both the ladder
-            // subcollection and the root `teams` collection:
-            //
-            // const teamSnaps = await Promise.all(
-            //   teamKeys.map((key) =>
-            //     transaction.get(
-            //       doc(db, LADDERS_COLLECTION, ladderId, LADDER_TEAMS_COLLECTION, key),
-            //     ),
-            //   ),
-            // );
-            // const allTeams = teamSnaps
-            //   .filter((snap) => snap.exists())
-            //   .map((snap) => snap.data() as TeamStats);
-            // const [winnerTeam, loserTeam] = await calculateTeamPerformance({
-            //   game: updatedGame,
-            //   allTeams,
-            // });
-            // [winnerTeam, loserTeam].forEach((team) => {
-            //   transaction.set(
-            //     doc(db, LADDERS_COLLECTION, ladderId, LADDER_TEAMS_COLLECTION, team.teamKey),
-            //     team,
-            //   );
-            //   transaction.set(doc(db, "teams", team.teamKey), team);
-            // });
+              if (matchDecided && outcome.winnerTeam) {
+                const matchWinnerKey = normalizeTeamKey(
+                  teamUserIds(updatedGame, outcome.winnerTeam),
+                );
+                [winnerTeam, loserTeam].forEach((team) => {
+                  const won = team.teamKey === matchWinnerKey;
+                  team.matchResultLog = [
+                    ...(team.matchResultLog ?? []),
+                    won ? "W" : "L",
+                  ].slice(-20);
+                });
+                matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
+                matchCompleted = true;
+              }
+
+              scoringParticipants.forEach((p) => {
+                if (!p.userId) return;
+                transaction.set(
+                  doc(
+                    db,
+                    LADDERS_COLLECTION,
+                    ladderId,
+                    LADDER_PARTICIPANTS_COLLECTION,
+                    p.userId,
+                  ),
+                  p,
+                );
+              });
+              persistUsers();
+              [winnerTeam, loserTeam].forEach((team) => {
+                transaction.set(
+                  doc(
+                    db,
+                    LADDERS_COLLECTION,
+                    ladderId,
+                    LADDER_TEAMS_COLLECTION,
+                    team.teamKey,
+                  ),
+                  team,
+                );
+              });
+            } else {
+              // Singles: passing the ladder competitionType makes the upset
+              // multiplier use each participant's per-ladder CP as the basis (not
+              // global XP), so prevGameXP is the CP this game earned in THIS
+              // ladder. Global profileDetail XP still accumulates that same delta.
+              // The per-ladder CP is accumulated here, floored at 0.
+              calculatePlayerPerformance(
+                updatedGame,
+                participants,
+                users,
+                COMPETITION_TYPES.LADDER,
+              );
+              participants.forEach((p) => {
+                p.competitionXP = Math.max(
+                  0,
+                  (p.competitionXP ?? 0) + (p.prevGameXP ?? 0),
+                );
+              });
+
+              if (matchDecided && outcome.winnerTeam) {
+                const winnerIds = teamUserIds(updatedGame, outcome.winnerTeam);
+                participants.forEach((p) => {
+                  const won = p.userId ? winnerIds.includes(p.userId) : false;
+                  p.matchResultLog = [
+                    ...(p.matchResultLog ?? []),
+                    won ? "W" : "L",
+                  ].slice(-20);
+                });
+                matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
+                matchCompleted = true;
+              }
+
+              participants.forEach((p) => {
+                if (!p.userId) return;
+                transaction.set(
+                  doc(
+                    db,
+                    LADDERS_COLLECTION,
+                    ladderId,
+                    LADDER_PARTICIPANTS_COLLECTION,
+                    p.userId,
+                  ),
+                  p,
+                );
+              });
+              persistUsers();
+            }
           }
 
           transaction.update(matchRef, matchUpdate);
