@@ -166,14 +166,26 @@ const PlayerDetails = ({
           </View>
         </View>
 
-        <MedalContainer>
-          <MedalDisplay xp={playerXp} size={screenAdjustedMedalSize} />
-          <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
-            {medalNames(playerXp)}
-          </Text>
-        </MedalContainer>
+        {isModal && (
+          <MedalContainer>
+            <MedalDisplay xp={playerXp} size={screenAdjustedMedalSize} />
+            <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
+              {medalNames(playerXp)}
+            </Text>
+          </MedalContainer>
+        )}
       </PlayerDetail>
-      <MedalProgress xp={playerXp} prevGameXp={player.prevGameXP} />
+      {isModal ? (
+        // League/tournament popup: global rank medal + progress.
+        <MedalProgress xp={playerXp} prevGameXp={player.prevGameXP} />
+      ) : (
+        // Ladder profile: per-ladder CP only, no rank medal — same as teams.
+        <MedalProgress
+          xp={player.competitionXP ?? 0}
+          prevGameXp={player.prevGameXP}
+          showMedals={false}
+        />
+      )}
       <Divider />
       <ResultLog resultLog={player.resultLog} />
       <MatchMedals

@@ -339,14 +339,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     if (!isDoubles) {
       const participant = participantByUserId[userId];
       if (participant) {
-        // The participant doc holds per-ladder stats but no global XP; graft on
-        // the global XP (from the profiles already fetched) so the rank medal
-        // reflects the player's global rank rather than falling back to 0.
-        const globalXp = players.find((p) => p.userId === userId)?.profileDetail
-          ?.XP;
-        navigation.navigate("PlayerDetails", {
-          selectedPlayer: { ...participant, XP: globalXp },
-        });
+        navigation.navigate("PlayerDetails", { selectedPlayer: participant });
         return;
       }
     }
