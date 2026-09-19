@@ -1,6 +1,7 @@
 import {
   getMatchStart,
   isMatchStarted,
+  isMatchDayPassed,
   formatMatchDateShort,
 } from "./ladderMatchTime";
 
@@ -40,6 +41,27 @@ describe("isMatchStarted", () => {
 
   it("fails open (true) when the start can't be parsed", () => {
     expect(isMatchStarted(match("", ""), new Date(2020, 0, 1))).toBe(true);
+  });
+});
+
+describe("isMatchDayPassed", () => {
+  const m = match("21-08-2026", "18:00");
+
+  it("is false on the match's own day, even past the start time", () => {
+    expect(isMatchDayPassed(m, new Date(2026, 7, 21, 8, 0))).toBe(false);
+    expect(isMatchDayPassed(m, new Date(2026, 7, 21, 23, 59))).toBe(false);
+  });
+
+  it("is true once a later day has begun", () => {
+    expect(isMatchDayPassed(m, new Date(2026, 7, 22, 0, 1))).toBe(true);
+  });
+
+  it("is false before the match day", () => {
+    expect(isMatchDayPassed(m, new Date(2026, 7, 20, 23, 59))).toBe(false);
+  });
+
+  it("fails closed (false) when the date can't be parsed", () => {
+    expect(isMatchDayPassed(match("", ""), new Date(2030, 0, 1))).toBe(false);
   });
 });
 

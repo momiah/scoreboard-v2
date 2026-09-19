@@ -33,7 +33,8 @@ interface VideoUploadModalProps {
   competitionName: string;
   competitionType:
     | typeof COMPETITION_TYPES.LEAGUE
-    | typeof COMPETITION_TYPES.TOURNAMENT;
+    | typeof COMPETITION_TYPES.TOURNAMENT
+    | typeof COMPETITION_TYPES.LADDER;
   gamescore: string;
   date: string;
   teams: Teams;
@@ -43,6 +44,8 @@ interface VideoUploadModalProps {
   icon?: "checkmark-circle-outline" | "videocam-outline";
   iconColor?: string;
   showAddLaterHint?: boolean;
+  /** Ladder games live in a match subcollection; required for ladder uploads. */
+  matchId?: string;
 }
 
 const PROCESSING_MESSAGES = [
@@ -77,6 +80,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   icon = "checkmark-circle-outline",
   iconColor = "#00A2FF",
   showAddLaterHint = true,
+  matchId,
 }) => {
   const [pickedVideo, setPickedVideo] = useState<PickedVideo | null>(null);
   const [compressedUri, setCompressedUri] = useState<string | null>(null);
@@ -295,6 +299,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       videoLength: pickedVideo.duration
         ? Math.round(pickedVideo.duration / 1000)
         : undefined,
+      ...(matchId ? { matchId } : {}),
     });
     setIsUploading(false);
     compressedUriRef.current = null;

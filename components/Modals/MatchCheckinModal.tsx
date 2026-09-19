@@ -1,5 +1,11 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Dimensions, Linking, Modal } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Linking,
+  Modal,
+} from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -19,6 +25,8 @@ import {
   hasUserCheckedIn,
   isLadderMatchCheckedIn,
   isValidLadderCheckInScan,
+  parseLadderCheckInPayload,
+  NO_SHOW_GRACE_MINUTES,
 } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
@@ -31,6 +39,7 @@ import {
   formatCourtAddress,
   getCourtCoords,
 } from "../../helpers/locationCheckIn";
+import { getMatchStart } from "../../helpers/ladderMatchTime";
 import type { Court } from "@shared/types";
 
 const screenWidth = Dimensions.get("window").width;
@@ -71,6 +80,8 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   const [status, setStatus] = useState<VerifyStatus>("checking");
   const [showCheckin, setShowCheckin] = useState(false);
   const [court, setCourt] = useState<Court>(match.court);
+  const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const runIdRef = useRef(0);
 
   const address = formatCourtAddress(court);
@@ -81,6 +92,8 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
     const startedAt = Date.now();
 
     let result: VerifyStatus = "failed";
+    let measured: number | null = null;
+    let denied = false;
     try {
       let targetCourt = match.court;
       try {
@@ -97,9 +110,15 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
       }
 
       const courtCoords = getCourtCoords(targetCourt);
-      if (courtCoords) {
+      if (!courtCoords) {
+        // No coordinates on file for this court, so location can't be verified
+        // — allow the check-in rather than blocking it forever.
+        result = "verified";
+      } else {
         const { granted } = await Location.requestForegroundPermissionsAsync();
-        if (granted) {
+        if (!granted) {
+          denied = true;
+        } else {
           const position = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.High,
           });
@@ -108,11 +127,12 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
             longitude: position.coords.longitude,
           };
           const distance = distanceInMeters(device, courtCoords);
+          measured = Math.round(distance);
           if (__DEV__) {
             console.log("[check-in] location verify", {
               device,
               court: courtCoords,
-              distanceMeters: Math.round(distance),
+              distanceMeters: measured,
               radiusMeters: CHECKIN_RADIUS_METERS,
             });
           }
@@ -132,6 +152,8 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
     }
 
     if (runIdRef.current === runId) {
+      setDistanceMeters(measured);
+      setPermissionDenied(denied);
       setStatus(result);
     }
   };
@@ -201,10 +223,19 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
             {status === "failed" && (
               <StatusBlock testID="location-verifier-failed">
                 <Ionicons name="location-outline" size={48} color="#FF4B6E" />
-                <SectionTitle>Location not verified</SectionTitle>
+                <SectionTitle>
+                  {permissionDenied
+                    ? "Location access needed"
+                    : "Location not verified"}
+                </SectionTitle>
                 <ErrorText>
-                  You are not in the right location to check in, please ensure
-                  you have arrived at the correct address
+                  {permissionDenied
+                    ? "Allow location access for this app, then check again — we use it to confirm you've arrived at the court."
+                    : `You are not in the right location to check in, please ensure you have arrived at the correct address${
+                        distanceMeters !== null
+                          ? ` — you're about ${distanceMeters}m away (need to be within ${CHECKIN_RADIUS_METERS}m).`
+                          : "."
+                      }`}
                 </ErrorText>
                 {!!address && (
                   <AddressLink
@@ -226,6 +257,22 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                   <Ionicons name="refresh" size={16} color="#00A2FF" />
                   <RetryText>Check again</RetryText>
                 </RetryButton>
+                {__DEV__ && (
+                  <RetryButton
+                    onPress={() => setStatus("verified")}
+                    activeOpacity={0.8}
+                    testID="location-verifier-dev-bypass"
+                  >
+                    <Ionicons
+                      name="construct-outline"
+                      size={16}
+                      color="#FFA500"
+                    />
+                    <RetryText style={{ color: "#FFA500" }}>
+                      Check in anyway (dev only)
+                    </RetryText>
+                  </RetryButton>
+                )}
               </StatusBlock>
             )}
 
@@ -279,6 +326,13 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   );
 };
 
+const formatNoShowCountdown = (ms: number): string => {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
 interface MatchCheckinModalProps {
   visible: boolean;
   onClose: () => void;
@@ -296,14 +350,33 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   currentUserId,
   onCheckedIn,
 }) => {
-  const { checkInLadderMatch, subscribeToLadderMatches } =
-    useContext(LadderContext);
+  const {
+    checkInLadderMatch,
+    checkInLadderMatchHandshake,
+    subscribeToLadderMatches,
+    createNoShowClaim,
+  } = useContext(LadderContext);
   const { showBottomToast } = useContext(PopupContext);
   const [permission, requestPermission] = useCameraPermissions();
+  const [noShowReported, setNoShowReported] = useState(false);
 
   const isPoster = !!currentUserId && currentUserId === match.createdBy;
   const reference = getLadderMatchReference(match.ladderMatchId);
-  const qrValue = JSON.stringify(buildLadderCheckInPayload(match));
+  const qrValue = JSON.stringify(
+    buildLadderCheckInPayload(match, currentUserId ?? ""),
+  );
+
+  // Fixed roles: one side shows QRs, the other scans — so a doubles match can't
+  // end up with both teams scanning (or both showing). The poster's side shows;
+  // in doubles that's every player on teams[0], and the opposing team scans.
+  // Each scan checks in the scanner and the QR's owner together, so two scans
+  // (one per opposing player) check all four in.
+  const teams = match.teams ?? [];
+  const showRole =
+    teams.length >= 2
+      ? teams[0].playerIds.includes(currentUserId ?? "")
+      : isPoster;
+  const mode: "show" | "scan" = showRole ? "show" : "scan";
 
   const [processing, setProcessing] = useState(false);
   const [code, setCode] = useState("");
@@ -315,12 +388,81 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const checkinComplete = isLadderMatchCheckedIn(liveMatch);
   const progress = getLadderCheckInProgress(liveMatch);
 
+  // A blocked player can report the opponent's no-show once the grace period
+  // after the scheduled start has passed and check-in still isn't complete.
+  // Until then the button is shown dimmed with a live countdown.
+  const matchStart = getMatchStart(match);
+  const noShowUnlockMs = matchStart
+    ? matchStart.getTime() + NO_SHOW_GRACE_MINUTES * 60_000
+    : null;
+
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!visible || noShowUnlockMs == null) return;
+    setNowMs(Date.now());
+    if (Date.now() >= noShowUnlockMs) return;
+    const id = setInterval(() => {
+      const tick = Date.now();
+      setNowMs(tick);
+      if (tick >= noShowUnlockMs) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [visible, noShowUnlockMs]);
+
+  const graceElapsed = noShowUnlockMs != null && nowMs >= noShowUnlockMs;
+  const noShowCountdownMs =
+    noShowUnlockMs != null ? Math.max(0, noShowUnlockMs - nowMs) : 0;
+
+  const showNoShowSection =
+    !!currentUserId &&
+    match.participants.includes(currentUserId) &&
+    !checkinComplete &&
+    !noShowReported &&
+    noShowUnlockMs != null;
+  const canReportNoShow = showNoShowSection && graceElapsed;
+
+  const handleReportNoShow = () => {
+    if (!currentUserId) return;
+    Alert.alert(
+      "Report a no-show",
+      "Only do this if an opponent hasn't arrived and you can't check in. A ladder admin reviews it before the forfeit is awarded.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Report no-show",
+          style: "destructive",
+          onPress: async () => {
+            const { success, reason } = await createNoShowClaim(
+              ladderId,
+              match,
+              currentUserId,
+            );
+            if (success || reason === "exists") {
+              setNoShowReported(true);
+              showBottomToast(
+                "No-show reported — an admin will review it",
+                "success",
+              );
+            } else {
+              showBottomToast(
+                "Couldn't report the no-show. Please try again.",
+                "error",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
   useEffect(() => {
     if (visible) {
       handledRef.current = false;
       setProcessing(false);
       setCode("");
       setLiveMatch(match);
+      setNoShowReported(false);
     }
   }, [visible, match]);
 
@@ -343,16 +485,43 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     onClose();
   };
 
-  const recordCheckIn = async () => {
-    if (handledRef.current || processing) return;
+  const guardParticipant = (): boolean => {
     if (!currentUserId) {
       showBottomToast("You need to be signed in to check in", "error");
-      return;
+      return false;
     }
     if (!match.participants.includes(currentUserId)) {
       showBottomToast("This code isn't for a match you're in", "error");
-      return;
+      return false;
     }
+    return true;
+  };
+
+  // A successful scan checks in BOTH the scanner and the QR's owner.
+  const recordHandshake = async (displayerId: string) => {
+    if (handledRef.current || processing) return;
+    if (!guardParticipant() || !currentUserId) return;
+    handledRef.current = true;
+    setProcessing(true);
+
+    const { success } = await checkInLadderMatchHandshake(
+      ladderId,
+      match.ladderMatchId,
+      currentUserId,
+      displayerId,
+    );
+    setProcessing(false);
+    if (!success) {
+      showBottomToast("Couldn't complete check-in. Please try again.", "error");
+      handledRef.current = false;
+    }
+  };
+
+  // Reference-code fallback when a QR can't be scanned: checks in the acting
+  // user only (each player enters the code from their own device).
+  const recordSelfCheckIn = async () => {
+    if (handledRef.current || processing) return;
+    if (!guardParticipant() || !currentUserId) return;
     handledRef.current = true;
     setProcessing(true);
 
@@ -368,19 +537,29 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (visible && isPoster && !selfCheckedIn) {
-      recordCheckIn();
-    }
-  }, [visible, isPoster]);
-
   const handleScan = (result: BarcodeScanningResult) => {
     if (handledRef.current || processing) return;
-    if (!isValidLadderCheckInScan(match, result.data)) {
+    const payload = parseLadderCheckInPayload(result.data);
+    if (!payload || !isValidLadderCheckInScan(match, result.data)) {
       showBottomToast("That QR code is for a different match", "error");
       return;
     }
-    recordCheckIn();
+    if (payload.userId === currentUserId) {
+      showBottomToast("That's your own code — scan another player's", "info");
+      return;
+    }
+    if (!match.participants.includes(payload.userId)) {
+      showBottomToast("That code isn't for a player in this match", "error");
+      return;
+    }
+    if (hasUserCheckedIn(liveMatch, payload.userId)) {
+      showBottomToast(
+        "That player is already checked in — scan the other player's QR",
+        "info",
+      );
+      return;
+    }
+    recordHandshake(payload.userId);
   };
 
   const handleSubmitCode = () => {
@@ -392,23 +571,29 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       );
       return;
     }
-    recordCheckIn();
+    recordSelfCheckIn();
   };
 
-  const renderPoster = () => (
+  const renderShow = () => (
     <>
-      <PosterHeading>Show this QR code to all players</PosterHeading>
+      <PosterHeading>Show this QR code to another player</PosterHeading>
       <QRFrame>
         <QRCode value={qrValue} size={QR_SIZE} />
       </QRFrame>
       <WaitingRow testID="match-checkin-waiting">
         <Ionicons name="hourglass-outline" size={16} color="#9fb8c8" />
-        <WaitingText>Waiting for the others to scan…</WaitingText>
+        <WaitingText>Waiting for an opponent to scan…</WaitingText>
       </WaitingRow>
+      <EmergencyRow testID="match-checkin-reference">
+        <EmergencyLabel>
+          If your QR cannot be scanned, give this code to another player
+        </EmergencyLabel>
+        <EmergencyCode>{reference}</EmergencyCode>
+      </EmergencyRow>
     </>
   );
 
-  const renderScanner = () => {
+  const renderScan = () => {
     if (!permission) {
       return <Helper>Checking camera permission…</Helper>;
     }
@@ -418,7 +603,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
           <Ionicons name="camera-outline" size={40} color="#00A2FF" />
           <SectionTitle>Camera access needed</SectionTitle>
           <Helper>
-            Allow camera access to scan your opponent&apos;s check-in code.
+            Allow camera access to scan another player&apos;s check-in code.
           </Helper>
           <ActionButton
             testID="match-checkin-grant-permission"
@@ -433,7 +618,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     }
     return (
       <>
-        <SectionTitle>Scan your opponent&apos;s code</SectionTitle>
+        <SectionTitle>Scan another player&apos;s code</SectionTitle>
         <Helper>Point your camera at the QR code on their screen.</Helper>
         <ScannerFrame>
           <CameraView
@@ -449,6 +634,35 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             </ScannerOverlay>
           )}
         </ScannerFrame>
+        <EmergencyRow testID="match-checkin-reference">
+          <EmergencyLabel>
+            Can&apos;t scan? Enter the match code to check in
+          </EmergencyLabel>
+          <CodeInputRow>
+            <CodeInput
+              value={code}
+              onChangeText={(text: string) => setCode(text.toUpperCase())}
+              placeholder="CODE"
+              placeholderTextColor="#5b7183"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={reference.length}
+              editable={!processing}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmitCode}
+              testID="match-checkin-code-input"
+            />
+            <CodeSubmit
+              onPress={handleSubmitCode}
+              activeOpacity={0.85}
+              disabled={processing || code.trim().length === 0}
+              isDisabled={processing || code.trim().length === 0}
+              testID="match-checkin-code-submit"
+            >
+              <CodeSubmitText>Submit</CodeSubmitText>
+            </CodeSubmit>
+          </CodeInputRow>
+        </EmergencyRow>
       </>
     );
   };
@@ -486,7 +700,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
                 <ActionButtonText>Done</ActionButtonText>
               </ActionButton>
             </SuccessBlock>
-          ) : selfCheckedIn && !isPoster ? (
+          ) : selfCheckedIn ? (
             <SuccessBlock testID="match-checkin-waiting-self">
               <Ionicons
                 name="checkmark-circle-outline"
@@ -508,52 +722,41 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
                 <ActionButtonText>Done</ActionButtonText>
               </ActionButton>
             </SuccessBlock>
+          ) : mode === "show" ? (
+            renderShow()
           ) : (
-            <>
-              {isPoster ? renderPoster() : renderScanner()}
+            renderScan()
+          )}
 
-              {isPoster ? (
-                <EmergencyRow testID="match-checkin-reference">
-                  <EmergencyLabel>
-                    If your QR cannot be scanned, give this code to your
-                    opponent
-                  </EmergencyLabel>
-                  <EmergencyCode>{reference}</EmergencyCode>
-                </EmergencyRow>
-              ) : (
-                <EmergencyRow testID="match-checkin-reference">
-                  <EmergencyLabel>
-                    Can&apos;t scan? Enter the code from your opponent
-                  </EmergencyLabel>
-                  <CodeInputRow>
-                    <CodeInput
-                      value={code}
-                      onChangeText={(text: string) =>
-                        setCode(text.toUpperCase())
-                      }
-                      placeholder="CODE"
-                      placeholderTextColor="#5b7183"
-                      autoCapitalize="characters"
-                      autoCorrect={false}
-                      maxLength={reference.length}
-                      editable={!processing}
-                      returnKeyType="done"
-                      onSubmitEditing={handleSubmitCode}
-                      testID="match-checkin-code-input"
-                    />
-                    <CodeSubmit
-                      onPress={handleSubmitCode}
-                      activeOpacity={0.85}
-                      disabled={processing || code.trim().length === 0}
-                      isDisabled={processing || code.trim().length === 0}
-                      testID="match-checkin-code-submit"
-                    >
-                      <CodeSubmitText>Submit</CodeSubmitText>
-                    </CodeSubmit>
-                  </CodeInputRow>
-                </EmergencyRow>
-              )}
-            </>
+          {showNoShowSection && (
+            <NoShowButton
+              onPress={canReportNoShow ? handleReportNoShow : undefined}
+              disabled={!canReportNoShow}
+              isDisabled={!canReportNoShow}
+              activeOpacity={0.85}
+              testID="match-checkin-report-no-show"
+            >
+              <Ionicons
+                name={
+                  canReportNoShow ? "alert-circle-outline" : "time-outline"
+                }
+                size={16}
+                color="#FFA500"
+              />
+              <NoShowButtonText>
+                {canReportNoShow
+                  ? "Can't check in? Report a no-show"
+                  : `Report no-show in ${formatNoShowCountdown(noShowCountdownMs)}`}
+              </NoShowButtonText>
+            </NoShowButton>
+          )}
+          {noShowReported && (
+            <NoShowNote testID="match-checkin-no-show-reported">
+              <Ionicons name="time-outline" size={16} color="#9fb8c8" />
+              <NoShowNoteText>
+                No-show reported — an admin will review it.
+              </NoShowNoteText>
+            </NoShowNote>
           )}
         </ModalContent>
       </ModalContainer>
@@ -752,6 +955,42 @@ const WaitingText = styled.Text({
 const EmergencyRow = styled.View({
   alignItems: "center",
   gap: 4,
+});
+
+const NoShowButton = styled.TouchableOpacity<{ isDisabled?: boolean }>(
+  ({ isDisabled }: { isDisabled?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 18,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 165, 0, 0.4)",
+    backgroundColor: "rgba(255, 165, 0, 0.08)",
+    opacity: isDisabled ? 0.5 : 1,
+  }),
+);
+
+const NoShowButtonText = styled.Text({
+  color: "#FFA500",
+  fontSize: 14,
+  fontWeight: "700",
+});
+
+const NoShowNote = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  marginTop: 18,
+});
+
+const NoShowNoteText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+  fontWeight: "600",
 });
 
 const EmergencyLabel = styled.Text({

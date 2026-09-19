@@ -21,9 +21,20 @@ export const FixturePlayerCell = ({ position, player }) => (
 
 export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
   <FixtureTeamContainer>
-    <FixturePlayerCell position={position} player={team?.player1} />
-    {tournamentType === "Doubles" && (
-      <FixturePlayerCell position={position} player={team?.player2} />
+    {team?.teamName ? (
+      // Doubles ladders name their teams, so a single team-name cell replaces
+      // the two player cells. Leagues/tournaments never set teamName.
+      <FixturePlayerCell
+        position={position}
+        player={{ displayName: team.teamName }}
+      />
+    ) : (
+      <>
+        <FixturePlayerCell position={position} player={team?.player1} />
+        {tournamentType === "Doubles" && (
+          <FixturePlayerCell position={position} player={team?.player2} />
+        )}
+      </>
     )}
   </FixtureTeamContainer>
 );

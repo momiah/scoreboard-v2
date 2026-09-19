@@ -3,13 +3,19 @@ import { Dimensions, View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import { LADDER_STATUS, COMPETITION_TYPES } from "@shared";
-import type { Ladder, ScoreboardProfile } from "@shared/types";
-import { calculateLadderPrizePool } from "@shared/helpers";
 import {
-  sortPlayersByPlacement,
-  getPlayerRankInCompetition,
-} from "@shared/helpers/getRankInCompetition";
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
+import { LADDER_STATUS, COMPETITION_TYPES, LADDER_TYPE } from "@shared";
+import type { Ladder, ScoreboardProfile, TeamStats } from "@shared/types";
+import {
+  calculateLadderPrizePool,
+  sortLadderTeamsByPlacement,
+} from "@shared/helpers";
+import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
+import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 
 import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
@@ -36,12 +42,13 @@ const LADDER_TOOLTIP =
 
 const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
   const isPaid = ladder.entryFee > 0;
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
 
   return (
     <StatsRow testID="ladder-stats-row">
       <StatBlock>
-        <StatLabel>Players</StatLabel>
+        <StatLabel>{isDoubles ? "Teams" : "Players"}</StatLabel>
         <StatHeadingContainer>
           <StatValue testID="ladder-players">
             {ladder.participantCount} / {ladder.maxPlayers}
@@ -85,7 +92,10 @@ type EnrichedPlayer = ScoreboardProfile & { XP?: number };
 
 const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const { getUserById, currentUser } = useContext(UserContext);
-  const { fetchLadderParticipants } = useContext(LadderContext);
+  const { fetchLadderParticipants, fetchLadderTeams } =
+    useContext(LadderContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -104,7 +114,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     };
   }, [ladderId, fetchLadderParticipants]);
 
-  const { mode, requestJoin } = useLadderJoin(ladder, () =>
+  const { mode, openJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
   );
 
@@ -123,7 +133,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const [userSummaryRow, setUserSummaryRow] = useState<{
     player: EnrichedPlayer;
     rank: number;
-    cp: number;
   } | null>(null);
 
   useEffect(() => {
@@ -132,20 +141,24 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       setUserSummaryRow(null);
       return;
     }
-    const me = participants.find((p) => p.userId === uid);
-    if (!me) {
+    const participant = participants.find((p) => p.userId === uid);
+    if (!participant) {
       setUserSummaryRow(null);
       return;
     }
     let active = true;
     const load = async () => {
       try {
-        const [enrichedMe] = (await enrichPlayers(getUserById, [
-          me,
+        const [enrichedPlayer] = (await enrichPlayers(getUserById, [
+          participant,
         ])) as EnrichedPlayer[];
-        const rank = getPlayerRankInCompetition(participants, uid);
-        const cp = me.XP ?? 0;
-        if (active) setUserSummaryRow({ player: enrichedMe, rank, cp });
+        // Rank on the raw participants (per-ladder XP = CP) via the ladder
+        // comparator; 0 means unranked (no wins).
+        const rank =
+          sortLadderParticipantsByPlacement(participants).findIndex(
+            (p) => p.userId === uid,
+          ) + 1;
+        if (active) setUserSummaryRow({ player: enrichedPlayer, rank });
       } catch (error) {
         console.error("Error building ladder summary row:", error);
         if (active) setUserSummaryRow(null);
@@ -157,21 +170,60 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     };
   }, [participants, currentUser?.userId, getUserById]);
 
+  const [userTeamRow, setUserTeamRow] = useState<{
+    team: TeamStats;
+    rank: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const uid = currentUser?.userId;
+    if (!isDoubles || !uid) {
+      setUserTeamRow(null);
+      return;
+    }
+    let active = true;
+    const load = async () => {
+      try {
+        const teams = await fetchLadderTeams(ladderId);
+        const valid = teams.filter(
+          (t) => t.teamKey && Array.isArray(t.team),
+        );
+        const ranked = sortLadderTeamsByPlacement(valid);
+        const idx = ranked.findIndex((t) => teamMemberIds(t).includes(uid));
+        const userTeam =
+          idx >= 0
+            ? ranked[idx]
+            : (valid.find((t) => teamMemberIds(t).includes(uid)) ?? null);
+        if (active) {
+          setUserTeamRow(userTeam ? { team: userTeam, rank: idx + 1 } : null);
+        }
+      } catch (error) {
+        console.error("Error building ladder team summary row:", error);
+        if (active) setUserTeamRow(null);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [isDoubles, ladderId, currentUser?.userId, fetchLadderTeams]);
+
   useEffect(() => {
     let active = true;
     const loadContenders = async () => {
       setIsDataLoading(true);
-      const withWins = participants.filter((p) => (p.numberOfWins ?? 0) > 0);
-      if (withWins.length === 0) {
+      // Rank raw participants (per-ladder XP = CP) with the ladder comparator,
+      // then enrich the top few for display (order preserved).
+      const ranked = sortLadderParticipantsByPlacement(participants);
+      if (ranked.length === 0) {
         if (active) setTopContenders([]);
       } else {
         try {
           const enriched = (await enrichPlayers(
             getUserById,
-            withWins,
+            ranked,
           )) as ScoreboardProfile[];
-          if (active)
-            setTopContenders(sortPlayersByPlacement(enriched).slice(0, 4));
+          if (active) setTopContenders(enriched.slice(0, 4));
         } catch (error) {
           console.error("Error enriching ladder players:", error);
           if (active) setTopContenders([]);
@@ -201,19 +253,37 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       )}
       <LadderStatsRow ladder={ladder} />
 
-      {userSummaryRow && (
-        <MySummarySection testID="my-ladder-summary">
-          <SectionTitle>Current Position</SectionTitle>
-          <MySummaryCard>
-            <PerformanceRow
-              player={userSummaryRow.player}
-              rank={userSummaryRow.rank}
-              ladder={ladder}
-              cp={userSummaryRow.cp}
-            />
-          </MySummaryCard>
-        </MySummarySection>
-      )}
+      {isDoubles
+        ? userTeamRow && (
+            <PositionSection testID="ladder-team-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <PositionCard>
+                <PerformanceRow
+                  team={userTeamRow.team}
+                  rank={userTeamRow.rank}
+                  ladder={ladder}
+                  onPress={(team: TeamStats) =>
+                    navigation.navigate("TeamDetails", { team })
+                  }
+                />
+              </PositionCard>
+            </PositionSection>
+          )
+        : userSummaryRow && (
+            <PositionSection testID="ladder-position-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <PositionCard>
+                <PerformanceRow
+                  player={userSummaryRow.player}
+                  rank={userSummaryRow.rank}
+                  ladder={ladder}
+                  onPress={(selectedPlayer: ScoreboardProfile) =>
+                    navigation.navigate("PlayerDetails", { selectedPlayer })
+                  }
+                />
+              </PositionCard>
+            </PositionSection>
+          )}
 
       <PrizeDistribution
         prizePool={prizePool.xp}
@@ -285,7 +355,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         <JoinNowButton
           testID="ladder-summary-join"
           activeOpacity={0.85}
-          onPress={requestJoin}
+          onPress={openJoin}
         >
           <JoinNowText>Join Now</JoinNowText>
         </JoinNowButton>
@@ -463,12 +533,13 @@ const StatLabel = styled.Text({
   color: "#9fb8c8",
 });
 
-const MySummarySection = styled.View({
+const PositionSection = styled.View({
   gap: 10,
   marginBottom: 20,
 });
 
-const MySummaryCard = styled.View({
+
+const PositionCard = styled.View({
   marginHorizontal: -20,
   paddingHorizontal: 20,
 });

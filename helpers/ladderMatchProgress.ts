@@ -33,8 +33,8 @@ const teamHasUser = (team: GameTeam | undefined, userId: string): boolean =>
 export type LadderMatchOutcome = "win" | "loss" | "undecided";
 
 export interface LadderMatchScore {
-  mine: number;
-  theirs: number;
+  user: number;
+  opponent: number;
   outcome: LadderMatchOutcome;
 }
 
@@ -43,26 +43,26 @@ export const getLadderMatchScore = (
   userId: string,
 ): LadderMatchScore => {
   const games = match.games ?? [];
-  let mine = 0;
-  let theirs = 0;
+  let user = 0;
+  let opponent = 0;
 
   if (userId) {
     for (const game of games) {
       if (!isApproved(game) || !game.result) continue;
-      const mySide = teamHasUser(game.team1, userId)
+      const userSide = teamHasUser(game.team1, userId)
         ? "Team 1"
         : teamHasUser(game.team2, userId)
           ? "Team 2"
           : null;
-      if (!mySide) continue;
-      if (game.result.winner.team === mySide) mine += 1;
-      else theirs += 1;
+      if (!userSide) continue;
+      if (game.result.winner.team === userSide) user += 1;
+      else opponent += 1;
     }
   }
 
   const majority = Math.floor((match.bestOf ?? games.length) / 2) + 1;
   const outcome: LadderMatchOutcome =
-    mine >= majority ? "win" : theirs >= majority ? "loss" : "undecided";
+    user >= majority ? "win" : opponent >= majority ? "loss" : "undecided";
 
-  return { mine, theirs, outcome };
+  return { user, opponent, outcome };
 };

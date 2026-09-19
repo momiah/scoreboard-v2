@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { View, Text, Modal } from "react-native";
 import styled from "styled-components/native";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Ionicons } from "@expo/vector-icons";
 import MedalDisplay from "../performance/MedalDisplay";
 import MedalProgress from "../performance/MedalProgress";
 import MatchMedals from "../performance/MatchMedals";
@@ -40,30 +40,50 @@ const screenAdjustedDescriptionFontSize = screenWidth <= 405 ? 12 : 14;
 const screenAdjustedMedalSize = screenWidth <= 405 ? 60 : 70;
 const screenAdjustedPadding = screenWidth <= 405 ? 10 : 20;
 
+/**
+ * @param {{
+ *   showPlayerDetails?: boolean,
+ *   setShowPlayerDetails?: (value: boolean) => void,
+ *   selectedPlayer?: any,
+ *   route?: any,
+ * }} props
+ */
 const PlayerDetails = ({
   showPlayerDetails,
   setShowPlayerDetails,
   selectedPlayer,
+  route,
 }) => {
+  // Modal mode when opened as a popup (Leagues/Tournaments/standings); screen
+  // mode when React Navigation injects a route (Ladder Current Position).
+  const isModal = showPlayerDetails !== undefined;
   const navigation = useNavigation();
   const { medalNames } = useContext(GameContext);
-  const winRatio = selectedPlayer.numberOfWins / selectedPlayer.numberOfLosses;
+
+  const player = selectedPlayer ?? route?.params?.selectedPlayer ?? null;
+  if (!player) return null;
+
+  // Enriched callers flatten XP to the top level; a raw ladder participant
+  // keeps it nested under profileDetail. Read whichever is present.
+  const playerXp = player.XP ?? player.profileDetail?.XP;
+
+  const winRatio = player.numberOfWins / player.numberOfLosses;
 
   const goToProfile = () => {
-    setShowPlayerDetails(false);
+    if (isModal) setShowPlayerDetails(false);
     navigation.navigate("UserProfile", {
-      userId: selectedPlayer.userId,
+      userId: player.userId,
     });
   };
 
-  const currentStreakValue = currentStreak(selectedPlayer.resultLog);
+  const currentStreakValue = currentStreak(player.resultLog);
 
   const statData = [
     {
       statTitle: "Wins",
       stat: (
         <AnimateNumber
-          number={selectedPlayer.numberOfWins}
+          number={player.numberOfWins}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -72,7 +92,7 @@ const PlayerDetails = ({
       statTitle: "Losses",
       stat: (
         <AnimateNumber
-          number={selectedPlayer.numberOfLosses}
+          number={player.numberOfLosses}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -85,7 +105,7 @@ const PlayerDetails = ({
       statTitle: "Avg Point Difference",
       stat: (
         <AnimateNumber
-          number={selectedPlayer.averagePointDifference?.toFixed(0) || 0}
+          number={player.averagePointDifference?.toFixed(0) || 0}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
@@ -103,13 +123,111 @@ const PlayerDetails = ({
       statTitle: "Highest Streak",
       stat: (
         <AnimateNumber
-          number={selectedPlayer.highestWinStreak}
+          number={player.highestWinStreak}
           fontSize={screenAdjustedStatFontSize}
         />
       ),
     },
   ];
 
+  const content = (
+    <>
+      <PlayerDetail>
+        <View>
+          <PlayerName>{player.username}</PlayerName>
+          <Text
+            style={{
+              color: "#aaa",
+              fontSize: screenAdjustedDescriptionFontSize,
+            }}
+          >
+            Member since {player.memberSince}
+          </Text>
+          <Text
+            style={{
+              color: "#aaa",
+              fontSize: screenAdjustedDescriptionFontSize,
+            }}
+          >
+            Last Active {transformDate(player.lastActive)}
+          </Text>
+
+          <View style={{ marginTop: 10, alignSelf: "flex-start" }}>
+            <Tag
+              name={"Go to profile"}
+              icon="person"
+              iconSize={screenAdjustedDescriptionFontSize}
+              iconColor="white"
+              iconPosition="left"
+              color="#00A2FF"
+              onPress={goToProfile}
+              bold
+            />
+          </View>
+        </View>
+
+        {isModal && (
+          <MedalContainer>
+            <MedalDisplay xp={playerXp} size={screenAdjustedMedalSize} />
+            <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
+              {medalNames(playerXp)}
+            </Text>
+          </MedalContainer>
+        )}
+      </PlayerDetail>
+      {isModal ? (
+        // League/tournament popup: global rank medal + progress.
+        <MedalProgress xp={playerXp} prevGameXp={player.prevGameXP} />
+      ) : (
+        // Ladder profile: per-ladder CP only, no rank medal — same as teams.
+        <MedalProgress
+          xp={player.competitionXP ?? 0}
+          prevGameXp={player.prevGameXP}
+          showMedals={false}
+        />
+      )}
+      <Divider />
+      <ResultLog
+        resultLog={
+          isModal ? player.resultLog : player.matchResultLog ?? player.resultLog
+        }
+      />
+      <MatchMedals
+        demonWin={player.demonWin}
+        winStreak3={player.winStreak3}
+        winStreak5={player.winStreak5}
+        winStreak7={player.winStreak7}
+      />
+
+      <PerformanceStats statData={statData} selectedPlayer={player} />
+    </>
+  );
+
+  // ── Screen mode: full-screen Ladder route ──
+  if (!isModal) {
+    return (
+      <Screen>
+        <Header>
+          <BackButton
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID="player-details-back"
+          >
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </BackButton>
+          <HeaderSpacer />
+        </Header>
+        <Body
+          contentContainerStyle={{ paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {content}
+        </Body>
+      </Screen>
+    );
+  }
+
+  // ── Modal mode: the read-only stats popup ──
   return (
     <View>
       <Modal
@@ -128,75 +246,13 @@ const PlayerDetails = ({
               />
             </CloseIconContainer>
 
-            <PlayerDetail>
-              <View>
-                <PlayerName>{selectedPlayer.username}</PlayerName>
-                <Text
-                  style={{
-                    color: "#aaa",
-                    fontSize: screenAdjustedDescriptionFontSize,
-                  }}
-                >
-                  Member since {selectedPlayer.memberSince}
-                </Text>
-                <Text
-                  style={{
-                    color: "#aaa",
-                    fontSize: screenAdjustedDescriptionFontSize,
-                  }}
-                >
-                  Last Active {transformDate(selectedPlayer.lastActive)}
-                </Text>
-
-                <View style={{ marginTop: 10, alignSelf: "flex-start" }}>
-                  <Tag
-                    name={"Go to profile"}
-                    icon="person"
-                    iconSize={screenAdjustedDescriptionFontSize}
-                    iconColor="white"
-                    iconPosition="left"
-                    color="#00A2FF"
-                    onPress={goToProfile}
-                    bold
-                  />
-                </View>
-              </View>
-
-              <MedalContainer>
-                <MedalDisplay
-                  xp={selectedPlayer.XP}
-                  size={screenAdjustedMedalSize}
-                />
-                <Text style={{ color: "white", marginTop: 10, fontSize: 12 }}>
-                  {medalNames(selectedPlayer.XP)}
-                </Text>
-              </MedalContainer>
-            </PlayerDetail>
-            <MedalProgress
-              xp={selectedPlayer.XP}
-              prevGameXp={selectedPlayer.prevGameXP}
-            />
-            <Divider />
-            <ResultLog resultLog={selectedPlayer.resultLog} />
-            <MatchMedals
-              demonWin={selectedPlayer.demonWin}
-              winStreak3={selectedPlayer.winStreak3}
-              winStreak5={selectedPlayer.winStreak5}
-              winStreak7={selectedPlayer.winStreak7}
-            />
-
-            <PerformanceStats
-              statData={statData}
-              selectedPlayer={selectedPlayer}
-            />
+            {content}
           </ModalContent>
         </ModalContainer>
       </Modal>
     </View>
   );
 };
-
-console.log("screenWidth", screenWidth);
 
 const Divider = styled.View({
   borderBottomColor: "#262626",
@@ -254,6 +310,34 @@ const Stat = styled.Text({
   fontSize: screenAdjustedStatFontSize,
   fontWeight: "bold",
   color: "white",
+});
+
+// ── Screen-mode styles (Ladder Current Position full screen) ──
+const Screen = styled.View({
+  flex: 1,
+  backgroundColor: "rgb(3, 16, 31)",
+  paddingHorizontal: 20,
+});
+
+const Header = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  paddingTop: 20,
+  paddingBottom: 12,
+});
+
+const Body = styled.ScrollView({
+  flex: 1,
+});
+
+const BackButton = styled.TouchableOpacity({
+  width: 32,
+  justifyContent: "center",
+});
+
+const HeaderSpacer = styled.View({
+  width: 32,
 });
 
 export default PlayerDetails;

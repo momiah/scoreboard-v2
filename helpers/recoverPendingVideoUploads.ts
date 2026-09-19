@@ -60,6 +60,7 @@ export const recoverPendingVideoUploads = async (userId: string) => {
       progress,
       platform,
       startedAt,
+      matchId,
     } = docSnap.data();
 
     try {
@@ -77,6 +78,7 @@ export const recoverPendingVideoUploads = async (userId: string) => {
           date,
           postedBy,
           teams,
+          ...(matchId ? { matchId } : {}),
         });
         await deleteDoc(docSnap.ref);
         continue;

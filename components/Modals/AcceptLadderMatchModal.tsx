@@ -9,14 +9,17 @@ import {
   canAcceptLadderMatch,
   notificationSchema,
   notificationTypes,
+  LADDER_TYPE,
+  TEAM_STATUS,
 } from "@shared";
-import type { Ladder, LadderMatch } from "@shared/types";
+import type { Ladder, LadderMatch, MatchTeam, TeamStats } from "@shared/types";
 
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import MatchCard from "../ladder/MatchCard";
 import LadderTermsModal from "./LadderTermsModal";
 
@@ -39,7 +42,8 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   onAccepted,
   onUnavailable,
 }) => {
-  const { acceptLadderMatch } = useContext(LadderContext);
+  const { acceptLadderMatch, fetchUserTeams, checkLadderMembership } =
+    useContext(LadderContext);
   const { currentUser, sendNotification } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
@@ -47,6 +51,10 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [termsVisible, setTermsVisible] = useState(false);
+  const [accepterTeam, setAccepterTeam] = useState<TeamStats | null>(null);
+  const [isLadderMember, setIsLadderMember] = useState(false);
+
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
 
   useEffect(() => {
     if (modalVisible) {
@@ -56,6 +64,52 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     }
   }, [modalVisible]);
 
+  // Only ladder members may accept a match. Membership is a separate join
+  // (doubles members join via their team; checkLadderMembership covers both).
+  useEffect(() => {
+    if (!modalVisible || !currentUser?.userId) {
+      setIsLadderMember(false);
+      return;
+    }
+    let active = true;
+    checkLadderMembership(ladder.ladderId, currentUser.userId)
+      .then((member) => {
+        if (active) setIsLadderMember(member);
+      })
+      .catch(() => {
+        if (active) setIsLadderMember(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [modalVisible, currentUser?.userId, ladder.ladderId, checkLadderMembership]);
+
+  // Doubles accepts as a team: resolve the user's active team in this ladder.
+  useEffect(() => {
+    if (!modalVisible || !isDoubles || !currentUser?.userId) {
+      setAccepterTeam(null);
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const teams = await fetchUserTeams(currentUser.userId);
+        const team = teams.find(
+          (t) =>
+            t.status === TEAM_STATUS.ACTIVE &&
+            (t.ladderIds ?? []).includes(ladder.ladderId),
+        );
+        if (active) setAccepterTeam(team ?? null);
+      } catch (error) {
+        console.error("Error resolving accepter team:", error);
+        if (active) setAccepterTeam(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [modalVisible, isDoubles, currentUser?.userId, ladder.ladderId, fetchUserTeams]);
+
   const resetAndClose = () => {
     setAcceptedTerms(false);
     setProcessing(false);
@@ -64,9 +118,25 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   };
 
   const userId = currentUser?.userId;
+  const accepterPlayerIds = accepterTeam ? teamMemberIds(accepterTeam) : [];
+  const accepterMatchTeam: MatchTeam | undefined =
+    isDoubles && accepterTeam?.teamId && accepterPlayerIds.length >= 2
+      ? {
+          teamId: accepterTeam.teamId,
+          teamKey: accepterTeam.teamKey,
+          playerIds: accepterPlayerIds,
+        }
+      : undefined;
   const isOwnMatch =
     !!match && !!userId && match.participants.includes(userId);
-  const canAccept = !!match && !!userId && canAcceptLadderMatch(match, userId);
+  const canAccept =
+    !!match &&
+    !!userId &&
+    isLadderMember &&
+    (isDoubles
+      ? !!accepterMatchTeam &&
+        canAcceptLadderMatch(match, userId, accepterMatchTeam)
+      : canAcceptLadderMatch(match, userId));
 
   const handleOpenMap = () => {
     if (!match) return;
@@ -105,7 +175,19 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
       setErrorMessage("You need to be signed in to accept a match.");
       return;
     }
-    if (!canAcceptLadderMatch(match, userId)) {
+    if (!isLadderMember) {
+      setErrorMessage("You need to join the ladder to accept a match.");
+      return;
+    }
+
+    const matchTeam = isDoubles ? accepterMatchTeam : undefined;
+    if (isDoubles && !matchTeam) {
+      setErrorMessage(
+        "You need an active team in this ladder to accept this match.",
+      );
+      return;
+    }
+    if (!canAcceptLadderMatch(match, userId, matchTeam)) {
       setErrorMessage("This match can no longer be accepted.");
       return;
     }
@@ -117,6 +199,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
         ladder.ladderId,
         match.ladderMatchId,
         userId,
+        matchTeam,
       );
       if (success) {
         onAccepted?.(match);
@@ -174,6 +257,28 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
               />
               <DisclaimerText>
                 You cannot accept your own match.
+              </DisclaimerText>
+            </Disclaimer>
+          ) : !isLadderMember ? (
+            <Disclaimer testID="accept-ladder-not-member">
+              <Ionicons
+                name="information-circle-outline"
+                size={18}
+                color="#FFA500"
+              />
+              <DisclaimerText>
+                You need to join the ladder to accept a match.
+              </DisclaimerText>
+            </Disclaimer>
+          ) : isDoubles && !accepterTeam ? (
+            <Disclaimer testID="accept-ladder-no-team">
+              <Ionicons
+                name="information-circle-outline"
+                size={18}
+                color="#FFA500"
+              />
+              <DisclaimerText>
+                You need an active team in this ladder to accept this match.
               </DisclaimerText>
             </Disclaimer>
           ) : (

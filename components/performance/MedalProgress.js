@@ -24,15 +24,17 @@ const getNextRank = (xp) => {
   return ranks[ranks.length - 1]; // Return the last rank if xp is very high
 };
 
-const MedalProgress = ({ xp, prevGameXp }) => {
+const MedalProgress = ({ xp, prevGameXp, showMedals = true }) => {
   const [mounted, setMounted] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+  const safeXp = Number.isFinite(xp) ? xp : 0;
+
   const currentRank = ranks.reduce((prev, current) =>
-    current.xp <= xp ? current : prev,
+    current.xp <= safeXp ? current : prev,
   );
 
-  const nextRank = getNextRank(xp);
+  const nextRank = getNextRank(safeXp);
   const previousGameXp = prevGameXp ? prevGameXp.toFixed(0) : null;
 
   useEffect(() => {
@@ -47,12 +49,12 @@ const MedalProgress = ({ xp, prevGameXp }) => {
     if (!mounted) return;
     Animated.parallel([
       Animated.timing(progressAnim, {
-        toValue: xp - currentRank.xp,
+        toValue: safeXp - currentRank.xp,
         duration: 1000,
         useNativeDriver: false,
       }),
     ]).start();
-  }, [xp, currentRank, mounted]);
+  }, [safeXp, currentRank, mounted]);
 
   if (!mounted) return <MedalProgressSkeleton />;
 
@@ -71,7 +73,7 @@ const MedalProgress = ({ xp, prevGameXp }) => {
           ]}
         >
           <ProgressArrowContainer>
-            <AnimateNumber number={xp} progressBar />
+            <AnimateNumber number={safeXp} progressBar />
             <FontAwesome name="caret-down" size={16} color="white" />
           </ProgressArrowContainer>
         </Animated.View>
@@ -99,10 +101,16 @@ const MedalProgress = ({ xp, prevGameXp }) => {
       <ProgressRanks>
         <RankContainer style={{ alignItems: "flex-start" }}>
           <RankXpText>{formatNumber(currentRank.xp)} CP</RankXpText>
-          <MedalDisplay xp={currentRank.xp} size={20} />
-          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>
-            {currentRank.name}
-          </Text>
+          {showMedals && (
+            <>
+              <MedalDisplay xp={currentRank.xp} size={20} />
+              <Text
+                style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}
+              >
+                {currentRank.name}
+              </Text>
+            </>
+          )}
         </RankContainer>
         {previousGameXp !== null && (
           <PreviousGameXpContainer>
@@ -118,10 +126,16 @@ const MedalProgress = ({ xp, prevGameXp }) => {
         )}
         <RankContainer style={{ alignItems: "flex-end" }}>
           <RankXpText>{formatNumber(nextRank.xp)} CP</RankXpText>
-          <MedalDisplay xp={nextRank.xp} size={20} />
-          <Text style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}>
-            {nextRank.name}
-          </Text>
+          {showMedals && (
+            <>
+              <MedalDisplay xp={nextRank.xp} size={20} />
+              <Text
+                style={{ color: "#aaa", fontSize: screenAdjustedRankFontSize }}
+              >
+                {nextRank.name}
+              </Text>
+            </>
+          )}
         </RankContainer>
       </ProgressRanks>
     </Container>

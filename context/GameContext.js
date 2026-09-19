@@ -88,8 +88,8 @@ const GameProvider = ({ children }) => {
     return <AntDesign name={icon} size={10} color={color} />;
   };
 
-  const recentMatchResult = (ladderResultLog = []) => {
-    const lastResult = ladderResultLog[ladderResultLog.length - 1];
+  const recentMatchResult = (matchResultLog = []) => {
+    const lastResult = matchResultLog[matchResultLog.length - 1];
 
     const icon = lastResult === "W" ? "caret-up" : "caret-down";
     const color = lastResult === "W" ? "green" : "red";
