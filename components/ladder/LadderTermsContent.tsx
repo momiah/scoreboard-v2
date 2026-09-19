@@ -28,11 +28,15 @@ export const LADDER_TERMS: TermsSection[] = [
     body: "Results must be reported honestly and confirmed by both players. Any manipulation of scores, collusion, or abusive conduct may result in removal from the ladder without refund and further account action.",
   },
   {
-    title: "6. Refunds & cancellations",
+    title: "6. Attendance & no-shows",
+    body: "You must check in at the court for each scheduled match. If your opponent has not checked in within the 30-minute grace period after the scheduled start time, you may report a no-show. Once an admin approves it, the match is awarded to you as a walkover: you gain 50 CP and the no-show loses 50 CP (never below zero). No games are played, so no game points, point difference, or achievement medals are awarded. Repeatedly failing to attend your matches (5 no-shows in a single ladder) will result in disqualification from that ladder with no refund of your entry fee.",
+  },
+  {
+    title: "7. Refunds & cancellations",
     body: "If a ladder is cancelled before it begins, paid entry fees are refunded. Once a ladder has started, you have the right for refund before you play your first match. After that, entry fees are generally non-refundable except where required by law.",
   },
   {
-    title: "7. Changes",
+    title: "8. Changes",
     body: "Court Champs may update these terms or a ladder's details where reasonably necessary. Material changes affecting an active ladder will be communicated to participants.",
   },
 ];
