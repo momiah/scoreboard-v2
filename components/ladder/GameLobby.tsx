@@ -1,10 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import {
-  ScrollView,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from "react-native";
+import { ScrollView, LayoutAnimation, Platform, UIManager } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -517,7 +512,9 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           {isWalkover ? (
             <StatusChip forfeit testID="lobby-games-forfeit">
               <Ionicons name="flag" size={12} color="#FFA500" />
-              <StatusChipText forfeit>Forfeit ({walkoverReason})</StatusChipText>
+              <StatusChipText forfeit>
+                Forfeit by {walkoverLoserLabel} ({walkoverReason})
+              </StatusChipText>
             </StatusChip>
           ) : isCompleted ? (
             <StatusChip completed testID="lobby-games-completed">
@@ -531,12 +528,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
             </StatusChip>
           ) : null}
         </GamesHeader>
-        {isWalkover && walkoverWinnerLabel ? (
-          <ForfeitNote testID="lobby-forfeit-note">
-            {walkoverWinnerLabel} won by walkover
-            {walkoverLoserLabel ? ` — ${walkoverLoserLabel} didn't check in` : ""}
-          </ForfeitNote>
-        ) : null}
 
         <GamesList isLocked={gamesLocked}>
           {gamesWithPlayers.map((game) => (
