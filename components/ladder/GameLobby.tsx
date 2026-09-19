@@ -258,34 +258,25 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   // A forfeit completes the match with no games. The walkover fields are
   // written by the No Shows admin flow; `walkoverReason` names why (e.g. a no
   // show) so the pill can distinguish it from other forfeit types later.
-  const walkoverMatch = match as LadderMatch & {
-    walkover?: boolean;
-    walkoverWinner?: string;
-    walkoverReason?: string;
-  };
-  const isWalkover = walkoverMatch.walkover === true;
-  const walkoverReason = walkoverMatch.walkoverReason ?? "No show";
+  const isWalkover = match.walkover === true;
+  const walkoverReason = match.walkoverReason ?? "No show";
   const namePlayer = (found?: ParticipantProfile): string =>
     found ? formatDisplayName(found) : "";
   const walkoverWinnerLabel = !isWalkover
     ? ""
     : hasTwoTeams
-      ? teamName(ladderTeamByKey[walkoverMatch.walkoverWinner ?? ""])
-      : namePlayer(
-          players.find((p) => p.userId === walkoverMatch.walkoverWinner),
-        );
+      ? teamName(ladderTeamByKey[match.walkoverWinner ?? ""])
+      : namePlayer(players.find((p) => p.userId === match.walkoverWinner));
   const walkoverLoserLabel = !isWalkover
     ? ""
     : hasTwoTeams
       ? teamName(
           ladderTeamByKey[
-            matchTeams.find((t) => t.teamKey !== walkoverMatch.walkoverWinner)
+            matchTeams.find((t) => t.teamKey !== match.walkoverWinner)
               ?.teamKey ?? ""
           ],
         )
-      : namePlayer(
-          players.find((p) => p.userId !== walkoverMatch.walkoverWinner),
-        );
+      : namePlayer(players.find((p) => p.userId !== match.walkoverWinner));
 
   const gamesWithPlayers: LobbyGame[] = match.games.map((game) => {
     const filled = !!(game.team1?.player1 || game.team2?.player1);

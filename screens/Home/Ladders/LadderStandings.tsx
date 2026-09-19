@@ -16,7 +16,7 @@ import {
 } from "@react-navigation/native";
 import {
   sortLadderParticipantsByPlacement,
-  sortTeamsByPlacement,
+  sortLadderTeamsByPlacement,
 } from "@shared/helpers";
 import type { ScoreboardProfile, TeamStats } from "@shared/types";
 
@@ -95,7 +95,7 @@ const LadderStandings: React.FC = () => {
 
   const orderedTeams = useMemo<RankedTeam[]>(() => {
     const valid = teams.filter((t) => t.teamKey && Array.isArray(t.team));
-    const ranked = sortTeamsByPlacement(valid);
+    const ranked = sortLadderTeamsByPlacement(valid);
     const rankedKeys = new Set(ranked.map((t) => t.teamKey));
     const unranked = valid.filter((t) => !rankedKeys.has(t.teamKey));
     return [...ranked, ...unranked].map((t, index) => ({

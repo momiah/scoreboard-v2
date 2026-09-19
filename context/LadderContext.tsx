@@ -36,6 +36,7 @@ import {
   LADDER_MATCH_STATUS,
   TEAM_STATUS,
   NO_SHOW_STATUS,
+  NO_SHOW_CLAIMS_COLLECTION,
 } from "@shared";
 import { createRootTeam } from "@shared/helpers";
 import { scoreDoublesLadderGame } from "../helpers/scoreDoublesLadderGame";
@@ -92,7 +93,6 @@ const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
 const TEAMS_COLLECTION = "teams";
-const NO_SHOW_CLAIMS_COLLECTION = "noShowClaims";
 const TEAM_REQUESTS_SUBCOLLECTION = "requests";
 
 export const LadderContext = createContext<LadderContextType>(

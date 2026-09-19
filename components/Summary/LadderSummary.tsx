@@ -10,7 +10,10 @@ import {
 } from "@react-navigation/native";
 import { LADDER_STATUS, COMPETITION_TYPES, LADDER_TYPE } from "@shared";
 import type { Ladder, ScoreboardProfile, TeamStats } from "@shared/types";
-import { calculateLadderPrizePool, sortTeamsByPlacement } from "@shared/helpers";
+import {
+  calculateLadderPrizePool,
+  sortLadderTeamsByPlacement,
+} from "@shared/helpers";
 import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 
@@ -185,7 +188,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         const valid = teams.filter(
           (t) => t.teamKey && Array.isArray(t.team),
         );
-        const ranked = sortTeamsByPlacement(valid);
+        const ranked = sortLadderTeamsByPlacement(valid);
         const idx = ranked.findIndex((t) => teamMemberIds(t).includes(uid));
         const userTeam =
           idx >= 0

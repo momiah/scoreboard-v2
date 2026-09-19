@@ -7,7 +7,10 @@ import type {
   ScoreboardProfile,
   TeamStats,
   TeamMember,
+  CreateNoShowClaimOutcome,
 } from "@shared/types";
+
+export type { CreateNoShowClaimOutcome };
 import type { LadderJoinUser } from "../../helpers/ladderParticipants";
 
 export interface LadderJoinOutcome {
@@ -47,11 +50,6 @@ export type AcceptLadderMatchFailureReason = "unavailable" | "error";
 export interface AcceptLadderMatchOutcome {
   success: boolean;
   reason?: AcceptLadderMatchFailureReason;
-}
-
-export interface CreateNoShowClaimOutcome {
-  success: boolean;
-  reason?: "exists" | "invalid" | "error";
 }
 
 export type CheckInLadderMatchFailureReason = "unavailable" | "error";
