@@ -14,36 +14,40 @@ import { formatDisplayName } from "./formatDisplayName";
  * not a walkover; a ladderId is required to look up a doubles team name.
  */
 export const useForfeitLabel = (
-  match: LadderMatch,
+  match: LadderMatch | null | undefined,
   ladderId?: string,
 ): string => {
   const { getUserById } = useContext(UserContext);
   const { fetchLadderTeams } = useContext(LadderContext);
 
   const [forfeitLabel, setForfeitLabel] = useState("");
-  const walkoverWinner = match.walkover ? match.walkoverWinner : undefined;
+  const walkoverWinner = match?.walkover ? match.walkoverWinner : undefined;
+  const teams = match?.teams;
+  const participants = match?.participants;
 
   useEffect(() => {
-    if (!match.walkover || !walkoverWinner) {
+    if (!walkoverWinner) {
       setForfeitLabel("");
       return;
     }
-    const isDoubles = (match.teams?.length ?? 0) >= 2;
+    const isDoubles = (teams?.length ?? 0) >= 2;
     let active = true;
     (async () => {
       try {
         if (isDoubles) {
-          const loserKey = (match.teams ?? []).find(
+          const loserKey = (teams ?? []).find(
             (t) => t.teamKey !== walkoverWinner,
           )?.teamKey;
-          const teams = ladderId ? await fetchLadderTeams(ladderId) : [];
-          const loser = teams.find((t) => t.teamKey === loserKey);
+          const ladderTeams = ladderId ? await fetchLadderTeams(ladderId) : [];
+          const loser = ladderTeams.find((t) => t.teamKey === loserKey);
           const label = loser
             ? loser.teamName?.trim() || (loser.team ?? []).join(" & ")
             : "";
           if (active) setForfeitLabel(label);
         } else {
-          const loserId = match.participants.find((id) => id !== walkoverWinner);
+          const loserId = (participants ?? []).find(
+            (id) => id !== walkoverWinner,
+          );
           const loser = loserId ? await getUserById(loserId) : null;
           if (active) setForfeitLabel(loser ? formatDisplayName(loser) : "");
         }
@@ -55,15 +59,7 @@ export const useForfeitLabel = (
     return () => {
       active = false;
     };
-  }, [
-    match.walkover,
-    walkoverWinner,
-    match.teams,
-    match.participants,
-    ladderId,
-    fetchLadderTeams,
-    getUserById,
-  ]);
+  }, [walkoverWinner, teams, participants, ladderId, fetchLadderTeams, getUserById]);
 
   return forfeitLabel;
 };

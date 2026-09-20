@@ -10,9 +10,11 @@ import {
   formatMatchDateShort,
   isMatchDayPassed,
 } from "../../helpers/ladderMatchTime";
-import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
+import {
+  getLadderMatchProgress,
+  getLadderMatchOutcome,
+} from "../../helpers/ladderMatchProgress";
 import { deriveLadderMatchStatus } from "../../helpers/ladderMatchStatus";
-import { useForfeitLabel } from "../../helpers/useForfeitLabel";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -30,8 +32,10 @@ interface MatchCardProps {
   checkin?: CheckinControl;
   flat?: boolean;
   onLocationPress?: () => void;
-  /** Ladder the match belongs to, used to resolve a walkover forfeit name. */
-  ladderId?: string;
+  /** Name of the side that forfeited, appended to the walkover status pill. */
+  forfeitLabel?: string;
+  /** When set, a completed match shows the user's W/L to the right of the pill. */
+  currentUserId?: string;
   testID?: string;
 }
 
@@ -47,7 +51,8 @@ const MatchCard: React.FC<MatchCardProps> = ({
   checkin,
   flat = false,
   onLocationPress,
-  ladderId,
+  forfeitLabel,
+  currentUserId,
   testID,
 }) => {
   const city = match.court?.location?.city;
@@ -66,13 +71,18 @@ const MatchCard: React.FC<MatchCardProps> = ({
   // lobby: Press here to checkin → Checked in / Waiting for players (doubles) →
   // Started → Completed / Forfeit. Terminal states win, so a walkover never
   // falls through to a stale "Checked in".
-  const forfeitLabel = useForfeitLabel(match, ladderId);
   const status = deriveLadderMatchStatus(match, {
     selfCheckedIn: !!checkin?.checkedIn,
     pendingApproval: progress.pendingApproval,
     forfeitLabel,
   });
   const showStatus = showProgress || !!checkin;
+  // A quick W/L glance to the right of the pill, only where a viewer is given
+  // (the schedule) and the match is decided. The hero header omits it.
+  const outcome =
+    currentUserId && isCompleted
+      ? getLadderMatchOutcome(match, currentUserId)
+      : "undecided";
   const tag = (testID ? `${testID}-` : "") + status.phase;
   const tagStatus = !showStatus
     ? null
@@ -159,7 +169,21 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <TagText>Best of {match.bestOf}</TagText>
           </Tag>
         </TagGroup>
-        {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
+        {tagStatus && (
+          <TagStatus>
+            {tagStatus}
+            {outcome !== "undecided" && (
+              <ResultBadge
+                isWin={outcome === "win"}
+                testID={testID ? `${testID}-result` : undefined}
+              >
+                <ResultBadgeText isWin={outcome === "win"}>
+                  {outcome === "win" ? "W" : "L"}
+                </ResultBadgeText>
+              </ResultBadge>
+            )}
+          </TagStatus>
+        )}
         {!showStatus && (
           <FeeTag hasCourtFee={hasCourtFee}>
             <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
@@ -241,7 +265,29 @@ const TagGroup = styled.View({
 
 const TagStatus = styled.View({
   flexShrink: 0,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
 });
+
+const ResultBadge = styled.View<{ isWin: boolean }>(
+  ({ isWin }: { isWin: boolean }) => ({
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: isWin ? "rgba(25, 168, 0, 0.16)" : "rgba(255, 75, 110, 0.16)",
+  }),
+);
+
+const ResultBadgeText = styled.Text<{ isWin: boolean }>(
+  ({ isWin }: { isWin: boolean }) => ({
+    color: isWin ? "#19a800" : "#FF4B6E",
+    fontSize: 12,
+    fontWeight: "800",
+  }),
+);
 
 const Tag = styled.View({
   flexDirection: "row",

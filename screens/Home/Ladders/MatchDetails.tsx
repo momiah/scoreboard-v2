@@ -28,6 +28,7 @@ import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
+import { useForfeitLabel } from "../../../helpers/useForfeitLabel";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -90,6 +91,8 @@ const MatchDetails: React.FC = () => {
     [ladderId, matchId],
   );
 
+  const forfeitLabel = useForfeitLabel(match, ladderId);
+
   if (notFound || !match) {
     return (
       <Screen>
@@ -143,7 +146,7 @@ const MatchDetails: React.FC = () => {
           flat
           checkin={checkinControl}
           onLocationPress={openMap}
-          ladderId={ladderId}
+          forfeitLabel={forfeitLabel}
           testID="match-details-card"
         />
       </Header>

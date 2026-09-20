@@ -86,16 +86,12 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
-  // Concluded doubles matches open with the check-in rows already collapsed
-  // (the result is what matters, not who checked in). An initializer — not an
-  // effect — so there's no layout animation firing mid-navigation, and the
-  // rows stay freely expandable afterwards.
-  const [checkinCollapsed, setCheckinCollapsed] = useState(() => {
-    const doubles =
-      match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
-    const completed = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-    return doubles && completed;
-  });
+  // Check-in rows start collapsed once the match is over, expanded while it's
+  // still live. An initializer, not an effect, so no layout animation fires
+  // mid-navigation and the rows stay freely expandable afterwards.
+  const [checkinCollapsed, setCheckinCollapsed] = useState(
+    match.matchStatus === LADDER_MATCH_STATUS.COMPLETED,
+  );
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const allCheckedIn = players.length > 0 && checkedIn;
@@ -118,19 +114,11 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     }
   }, []);
 
-  // toggle check-in collapse with animated layout change
+  // toggle check-in collapse with animated layout change (doubles only)
   const toggleCheckin = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCheckinCollapsed((s) => !s);
   };
-
-  // ensure collapse is reset when switching to singles
-  useEffect(() => {
-    if (!isDoubles && checkinCollapsed) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setCheckinCollapsed(false);
-    }
-  }, [isDoubles, checkinCollapsed]);
 
   useEffect(() => {
     let active = true;
@@ -461,7 +449,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
                 );
               })}
             </PlayerList>
-          ) : checkinCollapsed ? null : (
+          ) : (
             <PlayerList>
               {players.map((player) =>
                 renderCheckinRow(player, () => openPlayer(player.userId)),
