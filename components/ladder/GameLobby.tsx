@@ -86,7 +86,16 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
-  const [checkinCollapsed, setCheckinCollapsed] = useState(false);
+  // Concluded doubles matches open with the check-in rows already collapsed
+  // (the result is what matters, not who checked in). An initializer — not an
+  // effect — so there's no layout animation firing mid-navigation, and the
+  // rows stay freely expandable afterwards.
+  const [checkinCollapsed, setCheckinCollapsed] = useState(() => {
+    const doubles =
+      match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
+    const completed = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
+    return doubles && completed;
+  });
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const allCheckedIn = players.length > 0 && checkedIn;
@@ -249,29 +258,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     : opponents.length > 0
       ? opponents.map((p) => formatDisplayName(p))
       : ["Opponent"];
-
-  // A forfeit completes the match with no games. The walkover fields are
-  // written by the No Shows admin flow; `walkoverReason` names why (e.g. a no
-  // show) so the pill can distinguish it from other forfeit types later.
-  const isWalkover = match.walkover === true;
-  const walkoverReason = match.walkoverReason ?? "No show";
-  const namePlayer = (found?: ParticipantProfile): string =>
-    found ? formatDisplayName(found) : "";
-  const walkoverWinnerLabel = !isWalkover
-    ? ""
-    : hasTwoTeams
-      ? teamName(ladderTeamByKey[match.walkoverWinner ?? ""])
-      : namePlayer(players.find((p) => p.userId === match.walkoverWinner));
-  const walkoverLoserLabel = !isWalkover
-    ? ""
-    : hasTwoTeams
-      ? teamName(
-          ladderTeamByKey[
-            matchTeams.find((t) => t.teamKey !== match.walkoverWinner)
-              ?.teamKey ?? ""
-          ],
-        )
-      : namePlayer(players.find((p) => p.userId !== match.walkoverWinner));
 
   const gamesWithPlayers: LobbyGame[] = match.games.map((game) => {
     const filled = !!(game.team1?.player1 || game.team2?.player1);
@@ -509,19 +495,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
         <GamesHeader>
           <BlockTitle>Games</BlockTitle>
-          {isWalkover ? (
-            <StatusChip forfeit testID="lobby-games-forfeit">
-              <Ionicons name="flag" size={12} color="#FFA500" />
-              <StatusChipText forfeit>
-                Forfeit by {walkoverLoserLabel} ({walkoverReason})
-              </StatusChipText>
-            </StatusChip>
-          ) : isCompleted ? (
-            <StatusChip completed testID="lobby-games-completed">
-              <Ionicons name="checkmark-circle" size={13} color="#5ef0a6" />
-              <StatusChipText completed>Completed</StatusChipText>
-            </StatusChip>
-          ) : !allCheckedIn ? (
+          {!allCheckedIn ? (
             <StatusChip testID="lobby-games-locked">
               <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
               <StatusChipText>Locked until all players check in</StatusChipText>
@@ -815,14 +789,6 @@ const StatusChipText = styled.Text<{ completed?: boolean; forfeit?: boolean }>(
     fontWeight: "600",
   }),
 );
-
-const ForfeitNote = styled.Text({
-  marginHorizontal: 20,
-  marginTop: -4,
-  marginBottom: 12,
-  color: "#9fb8c8",
-  fontSize: 12,
-});
 
 const GamesList = styled.View<{ isLocked: boolean }>(
   ({ isLocked }: { isLocked: boolean }) => ({

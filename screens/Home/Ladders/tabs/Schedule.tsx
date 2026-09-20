@@ -160,6 +160,7 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
               testID={`schedule-card-${match.ladderMatchId}`}
               match={match}
               onPress={handleOpenMatch}
+              ladderId={ladder.ladderId}
               showProgress
             />
             {glowMatchId === match.ladderMatchId && (

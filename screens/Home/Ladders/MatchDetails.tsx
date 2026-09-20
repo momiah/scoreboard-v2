@@ -143,6 +143,7 @@ const MatchDetails: React.FC = () => {
           flat
           checkin={checkinControl}
           onLocationPress={openMap}
+          ladderId={ladderId}
           testID="match-details-card"
         />
       </Header>
