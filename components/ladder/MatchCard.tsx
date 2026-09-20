@@ -11,6 +11,7 @@ import {
   isMatchDayPassed,
 } from "../../helpers/ladderMatchTime";
 import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
+import { deriveLadderMatchStatus } from "../../helpers/ladderMatchStatus";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -28,6 +29,8 @@ interface MatchCardProps {
   checkin?: CheckinControl;
   flat?: boolean;
   onLocationPress?: () => void;
+  /** Name of the side that forfeited, shown in the walkover status pill. */
+  forfeitLabel?: string;
   testID?: string;
 }
 
@@ -43,6 +46,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   checkin,
   flat = false,
   onLocationPress,
+  forfeitLabel,
   testID,
 }) => {
   const city = match.court?.location?.city;
@@ -57,37 +61,55 @@ const MatchCard: React.FC<MatchCardProps> = ({
   // posted match never dims. The flat header variant always keeps full contrast.
   const dimmed = !flat && (isCompleted || (isMatchDayPassed(match) && !isPosted));
 
+  // The hero status pill uses the shared derivation so it can't drift from the
+  // lobby: Press here to checkin → Checked in / Waiting for players (doubles) →
+  // Started → Completed / Forfeit. Terminal states win, so a walkover never
+  // falls through to a stale "Checked in".
+  const status = deriveLadderMatchStatus(match, {
+    selfCheckedIn: !!checkin?.checkedIn,
+    pendingApproval: progress.pendingApproval,
+    forfeitLabel,
+  });
   const showStatus = showProgress || !!checkin;
-  const tagStatus = !showStatus ? null : checkin &&
-    !checkin.checkedIn &&
-    !isCompleted ? (
-    <CheckinButton
-      activeOpacity={0.85}
-      onPress={checkin.onPress}
-      testID={testID ? `${testID}-checkin-button` : undefined}
-    >
-      <CheckinButtonText>Press here to checkin</CheckinButtonText>
-    </CheckinButton>
-  ) : progress.pendingApproval > 0 ? (
-    <AwaitingTag testID={testID ? `${testID}-awaiting` : undefined}>
-      <AwaitingTagText numberOfLines={1}>
-        {progress.pendingApproval}{" "}
-        {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
-      </AwaitingTagText>
-    </AwaitingTag>
-  ) : checkin && checkin.checkedIn ? (
-    <CheckedInTag testID={testID ? `${testID}-checked-in` : undefined}>
-      <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
-      <CheckedInTagText>Checked in</CheckedInTagText>
-    </CheckedInTag>
-  ) : isCompleted ? (
-    <Ionicons
-      name="checkmark-circle-outline"
-      size={22}
-      color="#008c13ff"
-      testID={testID ? `${testID}-status-done` : undefined}
-    />
-  ) : null;
+  const tag = (testID ? `${testID}-` : "") + status.phase;
+  const tagStatus = !showStatus
+    ? null
+    : status.phase === "forfeit" ? (
+        <ForfeitTag testID={tag}>
+          <Ionicons name="flag" size={13} color="#FFA500" />
+          <ForfeitTagText numberOfLines={1}>{status.label}</ForfeitTagText>
+        </ForfeitTag>
+      ) : status.phase === "completed" ? (
+        <CompletedTag testID={tag}>
+          <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
+          <CompletedTagText>{status.label}</CompletedTagText>
+        </CompletedTag>
+      ) : status.phase === "awaiting-approval" ? (
+        <AwaitingTag testID={tag}>
+          <AwaitingTagText numberOfLines={1}>{status.label}</AwaitingTagText>
+        </AwaitingTag>
+      ) : status.phase === "started" ? (
+        <StartedTag testID={tag}>
+          <StartedTagText>{status.label}</StartedTagText>
+        </StartedTag>
+      ) : status.phase === "waiting-players" ? (
+        <WaitingTag testID={tag}>
+          <WaitingTagText numberOfLines={1}>{status.label}</WaitingTagText>
+        </WaitingTag>
+      ) : status.phase === "checked-in" ? (
+        <CheckedInTag testID={tag}>
+          <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
+          <CheckedInTagText>{status.label}</CheckedInTagText>
+        </CheckedInTag>
+      ) : checkin ? (
+        <CheckinButton
+          activeOpacity={0.85}
+          onPress={checkin.onPress}
+          testID={testID ? `${testID}-checkin-button` : undefined}
+        >
+          <CheckinButtonText>{status.label}</CheckinButtonText>
+        </CheckinButton>
+      ) : null;
 
   return (
     <Card
@@ -261,6 +283,57 @@ const CheckedInTag = styled.View({
 
 const CheckedInTagText = styled.Text({
   color: "#5ef0a6",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const CompletedTag = styled(CheckedInTag)({});
+const CompletedTagText = styled(CheckedInTagText)({});
+
+const StartedTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(0, 162, 255, 0.16)",
+});
+
+const StartedTagText = styled.Text({
+  color: "#4db8ff",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const WaitingTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 255, 255, 0.06)",
+});
+
+const WaitingTagText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const ForfeitTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 165, 0, 0.12)",
+});
+
+const ForfeitTagText = styled.Text({
+  color: "#FFA500",
   fontSize: 11,
   fontWeight: "600",
 });

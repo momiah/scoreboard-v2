@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Dimensions, Linking } from "react-native";
 import {
   useFocusEffect,
@@ -28,6 +34,7 @@ import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
+import { formatDisplayName } from "../../../helpers/formatDisplayName";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -55,8 +62,9 @@ const MatchDetails: React.FC = () => {
     ladderName,
   } = route.params;
 
-  const { currentUser } = useContext(UserContext);
-  const { subscribeToLadderMatches } = useContext(LadderContext);
+  const { currentUser, getUserById } = useContext(UserContext);
+  const { subscribeToLadderMatches, fetchLadderTeams } =
+    useContext(LadderContext);
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
@@ -89,6 +97,51 @@ const MatchDetails: React.FC = () => {
     () => ["ladders", ladderId, "ladderMatches", matchId, "chat"],
     [ladderId, matchId],
   );
+
+  // Resolve the name of the side that forfeited, for the walkover status pill.
+  const [forfeitLabel, setForfeitLabel] = useState("");
+  const walkoverWinner = match?.walkover ? match.walkoverWinner : undefined;
+  useEffect(() => {
+    if (!match?.walkover || !walkoverWinner) {
+      setForfeitLabel("");
+      return;
+    }
+    const isDoubles = (match.teams?.length ?? 0) >= 2;
+    let active = true;
+    (async () => {
+      try {
+        if (isDoubles) {
+          const loserKey = (match.teams ?? []).find(
+            (t) => t.teamKey !== walkoverWinner,
+          )?.teamKey;
+          const teams = await fetchLadderTeams(ladderId);
+          const loser = teams.find((t) => t.teamKey === loserKey);
+          const label = loser
+            ? loser.teamName?.trim() || (loser.team ?? []).join(" & ")
+            : "";
+          if (active) setForfeitLabel(label);
+        } else {
+          const loserId = match.participants.find((id) => id !== walkoverWinner);
+          const loser = loserId ? await getUserById(loserId) : null;
+          if (active) setForfeitLabel(loser ? formatDisplayName(loser) : "");
+        }
+      } catch (error) {
+        console.error("Error resolving forfeit label:", error);
+        if (active) setForfeitLabel("");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [
+    match?.walkover,
+    walkoverWinner,
+    match?.teams,
+    match?.participants,
+    ladderId,
+    fetchLadderTeams,
+    getUserById,
+  ]);
 
   if (notFound || !match) {
     return (
@@ -143,6 +196,7 @@ const MatchDetails: React.FC = () => {
           flat
           checkin={checkinControl}
           onLocationPress={openMap}
+          forfeitLabel={forfeitLabel}
           testID="match-details-card"
         />
       </Header>
