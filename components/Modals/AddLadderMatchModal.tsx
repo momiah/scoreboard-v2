@@ -48,6 +48,7 @@ import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { toMoment } from "../../helpers/ladderPhases";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
+import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -297,11 +298,24 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     }
   };
 
+  const gateUserIds = isDoubles
+    ? posterTeam
+      ? teamMemberIds(posterTeam)
+      : []
+    : currentUser?.userId
+      ? [currentUser.userId]
+      : [];
+  const { disqualified, disclaimer } = useLadderDisqualification(
+    modalVisible ? ladder.ladderId : undefined,
+    gateUserIds,
+  );
+
   const confirmDisabled =
     submitting ||
     !selectedCourt ||
     !startDate ||
     !acceptedTerms ||
+    disqualified ||
     (isDoubles && !posterTeam);
 
   return (
@@ -454,6 +468,11 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   </TermsLink>
                 </TermsRow>
 
+                {disqualified && !!disclaimer && (
+                  <ErrorText testID="add-ladder-match-disqualified">
+                    {disclaimer}
+                  </ErrorText>
+                )}
                 {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
 
                 <ButtonContainer>

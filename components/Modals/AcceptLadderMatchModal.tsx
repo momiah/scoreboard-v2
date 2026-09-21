@@ -20,6 +20,7 @@ import { PopupContext } from "../../context/PopupContext";
 import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
+import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import MatchCard from "../ladder/MatchCard";
 import LadderTermsModal from "./LadderTermsModal";
 
@@ -221,8 +222,15 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     }
   };
 
+  const gateUserIds =
+    isDoubles ? accepterPlayerIds : userId ? [userId] : [];
+  const { disqualified, disclaimer } = useLadderDisqualification(
+    modalVisible ? ladder.ladderId : undefined,
+    gateUserIds,
+  );
+
   const disableAccept =
-    isOwnMatch || !acceptedTerms || processing || !canAccept;
+    isOwnMatch || !acceptedTerms || processing || !canAccept || disqualified;
 
   return (
     <Modal
@@ -305,6 +313,11 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
             </TermsRow>
           )}
 
+          {disqualified && !!disclaimer && (
+            <ErrorText testID="accept-ladder-match-disqualified">
+              {disclaimer}
+            </ErrorText>
+          )}
           {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
 
           <ActionButton
