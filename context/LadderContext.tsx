@@ -1067,7 +1067,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         target = { type: "player", userIds: opponents };
         walkover = { winnerType: "player", winnerUserIds: [claimantUserId] };
       }
-      return writeReport(
+      const outcome = await writeReport(
         {
           ladderId,
           ladderType: match.ladderType ?? (isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES),
@@ -1082,6 +1082,24 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         },
         {},
       );
+      // Flag the match so check-in pauses until an admin resolves the no-show.
+      if (outcome.success) {
+        try {
+          await updateDoc(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_MATCHES_COLLECTION,
+              match.ladderMatchId,
+            ),
+            { noShowReported: true },
+          );
+        } catch (error) {
+          console.error("Error flagging match no-show:", error);
+        }
+      }
+      return outcome;
     },
     [writeReport],
   );

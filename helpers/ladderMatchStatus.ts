@@ -7,6 +7,7 @@ export type LadderMatchPhase =
   | "waiting-players"
   | "started"
   | "awaiting-approval"
+  | "no-show-review"
   | "completed"
   | "forfeit";
 
@@ -45,6 +46,11 @@ export const deriveLadderMatchStatus = (
   }
   if (match.matchStatus === LADDER_MATCH_STATUS.COMPLETED) {
     return { phase: "completed", label: "Completed" };
+  }
+  // A no-show has been reported and is awaiting an admin decision; check-in is
+  // paused until it resolves. (Field set on the match when the report is raised.)
+  if ((match as { noShowReported?: boolean }).noShowReported) {
+    return { phase: "no-show-review", label: "No-show reported · under review" };
   }
   if (pendingApproval > 0) {
     return {

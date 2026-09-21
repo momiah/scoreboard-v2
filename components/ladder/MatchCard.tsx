@@ -104,6 +104,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
         <StartedTag testID={tag}>
           <StartedTagText>{status.label}</StartedTagText>
         </StartedTag>
+      ) : status.phase === "no-show-review" ? (
+        <ForfeitTag testID={tag}>
+          <Ionicons name="flag-outline" size={13} color="#FFA500" />
+          <ForfeitTagText numberOfLines={1}>{status.label}</ForfeitTagText>
+        </ForfeitTag>
       ) : status.phase === "waiting-players" ? (
         <WaitingTag testID={tag}>
           <WaitingTagText numberOfLines={1}>{status.label}</WaitingTagText>

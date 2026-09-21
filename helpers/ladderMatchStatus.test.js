@@ -48,6 +48,26 @@ describe("deriveLadderMatchStatus", () => {
     expect(s.label).toBe("2 games awaiting approval");
   });
 
+  it("shows under-review and hides check-in once a no-show is reported", () => {
+    const s = deriveLadderMatchStatus(singles({ noShowReported: true }), {
+      selfCheckedIn: false,
+    });
+    expect(s.phase).toBe("no-show-review");
+    expect(s.label).toContain("under review");
+  });
+
+  it("a concluded walkover still reads as forfeit, not under-review", () => {
+    const s = deriveLadderMatchStatus(
+      singles({
+        matchStatus: "completed",
+        walkover: true,
+        noShowReported: true,
+      }),
+      { selfCheckedIn: false },
+    );
+    expect(s.phase).toBe("forfeit");
+  });
+
   it("Completed for a played, concluded match", () => {
     const s = deriveLadderMatchStatus(
       singles({ matchStatus: "completed", ...allIn }),
