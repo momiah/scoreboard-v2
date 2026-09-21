@@ -154,8 +154,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </Info>
 
         <StatCell>
-          <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
-          <StatTime>{match.matchTime?.start}</StatTime>
+          <StatDate numberOfLines={1}>
+            {formatMatchDateShort(match.matchDate)}
+          </StatDate>
+          <StatTime numberOfLines={1}>
+            {match.matchTime?.start?.trim()}
+          </StatTime>
         </StatCell>
       </HeaderRow>
 
@@ -173,14 +177,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
           <TagStatus>
             {tagStatus}
             {outcome !== "undecided" && (
-              <ResultBadge
+              <ResultBadgeText
                 isWin={outcome === "win"}
                 testID={testID ? `${testID}-result` : undefined}
               >
-                <ResultBadgeText isWin={outcome === "win"}>
-                  {outcome === "win" ? "W" : "L"}
-                </ResultBadgeText>
-              </ResultBadge>
+                {outcome === "win" ? "W" : "L"}
+              </ResultBadgeText>
             )}
           </TagStatus>
         )}
@@ -270,21 +272,10 @@ const TagStatus = styled.View({
   gap: 6,
 });
 
-const ResultBadge = styled.View<{ isWin: boolean }>(
-  ({ isWin }: { isWin: boolean }) => ({
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: isWin ? "rgba(25, 168, 0, 0.16)" : "rgba(255, 75, 110, 0.16)",
-  }),
-);
-
 const ResultBadgeText = styled.Text<{ isWin: boolean }>(
   ({ isWin }: { isWin: boolean }) => ({
     color: isWin ? "#19a800" : "#FF4B6E",
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: "800",
   }),
 );
