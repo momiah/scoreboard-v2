@@ -7,10 +7,13 @@ import type {
   ScoreboardProfile,
   TeamStats,
   TeamMember,
-  CreateNoShowClaimOutcome,
+  CreateReportOutcome,
+  ReportReason,
+  ReportTarget,
+  StrikeCounts,
 } from "@shared/types";
 
-export type { CreateNoShowClaimOutcome };
+export type { CreateReportOutcome };
 import type { LadderJoinUser } from "../../helpers/ladderParticipants";
 
 export interface LadderJoinOutcome {
@@ -159,7 +162,20 @@ export interface LadderContextType {
     ladderId: string,
     match: LadderMatch,
     claimantUserId: string,
-  ) => Promise<CreateNoShowClaimOutcome>;
+  ) => Promise<CreateReportOutcome>;
+  submitReport: (input: {
+    ladderId: string;
+    ladderName?: string;
+    match: LadderMatch;
+    reportedBy: string;
+    reason: ReportReason;
+    target: ReportTarget;
+    description?: string;
+  }) => Promise<CreateReportOutcome>;
+  fetchLadderReportCounts: (
+    ladderId: string,
+    userIds: string[],
+  ) => Promise<Record<string, StrikeCounts>>;
   checkInLadderMatch: (
     ladderId: string,
     matchId: string,

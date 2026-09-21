@@ -34,9 +34,12 @@ import {
   getLadderCheckedInUserIds,
   notificationTypes,
   LADDER_MATCH_STATUS,
+  LADDER_TYPE,
   TEAM_STATUS,
-  NO_SHOW_STATUS,
-  NO_SHOW_CLAIMS_COLLECTION,
+  REPORTS_COLLECTION,
+  LADDER_REPORT_COUNTS_COLLECTION,
+  REPORT_STATUS,
+  REPORT_REASONS,
 } from "@shared";
 import { createRootTeam } from "@shared/helpers";
 import { scoreDoublesLadderGame } from "../helpers/scoreDoublesLadderGame";
@@ -51,6 +54,12 @@ import type {
   TeamStats,
   TeamMember,
   UserProfile,
+  Report,
+  ReportTarget,
+  ReportReason,
+  LadderReportCounts,
+  StrikeCounts,
+  CreateReportOutcome,
 } from "@shared/types";
 import { buildLadderParticipant } from "../helpers/ladderParticipants";
 import type { LadderJoinUser } from "../helpers/ladderParticipants";
@@ -73,7 +82,6 @@ import type {
   CreateTeamOutcome,
   CreateLadderMatchOutcome,
   AcceptLadderMatchOutcome,
-  CreateNoShowClaimOutcome,
   CheckInLadderMatchOutcome,
   UpdateLadderGameOutcome,
   ApproveLadderGameOutcome,
@@ -82,6 +90,20 @@ import type {
 class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
 class ApproveLadderGameError extends Error {}
+
+// Firestore rejects `undefined` field values, so drop them before a write
+// (Dates and arrays are preserved).
+const pruneUndefined = <T,>(value: T): T => {
+  if (Array.isArray(value)) return value.map(pruneUndefined) as unknown as T;
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, pruneUndefined(v)]),
+    ) as T;
+  }
+  return value;
+};
 
 const APPROVED_GAME = notificationTypes.RESPONSE.APPROVED_GAME;
 // Ladder singles need a single opponent approval. Doubles will raise this to 2
@@ -956,68 +978,189 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   // A blocked player (opponent didn't show) reports a no-show after the grace
   // period. Writes one pending claim per match to a top-level collection the
   // website admin panel reviews; the claimant's side is the walkover winner.
+  // Write a report to the shared `reports` queue, deduped against an existing
+  // open (non-rejected) report of the same reason for this match — by the same
+  // reporter against the same target for a conduct report, or any no-show.
+  const writeReport = useCallback(
+    async (
+      report: Omit<
+        Report,
+        "reportId" | "status" | "createdAt" | "resolvedAt" | "resolvedBy"
+      >,
+      dedupe: { reportedBy?: string; targetUserIds?: string[] },
+    ): Promise<CreateReportOutcome> => {
+      const targetKey = (ids?: string[]): string => [...(ids ?? [])].sort().join("_");
+      try {
+        const constraints: QueryConstraint[] = [
+          where("ladderMatchId", "==", report.ladderMatchId),
+          where("reason", "==", report.reason),
+        ];
+        if (dedupe.reportedBy) {
+          constraints.push(where("reportedBy", "==", dedupe.reportedBy));
+        }
+        const existing = await getDocs(
+          query(collection(db, REPORTS_COLLECTION), ...constraints),
+        );
+        const duplicate = existing.docs.some((d) => {
+          const data = d.data() as Report;
+          if (data.status === REPORT_STATUS.REJECTED) return false;
+          if (!dedupe.targetUserIds) return true;
+          return targetKey(data.target?.userIds) === targetKey(dedupe.targetUserIds);
+        });
+        if (duplicate) return { success: false, reason: "exists" };
+
+        const reportId = doc(collection(db, REPORTS_COLLECTION)).id;
+        await setDoc(
+          doc(db, REPORTS_COLLECTION, reportId),
+          pruneUndefined({
+            ...report,
+            reportId,
+            status: REPORT_STATUS.PENDING,
+            createdAt: new Date(),
+            resolvedAt: null,
+            resolvedBy: null,
+          }),
+        );
+        return { success: true };
+      } catch (error) {
+        console.error("Error creating report:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  // No-show route (check-in flow): a `no_show` report awarding the walkover to
+  // the claimant's side and striking the side that didn't show.
   const createNoShowClaim = useCallback(
     async (
       ladderId: string,
       match: LadderMatch,
       claimantUserId: string,
-    ): Promise<CreateNoShowClaimOutcome> => {
+    ): Promise<CreateReportOutcome> => {
       if (!ladderId || !match?.ladderMatchId || !claimantUserId) {
         return { success: false, reason: "error" };
       }
-
       const teams = match.teams ?? [];
-      let claimantTeam: MatchTeam;
-      let noShowTeam: MatchTeam;
-      if (teams.length === 2) {
-        const mine = teams.find((t) => t.playerIds.includes(claimantUserId));
-        const theirs = teams.find((t) => !t.playerIds.includes(claimantUserId));
-        if (!mine || !theirs) return { success: false, reason: "invalid" };
-        claimantTeam = mine;
-        noShowTeam = theirs;
+      const isDoubles = teams.length === 2;
+      let target: ReportTarget;
+      let walkover: Report["walkover"];
+      if (isDoubles) {
+        const winner = teams.find((t) => t.playerIds.includes(claimantUserId));
+        const noShow = teams.find((t) => !t.playerIds.includes(claimantUserId));
+        if (!winner || !noShow) return { success: false, reason: "invalid" };
+        target = {
+          type: "team",
+          userIds: noShow.playerIds,
+          teamKey: noShow.teamKey,
+          teamId: noShow.teamId,
+        };
+        walkover = {
+          winnerType: "team",
+          winnerUserIds: winner.playerIds,
+          winnerTeamKey: winner.teamKey,
+          winnerTeamId: winner.teamId,
+        };
       } else {
-        // Singles: synthesise single-player sides (no team docs).
-        const others = match.participants.filter((id) => id !== claimantUserId);
-        if (others.length === 0) return { success: false, reason: "invalid" };
-        claimantTeam = { teamId: "", teamKey: "", playerIds: [claimantUserId] };
-        noShowTeam = { teamId: "", teamKey: "", playerIds: others };
+        const opponents = match.participants.filter((id) => id !== claimantUserId);
+        if (opponents.length === 0) return { success: false, reason: "invalid" };
+        target = { type: "player", userIds: opponents };
+        walkover = { winnerType: "player", winnerUserIds: [claimantUserId] };
       }
-
-      const claimRef = doc(
-        db,
-        NO_SHOW_CLAIMS_COLLECTION,
-        match.ladderMatchId,
-      );
-
-      try {
-        const existing = await getDoc(claimRef);
-        if (
-          existing.exists() &&
-          (existing.data() as { status?: string }).status !==
-            NO_SHOW_STATUS.REJECTED
-        ) {
-          return { success: false, reason: "exists" };
-        }
-
-        await setDoc(claimRef, {
-          claimId: match.ladderMatchId,
+      return writeReport(
+        {
           ladderId,
+          ladderType: match.ladderType ?? (isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES),
           ladderMatchId: match.ladderMatchId,
+          reason: REPORT_REASONS.NO_SHOW,
+          reportedBy: claimantUserId,
+          target,
+          walkover,
           matchDate: match.matchDate,
           matchTime: match.matchTime?.start ?? "",
           courtName: match.court?.courtName ?? "",
-          claimantTeam,
-          noShowTeam,
-          createdBy: claimantUserId,
-          status: NO_SHOW_STATUS.PENDING,
-          createdAt: new Date(),
-          resolvedAt: null,
-          resolvedBy: null,
-        });
-        return { success: true };
-      } catch (error) {
-        console.error("Error creating no-show claim:", error);
+        },
+        {},
+      );
+    },
+    [writeReport],
+  );
+
+  // Conduct route (match settings menu): cheating / abuse / harassment / other.
+  const submitReport = useCallback(
+    async (input: {
+      ladderId: string;
+      ladderName?: string;
+      match: LadderMatch;
+      reportedBy: string;
+      reason: ReportReason;
+      target: ReportTarget;
+      description?: string;
+    }): Promise<CreateReportOutcome> => {
+      const { ladderId, ladderName, match, reportedBy, reason, target, description } =
+        input;
+      if (
+        !ladderId ||
+        !match?.ladderMatchId ||
+        !reportedBy ||
+        !target?.userIds?.length
+      ) {
         return { success: false, reason: "error" };
+      }
+      if (reason === REPORT_REASONS.OTHER && !description?.trim()) {
+        return { success: false, reason: "invalid" };
+      }
+      const isDoubles = (match.teams?.length ?? 0) === 2;
+      return writeReport(
+        {
+          ladderId,
+          ladderName,
+          ladderType:
+            match.ladderType ?? (isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES),
+          ladderMatchId: match.ladderMatchId,
+          reason,
+          description: description?.trim() || undefined,
+          reportedBy,
+          target,
+          matchDate: match.matchDate,
+          matchTime: match.matchTime?.start ?? "",
+          courtName: match.court?.courtName ?? "",
+        },
+        { reportedBy, targetUserIds: target.userIds },
+      );
+    },
+    [writeReport],
+  );
+
+  // Per-ladder strike tallies for the given players (drives the DQ gate).
+  const fetchLadderReportCounts = useCallback(
+    async (
+      ladderId: string,
+      userIds: string[],
+    ): Promise<Record<string, StrikeCounts>> => {
+      if (!ladderId || userIds.length === 0) return {};
+      try {
+        const entries = await Promise.all(
+          userIds.map(async (userId) => {
+            const snap = await getDoc(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_REPORT_COUNTS_COLLECTION,
+                userId,
+              ),
+            );
+            const strikes = snap.exists()
+              ? (snap.data() as LadderReportCounts).strikes ?? {}
+              : {};
+            return [userId, strikes] as const;
+          }),
+        );
+        return Object.fromEntries(entries);
+      } catch (error) {
+        console.error("Error fetching report counts:", error);
+        return {};
       }
     },
     [],
@@ -1550,6 +1693,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         subscribeToLadderMatches,
         acceptLadderMatch,
         createNoShowClaim,
+        submitReport,
+        fetchLadderReportCounts,
         checkInLadderMatch,
         checkInLadderMatchHandshake,
         updateLadderGame,
