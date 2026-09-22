@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
 import {
   useNavigation,
   useRoute,
@@ -18,12 +17,16 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 
-import { LADDER_TYPE, notificationSchema, notificationTypes } from "@shared";
+import {
+  LADDER_TYPE,
+  COMPETITION_TYPES,
+  notificationSchema,
+  notificationTypes,
+} from "@shared";
 import {
   DISPUTE_STAGE,
   DISPUTE_STAGE_LABELS,
   DISPUTE_RESOLUTION,
-  disputeEvidenceNeedsCourtPositions,
   hasCourtPositions,
 } from "@shared/types";
 import type {
@@ -35,16 +38,18 @@ import type {
   LadderType,
   Player,
   SelectedPlayers,
+  Teams,
 } from "@shared/types";
 
 import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
+import { usePendingUpload } from "../hooks/usePendingUpload";
 import { FixtureGameItem } from "../components/Tournaments/Fixtures/FixturesAtoms";
 import AddTournamentGameModal from "../components/Modals/AddTournamentGameModal";
 import CourtPositionModal from "../components/Modals/CourtPositionModal";
+import VideoUploadModal from "../components/Modals/VideoUploadModal";
 import ActionPlaceholder from "../components/ActionPlaceholder";
 import { formatDisplayName } from "../helpers/formatDisplayName";
-import { uploadDisputeVideo } from "../utils/UploadDisputeVideoToFirebase";
 import {
   createDispute,
   fetchDisputeById,
@@ -91,23 +96,25 @@ const playersOf = (game: Game): Player[] =>
     game.team2?.player2,
   ].filter((p): p is Player => Boolean(p));
 
-// CourtPositionModal is built around a GameVideo; a dispute has no feed video, so
-// hand it a minimal stand-in carrying just the teams and current positions.
+const teamsOf = (game: Game): Teams => ({
+  team1: {
+    player1: game.team1?.player1 as Player,
+    ...(game.team1?.player2 && { player2: game.team1.player2 }),
+  },
+  team2: {
+    player1: game.team2?.player1 as Player,
+    ...(game.team2?.player2 && { player2: game.team2.player2 }),
+  },
+});
+
+// CourtPositionModal is built around a GameVideo; a dispute captures the
+// positions on its own doc, so hand the modal a minimal stand-in.
 const courtPositionVideo = (
   game: Game,
   positions: SelectedPlayers | null,
 ): GameVideo =>
   ({
-    teams: {
-      team1: {
-        player1: game.team1?.player1 as Player,
-        ...(game.team1?.player2 && { player2: game.team1.player2 }),
-      },
-      team2: {
-        player1: game.team2?.player1 as Player,
-        ...(game.team2?.player2 && { player2: game.team2.player2 }),
-      },
-    },
+    teams: teamsOf(game),
     courtPositions: positions ?? undefined,
   }) as unknown as GameVideo;
 
@@ -136,23 +143,24 @@ const GameDisputeScreen = () => {
 
   // Compose state (before the dispute exists).
   const [correctedGame, setCorrectedGame] = useState<Game | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [courtPositions, setCourtPositions] = useState<SelectedPlayers | null>(
     null,
   );
   const [entryVisible, setEntryVisible] = useState(false);
   const [courtVisible, setCourtVisible] = useState(false);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadVisible, setUploadVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // More-evidence state (view mode, when the admin asked for more).
-  const [moreVideoUrl, setMoreVideoUrl] = useState<string | null>(null);
   const [moreNotes, setMoreNotes] = useState("");
   const [moreCourtPositions, setMoreCourtPositions] =
     useState<SelectedPlayers | null>(null);
   const [moreCourtVisible, setMoreCourtVisible] = useState(false);
+  const [moreUploadVisible, setMoreUploadVisible] = useState(false);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+
+  const { pendingUploads } = usePendingUpload(currentUser?.userId);
 
   const loadDispute = useCallback(async (id: string) => {
     setLoading(true);
@@ -170,37 +178,14 @@ const GameDisputeScreen = () => {
   const effectiveType = dispute?.ladderType ?? ladderType ?? LADDER_TYPE.SINGLES;
   const isComposing = !dispute;
 
-  const pickAndUpload = useCallback(
-    async (onDone: (url: string) => void) => {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        showBottomToast("Media permission is required to upload", "error");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-        quality: 1,
-      });
-      if (result.canceled || !result.assets?.[0]?.uri) return;
-      setUploadingVideo(true);
-      const url = await uploadDisputeVideo(result.assets[0].uri, effectiveGameId);
-      setUploadingVideo(false);
-      if (!url) {
-        showBottomToast("Video upload failed. Please try again.", "error");
-        return;
-      }
-      onDone(url);
-    },
-    [effectiveGameId, showBottomToast],
+  // A video attaches through the normal pipeline (VideoUploadModal → gameVideos),
+  // so its presence is read off the in-flight upload for this game.
+  const videoAttached = pendingUploads.some(
+    (upload) => upload.gameId === effectiveGameId,
   );
 
   const canSubmit =
-    !!correctedGame &&
-    !disputeEvidenceNeedsCourtPositions({
-      videoUrl: videoUrl ?? undefined,
-      courtPositions: courtPositions ?? undefined,
-    });
+    !!correctedGame && !(videoAttached && !hasCourtPositions(courtPositions ?? undefined));
 
   const notifyParticipants = useCallback(
     async (disputeId: string, message: string) => {
@@ -231,7 +216,6 @@ const GameDisputeScreen = () => {
     }
     setSubmitting(true);
     const evidence: DisputeEvidence = {
-      ...(videoUrl ? { videoUrl } : {}),
       ...(notes.trim() ? { notes: notes.trim() } : {}),
       ...(courtPositions ? { courtPositions } : {}),
       submittedBy: currentUser.userId,
@@ -277,7 +261,6 @@ const GameDisputeScreen = () => {
     originalGame,
     correctedGame,
     matchId,
-    videoUrl,
     notes,
     courtPositions,
     ladderId,
@@ -295,18 +278,12 @@ const GameDisputeScreen = () => {
 
   const handleSubmitMoreEvidence = useCallback(async () => {
     if (!dispute || !currentUser?.userId) return;
-    if (
-      disputeEvidenceNeedsCourtPositions({
-        videoUrl: moreVideoUrl ?? undefined,
-        courtPositions: moreCourtPositions ?? undefined,
-      })
-    ) {
+    if (videoAttached && !hasCourtPositions(moreCourtPositions ?? undefined)) {
       showBottomToast("Add court positions for the uploaded video", "error");
       return;
     }
     setSubmitting(true);
     const evidence: DisputeEvidence = {
-      ...(moreVideoUrl ? { videoUrl: moreVideoUrl } : {}),
       ...(moreNotes.trim() ? { notes: moreNotes.trim() } : {}),
       ...(moreCourtPositions ? { courtPositions: moreCourtPositions } : {}),
       submittedBy: currentUser.userId,
@@ -318,7 +295,6 @@ const GameDisputeScreen = () => {
       showBottomToast("Could not submit evidence. Please try again.", "error");
       return;
     }
-    setMoreVideoUrl(null);
     setMoreNotes("");
     setMoreCourtPositions(null);
     showBottomToast("Evidence submitted", "success");
@@ -326,7 +302,7 @@ const GameDisputeScreen = () => {
   }, [
     dispute,
     currentUser,
-    moreVideoUrl,
+    videoAttached,
     moreNotes,
     moreCourtPositions,
     showBottomToast,
@@ -418,23 +394,17 @@ const GameDisputeScreen = () => {
           <>
             <Block>
               <BlockTitle>Video evidence (optional)</BlockTitle>
-              {videoUrl ? (
+              {videoAttached ? (
                 <EvidenceRow>
                   <Ionicons name="videocam" size={18} color="#00A2FF" />
-                  <EvidenceText>Video attached</EvidenceText>
-                  <RemoveLink onPress={() => setVideoUrl(null)}>
-                    <RemoveText>Remove</RemoveText>
-                  </RemoveLink>
+                  <EvidenceText>Video uploading…</EvidenceText>
                 </EvidenceRow>
               ) : (
                 <ActionPlaceholder
-                  message={
-                    uploadingVideo ? "Uploading..." : "Upload video evidence"
-                  }
-                  icon={uploadingVideo ? "cloud-upload-outline" : "videocam-outline"}
+                  message="Upload video evidence"
+                  icon="videocam-outline"
                   height={110}
-                  disabled={uploadingVideo}
-                  onPress={() => pickAndUpload(setVideoUrl)}
+                  onPress={() => setUploadVisible(true)}
                 />
               )}
               <NotesLabel>Notes to admin</NotesLabel>
@@ -457,7 +427,7 @@ const GameDisputeScreen = () => {
                     : "Add court positions"}
                 </SecondaryText>
               </SecondaryButton>
-              {videoUrl && !hasCourtPositions(courtPositions ?? undefined) && (
+              {videoAttached && !hasCourtPositions(courtPositions ?? undefined) && (
                 <HintText>
                   Court positions are required when a video is attached.
                 </HintText>
@@ -506,49 +476,33 @@ const GameDisputeScreen = () => {
                       dispute.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED &&
                       currentUser?.userId === dispute.openedBy && (
                         <MoreEvidence>
-                          {moreVideoUrl ? (
+                          {videoAttached ? (
                             <EvidenceRow>
                               <Ionicons name="videocam" size={18} color="#00A2FF" />
-                              <EvidenceText>Video attached</EvidenceText>
-                              <RemoveLink onPress={() => setMoreVideoUrl(null)}>
-                                <RemoveText>Remove</RemoveText>
-                              </RemoveLink>
+                              <EvidenceText>Video uploading…</EvidenceText>
                             </EvidenceRow>
                           ) : (
                             <ActionPlaceholder
-                              message={
-                                uploadingVideo
-                                  ? "Uploading..."
-                                  : "Upload video evidence"
-                              }
-                              icon={
-                                uploadingVideo
-                                  ? "cloud-upload-outline"
-                                  : "videocam-outline"
-                              }
+                              message="Upload video evidence"
+                              icon="videocam-outline"
                               height={100}
-                              disabled={uploadingVideo}
-                              onPress={() => pickAndUpload(setMoreVideoUrl)}
+                              onPress={() => setMoreUploadVisible(true)}
                             />
                           )}
-                          {moreVideoUrl && (
-                            <SecondaryButton
-                              onPress={() => setMoreCourtVisible(true)}
-                            >
-                              <Ionicons
-                                name="grid-outline"
-                                size={16}
-                                color="#00A2FF"
-                              />
-                              <SecondaryText>
-                                {hasCourtPositions(
-                                  moreCourtPositions ?? undefined,
-                                )
-                                  ? "Edit court positions"
-                                  : "Add court positions"}
-                              </SecondaryText>
-                            </SecondaryButton>
-                          )}
+                          <SecondaryButton
+                            onPress={() => setMoreCourtVisible(true)}
+                          >
+                            <Ionicons
+                              name="grid-outline"
+                              size={16}
+                              color="#00A2FF"
+                            />
+                            <SecondaryText>
+                              {hasCourtPositions(moreCourtPositions ?? undefined)
+                                ? "Edit court positions"
+                                : "Add court positions"}
+                            </SecondaryText>
+                          </SecondaryButton>
                           <NotesLabel>Notes to admin</NotesLabel>
                           <NotesInput
                             value={moreNotes}
@@ -587,6 +541,46 @@ const GameDisputeScreen = () => {
           tournamentName={ladderName ?? "Ladder match"}
           tournamentId=""
           onCapture={(captured) => setCorrectedGame(captured)}
+        />
+      )}
+
+      {originalGame && uploadVisible && currentUser && (
+        <VideoUploadModal
+          visible={uploadVisible}
+          onClose={() => setUploadVisible(false)}
+          gameId={effectiveGameId}
+          competitionId={ladderId}
+          competitionName={ladderName ?? "Ladder match"}
+          competitionType={COMPETITION_TYPES.LADDER}
+          matchId={matchId}
+          gamescore={originalGame.gamescore ?? ""}
+          date={originalGame.date ?? ""}
+          teams={teamsOf(originalGame)}
+          currentUser={currentUser}
+          title="Upload dispute evidence"
+          subtitle="Upload the full game video so an admin can review the disputed result."
+          icon="videocam-outline"
+          showAddLaterHint={false}
+        />
+      )}
+
+      {originalGame && moreUploadVisible && currentUser && (
+        <VideoUploadModal
+          visible={moreUploadVisible}
+          onClose={() => setMoreUploadVisible(false)}
+          gameId={effectiveGameId}
+          competitionId={ladderId}
+          competitionName={ladderName ?? "Ladder match"}
+          competitionType={COMPETITION_TYPES.LADDER}
+          matchId={matchId}
+          gamescore={originalGame.gamescore ?? ""}
+          date={originalGame.date ?? ""}
+          teams={teamsOf(originalGame)}
+          currentUser={currentUser}
+          title="Upload dispute evidence"
+          subtitle="Upload the full game video so an admin can review the disputed result."
+          icon="videocam-outline"
+          showAddLaterHint={false}
         />
       )}
 
@@ -722,10 +716,6 @@ const EvidenceRow = styled.View({
 
 const EvidenceText = styled.Text({ color: "#fff", fontSize: 14, flex: 1 });
 
-const RemoveLink = styled.TouchableOpacity({});
-
-const RemoveText = styled.Text({ color: "#ff6b6b", fontSize: 13, fontWeight: "bold" });
-
 const NotesLabel = styled.Text({
   color: "#9fb8c8",
   fontSize: 12,
@@ -825,6 +815,6 @@ const AccordionBody = styled.View({
 
 const DetailText = styled.Text({ color: "#c7d6e5", fontSize: 13, lineHeight: 19 });
 
-const MoreEvidence = styled.View({ gap: 4, marginTop: 4 });
+const MoreEvidence = styled.View({ gap: 10, marginTop: 4 });
 
 export default GameDisputeScreen;
