@@ -50,6 +50,12 @@ type AddTournamentGameModalProps = {
   tournamentName: string;
   tournamentId: string;
   ladder?: LadderGameContext | null;
+  /**
+   * Capture-only mode: when supplied, the entered scores are returned via this
+   * callback and nothing is persisted or notified. Used by the dispute flow to
+   * collect corrected scores without touching the live match.
+   */
+  onCapture?: (capturedGame: Game) => void;
 };
 
 const AddTournamentGameModal = ({
@@ -62,6 +68,7 @@ const AddTournamentGameModal = ({
   tournamentName,
   tournamentId,
   ladder = null,
+  onCapture,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
   const { updateTournamentGame } = useContext(LeagueContext);
@@ -167,6 +174,16 @@ const AddTournamentGameModal = ({
       createdTime: game?.createdTime,
       approvers: game?.approvers || [],
     };
+
+    // Capture-only: hand the corrected game back and stop — no notifications,
+    // no writes to the live match (the dispute owns persistence on resolution).
+    if (onCapture) {
+      onCapture(gameResult);
+      setLoading(false);
+      resetForm();
+      onClose();
+      return;
+    }
 
     const isCurrentUserTeam1 = [
       team1.player1?.userId,
