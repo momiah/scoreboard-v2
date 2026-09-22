@@ -6,6 +6,7 @@ import { getMatchStart } from "./ladderMatchTime";
 const SCHEDULE_STATUSES: readonly string[] = [
   LADDER_MATCH_STATUS.ACCEPTED,
   LADDER_MATCH_STATUS.COMPLETED,
+  LADDER_MATCH_STATUS.CANCELLED,
 ];
 
 export const getMyScheduleMatches = (

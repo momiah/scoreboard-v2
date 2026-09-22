@@ -109,6 +109,11 @@ const MatchCard: React.FC<MatchCardProps> = ({
           <Ionicons name="flag-outline" size={13} color="#FFA500" />
           <ForfeitTagText numberOfLines={1}>{status.label}</ForfeitTagText>
         </ForfeitTag>
+      ) : status.phase === "cancelled" ? (
+        <CancelledTag testID={tag}>
+          <Ionicons name="close-circle-outline" size={16} color="#9fb8c8" />
+          <CancelledTagText numberOfLines={1}>{status.label}</CancelledTagText>
+        </CancelledTag>
       ) : status.phase === "waiting-players" ? (
         <WaitingTag testID={tag}>
           <WaitingTagText numberOfLines={1}>{status.label}</WaitingTagText>
@@ -361,6 +366,22 @@ const WaitingTag = styled.View({
 });
 
 const WaitingTagText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const CancelledTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 255, 255, 0.06)",
+});
+
+const CancelledTagText = styled.Text({
   color: "#9fb8c8",
   fontSize: 11,
   fontWeight: "600",

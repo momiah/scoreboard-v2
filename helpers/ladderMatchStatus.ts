@@ -9,6 +9,7 @@ export type LadderMatchPhase =
   | "awaiting-approval"
   | "no-show-review"
   | "completed"
+  | "cancelled"
   | "forfeit";
 
 export interface LadderMatchStatus {
@@ -46,6 +47,9 @@ export const deriveLadderMatchStatus = (
   }
   if (match.matchStatus === LADDER_MATCH_STATUS.COMPLETED) {
     return { phase: "completed", label: "Completed" };
+  }
+  if (match.matchStatus === LADDER_MATCH_STATUS.CANCELLED) {
+    return { phase: "cancelled", label: "Cancelled" };
   }
   // A no-show has been reported and is awaiting an admin decision; check-in is
   // paused until it resolves. (Field set on the match when the report is raised.)
