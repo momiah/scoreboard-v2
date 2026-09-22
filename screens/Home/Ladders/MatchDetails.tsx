@@ -28,6 +28,7 @@ import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
+import { useForfeitLabel } from "../../../helpers/useForfeitLabel";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -38,6 +39,7 @@ interface MatchDetailsParams {
   matchId: string;
   match?: LadderMatch;
   ladderType?: LadderType;
+  ladderName?: string;
 }
 
 const TABS: LobbyTab[] = ["Chat Room", "Game Lobby"];
@@ -46,7 +48,13 @@ const MatchDetails: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route =
     useRoute<RouteProp<Record<string, MatchDetailsParams>, string>>();
-  const { ladderId, matchId, match: matchParam, ladderType } = route.params;
+  const {
+    ladderId,
+    matchId,
+    match: matchParam,
+    ladderType,
+    ladderName,
+  } = route.params;
 
   const { currentUser } = useContext(UserContext);
   const { subscribeToLadderMatches } = useContext(LadderContext);
@@ -82,6 +90,8 @@ const MatchDetails: React.FC = () => {
     () => ["ladders", ladderId, "ladderMatches", matchId, "chat"],
     [ladderId, matchId],
   );
+
+  const forfeitLabel = useForfeitLabel(match, ladderId);
 
   if (notFound || !match) {
     return (
@@ -136,6 +146,7 @@ const MatchDetails: React.FC = () => {
           flat
           checkin={checkinControl}
           onLocationPress={openMap}
+          forfeitLabel={forfeitLabel}
           testID="match-details-card"
         />
       </Header>
@@ -155,7 +166,13 @@ const MatchDetails: React.FC = () => {
       </Tabs>
 
       {selectedTab === "Game Lobby" ? (
-        <GameLobby match={match} currentUserId={userId} checkedIn={checkedIn} />
+        <GameLobby
+          ladderId={ladderId}
+          ladderName={ladderName}
+          match={match}
+          currentUserId={userId}
+          checkedIn={checkedIn}
+        />
       ) : (
         <ChatRoom
           competitionId={matchId}

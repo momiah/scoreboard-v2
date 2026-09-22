@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { ImageSourcePropType } from "react-native";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import styled from "styled-components/native";
 import { trophies, medals } from "../../mockImages";
 import { useImageLoader } from "../../utils/imageLoader";
@@ -27,6 +32,7 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
   hasPrizesDistributed,
   competitionType,
 }) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
   const [showSkeleton, setShowSkeleton] = useState<boolean>(true);
   const [showTeamDetails, setShowTeamDetails] = useState<boolean>(false);
@@ -52,6 +58,10 @@ const DoublePrizeContenders: React.FC<DoublePrizeContendersProps> = ({
   };
 
   const handleTeamPress = (team: TeamStats): void => {
+    if (competitionType === COMPETITION_TYPES.LADDER) {
+      navigation.navigate("TeamDetails", { team });
+      return;
+    }
     setSelectedTeam(team);
     setShowTeamDetails(true);
   };

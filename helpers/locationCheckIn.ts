@@ -21,10 +21,21 @@ export const distanceInMeters = (a: LatLng, b: LatLng): number => {
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
 };
 
+// Coordinates may arrive as numbers or numeric strings (some court sources
+// store them as strings). Coerce; return null only when genuinely absent.
+const toFiniteNumber = (value: unknown): number | null => {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+};
+
 export const getCourtCoords = (court?: Court | null): LatLng | null => {
-  const latitude = court?.location?.latitude;
-  const longitude = court?.location?.longitude;
-  if (typeof latitude !== "number" || typeof longitude !== "number") {
+  const latitude = toFiniteNumber(court?.location?.latitude);
+  const longitude = toFiniteNumber(court?.location?.longitude);
+  if (latitude === null || longitude === null) {
     return null;
   }
   return { latitude, longitude };

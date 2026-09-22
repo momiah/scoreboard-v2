@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { View, Alert, Linking, StyleSheet } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -12,6 +12,8 @@ import type {
 import type { LadderMatch, LadderType } from "@shared/types";
 
 import { PopupContext } from "../../../context/PopupContext";
+import { UserContext } from "../../../context/UserContext";
+import ReportPlayerModal from "../../../components/Modals/ReportPlayerModal";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -21,6 +23,7 @@ type MatchMenuAction =
   | "LadderRules"
   | "LadderTerms"
   | "RescheduleMatch"
+  | "Report"
   | "Support"
   | "CancelMatch";
 
@@ -50,6 +53,7 @@ const MENU_OPTIONS: MenuOption[] = [
     icon: "calendar-outline",
     action: "RescheduleMatch",
   },
+  { label: "Report a Player", icon: "flag-outline", action: "Report" },
   { label: "Support", icon: "help-buoy-outline", action: "Support" },
   {
     label: "Cancel Match",
@@ -63,8 +67,10 @@ const MatchDetailsMenu: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route =
     useRoute<RouteProp<Record<string, MatchDetailsMenuParams>, string>>();
-  const { ladderId } = route.params;
+  const { ladderId, match } = route.params;
   const { showBottomToast } = useContext(PopupContext);
+  const { currentUser } = useContext(UserContext);
+  const [reportVisible, setReportVisible] = useState(false);
 
   const handleReschedule = () => {
     showBottomToast("Rescheduling a match is coming soon", "info");
@@ -100,6 +106,13 @@ const MatchDetailsMenu: React.FC = () => {
         return;
       case "RescheduleMatch":
         handleReschedule();
+        return;
+      case "Report":
+        if (!match) {
+          showBottomToast("Open the match to report a player", "info");
+          return;
+        }
+        setReportVisible(true);
         return;
       case "Support":
         handleSupport();
@@ -146,6 +159,16 @@ const MatchDetailsMenu: React.FC = () => {
           </MenuItem>
         ))}
       </MenuList>
+
+      {match && (
+        <ReportPlayerModal
+          visible={reportVisible}
+          onClose={() => setReportVisible(false)}
+          ladderId={ladderId}
+          match={match}
+          currentUserId={currentUser?.userId}
+        />
+      )}
     </Container>
   );
 };

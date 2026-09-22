@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 
-import { LADDER_STATUS } from "@shared";
+import { LADDER_STATUS, LADDER_TYPE } from "@shared";
 import type { Ladder } from "@shared/types";
 import { UserContext } from "../context/UserContext";
 import { LadderContext } from "../context/LadderContext";
@@ -14,7 +14,7 @@ interface UseLadderJoinResult {
   isParticipant: boolean;
   membershipChecking: boolean;
   mode: LadderJoinMode;
-  requestJoin: () => void;
+  openJoin: () => void;
 }
 
 export const useLadderJoin = (
@@ -64,15 +64,19 @@ export const useLadderJoin = (
       ? "closed"
       : "join";
 
-  const requestJoin = () => {
+  const openJoin = () => {
     if (mode !== "join") return;
     if (!isSignedIn) {
       navigation.navigate("Login");
       return;
     }
     if (!ladder) return;
+    if (ladder.ladderType === LADDER_TYPE.DOUBLES) {
+      navigation.navigate("SelectDoublesTeam", { ladder });
+      return;
+    }
     onOpenModal();
   };
 
-  return { isSignedIn, isParticipant, membershipChecking, mode, requestJoin };
+  return { isSignedIn, isParticipant, membershipChecking, mode, openJoin };
 };

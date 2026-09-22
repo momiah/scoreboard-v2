@@ -38,6 +38,28 @@ export const isMatchStarted = (
   return start ? now.getTime() >= start.getTime() : true;
 };
 
+// True once the match's play DATE is in the past (a prior day) — not merely its
+// start time on the same day. Used to dim done/overdue matches; a match
+// scheduled for today stays active all day even after its start time.
+export const isMatchDayPassed = (
+  match: MatchTimeFields,
+  now: Date = new Date(),
+): boolean => {
+  const start = getMatchStart(match);
+  if (!start) return false;
+  const startDay = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate(),
+  ).getTime();
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  return startDay < today;
+};
+
 export const formatMatchDateShort = (matchDate: string): string => {
   const [day, month] = (matchDate ?? "").split("-").map(Number);
   if (!day || !month) return matchDate ?? "";

@@ -7,7 +7,6 @@ import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
-import { LADDER_TYPE } from "@shared/types";
 import type { Ladder } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
@@ -46,7 +45,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   const { currentUser } = useContext(UserContext);
 
   const isPaid = ladder.entryFee > 0;
-  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const serviceCharge = ladder.entryFee * SERVICE_CHARGE_RATE;
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -54,6 +52,8 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [paymentVisible, setPaymentVisible] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
+
+  const canJoin = acceptedTerms && !processing;
 
   const resetAndClose = () => {
     setAcceptedTerms(false);
@@ -86,7 +86,7 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   };
 
   const handleActionPress = () => {
-    if (!acceptedTerms) return;
+    if (!canJoin) return;
     if (isPaid) {
       setPaymentVisible(true);
     } else {
@@ -156,13 +156,6 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             </PriceColumn>
           </TopRow>
 
-          {isDoubles && (
-            <TeamSelect testID="join-ladder-team-selector" activeOpacity={0.8}>
-              <TeamSelectText>Select Team</TeamSelectText>
-              <Ionicons name="chevron-down" size={20} color="#9fb8c8" />
-            </TeamSelect>
-          )}
-
           <TermsRow>
             <CheckboxToggle
               testID="join-ladder-terms"
@@ -196,8 +189,8 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
           <ActionButton
             testID="join-ladder-confirm"
             activeOpacity={0.85}
-            disabled={!acceptedTerms || processing}
-            isDisabled={!acceptedTerms || processing}
+            disabled={!canJoin}
+            isDisabled={!canJoin}
             onPress={handleActionPress}
           >
             <ActionButtonText>{actionLabel}</ActionButtonText>
@@ -386,21 +379,6 @@ const ServiceNote = styled.Text({
   color: "#7f97a8",
   fontSize: 11,
   textAlign: "right",
-});
-
-const TeamSelect = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  paddingHorizontal: 18,
-  paddingVertical: 16,
-  borderRadius: 30,
-  backgroundColor: "#1e2b3d",
-});
-
-const TeamSelectText = styled.Text({
-  color: "#cbd5e1",
-  fontSize: 15,
 });
 
 const TermsRow = styled.View({

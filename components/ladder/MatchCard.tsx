@@ -6,8 +6,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
-import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
-import { getLadderMatchProgress } from "../../helpers/ladderMatchProgress";
+import {
+  formatMatchDateShort,
+  isMatchDayPassed,
+} from "../../helpers/ladderMatchTime";
+import {
+  getLadderMatchProgress,
+  getLadderMatchOutcome,
+} from "../../helpers/ladderMatchProgress";
+import {
+  deriveLadderMatchStatus,
+  type LadderMatchPhase,
+} from "../../helpers/ladderMatchStatus";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -25,6 +35,8 @@ interface MatchCardProps {
   checkin?: CheckinControl;
   flat?: boolean;
   onLocationPress?: () => void;
+  forfeitLabel?: string;
+  currentUserId?: string;
   testID?: string;
 }
 
@@ -40,6 +52,8 @@ const MatchCard: React.FC<MatchCardProps> = ({
   checkin,
   flat = false,
   onLocationPress,
+  forfeitLabel,
+  currentUserId,
   testID,
 }) => {
   const city = match.court?.location?.city;
@@ -47,46 +61,54 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
+  const isPosted = match.matchStatus === LADDER_MATCH_STATUS.POSTED;
+  // Completed matches, or accepted ones whose play date has passed (a prior
+  // day), read as done: dimmed but still pressable (view result / report late).
+  // A match scheduled for today stays full contrast all day, and a still-open
+  // posted match never dims. The flat header variant always keeps full contrast.
+  const dimmed = !flat && (isCompleted || (isMatchDayPassed(match) && !isPosted));
 
+  const status = deriveLadderMatchStatus(match, {
+    selfCheckedIn: !!checkin?.checkedIn,
+    pendingApproval: progress.pendingApproval,
+    forfeitLabel,
+  });
   const showStatus = showProgress || !!checkin;
-  const tagStatus = !showStatus ? null : checkin &&
-    !checkin.checkedIn &&
-    !isCompleted ? (
-    <CheckinButton
-      activeOpacity={0.85}
-      onPress={checkin.onPress}
-      testID={testID ? `${testID}-checkin-button` : undefined}
-    >
-      <CheckinButtonText>Press here to checkin</CheckinButtonText>
-    </CheckinButton>
-  ) : progress.pendingApproval > 0 ? (
-    <AwaitingTag testID={testID ? `${testID}-awaiting` : undefined}>
-      <AwaitingTagText numberOfLines={1}>
-        {progress.pendingApproval}{" "}
-        {progress.pendingApproval === 1 ? "game" : "games"} awaiting approval
-      </AwaitingTagText>
-    </AwaitingTag>
-  ) : checkin && checkin.checkedIn ? (
-    <CheckedInTag testID={testID ? `${testID}-checked-in` : undefined}>
-      <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
-      <CheckedInTagText>Checked in</CheckedInTagText>
-    </CheckedInTag>
-  ) : isCompleted ? (
-    <Ionicons
-      name="checkmark-circle-outline"
-      size={22}
-      color="#008c13ff"
-      testID={testID ? `${testID}-status-done` : undefined}
-    />
-  ) : null;
+  const outcome =
+    currentUserId && isCompleted
+      ? getLadderMatchOutcome(match, currentUserId)
+      : "undecided";
+  const tag = (testID ? `${testID}-` : "") + status.phase;
+  const spec = showStatus ? PHASE_TAGS[status.phase] : undefined;
+  let tagStatus: React.ReactNode = null;
+  if (spec) {
+    const { Tag, Text, icon } = spec;
+    tagStatus = (
+      <Tag testID={tag}>
+        {icon && <Ionicons name={icon.name} size={icon.size} color={icon.color} />}
+        <Text numberOfLines={1}>{status.label}</Text>
+      </Tag>
+    );
+  } else if (showStatus && checkin) {
+    tagStatus = (
+      <CheckinButton
+        activeOpacity={0.85}
+        onPress={checkin.onPress}
+        testID={testID ? `${testID}-checkin-button` : undefined}
+      >
+        <CheckinButtonText>{status.label}</CheckinButtonText>
+      </CheckinButton>
+    );
+  }
 
   return (
     <Card
       testID={testID}
-      activeOpacity={0.8}
+      activeOpacity={dimmed ? 0.55 : 0.8}
       isFlat={flat}
       disabled={!onPress}
       onPress={() => onPress?.(match)}
+      style={dimmed ? { opacity: 0.55 } : undefined}
     >
       <HeaderRow flat={flat}>
         <Info>
@@ -110,8 +132,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
         </Info>
 
         <StatCell>
-          <StatDate>{formatMatchDateShort(match.matchDate)}</StatDate>
-          <StatTime>{match.matchTime?.start}</StatTime>
+          <StatDate numberOfLines={1}>
+            {formatMatchDateShort(match.matchDate)}
+          </StatDate>
+          <StatTime numberOfLines={1}>
+            {match.matchTime?.start?.trim()}
+          </StatTime>
         </StatCell>
       </HeaderRow>
 
@@ -125,7 +151,19 @@ const MatchCard: React.FC<MatchCardProps> = ({
             <TagText>Best of {match.bestOf}</TagText>
           </Tag>
         </TagGroup>
-        {tagStatus && <TagStatus>{tagStatus}</TagStatus>}
+        {tagStatus && (
+          <TagStatus>
+            {tagStatus}
+            {outcome !== "undecided" && (
+              <ResultBadgeText
+                isWin={outcome === "win"}
+                testID={testID ? `${testID}-result` : undefined}
+              >
+                {outcome === "win" ? "W" : "L"}
+              </ResultBadgeText>
+            )}
+          </TagStatus>
+        )}
         {!showStatus && (
           <FeeTag hasCourtFee={hasCourtFee}>
             <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
@@ -207,7 +245,18 @@ const TagGroup = styled.View({
 
 const TagStatus = styled.View({
   flexShrink: 0,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
 });
+
+const ResultBadgeText = styled.Text<{ isWin: boolean }>(
+  ({ isWin }: { isWin: boolean }) => ({
+    color: isWin ? "#19a800" : "#FF4B6E",
+    fontSize: 15,
+    fontWeight: "800",
+  }),
+);
 
 const Tag = styled.View({
   flexDirection: "row",
@@ -251,6 +300,73 @@ const CheckedInTag = styled.View({
 
 const CheckedInTagText = styled.Text({
   color: "#5ef0a6",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const CompletedTag = styled(CheckedInTag)({});
+const CompletedTagText = styled(CheckedInTagText)({});
+
+const StartedTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(0, 162, 255, 0.16)",
+});
+
+const StartedTagText = styled.Text({
+  color: "#4db8ff",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const WaitingTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 255, 255, 0.06)",
+});
+
+const WaitingTagText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const CancelledTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 255, 255, 0.06)",
+});
+
+const CancelledTagText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
+const ForfeitTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 5,
+  paddingHorizontal: 9,
+  paddingVertical: 5,
+  borderRadius: 8,
+  backgroundColor: "rgba(255, 165, 0, 0.12)",
+});
+
+const ForfeitTagText = styled.Text({
+  color: "#FFA500",
   fontSize: 11,
   fontWeight: "600",
 });
@@ -305,3 +421,47 @@ const FeeText = styled.Text<{ hasCourtFee: boolean }>(
     textAlign: "center",
   }),
 );
+
+interface PhaseTagSpec {
+  Tag: React.ComponentType<{ testID?: string; children?: React.ReactNode }>;
+  Text: React.ComponentType<{
+    numberOfLines?: number;
+    children?: React.ReactNode;
+  }>;
+  icon?: {
+    name: React.ComponentProps<typeof Ionicons>["name"];
+    size: number;
+    color: string;
+  };
+}
+
+const PHASE_TAGS: Partial<Record<LadderMatchPhase, PhaseTagSpec>> = {
+  forfeit: {
+    Tag: ForfeitTag,
+    Text: ForfeitTagText,
+    icon: { name: "flag", size: 13, color: "#FFA500" },
+  },
+  "no-show-review": {
+    Tag: ForfeitTag,
+    Text: ForfeitTagText,
+    icon: { name: "flag-outline", size: 13, color: "#FFA500" },
+  },
+  cancelled: {
+    Tag: CancelledTag,
+    Text: CancelledTagText,
+    icon: { name: "close-circle-outline", size: 16, color: "#9fb8c8" },
+  },
+  completed: {
+    Tag: CompletedTag,
+    Text: CompletedTagText,
+    icon: { name: "checkmark-circle-outline", size: 16, color: "#5ef0a6" },
+  },
+  "checked-in": {
+    Tag: CheckedInTag,
+    Text: CheckedInTagText,
+    icon: { name: "checkmark-circle-outline", size: 16, color: "#5ef0a6" },
+  },
+  started: { Tag: StartedTag, Text: StartedTagText },
+  "awaiting-approval": { Tag: AwaitingTag, Text: AwaitingTagText },
+  "waiting-players": { Tag: WaitingTag, Text: WaitingTagText },
+};

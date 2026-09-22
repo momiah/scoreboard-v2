@@ -1,6 +1,7 @@
 import {
   getLadderMatchProgress,
   getLadderMatchScore,
+  getLadderMatchOutcome,
 } from "./ladderMatchProgress";
 
 const game = (overrides = {}) => ({
@@ -11,22 +12,26 @@ const game = (overrides = {}) => ({
   ...overrides,
 });
 
-const ME = "me";
+const USER = "user";
 const OPP = "opp";
 
 const scoredGame = (winnerUserId, overrides = {}) => ({
   gameId: "",
   gameNumber: 1,
   approvalStatus: "approved",
-  team1: { player1: { userId: ME } },
+  team1: { player1: { userId: USER } },
   team2: { player1: { userId: OPP } },
   result: {
     winner: {
-      team: winnerUserId === ME ? "Team 1" : "Team 2",
+      team: winnerUserId === USER ? "Team 1" : "Team 2",
       players: [winnerUserId],
       score: 21,
     },
-    loser: { team: winnerUserId === ME ? "Team 2" : "Team 1", players: [], score: 0 },
+    loser: {
+      team: winnerUserId === USER ? "Team 2" : "Team 1",
+      players: [],
+      score: 0,
+    },
   },
   ...overrides,
 });
@@ -76,27 +81,27 @@ describe("getLadderMatchProgress", () => {
 describe("getLadderMatchScore", () => {
   it("starts 0-0 undecided for fresh shells", () => {
     const match = { bestOf: 5, games: [game(), game(), game(), game(), game()] };
-    expect(getLadderMatchScore(match, ME)).toEqual({
-      mine: 0,
-      theirs: 0,
+    expect(getLadderMatchScore(match, USER)).toEqual({
+      user: 0,
+      opponent: 0,
       outcome: "undecided",
     });
   });
 
-  it("counts my wins on the left and reports a win at the majority", () => {
+  it("counts the user's wins and reports a win at the majority", () => {
     const match = {
       bestOf: 5,
       games: [
-        scoredGame(ME, { gameNumber: 1 }),
+        scoredGame(USER, { gameNumber: 1 }),
         scoredGame(OPP, { gameNumber: 2 }),
-        scoredGame(ME, { gameNumber: 3 }),
+        scoredGame(USER, { gameNumber: 3 }),
         scoredGame(OPP, { gameNumber: 4 }),
-        scoredGame(ME, { gameNumber: 5 }),
+        scoredGame(USER, { gameNumber: 5 }),
       ],
     };
-    expect(getLadderMatchScore(match, ME)).toEqual({
-      mine: 3,
-      theirs: 2,
+    expect(getLadderMatchScore(match, USER)).toEqual({
+      user: 3,
+      opponent: 2,
       outcome: "win",
     });
   });
@@ -106,14 +111,14 @@ describe("getLadderMatchScore", () => {
       bestOf: 5,
       games: [
         scoredGame(OPP, { gameNumber: 1 }),
-        scoredGame(ME, { gameNumber: 2 }),
+        scoredGame(USER, { gameNumber: 2 }),
         scoredGame(OPP, { gameNumber: 3 }),
         scoredGame(OPP, { gameNumber: 4 }),
       ],
     };
-    expect(getLadderMatchScore(match, ME)).toEqual({
-      mine: 1,
-      theirs: 3,
+    expect(getLadderMatchScore(match, USER)).toEqual({
+      user: 1,
+      opponent: 3,
       outcome: "loss",
     });
   });
@@ -121,13 +126,63 @@ describe("getLadderMatchScore", () => {
   it("ignores unapproved games and returns 0-0 without a userId", () => {
     const pendingMatch = {
       bestOf: 5,
-      games: [scoredGame(ME, { approvalStatus: "pending" })],
+      games: [scoredGame(USER, { approvalStatus: "pending" })],
     };
-    expect(getLadderMatchScore(pendingMatch, ME)).toMatchObject({
-      mine: 0,
-      theirs: 0,
+    expect(getLadderMatchScore(pendingMatch, USER)).toMatchObject({
+      user: 0,
+      opponent: 0,
     });
-    const match = { bestOf: 5, games: [scoredGame(ME), scoredGame(OPP)] };
-    expect(getLadderMatchScore(match, "")).toMatchObject({ mine: 0, theirs: 0 });
+    const match = { bestOf: 5, games: [scoredGame(USER), scoredGame(OPP)] };
+    expect(getLadderMatchScore(match, "")).toMatchObject({
+      user: 0,
+      opponent: 0,
+    });
+  });
+});
+
+describe("getLadderMatchOutcome", () => {
+  it("derives a played match from its score", () => {
+    const match = {
+      bestOf: 3,
+      games: [scoredGame(USER, { gameNumber: 1 }), scoredGame(USER, { gameNumber: 2 })],
+    };
+    expect(getLadderMatchOutcome(match, USER)).toBe("win");
+    expect(getLadderMatchOutcome(match, OPP)).toBe("loss");
+  });
+
+  it("singles walkover: the walkover winner wins, the other loses", () => {
+    const match = { walkover: true, walkoverWinner: USER, games: [] };
+    expect(getLadderMatchOutcome(match, USER)).toBe("win");
+    expect(getLadderMatchOutcome(match, OPP)).toBe("loss");
+  });
+
+  it("doubles walkover: decided by the user's team key", () => {
+    const match = {
+      walkover: true,
+      walkoverWinner: "teamA",
+      games: [],
+      teams: [
+        { teamKey: "teamA", playerIds: ["a1", "a2"] },
+        { teamKey: "teamB", playerIds: ["b1", "b2"] },
+      ],
+    };
+    expect(getLadderMatchOutcome(match, "a2")).toBe("win");
+    expect(getLadderMatchOutcome(match, "b1")).toBe("loss");
+  });
+
+  it("is undecided for a walkover with no winner or an unknown user", () => {
+    expect(getLadderMatchOutcome({ walkover: true, games: [] }, USER)).toBe(
+      "undecided",
+    );
+    const doubles = {
+      walkover: true,
+      walkoverWinner: "teamA",
+      games: [],
+      teams: [
+        { teamKey: "teamA", playerIds: ["a1"] },
+        { teamKey: "teamB", playerIds: ["b1"] },
+      ],
+    };
+    expect(getLadderMatchOutcome(doubles, "stranger")).toBe("undecided");
   });
 });

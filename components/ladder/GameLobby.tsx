@@ -1,16 +1,32 @@
 import React, { useContext, useEffect, useState } from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, LayoutAnimation, Platform, UIManager } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { hasUserCheckedIn, LADDER_MATCH_STATUS, LADDER_TYPE } from "@shared";
-import type { LadderMatch, Game, Player } from "@shared/types";
+import {
+  hasUserCheckedIn,
+  LADDER_MATCH_STATUS,
+  LADDER_TYPE,
+  COMPETITION_TYPES,
+} from "@shared";
+import type {
+  LadderMatch,
+  Game,
+  GameTeam,
+  Player,
+  ScoreboardProfile,
+  TeamStats,
+} from "@shared/types";
 
 import { UserContext } from "../../context/UserContext";
+import { LadderContext } from "../../context/LadderContext";
+import { GameContext } from "../../context/GameContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
-import AddLadderGameModal from "../Modals/AddLadderGameModal";
+import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   getLadderMatchScore,
@@ -28,6 +44,8 @@ interface ParticipantProfile {
 }
 
 interface GameLobbyProps {
+  ladderId: string;
+  ladderName?: string;
   match: LadderMatch;
   currentUserId?: string;
   checkedIn: boolean;
@@ -39,17 +57,64 @@ const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
   undecided: "#64748b",
 };
 
+type LobbyGameTeam = GameTeam & { teamName?: string };
+type LobbyGame = Omit<Game, "team1" | "team2"> & {
+  team1: LobbyGameTeam;
+  team2: LobbyGameTeam;
+};
+
 const GameLobby: React.FC<GameLobbyProps> = ({
+  ladderId,
+  ladderName,
   match,
   currentUserId,
   checkedIn,
 }) => {
-  const { getUserById } = useContext(UserContext);
+  const { getUserById, currentUser } = useContext(UserContext);
+  const { fetchLadderTeams, fetchLadderParticipants } =
+    useContext(LadderContext);
+  const { findRankIndex } = useContext(GameContext);
   const { showBottomToast } = useContext(PopupContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
   const [players, setPlayers] = useState<ParticipantProfile[]>([]);
+  const [ladderTeamByKey, setLadderTeamByKey] = useState<
+    Record<string, TeamStats>
+  >({});
+  const [participantByUserId, setParticipantByUserId] = useState<
+    Record<string, ScoreboardProfile>
+  >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
+  const [checkinCollapsed, setCheckinCollapsed] = useState(
+    match.matchStatus === LADDER_MATCH_STATUS.COMPLETED,
+  );
+
+  const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
+  const allCheckedIn = players.length > 0 && checkedIn;
+  const gamesLocked = isCompleted || !allCheckedIn;
+
+  const score = getLadderMatchScore(match, currentUserId ?? "");
+
+  const isDoubles =
+    match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
+  const matchTeams = match.teams ?? [];
+  const hasTwoTeams = isDoubles && matchTeams.length === 2;
+
+  // enable LayoutAnimation on Android
+  useEffect(() => {
+    if (
+      Platform.OS === "android" &&
+      UIManager.setLayoutAnimationEnabledExperimental
+    ) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  const toggleCheckin = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCheckinCollapsed((s) => !s);
+  };
 
   useEffect(() => {
     let active = true;
@@ -72,21 +137,61 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     };
   }, [match.participants, getUserById]);
 
-  const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  const allCheckedIn = players.length > 0 && checkedIn;
-  const gamesLocked = isCompleted || !allCheckedIn;
+  // Doubles: fetch the ladder's teams (by teamKey) so the score bar, shells and
+  // team headers can show the team name/photo and link to the team page —
+  // MatchTeam carries only ids.
+  useEffect(() => {
+    if (!isDoubles || matchTeams.length === 0) {
+      setLadderTeamByKey({});
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const teams = await fetchLadderTeams(ladderId);
+        const map: Record<string, TeamStats> = {};
+        teams.forEach((t) => {
+          if (t.teamKey) map[t.teamKey] = t;
+        });
+        if (active) setLadderTeamByKey(map);
+      } catch (error) {
+        console.error("Error loading ladder teams:", error);
+        if (active) setLadderTeamByKey({});
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [isDoubles, matchTeams.length, ladderId, fetchLadderTeams]);
 
-  const score = getLadderMatchScore(match, currentUserId ?? "");
+  // Singles: fetch the ladder participant docs so a check-in row can open the
+  // player's ladder profile (per-ladder stats), not their global profile.
+  useEffect(() => {
+    if (isDoubles) {
+      setParticipantByUserId({});
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const rows = await fetchLadderParticipants(ladderId);
+        const map: Record<string, ScoreboardProfile> = {};
+        rows.forEach((p) => {
+          if (p.userId) map[p.userId] = p;
+        });
+        if (active) setParticipantByUserId(map);
+      } catch (error) {
+        console.error("Error loading ladder participants:", error);
+        if (active) setParticipantByUserId({});
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [isDoubles, ladderId, fetchLadderParticipants]);
 
-  const mine = players.find((p) => p.userId === currentUserId);
-  const opponents = players.filter((p) => p.userId !== currentUserId);
-  const leftNames = mine ? [formatDisplayName(mine)] : ["You"];
-  const rightNames =
-    opponents.length > 0
-      ? opponents.map((p) => formatDisplayName(p))
-      : ["Opponent"];
-
-  const isDoubles = match.participants.length > 2;
+  const teamName = (t?: TeamStats): string =>
+    t ? t.teamName?.trim() || (t.team ?? []).join(" & ") : "Team";
 
   const toPlayerCell = (p?: ParticipantProfile): Player | null =>
     p
@@ -99,31 +204,177 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         }
       : null;
 
-  const gamesWithPlayers: Game[] = match.games.map((game) => {
-    if (game.team1?.player1 || game.team2?.player1) return game;
+  const profileById = new Map(players.map((p) => [p.userId, p]));
+  const teamKeyByPlayer = new Map<string, string>();
+  matchTeams.forEach((t) =>
+    t.playerIds.forEach((id) => teamKeyByPlayer.set(id, t.teamKey)),
+  );
+  const teamNameForCells = (team?: GameTeam): string => {
+    const uid = team?.player1?.userId ?? team?.player2?.userId ?? undefined;
+    const key = uid ? teamKeyByPlayer.get(uid) : undefined;
+    return key ? teamName(ladderTeamByKey[key]) : "";
+  };
+
+  // Group the two sides. Doubles shows the current user's team on the left
+  // (matching the viewer-relative score), the opponent team on the right.
+  const userTeamIdx = hasTwoTeams
+    ? Math.max(
+        0,
+        matchTeams.findIndex((t) => t.playerIds.includes(currentUserId ?? "")),
+      )
+    : -1;
+  const userTeam = hasTwoTeams ? matchTeams[userTeamIdx] : undefined;
+  const opponentTeam = hasTwoTeams
+    ? matchTeams[userTeamIdx === 0 ? 1 : 0]
+    : undefined;
+  const teamForKey = (key?: string): TeamStats | undefined =>
+    key ? ladderTeamByKey[key] : undefined;
+
+  const user = players.find((p) => p.userId === currentUserId);
+  const opponents = players.filter((p) => p.userId !== currentUserId);
+  const leftNames = hasTwoTeams
+    ? [teamName(teamForKey(userTeam?.teamKey))]
+    : user
+      ? [formatDisplayName(user)]
+      : ["You"];
+  const rightNames = hasTwoTeams
+    ? [teamName(teamForKey(opponentTeam?.teamKey))]
+    : opponents.length > 0
+      ? opponents.map((p) => formatDisplayName(p))
+      : ["Opponent"];
+
+  const gamesWithPlayers: LobbyGame[] = match.games.map((game) => {
+    const filled = !!(game.team1?.player1 || game.team2?.player1);
+
+    let team1: GameTeam = game.team1;
+    let team2: GameTeam = game.team2;
+    if (!filled) {
+      if (hasTwoTeams) {
+        const userCells = (userTeam?.playerIds ?? []).map((id) =>
+          toPlayerCell(profileById.get(id)),
+        );
+        const oppCells = (opponentTeam?.playerIds ?? []).map((id) =>
+          toPlayerCell(profileById.get(id)),
+        );
+        team1 = {
+          ...game.team1,
+          player1: userCells[0] ?? null,
+          player2: userCells[1] ?? null,
+        };
+        team2 = {
+          ...game.team2,
+          player1: oppCells[0] ?? null,
+          player2: oppCells[1] ?? null,
+        };
+      } else {
+        team1 = { ...game.team1, player1: toPlayerCell(user), player2: null };
+        team2 = {
+          ...game.team2,
+          player1: toPlayerCell(opponents[0]),
+          player2: isDoubles ? toPlayerCell(opponents[1]) : null,
+        };
+      }
+    }
+
     return {
       ...game,
-      team1: {
-        ...game.team1,
-        player1: toPlayerCell(mine),
-        player2: null,
-      },
-      team2: {
-        ...game.team2,
-        player1: toPlayerCell(opponents[0]),
-        player2: isDoubles ? toPlayerCell(opponents[1]) : null,
-      },
+      team1: hasTwoTeams
+        ? { ...team1, teamName: teamNameForCells(team1) }
+        : team1,
+      team2: hasTwoTeams
+        ? { ...team2, teamName: teamNameForCells(team2) }
+        : team2,
     };
   });
 
   const handleGamePress = (game: Game) => {
-    if (isCompleted) return;
-    if (!allCheckedIn) {
+    if (!allCheckedIn && !isCompleted) {
       showBottomToast("All players must check in to start the games", "info");
       return;
     }
+
+    // A reported game (score submitted) opens the shared GameScreen to
+    // view/approve/watch, exactly like League/Tournament. An unreported shell
+    // opens the report modal so a player can submit the score.
+    const isReported = !!game.result || (game.approvalStatus ?? "") !== "";
+
+    if (isReported) {
+      navigation.navigate("GameScreen", {
+        gameId: game.gameId,
+        competitionId: ladderId,
+        competitionType: COMPETITION_TYPES.LADDER,
+        competitionName: ladderName ?? match.court?.courtName ?? "Ladder match",
+        gamescore: game.gamescore ?? "",
+        date: game.date ?? "",
+        team1: game.team1,
+        team2: game.team2,
+        ladderId,
+        matchId: match.ladderMatchId,
+      });
+      return;
+    }
+
+    if (isCompleted) return;
+
     setSelectedGame(game);
     setGameModalVisible(true);
+  };
+
+  // A check-in row opens a player's profile: doubles → global profile (the
+  // ladder ranks the team), singles → their ladder profile.
+  const openPlayer = (userId?: string) => {
+    if (!userId) return;
+    if (!isDoubles) {
+      const participant = participantByUserId[userId];
+      if (participant) {
+        navigation.navigate("PlayerDetails", { selectedPlayer: participant });
+        return;
+      }
+    }
+    navigation.navigate("UserProfile", { userId });
+  };
+
+  const openTeam = (teamId?: string) => {
+    if (teamId) navigation.navigate("TeamDetails", { teamId });
+  };
+
+  const renderCheckinRow = (
+    player: ParticipantProfile,
+    onPress: () => void,
+    nested = false,
+  ) => {
+    const xp = player.profileDetail?.XP ?? 0;
+    const rankLevel = findRankIndex(xp) + 1;
+    // Reflect the real check-in record — a walkover completes the match without
+    // anyone checking in, so completion alone must not imply checked-in.
+    const isCheckedIn = hasUserCheckedIn(match, player.userId);
+    return (
+      <PlayerRow
+        key={player.userId}
+        activeOpacity={0.7}
+        nested={nested}
+        onPress={onPress}
+        testID={`checkin-${player.userId}`}
+      >
+        <Avatar
+          source={
+            player.profileImage ? { uri: player.profileImage } : ccDefaultImage
+          }
+        />
+        <PlayerName numberOfLines={1}>{formatDisplayName(player)}</PlayerName>
+        <StatusBadge isCheckedIn={isCheckedIn}>
+          <Dot isCheckedIn={isCheckedIn} />
+          <CheckText isCheckedIn={isCheckedIn}>
+            {isCheckedIn ? "Checked In" : "Not checked In"}
+          </CheckText>
+        </StatusBadge>
+        <MedalCol>
+          <MedalDisplay xp={xp} size={40} />
+          <RankLevel>{rankLevel}</RankLevel>
+        </MedalCol>
+        <Ionicons name="chevron-forward" size={16} color="#46596e" />
+      </PlayerRow>
+    );
   };
 
   return (
@@ -134,42 +385,71 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         <PaddedBlock>
           <CheckinHeader>
             <BlockTitle>Check-in</BlockTitle>
+            {isDoubles ? (
+              <CollapseToggle
+                activeOpacity={0.7}
+                onPress={toggleCheckin}
+                testID="checkin-collapse-toggle"
+              >
+                <Ionicons
+                  name={checkinCollapsed ? "chevron-down" : "chevron-up"}
+                  size={20}
+                  color="#9fb8c8"
+                />
+              </CollapseToggle>
+            ) : null}
           </CheckinHeader>
 
           {players.length === 0 ? (
             <MutedText>Waiting for an opponent to accept.</MutedText>
-          ) : (
+          ) : hasTwoTeams ? (
             <PlayerList>
-              {players.map((player) => {
-                const xp = player.profileDetail?.XP ?? 0;
-                const isCheckedIn =
-                  isCompleted || hasUserCheckedIn(match, player.userId);
+              {matchTeams.map((mt) => {
+                const teamDoc = ladderTeamByKey[mt.teamKey];
+                const roster = mt.playerIds
+                  .map((id) => players.find((p) => p.userId === id))
+                  .filter((p): p is ParticipantProfile => !!p);
                 return (
-                  <PlayerRow
-                    key={player.userId}
-                    activeOpacity={0.7}
-                    testID={`checkin-${player.userId}`}
-                  >
-                    <Avatar
-                      source={
-                        player.profileImage
-                          ? { uri: player.profileImage }
-                          : ccDefaultImage
-                      }
-                    />
-                    <PlayerName numberOfLines={1}>
-                      {formatDisplayName(player)}
-                    </PlayerName>
-                    <StatusBadge isCheckedIn={isCheckedIn}>
-                      <Dot isCheckedIn={isCheckedIn} />
-                      <CheckText isCheckedIn={isCheckedIn}>
-                        {isCheckedIn ? "Checked In" : "Not checked In"}
-                      </CheckText>
-                    </StatusBadge>
-                    <MedalDisplay xp={xp} size={42} />
-                  </PlayerRow>
+                  <TeamGroup key={mt.teamKey}>
+                    <TeamHeader
+                      activeOpacity={0.8}
+                      onPress={() => openTeam(mt.teamId)}
+                      testID={`checkin-team-${mt.teamId}`}
+                    >
+                      {teamDoc?.teamProfilePic ? (
+                        <TeamAvatar source={{ uri: teamDoc.teamProfilePic }} />
+                      ) : (
+                        <TeamAvatarPlaceholder>
+                          <Ionicons name="people" size={18} color="#00A2FF" />
+                        </TeamAvatarPlaceholder>
+                      )}
+                      <TeamHeaderName numberOfLines={1}>
+                        {teamName(teamDoc)}
+                      </TeamHeaderName>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={18}
+                        color="#46596e"
+                      />
+                    </TeamHeader>
+                    {!checkinCollapsed
+                      ? roster.map((player) =>
+                          renderCheckinRow(
+                            player,
+                            () => openPlayer(player.userId),
+                            true,
+                          ),
+                        )
+                      : null}
+                  </TeamGroup>
                 );
               })}
+            </PlayerList>
+          ) : (
+            <PlayerList>
+              {players.map((player) =>
+                renderCheckinRow(player, () => openPlayer(player.userId)),
+              )}
             </PlayerList>
           )}
         </PaddedBlock>
@@ -185,7 +465,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
               ))}
             </SideCol>
             <ScoreValue outcome={score.outcome}>
-              {score.mine} - {score.theirs}
+              {score.user} - {score.opponent}
             </ScoreValue>
             <SideCol align="right">
               {rightNames.map((name, i) => (
@@ -199,12 +479,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
         <GamesHeader>
           <BlockTitle>Games</BlockTitle>
-          {isCompleted ? (
-            <StatusChip completed testID="lobby-games-completed">
-              <Ionicons name="checkmark-circle" size={13} color="#5ef0a6" />
-              <StatusChipText completed>Completed</StatusChipText>
-            </StatusChip>
-          ) : !allCheckedIn ? (
+          {!allCheckedIn ? (
             <StatusChip testID="lobby-games-locked">
               <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
               <StatusChipText>Locked until all players check in</StatusChipText>
@@ -230,9 +505,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         </GamesList>
       </ScrollView>
 
-      <AddLadderGameModal
+      <AddTournamentGameModal
         visible={gameModalVisible}
         game={selectedGame}
+        tournamentType={isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES}
+        currentUser={currentUser ?? null}
+        tournamentName={match.court?.courtName ?? "Ladder match"}
+        tournamentId=""
+        ladder={{
+          ladderId,
+          matchId: match.ladderMatchId,
+          name: match.court?.courtName ?? "Ladder match",
+        }}
         onClose={() => {
           setGameModalVisible(false);
           setSelectedGame(null);
@@ -260,6 +544,14 @@ const CheckinHeader = styled.View({
   justifyContent: "space-between",
 });
 
+const CollapseToggle = styled.TouchableOpacity({
+  marginRight: 4,
+  padding: 4,
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: "#9fb8c8",
+});
+
 const BlockTitle = styled.Text({
   color: "#ffffff",
   fontSize: 16,
@@ -273,15 +565,64 @@ const MutedText = styled.Text({
 
 const PlayerList = styled.View({});
 
-const PlayerRow = styled.TouchableOpacity({
+const PlayerRow = styled.TouchableOpacity<{ nested?: boolean }>(
+  ({ nested }: { nested?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+    paddingLeft: nested ? 12 : 0,
+    marginLeft: nested ? 8 : 0,
+    borderLeftWidth: nested ? 2 : 0,
+    borderLeftColor: "#1b2c40",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgb(9, 33, 62)",
+    borderTopWidth: nested ? 0 : 1,
+    borderTopColor: "rgb(9, 33, 62)",
+  }),
+);
+
+const TeamGroup = styled.View({
+  marginBottom: 8,
+});
+
+const TeamHeader = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
-  gap: 12,
-  paddingVertical: 10,
-  borderBottomWidth: 1,
-  borderBottomColor: "rgb(9, 33, 62)",
-  borderTopWidth: 1,
-  borderTopColor: "rgb(9, 33, 62)",
+  gap: 11,
+  paddingVertical: 11,
+  paddingHorizontal: 12,
+  marginTop: 8,
+  borderRadius: 12,
+  backgroundColor: "rgba(0, 162, 255, 0.07)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+});
+
+const TeamAvatar = styled.Image({
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+  backgroundColor: "#0a1929",
+});
+
+const TeamAvatarPlaceholder = styled.View({
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+  backgroundColor: "#0a1929",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const TeamHeaderName = styled.Text({
+  flex: 1,
+  minWidth: 0,
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: "bold",
 });
 
 const Avatar = styled.Image({
@@ -289,6 +630,18 @@ const Avatar = styled.Image({
   height: 42,
   borderRadius: 21,
   backgroundColor: "rgb(9, 33, 62)",
+});
+
+const MedalCol = styled.View({
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const RankLevel = styled.Text({
+  fontSize: 10,
+  fontWeight: "bold",
+  color: "#ffffff",
+  marginTop: 2,
 });
 
 const PlayerName = styled.Text({
@@ -397,21 +750,25 @@ const GamesHeader = styled.View({
   justifyContent: "space-between",
 });
 
-const StatusChip = styled.View<{ completed?: boolean }>(
-  ({ completed }: { completed?: boolean }) => ({
+const StatusChip = styled.View<{ completed?: boolean; forfeit?: boolean }>(
+  ({ completed, forfeit }: { completed?: boolean; forfeit?: boolean }) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: completed ? "#0c3d24" : "rgba(255, 255, 255, 0.06)",
+    backgroundColor: forfeit
+      ? "rgba(255, 165, 0, 0.12)"
+      : completed
+        ? "#0c3d24"
+        : "rgba(255, 255, 255, 0.06)",
   }),
 );
 
-const StatusChipText = styled.Text<{ completed?: boolean }>(
-  ({ completed }: { completed?: boolean }) => ({
-    color: completed ? "#5ef0a6" : "#9fb8c8",
+const StatusChipText = styled.Text<{ completed?: boolean; forfeit?: boolean }>(
+  ({ completed, forfeit }: { completed?: boolean; forfeit?: boolean }) => ({
+    color: forfeit ? "#FFA500" : completed ? "#5ef0a6" : "#9fb8c8",
     fontSize: 11,
     fontWeight: "600",
   }),
