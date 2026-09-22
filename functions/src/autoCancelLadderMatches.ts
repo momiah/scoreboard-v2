@@ -8,12 +8,6 @@ import { isLadderMatchUnattended } from "courtchamps-shared/helpers";
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
 
-/**
- * Cancels accepted ladder matches that have gone entirely unattended past their
- * window (nobody checked in, played, or reported). A cancelled match carries no
- * result and no penalty. Eligibility is the shared `isLadderMatchUnattended`
- * rule, so the app and this job never disagree.
- */
 export const autoCancelLadderMatches = onSchedule(
   "every 30 minutes",
   async () => {

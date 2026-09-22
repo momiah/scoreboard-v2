@@ -67,12 +67,6 @@ export const getLadderMatchScore = (
   return { user, opponent, outcome };
 };
 
-/**
- * The match result from the user's perspective, for the schedule's W/L glance.
- * A walkover has no played games, so it's decided by the walkover winner (the
- * user's team key for doubles, their userId for singles); everything else falls
- * back to the played score.
- */
 export const getLadderMatchOutcome = (
   match: Pick<
     LadderMatch,

@@ -86,9 +86,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [gameModalVisible, setGameModalVisible] = useState(false);
-  // Check-in rows start collapsed once the match is over, expanded while it's
-  // still live. An initializer, not an effect, so no layout animation fires
-  // mid-navigation and the rows stay freely expandable afterwards.
   const [checkinCollapsed, setCheckinCollapsed] = useState(
     match.matchStatus === LADDER_MATCH_STATUS.COMPLETED,
   );
@@ -114,7 +111,6 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     }
   }, []);
 
-  // toggle check-in collapse with animated layout change (doubles only)
   const toggleCheckin = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCheckinCollapsed((s) => !s);

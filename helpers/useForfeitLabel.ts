@@ -6,13 +6,6 @@ import { UserContext } from "../context/UserContext";
 import { LadderContext } from "../context/LadderContext";
 import { formatDisplayName } from "./formatDisplayName";
 
-/**
- * Resolve the name of the side that forfeited a walkover, for the status pill.
- * Lives here (not in a screen) so every surface that shows a match card — the
- * schedule and the match details header — resolves the same name from the same
- * source and can never disagree. Returns "" until resolved or when the match is
- * not a walkover; a ladderId is required to look up a doubles team name.
- */
 export const useForfeitLabel = (
   match: LadderMatch | null | undefined,
   ladderId?: string,

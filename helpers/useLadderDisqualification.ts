@@ -10,12 +10,6 @@ interface LadderDisqualificationState {
   disclaimer?: string;
 }
 
-/**
- * Derive whether any of the given players is disqualified from a ladder, by
- * reading their per-ladder strike counts and comparing to the thresholds. Used
- * to gate the post/accept flow — for doubles, pass both team members, since the
- * pair is blocked if either is disqualified.
- */
 export const useLadderDisqualification = (
   ladderId?: string,
   userIds: string[] = [],

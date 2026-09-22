@@ -35,9 +35,7 @@ interface MatchCardProps {
   checkin?: CheckinControl;
   flat?: boolean;
   onLocationPress?: () => void;
-  /** Name of the side that forfeited, appended to the walkover status pill. */
   forfeitLabel?: string;
-  /** When set, a completed match shows the user's W/L to the right of the pill. */
   currentUserId?: string;
   testID?: string;
 }
@@ -70,18 +68,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
   // posted match never dims. The flat header variant always keeps full contrast.
   const dimmed = !flat && (isCompleted || (isMatchDayPassed(match) && !isPosted));
 
-  // The hero status pill uses the shared derivation so it can't drift from the
-  // lobby: Press here to checkin → Checked in / Waiting for players (doubles) →
-  // Started → Completed / Forfeit. Terminal states win, so a walkover never
-  // falls through to a stale "Checked in".
   const status = deriveLadderMatchStatus(match, {
     selfCheckedIn: !!checkin?.checkedIn,
     pendingApproval: progress.pendingApproval,
     forfeitLabel,
   });
   const showStatus = showProgress || !!checkin;
-  // A quick W/L glance to the right of the pill, only where a viewer is given
-  // (the schedule) and the match is decided. The hero header omits it.
   const outcome =
     currentUserId && isCompleted
       ? getLadderMatchOutcome(match, currentUserId)
@@ -98,7 +90,6 @@ const MatchCard: React.FC<MatchCardProps> = ({
       </Tag>
     );
   } else if (showStatus && checkin) {
-    // Only the check-in prompt has no static pill — it's an actionable button.
     tagStatus = (
       <CheckinButton
         activeOpacity={0.85}
@@ -444,8 +435,6 @@ interface PhaseTagSpec {
   };
 }
 
-// Every static status pill, keyed by phase. Phases absent here (awaiting-checkin)
-// have no pill — they render the actionable check-in button instead.
 const PHASE_TAGS: Partial<Record<LadderMatchPhase, PhaseTagSpec>> = {
   forfeit: {
     Tag: ForfeitTag,

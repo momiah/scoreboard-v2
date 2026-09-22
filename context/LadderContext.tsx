@@ -91,8 +91,7 @@ class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
 class ApproveLadderGameError extends Error {}
 
-// Firestore rejects `undefined` field values, so drop them before a write
-// (Dates and arrays are preserved).
+// Firestore rejects `undefined` field values, so drop them before a write.
 const pruneUndefined = <T,>(value: T): T => {
   if (Array.isArray(value)) return value.map(pruneUndefined) as unknown as T;
   if (value && typeof value === "object" && !(value instanceof Date)) {
@@ -975,12 +974,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  // A blocked player (opponent didn't show) reports a no-show after the grace
-  // period. Writes one pending claim per match to a top-level collection the
-  // website admin panel reviews; the claimant's side is the walkover winner.
-  // Write a report to the shared `reports` queue, deduped against an existing
-  // open (non-rejected) report of the same reason for this match — by the same
-  // reporter against the same target for a conduct report, or any no-show.
   const writeReport = useCallback(
     async (
       report: Omit<
@@ -1030,8 +1023,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  // No-show route (check-in flow): a `no_show` report awarding the walkover to
-  // the claimant's side and striking the side that didn't show.
   const createNoShowClaim = useCallback(
     async (
       ladderId: string,
@@ -1082,7 +1073,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         },
         {},
       );
-      // Flag the match so check-in pauses until an admin resolves the no-show.
       if (outcome.success) {
         try {
           await updateDoc(
@@ -1104,7 +1094,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [writeReport],
   );
 
-  // Conduct route (match settings menu): cheating / abuse / harassment / other.
   const submitReport = useCallback(
     async (input: {
       ladderId: string;
@@ -1150,7 +1139,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [writeReport],
   );
 
-  // Per-ladder strike tallies for the given players (drives the DQ gate).
   const fetchLadderReportCounts = useCallback(
     async (
       ladderId: string,
