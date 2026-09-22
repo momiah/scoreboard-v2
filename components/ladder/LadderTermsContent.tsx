@@ -28,15 +28,19 @@ export const LADDER_TERMS: TermsSection[] = [
     body: "Results must be reported honestly and confirmed by both players. Any manipulation of scores, collusion, or abusive conduct may result in removal from the ladder without refund and further account action.",
   },
   {
-    title: "6. Attendance & no-shows",
-    body: "You must check in at the court for each scheduled match. If your opponent has not checked in within the 30-minute grace period after the scheduled start time, you may report a no-show. Once an admin approves it, the match is awarded to you as a walkover: you gain 50 CP and the no-show loses 50 CP (never below zero). No games are played, so no game points, point difference, or achievement medals are awarded. Repeatedly failing to attend your matches (5 no-shows in a single ladder) will result in disqualification from that ladder with no refund of your entry fee.",
+    title: "6. Attendance, reports & disqualification",
+    body: "You must check in at the court for each scheduled match. If your opponent hasn't checked in within the 30-minute grace period after the scheduled start, you can report a no-show from the check-in screen; you can also report misconduct — cheating, abuse or harassment — from the match menu. All reports are reviewed by an admin. An upheld no-show awards you the match as a walkover: you gain up to 50 CP, transferred from the no-show and never taking them below zero, with no games, points or medals. Upheld reports add a strike against the reported player. Strikes are counted per ladder, and reaching the limit for any reason — 5 no-shows, or 3 for a conduct reason — disqualifies that player from the ladder, blocking them from posting or accepting further matches, with no refund of their entry fee.",
   },
   {
-    title: "7. Refunds & cancellations",
+    title: "7. Unattended matches",
+    body: "If an accepted match goes completely unattended — nobody checks in, plays, or reports anything within 24 hours of the scheduled start — it is automatically cancelled. A cancelled match carries no result and no penalty for either side.",
+  },
+  {
+    title: "8. Refunds & cancellations",
     body: "If a ladder is cancelled before it begins, paid entry fees are refunded. Once a ladder has started, you have the right for refund before you play your first match. After that, entry fees are generally non-refundable except where required by law.",
   },
   {
-    title: "8. Changes",
+    title: "9. Changes",
     body: "Court Champs may update these terms or a ladder's details where reasonably necessary. Material changes affecting an active ladder will be communicated to participants.",
   },
 ];
