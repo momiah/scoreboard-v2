@@ -14,7 +14,10 @@ import {
   getLadderMatchProgress,
   getLadderMatchOutcome,
 } from "../../helpers/ladderMatchProgress";
-import { deriveLadderMatchStatus } from "../../helpers/ladderMatchStatus";
+import {
+  deriveLadderMatchStatus,
+  type LadderMatchPhase,
+} from "../../helpers/ladderMatchStatus";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -84,54 +87,28 @@ const MatchCard: React.FC<MatchCardProps> = ({
       ? getLadderMatchOutcome(match, currentUserId)
       : "undecided";
   const tag = (testID ? `${testID}-` : "") + status.phase;
-  const tagStatus = !showStatus
-    ? null
-    : status.phase === "forfeit" ? (
-        <ForfeitTag testID={tag}>
-          <Ionicons name="flag" size={13} color="#FFA500" />
-          <ForfeitTagText numberOfLines={1}>{status.label}</ForfeitTagText>
-        </ForfeitTag>
-      ) : status.phase === "completed" ? (
-        <CompletedTag testID={tag}>
-          <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
-          <CompletedTagText>{status.label}</CompletedTagText>
-        </CompletedTag>
-      ) : status.phase === "awaiting-approval" ? (
-        <AwaitingTag testID={tag}>
-          <AwaitingTagText numberOfLines={1}>{status.label}</AwaitingTagText>
-        </AwaitingTag>
-      ) : status.phase === "started" ? (
-        <StartedTag testID={tag}>
-          <StartedTagText>{status.label}</StartedTagText>
-        </StartedTag>
-      ) : status.phase === "no-show-review" ? (
-        <ForfeitTag testID={tag}>
-          <Ionicons name="flag-outline" size={13} color="#FFA500" />
-          <ForfeitTagText numberOfLines={1}>{status.label}</ForfeitTagText>
-        </ForfeitTag>
-      ) : status.phase === "cancelled" ? (
-        <CancelledTag testID={tag}>
-          <Ionicons name="close-circle-outline" size={16} color="#9fb8c8" />
-          <CancelledTagText numberOfLines={1}>{status.label}</CancelledTagText>
-        </CancelledTag>
-      ) : status.phase === "waiting-players" ? (
-        <WaitingTag testID={tag}>
-          <WaitingTagText numberOfLines={1}>{status.label}</WaitingTagText>
-        </WaitingTag>
-      ) : status.phase === "checked-in" ? (
-        <CheckedInTag testID={tag}>
-          <Ionicons name="checkmark-circle-outline" size={16} color="#5ef0a6" />
-          <CheckedInTagText>{status.label}</CheckedInTagText>
-        </CheckedInTag>
-      ) : checkin ? (
-        <CheckinButton
-          activeOpacity={0.85}
-          onPress={checkin.onPress}
-          testID={testID ? `${testID}-checkin-button` : undefined}
-        >
-          <CheckinButtonText>{status.label}</CheckinButtonText>
-        </CheckinButton>
-      ) : null;
+  const spec = showStatus ? PHASE_TAGS[status.phase] : undefined;
+  let tagStatus: React.ReactNode = null;
+  if (spec) {
+    const { Tag, Text, icon } = spec;
+    tagStatus = (
+      <Tag testID={tag}>
+        {icon && <Ionicons name={icon.name} size={icon.size} color={icon.color} />}
+        <Text numberOfLines={1}>{status.label}</Text>
+      </Tag>
+    );
+  } else if (showStatus && checkin) {
+    // Only the check-in prompt has no static pill — it's an actionable button.
+    tagStatus = (
+      <CheckinButton
+        activeOpacity={0.85}
+        onPress={checkin.onPress}
+        testID={testID ? `${testID}-checkin-button` : undefined}
+      >
+        <CheckinButtonText>{status.label}</CheckinButtonText>
+      </CheckinButton>
+    );
+  }
 
   return (
     <Card
@@ -453,3 +430,49 @@ const FeeText = styled.Text<{ hasCourtFee: boolean }>(
     textAlign: "center",
   }),
 );
+
+interface PhaseTagSpec {
+  Tag: React.ComponentType<{ testID?: string; children?: React.ReactNode }>;
+  Text: React.ComponentType<{
+    numberOfLines?: number;
+    children?: React.ReactNode;
+  }>;
+  icon?: {
+    name: React.ComponentProps<typeof Ionicons>["name"];
+    size: number;
+    color: string;
+  };
+}
+
+// Every static status pill, keyed by phase. Phases absent here (awaiting-checkin)
+// have no pill — they render the actionable check-in button instead.
+const PHASE_TAGS: Partial<Record<LadderMatchPhase, PhaseTagSpec>> = {
+  forfeit: {
+    Tag: ForfeitTag,
+    Text: ForfeitTagText,
+    icon: { name: "flag", size: 13, color: "#FFA500" },
+  },
+  "no-show-review": {
+    Tag: ForfeitTag,
+    Text: ForfeitTagText,
+    icon: { name: "flag-outline", size: 13, color: "#FFA500" },
+  },
+  cancelled: {
+    Tag: CancelledTag,
+    Text: CancelledTagText,
+    icon: { name: "close-circle-outline", size: 16, color: "#9fb8c8" },
+  },
+  completed: {
+    Tag: CompletedTag,
+    Text: CompletedTagText,
+    icon: { name: "checkmark-circle-outline", size: 16, color: "#5ef0a6" },
+  },
+  "checked-in": {
+    Tag: CheckedInTag,
+    Text: CheckedInTagText,
+    icon: { name: "checkmark-circle-outline", size: 16, color: "#5ef0a6" },
+  },
+  started: { Tag: StartedTag, Text: StartedTagText },
+  "awaiting-approval": { Tag: AwaitingTag, Text: AwaitingTagText },
+  "waiting-players": { Tag: WaitingTag, Text: WaitingTagText },
+};
