@@ -253,6 +253,24 @@ const GameDisputeScreen = () => {
   const effectiveType =
     dispute?.ladderType ?? ladderType ?? LADDER_TYPE.SINGLES;
   const isComposing = !dispute;
+  const isResolved = dispute?.stage === DISPUTE_STAGE.RESOLVED;
+
+  // The disputing side is the game team the opener plays on — either of its
+  // players (doubles) may add evidence, not just the opener.
+  const opener = dispute?.openedBy ?? currentUser?.userId;
+  const teamIdsOf = (game: Game | null, side: "team1" | "team2"): string[] =>
+    [game?.[side]?.player1?.userId, game?.[side]?.player2?.userId].filter(
+      (id): id is string => Boolean(id),
+    );
+  const team1Ids = teamIdsOf(originalGame, "team1");
+  const team2Ids = teamIdsOf(originalGame, "team2");
+  const disputingTeamIds = opener && team1Ids.includes(opener)
+    ? team1Ids
+    : opener && team2Ids.includes(opener)
+      ? team2Ids
+      : [];
+  const canContribute =
+    !!currentUser?.userId && disputingTeamIds.includes(currentUser.userId);
 
   // A video attaches through the normal pipeline (VideoUploadModal → gameVideos),
   // so its presence is read off the in-flight upload for this game.
@@ -543,69 +561,60 @@ const GameDisputeScreen = () => {
                           finalGame={finalGame}
                           effectiveType={effectiveType}
                         />
-                        {event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED &&
-                          dispute.stage ===
-                            DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED &&
-                          currentUser?.userId === dispute.openedBy && (
-                            <MoreEvidence>
-                              {videoAttached ? (
-                                <EvidenceRow>
-                                  <Ionicons
-                                    name="videocam"
-                                    size={18}
-                                    color="#00A2FF"
-                                  />
-                                  <EvidenceText>Video uploading…</EvidenceText>
-                                </EvidenceRow>
-                              ) : (
-                                <ActionPlaceholder
-                                  message="Upload video evidence"
-                                  icon="videocam-outline"
-                                  onPress={() => setMoreUploadVisible(true)}
-                                />
-                              )}
-                              <SecondaryButton
-                                onPress={() => setMoreCourtVisible(true)}
-                              >
-                                <Ionicons
-                                  name="grid-outline"
-                                  size={16}
-                                  color="#00A2FF"
-                                />
-                                <SecondaryText>
-                                  {hasCourtPositions(
-                                    moreCourtPositions ?? undefined,
-                                  )
-                                    ? "Edit court positions"
-                                    : "Add court positions"}
-                                </SecondaryText>
-                              </SecondaryButton>
-                              <NotesLabel>Notes to admin</NotesLabel>
-                              <NotesInput
-                                value={moreNotes}
-                                onChangeText={setMoreNotes}
-                                placeholder="Add anything else the admin asked for…"
-                                placeholderTextColor="#5b7186"
-                                multiline
-                              />
-                              <SubmitButton
-                                disabled={!canSubmitMore || submitting}
-                                onPress={handleSubmitMoreEvidence}
-                              >
-                                {submitting ? (
-                                  <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                  <SubmitText>Submit evidence</SubmitText>
-                                )}
-                              </SubmitButton>
-                            </MoreEvidence>
-                          )}
                       </StageBody>
                     )}
                   </TimelineContent>
                 </TimelineRow>
               );
             })}
+
+            {!isResolved && canContribute && (
+              <AddEvidenceCard>
+                <AddEvidenceTitle>
+                  {dispute.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
+                    ? "The admin has requested more evidence"
+                    : "Add evidence"}
+                </AddEvidenceTitle>
+                {videoAttached ? (
+                  <EvidenceRow>
+                    <Ionicons name="videocam" size={18} color="#00A2FF" />
+                    <EvidenceText>Video uploading…</EvidenceText>
+                  </EvidenceRow>
+                ) : (
+                  <ActionPlaceholder
+                    message="Upload video evidence"
+                    icon="videocam-outline"
+                    onPress={() => setMoreUploadVisible(true)}
+                  />
+                )}
+                <SecondaryButton onPress={() => setMoreCourtVisible(true)}>
+                  <Ionicons name="grid-outline" size={16} color="#00A2FF" />
+                  <SecondaryText>
+                    {hasCourtPositions(moreCourtPositions ?? undefined)
+                      ? "Edit court positions"
+                      : "Add court positions"}
+                  </SecondaryText>
+                </SecondaryButton>
+                <NotesLabel>Notes to admin</NotesLabel>
+                <NotesInput
+                  value={moreNotes}
+                  onChangeText={setMoreNotes}
+                  placeholder="Add anything else the admin should see…"
+                  placeholderTextColor="#5b7186"
+                  multiline
+                />
+                <SubmitButton
+                  disabled={!canSubmitMore || submitting}
+                  onPress={handleSubmitMoreEvidence}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <SubmitText>Submit evidence</SubmitText>
+                  )}
+                </SubmitButton>
+              </AddEvidenceCard>
+            )}
           </Block>
         )}
       </ScrollView>
@@ -959,6 +968,20 @@ const DetailText = styled.Text({
   lineHeight: 19,
 });
 
-const MoreEvidence = styled.View({ gap: 10, marginTop: 4 });
+const AddEvidenceCard = styled.View({
+  marginTop: 16,
+  gap: 10,
+  backgroundColor: "#001123",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
+  borderRadius: 10,
+  padding: 14,
+});
+
+const AddEvidenceTitle = styled.Text({
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: "bold",
+});
 
 export default GameDisputeScreen;
