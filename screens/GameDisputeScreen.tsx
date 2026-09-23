@@ -5,6 +5,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
@@ -34,6 +35,7 @@ import type {
   DisputeEvidence,
   DisputeStage,
   Game,
+  GameTeam,
   GameVideo,
   LadderType,
   Player,
@@ -44,7 +46,7 @@ import type {
 import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
 import { usePendingUpload } from "../hooks/usePendingUpload";
-import { FixtureGameItem } from "../components/Tournaments/Fixtures/FixturesAtoms";
+import { TeamColumn, ScoreDisplay } from "../components/scoreboard/ScoreboardAtoms";
 import AddTournamentGameModal from "../components/Modals/AddTournamentGameModal";
 import CourtPositionModal from "../components/Modals/CourtPositionModal";
 import VideoUploadModal from "../components/Modals/VideoUploadModal";
@@ -117,6 +119,63 @@ const courtPositionVideo = (
     teams: teamsOf(game),
     courtPositions: positions ?? undefined,
   }) as unknown as GameVideo;
+
+const teamWithNames = (team?: GameTeam | null) => ({
+  player1: team?.player1
+    ? {
+        ...team.player1,
+        displayName: team.player1.displayName || formatDisplayName(team.player1),
+      }
+    : null,
+  player2: team?.player2
+    ? {
+        ...team.player2,
+        displayName: team.player2.displayName || formatDisplayName(team.player2),
+      }
+    : null,
+});
+
+// The same spacious score card GameScreen uses (ScoreboardAtoms). The dispute
+// screen shows results for context, so the "Pending Approval" pill is
+// suppressed; pass onPress to make the card tappable (to enter corrected scores).
+const DisputeScoreCard = ({
+  game,
+  leagueType,
+  onPress,
+}: {
+  game: Game;
+  leagueType: string;
+  onPress?: () => void;
+}) => {
+  const item = { ...game, approvalStatus: "" };
+  const card = (
+    <ScoreCard>
+      <TeamColumn
+        team="left"
+        players={teamWithNames(game.team1)}
+        leagueType={leagueType}
+      />
+      <ScoreDisplay
+        date={game.date || ""}
+        team1={game.team1?.score ?? "-"}
+        team2={game.team2?.score ?? "-"}
+        item={item}
+      />
+      <TeamColumn
+        team="right"
+        players={teamWithNames(game.team2)}
+        leagueType={leagueType}
+      />
+    </ScoreCard>
+  );
+  return onPress ? (
+    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+      {card}
+    </TouchableOpacity>
+  ) : (
+    card
+  );
+};
 
 const GameDisputeScreen = () => {
   const route = useRoute<RouteProp<GameDisputeParams, "GameDisputeScreen">>();
@@ -339,15 +398,7 @@ const GameDisputeScreen = () => {
         {originalGame && (
           <Block>
             <BlockTitle>Original result</BlockTitle>
-            <FixtureGameItem
-              game={originalGame}
-              tournamentType={effectiveType}
-              onPress={() => {}}
-              innerRef={undefined}
-              glowAnim={undefined}
-              isHighlighted={false}
-              glowColor="#00A2FF"
-            />
+            <DisputeScoreCard game={originalGame} leagueType={effectiveType} />
           </Block>
         )}
 
@@ -357,36 +408,20 @@ const GameDisputeScreen = () => {
           </BlockTitle>
           {isComposing ? (
             correctedGame ? (
-              <FixtureGameItem
+              <DisputeScoreCard
                 game={correctedGame}
-                tournamentType={effectiveType}
+                leagueType={effectiveType}
                 onPress={() => setEntryVisible(true)}
-                innerRef={undefined}
-                glowAnim={undefined}
-                isHighlighted={false}
-                glowColor="#00A2FF"
               />
             ) : originalGame ? (
-              <FixtureGameItem
+              <DisputeScoreCard
                 game={shellFrom(originalGame)}
-                tournamentType={effectiveType}
+                leagueType={effectiveType}
                 onPress={() => setEntryVisible(true)}
-                innerRef={undefined}
-                glowAnim={undefined}
-                isHighlighted={false}
-                glowColor="#00A2FF"
               />
             ) : null
           ) : finalGame ? (
-            <FixtureGameItem
-              game={finalGame}
-              tournamentType={effectiveType}
-              onPress={() => {}}
-              innerRef={undefined}
-              glowAnim={undefined}
-              isHighlighted={false}
-              glowColor="#00A2FF"
-            />
+            <DisputeScoreCard game={finalGame} leagueType={effectiveType} />
           ) : null}
         </Block>
 
@@ -403,7 +438,6 @@ const GameDisputeScreen = () => {
                 <ActionPlaceholder
                   message="Upload video evidence"
                   icon="videocam-outline"
-                  height={110}
                   onPress={() => setUploadVisible(true)}
                 />
               )}
@@ -485,7 +519,6 @@ const GameDisputeScreen = () => {
                             <ActionPlaceholder
                               message="Upload video evidence"
                               icon="videocam-outline"
-                              height={100}
                               onPress={() => setMoreUploadVisible(true)}
                             />
                           )}
@@ -636,15 +669,7 @@ const StageDetail = ({
             : "The original result stands."}
         </DetailText>
         {finalGame && (
-          <FixtureGameItem
-            game={finalGame}
-            tournamentType={effectiveType}
-            onPress={() => {}}
-            innerRef={undefined}
-            glowAnim={undefined}
-            isHighlighted={false}
-            glowColor="#00A2FF"
-          />
+          <DisputeScoreCard game={finalGame} leagueType={effectiveType} />
         )}
         {dispute.adminNotes ? (
           <DetailText>Admin notes: {dispute.adminNotes}</DetailText>
@@ -694,6 +719,18 @@ const HeaderTitle = styled.Text({
 });
 
 const Block = styled.View({ marginBottom: 20 });
+
+const ScoreCard = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  backgroundColor: "#001123",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
+  borderRadius: 12,
+  paddingVertical: 16,
+  paddingHorizontal: 12,
+});
 
 const BlockTitle = styled.Text({
   color: "#9fb8c8",
