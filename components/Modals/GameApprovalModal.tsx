@@ -458,10 +458,10 @@ const LadderGameApprovalModal = ({
     onClose();
   };
 
-  // Reject just opens the dispute screen — it does not start the dispute. The
+  // Decline just opens the dispute screen — it does not start the dispute. The
   // disputer composes and submits it there (which creates the dispute doc and
   // notifies the other players).
-  const handleReject = () => {
+  const handleDecline = () => {
     if (!game || !match) return;
     onClose();
     navigation.navigate("GameDisputeScreen", {
@@ -525,12 +525,11 @@ const LadderGameApprovalModal = ({
       )}
 
       <ApprovalButtons
-        onDecline={handleReject}
+        onDecline={handleDecline}
         onAccept={handleApprove}
         declineDisabled={isDisabled}
         acceptDisabled={isDisabled}
         submitting={submitting}
-        declineLabel="Reject"
       />
     </GameApprovalShell>
   );
@@ -652,18 +651,16 @@ const ApprovalButtons = ({
   declineDisabled,
   acceptDisabled,
   submitting,
-  declineLabel = "Decline",
 }: {
   onDecline: () => void;
   onAccept: () => void;
   declineDisabled: boolean;
   acceptDisabled: boolean;
   submitting: boolean;
-  declineLabel?: string;
 }) => (
   <ButtonRow>
     <Button variant="decline" disabled={declineDisabled} onPress={onDecline}>
-      <ButtonText>{declineLabel}</ButtonText>
+      <ButtonText>Decline</ButtonText>
     </Button>
     <Button disabled={acceptDisabled} onPress={onAccept}>
       {submitting ? (
