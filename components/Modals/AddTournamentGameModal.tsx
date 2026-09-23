@@ -56,6 +56,11 @@ type AddTournamentGameModalProps = {
    * collect corrected scores without touching the live match.
    */
   onCapture?: (capturedGame: Game) => void;
+  /**
+   * Extra validation run after the badminton-score check; return an error string
+   * to block submission (e.g. the dispute flow rejects the original score).
+   */
+  validateScores?: (team1Score: number, team2Score: number) => string | null;
 };
 
 const AddTournamentGameModal = ({
@@ -69,6 +74,7 @@ const AddTournamentGameModal = ({
   tournamentId,
   ladder = null,
   onCapture,
+  validateScores,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
   const { updateTournamentGame } = useContext(LeagueContext);
@@ -134,6 +140,12 @@ const AddTournamentGameModal = ({
     const validationError = validateBadmintonScores(score1, score2);
     if (validationError) {
       setErrorText(validationError);
+      return;
+    }
+
+    const extraError = validateScores?.(score1, score2);
+    if (extraError) {
+      setErrorText(extraError);
       return;
     }
 

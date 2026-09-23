@@ -89,6 +89,7 @@ const shellFrom = (game: Game): Game => ({
   ...game,
   gamescore: "",
   result: null,
+  approvalStatus: "",
   team1: { ...game.team1, score: null },
   team2: { ...game.team2, score: null },
 });
@@ -591,6 +592,13 @@ const GameDisputeScreen = () => {
           tournamentName={ladderName ?? "Ladder match"}
           tournamentId=""
           onCapture={(captured) => setCorrectedGame(captured)}
+          validateScores={(team1Score, team2Score) =>
+            originalGame &&
+            team1Score === originalGame.team1?.score &&
+            team2Score === originalGame.team2?.score
+              ? "The corrected score must differ from the original."
+              : null
+          }
         />
       )}
 
