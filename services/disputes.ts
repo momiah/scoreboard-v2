@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "./firebase.config";
+import { COLLECTION_NAMES } from "@shared";
 import {
   DISPUTES_COLLECTION,
   DISPUTE_STAGE,
@@ -20,8 +21,41 @@ import type {
   Dispute,
   DisputeEvidence,
   Game,
+  GameVideo,
   LadderType,
 } from "@shared/types";
+
+const toMillis = (value: unknown): number => {
+  if (
+    value &&
+    typeof (value as { toMillis?: () => number }).toMillis === "function"
+  ) {
+    return (value as { toMillis: () => number }).toMillis();
+  }
+  const t = new Date(value as string | number | Date).getTime();
+  return Number.isFinite(t) ? t : 0;
+};
+
+/** All video evidence uploaded for a disputed game (newest first). */
+export const fetchDisputeGameVideos = async (
+  gameId: string,
+): Promise<GameVideo[]> => {
+  if (!gameId) return [];
+  try {
+    const snap = await getDocs(
+      query(
+        collection(db, COLLECTION_NAMES.gameVideos),
+        where("gameId", "==", gameId),
+      ),
+    );
+    return snap.docs
+      .map((d) => d.data() as GameVideo)
+      .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+  } catch (error) {
+    console.error("Error fetching dispute videos:", error);
+    return [];
+  }
+};
 
 // Firestore rejects undefined field values; drop them (and any nested in the
 // initial evidence) before writing.

@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
 import moment from "moment";
 import { Ionicons } from "@expo/vector-icons";
+import { useVideoPlayer, VideoView } from "expo-video";
 import {
   useNavigation,
   useRoute,
@@ -59,6 +60,7 @@ import { formatDisplayName } from "../helpers/formatDisplayName";
 import {
   createDispute,
   fetchDisputeById,
+  fetchDisputeGameVideos,
   addDisputeEvidence,
 } from "../services/disputes";
 
@@ -101,6 +103,21 @@ const formatEventDate = (value: unknown): string => {
       ? (value as { toDate: () => Date }).toDate()
       : new Date(value as string | number | Date);
   return Number.isNaN(date.getTime()) ? "" : moment(date).format("D MMM, h:mma");
+};
+
+const uploaderName = (video: GameVideo): string => {
+  const by = video.postedBy;
+  if (!by) return "Unknown";
+  return (
+    by.username?.trim() ||
+    `${by.firstName ?? ""} ${by.lastName ?? ""}`.trim() ||
+    "Unknown"
+  );
+};
+
+const DisputeVideoPlayer = ({ url }: { url: string }) => {
+  const player = useVideoPlayer(url);
+  return <DisputeVideo player={player} nativeControls contentFit="contain" />;
 };
 
 const playersOf = (game: Game): Player[] =>
@@ -213,6 +230,7 @@ const GameDisputeScreen = () => {
   } = route.params;
 
   const [dispute, setDispute] = useState<Dispute | null>(null);
+  const [videos, setVideos] = useState<GameVideo[]>([]);
   const [loading, setLoading] = useState(Boolean(routeDisputeId));
 
   // Compose state (before the dispute exists).
@@ -240,6 +258,7 @@ const GameDisputeScreen = () => {
     setLoading(true);
     const loaded = await fetchDisputeById(id);
     setDispute(loaded);
+    if (loaded) setVideos(await fetchDisputeGameVideos(loaded.gameId));
     setLoading(false);
   }, []);
 
@@ -567,6 +586,21 @@ const GameDisputeScreen = () => {
                 </TimelineRow>
               );
             })}
+
+            {expanded[dispute.events.length - 1] &&
+              videos.some((v) => v.videoUrl) && (
+                <VideoEvidence>
+                  <AddEvidenceTitle>Video evidence</AddEvidenceTitle>
+                  {videos
+                    .filter((video) => video.videoUrl)
+                    .map((video, i) => (
+                      <VideoItem key={i}>
+                        <Uploader>Uploaded by {uploaderName(video)}</Uploader>
+                        <DisputeVideoPlayer url={video.videoUrl} />
+                      </VideoItem>
+                    ))}
+                </VideoEvidence>
+              )}
 
             {!isResolved &&
               canContribute &&
@@ -984,6 +1018,27 @@ const AddEvidenceTitle = styled.Text({
   color: "#fff",
   fontSize: 14,
   fontWeight: "bold",
+});
+
+const VideoEvidence = styled.View({
+  marginTop: 12,
+  gap: 12,
+  backgroundColor: "#001123",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
+  borderRadius: 10,
+  padding: 14,
+});
+
+const VideoItem = styled.View({ gap: 6 });
+
+const Uploader = styled.Text({ color: "#9fb8c8", fontSize: 12 });
+
+const DisputeVideo = styled(VideoView)({
+  width: "100%",
+  height: 200,
+  borderRadius: 8,
+  backgroundColor: "#000",
 });
 
 export default GameDisputeScreen;
