@@ -46,7 +46,10 @@ import type {
 import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
 import { usePendingUpload } from "../hooks/usePendingUpload";
-import { TeamColumn, ScoreDisplay } from "../components/scoreboard/ScoreboardAtoms";
+import {
+  TeamColumn,
+  ScoreDisplay,
+} from "../components/scoreboard/ScoreboardAtoms";
 import AddTournamentGameModal from "../components/Modals/AddTournamentGameModal";
 import CourtPositionModal from "../components/Modals/CourtPositionModal";
 import VideoUploadModal from "../components/Modals/VideoUploadModal";
@@ -124,13 +127,15 @@ const teamWithNames = (team?: GameTeam | null) => ({
   player1: team?.player1
     ? {
         ...team.player1,
-        displayName: team.player1.displayName || formatDisplayName(team.player1),
+        displayName:
+          team.player1.displayName || formatDisplayName(team.player1),
       }
     : null,
   player2: team?.player2
     ? {
         ...team.player2,
-        displayName: team.player2.displayName || formatDisplayName(team.player2),
+        displayName:
+          team.player2.displayName || formatDisplayName(team.player2),
       }
     : null,
 });
@@ -157,8 +162,8 @@ const DisputeScoreCard = ({
       />
       <ScoreDisplay
         date={game.date || ""}
-        team1={game.team1?.score ?? "-"}
-        team2={game.team2?.score ?? "-"}
+        team1={game.team1?.score ?? ""}
+        team2={game.team2?.score ?? ""}
         item={item}
       />
       <TeamColumn
@@ -233,8 +238,10 @@ const GameDisputeScreen = () => {
   }, [routeDisputeId, loadDispute]);
 
   const originalGame = dispute?.originalGame ?? routeGame ?? null;
-  const effectiveGameId = dispute?.gameId ?? gameId ?? originalGame?.gameId ?? "";
-  const effectiveType = dispute?.ladderType ?? ladderType ?? LADDER_TYPE.SINGLES;
+  const effectiveGameId =
+    dispute?.gameId ?? gameId ?? originalGame?.gameId ?? "";
+  const effectiveType =
+    dispute?.ladderType ?? ladderType ?? LADDER_TYPE.SINGLES;
   const isComposing = !dispute;
 
   // A video attaches through the normal pipeline (VideoUploadModal → gameVideos),
@@ -244,13 +251,13 @@ const GameDisputeScreen = () => {
   );
 
   const canSubmit =
-    !!correctedGame && !(videoAttached && !hasCourtPositions(courtPositions ?? undefined));
+    !!correctedGame &&
+    !(videoAttached && !hasCourtPositions(courtPositions ?? undefined));
 
   const notifyParticipants = useCallback(
     async (disputeId: string, message: string) => {
-      const recipients = (participantIds.length
-        ? participantIds
-        : dispute?.participantIds ?? []
+      const recipients = (
+        participantIds.length ? participantIds : (dispute?.participantIds ?? [])
       ).filter((id) => id && id !== currentUser?.userId);
       await Promise.all(
         recipients.map((recipientId) =>
@@ -461,11 +468,12 @@ const GameDisputeScreen = () => {
                     : "Add court positions"}
                 </SecondaryText>
               </SecondaryButton>
-              {videoAttached && !hasCourtPositions(courtPositions ?? undefined) && (
-                <HintText>
-                  Court positions are required when a video is attached.
-                </HintText>
-              )}
+              {videoAttached &&
+                !hasCourtPositions(courtPositions ?? undefined) && (
+                  <HintText>
+                    Court positions are required when a video is attached.
+                  </HintText>
+                )}
             </Block>
 
             <SubmitButton
@@ -486,7 +494,10 @@ const GameDisputeScreen = () => {
             <BlockTitle>Dispute progress</BlockTitle>
             {dispute.events.map((event, index) => (
               <AccordionCard key={`${event.stage}-${index}`}>
-                <AccordionHeader activeOpacity={0.8} onPress={() => toggle(index)}>
+                <AccordionHeader
+                  activeOpacity={0.8}
+                  onPress={() => toggle(index)}
+                >
                   <StageDot stage={event.stage} />
                   <AccordionTitle>
                     {DISPUTE_STAGE_LABELS[event.stage]}
@@ -512,7 +523,11 @@ const GameDisputeScreen = () => {
                         <MoreEvidence>
                           {videoAttached ? (
                             <EvidenceRow>
-                              <Ionicons name="videocam" size={18} color="#00A2FF" />
+                              <Ionicons
+                                name="videocam"
+                                size={18}
+                                color="#00A2FF"
+                              />
                               <EvidenceText>Video uploading…</EvidenceText>
                             </EvidenceRow>
                           ) : (
@@ -531,7 +546,9 @@ const GameDisputeScreen = () => {
                               color="#00A2FF"
                             />
                             <SecondaryText>
-                              {hasCourtPositions(moreCourtPositions ?? undefined)
+                              {hasCourtPositions(
+                                moreCourtPositions ?? undefined,
+                              )
                                 ? "Edit court positions"
                                 : "Add court positions"}
                             </SecondaryText>
@@ -805,7 +822,11 @@ const SubmitButton = styled.TouchableOpacity<{ disabled?: boolean }>(
   }),
 );
 
-const SubmitText = styled.Text({ color: "#fff", fontWeight: "bold", fontSize: 15 });
+const SubmitText = styled.Text({
+  color: "#fff",
+  fontWeight: "bold",
+  fontSize: 15,
+});
 
 const AccordionCard = styled.View({
   backgroundColor: "#001123",
@@ -850,7 +871,11 @@ const AccordionBody = styled.View({
   gap: 10,
 });
 
-const DetailText = styled.Text({ color: "#c7d6e5", fontSize: 13, lineHeight: 19 });
+const DetailText = styled.Text({
+  color: "#c7d6e5",
+  fontSize: 13,
+  lineHeight: 19,
+});
 
 const MoreEvidence = styled.View({ gap: 10, marginTop: 4 });
 
