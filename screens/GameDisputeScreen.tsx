@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import styled from "styled-components/native";
+import moment from "moment";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useNavigation,
@@ -93,6 +94,14 @@ const shellFrom = (game: Game): Game => ({
   team1: { ...game.team1, score: null },
   team2: { ...game.team2, score: null },
 });
+
+const formatEventDate = (value: unknown): string => {
+  const date =
+    value && typeof (value as { toDate?: () => Date }).toDate === "function"
+      ? (value as { toDate: () => Date }).toDate()
+      : new Date(value as string | number | Date);
+  return Number.isNaN(date.getTime()) ? "" : moment(date).format("D MMM, h:mma");
+};
 
 const playersOf = (game: Game): Player[] =>
   [
@@ -254,6 +263,16 @@ const GameDisputeScreen = () => {
   const canSubmit =
     !!correctedGame &&
     !(videoAttached && !hasCourtPositions(courtPositions ?? undefined));
+
+  // Require at least one piece of evidence before a more-evidence submission,
+  // and court positions whenever a video is attached.
+  const hasMoreEvidence =
+    videoAttached ||
+    moreNotes.trim().length > 0 ||
+    hasCourtPositions(moreCourtPositions ?? undefined);
+  const canSubmitMore =
+    hasMoreEvidence &&
+    !(videoAttached && !hasCourtPositions(moreCourtPositions ?? undefined));
 
   const notifyParticipants = useCallback(
     async (disputeId: string, message: string) => {
@@ -492,92 +511,101 @@ const GameDisputeScreen = () => {
 
         {dispute && (
           <Block>
-            <BlockTitle>Dispute progress</BlockTitle>
-            {dispute.events.map((event, index) => (
-              <AccordionCard key={`${event.stage}-${index}`}>
-                <AccordionHeader
-                  activeOpacity={0.8}
-                  onPress={() => toggle(index)}
-                >
-                  <StageDot stage={event.stage} />
-                  <AccordionTitle>
-                    {DISPUTE_STAGE_LABELS[event.stage]}
-                  </AccordionTitle>
-                  <Ionicons
-                    name={expanded[index] ? "chevron-up" : "chevron-down"}
-                    size={18}
-                    color="#9fb8c8"
-                  />
-                </AccordionHeader>
-                {expanded[index] && (
-                  <AccordionBody>
-                    <StageDetail
-                      dispute={dispute}
-                      stage={event.stage}
-                      note={event.note}
-                      finalGame={finalGame}
-                      effectiveType={effectiveType}
-                    />
-                    {event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED &&
-                      dispute.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED &&
-                      currentUser?.userId === dispute.openedBy && (
-                        <MoreEvidence>
-                          {videoAttached ? (
-                            <EvidenceRow>
-                              <Ionicons
-                                name="videocam"
-                                size={18}
-                                color="#00A2FF"
+            <TimelineHeader>Dispute progress</TimelineHeader>
+            {dispute.events.map((event, index) => {
+              const isFirst = index === 0;
+              const isLast = index === dispute.events.length - 1;
+              const state = isLast ? "active" : "completed";
+              const open = expanded[index];
+              return (
+                <TimelineRow key={`${event.stage}-${index}`}>
+                  <Gutter>
+                    {!isFirst && <LineTop />}
+                    {!isLast && <LineBottom />}
+                    <Dot state={state} />
+                  </Gutter>
+                  <TimelineContent last={isLast}>
+                    <StageHeader activeOpacity={0.8} onPress={() => toggle(index)}>
+                      <StageLabel>{DISPUTE_STAGE_LABELS[event.stage]}</StageLabel>
+                      <Ionicons
+                        name={open ? "chevron-up" : "chevron-down"}
+                        size={18}
+                        color="#9fb8c8"
+                      />
+                    </StageHeader>
+                    <StageWhen>{formatEventDate(event.createdAt)}</StageWhen>
+                    {open && (
+                      <StageBody>
+                        <StageDetail
+                          dispute={dispute}
+                          stage={event.stage}
+                          note={event.note}
+                          finalGame={finalGame}
+                          effectiveType={effectiveType}
+                        />
+                        {event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED &&
+                          dispute.stage ===
+                            DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED &&
+                          currentUser?.userId === dispute.openedBy && (
+                            <MoreEvidence>
+                              {videoAttached ? (
+                                <EvidenceRow>
+                                  <Ionicons
+                                    name="videocam"
+                                    size={18}
+                                    color="#00A2FF"
+                                  />
+                                  <EvidenceText>Video uploading…</EvidenceText>
+                                </EvidenceRow>
+                              ) : (
+                                <ActionPlaceholder
+                                  message="Upload video evidence"
+                                  icon="videocam-outline"
+                                  onPress={() => setMoreUploadVisible(true)}
+                                />
+                              )}
+                              <SecondaryButton
+                                onPress={() => setMoreCourtVisible(true)}
+                              >
+                                <Ionicons
+                                  name="grid-outline"
+                                  size={16}
+                                  color="#00A2FF"
+                                />
+                                <SecondaryText>
+                                  {hasCourtPositions(
+                                    moreCourtPositions ?? undefined,
+                                  )
+                                    ? "Edit court positions"
+                                    : "Add court positions"}
+                                </SecondaryText>
+                              </SecondaryButton>
+                              <NotesLabel>Notes to admin</NotesLabel>
+                              <NotesInput
+                                value={moreNotes}
+                                onChangeText={setMoreNotes}
+                                placeholder="Add anything else the admin asked for…"
+                                placeholderTextColor="#5b7186"
+                                multiline
                               />
-                              <EvidenceText>Video uploading…</EvidenceText>
-                            </EvidenceRow>
-                          ) : (
-                            <ActionPlaceholder
-                              message="Upload video evidence"
-                              icon="videocam-outline"
-                              onPress={() => setMoreUploadVisible(true)}
-                            />
+                              <SubmitButton
+                                disabled={!canSubmitMore || submitting}
+                                onPress={handleSubmitMoreEvidence}
+                              >
+                                {submitting ? (
+                                  <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                  <SubmitText>Submit evidence</SubmitText>
+                                )}
+                              </SubmitButton>
+                            </MoreEvidence>
                           )}
-                          <SecondaryButton
-                            onPress={() => setMoreCourtVisible(true)}
-                          >
-                            <Ionicons
-                              name="grid-outline"
-                              size={16}
-                              color="#00A2FF"
-                            />
-                            <SecondaryText>
-                              {hasCourtPositions(
-                                moreCourtPositions ?? undefined,
-                              )
-                                ? "Edit court positions"
-                                : "Add court positions"}
-                            </SecondaryText>
-                          </SecondaryButton>
-                          <NotesLabel>Notes to admin</NotesLabel>
-                          <NotesInput
-                            value={moreNotes}
-                            onChangeText={setMoreNotes}
-                            placeholder="Add anything else the admin asked for…"
-                            placeholderTextColor="#5b7186"
-                            multiline
-                          />
-                          <SubmitButton
-                            disabled={submitting}
-                            onPress={handleSubmitMoreEvidence}
-                          >
-                            {submitting ? (
-                              <ActivityIndicator size="small" color="#fff" />
-                            ) : (
-                              <SubmitText>Submit evidence</SubmitText>
-                            )}
-                          </SubmitButton>
-                        </MoreEvidence>
-                      )}
-                  </AccordionBody>
-                )}
-              </AccordionCard>
-            ))}
+                      </StageBody>
+                    )}
+                  </TimelineContent>
+                </TimelineRow>
+              );
+            })}
           </Block>
         )}
       </ScrollView>
@@ -836,48 +864,94 @@ const SubmitText = styled.Text({
   fontSize: 15,
 });
 
-const AccordionCard = styled.View({
-  backgroundColor: "#001123",
-  borderRadius: 10,
-  borderWidth: 1,
-  borderColor: "rgb(9, 33, 62)",
-  marginBottom: 10,
-  overflow: "hidden",
+const GUTTER_WIDTH = 24;
+const DOT_SIZE = 14;
+const DOT_TOP = 6;
+const DOT_CENTER_Y = DOT_TOP + DOT_SIZE / 2;
+const LINE_LEFT = GUTTER_WIDTH / 2 - 1;
+const LINE_FILLED = "#D4AF37";
+
+const TimelineHeader = styled.Text({
+  color: "#6b8199",
+  fontSize: 12,
+  fontWeight: "600",
+  letterSpacing: 1.5,
+  textTransform: "uppercase",
+  marginBottom: 18,
 });
 
-const AccordionHeader = styled.TouchableOpacity({
+const TimelineRow = styled.View({ flexDirection: "row" });
+
+const Gutter = styled.View({ width: GUTTER_WIDTH, position: "relative" });
+
+const LineTop = styled.View({
+  position: "absolute",
+  top: 0,
+  left: LINE_LEFT,
+  width: 2,
+  height: DOT_CENTER_Y,
+  backgroundColor: LINE_FILLED,
+});
+
+const LineBottom = styled.View({
+  position: "absolute",
+  top: DOT_CENTER_Y,
+  bottom: 0,
+  left: LINE_LEFT,
+  width: 2,
+  backgroundColor: LINE_FILLED,
+});
+
+const Dot = styled.View<{ state: "active" | "completed" }>(
+  ({ state }: { state: "active" | "completed" }) => ({
+    position: "absolute",
+    top: DOT_TOP,
+    left: GUTTER_WIDTH / 2 - DOT_SIZE / 2,
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    zIndex: 1,
+    backgroundColor: state === "active" ? "#FFD700" : "#D4AF37",
+    ...(state === "active"
+      ? {
+          shadowColor: "#ffb700ff",
+          shadowOpacity: 0.9,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 8,
+        }
+      : {}),
+  }),
+);
+
+const TimelineContent = styled.View<{ last: boolean }>(
+  ({ last }: { last: boolean }) => ({
+    flex: 1,
+    paddingLeft: 8,
+    paddingBottom: last ? 0 : 24,
+  }),
+);
+
+const StageHeader = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
-  gap: 10,
-  padding: 14,
+  justifyContent: "space-between",
 });
 
-const AccordionTitle = styled.Text({
-  color: "#fff",
-  fontSize: 14,
+const StageLabel = styled.Text({
+  color: "#ffffff",
+  fontSize: 15,
   fontWeight: "bold",
   flex: 1,
 });
 
-const StageDot = styled.View<{ stage: DisputeStage }>(
-  ({ stage }: { stage: DisputeStage }) => ({
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor:
-      stage === DISPUTE_STAGE.RESOLVED
-        ? "#3ddc84"
-        : stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
-          ? "#ffb86b"
-          : "#00A2FF",
-  }),
-);
-
-const AccordionBody = styled.View({
-  paddingHorizontal: 14,
-  paddingBottom: 14,
-  gap: 10,
+const StageWhen = styled.Text({
+  color: "#5f7d99",
+  fontSize: 12,
+  marginTop: 3,
 });
+
+const StageBody = styled.View({ marginTop: 8, gap: 10 });
 
 const DetailText = styled.Text({
   color: "#c7d6e5",
