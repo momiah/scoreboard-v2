@@ -27,6 +27,10 @@ merged (the pinned commit must exist on `main` first).
 
 - Keep `npx tsc --noEmit` at 0 new errors vs the current baseline, and
   `npm run lint` at 0 errors, before committing.
+- Branch names must describe the feature (e.g. `claude/ladders-reject-game-flow`).
+  Never push to a randomly generated session branch (e.g. `claude/stoic-keller-ergc6k`);
+  continue the existing feature branch or create a descriptively named one,
+  in every repo, including `courtchamps-shared`.
 - No pull requests unless explicitly asked (the shared PR above is the exception,
   since landing shared changes requires one).
 - No explanatory code comments unless they are load-bearing or marking a stub.
