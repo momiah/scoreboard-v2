@@ -1128,8 +1128,7 @@ const TimelineContent = styled.View<{ last: boolean }>(
 
 const PhaseCard = styled.View<{ open: boolean }>(
   ({ open }: { open: boolean }) => ({
-    backgroundColor: "#001123",
-    borderWidth: 1,
+    borderBottomWidth: 1,
     borderColor: open ? "#16406a" : "rgb(9, 33, 62)",
     borderRadius: 10,
     paddingHorizontal: 12,
