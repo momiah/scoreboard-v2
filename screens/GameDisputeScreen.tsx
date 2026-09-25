@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   ScrollView,
   ActivityIndicator,
@@ -28,14 +34,20 @@ import {
 } from "@shared";
 import {
   DISPUTE_STAGE,
-  DISPUTE_STAGE_LABELS,
   DISPUTE_RESOLUTION,
+  DISPUTE_EVENT_TYPE,
+  DISPUTE_EVENT_LABELS,
+  DISPUTE_EVIDENCE_BLOCKER_MESSAGES,
+  DISPUTE_EVIDENCE_WINDOW_HOURS,
+  DISPUTE_SYSTEM_ACTOR,
+  gameVideoDocId,
+  getDisputeEvidenceBlocker,
   hasCourtPositions,
 } from "@shared/types";
 import type {
   Dispute,
+  DisputeEvent,
   DisputeEvidence,
-  DisputeStage,
   Game,
   GameTeam,
   GameVideo,
@@ -59,8 +71,8 @@ import ActionPlaceholder from "../components/ActionPlaceholder";
 import { formatDisplayName } from "../helpers/formatDisplayName";
 import {
   createDispute,
-  fetchDisputeById,
-  fetchDisputeGameVideos,
+  subscribeToDispute,
+  subscribeToDisputeGameVideos,
   addDisputeEvidence,
 } from "../services/disputes";
 
@@ -88,6 +100,8 @@ type GameDisputeParams = {
   };
 };
 
+type Role = "You" | "Teammate" | "Opponent" | "Admin";
+
 const shellFrom = (game: Game): Game => ({
   ...game,
   gamescore: "",
@@ -97,22 +111,16 @@ const shellFrom = (game: Game): Game => ({
   team2: { ...game.team2, score: null },
 });
 
-const formatEventDate = (value: unknown): string => {
-  const date =
-    value && typeof (value as { toDate?: () => Date }).toDate === "function"
-      ? (value as { toDate: () => Date }).toDate()
-      : new Date(value as string | number | Date);
-  return Number.isNaN(date.getTime()) ? "" : moment(date).format("D MMM, h:mma");
-};
+const toDate = (value: unknown): Date =>
+  value && typeof (value as { toDate?: () => Date }).toDate === "function"
+    ? (value as { toDate: () => Date }).toDate()
+    : new Date(value as string | number | Date);
 
-const uploaderName = (video: GameVideo): string => {
-  const by = video.postedBy;
-  if (!by) return "Unknown";
-  return (
-    by.username?.trim() ||
-    `${by.firstName ?? ""} ${by.lastName ?? ""}`.trim() ||
-    "Unknown"
-  );
+const formatEventDate = (value: unknown): string => {
+  const date = toDate(value);
+  return Number.isNaN(date.getTime())
+    ? ""
+    : moment(date).format("D MMM, h:mma");
 };
 
 const DisputeVideoPlayer = ({ url }: { url: string }) => {
@@ -143,12 +151,17 @@ const teamsOf = (game: Game): Teams => ({
 // positions on its own doc, so hand the modal a minimal stand-in.
 const courtPositionVideo = (
   game: Game,
-  positions: SelectedPlayers | null,
+  positions: SelectedPlayers | null | undefined,
 ): GameVideo =>
   ({
     teams: teamsOf(game),
     courtPositions: positions ?? undefined,
   }) as unknown as GameVideo;
+
+const teamIdsOf = (game: Game | null, side: "team1" | "team2"): string[] =>
+  [game?.[side]?.player1?.userId, game?.[side]?.player2?.userId].filter(
+    (id): id is string => Boolean(id),
+  );
 
 const teamWithNames = (team?: GameTeam | null) => ({
   player1: team?.player1
@@ -209,6 +222,105 @@ const DisputeScoreCard = ({
   );
 };
 
+interface EvidenceFormProps {
+  title: string;
+  subtitle?: string;
+  videoAttached: boolean;
+  onUploadVideo: () => void;
+  courtPositions: SelectedPlayers | null;
+  onEditCourtPositions: () => void;
+  note: string;
+  onChangeNote: (note: string) => void;
+  notePlaceholder: string;
+  submitLabel: string;
+  submitting: boolean;
+  onSubmit: () => void;
+  /** Extra condition on top of the evidence rule (e.g. corrected score entered). */
+  blockedMessage?: string | null;
+}
+
+const EvidenceForm = ({
+  title,
+  subtitle,
+  videoAttached,
+  onUploadVideo,
+  courtPositions,
+  onEditCourtPositions,
+  note,
+  onChangeNote,
+  notePlaceholder,
+  submitLabel,
+  submitting,
+  onSubmit,
+  blockedMessage,
+}: EvidenceFormProps) => {
+  const blocker = getDisputeEvidenceBlocker({
+    note,
+    hasVideo: videoAttached,
+    courtPositions,
+  });
+  const message =
+    blockedMessage ??
+    (blocker ? DISPUTE_EVIDENCE_BLOCKER_MESSAGES[blocker] : null);
+  const positionsSet = hasCourtPositions(courtPositions);
+
+  return (
+    <AddEvidenceCard>
+      <AddEvidenceTitle>{title}</AddEvidenceTitle>
+      {subtitle ? <DetailText>{subtitle}</DetailText> : null}
+      {videoAttached ? (
+        <EvidenceRow>
+          <Ionicons name="videocam" size={18} color="#00A2FF" />
+          <EvidenceText>Video attached</EvidenceText>
+          <Ionicons name="checkmark-circle" size={18} color="#2FD27A" />
+        </EvidenceRow>
+      ) : (
+        <ActionPlaceholder
+          message="Upload video evidence"
+          icon="videocam-outline"
+          onPress={onUploadVideo}
+        />
+      )}
+      <SecondaryButton
+        disabled={!videoAttached}
+        muted={!videoAttached}
+        onPress={onEditCourtPositions}
+      >
+        <Ionicons
+          name="grid-outline"
+          size={16}
+          color={videoAttached ? "#00A2FF" : "#5b7186"}
+        />
+        <SecondaryText muted={!videoAttached}>
+          {positionsSet ? "Edit court positions" : "Add court positions"}
+        </SecondaryText>
+      </SecondaryButton>
+      {!videoAttached && (
+        <MutedHint>Upload a video first to set court positions.</MutedHint>
+      )}
+      <NotesLabel>Notes to admin</NotesLabel>
+      <NotesInput
+        value={note}
+        onChangeText={onChangeNote}
+        placeholder={notePlaceholder}
+        placeholderTextColor="#5b7186"
+        multiline
+      />
+      <SubmitButton
+        disabled={Boolean(message) || submitting}
+        onPress={onSubmit}
+      >
+        {submitting ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <SubmitText>{submitLabel}</SubmitText>
+        )}
+      </SubmitButton>
+      {message ? <HintText>{message}</HintText> : null}
+    </AddEvidenceCard>
+  );
+};
+
 const GameDisputeScreen = () => {
   const route = useRoute<RouteProp<GameDisputeParams, "GameDisputeScreen">>();
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -229,42 +341,35 @@ const GameDisputeScreen = () => {
     courtName,
   } = route.params;
 
+  const [disputeId, setDisputeId] = useState(routeDisputeId);
   const [dispute, setDispute] = useState<Dispute | null>(null);
   const [videos, setVideos] = useState<GameVideo[]>([]);
   const [loading, setLoading] = useState(Boolean(routeDisputeId));
 
-  // Compose state (before the dispute exists).
   const [correctedGame, setCorrectedGame] = useState<Game | null>(null);
-  const [notes, setNotes] = useState("");
+  const [note, setNote] = useState("");
   const [courtPositions, setCourtPositions] = useState<SelectedPlayers | null>(
     null,
   );
+  const [videoAttached, setVideoAttached] = useState(false);
   const [entryVisible, setEntryVisible] = useState(false);
   const [courtVisible, setCourtVisible] = useState(false);
   const [uploadVisible, setUploadVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  // More-evidence state (view mode, when the admin asked for more).
-  const [moreNotes, setMoreNotes] = useState("");
-  const [moreCourtPositions, setMoreCourtPositions] =
+  const [viewingPositions, setViewingPositions] =
     useState<SelectedPlayers | null>(null);
-  const [moreCourtVisible, setMoreCourtVisible] = useState(false);
-  const [moreUploadVisible, setMoreUploadVisible] = useState(false);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   const { pendingUploads } = usePendingUpload(currentUser?.userId);
 
-  const loadDispute = useCallback(async (id: string) => {
-    setLoading(true);
-    const loaded = await fetchDisputeById(id);
-    setDispute(loaded);
-    if (loaded) setVideos(await fetchDisputeGameVideos(loaded.gameId));
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
-    if (routeDisputeId) loadDispute(routeDisputeId);
-  }, [routeDisputeId, loadDispute]);
+    if (!disputeId) return;
+    setLoading(true);
+    return subscribeToDispute(disputeId, (next) => {
+      setDispute(next);
+      setLoading(false);
+    });
+  }, [disputeId]);
 
   const originalGame = dispute?.originalGame ?? routeGame ?? null;
   const effectiveGameId =
@@ -273,49 +378,86 @@ const GameDisputeScreen = () => {
     dispute?.ladderType ?? ladderType ?? LADDER_TYPE.SINGLES;
   const isComposing = !dispute;
   const isResolved = dispute?.stage === DISPUTE_STAGE.RESOLVED;
+  const userId = currentUser?.userId;
 
-  // The disputing side is the game team the opener plays on — either of its
-  // players (doubles) may add evidence, not just the opener.
-  const opener = dispute?.openedBy ?? currentUser?.userId;
-  const teamIdsOf = (game: Game | null, side: "team1" | "team2"): string[] =>
-    [game?.[side]?.player1?.userId, game?.[side]?.player2?.userId].filter(
-      (id): id is string => Boolean(id),
-    );
+  useEffect(() => {
+    if (!dispute?.gameId) return;
+    return subscribeToDisputeGameVideos(dispute.gameId, setVideos);
+  }, [dispute?.gameId]);
+
+  // A video attaches through the normal pipeline (VideoUploadModal →
+  // gameVideos). The upload shows up as a pending upload for this game; keep
+  // the flag once seen so a fast upload that already finished still counts.
+  useEffect(() => {
+    if (pendingUploads.some((upload) => upload.gameId === effectiveGameId)) {
+      setVideoAttached(true);
+    }
+  }, [pendingUploads, effectiveGameId]);
+
+  const videosById = useMemo(() => {
+    const map: Record<string, GameVideo> = {};
+    videos.forEach((video) => {
+      if (video.gameId && video.postedBy?.userId) {
+        map[gameVideoDocId(video.gameId, video.postedBy.userId)] = video;
+      }
+    });
+    return map;
+  }, [videos]);
+
   const team1Ids = teamIdsOf(originalGame, "team1");
   const team2Ids = teamIdsOf(originalGame, "team2");
-  const disputingTeamIds = opener && team1Ids.includes(opener)
-    ? team1Ids
-    : opener && team2Ids.includes(opener)
-      ? team2Ids
-      : [];
+  const allParticipantIds = dispute?.participantIds?.length
+    ? dispute.participantIds
+    : participantIds;
   const canContribute =
-    !!currentUser?.userId && disputingTeamIds.includes(currentUser.userId);
+    !!userId &&
+    (allParticipantIds.includes(userId) ||
+      team1Ids.includes(userId) ||
+      team2Ids.includes(userId));
 
-  // A video attaches through the normal pipeline (VideoUploadModal → gameVideos),
-  // so its presence is read off the in-flight upload for this game.
-  const videoAttached = pendingUploads.some(
-    (upload) => upload.gameId === effectiveGameId,
-  );
+  const roleOf = (actorId: string): Role => {
+    if (actorId === userId) return "You";
+    const userTeam = userId && team1Ids.includes(userId) ? team1Ids : team2Ids;
+    if (userTeam.includes(actorId)) return "Teammate";
+    if (team1Ids.includes(actorId) || team2Ids.includes(actorId)) {
+      return "Opponent";
+    }
+    return "Admin";
+  };
 
-  const canSubmit =
-    !!correctedGame &&
-    !(videoAttached && !hasCourtPositions(courtPositions ?? undefined));
+  const nameOf = (actorId: string): string => {
+    if (actorId === DISPUTE_SYSTEM_ACTOR) return "CourtChamps";
+    const player = originalGame
+      ? playersOf(originalGame).find((p) => p.userId === actorId)
+      : undefined;
+    if (player) return player.displayName || formatDisplayName(player);
+    return "CourtChamps admin";
+  };
 
-  // Require at least one piece of evidence before a more-evidence submission,
-  // and court positions whenever a video is attached.
-  const hasMoreEvidence =
-    videoAttached ||
-    moreNotes.trim().length > 0 ||
-    hasCourtPositions(moreCourtPositions ?? undefined);
-  const canSubmitMore =
-    hasMoreEvidence &&
-    !(videoAttached && !hasCourtPositions(moreCourtPositions ?? undefined));
+  const buildEvidence = (): DisputeEvidence | null => {
+    if (!userId) return null;
+    return {
+      ...(note.trim() ? { note: note.trim() } : {}),
+      ...(videoAttached
+        ? {
+            videoId: gameVideoDocId(effectiveGameId, userId),
+            ...(courtPositions ? { courtPositions } : {}),
+          }
+        : {}),
+    };
+  };
+
+  const resetForm = () => {
+    setNote("");
+    setCourtPositions(null);
+    setVideoAttached(false);
+  };
 
   const notifyParticipants = useCallback(
-    async (disputeId: string, message: string) => {
-      const recipients = (
-        participantIds.length ? participantIds : (dispute?.participantIds ?? [])
-      ).filter((id) => id && id !== currentUser?.userId);
+    async (id: string, message: string) => {
+      const recipients = allParticipantIds.filter(
+        (recipientId) => recipientId && recipientId !== currentUser?.userId,
+      );
       await Promise.all(
         recipients.map((recipientId) =>
           sendNotification({
@@ -325,25 +467,21 @@ const GameDisputeScreen = () => {
             senderId: currentUser?.userId,
             message,
             type: notificationTypes.INFORMATION.LADDER_DISPUTE.TYPE,
-            data: { disputeId, ladderId },
+            data: { disputeId: id, ladderId },
           }),
         ),
       );
     },
-    [participantIds, dispute, currentUser, sendNotification, ladderId],
+    [allParticipantIds, currentUser, sendNotification, ladderId],
   );
 
-  const handleSubmit = useCallback(async () => {
+  const handleOpenDispute = async () => {
+    const evidence = buildEvidence();
     if (!currentUser?.userId || !originalGame || !correctedGame || !matchId) {
       return;
     }
+    if (!evidence) return;
     setSubmitting(true);
-    const evidence: DisputeEvidence = {
-      ...(notes.trim() ? { notes: notes.trim() } : {}),
-      ...(courtPositions ? { courtPositions } : {}),
-      submittedBy: currentUser.userId,
-      submittedAt: new Date(),
-    };
     const outcome = await createDispute({
       ladderId,
       ladderName,
@@ -378,63 +516,47 @@ const GameDisputeScreen = () => {
       }`,
     );
     showBottomToast("Dispute submitted for review", "success");
-    await loadDispute(outcome.disputeId!);
-  }, [
-    currentUser,
-    originalGame,
-    correctedGame,
-    matchId,
-    notes,
-    courtPositions,
-    ladderId,
-    ladderName,
-    effectiveType,
-    effectiveGameId,
-    participantIds,
-    matchDate,
-    matchTime,
-    courtName,
-    notifyParticipants,
-    showBottomToast,
-    loadDispute,
-  ]);
+    resetForm();
+    setDisputeId(outcome.disputeId);
+  };
 
-  const handleSubmitMoreEvidence = useCallback(async () => {
-    if (!dispute || !currentUser?.userId) return;
-    if (videoAttached && !hasCourtPositions(moreCourtPositions ?? undefined)) {
-      showBottomToast("Add court positions for the uploaded video", "error");
-      return;
-    }
+  const handleSubmitEvidence = async () => {
+    const evidence = buildEvidence();
+    if (!dispute || !currentUser?.userId || !evidence) return;
     setSubmitting(true);
-    const evidence: DisputeEvidence = {
-      ...(moreNotes.trim() ? { notes: moreNotes.trim() } : {}),
-      ...(moreCourtPositions ? { courtPositions: moreCourtPositions } : {}),
-      submittedBy: currentUser.userId,
-      submittedAt: new Date(),
-    };
-    const ok = await addDisputeEvidence(dispute.disputeId, evidence);
+    const outcome = await addDisputeEvidence(
+      dispute.disputeId,
+      currentUser.userId,
+      evidence,
+    );
     setSubmitting(false);
-    if (!ok) {
-      showBottomToast("Could not submit evidence. Please try again.", "error");
+    if (!outcome.success) {
+      showBottomToast(
+        outcome.reason === "resolved"
+          ? "This dispute has already been resolved."
+          : "Could not submit evidence. Please try again.",
+        "error",
+      );
       return;
     }
-    setMoreNotes("");
-    setMoreCourtPositions(null);
+    await notifyParticipants(
+      dispute.disputeId,
+      `${formatDisplayName(currentUser)} added evidence to a disputed game in ${
+        dispute.ladderName ?? "the ladder"
+      }`,
+    );
+    resetForm();
+    setExpanded({});
     showBottomToast("Evidence submitted", "success");
-    await loadDispute(dispute.disputeId);
-  }, [
-    dispute,
-    currentUser,
-    videoAttached,
-    moreNotes,
-    moreCourtPositions,
-    showBottomToast,
-    loadDispute,
-  ]);
+  };
+
+  const events = dispute?.events ?? [];
+  const lastIndex = events.length - 1;
+  const isOpen = (index: number) => expanded[index] ?? index === lastIndex;
 
   const toggle = (index: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded((prev) => ({ ...prev, [index]: !prev[index] }));
+    setExpanded((prev) => ({ ...prev, [index]: !isOpen(index) }));
   };
 
   const finalGame = dispute?.finalGame ?? dispute?.disputedGame ?? null;
@@ -484,173 +606,121 @@ const GameDisputeScreen = () => {
                 onPress={() => setEntryVisible(true)}
               />
             ) : null
-          ) : finalGame ? (
-            <DisputeScoreCard game={finalGame} leagueType={effectiveType} />
+          ) : dispute?.disputedGame ? (
+            <DisputeScoreCard
+              game={dispute.disputedGame}
+              leagueType={effectiveType}
+            />
           ) : null}
         </Block>
 
         {isComposing && (
-          <>
-            <Block>
-              <BlockTitle>Video evidence (optional)</BlockTitle>
-              {videoAttached ? (
-                <EvidenceRow>
-                  <Ionicons name="videocam" size={18} color="#00A2FF" />
-                  <EvidenceText>Video uploading…</EvidenceText>
-                </EvidenceRow>
-              ) : (
-                <ActionPlaceholder
-                  message="Upload video evidence"
-                  icon="videocam-outline"
-                  onPress={() => setUploadVisible(true)}
-                />
-              )}
-              <NotesLabel>Notes to admin</NotesLabel>
-              <NotesInput
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="Explain what the correct result should be…"
-                placeholderTextColor="#5b7186"
-                multiline
-              />
-            </Block>
-
-            <Block>
-              <BlockTitle>Court positions</BlockTitle>
-              <SecondaryButton onPress={() => setCourtVisible(true)}>
-                <Ionicons name="grid-outline" size={16} color="#00A2FF" />
-                <SecondaryText>
-                  {hasCourtPositions(courtPositions ?? undefined)
-                    ? "Edit court positions"
-                    : "Add court positions"}
-                </SecondaryText>
-              </SecondaryButton>
-              {videoAttached &&
-                !hasCourtPositions(courtPositions ?? undefined) && (
-                  <HintText>
-                    Court positions are required when a video is attached.
-                  </HintText>
-                )}
-            </Block>
-
-            <SubmitButton
-              disabled={!canSubmit || submitting}
-              onPress={handleSubmit}
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <SubmitText>Submit dispute</SubmitText>
-              )}
-            </SubmitButton>
-          </>
+          <EvidenceForm
+            title="Evidence"
+            subtitle="Add a note or a video so an admin can review the result."
+            videoAttached={videoAttached}
+            onUploadVideo={() => setUploadVisible(true)}
+            courtPositions={courtPositions}
+            onEditCourtPositions={() => setCourtVisible(true)}
+            note={note}
+            onChangeNote={setNote}
+            notePlaceholder="Explain what the correct result should be…"
+            submitLabel="Submit dispute"
+            submitting={submitting}
+            onSubmit={handleOpenDispute}
+            blockedMessage={
+              correctedGame
+                ? null
+                : "Tap the card above to enter the corrected score."
+            }
+          />
         )}
 
         {dispute && (
           <Block>
-            <TimelineHeader>Dispute progress</TimelineHeader>
-            {dispute.events.map((event, index) => {
+            <TimelineHeader>Dispute timeline</TimelineHeader>
+            {events.map((event, index) => {
+              const open = isOpen(index);
               const isFirst = index === 0;
-              const isLast = index === dispute.events.length - 1;
-              const state = isLast ? "active" : "completed";
-              const open = expanded[index];
+              const isLast = index === lastIndex;
               return (
-                <TimelineRow key={`${event.stage}-${index}`}>
+                <TimelineRow key={`${event.type ?? event.stage}-${index}`}>
                   <Gutter>
                     {!isFirst && <LineTop />}
                     {!isLast && <LineBottom />}
-                    <Dot state={state} />
+                    <Dot state={isLast ? "active" : "completed"} />
                   </Gutter>
                   <TimelineContent last={isLast}>
-                    <StageHeader activeOpacity={0.8} onPress={() => toggle(index)}>
-                      <StageLabel>{DISPUTE_STAGE_LABELS[event.stage]}</StageLabel>
-                      <Ionicons
-                        name={open ? "chevron-up" : "chevron-down"}
-                        size={18}
-                        color="#9fb8c8"
-                      />
-                    </StageHeader>
-                    <StageWhen>{formatEventDate(event.createdAt)}</StageWhen>
-                    {open && (
-                      <StageBody>
-                        <StageDetail
-                          dispute={dispute}
-                          stage={event.stage}
-                          note={event.note}
-                          finalGame={finalGame}
-                          effectiveType={effectiveType}
+                    <PhaseCard open={open}>
+                      <StageHeader
+                        activeOpacity={0.8}
+                        onPress={() => toggle(index)}
+                      >
+                        <PhaseTitle>
+                          <PhaseTitleRow>
+                            <StageLabel>{eventLabel(event)}</StageLabel>
+                            {event.createdBy !== DISPUTE_SYSTEM_ACTOR && (
+                              <RoleTag>
+                                <RoleText>{roleOf(event.createdBy)}</RoleText>
+                              </RoleTag>
+                            )}
+                          </PhaseTitleRow>
+                          <StageWhen>
+                            {nameOf(event.createdBy)} ·{" "}
+                            {formatEventDate(event.createdAt)}
+                          </StageWhen>
+                        </PhaseTitle>
+                        <Ionicons
+                          name={open ? "chevron-up" : "chevron-down"}
+                          size={18}
+                          color="#9fb8c8"
                         />
-                      </StageBody>
-                    )}
+                      </StageHeader>
+                      {!open && <EventChips event={event} />}
+                      {open && (
+                        <StageBody>
+                          <PhaseDetail
+                            dispute={dispute}
+                            event={event}
+                            video={
+                              event.videoId
+                                ? videosById[event.videoId]
+                                : undefined
+                            }
+                            finalGame={finalGame}
+                            effectiveType={effectiveType}
+                            onViewCourtPositions={() =>
+                              setViewingPositions(event.courtPositions ?? null)
+                            }
+                          />
+                        </StageBody>
+                      )}
+                    </PhaseCard>
                   </TimelineContent>
                 </TimelineRow>
               );
             })}
 
-            {expanded[dispute.events.length - 1] &&
-              videos.some((v) => v.videoUrl) && (
-                <VideoEvidence>
-                  <AddEvidenceTitle>Video evidence</AddEvidenceTitle>
-                  {videos
-                    .filter((video) => video.videoUrl)
-                    .map((video, i) => (
-                      <VideoItem key={i}>
-                        <Uploader>Uploaded by {uploaderName(video)}</Uploader>
-                        <DisputeVideoPlayer url={video.videoUrl} />
-                      </VideoItem>
-                    ))}
-                </VideoEvidence>
-              )}
-
-            {!isResolved &&
-              canContribute &&
-              expanded[dispute.events.length - 1] && (
-                <AddEvidenceCard>
-                  <AddEvidenceTitle>
-                    {dispute.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
-                      ? "The admin has requested more evidence"
-                      : "Add evidence"}
-                  </AddEvidenceTitle>
-                  {videoAttached ? (
-                    <EvidenceRow>
-                      <Ionicons name="videocam" size={18} color="#00A2FF" />
-                      <EvidenceText>Video uploading…</EvidenceText>
-                    </EvidenceRow>
-                  ) : (
-                    <ActionPlaceholder
-                      message="Upload video evidence"
-                      icon="videocam-outline"
-                      onPress={() => setMoreUploadVisible(true)}
-                    />
-                  )}
-                  <SecondaryButton onPress={() => setMoreCourtVisible(true)}>
-                    <Ionicons name="grid-outline" size={16} color="#00A2FF" />
-                    <SecondaryText>
-                      {hasCourtPositions(moreCourtPositions ?? undefined)
-                        ? "Edit court positions"
-                        : "Add court positions"}
-                    </SecondaryText>
-                  </SecondaryButton>
-                  <NotesLabel>Notes to admin</NotesLabel>
-                  <NotesInput
-                    value={moreNotes}
-                    onChangeText={setMoreNotes}
-                    placeholder="Add anything else the admin should see…"
-                    placeholderTextColor="#5b7186"
-                    multiline
-                  />
-                  <SubmitButton
-                    disabled={!canSubmitMore || submitting}
-                    onPress={handleSubmitMoreEvidence}
-                  >
-                    {submitting ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <SubmitText>Submit evidence</SubmitText>
-                    )}
-                  </SubmitButton>
-                </AddEvidenceCard>
-              )}
+            {!isResolved && canContribute && (
+              <EvidenceForm
+                title={
+                  dispute.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
+                    ? "The admin has requested more evidence"
+                    : "Add your evidence"
+                }
+                subtitle="Any player in this game can add a video or a note."
+                videoAttached={videoAttached}
+                onUploadVideo={() => setUploadVisible(true)}
+                courtPositions={courtPositions}
+                onEditCourtPositions={() => setCourtVisible(true)}
+                note={note}
+                onChangeNote={setNote}
+                notePlaceholder="Add anything else the admin should see…"
+                submitLabel="Submit evidence"
+                submitting={submitting}
+                onSubmit={handleSubmitEvidence}
+              />
+            )}
           </Block>
         )}
       </ScrollView>
@@ -680,30 +750,10 @@ const GameDisputeScreen = () => {
           visible={uploadVisible}
           onClose={() => setUploadVisible(false)}
           gameId={effectiveGameId}
-          competitionId={ladderId}
-          competitionName={ladderName ?? "Ladder match"}
+          competitionId={dispute?.ladderId ?? ladderId}
+          competitionName={dispute?.ladderName ?? ladderName ?? "Ladder match"}
           competitionType={COMPETITION_TYPES.LADDER}
-          matchId={matchId}
-          gamescore={originalGame.gamescore ?? ""}
-          date={originalGame.date ?? ""}
-          teams={teamsOf(originalGame)}
-          currentUser={currentUser}
-          title="Upload dispute evidence"
-          subtitle="Upload the full game video so an admin can review the disputed result."
-          icon="videocam-outline"
-          showAddLaterHint={false}
-        />
-      )}
-
-      {originalGame && moreUploadVisible && currentUser && (
-        <VideoUploadModal
-          visible={moreUploadVisible}
-          onClose={() => setMoreUploadVisible(false)}
-          gameId={effectiveGameId}
-          competitionId={ladderId}
-          competitionName={ladderName ?? "Ladder match"}
-          competitionType={COMPETITION_TYPES.LADDER}
-          matchId={matchId}
+          matchId={dispute?.ladderMatchId ?? matchId}
           gamescore={originalGame.gamescore ?? ""}
           date={originalGame.date ?? ""}
           teams={teamsOf(originalGame)}
@@ -728,36 +778,76 @@ const GameDisputeScreen = () => {
         />
       )}
 
-      {originalGame && moreCourtVisible && (
+      {originalGame && viewingPositions && (
         <CourtPositionModal
-          visible={moreCourtVisible}
-          onClose={() => setMoreCourtVisible(false)}
-          video={courtPositionVideo(originalGame, moreCourtPositions)}
-          isUploader
+          visible
+          onClose={() => setViewingPositions(null)}
+          video={courtPositionVideo(originalGame, viewingPositions)}
+          isUploader={false}
           playerArray={playersOf(originalGame)}
-          onSave={async (positions) => {
-            setMoreCourtPositions(positions);
-          }}
+          onSave={async () => {}}
         />
       )}
     </Screen>
   );
 };
 
-const StageDetail = ({
+const eventLabel = (event: DisputeEvent): string =>
+  event.type
+    ? DISPUTE_EVENT_LABELS[event.type]
+    : event.stage === DISPUTE_STAGE.RESOLVED
+      ? DISPUTE_EVENT_LABELS.resolved
+      : event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
+        ? DISPUTE_EVENT_LABELS.evidence_requested
+        : DISPUTE_EVENT_LABELS.evidence_submitted;
+
+const EventChips = ({ event }: { event: DisputeEvent }) => {
+  const chips = [
+    event.videoId && "Video",
+    event.courtPositions &&
+      hasCourtPositions(event.courtPositions) &&
+      "Court positions",
+    event.note && "Note",
+  ].filter((chip): chip is string => Boolean(chip));
+  if (!chips.length) return null;
+  return (
+    <ChipRow>
+      {chips.map((chip) => (
+        <Chip key={chip}>
+          <ChipText>{chip}</ChipText>
+        </Chip>
+      ))}
+    </ChipRow>
+  );
+};
+
+const PhaseDetail = ({
   dispute,
-  stage,
-  note,
+  event,
+  video,
   finalGame,
   effectiveType,
+  onViewCourtPositions,
 }: {
   dispute: Dispute;
-  stage: DisputeStage;
-  note?: string;
+  event: DisputeEvent;
+  video?: GameVideo;
   finalGame: Game | null;
   effectiveType: LadderType;
+  onViewCourtPositions: () => void;
 }) => {
-  if (stage === DISPUTE_STAGE.RESOLVED) {
+  if (event.type === DISPUTE_EVENT_TYPE.VOIDED) {
+    return (
+      <DetailText>
+        {event.note ||
+          `No evidence was submitted within ${DISPUTE_EVIDENCE_WINDOW_HOURS} hours of the admin's request. The original score stands.`}
+      </DetailText>
+    );
+  }
+  if (
+    event.type === DISPUTE_EVENT_TYPE.RESOLVED ||
+    (!event.type && event.stage === DISPUTE_STAGE.RESOLVED)
+  ) {
     const upheld = dispute.resolution === DISPUTE_RESOLUTION.UPHELD;
     return (
       <>
@@ -770,22 +860,72 @@ const StageDetail = ({
           <DisputeScoreCard game={finalGame} leagueType={effectiveType} />
         )}
         {dispute.adminNotes ? (
-          <DetailText>Admin notes: {dispute.adminNotes}</DetailText>
+          <AdminNote>
+            <NoteLabel>From the admin</NoteLabel>
+            <DetailText>{dispute.adminNotes}</DetailText>
+          </AdminNote>
         ) : null}
       </>
     );
   }
-  if (stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED) {
+  if (
+    event.type === DISPUTE_EVENT_TYPE.EVIDENCE_REQUESTED ||
+    (!event.type && event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED)
+  ) {
     return (
-      <DetailText>
-        {note || "The admin has requested more evidence for this dispute."}
-      </DetailText>
+      <>
+        <AdminNote>
+          <NoteLabel>From the admin</NoteLabel>
+          <DetailText>
+            {event.note ||
+              "The admin has requested more evidence for this dispute."}
+          </DetailText>
+        </AdminNote>
+        {event.evidenceDueAt ? (
+          <>
+            <DueText>
+              Due {formatEventDate(event.evidenceDueAt)} (
+              {moment(toDate(event.evidenceDueAt)).fromNow(true)} left)
+            </DueText>
+            <DetailText>
+              If nobody adds evidence by then, the dispute is voided and the
+              original score stands.
+            </DetailText>
+          </>
+        ) : null}
+      </>
     );
   }
+
+  const hasEvidence = Boolean(event.videoId || event.note);
   return (
-    <DetailText>
-      {note || "Your dispute is under review by an admin."}
-    </DetailText>
+    <>
+      {event.videoId ? (
+        video?.videoUrl ? (
+          <DisputeVideoPlayer url={video.videoUrl} />
+        ) : (
+          <EvidenceRow>
+            <ActivityIndicator size="small" color="#00A2FF" />
+            <EvidenceText>Video processing…</EvidenceText>
+          </EvidenceRow>
+        )
+      ) : null}
+      {event.videoId && hasCourtPositions(event.courtPositions) ? (
+        <SecondaryButton onPress={onViewCourtPositions}>
+          <Ionicons name="grid-outline" size={16} color="#00A2FF" />
+          <SecondaryText>View court positions</SecondaryText>
+        </SecondaryButton>
+      ) : null}
+      {event.note ? (
+        <NoteBox>
+          <NoteLabel>Note</NoteLabel>
+          <DetailText>{event.note}</DetailText>
+        </NoteBox>
+      ) : null}
+      {!hasEvidence ? (
+        <DetailText>No evidence was added with this action.</DetailText>
+      ) : null}
+    </>
   );
 };
 
@@ -869,27 +1009,36 @@ const NotesInput = styled.TextInput({
   textAlignVertical: "top",
 });
 
-const SecondaryButton = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  borderWidth: 1,
-  borderColor: "#00A2FF",
-  borderRadius: 8,
-  paddingVertical: 12,
-});
+const SecondaryButton = styled.TouchableOpacity<{ muted?: boolean }>(
+  ({ muted }: { muted?: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: muted ? "rgba(255,255,255,0.12)" : "#00A2FF",
+    borderRadius: 8,
+    paddingVertical: 12,
+  }),
+);
 
-const SecondaryText = styled.Text({
-  color: "#00A2FF",
-  fontWeight: "bold",
-  fontSize: 14,
+const SecondaryText = styled.Text<{ muted?: boolean }>(
+  ({ muted }: { muted?: boolean }) => ({
+    color: muted ? "#5b7186" : "#00A2FF",
+    fontWeight: "bold",
+    fontSize: 14,
+  }),
+);
+
+const MutedHint = styled.Text({
+  color: "#5b7186",
+  fontSize: 12,
+  marginTop: -4,
 });
 
 const HintText = styled.Text({
   color: "#ffb86b",
   fontSize: 12,
-  marginTop: 8,
 });
 
 const SubmitButton = styled.TouchableOpacity<{ disabled?: boolean }>(
@@ -973,7 +1122,18 @@ const TimelineContent = styled.View<{ last: boolean }>(
   ({ last }: { last: boolean }) => ({
     flex: 1,
     paddingLeft: 8,
-    paddingBottom: last ? 0 : 24,
+    paddingBottom: last ? 0 : 12,
+  }),
+);
+
+const PhaseCard = styled.View<{ open: boolean }>(
+  ({ open }: { open: boolean }) => ({
+    backgroundColor: "#001123",
+    borderWidth: 1,
+    borderColor: open ? "#16406a" : "rgb(9, 33, 62)",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   }),
 );
 
@@ -981,13 +1141,81 @@ const StageHeader = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
   justifyContent: "space-between",
+  gap: 8,
+});
+
+const PhaseTitle = styled.View({ flex: 1 });
+
+const PhaseTitleRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: 6,
+});
+
+const RoleTag = styled.View({
+  borderWidth: 1,
+  borderColor: "rgba(255,255,255,0.12)",
+  borderRadius: 4,
+  paddingHorizontal: 5,
+  paddingVertical: 1,
+});
+
+const RoleText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 10,
+  fontWeight: "600",
+});
+
+const ChipRow = styled.View({
+  flexDirection: "row",
+  flexWrap: "wrap",
+  gap: 4,
+  marginTop: 8,
+});
+
+const Chip = styled.View({
+  borderWidth: 1,
+  borderColor: "rgba(255,255,255,0.08)",
+  borderRadius: 4,
+  paddingHorizontal: 6,
+  paddingVertical: 1,
+});
+
+const ChipText = styled.Text({ color: "#9fb8c8", fontSize: 11 });
+
+const NoteBox = styled.View({
+  backgroundColor: "#0a1929",
+  borderRadius: 8,
+  padding: 10,
+  gap: 2,
+});
+
+const AdminNote = styled.View({
+  backgroundColor: "rgba(197,139,255,0.1)",
+  borderRadius: 8,
+  padding: 10,
+  gap: 2,
+});
+
+const NoteLabel = styled.Text({
+  color: "#5b7186",
+  fontSize: 10,
+  fontWeight: "600",
+  letterSpacing: 1,
+  textTransform: "uppercase",
+});
+
+const DueText = styled.Text({
+  color: "#FFB020",
+  fontSize: 13,
+  fontWeight: "bold",
 });
 
 const StageLabel = styled.Text({
   color: "#ffffff",
   fontSize: 15,
   fontWeight: "bold",
-  flex: 1,
 });
 
 const StageWhen = styled.Text({
@@ -1019,20 +1247,6 @@ const AddEvidenceTitle = styled.Text({
   fontSize: 14,
   fontWeight: "bold",
 });
-
-const VideoEvidence = styled.View({
-  marginTop: 12,
-  gap: 12,
-  backgroundColor: "#001123",
-  borderWidth: 1,
-  borderColor: "rgb(9, 33, 62)",
-  borderRadius: 10,
-  padding: 14,
-});
-
-const VideoItem = styled.View({ gap: 6 });
-
-const Uploader = styled.Text({ color: "#9fb8c8", fontSize: 12 });
 
 const DisputeVideo = styled(VideoView)({
   width: "100%",

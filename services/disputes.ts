@@ -3,9 +3,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   query,
+  runTransaction,
   setDoc,
-  updateDoc,
   where,
 } from "firebase/firestore";
 
@@ -15,26 +16,20 @@ import {
   DISPUTES_COLLECTION,
   DISPUTE_STAGE,
   DISPUTE_ACTIVE_STAGES,
+  DISPUTE_EVENT_TYPE,
+  disputeTimeMs,
+  getDisputeEvidenceBlocker,
+  hasCourtPositions,
 } from "@shared/types";
 import type {
   CreateDisputeOutcome,
   Dispute,
+  DisputeEvent,
   DisputeEvidence,
   Game,
   GameVideo,
   LadderType,
 } from "@shared/types";
-
-const toMillis = (value: unknown): number => {
-  if (
-    value &&
-    typeof (value as { toMillis?: () => number }).toMillis === "function"
-  ) {
-    return (value as { toMillis: () => number }).toMillis();
-  }
-  const t = new Date(value as string | number | Date).getTime();
-  return Number.isFinite(t) ? t : 0;
-};
 
 /** All video evidence uploaded for a disputed game (newest first). */
 export const fetchDisputeGameVideos = async (
@@ -50,11 +45,43 @@ export const fetchDisputeGameVideos = async (
     );
     return snap.docs
       .map((d) => d.data() as GameVideo)
-      .sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
+      .sort((a, b) => disputeTimeMs(b.createdAt) - disputeTimeMs(a.createdAt));
   } catch (error) {
     console.error("Error fetching dispute videos:", error);
     return [];
   }
+};
+
+/** Live game videos for a disputed game, so another player's upload appears as it lands. */
+export const subscribeToDisputeGameVideos = (
+  gameId: string,
+  onChange: (videos: GameVideo[]) => void,
+): (() => void) => {
+  if (!gameId) return () => {};
+  return onSnapshot(
+    query(
+      collection(db, COLLECTION_NAMES.gameVideos),
+      where("gameId", "==", gameId),
+    ),
+    (snap) => onChange(snap.docs.map((d) => d.data() as GameVideo)),
+    (error) => console.error("Error listening to dispute videos:", error),
+  );
+};
+
+/** Live dispute doc, so other players' submissions and admin actions appear in place. */
+export const subscribeToDispute = (
+  disputeId: string,
+  onChange: (dispute: Dispute | null) => void,
+): (() => void) => {
+  if (!disputeId) return () => {};
+  return onSnapshot(
+    doc(db, DISPUTES_COLLECTION, disputeId),
+    (snap) => onChange(snap.exists() ? (snap.data() as Dispute) : null),
+    (error) => {
+      console.error("Error listening to dispute:", error);
+      onChange(null);
+    },
+  );
 };
 
 // Firestore rejects undefined field values; drop them (and any nested in the
@@ -85,7 +112,7 @@ export interface CreateDisputeInput {
   openedBy: string;
   /** Everyone to notify (both players in singles, all four in doubles). */
   participantIds: string[];
-  /** The disputer's initial evidence round. */
+  /** The opener's evidence (a note or a video is required). */
   evidence: DisputeEvidence;
   matchDate?: string;
   matchTime?: string;
@@ -100,7 +127,12 @@ export interface CreateDisputeInput {
 export const createDispute = async (
   input: CreateDisputeInput,
 ): Promise<CreateDisputeOutcome & { disputeId?: string }> => {
-  if (!input.ladderId || !input.ladderMatchId || !input.gameId) {
+  if (
+    !input.ladderId ||
+    !input.ladderMatchId ||
+    !input.gameId ||
+    !isValidEvidence(input.evidence)
+  ) {
     return { success: false, reason: "invalid" };
   }
 
@@ -129,11 +161,17 @@ export const createDispute = async (
       disputedGame: input.disputedGame,
       openedBy: input.openedBy,
       participantIds: input.participantIds,
-      evidence: [input.evidence],
       stage: DISPUTE_STAGE.UNDER_REVIEW,
       events: [
-        { stage: DISPUTE_STAGE.UNDER_REVIEW, createdBy: input.openedBy, createdAt: now },
+        {
+          ...input.evidence,
+          type: DISPUTE_EVENT_TYPE.OPENED,
+          stage: DISPUTE_STAGE.UNDER_REVIEW,
+          createdBy: input.openedBy,
+          createdAt: now,
+        },
       ],
+      evidenceDueAt: null,
       resolution: null,
       finalGame: null,
       adminNotes: null,
@@ -145,7 +183,10 @@ export const createDispute = async (
       resolvedBy: null,
     };
 
-    await setDoc(doc(db, DISPUTES_COLLECTION, disputeId), pruneUndefined(dispute));
+    await setDoc(
+      doc(db, DISPUTES_COLLECTION, disputeId),
+      pruneUndefined(dispute),
+    );
     return { success: true, disputeId };
   } catch (error) {
     console.error("Error creating dispute:", error);
@@ -185,35 +226,59 @@ export const fetchActiveDisputeByGame = async (
   }
 };
 
+const isValidEvidence = (evidence: DisputeEvidence): boolean =>
+  getDisputeEvidenceBlocker({
+    note: evidence.note,
+    hasVideo: Boolean(evidence.videoId),
+    courtPositions: evidence.courtPositions,
+  }) === null &&
+  (Boolean(evidence.videoId) || !hasCourtPositions(evidence.courtPositions));
+
+export type AddDisputeEvidenceOutcome =
+  | { success: true }
+  | { success: false; reason: "invalid" | "resolved" | "error" };
+
 /**
- * Append a further evidence round from the disputer while the dispute is at
- * `more_evidence_requested`, and move it back to `under_review` for the admin.
+ * Append one participant's evidence as its own timeline phase. Any participant
+ * can submit while the dispute is unresolved; a submission moves the dispute to
+ * `under_review` (flagging it for the admin) and clears any void deadline.
  */
 export const addDisputeEvidence = async (
   disputeId: string,
+  userId: string,
   evidence: DisputeEvidence,
-): Promise<boolean> => {
-  if (!disputeId) return false;
+): Promise<AddDisputeEvidenceOutcome> => {
+  if (!disputeId || !userId || !isValidEvidence(evidence)) {
+    return { success: false, reason: "invalid" };
+  }
   try {
     const ref = doc(db, DISPUTES_COLLECTION, disputeId);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return false;
-    const dispute = snap.data() as Dispute;
-    await updateDoc(ref, {
-      evidence: [...(dispute.evidence ?? []), pruneUndefined(evidence)],
-      stage: DISPUTE_STAGE.UNDER_REVIEW,
-      events: [
-        ...(dispute.events ?? []),
-        {
-          stage: DISPUTE_STAGE.UNDER_REVIEW,
-          createdBy: evidence.submittedBy,
-          createdAt: new Date(),
-        },
-      ],
+    return await runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) return { success: false, reason: "invalid" } as const;
+      const dispute = snap.data() as Dispute;
+      if (!DISPUTE_ACTIVE_STAGES.includes(dispute.stage)) {
+        return { success: false, reason: "resolved" } as const;
+      }
+      if (!(dispute.participantIds ?? []).includes(userId)) {
+        return { success: false, reason: "invalid" } as const;
+      }
+      const event: DisputeEvent = pruneUndefined({
+        ...evidence,
+        type: DISPUTE_EVENT_TYPE.EVIDENCE_SUBMITTED,
+        stage: DISPUTE_STAGE.UNDER_REVIEW,
+        createdBy: userId,
+        createdAt: new Date(),
+      });
+      tx.update(ref, {
+        stage: DISPUTE_STAGE.UNDER_REVIEW,
+        evidenceDueAt: null,
+        events: [...(dispute.events ?? []), event],
+      });
+      return { success: true } as const;
     });
-    return true;
   } catch (error) {
     console.error("Error adding dispute evidence:", error);
-    return false;
+    return { success: false, reason: "error" };
   }
 };

@@ -9,6 +9,7 @@ import {
 import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 import { autoCancelLadderMatches } from "./autoCancelLadderMatches";
+import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
@@ -30,6 +31,7 @@ export {
   autoApproveLeagueGames,
   autoApproveTournamentGames,
   autoCancelLadderMatches,
+  autoVoidLadderDisputes,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,
   updateGameVideoUrl,
