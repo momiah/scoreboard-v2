@@ -10,11 +10,13 @@ import {
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { COLLECTION_NAMES } from "@shared";
-import { GameVideoUploadPayload } from "@shared/types";
+import { GameVideoType, GameVideoUploadPayload } from "@shared/types";
 
 type CheckR2VideoParams = {
   gameId: string;
   competitionId: string;
+  videoType?: GameVideoType;
+  videoId?: string;
 };
 
 type CheckR2VideoResponse = {
@@ -61,10 +63,20 @@ export const recoverPendingVideoUploads = async (userId: string) => {
       platform,
       startedAt,
       matchId,
+      videoType,
+      videoId,
     } = docSnap.data();
+    const videoRouting = {
+      ...(videoType ? { videoType } : {}),
+      ...(videoId ? { videoId } : {}),
+    };
 
     try {
-      const { data } = await checkR2VideoExists({ gameId, competitionId });
+      const { data } = await checkR2VideoExists({
+        gameId,
+        competitionId,
+        ...videoRouting,
+      });
 
       if (data.videoUrl) {
         // ── File made it to R2 — finish the job the killed app didn't ────────
@@ -79,6 +91,7 @@ export const recoverPendingVideoUploads = async (userId: string) => {
           postedBy,
           teams,
           ...(matchId ? { matchId } : {}),
+          ...videoRouting,
         });
         await deleteDoc(docSnap.ref);
         continue;

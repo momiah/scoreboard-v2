@@ -14,7 +14,7 @@ import type {
 } from "@shared/types";
 
 export type { CreateReportOutcome };
-import type { LadderJoinUser } from "../../helpers/ladderParticipants";
+import type { LadderJoinUser } from "@shared/helpers";
 
 export interface LadderJoinOutcome {
   success: boolean;

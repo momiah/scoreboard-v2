@@ -22,7 +22,10 @@ import {
   CollectionName,
   GameTeam,
   LadderMatch,
+  LadderType,
+  Dispute,
 } from "@shared/types";
+import { fetchActiveDisputeByGame } from "../../services/disputes";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
 import { normalizeCompetitionData } from "@/helpers/normalizeCompetitionData";
 import { useGameApproval } from "@/hooks/useGameApproval";
@@ -334,16 +337,21 @@ const LadderGameApprovalModal = ({
   };
 
   const [game, setGame] = useState<Game | null>(null);
+  const [match, setMatch] = useState<LadderMatch | null>(null);
+  const [ladderType, setLadderType] = useState<LadderType>(LADDER_TYPE.SINGLES);
   const [ladderName, setLadderName] = useState("this ladder");
   const [competitionType, setCompetitionType] = useState("Singles");
   const [senderDisplayName, setSenderDisplayName] = useState("Unknown");
   const [loading, setLoading] = useState(true);
   const [gameGone, setGameGone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [activeDispute, setActiveDispute] = useState<Dispute | null>(null);
 
   useEffect(() => {
     if (!visible) {
       setGame(null);
+      setMatch(null);
+      setActiveDispute(null);
       setLoading(true);
       setGameGone(false);
       setSubmitting(false);
@@ -363,20 +371,28 @@ const LadderGameApprovalModal = ({
 
         if (!isMounted) return;
 
-        const match =
+        const matchFound =
           matches.find((m: LadderMatch) => m.ladderMatchId === matchId) ?? null;
-        const found = match?.games.find((g) => g.gameId === gameId) ?? null;
+        const found = matchFound?.games.find((g) => g.gameId === gameId) ?? null;
 
         setLadderName(ladder?.name ?? "this ladder");
+        setLadderType(ladder?.ladderType ?? LADDER_TYPE.SINGLES);
         setCompetitionType(
           ladder?.ladderType === LADDER_TYPE.DOUBLES ? "Doubles" : "Singles",
         );
         setSenderDisplayName(sender ? formatDisplayName(sender) : "Unknown");
+        setMatch(matchFound);
         setGame(found);
 
         if (!found) {
           setGameGone(true);
           readNotification(notificationId, currentUser?.userId);
+        } else {
+          const dispute = await fetchActiveDisputeByGame(found.gameId);
+          if (isMounted && dispute) {
+            setActiveDispute(dispute);
+            readNotification(notificationId, currentUser?.userId);
+          }
         }
       } catch (error) {
         console.error("Error loading ladder game approval:", error);
@@ -401,7 +417,8 @@ const LadderGameApprovalModal = ({
   // Gate on the game's own state, not the notification's read flag — reading a
   // notification doesn't resolve the game, and approveLadderGame is the final
   // guard against a double approval.
-  const isDisabled = submitting || gameGone || alreadyApproved;
+  const isDisabled =
+    submitting || gameGone || alreadyApproved || !!activeDispute;
 
   const handleApprove = async () => {
     if (!currentUser?.userId || !game) return;
@@ -441,27 +458,34 @@ const LadderGameApprovalModal = ({
     onClose();
   };
 
-  // ── Decline (ready to implement) ──────────────────────────────────────────
-  // Wire this to declineLadderGame (see LadderContext) and the Decline button
-  // below when the reject flow is built out.
-  //
-  // const handleDecline = async () => {
-  //   if (!currentUser?.userId || !game) return;
-  //   setSubmitting(true);
-  //   await declineLadderGame({
-  //     ladderId,
-  //     matchId,
-  //     gameId: game.gameId,
-  //     userId: currentUser.userId,
-  //   });
-  //   setSubmitting(false);
-  //   await readNotification(
-  //     notificationId,
-  //     currentUser.userId,
-  //     notificationTypes.RESPONSE.DECLINE,
-  //   );
-  //   onClose();
-  // };
+  // Decline just opens the dispute screen — it does not start the dispute. The
+  // disputer composes and submits it there (which creates the dispute doc and
+  // notifies the other players).
+  const handleDecline = () => {
+    if (!game || !match) return;
+    onClose();
+    navigation.navigate("GameDisputeScreen", {
+      ladderId,
+      ladderName,
+      ladderType,
+      matchId,
+      gameId: game.gameId,
+      game,
+      participantIds: match.participants ?? [],
+      matchDate: match.matchDate,
+      matchTime: match.matchTime?.start ?? "",
+      courtName: match.court?.courtName ?? "",
+    });
+  };
+
+  const openDispute = () => {
+    if (!activeDispute) return;
+    onClose();
+    navigation.navigate("GameDisputeScreen", {
+      disputeId: activeDispute.disputeId,
+      ladderId,
+    });
+  };
 
   return (
     <GameApprovalShell visible={visible} onClose={onClose} loading={loading}>
@@ -493,11 +517,17 @@ const LadderGameApprovalModal = ({
         <Description>This game has already been approved.</Description>
       )}
 
+      {activeDispute && (
+        <Description>
+          This game has been{" "}
+          <LinkText onPress={openDispute}>disputed</LinkText>
+        </Description>
+      )}
+
       <ApprovalButtons
-        // Decline is wired for a later phase; see handleDecline above.
-        onDecline={onClose}
+        onDecline={handleDecline}
         onAccept={handleApprove}
-        declineDisabled
+        declineDisabled={isDisabled}
         acceptDisabled={isDisabled}
         submitting={submitting}
       />

@@ -63,6 +63,7 @@ import { LeagueContext } from "../context/LeagueContext";
 import { View } from "react-native";
 import InvitePlayer from "../screens/InvitePlayer";
 import GameScreen from "../screens/GameScreen";
+import GameDisputeScreen from "../screens/GameDisputeScreen";
 // import { getUnitId } from "../utils/getAdMobUnitId";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
@@ -136,6 +137,7 @@ const HomeStack = () => {
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -192,6 +194,7 @@ const ProfileStack = () => {
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -245,6 +248,7 @@ const ChatsStack = () => {
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -297,6 +301,7 @@ const CompetitionsStack = () => {
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}

@@ -14,7 +14,7 @@ import { BlurView } from "expo-blur";
 import { File } from "expo-file-system";
 import { Video } from "react-native-compressor";
 import { COMPETITION_TYPES } from "@shared";
-import { UserProfile, Teams } from "@shared/types";
+import { GameVideoType, UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
 import { GameContext } from "../../context/GameContext";
 
@@ -46,6 +46,9 @@ interface VideoUploadModalProps {
   showAddLaterHint?: boolean;
   /** Ladder games live in a match subcollection; required for ladder uploads. */
   matchId?: string;
+  /** `dispute` uploads are kept out of feeds and need their own videoId. */
+  videoType?: GameVideoType;
+  videoId?: string;
 }
 
 const PROCESSING_MESSAGES = [
@@ -81,6 +84,8 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   iconColor = "#00A2FF",
   showAddLaterHint = true,
   matchId,
+  videoType,
+  videoId,
 }) => {
   const [pickedVideo, setPickedVideo] = useState<PickedVideo | null>(null);
   const [compressedUri, setCompressedUri] = useState<string | null>(null);
@@ -300,6 +305,8 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
         ? Math.round(pickedVideo.duration / 1000)
         : undefined,
       ...(matchId ? { matchId } : {}),
+      ...(videoType ? { videoType } : {}),
+      ...(videoId ? { videoId } : {}),
     });
     setIsUploading(false);
     compressedUriRef.current = null;
