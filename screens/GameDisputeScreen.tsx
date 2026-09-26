@@ -614,6 +614,15 @@ const GameDisputeScreen = () => {
 
   const finalGame = dispute?.finalGame ?? dispute?.disputedGame ?? null;
 
+  const lastEvent = events[lastIndex];
+  const showEvidenceForm =
+    !!lastEvent &&
+    isOpen(lastIndex) &&
+    !isResolved &&
+    canContribute &&
+    (DISPUTE_ADMIN_EVENT_TYPES.includes(eventType(lastEvent)) ||
+      lastEvent.createdBy !== userId);
+
   if (loading) {
     return (
       <Screen>
@@ -754,31 +763,6 @@ const GameDisputeScreen = () => {
                                 )
                               }
                             />
-                            {isLast &&
-                              !isResolved &&
-                              canContribute &&
-                              (DISPUTE_ADMIN_EVENT_TYPES.includes(
-                                eventType(event),
-                              ) ||
-                                event.createdBy !== userId) && (
-                                <EvidenceForm
-                                  title="Add your evidence"
-                                  subtitle="Any player in this game can add a video or a note."
-                                  videoAttached={videoAttached}
-                                  onUploadVideo={() => setUploadVisible(true)}
-                                  courtPositions={courtPositions}
-                                  onEditCourtPositions={() =>
-                                    setCourtVisible(true)
-                                  }
-                                  note={note}
-                                  onChangeNote={setNote}
-                                  onNoteFocus={scrollToForm}
-                                  notePlaceholder="Add anything else the admin should see…"
-                                  submitLabel="Submit evidence"
-                                  submitting={submitting}
-                                  onSubmit={handleSubmitEvidence}
-                                />
-                              )}
                           </StageBody>
                         )}
                       </PhaseCard>
@@ -786,6 +770,24 @@ const GameDisputeScreen = () => {
                   </TimelineRow>
                 );
               })}
+
+              {showEvidenceForm && (
+                <EvidenceForm
+                  title="Add your evidence"
+                  subtitle="Any player in this game can add a video or a note."
+                  videoAttached={videoAttached}
+                  onUploadVideo={() => setUploadVisible(true)}
+                  courtPositions={courtPositions}
+                  onEditCourtPositions={() => setCourtVisible(true)}
+                  note={note}
+                  onChangeNote={setNote}
+                  onNoteFocus={scrollToForm}
+                  notePlaceholder="Add anything else the admin should see…"
+                  submitLabel="Submit evidence"
+                  submitting={submitting}
+                  onSubmit={handleSubmitEvidence}
+                />
+              )}
 
               {isOpener && !isResolved && (
                 <CancelButton
