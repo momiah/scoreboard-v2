@@ -17,6 +17,7 @@ import {
   DISPUTE_STAGE,
   DISPUTE_ACTIVE_STAGES,
   DISPUTE_EVENT_TYPE,
+  DISPUTE_RESOLUTION,
   disputeTimeMs,
   getDisputeEvidenceBlocker,
   hasCourtPositions,
@@ -28,8 +29,23 @@ import type {
   DisputeEvidence,
   Game,
   GameVideo,
+  LadderMatch,
   LadderType,
+  ScoreboardProfile,
+  TeamStats,
+  UserProfile,
 } from "@shared/types";
+import {
+  getDisputePlayerIds,
+  isDoublesDispute,
+  planDisputeResolution,
+} from "@shared/helpers";
+
+const LADDERS = "ladders";
+const LADDER_MATCHES = "ladderMatches";
+const LADDER_TEAMS = "ladderTeams";
+const LADDER_PARTICIPANTS = "ladderParticipants";
+const USERS = "users";
 
 /** All video evidence uploaded for a disputed game (newest first). */
 export const fetchDisputeGameVideos = async (
@@ -279,6 +295,97 @@ export const addDisputeEvidence = async (
     });
   } catch (error) {
     console.error("Error adding dispute evidence:", error);
+    return { success: false, reason: "error" };
+  }
+};
+
+export type CancelDisputeOutcome =
+  | { success: true }
+  | { success: false; reason: "not_opener" | "resolved" | "error" };
+
+/**
+ * The opener withdraws their dispute: the original game is approved and scored
+ * through the shared resolution path (as when an admin keeps the original),
+ * and the dispute closes with a "cancelled" phase.
+ */
+export const cancelDispute = async (
+  disputeId: string,
+  userId: string,
+): Promise<CancelDisputeOutcome> => {
+  if (!disputeId || !userId) return { success: false, reason: "error" };
+  const disputeRef = doc(db, DISPUTES_COLLECTION, disputeId);
+  try {
+    return await runTransaction(db, async (tx) => {
+      const disputeSnap = await tx.get(disputeRef);
+      if (!disputeSnap.exists()) {
+        return { success: false, reason: "error" } as const;
+      }
+      const dispute = disputeSnap.data() as Dispute;
+      if (dispute.openedBy !== userId) {
+        return { success: false, reason: "not_opener" } as const;
+      }
+      if (!DISPUTE_ACTIVE_STAGES.includes(dispute.stage)) {
+        return { success: false, reason: "resolved" } as const;
+      }
+
+      const ladderPath = [LADDERS, dispute.ladderId] as const;
+      const matchRef = doc(
+        db,
+        ...ladderPath,
+        LADDER_MATCHES,
+        dispute.ladderMatchId,
+      );
+      const matchSnap = await tx.get(matchRef);
+      if (!matchSnap.exists()) throw new Error("Match not found");
+      const match = matchSnap.data() as LadderMatch;
+
+      const participantRef = (uid: string) =>
+        doc(db, ...ladderPath, LADDER_PARTICIPANTS, uid);
+      const teamRef = (teamKey: string) =>
+        doc(db, ...ladderPath, LADDER_TEAMS, teamKey);
+      const userRef = (uid: string) => doc(db, USERS, uid);
+      const playerIds = getDisputePlayerIds(dispute.originalGame);
+
+      const [participantSnaps, userSnaps, teamSnaps] = await Promise.all([
+        Promise.all(playerIds.map((uid) => tx.get(participantRef(uid)))),
+        Promise.all(playerIds.map((uid) => tx.get(userRef(uid)))),
+        Promise.all(
+          isDoublesDispute(dispute, match)
+            ? (match.teams ?? []).map((t) => tx.get(teamRef(t.teamKey)))
+            : [],
+        ),
+      ]);
+
+      const plan = await planDisputeResolution({
+        dispute,
+        match,
+        participants: participantSnaps
+          .filter((snap) => snap.exists())
+          .map((snap) => snap.data() as ScoreboardProfile),
+        users: userSnaps
+          .filter((snap) => snap.exists())
+          .map((snap) => snap.data() as UserProfile),
+        ladderTeams: teamSnaps
+          .filter((snap) => snap.exists())
+          .map((snap) => snap.data() as TeamStats),
+        resolution: DISPUTE_RESOLUTION.CANCELLED,
+        actorId: userId,
+        now: new Date(),
+      });
+
+      plan.participants.forEach((p) => {
+        if (p.userId) tx.set(participantRef(p.userId), p);
+      });
+      plan.users.forEach((u) =>
+        tx.update(userRef(u.userId), { profileDetail: u.profileDetail }),
+      );
+      plan.teams.forEach((team) => tx.set(teamRef(team.teamKey), team));
+      tx.update(matchRef, plan.matchUpdate);
+      tx.update(disputeRef, plan.disputeUpdate);
+      return { success: true } as const;
+    });
+  } catch (error) {
+    console.error("Error cancelling dispute:", error);
     return { success: false, reason: "error" };
   }
 };

@@ -3,9 +3,12 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
+  Alert,
+  KeyboardAvoidingView,
   ScrollView,
   ActivityIndicator,
   LayoutAnimation,
@@ -13,7 +16,10 @@ import {
   UIManager,
   TouchableOpacity,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import styled from "styled-components/native";
 import moment from "moment";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,6 +42,7 @@ import {
   DISPUTE_STAGE,
   DISPUTE_RESOLUTION,
   DISPUTE_EVENT_TYPE,
+  DISPUTE_ADMIN_EVENT_TYPES,
   DISPUTE_EVENT_LABELS,
   DISPUTE_EVIDENCE_BLOCKER_MESSAGES,
   DISPUTE_EVIDENCE_WINDOW_HOURS,
@@ -47,6 +54,7 @@ import {
 import type {
   Dispute,
   DisputeEvent,
+  DisputeEventType,
   DisputeEvidence,
   Game,
   GameTeam,
@@ -74,6 +82,7 @@ import {
   subscribeToDispute,
   subscribeToDisputeGameVideos,
   addDisputeEvidence,
+  cancelDispute,
 } from "../services/disputes";
 
 if (
@@ -99,8 +108,6 @@ type GameDisputeParams = {
     courtName?: string;
   };
 };
-
-type Role = "You" | "Teammate" | "Opponent" | "Admin";
 
 const shellFrom = (game: Game): Game => ({
   ...game,
@@ -231,6 +238,7 @@ interface EvidenceFormProps {
   onEditCourtPositions: () => void;
   note: string;
   onChangeNote: (note: string) => void;
+  onNoteFocus?: () => void;
   notePlaceholder: string;
   submitLabel: string;
   submitting: boolean;
@@ -248,6 +256,7 @@ const EvidenceForm = ({
   onEditCourtPositions,
   note,
   onChangeNote,
+  onNoteFocus,
   notePlaceholder,
   submitLabel,
   submitting,
@@ -302,6 +311,7 @@ const EvidenceForm = ({
       <NotesInput
         value={note}
         onChangeText={onChangeNote}
+        onFocus={onNoteFocus}
         placeholder={notePlaceholder}
         placeholderTextColor="#5b7186"
         multiline
@@ -361,6 +371,10 @@ const GameDisputeScreen = () => {
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
   const { pendingUploads } = usePendingUpload(currentUser?.userId);
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollToForm = () =>
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
 
   useEffect(() => {
     if (!disputeId) return;
@@ -415,24 +429,23 @@ const GameDisputeScreen = () => {
       team1Ids.includes(userId) ||
       team2Ids.includes(userId));
 
-  const roleOf = (actorId: string): Role => {
-    if (actorId === userId) return "You";
-    const userTeam = userId && team1Ids.includes(userId) ? team1Ids : team2Ids;
-    if (userTeam.includes(actorId)) return "Teammate";
-    if (team1Ids.includes(actorId) || team2Ids.includes(actorId)) {
-      return "Opponent";
-    }
-    return "Admin";
-  };
-
   const nameOf = (actorId: string): string => {
     if (actorId === DISPUTE_SYSTEM_ACTOR) return "CourtChamps";
     const player = originalGame
       ? playersOf(originalGame).find((p) => p.userId === actorId)
       : undefined;
     if (player) return player.displayName || formatDisplayName(player);
-    return "CourtChamps admin";
+    return "Admin";
   };
+
+  const actorOf = (event: DisputeEvent): string => {
+    if (event.createdBy === DISPUTE_SYSTEM_ACTOR) return "CourtChamps";
+    return DISPUTE_ADMIN_EVENT_TYPES.includes(eventType(event))
+      ? "Admin"
+      : nameOf(event.createdBy);
+  };
+
+  const isOpener = !!userId && dispute?.openedBy === userId;
 
   const buildEvidence = (): DisputeEvidence | null => {
     if (!userId) return null;
@@ -550,6 +563,46 @@ const GameDisputeScreen = () => {
     showBottomToast("Evidence submitted", "success");
   };
 
+  const handleCancelDispute = () => {
+    if (!dispute || !currentUser?.userId) return;
+    Alert.alert(
+      "Cancel dispute?",
+      "The original score will stand and be scored as normal. This can't be undone.",
+      [
+        { text: "Keep dispute", style: "cancel" },
+        {
+          text: "Cancel dispute",
+          style: "destructive",
+          onPress: async () => {
+            setSubmitting(true);
+            const outcome = await cancelDispute(
+              dispute.disputeId,
+              currentUser.userId,
+            );
+            setSubmitting(false);
+            if (!outcome.success) {
+              showBottomToast(
+                outcome.reason === "resolved"
+                  ? "This dispute has already been resolved."
+                  : "Could not cancel the dispute. Please try again.",
+                "error",
+              );
+              return;
+            }
+            await notifyParticipants(
+              dispute.disputeId,
+              `${formatDisplayName(currentUser)} cancelled their dispute in ${
+                dispute.ladderName ?? "the ladder"
+              } — the original score stands.`,
+            );
+            setExpanded({});
+            showBottomToast("Dispute cancelled", "success");
+          },
+        },
+      ],
+    );
+  };
+
   const events = dispute?.events ?? [];
   const lastIndex = events.length - 1;
   const isOpen = (index: number) => expanded[index] ?? index === lastIndex;
@@ -580,150 +633,172 @@ const GameDisputeScreen = () => {
         <HeaderTitle>Game Dispute</HeaderTitle>
       </Header>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 48 }}>
-        {originalGame && (
-          <Block>
-            <BlockTitle>Original result</BlockTitle>
-            <DisputeScoreCard game={originalGame} leagueType={effectiveType} />
-          </Block>
-        )}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={insets.top}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {originalGame && (
+            <Block>
+              <BlockTitle>Original result</BlockTitle>
+              <DisputeScoreCard
+                game={originalGame}
+                leagueType={effectiveType}
+              />
+            </Block>
+          )}
 
-        <Block>
-          <BlockTitle>
-            {isComposing ? "Corrected result" : "Disputed result"}
-          </BlockTitle>
-          {isComposing ? (
-            correctedGame ? (
+          <Block>
+            <BlockTitle>
+              {isComposing ? "Corrected result" : "Disputed result"}
+            </BlockTitle>
+            {isComposing ? (
+              correctedGame ? (
+                <DisputeScoreCard
+                  game={correctedGame}
+                  leagueType={effectiveType}
+                  onPress={() => setEntryVisible(true)}
+                />
+              ) : originalGame ? (
+                <DisputeScoreCard
+                  game={shellFrom(originalGame)}
+                  leagueType={effectiveType}
+                  onPress={() => setEntryVisible(true)}
+                />
+              ) : null
+            ) : dispute?.disputedGame ? (
               <DisputeScoreCard
-                game={correctedGame}
+                game={dispute.disputedGame}
                 leagueType={effectiveType}
-                onPress={() => setEntryVisible(true)}
               />
-            ) : originalGame ? (
-              <DisputeScoreCard
-                game={shellFrom(originalGame)}
-                leagueType={effectiveType}
-                onPress={() => setEntryVisible(true)}
-              />
-            ) : null
-          ) : dispute?.disputedGame ? (
-            <DisputeScoreCard
-              game={dispute.disputedGame}
-              leagueType={effectiveType}
+            ) : null}
+          </Block>
+
+          {isComposing && (
+            <EvidenceForm
+              title="Evidence"
+              subtitle="Add a note or a video so an admin can review the result."
+              videoAttached={videoAttached}
+              onUploadVideo={() => setUploadVisible(true)}
+              courtPositions={courtPositions}
+              onEditCourtPositions={() => setCourtVisible(true)}
+              note={note}
+              onChangeNote={setNote}
+              onNoteFocus={scrollToForm}
+              notePlaceholder="Explain what the correct result should be…"
+              submitLabel="Submit dispute"
+              submitting={submitting}
+              onSubmit={handleOpenDispute}
+              blockedMessage={
+                correctedGame
+                  ? null
+                  : "Tap the card above to enter the corrected score."
+              }
             />
-          ) : null}
-        </Block>
+          )}
 
-        {isComposing && (
-          <EvidenceForm
-            title="Evidence"
-            subtitle="Add a note or a video so an admin can review the result."
-            videoAttached={videoAttached}
-            onUploadVideo={() => setUploadVisible(true)}
-            courtPositions={courtPositions}
-            onEditCourtPositions={() => setCourtVisible(true)}
-            note={note}
-            onChangeNote={setNote}
-            notePlaceholder="Explain what the correct result should be…"
-            submitLabel="Submit dispute"
-            submitting={submitting}
-            onSubmit={handleOpenDispute}
-            blockedMessage={
-              correctedGame
-                ? null
-                : "Tap the card above to enter the corrected score."
-            }
-          />
-        )}
-
-        {dispute && (
-          <Block>
-            <TimelineHeader>Dispute timeline</TimelineHeader>
-            {events.map((event, index) => {
-              const open = isOpen(index);
-              const isFirst = index === 0;
-              const isLast = index === lastIndex;
-              return (
-                <TimelineRow key={`${event.type ?? event.stage}-${index}`}>
-                  <Gutter>
-                    {!isFirst && <LineTop />}
-                    {!isLast && <LineBottom />}
-                    <Dot state={isLast ? "active" : "completed"} />
-                  </Gutter>
-                  <TimelineContent last={isLast}>
-                    <PhaseCard open={open}>
-                      <StageHeader
-                        activeOpacity={0.8}
-                        onPress={() => toggle(index)}
-                      >
-                        <PhaseTitle>
-                          <PhaseTitleRow>
+          {dispute && (
+            <Block>
+              <TimelineHeader>Dispute timeline</TimelineHeader>
+              {events.map((event, index) => {
+                const open = isOpen(index);
+                const isFirst = index === 0;
+                const isLast = index === lastIndex;
+                return (
+                  <TimelineRow key={`${event.type ?? event.stage}-${index}`}>
+                    <Gutter>
+                      {!isFirst && <LineTop />}
+                      {!isLast && <LineBottom />}
+                      <Dot state={isLast ? "active" : "completed"} />
+                    </Gutter>
+                    <TimelineContent last={isLast}>
+                      <PhaseCard open={open}>
+                        <StageHeader
+                          activeOpacity={0.8}
+                          onPress={() => toggle(index)}
+                        >
+                          <PhaseTitle>
                             <StageLabel>{eventLabel(event)}</StageLabel>
-                            {event.createdBy !== DISPUTE_SYSTEM_ACTOR && (
-                              <RoleTag>
-                                <RoleText>{roleOf(event.createdBy)}</RoleText>
-                              </RoleTag>
-                            )}
-                          </PhaseTitleRow>
-                          <StageWhen>
-                            {nameOf(event.createdBy)} ·{" "}
-                            {formatEventDate(event.createdAt)}
-                          </StageWhen>
-                        </PhaseTitle>
-                        <Ionicons
-                          name={open ? "chevron-up" : "chevron-down"}
-                          size={18}
-                          color="#9fb8c8"
-                        />
-                      </StageHeader>
-                      {!open && <EventChips event={event} />}
-                      {open && (
-                        <StageBody>
-                          <PhaseDetail
-                            dispute={dispute}
-                            event={event}
-                            video={
-                              event.videoId
-                                ? videosById[event.videoId]
-                                : undefined
-                            }
-                            finalGame={finalGame}
-                            effectiveType={effectiveType}
-                            onViewCourtPositions={() =>
-                              setViewingPositions(event.courtPositions ?? null)
-                            }
+                            <StageWhen>
+                              {actorOf(event)} ·{" "}
+                              {formatEventDate(event.createdAt)}
+                            </StageWhen>
+                          </PhaseTitle>
+                          <Ionicons
+                            name={open ? "chevron-up" : "chevron-down"}
+                            size={18}
+                            color="#9fb8c8"
                           />
-                        </StageBody>
-                      )}
-                    </PhaseCard>
-                  </TimelineContent>
-                </TimelineRow>
-              );
-            })}
+                        </StageHeader>
+                        {!open && <EventChips event={event} />}
+                        {open && (
+                          <StageBody>
+                            <PhaseDetail
+                              dispute={dispute}
+                              event={event}
+                              video={
+                                event.videoId
+                                  ? videosById[event.videoId]
+                                  : undefined
+                              }
+                              finalGame={finalGame}
+                              effectiveType={effectiveType}
+                              onViewCourtPositions={() =>
+                                setViewingPositions(
+                                  event.courtPositions ?? null,
+                                )
+                              }
+                            />
+                            {isLast &&
+                              !isResolved &&
+                              canContribute &&
+                              (DISPUTE_ADMIN_EVENT_TYPES.includes(
+                                eventType(event),
+                              ) ||
+                                event.createdBy !== userId) && (
+                                <EvidenceForm
+                                  title="Add your evidence"
+                                  subtitle="Any player in this game can add a video or a note."
+                                  videoAttached={videoAttached}
+                                  onUploadVideo={() => setUploadVisible(true)}
+                                  courtPositions={courtPositions}
+                                  onEditCourtPositions={() =>
+                                    setCourtVisible(true)
+                                  }
+                                  note={note}
+                                  onChangeNote={setNote}
+                                  onNoteFocus={scrollToForm}
+                                  notePlaceholder="Add anything else the admin should see…"
+                                  submitLabel="Submit evidence"
+                                  submitting={submitting}
+                                  onSubmit={handleSubmitEvidence}
+                                />
+                              )}
+                          </StageBody>
+                        )}
+                      </PhaseCard>
+                    </TimelineContent>
+                  </TimelineRow>
+                );
+              })}
 
-            {!isResolved && canContribute && (
-              <EvidenceForm
-                title={
-                  dispute.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
-                    ? "The admin has requested more evidence"
-                    : "Add your evidence"
-                }
-                subtitle="Any player in this game can add a video or a note."
-                videoAttached={videoAttached}
-                onUploadVideo={() => setUploadVisible(true)}
-                courtPositions={courtPositions}
-                onEditCourtPositions={() => setCourtVisible(true)}
-                note={note}
-                onChangeNote={setNote}
-                notePlaceholder="Add anything else the admin should see…"
-                submitLabel="Submit evidence"
-                submitting={submitting}
-                onSubmit={handleSubmitEvidence}
-              />
-            )}
-          </Block>
-        )}
-      </ScrollView>
+              {isOpener && !isResolved && (
+                <CancelButton
+                  disabled={submitting}
+                  onPress={handleCancelDispute}
+                >
+                  <CancelText>Cancel dispute</CancelText>
+                </CancelButton>
+              )}
+            </Block>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {originalGame && (
         <AddTournamentGameModal
@@ -792,14 +867,16 @@ const GameDisputeScreen = () => {
   );
 };
 
+const eventType = (event: DisputeEvent): DisputeEventType =>
+  event.type ??
+  (event.stage === DISPUTE_STAGE.RESOLVED
+    ? DISPUTE_EVENT_TYPE.RESOLVED
+    : event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
+      ? DISPUTE_EVENT_TYPE.EVIDENCE_REQUESTED
+      : DISPUTE_EVENT_TYPE.EVIDENCE_SUBMITTED);
+
 const eventLabel = (event: DisputeEvent): string =>
-  event.type
-    ? DISPUTE_EVENT_LABELS[event.type]
-    : event.stage === DISPUTE_STAGE.RESOLVED
-      ? DISPUTE_EVENT_LABELS.resolved
-      : event.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED
-        ? DISPUTE_EVENT_LABELS.evidence_requested
-        : DISPUTE_EVENT_LABELS.evidence_submitted;
+  DISPUTE_EVENT_LABELS[eventType(event)];
 
 const EventChips = ({ event }: { event: DisputeEvent }) => {
   const chips = [
@@ -836,6 +913,14 @@ const PhaseDetail = ({
   effectiveType: LadderType;
   onViewCourtPositions: () => void;
 }) => {
+  if (event.type === DISPUTE_EVENT_TYPE.CANCELLED) {
+    return (
+      <DetailText>
+        The dispute was cancelled by the player who opened it. The original
+        score stands.
+      </DetailText>
+    );
+  }
   if (event.type === DISPUTE_EVENT_TYPE.VOIDED) {
     return (
       <DetailText>
@@ -1145,27 +1230,6 @@ const StageHeader = styled.TouchableOpacity({
 
 const PhaseTitle = styled.View({ flex: 1 });
 
-const PhaseTitleRow = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  flexWrap: "wrap",
-  gap: 6,
-});
-
-const RoleTag = styled.View({
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.12)",
-  borderRadius: 4,
-  paddingHorizontal: 5,
-  paddingVertical: 1,
-});
-
-const RoleText = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 10,
-  fontWeight: "600",
-});
-
 const ChipRow = styled.View({
   flexDirection: "row",
   flexWrap: "wrap",
@@ -1252,6 +1316,24 @@ const DisputeVideo = styled(VideoView)({
   height: 200,
   borderRadius: 8,
   backgroundColor: "#000",
+});
+
+const CancelButton = styled.TouchableOpacity<{ disabled?: boolean }>(
+  ({ disabled }: { disabled?: boolean }) => ({
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#f87171",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    opacity: disabled ? 0.5 : 1,
+  }),
+);
+
+const CancelText = styled.Text({
+  color: "#f87171",
+  fontWeight: "bold",
+  fontSize: 14,
 });
 
 export default GameDisputeScreen;

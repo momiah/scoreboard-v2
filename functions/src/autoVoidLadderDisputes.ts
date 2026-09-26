@@ -4,28 +4,23 @@ import * as admin from "firebase-admin";
 import { notificationSchema, notificationTypes } from "courtchamps-shared";
 import {
   DISPUTES_COLLECTION,
-  DISPUTE_EVENT_TYPE,
   DISPUTE_EVIDENCE_WINDOW_HOURS,
   DISPUTE_RESOLUTION,
   DISPUTE_STAGE,
   DISPUTE_SYSTEM_ACTOR,
-  LADDER_MATCH_STATUS,
-  LADDER_TYPE,
   isDisputeEvidenceOverdue,
 } from "courtchamps-shared/types";
 import type {
   Dispute,
-  DisputeEvent,
-  Game,
   LadderMatch,
   ScoreboardProfile,
   TeamStats,
   UserProfile,
 } from "courtchamps-shared/types";
 import {
-  resolveLadderMatchOutcome,
-  scoreDoublesLadderGame,
-  scoreSinglesLadderGame,
+  getDisputePlayerIds,
+  isDoublesDispute,
+  planDisputeResolution,
 } from "courtchamps-shared/helpers";
 
 import { sendNotification } from "./helpers/sendNotification";
@@ -36,17 +31,11 @@ const LADDER_TEAMS = "ladderTeams";
 const LADDER_PARTICIPANTS = "ladderParticipants";
 const USERS = "users";
 
-const pruneUndefined = <T>(value: T): T =>
-  Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      ([, v]) => v !== undefined,
-    ),
-  ) as T;
-
 /**
  * Void a dispute whose evidence request went unanswered: the original game is
- * approved and scored exactly as the website's "Keep original" action does,
- * the match completes if decided, and the dispute resolves as `void`.
+ * approved and scored through the same shared path as the website's "Keep
+ * original", the match completes if decided, and the dispute resolves as
+ * `void`.
  */
 const voidDispute = async (
   db: admin.firestore.Firestore,
@@ -59,138 +48,58 @@ const voidDispute = async (
     const dispute = disputeSnap.data() as Dispute;
     if (!isDisputeEvidenceOverdue(dispute, nowMs)) return null;
 
-    const finalGame = pruneUndefined<Game>({
-      ...dispute.originalGame,
-      approvalStatus: notificationTypes.RESPONSE.APPROVED_GAME,
-    });
-
-    const matchRef = db
-      .collection(LADDERS)
-      .doc(dispute.ladderId)
+    const ladderRef = db.collection(LADDERS).doc(dispute.ladderId);
+    const matchRef = ladderRef
       .collection(LADDER_MATCHES)
       .doc(dispute.ladderMatchId);
     const matchSnap = await tx.get(matchRef);
     if (!matchSnap.exists) throw new Error("Match not found");
-
     const match = matchSnap.data() as LadderMatch;
-    if (match.matchStatus === LADDER_MATCH_STATUS.COMPLETED) {
-      throw new Error("Match has already been completed");
-    }
 
-    const games = match.games ?? [];
-    const index = games.findIndex((g) => g.gameId === dispute.gameId);
-    if (index === -1) throw new Error("Game not found in match");
-
-    const nextGames = [...games];
-    nextGames[index] = finalGame;
-
-    const outcome = resolveLadderMatchOutcome(
-      nextGames,
-      match.bestOf ?? nextGames.length,
-    );
-    const matchDecided = outcome.decided && !!outcome.winnerTeam;
-
-    const playerUserIds = [
-      finalGame.team1.player1?.userId,
-      finalGame.team1.player2?.userId,
-      finalGame.team2.player1?.userId,
-      finalGame.team2.player2?.userId,
-    ].filter((id): id is string => Boolean(id));
-
-    const isDoubles =
-      (match.teams?.length ?? 0) >= 2 ||
-      dispute.ladderType === LADDER_TYPE.DOUBLES;
-
-    const ladderRef = db.collection(LADDERS).doc(dispute.ladderId);
     const participantRef = (uid: string) =>
       ladderRef.collection(LADDER_PARTICIPANTS).doc(uid);
     const teamRef = (teamKey: string) =>
       ladderRef.collection(LADDER_TEAMS).doc(teamKey);
+    const userRef = (uid: string) => db.collection(USERS).doc(uid);
+    const playerIds = getDisputePlayerIds(dispute.originalGame);
 
     const [participantSnaps, userSnaps, teamSnaps] = await Promise.all([
-      Promise.all(playerUserIds.map((uid) => tx.get(participantRef(uid)))),
+      Promise.all(playerIds.map((uid) => tx.get(participantRef(uid)))),
+      Promise.all(playerIds.map((uid) => tx.get(userRef(uid)))),
       Promise.all(
-        playerUserIds.map((uid) => tx.get(db.collection(USERS).doc(uid))),
-      ),
-      Promise.all(
-        isDoubles
+        isDoublesDispute(dispute, match)
           ? (match.teams ?? []).map((t) => tx.get(teamRef(t.teamKey)))
           : [],
       ),
     ]);
 
-    const participants = participantSnaps
-      .filter((snap) => snap.exists)
-      .map((snap) => snap.data() as ScoreboardProfile);
-    const users = userSnaps
-      .filter((snap) => snap.exists)
-      .map((snap) => snap.data() as UserProfile);
-    const ladderTeams = teamSnaps
-      .filter((snap) => snap.exists)
-      .map((snap) => snap.data() as TeamStats);
-
-    const persistUsers = () =>
-      users.forEach((u) => {
-        if (!u.userId) return;
-        tx.update(db.collection(USERS).doc(u.userId), {
-          profileDetail: u.profileDetail,
-        });
-      });
-
-    if (isDoubles) {
-      const { scoringParticipants, teams } = await scoreDoublesLadderGame({
-        game: finalGame,
-        participants,
-        users,
-        ladderTeams,
-        matchDecided,
-        matchWinnerSide: outcome.winnerTeam,
-      });
-      scoringParticipants.forEach((p) => {
-        if (p.userId) tx.set(participantRef(p.userId), p);
-      });
-      persistUsers();
-      teams.forEach((team) => tx.set(teamRef(team.teamKey), team));
-    } else {
-      scoreSinglesLadderGame({
-        game: finalGame,
-        participants,
-        users,
-        matchDecided,
-        matchWinnerSide: outcome.winnerTeam,
-      });
-      participants.forEach((p) => {
-        if (p.userId) tx.set(participantRef(p.userId), p);
-      });
-      persistUsers();
-    }
-
     const now = new Date(nowMs);
-    const matchUpdate: Record<string, unknown> = {
-      games: nextGames,
-      lastUpdated: now,
-    };
-    if (matchDecided) {
-      matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
-      matchUpdate.completedAt = now;
-    }
-    tx.update(matchRef, matchUpdate);
-
-    const event: DisputeEvent = {
-      type: DISPUTE_EVENT_TYPE.VOIDED,
-      stage: DISPUTE_STAGE.RESOLVED,
-      createdBy: DISPUTE_SYSTEM_ACTOR,
-      createdAt: now,
-    };
-    tx.update(disputeRef, {
-      stage: DISPUTE_STAGE.RESOLVED,
+    const plan = await planDisputeResolution({
+      dispute,
+      match,
+      participants: participantSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as ScoreboardProfile),
+      users: userSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as UserProfile),
+      ladderTeams: teamSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as TeamStats),
       resolution: DISPUTE_RESOLUTION.VOID,
-      finalGame,
-      evidenceDueAt: null,
-      resolvedAt: now,
-      resolvedBy: DISPUTE_SYSTEM_ACTOR,
-      events: [...(dispute.events ?? []), event],
+      actorId: DISPUTE_SYSTEM_ACTOR,
+      now,
     });
+
+    plan.participants.forEach((p) => {
+      if (p.userId) tx.set(participantRef(p.userId), p);
+    });
+    plan.users.forEach((u) =>
+      tx.update(userRef(u.userId), { profileDetail: u.profileDetail }),
+    );
+    plan.teams.forEach((team) => tx.set(teamRef(team.teamKey), team));
+    tx.update(matchRef, plan.matchUpdate);
+    tx.update(disputeRef, plan.disputeUpdate);
 
     return dispute;
   });
