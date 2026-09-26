@@ -18,8 +18,9 @@ import {
   DISPUTE_ACTIVE_STAGES,
   DISPUTE_EVENT_TYPE,
   DISPUTE_RESOLUTION,
-  disputeTimeMs,
+  canUploadDisputeVideo,
   getDisputeEvidenceBlocker,
+  getDisputeSubmissionType,
   hasCourtPositions,
 } from "@shared/types";
 import type {
@@ -47,31 +48,14 @@ const LADDER_TEAMS = "ladderTeams";
 const LADDER_PARTICIPANTS = "ladderParticipants";
 const USERS = "users";
 
-/** All video evidence uploaded for a disputed game (newest first). */
-export const fetchDisputeGameVideos = async (
-  gameId: string,
-): Promise<GameVideo[]> => {
-  if (!gameId) return [];
-  try {
-    const snap = await getDocs(
-      query(
-        collection(db, COLLECTION_NAMES.gameVideos),
-        where("gameId", "==", gameId),
-      ),
-    );
-    return snap.docs
-      .map((d) => d.data() as GameVideo)
-      .sort((a, b) => disputeTimeMs(b.createdAt) - disputeTimeMs(a.createdAt));
-  } catch (error) {
-    console.error("Error fetching dispute videos:", error);
-    return [];
-  }
-};
-
-/** Live game videos for a disputed game, so another player's upload appears as it lands. */
+/**
+ * Live videos for a disputed game keyed by their `gameVideos` doc id (what
+ * dispute events store as `videoId`), so another player's upload appears as it
+ * lands.
+ */
 export const subscribeToDisputeGameVideos = (
   gameId: string,
-  onChange: (videos: GameVideo[]) => void,
+  onChange: (videosById: Record<string, GameVideo>) => void,
 ): (() => void) => {
   if (!gameId) return () => {};
   return onSnapshot(
@@ -79,7 +63,10 @@ export const subscribeToDisputeGameVideos = (
       collection(db, COLLECTION_NAMES.gameVideos),
       where("gameId", "==", gameId),
     ),
-    (snap) => onChange(snap.docs.map((d) => d.data() as GameVideo)),
+    (snap) =>
+      onChange(
+        Object.fromEntries(snap.docs.map((d) => [d.id, d.data() as GameVideo])),
+      ),
     (error) => console.error("Error listening to dispute videos:", error),
   );
 };
@@ -252,10 +239,14 @@ const isValidEvidence = (evidence: DisputeEvidence): boolean =>
 
 export type AddDisputeEvidenceOutcome =
   | { success: true }
-  | { success: false; reason: "invalid" | "resolved" | "error" };
+  | {
+      success: false;
+      reason: "invalid" | "resolved" | "video_limit" | "error";
+    };
 
 /**
- * Append one participant's evidence as its own timeline phase. Any participant
+ * Append one participant's evidence (or a note on its own) as its own
+ * timeline phase. Any participant
  * can submit while the dispute is unresolved; a submission moves the dispute to
  * `under_review` (flagging it for the admin) and clears any void deadline.
  */
@@ -279,9 +270,15 @@ export const addDisputeEvidence = async (
       if (!(dispute.participantIds ?? []).includes(userId)) {
         return { success: false, reason: "invalid" } as const;
       }
+      if (
+        evidence.videoId &&
+        !canUploadDisputeVideo(dispute.events ?? [], userId)
+      ) {
+        return { success: false, reason: "video_limit" } as const;
+      }
       const event: DisputeEvent = pruneUndefined({
         ...evidence,
-        type: DISPUTE_EVENT_TYPE.EVIDENCE_SUBMITTED,
+        type: getDisputeSubmissionType(evidence),
         stage: DISPUTE_STAGE.UNDER_REVIEW,
         createdBy: userId,
         createdAt: new Date(),

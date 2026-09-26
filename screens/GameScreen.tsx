@@ -32,6 +32,7 @@ import {
   notificationSchema,
 } from "@shared";
 import {
+  GAME_VIDEO_TYPE,
   GameVideo,
   GameTeam,
   Player,
@@ -218,6 +219,7 @@ const GameScreen: React.FC = () => {
       collection(db, COLLECTION_NAMES.gameVideos),
       where("gameId", "==", gameId),
       where("videoApproved", "==", true),
+      where("videoType", "==", GAME_VIDEO_TYPE.GAME),
     );
 
     const unsubscribe = onSnapshot(
