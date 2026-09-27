@@ -6,7 +6,6 @@ import {
   onSnapshot,
   query,
   runTransaction,
-  setDoc,
   where,
 } from "firebase/firestore";
 
@@ -186,10 +185,30 @@ export const createDispute = async (
       resolvedBy: null,
     };
 
-    await setDoc(
-      doc(db, DISPUTES_COLLECTION, disputeId),
-      pruneUndefined(dispute),
+    const disputeRef = doc(db, DISPUTES_COLLECTION, disputeId);
+    const matchRef = doc(
+      db,
+      LADDERS,
+      input.ladderId,
+      LADDER_MATCHES,
+      input.ladderMatchId,
     );
+
+    // Write the dispute and flag its game as `disputed` in the match together,
+    // so the fixture list shows the pill. Resolution reverts the game's status
+    // through the shared resolution path (getDisputeFinalGame).
+    await runTransaction(db, async (tx) => {
+      const matchSnap = await tx.get(matchRef);
+      tx.set(disputeRef, pruneUndefined(dispute));
+      if (!matchSnap.exists()) return;
+      const match = matchSnap.data() as LadderMatch;
+      const games = match.games ?? [];
+      const index = games.findIndex((g) => g.gameId === input.gameId);
+      if (index === -1) return;
+      const nextGames = [...games];
+      nextGames[index] = { ...nextGames[index], approvalStatus: "disputed" };
+      tx.update(matchRef, { games: nextGames });
+    });
     return { success: true, disputeId };
   } catch (error) {
     console.error("Error creating dispute:", error);

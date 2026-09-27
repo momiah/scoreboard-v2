@@ -47,9 +47,11 @@ export const FixtureScoreDisplay = ({ game }) => {
   const statusLabel =
     approvalStatus === "Scheduled"
       ? "Scheduled"
-      : approvalStatus === "pending" || approvalStatus === "Pending"
-        ? "Pending Approval"
-        : null;
+      : approvalStatus === "disputed"
+        ? "Disputed"
+        : approvalStatus === "pending" || approvalStatus === "Pending"
+          ? "Pending Approval"
+          : null;
 
   return (
     <FixtureResultsContainer>
@@ -344,7 +346,9 @@ export const FixtureStatusLabel = styled.Text(({ status }) => ({
       ? "rgba(0, 162, 255, 0.6)"
       : status === "Approved" || status === "approved"
         ? "rgba(0, 255, 0, 0.6)"
-        : "rgba(255, 165, 0, 0.6)",
+        : status === "disputed"
+          ? "rgba(255, 59, 48, 0.7)"
+          : "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,
   overflow: "hidden",
 }));
