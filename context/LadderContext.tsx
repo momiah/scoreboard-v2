@@ -48,6 +48,7 @@ import {
   buildLadderParticipant,
   resolveLadderMatchOutcome,
   getReportableLadderGameId,
+  hasOpenLadderDispute,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
 import type {
@@ -1536,8 +1537,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               nextGames,
               match.bestOf ?? nextGames.length,
             );
+            // Hold completion while any game is disputed — a contested match is
+            // not settled until every dispute resolves.
             const matchDecided =
-              !alreadyCompleted && outcome.decided && !!outcome.winnerTeam;
+              !alreadyCompleted &&
+              outcome.decided &&
+              !!outcome.winnerTeam &&
+              !hasOpenLadderDispute(nextGames);
 
             const persistUsers = () =>
               users.forEach((u) => {
