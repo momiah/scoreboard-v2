@@ -931,9 +931,6 @@ const eventLabel = (event: DisputeEvent): string =>
 const EventChips = ({ event }: { event: DisputeEvent }) => {
   const chips = [
     event.videoId && "Video",
-    event.courtPositions &&
-      hasCourtPositions(event.courtPositions) &&
-      "Court positions",
     event.note && "Note",
   ].filter((chip): chip is string => Boolean(chip));
   if (!chips.length) return null;
