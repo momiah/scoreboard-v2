@@ -1302,7 +1302,7 @@ const NoteBox = styled.View({
 });
 
 const AdminNote = styled.View({
-  backgroundColor: "rgba(197,139,255,0.1)",
+  backgroundColor: "rgba(0,162,255,0.1)",
   borderRadius: 8,
   padding: 10,
   gap: 2,
