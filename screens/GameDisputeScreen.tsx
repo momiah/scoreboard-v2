@@ -988,7 +988,9 @@ const PhaseDetail = ({
             : "The original result stands."}
         </DetailText>
         {finalGame && (
-          <DisputeScoreCard game={finalGame} leagueType={effectiveType} />
+          <ResolvedScore>
+            <DisputeScoreCard game={finalGame} leagueType={effectiveType} />
+          </ResolvedScore>
         )}
         {dispute.adminNotes ? (
           <AdminNote>
@@ -1088,6 +1090,14 @@ const HeaderTitle = styled.Text({
 });
 
 const Block = styled.View({ marginBottom: 20 });
+
+// Cancel the phase's asymmetric insets (gutter 24 + content 8 + phase 12 on the
+// left, phase 12 on the right) so the score card spans the full timeline width
+// and reads centred instead of pushed right.
+const ResolvedScore = styled.View({
+  marginLeft: -44,
+  marginRight: -12,
+});
 
 const ScoreCard = styled.View({
   flexDirection: "row",
