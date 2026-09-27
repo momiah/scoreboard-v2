@@ -570,9 +570,9 @@ const GameDisputeScreen = () => {
     }
     await notifyParticipants(
       dispute.disputeId,
-      `${formatDisplayName(currentUser)} added evidence to a disputed game in ${
-        dispute.ladderName ?? "the ladder"
-      }`,
+      `${formatDisplayName(currentUser)} added ${
+        evidence.videoId ? "evidence" : "a note"
+      } to a disputed game in ${dispute.ladderName ?? "the ladder"}`,
     );
     resetForm();
     setExpanded({});
@@ -929,10 +929,9 @@ const eventLabel = (event: DisputeEvent): string =>
   DISPUTE_EVENT_LABELS[eventType(event)];
 
 const EventChips = ({ event }: { event: DisputeEvent }) => {
-  const chips = [
-    event.videoId && "Video",
-    event.note && "Note",
-  ].filter((chip): chip is string => Boolean(chip));
+  const chips = [event.videoId && "Video", event.note && "Note"].filter(
+    (chip): chip is string => Boolean(chip),
+  );
   if (!chips.length) return null;
   return (
     <ChipRow>
