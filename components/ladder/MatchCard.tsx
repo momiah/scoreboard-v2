@@ -6,10 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LADDER_MATCH_STATUS } from "@shared";
 import type { LadderMatch } from "@shared/types";
 
-import {
-  formatMatchDateShort,
-  isMatchDayPassed,
-} from "../../helpers/ladderMatchTime";
+import { formatMatchDateShort } from "../../helpers/ladderMatchTime";
 import {
   getLadderMatchProgress,
   getLadderMatchOutcome,
@@ -61,12 +58,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-  const isPosted = match.matchStatus === LADDER_MATCH_STATUS.POSTED;
-  // Completed matches, or accepted ones whose play date has passed (a prior
-  // day), read as done: dimmed but still pressable (view result / report late).
-  // A match scheduled for today stays full contrast all day, and a still-open
-  // posted match never dims. The flat header variant always keeps full contrast.
-  const dimmed = !flat && (isCompleted || (isMatchDayPassed(match) && !isPosted));
+  const isCancelled = match.matchStatus === LADDER_MATCH_STATUS.CANCELLED;
+  // Only a terminal match reads as done: dim once completed or cancelled. A
+  // match that is merely past its scheduled time stays full contrast (it may
+  // still be played/reported late, and inactivity auto-cancels it anyway). The
+  // flat header variant always keeps full contrast.
+  const dimmed = !flat && (isCompleted || isCancelled);
 
   const status = deriveLadderMatchStatus(match, {
     selfCheckedIn: !!checkin?.checkedIn,
