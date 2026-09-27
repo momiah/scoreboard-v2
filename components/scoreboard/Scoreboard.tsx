@@ -256,6 +256,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
           const isPending =
             item.approvalStatus === "pending" ||
             item.approvalStatus === "Pending";
+          const isDisputed = item.approvalStatus === "disputed";
           const isHighlighted = item.gameId === highlightedGameId;
 
           return (
@@ -265,7 +266,7 @@ const Scoreboard: React.FC<ScoreboardProps> = ({
               )}
               <GameContainer
                 onPress={() => handleGamePress(item)}
-                style={{ opacity: isPending ? 0.6 : 1 }}
+                style={{ opacity: isPending || isDisputed ? 0.6 : 1 }}
               >
                 <TeamColumn
                   team="left"

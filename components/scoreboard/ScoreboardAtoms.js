@@ -25,9 +25,12 @@ export const TeamColumn = ({ team, players = {}, leagueType }) => (
 export const ScoreDisplay = ({ date, team1, team2, item }) => {
   const isPending =
     item.approvalStatus === "pending" || item.approvalStatus === "Pending";
+  const isDisputed = item.approvalStatus === "disputed";
   const videoCount = item.videoCount ?? 0;
   return (
-    <ResultsContainer style={!isPending ? { paddingBottom: 20 } : undefined}>
+    <ResultsContainer
+      style={!isPending && !isDisputed ? { paddingBottom: 20 } : undefined}
+    >
       <DateText>{moment(date, "DD-MM-YYYY").format("D MMM YY")}</DateText>
       <ScoreContainer>
         <Score>
@@ -35,6 +38,7 @@ export const ScoreDisplay = ({ date, team1, team2, item }) => {
         </Score>
       </ScoreContainer>
       {isPending && <PendingLabel>Pending Approval</PendingLabel>}
+      {isDisputed && <DisputedLabel>Disputed</DisputedLabel>}
       {videoCount > 0 && (
         <VideoIndicator>
           <Ionicons
@@ -70,6 +74,17 @@ const PendingLabel = styled.Text({
   fontSize: 9,
   color: "white",
   backgroundColor: "rgba(255, 165, 0, 0.6)",
+  borderRadius: 4,
+  overflow: "hidden",
+});
+
+const DisputedLabel = styled.Text({
+  paddingHorizontal: 6,
+  paddingVertical: 2,
+  marginTop: 10,
+  fontSize: 9,
+  color: "white",
+  backgroundColor: "rgba(255, 59, 48, 0.7)",
   borderRadius: 4,
   overflow: "hidden",
 });
