@@ -105,7 +105,9 @@ export const FixtureGameItem = ({
   locked = false,
 }) => {
   const dimmed =
-    game.approvalStatus === "pending" || game.approvalStatus === "Pending";
+    game.approvalStatus === "pending" ||
+    game.approvalStatus === "Pending" ||
+    game.approvalStatus === "disputed";
   return (
     <FixtureGameOuter ref={innerRef}>
       <FixtureGameContainer
