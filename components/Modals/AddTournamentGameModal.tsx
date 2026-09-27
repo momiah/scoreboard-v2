@@ -279,15 +279,8 @@ const AddTournamentGameModal = ({
     setLoading(false);
     resetForm();
 
-    // The tournament flow follows submit with an optional video upload; the
-    // ladder video pipeline is wired in a later phase, so for ladders we just
-    // confirm the report and close.
-    if (ladder) {
-      onClose();
-      showBottomToast("Score sent to your opponent for approval", "success");
-      return;
-    }
-
+    // Both flows follow submit with an optional video upload; the modal is
+    // pointed at the ladder match subcollection or the tournament below.
     setSubmittedGame({
       gameId: game.gameId,
       gamescore,
@@ -380,12 +373,20 @@ const AddTournamentGameModal = ({
           onClose={() => {
             setSubmittedGame(null);
             onClose();
-            showBottomToast("Game published!", "success");
+            showBottomToast(
+              ladder
+                ? "Score sent to your opponent for approval"
+                : "Game published!",
+              "success",
+            );
           }}
           gameId={submittedGame.gameId}
-          competitionId={tournamentId}
-          competitionName={tournamentName}
-          competitionType={COMPETITION_TYPES.TOURNAMENT}
+          competitionId={ladder ? ladder.ladderId : tournamentId}
+          competitionName={ladder ? ladder.name : tournamentName}
+          competitionType={
+            ladder ? COMPETITION_TYPES.LADDER : COMPETITION_TYPES.TOURNAMENT
+          }
+          matchId={ladder ? ladder.matchId : undefined}
           gamescore={submittedGame.gamescore}
           date={submittedGame.date}
           teams={submittedGame.teams}
