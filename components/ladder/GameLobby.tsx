@@ -1,5 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
-import { ScrollView, LayoutAnimation, Platform, UIManager } from "react-native";
+import {
+  ScrollView,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  View,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -27,6 +33,7 @@ import { GameContext } from "../../context/GameContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
+import { useFixturesScrollToGame } from "../Tournaments/Fixtures/useFixturesScrollToGame";
 import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
@@ -50,6 +57,10 @@ interface GameLobbyProps {
   match: LadderMatch;
   currentUserId?: string;
   checkedIn: boolean;
+  /** Scroll to and glow this game on mount (e.g. from a dispute link). */
+  highlightGameId?: string;
+  /** Glow colour for the highlighted game; defaults to the ladder blue. */
+  highlightColor?: string;
 }
 
 const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
@@ -70,6 +81,8 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   match,
   currentUserId,
   checkedIn,
+  highlightGameId,
+  highlightColor = "#00A2FF",
 }) => {
   const { getUserById, currentUser } = useContext(UserContext);
   const { fetchLadderTeams, fetchLadderParticipants } =
@@ -100,6 +113,10 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     match.games ?? [],
     match.bestOf ?? (match.games?.length ?? 0),
   );
+
+  // Scroll to and glow a game when linked here (e.g. from a dispute).
+  const { scrollRef, gameRefs, highlightedGameId, glowAnim } =
+    useFixturesScrollToGame(highlightGameId);
   const gamesLocked = isCompleted || !allCheckedIn;
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
@@ -400,6 +417,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   return (
     <Screen>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ paddingVertical: 20, paddingBottom: 40 }}
       >
         <PaddedBlock>
@@ -519,10 +537,12 @@ const GameLobby: React.FC<GameLobbyProps> = ({
                   isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES
                 }
                 onPress={handleGamePress}
-                innerRef={undefined}
-                glowAnim={undefined}
-                isHighlighted={false}
-                glowColor="#00A2FF"
+                innerRef={(node: View | null) => {
+                  if (node) gameRefs.current[game.gameId] = node;
+                }}
+                glowAnim={glowAnim}
+                isHighlighted={game.gameId === highlightedGameId}
+                glowColor={highlightColor}
                 locked={
                   !gamesLocked &&
                   !isReported &&

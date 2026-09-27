@@ -422,6 +422,10 @@ const GameDisputeScreen = () => {
       matchId: effectiveMatchId,
       ladderType: effectiveType,
       ladderName: effectiveLadderName,
+      ...(effectiveGameId && {
+        highlightGameId: effectiveGameId,
+        highlightColor: "#FF3B30",
+      }),
     });
   };
 
