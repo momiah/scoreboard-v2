@@ -14,6 +14,7 @@ import { BlurView } from "expo-blur";
 import { File } from "expo-file-system";
 import { Video } from "react-native-compressor";
 import { COMPETITION_TYPES } from "@shared";
+import { GAME_VIDEO_TYPE } from "@shared/types";
 import { GameVideoType, UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
 import { GameContext } from "../../context/GameContext";
@@ -135,8 +136,12 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     if (video.fileSize && video.fileSize > 6 * 1024 * 1024 * 1024) {
       return "Video is too large. Please select a video under 6GB.";
     }
-    if (video.duration && video.duration < 180000) {
-      return "Video is too short. Please upload a full game of at least 3 minutes.";
+    const isDispute = videoType === GAME_VIDEO_TYPE.DISPUTE;
+    const minDuration = isDispute ? 60000 : 180000;
+    if (video.duration && video.duration < minDuration) {
+      return isDispute
+        ? "Clip is too short. Please upload at least 1 minute so the incident has context."
+        : "Video is too short. Please upload a full game of at least 3 minutes.";
     }
     if (video.duration && video.duration > 900000) {
       return "Video is too long. Please select a video under 15 minutes.";
