@@ -31,6 +31,10 @@ merged (the pinned commit must exist on `main` first).
   Never push to a randomly generated session branch (e.g. `claude/stoic-keller-ergc6k`);
   continue the existing feature branch or create a descriptively named one,
   in every repo, including `courtchamps-shared`.
+- Data backfills: write a client-SDK function in `devFunctions/` (using `db`
+  from `services/firebase.config`, like `backfillLeagueCountryCode.js`) and
+  expose it via a temporary `TouchableOpacity` on the Home screen for the user
+  to tap. Do not write admin-SDK scripts that need gcloud or service-account keys.
 - No pull requests unless explicitly asked (the shared PR above is the exception,
   since landing shared changes requires one).
 - No explanatory code comments unless they are load-bearing or marking a stub.

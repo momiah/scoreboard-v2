@@ -48,6 +48,7 @@ import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
+import { backfillGameVideoType } from "@/devFunctions/backfillGameVideoType";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
 const VIEWABILITY_CONFIG: ViewabilityConfig = {
@@ -227,6 +228,15 @@ const Home = () => {
         >
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
+
+        <TouchableOpacity
+          onPress={async () => {
+            const result = await backfillGameVideoType();
+            console.log("backfillGameVideoType", result);
+          }}
+        >
+          <Text style={{ color: "white" }}>Backfill video type</Text>
+        </TouchableOpacity>
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
