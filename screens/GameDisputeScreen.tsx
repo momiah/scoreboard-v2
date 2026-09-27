@@ -407,6 +407,24 @@ const GameDisputeScreen = () => {
   const isResolved = dispute?.stage === DISPUTE_STAGE.RESOLVED;
   const userId = currentUser?.userId;
 
+  const effectiveLadderId = dispute?.ladderId ?? ladderId;
+  const effectiveMatchId = dispute?.ladderMatchId ?? matchId;
+  const effectiveLadderName = dispute?.ladderName ?? ladderName;
+
+  const goToLadder = () => {
+    if (!effectiveLadderId) return;
+    navigation.navigate("Ladder", { ladderId: effectiveLadderId });
+  };
+  const goToMatch = () => {
+    if (!effectiveLadderId || !effectiveMatchId) return;
+    navigation.navigate("MatchDetails", {
+      ladderId: effectiveLadderId,
+      matchId: effectiveMatchId,
+      ladderType: effectiveType,
+      ladderName: effectiveLadderName,
+    });
+  };
+
   useEffect(() => {
     if (!dispute?.gameId) return;
     return subscribeToDisputeGameVideos(dispute.gameId, setVideosById);
@@ -669,6 +687,35 @@ const GameDisputeScreen = () => {
           contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
           keyboardShouldPersistTaps="handled"
         >
+          {(effectiveLadderId || effectiveMatchId) && (
+            <MatchLinks>
+              {effectiveLadderId ? (
+                <LinkRow activeOpacity={0.8} onPress={goToLadder}>
+                  <Ionicons name="trophy-outline" size={16} color="#00A2FF" />
+                  <LinkText numberOfLines={1}>
+                    {effectiveLadderName || "View ladder"}
+                  </LinkText>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color="#5f7d99"
+                  />
+                </LinkRow>
+              ) : null}
+              {effectiveLadderId && effectiveMatchId ? (
+                <LinkRow activeOpacity={0.8} onPress={goToMatch}>
+                  <Ionicons name="tennisball-outline" size={16} color="#00A2FF" />
+                  <LinkText>View match details</LinkText>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color="#5f7d99"
+                  />
+                </LinkRow>
+              ) : null}
+            </MatchLinks>
+          )}
+
           {originalGame && (
             <Block>
               <BlockTitle>Original result</BlockTitle>
@@ -1090,6 +1137,27 @@ const HeaderTitle = styled.Text({
 });
 
 const Block = styled.View({ marginBottom: 20 });
+
+const MatchLinks = styled.View({ marginBottom: 20, gap: 8 });
+
+const LinkRow = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+  backgroundColor: "#001123",
+  borderWidth: 1,
+  borderColor: "rgb(9, 33, 62)",
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 12,
+});
+
+const LinkText = styled.Text({
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: "600",
+  flex: 1,
+});
 
 // Cancel the phase's asymmetric insets (gutter 24 + content 8 + phase 12 on the
 // left, phase 12 on the right) so the score card spans the full timeline width
