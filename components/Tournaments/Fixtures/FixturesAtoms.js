@@ -102,18 +102,15 @@ export const FixtureGameItem = ({
   glowAnim,
   isHighlighted,
   glowColor,
+  locked = false,
 }) => {
+  const dimmed =
+    game.approvalStatus === "pending" || game.approvalStatus === "Pending";
   return (
     <FixtureGameOuter ref={innerRef}>
       <FixtureGameContainer
         onPress={() => onPress(game)}
-        style={{
-          opacity:
-            game.approvalStatus === "pending" ||
-            game.approvalStatus === "Pending"
-              ? 0.6
-              : 1,
-        }}
+        style={{ opacity: locked ? 0.4 : dimmed ? 0.6 : 1 }}
       >
         <FixtureGameHeader game={game} />
         <FixtureTeamVsContainer>
@@ -130,6 +127,11 @@ export const FixtureGameItem = ({
           />
         </FixtureTeamVsContainer>
       </FixtureGameContainer>
+      {locked && (
+        <LockedBadge>
+          <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
+        </LockedBadge>
+      )}
       {isHighlighted && <GameGlow glowAnim={glowAnim} color={glowColor} />}
     </FixtureGameOuter>
   );
@@ -333,6 +335,12 @@ const FixtureGameContainer = styled.TouchableOpacity({
   borderColor: "rgb(9, 33, 62)",
   borderRadius: 8,
   backgroundColor: "rgb(3, 16, 31)",
+});
+
+const LockedBadge = styled.View({
+  position: "absolute",
+  top: 8,
+  right: 8,
 });
 
 export const FixtureStatusLabel = styled.Text(({ status }) => ({

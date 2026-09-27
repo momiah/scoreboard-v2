@@ -62,7 +62,10 @@ export interface CheckInLadderMatchOutcome {
   reason?: CheckInLadderMatchFailureReason;
 }
 
-export type UpdateLadderGameFailureReason = "unavailable" | "error";
+export type UpdateLadderGameFailureReason =
+  | "unavailable"
+  | "error"
+  | "match_decided";
 
 export interface UpdateLadderGameOutcome {
   success: boolean;

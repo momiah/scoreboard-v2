@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import {
   hasUserCheckedIn,
+  getReportableLadderGameId,
   LADDER_MATCH_STATUS,
   LADDER_TYPE,
   COMPETITION_TYPES,
@@ -92,6 +93,13 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const allCheckedIn = players.length > 0 && checkedIn;
+
+  // The one shell that may be reported now: games run in order from game 1 and
+  // lock once a side reaches the decider. null once the match is decided.
+  const reportableGameId = getReportableLadderGameId(
+    match.games ?? [],
+    match.bestOf ?? (match.games?.length ?? 0),
+  );
   const gamesLocked = isCompleted || !allCheckedIn;
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
@@ -316,6 +324,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
     if (isCompleted) return;
 
+    // Only the next live shell is reportable; everything else is locked (an
+    // earlier game still to report, or a dead rubber past the decider).
+    if (game.gameId !== reportableGameId) {
+      showBottomToast(
+        reportableGameId
+          ? "Report the current game before the next one"
+          : "This match is already decided",
+        "info",
+      );
+      return;
+    }
+
     setSelectedGame(game);
     setGameModalVisible(true);
   };
@@ -488,20 +508,29 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         </GamesHeader>
 
         <GamesList isLocked={gamesLocked}>
-          {gamesWithPlayers.map((game) => (
-            <FixtureGameItem
-              key={game.gameNumber}
-              game={game}
-              tournamentType={
-                isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES
-              }
-              onPress={handleGamePress}
-              innerRef={undefined}
-              glowAnim={undefined}
-              isHighlighted={false}
-              glowColor="#00A2FF"
-            />
-          ))}
+          {gamesWithPlayers.map((game) => {
+            const isReported =
+              !!game.result || (game.approvalStatus ?? "") !== "";
+            return (
+              <FixtureGameItem
+                key={game.gameNumber}
+                game={game}
+                tournamentType={
+                  isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES
+                }
+                onPress={handleGamePress}
+                innerRef={undefined}
+                glowAnim={undefined}
+                isHighlighted={false}
+                glowColor="#00A2FF"
+                locked={
+                  !gamesLocked &&
+                  !isReported &&
+                  game.gameId !== reportableGameId
+                }
+              />
+            );
+          })}
         </GamesList>
       </ScrollView>
 

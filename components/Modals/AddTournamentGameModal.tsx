@@ -241,7 +241,9 @@ const AddTournamentGameModal = ({
           throw new Error(
             outcome.reason === "unavailable"
               ? "already been reported"
-              : "Failed to submit ladder game result.",
+              : outcome.reason === "match_decided"
+                ? "match already decided"
+                : "Failed to submit ladder game result.",
           );
         }
       } else {
@@ -257,12 +259,15 @@ const AddTournamentGameModal = ({
       const alreadyReported =
         errorMessage.includes("already been reported") ||
         errorMessage.includes("already been processed");
+      const matchDecided = errorMessage.includes("match already decided");
 
       setLoading(false);
       setErrorText(
         alreadyReported
           ? "This game has already been reported. Please refresh to see the latest status."
-          : "Failed to submit game result. Please try again.",
+          : matchDecided
+            ? "This match is already decided — no further games can be reported."
+            : "Failed to submit game result. Please try again.",
       );
       return;
     }

@@ -47,6 +47,7 @@ import {
   scoreSinglesLadderGame,
   buildLadderParticipant,
   resolveLadderMatchOutcome,
+  getReportableLadderGameId,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
 import type {
@@ -92,6 +93,7 @@ import type {
 class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
 class ApproveLadderGameError extends Error {}
+class LadderReportBlockedError extends Error {}
 
 // Firestore rejects `undefined` field values, so drop them before a write.
 const pruneUndefined = <T,>(value: T): T => {
@@ -1344,6 +1346,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             updatedGame.approvalStatus,
           );
 
+          // Games are reported one at a time from game 1, and the match locks
+          // once a side reaches the decider — so the only shell that may be
+          // written is the next live one. This blocks out-of-turn reports and
+          // dead-rubber games past the decider (which would otherwise farm CP).
+          const bestOf = match.bestOf ?? games.length;
+          if (getReportableLadderGameId(games, bestOf) !== updatedGame.gameId) {
+            throw new LadderReportBlockedError("match_decided");
+          }
+
           // Firestore rejects undefined field values; ladder shells omit
           // tournament-only fields (court/createdAt/createdTime), so drop any
           // undefined keys before writing.
@@ -1364,6 +1375,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
         return { success: true };
       } catch (error) {
+        if (error instanceof LadderReportBlockedError) {
+          return { success: false, reason: "match_decided" };
+        }
         const message = error instanceof Error ? error.message : "";
         const alreadyReported =
           message.includes("already been reported") ||
