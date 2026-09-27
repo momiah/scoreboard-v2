@@ -748,7 +748,7 @@ const GameDisputeScreen = () => {
                       <Dot state={isLast ? "active" : "completed"} />
                     </Gutter>
                     <TimelineContent last={isLast}>
-                      <PhaseCard open={open}>
+                      <PhaseCard open={open} last={isLast}>
                         <StageHeader
                           activeOpacity={0.8}
                           onPress={() => toggle(item.key)}
@@ -1267,9 +1267,9 @@ const TimelineContent = styled.View<{ last: boolean }>(
   }),
 );
 
-const PhaseCard = styled.View<{ open: boolean }>(
-  ({ open }: { open: boolean }) => ({
-    borderBottomWidth: 1,
+const PhaseCard = styled.View<{ open: boolean; last: boolean }>(
+  ({ open, last }: { open: boolean; last: boolean }) => ({
+    borderBottomWidth: last && open ? 0 : 1,
     borderColor: open ? "#16406a" : "rgb(9, 33, 62)",
     borderRadius: 10,
     paddingHorizontal: 12,
