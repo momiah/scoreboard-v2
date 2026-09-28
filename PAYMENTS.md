@@ -50,10 +50,12 @@ match to dodge Stripe's ~7-day authorisation window. It was dropped because it
 strands the poster: they book a court a week out, someone accepts, and the day
 before the match the accepter's card fails — leaving the poster with a paid
 court and no payment. Charging at accept means the money is already collected
-before the poster is committed, and there is no 7-day window to manage, so a
-match can be scheduled right up to the ladder's playoff start with no
-payment-window constraint. (There is intentionally **no** fixed
-"days ahead" cap anymore; the date picker caps at the day before playoffs.)
+before the poster is committed, and there is no 7-day window to manage, so the
+booking horizon is a pure product choice with no payment-window constraint.
+Posting closes **one week before the ladder's playoffs** (`PLAYOFF_POSTING_
+BUFFER_DAYS` in `AddLadderMatchModal`) so players have time to finish every
+outstanding match and the playoff cloud function is never left waiting on a
+last-minute match — this is a scheduling rule, unrelated to payments.
 
 ## Settlement per outcome
 

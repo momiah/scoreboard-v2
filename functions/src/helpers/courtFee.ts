@@ -19,9 +19,10 @@ export type LadderMatchOutcomeKind =
  * has actually succeeded, so there is never an accepted-but-unpaid match and the
  * poster is never left one day out with a booked court and a failed opponent
  * card. It also removes the ~7-day card-authorisation window entirely — the
- * money is already collected, so any booking horizon works — matches can be
- * scheduled right up to the ladder's playoff start with no payment-window
- * constraint.
+ * money is already collected, so any booking horizon works with no
+ * payment-window constraint — the only cap on scheduling is a product rule
+ * (posting closes a week before the ladder's playoffs so outstanding matches
+ * can finish), not anything payment-related.
  *   1. On accept → an off-session PaymentIntent charges the accepter's share
  *      plus the platform fee and settles into escrow (a Stripe Connect balance /
  *      held funds). If the charge fails, the accept is rejected and the match

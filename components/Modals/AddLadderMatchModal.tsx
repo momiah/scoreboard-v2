@@ -70,6 +70,12 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
 const MIN_COURT_FEE = 5;
 const MAX_COURT_FEE = 20;
 
+// Posting closes a week before playoffs so players have time to finish every
+// outstanding match, and the playoff cloud function is never left waiting on a
+// match posted at the last minute.
+const PLAYOFF_POSTING_BUFFER_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 interface AddLadderMatchFormValues {
   startDate: string;
   startTime: string;
@@ -107,6 +113,10 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
 
   const playoffStartDate = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
+  // Latest a match may be posted: a week before playoffs begin.
+  const postingDeadline = playoffStartDate
+    ? new Date(playoffStartDate.getTime() - PLAYOFF_POSTING_BUFFER_DAYS * DAY_MS)
+    : null;
 
   // Doubles posts on behalf of the user's active team in this ladder. Resolve it
   // when the modal opens so the fixture can record both sides.
@@ -264,6 +274,12 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       setErrorMessage("Please choose a date and time in the future.");
       return;
     }
+    if (start && postingDeadline && start.getTime() > postingDeadline.getTime()) {
+      setErrorMessage(
+        `Matches must be scheduled at least ${PLAYOFF_POSTING_BUFFER_DAYS} days before playoffs begin.`,
+      );
+      return;
+    }
 
     let matchTeam: MatchTeam | undefined;
     if (isDoubles) {
@@ -380,6 +396,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   hasEndDate={false}
                   labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
                   playoffStartDate={playoffStartDate}
+                  maxDate={postingDeadline}
                 />
 
                 <Label style={{ marginTop: 15, marginLeft: 5 }}>
