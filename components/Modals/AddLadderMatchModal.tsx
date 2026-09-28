@@ -66,13 +66,6 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 };
 
-// How far ahead a match may be scheduled. The accepter's court-fee share is
-// charged at accept (not near the start), so the money is already held whatever
-// the booking horizon — this cap is a product choice, not a payment-window
-// constraint. See the court-fee stub.
-const MAX_SCHEDULE_DAYS_AHEAD = 7;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 // A paid court fee is capped so users cannot abuse it; 0 means a free match.
 const MIN_COURT_FEE = 5;
 const MAX_COURT_FEE = 20;
@@ -271,12 +264,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       setErrorMessage("Please choose a date and time in the future.");
       return;
     }
-    if (start && start.getTime() > Date.now() + MAX_SCHEDULE_DAYS_AHEAD * DAY_MS) {
-      setErrorMessage(
-        `Matches can be scheduled up to ${MAX_SCHEDULE_DAYS_AHEAD} days ahead.`,
-      );
-      return;
-    }
 
     let matchTeam: MatchTeam | undefined;
     if (isDoubles) {
@@ -393,7 +380,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   hasEndDate={false}
                   labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
                   playoffStartDate={playoffStartDate}
-                  maxDate={new Date(Date.now() + MAX_SCHEDULE_DAYS_AHEAD * DAY_MS)}
                 />
 
                 <Label style={{ marginTop: 15, marginLeft: 5 }}>

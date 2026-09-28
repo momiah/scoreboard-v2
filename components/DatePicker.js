@@ -16,7 +16,6 @@ const DatePicker = ({
   hasEndDate = true,
   labelStyle,
   playoffStartDate,
-  maxDate,
 }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -80,10 +79,6 @@ const DatePicker = ({
         playoffStartDate.getDate() - 1,
       )
     : new Date(new Date().setMonth(new Date().getMonth() + 3));
-  // A caller can cap the selectable range further (e.g. ladder matches must be
-  // scheduled within a few days); take whichever bound is earlier.
-  const maxSelectableDate =
-    maxDate && maxDate.getTime() < playoffMax.getTime() ? maxDate : playoffMax;
 
   return (
     <DatePickerContainer>
@@ -134,7 +129,7 @@ const DatePicker = ({
                 handleTempDateChange(selectedDate);
               }}
               minimumDate={new Date()}
-              maximumDate={maxSelectableDate}
+              maximumDate={playoffMax}
             />
 
             <View
