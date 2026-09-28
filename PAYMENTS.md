@@ -52,10 +52,10 @@ before the match the accepter's card fails — leaving the poster with a paid
 court and no payment. Charging at accept means the money is already collected
 before the poster is committed, and there is no 7-day window to manage, so the
 booking horizon is a pure product choice with no payment-window constraint.
-Posting closes **one week before the ladder's playoffs** (`PLAYOFF_POSTING_
-BUFFER_DAYS` in `AddLadderMatchModal`) so players have time to finish every
-outstanding match and the playoff cloud function is never left waiting on a
-last-minute match — this is a scheduling rule, unrelated to payments.
+Posting closes a few days before the ladder's playoffs (`LADDER_POSTING_BUFFER_
+DAYS` in `helpers/ladderDayTabs`, currently 5) so players have time to finish
+every outstanding match and the playoff cloud function is never left waiting on
+a last-minute match — this is a scheduling rule, unrelated to payments.
 
 ## Settlement per outcome
 

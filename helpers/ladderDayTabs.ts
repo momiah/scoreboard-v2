@@ -118,6 +118,30 @@ export const ladderRegistrationOpen = (
   return now.getTime() >= regOpens.getTime();
 };
 
+// Posting closes this many days before playoffs so players have time to finish
+// every outstanding match, and the playoff cloud function is never left waiting
+// on a match posted at the last minute.
+export const LADDER_POSTING_BUFFER_DAYS = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The latest a match may be posted: the buffer before playoffs, or null if the
+ * ladder has no playoff date set (then posting stays open to the season end). */
+export const ladderPostingDeadline = (ladder: Ladder): Date | null => {
+  const playoffStart = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
+  if (!playoffStart) return null;
+  return new Date(playoffStart.getTime() - LADDER_POSTING_BUFFER_DAYS * DAY_MS);
+};
+
+/** True once posting has closed for the season (past the buffer before playoffs). */
+export const ladderPostingClosed = (
+  ladder: Ladder,
+  now: Date = new Date(),
+): boolean => {
+  const deadline = ladderPostingDeadline(ladder);
+  if (!deadline) return false;
+  return now.getTime() >= deadline.getTime();
+};
+
 export const filterMatchesByDay = (
   matches: LadderMatch[],
   dayKey: string,

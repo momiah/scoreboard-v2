@@ -21,8 +21,8 @@ export type LadderMatchOutcomeKind =
  * card. It also removes the ~7-day card-authorisation window entirely — the
  * money is already collected, so any booking horizon works with no
  * payment-window constraint — the only cap on scheduling is a product rule
- * (posting closes a week before the ladder's playoffs so outstanding matches
- * can finish), not anything payment-related.
+ * (posting closes a few days before the ladder's playoffs so outstanding
+ * matches can finish), not anything payment-related.
  *   1. On accept → an off-session PaymentIntent charges the accepter's share
  *      plus the platform fee and settles into escrow (a Stripe Connect balance /
  *      held funds). If the charge fails, the accept is rejected and the match

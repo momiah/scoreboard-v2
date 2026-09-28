@@ -13,6 +13,7 @@ import {
   ALL_DAYS_KEY,
   buildMatchmakingDayTabs,
   filterMatchesByDay,
+  ladderPostingClosed,
   ladderRegistrationOpen,
   todayDayKey,
 } from "../../../../helpers/ladderDayTabs";
@@ -71,13 +72,16 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   );
 
   const registrationOpen = useMemo(() => ladderRegistrationOpen(ladder), [ladder]);
+  const postingClosed = useMemo(() => ladderPostingClosed(ladder), [ladder]);
   const nonParticipant = isSignedIn && !isParticipant;
-  const cannotPost = nonParticipant || !registrationOpen;
+  const cannotPost = nonParticipant || !registrationOpen || postingClosed;
   const buttonLabel = !registrationOpen
     ? "Registration not open yet"
-    : nonParticipant
-      ? "Join the ladder to post"
-      : "Post a Match";
+    : postingClosed
+      ? "Posting closed for playoffs"
+      : nonParticipant
+        ? "Join the ladder to post"
+        : "Post a Match";
 
   const handlePostMatch = () => {
     if (!isSignedIn) {
@@ -86,6 +90,13 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     }
     if (!registrationOpen) {
       showBottomToast("Registration is not open yet", "error");
+      return;
+    }
+    if (postingClosed) {
+      showBottomToast(
+        "Match posting has closed ahead of the playoffs",
+        "error",
+      );
       return;
     }
     if (!isParticipant) return;
