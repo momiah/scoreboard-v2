@@ -72,6 +72,10 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
 const MAX_SCHEDULE_DAYS_AHEAD = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// A paid court fee is capped so users cannot abuse it; 0 means a free match.
+const MIN_COURT_FEE = 5;
+const MAX_COURT_FEE = 20;
+
 interface AddLadderMatchFormValues {
   startDate: string;
   startTime: string;
@@ -246,6 +250,15 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     const parsedFee = Number(data.courtFee || "0");
     if (!Number.isFinite(parsedFee) || parsedFee < 0) {
       setErrorMessage("Please enter a valid court fee.");
+      return;
+    }
+    if (
+      parsedFee > 0 &&
+      (parsedFee < MIN_COURT_FEE || parsedFee > MAX_COURT_FEE)
+    ) {
+      setErrorMessage(
+        `A court fee must be between ${MIN_COURT_FEE} and ${MAX_COURT_FEE} ${ladder.currencyType}, or 0 for a free match.`,
+      );
       return;
     }
 
