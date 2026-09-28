@@ -66,9 +66,10 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 };
 
-// Matches must start within this window so the court-fee authorisation (placed
-// at accept) can be captured before it expires — see the court-fee stub.
-const MAX_SCHEDULE_DAYS_AHEAD = 4;
+// How far ahead a match may be scheduled. Court-fee settlement authorises the
+// card near the start (not at accept), so this horizon is a product choice, not
+// a payment-window constraint — see the court-fee stub.
+const MAX_SCHEDULE_DAYS_AHEAD = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 interface AddLadderMatchFormValues {

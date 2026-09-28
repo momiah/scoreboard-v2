@@ -13,20 +13,21 @@ export type LadderMatchOutcomeKind =
  * terminal transition. Not yet implemented — this is where the payment provider
  * settlement will be wired when payments are built.
  *
- * ── Capture model (only ever charge on capture) ──
- * The accepter's payment is AUTHORISED (held), not charged, when they accept
- * the match; it is only CAPTURED here, once the match hits a terminal status.
- * Stripe charges its processing fee only on capture, so voiding a hold
- * (cancelled / expired / poster no-show) costs nothing — the accepter is not
- * charged and we pay no fee.
- *   Fitting the ~7-day card-authorisation window: matches must start within
- *   MAX_SCHEDULE_DAYS_AHEAD (4) days of being posted (enforced in
- *   AddLadderMatchModal), so accept → start ≤ 4 days and an untouched match
- *   expires by ~7 days. Because the 72h expire clock resets on activity and the
- *   time-of-day can nudge that past 7 days, the settlement MUST capture on a
- *   hard safety deadline (e.g. accept + 6 days) if the match is still not
- *   terminal, so the authorisation never lapses. That safety capture is the
- *   only case that pays a fee on a not-yet-completed match, and it is rare.
+ * ── Capture model (authorise near the start; only ever charge on capture) ──
+ * To support a week's booking notice without the ~7-day card-authorisation
+ * window lapsing, DO NOT authorise at accept. Instead:
+ *   1. On accept → a SetupIntent saves and validates the card. No money, no
+ *      fee, no auth clock — this is just the commitment that the card is good.
+ *   2. ~1 day before the scheduled start → a job creates a manual-capture
+ *      PaymentIntent off-session on that saved card. The 7-day auth clock
+ *      starts here, so it comfortably covers the match plus its 72h expire
+ *      whatever the booking horizon (capped at MAX_SCHEDULE_DAYS_AHEAD only as
+ *      a product choice).
+ *   3. On terminal → this function CAPTURES (release to poster) or VOIDS the
+ *      auth (cancelled / expired / poster no-show). Stripe charges its fee only
+ *      on capture, so every non-completion voids for free.
+ * The off-session authorisation in step 2 can fail (declined card, or 3DS/SCA
+ * needing the customer present) — handle with a retry / notify / hold fallback.
  *
  * ── Platform fee (our revenue) ──
  * The platform fee is 10% of the court fee, added on top (a £10 court fee → a
