@@ -7,6 +7,7 @@ import {
   isLadderMatchUnattended,
   isLadderMatchExpired,
 } from "courtchamps-shared/helpers";
+import { reconcileLadderCourtFee } from "./helpers/courtFee";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
@@ -39,12 +40,16 @@ export const autoCancelLadderMatches = onSchedule(
                 cancelledAt: new Date(),
                 cancelledReason: "Unattended",
               });
+              // STUB: refund the accepter's court-fee share (no one played).
+              reconcileLadderCourtFee(match, "cancelled");
               cancelled += 1;
             } else if (isLadderMatchExpired(match, now)) {
               batch.update(matchDoc.ref, {
                 matchStatus: LADDER_MATCH_STATUS.EXPIRED,
                 expiredAt: new Date(),
               });
+              // STUB: the court was used, so settle the fee (or partial refund).
+              reconcileLadderCourtFee(match, "expired");
               expired += 1;
             }
           });

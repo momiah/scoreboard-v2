@@ -19,6 +19,7 @@ import {
   isDueForAutoApproval,
   markGameApproved,
 } from "./helpers/autoApproveHelpers";
+import { reconcileLadderCourtFee } from "./helpers/courtFee";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
@@ -148,6 +149,8 @@ const processMatch = async (
   if (completed) {
     matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
     matchUpdate.completedAt = new Date();
+    // STUB: settle the court fee now the match has played out.
+    reconcileLadderCourtFee(match, "completed");
   }
   batch.update(matchDoc.ref, matchUpdate);
   participants.forEach((p) => {
