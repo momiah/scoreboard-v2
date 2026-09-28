@@ -1364,6 +1364,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               ([, value]) => value !== undefined,
             ),
           ) as Game;
+          // Stamp the report time so the auto-approve job can age this game
+          // (ladder shells otherwise carry no createdAt).
+          sanitizedGame.createdAt = new Date();
 
           const nextGames = [...games];
           nextGames[index] = sanitizedGame;

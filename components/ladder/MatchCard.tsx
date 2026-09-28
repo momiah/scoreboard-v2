@@ -59,11 +59,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const isCancelled = match.matchStatus === LADDER_MATCH_STATUS.CANCELLED;
-  // Only a terminal match reads as done: dim once completed or cancelled. A
-  // match that is merely past its scheduled time stays full contrast (it may
-  // still be played/reported late, and inactivity auto-cancels it anyway). The
-  // flat header variant always keeps full contrast.
-  const dimmed = !flat && (isCompleted || isCancelled);
+  const isExpired = match.matchStatus === LADDER_MATCH_STATUS.EXPIRED;
+  // Only a terminal match reads as done: dim once completed, cancelled or
+  // expired. A match that is merely past its scheduled time stays full contrast
+  // (it may still be played/reported late, and inactivity expires it anyway).
+  // The flat header variant always keeps full contrast.
+  const dimmed = !flat && (isCompleted || isCancelled || isExpired);
 
   const status = deriveLadderMatchStatus(match, {
     selfCheckedIn: !!checkin?.checkedIn,
@@ -447,6 +448,11 @@ const PHASE_TAGS: Partial<Record<LadderMatchPhase, PhaseTagSpec>> = {
     Tag: CancelledTag,
     Text: CancelledTagText,
     icon: { name: "close-circle-outline", size: 16, color: "#9fb8c8" },
+  },
+  expired: {
+    Tag: CancelledTag,
+    Text: CancelledTagText,
+    icon: { name: "hourglass-outline", size: 15, color: "#9fb8c8" },
   },
   completed: {
     Tag: CompletedTag,
