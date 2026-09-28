@@ -8,6 +8,7 @@ import {
 } from "./distributeTournamentPrizes";
 import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
+import { autoApproveLadderGames } from "./autoApproveLadderGames";
 import { autoCancelLadderMatches } from "./autoCancelLadderMatches";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
@@ -30,6 +31,7 @@ export {
   ogPreview,
   autoApproveLeagueGames,
   autoApproveTournamentGames,
+  autoApproveLadderGames,
   autoCancelLadderMatches,
   autoVoidLadderDisputes,
   notifyOwnersToInvitePlayers,
