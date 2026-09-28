@@ -13,58 +13,68 @@ export type LadderMatchOutcomeKind =
  * terminal transition. Not yet implemented — this is where the payment provider
  * settlement will be wired when payments are built.
  *
- * ── Capture model (authorise near the start; only ever charge on capture) ──
- * To support a week's booking notice without the ~7-day card-authorisation
- * window lapsing, DO NOT authorise at accept. Instead:
- *   1. On accept → a SetupIntent saves and validates the card. No money, no
- *      fee, no auth clock — this is just the commitment that the card is good.
- *   2. ~1 day before the scheduled start → a job creates a manual-capture
- *      PaymentIntent off-session on that saved card. The 7-day auth clock
- *      starts here, so it comfortably covers the match plus its 72h expire
- *      whatever the booking horizon (capped at MAX_SCHEDULE_DAYS_AHEAD only as
- *      a product choice).
- *   3. On terminal → this function CAPTURES (release to poster) or VOIDS the
- *      auth (cancelled / expired / poster no-show). Stripe charges its fee only
- *      on capture, so every non-completion voids for free.
- * The off-session authorisation in step 2 can fail (declined card, or 3DS/SCA
- * needing the customer present) — handle with a retry / notify / hold fallback.
+ * ── Charge-at-accept model (money is taken up front, refunded if not played) ──
+ * The accepter's share is charged the moment they accept, NOT near the start.
+ * This keeps the poster safe: a match only becomes `accepted` once the payment
+ * has actually succeeded, so there is never an accepted-but-unpaid match and the
+ * poster is never left one day out with a booked court and a failed opponent
+ * card. It also removes the ~7-day card-authorisation window entirely — the
+ * money is already collected, so any booking horizon works (MAX_SCHEDULE_DAYS_
+ * AHEAD stays a pure product choice, not a payment-window constraint).
+ *   1. On accept → an off-session PaymentIntent charges the accepter's share
+ *      plus the platform fee and settles into escrow (a Stripe Connect balance /
+ *      held funds). If the charge fails, the accept is rejected and the match
+ *      stays open for someone else — nothing is committed on a failed card.
+ *   2. On terminal → this function either RELEASES the court-fee share to the
+ *      poster (completed / accepter no-show walkover) or REFUNDS it to the
+ *      accepter (cancelled / expired / poster no-show walkover). The 10%
+ *      platform fee is NON-REFUNDABLE in every case and is retained by the
+ *      platform — see the notes below.
  *
- * ── Platform fee (our revenue) ──
+ * ── Platform fee (our revenue) and refunds ──
  * The platform fee is 10% of the court fee, added on top (a £10 court fee → a
- * £1 platform fee). That fee pays the Stripe processing fee and CourtChamps
- * keeps the difference. WATCH the fixed per-transaction fee (~£0.20 UK / $0.30
- * US): a flat 10% does not cover it on small court fees (~£2 loses money), so
- * floor the platform fee at a minimum (e.g. max(10%, £0.50)). International /
- * Amex cards and Stripe Connect payout fees cost more — size the fee for those.
+ * £1 platform fee). It is charged at accept and kept whatever the outcome, so
+ * on a refund only the court-fee share is returned; the 10% stays. Across the
+ * £5–£20 court-fee range that non-refundable 10% (£0.50–£2.00) comfortably
+ * covers Stripe's per-refund/processing cost (~£0.20 fixed + the small
+ * percentage that Stripe does not return on a refund), so a cancelled or
+ * expired match is never a loss — it retains a margin. Because refunds do cost
+ * the platform something, the non-refundable-fee terms must be stated clearly:
+ * in the ladder T&Cs (LadderTermsContent) and in the AddLadderMatchModal
+ * disclaimer ("A 10% non refundable platform fee is deducted from this fee").
+ * WATCH the fixed per-transaction fee on tiny fees only if the £5 floor is ever
+ * lowered — at £5 the 10% is £0.50, already above the fixed cost.
  *
  * ── Fee model ──
  * The poster (`createdBy`) books and pays the venue up front. The accepter
- * (`acceptedBy`) covers their share (plus the platform fee) via the platform.
- * Settlement is one of two directions on the accepter's held authorisation:
- * CAPTURE it (release to the poster), or VOID it (accepter pays nothing). Only
- * settle when `courtFee > 0`.
+ * (`acceptedBy`) covers their share (plus the platform fee) via the platform,
+ * charged at accept. Settlement is one of two directions on the escrowed funds:
+ * RELEASE the court-fee share to the poster, or REFUND it to the accepter (the
+ * platform fee is kept either way). Only settle when `courtFee > 0`.
  *
  * ── Settlement per outcome ──
- * • completed  → CAPTURE and release to the poster (the court was used); the
- *                platform keeps its fee.
+ * • completed  → RELEASE the court-fee share to the poster (the court was used);
+ *                the platform keeps its fee.
  * • walkover   → the only conditional case; settle by who showed up
  *                (`walkoverWinner` is the side that showed):
- *                  – accepter no-showed (poster won the walkover) → CAPTURE and
- *                    release to the poster, as `completed`; the accepter forfeits.
- *                  – poster no-showed (accepter won the walkover) → VOID the
- *                    hold; the accepter pays nothing, the poster bears their own
- *                    venue cost.
- * • cancelled  → VOID the hold — the accepter pays nothing (called off before
- *                any game). Revisit if a cancellation window/penalty is added.
- * • expired    → VOID the hold — the accepter pays nothing (the court went
- *                unused); the poster reclaims their venue booking from the venue.
+ *                  – accepter no-showed (poster won the walkover) → RELEASE to
+ *                    the poster, as `completed`; the accepter forfeits.
+ *                  – poster no-showed (accepter won the walkover) → REFUND the
+ *                    court-fee share to the accepter; the poster bears their own
+ *                    venue cost. Platform fee still kept.
+ * • cancelled  → REFUND the court-fee share to the accepter (called off before
+ *                any game); platform fee kept. Revisit if a cancellation
+ *                window/penalty is added.
+ * • expired    → REFUND the court-fee share to the accepter (the court went
+ *                unused); the poster reclaims their venue booking from the
+ *                venue. Platform fee kept.
  *
  * ── Notes for the real implementation ──
  * • Idempotency: this trigger can re-fire on retries, so persist a settlement
  *   marker (e.g. `feeSettledAt`) and no-op if already settled — never
- *   double-capture or double-void.
- * • A failed payout to the poster does not reverse the accepter's capture; the
- *   money is held and the payout retried.
+ *   double-release or double-refund.
+ * • A failed payout to the poster does not reverse the accepter's charge; the
+ *   money stays in escrow and the payout is retried.
  */
 export const reconcileLadderCourtFee = (
   match: Pick<

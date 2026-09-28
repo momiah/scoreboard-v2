@@ -40,7 +40,11 @@ export const LADDER_TERMS: TermsSection[] = [
     body: "If a ladder is cancelled before it begins, paid entry fees are refunded. Once a ladder has started, you have the right for refund before you play your first match. After that, entry fees are generally non-refundable except where required by law.",
   },
   {
-    title: "9. Changes",
+    title: "9. Court fees",
+    body: "Where a match sets a court fee, the accepting player pays their share, plus a 10% platform fee, when they accept the match — this secures the match so the poster is never left with an unpaid opponent. The court-fee share is released to the poster once the match completes. If the match is cancelled or expires before it is played, the court-fee share is refunded to the accepting player; the 10% platform fee is non-refundable in all cases and is retained by Court Champs to cover payment processing.",
+  },
+  {
+    title: "10. Changes",
     body: "Court Champs may update these terms or a ladder's details where reasonably necessary. Material changes affecting an active ladder will be communicated to participants.",
   },
 ];
