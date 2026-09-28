@@ -13,34 +13,52 @@ export type LadderMatchOutcomeKind =
  * terminal transition. Not yet implemented — this is where the payment provider
  * settlement will be wired when payments are built.
  *
+ * ── Capture model (only ever charge on capture) ──
+ * The accepter's payment is AUTHORISED (held), not charged, when they accept
+ * the match; it is only CAPTURED here, once the match hits a terminal status.
+ * Stripe charges its processing fee only on capture, so releasing a hold
+ * (cancelled / expired / poster no-show) costs nothing — the accepter is not
+ * charged and we pay no fee. NOTE: card authorisations expire (~7 days), so a
+ * hold only covers matches that terminate within that window; a far-future
+ * booking must be captured up front and refunded on non-completion (which does
+ * incur the Stripe fee).
+ *
+ * ── Platform fee (our revenue) ──
+ * The platform fee is 10% of the court fee, added on top (a £10 court fee → a
+ * £1 platform fee). That fee pays the Stripe processing fee and CourtChamps
+ * keeps the difference. WATCH the fixed per-transaction fee (~£0.20 UK / $0.30
+ * US): a flat 10% does not cover it on small court fees (~£2 loses money), so
+ * floor the platform fee at a minimum (e.g. max(10%, £0.50)). International /
+ * Amex cards and Stripe Connect payout fees cost more — size the fee for those.
+ *
  * ── Fee model ──
  * The poster (`createdBy`) books and pays the venue up front. The accepter
- * (`acceptedBy`) pays their share into escrow via the platform, and the
- * platform fee is deducted from that amount. Settlement is therefore one of two
- * directions on the accepter's held share: RELEASE it to the poster, or REFUND
- * it to the accepter. Only settle when `courtFee > 0`.
+ * (`acceptedBy`) covers their share (plus the platform fee) via the platform.
+ * Settlement is one of two directions on the accepter's held authorisation:
+ * CAPTURE it (release to the poster), or VOID it (accepter pays nothing). Only
+ * settle when `courtFee > 0`.
  *
  * ── Settlement per outcome ──
- * • completed  → RELEASE the accepter's share to the poster (the court was
- *                used); the platform keeps its fee. No refund.
+ * • completed  → CAPTURE and release to the poster (the court was used); the
+ *                platform keeps its fee.
  * • walkover   → the only conditional case; settle by who showed up
  *                (`walkoverWinner` is the side that showed):
- *                  – accepter no-showed (poster won the walkover) → RELEASE to
- *                    the poster, as `completed`; the no-show accepter forfeits.
- *                  – poster no-showed (accepter won the walkover) → REFUND the
- *                    accepter in full incl. the platform fee (no service given);
- *                    the poster bears their own venue cost.
- * • cancelled  → REFUND the accepter's share (a player called it off before any
- *                game was played). Platform-fee policy TBD — likely refunded;
- *                revisit if a cancellation window/penalty is added.
- * • expired    → REFUND the accepter's share in full (the court went unused);
- *                the poster reclaims their venue booking from the venue direct.
+ *                  – accepter no-showed (poster won the walkover) → CAPTURE and
+ *                    release to the poster, as `completed`; the accepter forfeits.
+ *                  – poster no-showed (accepter won the walkover) → VOID the
+ *                    hold; the accepter pays nothing, the poster bears their own
+ *                    venue cost.
+ * • cancelled  → VOID the hold — the accepter pays nothing (called off before
+ *                any game). Revisit if a cancellation window/penalty is added.
+ * • expired    → VOID the hold — the accepter pays nothing (the court went
+ *                unused); the poster reclaims their venue booking from the venue.
  *
  * ── Notes for the real implementation ──
  * • Idempotency: this trigger can re-fire on retries, so persist a settlement
  *   marker (e.g. `feeSettledAt`) and no-op if already settled — never
- *   double-refund or double-release.
- * • Platform fee: kept on a RELEASE; refunded on a full REFUND (per policy).
+ *   double-capture or double-void.
+ * • A failed payout to the poster does not reverse the accepter's capture; the
+ *   money is held and the payout retried.
  */
 export const reconcileLadderCourtFee = (
   match: Pick<
