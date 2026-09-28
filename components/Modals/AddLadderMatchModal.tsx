@@ -66,6 +66,11 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 };
 
+// Matches must start within this window so the court-fee authorisation (placed
+// at accept) can be captured before it expires — see the court-fee stub.
+const MAX_SCHEDULE_DAYS_AHEAD = 4;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 interface AddLadderMatchFormValues {
   startDate: string;
   startTime: string;
@@ -251,6 +256,12 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       setErrorMessage("Please choose a date and time in the future.");
       return;
     }
+    if (start && start.getTime() > Date.now() + MAX_SCHEDULE_DAYS_AHEAD * DAY_MS) {
+      setErrorMessage(
+        `Matches can be scheduled up to ${MAX_SCHEDULE_DAYS_AHEAD} days ahead.`,
+      );
+      return;
+    }
 
     let matchTeam: MatchTeam | undefined;
     if (isDoubles) {
@@ -367,6 +378,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   hasEndDate={false}
                   labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
                   playoffStartDate={playoffStartDate}
+                  maxDate={new Date(Date.now() + MAX_SCHEDULE_DAYS_AHEAD * DAY_MS)}
                 />
 
                 <Label style={{ marginTop: 15, marginLeft: 5 }}>

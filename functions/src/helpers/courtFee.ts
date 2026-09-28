@@ -16,12 +16,17 @@ export type LadderMatchOutcomeKind =
  * ── Capture model (only ever charge on capture) ──
  * The accepter's payment is AUTHORISED (held), not charged, when they accept
  * the match; it is only CAPTURED here, once the match hits a terminal status.
- * Stripe charges its processing fee only on capture, so releasing a hold
+ * Stripe charges its processing fee only on capture, so voiding a hold
  * (cancelled / expired / poster no-show) costs nothing — the accepter is not
- * charged and we pay no fee. NOTE: card authorisations expire (~7 days), so a
- * hold only covers matches that terminate within that window; a far-future
- * booking must be captured up front and refunded on non-completion (which does
- * incur the Stripe fee).
+ * charged and we pay no fee.
+ *   Fitting the ~7-day card-authorisation window: matches must start within
+ *   MAX_SCHEDULE_DAYS_AHEAD (4) days of being posted (enforced in
+ *   AddLadderMatchModal), so accept → start ≤ 4 days and an untouched match
+ *   expires by ~7 days. Because the 72h expire clock resets on activity and the
+ *   time-of-day can nudge that past 7 days, the settlement MUST capture on a
+ *   hard safety deadline (e.g. accept + 6 days) if the match is still not
+ *   terminal, so the authorisation never lapses. That safety capture is the
+ *   only case that pays a fee on a not-yet-completed match, and it is rare.
  *
  * ── Platform fee (our revenue) ──
  * The platform fee is 10% of the court fee, added on top (a £10 court fee → a
