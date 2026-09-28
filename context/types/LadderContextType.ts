@@ -72,6 +72,16 @@ export interface UpdateLadderGameOutcome {
   reason?: UpdateLadderGameFailureReason;
 }
 
+export type CancelLadderMatchFailureReason =
+  | "not_participant"
+  | "not_cancellable"
+  | "error";
+
+export interface CancelLadderMatchOutcome {
+  success: boolean;
+  reason?: CancelLadderMatchFailureReason;
+}
+
 export type ApproveLadderGameFailureReason = "unavailable" | "error";
 
 export interface ApproveLadderGameOutcome {
@@ -195,6 +205,11 @@ export interface LadderContextType {
     matchId: string;
     updatedGame: Game;
   }) => Promise<UpdateLadderGameOutcome>;
+  cancelLadderMatch: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+  }) => Promise<CancelLadderMatchOutcome>;
   approveLadderGame: (args: {
     ladderId: string;
     matchId: string;

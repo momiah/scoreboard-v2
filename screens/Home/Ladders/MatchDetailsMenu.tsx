@@ -13,6 +13,7 @@ import type { LadderMatch, LadderType } from "@shared/types";
 
 import { PopupContext } from "../../../context/PopupContext";
 import { UserContext } from "../../../context/UserContext";
+import { LadderContext } from "../../../context/LadderContext";
 import ReportPlayerModal from "../../../components/Modals/ReportPlayerModal";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
@@ -67,9 +68,10 @@ const MatchDetailsMenu: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route =
     useRoute<RouteProp<Record<string, MatchDetailsMenuParams>, string>>();
-  const { ladderId, match } = route.params;
+  const { ladderId, matchId, match } = route.params;
   const { showBottomToast } = useContext(PopupContext);
   const { currentUser } = useContext(UserContext);
+  const { cancelLadderMatch } = useContext(LadderContext);
   const [reportVisible, setReportVisible] = useState(false);
 
   const handleReschedule = () => {
@@ -85,8 +87,27 @@ const MatchDetailsMenu: React.FC = () => {
         {
           text: "Cancel Match",
           style: "destructive",
-          onPress: () =>
-            showBottomToast("Cancelling a match is coming soon", "info"),
+          onPress: async () => {
+            if (!currentUser?.userId) return;
+            const outcome = await cancelLadderMatch({
+              ladderId,
+              matchId,
+              userId: currentUser.userId,
+            });
+            if (outcome.success) {
+              showBottomToast("Match cancelled", "success");
+              navigation.goBack();
+              return;
+            }
+            showBottomToast(
+              outcome.reason === "not_cancellable"
+                ? "This match can no longer be cancelled"
+                : outcome.reason === "not_participant"
+                  ? "Only a player in this match can cancel it"
+                  : "Couldn't cancel the match. Please try again.",
+              "error",
+            );
+          },
         },
       ],
     );

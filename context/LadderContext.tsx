@@ -76,6 +76,7 @@ import { addMember, removeMember } from "../helpers/teamRoster";
 import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
+import { reconcileLadderCourtFee } from "../helpers/courtFee";
 import type {
   LadderContextType,
   FetchLaddersOptions,
@@ -88,6 +89,7 @@ import type {
   AcceptLadderMatchOutcome,
   CheckInLadderMatchOutcome,
   UpdateLadderGameOutcome,
+  CancelLadderMatchOutcome,
   ApproveLadderGameOutcome,
 } from "./types/LadderContextType";
 
@@ -1396,6 +1398,69 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const cancelLadderMatch = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+    }): Promise<CancelLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            return { success: false, reason: "error" } as const;
+          }
+          const match = snap.data() as LadderMatch;
+
+          if (!(match.participants ?? []).includes(userId)) {
+            return { success: false, reason: "not_participant" } as const;
+          }
+          // Only a match that has not been played can be cancelled — a match
+          // with a reported game runs to completion, expiry or a dispute.
+          const cancellable =
+            (match.matchStatus === LADDER_MATCH_STATUS.POSTED ||
+              match.matchStatus === LADDER_MATCH_STATUS.ACCEPTED) &&
+            !(match.games ?? []).some(
+              (game) => !!game.result || (game.approvalStatus ?? "") !== "",
+            );
+          if (!cancellable) {
+            return { success: false, reason: "not_cancellable" } as const;
+          }
+
+          transaction.update(matchRef, {
+            matchStatus: LADDER_MATCH_STATUS.CANCELLED,
+            cancelledAt: new Date(),
+            cancelledReason: "Cancelled by player",
+            lastUpdated: new Date(),
+          });
+          // STUB: refund the accepter's court-fee share for a player cancel.
+          reconcileLadderCourtFee(match, "cancelled");
+          return { success: true } as const;
+        });
+      } catch (error) {
+        console.error("Error cancelling ladder match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
   const approveLadderGame = useCallback(
     async ({
       ladderId,
@@ -1729,6 +1794,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         checkInLadderMatch,
         checkInLadderMatchHandshake,
         updateLadderGame,
+        cancelLadderMatch,
         approveLadderGame,
         addCourtToLadder,
       }}
