@@ -4,7 +4,6 @@ import * as admin from "firebase-admin";
 import { LADDER_MATCH_STATUS } from "courtchamps-shared/types";
 import type { LadderMatch } from "courtchamps-shared/types";
 import { isLadderMatchExpired } from "courtchamps-shared/helpers";
-import { reconcileLadderCourtFee } from "./helpers/courtFee";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
@@ -32,8 +31,6 @@ export const autoExpireLadderMatches = onSchedule(
                 matchStatus: LADDER_MATCH_STATUS.EXPIRED,
                 expiredAt: new Date(),
               });
-              // STUB: settle the court fee for an abandoned match.
-              reconcileLadderCourtFee(match, "expired");
               expired += 1;
             }
           });

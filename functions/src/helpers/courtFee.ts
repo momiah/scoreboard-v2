@@ -34,8 +34,10 @@ export const reconcileLadderCourtFee = (
     | "participants"
   >,
   outcome: LadderMatchOutcomeKind,
-): void => {
-  // STUB: court-fee settlement is not built yet.
+): Promise<void> => {
+  // STUB: court-fee settlement is not built yet. Wire the payment provider
+  // (refund / release / charge) here per `outcome`.
   void match;
   void outcome;
+  return Promise.resolve();
 };

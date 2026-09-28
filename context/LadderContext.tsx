@@ -76,7 +76,6 @@ import { addMember, removeMember } from "../helpers/teamRoster";
 import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
-import { reconcileLadderCourtFee } from "../helpers/courtFee";
 import type {
   LadderContextType,
   FetchLaddersOptions,
@@ -1449,8 +1448,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             cancelledReason: "Cancelled by player",
             lastUpdated: new Date(),
           });
-          // STUB: refund the accepter's court-fee share for a player cancel.
-          reconcileLadderCourtFee(match, "cancelled");
           return { success: true } as const;
         });
       } catch (error) {

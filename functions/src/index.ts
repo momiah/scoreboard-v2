@@ -10,6 +10,7 @@ import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 import { autoApproveLadderGames } from "./autoApproveLadderGames";
 import { autoExpireLadderMatches } from "./autoExpireLadderMatches";
+import { onLadderMatchStatusChange } from "./onLadderMatchStatusChange";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
@@ -33,6 +34,7 @@ export {
   autoApproveTournamentGames,
   autoApproveLadderGames,
   autoExpireLadderMatches,
+  onLadderMatchStatusChange,
   autoVoidLadderDisputes,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,
