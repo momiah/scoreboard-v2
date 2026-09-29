@@ -10,6 +10,7 @@ export type LadderMatchPhase =
   | "no-show-review"
   | "completed"
   | "cancelled"
+  | "expired"
   | "forfeit";
 
 export interface LadderMatchStatus {
@@ -41,6 +42,9 @@ export const deriveLadderMatchStatus = (
   }
   if (match.matchStatus === LADDER_MATCH_STATUS.CANCELLED) {
     return { phase: "cancelled", label: "Cancelled" };
+  }
+  if (match.matchStatus === LADDER_MATCH_STATUS.EXPIRED) {
+    return { phase: "expired", label: "Expired" };
   }
   if ((match as { noShowReported?: boolean }).noShowReported) {
     return { phase: "no-show-review", label: "No-show reported · under review" };

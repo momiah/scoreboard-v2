@@ -3,12 +3,12 @@ import * as admin from "firebase-admin";
 
 import { LADDER_MATCH_STATUS } from "courtchamps-shared/types";
 import type { LadderMatch } from "courtchamps-shared/types";
-import { isLadderMatchUnattended } from "courtchamps-shared/helpers";
+import { isLadderMatchExpired } from "courtchamps-shared/helpers";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
 
-export const autoCancelLadderMatches = onSchedule(
+export const autoExpireLadderMatches = onSchedule(
   "every 30 minutes",
   async () => {
     const db = admin.firestore();
@@ -23,27 +23,28 @@ export const autoCancelLadderMatches = onSchedule(
             .get();
 
           const batch = db.batch();
-          let cancelled = 0;
+          let expired = 0;
           matchesSnapshot.docs.forEach((matchDoc) => {
             const match = matchDoc.data() as LadderMatch;
-            if (isLadderMatchUnattended(match, now)) {
+            if (isLadderMatchExpired(match, now)) {
               batch.update(matchDoc.ref, {
-                matchStatus: LADDER_MATCH_STATUS.CANCELLED,
-                cancelledAt: new Date(),
-                cancelledReason: "Unattended",
+                matchStatus: LADDER_MATCH_STATUS.EXPIRED,
+                expiredAt: new Date(),
               });
-              cancelled += 1;
+              expired += 1;
             }
           });
-          if (cancelled > 0) await batch.commit();
-          return cancelled;
+          if (expired > 0) await batch.commit();
+          return expired;
         }),
       );
 
-      const total = counts.reduce((sum, n) => sum + n, 0);
-      console.log(`✅ Auto-cancel finished. Cancelled ${total} unattended match(es).`);
+      const expired = counts.reduce((sum, n) => sum + n, 0);
+      console.log(
+        `✅ Auto-expire finished. Expired ${expired} inactive match(es).`,
+      );
     } catch (error) {
-      console.log("❌ Auto-cancel function failed:", error);
+      console.log("❌ Auto-expire function failed:", error);
     }
   },
 );

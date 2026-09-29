@@ -8,7 +8,13 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Game, GameVideo, GameVideoUploadPayload } from "courtchamps-shared/types";
+import { GAME_VIDEO_TYPE } from "courtchamps-shared/types";
+import type {
+  Game,
+  GameVideo,
+  GameVideoType,
+  GameVideoUploadPayload,
+} from "courtchamps-shared/types";
 import {
   COLLECTION_NAMES,
   COMPETITION_TYPES,
@@ -60,12 +66,17 @@ const triggerTranscode = async (payload: {
   }
 };
 
+const disputeVideoPrefix = (competitionId: string, videoId: string) =>
+  `disputes/${competitionId}/${videoId}/`;
+
 // ─── 1. Generate a presigned URL for the device to upload directly to R2 ──────
 
 type GenerateUrlData = {
   competitionId: string;
   gameId: string;
   fileType: string;
+  videoType?: GameVideoType;
+  videoId?: string;
 };
 
 type GenerateUrlResponse = {
@@ -79,12 +90,14 @@ export const generateR2UploadUrl = functions.https.onCall(
   async (
     request: functions.https.CallableRequest<GenerateUrlData>,
   ): Promise<GenerateUrlResponse> => {
-    const { competitionId, gameId, fileType } = request.data;
+    const { competitionId, gameId, fileType, videoType, videoId } =
+      request.data;
+    const isDispute = videoType === GAME_VIDEO_TYPE.DISPUTE;
 
-    if (!competitionId || !gameId) {
+    if (!competitionId || !gameId || (isDispute && !videoId)) {
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "competitionId and gameId are required.",
+        "competitionId and gameId are required (and videoId for dispute videos).",
       );
     }
 
@@ -98,7 +111,9 @@ export const generateR2UploadUrl = functions.https.onCall(
     });
 
     const timestamp = Date.now();
-    const key = `games/${competitionId}/${gameId}/${timestamp}.mp4`;
+    const key = isDispute
+      ? `${disputeVideoPrefix(competitionId, videoId as string)}${timestamp}.mp4`
+      : `games/${competitionId}/${gameId}/${timestamp}.mp4`;
 
     const command = new PutObjectCommand({
       Bucket: R2_BUCKET_NAME.value(),
@@ -132,7 +147,16 @@ export const updateGameVideoUrl = functions.https.onCall(
       teams,
       videoLength = undefined,
       matchId = undefined,
+      videoType = GAME_VIDEO_TYPE.GAME,
+      videoId = undefined,
     } = request.data;
+    const isDispute = videoType === GAME_VIDEO_TYPE.DISPUTE;
+    if (isDispute && !videoId) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "videoId is required for dispute videos.",
+      );
+    }
 
     const db = admin.firestore();
 
@@ -157,14 +181,19 @@ export const updateGameVideoUrl = functions.https.onCall(
     const competitionSnap = await competitionRef.get();
 
     // ── Check if this user already has a video for this game ─────────────
-    const docId = `${gameId}_${postedBy.userId}`;
+    // Dispute evidence gets its own doc per upload, so it never replaces the
+    // player's match video (or an earlier dispute video).
+    const docId = isDispute
+      ? (videoId as string)
+      : `${gameId}_${postedBy.userId}`;
     const existingDoc = await db
       .collection(COLLECTION_NAMES.gameVideos)
       .doc(docId)
       .get();
 
-    const isReplacing = existingDoc.exists;
     const oldVideoUrl = existingDoc.data()?.videoUrl as string | undefined;
+    if (isDispute && existingDoc.exists && oldVideoUrl === videoUrl) return;
+    const isReplacing = !isDispute && existingDoc.exists;
 
     // ── Delete old raw + transcoded R2 files if replacing ─────────────────
     if (isReplacing && oldVideoUrl) {
@@ -223,7 +252,9 @@ export const updateGameVideoUrl = functions.https.onCall(
       teams,
       videoApproved: true,
       transcoded: false,
-      videoLength,
+      ...(videoLength !== undefined ? { videoLength } : {}),
+      videoType,
+      ...(isDispute ? { videoId: docId } : {}),
       playerIds: [
         teams.team1?.player1?.userId,
         teams.team1?.player2?.userId,
@@ -233,7 +264,14 @@ export const updateGameVideoUrl = functions.https.onCall(
     };
 
     // ── Update competition document ───────────────────────────────────────
-    if (competitionType === COMPETITION_TYPES.TOURNAMENT) {
+    // Dispute evidence isn't a match video: no videoCount bump, no "uploaded
+    // a video" notification, and it never appears in feeds.
+    if (isDispute) {
+      await db
+        .collection(COLLECTION_NAMES.gameVideos)
+        .doc(docId)
+        .set(gameVideoRecord);
+    } else if (competitionType === COMPETITION_TYPES.TOURNAMENT) {
       const fixtures = competitionSnap.data()?.fixtures ?? [];
       const updatedFixtures = fixtures.map(
         (round: { round: number; games: Game[] }) => ({
@@ -288,7 +326,7 @@ export const updateGameVideoUrl = functions.https.onCall(
     try {
       await db
         .collection(COLLECTION_NAMES.pendingVideoUploads)
-        .doc(gameId)
+        .doc(isDispute ? docId : gameId)
         .delete();
     } catch (error) {
       console.error("[videoFunctions] Failed to delete pending record:", error);
@@ -314,7 +352,7 @@ export const updateGameVideoUrl = functions.https.onCall(
     };
 
     await Promise.all(
-      playerUserIds.map((userId) =>
+      (isDispute ? [] : playerUserIds).map((userId) =>
         sendNotification({
           createdAt: new Date(),
           type: notificationTypes.INFORMATION.GAME_VIDEO.TYPE,
@@ -339,6 +377,8 @@ export const updateGameVideoUrl = functions.https.onCall(
 type CheckR2VideoData = {
   gameId: string;
   competitionId: string;
+  videoType?: GameVideoType;
+  videoId?: string;
 };
 
 type CheckR2VideoResponse = {
@@ -350,7 +390,7 @@ export const checkR2VideoExists = functions.https.onCall(
   async (
     request: functions.https.CallableRequest<CheckR2VideoData>,
   ): Promise<CheckR2VideoResponse> => {
-    const { gameId, competitionId } = request.data;
+    const { gameId, competitionId, videoType, videoId } = request.data;
 
     const r2Client = new S3Client({
       region: "auto",
@@ -361,7 +401,10 @@ export const checkR2VideoExists = functions.https.onCall(
       },
     });
 
-    const prefix = `games/${competitionId}/${gameId}/`;
+    const prefix =
+      videoType === GAME_VIDEO_TYPE.DISPUTE && videoId
+        ? disputeVideoPrefix(competitionId, videoId)
+        : `games/${competitionId}/${gameId}/`;
 
     try {
       const listResult = await r2Client.send(

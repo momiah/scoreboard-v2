@@ -8,7 +8,10 @@ import {
 } from "./distributeTournamentPrizes";
 import { ogPreview } from "./ogPreview";
 import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
-import { autoCancelLadderMatches } from "./autoCancelLadderMatches";
+import { autoApproveLadderGames } from "./autoApproveLadderGames";
+import { autoExpireLadderMatches } from "./autoExpireLadderMatches";
+import { onLadderMatchStatusChange } from "./onLadderMatchStatusChange";
+import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
@@ -29,7 +32,10 @@ export {
   ogPreview,
   autoApproveLeagueGames,
   autoApproveTournamentGames,
-  autoCancelLadderMatches,
+  autoApproveLadderGames,
+  autoExpireLadderMatches,
+  onLadderMatchStatusChange,
+  autoVoidLadderDisputes,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,
   updateGameVideoUrl,

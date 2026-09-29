@@ -41,9 +41,16 @@ import {
   REPORT_STATUS,
   REPORT_REASONS,
 } from "@shared";
-import { createRootTeam } from "@shared/helpers";
-import { scoreDoublesLadderGame } from "../helpers/scoreDoublesLadderGame";
-import { scoreSinglesLadderGame } from "../helpers/scoreSinglesLadderGame";
+import {
+  createRootTeam,
+  scoreDoublesLadderGame,
+  scoreSinglesLadderGame,
+  buildLadderParticipant,
+  resolveLadderMatchOutcome,
+  getReportableLadderGameId,
+  hasOpenLadderDispute,
+} from "@shared/helpers";
+import type { LadderJoinUser } from "@shared/helpers";
 import type {
   Ladder,
   LadderMatch,
@@ -61,8 +68,6 @@ import type {
   StrikeCounts,
   CreateReportOutcome,
 } from "@shared/types";
-import { buildLadderParticipant } from "../helpers/ladderParticipants";
-import type { LadderJoinUser } from "../helpers/ladderParticipants";
 import {
   teamMemberIds,
   findLadderMemberConflicts,
@@ -71,7 +76,6 @@ import { addMember, removeMember } from "../helpers/teamRoster";
 import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
-import { resolveLadderMatchOutcome } from "../helpers/ladderMatchResult";
 import type {
   LadderContextType,
   FetchLaddersOptions,
@@ -84,12 +88,14 @@ import type {
   AcceptLadderMatchOutcome,
   CheckInLadderMatchOutcome,
   UpdateLadderGameOutcome,
+  CancelLadderMatchOutcome,
   ApproveLadderGameOutcome,
 } from "./types/LadderContextType";
 
 class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
 class ApproveLadderGameError extends Error {}
+class LadderReportBlockedError extends Error {}
 
 // Firestore rejects `undefined` field values, so drop them before a write.
 const pruneUndefined = <T,>(value: T): T => {
@@ -1342,6 +1348,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             updatedGame.approvalStatus,
           );
 
+          // Games are reported one at a time from game 1, and the match locks
+          // once a side reaches the decider — so the only shell that may be
+          // written is the next live one. This blocks out-of-turn reports and
+          // dead-rubber games past the decider (which would otherwise farm CP).
+          const bestOf = match.bestOf ?? games.length;
+          if (getReportableLadderGameId(games, bestOf) !== updatedGame.gameId) {
+            throw new LadderReportBlockedError("match_decided");
+          }
+
           // Firestore rejects undefined field values; ladder shells omit
           // tournament-only fields (court/createdAt/createdTime), so drop any
           // undefined keys before writing.
@@ -1350,6 +1365,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               ([, value]) => value !== undefined,
             ),
           ) as Game;
+          // Stamp the report time so the auto-approve job can age this game
+          // (ladder shells otherwise carry no createdAt).
+          sanitizedGame.createdAt = new Date();
 
           const nextGames = [...games];
           nextGames[index] = sanitizedGame;
@@ -1362,6 +1380,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
         return { success: true };
       } catch (error) {
+        if (error instanceof LadderReportBlockedError) {
+          return { success: false, reason: "match_decided" };
+        }
         const message = error instanceof Error ? error.message : "";
         const alreadyReported =
           message.includes("already been reported") ||
@@ -1370,6 +1391,67 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           return { success: false, reason: "unavailable" };
         }
         console.error("Error updating ladder game:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const cancelLadderMatch = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+    }): Promise<CancelLadderMatchOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) {
+            return { success: false, reason: "error" } as const;
+          }
+          const match = snap.data() as LadderMatch;
+
+          if (!(match.participants ?? []).includes(userId)) {
+            return { success: false, reason: "not_participant" } as const;
+          }
+          // Only a match that has not been played can be cancelled — a match
+          // with a reported game runs to completion, expiry or a dispute.
+          const cancellable =
+            (match.matchStatus === LADDER_MATCH_STATUS.POSTED ||
+              match.matchStatus === LADDER_MATCH_STATUS.ACCEPTED) &&
+            !(match.games ?? []).some(
+              (game) => !!game.result || (game.approvalStatus ?? "") !== "",
+            );
+          if (!cancellable) {
+            return { success: false, reason: "not_cancellable" } as const;
+          }
+
+          transaction.update(matchRef, {
+            matchStatus: LADDER_MATCH_STATUS.CANCELLED,
+            cancelledAt: new Date(),
+            cancelledReason: "Cancelled by player",
+            lastUpdated: new Date(),
+          });
+          return { success: true } as const;
+        });
+      } catch (error) {
+        console.error("Error cancelling ladder match:", error);
         return { success: false, reason: "error" };
       }
     },
@@ -1520,8 +1602,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               nextGames,
               match.bestOf ?? nextGames.length,
             );
+            // Hold completion while any game is disputed — a contested match is
+            // not settled until every dispute resolves.
             const matchDecided =
-              !alreadyCompleted && outcome.decided && !!outcome.winnerTeam;
+              !alreadyCompleted &&
+              outcome.decided &&
+              !!outcome.winnerTeam &&
+              !hasOpenLadderDispute(nextGames);
 
             const persistUsers = () =>
               users.forEach((u) => {
@@ -1704,6 +1791,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         checkInLadderMatch,
         checkInLadderMatchHandshake,
         updateLadderGame,
+        cancelLadderMatch,
         approveLadderGame,
         addCourtToLadder,
       }}

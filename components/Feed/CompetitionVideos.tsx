@@ -21,7 +21,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { COLLECTION_NAMES } from "@shared";
-import { GameVideo } from "@shared/types";
+import { GAME_VIDEO_TYPE, GameVideo } from "@shared/types";
 import { UserContext } from "../../context/UserContext";
 import GameVideoCard from "../Feed/GameVideoCard";
 import { useLikeVideo } from "../../hooks/useLikeVideo";
@@ -72,6 +72,7 @@ const CompetitionVideos: React.FC<CompetitionVideosProps> = ({
             collection(db, COLLECTION_NAMES.gameVideos),
             where("competitionId", "==", competitionId),
             where("videoApproved", "==", true),
+            where("videoType", "==", GAME_VIDEO_TYPE.GAME),
             orderBy("createdAt", "desc"),
           ),
         );

@@ -10,7 +10,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { COLLECTION_NAMES } from "@shared";
-import { GameVideoUploadPayload } from "@shared/types";
+import { GameVideoType, GameVideoUploadPayload } from "@shared/types";
 import Upload from "react-native-background-upload";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import { PopupContext } from "../context/PopupContext";
@@ -26,6 +26,8 @@ type GenerateUrlParams = {
   competitionId: string;
   gameId: string;
   fileType: string;
+  videoType?: GameVideoType;
+  videoId?: string;
 };
 
 export interface PickedVideo {
@@ -56,7 +58,12 @@ interface UseVideoUploadReturn {
   startBackgroundUpload: (params: StartBackgroundUploadParams) => Promise<void>;
 }
 
-type CheckR2VideoParams = { gameId: string; competitionId: string };
+type CheckR2VideoParams = {
+  gameId: string;
+  competitionId: string;
+  videoType?: GameVideoType;
+  videoId?: string;
+};
 type CheckR2VideoResponse = { videoUrl: string | null };
 
 // Android's react-native-background-upload `completed` event is unreliable — the
@@ -129,12 +136,21 @@ export const useVideoUpload = ({
       teams,
       videoLength,
       matchId,
+      videoType,
+      videoId,
     }: StartBackgroundUploadParams) => {
       const db = getFirestore();
+      // Dispute uploads are keyed by their own video id so they don't collide
+      // with a match-video upload for the same game.
+      const uploadKey = videoId ?? gameId;
+      const videoRouting = {
+        ...(videoType ? { videoType } : {}),
+        ...(videoId ? { videoId } : {}),
+      };
       const pendingDocRef = doc(
         db,
         COLLECTION_NAMES.pendingVideoUploads,
-        gameId,
+        uploadKey,
       );
 
       // ── Helper: record a failed upload for diagnostics ──────────────────────
@@ -165,6 +181,7 @@ export const useVideoUpload = ({
           teams,
           videoLength: videoLength ?? null,
           ...(matchId ? { matchId } : {}),
+          ...videoRouting,
           status: "uploading",
           progress: 0,
           platform: Platform.OS,
@@ -219,8 +236,9 @@ export const useVideoUpload = ({
 
           // ── Attach the video to the game. Idempotent + guarded so the
           //    `completed` event and the R2 fallback can't double-run it.
-          //    updateGameVideoUrl is keyed by `${gameId}_${userId}` and only
-          //    bumps videoCount on first write, so a retry is safe. ──────────
+          //    updateGameVideoUrl is keyed by `${gameId}_${userId}` (or the
+          //    dispute videoId) and only bumps videoCount on first write, so a
+          //    retry is safe. ──────────────────────────────────────────────
           const finalizeUpload = async (videoUrl: string, via: string) => {
             if (finalized || finalizing || settled) return;
             finalizing = true;
@@ -237,6 +255,7 @@ export const useVideoUpload = ({
                 teams,
                 videoLength,
                 ...(matchId ? { matchId } : {}),
+                ...videoRouting,
               });
               await deleteDoc(pendingDocRef);
               finalized = true;
@@ -267,6 +286,7 @@ export const useVideoUpload = ({
               const { data: r2 } = await checkR2VideoExists({
                 gameId,
                 competitionId,
+                ...videoRouting,
               });
               if (r2.videoUrl) {
                 await finalizeUpload(r2.videoUrl, via);
@@ -313,6 +333,7 @@ export const useVideoUpload = ({
             competitionId,
             gameId,
             fileType: "video/mp4",
+            ...videoRouting,
           });
 
           // Android: react-native-background-upload needs a raw path
@@ -328,7 +349,7 @@ export const useVideoUpload = ({
             method: "PUT",
             type: "raw",
             headers: { "content-type": "video/mp4" },
-            customUploadId: gameId,
+            customUploadId: uploadKey,
             notification: {
               enabled: true,
               onProgressTitle: "Court Champs",

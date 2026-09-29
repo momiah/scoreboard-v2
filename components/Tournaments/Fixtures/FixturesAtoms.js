@@ -47,9 +47,11 @@ export const FixtureScoreDisplay = ({ game }) => {
   const statusLabel =
     approvalStatus === "Scheduled"
       ? "Scheduled"
-      : approvalStatus === "pending" || approvalStatus === "Pending"
-        ? "Pending Approval"
-        : null;
+      : approvalStatus === "disputed"
+        ? "Disputed"
+        : approvalStatus === "pending" || approvalStatus === "Pending"
+          ? "Pending Approval"
+          : null;
 
   return (
     <FixtureResultsContainer>
@@ -100,18 +102,17 @@ export const FixtureGameItem = ({
   glowAnim,
   isHighlighted,
   glowColor,
+  locked = false,
 }) => {
+  const dimmed =
+    game.approvalStatus === "pending" ||
+    game.approvalStatus === "Pending" ||
+    game.approvalStatus === "disputed";
   return (
     <FixtureGameOuter ref={innerRef}>
       <FixtureGameContainer
         onPress={() => onPress(game)}
-        style={{
-          opacity:
-            game.approvalStatus === "pending" ||
-            game.approvalStatus === "Pending"
-              ? 0.6
-              : 1,
-        }}
+        style={{ opacity: locked ? 0.4 : dimmed ? 0.6 : 1 }}
       >
         <FixtureGameHeader game={game} />
         <FixtureTeamVsContainer>
@@ -128,6 +129,11 @@ export const FixtureGameItem = ({
           />
         </FixtureTeamVsContainer>
       </FixtureGameContainer>
+      {locked && (
+        <LockedBadge>
+          <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
+        </LockedBadge>
+      )}
       {isHighlighted && <GameGlow glowAnim={glowAnim} color={glowColor} />}
     </FixtureGameOuter>
   );
@@ -333,6 +339,12 @@ const FixtureGameContainer = styled.TouchableOpacity({
   backgroundColor: "rgb(3, 16, 31)",
 });
 
+const LockedBadge = styled.View({
+  position: "absolute",
+  top: 8,
+  right: 8,
+});
+
 export const FixtureStatusLabel = styled.Text(({ status }) => ({
   paddingHorizontal: 6,
   paddingVertical: 2,
@@ -344,7 +356,9 @@ export const FixtureStatusLabel = styled.Text(({ status }) => ({
       ? "rgba(0, 162, 255, 0.6)"
       : status === "Approved" || status === "approved"
         ? "rgba(0, 255, 0, 0.6)"
-        : "rgba(255, 165, 0, 0.6)",
+        : status === "disputed"
+          ? "rgba(255, 59, 48, 0.7)"
+          : "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,
   overflow: "hidden",
 }));

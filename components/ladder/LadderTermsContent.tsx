@@ -32,15 +32,19 @@ export const LADDER_TERMS: TermsSection[] = [
     body: "You must check in at the court for each scheduled match. If your opponent hasn't checked in within the 30-minute grace period after the scheduled start, you can report a no-show from the check-in screen; you can also report misconduct — cheating, abuse or harassment — from the match menu. All reports are reviewed by an admin. An upheld no-show awards you the match as a walkover: you gain up to 50 CP, transferred from the no-show and never taking them below zero, with no games, points or medals. Upheld reports add a strike against the reported player. Strikes are counted per ladder, and reaching the limit for any reason — 5 no-shows, or 3 for a conduct reason — disqualifies that player from the ladder, blocking them from posting or accepting further matches, with no refund of their entry fee.",
   },
   {
-    title: "7. Unattended matches",
-    body: "If an accepted match goes completely unattended — nobody checks in, plays, or reports anything within 24 hours of the scheduled start — it is automatically cancelled. A cancelled match carries no result and no penalty for either side.",
+    title: "7. Inactive matches",
+    body: "If an accepted match sees no activity — no check-in, game or report — for 72 hours, it automatically expires. The clock starts at the scheduled start and resets whenever something happens, so any progress keeps the match alive. An expired match carries no result and no penalty for either side.",
   },
   {
     title: "8. Refunds & cancellations",
     body: "If a ladder is cancelled before it begins, paid entry fees are refunded. Once a ladder has started, you have the right for refund before you play your first match. After that, entry fees are generally non-refundable except where required by law.",
   },
   {
-    title: "9. Changes",
+    title: "9. Court fees",
+    body: "Where a match sets a court fee, the accepting player pays their share, plus a 10% platform fee, when they accept the match — this secures the match so the poster is never left with an unpaid opponent. The court-fee share is released to the poster once the match completes. If the match is cancelled or expires before it is played, the court-fee share is refunded to the accepting player; the 10% platform fee is non-refundable in all cases and is retained by Court Champs to cover payment processing.",
+  },
+  {
+    title: "10. Changes",
     body: "Court Champs may update these terms or a ladder's details where reasonably necessary. Material changes affecting an active ladder will be communicated to participants.",
   },
 ];

@@ -50,6 +50,17 @@ type AddTournamentGameModalProps = {
   tournamentName: string;
   tournamentId: string;
   ladder?: LadderGameContext | null;
+  /**
+   * Capture-only mode: when supplied, the entered scores are returned via this
+   * callback and nothing is persisted or notified. Used by the dispute flow to
+   * collect corrected scores without touching the live match.
+   */
+  onCapture?: (capturedGame: Game) => void;
+  /**
+   * Extra validation run after the badminton-score check; return an error string
+   * to block submission (e.g. the dispute flow rejects the original score).
+   */
+  validateScores?: (team1Score: number, team2Score: number) => string | null;
 };
 
 const AddTournamentGameModal = ({
@@ -62,6 +73,8 @@ const AddTournamentGameModal = ({
   tournamentName,
   tournamentId,
   ladder = null,
+  onCapture,
+  validateScores,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
   const { updateTournamentGame } = useContext(LeagueContext);
@@ -130,6 +143,12 @@ const AddTournamentGameModal = ({
       return;
     }
 
+    const extraError = validateScores?.(score1, score2);
+    if (extraError) {
+      setErrorText(extraError);
+      return;
+    }
+
     setLoading(true);
 
     const team1: GameTeam = {
@@ -167,6 +186,16 @@ const AddTournamentGameModal = ({
       createdTime: game?.createdTime,
       approvers: game?.approvers || [],
     };
+
+    // Capture-only: hand the corrected game back and stop — no notifications,
+    // no writes to the live match (the dispute owns persistence on resolution).
+    if (onCapture) {
+      onCapture(gameResult);
+      setLoading(false);
+      resetForm();
+      onClose();
+      return;
+    }
 
     const isCurrentUserTeam1 = [
       team1.player1?.userId,
@@ -212,7 +241,9 @@ const AddTournamentGameModal = ({
           throw new Error(
             outcome.reason === "unavailable"
               ? "already been reported"
-              : "Failed to submit ladder game result.",
+              : outcome.reason === "match_decided"
+                ? "match already decided"
+                : "Failed to submit ladder game result.",
           );
         }
       } else {
@@ -228,12 +259,15 @@ const AddTournamentGameModal = ({
       const alreadyReported =
         errorMessage.includes("already been reported") ||
         errorMessage.includes("already been processed");
+      const matchDecided = errorMessage.includes("match already decided");
 
       setLoading(false);
       setErrorText(
         alreadyReported
           ? "This game has already been reported. Please refresh to see the latest status."
-          : "Failed to submit game result. Please try again.",
+          : matchDecided
+            ? "This match is already decided — no further games can be reported."
+            : "Failed to submit game result. Please try again.",
       );
       return;
     }
@@ -245,15 +279,8 @@ const AddTournamentGameModal = ({
     setLoading(false);
     resetForm();
 
-    // The tournament flow follows submit with an optional video upload; the
-    // ladder video pipeline is wired in a later phase, so for ladders we just
-    // confirm the report and close.
-    if (ladder) {
-      onClose();
-      showBottomToast("Score sent to your opponent for approval", "success");
-      return;
-    }
-
+    // Both flows follow submit with an optional video upload; the modal is
+    // pointed at the ladder match subcollection or the tournament below.
     setSubmittedGame({
       gameId: game.gameId,
       gamescore,
@@ -346,12 +373,20 @@ const AddTournamentGameModal = ({
           onClose={() => {
             setSubmittedGame(null);
             onClose();
-            showBottomToast("Game published!", "success");
+            showBottomToast(
+              ladder
+                ? "Score sent to your opponent for approval"
+                : "Game published!",
+              "success",
+            );
           }}
           gameId={submittedGame.gameId}
-          competitionId={tournamentId}
-          competitionName={tournamentName}
-          competitionType={COMPETITION_TYPES.TOURNAMENT}
+          competitionId={ladder ? ladder.ladderId : tournamentId}
+          competitionName={ladder ? ladder.name : tournamentName}
+          competitionType={
+            ladder ? COMPETITION_TYPES.LADDER : COMPETITION_TYPES.TOURNAMENT
+          }
+          matchId={ladder ? ladder.matchId : undefined}
           gamescore={submittedGame.gamescore}
           date={submittedGame.date}
           teams={submittedGame.teams}

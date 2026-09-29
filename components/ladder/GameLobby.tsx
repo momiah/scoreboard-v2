@@ -1,5 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
-import { ScrollView, LayoutAnimation, Platform, UIManager } from "react-native";
+import {
+  ScrollView,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  View,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -7,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import {
   hasUserCheckedIn,
+  getReportableLadderGameId,
   LADDER_MATCH_STATUS,
   LADDER_TYPE,
   COMPETITION_TYPES,
@@ -26,6 +33,7 @@ import { GameContext } from "../../context/GameContext";
 import { PopupContext } from "../../context/PopupContext";
 import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
+import { useFixturesScrollToGame } from "../Tournaments/Fixtures/useFixturesScrollToGame";
 import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
@@ -49,6 +57,10 @@ interface GameLobbyProps {
   match: LadderMatch;
   currentUserId?: string;
   checkedIn: boolean;
+  /** Scroll to and glow this game on mount (e.g. from a dispute link). */
+  highlightGameId?: string;
+  /** Glow colour for the highlighted game; defaults to the ladder blue. */
+  highlightColor?: string;
 }
 
 const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
@@ -69,6 +81,8 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   match,
   currentUserId,
   checkedIn,
+  highlightGameId,
+  highlightColor = "#00A2FF",
 }) => {
   const { getUserById, currentUser } = useContext(UserContext);
   const { fetchLadderTeams, fetchLadderParticipants } =
@@ -92,6 +106,17 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
   const allCheckedIn = players.length > 0 && checkedIn;
+
+  // The one shell that may be reported now: games run in order from game 1 and
+  // lock once a side reaches the decider. null once the match is decided.
+  const reportableGameId = getReportableLadderGameId(
+    match.games ?? [],
+    match.bestOf ?? (match.games?.length ?? 0),
+  );
+
+  // Scroll to and glow a game when linked here (e.g. from a dispute).
+  const { scrollRef, gameRefs, highlightedGameId, glowAnim } =
+    useFixturesScrollToGame(highlightGameId);
   const gamesLocked = isCompleted || !allCheckedIn;
 
   const score = getLadderMatchScore(match, currentUserId ?? "");
@@ -316,6 +341,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
     if (isCompleted) return;
 
+    // Only the next live shell is reportable; everything else is locked (an
+    // earlier game still to report, or a dead rubber past the decider).
+    if (game.gameId !== reportableGameId) {
+      showBottomToast(
+        reportableGameId
+          ? "Report the current game before the next one"
+          : "This match is already decided",
+        "info",
+      );
+      return;
+    }
+
     setSelectedGame(game);
     setGameModalVisible(true);
   };
@@ -380,6 +417,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   return (
     <Screen>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ paddingVertical: 20, paddingBottom: 40 }}
       >
         <PaddedBlock>
@@ -488,20 +526,31 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         </GamesHeader>
 
         <GamesList isLocked={gamesLocked}>
-          {gamesWithPlayers.map((game) => (
-            <FixtureGameItem
-              key={game.gameNumber}
-              game={game}
-              tournamentType={
-                isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES
-              }
-              onPress={handleGamePress}
-              innerRef={undefined}
-              glowAnim={undefined}
-              isHighlighted={false}
-              glowColor="#00A2FF"
-            />
-          ))}
+          {gamesWithPlayers.map((game) => {
+            const isReported =
+              !!game.result || (game.approvalStatus ?? "") !== "";
+            return (
+              <FixtureGameItem
+                key={game.gameNumber}
+                game={game}
+                tournamentType={
+                  isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES
+                }
+                onPress={handleGamePress}
+                innerRef={(node: View | null) => {
+                  if (node) gameRefs.current[game.gameId] = node;
+                }}
+                glowAnim={glowAnim}
+                isHighlighted={game.gameId === highlightedGameId}
+                glowColor={highlightColor}
+                locked={
+                  !gamesLocked &&
+                  !isReported &&
+                  game.gameId !== reportableGameId
+                }
+              />
+            );
+          })}
         </GamesList>
       </ScrollView>
 

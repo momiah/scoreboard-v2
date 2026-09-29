@@ -14,7 +14,7 @@ import type {
 } from "@shared/types";
 
 export type { CreateReportOutcome };
-import type { LadderJoinUser } from "../../helpers/ladderParticipants";
+import type { LadderJoinUser } from "@shared/helpers";
 
 export interface LadderJoinOutcome {
   success: boolean;
@@ -62,11 +62,24 @@ export interface CheckInLadderMatchOutcome {
   reason?: CheckInLadderMatchFailureReason;
 }
 
-export type UpdateLadderGameFailureReason = "unavailable" | "error";
+export type UpdateLadderGameFailureReason =
+  | "unavailable"
+  | "error"
+  | "match_decided";
 
 export interface UpdateLadderGameOutcome {
   success: boolean;
   reason?: UpdateLadderGameFailureReason;
+}
+
+export type CancelLadderMatchFailureReason =
+  | "not_participant"
+  | "not_cancellable"
+  | "error";
+
+export interface CancelLadderMatchOutcome {
+  success: boolean;
+  reason?: CancelLadderMatchFailureReason;
 }
 
 export type ApproveLadderGameFailureReason = "unavailable" | "error";
@@ -192,6 +205,11 @@ export interface LadderContextType {
     matchId: string;
     updatedGame: Game;
   }) => Promise<UpdateLadderGameOutcome>;
+  cancelLadderMatch: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+  }) => Promise<CancelLadderMatchOutcome>;
   approveLadderGame: (args: {
     ladderId: string;
     matchId: string;

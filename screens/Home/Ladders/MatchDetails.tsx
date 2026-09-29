@@ -40,6 +40,9 @@ interface MatchDetailsParams {
   match?: LadderMatch;
   ladderType?: LadderType;
   ladderName?: string;
+  /** Scroll to and glow this game on the Game Lobby tab (e.g. from a dispute). */
+  highlightGameId?: string;
+  highlightColor?: string;
 }
 
 const TABS: LobbyTab[] = ["Chat Room", "Game Lobby"];
@@ -54,6 +57,8 @@ const MatchDetails: React.FC = () => {
     match: matchParam,
     ladderType,
     ladderName,
+    highlightGameId,
+    highlightColor,
   } = route.params;
 
   const { currentUser } = useContext(UserContext);
@@ -172,6 +177,8 @@ const MatchDetails: React.FC = () => {
           match={match}
           currentUserId={userId}
           checkedIn={checkedIn}
+          highlightGameId={highlightGameId}
+          highlightColor={highlightColor}
         />
       ) : (
         <ChatRoom

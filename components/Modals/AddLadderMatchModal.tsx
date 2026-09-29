@@ -47,6 +47,10 @@ import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { toMoment } from "../../helpers/ladderPhases";
+import {
+  LADDER_POSTING_BUFFER_DAYS,
+  ladderPostingDeadline,
+} from "../../helpers/ladderDayTabs";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
@@ -65,6 +69,10 @@ const shiftTime = (time: string, deltaMinutes: number): string => {
   total = ((total % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 };
+
+// A paid court fee is capped so users cannot abuse it; 0 means a free match.
+const MIN_COURT_FEE = 5;
+const MAX_COURT_FEE = 20;
 
 interface AddLadderMatchFormValues {
   startDate: string;
@@ -103,6 +111,8 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
 
   const playoffStartDate = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
+  // Latest a match may be posted: the buffer before playoffs begin.
+  const postingDeadline = ladderPostingDeadline(ladder);
 
   // Doubles posts on behalf of the user's active team in this ladder. Resolve it
   // when the modal opens so the fixture can record both sides.
@@ -242,6 +252,15 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       setErrorMessage("Please enter a valid court fee.");
       return;
     }
+    if (
+      parsedFee > 0 &&
+      (parsedFee < MIN_COURT_FEE || parsedFee > MAX_COURT_FEE)
+    ) {
+      setErrorMessage(
+        `A court fee must be between ${MIN_COURT_FEE} and ${MAX_COURT_FEE} ${ladder.currencyType}, or 0 for a free match.`,
+      );
+      return;
+    }
 
     const start = getMatchStart({
       matchDate: data.startDate,
@@ -249,6 +268,12 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     });
     if (start && start.getTime() <= Date.now()) {
       setErrorMessage("Please choose a date and time in the future.");
+      return;
+    }
+    if (start && postingDeadline && start.getTime() > postingDeadline.getTime()) {
+      setErrorMessage(
+        `Matches must be scheduled at least ${LADDER_POSTING_BUFFER_DAYS} days before playoffs begin.`,
+      );
       return;
     }
 
@@ -367,6 +392,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   hasEndDate={false}
                   labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
                   playoffStartDate={playoffStartDate}
+                  maxDate={postingDeadline}
                 />
 
                 <Label style={{ marginTop: 15, marginLeft: 5 }}>
@@ -442,9 +468,12 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   If you&apos;d prefer to split the venue cost, set a court fee
                   for this match.
                 </DisclaimerText>
-                <DisclaimerText>
-                  A {PLATFORM_FEE_PERCENT}% platform fee will be deducted.
-                </DisclaimerText>
+                {Number(watch("courtFee") || "0") > 0 && (
+                  <DisclaimerText>
+                    A {PLATFORM_FEE_PERCENT}% non refundable platform fee is
+                    deducted from this fee.
+                  </DisclaimerText>
+                )}
 
                 <TermsRow>
                   <CheckboxToggle

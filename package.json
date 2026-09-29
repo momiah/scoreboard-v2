@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "test": "jest",
     "shared": "npm i courtchamps-shared@github:momiah/courtchamps-shared#main --force",
+    "shared:functions": "npm --prefix functions i courtchamps-shared@github:momiah/courtchamps-shared#main --force",
     "shared:start": "npm run shared && expo start -c"
   },
   "dependencies": {
@@ -81,6 +82,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@eslint/js": "^9.16.0",
+    "@testing-library/react-native": "^13.3.3",
     "@types/lodash": "^4.17.21",
     "@types/react": "~19.1.10",
     "@types/styled-components-react-native": "^5.2.5",
@@ -91,6 +93,8 @@
     "eslint-plugin-react": "^7.37.2",
     "globals": "^15.12.0",
     "jest": "^29.7.0",
+    "jest-expo": "~54.0.0",
+    "react-test-renderer": "^19.1.0",
     "typescript": "~5.9.2"
   },
   "expo": {

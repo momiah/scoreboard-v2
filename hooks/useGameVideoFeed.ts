@@ -10,7 +10,7 @@ import {
   where,
   DocumentSnapshot,
 } from "firebase/firestore";
-import { GameVideo } from "@shared/types";
+import { GAME_VIDEO_TYPE, GameVideo } from "@shared/types";
 import { COLLECTION_NAMES } from "@shared";
 
 const PAGE_SIZE = 10;
@@ -66,6 +66,7 @@ export const useGameVideoFeed = (): UseGameVideoFeedReturn => {
       const videosQuery = query(
         collection(db, COLLECTION_NAMES.gameVideos),
         where("videoApproved", "==", true),
+        where("videoType", "==", GAME_VIDEO_TYPE.GAME),
         orderBy("createdAt", "desc"),
         limit(PAGE_SIZE),
       );
@@ -94,6 +95,7 @@ export const useGameVideoFeed = (): UseGameVideoFeedReturn => {
       const videosQuery = query(
         collection(db, COLLECTION_NAMES.gameVideos),
         where("videoApproved", "==", true),
+        where("videoType", "==", GAME_VIDEO_TYPE.GAME),
         orderBy("createdAt", "desc"),
         startAfter(lastDoc),
         limit(PAGE_SIZE),
