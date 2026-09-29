@@ -1,0 +1,47 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Scenario 1.1 (docs/testing/reject-game-flow-test-plan.md): opener taps Decline
+# on a pending reported ladder game -> GameDisputeScreen opens with the game
+# context; no dispute is created and the original game is not deleted.
+#
+# Seed first: tap "Seed Reject-Game Flow" on Home so there's a freshly
+# reported game + notification to act on.
+- tapOn:
+    id: "maestro-seed-reject-game-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+
+- assertVisible:
+    id: "game-approval-modal"
+- assertVisible:
+    id: "game-approval-decline"
+- tapOn:
+    id: "game-approval-decline"
+
+# The dispute composer opens — nothing has been submitted yet, and the
+# original (reported) game is still there, not deleted.
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible:
+    id: "dispute-original-result"
+- assertVisible:
+    id: "dispute-compose-note-input"
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- assertVisible:
+    id: "dispute-compose-submit"
