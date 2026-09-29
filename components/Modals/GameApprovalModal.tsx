@@ -520,7 +520,9 @@ const LadderGameApprovalModal = ({
       {activeDispute && (
         <Description>
           This game has been{" "}
-          <LinkText onPress={openDispute}>disputed</LinkText>
+          <LinkText testID="game-approval-disputed-link" onPress={openDispute}>
+            disputed
+          </LinkText>
         </Description>
       )}
 
@@ -602,7 +604,7 @@ const GameApprovalShell = ({
 }) => (
   <Modal transparent visible={visible} animationType="slide">
     <ModalContainer>
-      <ModalContent>
+      <ModalContent testID="game-approval-modal">
         {loading ? (
           <ActivityIndicator size="large" color="#fff" />
         ) : (
@@ -659,10 +661,19 @@ const ApprovalButtons = ({
   submitting: boolean;
 }) => (
   <ButtonRow>
-    <Button variant="decline" disabled={declineDisabled} onPress={onDecline}>
+    <Button
+      testID="game-approval-decline"
+      variant="decline"
+      disabled={declineDisabled}
+      onPress={onDecline}
+    >
       <ButtonText>Decline</ButtonText>
     </Button>
-    <Button disabled={acceptDisabled} onPress={onAccept}>
+    <Button
+      testID="game-approval-accept"
+      disabled={acceptDisabled}
+      onPress={onAccept}
+    >
       {submitting ? (
         <ActivityIndicator size="small" color="white" />
       ) : (

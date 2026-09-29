@@ -38,7 +38,11 @@ export const ScoreDisplay = ({ date, team1, team2, item }) => {
         </Score>
       </ScoreContainer>
       {isPending && <PendingLabel>Pending Approval</PendingLabel>}
-      {isDisputed && <DisputedLabel>Disputed</DisputedLabel>}
+      {isDisputed && (
+        <DisputedLabel testID="score-display-disputed-pill">
+          Disputed
+        </DisputedLabel>
+      )}
       {videoCount > 0 && (
         <VideoIndicator>
           <Ionicons

@@ -532,6 +532,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
             return (
               <FixtureGameItem
                 key={game.gameNumber}
+                testID={`ladder-game-${game.gameId}`}
                 game={game}
                 tournamentType={
                   isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES

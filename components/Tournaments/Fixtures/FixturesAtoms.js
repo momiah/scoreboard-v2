@@ -39,7 +39,7 @@ export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
   </FixtureTeamContainer>
 );
 
-export const FixtureScoreDisplay = ({ game }) => {
+export const FixtureScoreDisplay = ({ game, testID }) => {
   const hasResult = game?.result;
   const approvalStatus = game?.approvalStatus;
   const videoCount = game?.videoCount ?? 0;
@@ -65,7 +65,14 @@ export const FixtureScoreDisplay = ({ game }) => {
         )}
       </FixtureScoreContainer>
       {statusLabel && (
-        <FixtureStatusLabel status={approvalStatus}>
+        <FixtureStatusLabel
+          status={approvalStatus}
+          testID={
+            approvalStatus === "disputed" && testID
+              ? `${testID}-disputed-pill`
+              : undefined
+          }
+        >
           {statusLabel}
         </FixtureStatusLabel>
       )}
@@ -103,6 +110,7 @@ export const FixtureGameItem = ({
   isHighlighted,
   glowColor,
   locked = false,
+  testID,
 }) => {
   const dimmed =
     game.approvalStatus === "pending" ||
@@ -111,6 +119,7 @@ export const FixtureGameItem = ({
   return (
     <FixtureGameOuter ref={innerRef}>
       <FixtureGameContainer
+        testID={testID}
         onPress={() => onPress(game)}
         style={{ opacity: locked ? 0.4 : dimmed ? 0.6 : 1 }}
       >
@@ -121,7 +130,7 @@ export const FixtureGameItem = ({
             position="left"
             tournamentType={tournamentType}
           />
-          <FixtureScoreDisplay game={game} />
+          <FixtureScoreDisplay game={game} testID={testID} />
           <FixtureTeamColumn
             team={game?.team2}
             position="right"
