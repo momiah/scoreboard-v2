@@ -15,6 +15,8 @@ import {
   LADDER_STATUS,
   LADDER_MATCH_STATUS,
   DISPUTES_COLLECTION,
+  DISPUTE_STAGE,
+  DISPUTE_EVENT_TYPE,
   notificationTypes,
   notificationSchema,
   createLadderMatchGames,
@@ -26,6 +28,7 @@ import { formatDisplayName } from "../helpers/formatDisplayName";
 export const MAESTRO_LADDER_ID = "maestro-reject-flow-ladder";
 export const MAESTRO_MATCH_ID = "maestro-reject-flow-match";
 export const MAESTRO_OPPONENT_ID = "maestro-reject-flow-opponent";
+export const MAESTRO_DISPUTE_ID = "maestro-reject-flow-dispute";
 const BEST_OF = 5;
 // createLadderMatchGames ids each shell `${matchId}-g${n}` — game 1 (the one
 // this seed reports) is always this id. Maestro flows can reference it
@@ -47,8 +50,16 @@ const toPlayer = (user) => ({
  * need to act on. Re-running it resets game 1 and clears any dispute/
  * notification left over from a previous run, so it's safe to call before
  * every Maestro suite run.
+ *
+ * Pass `withActiveDispute: true` to seed the game already under an active
+ * dispute (opened by the test user, matching createDispute's shape) instead
+ * of just reported — for flows that need a duplicate-guard / existing-
+ * dispute starting point rather than walking the compose UI themselves.
  */
-export const seedRejectGameFlow = async ({ testUser }) => {
+export const seedRejectGameFlow = async ({
+  testUser,
+  withActiveDispute = false,
+}) => {
   if (!testUser?.userId) {
     throw new Error("seedRejectGameFlow: testUser with a userId is required");
   }
@@ -102,7 +113,7 @@ export const seedRejectGameFlow = async ({ testUser }) => {
       winner: { team: "Team 1", players: [opponent.userId], score: 21 },
       loser: { team: "Team 2", players: [testUser.userId], score: 15 },
     },
-    approvalStatus: "Pending",
+    approvalStatus: withActiveDispute ? "disputed" : "Pending",
     reporter: opponent.userId,
     numberOfApprovals: 0,
     numberOfDeclines: 0,
@@ -202,9 +213,54 @@ export const seedRejectGameFlow = async ({ testUser }) => {
     },
   });
 
+  if (withActiveDispute) {
+    // Matches createDispute's shape (services/disputes.ts) — opened by the
+    // test user with a note, same as the real compose flow would write.
+    const disputedGame = {
+      ...reportedGame,
+      team1: { ...reportedGame.team1, score: 21 },
+      team2: { ...reportedGame.team2, score: 19 },
+      gamescore: "21-19",
+      approvalStatus: "",
+    };
+    await setDoc(doc(db, DISPUTES_COLLECTION, MAESTRO_DISPUTE_ID), {
+      disputeId: MAESTRO_DISPUTE_ID,
+      ladderId: MAESTRO_LADDER_ID,
+      ladderName: "Maestro Reject-Flow Ladder",
+      ladderType: LADDER_TYPE.SINGLES,
+      ladderMatchId: MAESTRO_MATCH_ID,
+      gameId,
+      originalGame: reportedGame,
+      disputedGame,
+      openedBy: testUser.userId,
+      participantIds: [testUser.userId, opponent.userId],
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+      events: [
+        {
+          type: DISPUTE_EVENT_TYPE.OPENED,
+          stage: DISPUTE_STAGE.UNDER_REVIEW,
+          createdBy: testUser.userId,
+          createdAt: now,
+          note: "Maestro E2E seed: pre-existing dispute.",
+        },
+      ],
+      evidenceDueAt: null,
+      resolution: null,
+      finalGame: null,
+      adminNotes: null,
+      matchDate: today,
+      matchTime: { start: "18:00" },
+      courtName: "Maestro Test Court",
+      createdAt: now,
+      resolvedAt: null,
+      resolvedBy: null,
+    });
+  }
+
   return {
     ladderId: MAESTRO_LADDER_ID,
     matchId: MAESTRO_MATCH_ID,
+    disputeId: withActiveDispute ? MAESTRO_DISPUTE_ID : null,
     gameId,
     opponentId: opponent.userId,
   };

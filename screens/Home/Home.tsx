@@ -252,6 +252,27 @@ const Home = () => {
         ) : null}
 
         {currentUser ? (
+          <TouchableOpacity
+            testID="maestro-seed-active-dispute"
+            onPress={async () => {
+              try {
+                const outcome = await seedRejectGameFlow({
+                  testUser: currentUser,
+                  withActiveDispute: true,
+                });
+                Alert.alert("Seeded", JSON.stringify(outcome));
+              } catch (error) {
+                Alert.alert("Seed failed", String(error));
+              }
+            }}
+          >
+            <Text style={{ color: "white" }}>
+              Seed Reject-Game Flow (Active Dispute)
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
             Hello, {currentUser?.firstName}
           </Text>
