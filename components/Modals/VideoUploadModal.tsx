@@ -343,7 +343,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       <Overlay intensity={50} tint="dark">
         <PopupContent>
           {/* ── Close button ── */}
-          <CloseButton onPress={handleClose}>
+          <CloseButton testID="video-upload-modal-close" onPress={handleClose}>
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 

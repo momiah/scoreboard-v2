@@ -197,10 +197,12 @@ const DisputeScoreCard = ({
   game,
   leagueType,
   onPress,
+  testID,
 }: {
   game: Game;
   leagueType: string;
   onPress?: () => void;
+  testID?: string;
 }) => {
   const item = { ...game, approvalStatus: "" };
   const card = (
@@ -224,7 +226,7 @@ const DisputeScoreCard = ({
     </ScoreCard>
   );
   return onPress ? (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+    <TouchableOpacity testID={testID} activeOpacity={0.8} onPress={onPress}>
       {card}
     </TouchableOpacity>
   ) : (
@@ -701,7 +703,11 @@ const GameDisputeScreen = () => {
           {(effectiveLadderId || effectiveMatchId) && (
             <MatchLinks>
               {effectiveLadderId ? (
-                <LinkRow activeOpacity={0.8} onPress={goToLadder}>
+                <LinkRow
+                  testID="dispute-view-ladder"
+                  activeOpacity={0.8}
+                  onPress={goToLadder}
+                >
                   <Ionicons name="trophy-outline" size={16} color="#00A2FF" />
                   <LinkText numberOfLines={1}>
                     {effectiveLadderName || "View ladder"}
@@ -714,7 +720,11 @@ const GameDisputeScreen = () => {
                 </LinkRow>
               ) : null}
               {effectiveLadderId && effectiveMatchId ? (
-                <LinkRow activeOpacity={0.8} onPress={goToMatch}>
+                <LinkRow
+                  testID="dispute-view-match"
+                  activeOpacity={0.8}
+                  onPress={goToMatch}
+                >
                   <Ionicons name="tennisball-outline" size={16} color="#00A2FF" />
                   <LinkText>View match details</LinkText>
                   <Ionicons
@@ -744,12 +754,14 @@ const GameDisputeScreen = () => {
             {isComposing ? (
               correctedGame ? (
                 <DisputeScoreCard
+                  testID="dispute-corrected-result"
                   game={correctedGame}
                   leagueType={effectiveType}
                   onPress={() => setEntryVisible(true)}
                 />
               ) : originalGame ? (
                 <DisputeScoreCard
+                  testID="dispute-corrected-result"
                   game={shellFrom(originalGame)}
                   leagueType={effectiveType}
                   onPress={() => setEntryVisible(true)}

@@ -27,6 +27,10 @@ export const MAESTRO_LADDER_ID = "maestro-reject-flow-ladder";
 export const MAESTRO_MATCH_ID = "maestro-reject-flow-match";
 export const MAESTRO_OPPONENT_ID = "maestro-reject-flow-opponent";
 const BEST_OF = 5;
+// createLadderMatchGames ids each shell `${matchId}-g${n}` — game 1 (the one
+// this seed reports) is always this id. Maestro flows can reference it
+// directly instead of reading it back out of the app.
+export const MAESTRO_GAME_ID = `${MAESTRO_MATCH_ID}-g1`;
 
 const toPlayer = (user) => ({
   userId: user.userId,
