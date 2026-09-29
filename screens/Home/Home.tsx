@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import {
+  Alert,
   Image,
   SafeAreaView,
   Text,
@@ -47,6 +48,7 @@ import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
+import { seedRejectGameFlow } from "@/devFunctions/seedRejectGameFlow";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -228,12 +230,36 @@ const Home = () => {
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
 
+        {/* Temporary: seeds a ladder + reported game + notification for the
+            Maestro reject-game flow. Remove once those flows no longer need
+            manual re-seeding. */}
+        {currentUser ? (
+          <TouchableOpacity
+            testID="maestro-seed-reject-game-flow"
+            onPress={async () => {
+              try {
+                const outcome = await seedRejectGameFlow({
+                  testUser: currentUser,
+                });
+                Alert.alert("Seeded", JSON.stringify(outcome));
+              } catch (error) {
+                Alert.alert("Seed failed", String(error));
+              }
+            }}
+          >
+            <Text style={{ color: "white" }}>Seed Reject-Game Flow</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
             Hello, {currentUser?.firstName}
           </Text>
         ) : (
-          <TouchableOpacity onPress={() => navigateTo("Login")}>
+          <TouchableOpacity
+            testID="home-sign-in-link"
+            onPress={() => navigateTo("Login")}
+          >
             <Text style={{ color: "white" }}>Sign In</Text>
           </TouchableOpacity>
         )}
