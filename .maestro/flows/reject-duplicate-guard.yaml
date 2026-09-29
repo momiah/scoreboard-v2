@@ -1,0 +1,47 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Scenarios 1.2/2.4 (docs/testing/reject-game-flow-test-plan.md): with an
+# active dispute already open on the game, Accept/Decline are locked and the
+# "disputed" link opens the existing dispute (not a new composer).
+#
+# Seeds the game with an active dispute directly (services/disputes.ts'
+# createDispute shape) rather than walking the compose UI — this scenario
+# only cares about the state once a dispute already exists.
+- tapOn:
+    id: "maestro-seed-active-dispute"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+- assertVisible:
+    id: "game-approval-modal"
+
+# Accept/Decline are both locked while a dispute is active.
+- assertVisible:
+    id: "game-approval-accept"
+    enabled: false
+- assertVisible:
+    id: "game-approval-decline"
+    enabled: false
+
+# The disputed link opens the existing dispute, not a fresh composer.
+- assertVisible:
+    id: "game-approval-disputed-link"
+- tapOn:
+    id: "game-approval-disputed-link"
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible: ".*Dispute opened.*"
+- assertNotVisible:
+    id: "dispute-compose-submit"
