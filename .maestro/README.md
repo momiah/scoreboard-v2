@@ -46,6 +46,15 @@ reported ladder game + notification to act on. Re-running the seed resets
 game 1 and clears any dispute from a previous run, so flows are safe to
 re-run back to back.
 
+## Known limitation: native pickers
+
+The video-evidence picker (`expo-image-picker` → iOS `PHPickerViewController`)
+runs out-of-process via ExtensionKit — it opens fine, but Maestro's
+accessibility tree can't see or tap into it at all. Any scenario that needs a
+specific video/photo selected from the library isn't Maestro-testable on iOS;
+see `docs/testing/reject-game-flow-test-plan.md` scenario 2.8 for the case
+this ruled out (covered by a Jest test on the guard function instead).
+
 ## CI
 
 Not wired up yet — see `docs/testing/maestro.md`.
