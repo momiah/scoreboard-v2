@@ -1,0 +1,35 @@
+appId: com.courtchamp
+---
+# Shared login step, run via onFlowStart from every reject-game flow. Idempotent:
+# if the app already has a session, this is a no-op — Firebase Auth persists
+# across launchApp:clearState:false runs. Home briefly renders logged-out
+# (home-sign-in-link) while the persisted session rehydrates, so check for
+# the logged-in marker FIRST and give it time to settle before deciding a
+# login is actually needed — reacting to the transient flash would try to
+# log in on top of a session that was about to resolve anyway.
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "maestro-seed-reject-game-flow"
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "maestro-seed-reject-game-flow"
+    commands:
+      - tapOn:
+          id: "home-sign-in-link"
+      - tapOn:
+          id: "login-email-input"
+      - inputText: ${MAESTRO_TEST_USER_EMAIL}
+      - tapOn:
+          id: "login-password-input"
+      - inputText: ${MAESTRO_TEST_USER_PASSWORD}
+      - tapOn:
+          id: "login-submit"
+      - extendedWaitUntil:
+          visible:
+            id: "maestro-seed-reject-game-flow"
+          timeout: 15000
