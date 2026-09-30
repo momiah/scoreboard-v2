@@ -100,6 +100,18 @@ onFlowStart:
 - assertVisible:
     id: "game-dispute-screen"
 - assertVisible: ".*Resolved.*"
+
+# Scenario 7 (terminal from the evidence side): once a dispute resolves via
+# an admin action (as opposed to the opener cancelling it), GameDisputeScreen
+# hides both the "add evidence" form and the opener's cancel button — there's
+# nothing left to submit once isResolved is true.
+- assertNotVisible:
+    id: "dispute-evidence-note-input"
+- assertNotVisible:
+    id: "dispute-evidence-submit"
+- assertNotVisible:
+    id: "dispute-cancel"
+
 - tapOn:
     id: "dispute-view-ladder"
 - tapOn:

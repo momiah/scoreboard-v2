@@ -51,6 +51,14 @@ onFlowStart:
     id: "dispute-cancel"
 - assertVisible: ".*Dispute cancelled.*"
 
+# Scenario 6 (terminal from the cancel side): once the opener cancels, the
+# dispute is resolved (isResolved) — GameDisputeScreen also hides the "add
+# evidence" form, so no participant can submit anything more.
+- assertNotVisible:
+    id: "dispute-evidence-note-input"
+- assertNotVisible:
+    id: "dispute-evidence-submit"
+
 # Cancelling scores the original 21-15 game normally: Team B (Maestro Delta +
 # Maestro Echo, shown as "Maestro D & Maestro E" — the reporters) won it.
 # Doubles CP is a TEAM currency (not a
