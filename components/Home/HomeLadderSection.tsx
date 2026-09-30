@@ -51,6 +51,7 @@ const HomeLadderSection: React.FC<HomeLadderSectionProps> = ({ loading }) => {
 
             return {
               key: ladder.ladderId || String(index),
+              testID: `home-ladder-card-${ladder.ladderId}`,
               source: ladder.image ? { uri: ladder.image } : ccDefaultImage,
               onPress: () =>
                 navigation.navigate("Ladder", { ladderId: ladder.ladderId }),

@@ -268,6 +268,13 @@ export const seedRejectGameFlow = async ({
       team2: { ...reportedGame.team2, score: 19 },
       gamescore: "21-19",
       approvalStatus: "",
+      // Scoring reads result.winner/loser.score, not team1/team2.score
+      // directly — these must move with the corrected score above, or an
+      // UPHELD resolution ends up scoring the original margin.
+      result: {
+        winner: { ...reportedGame.result.winner, score: 21 },
+        loser: { ...reportedGame.result.loser, score: 19 },
+      },
     };
     await setDoc(doc(db, DISPUTES_COLLECTION, MAESTRO_DISPUTE_ID), {
       disputeId: MAESTRO_DISPUTE_ID,

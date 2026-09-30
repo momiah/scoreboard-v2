@@ -49,7 +49,13 @@ import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 import { seedRejectGameFlow } from "@/devFunctions/seedRejectGameFlow";
-import { seedDoublesRejectGameFlow } from "@/devFunctions/seedRejectGameFlowDoubles";
+import {
+  seedDoublesRejectGameFlow,
+  MAESTRO_D_LADDER_ID,
+  MAESTRO_D_MATCH_ID,
+  MAESTRO_D_GAME_ID,
+} from "@/devFunctions/seedRejectGameFlowDoubles";
+import { mockResolveDispute } from "@/devFunctions/mockResolveDispute";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -313,6 +319,38 @@ const Home = () => {
             </Text>
           </TouchableOpacity>
         ) : null}
+
+        {/* Test-only stand-in for the admin resolution action this app
+            doesn't have yet — resolves whatever dispute is currently active
+            on the seeded doubles game. Seed a dispute first (open one for
+            real through the UI, or use the Active Dispute seed above). */}
+        {currentUser
+          ? (["upheld", "rejected", "void"] as const).map((resolution) => (
+              <TouchableOpacity
+                key={resolution}
+                testID={`maestro-mock-resolve-doubles-${resolution}`}
+                onPress={async () => {
+                  try {
+                    const outcome = await mockResolveDispute({
+                      ladderId: MAESTRO_D_LADDER_ID,
+                      matchId: MAESTRO_D_MATCH_ID,
+                      gameId: MAESTRO_D_GAME_ID,
+                      resolution,
+                      actorId: currentUser.userId,
+                      note: `Maestro E2E mock: ${resolution}`,
+                    });
+                    Alert.alert("Resolved", JSON.stringify(outcome));
+                  } catch (error) {
+                    Alert.alert("Resolve failed", String(error));
+                  }
+                }}
+              >
+                <Text style={{ color: "white" }}>
+                  Mock Resolve Doubles Dispute ({resolution})
+                </Text>
+              </TouchableOpacity>
+            ))
+          : null}
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
