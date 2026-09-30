@@ -53,3 +53,47 @@ onFlowStart:
 - assertNotVisible:
     id: "dispute-cancel"
 - assertVisible: ".*Dispute cancelled.*"
+
+# Cancelling scores the original 21-15 game normally: Maestro Opponent (the
+# reporter) won it, so the ladder's Player Performance tab should award them
+# the win/PD/CP — precise numbers from running the real scoring function
+# (scoreSinglesLadderGame) against this seed's fixed inputs.
+- scrollUntilVisible:
+    element:
+      id: "dispute-view-ladder"
+    direction: UP
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "dispute-view-ladder"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 10000
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro O.*Wins.*1.*PD.*6.*CP.*20.*"
+    timeout: 15000
+
+# testUser (the loser) should see the same game reflected on their own
+# UserProfile: CP 100 -> 85, PD 0 -> -6, one loss recorded. (iOS merges these
+# plain Text siblings, dropping their individual testIDs, same as the ladder
+# row above — match by text instead.)
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-6 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"
