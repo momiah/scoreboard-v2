@@ -56,6 +56,7 @@ import {
   MAESTRO_D_GAME_ID,
 } from "@/devFunctions/seedRejectGameFlowDoubles";
 import { mockResolveDispute } from "@/devFunctions/mockResolveDispute";
+import { mockRequestMoreEvidence } from "@/devFunctions/mockRequestMoreEvidence";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -351,6 +352,31 @@ const Home = () => {
               </TouchableOpacity>
             ))
           : null}
+
+        {/* Test-only stand-in for the admin "request more evidence" action
+            this app doesn't have yet — moves the currently active dispute on
+            the seeded doubles game to more_evidence_requested. */}
+        {currentUser ? (
+          <TouchableOpacity
+            testID="maestro-mock-request-doubles-more-evidence"
+            onPress={async () => {
+              try {
+                await mockRequestMoreEvidence({
+                  gameId: MAESTRO_D_GAME_ID,
+                  actorId: currentUser.userId,
+                  note: "Maestro E2E mock: please provide more detail.",
+                });
+                Alert.alert("Requested", "More evidence requested");
+              } catch (error) {
+                Alert.alert("Request failed", String(error));
+              }
+            }}
+          >
+            <Text style={{ color: "white" }}>
+              Mock Request More Evidence (Doubles)
+            </Text>
+          </TouchableOpacity>
+        ) : null}
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>

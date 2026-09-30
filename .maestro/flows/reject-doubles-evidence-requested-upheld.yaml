@@ -1,0 +1,176 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Doubles scenario 3: decline -> dispute opened with a corrected score + note
+# -> admin asks for more evidence -> a follow-up note is submitted through the
+# real "Add your evidence" UI -> dispute UPHELD -> all 4 players' + both
+# teams' stats update to reflect the DISPUTED (corrected) 21-19 result, same
+# numbers as reject-doubles-upheld.yaml.
+#
+# createDispute always requires a note or video to open at all, so "notes and
+# evidence not submitted" from the original scenario list is read here as:
+# the opener's FIRST note is the minimum required to open, then the admin
+# asks for more before resolving — not that the dispute opens with nothing.
+#
+# The evidence-request itself has no in-app trigger (see
+# docs/testing/reject-game-flow-test-plan.md §5 and .maestro/README.md) —
+# mocked via devFunctions/mockRequestMoreEvidence.js, which writes the same
+# evidence_requested event shape a real admin action would. The follow-up
+# note submission and the UPHELD resolution reuse the real
+# addDisputeEvidence path and the existing UPHELD mock respectively.
+- tapOn:
+    id: "maestro-seed-doubles-reject-game-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Doubles Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Doubles Ladder.*"
+- tapOn:
+    id: "game-approval-decline"
+- assertVisible:
+    id: "game-dispute-screen"
+
+- tapOn:
+    id: "dispute-corrected-result"
+- tapOn:
+    id: "add-game-score-input"
+- inputText: "2119"
+- tapOn:
+    id: "add-game-submit"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-note-input"
+    direction: DOWN
+- tapOn:
+    id: "dispute-compose-note-input"
+- waitForAnimationToEnd:
+    timeout: 1000
+- inputText: "Maestro E2E test note: score should be 21-19."
+- assertVisible: ".*Maestro E2E test note.*"
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: "video-upload-modal-close"
+    commands:
+      - tapOn:
+          id: "video-upload-modal-close"
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- tapOn:
+    id: "dispute-compose-submit"
+- extendedWaitUntil:
+    visible: "Dispute submitted for review"
+    timeout: 10000
+
+# Mock the admin action: ask for more evidence on the dispute just opened.
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-mock-request-doubles-more-evidence"
+- extendedWaitUntil:
+    visible: "Requested"
+    timeout: 15000
+- tapOn: "OK"
+
+# Back on the same GameDisputeScreen instance (still on the Competitions
+# tab's stack) — the live dispute listener now shows the evidence-requested
+# phase, auto-expanded with the real "Add your evidence" follow-up form.
+- tapOn:
+    id: "tab-competitions"
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible: ".*Evidence requested.*"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-evidence-note-input"
+    direction: DOWN
+- assertVisible: ".*Add your evidence.*"
+- tapOn:
+    id: "dispute-evidence-note-input"
+- waitForAnimationToEnd:
+    timeout: 1000
+- inputText: "Maestro E2E test note: here is the extra detail requested."
+- assertVisible: ".*extra detail requested.*"
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: "video-upload-modal-close"
+    commands:
+      - tapOn:
+          id: "video-upload-modal-close"
+- scrollUntilVisible:
+    element:
+      id: "dispute-evidence-submit"
+    direction: DOWN
+- tapOn:
+    id: "dispute-evidence-submit"
+- extendedWaitUntil:
+    visible: "Note sent"
+    timeout: 10000
+
+# Mock the admin action: uphold the dispute now that more evidence is in.
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-mock-resolve-doubles-upheld"
+- extendedWaitUntil:
+    visible: "Resolved"
+    timeout: 15000
+- tapOn: "OK"
+
+# Same numbers as reject-doubles-upheld.yaml: Team B (Maestro D & Maestro E)
+# win the disputed 21-19 margin — Wins 1, PD +2, CP 20. Team A (Maestro F &
+# Mohsin M) — Wins 0, PD -2, CP 0.
+- tapOn:
+    id: "tab-competitions"
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible: ".*Resolved.*"
+- scrollUntilVisible:
+    element:
+      id: "dispute-view-ladder"
+    direction: UP
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "dispute-view-ladder"
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro D.*Maestro E.*Wins.*1.*PD.*2.*CP.*20.*"
+    timeout: 15000
+- assertVisible: ".*Maestro F.*Mohsin M.*Wins.*0.*PD.*-2.*CP.*0.*"
+
+# testUser's own UserProfile: CP 100 -> 85, PD 0 -> -2, one loss.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-2 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"
