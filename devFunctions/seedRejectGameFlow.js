@@ -20,6 +20,7 @@ import {
   notificationTypes,
   notificationSchema,
   createLadderMatchGames,
+  buildLadderParticipant,
 } from "@shared";
 import { formatDisplayName } from "../helpers/formatDisplayName";
 
@@ -34,6 +35,31 @@ const BEST_OF = 5;
 // this seed reports) is always this id. Maestro flows can reference it
 // directly instead of reading it back out of the app.
 export const MAESTRO_GAME_ID = `${MAESTRO_MATCH_ID}-g1`;
+// Known-baseline global profile stats, reset on every seed call so the
+// reject-cancel-dispute flow can assert an exact before/after CP/Win/PD once
+// the cancelled dispute's original score gets scored. XP starts at 100 (well
+// clear of the app's 20-XP floor) so a losing game's XP delta is never
+// clamped. Safe on this account only because it's the throwaway Maestro test
+// user — never do this to a real account.
+const baselineProfileDetail = (xp) => ({
+  XP: xp,
+  totalPointDifference: 0,
+  numberOfWins: 0,
+  numberOfLosses: 0,
+  numberOfGamesPlayed: 0,
+  winPercentage: 0,
+  prevGameXP: 0,
+  highestWinStreak: 0,
+  highestLossStreak: 0,
+  winStreak3: 0,
+  winStreak5: 0,
+  winStreak7: 0,
+  demonWin: 0,
+  averagePointDifference: 0,
+  pointDifferenceLog: [],
+  resultLog: [],
+  currentStreak: { type: null, count: 0 },
+});
 
 const toPlayer = (user) => ({
   userId: user.userId,
@@ -82,7 +108,7 @@ export const seedRejectGameFlow = async ({
       handPreference: "",
       provider: "seed",
       dob: "",
-      profileDetail: { XP: 20 },
+      profileDetail: baselineProfileDetail(100),
       profileImage: "",
       bio: "",
       headline: "",
@@ -94,6 +120,15 @@ export const seedRejectGameFlow = async ({
       showPhoneNumber: false,
       pushTokens: [],
     },
+    { merge: true },
+  );
+
+  // Reset the test user's own global profile stats too, so the UserProfile
+  // screen shows a predictable before/after once a cancelled dispute scores
+  // the original game.
+  await setDoc(
+    doc(db, "users", testUser.userId),
+    { profileDetail: baselineProfileDetail(100) },
     { merge: true },
   );
 
@@ -149,6 +184,17 @@ export const seedRejectGameFlow = async ({
     updatedBy: testUser.userId,
     updatedAt: new Date(),
   });
+
+  // Per-ladder standings (Player Performance tab) — reset both participants
+  // to 0 CP/Wins/Losses/PD each run, same reasoning as the global reset above.
+  await setDoc(
+    doc(db, "ladders", MAESTRO_LADDER_ID, "ladderParticipants", testUser.userId),
+    buildLadderParticipant(testUser),
+  );
+  await setDoc(
+    doc(db, "ladders", MAESTRO_LADDER_ID, "ladderParticipants", opponent.userId),
+    buildLadderParticipant(opponent),
+  );
 
   const now = new Date();
   await setDoc(doc(db, "ladders", MAESTRO_LADDER_ID, "ladderMatches", MAESTRO_MATCH_ID), {
