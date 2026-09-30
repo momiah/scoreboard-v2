@@ -433,7 +433,11 @@ const Tabs = () => {
             },
           }}
         />
-        <Tab.Screen name="Profile" component={ProfileStack} />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileStack}
+          options={{ tabBarButtonTestID: "tab-profile" }}
+        />
       </Tab.Navigator>
 
       {/* {showAd && (
