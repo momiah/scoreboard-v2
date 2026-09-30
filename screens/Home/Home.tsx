@@ -49,6 +49,7 @@ import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 import { seedRejectGameFlow } from "@/devFunctions/seedRejectGameFlow";
+import { seedDoublesRejectGameFlow } from "@/devFunctions/seedRejectGameFlowDoubles";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -268,6 +269,47 @@ const Home = () => {
           >
             <Text style={{ color: "white" }}>
               Seed Reject-Game Flow (Active Dispute)
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {currentUser ? (
+          <TouchableOpacity
+            testID="maestro-seed-doubles-reject-game-flow"
+            onPress={async () => {
+              try {
+                const outcome = await seedDoublesRejectGameFlow({
+                  testUser: currentUser,
+                });
+                Alert.alert("Seeded", JSON.stringify(outcome));
+              } catch (error) {
+                Alert.alert("Seed failed", String(error));
+              }
+            }}
+          >
+            <Text style={{ color: "white" }}>
+              Seed Doubles Reject-Game Flow
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {currentUser ? (
+          <TouchableOpacity
+            testID="maestro-seed-doubles-active-dispute"
+            onPress={async () => {
+              try {
+                const outcome = await seedDoublesRejectGameFlow({
+                  testUser: currentUser,
+                  withActiveDispute: true,
+                });
+                Alert.alert("Seeded", JSON.stringify(outcome));
+              } catch (error) {
+                Alert.alert("Seed failed", String(error));
+              }
+            }}
+          >
+            <Text style={{ color: "white" }}>
+              Seed Doubles Reject-Game Flow (Active Dispute)
             </Text>
           </TouchableOpacity>
         ) : null}

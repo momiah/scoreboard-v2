@@ -41,7 +41,7 @@ export const MAESTRO_GAME_ID = `${MAESTRO_MATCH_ID}-g1`;
 // clear of the app's 20-XP floor) so a losing game's XP delta is never
 // clamped. Safe on this account only because it's the throwaway Maestro test
 // user — never do this to a real account.
-const baselineProfileDetail = (xp) => ({
+export const baselineProfileDetail = (xp) => ({
   XP: xp,
   totalPointDifference: 0,
   numberOfWins: 0,
@@ -61,7 +61,7 @@ const baselineProfileDetail = (xp) => ({
   currentStreak: { type: null, count: 0 },
 });
 
-const toPlayer = (user) => ({
+export const toPlayer = (user) => ({
   userId: user.userId,
   firstName: user.firstName || "",
   lastName: user.lastName || "",
