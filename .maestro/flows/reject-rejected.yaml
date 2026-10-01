@@ -21,7 +21,6 @@ onFlowStart:
     id: "game-approval-modal"
 - tapOn:
     id: "game-approval-decline"
-
 - assertVisible:
     id: "game-dispute-screen"
 
@@ -41,7 +40,7 @@ onFlowStart:
     id: "dispute-compose-note-input"
 - waitForAnimationToEnd:
     timeout: 1000
-- inputText: "Maestro E2E test note: score should be reviewed."
+- inputText: "Maestro E2E test note: score should be 21-19."
 - assertVisible: ".*Maestro E2E test note.*"
 - hideKeyboard
 - runFlow:
@@ -61,16 +60,53 @@ onFlowStart:
     visible: "Dispute submitted for review"
     timeout: 10000
 
-- assertVisible: ".*Dispute opened.*"
-- assertVisible:
-    id: "dispute-view-match"
 - tapOn:
-    id: "dispute-view-match"
-
-- assertVisible:
-    id: "match-details"
-- assertVisible:
-    id: "ladder-game-maestro-reject-flow-match-g1"
+    id: "tab-home"
+- tapOn:
+    id: "maestro-mock-resolve-rejected"
 - extendedWaitUntil:
-    visible: ".*Disputed.*"
+    visible: "Resolved"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible: ".*Resolved.*"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-view-ladder"
+    direction: UP
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "dispute-view-ladder"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
     timeout: 10000
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro O.*Wins.*1.*PD.*6.*CP.*20.*"
+    timeout: 15000
+
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-6 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

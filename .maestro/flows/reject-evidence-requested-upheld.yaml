@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - tapOn:
-    id: "maestro-seed-doubles-reject-game-flow"
+    id: "maestro-seed-reject-game-flow"
 - extendedWaitUntil:
     visible: "Seeded"
     timeout: 15000
@@ -14,9 +14,11 @@ onFlowStart:
 - tapOn:
     id: "competitions-notifications-button"
 - extendedWaitUntil:
-    visible: ".*Maestro Reject-Flow Doubles Ladder.*"
+    visible: ".*Maestro Reject-Flow Ladder.*"
     timeout: 15000
-- tapOn: ".*Maestro Reject-Flow Doubles Ladder.*"
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+- assertVisible:
+    id: "game-approval-modal"
 - tapOn:
     id: "game-approval-decline"
 - assertVisible:
@@ -61,7 +63,7 @@ onFlowStart:
 - tapOn:
     id: "tab-home"
 - tapOn:
-    id: "maestro-mock-request-doubles-more-evidence"
+    id: "maestro-mock-request-more-evidence"
 - extendedWaitUntil:
     visible: "Requested"
     timeout: 15000
@@ -105,7 +107,7 @@ onFlowStart:
 - tapOn:
     id: "tab-home"
 - tapOn:
-    id: "maestro-mock-resolve-doubles-upheld"
+    id: "maestro-mock-resolve-upheld"
 - extendedWaitUntil:
     visible: "Resolved"
     timeout: 15000
@@ -125,12 +127,15 @@ onFlowStart:
     timeout: 1000
 - tapOn:
     id: "dispute-view-ladder"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 10000
 - tapOn:
     id: "ladder-tab-Performance"
 - extendedWaitUntil:
-    visible: ".*Maestro D.*Maestro E.*Wins.*1.*PD.*2.*CP.*20.*"
+    visible: ".*Maestro O.*Wins.*1.*PD.*2.*CP.*20.*"
     timeout: 15000
-- assertVisible: ".*Maestro F.*Mohsin M.*Wins.*0.*PD.*-2.*CP.*0.*"
 
 - tapOn:
     id: "tab-profile"

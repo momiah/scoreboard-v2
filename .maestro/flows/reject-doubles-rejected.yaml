@@ -2,16 +2,6 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-# Doubles scenario 2: decline -> dispute opened with a corrected score + note
-# -> dispute REJECTED -> all 4 players' + both teams' stats update to reflect
-# the ORIGINAL 21-15 result (the disputed 21-19 correction is thrown out),
-# same numbers as reject-cancel-dispute-doubles.yaml since both resolutions
-# score dispute.originalGame.
-#
-# REJECTED has no in-app trigger (see docs/testing/reject-game-flow-test-plan.md
-# §5 and .maestro/README.md) — mocked via devFunctions/mockResolveDispute.js,
-# which runs the real planDisputeResolution/write path, just triggered by a
-# Home-screen button instead of an admin UI that doesn't exist yet.
 - tapOn:
     id: "maestro-seed-doubles-reject-game-flow"
 - extendedWaitUntil:
@@ -50,9 +40,6 @@ onFlowStart:
     timeout: 1000
 - inputText: "Maestro E2E test note: score should be 21-19."
 - assertVisible: ".*Maestro E2E test note.*"
-# hideKeyboard's dismiss gesture is a swipe from the screen center, which at
-# this scroll position lands on the (large) "Upload video evidence" card and
-# opens it — close it back out before continuing.
 - hideKeyboard
 - runFlow:
     when:
@@ -71,7 +58,6 @@ onFlowStart:
     visible: "Dispute submitted for review"
     timeout: 10000
 
-# Mock the admin action: reject the dispute that was just opened for real.
 - tapOn:
     id: "tab-home"
 - tapOn:
@@ -81,16 +67,6 @@ onFlowStart:
     timeout: 15000
 - tapOn: "OK"
 
-# Team Performance: rejecting throws out the disputed correction and scores
-# the original 21-15 game normally — Team B (Maestro D & Maestro E, the
-# reporters) win it. Wins 1, PD +6, CP 20 for Team B; Wins 0, PD -6, CP 0 for
-# Team A — identical numbers to reject-cancel-dispute-doubles.yaml since both
-# resolutions score dispute.originalGame.
-#
-# The Competitions tab's own navigation stack still has GameDisputeScreen on
-# top from composing the dispute earlier in this flow, so switching back to
-# it returns straight there — with the live subscribeToDispute listener
-# already showing the resolved state.
 - tapOn:
     id: "tab-competitions"
 - assertVisible:
@@ -105,7 +81,6 @@ onFlowStart:
     timeout: 15000
 - assertVisible: ".*Maestro F.*Mohsin M.*Wins.*0.*PD.*-6.*CP.*0.*"
 
-# testUser's own UserProfile: CP 100 -> 85, PD 0 -> -6, one loss.
 - tapOn:
     id: "tab-profile"
 - extendedWaitUntil:

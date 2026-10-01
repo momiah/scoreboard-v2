@@ -46,6 +46,14 @@ reported ladder game + notification to act on. Re-running the seed resets
 game 1 and clears any dispute from a previous run, so flows are safe to
 re-run back to back.
 
+## Test-only Home-screen buttons
+
+The seed/mock-resolve/mock-request-evidence/cleanup buttons these flows tap
+are gated behind `__DEV__` in `screens/Home/Home.tsx`, so they only render in
+a dev-client build (never in a production/release build) — tap
+**Delete Reject-Flow Test Data** (`devFunctions/cleanupRejectFlowTestData.js`)
+to remove every ladder/match/dispute/fixture-user doc these flows create.
+
 ## Known limitation: native pickers
 
 The video-evidence picker (`expo-image-picker` → iOS `PHPickerViewController`)

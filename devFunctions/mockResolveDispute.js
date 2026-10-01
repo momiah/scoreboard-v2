@@ -16,22 +16,6 @@ const LADDER_TEAMS = "ladderTeams";
 const LADDER_PARTICIPANTS = "ladderParticipants";
 const USERS = "users";
 
-/**
- * Test-only stand-in for the admin resolution action this app doesn't have
- * yet (see docs/testing/reject-game-flow-test-plan.md §5 — UPHELD/REJECTED/
- * VOID have no in-app trigger). Runs the exact same planDisputeResolution +
- * write shape services/disputes.ts's cancelDispute uses, just parameterized
- * by resolution/actorId/note instead of being hardcoded to CANCELLED. This
- * is not a hand-approximated mock — it's the real scoring/resolution logic,
- * triggered by a script instead of an admin UI that doesn't exist yet.
- *
- * Takes `gameId` rather than a disputeId so callers don't need to know the
- * (auto-generated) id of a dispute opened for real through the app UI —
- * it looks up the currently-active dispute for that game itself, the same
- * way the app's own "disputed" link does.
- *
- * @param {{ ladderId: string, matchId: string, gameId: string, resolution: "upheld"|"rejected"|"void", actorId: string, note?: string }} params
- */
 export const mockResolveDispute = async ({
   ladderId,
   matchId,
@@ -103,10 +87,6 @@ export const mockResolveDispute = async ({
     return { success: true, finalGame: plan.finalGame };
   });
 
-  // Mirror GameDisputeScreen's notifyParticipants for a real resolution —
-  // gives the Maestro flow (and a real opener) a reliable, order-independent
-  // way back to the resolved dispute, instead of hunting for it through
-  // Home's ladder carousel.
   await addDoc(collection(db, "users", actorId, "notifications"), {
     ...notificationSchema,
     createdAt: new Date(),

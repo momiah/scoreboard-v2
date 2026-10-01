@@ -27,9 +27,6 @@ import {
 import { formatDisplayName } from "../helpers/formatDisplayName";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 
-// Fixed ids, hyphen-free so normalizeTeamKey's derived team keys stay simple
-// enough to hardcode in a Maestro flow (it splits every id on "-" before
-// re-sorting, so a real id with hyphens in it produces a scrambled key).
 export const MAESTRO_D_LADDER_ID = "maestro-reject-flow-doubles-ladder";
 export const MAESTRO_D_MATCH_ID = "maestro-reject-flow-doubles-match";
 export const MAESTRO_D_PARTNER_ID = "maestrodpartner";
@@ -39,16 +36,6 @@ export const MAESTRO_D_DISPUTE_ID = "maestro-reject-flow-doubles-dispute";
 const BEST_OF = 5;
 export const MAESTRO_D_GAME_ID = `${MAESTRO_D_MATCH_ID}-g1`;
 
-/**
- * Doubles counterpart to seedRejectGameFlow.js: a checked-in doubles ladder
- * match with one game already reported (Team B, the opponents, win 21-15)
- * and a matching notification for the test user (Team A, with a synthetic
- * partner). Same idempotent-reset shape as the singles seed — re-running it
- * always resets both teams and all four players back to a 0/0/0 baseline.
- *
- * Pass `withActiveDispute: true` for a game already under an active dispute
- * the test user opened, matching createDispute's shape.
- */
 export const seedDoublesRejectGameFlow = async ({
   testUser,
   withActiveDispute = false,
@@ -59,9 +46,6 @@ export const seedDoublesRejectGameFlow = async ({
     );
   }
 
-  // Distinct last-name initials (formatDisplayName is "First L.") so each
-  // player's name is unambiguous in screenshots/assertions, and doesn't
-  // collide with the singles seed's "Maestro O" opponent.
   const partner = {
     userId: MAESTRO_D_PARTNER_ID,
     firstName: "Maestro",
@@ -188,10 +172,6 @@ export const seedDoublesRejectGameFlow = async ({
     updatedAt: new Date(),
   });
 
-  // Team standings (Team Performance tab) — both teams reset to a 0 baseline
-  // each run. teamKey is derived the same way the real scoring code derives
-  // it (normalizeTeamKey), not hand-computed, so it's always correct even
-  // though testUser's real id is unknown ahead of time.
   const teamAKey = normalizeTeamKey([testUser.userId, partner.userId]);
   const teamBKey = normalizeTeamKey([opp1.userId, opp2.userId]);
   const teamA = {
@@ -220,19 +200,6 @@ export const seedDoublesRejectGameFlow = async ({
     teamB,
   );
 
-  // Also seed a ladderParticipants doc per player. The Team Performance tab
-  // doesn't read these, but the dispute-resolution scoring path does — and
-  // when it can't find one, courtchamps-shared's scoreDoublesLadderGame falls
-  // back to building one on the fly via buildLadderParticipant(). That
-  // fallback has a real bug: it shallow-spreads the module-level
-  // scoreboardProfileSchema singleton, so every fallback participant shares
-  // the SAME `currentStreak`/`resultLog`/etc. object by reference — scoring
-  // one player mutates the "fresh" state the next player reads, corrupting
-  // all 4 players' streak/XP numbers (confirmed directly against the
-  // installed package; see the message to the user for the reproduction).
-  // Pre-seeding real, independent participant docs avoids the fallback
-  // entirely, which is also what keeps a real doubles ladder correct in
-  // production once players have actually played a game before.
   await Promise.all(
     [testUser, partner, opp1, opp2].map((user) =>
       setDoc(
@@ -303,7 +270,6 @@ export const seedDoublesRejectGameFlow = async ({
     },
   );
 
-  // Reset: drop any dispute or notification left over from a previous run.
   const staleDisputes = await getDocs(
     query(collection(db, DISPUTES_COLLECTION), where("gameId", "==", gameId)),
   );
@@ -341,9 +307,6 @@ export const seedDoublesRejectGameFlow = async ({
       team2: { ...reportedGame.team2, score: 19 },
       gamescore: "21-19",
       approvalStatus: "",
-      // Scoring reads result.winner/loser.score, not team1/team2.score
-      // directly — these must move with the corrected score above, or an
-      // UPHELD resolution ends up scoring the original margin.
       result: {
         winner: { ...reportedGame.result.winner, score: 21 },
         loser: { ...reportedGame.result.loser, score: 19 },

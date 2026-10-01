@@ -742,10 +742,6 @@ const Description = styled.Text({
   fontStyle: "italic",
 });
 
-// A nested Text-in-Text (as GameApprovalModal used for the "disputed" link)
-// merges into one accessibility element on iOS, so it can't be tapped as its
-// own element in Maestro — siblings in a row keep the same look but stay
-// individually accessible.
 const DisputedRow = styled.View({
   flexDirection: "row",
   flexWrap: "wrap",

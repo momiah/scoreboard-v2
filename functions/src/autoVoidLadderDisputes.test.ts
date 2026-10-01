@@ -1,18 +1,9 @@
-/**
- * Unit tests for the scheduled auto-void function: the last resolution path
- * that's fully automatic (no admin action), so a bug here silently strands
- * disputes or scores the wrong game with nobody watching. Firestore (Admin
- * SDK) is mocked at the module boundary; isDisputeEvidenceOverdue is the
- * REAL implementation so the overdue-filtering itself is under test, not
- * just the plumbing around it.
- */
 import {
   DISPUTE_STAGE,
   DISPUTE_RESOLUTION,
   DISPUTE_SYSTEM_ACTOR,
 } from "courtchamps-shared/types";
 
-// ── Mocks ────────────────────────────────────────────────────────────────
 const mockFirestore = jest.fn();
 jest.mock("firebase-admin", () => ({
   firestore: (...args: unknown[]) => mockFirestore(...args),
@@ -32,11 +23,8 @@ jest.mock("courtchamps-shared/helpers", () => ({
   isDoublesDispute: () => false,
 }));
 
-// Must follow the jest.mock calls above for readability;
-// babel-plugin-jest-hoist hoists them either way.
 import { runAutoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 
-// ── Fixtures ─────────────────────────────────────────────────────────────
 const snapOf = <T>(exists: boolean, data: T) => ({ exists, data: () => data });
 
 const queryDocOf = (data: Record<string, unknown>) => ({
@@ -79,9 +67,6 @@ const makeTx = (getResults: Array<ReturnType<typeof snapOf>>) => {
   return { get, set: jest.fn(), update: jest.fn() };
 };
 
-// The chain used to build participant/team/user/match refs inside
-// voidDispute — never read directly outside a transaction, so it just needs
-// to keep returning something chainable.
 const refChain = (): Record<string, unknown> => {
   const node: Record<string, unknown> = {};
   node.collection = jest.fn(() => refChain());
@@ -109,7 +94,6 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-// ── runAutoVoidLadderDisputes ────────────────────────────────────────────
 describe("runAutoVoidLadderDisputes", () => {
   it("does nothing when no dispute's evidence deadline has passed", async () => {
     const notDue = baseDispute({ evidenceDueAt: new Date(Date.now() + 60_000) });
@@ -139,7 +123,6 @@ describe("runAutoVoidLadderDisputes", () => {
 
     await runAutoVoidLadderDisputes();
 
-    // Exactly one transaction ran — for the overdue dispute only.
     expect(mockRunTransaction).toHaveBeenCalledTimes(1);
     expect(mockPlanDisputeResolution).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -161,8 +144,8 @@ describe("runAutoVoidLadderDisputes", () => {
 
     await runAutoVoidLadderDisputes();
 
-    expect(tx.update).toHaveBeenCalledTimes(2); // match + dispute
-    expect(mockSendNotification).toHaveBeenCalledTimes(2); // one per participant
+    expect(tx.update).toHaveBeenCalledTimes(2);
+    expect(mockSendNotification).toHaveBeenCalledTimes(2);
     const [notification] = mockSendNotification.mock.calls[0];
     expect(notification.recipientId).toBe("p1");
     expect(notification.senderId).toBe(DISPUTE_SYSTEM_ACTOR);
