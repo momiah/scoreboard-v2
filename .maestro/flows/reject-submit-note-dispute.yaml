@@ -2,13 +2,6 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-# Scenario 2.2 (docs/testing/reject-game-flow-test-plan.md): opener submits a
-# note-only dispute -> the game shows the Disputed pill (and is dimmed — not
-# asserted directly, styled visual state), and the timeline shows the
-# "Dispute opened" phase.
-#
-# Re-seeds first (see reject-decline-opens-dispute.yaml for why), then walks
-# Decline -> compose -> submit before checking the result.
 - tapOn:
     id: "maestro-seed-reject-game-flow"
 - extendedWaitUntil:
@@ -32,9 +25,6 @@ onFlowStart:
 - assertVisible:
     id: "game-dispute-screen"
 
-# A corrected score is required before the dispute can be submitted, even for
-# a note-only dispute (createDispute rejects without one) — enter one that
-# differs from the original 21-15.
 - tapOn:
     id: "dispute-corrected-result"
 - tapOn:
@@ -49,16 +39,10 @@ onFlowStart:
     direction: DOWN
 - tapOn:
     id: "dispute-compose-note-input"
-# Focusing the note field triggers an animated scroll-to-end (GameDisputeScreen's
-# onNoteFocus) — let it settle before typing, or the keystrokes can land while
-# the view is still moving and get dropped.
 - waitForAnimationToEnd:
     timeout: 1000
 - inputText: "Maestro E2E test note: score should be reviewed."
 - assertVisible: ".*Maestro E2E test note.*"
-# hideKeyboard's dismiss gesture is a swipe from the screen center, which at
-# this scroll position lands on the (large) "Upload video evidence" card and
-# opens it — close it back out before continuing.
 - hideKeyboard
 - runFlow:
     when:
@@ -77,8 +61,6 @@ onFlowStart:
     visible: "Dispute submitted for review"
     timeout: 10000
 
-# The dispute now exists — the composer is replaced by the timeline, opened
-# with this note.
 - assertVisible: ".*Dispute opened.*"
 - assertVisible:
     id: "dispute-view-match"
@@ -87,13 +69,8 @@ onFlowStart:
 
 - assertVisible:
     id: "match-details"
-# The Disputed pill's testID doesn't surface as its own accessibility element
-# on iOS (it gets flattened into its parent), so assert on the pill's text —
-# game 1 is the only disputed game on screen, so this is unambiguous.
 - assertVisible:
     id: "ladder-game-maestro-reject-flow-match-g1"
-# iOS merges the whole card into one accessibility element ("GAME 1 Maestro O
-# 21 - 15 Disputed Mohsin M"), so match the pill's text as a substring.
 - extendedWaitUntil:
     visible: ".*Disputed.*"
     timeout: 10000

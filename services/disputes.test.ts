@@ -1,14 +1,3 @@
-/**
- * Integration tests for the reject-game (dispute) lifecycle service. Firestore
- * is mocked at the module boundary (firebase/firestore + firebase.config) so we
- * exercise the real orchestration and guards in services/disputes.ts —
- * duplicate-dispute guard, evidence validation, participant/opener checks,
- * per-round video limit, and the terminal writes — without a live backend.
- *
- * Shared helpers (evidence validity, stages, resolution) are the REAL ones, so
- * the tests track production rules. planDisputeResolution and the player-id
- * helpers are stubbed for the cancel path, which is tested elsewhere.
- */
 import {
   DISPUTE_STAGE,
   DISPUTE_EVENT_TYPE,
@@ -16,7 +5,6 @@ import {
 } from "@shared/types";
 import type { Player } from "@shared/types";
 
-// ── Mocks ────────────────────────────────────────────────────────────────
 jest.mock("./firebase.config", () => ({ db: {} }));
 
 const mockGetDocs = jest.fn();
@@ -51,7 +39,6 @@ import {
   type CreateDisputeInput,
 } from "./disputes";
 
-// ── Fixtures ─────────────────────────────────────────────────────────────
 const snapOf = <T>(exists: boolean, data: T) => ({
   exists: () => exists,
   data: () => data,
@@ -100,7 +87,6 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-// ── createDispute ──────────────────────────────────────────────────────────
 describe("createDispute", () => {
   it("rejects evidence that is neither a note nor a video", async () => {
     const result = await createDispute(validCreateInput({ evidence: {} }));
@@ -136,12 +122,10 @@ describe("createDispute", () => {
     const result = await createDispute(validCreateInput());
 
     expect(result.success).toBe(true);
-    // Dispute written at under_review with an OPENED event.
     const [, dispute] = tx.set.mock.calls[0];
     expect(dispute.stage).toBe(DISPUTE_STAGE.UNDER_REVIEW);
     expect(dispute.openedBy).toBe("opener");
     expect(dispute.events[0].type).toBe(DISPUTE_EVENT_TYPE.OPENED);
-    // Only the disputed game (g1) is flagged, siblings untouched.
     const [, matchUpdate] = tx.update.mock.calls[0];
     expect(matchUpdate.games[0].approvalStatus).toBe("disputed");
     expect(matchUpdate.games[1].approvalStatus).toBeUndefined();
@@ -153,13 +137,11 @@ describe("createDispute", () => {
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
 
     const result = await createDispute(validCreateInput());
-    // Dispute still written, but no game gets flagged (index === -1 path).
     expect(result.success).toBe(true);
     expect(tx.update).not.toHaveBeenCalled();
   });
 });
 
-// ── addDisputeEvidence ───────────────────────────────────────────────────
 describe("addDisputeEvidence", () => {
   const activeDispute = {
     stage: DISPUTE_STAGE.UNDER_REVIEW,
@@ -231,7 +213,6 @@ describe("addDisputeEvidence", () => {
   });
 });
 
-// ── cancelDispute ────────────────────────────────────────────────────────
 describe("cancelDispute", () => {
   const dispute = {
     disputeId: "d1",
@@ -278,7 +259,6 @@ describe("cancelDispute", () => {
         actorId: "opener",
       }),
     );
-    // Both the match and dispute docs are updated from the plan.
     expect(tx.update).toHaveBeenCalledTimes(2);
   });
 });

@@ -8,16 +8,6 @@ import {
   getDisputeEvidenceDueAt,
 } from "@shared";
 
-/**
- * Test-only stand-in for the admin "request more evidence" action this app
- * doesn't have yet (see docs/testing/reject-game-flow-test-plan.md §5) —
- * appends an evidence_requested event and moves the dispute to
- * more_evidence_requested, the same shape a real admin action would write.
- * Takes `gameId` so callers can look up the currently-active dispute the same
- * way the app's own "disputed" link does.
- *
- * @param {{ gameId: string, actorId: string, note?: string }} params
- */
 export const mockRequestMoreEvidence = async ({ gameId, actorId, note }) => {
   if (!gameId || !actorId) {
     throw new Error(

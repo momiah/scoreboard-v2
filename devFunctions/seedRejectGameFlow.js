@@ -24,23 +24,12 @@ import {
 } from "@shared";
 import { formatDisplayName } from "../helpers/formatDisplayName";
 
-// Fixed ids so re-running the seed is idempotent — it always resets the same
-// ladder/match/game back to "just reported", rather than piling up test data.
 export const MAESTRO_LADDER_ID = "maestro-reject-flow-ladder";
 export const MAESTRO_MATCH_ID = "maestro-reject-flow-match";
 export const MAESTRO_OPPONENT_ID = "maestro-reject-flow-opponent";
 export const MAESTRO_DISPUTE_ID = "maestro-reject-flow-dispute";
 const BEST_OF = 5;
-// createLadderMatchGames ids each shell `${matchId}-g${n}` — game 1 (the one
-// this seed reports) is always this id. Maestro flows can reference it
-// directly instead of reading it back out of the app.
 export const MAESTRO_GAME_ID = `${MAESTRO_MATCH_ID}-g1`;
-// Known-baseline global profile stats, reset on every seed call so the
-// reject-cancel-dispute flow can assert an exact before/after CP/Win/PD once
-// the cancelled dispute's original score gets scored. XP starts at 100 (well
-// clear of the app's 20-XP floor) so a losing game's XP delta is never
-// clamped. Safe on this account only because it's the throwaway Maestro test
-// user — never do this to a real account.
 export const baselineProfileDetail = (xp) => ({
   XP: xp,
   totalPointDifference: 0,
@@ -69,19 +58,6 @@ export const toPlayer = (user) => ({
   displayName: formatDisplayName(user),
 });
 
-/**
- * Seed a ladder + accepted, checked-in match with one game already reported
- * (Pending, opponent as reporter) and a matching "game reported" notification
- * for the test user — everything the reject-game (dispute) Maestro flows
- * need to act on. Re-running it resets game 1 and clears any dispute/
- * notification left over from a previous run, so it's safe to call before
- * every Maestro suite run.
- *
- * Pass `withActiveDispute: true` to seed the game already under an active
- * dispute (opened by the test user, matching createDispute's shape) instead
- * of just reported — for flows that need a duplicate-guard / existing-
- * dispute starting point rather than walking the compose UI themselves.
- */
 export const seedRejectGameFlow = async ({
   testUser,
   withActiveDispute = false,
@@ -123,9 +99,6 @@ export const seedRejectGameFlow = async ({
     { merge: true },
   );
 
-  // Reset the test user's own global profile stats too, so the UserProfile
-  // screen shows a predictable before/after once a cancelled dispute scores
-  // the original game.
   await setDoc(
     doc(db, "users", testUser.userId),
     { profileDetail: baselineProfileDetail(100) },
@@ -185,8 +158,6 @@ export const seedRejectGameFlow = async ({
     updatedAt: new Date(),
   });
 
-  // Per-ladder standings (Player Performance tab) — reset both participants
-  // to 0 CP/Wins/Losses/PD each run, same reasoning as the global reset above.
   await setDoc(
     doc(db, "ladders", MAESTRO_LADDER_ID, "ladderParticipants", testUser.userId),
     buildLadderParticipant(testUser),
@@ -227,8 +198,6 @@ export const seedRejectGameFlow = async ({
     lastUpdated: now,
   });
 
-  // Reset: drop any dispute or notification left over from a previous run of
-  // this seed so the flow always starts from a freshly reported game.
   const staleDisputes = await getDocs(
     query(collection(db, DISPUTES_COLLECTION), where("gameId", "==", gameId)),
   );
@@ -260,17 +229,12 @@ export const seedRejectGameFlow = async ({
   });
 
   if (withActiveDispute) {
-    // Matches createDispute's shape (services/disputes.ts) — opened by the
-    // test user with a note, same as the real compose flow would write.
     const disputedGame = {
       ...reportedGame,
       team1: { ...reportedGame.team1, score: 21 },
       team2: { ...reportedGame.team2, score: 19 },
       gamescore: "21-19",
       approvalStatus: "",
-      // Scoring reads result.winner/loser.score, not team1/team2.score
-      // directly — these must move with the corrected score above, or an
-      // UPHELD resolution ends up scoring the original margin.
       result: {
         winner: { ...reportedGame.result.winner, score: 21 },
         loser: { ...reportedGame.result.loser, score: 19 },
