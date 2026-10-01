@@ -104,7 +104,11 @@ const voidDispute = async (
     return dispute;
   });
 
-export const autoVoidLadderDisputes = onSchedule("every 1 hours", async () => {
+/**
+ * Handler body, extracted from the onSchedule wrapper below so it can be
+ * invoked directly in tests without going through the scheduler/emulator.
+ */
+export const runAutoVoidLadderDisputes = async (): Promise<void> => {
   const db = admin.firestore();
   const nowMs = Date.now();
   try {
@@ -150,4 +154,9 @@ export const autoVoidLadderDisputes = onSchedule("every 1 hours", async () => {
   } catch (error) {
     console.log("❌ Auto-void function failed:", error);
   }
-});
+};
+
+export const autoVoidLadderDisputes = onSchedule(
+  "every 1 hours",
+  runAutoVoidLadderDisputes,
+);
