@@ -6,26 +6,24 @@ const DEFAULT_IMAGE =
 
 const SITE_URL = "https://courtchamps.com";
 
-// Firestore auto-IDs are alphanumeric; reject anything else before it reaches
-// a query, a redirect or the HTML below.
-const ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+// Competition IDs are built from user-entered names (see generateLeagueId), so
+// they can hold any character Firestore allows in a document ID. Reject only
+// what Firestore itself would reject; escaping below keeps the HTML safe.
+const isValidDocId = (id: unknown): id is string =>
+  typeof id === "string" &&
+  id.length > 0 &&
+  id.length <= 1500 &&
+  !id.includes("/") &&
+  id !== "." &&
+  id !== "..";
 
-const COMPETITION_TYPES: Record<
-  string,
-  { collection: string; nameField: string; imageField: string; descField: string }
-> = {
-  league: {
-    collection: "leagues",
-    nameField: "leagueName",
-    imageField: "leagueImage",
-    descField: "leagueDescription",
-  },
-  tournament: {
-    collection: "tournaments",
-    nameField: "tournamentName",
-    imageField: "tournamentImage",
-    descField: "tournamentDescription",
-  },
+const decodeSegment = (segment: string | undefined): string | undefined => {
+  if (segment === undefined) return undefined;
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return undefined;
+  }
 };
 
 const escapeHtml = (value: string): string =>
@@ -37,7 +35,7 @@ const escapeHtml = (value: string): string =>
     .replace(/'/g, "&#39;");
 
 const safeImage = (value: unknown): string =>
-  typeof value === "string" && value.startsWith("https://") ? value : DEFAULT_IMAGE;
+  typeof value === "string" && /^https?:\/\//.test(value) ? value : DEFAULT_IMAGE;
 
 const asText = (value: unknown, fallback: string): string =>
   typeof value === "string" && value.trim() ? value : fallback;
@@ -86,12 +84,12 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
   if (parts[0] === "og" && parts[1] === "videos") {
     const docId = req.query.v;
 
-    if (typeof docId !== "string" || !ID_PATTERN.test(docId)) {
+    if (!isValidDocId(docId)) {
       res.redirect(SITE_URL);
       return;
     }
 
-    const url = `${SITE_URL}/videos?v=${docId}`;
+    const url = `${SITE_URL}/videos?v=${encodeURIComponent(docId)}`;
 
     try {
       const videoDoc = await admin
@@ -130,21 +128,25 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
   }
 
   // ── Competition preview ───────────────────────────────────────────────────
-  const type = parts[1];
-  const id = parts[2];
-  const config = COMPETITION_TYPES[type];
+  const type = decodeSegment(parts[1]);
+  const id = decodeSegment(parts[2]);
 
-  if (!config || !id || !ID_PATTERN.test(id)) {
+  if (!type || !isValidDocId(id)) {
     res.redirect(SITE_URL);
     return;
   }
 
-  const url = `${SITE_URL}/join/${type}/${id}`;
+  const collectionName = type === "league" ? "leagues" : "tournaments";
+  const nameField = type === "league" ? "leagueName" : "tournamentName";
+  const imageField = type === "league" ? "leagueImage" : "tournamentImage";
+  const descField =
+    type === "league" ? "leagueDescription" : "tournamentDescription";
+  const url = `${SITE_URL}/join/${encodeURIComponent(type)}/${encodeURIComponent(id)}`;
 
   try {
     const doc = await admin
       .firestore()
-      .collection(config.collection)
+      .collection(collectionName)
       .doc(id)
       .get();
     const data = doc.data();
@@ -152,12 +154,12 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
     res.set("Cache-Control", "public, max-age=300, s-maxage=600");
     res.send(
       renderPreview({
-        title: asText(data?.[config.nameField], "Court Champs Competition"),
+        title: asText(data?.[nameField], "Court Champs Competition"),
         description: asText(
-          data?.[config.descField],
+          data?.[descField],
           "Join this competition on Court Champs 🏸"
         ),
-        image: safeImage(data?.[config.imageField]),
+        image: safeImage(data?.[imageField]),
         url,
         type: "website",
       })
