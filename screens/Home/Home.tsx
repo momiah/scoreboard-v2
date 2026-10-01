@@ -62,7 +62,8 @@ import {
 } from "@/devFunctions/seedRejectGameFlowDoubles";
 import { mockResolveDispute } from "@/devFunctions/mockResolveDispute";
 import { mockRequestMoreEvidence } from "@/devFunctions/mockRequestMoreEvidence";
-import { cleanupRejectFlowTestData } from "@/devFunctions/cleanupRejectFlowTestData";
+import { cleanupLadderTestData } from "@/devFunctions/cleanupLadderTestData";
+import { seedAddApproveGameFlow } from "@/devFunctions/seedAddApproveGameFlow";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -409,10 +410,26 @@ const Home = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              testID="maestro-cleanup-reject-flow-data"
+              testID="maestro-seed-add-game-flow"
               onPress={async () => {
                 try {
-                  const outcome = await cleanupRejectFlowTestData({
+                  const outcome = await seedAddApproveGameFlow({
+                    testUser: currentUser,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>Seed Add-Game Flow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="maestro-cleanup-ladder-test-data"
+              onPress={async () => {
+                try {
+                  const outcome = await cleanupLadderTestData({
                     testUser: currentUser,
                   });
                   Alert.alert("Cleaned up", JSON.stringify(outcome));
@@ -421,9 +438,7 @@ const Home = () => {
                 }
               }}
             >
-              <Text style={{ color: "white" }}>
-                Delete Reject-Flow Test Data
-              </Text>
+              <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
             </TouchableOpacity>
           </>
         ) : null}

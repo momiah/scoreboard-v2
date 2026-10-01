@@ -51,8 +51,9 @@ re-run back to back.
 The seed/mock-resolve/mock-request-evidence/cleanup buttons these flows tap
 are gated behind `__DEV__` in `screens/Home/Home.tsx`, so they only render in
 a dev-client build (never in a production/release build) — tap
-**Delete Reject-Flow Test Data** (`devFunctions/cleanupRejectFlowTestData.js`)
-to remove every ladder/match/dispute/fixture-user doc these flows create.
+**Delete Ladder Test Data** (`devFunctions/cleanupLadderTestData.js`) to
+remove every ladder/match/dispute/fixture-user doc any of these flows create
+(reject-game and add-game both).
 
 ## Known limitation: native pickers
 
