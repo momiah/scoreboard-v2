@@ -48,7 +48,12 @@ import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
-import { seedRejectGameFlow } from "@/devFunctions/seedRejectGameFlow";
+import {
+  seedRejectGameFlow,
+  MAESTRO_LADDER_ID,
+  MAESTRO_MATCH_ID,
+  MAESTRO_GAME_ID,
+} from "@/devFunctions/seedRejectGameFlow";
 import {
   seedDoublesRejectGameFlow,
   MAESTRO_D_LADDER_ID,
@@ -57,6 +62,7 @@ import {
 } from "@/devFunctions/seedRejectGameFlowDoubles";
 import { mockResolveDispute } from "@/devFunctions/mockResolveDispute";
 import { mockRequestMoreEvidence } from "@/devFunctions/mockRequestMoreEvidence";
+import { cleanupRejectFlowTestData } from "@/devFunctions/cleanupRejectFlowTestData";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -238,95 +244,125 @@ const Home = () => {
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
 
-        {/* Temporary: seeds a ladder + reported game + notification for the
-            Maestro reject-game flow. Remove once those flows no longer need
-            manual re-seeding. */}
-        {currentUser ? (
-          <TouchableOpacity
-            testID="maestro-seed-reject-game-flow"
-            onPress={async () => {
-              try {
-                const outcome = await seedRejectGameFlow({
-                  testUser: currentUser,
-                });
-                Alert.alert("Seeded", JSON.stringify(outcome));
-              } catch (error) {
-                Alert.alert("Seed failed", String(error));
-              }
-            }}
-          >
-            <Text style={{ color: "white" }}>Seed Reject-Game Flow</Text>
-          </TouchableOpacity>
-        ) : null}
+        {__DEV__ && currentUser ? (
+          <>
+            <TouchableOpacity
+              testID="maestro-seed-reject-game-flow"
+              onPress={async () => {
+                try {
+                  const outcome = await seedRejectGameFlow({
+                    testUser: currentUser,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>Seed Reject-Game Flow</Text>
+            </TouchableOpacity>
 
-        {currentUser ? (
-          <TouchableOpacity
-            testID="maestro-seed-active-dispute"
-            onPress={async () => {
-              try {
-                const outcome = await seedRejectGameFlow({
-                  testUser: currentUser,
-                  withActiveDispute: true,
-                });
-                Alert.alert("Seeded", JSON.stringify(outcome));
-              } catch (error) {
-                Alert.alert("Seed failed", String(error));
-              }
-            }}
-          >
-            <Text style={{ color: "white" }}>
-              Seed Reject-Game Flow (Active Dispute)
-            </Text>
-          </TouchableOpacity>
-        ) : null}
+            <TouchableOpacity
+              testID="maestro-seed-active-dispute"
+              onPress={async () => {
+                try {
+                  const outcome = await seedRejectGameFlow({
+                    testUser: currentUser,
+                    withActiveDispute: true,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Seed Reject-Game Flow (Active Dispute)
+              </Text>
+            </TouchableOpacity>
 
-        {currentUser ? (
-          <TouchableOpacity
-            testID="maestro-seed-doubles-reject-game-flow"
-            onPress={async () => {
-              try {
-                const outcome = await seedDoublesRejectGameFlow({
-                  testUser: currentUser,
-                });
-                Alert.alert("Seeded", JSON.stringify(outcome));
-              } catch (error) {
-                Alert.alert("Seed failed", String(error));
-              }
-            }}
-          >
-            <Text style={{ color: "white" }}>
-              Seed Doubles Reject-Game Flow
-            </Text>
-          </TouchableOpacity>
-        ) : null}
+            <TouchableOpacity
+              testID="maestro-seed-doubles-reject-game-flow"
+              onPress={async () => {
+                try {
+                  const outcome = await seedDoublesRejectGameFlow({
+                    testUser: currentUser,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Seed Doubles Reject-Game Flow
+              </Text>
+            </TouchableOpacity>
 
-        {currentUser ? (
-          <TouchableOpacity
-            testID="maestro-seed-doubles-active-dispute"
-            onPress={async () => {
-              try {
-                const outcome = await seedDoublesRejectGameFlow({
-                  testUser: currentUser,
-                  withActiveDispute: true,
-                });
-                Alert.alert("Seeded", JSON.stringify(outcome));
-              } catch (error) {
-                Alert.alert("Seed failed", String(error));
-              }
-            }}
-          >
-            <Text style={{ color: "white" }}>
-              Seed Doubles Reject-Game Flow (Active Dispute)
-            </Text>
-          </TouchableOpacity>
-        ) : null}
+            <TouchableOpacity
+              testID="maestro-seed-doubles-active-dispute"
+              onPress={async () => {
+                try {
+                  const outcome = await seedDoublesRejectGameFlow({
+                    testUser: currentUser,
+                    withActiveDispute: true,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Seed Doubles Reject-Game Flow (Active Dispute)
+              </Text>
+            </TouchableOpacity>
 
-        {/* Test-only stand-in for the admin resolution action this app
-            doesn't have yet — resolves whatever dispute is currently active
-            on the seeded doubles game. Seed a dispute first (open one for
-            real through the UI, or use the Active Dispute seed above). */}
-        {currentUser
-          ? (["upheld", "rejected", "void"] as const).map((resolution) => (
+            {(["upheld", "rejected", "void"] as const).map((resolution) => (
+              <TouchableOpacity
+                key={resolution}
+                testID={`maestro-mock-resolve-${resolution}`}
+                onPress={async () => {
+                  try {
+                    const outcome = await mockResolveDispute({
+                      ladderId: MAESTRO_LADDER_ID,
+                      matchId: MAESTRO_MATCH_ID,
+                      gameId: MAESTRO_GAME_ID,
+                      resolution,
+                      actorId: currentUser.userId,
+                      note: `Maestro E2E mock: ${resolution}`,
+                    });
+                    Alert.alert("Resolved", JSON.stringify(outcome));
+                  } catch (error) {
+                    Alert.alert("Resolve failed", String(error));
+                  }
+                }}
+              >
+                <Text style={{ color: "white" }}>
+                  Mock Resolve Dispute ({resolution})
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              testID="maestro-mock-request-more-evidence"
+              onPress={async () => {
+                try {
+                  await mockRequestMoreEvidence({
+                    gameId: MAESTRO_GAME_ID,
+                    actorId: currentUser.userId,
+                    note: "Maestro E2E mock: please provide more detail.",
+                  });
+                  Alert.alert("Requested", "More evidence requested");
+                } catch (error) {
+                  Alert.alert("Request failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>Mock Request More Evidence</Text>
+            </TouchableOpacity>
+
+            {(["upheld", "rejected", "void"] as const).map((resolution) => (
               <TouchableOpacity
                 key={resolution}
                 testID={`maestro-mock-resolve-doubles-${resolution}`}
@@ -350,32 +386,46 @@ const Home = () => {
                   Mock Resolve Doubles Dispute ({resolution})
                 </Text>
               </TouchableOpacity>
-            ))
-          : null}
+            ))}
 
-        {/* Test-only stand-in for the admin "request more evidence" action
-            this app doesn't have yet — moves the currently active dispute on
-            the seeded doubles game to more_evidence_requested. */}
-        {currentUser ? (
-          <TouchableOpacity
-            testID="maestro-mock-request-doubles-more-evidence"
-            onPress={async () => {
-              try {
-                await mockRequestMoreEvidence({
-                  gameId: MAESTRO_D_GAME_ID,
-                  actorId: currentUser.userId,
-                  note: "Maestro E2E mock: please provide more detail.",
-                });
-                Alert.alert("Requested", "More evidence requested");
-              } catch (error) {
-                Alert.alert("Request failed", String(error));
-              }
-            }}
-          >
-            <Text style={{ color: "white" }}>
-              Mock Request More Evidence (Doubles)
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              testID="maestro-mock-request-doubles-more-evidence"
+              onPress={async () => {
+                try {
+                  await mockRequestMoreEvidence({
+                    gameId: MAESTRO_D_GAME_ID,
+                    actorId: currentUser.userId,
+                    note: "Maestro E2E mock: please provide more detail.",
+                  });
+                  Alert.alert("Requested", "More evidence requested");
+                } catch (error) {
+                  Alert.alert("Request failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Mock Request More Evidence (Doubles)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="maestro-cleanup-reject-flow-data"
+              onPress={async () => {
+                try {
+                  const outcome = await cleanupRejectFlowTestData({
+                    testUser: currentUser,
+                  });
+                  Alert.alert("Cleaned up", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Cleanup failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Delete Reject-Flow Test Data
+              </Text>
+            </TouchableOpacity>
+          </>
         ) : null}
 
         {currentUser ? (
