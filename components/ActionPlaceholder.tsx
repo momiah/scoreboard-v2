@@ -8,6 +8,7 @@ interface ActionPlaceholderProps {
   icon?: keyof typeof Ionicons.glyphMap;
   height?: number;
   disabled?: boolean;
+  testID?: string;
 }
 
 const ActionPlaceholder: React.FC<ActionPlaceholderProps> = ({
@@ -16,8 +17,14 @@ const ActionPlaceholder: React.FC<ActionPlaceholderProps> = ({
   icon = "add-circle-outline",
   height = 150,
   disabled = false,
+  testID,
 }) => (
-  <Container onPress={onPress} style={{ height }} disabled={disabled}>
+  <Container
+    testID={testID}
+    onPress={onPress}
+    style={{ height }}
+    disabled={disabled}
+  >
     <Ionicons name={icon} size={40} color="#00A2FF" />
     <PlaceholderText>{message}</PlaceholderText>
   </Container>

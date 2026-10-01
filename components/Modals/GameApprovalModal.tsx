@@ -518,10 +518,15 @@ const LadderGameApprovalModal = ({
       )}
 
       {activeDispute && (
-        <Description>
-          This game has been{" "}
-          <LinkText onPress={openDispute}>disputed</LinkText>
-        </Description>
+        <DisputedRow>
+          <Description style={{ marginTop: 0 }}>
+            This game has been
+          </Description>
+          <LinkText testID="game-approval-disputed-link" onPress={openDispute}>
+            {" "}
+            disputed
+          </LinkText>
+        </DisputedRow>
       )}
 
       <ApprovalButtons
@@ -602,7 +607,7 @@ const GameApprovalShell = ({
 }) => (
   <Modal transparent visible={visible} animationType="slide">
     <ModalContainer>
-      <ModalContent>
+      <ModalContent testID="game-approval-modal">
         {loading ? (
           <ActivityIndicator size="large" color="#fff" />
         ) : (
@@ -659,10 +664,19 @@ const ApprovalButtons = ({
   submitting: boolean;
 }) => (
   <ButtonRow>
-    <Button variant="decline" disabled={declineDisabled} onPress={onDecline}>
+    <Button
+      testID="game-approval-decline"
+      variant="decline"
+      disabled={declineDisabled}
+      onPress={onDecline}
+    >
       <ButtonText>Decline</ButtonText>
     </Button>
-    <Button disabled={acceptDisabled} onPress={onAccept}>
+    <Button
+      testID="game-approval-accept"
+      disabled={acceptDisabled}
+      onPress={onAccept}
+    >
       {submitting ? (
         <ActivityIndicator size="small" color="white" />
       ) : (
@@ -726,6 +740,17 @@ const Description = styled.Text({
   marginTop: 10,
   fontWeight: "bold",
   fontStyle: "italic",
+});
+
+// A nested Text-in-Text (as GameApprovalModal used for the "disputed" link)
+// merges into one accessibility element on iOS, so it can't be tapped as its
+// own element in Maestro — siblings in a row keep the same look but stay
+// individually accessible.
+const DisputedRow = styled.View({
+  flexDirection: "row",
+  flexWrap: "wrap",
+  alignItems: "center",
+  marginTop: 10,
 });
 
 const ButtonRow = styled.View({

@@ -197,10 +197,12 @@ const DisputeScoreCard = ({
   game,
   leagueType,
   onPress,
+  testID,
 }: {
   game: Game;
   leagueType: string;
   onPress?: () => void;
+  testID?: string;
 }) => {
   const item = { ...game, approvalStatus: "" };
   const card = (
@@ -224,7 +226,7 @@ const DisputeScoreCard = ({
     </ScoreCard>
   );
   return onPress ? (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+    <TouchableOpacity testID={testID} activeOpacity={0.8} onPress={onPress}>
       {card}
     </TouchableOpacity>
   ) : (
@@ -250,6 +252,9 @@ interface EvidenceFormProps {
   videoLockedMessage?: string | null;
   /** Extra condition on top of the evidence rule (e.g. corrected score entered). */
   blockedMessage?: string | null;
+  /** Prefix for this form's testIDs — distinguishes the composer from the
+   * in-timeline "add evidence" form, which reuses the same component. */
+  testIDPrefix: string;
 }
 
 const EvidenceForm = ({
@@ -268,6 +273,7 @@ const EvidenceForm = ({
   onSubmit,
   videoLockedMessage,
   blockedMessage,
+  testIDPrefix,
 }: EvidenceFormProps) => {
   const blocker = getDisputeEvidenceBlocker({
     note,
@@ -293,6 +299,7 @@ const EvidenceForm = ({
         </EvidenceRow>
       ) : (
         <ActionPlaceholder
+          testID={`${testIDPrefix}-evidence-video`}
           message="Upload video evidence"
           icon="videocam-outline"
           onPress={onUploadVideo}
@@ -321,6 +328,7 @@ const EvidenceForm = ({
       )}
       <NotesLabel>Notes to admin</NotesLabel>
       <NotesInput
+        testID={`${testIDPrefix}-note-input`}
         value={note}
         onChangeText={onChangeNote}
         onFocus={onNoteFocus}
@@ -329,6 +337,7 @@ const EvidenceForm = ({
         multiline
       />
       <SubmitButton
+        testID={`${testIDPrefix}-submit`}
         disabled={Boolean(message) || submitting}
         onPress={onSubmit}
       >
@@ -673,7 +682,7 @@ const GameDisputeScreen = () => {
   }
 
   return (
-    <Screen>
+    <Screen testID="game-dispute-screen">
       <Header>
         <BackButton onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -694,7 +703,11 @@ const GameDisputeScreen = () => {
           {(effectiveLadderId || effectiveMatchId) && (
             <MatchLinks>
               {effectiveLadderId ? (
-                <LinkRow activeOpacity={0.8} onPress={goToLadder}>
+                <LinkRow
+                  testID="dispute-view-ladder"
+                  activeOpacity={0.8}
+                  onPress={goToLadder}
+                >
                   <Ionicons name="trophy-outline" size={16} color="#00A2FF" />
                   <LinkText numberOfLines={1}>
                     {effectiveLadderName || "View ladder"}
@@ -707,7 +720,11 @@ const GameDisputeScreen = () => {
                 </LinkRow>
               ) : null}
               {effectiveLadderId && effectiveMatchId ? (
-                <LinkRow activeOpacity={0.8} onPress={goToMatch}>
+                <LinkRow
+                  testID="dispute-view-match"
+                  activeOpacity={0.8}
+                  onPress={goToMatch}
+                >
                   <Ionicons name="tennisball-outline" size={16} color="#00A2FF" />
                   <LinkText>View match details</LinkText>
                   <Ionicons
@@ -721,7 +738,7 @@ const GameDisputeScreen = () => {
           )}
 
           {originalGame && (
-            <Block>
+            <Block testID="dispute-original-result">
               <BlockTitle>Original result</BlockTitle>
               <DisputeScoreCard
                 game={originalGame}
@@ -737,12 +754,14 @@ const GameDisputeScreen = () => {
             {isComposing ? (
               correctedGame ? (
                 <DisputeScoreCard
+                  testID="dispute-corrected-result"
                   game={correctedGame}
                   leagueType={effectiveType}
                   onPress={() => setEntryVisible(true)}
                 />
               ) : originalGame ? (
                 <DisputeScoreCard
+                  testID="dispute-corrected-result"
                   game={shellFrom(originalGame)}
                   leagueType={effectiveType}
                   onPress={() => setEntryVisible(true)}
@@ -758,6 +777,7 @@ const GameDisputeScreen = () => {
 
           {isComposing && (
             <EvidenceForm
+              testIDPrefix="dispute-compose"
               title="Evidence"
               subtitle="Add a note or a video so an admin can review the result."
               videoAttached={videoAttached}
@@ -855,6 +875,7 @@ const GameDisputeScreen = () => {
 
               {showEvidenceForm && (
                 <EvidenceForm
+                  testIDPrefix="dispute-evidence"
                   title={
                     evidenceRequested
                       ? "Add your evidence"
@@ -888,6 +909,7 @@ const GameDisputeScreen = () => {
 
               {isOpener && !isResolved && (
                 <CancelButton
+                  testID="dispute-cancel"
                   disabled={submitting}
                   onPress={handleCancelDispute}
                 >

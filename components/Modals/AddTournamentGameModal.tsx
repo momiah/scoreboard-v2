@@ -345,6 +345,7 @@ const AddTournamentGameModal = ({
           )}
 
           <SubmitButton
+            testID="add-game-submit"
             onPress={handleSubmit}
             disabled={loading || !areScoresEntered() || !canCurrentUserReport}
             style={{

@@ -1,0 +1,114 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Doubles counterpart to reject-cancel-dispute.yaml (scenario 4 of the
+# doubles test list): opener cancels a live dispute -> resolved via the
+# CANCELLED plan, the original 21-15 game is scored, and BOTH teams' CP/
+# Win/PD update, not just the individual players'.
+- tapOn:
+    id: "maestro-seed-doubles-active-dispute"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Doubles Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Doubles Ladder.*"
+- assertVisible:
+    id: "game-approval-disputed-link"
+- tapOn:
+    id: "game-approval-disputed-link"
+- assertVisible:
+    id: "game-dispute-screen"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-cancel"
+    direction: DOWN
+- assertVisible:
+    id: "dispute-cancel"
+- tapOn:
+    id: "dispute-cancel"
+- extendedWaitUntil:
+    visible: "Cancel dispute?"
+    timeout: 5000
+- tapOn:
+    text: "Cancel dispute"
+    below: ".*undone.*"
+    above: "Keep dispute"
+- extendedWaitUntil:
+    visible: "Dispute cancelled"
+    timeout: 15000
+
+- assertNotVisible:
+    id: "dispute-cancel"
+- assertVisible: ".*Dispute cancelled.*"
+
+# Scenario 6 (terminal from the cancel side): once the opener cancels, the
+# dispute is resolved (isResolved) — GameDisputeScreen also hides the "add
+# evidence" form, so no participant can submit anything more.
+- assertNotVisible:
+    id: "dispute-evidence-note-input"
+- assertNotVisible:
+    id: "dispute-evidence-submit"
+
+# Cancelling scores the original 21-15 game normally: Team B (Maestro Delta +
+# Maestro Echo, shown as "Maestro D & Maestro E" — the reporters) won it.
+# Doubles CP is a TEAM currency (not a
+# per-player one — scoreDoublesLadderGame never touches a player's per-ladder
+# competitionXP, only calculatePlayerPerformance's global Win/Loss/PD/XP and
+# applyLadderTeamGameXp's team.XP), so the Ladder's Team Performance tab
+# should show Team B up a win/PD/CP and Team A down. Numbers are exact —
+# from running the real scoreDoublesLadderGame against this seed's fixed
+# inputs directly in Node before writing these assertions.
+- scrollUntilVisible:
+    element:
+      id: "dispute-view-ladder"
+    direction: UP
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "dispute-view-ladder"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 10000
+- tapOn:
+    id: "ladder-tab-Performance"
+# formatDisplayName renders "First L." (first name + last initial only), so
+# the team names show as "Maestro D & Maestro E" / "Maestro F & Mohsin M".
+- extendedWaitUntil:
+    visible: ".*Maestro D.*Maestro E.*Wins.*1.*PD.*6.*CP.*20.*"
+    timeout: 15000
+- assertVisible: ".*Maestro F.*Mohsin M.*Wins.*0.*PD.*-6.*CP.*0.*"
+
+# Each of the 4 players' own global Win/Loss/PD/CP also updates individually
+# (calculatePlayerPerformance runs regardless of singles/doubles) — verified
+# on testUser's own UserProfile, same as the singles flow. Maestro Foxtrot/
+# Delta/Echo aren't logged-in accounts, so their own profiles aren't checked
+# here; the shared scoring function already proves the same code path ran
+# for them too.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-6 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

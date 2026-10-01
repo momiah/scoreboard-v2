@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Text, StyleSheet } from "react-native";
 import { formatNumber } from "../../helpers/formatNumber";
 
-const AnimateNumber = ({ number, fontSize = 12, progressBar = false }) => {
+const AnimateNumber = ({
+  number,
+  fontSize = 12,
+  progressBar = false,
+  testID = undefined,
+}) => {
   const [displayValue, setDisplayValue] = useState(0);
   const [isPercentage, setIsPercentage] = useState(false);
 
@@ -46,6 +51,7 @@ const AnimateNumber = ({ number, fontSize = 12, progressBar = false }) => {
 
   return (
     <Text
+      testID={testID}
       style={[
         styles.number,
         { fontSize: fontSize, width: progressBar ? 50 : "auto" },

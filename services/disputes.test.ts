@@ -14,6 +14,7 @@ import {
   DISPUTE_EVENT_TYPE,
   DISPUTE_RESOLUTION,
 } from "@shared/types";
+import type { Player } from "@shared/types";
 
 // ── Mocks ────────────────────────────────────────────────────────────────
 jest.mock("./firebase.config", () => ({ db: {} }));
@@ -209,7 +210,7 @@ describe("addDisputeEvidence", () => {
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
     const result = await addDisputeEvidence("d1", "reporter", {
       videoId: "v2",
-      courtPositions: { team1: ["reporter"], team2: [null] },
+      courtPositions: { team1: [{ userId: "reporter" } as Player], team2: [null] },
     });
     expect(result).toEqual({ success: false, reason: "video_limit" });
   });

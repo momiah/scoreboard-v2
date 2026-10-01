@@ -16,6 +16,7 @@ export interface CarouselCard {
   onPress: () => void;
   /** Overlay content rendered on top of the card (tags, name, location, …). */
   content: React.ReactNode;
+  testID?: string;
 }
 
 interface HorizontalCardCarouselProps {
@@ -43,6 +44,7 @@ function HorizontalCardCarousel({ cards }: HorizontalCardCarouselProps) {
           key={card.key}
           source={card.source}
           onPress={card.onPress}
+          testID={card.testID}
         >
           {card.content}
         </CarouselCardView>
@@ -55,17 +57,20 @@ interface CarouselCardViewProps {
   source: ImageSourcePropType;
   onPress: () => void;
   children: React.ReactNode;
+  testID?: string;
 }
 
 const CarouselCardView: React.FC<CarouselCardViewProps> = ({
   source,
   onPress,
   children,
+  testID,
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
 
   return (
     <CarouselItem
+      testID={testID}
       onPress={onPress}
       style={{
         width: CAROUSEL_ITEM_WIDTH,

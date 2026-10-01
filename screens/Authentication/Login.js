@@ -488,6 +488,7 @@ export default function Login() {
           <Text style={styles.inputLabel}>Email</Text>
           <View style={styles.inputWrapper}>
             <TextInput
+              testID="login-email-input"
               style={[styles.input, emailError && styles.inputError]}
               placeholder="Enter your email"
               placeholderTextColor="#B3B3B3"
@@ -507,6 +508,7 @@ export default function Login() {
           <Text style={styles.inputLabel}>Password</Text>
           <View style={styles.inputWrapper}>
             <TextInput
+              testID="login-password-input"
               style={[styles.input, passwordError && styles.inputError]}
               placeholder="Enter your password"
               placeholderTextColor="#B3B3B3"
@@ -535,7 +537,11 @@ export default function Login() {
           </View>
 
           {/* Sign-In Button */}
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <TouchableOpacity
+            testID="login-submit"
+            style={styles.button}
+            onPress={handleLogin}
+          >
             <Text style={styles.buttonText}>Sign In</Text>
           </TouchableOpacity>
 

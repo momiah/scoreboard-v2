@@ -343,7 +343,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       <Overlay intensity={50} tint="dark">
         <PopupContent>
           {/* ── Close button ── */}
-          <CloseButton onPress={handleClose}>
+          <CloseButton testID="video-upload-modal-close" onPress={handleClose}>
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
@@ -368,6 +368,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
 
           {/* ── Video picker button ── */}
           <VideoPickerButton
+            testID="video-upload-select"
             onPress={handlePickVideo}
             hasVideo={hasVideo}
             disabled={isCompressing || isUploading}
@@ -423,7 +424,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
             </ProgressContainer>
           )}
 
-          {errorText ? <ErrorText>{errorText}</ErrorText> : null}
+          {errorText ? (
+            <ErrorText testID="video-upload-error">{errorText}</ErrorText>
+          ) : null}
 
           {/* ── Upload button ── */}
           <UploadButton

@@ -399,11 +399,16 @@ const Tabs = () => {
           headerShown: false,
         })}
       >
-        <Tab.Screen name="Home" component={HomeStack} />
+        <Tab.Screen
+          name="Home"
+          component={HomeStack}
+          options={{ tabBarButtonTestID: "tab-home" }}
+        />
         <Tab.Screen
           name="Competitions"
           component={CompetitionsStack}
           options={{
+            tabBarButtonTestID: "tab-competitions",
             tabBarBadge: hasUnreadNotifications ? "" : null,
             tabBarBadgeStyle: {
               backgroundColor: "red",
@@ -428,7 +433,11 @@ const Tabs = () => {
             },
           }}
         />
-        <Tab.Screen name="Profile" component={ProfileStack} />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileStack}
+          options={{ tabBarButtonTestID: "tab-profile" }}
+        />
       </Tab.Navigator>
 
       {/* {showAd && (

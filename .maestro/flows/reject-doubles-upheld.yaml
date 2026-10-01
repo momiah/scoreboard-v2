@@ -1,0 +1,142 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Doubles scenario 1: decline -> dispute opened with a corrected score + note
+# -> dispute UPHELD -> all 4 players' + both teams' stats update to reflect
+# the DISPUTED (corrected) 21-19 result, not the original 21-15.
+#
+# UPHELD has no in-app trigger (see docs/testing/reject-game-flow-test-plan.md
+# §5 and .maestro/README.md) — mocked via devFunctions/mockResolveDispute.js,
+# which runs the real planDisputeResolution/write path, just triggered by a
+# Home-screen button instead of an admin UI that doesn't exist yet.
+- tapOn:
+    id: "maestro-seed-doubles-reject-game-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Doubles Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Doubles Ladder.*"
+- tapOn:
+    id: "game-approval-decline"
+- assertVisible:
+    id: "game-dispute-screen"
+
+# Corrected score 21-19 — matches the numbers baked into this flow's
+# assertions below (run directly through the real scoreDoublesLadderGame
+# before writing them).
+- tapOn:
+    id: "dispute-corrected-result"
+- tapOn:
+    id: "add-game-score-input"
+- inputText: "2119"
+- tapOn:
+    id: "add-game-submit"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-note-input"
+    direction: DOWN
+- tapOn:
+    id: "dispute-compose-note-input"
+- waitForAnimationToEnd:
+    timeout: 1000
+- inputText: "Maestro E2E test note: score should be 21-19."
+- assertVisible: ".*Maestro E2E test note.*"
+# hideKeyboard's dismiss gesture is a swipe from the screen center, which at
+# this scroll position lands on the (large) "Upload video evidence" card and
+# opens it — close it back out before continuing.
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: "video-upload-modal-close"
+    commands:
+      - tapOn:
+          id: "video-upload-modal-close"
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- tapOn:
+    id: "dispute-compose-submit"
+- extendedWaitUntil:
+    visible: "Dispute submitted for review"
+    timeout: 10000
+
+# Mock the admin action: uphold the dispute that was just opened for real.
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-mock-resolve-doubles-upheld"
+- extendedWaitUntil:
+    visible: "Resolved"
+    timeout: 15000
+- tapOn: "OK"
+
+# Team Performance: Team B (Maestro D & Maestro E) win the disputed 21-19
+# margin — Wins 1, PD +2, CP 20. Team A (Maestro F & Mohsin M) — Wins 0,
+# PD -2, CP 0.
+#
+# The Competitions tab's own navigation stack still has GameDisputeScreen on
+# top from composing the dispute earlier in this flow, so switching back to
+# it returns straight there — with the live subscribeToDispute listener
+# already showing the resolved state. Reliable and order-independent, unlike
+# hunting for the ladder card in Home's carousel (its position there shifts
+# with how many other ladders exist/were touched by earlier flows).
+# mockResolveDispute also sends a real "your dispute was resolved"
+# notification (mirroring GameDisputeScreen's own notifyParticipants) for a
+# fresh app session that wouldn't have this screen already on the stack.
+- tapOn:
+    id: "tab-competitions"
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible: ".*Resolved.*"
+
+# Scenario 7 (terminal from the evidence side): once a dispute resolves via
+# an admin action (as opposed to the opener cancelling it), GameDisputeScreen
+# hides both the "add evidence" form and the opener's cancel button — there's
+# nothing left to submit once isResolved is true.
+- assertNotVisible:
+    id: "dispute-evidence-note-input"
+- assertNotVisible:
+    id: "dispute-evidence-submit"
+- assertNotVisible:
+    id: "dispute-cancel"
+
+- tapOn:
+    id: "dispute-view-ladder"
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro D.*Maestro E.*Wins.*1.*PD.*2.*CP.*20.*"
+    timeout: 15000
+- assertVisible: ".*Maestro F.*Mohsin M.*Wins.*0.*PD.*-2.*CP.*0.*"
+
+# testUser's own UserProfile: CP 100 -> 85, PD 0 -> -2, one loss. XP delta is
+# the same as the 21-15 game (score margin doesn't change the multiplier
+# here), only PD reflects the smaller upheld margin.
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-2 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

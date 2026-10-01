@@ -1,0 +1,99 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# Scenario 4.3 (docs/testing/reject-game-flow-test-plan.md): opener cancels a
+# live dispute -> resolved via the CANCELLED plan, the original game is
+# approved/scored, and the dispute closes.
+- tapOn:
+    id: "maestro-seed-active-dispute"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+- assertVisible:
+    id: "game-approval-disputed-link"
+- tapOn:
+    id: "game-approval-disputed-link"
+- assertVisible:
+    id: "game-dispute-screen"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-cancel"
+    direction: DOWN
+- assertVisible:
+    id: "dispute-cancel"
+- tapOn:
+    id: "dispute-cancel"
+- extendedWaitUntil:
+    visible: "Cancel dispute?"
+    timeout: 5000
+# The screen has its own "Cancel dispute" button underneath the alert (same
+# text) — disambiguate the alert's destructive option by position relative
+# to the alert's other two elements.
+- tapOn:
+    text: "Cancel dispute"
+    below: ".*undone.*"
+    above: "Keep dispute"
+- extendedWaitUntil:
+    visible: "Dispute cancelled"
+    timeout: 15000
+
+# The dispute is resolved — cancel control and compose form are both gone.
+- assertNotVisible:
+    id: "dispute-cancel"
+- assertVisible: ".*Dispute cancelled.*"
+
+# Cancelling scores the original 21-15 game normally: Maestro Opponent (the
+# reporter) won it, so the ladder's Player Performance tab should award them
+# the win/PD/CP — precise numbers from running the real scoring function
+# (scoreSinglesLadderGame) against this seed's fixed inputs.
+- scrollUntilVisible:
+    element:
+      id: "dispute-view-ladder"
+    direction: UP
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "dispute-view-ladder"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 10000
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro O.*Wins.*1.*PD.*6.*CP.*20.*"
+    timeout: 15000
+
+# testUser (the loser) should see the same game reflected on their own
+# UserProfile: CP 100 -> 85, PD 0 -> -6, one loss recorded. (iOS merges these
+# plain Text siblings, dropping their individual testIDs, same as the ladder
+# row above — match by text instead.)
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-6 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

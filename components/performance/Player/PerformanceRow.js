@@ -61,12 +61,17 @@ const PerformanceRow = ({
 
       <TableCell>
         <StatTitle>Wins</StatTitle>
-        <Stat>{entity.numberOfWins ?? 0}</Stat>
+        <Stat testID={`ladder-performance-wins-${entity.userId ?? entity.teamKey}`}>
+          {entity.numberOfWins ?? 0}
+        </Stat>
       </TableCell>
 
       <TableCell>
         <StatTitle>PD</StatTitle>
-        <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+        <Stat
+          testID={`ladder-performance-pd-${entity.userId ?? entity.teamKey}`}
+          style={{ color: pointDifference < 0 ? "red" : "green" }}
+        >
           {pointDifference}
         </Stat>
       </TableCell>
@@ -74,7 +79,9 @@ const PerformanceRow = ({
       {isLadder && (
         <TableCell>
           <StatTitle>CP</StatTitle>
-          <Stat>{(isTeam ? entity.XP : entity.competitionXP) ?? 0}</Stat>
+          <Stat testID={`ladder-performance-cp-${entity.userId ?? entity.teamKey}`}>
+            {(isTeam ? entity.XP : entity.competitionXP) ?? 0}
+          </Stat>
         </TableCell>
       )}
 

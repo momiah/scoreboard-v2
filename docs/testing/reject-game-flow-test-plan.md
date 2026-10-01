@@ -36,7 +36,7 @@ player who rejected it and opened the dispute; **decider** = `floor(bestOf/2)+1`
 | 2.5 | Only a **resolved** dispute exists for the game | New dispute allowed ✅ |
 | 2.6 | Disputed game is **not** in the match shell (stale) | Dispute doc still written, but no game flagged ✅ |
 | 2.7 | Only the **disputed game** is flagged, siblings untouched | Sibling games keep their status ✅ |
-| 2.8 | Video **minimum duration** is 1 min for disputes (not 3) | Sub-1-min video rejected; 1-3 min accepted 🅼 (native recorder) |
+| 2.8 | Video **minimum duration** is 1 min for disputes (not 3) | Sub-1-min video rejected; 1-3 min accepted — **not Maestro-testable**: `expo-image-picker`'s native library picker runs out-of-process via iOS ExtensionKit (`PHPickerViewController`), and Maestro's accessibility tree cannot see or tap into it (confirmed: the picker opens and is visibly on screen, but `tapOn` by id or text finds nothing). The guard itself (`getGuardError` in `components/Modals/VideoUploadModal.tsx`) is a pure function of a duration number — better covered by a Jest test than an E2E flow. |
 
 ## 3. Evidence timeline (addDisputeEvidence)
 
@@ -95,8 +95,10 @@ player who rejected it and opened the dispute; **decider** = `floor(bestOf/2)+1`
 
 - ✅ **Integration, done now:** all of §1 (1.1–1.4), §2 (2.1–2.7), §3 (3.1–3.5),
   §4 (4.1–4.3) — the decision gates and the full service lifecycle with guards.
-- 🅼 **Maestro, to author on device:** the real happy paths (1.5, 2.8, 3.6–3.7),
-  admin resolution journeys (§5), and the UI-state scenarios (§7).
+- 🅼 **Maestro, to author on device:** the real happy paths (1.5, 3.6–3.7),
+  admin resolution journeys (§5), and the UI-state scenarios (§7). 2.8 is
+  **not Maestro-testable** (see its row above) — cover it with a Jest test
+  on `getGuardError` instead.
 - **Integration, worth adding next:** §6 is mostly **pure shared helpers**
   (`resolveLadderMatchOutcome`, `isLadderMatchReportDecided`,
   `getReportableLadderGameId`, `isLadderMatchExpired`, `hasOpenLadderDispute`) —
