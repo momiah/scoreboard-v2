@@ -482,6 +482,92 @@ const Home = () => {
               </Text>
             </TouchableOpacity>
 
+            {[
+              {
+                id: "maestro-seed-add-game-flow-decider",
+                label: "Seed Add-Game Flow (Decider Pending)",
+                run: () =>
+                  seedAddApproveGameFlow({
+                    testUser: currentUser,
+                    withReportedGame: true,
+                    priorApprovedGames: 2,
+                  }),
+              },
+              {
+                id: "maestro-seed-add-game-flow-not-checked-in",
+                label: "Seed Add-Game Flow (Not Checked In)",
+                run: () =>
+                  seedAddApproveGameFlow({
+                    testUser: currentUser,
+                    allCheckedIn: false,
+                  }),
+              },
+              {
+                id: "maestro-seed-add-game-flow-doubles-decider",
+                label: "Seed Add-Game Flow (Doubles, Decider Pending)",
+                run: () =>
+                  seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                    withReportedGame: true,
+                    priorApprovedGames: 2,
+                  }),
+              },
+              {
+                id: "maestro-seed-add-game-flow-doubles-not-checked-in",
+                label: "Seed Add-Game Flow (Doubles, Not Checked In)",
+                run: () =>
+                  seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                    allCheckedIn: false,
+                  }),
+              },
+              {
+                id: "maestro-seed-add-game-flow-two-reported",
+                label: "Seed Add-Game Flow (Two Reported)",
+                run: () =>
+                  seedAddApproveGameFlow({
+                    testUser: currentUser,
+                    withReportedGame: true,
+                    extraPendingGames: 1,
+                  }),
+              },
+              {
+                id: "maestro-seed-add-game-flow-doubles-two-reported",
+                label: "Seed Add-Game Flow (Doubles, Two Reported)",
+                run: () =>
+                  seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                    withReportedGame: true,
+                    extraPendingGames: 1,
+                  }),
+              },
+              {
+                id: "maestro-seed-add-game-flow-doubles-lazy-participant",
+                label: "Seed Add-Game Flow (Doubles, Missing Participants)",
+                run: () =>
+                  seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                    withReportedGame: true,
+                    omitPartnerAndOpp2Participants: true,
+                  }),
+              },
+            ].map(({ id, label, run }) => (
+              <TouchableOpacity
+                key={id}
+                testID={id}
+                onPress={async () => {
+                  try {
+                    const outcome = await run();
+                    Alert.alert("Seeded", JSON.stringify(outcome));
+                  } catch (error) {
+                    Alert.alert("Seed failed", String(error));
+                  }
+                }}
+              >
+                <Text style={{ color: "white" }}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+
             <TouchableOpacity
               testID="maestro-cleanup-ladder-test-data"
               onPress={async () => {
