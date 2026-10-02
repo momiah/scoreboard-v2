@@ -73,6 +73,7 @@ actor.
 | 4b.4 | The disputing side (opener or their partner) or an outsider | Button hidden; service returns `not_reporter_side` ✅ `disputeReporterSide.test.ts`, `disputes.test.ts` · 🅼 opener flows assert it is absent |
 | 4b.5 | Dispute already resolved (e.g. admin got there first) | `resolved`, nothing written ✅ |
 | 4b.6 | Available while an admin has requested more evidence | Same as under review ✅ `disputeReporterSide.test.ts` |
+| 4b.7 | Reporter side does not approve and instead adds a note / video | The evidence form (note + video) stays available to every participant while the dispute is open; submitting a note leaves the dispute under review and the approve button still shown 🅼 `dispute-reporter-adds-note-without-approving`, `dispute-doubles-teammate-adds-note-without-approving` |
 
 ## 5. Admin resolution (planDisputeResolution outcomes)
 

@@ -1,0 +1,60 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-opponent-dispute"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*disputed a game in.*"
+    timeout: 15000
+- tapOn: ".*disputed a game in.*"
+- extendedWaitUntil:
+    visible:
+      id: "game-dispute-screen"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "dispute-evidence-note-input"
+    direction: DOWN
+- assertVisible:
+    id: "dispute-evidence-evidence-video"
+- tapOn:
+    id: "dispute-evidence-note-input"
+- waitForAnimationToEnd:
+    timeout: 1000
+- inputText: "Maestro E2E reporter note: I entered the wrong score."
+- assertVisible: ".*I entered the wrong score.*"
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: "video-upload-modal-close"
+    commands:
+      - tapOn:
+          id: "video-upload-modal-close"
+- scrollUntilVisible:
+    element:
+      id: "dispute-evidence-submit"
+    direction: DOWN
+- tapOn:
+    id: "dispute-evidence-submit"
+- extendedWaitUntil:
+    visible: "Note sent"
+    timeout: 10000
+- assertVisible: ".*Notes submitted.*"
+- scrollUntilVisible:
+    element:
+      id: "dispute-approve-score"
+    direction: DOWN
+- assertVisible:
+    id: "dispute-approve-score"
+- assertNotVisible: ".*upheld and applied.*"
