@@ -44,6 +44,7 @@ export const seedAddApproveGameFlowDoubles = async ({
   allCheckedIn = true,
   omitPartnerAndOpp2Participants = false,
   withOpponentDispute = false,
+  reportedByMyTeam = false,
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -333,9 +334,14 @@ export const seedAddApproveGameFlowDoubles = async ({
           playerIds: [testUser.userId, partner.userId],
         },
       ],
-      games: withOpponentDispute
-        ? [reporterOriginal, ...shells.slice(1)]
-        : games,
+      games: reportedByMyTeam
+        ? [
+            { ...reporterOriginal, approvalStatus: "Pending" },
+            ...shells.slice(1),
+          ]
+        : withOpponentDispute
+          ? [reporterOriginal, ...shells.slice(1)]
+          : games,
       matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
       shuttleType: "Feather",
       createdBy: opp1.userId,

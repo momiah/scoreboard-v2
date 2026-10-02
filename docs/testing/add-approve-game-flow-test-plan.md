@@ -72,7 +72,7 @@ Terminology: **reporter** = the player who submits a game score; **approver**
 |---|----------|----------|
 | 6.1 | Match fully decided | Schedule card and match show `Completed`; unreported shells past the decider do nothing when tapped. (`lobby-games-locked` is the *not checked in* chip, not a decided-match state.) 🅼 |
 | 6.2 | Doubles check-in | Rows grouped under `TeamHeader`/`TeamGroup` with `checkin-collapse-toggle`; singles stays a flat per-player list 🅼 |
-| 6.3 | Reporter reports, then the **same** reporter opens the game before anyone approves | Game shows `Pending`; `GameScreen` hides the approval controls from the reporter (`showApproval = isParticipant && !isReporter`). The guard is UI-only — `approveLadderGame` has no reporter check, and in doubles the reporter's own partner passes the UI check too (see Known gaps) 🅼 |
+| 6.3 | Reporter reports, then the **same** reporter (or, in doubles, the reporter's own partner) opens the game before the opponents approve | Game shows `Pending`; `GameScreen` hides the approval controls from the reporter's whole side. `approveLadderGame` enforces it too (`not_opponent`) so only a player on the opposing side can approve 🅼 |
 
 ---
 
@@ -96,7 +96,7 @@ Player/Team details screen and assert its stats.
 | 5.1 reporting locked while decider approval pending | `add-game-report-locked-at-decider`, `add-game-doubles-report-locked-at-decider` |
 | 6.1 completed state | decider flows above |
 | 6.2 check-in UI | `add-game-checkin-ui`, `add-game-doubles-checkin-ui` |
-| 6.3 reporter not offered approval | `add-game-reporter-cannot-approve-own-report`, `add-game-doubles-reporter-cannot-approve-own-report` |
+| 6.3 reporter / reporter's partner not offered approval | `add-game-reporter-cannot-approve-own-report`, `add-game-doubles-reporter-cannot-approve-own-report`, `approve-game-doubles-reporters-partner-cannot-approve` |
 
 Jest:
 
@@ -105,13 +105,20 @@ Jest:
 - `functions/src/autoApproveLadderGames.test.ts` — 4.1–4.4 plus completion and
   dispute-hold behaviour with real scoring.
 
-## Known gaps (not asserted as intended behaviour)
+## Approval eligibility
 
-- `approveLadderGame` has no reporter/opponent check; only the UI hides the
-  controls from the reporter.
-- Approval limit is 1 for doubles too, and `GameScreen` shows approval to any
-  non-reporter participant, so the reporter's own partner can approve a
-  doubles score without an opponent. Recorded as `it.todo` in
-  `LadderContext.test.tsx`.
-- The decline path in `approveLadderGame`'s neighbourhood is commented out
-  ("ready to implement"); Decline from `GameScreen` is disabled for ladders.
+Only a player on the **opposing** side of the reporter can approve a reported
+ladder game. This is enforced in `approveLadderGame` (reason `not_opponent`,
+covering the reporter, the reporter's doubles partner and non-players), hidden
+in `GameScreen`, and disabled in `GameApprovalModal`. The rule lives in
+`helpers/ladderGameApproval.ts`. Report-time notifications already go only to
+the opponents.
+
+- Jest: `helpers/ladderGameApproval.test.ts`, "approval eligibility" in
+  `context/LadderContext.test.tsx`.
+- Maestro: `add-game-reporter-cannot-approve-own-report` (+ doubles) and
+  `approve-game-doubles-reporters-partner-cannot-approve`.
+
+Open: Decline from `GameScreen` is disabled for ladders, and the ladder
+decline path in `LadderContext` is still commented out ("ready to implement");
+declines currently go through the notification modal into the dispute flow.
