@@ -417,12 +417,13 @@ const GameScreen: React.FC = () => {
               </CompetitionName>
 
               {showApproval && (
-                <ApprovalContainer>
+                <ApprovalContainer testID="game-screen-approval">
                   <ApprovalLabel disabled={!canApprove}>
                     {approvalLabel}
                   </ApprovalLabel>
                   <ApprovalActions>
                     <IconButton
+                      testID="game-screen-decline"
                       variant="decline"
                       disabled={!canApprove || decisionPending || isLadder}
                       onPress={handleDecline}
@@ -430,6 +431,7 @@ const GameScreen: React.FC = () => {
                       <Ionicons name="close" size={15} color="white" />
                     </IconButton>
                     <IconButton
+                      testID="game-screen-approve"
                       variant="accept"
                       disabled={!canApprove || decisionPending}
                       onPress={handleApprove}

@@ -70,23 +70,48 @@ Terminology: **reporter** = the player who submits a game score; **approver**
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 6.1 | Match fully decided | `lobby-games-locked` state shown, no further games reportable 🅼 |
+| 6.1 | Match fully decided | Schedule card and match show `Completed`; unreported shells past the decider do nothing when tapped. (`lobby-games-locked` is the *not checked in* chip, not a decided-match state.) 🅼 |
 | 6.2 | Doubles check-in | Rows grouped under `TeamHeader`/`TeamGroup` with `checkin-collapse-toggle`; singles stays a flat per-player list 🅼 |
-| 6.3 | Reporter reports, then the **same** reporter opens the match again before anyone approves | Game shows `Pending`, reporter sees no Accept/Decline (can't approve their own report) — confirm the modal's own-report guard |
+| 6.3 | Reporter reports, then the **same** reporter opens the game before anyone approves | Game shows `Pending`; `GameScreen` hides the approval controls from the reporter (`showApproval = isParticipant && !isReporter`). The guard is UI-only — `approveLadderGame` has no reporter check, and in doubles the reporter's own partner passes the UI check too (see Known gaps) 🅼 |
 
 ---
 
-## Coverage plan
+## Coverage status
 
-- **E2E, author on device:** the real happy paths — 1.1, 2.1, 2.5, 2.6, 3.1–3.4
-  (with exact CP/Win/PD assertions, same methodology as the reject-flow
-  doubles scenarios), 5.1, 6.1, 6.2.
-- **Integration, worth adding:** the guard rows (1.2–1.4, 2.2–2.4) and the
-  pure decider helpers already partly covered for the reject flow
-  (`resolveLadderMatchOutcome`, `isLadderMatchReportDecided`,
-  `getReportableLadderGameId`) — these are plain functions in
-  `courtchamps-shared`, cheap to unit test directly regardless of how
-  `updateLadderGame`/`approveLadderGame` end up tested.
-- **Not Maestro-testable:** 4.1–4.4 (auto-approve needs a 24h-old fixture or
-  clock control) — cover with Jest against `autoApproveLadderGames.ts`,
-  mirroring `functions/src/autoVoidLadderDisputes.test.ts`.
+Maestro flows (`.maestro/flows`), singles and doubles unless noted. Every
+approve flow asserts exact numbers on the ladder Performance/Team tab and the
+opener's global UserProfile; the accept and tally flows also open the
+Player/Team details screen and assert its stats.
+
+| Scenario | Flow(s) |
+|---|---|
+| 1.1 report a score | `add-game-report-score`, `add-game-doubles-report-score` |
+| 1.5 not checked in locks games | `add-game-not-checked-in-locks-games`, `add-game-doubles-not-checked-in-locks-games` |
+| 2.1 / 3.1 / 3.2 single approval scores | `approve-game-accept-score`, `approve-game-doubles-accept-score` |
+| 2.1 via the GameScreen header (second entry point) | `approve-game-via-game-screen`, `approve-game-doubles-via-game-screen` |
+| 2.5 decider completes the match | `approve-game-decider-completes-match`, `approve-game-doubles-decider-completes-match` |
+| 2.6 non-decider keeps match open | `approve-game-non-decider-continues`, `approve-game-doubles-non-decider-continues` |
+| 3.3 missing participant docs (doubles only) | `approve-game-doubles-lazy-participant` |
+| Multi-game accumulation (streak CP, summed PD, fractional XP) | `approve-game-two-games-tally`, `approve-game-doubles-two-games-tally` |
+| 5.1 reporting locked while decider approval pending | `add-game-report-locked-at-decider`, `add-game-doubles-report-locked-at-decider` |
+| 6.1 completed state | decider flows above |
+| 6.2 check-in UI | `add-game-checkin-ui`, `add-game-doubles-checkin-ui` |
+| 6.3 reporter not offered approval | `add-game-reporter-cannot-approve-own-report`, `add-game-doubles-reporter-cannot-approve-own-report` |
+
+Jest:
+
+- `context/LadderContext.test.tsx` — render harness over the real
+  `LadderProvider`: 1.2–1.4, 2.2–2.4, 2.5–2.7, 3.1–3.4 at the context level.
+- `functions/src/autoApproveLadderGames.test.ts` — 4.1–4.4 plus completion and
+  dispute-hold behaviour with real scoring.
+
+## Known gaps (not asserted as intended behaviour)
+
+- `approveLadderGame` has no reporter/opponent check; only the UI hides the
+  controls from the reporter.
+- Approval limit is 1 for doubles too, and `GameScreen` shows approval to any
+  non-reporter participant, so the reporter's own partner can approve a
+  doubles score without an opponent. Recorded as `it.todo` in
+  `LadderContext.test.tsx`.
+- The decline path in `approveLadderGame`'s neighbourhood is commented out
+  ("ready to implement"); Decline from `GameScreen` is disabled for ladders.
