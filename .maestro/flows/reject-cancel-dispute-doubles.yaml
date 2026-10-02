@@ -30,6 +30,8 @@ onFlowStart:
     direction: DOWN
 - assertVisible:
     id: "dispute-cancel"
+- assertNotVisible:
+    id: "dispute-approve-score"
 - tapOn:
     id: "dispute-cancel"
 - extendedWaitUntil:

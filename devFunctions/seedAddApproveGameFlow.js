@@ -14,6 +14,9 @@ import {
   LADDER_TYPE,
   LADDER_STATUS,
   LADDER_MATCH_STATUS,
+  DISPUTES_COLLECTION,
+  DISPUTE_STAGE,
+  DISPUTE_EVENT_TYPE,
   createLadderMatchGames,
   buildLadderParticipant,
   notificationTypes,
@@ -26,6 +29,7 @@ export const MAESTRO_AG_MATCH_ID = "maestro-add-game-flow-match";
 export const MAESTRO_AG_OPPONENT_ID = "maestro-add-game-flow-opponent";
 const BEST_OF = 5;
 export const MAESTRO_AG_GAME_ID = `${MAESTRO_AG_MATCH_ID}-g1`;
+export const MAESTRO_AG_DISPUTE_ID = "maestro-add-game-flow-dispute";
 
 export const seedAddApproveGameFlow = async ({
   testUser,
@@ -33,6 +37,7 @@ export const seedAddApproveGameFlow = async ({
   priorApprovedGames = 0,
   extraPendingGames = 0,
   allCheckedIn = true,
+  withOpponentDispute = false,
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -103,6 +108,36 @@ export const seedAddApproveGameFlow = async ({
         ? [{ userId: testUser.userId, username: testUser.username }]
         : [],
   });
+
+  const reporterOriginal = {
+    ...shells[0],
+    team1: { player1: toPlayer(testUser), player2: null, score: 21 },
+    team2: { player1: toPlayer(opponent), player2: null, score: 15 },
+    gamescore: "21-15",
+    date: today,
+    reportedAt: new Date(),
+    reportedTime: moment().format("HH:mm"),
+    result: {
+      winner: { team: "Team 1", players: [testUser.userId], score: 21 },
+      loser: { team: "Team 2", players: [opponent.userId], score: 15 },
+    },
+    approvalStatus: "disputed",
+    reporter: testUser.userId,
+    numberOfApprovals: 0,
+    numberOfDeclines: 0,
+    approvers: [],
+  };
+  const opponentCorrection = {
+    ...reporterOriginal,
+    team1: { ...reporterOriginal.team1, score: 19 },
+    team2: { ...reporterOriginal.team2, score: 21 },
+    gamescore: "19-21",
+    approvalStatus: "",
+    result: {
+      winner: { team: "Team 2", players: [opponent.userId], score: 21 },
+      loser: { team: "Team 1", players: [testUser.userId], score: 19 },
+    },
+  };
 
   const games = shells.map((shell, index) => {
     if (index < priorApprovedGames) return opponentWinsGame(shell, "approved");
@@ -226,6 +261,61 @@ export const seedAddApproveGameFlow = async ({
     query(notificationsRef, where("data.matchId", "==", MAESTRO_AG_MATCH_ID)),
   );
   await Promise.all(staleNotifications.docs.map((d) => deleteDoc(d.ref)));
+
+  const staleDisputes = await getDocs(
+    query(
+      collection(db, DISPUTES_COLLECTION),
+      where("gameId", "==", MAESTRO_AG_GAME_ID),
+    ),
+  );
+  await Promise.all(staleDisputes.docs.map((d) => deleteDoc(d.ref)));
+
+  if (withOpponentDispute) {
+    await setDoc(doc(db, DISPUTES_COLLECTION, MAESTRO_AG_DISPUTE_ID), {
+      disputeId: MAESTRO_AG_DISPUTE_ID,
+      ladderId: MAESTRO_AG_LADDER_ID,
+      ladderName: "Maestro Add-Game Flow Ladder",
+      ladderType: LADDER_TYPE.SINGLES,
+      ladderMatchId: MAESTRO_AG_MATCH_ID,
+      gameId: MAESTRO_AG_GAME_ID,
+      originalGame: reporterOriginal,
+      disputedGame: opponentCorrection,
+      openedBy: opponent.userId,
+      participantIds: [testUser.userId, opponent.userId],
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+      events: [
+        {
+          type: DISPUTE_EVENT_TYPE.OPENED,
+          stage: DISPUTE_STAGE.UNDER_REVIEW,
+          createdBy: opponent.userId,
+          createdAt: now,
+          note: "Maestro E2E seed: the reporter entered the wrong score.",
+        },
+      ],
+      evidenceDueAt: null,
+      resolution: null,
+      finalGame: null,
+      adminNotes: null,
+      matchDate: today,
+      matchTime: { start: "18:00" },
+      courtName: "Maestro Test Court",
+      createdAt: now,
+      resolvedAt: null,
+      resolvedBy: null,
+    });
+    await addDoc(notificationsRef, {
+      ...notificationSchema,
+      createdAt: new Date(Date.now() + 1),
+      recipientId: testUser.userId,
+      senderId: opponent.userId,
+      message: `${opponent.firstName} ${opponent.lastName} disputed a game in Maestro Add-Game Flow Ladder`,
+      type: notificationTypes.INFORMATION.LADDER_DISPUTE.TYPE,
+      data: {
+        disputeId: MAESTRO_AG_DISPUTE_ID,
+        ladderId: MAESTRO_AG_LADDER_ID,
+      },
+    });
+  }
 
   await addDoc(notificationsRef, {
     ...notificationSchema,

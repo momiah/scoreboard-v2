@@ -14,6 +14,9 @@ import {
   LADDER_TYPE,
   LADDER_STATUS,
   LADDER_MATCH_STATUS,
+  DISPUTES_COLLECTION,
+  DISPUTE_STAGE,
+  DISPUTE_EVENT_TYPE,
   createLadderMatchGames,
   normalizeTeamKey,
   createTeam,
@@ -31,6 +34,7 @@ export const MAESTRO_AGD_OPP1_ID = "maestroagdopp1";
 export const MAESTRO_AGD_OPP2_ID = "maestroagdopp2";
 const BEST_OF = 5;
 export const MAESTRO_AGD_GAME_ID = `${MAESTRO_AGD_MATCH_ID}-g1`;
+export const MAESTRO_AGD_DISPUTE_ID = "maestro-add-game-flow-doubles-dispute";
 
 export const seedAddApproveGameFlowDoubles = async ({
   testUser,
@@ -39,6 +43,7 @@ export const seedAddApproveGameFlowDoubles = async ({
   extraPendingGames = 0,
   allCheckedIn = true,
   omitPartnerAndOpp2Participants = false,
+  withOpponentDispute = false,
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -143,6 +148,60 @@ export const seedAddApproveGameFlowDoubles = async ({
         ? [{ userId: testUser.userId, username: testUser.username }]
         : [],
   });
+
+  const reporterOriginal = {
+    ...shells[0],
+    team1: {
+      player1: toPlayer(testUser),
+      player2: toPlayer(partner),
+      score: 21,
+    },
+    team2: {
+      player1: toPlayer(opp1),
+      player2: toPlayer(opp2),
+      score: 15,
+    },
+    gamescore: "21-15",
+    date: today,
+    reportedAt: new Date(),
+    reportedTime: moment().format("HH:mm"),
+    result: {
+      winner: {
+        team: "Team 1",
+        players: [testUser.userId, partner.userId],
+        score: 21,
+      },
+      loser: {
+        team: "Team 2",
+        players: [opp1.userId, opp2.userId],
+        score: 15,
+      },
+    },
+    approvalStatus: "disputed",
+    reporter: partner.userId,
+    numberOfApprovals: 0,
+    numberOfDeclines: 0,
+    approvers: [],
+  };
+  const opponentCorrection = {
+    ...reporterOriginal,
+    team1: { ...reporterOriginal.team1, score: 19 },
+    team2: { ...reporterOriginal.team2, score: 21 },
+    gamescore: "19-21",
+    approvalStatus: "",
+    result: {
+      winner: {
+        team: "Team 2",
+        players: [opp1.userId, opp2.userId],
+        score: 21,
+      },
+      loser: {
+        team: "Team 1",
+        players: [testUser.userId, partner.userId],
+        score: 19,
+      },
+    },
+  };
 
   const games = shells.map((shell, index) => {
     if (index < priorApprovedGames) return opponentsWinGame(shell, "approved");
@@ -274,7 +333,9 @@ export const seedAddApproveGameFlowDoubles = async ({
           playerIds: [testUser.userId, partner.userId],
         },
       ],
-      games,
+      games: withOpponentDispute
+        ? [reporterOriginal, ...shells.slice(1)]
+        : games,
       matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
       shuttleType: "Feather",
       createdBy: opp1.userId,
@@ -318,6 +379,66 @@ export const seedAddApproveGameFlowDoubles = async ({
     query(notificationsRef, where("data.matchId", "==", MAESTRO_AGD_MATCH_ID)),
   );
   await Promise.all(staleNotifications.docs.map((d) => deleteDoc(d.ref)));
+
+  const staleDisputes = await getDocs(
+    query(
+      collection(db, DISPUTES_COLLECTION),
+      where("gameId", "==", MAESTRO_AGD_GAME_ID),
+    ),
+  );
+  await Promise.all(staleDisputes.docs.map((d) => deleteDoc(d.ref)));
+
+  if (withOpponentDispute) {
+    await setDoc(doc(db, DISPUTES_COLLECTION, MAESTRO_AGD_DISPUTE_ID), {
+      disputeId: MAESTRO_AGD_DISPUTE_ID,
+      ladderId: MAESTRO_AGD_LADDER_ID,
+      ladderName: "Maestro Add-Game Flow Doubles Ladder",
+      ladderType: LADDER_TYPE.DOUBLES,
+      ladderMatchId: MAESTRO_AGD_MATCH_ID,
+      gameId: MAESTRO_AGD_GAME_ID,
+      originalGame: reporterOriginal,
+      disputedGame: opponentCorrection,
+      openedBy: opp1.userId,
+      participantIds: [
+        testUser.userId,
+        partner.userId,
+        opp1.userId,
+        opp2.userId,
+      ],
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+      events: [
+        {
+          type: DISPUTE_EVENT_TYPE.OPENED,
+          stage: DISPUTE_STAGE.UNDER_REVIEW,
+          createdBy: opp1.userId,
+          createdAt: now,
+          note: "Maestro E2E seed: the reporter entered the wrong score.",
+        },
+      ],
+      evidenceDueAt: null,
+      resolution: null,
+      finalGame: null,
+      adminNotes: null,
+      matchDate: today,
+      matchTime: { start: "18:00" },
+      courtName: "Maestro Test Court",
+      createdAt: now,
+      resolvedAt: null,
+      resolvedBy: null,
+    });
+    await addDoc(notificationsRef, {
+      ...notificationSchema,
+      createdAt: new Date(Date.now() + 1),
+      recipientId: testUser.userId,
+      senderId: opp1.userId,
+      message: `${opp1.firstName} ${opp1.lastName} disputed a game in Maestro Add-Game Flow Doubles Ladder`,
+      type: notificationTypes.INFORMATION.LADDER_DISPUTE.TYPE,
+      data: {
+        disputeId: MAESTRO_AGD_DISPUTE_ID,
+        ladderId: MAESTRO_AGD_LADDER_ID,
+      },
+    });
+  }
 
   await addDoc(notificationsRef, {
     ...notificationSchema,

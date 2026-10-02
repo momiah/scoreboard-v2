@@ -542,6 +542,24 @@ const Home = () => {
                   }),
               },
               {
+                id: "maestro-seed-add-game-flow-opponent-dispute",
+                label: "Seed Add-Game Flow (Opponent Disputed My Report)",
+                run: () =>
+                  seedAddApproveGameFlow({
+                    testUser: currentUser,
+                    withOpponentDispute: true,
+                  }),
+              },
+              {
+                id: "maestro-seed-add-game-flow-doubles-opponent-dispute",
+                label: "Seed Add-Game Flow (Doubles, Opponent Disputed Partner Report)",
+                run: () =>
+                  seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                    withOpponentDispute: true,
+                  }),
+              },
+              {
                 id: "maestro-seed-add-game-flow-doubles-lazy-participant",
                 label: "Seed Add-Game Flow (Doubles, Missing Participants)",
                 run: () =>

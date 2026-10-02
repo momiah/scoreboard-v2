@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - tapOn:
-    id: "maestro-seed-active-dispute"
+    id: "maestro-seed-add-game-flow-doubles-opponent-dispute"
 - extendedWaitUntil:
     visible: "Seeded"
     timeout: 15000
@@ -14,40 +14,41 @@ onFlowStart:
 - tapOn:
     id: "competitions-notifications-button"
 - extendedWaitUntil:
-    visible: ".*Maestro Reject-Flow Ladder.*"
+    visible: ".*disputed a game in.*"
     timeout: 15000
-- tapOn: ".*Maestro Reject-Flow Ladder.*"
-- assertVisible:
-    id: "game-approval-disputed-link"
-- tapOn:
-    id: "game-approval-disputed-link"
-- assertVisible:
-    id: "game-dispute-screen"
-
+- tapOn: ".*disputed a game in.*"
+- extendedWaitUntil:
+    visible:
+      id: "game-dispute-screen"
+    timeout: 15000
 - scrollUntilVisible:
     element:
-      id: "dispute-cancel"
+      id: "dispute-approve-score"
     direction: DOWN
-- assertVisible:
-    id: "dispute-cancel"
+- assertVisible: "Approve disputed score"
 - assertNotVisible:
+    id: "dispute-cancel"
+- tapOn:
+    id: "dispute-approve-score"
+- extendedWaitUntil:
+    visible: "Approve disputed score?"
+    timeout: 5000
+- tapOn: "Not now"
+- assertVisible:
     id: "dispute-approve-score"
 - tapOn:
-    id: "dispute-cancel"
+    id: "dispute-approve-score"
 - extendedWaitUntil:
-    visible: "Cancel dispute?"
+    visible: "Approve disputed score?"
     timeout: 5000
-- tapOn:
-    text: "Cancel dispute"
-    below: ".*undone.*"
-    above: "Keep dispute"
+- tapOn: "Approve score"
 - extendedWaitUntil:
-    visible: "Dispute cancelled"
+    visible: ".*Resolved.*"
     timeout: 15000
-
 - assertNotVisible:
-    id: "dispute-cancel"
-- assertVisible: ".*Dispute cancelled.*"
+    id: "dispute-approve-score"
+- assertNotVisible: ".*Admin ·.*"
+- assertVisible: ".*upheld and applied.*"
 
 - scrollUntilVisible:
     element:
@@ -65,15 +66,16 @@ onFlowStart:
 - tapOn:
     id: "ladder-tab-Performance"
 - extendedWaitUntil:
-    visible: ".*Maestro O.*Wins.*1.*PD.*6.*CP.*20.*"
+    visible: ".*Maestro H.*Maestro I.*Wins.*1.*PD.*2.*CP.*20.*"
     timeout: 15000
+- assertVisible: ".*Maestro G.*Mohsin M.*Wins.*0.*PD.*-2.*CP.*0.*"
 
 - tapOn:
     id: "tab-profile"
 - extendedWaitUntil:
     visible: "85 CP"
     timeout: 15000
-- assertVisible: "-6 PD"
+- assertVisible: "-2 PD"
 - scrollUntilVisible:
     element:
       id: "profile-stat-wins"

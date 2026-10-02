@@ -58,6 +58,22 @@ player who rejected it and opened the dispute; **decider** = `floor(bestOf/2)+1`
 | 4.2 | Cancel an **already-resolved** dispute | `resolved` ✅ |
 | 4.3 | Opener cancels a live dispute | Resolved via `CANCELLED` plan; original game approved/scored; match + dispute docs updated ✅ |
 
+## 4b. Reporter-side approval of the disputed score (approveDisputedScore)
+
+The reporter (or, in doubles, either teammate of the reporter) can accept the
+opponent's corrected score on the dispute screen without an admin. It resolves
+through the same `UPHELD` plan an admin uses, with the approving player as the
+actor.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 4b.1 | Reporter (singles) taps **Approve disputed score** and confirms | Disputed score applied and scored (winner can flip); dispute `resolved`/`upheld`; timeline shows the player, not "Admin" ✅ `disputes.test.ts` · 🅼 `dispute-reporter-approves-disputed-score` |
+| 4b.2 | Teammate of the reporter in doubles approves | Same, with team CP/PD updated ✅ · 🅼 `dispute-doubles-teammate-approves-disputed-score` |
+| 4b.3 | Confirmation dismissed with **Not now** | Nothing written, dispute still open, button still shown 🅼 (same flows) |
+| 4b.4 | The disputing side (opener or their partner) or an outsider | Button hidden; service returns `not_reporter_side` ✅ `disputeReporterSide.test.ts`, `disputes.test.ts` · 🅼 opener flows assert it is absent |
+| 4b.5 | Dispute already resolved (e.g. admin got there first) | `resolved`, nothing written ✅ |
+| 4b.6 | Available while an admin has requested more evidence | Same as under review ✅ `disputeReporterSide.test.ts` |
+
 ## 5. Admin resolution (planDisputeResolution outcomes)
 
 | # | Scenario | Expected |
