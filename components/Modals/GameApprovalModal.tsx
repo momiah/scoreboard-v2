@@ -14,6 +14,7 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { notificationTypes, notificationSchema, LADDER_TYPE } from "@shared";
+import { canApproveLadderGame } from "../../helpers/ladderGameApproval";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   NormalizedCompetition,
@@ -417,8 +418,14 @@ const LadderGameApprovalModal = ({
   // Gate on the game's own state, not the notification's read flag — reading a
   // notification doesn't resolve the game, and approveLadderGame is the final
   // guard against a double approval.
+  const notOpponent =
+    !!game && !canApproveLadderGame(game, currentUser?.userId);
   const isDisabled =
-    submitting || gameGone || alreadyApproved || !!activeDispute;
+    submitting ||
+    gameGone ||
+    alreadyApproved ||
+    !!activeDispute ||
+    notOpponent;
 
   const handleApprove = async () => {
     if (!currentUser?.userId || !game) return;
@@ -515,6 +522,12 @@ const LadderGameApprovalModal = ({
 
       {alreadyApproved && (
         <Description>This game has already been approved.</Description>
+      )}
+
+      {notOpponent && !alreadyApproved && (
+        <Description>
+          Only a player on the other side can approve this game.
+        </Description>
       )}
 
       {activeDispute && (

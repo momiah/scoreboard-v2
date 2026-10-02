@@ -76,6 +76,7 @@ import { addMember, removeMember } from "../helpers/teamRoster";
 import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
+import { canApproveLadderGame } from "../helpers/ladderGameApproval";
 import type {
   LadderContextType,
   FetchLaddersOptions,
@@ -95,6 +96,7 @@ import type {
 class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
 class ApproveLadderGameError extends Error {}
+class ApproveLadderGameNotOpponentError extends Error {}
 class LadderReportBlockedError extends Error {}
 
 // Firestore rejects `undefined` field values, so drop them before a write.
@@ -1511,6 +1513,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if ((game.approvers ?? []).some((a) => a.userId === userId)) {
             throw new ApproveLadderGameError("already been processed");
           }
+          if (!canApproveLadderGame(game, userId)) {
+            throw new ApproveLadderGameNotOpponentError(
+              "only the opposing side can approve a reported game",
+            );
+          }
 
           const updatedGame: Game = {
             ...game,
@@ -1700,6 +1707,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         if (error instanceof ApproveLadderGameError) {
           return { success: false, reason: "unavailable" };
+        }
+        if (error instanceof ApproveLadderGameNotOpponentError) {
+          return { success: false, reason: "not_opponent" };
         }
         console.error("Error approving ladder game:", error);
         return { success: false, reason: "error" };

@@ -579,11 +579,108 @@ describe("approveLadderGame (doubles)", () => {
   });
 });
 
-describe("approval eligibility gaps", () => {
-  it.todo(
-    "should refuse an approval from the reporter themselves at the context level (only the UI hides it today)",
+describe("approval eligibility", () => {
+  it("refuses the reporter approving their own singles game", async () => {
+    const { store, tx } = singlesStore([singlesGame(1), shell(2)]);
+    const result = await renderLadder();
+
+    expect(await approve(result, `${MATCH}-g1`, "opp")).toEqual({
+      success: false,
+      reason: "not_opponent",
+    });
+    expect(tx.update).not.toHaveBeenCalled();
+    expect(
+      (store[MATCH_PATH] as { games: { approvalStatus: string }[] }).games[0]
+        .approvalStatus,
+    ).toBe("Pending");
+  });
+
+  it("refuses someone who is not a player in the game", async () => {
+    const { tx } = singlesStore([singlesGame(1), shell(2)]);
+    const result = await renderLadder();
+
+    expect(await approve(result, `${MATCH}-g1`, "stranger")).toEqual({
+      success: false,
+      reason: "not_opponent",
+    });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it.each(["o1", "o2"])(
+    "refuses the reporting team's own player %s approving a doubles game",
+    async (userId) => {
+      const teamAKey = normalizeTeamKey(["me", "pt"]);
+      const teamBKey = normalizeTeamKey(["o1", "o2"]);
+      const { store, tx } = makeStore({
+        [MATCH_PATH]: makeMatch(
+          [doublesGame(1), shell(2), shell(3), shell(4), shell(5)],
+          {
+            participants: ["me", "pt", "o1", "o2"],
+            teams: [
+              { teamId: teamBKey, teamKey: teamBKey, playerIds: ["o1", "o2"] },
+              { teamId: teamAKey, teamKey: teamAKey, playerIds: ["me", "pt"] },
+            ],
+          },
+        ),
+        ...Object.fromEntries(
+          ["me", "pt", "o1", "o2"].map((id) => [userPath(id), user(id)]),
+        ),
+      });
+      const result = await renderLadder();
+
+      expect(await approve(result, `${MATCH}-g1`, userId)).toEqual({
+        success: false,
+        reason: "not_opponent",
+      });
+      expect(tx.update).not.toHaveBeenCalled();
+      expect(
+        (store[MATCH_PATH] as { games: { approvalStatus: string }[] }).games[0]
+          .approvalStatus,
+      ).toBe("Pending");
+    },
   );
-  it.todo(
-    "should require an opponent, not the reporter's own doubles partner, to approve a doubles game",
-  );
+
+  it("lets either player on the opposing team approve a doubles game", async () => {
+    const teamAKey = normalizeTeamKey(["me", "pt"]);
+    const teamBKey = normalizeTeamKey(["o1", "o2"]);
+    const { store } = makeStore({
+      [MATCH_PATH]: makeMatch(
+        [doublesGame(1), shell(2), shell(3), shell(4), shell(5)],
+        {
+          participants: ["me", "pt", "o1", "o2"],
+          teams: [
+            { teamId: teamBKey, teamKey: teamBKey, playerIds: ["o1", "o2"] },
+            { teamId: teamAKey, teamKey: teamAKey, playerIds: ["me", "pt"] },
+          ],
+        },
+      ),
+      ...Object.fromEntries(
+        ["me", "pt", "o1", "o2"].map((id) => [userPath(id), user(id)]),
+      ),
+      [teamPath(teamAKey)]: {
+        ...createTeam(["me", "pt"], teamAKey),
+        XP: 0,
+        teamId: teamAKey,
+        playerIds: ["me", "pt"],
+        status: "active",
+      },
+      [teamPath(teamBKey)]: {
+        ...createTeam(["o1", "o2"], teamBKey),
+        XP: 0,
+        teamId: teamBKey,
+        playerIds: ["o1", "o2"],
+        status: "active",
+      },
+    });
+    const result = await renderLadder();
+
+    expect(await approve(result, `${MATCH}-g1`, "pt")).toMatchObject({
+      success: true,
+      fullyApproved: true,
+    });
+    expect(
+      (store[MATCH_PATH] as { games: { approvalStatus: string }[] }).games[0]
+        .approvalStatus,
+    ).toBe(APPROVED);
+  });
 });
