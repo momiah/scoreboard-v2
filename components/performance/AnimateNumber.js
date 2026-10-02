@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Text, StyleSheet } from "react-native";
 import { formatNumber } from "../../helpers/formatNumber";
 
+/**
+ * @param {{ number: any, fontSize?: number, progressBar?: boolean, testID?: string }} props
+ */
 const AnimateNumber = ({
   number,
   fontSize = 12,
   progressBar = false,
-  testID = undefined,
+  testID,
 }) => {
   const [displayValue, setDisplayValue] = useState(0);
   const [isPercentage, setIsPercentage] = useState(false);

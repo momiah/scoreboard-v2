@@ -24,7 +24,7 @@ const getNextRank = (xp) => {
   return ranks[ranks.length - 1]; // Return the last rank if xp is very high
 };
 
-const MedalProgress = ({ xp, prevGameXp, showMedals = true }) => {
+const MedalProgress = ({ xp, prevGameXp, showMedals = true, testID }) => {
   const [mounted, setMounted] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -73,7 +73,7 @@ const MedalProgress = ({ xp, prevGameXp, showMedals = true }) => {
           ]}
         >
           <ProgressArrowContainer>
-            <AnimateNumber number={safeXp} progressBar />
+            <AnimateNumber number={safeXp} progressBar testID={testID} />
             <FontAwesome name="caret-down" size={16} color="white" />
           </ProgressArrowContainer>
         </Animated.View>

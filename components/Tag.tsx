@@ -17,6 +17,7 @@ interface TagProps {
   fontSize?: number;
   disabled?: boolean;
   loading?: boolean;
+  testID?: string;
 }
 
 const Tag = ({
@@ -32,6 +33,7 @@ const Tag = ({
   fontSize = 10,
   disabled = false,
   loading = false,
+  testID,
 }: TagProps) => {
   const tagName = name ? name.toUpperCase() : "";
   const TagComponent = onPress ? InteractiveTagContainer : TagContainer;
@@ -39,6 +41,7 @@ const Tag = ({
 
   return (
     <TagComponent
+      testID={testID}
       backgroundColor={color}
       onPress={onPress}
       flexDirection={flexDirection}
