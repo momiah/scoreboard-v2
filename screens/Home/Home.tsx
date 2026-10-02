@@ -64,6 +64,7 @@ import { mockResolveDispute } from "@/devFunctions/mockResolveDispute";
 import { mockRequestMoreEvidence } from "@/devFunctions/mockRequestMoreEvidence";
 import { cleanupLadderTestData } from "@/devFunctions/cleanupLadderTestData";
 import { seedAddApproveGameFlow } from "@/devFunctions/seedAddApproveGameFlow";
+import { seedAddApproveGameFlowDoubles } from "@/devFunctions/seedAddApproveGameFlowDoubles";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
@@ -423,6 +424,62 @@ const Home = () => {
               }}
             >
               <Text style={{ color: "white" }}>Seed Add-Game Flow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="maestro-seed-add-game-flow-reported"
+              onPress={async () => {
+                try {
+                  const outcome = await seedAddApproveGameFlow({
+                    testUser: currentUser,
+                    withReportedGame: true,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Seed Add-Game Flow (Reported)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="maestro-seed-add-game-flow-doubles"
+              onPress={async () => {
+                try {
+                  const outcome = await seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Seed Add-Game Flow (Doubles)
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              testID="maestro-seed-add-game-flow-doubles-reported"
+              onPress={async () => {
+                try {
+                  const outcome = await seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                    withReportedGame: true,
+                  });
+                  Alert.alert("Seeded", JSON.stringify(outcome));
+                } catch (error) {
+                  Alert.alert("Seed failed", String(error));
+                }
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Seed Add-Game Flow (Doubles, Reported)
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity

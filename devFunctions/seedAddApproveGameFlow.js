@@ -19,7 +19,7 @@ import {
   notificationTypes,
   notificationSchema,
 } from "@shared";
-import { baselineProfileDetail } from "./seedRejectGameFlow";
+import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 
 export const MAESTRO_AG_LADDER_ID = "maestro-add-game-flow-ladder";
 export const MAESTRO_AG_MATCH_ID = "maestro-add-game-flow-match";
@@ -27,7 +27,10 @@ export const MAESTRO_AG_OPPONENT_ID = "maestro-add-game-flow-opponent";
 const BEST_OF = 5;
 export const MAESTRO_AG_GAME_ID = `${MAESTRO_AG_MATCH_ID}-g1`;
 
-export const seedAddApproveGameFlow = async ({ testUser }) => {
+export const seedAddApproveGameFlow = async ({
+  testUser,
+  withReportedGame = false,
+}) => {
   if (!testUser?.userId) {
     throw new Error("seedAddApproveGameFlow: testUser with a userId is required");
   }
@@ -73,6 +76,27 @@ export const seedAddApproveGameFlow = async ({ testUser }) => {
 
   const today = moment().format("DD-MM-YYYY");
   const shells = createLadderMatchGames(BEST_OF, MAESTRO_AG_MATCH_ID);
+
+  const reportedGame = withReportedGame
+    ? {
+        ...shells[0],
+        team1: { player1: toPlayer(opponent), player2: null, score: 21 },
+        team2: { player1: toPlayer(testUser), player2: null, score: 15 },
+        gamescore: "21-15",
+        date: today,
+        reportedAt: new Date(),
+        reportedTime: moment().format("HH:mm"),
+        result: {
+          winner: { team: "Team 1", players: [opponent.userId], score: 21 },
+          loser: { team: "Team 2", players: [testUser.userId], score: 15 },
+        },
+        approvalStatus: "Pending",
+        reporter: opponent.userId,
+        numberOfApprovals: 0,
+        numberOfDeclines: 0,
+        approvers: [],
+      }
+    : null;
 
   await setDoc(doc(db, "ladders", MAESTRO_AG_LADDER_ID), {
     ladderId: MAESTRO_AG_LADDER_ID,
@@ -127,7 +151,7 @@ export const seedAddApproveGameFlow = async ({ testUser }) => {
     courtFee: 0,
     currencyType: "GBP",
     participants: [testUser.userId, opponent.userId],
-    games: shells,
+    games: reportedGame ? [reportedGame, ...shells.slice(1)] : shells,
     matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
     shuttleType: "Feather",
     createdBy: opponent.userId,
@@ -168,6 +192,22 @@ export const seedAddApproveGameFlow = async ({ testUser }) => {
       ladderType: LADDER_TYPE.SINGLES,
     },
   });
+
+  if (withReportedGame) {
+    await addDoc(notificationsRef, {
+      ...notificationSchema,
+      createdAt: new Date(),
+      recipientId: testUser.userId,
+      senderId: opponent.userId,
+      message: `${opponent.firstName} ${opponent.lastName} has just reported a score in Maestro Add-Game Flow Ladder ladder`,
+      type: notificationTypes.ACTION.ADD_GAME.LADDER,
+      data: {
+        ladderId: MAESTRO_AG_LADDER_ID,
+        matchId: MAESTRO_AG_MATCH_ID,
+        gameId: MAESTRO_AG_GAME_ID,
+      },
+    });
+  }
 
   return {
     ladderId: MAESTRO_AG_LADDER_ID,
