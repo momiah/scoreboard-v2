@@ -36,6 +36,7 @@ import {
   createDispute,
   addDisputeEvidence,
   cancelDispute,
+  approveDisputedScore,
   type CreateDisputeInput,
 } from "./disputes";
 
@@ -192,7 +193,10 @@ describe("addDisputeEvidence", () => {
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
     const result = await addDisputeEvidence("d1", "reporter", {
       videoId: "v2",
-      courtPositions: { team1: [{ userId: "reporter" } as Player], team2: [null] },
+      courtPositions: {
+        team1: [{ userId: "reporter" } as Player],
+        team2: [null],
+      },
     });
     expect(result).toEqual({ success: false, reason: "video_limit" });
   });
@@ -261,4 +265,90 @@ describe("cancelDispute", () => {
     );
     expect(tx.update).toHaveBeenCalledTimes(2);
   });
+});
+
+describe("approveDisputedScore", () => {
+  const reporterGame = {
+    ...baseGame,
+    reporter: "reporter",
+    team2: { player1: { userId: "reporter" }, player2: { userId: "mate" } },
+  };
+  const dispute = {
+    disputeId: "d1",
+    ladderId: "L1",
+    ladderMatchId: "m1",
+    openedBy: "opener",
+    stage: DISPUTE_STAGE.UNDER_REVIEW,
+    originalGame: reporterGame,
+  };
+  const plan = {
+    participants: [],
+    users: [],
+    teams: [],
+    matchUpdate: { games: [] },
+    disputeUpdate: { stage: DISPUTE_STAGE.RESOLVED },
+  };
+
+  it("refuses the disputing side", async () => {
+    const tx = makeTx([snapOf(true, dispute)]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+    expect(await approveDisputedScore("d1", "opener")).toEqual({
+      success: false,
+      reason: "not_reporter_side",
+    });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses someone who is not in the game", async () => {
+    const tx = makeTx([snapOf(true, dispute)]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+    expect(await approveDisputedScore("d1", "stranger")).toEqual({
+      success: false,
+      reason: "not_reporter_side",
+    });
+  });
+
+  it("refuses once the dispute is resolved", async () => {
+    const tx = makeTx([
+      snapOf(true, { ...dispute, stage: DISPUTE_STAGE.RESOLVED }),
+    ]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+    expect(await approveDisputedScore("d1", "reporter")).toEqual({
+      success: false,
+      reason: "resolved",
+    });
+  });
+
+  it("returns an error for a missing dispute or missing identifiers", async () => {
+    const tx = makeTx([snapOf(false, undefined)]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+    expect(await approveDisputedScore("d1", "reporter")).toEqual({
+      success: false,
+      reason: "error",
+    });
+    expect(await approveDisputedScore("", "reporter")).toEqual({
+      success: false,
+      reason: "error",
+    });
+  });
+
+  it.each(["reporter", "mate"])(
+    "upholds the corrected score for reporter-side player %s without an admin",
+    async (userId) => {
+      const tx = makeTx([snapOf(true, dispute), snapOf(true, makeMatch())]);
+      mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+      mockPlanDisputeResolution.mockResolvedValueOnce(plan);
+
+      expect(await approveDisputedScore("d1", userId)).toEqual({
+        success: true,
+      });
+      expect(mockPlanDisputeResolution).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resolution: DISPUTE_RESOLUTION.UPHELD,
+          actorId: userId,
+        }),
+      );
+      expect(tx.update).toHaveBeenCalledTimes(2);
+    },
+  );
 });

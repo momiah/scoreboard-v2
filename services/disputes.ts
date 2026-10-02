@@ -25,6 +25,7 @@ import {
 import type {
   CreateDisputeOutcome,
   Dispute,
+  DisputeResolution,
   DisputeEvent,
   DisputeEvidence,
   Game,
@@ -40,6 +41,7 @@ import {
   isDoublesDispute,
   planDisputeResolution,
 } from "@shared/helpers";
+import { getReporterSideIds } from "../helpers/disputeReporterSide";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
@@ -315,19 +317,25 @@ export const addDisputeEvidence = async (
   }
 };
 
-export type CancelDisputeOutcome =
-  | { success: true }
-  | { success: false; reason: "not_opener" | "resolved" | "error" };
+type ResolveOutcome<Denied extends string> =
+  { success: true } | { success: false; reason: Denied | "resolved" | "error" };
 
-/**
- * The opener withdraws their dispute: the original game is approved and scored
- * through the shared resolution path (as when an admin keeps the original),
- * and the dispute closes with a "cancelled" phase.
- */
-export const cancelDispute = async (
-  disputeId: string,
-  userId: string,
-): Promise<CancelDisputeOutcome> => {
+const DENIED_REASON = {
+  opener: "not_opener",
+  reporter_side: "not_reporter_side",
+} as const;
+
+const resolveActiveDispute = async <Role extends keyof typeof DENIED_REASON>({
+  disputeId,
+  userId,
+  resolution,
+  requires,
+}: {
+  disputeId: string;
+  userId: string;
+  resolution: DisputeResolution;
+  requires: Role;
+}): Promise<ResolveOutcome<(typeof DENIED_REASON)[Role]>> => {
   if (!disputeId || !userId) return { success: false, reason: "error" };
   const disputeRef = doc(db, DISPUTES_COLLECTION, disputeId);
   try {
@@ -337,8 +345,13 @@ export const cancelDispute = async (
         return { success: false, reason: "error" } as const;
       }
       const dispute = disputeSnap.data() as Dispute;
-      if (dispute.openedBy !== userId) {
-        return { success: false, reason: "not_opener" } as const;
+      const permitted =
+        requires === "opener"
+          ? dispute.openedBy === userId
+          : dispute.openedBy !== userId &&
+            getReporterSideIds(dispute.originalGame).includes(userId);
+      if (!permitted) {
+        return { success: false, reason: DENIED_REASON[requires] } as const;
       }
       if (!DISPUTE_ACTIVE_STAGES.includes(dispute.stage)) {
         return { success: false, reason: "resolved" } as const;
@@ -384,7 +397,7 @@ export const cancelDispute = async (
         ladderTeams: teamSnaps
           .filter((snap) => snap.exists())
           .map((snap) => snap.data() as TeamStats),
-        resolution: DISPUTE_RESOLUTION.CANCELLED,
+        resolution,
         actorId: userId,
         now: new Date(),
       });
@@ -401,7 +414,44 @@ export const cancelDispute = async (
       return { success: true } as const;
     });
   } catch (error) {
-    console.error("Error cancelling dispute:", error);
+    console.error("Error resolving dispute:", error);
     return { success: false, reason: "error" };
   }
 };
+
+export type CancelDisputeOutcome = ResolveOutcome<"not_opener">;
+
+/**
+ * The opener withdraws their dispute: the original game is approved and scored
+ * through the shared resolution path (as when an admin keeps the original),
+ * and the dispute closes with a "cancelled" phase.
+ */
+export const cancelDispute = (
+  disputeId: string,
+  userId: string,
+): Promise<CancelDisputeOutcome> =>
+  resolveActiveDispute({
+    disputeId,
+    userId,
+    resolution: DISPUTE_RESOLUTION.CANCELLED,
+    requires: "opener",
+  });
+
+export type ApproveDisputedScoreOutcome = ResolveOutcome<"not_reporter_side">;
+
+/**
+ * The reporter's side (the reporter, or either teammate in doubles) accepts the
+ * opponent's corrected score: it is applied and scored through the shared
+ * resolution path exactly as an admin upholding the dispute would, without
+ * waiting for an admin.
+ */
+export const approveDisputedScore = (
+  disputeId: string,
+  userId: string,
+): Promise<ApproveDisputedScoreOutcome> =>
+  resolveActiveDispute({
+    disputeId,
+    userId,
+    resolution: DISPUTE_RESOLUTION.UPHELD,
+    requires: "reporter_side",
+  });
