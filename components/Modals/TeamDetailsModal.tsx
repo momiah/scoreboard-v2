@@ -16,7 +16,14 @@ import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import MatchMedals from "../performance/MatchMedals";
-import AnimateNumber from "../performance/AnimateNumber";
+import AnimateNumberUntyped from "../performance/AnimateNumber";
+
+const AnimateNumber = AnimateNumberUntyped as React.ComponentType<{
+  number: number;
+  fontSize?: number;
+  progressBar?: boolean;
+  testID?: string;
+}>;
 import ResultLog from "../performance/ResultLog";
 import MedalProgress from "../performance/MedalProgress";
 import TeamDetailsSkeleton from "../Skeletons/TeamDetailsSkeleton";
