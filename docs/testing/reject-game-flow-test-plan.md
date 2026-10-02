@@ -29,7 +29,7 @@ player who rejected it and opened the dispute; **decider** = `floor(bestOf/2)+1`
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 2.1 | Submit with **neither note nor video** | Blocked as `invalid`; nothing written ✅ `disputes.test.ts` |
+| 2.1 | Submit with **neither note nor video** | Blocked as `invalid`; nothing written ✅ `disputes.test.ts` · 🅼 `reject-submit-requires-score-and-evidence` also checks the screen: submit is blocked until a corrected score is entered, then until a note or video is added |
 | 2.2 | Submit with a **note only** | Dispute opens `under_review`, game flagged `disputed`, OPENED event recorded ✅ |
 | 2.3 | Submit with a **video but no court positions** | Blocked (`court_positions`) — video evidence needs positions ✅ (validity rule) |
 | 2.4 | An **active** dispute already exists for the game | Refused as `exists` (duplicate guard) ✅ |
