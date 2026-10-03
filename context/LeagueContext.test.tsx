@@ -125,6 +125,23 @@ const wroteApproval = (kind: "league" | "tournament") =>
     ? mockUpdateDoc.mock.calls.length > 0
     : mockRunTransaction.mock.calls.length > 0;
 
+const declineAs = (
+  result: Awaited<ReturnType<typeof renderLeague>>,
+  userId: string,
+  kind: "league" | "tournament",
+) =>
+  result.current.declineGame({
+    gameId: "g1",
+    competitionId: "c1",
+    userId,
+    senderId: "reporter",
+    notificationId: "n1",
+    notificationType:
+      kind === "league"
+        ? notificationTypes.ACTION.ADD_GAME.LEAGUE
+        : notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
+  });
+
 const approveAs = (
   result: Awaited<ReturnType<typeof renderLeague>>,
   userId: string,
@@ -300,6 +317,36 @@ describe("approval limit of two", () => {
 
       expect(sendNotification).not.toHaveBeenCalled();
       expect(wroteApproval(kind)).toBe(false);
+    },
+  );
+});
+
+describe.each([
+  ["league", leagueDoc],
+  ["tournament", tournamentDoc],
+] as const)("declineGame (%s)", (kind, makeDoc) => {
+  it.each(["a", "a2", "stranger"])(
+    "does not let %s decline a doubles game reported by a",
+    async (userId) => {
+      respondWith(makeDoc(doublesGame("a")));
+      const result = await renderLeague();
+
+      await declineAs(result, userId, kind);
+
+      expect(sendNotification).not.toHaveBeenCalled();
+      expect(wroteApproval(kind)).toBe(false);
+    },
+  );
+
+  it.each(["b", "b2"])(
+    "lets the opposing player %s decline",
+    async (userId) => {
+      respondWith(makeDoc(doublesGame("a")));
+      const result = await renderLeague();
+
+      await declineAs(result, userId, kind);
+
+      expect(wroteApproval(kind)).toBe(true);
     },
   );
 });

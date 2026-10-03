@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 
 import { db } from "./firebase.config";
+import { canApproveReportedGame } from "../helpers/reportedGameApproval";
 import { COLLECTION_NAMES } from "@shared";
 import {
   DISPUTES_COLLECTION,
@@ -128,9 +129,14 @@ export interface CreateDisputeInput {
  * `under_review`. Refuses when an unresolved dispute already exists for the
  * game (mirrors the report/no-show duplicate guard).
  */
+export type CreateDisputeResult = Omit<CreateDisputeOutcome, "reason"> & {
+  reason?: CreateDisputeOutcome["reason"] | "not_opponent";
+  disputeId?: string;
+};
+
 export const createDispute = async (
   input: CreateDisputeInput,
-): Promise<CreateDisputeOutcome & { disputeId?: string }> => {
+): Promise<CreateDisputeResult> => {
   if (
     !input.ladderId ||
     !input.ladderMatchId ||
@@ -138,6 +144,10 @@ export const createDispute = async (
     !isValidEvidence(input.evidence)
   ) {
     return { success: false, reason: "invalid" };
+  }
+
+  if (!canApproveReportedGame(input.originalGame, input.openedBy)) {
+    return { success: false, reason: "not_opponent" };
   }
 
   try {

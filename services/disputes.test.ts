@@ -48,6 +48,7 @@ const docsSnap = (docs: unknown[]) => ({ docs });
 
 const baseGame = {
   gameId: "g1",
+  reporter: "reporter",
   approvalStatus: "pending",
   team1: { player1: { userId: "opener" }, player2: null },
   team2: { player1: { userId: "reporter" }, player2: null },
@@ -92,6 +93,37 @@ describe("createDispute", () => {
   it("rejects evidence that is neither a note nor a video", async () => {
     const result = await createDispute(validCreateInput({ evidence: {} }));
     expect(result).toEqual({ success: false, reason: "invalid" });
+    expect(mockRunTransaction).not.toHaveBeenCalled();
+  });
+
+  it.each(["reporter", "mate"])(
+    "refuses a dispute opened by %s on the reporting side",
+    async (openedBy) => {
+      const doublesGame = {
+        ...baseGame,
+        team2: {
+          player1: { userId: "reporter" },
+          player2: { userId: "mate" },
+        },
+      };
+      const result = await createDispute(
+        validCreateInput({
+          openedBy,
+          originalGame:
+            doublesGame as unknown as CreateDisputeInput["originalGame"],
+        }),
+      );
+      expect(result).toEqual({ success: false, reason: "not_opponent" });
+      expect(mockGetDocs).not.toHaveBeenCalled();
+      expect(mockRunTransaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it("refuses a dispute opened by someone outside the game", async () => {
+    const result = await createDispute(
+      validCreateInput({ openedBy: "stranger" }),
+    );
+    expect(result).toEqual({ success: false, reason: "not_opponent" });
     expect(mockRunTransaction).not.toHaveBeenCalled();
   });
 

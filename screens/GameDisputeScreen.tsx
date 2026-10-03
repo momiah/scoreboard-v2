@@ -569,7 +569,9 @@ const GameDisputeScreen = () => {
       showBottomToast(
         outcome.reason === "exists"
           ? "This game is already under dispute."
-          : "Could not open the dispute. Please try again.",
+          : outcome.reason === "not_opponent"
+            ? "Only a player on the other side can dispute this game."
+            : "Could not open the dispute. Please try again.",
         "error",
       );
       return;

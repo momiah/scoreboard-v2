@@ -1848,6 +1848,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      if (!canApproveReportedGame(game, userId)) {
+        console.error("Only a player on the opposing side can decline a game");
+        return;
+      }
+
       const declineLimit = competitionData.declineLimit || 1;
 
       const updatedGame = {
