@@ -157,15 +157,24 @@ const GameScreen: React.FC = () => {
   );
   const showApproval =
     isParticipant && !isReporter && canActAsApprover && liveGame !== null;
+  const hasApproved = !!liveGame?.approvers?.some(
+    (approver) => approver.userId === currentUser?.userId,
+  );
   const canApprove =
-    showApproval && isPending && !approvalLimitReached && !autoApproved;
+    showApproval &&
+    isPending &&
+    !approvalLimitReached &&
+    !autoApproved &&
+    !hasApproved;
   const decisionPending = isLadder ? ladderSubmitting : loadingDecision;
 
   const approvalLabel = approvalLimitReached
     ? "Game approved"
     : autoApproved
       ? "Auto-approved"
-      : "Approve this game?";
+      : hasApproved
+        ? "You approved this game"
+        : "Approve this game?";
 
   // ── Live game subscription ────────────────────────────────────────────────
   useEffect(() => {

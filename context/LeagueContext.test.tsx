@@ -69,18 +69,19 @@ const doublesGame = (reporter: string): Game =>
     },
   }) as unknown as Game;
 
-const leagueDoc = (game: Game) => ({
+const leagueDoc = (game: Game, approvalLimit = 2) => ({
   leagueName: "Test League",
-  approvalLimit: 2,
+  approvalLimit,
   games: [game],
 });
 
-const tournamentDoc = (game: Game) => ({
+const tournamentDoc = (game: Game, approvalLimit = 2) => ({
   tournamentName: "Test Tournament",
-  approvalLimit: 2,
+  approvalLimit,
   fixtures: [{ round: 1, games: [game] }],
 });
 
+const mockTransactionUpdate = jest.fn();
 const sendNotification = jest.fn();
 const readNotification = jest.fn();
 
@@ -113,7 +114,7 @@ const respondWith = (data: object) => {
   mockRunTransaction.mockImplementation(async (_db, fn) =>
     fn({
       get: jest.fn().mockResolvedValue(snap),
-      update: jest.fn(),
+      update: mockTransactionUpdate,
       set: jest.fn(),
     }),
   );
@@ -220,4 +221,72 @@ describe("approveGame (league) write", () => {
       approvers: [{ userId: "b2", username: "b2" }],
     });
   });
+});
+
+describe("approval limit of two", () => {
+  const withApprover = (game: Game, userId: string) =>
+    ({
+      ...game,
+      numberOfApprovals: 1,
+      approvers: [{ userId, username: userId }],
+    }) as Game;
+
+  it("keeps a league game pending after the first approval", async () => {
+    respondWith(leagueDoc(doublesGame("a")));
+    const result = await renderLeague();
+
+    await approveAs(result, "b", "league");
+
+    const [, update] = mockUpdateDoc.mock.calls[0];
+    expect(update.games[0]).toMatchObject({
+      approvalStatus: "Pending",
+      numberOfApprovals: 1,
+    });
+    expect(mockRunTransaction).not.toHaveBeenCalled();
+  });
+
+  it("keeps a tournament game pending after the first approval without error", async () => {
+    respondWith(tournamentDoc(doublesGame("a")));
+    const result = await renderLeague();
+
+    await approveAs(result, "b", "tournament");
+
+    expect(console.error).not.toHaveBeenCalled();
+    expect(mockTransactionUpdate).toHaveBeenCalledTimes(1);
+    const [, update] = mockTransactionUpdate.mock.calls[0];
+    expect(update.fixtures[0].games[0]).toMatchObject({
+      approvalStatus: "Pending",
+      numberOfApprovals: 1,
+      approvers: [{ userId: "b" }],
+    });
+    expect(sendNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it("approves a league game once the second opponent approves", async () => {
+    respondWith(leagueDoc(withApprover(doublesGame("a"), "b")));
+    const result = await renderLeague();
+
+    await approveAs(result, "b2", "league");
+
+    expect(mockRunTransaction).toHaveBeenCalled();
+    const [, update] = mockUpdateDoc.mock.calls[0];
+    expect(update.games[0]).toMatchObject({
+      approvalStatus: "approved",
+      numberOfApprovals: 2,
+    });
+  });
+
+  it.each(["league", "tournament"] as const)(
+    "does not count the same %s approver twice",
+    async (kind) => {
+      const make = kind === "league" ? leagueDoc : tournamentDoc;
+      respondWith(make(withApprover(doublesGame("a"), "b")));
+      const result = await renderLeague();
+
+      await approveAs(result, "b", kind);
+
+      expect(sendNotification).not.toHaveBeenCalled();
+      expect(wroteApproval(kind)).toBe(false);
+    },
+  );
 });

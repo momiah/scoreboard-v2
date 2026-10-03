@@ -1745,6 +1745,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             gameId,
             updatedGame,
             removeGame: false,
+            partialApproval: true,
           });
         }
       } else {
@@ -2515,11 +2516,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     gameId,
     updatedGame,
     removeGame = false,
+    partialApproval = false,
   }: {
     tournamentId: string;
     gameId: string;
     updatedGame: Game;
     removeGame?: boolean;
+    partialApproval?: boolean;
   }) => {
     try {
       const tournamentRef = doc(db, "tournaments", tournamentId);
@@ -2561,7 +2564,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         } else {
           assertGameTransition(
             currentGame.approvalStatus,
-            updatedGame.approvalStatus,
+            partialApproval
+              ? notificationTypes.RESPONSE.APPROVED_GAME
+              : updatedGame.approvalStatus,
           );
 
           updatedFixtures = fixtures.map((round: Fixtures) => ({

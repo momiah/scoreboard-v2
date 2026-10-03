@@ -119,6 +119,12 @@ tournaments have no dispute route.
 - Jest: `helpers/reportedGameApproval.test.ts`, "approval eligibility" in
   `context/LadderContext.test.tsx`, `context/LeagueContext.test.tsx` (league and
   tournament, singles and doubles).
+- Approval limits above 1 (league and tournament): the game stays `Pending`
+  until the limit is met, the same player cannot count twice, and
+  `GameScreen` disables the controls for a player who has already approved
+  (`context/LeagueContext.test.tsx`, "approval limit of two"). The limit is
+  fixed at 1 today; singles has only one eligible approver, so a limit of 2
+  would need doubles-only handling.
 - Not covered by Maestro for leagues/tournaments: there is no seed fixture for
   them yet.
 - Maestro: `add-game-reporter-cannot-approve-own-report` (+ doubles) and
