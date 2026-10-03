@@ -34,7 +34,10 @@ import { db } from "../services/firebase.config";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
-import { canApproveReportedGame } from "../helpers/reportedGameApproval";
+import {
+  canApproveReportedGame,
+  getEffectiveApprovalLimit,
+} from "../helpers/reportedGameApproval";
 import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
@@ -1528,7 +1531,17 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const approvalLimit = competitionData.approvalLimit || 1;
+      // STUB: a doubles approval limit above 1 is not race-safe. This function
+      // reads the game, then writes it back, so two opponents approving at the
+      // same time can overwrite each other and leave the game pending. Before
+      // the limit can be raised to 2, approveGame must become a single atomic
+      // transaction (read, add approver, decide approval, write). Singles is
+      // capped at 1 by getEffectiveApprovalLimit. Cloud functions ignore the
+      // approval limit; it only gates user approvals.
+      const approvalLimit = getEffectiveApprovalLimit(
+        game,
+        competitionData.approvalLimit,
+      );
       const existingApprovers = game.approvers || [];
 
       if (existingApprovers.some((a) => a.userId === userId)) {

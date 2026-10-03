@@ -123,8 +123,10 @@ tournaments have no dispute route.
   until the limit is met, the same player cannot count twice, and
   `GameScreen` disables the controls for a player who has already approved
   (`context/LeagueContext.test.tsx`, "approval limit of two"). The limit is
-  fixed at 1 today; singles has only one eligible approver, so a limit of 2
-  would need doubles-only handling.
+  fixed at 1 today. Singles is always capped at 1 (`getEffectiveApprovalLimit`,
+  since the opponent is the only eligible approver). Raising a doubles limit to
+  2 needs `approveGame` to become one atomic transaction first (stub in the
+  function). Cloud functions ignore approval limits.
 - Not covered by Maestro for leagues/tournaments: there is no seed fixture for
   them yet.
 - Maestro: `add-game-reporter-cannot-approve-own-report` (+ doubles) and

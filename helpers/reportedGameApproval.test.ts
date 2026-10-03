@@ -1,5 +1,8 @@
 import type { Game } from "@shared/types";
-import { canApproveReportedGame } from "./reportedGameApproval";
+import {
+  canApproveReportedGame,
+  getEffectiveApprovalLimit,
+} from "./reportedGameApproval";
 
 const player = (userId: string) => ({ userId });
 
@@ -45,5 +48,19 @@ describe("canApproveReportedGame", () => {
     expect(canApproveReportedGame(doubles("a"), "stranger")).toBe(false);
     expect(canApproveReportedGame(doubles("a"), undefined)).toBe(false);
     expect(canApproveReportedGame(null, "b")).toBe(false);
+  });
+});
+
+describe("getEffectiveApprovalLimit", () => {
+  it("caps singles at one approval whatever the competition limit", () => {
+    expect(getEffectiveApprovalLimit(singles("a"), 2)).toBe(1);
+    expect(getEffectiveApprovalLimit(singles("a"), undefined)).toBe(1);
+  });
+
+  it("uses the competition limit for doubles, defaulting to one", () => {
+    expect(getEffectiveApprovalLimit(doubles("a"), 2)).toBe(2);
+    expect(getEffectiveApprovalLimit(doubles("a"), 1)).toBe(1);
+    expect(getEffectiveApprovalLimit(doubles("a"), undefined)).toBe(1);
+    expect(getEffectiveApprovalLimit(doubles("a"), 0)).toBe(1);
   });
 });

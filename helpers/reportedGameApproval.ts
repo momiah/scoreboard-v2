@@ -17,3 +17,12 @@ export const canApproveReportedGame = (
   !!userId &&
   gamePlayerIds(game).includes(userId) &&
   !getReporterSideIds(game).includes(userId);
+
+export const getEffectiveApprovalLimit = (
+  game: Game,
+  configuredLimit: number | undefined,
+): number => {
+  const isSingles =
+    !game.team1?.player2?.userId && !game.team2?.player2?.userId;
+  return isSingles ? 1 : configuredLimit || 1;
+};

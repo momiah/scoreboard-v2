@@ -262,6 +262,19 @@ describe("approval limit of two", () => {
     expect(sendNotification).toHaveBeenCalledTimes(1);
   });
 
+  it("approves a singles league game on one approval despite a limit of two", async () => {
+    respondWith(leagueDoc(singlesGame("a")));
+    const result = await renderLeague();
+
+    await approveAs(result, "b", "league");
+
+    const [, update] = mockUpdateDoc.mock.calls[0];
+    expect(update.games[0]).toMatchObject({
+      approvalStatus: "approved",
+      numberOfApprovals: 1,
+    });
+  });
+
   it("approves a league game once the second opponent approves", async () => {
     respondWith(leagueDoc(withApprover(doublesGame("a"), "b")));
     const result = await renderLeague();
