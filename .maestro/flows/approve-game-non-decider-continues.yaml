@@ -1,0 +1,56 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-reported"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*has just reported a score.*"
+    timeout: 15000
+- tapOn: ".*has just reported a score.*"
+- assertVisible:
+    id: "game-approval-modal"
+- tapOn:
+    id: "game-approval-accept"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-add-game-flow-match"
+    timeout: 15000
+- assertVisible: ".*Started.*"
+- assertNotVisible: ".*Completed.*"
+- assertNotVisible: ".*awaiting approval.*"
+- tapOn:
+    id: "schedule-card-maestro-add-game-flow-match"
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-maestro-add-game-flow-match-g3"
+    direction: DOWN
+- tapOn:
+    id: "ladder-game-maestro-add-game-flow-match-g3"
+- extendedWaitUntil:
+    visible: "Report the current game before the next one"
+    timeout: 10000
+- tapOn:
+    id: "ladder-game-maestro-add-game-flow-match-g2"
+- extendedWaitUntil:
+    visible:
+      id: "add-game-score-input"
+    timeout: 10000

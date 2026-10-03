@@ -86,7 +86,9 @@ import {
   subscribeToDisputeGameVideos,
   addDisputeEvidence,
   cancelDispute,
+  approveDisputedScore,
 } from "../services/disputes";
+import { canApproveDisputedScore } from "../helpers/disputeReporterSide";
 
 if (
   Platform.OS === "android" &&
@@ -484,12 +486,18 @@ const GameDisputeScreen = () => {
 
   const actorOf = (event: DisputeEvent): string => {
     if (event.createdBy === DISPUTE_SYSTEM_ACTOR) return "CourtChamps";
-    return DISPUTE_ADMIN_EVENT_TYPES.includes(eventType(event))
+    const isParticipant = (dispute?.participantIds ?? []).includes(
+      event.createdBy,
+    );
+    return DISPUTE_ADMIN_EVENT_TYPES.includes(eventType(event)) &&
+      !isParticipant
       ? "Admin"
       : nameOf(event.createdBy);
   };
 
   const isOpener = !!userId && dispute?.openedBy === userId;
+  const canApproveScore =
+    !!dispute && !isResolved && canApproveDisputedScore(dispute, userId);
 
   const buildEvidence = (): DisputeEvidence | null => {
     if (!userId) return null;
@@ -561,7 +569,9 @@ const GameDisputeScreen = () => {
       showBottomToast(
         outcome.reason === "exists"
           ? "This game is already under dispute."
-          : "Could not open the dispute. Please try again.",
+          : outcome.reason === "not_opponent"
+            ? "Only a player on the other side can dispute this game."
+            : "Could not open the dispute. Please try again.",
         "error",
       );
       return;
@@ -647,6 +657,47 @@ const GameDisputeScreen = () => {
             );
             setExpanded({});
             showBottomToast("Dispute cancelled", "success");
+          },
+        },
+      ],
+    );
+  };
+
+  const handleApproveDisputedScore = () => {
+    if (!dispute || !currentUser?.userId) return;
+    Alert.alert(
+      "Approve disputed score?",
+      "The corrected score will be applied and scored as normal, without waiting for an admin. This can't be undone.",
+      [
+        { text: "Not now", style: "cancel" },
+        {
+          text: "Approve score",
+          onPress: async () => {
+            setSubmitting(true);
+            const outcome = await approveDisputedScore(
+              dispute.disputeId,
+              currentUser.userId,
+            );
+            setSubmitting(false);
+            if (!outcome.success) {
+              showBottomToast(
+                outcome.reason === "resolved"
+                  ? "This dispute has already been resolved."
+                  : outcome.reason === "not_reporter_side"
+                    ? "Only the player who reported the game can approve this score."
+                    : "Could not approve the score. Please try again.",
+                "error",
+              );
+              return;
+            }
+            await notifyParticipants(
+              dispute.disputeId,
+              `${formatDisplayName(currentUser)} approved the disputed score in ${
+                dispute.ladderName ?? "the ladder"
+              } — the corrected score now stands.`,
+            );
+            setExpanded({});
+            showBottomToast("Disputed score approved", "success");
           },
         },
       ],
@@ -905,6 +956,16 @@ const GameDisputeScreen = () => {
                   submitting={submitting}
                   onSubmit={handleSubmitEvidence}
                 />
+              )}
+
+              {canApproveScore && (
+                <ApproveButton
+                  testID="dispute-approve-score"
+                  disabled={submitting}
+                  onPress={handleApproveDisputedScore}
+                >
+                  <ApproveText>Approve disputed score</ApproveText>
+                </ApproveButton>
               )}
 
               {isOpener && !isResolved && (
@@ -1479,6 +1540,24 @@ const CancelButton = styled.TouchableOpacity<{ disabled?: boolean }>(
     opacity: disabled ? 0.5 : 1,
   }),
 );
+
+const ApproveButton = styled.TouchableOpacity<{ disabled?: boolean }>(
+  ({ disabled }: { disabled?: boolean }) => ({
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#2FD27A",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    opacity: disabled ? 0.5 : 1,
+  }),
+);
+
+const ApproveText = styled.Text({
+  color: "#2FD27A",
+  fontWeight: "bold",
+  fontSize: 14,
+});
 
 const CancelText = styled.Text({
   color: "#f87171",

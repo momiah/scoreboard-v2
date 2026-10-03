@@ -1,0 +1,86 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-reject-game-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+- assertVisible:
+    id: "game-approval-modal"
+- tapOn:
+    id: "game-approval-decline"
+- assertVisible:
+    id: "game-dispute-screen"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- assertVisible: ".*enter the corrected score.*"
+- tapOn:
+    id: "dispute-compose-submit"
+- assertNotVisible: "Dispute submitted for review"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-corrected-result"
+    direction: UP
+    centerElement: true
+- tapOn:
+    id: "dispute-corrected-result"
+- tapOn:
+    id: "add-game-score-input"
+- inputText: "2119"
+- tapOn:
+    id: "add-game-submit"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- assertVisible: ".*Add a note or a video to submit.*"
+- tapOn:
+    id: "dispute-compose-submit"
+- assertNotVisible: "Dispute submitted for review"
+- assertVisible:
+    id: "dispute-compose-submit"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-note-input"
+    direction: DOWN
+- tapOn:
+    id: "dispute-compose-note-input"
+- waitForAnimationToEnd:
+    timeout: 1000
+- inputText: "Maestro E2E test note: score should be 21-19."
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: "video-upload-modal-close"
+    commands:
+      - tapOn:
+          id: "video-upload-modal-close"
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- assertNotVisible: ".*Add a note or a video to submit.*"
+- tapOn:
+    id: "dispute-compose-submit"
+- extendedWaitUntil:
+    visible: "Dispute submitted for review"
+    timeout: 10000

@@ -14,6 +14,7 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { notificationTypes, notificationSchema, LADDER_TYPE } from "@shared";
+import { canApproveReportedGame } from "../../helpers/reportedGameApproval";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   NormalizedCompetition,
@@ -238,12 +239,16 @@ const CompetitionGameApprovalModal = ({
   const autoApproved = gameDetails?.autoApproved || false;
   const competitionName = competition?.name || "Unknown Competition";
   const competitionType = competition?.type || "Singles";
+  const notOpponent =
+    !!gameDetails &&
+    !canApproveReportedGame(gameDetails, currentUser?.userId);
   const isDisabled =
     isRead ||
     loadingDecision ||
     gameDeleted ||
     approvalLimitReached ||
-    autoApproved;
+    autoApproved ||
+    notOpponent;
 
   return (
     <GameApprovalShell visible={visible} onClose={onClose} loading={loading}>
@@ -296,6 +301,12 @@ const CompetitionGameApprovalModal = ({
             <Description>
               This game has already been approved by the maximum number of
               participants. No further actions can be taken.
+            </Description>
+          )}
+
+          {notOpponent && !approvalLimitReached && (
+            <Description>
+              Only a player on the other side can approve this game.
             </Description>
           )}
 
@@ -417,8 +428,14 @@ const LadderGameApprovalModal = ({
   // Gate on the game's own state, not the notification's read flag — reading a
   // notification doesn't resolve the game, and approveLadderGame is the final
   // guard against a double approval.
+  const notOpponent =
+    !!game && !canApproveReportedGame(game, currentUser?.userId);
   const isDisabled =
-    submitting || gameGone || alreadyApproved || !!activeDispute;
+    submitting ||
+    gameGone ||
+    alreadyApproved ||
+    !!activeDispute ||
+    notOpponent;
 
   const handleApprove = async () => {
     if (!currentUser?.userId || !game) return;
@@ -515,6 +532,12 @@ const LadderGameApprovalModal = ({
 
       {alreadyApproved && (
         <Description>This game has already been approved.</Description>
+      )}
+
+      {notOpponent && !alreadyApproved && (
+        <Description>
+          Only a player on the other side can approve this game.
+        </Description>
       )}
 
       {activeDispute && (

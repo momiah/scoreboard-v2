@@ -1,0 +1,87 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-doubles-lazy-participant"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*has just reported a score.*"
+    timeout: 15000
+- tapOn: ".*has just reported a score.*"
+- assertVisible:
+    id: "game-approval-modal"
+- tapOn:
+    id: "game-approval-accept"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 15000
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro Bravos.*Wins.*1.*PD.*6.*CP.*20.*"
+    timeout: 15000
+- assertVisible: ".*Maestro Aces.*Wins.*0.*PD.*-6.*CP.*0.*"
+
+- tapOn: ".*Maestro Aces.*"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- assertVisible:
+    id: "team-details-losses"
+    text: "1"
+- extendedWaitUntil:
+    visible: ".*-15 CP.*"
+    timeout: 15000
+- tapOn:
+    id: "team-details-back"
+
+- tapOn: ".*Maestro Bravos.*"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- assertVisible:
+    id: "team-details-wins"
+    text: "1"
+- extendedWaitUntil:
+    visible: ".*20 CP.*"
+    timeout: 15000
+- tapOn:
+    id: "team-details-back"
+
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-6 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

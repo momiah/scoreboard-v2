@@ -9,7 +9,7 @@ import {
   where,
 } from "firebase/firestore";
 import moment from "moment";
-import { db } from "../services/firebase.config";
+import { db } from "../../services/firebase.config";
 import {
   LADDER_TYPE,
   LADDER_STATUS,
@@ -21,10 +21,10 @@ import {
   notificationSchema,
   createLadderMatchGames,
   normalizeTeamKey,
-  createTeam,
   buildLadderParticipant,
 } from "@shared";
-import { formatDisplayName } from "../helpers/formatDisplayName";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 
 export const MAESTRO_D_LADDER_ID = "maestro-reject-flow-doubles-ladder";
@@ -174,23 +174,16 @@ export const seedDoublesRejectGameFlow = async ({
 
   const teamAKey = normalizeTeamKey([testUser.userId, partner.userId]);
   const teamBKey = normalizeTeamKey([opp1.userId, opp2.userId]);
-  const teamA = {
-    ...createTeam(
-      [formatDisplayName(testUser), formatDisplayName(partner)],
-      teamAKey,
-    ),
-    XP: 0,
-    teamId: teamAKey,
-    playerIds: [testUser.userId, partner.userId],
-    status: "active",
-  };
-  const teamB = {
-    ...createTeam([formatDisplayName(opp1), formatDisplayName(opp2)], teamBKey),
-    XP: 0,
-    teamId: teamBKey,
-    playerIds: [opp1.userId, opp2.userId],
-    status: "active",
-  };
+  const teamA = buildSeedLadderTeam({
+    players: [testUser, partner],
+    createdBy: testUser,
+    teamName: "Reject Aces",
+  });
+  const teamB = buildSeedLadderTeam({
+    players: [opp1, opp2],
+    createdBy: opp1,
+    teamName: "Reject Bravos",
+  });
   await setDoc(
     doc(db, "ladders", MAESTRO_D_LADDER_ID, "ladderTeams", teamAKey),
     teamA,
@@ -203,7 +196,13 @@ export const seedDoublesRejectGameFlow = async ({
   await Promise.all(
     [testUser, partner, opp1, opp2].map((user) =>
       setDoc(
-        doc(db, "ladders", MAESTRO_D_LADDER_ID, "ladderParticipants", user.userId),
+        doc(
+          db,
+          "ladders",
+          MAESTRO_D_LADDER_ID,
+          "ladderParticipants",
+          user.userId,
+        ),
         buildLadderParticipant(user),
       ),
     ),
@@ -211,7 +210,13 @@ export const seedDoublesRejectGameFlow = async ({
 
   const now = new Date();
   await setDoc(
-    doc(db, "ladders", MAESTRO_D_LADDER_ID, "ladderMatches", MAESTRO_D_MATCH_ID),
+    doc(
+      db,
+      "ladders",
+      MAESTRO_D_LADDER_ID,
+      "ladderMatches",
+      MAESTRO_D_MATCH_ID,
+    ),
     {
       ladderMatchId: MAESTRO_D_MATCH_ID,
       court: {
@@ -228,14 +233,13 @@ export const seedDoublesRejectGameFlow = async ({
       matchTime: { start: "18:00" },
       courtFee: 0,
       currencyType: "GBP",
-      participants: [
-        testUser.userId,
-        partner.userId,
-        opp1.userId,
-        opp2.userId,
-      ],
+      participants: [testUser.userId, partner.userId, opp1.userId, opp2.userId],
       teams: [
-        { teamId: teamBKey, teamKey: teamBKey, playerIds: [opp1.userId, opp2.userId] },
+        {
+          teamId: teamBKey,
+          teamKey: teamBKey,
+          playerIds: [opp1.userId, opp2.userId],
+        },
         {
           teamId: teamAKey,
           teamKey: teamAKey,

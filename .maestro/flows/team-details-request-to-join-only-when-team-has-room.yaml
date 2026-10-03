@@ -1,0 +1,65 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-doubles-solo-team"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 15000
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro Soloists.*"
+    timeout: 15000
+- assertVisible: ".*Maestro Bravos.*"
+- assertVisible: ".*Maestro Aces.*"
+
+- tapOn: ".*Maestro Soloists.*"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- assertVisible: "Maestro Soloists"
+- assertVisible:
+    id: "team-details-request"
+- tapOn:
+    id: "team-details-back"
+
+- tapOn: ".*Maestro Bravos.*"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- assertVisible: "Maestro Bravos"
+- assertNotVisible:
+    id: "team-details-request"
+- assertNotVisible:
+    id: "team-details-invite"
+- tapOn:
+    id: "team-details-back"
+
+- tapOn: ".*Maestro Aces.*"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- assertVisible: "Maestro Aces"
+- assertNotVisible:
+    id: "team-details-request"
+- assertNotVisible:
+    id: "team-details-invite"

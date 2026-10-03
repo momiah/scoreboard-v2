@@ -16,7 +16,14 @@ import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import MatchMedals from "../performance/MatchMedals";
-import AnimateNumber from "../performance/AnimateNumber";
+import AnimateNumberUntyped from "../performance/AnimateNumber";
+
+const AnimateNumber = AnimateNumberUntyped as React.ComponentType<{
+  number: number;
+  fontSize?: number;
+  progressBar?: boolean;
+  testID?: string;
+}>;
 import ResultLog from "../performance/ResultLog";
 import MedalProgress from "../performance/MedalProgress";
 import TeamDetailsSkeleton from "../Skeletons/TeamDetailsSkeleton";
@@ -47,11 +54,23 @@ const StatsBlock: React.FC<{ team: TeamStats; useMatchLog?: boolean }> = ({
   const statData = [
     {
       statTitle: "Wins",
-      stat: <AnimateNumber number={team.numberOfWins} fontSize={25} />,
+      stat: (
+        <AnimateNumber
+          number={team.numberOfWins}
+          fontSize={25}
+          testID="team-details-wins"
+        />
+      ),
     },
     {
       statTitle: "Losses",
-      stat: <AnimateNumber number={team.numberOfLosses} fontSize={25} />,
+      stat: (
+        <AnimateNumber
+          number={team.numberOfLosses}
+          fontSize={25}
+          testID="team-details-losses"
+        />
+      ),
     },
     {
       statTitle: "Win Ratio",
@@ -63,6 +82,7 @@ const StatsBlock: React.FC<{ team: TeamStats; useMatchLog?: boolean }> = ({
         <AnimateNumber
           number={Number(team.averagePointDifference.toFixed(0))}
           fontSize={25}
+          testID="team-details-pd"
         />
       ),
     },
@@ -288,7 +308,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
   };
 
   return (
-    <Screen>
+    <Screen testID="team-details-screen">
       <Header>
         <BackButton
           onPress={() => navigation.goBack()}
@@ -428,6 +448,7 @@ const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
             xp={(statsTeam ?? team).XP ?? 0}
             prevGameXp={(statsTeam ?? team).prevGameXP}
             showMedals={false}
+            testID="team-details-cp"
           />
           <StatsBlock team={statsTeam ?? team} useMatchLog />
         </Body>

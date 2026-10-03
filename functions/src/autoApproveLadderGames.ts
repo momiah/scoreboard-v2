@@ -32,29 +32,31 @@ const USERS = "users";
  * mirror of the app's approveLadderGame. Completion is held while any game is
  * disputed, exactly as in the app.
  */
+export const runAutoApproveLadderGames = async (): Promise<void> => {
+  const db = admin.firestore();
+  try {
+    const laddersSnapshot = await db.collection(LADDERS).get();
+    let approved = 0;
+    for (const ladderDoc of laddersSnapshot.docs) {
+      const matchesSnapshot = await ladderDoc.ref
+        .collection(LADDER_MATCHES)
+        .where("matchStatus", "==", LADDER_MATCH_STATUS.ACCEPTED)
+        .get();
+      for (const matchDoc of matchesSnapshot.docs) {
+        approved += await processMatch(db, ladderDoc.id, matchDoc);
+      }
+    }
+    console.log(
+      `✅ Ladder auto-approval finished. Approved ${approved} game(s).`,
+    );
+  } catch (error) {
+    console.log("❌ Ladder auto-approval failed:", error);
+  }
+};
+
 export const autoApproveLadderGames = onSchedule(
   "every 30 minutes",
-  async () => {
-    const db = admin.firestore();
-    try {
-      const laddersSnapshot = await db.collection(LADDERS).get();
-      let approved = 0;
-      for (const ladderDoc of laddersSnapshot.docs) {
-        const matchesSnapshot = await ladderDoc.ref
-          .collection(LADDER_MATCHES)
-          .where("matchStatus", "==", LADDER_MATCH_STATUS.ACCEPTED)
-          .get();
-        for (const matchDoc of matchesSnapshot.docs) {
-          approved += await processMatch(db, ladderDoc.id, matchDoc);
-        }
-      }
-      console.log(
-        `✅ Ladder auto-approval finished. Approved ${approved} game(s).`,
-      );
-    } catch (error) {
-      console.log("❌ Ladder auto-approval failed:", error);
-    }
-  },
+  runAutoApproveLadderGames,
 );
 
 const processMatch = async (
