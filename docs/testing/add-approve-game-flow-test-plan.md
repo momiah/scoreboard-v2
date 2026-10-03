@@ -139,7 +139,7 @@ declines currently go through the notification modal into the dispute flow.
 ## Fixture fidelity
 
 Seeded doubles teams are built with `createRootTeam` via
-`devFunctions/buildSeedLadderTeam.js` so they carry the real shape (`teamName`,
+`maestro/seeds/buildSeedLadderTeam.js` so they carry the real shape (`teamName`,
 `players`, `createdBy`, `status`). An earlier version used `createTeam`, which
 has no `teamName`/`players`: the UI then fell back to the players' names and
 treated every team as empty (so "Request to Join" appeared on full teams).

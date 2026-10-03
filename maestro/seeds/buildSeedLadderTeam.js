@@ -1,5 +1,5 @@
 import { createRootTeam, TEAM_STATUS } from "@shared";
-import { formatDisplayName } from "../helpers/formatDisplayName";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 const toTeamMember = (user) => ({
   userId: user.userId,

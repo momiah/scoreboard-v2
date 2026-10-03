@@ -1,6 +1,6 @@
 import { addDoc, collection, doc, runTransaction } from "firebase/firestore";
-import { db } from "../services/firebase.config";
-import { fetchActiveDisputeByGame } from "../services/disputes";
+import { db } from "../../services/firebase.config";
+import { fetchActiveDisputeByGame } from "../../services/disputes";
 import {
   planDisputeResolution,
   getDisputePlayerIds,

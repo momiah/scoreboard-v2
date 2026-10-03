@@ -152,6 +152,7 @@ const approveAs = (
     competitionId: "c1",
     userId,
     senderId: "reporter",
+    notificationId: "n1",
     notificationType:
       kind === "league"
         ? notificationTypes.ACTION.ADD_GAME.LEAGUE

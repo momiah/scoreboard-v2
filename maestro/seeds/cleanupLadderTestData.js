@@ -6,7 +6,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db } from "../services/firebase.config";
+import { db } from "../../services/firebase.config";
 import { DISPUTES_COLLECTION } from "@shared";
 import {
   MAESTRO_LADDER_ID,

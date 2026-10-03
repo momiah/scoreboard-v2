@@ -9,7 +9,7 @@ import {
   where,
 } from "firebase/firestore";
 import moment from "moment";
-import { db } from "../services/firebase.config";
+import { db } from "../../services/firebase.config";
 import {
   LADDER_TYPE,
   LADDER_STATUS,

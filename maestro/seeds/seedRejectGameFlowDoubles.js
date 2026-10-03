@@ -9,7 +9,7 @@ import {
   where,
 } from "firebase/firestore";
 import moment from "moment";
-import { db } from "../services/firebase.config";
+import { db } from "../../services/firebase.config";
 import {
   LADDER_TYPE,
   LADDER_STATUS,
@@ -23,7 +23,7 @@ import {
   normalizeTeamKey,
   buildLadderParticipant,
 } from "@shared";
-import { formatDisplayName } from "../helpers/formatDisplayName";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 

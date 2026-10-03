@@ -431,11 +431,6 @@ const resolveActiveDispute = async <Role extends keyof typeof DENIED_REASON>({
 
 export type CancelDisputeOutcome = ResolveOutcome<"not_opener">;
 
-/**
- * The opener withdraws their dispute: the original game is approved and scored
- * through the shared resolution path (as when an admin keeps the original),
- * and the dispute closes with a "cancelled" phase.
- */
 export const cancelDispute = (
   disputeId: string,
   userId: string,
@@ -449,12 +444,6 @@ export const cancelDispute = (
 
 export type ApproveDisputedScoreOutcome = ResolveOutcome<"not_reporter_side">;
 
-/**
- * The reporter's side (the reporter, or either teammate in doubles) accepts the
- * opponent's corrected score: it is applied and scored through the shared
- * resolution path exactly as an admin upholding the dispute would, without
- * waiting for an admin.
- */
 export const approveDisputedScore = (
   disputeId: string,
   userId: string,
