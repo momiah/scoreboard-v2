@@ -41,7 +41,7 @@ import {
   LadderMatch,
 } from "@shared/types";
 import { buildCompetitionConfig } from "@/helpers/getCompetitionConfig";
-import { canApproveLadderGame } from "../helpers/ladderGameApproval";
+import { canApproveReportedGame } from "../helpers/reportedGameApproval";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { UserContext } from "../context/UserContext";
 import { LadderContext } from "../context/LadderContext";
@@ -151,8 +151,10 @@ const GameScreen: React.FC = () => {
     liveGame?.approvalStatus === "Pending" ||
     liveGame?.approvalStatus === "pending";
 
-  const canActAsApprover =
-    !isLadder || canApproveLadderGame(liveGame, currentUser?.userId);
+  const canActAsApprover = canApproveReportedGame(
+    liveGame,
+    currentUser?.userId,
+  );
   const showApproval =
     isParticipant && !isReporter && canActAsApprover && liveGame !== null;
   const canApprove =

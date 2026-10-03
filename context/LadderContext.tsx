@@ -76,7 +76,7 @@ import { addMember, removeMember } from "../helpers/teamRoster";
 import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
-import { canApproveLadderGame } from "../helpers/ladderGameApproval";
+import { canApproveReportedGame } from "../helpers/reportedGameApproval";
 import type {
   LadderContextType,
   FetchLaddersOptions,
@@ -1513,7 +1513,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if ((game.approvers ?? []).some((a) => a.userId === userId)) {
             throw new ApproveLadderGameError("already been processed");
           }
-          if (!canApproveLadderGame(game, userId)) {
+          if (!canApproveReportedGame(game, userId)) {
             throw new ApproveLadderGameNotOpponentError(
               "only the opposing side can approve a reported game",
             );

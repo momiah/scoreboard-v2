@@ -34,6 +34,7 @@ import { db } from "../services/firebase.config";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
+import { canApproveReportedGame } from "../helpers/reportedGameApproval";
 import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
@@ -1532,6 +1533,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
 
       if (existingApprovers.some((a) => a.userId === userId)) {
         console.error("User has already approved this game");
+        return;
+      }
+
+      if (!canApproveReportedGame(game, userId)) {
+        console.error("Only a player on the opposing side can approve a game");
         return;
       }
 

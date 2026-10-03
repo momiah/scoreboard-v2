@@ -14,6 +14,9 @@ for the scenarios each flow covers.
 - `login.yaml` — shared login subflow, invoked via `onFlowStart` from every
   flow below. Idempotent: skips itself if a session is already active.
 - `flows/` — the reject-game/dispute flows.
+- `utilities/` — flows that are not part of the suite (not matched by
+  `config.yaml`), e.g. `cleanup-ladder-test-data.yaml`, which taps the Home
+  cleanup button to delete all seeded Maestro fixtures. Run on request only.
 - `.env` (gitignored) — the throwaway test account's credentials.
 
 ## One-time setup

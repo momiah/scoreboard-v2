@@ -9,7 +9,7 @@ const gamePlayerIds = (game: Game): string[] =>
     game.team2?.player2?.userId,
   ].filter((id): id is string => Boolean(id));
 
-export const canApproveLadderGame = (
+export const canApproveReportedGame = (
   game: Game | null | undefined,
   userId: string | undefined,
 ): boolean =>

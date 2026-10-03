@@ -108,14 +108,19 @@ Jest:
 ## Approval eligibility
 
 Only a player on the **opposing** side of the reporter can approve a reported
-ladder game. This is enforced in `approveLadderGame` (reason `not_opponent`,
-covering the reporter, the reporter's doubles partner and non-players), hidden
-in `GameScreen`, and disabled in `GameApprovalModal`. The rule lives in
-`helpers/ladderGameApproval.ts`. Report-time notifications already go only to
-the opponents.
+game, in ladders, leagues and tournaments. For ladders this is enforced in
+`approveLadderGame` (reason `not_opponent`); for leagues and tournaments in
+`LeagueProvider.approveGame`. Both cover the reporter, the reporter's doubles
+partner and non-players. The controls are hidden in `GameScreen` and disabled
+in `GameApprovalModal`. The rule lives in `helpers/reportedGameApproval.ts`.
+Report-time notifications already go only to the opponents. Leagues and
+tournaments have no dispute route.
 
-- Jest: `helpers/ladderGameApproval.test.ts`, "approval eligibility" in
-  `context/LadderContext.test.tsx`.
+- Jest: `helpers/reportedGameApproval.test.ts`, "approval eligibility" in
+  `context/LadderContext.test.tsx`, `context/LeagueContext.test.tsx` (league and
+  tournament, singles and doubles).
+- Not covered by Maestro for leagues/tournaments: there is no seed fixture for
+  them yet.
 - Maestro: `add-game-reporter-cannot-approve-own-report` (+ doubles) and
   `approve-game-doubles-reporters-partner-cannot-approve`.
 
