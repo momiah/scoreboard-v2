@@ -23,6 +23,10 @@ onFlowStart:
     timeout: 15000
 - tapOn:
     id: "schedule-card-maestro-add-game-flow-doubles-match"
+- assertVisible: ".*Maestro Bravos.*"
+- assertVisible: ".*Maestro Aces.*"
+- assertNotVisible: ".*Maestro H & Maestro I.*"
+- assertNotVisible: ".*Maestro G & Mohsin M.*"
 - assertVisible:
     id: "checkin-team-maestroagdopp1-maestroagdopp2"
 - assertVisible:

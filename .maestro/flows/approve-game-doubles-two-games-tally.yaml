@@ -50,11 +50,11 @@ onFlowStart:
 - tapOn:
     id: "ladder-tab-Performance"
 - extendedWaitUntil:
-    visible: ".*Maestro H.*Maestro I.*Wins.*2.*PD.*12.*CP.*60.*"
+    visible: ".*Maestro Bravos.*Wins.*2.*PD.*12.*CP.*60.*"
     timeout: 15000
-- assertVisible: ".*Maestro G.*Mohsin M.*Wins.*0.*PD.*-12.*CP.*0.*"
+- assertVisible: ".*Maestro Aces.*Wins.*0.*PD.*-12.*CP.*0.*"
 
-- tapOn: ".*Maestro G.*Mohsin M.*"
+- tapOn: ".*Maestro Aces.*"
 - extendedWaitUntil:
     visible:
       id: "team-details-screen"
@@ -68,7 +68,7 @@ onFlowStart:
 - tapOn:
     id: "team-details-back"
 
-- tapOn: ".*Maestro H.*Maestro I.*"
+- tapOn: ".*Maestro Bravos.*"
 - extendedWaitUntil:
     visible:
       id: "team-details-screen"

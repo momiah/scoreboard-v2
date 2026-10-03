@@ -122,3 +122,14 @@ the opponents.
 Open: Decline from `GameScreen` is disabled for ladders, and the ladder
 decline path in `LadderContext` is still commented out ("ready to implement");
 declines currently go through the notification modal into the dispute flow.
+
+## Fixture fidelity
+
+Seeded doubles teams are built with `createRootTeam` via
+`devFunctions/buildSeedLadderTeam.js` so they carry the real shape (`teamName`,
+`players`, `createdBy`, `status`). An earlier version used `createTeam`, which
+has no `teamName`/`players`: the UI then fell back to the players' names and
+treated every team as empty (so "Request to Join" appeared on full teams).
+Flows assert the team names, that the player-name fallback is absent, and
+`team-details-request-to-join-only-when-team-has-room` covers the full-team
+vs. team-with-room behaviour using a one-member control team.

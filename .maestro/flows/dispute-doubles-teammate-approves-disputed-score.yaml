@@ -66,9 +66,9 @@ onFlowStart:
 - tapOn:
     id: "ladder-tab-Performance"
 - extendedWaitUntil:
-    visible: ".*Maestro H.*Maestro I.*Wins.*1.*PD.*2.*CP.*20.*"
+    visible: ".*Maestro Bravos.*Wins.*1.*PD.*2.*CP.*20.*"
     timeout: 15000
-- assertVisible: ".*Maestro G.*Mohsin M.*Wins.*0.*PD.*-2.*CP.*0.*"
+- assertVisible: ".*Maestro Aces.*Wins.*0.*PD.*-2.*CP.*0.*"
 
 - tapOn:
     id: "tab-profile"

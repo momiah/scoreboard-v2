@@ -19,12 +19,11 @@ import {
   DISPUTE_EVENT_TYPE,
   createLadderMatchGames,
   normalizeTeamKey,
-  createTeam,
   buildLadderParticipant,
   notificationTypes,
   notificationSchema,
 } from "@shared";
-import { formatDisplayName } from "../helpers/formatDisplayName";
+import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 
 export const MAESTRO_AGD_LADDER_ID = "maestro-add-game-flow-doubles-ladder";
@@ -45,6 +44,7 @@ export const seedAddApproveGameFlowDoubles = async ({
   omitPartnerAndOpp2Participants = false,
   withOpponentDispute = false,
   reportedByMyTeam = false,
+  withSoloTeam = false,
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -247,23 +247,37 @@ export const seedAddApproveGameFlowDoubles = async ({
 
   const teamAKey = normalizeTeamKey([testUser.userId, partner.userId]);
   const teamBKey = normalizeTeamKey([opp1.userId, opp2.userId]);
-  const teamA = {
-    ...createTeam(
-      [formatDisplayName(testUser), formatDisplayName(partner)],
-      teamAKey,
-    ),
-    XP: 0,
-    teamId: teamAKey,
-    playerIds: [testUser.userId, partner.userId],
-    status: "active",
+  const teamA = buildSeedLadderTeam({
+    players: [testUser, partner],
+    createdBy: testUser,
+    teamName: "Maestro Aces",
+  });
+  const teamB = buildSeedLadderTeam({
+    players: [opp1, opp2],
+    createdBy: opp1,
+    teamName: "Maestro Bravos",
+  });
+  const solo = {
+    userId: "maestroagdsolo",
+    firstName: "Maestro",
+    lastName: "Juliet",
+    username: "maestro_agd_solo",
   };
-  const teamB = {
-    ...createTeam([formatDisplayName(opp1), formatDisplayName(opp2)], teamBKey),
-    XP: 0,
-    teamId: teamBKey,
-    playerIds: [opp1.userId, opp2.userId],
-    status: "active",
-  };
+  const soloTeam = buildSeedLadderTeam({
+    players: [solo],
+    createdBy: solo,
+    teamName: "Maestro Soloists",
+  });
+  const soloTeamRef = doc(
+    db,
+    "ladders",
+    MAESTRO_AGD_LADDER_ID,
+    "ladderTeams",
+    soloTeam.teamKey,
+  );
+  if (withSoloTeam) await setDoc(soloTeamRef, soloTeam);
+  else await deleteDoc(soloTeamRef);
+
   await setDoc(
     doc(db, "ladders", MAESTRO_AGD_LADDER_ID, "ladderTeams", teamAKey),
     teamA,

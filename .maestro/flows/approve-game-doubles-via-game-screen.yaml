@@ -56,7 +56,7 @@ onFlowStart:
 - tapOn:
     id: "ladder-tab-Performance"
 - extendedWaitUntil:
-    visible: ".*Maestro H.*Maestro I.*Wins.*1.*PD.*6.*CP.*20.*"
+    visible: ".*Maestro Bravos.*Wins.*1.*PD.*6.*CP.*20.*"
     timeout: 15000
 - tapOn:
     id: "tab-profile"

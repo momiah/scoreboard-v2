@@ -569,6 +569,15 @@ const Home = () => {
                   }),
               },
               {
+                id: "maestro-seed-add-game-flow-doubles-solo-team",
+                label: "Seed Add-Game Flow (Doubles, With Solo Team)",
+                run: () =>
+                  seedAddApproveGameFlowDoubles({
+                    testUser: currentUser,
+                    withSoloTeam: true,
+                  }),
+              },
+              {
                 id: "maestro-seed-add-game-flow-doubles-lazy-participant",
                 label: "Seed Add-Game Flow (Doubles, Missing Participants)",
                 run: () =>
