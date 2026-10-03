@@ -82,7 +82,10 @@ export interface CancelLadderMatchOutcome {
   reason?: CancelLadderMatchFailureReason;
 }
 
-export type ApproveLadderGameFailureReason = "unavailable" | "error";
+export type ApproveLadderGameFailureReason =
+  | "unavailable"
+  | "not_opponent"
+  | "error";
 
 export interface ApproveLadderGameOutcome {
   success: boolean;

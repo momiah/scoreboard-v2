@@ -34,6 +34,10 @@ import { db } from "../services/firebase.config";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
+import {
+  canApproveReportedGame,
+  getEffectiveApprovalLimit,
+} from "../helpers/reportedGameApproval";
 import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
@@ -1527,11 +1531,26 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const approvalLimit = competitionData.approvalLimit || 1;
+      // STUB: a doubles approval limit above 1 is not race-safe. This function
+      // reads the game, then writes it back, so two opponents approving at the
+      // same time can overwrite each other and leave the game pending. Before
+      // the limit can be raised to 2, approveGame must become a single atomic
+      // transaction (read, add approver, decide approval, write). Singles is
+      // capped at 1 by getEffectiveApprovalLimit. Cloud functions ignore the
+      // approval limit; it only gates user approvals.
+      const approvalLimit = getEffectiveApprovalLimit(
+        game,
+        competitionData.approvalLimit,
+      );
       const existingApprovers = game.approvers || [];
 
       if (existingApprovers.some((a) => a.userId === userId)) {
         console.error("User has already approved this game");
+        return;
+      }
+
+      if (!canApproveReportedGame(game, userId)) {
+        console.error("Only a player on the opposing side can approve a game");
         return;
       }
 
@@ -1739,6 +1758,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             gameId,
             updatedGame,
             removeGame: false,
+            partialApproval: true,
           });
         }
       } else {
@@ -1825,6 +1845,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       const currentUserData = await getUserById(userId);
       if (!currentUserData) {
         console.error("User not found");
+        return;
+      }
+
+      if (!canApproveReportedGame(game, userId)) {
+        console.error("Only a player on the opposing side can decline a game");
         return;
       }
 
@@ -2509,11 +2534,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     gameId,
     updatedGame,
     removeGame = false,
+    partialApproval = false,
   }: {
     tournamentId: string;
     gameId: string;
     updatedGame: Game;
     removeGame?: boolean;
+    partialApproval?: boolean;
   }) => {
     try {
       const tournamentRef = doc(db, "tournaments", tournamentId);
@@ -2555,7 +2582,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         } else {
           assertGameTransition(
             currentGame.approvalStatus,
-            updatedGame.approvalStatus,
+            partialApproval
+              ? notificationTypes.RESPONSE.APPROVED_GAME
+              : updatedGame.approvalStatus,
           );
 
           updatedFixtures = fixtures.map((round: Fixtures) => ({

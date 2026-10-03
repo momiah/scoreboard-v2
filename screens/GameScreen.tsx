@@ -41,6 +41,7 @@ import {
   LadderMatch,
 } from "@shared/types";
 import { buildCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { canApproveReportedGame } from "../helpers/reportedGameApproval";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { UserContext } from "../context/UserContext";
 import { LadderContext } from "../context/LadderContext";
@@ -150,16 +151,30 @@ const GameScreen: React.FC = () => {
     liveGame?.approvalStatus === "Pending" ||
     liveGame?.approvalStatus === "pending";
 
-  const showApproval = isParticipant && !isReporter && liveGame !== null;
+  const canActAsApprover = canApproveReportedGame(
+    liveGame,
+    currentUser?.userId,
+  );
+  const showApproval =
+    isParticipant && !isReporter && canActAsApprover && liveGame !== null;
+  const hasApproved = !!liveGame?.approvers?.some(
+    (approver) => approver.userId === currentUser?.userId,
+  );
   const canApprove =
-    showApproval && isPending && !approvalLimitReached && !autoApproved;
+    showApproval &&
+    isPending &&
+    !approvalLimitReached &&
+    !autoApproved &&
+    !hasApproved;
   const decisionPending = isLadder ? ladderSubmitting : loadingDecision;
 
   const approvalLabel = approvalLimitReached
     ? "Game approved"
     : autoApproved
       ? "Auto-approved"
-      : "Approve this game?";
+      : hasApproved
+        ? "You approved this game"
+        : "Approve this game?";
 
   // ── Live game subscription ────────────────────────────────────────────────
   useEffect(() => {
@@ -417,12 +432,13 @@ const GameScreen: React.FC = () => {
               </CompetitionName>
 
               {showApproval && (
-                <ApprovalContainer>
+                <ApprovalContainer testID="game-screen-approval">
                   <ApprovalLabel disabled={!canApprove}>
                     {approvalLabel}
                   </ApprovalLabel>
                   <ApprovalActions>
                     <IconButton
+                      testID="game-screen-decline"
                       variant="decline"
                       disabled={!canApprove || decisionPending || isLadder}
                       onPress={handleDecline}
@@ -430,6 +446,7 @@ const GameScreen: React.FC = () => {
                       <Ionicons name="close" size={15} color="white" />
                     </IconButton>
                     <IconButton
+                      testID="game-screen-approve"
                       variant="accept"
                       disabled={!canApprove || decisionPending}
                       onPress={handleApprove}

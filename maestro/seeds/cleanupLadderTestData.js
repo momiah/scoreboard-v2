@@ -6,7 +6,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { db } from "../services/firebase.config";
+import { db } from "../../services/firebase.config";
 import { DISPUTES_COLLECTION } from "@shared";
 import {
   MAESTRO_LADDER_ID,
@@ -20,11 +20,46 @@ import {
   MAESTRO_D_OPP1_ID,
   MAESTRO_D_OPP2_ID,
 } from "./seedRejectGameFlowDoubles";
+import {
+  MAESTRO_AG_LADDER_ID,
+  MAESTRO_AG_GAME_ID,
+  MAESTRO_AG_OPPONENT_ID,
+} from "./seedAddApproveGameFlow";
+import {
+  MAESTRO_AGD_LADDER_ID,
+  MAESTRO_AGD_GAME_ID,
+  MAESTRO_AGD_PARTNER_ID,
+  MAESTRO_AGD_OPP1_ID,
+  MAESTRO_AGD_OPP2_ID,
+} from "./seedAddApproveGameFlowDoubles";
 
 const LADDER_SUBCOLLECTIONS = [
   "ladderMatches",
   "ladderParticipants",
   "ladderTeams",
+];
+
+const ALL_LADDER_IDS = [
+  MAESTRO_LADDER_ID,
+  MAESTRO_D_LADDER_ID,
+  MAESTRO_AG_LADDER_ID,
+  MAESTRO_AGD_LADDER_ID,
+];
+const ALL_GAME_IDS = [
+  MAESTRO_GAME_ID,
+  MAESTRO_D_GAME_ID,
+  MAESTRO_AG_GAME_ID,
+  MAESTRO_AGD_GAME_ID,
+];
+const ALL_FIXTURE_USER_IDS = [
+  MAESTRO_OPPONENT_ID,
+  MAESTRO_D_PARTNER_ID,
+  MAESTRO_D_OPP1_ID,
+  MAESTRO_D_OPP2_ID,
+  MAESTRO_AG_OPPONENT_ID,
+  MAESTRO_AGD_PARTNER_ID,
+  MAESTRO_AGD_OPP1_ID,
+  MAESTRO_AGD_OPP2_ID,
 ];
 
 const deleteAllDocs = async (colRef) => {
@@ -48,19 +83,19 @@ const deleteDisputesForGame = async (gameId) => {
   await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
 };
 
-export const cleanupRejectFlowTestData = async ({ testUser } = {}) => {
+export const cleanupLadderTestData = async ({
+  testUser = null,
+  ladderIds = ALL_LADDER_IDS,
+  gameIds = ALL_GAME_IDS,
+  fixtureUserIds = ALL_FIXTURE_USER_IDS,
+} = {}) => {
   await Promise.all([
-    deleteLadderTree(MAESTRO_LADDER_ID),
-    deleteLadderTree(MAESTRO_D_LADDER_ID),
-    deleteDisputesForGame(MAESTRO_GAME_ID),
-    deleteDisputesForGame(MAESTRO_D_GAME_ID),
-    deleteDoc(doc(db, "users", MAESTRO_OPPONENT_ID)),
-    deleteDoc(doc(db, "users", MAESTRO_D_PARTNER_ID)),
-    deleteDoc(doc(db, "users", MAESTRO_D_OPP1_ID)),
-    deleteDoc(doc(db, "users", MAESTRO_D_OPP2_ID)),
+    ...ladderIds.map((id) => deleteLadderTree(id)),
+    ...gameIds.map((id) => deleteDisputesForGame(id)),
+    ...fixtureUserIds.map((id) => deleteDoc(doc(db, "users", id))),
   ]);
 
-  if (testUser?.userId) {
+  if (testUser?.userId && ladderIds.length) {
     const notificationsRef = collection(
       db,
       "users",
@@ -68,21 +103,10 @@ export const cleanupRejectFlowTestData = async ({ testUser } = {}) => {
       "notifications",
     );
     const snap = await getDocs(
-      query(
-        notificationsRef,
-        where("data.ladderId", "in", [MAESTRO_LADDER_ID, MAESTRO_D_LADDER_ID]),
-      ),
+      query(notificationsRef, where("data.ladderId", "in", ladderIds)),
     );
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   }
 
-  return {
-    deletedLadders: [MAESTRO_LADDER_ID, MAESTRO_D_LADDER_ID],
-    deletedUsers: [
-      MAESTRO_OPPONENT_ID,
-      MAESTRO_D_PARTNER_ID,
-      MAESTRO_D_OPP1_ID,
-      MAESTRO_D_OPP2_ID,
-    ],
-  };
+  return { deletedLadders: ladderIds, deletedUsers: fixtureUserIds };
 };

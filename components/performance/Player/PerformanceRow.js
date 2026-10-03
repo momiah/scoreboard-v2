@@ -44,6 +44,7 @@ const PerformanceRow = ({
 
   return (
     <TableRow
+      testID={`performance-row-${entity.userId ?? entity.teamKey}`}
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
       onPress={onPress ? () => onPress(entity) : undefined}

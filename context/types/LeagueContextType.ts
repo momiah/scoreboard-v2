@@ -263,6 +263,7 @@ export interface LeagueContextType {
     gameId: string;
     updatedGame: Game;
     removeGame?: boolean;
+    partialApproval?: boolean;
   }) => Promise<{ success: boolean }>;
   fetchTournamentParticipants: (
     tournamentId: string,

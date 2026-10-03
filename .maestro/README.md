@@ -14,6 +14,9 @@ for the scenarios each flow covers.
 - `login.yaml` — shared login subflow, invoked via `onFlowStart` from every
   flow below. Idempotent: skips itself if a session is already active.
 - `flows/` — the reject-game/dispute flows.
+- `utilities/` — flows that are not part of the suite (not matched by
+  `config.yaml`), e.g. `cleanup-ladder-test-data.yaml`, which taps the Home
+  cleanup button to delete all seeded Maestro fixtures. Run on request only.
 - `.env` (gitignored) — the throwaway test account's credentials.
 
 ## One-time setup
@@ -41,7 +44,7 @@ maestro test .maestro/flows                                     # whole suite
 
 Each flow's `onFlowStart` seeds nothing itself — the composer/timeline flows
 tap the **Seed Reject-Game Flow** button on the Home screen first (a
-temporary `devFunctions/seedRejectGameFlow.js` helper) to get a freshly
+`maestro/seeds/seedRejectGameFlow.js` helper) to get a freshly
 reported ladder game + notification to act on. Re-running the seed resets
 game 1 and clears any dispute from a previous run, so flows are safe to
 re-run back to back.
@@ -49,10 +52,12 @@ re-run back to back.
 ## Test-only Home-screen buttons
 
 The seed/mock-resolve/mock-request-evidence/cleanup buttons these flows tap
-are gated behind `__DEV__` in `screens/Home/Home.tsx`, so they only render in
-a dev-client build (never in a production/release build) — tap
-**Delete Reject-Flow Test Data** (`devFunctions/cleanupRejectFlowTestData.js`)
-to remove every ladder/match/dispute/fixture-user doc these flows create.
+live in `maestro/MaestroHarness.tsx` and the helpers in `maestro/seeds/`. Home
+loads the harness through a `require` guarded by `__DEV__`, so it renders in a
+dev-client build and is not included in a production/release build. The
+**Delete Ladder Test Data** button (`maestro/seeds/cleanupLadderTestData.js`)
+removes every ladder/match/dispute/fixture-user doc any of these flows create
+(reject-game and add-game both). See [maestro/README.md](../maestro/README.md).
 
 ## Known limitation: native pickers
 

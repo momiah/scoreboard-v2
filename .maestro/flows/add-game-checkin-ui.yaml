@@ -1,0 +1,32 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-add-game-flow-match"
+    timeout: 15000
+- tapOn:
+    id: "schedule-card-maestro-add-game-flow-match"
+- assertVisible:
+    id: "checkin-maestro-add-game-flow-opponent"
+- assertVisible: ".*Checked In.*"
+- assertNotVisible:
+    id: "lobby-games-locked"
+- assertNotVisible:
+    id: "checkin-collapse-toggle"

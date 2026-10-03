@@ -1,0 +1,76 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-doubles-reported"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-add-game-flow-doubles-match"
+    timeout: 15000
+- assertVisible: ".*1 game awaiting approval.*"
+- tapOn:
+    id: "schedule-card-maestro-add-game-flow-doubles-match"
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-maestro-add-game-flow-doubles-match-g1"
+    direction: DOWN
+- tapOn:
+    id: "ladder-game-maestro-add-game-flow-doubles-match-g1"
+- extendedWaitUntil:
+    visible:
+      id: "game-screen-approval"
+    timeout: 15000
+- assertVisible: ".*Approve this game.*"
+- tapOn:
+    id: "game-screen-approve"
+- extendedWaitUntil:
+    visible: ".*Game approved.*"
+    timeout: 15000
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 15000
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Maestro Bravos.*Wins.*1.*PD.*6.*CP.*20.*"
+    timeout: 15000
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-6 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

@@ -85,6 +85,7 @@ const PlayerDetails = ({
         <AnimateNumber
           number={player.numberOfWins}
           fontSize={screenAdjustedStatFontSize}
+          testID="player-details-wins"
         />
       ),
     },
@@ -94,6 +95,7 @@ const PlayerDetails = ({
         <AnimateNumber
           number={player.numberOfLosses}
           fontSize={screenAdjustedStatFontSize}
+          testID="player-details-losses"
         />
       ),
     },
@@ -107,6 +109,7 @@ const PlayerDetails = ({
         <AnimateNumber
           number={player.averagePointDifference?.toFixed(0) || 0}
           fontSize={screenAdjustedStatFontSize}
+          testID="player-details-pd"
         />
       ),
     },
@@ -154,6 +157,7 @@ const PlayerDetails = ({
 
           <View style={{ marginTop: 10, alignSelf: "flex-start" }}>
             <Tag
+              testID="player-details-go-to-profile"
               name={"Go to profile"}
               icon="person"
               iconSize={screenAdjustedDescriptionFontSize}
@@ -184,6 +188,7 @@ const PlayerDetails = ({
           xp={player.competitionXP ?? 0}
           prevGameXp={player.prevGameXP}
           showMedals={false}
+          testID="player-details-cp"
         />
       )}
       <Divider />
@@ -206,7 +211,7 @@ const PlayerDetails = ({
   // ── Screen mode: full-screen Ladder route ──
   if (!isModal) {
     return (
-      <Screen>
+      <Screen testID="player-details-screen">
         <Header>
           <BackButton
             onPress={() => navigation.goBack()}

@@ -9,7 +9,7 @@ import {
   where,
 } from "firebase/firestore";
 import moment from "moment";
-import { db } from "../services/firebase.config";
+import { db } from "../../services/firebase.config";
 import {
   LADDER_TYPE,
   LADDER_STATUS,
@@ -22,7 +22,7 @@ import {
   createLadderMatchGames,
   buildLadderParticipant,
 } from "@shared";
-import { formatDisplayName } from "../helpers/formatDisplayName";
+import { formatDisplayName } from "../../helpers/formatDisplayName";
 
 export const MAESTRO_LADDER_ID = "maestro-reject-flow-ladder";
 export const MAESTRO_MATCH_ID = "maestro-reject-flow-match";
