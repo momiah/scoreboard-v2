@@ -1,4 +1,6 @@
+import type { LadderHomeCourtState } from "../../helpers/ladderHomeCourt";
 import type {
+  Court,
   Ladder,
   LadderMatch,
   LadderMatchInput,
@@ -94,6 +96,17 @@ export interface ApproveLadderGameOutcome {
   fullyApproved?: boolean;
   /** True when this approval also completed the match (recent-form written). */
   matchCompleted?: boolean;
+}
+
+export type SetLadderHomeCourtFailureReason =
+  | "not_participant"
+  | "change_limit"
+  | "invalid_court"
+  | "error";
+
+export interface SetLadderHomeCourtOutcome {
+  success: boolean;
+  reason?: SetLadderHomeCourtFailureReason;
 }
 
 export interface LadderContextType {
@@ -221,6 +234,17 @@ export interface LadderContextType {
     approver: { userId: string; username: string };
   }) => Promise<ApproveLadderGameOutcome>;
   addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
+  subscribeToLadderHomeCourt: (
+    ladder: Pick<Ladder, "ladderId" | "ladderType">,
+    userId: string,
+    onUpdate: (state: LadderHomeCourtState | null) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
+  setLadderHomeCourt: (args: {
+    ladder: Pick<Ladder, "ladderId" | "ladderType">;
+    userId: string;
+    court: Court;
+  }) => Promise<SetLadderHomeCourtOutcome>;
 }
 
 export interface FetchLaddersOptions {

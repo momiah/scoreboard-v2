@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -6,6 +12,7 @@ import styled from "styled-components/native";
 import type { Ladder, LadderMatch } from "@shared/types";
 
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
+import { useLadderHomeCourt } from "../../../../hooks/useLadderHomeCourt";
 import { LadderContext } from "../../../../context/LadderContext";
 import { PopupContext } from "../../../../context/PopupContext";
 import { getOpenMatchmakingMatches } from "../../../../helpers/ladderScheduleMatches";
@@ -20,6 +27,8 @@ import {
 import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
 import AcceptLadderMatchModal from "../../../../components/Modals/AcceptLadderMatchModal";
 import MatchCard from "../../../../components/ladder/MatchCard";
+import LadderHomeCourtSelector from "../../../../components/ladder/LadderHomeCourtSelector";
+import InfoModal from "../../../../components/Modals/InfoModal";
 import LineTabs from "../../../../components/LineTabs";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
 
@@ -28,6 +37,7 @@ interface MatchmakingProps {
 }
 
 const SKELETON_ROWS = [0, 1, 2];
+const MODAL_HANDOFF_MS = 350;
 
 const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -52,6 +62,39 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     ladder,
     () => setPostModalVisible(true),
   );
+
+  const {
+    homeCourt,
+    hasHomeCourt,
+    loading: homeCourtLoading,
+    saveHomeCourt,
+  } = useLadderHomeCourt(ladder);
+  const [homeCourtInfoVisible, setHomeCourtInfoVisible] = useState(false);
+  const [homeCourtSelectorVisible, setHomeCourtSelectorVisible] =
+    useState(false);
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
+  const requireHomeCourt = (action: () => void) => {
+    if (hasHomeCourt) {
+      action();
+      return;
+    }
+    if (homeCourtLoading) return;
+    pendingActionRef.current = action;
+    setHomeCourtInfoVisible(true);
+  };
+
+  const handleSelectHomeCourt = () => {
+    setHomeCourtInfoVisible(false);
+    setTimeout(() => setHomeCourtSelectorVisible(true), MODAL_HANDOFF_MS);
+  };
+
+  const handleHomeCourtSaved = () => {
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    setHomeCourtSelectorVisible(false);
+    if (action) setTimeout(action, MODAL_HANDOFF_MS);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -100,7 +143,7 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
       return;
     }
     if (!isParticipant) return;
-    setPostModalVisible(true);
+    requireHomeCourt(() => setPostModalVisible(true));
   };
 
   const handleAcceptPress = (match: LadderMatch) => {
@@ -112,8 +155,10 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
       showBottomToast("Join the ladder to accept a match", "info");
       return;
     }
-    setSelectedMatch(match);
-    setAcceptModalVisible(true);
+    requireHomeCourt(() => {
+      setSelectedMatch(match);
+      setAcceptModalVisible(true);
+    });
   };
 
   const handleMatchGone = (gone: LadderMatch) => {
@@ -226,6 +271,31 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
         onAccepted={handleMatchGone}
         onUnavailable={handleMatchGone}
       />
+
+      <InfoModal
+        visible={homeCourtInfoVisible}
+        onClose={() => {
+          pendingActionRef.current = null;
+          setHomeCourtInfoVisible(false);
+        }}
+        title="Select a home court"
+        description="You need to select a home court before you can post or accept matches in this ladder. You only need to do this once, and you can change it once per ladder."
+        ctaLabel="Select Home Court"
+        onCtaPress={handleSelectHomeCourt}
+        icon="location-outline"
+        testID="home-court-required-modal"
+      />
+
+      {homeCourtSelectorVisible && (
+        <LadderHomeCourtSelector
+          visible={homeCourtSelectorVisible}
+          onClose={() => setHomeCourtSelectorVisible(false)}
+          ladder={ladder}
+          homeCourt={homeCourt}
+          saveHomeCourt={saveHomeCourt}
+          onSaved={handleHomeCourtSaved}
+        />
+      )}
     </Container>
   );
 };

@@ -21,6 +21,7 @@ import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
+import LadderHomeCourtSection from "./LadderHomeCourtSection";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import PerformanceRow from "../performance/Player/PerformanceRow";
 import { UserContext } from "../../context/UserContext";
@@ -284,6 +285,8 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
               </PositionCard>
             </PositionSection>
           )}
+
+      <LadderHomeCourtSection ladder={ladder} />
 
       <PrizeDistribution
         prizePool={prizePool.xp}

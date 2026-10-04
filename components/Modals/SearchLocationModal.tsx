@@ -45,6 +45,9 @@ interface SearchCourtProps {
   onCourtsRefreshed: (rawCourtData: Court[]) => void;
   showCountryIcon?: boolean;
   highlightUnverified?: boolean;
+  selectAddedCourt?: boolean;
+  onCourtSubmitted?: (courtDetails: CourtDetails) => void;
+  emptyListMessage?: string;
 }
 
 const SearchCourt = ({
@@ -58,6 +61,9 @@ const SearchCourt = ({
   onCourtsRefreshed,
   showCountryIcon = true,
   highlightUnverified = false,
+  selectAddedCourt = true,
+  onCourtSubmitted,
+  emptyListMessage,
 }: SearchCourtProps) => {
   const [search, setSearch] = useState("");
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
@@ -184,6 +190,12 @@ const SearchCourt = ({
             spellCheck={false}
           />
 
+          {emptyListMessage && filteredCourts.length === 0 ? (
+            <EmptyListText testID="search-court-empty">
+              {emptyListMessage}
+            </EmptyListText>
+          ) : null}
+
           <FlatList
             data={listData}
             keyExtractor={(item) => item.key}
@@ -205,7 +217,8 @@ const SearchCourt = ({
             onCourtAdded={async (newCourt: CourtDetails) => {
               const courtData = await getCourts();
               onCourtsRefreshed(courtData);
-              handleSelect(newCourt.courtName);
+              onCourtSubmitted?.(newCourt);
+              if (selectAddedCourt) handleSelect(newCourt.courtName);
             }}
           />
         )}
@@ -325,6 +338,13 @@ const AddCourtText = styled.Text({
   color: "#00A2FF",
   fontWeight: "600",
   fontSize: 15,
+});
+
+const EmptyListText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+  textAlign: "center",
+  marginBottom: 12,
 });
 
 const ItemRight = styled.View({
