@@ -167,17 +167,10 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     );
   };
 
-  const renderMatches = () => {
-    if (matchesLoading) {
-      return (
-        <List testID="matchmaking-loading">
-          {SKELETON_ROWS.map((row) => (
-            <SkeletonWrapper key={row} show height={116} width="100%" radius={10} />
-          ))}
-        </List>
-      );
-    }
+  const screenLoading =
+    membershipChecking || homeCourtLoading || matchesLoading;
 
+  const renderMatches = () => {
     if (visibleMatches.length === 0) {
       const dayFiltered = selectedDay !== ALL_DAYS_KEY;
       return (
@@ -210,23 +203,41 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     );
   };
 
-  return (
-    <Container testID="ladder-matchmaking">
-      {membershipChecking ? (
+  if (screenLoading) {
+    return (
+      <Container testID="ladder-matchmaking">
         <SkeletonButtonWrap testID="matchmaking-post-skeleton">
           <SkeletonWrapper show height={44} width="100%" radius={8} />
         </SkeletonButtonWrap>
-      ) : (
-        <PostButton
-          testID="matchmaking-post-match"
-          activeOpacity={0.85}
-          disabled={cannotPost}
-          isDisabled={cannotPost}
-          onPress={handlePostMatch}
-        >
-          <PostButtonText>{buttonLabel}</PostButtonText>
-        </PostButton>
-      )}
+        <SkeletonButtonWrap>
+          <SkeletonWrapper show height={40} width="100%" radius={8} />
+        </SkeletonButtonWrap>
+        <List testID="matchmaking-loading">
+          {SKELETON_ROWS.map((row) => (
+            <SkeletonWrapper
+              key={row}
+              show
+              height={116}
+              width="100%"
+              radius={10}
+            />
+          ))}
+        </List>
+      </Container>
+    );
+  }
+
+  return (
+    <Container testID="ladder-matchmaking">
+      <PostButton
+        testID="matchmaking-post-match"
+        activeOpacity={0.85}
+        disabled={cannotPost}
+        isDisabled={cannotPost}
+        onPress={handlePostMatch}
+      >
+        <PostButtonText>{buttonLabel}</PostButtonText>
+      </PostButton>
 
       <TabsRow>
         <AllTab

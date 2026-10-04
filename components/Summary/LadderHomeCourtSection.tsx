@@ -2,23 +2,29 @@ import React, { useState } from "react";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-import type { Ladder } from "@shared/types";
-import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
+import type { Court, Ladder } from "@shared/types";
+import type { SetLadderHomeCourtOutcome } from "../../context/types/LadderContextType";
+import type { LadderHomeCourt } from "../../helpers/ladderHomeCourt";
 import LadderHomeCourtSelector from "../ladder/LadderHomeCourtSelector";
-import { SkeletonWrapper } from "../Skeletons/SkeletonComponents";
 
 interface LadderHomeCourtSectionProps {
   ladder: Ladder;
+  homeCourt: LadderHomeCourt | null;
+  canChange: boolean;
+  isEntrant: boolean;
+  saveHomeCourt: (court: Court) => Promise<SetLadderHomeCourtOutcome>;
 }
 
 const LadderHomeCourtSection: React.FC<LadderHomeCourtSectionProps> = ({
   ladder,
+  homeCourt,
+  canChange,
+  isEntrant,
+  saveHomeCourt,
 }) => {
-  const { homeCourt, canChange, isEntrant, loading, saveHomeCourt } =
-    useLadderHomeCourt(ladder);
   const [selectorVisible, setSelectorVisible] = useState(false);
 
-  if (!loading && !isEntrant) return null;
+  if (!isEntrant) return null;
 
   const location = homeCourt
     ? [homeCourt.location.address, homeCourt.location.city]
@@ -28,28 +34,27 @@ const LadderHomeCourtSection: React.FC<LadderHomeCourtSectionProps> = ({
 
   return (
     <Section testID="ladder-home-court">
-      <HeaderRow>
-        <SectionTitle>Home Court</SectionTitle>
-        {!loading && homeCourt && canChange ? (
-          <ChangeButton
-            activeOpacity={0.7}
-            onPress={() => setSelectorVisible(true)}
-            testID="ladder-home-court-change"
-          >
-            <ChangeText>Change Court</ChangeText>
-          </ChangeButton>
-        ) : null}
-      </HeaderRow>
+      <SectionTitle>Home Court</SectionTitle>
 
-      {loading ? (
-        <SkeletonWrapper show height={56} width="100%" radius={12} />
-      ) : homeCourt ? (
-        <CourtDetails testID="ladder-home-court-card">
-          <CourtName testID="ladder-home-court-name">
-            {homeCourt.courtName}
-          </CourtName>
-          {!!location && <CourtLocation>{location}</CourtLocation>}
-        </CourtDetails>
+      {homeCourt ? (
+        <CourtCard testID="ladder-home-court-card">
+          <Ionicons name="location" size={22} color="#00A2FF" />
+          <CourtText>
+            <CourtName testID="ladder-home-court-name">
+              {homeCourt.courtName}
+            </CourtName>
+            {!!location && <CourtLocation>{location}</CourtLocation>}
+          </CourtText>
+          {canChange ? (
+            <ChangeButton
+              activeOpacity={0.8}
+              onPress={() => setSelectorVisible(true)}
+              testID="ladder-home-court-change"
+            >
+              <ChangeText>Change</ChangeText>
+            </ChangeButton>
+          ) : null}
+        </CourtCard>
       ) : (
         <AddButton
           activeOpacity={0.85}
@@ -87,14 +92,19 @@ const SectionTitle = styled.Text({
   color: "#ffffff",
 });
 
-const HeaderRow = styled.View({
+const CourtCard = styled.View({
   flexDirection: "row",
   alignItems: "center",
-  justifyContent: "space-between",
+  gap: 12,
+  padding: 14,
+  borderRadius: 12,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
 });
 
-const CourtDetails = styled.View({
-  width: "100%",
+const CourtText = styled.View({
+  flex: 1,
   gap: 2,
 });
 
@@ -109,11 +119,18 @@ const CourtLocation = styled.Text({
   fontSize: 12,
 });
 
-const ChangeButton = styled.TouchableOpacity({});
+const ChangeButton = styled.TouchableOpacity({
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "#00A2FF",
+});
 
 const ChangeText = styled.Text({
-  color: "white",
-  fontSize: 11,
+  color: "#00A2FF",
+  fontSize: 13,
+  fontWeight: "600",
 });
 
 const AddButton = styled.TouchableOpacity({
