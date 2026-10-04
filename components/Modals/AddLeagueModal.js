@@ -31,6 +31,7 @@ import { uploadLeagueImage } from "../../utils/UploadLeagueImageToFirebase";
 import { useForm, Controller } from "react-hook-form";
 import { getLeagueLocationDetails } from "../../helpers/getLeagueLocationDetails";
 import { generateLeagueId } from "../../helpers/generateLeagueId";
+import { validateCompetitionName } from "../../helpers/validateCompetitionName";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import SearchCourt from "./SearchLocationModal";
 import { formatCourtDetailsForList } from "@/helpers/formatCourtDetails";
@@ -195,9 +196,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
     }
   };
 
+  const nameError = validateCompetitionName(leagueName);
+
   // Step 1 validation check
   const canProceedToNext =
     leagueName?.trim() &&
+    !nameError &&
     selectedLocation &&
     Object.values(selectedLocation).some((value) => value.trim() !== "");
 
@@ -258,7 +262,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
                   label="League Name"
                   name="leagueName"
                   control={control}
-                  error={errors.leagueName}
+                  error={errors.leagueName || (nameError && { message: nameError })}
                   required
                 />
 
