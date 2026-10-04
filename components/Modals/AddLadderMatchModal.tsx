@@ -100,6 +100,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const { showBottomToast } = useContext(PopupContext);
 
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
+  const [courtsLoading, setCourtsLoading] = useState(true);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -181,6 +182,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     if (!modalVisible) return;
     let active = true;
     const loadCourts = async () => {
+      setCourtsLoading(true);
       try {
         const allCourts = await getCourts();
         if (active) applyLadderCourts(allCourts);
@@ -190,6 +192,8 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
           courtsRef.current = [];
           setCourtsList([]);
         }
+      } finally {
+        if (active) setCourtsLoading(false);
       }
     };
     loadCourts();
@@ -540,6 +544,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
           }
           showCountryIcon={false}
           highlightUnverified
+          loading={courtsLoading}
         />
       )}
 

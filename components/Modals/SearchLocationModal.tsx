@@ -15,10 +15,12 @@ import { courtSchema } from "@shared";
 import { Court } from "@shared/types";
 import Icon from "react-native-ico-flags";
 import AddCourtModal from "./AddCourtModal";
+import { SkeletonWrapper } from "../Skeletons/SkeletonComponents";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 const ADD_COURT_KEY = "__add_court__";
+const SKELETON_ROWS = [0, 1, 2, 3];
 
 export interface CourtListItem {
   key: string;
@@ -48,6 +50,7 @@ interface SearchCourtProps {
   selectAddedCourt?: boolean;
   onCourtSubmitted?: (courtDetails: CourtDetails) => void;
   emptyListMessage?: string;
+  loading?: boolean;
 }
 
 const SearchCourt = ({
@@ -64,6 +67,7 @@ const SearchCourt = ({
   selectAddedCourt = true,
   onCourtSubmitted,
   emptyListMessage,
+  loading = false,
 }: SearchCourtProps) => {
   const [search, setSearch] = useState("");
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
@@ -190,21 +194,37 @@ const SearchCourt = ({
             spellCheck={false}
           />
 
-          {emptyListMessage && filteredCourts.length === 0 ? (
-            <EmptyListText testID="search-court-empty">
-              {emptyListMessage}
-            </EmptyListText>
-          ) : null}
+          {loading ? (
+            <SkeletonList testID="search-court-loading">
+              {SKELETON_ROWS.map((row) => (
+                <SkeletonWrapper
+                  key={row}
+                  show
+                  height={64}
+                  width="100%"
+                  radius={8}
+                />
+              ))}
+            </SkeletonList>
+          ) : (
+            <>
+              {emptyListMessage && filteredCourts.length === 0 ? (
+                <EmptyListText testID="search-court-empty">
+                  {emptyListMessage}
+                </EmptyListText>
+              ) : null}
 
-          <FlatList
-            data={listData}
-            keyExtractor={(item) => item.key}
-            renderItem={renderItem}
-            keyboardShouldPersistTaps="handled"
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: 12 }}
-            showsVerticalScrollIndicator={false}
-          />
+              <FlatList
+                data={listData}
+                keyExtractor={(item) => item.key}
+                renderItem={renderItem}
+                keyboardShouldPersistTaps="handled"
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingBottom: 12 }}
+                showsVerticalScrollIndicator={false}
+              />
+            </>
+          )}
         </Wrapper>
 
         {showAddCourtModal && (
@@ -338,6 +358,10 @@ const AddCourtText = styled.Text({
   color: "#00A2FF",
   fontWeight: "600",
   fontSize: 15,
+});
+
+const SkeletonList = styled.View({
+  gap: 8,
 });
 
 const EmptyListText = styled.Text({

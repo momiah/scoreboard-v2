@@ -44,6 +44,7 @@ const LadderHomeCourtSelector: React.FC<LadderHomeCourtSelectorProps> = ({
   const { showBottomToast } = useContext(PopupContext);
 
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
+  const [courtsLoading, setCourtsLoading] = useState(true);
   const courtsRef = useRef<Court[]>([]);
   const ladderCourtIdsRef = useRef<string[]>([]);
   const savingRef = useRef(false);
@@ -64,6 +65,7 @@ const LadderHomeCourtSelector: React.FC<LadderHomeCourtSelectorProps> = ({
   useEffect(() => {
     if (!visible) return;
     let active = true;
+    setCourtsLoading(true);
     getCourts()
       .then((allCourts: Court[]) => {
         if (active) applyCourts(allCourts);
@@ -74,6 +76,9 @@ const LadderHomeCourtSelector: React.FC<LadderHomeCourtSelectorProps> = ({
           courtsRef.current = [];
           setCourtsList([]);
         }
+      })
+      .finally(() => {
+        if (active) setCourtsLoading(false);
       });
     return () => {
       active = false;
@@ -146,6 +151,8 @@ const LadderHomeCourtSelector: React.FC<LadderHomeCourtSelectorProps> = ({
       addCourt={handleAddCourt}
       onCourtsRefreshed={applyCourts}
       selectAddedCourt={false}
+      showCountryIcon={false}
+      loading={courtsLoading}
       onCourtSubmitted={handleCourtSubmitted}
       emptyListMessage="No verified courts in this ladder yet. Add your court below and it will appear here once approved."
     />
