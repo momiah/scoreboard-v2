@@ -17,12 +17,14 @@ const isValidDocId = (id: unknown): id is string =>
   id !== "." &&
   id !== "..";
 
+// Matches React Router on the website: a name like "100% Club" isn't valid
+// percent-encoding, so fall back to the raw segment rather than rejecting it.
 const decodeSegment = (segment: string | undefined): string | undefined => {
   if (segment === undefined) return undefined;
   try {
     return decodeURIComponent(segment);
   } catch {
-    return undefined;
+    return segment;
   }
 };
 
