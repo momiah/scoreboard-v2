@@ -233,7 +233,6 @@ export interface LadderContextType {
     userId: string;
     approver: { userId: string; username: string };
   }) => Promise<ApproveLadderGameOutcome>;
-  addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
   subscribeToLadderHomeCourt: (
     ladder: Pick<Ladder, "ladderId" | "ladderType">,
     userId: string,

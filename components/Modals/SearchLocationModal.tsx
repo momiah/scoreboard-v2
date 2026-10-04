@@ -32,6 +32,8 @@ export interface CourtListItem {
   address?: string;
   postCode?: string;
   verified?: boolean;
+  awaitingVerification?: boolean;
+  pinned?: boolean;
 }
 
 export type CourtDetails = Pick<Court, "courtName" | "location">;
@@ -46,9 +48,7 @@ interface SearchCourtProps {
   addCourt: (courtDetails: CourtDetails) => Promise<string | null>;
   onCourtsRefreshed: (rawCourtData: Court[]) => void;
   showCountryIcon?: boolean;
-  highlightUnverified?: boolean;
   selectAddedCourt?: boolean;
-  onCourtSubmitted?: (courtDetails: CourtDetails) => void;
   emptyListMessage?: string;
   loading?: boolean;
 }
@@ -63,9 +63,7 @@ const SearchCourt = ({
   addCourt,
   onCourtsRefreshed,
   showCountryIcon = true,
-  highlightUnverified = false,
   selectAddedCourt = true,
-  onCourtSubmitted,
   emptyListMessage,
   loading = false,
 }: SearchCourtProps) => {
@@ -96,7 +94,10 @@ const SearchCourt = ({
     };
 
     const sorted = [...matched].sort(
-      (a, b) => rank(a) - rank(b) || a.value.localeCompare(b.value),
+      (a, b) =>
+        Number(!!b.pinned) - Number(!!a.pinned) ||
+        rank(a) - rank(b) ||
+        a.value.localeCompare(b.value),
     );
 
     if (!selectedCourtKey) return sorted;
@@ -132,22 +133,25 @@ const SearchCourt = ({
       }
 
       const isSelected = item.key === selectedCourtKey;
-      const showUnverified = highlightUnverified && item.verified === false;
+      const isAwaiting = !!item.awaitingVerification;
       return (
         <CourtItem
           isSelected={isSelected}
+          disabled={isAwaiting}
+          style={isAwaiting ? { opacity: 0.5 } : undefined}
           onPress={() => handleSelect(item.value)}
+          testID={isAwaiting ? `search-court-awaiting-${item.key}` : undefined}
         >
           <CourtTextWrap>
             <CourtName isSelected={isSelected}>{item.value}</CourtName>
             <CourtLocation isSelected={isSelected}>
               {item?.address}, {item?.city}, {item?.country}
             </CourtLocation>
-            {showUnverified ? (
-              <UnverifiedTag>
-                <AntDesign name="exclamation-circle" size={11} color="#f5a623" />
-                <UnverifiedText>Unverified court</UnverifiedText>
-              </UnverifiedTag>
+            {isAwaiting ? (
+              <AwaitingTag>
+                <AntDesign name="clock-circle" size={11} color="#f5a623" />
+                <AwaitingText>Awaiting Verification</AwaitingText>
+              </AwaitingTag>
             ) : null}
           </CourtTextWrap>
           <ItemRight>
@@ -161,7 +165,7 @@ const SearchCourt = ({
         </CourtItem>
       );
     },
-    [selectedCourtKey, handleSelect, showCountryIcon, highlightUnverified],
+    [selectedCourtKey, handleSelect, showCountryIcon],
   );
 
   return (
@@ -237,7 +241,6 @@ const SearchCourt = ({
             onCourtAdded={async (newCourt: CourtDetails) => {
               const courtData = await getCourts();
               onCourtsRefreshed(courtData);
-              onCourtSubmitted?.(newCourt);
               if (selectAddedCourt) handleSelect(newCourt.courtName);
             }}
           />
@@ -322,7 +325,7 @@ const CourtLocation = styled.Text<{ isSelected: boolean }>(
   }),
 );
 
-const UnverifiedTag = styled.View({
+const AwaitingTag = styled.View({
   flexDirection: "row",
   alignItems: "center",
   gap: 4,
@@ -334,7 +337,7 @@ const UnverifiedTag = styled.View({
   backgroundColor: "rgba(245, 166, 35, 0.12)",
 });
 
-const UnverifiedText = styled.Text({
+const AwaitingText = styled.Text({
   color: "#f5a623",
   fontSize: 11,
   fontWeight: "600",

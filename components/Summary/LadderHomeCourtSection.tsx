@@ -3,16 +3,19 @@ import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import type { Court, Ladder } from "@shared/types";
-import type { SetLadderHomeCourtOutcome } from "../../context/types/LadderContextType";
 import type { LadderHomeCourt } from "../../helpers/ladderHomeCourt";
-import LadderHomeCourtSelector from "../ladder/LadderHomeCourtSelector";
+import SearchCourt from "../Modals/SearchLocationModal";
+import { useLadderCourts } from "../../hooks/useLadderCourts";
+
+export const NO_COURTS_MESSAGE =
+  "No verified courts in this ladder yet. Add your court below and it will appear here once approved.";
 
 interface LadderHomeCourtSectionProps {
   ladder: Ladder;
   homeCourt: LadderHomeCourt | null;
   canChange: boolean;
   isEntrant: boolean;
-  saveHomeCourt: (court: Court) => Promise<SetLadderHomeCourtOutcome>;
+  confirmHomeCourt: (court: Court | null, onSaved?: () => void) => void;
 }
 
 const LadderHomeCourtSection: React.FC<LadderHomeCourtSectionProps> = ({
@@ -20,9 +23,17 @@ const LadderHomeCourtSection: React.FC<LadderHomeCourtSectionProps> = ({
   homeCourt,
   canChange,
   isEntrant,
-  saveHomeCourt,
+  confirmHomeCourt,
 }) => {
   const [selectorVisible, setSelectorVisible] = useState(false);
+  const {
+    courtsList,
+    courtsLoading,
+    findSelectableCourt,
+    submitCourt,
+    applyCourts,
+    getCourts,
+  } = useLadderCourts(ladder, selectorVisible);
 
   if (!isEntrant) return null;
 
@@ -67,12 +78,19 @@ const LadderHomeCourtSection: React.FC<LadderHomeCourtSectionProps> = ({
       )}
 
       {selectorVisible && (
-        <LadderHomeCourtSelector
+        <SearchCourt
           visible={selectorVisible}
           onClose={() => setSelectorVisible(false)}
-          ladder={ladder}
-          homeCourt={homeCourt}
-          saveHomeCourt={saveHomeCourt}
+          courts={courtsList}
+          selectedCourtKey={homeCourt?.courtId}
+          onSelectCourt={(value) => confirmHomeCourt(findSelectableCourt(value))}
+          getCourts={getCourts}
+          addCourt={submitCourt}
+          onCourtsRefreshed={applyCourts}
+          showCountryIcon={false}
+          selectAddedCourt={false}
+          loading={courtsLoading}
+          emptyListMessage={NO_COURTS_MESSAGE}
         />
       )}
     </Section>

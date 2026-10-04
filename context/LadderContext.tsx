@@ -49,6 +49,7 @@ import {
   resolveLadderMatchOutcome,
   getReportableLadderGameId,
   hasOpenLadderDispute,
+  isSelectableLadderCourt,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
 import type {
@@ -97,7 +98,6 @@ import type {
 } from "./types/LadderContextType";
 import {
   canChangeLadderHomeCourt,
-  isSelectableLadderHomeCourt,
   nextLadderHomeCourtChanges,
   toLadderHomeCourt,
 } from "../helpers/ladderHomeCourt";
@@ -778,34 +778,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const addCourtToLadder = useCallback(
-    async (ladderId: string, courtId: string): Promise<boolean> => {
-      if (!ladderId || !courtId) return false;
-
-      try {
-        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
-        await updateDoc(ladderRef, { courtIds: arrayUnion(courtId) });
-
-        setLadderById((prev) =>
-          prev && prev.ladderId === ladderId
-            ? {
-                ...prev,
-                courtIds: prev.courtIds?.includes(courtId)
-                  ? prev.courtIds
-                  : [...(prev.courtIds ?? []), courtId],
-              }
-            : prev,
-        );
-
-        return true;
-      } catch (error) {
-        console.error("Error adding court to ladder:", error);
-        return false;
-      }
-    },
-    [],
-  );
-
   const resolveLadderHomeCourtRef = useCallback(
     async (
       ladder: Pick<Ladder, "ladderId" | "ladderType">,
@@ -946,7 +918,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             : [];
           if (
             !freshCourt ||
-            !isSelectableLadderHomeCourt(freshCourt, ladderCourtIds)
+            !isSelectableLadderCourt(freshCourt, ladderCourtIds)
           ) {
             throw new SetLadderHomeCourtError("invalid_court");
           }
@@ -1989,7 +1961,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         updateLadderGame,
         cancelLadderMatch,
         approveLadderGame,
-        addCourtToLadder,
         subscribeToLadderHomeCourt,
         setLadderHomeCourt,
       }}

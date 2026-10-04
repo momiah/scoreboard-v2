@@ -3,8 +3,6 @@ import {
   hasLadderHomeCourt,
   canChangeLadderHomeCourt,
   nextLadderHomeCourtChanges,
-  isSelectableLadderHomeCourt,
-  selectableLadderHomeCourts,
   toLadderHomeCourt,
 } from "./ladderHomeCourt";
 
@@ -69,36 +67,6 @@ describe("nextLadderHomeCourtChanges", () => {
     expect(nextLadderHomeCourtChanges({ homeCourt, homeCourtChanges: 0 })).toBe(
       1,
     );
-  });
-});
-
-describe("isSelectableLadderHomeCourt", () => {
-  it("accepts a verified court in the ladder", () => {
-    expect(isSelectableLadderHomeCourt(court("c1"), ["c1"])).toBe(true);
-  });
-
-  it("rejects a court outside the ladder", () => {
-    expect(isSelectableLadderHomeCourt(court("c2"), ["c1"])).toBe(false);
-    expect(isSelectableLadderHomeCourt(court("c1"), undefined)).toBe(false);
-  });
-
-  it("rejects an unverified court even when it is in the ladder", () => {
-    expect(
-      isSelectableLadderHomeCourt(court("c1", { verified: false }), ["c1"]),
-    ).toBe(false);
-  });
-});
-
-describe("selectableLadderHomeCourts", () => {
-  it("keeps only verified ladder courts", () => {
-    const courts = [
-      court("c1"),
-      court("c2", { verified: false }),
-      court("c3"),
-    ];
-    expect(
-      selectableLadderHomeCourts(courts, ["c1", "c2"]).map((c) => c.courtId),
-    ).toEqual(["c1"]);
   });
 });
 

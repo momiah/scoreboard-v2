@@ -27,7 +27,9 @@ import {
 import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
 import AcceptLadderMatchModal from "../../../../components/Modals/AcceptLadderMatchModal";
 import MatchCard from "../../../../components/ladder/MatchCard";
-import LadderHomeCourtSelector from "../../../../components/ladder/LadderHomeCourtSelector";
+import SearchCourt from "../../../../components/Modals/SearchLocationModal";
+import { NO_COURTS_MESSAGE } from "../../../../components/Summary/LadderHomeCourtSection";
+import { useLadderCourts } from "../../../../hooks/useLadderCourts";
 import InfoModal from "../../../../components/Modals/InfoModal";
 import LineTabs from "../../../../components/LineTabs";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
@@ -67,11 +69,12 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     homeCourt,
     hasHomeCourt,
     loading: homeCourtLoading,
-    saveHomeCourt,
+    confirmHomeCourt,
   } = useLadderHomeCourt(ladder);
   const [homeCourtInfoVisible, setHomeCourtInfoVisible] = useState(false);
   const [homeCourtSelectorVisible, setHomeCourtSelectorVisible] =
     useState(false);
+  const ladderCourts = useLadderCourts(ladder, homeCourtSelectorVisible);
   const pendingActionRef = useRef<(() => void) | null>(null);
 
   const requireHomeCourt = (action: () => void) => {
@@ -298,13 +301,24 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
       />
 
       {homeCourtSelectorVisible && (
-        <LadderHomeCourtSelector
+        <SearchCourt
           visible={homeCourtSelectorVisible}
           onClose={() => setHomeCourtSelectorVisible(false)}
-          ladder={ladder}
-          homeCourt={homeCourt}
-          saveHomeCourt={saveHomeCourt}
-          onSaved={handleHomeCourtSaved}
+          courts={ladderCourts.courtsList}
+          selectedCourtKey={homeCourt?.courtId}
+          onSelectCourt={(value) =>
+            confirmHomeCourt(
+              ladderCourts.findSelectableCourt(value),
+              handleHomeCourtSaved,
+            )
+          }
+          getCourts={ladderCourts.getCourts}
+          addCourt={ladderCourts.submitCourt}
+          onCourtsRefreshed={ladderCourts.applyCourts}
+          showCountryIcon={false}
+          selectAddedCourt={false}
+          loading={ladderCourts.courtsLoading}
+          emptyListMessage={NO_COURTS_MESSAGE}
         />
       )}
     </Container>

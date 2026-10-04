@@ -131,7 +131,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     canChange: canChangeHomeCourt,
     isEntrant,
     loading: homeCourtLoading,
-    saveHomeCourt,
+    confirmHomeCourt,
   } = useLadderHomeCourt(ladder);
 
   const prizePool = useMemo(
@@ -327,7 +327,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         homeCourt={homeCourt}
         canChange={canChangeHomeCourt}
         isEntrant={isEntrant}
-        saveHomeCourt={saveHomeCourt}
+        confirmHomeCourt={confirmHomeCourt}
       />
 
       <PrizeDistribution

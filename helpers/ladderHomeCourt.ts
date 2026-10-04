@@ -28,17 +28,6 @@ export const nextLadderHomeCourtChanges = (
 ): number =>
   hasLadderHomeCourt(state) ? (state?.homeCourtChanges ?? 0) + 1 : 0;
 
-export const isSelectableLadderHomeCourt = (
-  court: Pick<Court, "courtId" | "verified">,
-  ladderCourtIds: string[] | null | undefined,
-): boolean => !!court.verified && (ladderCourtIds ?? []).includes(court.courtId);
-
-export const selectableLadderHomeCourts = (
-  courts: Court[],
-  ladderCourtIds: string[] | null | undefined,
-): Court[] =>
-  courts.filter((court) => isSelectableLadderHomeCourt(court, ladderCourtIds));
-
 export const toLadderHomeCourt = (court: Court): LadderHomeCourt => ({
   courtId: court.courtId,
   courtName: court.courtName.trim(),
