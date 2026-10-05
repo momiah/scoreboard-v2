@@ -1,0 +1,55 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "maestro-mock-reject-court-submission"
+- extendedWaitUntil:
+    visible: "Mocked"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Court A Own Pending was not accepted for Maestro Home Court Ladder..*"
+    timeout: 15000
+- tapOn: ".*Maestro Court A Own Pending was not accepted for Maestro Home Court Ladder..*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-post-match"
+    timeout: 20000
+- assertVisible:
+    id: "ladder-matchmaking"
+- tapOn:
+    id: "matchmaking-post-match"
+- extendedWaitUntil:
+    visible:
+      id: "home-court-required-modal"
+    timeout: 10000
+- assertVisible: "Select a home court"
+- tapOn:
+    id: "home-court-required-modal-cta"
+- extendedWaitUntil:
+    visible: ".*Maestro Court B Verified.*"
+    timeout: 15000
+- assertVisible: ".*Maestro Court D Verified.*"
+- assertVisible:
+    id: "search-court-awaiting-maestro-hc-court-c-singles"
+- assertNotVisible: ".*Maestro Court A Own Pending.*"
+- assertNotVisible:
+    id: "search-court-awaiting-maestro-hc-court-a-singles"

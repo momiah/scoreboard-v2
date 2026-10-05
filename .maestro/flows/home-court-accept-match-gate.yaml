@@ -1,0 +1,61 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Ladder on Matchmaking.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Ladder on Matchmaking.*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-post-match"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-card-maestro-hc-match"
+    timeout: 15000
+- tapOn:
+    id: "matchmaking-card-maestro-hc-match"
+- extendedWaitUntil:
+    visible:
+      id: "home-court-required-modal"
+    timeout: 10000
+- assertVisible: "Select a home court"
+- assertNotVisible:
+    id: "accept-ladder-match-modal"
+- tapOn:
+    id: "home-court-required-modal-cta"
+- extendedWaitUntil:
+    visible: ".*Maestro Court B Verified.*"
+    timeout: 15000
+- tapOn: ".*Maestro Court B Verified.*"
+- assertVisible: "Set home court?"
+- assertVisible: ".*Set Maestro Court B Verified as your home court. You can change it once for this ladder..*"
+- tapOn: "Confirm"
+- extendedWaitUntil:
+    visible: "Home court saved"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "accept-ladder-match-modal"
+    timeout: 15000
+- assertVisible: "Accept Match"
+- assertNotVisible:
+    id: "home-court-required-modal"

@@ -351,3 +351,29 @@ describe.each([
     },
   );
 });
+
+describe("getCourts", () => {
+  it("uses the document id even when the stored court has an empty courtId", async () => {
+    const result = await renderLeague();
+    mockGetDocs.mockResolvedValueOnce({
+      docs: [
+        {
+          id: "real-court-id",
+          data: () => ({ courtId: "", courtName: "Submitted Court" }),
+        },
+        {
+          id: "other-court-id",
+          data: () => ({ courtName: "Website Court" }),
+        },
+      ],
+    });
+
+    const courts = await result.current.getCourts();
+
+    expect(courts.map((court) => court.courtId)).toEqual([
+      "real-court-id",
+      "other-court-id",
+    ]);
+    expect(courts[0].courtName).toBe("Submitted Court");
+  });
+});

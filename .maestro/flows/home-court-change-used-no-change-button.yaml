@@ -1,0 +1,38 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow-change-used"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Ladder on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-home-court"
+    timeout: 20000
+- assertVisible:
+    id: "ladder-home-court-card"
+- assertVisible:
+    id: "ladder-home-court-name"
+    text: "Maestro Court D Verified"
+- assertNotVisible:
+    id: "ladder-home-court-change"
+- assertNotVisible:
+    id: "ladder-home-court-add"

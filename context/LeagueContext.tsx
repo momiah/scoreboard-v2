@@ -634,8 +634,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   const getCourts = async () => {
     const snapshot = await getDocs(collection(db, "courts"));
     return snapshot.docs.map((doc) => ({
-      courtId: doc.id,
       ...doc.data(),
+      courtId: doc.id,
     })) as unknown as Court[];
   };
 
