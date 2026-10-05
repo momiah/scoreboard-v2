@@ -199,4 +199,19 @@ describe("SearchLocationModal adding a court", () => {
 
     expect(onSelectCourt).not.toHaveBeenCalled();
   });
+
+  it("shows the success message inside the picker when one is provided", async () => {
+    const { getByText } = await addCourtFlow({
+      selectAddedCourt: false,
+      addCourtSuccessMessage: "Court sent for approval.",
+    });
+
+    expect(getByText("Court sent for approval.")).toBeTruthy();
+  });
+
+  it("shows no toast when no success message is provided", async () => {
+    const { queryByText } = await addCourtFlow({ selectAddedCourt: false });
+
+    expect(queryByText("Court sent for approval.")).toBeNull();
+  });
 });

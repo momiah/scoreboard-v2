@@ -29,7 +29,7 @@ and accepting a posted match both require a home court.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 1.1 | Submit a court from the Home Court picker | The court is at the top of the picker with an "Awaiting Verification" pill. Tapping it does nothing and no home court alert appears. The toast "Court sent for approval. You'll be notified once it's verified." is expected but is not asserted — see Known issues 🅼 |
+| 1.1 | Submit a court from the Home Court picker | Toast "Court sent for approval. You'll be notified once it's verified." shows inside the picker. The court is at the top of the picker with an "Awaiting Verification" pill. Tapping it does nothing and no home court alert appears 🅼 🅹 |
 | 1.2 | Submit a court from the Matchmaking route (Post a Match → Select Home Court → picker) | Same as 1.1 🅼 |
 | 1.3 | Submit a court from the post-a-match modal's Court selector (home court already set) | Same as 1.1, and the selector still reads "Select Court" with no pending-verification tag 🅼 |
 | 1.4 | Admin approves the submission (mocked website batch) | Notification "`<court>` has been approved. You can now select it in `<ladder>`." Tapping it opens the ladder on **Matchmaking**; the court is now selectable (no pill) and can be chosen as the home court / match court 🅼 |
@@ -78,23 +78,17 @@ and accepting a posted match both require a home court.
   ladder's `courtIds` after the admin approves it. `getCourts` now lets the
   document id win. Regression test: `getCourts` in `context/LeagueContext.test.tsx`.
 
-## Known issues
-
-- **The submission toast is not visible.** `useLadderCourts.submitCourt` shows
-  "Court sent for approval. You'll be notified once it's verified." through
-  `showBottomToast`, but that toast is mounted in the app root and the court
-  picker and Add Court form are native modals, so it renders underneath them.
-  A screenshot taken immediately after submitting shows the new court in the
-  list and no toast. The flows therefore assert the pinned, greyed court with
-  its pill instead. The "Home court saved" toast does show because the picker
-  has closed by then.
+- **The submission toast was hidden.** It was shown through the root
+  `showBottomToast`, underneath the native court picker and Add Court modals.
+  `SearchLocationModal` now takes `addCourtSuccessMessage` and renders the toast
+  inside its own modal; the ladder pickers pass `COURT_SUBMITTED_MESSAGE`.
+  Regression tests: the success message cases in `SearchLocationModal.test.tsx`.
 
 ## Not covered yet
 
-- A home court change by a doubles partner. Ladder teams have no admin/owner
-  role in the code today, so any team member can set the home court and post
-  or accept matches; the intended admin/owner rule is not implemented and is
-  not tested.
+- A home court change by a doubles partner. Both members of a team can set
+  the home court and post or accept matches (there is no team admin role by
+  design), so there is no separate partner-permission flow.
 - League and tournament court pickers (they share `SearchLocationModal` and
   `AddCourtModal` but contain no ladder logic).
 - Loading skeletons.

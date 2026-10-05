@@ -74,6 +74,9 @@ onFlowStart:
 - tapOn:
     id: "add-court-submit"
 - extendedWaitUntil:
+    visible: "Court sent for approval. You'll be notified once it's verified."
+    timeout: 15000
+- extendedWaitUntil:
     visible: ".*Maestro Court New Submission.*Awaiting Verification.*"
     timeout: 15000
 - tapOn: ".*Maestro Court New Submission.*Awaiting Verification.*"

@@ -16,6 +16,7 @@ import { Court } from "@shared/types";
 import Icon from "react-native-ico-flags";
 import AddCourtModal from "./AddCourtModal";
 import { SkeletonWrapper } from "../Skeletons/SkeletonComponents";
+import BottomToast from "../Toasts/BottomToast";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -50,6 +51,7 @@ interface SearchCourtProps {
   showCountryIcon?: boolean;
   selectAddedCourt?: boolean;
   emptyListMessage?: string;
+  addCourtSuccessMessage?: string;
   loading?: boolean;
 }
 
@@ -65,10 +67,12 @@ const SearchCourt = ({
   showCountryIcon = true,
   selectAddedCourt = true,
   emptyListMessage,
+  addCourtSuccessMessage,
   loading = false,
 }: SearchCourtProps) => {
   const [search, setSearch] = useState("");
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+  const [successToastVisible, setSuccessToastVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState<CourtDetails>(courtSchema);
 
   useEffect(() => {
@@ -247,12 +251,21 @@ const SearchCourt = ({
             onClose={() => setShowAddCourtModal(false)}
             addCourt={addCourt}
             onCourtAdded={async (newCourt: CourtDetails) => {
+              if (addCourtSuccessMessage) setSuccessToastVisible(true);
               const courtData = await getCourts();
               onCourtsRefreshed(courtData);
               if (selectAddedCourt) handleSelect(newCourt.courtName);
             }}
           />
         )}
+
+        {addCourtSuccessMessage ? (
+          <BottomToast
+            visible={successToastVisible}
+            message={addCourtSuccessMessage}
+            onHide={() => setSuccessToastVisible(false)}
+          />
+        ) : null}
       </ModalContainer>
     </Modal>
   );

@@ -9,8 +9,10 @@ import type {
 } from "../components/Modals/SearchLocationModal";
 import { LeagueContext } from "../context/LeagueContext";
 import { UserContext } from "../context/UserContext";
-import { PopupContext } from "../context/PopupContext";
 import { buildLadderCourtList } from "../helpers/ladderCourtList";
+
+export const COURT_SUBMITTED_MESSAGE =
+  "Court sent for approval. You'll be notified once it's verified.";
 
 interface UseLadderCourtsResult {
   courtsList: CourtListItem[];
@@ -27,7 +29,6 @@ export const useLadderCourts = (
 ): UseLadderCourtsResult => {
   const { getCourts, addCourt } = useContext(LeagueContext);
   const { currentUser } = useContext(UserContext);
-  const { showBottomToast } = useContext(PopupContext);
 
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [courtsLoading, setCourtsLoading] = useState(true);
@@ -92,22 +93,9 @@ export const useLadderCourts = (
           ladderName: ladder.name,
         }),
       });
-      if (newCourtId) {
-        showBottomToast(
-          "Court sent for approval. You'll be notified once it's verified.",
-          "success",
-        );
-      }
       return newCourtId;
     },
-    [
-      addCourt,
-      userId,
-      currentUser?.username,
-      ladder.ladderId,
-      ladder.name,
-      showBottomToast,
-    ],
+    [addCourt, userId, currentUser?.username, ladder.ladderId, ladder.name],
   );
 
   return {

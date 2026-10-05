@@ -44,7 +44,10 @@ import {
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
-import { useLadderCourts } from "../../hooks/useLadderCourts";
+import {
+  COURT_SUBMITTED_MESSAGE,
+  useLadderCourts,
+} from "../../hooks/useLadderCourts";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -480,6 +483,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
           onCourtsRefreshed={applyCourts}
           showCountryIcon={false}
           selectAddedCourt={false}
+          addCourtSuccessMessage={COURT_SUBMITTED_MESSAGE}
           loading={courtsLoading}
         />
       )}
