@@ -158,6 +158,28 @@ describe("SearchLocationModal ordering", () => {
   });
 });
 
+describe("SearchLocationModal with a full ladder", () => {
+  it("renders the ladder's courts below the player's own pinned submission", () => {
+    const ladderCourts = Array.from({ length: 86 }, (_, i) =>
+      item(
+        `l${String(i).padStart(2, "0")}`,
+        `Ladder Court ${String(i).padStart(2, "0")}`,
+      ),
+    );
+    const own = item("own", "Zed Own Pending", {
+      awaitingVerification: true,
+      pinned: true,
+    });
+    const utils = renderPicker({ courts: [...ladderCourts, own] });
+
+    const names = utils
+      .getAllByText(/^(Ladder|Zed) Court|^Zed Own/)
+      .map((node) => String(node.props.children));
+    expect(names[0]).toBe("Zed Own Pending");
+    expect(names[1]).toBe("Ladder Court 00");
+  });
+});
+
 describe("SearchLocationModal empty state", () => {
   it("shows the empty message when there are no courts", () => {
     const utils = renderPicker({

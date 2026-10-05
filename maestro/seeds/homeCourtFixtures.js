@@ -61,7 +61,18 @@ export const MAESTRO_HC_COURT_NAMES = {
 export const MAESTRO_HC_COURT_NAME_PREFIX = "Maestro";
 export const MAESTRO_HC_NEW_SUBMISSION_NAME = "Maestro Court New Submission";
 
+export const MAESTRO_HC_EXTRA_COURT_COUNT = 80;
+export const maestroHcExtraCourtId = (n) =>
+  `maestro-hc-court-extra-${String(n).padStart(2, "0")}`;
+const maestroHcExtraCourtName = (n) =>
+  `Maestro Extra Court ${String(n).padStart(2, "0")}`;
+const EXTRA_COURT_NUMBERS = Array.from(
+  { length: MAESTRO_HC_EXTRA_COURT_COUNT },
+  (_, i) => i + 1,
+);
+
 export const MAESTRO_HC_ALL_COURT_IDS = [
+  ...EXTRA_COURT_NUMBERS.map(maestroHcExtraCourtId),
   MAESTRO_HC_COURT_A_SINGLES_ID,
   MAESTRO_HC_COURT_A_DOUBLES_ID,
   MAESTRO_HC_COURT_B_ID,
@@ -162,6 +173,7 @@ export const seedHomeCourtCourts = async ({
   ladderName,
   ownPendingCourtId,
   otherPendingCourtId,
+  extraCourts = 0,
 }) => {
   const pending = (submittedBy, username, forLadderId, forLadderName) =>
     buildLadderCourtSubmission({
@@ -234,8 +246,19 @@ export const seedHomeCourtCourts = async ({
     }),
   ];
 
+  const extras = EXTRA_COURT_NUMBERS.slice(0, extraCourts).map((n) =>
+    courtDoc({
+      courtId: maestroHcExtraCourtId(n),
+      courtName: maestroHcExtraCourtName(n),
+      verified: true,
+      submittedBy: MAESTRO_HC_OPPONENT_ID,
+    }),
+  );
+
   await Promise.all(
-    courts.map((court) => setDoc(doc(db, "courts", court.courtId), court)),
+    [...courts, ...extras].map((court) =>
+      setDoc(doc(db, "courts", court.courtId), court),
+    ),
   );
 
   return courts;
@@ -247,6 +270,7 @@ export const seedHomeCourtLadder = ({
   ladderName,
   ladderType,
   maxPlayers,
+  extraCourts = 0,
 }) =>
   setDoc(doc(db, "ladders", ladderId), {
     ladderId,
@@ -258,7 +282,11 @@ export const seedHomeCourtLadder = ({
     countryCode: "GB",
     ladderType,
     genderType: "Mixed",
-    courtIds: [MAESTRO_HC_COURT_B_ID, MAESTRO_HC_COURT_D_ID],
+    courtIds: [
+      MAESTRO_HC_COURT_B_ID,
+      MAESTRO_HC_COURT_D_ID,
+      ...EXTRA_COURT_NUMBERS.slice(0, extraCourts).map(maestroHcExtraCourtId),
+    ],
     status: LADDER_STATUS.REGISTRATION_OPEN,
     registrationOpensAt: daysFromNow(-1),
     registrationClosesAt: daysFromNow(7),

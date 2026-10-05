@@ -33,11 +33,13 @@ export const useLadderCourts = (
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [courtsLoading, setCourtsLoading] = useState(true);
   const selectableRef = useRef<Court[]>([]);
+  const allCourtsRef = useRef<Court[] | null>(null);
 
   const userId = currentUser?.userId;
 
   const applyCourts = useCallback(
     (allCourts: Court[]) => {
+      allCourtsRef.current = allCourts;
       const { selectable, items } = buildLadderCourtList(
         allCourts,
         { ladderId: ladder.ladderId, courtIds: ladder.courtIds },
@@ -49,13 +51,19 @@ export const useLadderCourts = (
     [ladder.courtIds, ladder.ladderId, userId],
   );
 
+  const getCourtsRef = useRef(getCourts);
+  getCourtsRef.current = getCourts;
+  const applyCourtsRef = useRef(applyCourts);
+  applyCourtsRef.current = applyCourts;
+
   useEffect(() => {
     if (!visible) return;
     let active = true;
     setCourtsLoading(true);
-    getCourts()
+    getCourtsRef
+      .current()
       .then((allCourts: Court[]) => {
-        if (active) applyCourts(allCourts);
+        if (active) applyCourtsRef.current(allCourts);
       })
       .catch((error: unknown) => {
         console.error("Error loading ladder courts:", error);
@@ -70,7 +78,11 @@ export const useLadderCourts = (
     return () => {
       active = false;
     };
-  }, [visible, getCourts, applyCourts]);
+  }, [visible]);
+
+  useEffect(() => {
+    if (allCourtsRef.current) applyCourts(allCourtsRef.current);
+  }, [applyCourts]);
 
   const findSelectableCourt = useCallback(
     (courtName: string): Court | null =>

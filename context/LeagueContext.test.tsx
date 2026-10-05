@@ -376,4 +376,16 @@ describe("getCourts", () => {
     ]);
     expect(courts[0].courtName).toBe("Submitted Court");
   });
+
+  it("returns the same getCourts function across re-renders", async () => {
+    const hook = renderHook(() => useContext(LeagueContext), { wrapper });
+    await waitFor(() => expect(mockGetDocs).toHaveBeenCalled());
+    await act(async () => {});
+    const first = hook.result.current.getCourts;
+
+    hook.rerender({});
+    hook.rerender({});
+
+    expect(hook.result.current.getCourts).toBe(first);
+  });
 });

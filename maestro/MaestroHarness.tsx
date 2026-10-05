@@ -32,6 +32,7 @@ import {
   MAESTRO_HC_COURT_B_ID,
   MAESTRO_HC_COURT_D_ID,
   MAESTRO_HC_DOUBLES_LADDER_ID,
+  MAESTRO_HC_EXTRA_COURT_COUNT,
   MAESTRO_HC_LADDER_ID,
   MAESTRO_HC_NEW_SUBMISSION_NAME,
 } from "./seeds/homeCourtFixtures";
@@ -413,6 +414,16 @@ const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => (
           seedHomeCourtFlow({
             testUser: currentUser,
             homeCourt: HOME_COURT_VARIANT.CHANGE_USED,
+          }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-large-ladder",
+        label: "Seed Home Court Flow (80 Extra Ladder Courts)",
+        title: "Seeded",
+        run: () =>
+          seedHomeCourtFlow({
+            testUser: currentUser,
+            extraLadderCourts: MAESTRO_HC_EXTRA_COURT_COUNT,
           }),
       },
       {

@@ -631,13 +631,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const getCourts = async () => {
+  const getCourts = useCallback(async () => {
     const snapshot = await getDocs(collection(db, "courts"));
     return snapshot.docs.map((doc) => ({
       ...doc.data(),
       courtId: doc.id,
     })) as unknown as Court[];
-  };
+  }, []);
 
   const addCourt = async (courtData: Court) => {
     try {

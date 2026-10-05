@@ -28,6 +28,7 @@ export { HOME_COURT_VARIANT, MAESTRO_HC_LADDER_ID, MAESTRO_HC_MATCH_ID };
 export const seedHomeCourtFlow = async ({
   testUser,
   homeCourt = HOME_COURT_VARIANT.NONE,
+  extraLadderCourts = 0,
 }) => {
   if (!testUser?.userId) {
     throw new Error("seedHomeCourtFlow: testUser with a userId is required");
@@ -58,6 +59,7 @@ export const seedHomeCourtFlow = async ({
     ladderName: MAESTRO_HC_LADDER_NAME,
     ownPendingCourtId: MAESTRO_HC_COURT_A_SINGLES_ID,
     otherPendingCourtId: MAESTRO_HC_COURT_C_SINGLES_ID,
+    extraCourts: extraLadderCourts,
   });
 
   await seedHomeCourtLadder({
@@ -66,6 +68,7 @@ export const seedHomeCourtFlow = async ({
     ladderName: MAESTRO_HC_LADDER_NAME,
     ladderType: LADDER_TYPE.SINGLES,
     maxPlayers: 2,
+    extraCourts: extraLadderCourts,
   });
 
   await setDoc(

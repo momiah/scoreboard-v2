@@ -35,6 +35,8 @@ and accepting a posted match both require a home court.
 | 1.4 | Admin approves the submission (mocked website batch) | Notification "`<court>` has been approved. You can now select it in `<ladder>`." Tapping it opens the ladder on **Matchmaking**; the court is now selectable (no pill) and can be chosen as the home court / match court 🅼 |
 | 1.5 | Admin rejects the submission (mocked website batch) | Notification "`<court>` was not accepted for `<ladder>`." Tapping it opens **Matchmaking**; the court is gone from the picker 🅼 |
 | 1.6 | Doubles: submit from the Home Court picker, approve, choose it | Same journey as 1.1 + 1.4 for a doubles ladder 🅼 |
+| 1.7 | After submitting from the Matchmaking route, pick an existing court instead | The submitted court stays pinned and greyed, and any other verified ladder court is still selectable: pick it, confirm, and the post-a-match modal opens 🅼 |
+| 1.8 | Submit from the Matchmaking route, then the admin rejects (mocked) | Notification "`<court>` was not accepted for `<ladder>`." opens **Matchmaking**; the court is gone from the picker 🅼 |
 
 ## 2. Choosing a court (user does not submit)
 
@@ -44,6 +46,8 @@ and accepting a posted match both require a home court.
 | 2.2 | Open the picker through Post a Match with no home court | The "Select a home court" info modal appears first; its button opens the same picker with the same contents as 2.1; choosing and confirming opens the post-a-match modal 🅼 |
 | 2.3 | Open the picker through the post-a-match modal's Court selector (home court set) | Same contents as 2.1; choosing a court puts its name in the selector 🅼 |
 | 2.4 | Doubles: 2.1 and 2.2 on a doubles ladder | Same results, using the team's home court 🅼 |
+| 2.8 | A realistic ladder (82 courts) | The picker loads, lists the player's pinned submission and the ladder's courts, scrolls to the last court and selecting it saves it 🅼 |
+| 2.9 | Court loading | Courts are fetched once per open even when the court context re-renders, are not fetched while the picker is closed, and re-apply without refetching when the ladder's `courtIds` change; `getCourts` returns the same function across renders 🅹 |
 | 2.5 | Picker ordering | The current selection first, then the player's own pending submissions, then the rest alphabetically 🅹 |
 | 2.6 | Country flags | Shown by default and hidden when `showCountryIcon` is false 🅹 |
 | 2.7 | Add Court from the picker | The new court is selected straight away by default and not selected when `selectAddedCourt` is false 🅹 |
@@ -83,6 +87,12 @@ and accepting a posted match both require a home court.
   `SearchLocationModal` now takes `addCourtSuccessMessage` and renders the toast
   inside its own modal; the ladder pickers pass `COURT_SUBMITTED_MESSAGE`.
   Regression tests: the success message cases in `SearchLocationModal.test.tsx`.
+- **The picker refetched on every context re-render.** `getCourts` was recreated
+  on each render of the league context and the loading effect depended on it,
+  so every re-render restarted the whole-collection fetch, discarded the
+  previous result and set loading again. `getCourts` is now memoised and
+  `useLadderCourts` fetches once per open. Regression tests: `useLadderCourts.test.tsx`
+  and `context/LeagueContext.test.tsx`.
 
 ## Not covered yet
 
@@ -117,6 +127,9 @@ notifications these flows create.
 | `court-submission-post-match-selector-route` | 1.3, 1.4 |
 | `court-submission-rejected` | 1.5 |
 | `court-submission-doubles-home-court-route` | 1.6 |
+| `court-submission-can-still-select-other-court` | 1.7 |
+| `court-submission-matchmaking-route-rejected` | 1.8 |
+| `home-court-picker-large-ladder` | 2.8 |
 | `home-court-set-from-summary` | 2.1 |
 | `home-court-post-match-gate` | 2.2, 3.3 |
 | `home-court-post-match-court-selector` | 2.3 |
