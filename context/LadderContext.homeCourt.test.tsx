@@ -344,3 +344,42 @@ describe("subscribeToLadderHomeCourt", () => {
     expect(onUpdate).toHaveBeenCalledWith(null);
   });
 });
+
+describe("fetchLadderTeamMemberIds", () => {
+  const fetchMembers = (result: Rendered) =>
+    result.current.fetchLadderTeamMemberIds(LADDER, USER);
+
+  it("returns both players of the user's team", async () => {
+    makeStore(baseStore());
+    mockGetDocs.mockResolvedValue({
+      empty: false,
+      docs: [{ data: () => ({ playerIds: [USER, "pt"] }) }],
+    });
+    const result = await renderLadder();
+
+    expect(await fetchMembers(result)).toEqual([USER, "pt"]);
+  });
+
+  it("returns just the user when they are on no team", async () => {
+    makeStore(baseStore());
+    mockGetDocs.mockResolvedValue({ empty: true, docs: [] });
+    const result = await renderLadder();
+
+    expect(await fetchMembers(result)).toEqual([USER]);
+  });
+
+  it("returns just the user when the lookup fails", async () => {
+    makeStore(baseStore());
+    const result = await renderLadder();
+    mockGetDocs.mockRejectedValue(new Error("offline"));
+
+    expect(await fetchMembers(result)).toEqual([USER]);
+  });
+
+  it("returns nothing without identifiers", async () => {
+    makeStore(baseStore());
+    const result = await renderLadder();
+
+    expect(await result.current.fetchLadderTeamMemberIds("", USER)).toEqual([]);
+  });
+});

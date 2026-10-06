@@ -8,9 +8,13 @@ jest.mock("../context/UserContext", () => ({
 jest.mock("../context/LeagueContext", () => ({
   LeagueContext: require("react").createContext({}),
 }));
+jest.mock("../context/LadderContext", () => ({
+  LadderContext: require("react").createContext({}),
+}));
 
 import { UserContext } from "../context/UserContext";
 import { LeagueContext } from "../context/LeagueContext";
+import { LadderContext } from "../context/LadderContext";
 import { useLadderCourts } from "./useLadderCourts";
 
 const court = (courtId: string, overrides: Record<string, unknown> = {}) =>
@@ -44,6 +48,7 @@ const allCourts = [
 ];
 const ladderIds = ladderCourts.map((c) => c.courtId);
 
+const mockFetchTeamMemberIds = jest.fn();
 let fetchCount = 0;
 const makeGetCourts = () => {
   fetchCount += 1;
@@ -57,11 +62,17 @@ const wrapperFor = (getCourtsFactory: () => () => Promise<Court[]>) => {
     <UserContext.Provider
       value={{ currentUser: { userId: "me", username: "me" } } as never}
     >
-      <LeagueContext.Provider
-        value={{ getCourts: getCourtsFactory(), addCourt: jest.fn() } as never}
+      <LadderContext.Provider
+        value={{ fetchLadderTeamMemberIds: mockFetchTeamMemberIds } as never}
       >
-        {children}
-      </LeagueContext.Provider>
+        <LeagueContext.Provider
+          value={
+            { getCourts: getCourtsFactory(), addCourt: jest.fn() } as never
+          }
+        >
+          {children}
+        </LeagueContext.Provider>
+      </LadderContext.Provider>
     </UserContext.Provider>
   );
   return Wrapper;
@@ -69,11 +80,17 @@ const wrapperFor = (getCourtsFactory: () => () => Promise<Court[]>) => {
 
 beforeEach(() => {
   fetchCount = 0;
+  mockFetchTeamMemberIds.mockReset();
   jest.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
 describe("useLadderCourts", () => {
-  const ladder = { ladderId: "L1", name: "Ladder", courtIds: ladderIds };
+  const ladder = {
+    ladderId: "L1",
+    ladderType: "Singles",
+    name: "Ladder",
+    courtIds: ladderIds,
+  } as never;
 
   it("lists every ladder court plus pending submissions, flagging only the player's own as pinned", async () => {
     const wrapper = wrapperFor(() => makeGetCourts);
@@ -136,7 +153,7 @@ describe("useLadderCourts", () => {
     const wrapper = wrapperFor(() => makeGetCourts);
     const { result, rerender } = renderHook(
       ({ courtIds }: { courtIds: string[] }) =>
-        useLadderCourts({ ...ladder, courtIds }, true),
+        useLadderCourts({ ...(ladder as object), courtIds } as never, true),
       { wrapper, initialProps: { courtIds: ladderIds.slice(0, 2) } },
     );
     await waitFor(() => expect(result.current.courtsLoading).toBe(false));
@@ -146,5 +163,63 @@ describe("useLadderCourts", () => {
 
     expect(result.current.courtsList).toHaveLength(86 + 2);
     expect(fetchCount).toBe(1);
+  });
+
+  describe("doubles", () => {
+    const doublesLadder = {
+      ladderId: "L1",
+      ladderType: "Doubles",
+      name: "Ladder",
+      courtIds: ladderIds,
+    } as never;
+
+    it("pins a court submitted by the team mate as well as the player's own", async () => {
+      mockFetchTeamMemberIds.mockResolvedValue(["me", "someone"]);
+      const wrapper = wrapperFor(() => makeGetCourts);
+      const { result } = renderHook(
+        () => useLadderCourts(doublesLadder, true),
+        { wrapper },
+      );
+
+      await waitFor(() => expect(result.current.courtsLoading).toBe(false));
+
+      expect(mockFetchTeamMemberIds).toHaveBeenCalledWith("L1", "me");
+      const pinned = result.current.courtsList
+        .filter((item) => item.pinned)
+        .map((item) => item.key);
+      expect(pinned.sort()).toEqual(["other-pending", "own-pending"]);
+    });
+
+    it("falls back to the player's own submissions when the team lookup fails", async () => {
+      mockFetchTeamMemberIds.mockRejectedValue(new Error("offline"));
+      const wrapper = wrapperFor(() => makeGetCourts);
+      const { result } = renderHook(
+        () => useLadderCourts(doublesLadder, true),
+        { wrapper },
+      );
+
+      await waitFor(() => expect(result.current.courtsLoading).toBe(false));
+
+      const pinned = result.current.courtsList
+        .filter((item) => item.pinned)
+        .map((item) => item.key);
+      expect(pinned).toEqual(["own-pending"]);
+      expect(result.current.courtsList).toHaveLength(86 + 2);
+    });
+
+    it("does not look up a team for a singles ladder", async () => {
+      const wrapper = wrapperFor(() => makeGetCourts);
+      const { result } = renderHook(() => useLadderCourts(ladder, true), {
+        wrapper,
+      });
+
+      await waitFor(() => expect(result.current.courtsLoading).toBe(false));
+
+      expect(mockFetchTeamMemberIds).not.toHaveBeenCalled();
+      const pinned = result.current.courtsList
+        .filter((item) => item.pinned)
+        .map((item) => item.key);
+      expect(pinned).toEqual(["own-pending"]);
+    });
   });
 });

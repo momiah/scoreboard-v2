@@ -40,6 +40,22 @@ import {
 const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => (
   <>
     <TouchableOpacity
+      testID="maestro-cleanup-ladder-test-data"
+      onPress={async () => {
+        try {
+          const outcome = await cleanupLadderTestData({
+            testUser: currentUser as never,
+          });
+          Alert.alert("Cleaned up", JSON.stringify(outcome));
+        } catch (error) {
+          Alert.alert("Cleanup failed", String(error));
+        }
+      }}
+    >
+      <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
       testID="maestro-seed-reject-game-flow"
       onPress={async () => {
         try {
@@ -543,22 +559,6 @@ const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => (
         <Text style={{ color: "white" }}>{label}</Text>
       </TouchableOpacity>
     ))}
-
-    <TouchableOpacity
-      testID="maestro-cleanup-ladder-test-data"
-      onPress={async () => {
-        try {
-          const outcome = await cleanupLadderTestData({
-            testUser: currentUser as never,
-          });
-          Alert.alert("Cleaned up", JSON.stringify(outcome));
-        } catch (error) {
-          Alert.alert("Cleanup failed", String(error));
-        }
-      }}
-    >
-      <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
-    </TouchableOpacity>
   </>
 );
 

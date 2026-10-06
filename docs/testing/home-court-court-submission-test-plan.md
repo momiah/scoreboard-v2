@@ -48,7 +48,8 @@ and accepting a posted match both require a home court.
 | 2.4 | Doubles: 2.1 and 2.2 on a doubles ladder | Same results, using the team's home court 🅼 |
 | 2.8 | A realistic ladder (82 courts) | The picker loads, lists the player's pinned submission and the ladder's courts, scrolls to the last court and selecting it saves it 🅼 |
 | 2.9 | Court loading | Courts are fetched once per open even when the court context re-renders, are not fetched while the picker is closed, and re-apply without refetching when the ladder's `courtIds` change; `getCourts` returns the same function across renders 🅹 |
-| 2.5 | Picker ordering | The current selection first, then the player's own pending submissions, then the rest alphabetically 🅹 |
+| 2.5 | Picker ordering | The current selection first, then the pending submissions of the player and, in doubles, their team mate (pinned), then the rest alphabetically 🅹 |
+| 2.10 | Doubles: the team mate's submission | A court the partner submitted is pinned for the other team mate too (right after their own), greyed with the pill and not selectable, so it is not submitted twice; another player's pending court is not pinned 🅼 🅹 |
 | 2.6 | Country flags | Shown by default and hidden when `showCountryIcon` is false 🅹 |
 | 2.7 | Add Court from the picker | The new court is selected straight away by default and not selected when `selectAddedCourt` is false 🅹 |
 
@@ -87,6 +88,7 @@ and accepting a posted match both require a home court.
   `SearchLocationModal` now takes `addCourtSuccessMessage` and renders the toast
   inside its own modal; the ladder pickers pass `COURT_SUBMITTED_MESSAGE`.
   Regression tests: the success message cases in `SearchLocationModal.test.tsx`.
+- **A team mate's submission was not pinned.** Only the signed-in user's own pending courts were pinned. In doubles the picker now looks up the team (`fetchLadderTeamMemberIds`) and pins a pending court submitted by either member. Tests: `useLadderCourts.test.tsx`, `ladderCourtList.test.js`, `LadderContext.homeCourt.test.tsx`.
 - **The picker refetched on every context re-render.** `getCourts` was recreated
   on each render of the league context and the loading effect depended on it,
   so every re-render restarted the whole-collection fetch, discarded the
@@ -114,7 +116,7 @@ ladder; an opponent's posted match; and the entrant (participant or team) with
 no home court. Variants: home court set (`homeCourtChanges: 0`) and change
 used (`homeCourtChanges: 1`). Re-running a seed resets its state.
 `mockCourtSubmissionReview.js` mirrors the website's approve and reject
-batches. `cleanupLadderTestData.js` also deletes the seeded courts, the courts
+batches. `cleanupLadderTestData.js` (the Delete button is at the top of the harness so Maestro can tap it; `.maestro/utilities/cleanup-ladder-test-data.yaml`) also deletes the seeded courts, the courts
 the test user submits (by `submittedBy` plus the "Maestro" name prefix) and the
 notifications these flows create.
 
@@ -130,6 +132,7 @@ notifications these flows create.
 | `court-submission-can-still-select-other-court` | 1.7 |
 | `court-submission-matchmaking-route-rejected` | 1.8 |
 | `home-court-picker-large-ladder` | 2.8 |
+| `court-picker-doubles-partner-submission-pinned` | 2.10 |
 | `home-court-set-from-summary` | 2.1 |
 | `home-court-post-match-gate` | 2.2, 3.3 |
 | `home-court-post-match-court-selector` | 2.3 |

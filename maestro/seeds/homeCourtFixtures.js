@@ -46,12 +46,14 @@ export const MAESTRO_HC_COURT_H_ID = "maestro-hc-court-h";
 export const MAESTRO_HC_COURT_A_SINGLES_ID = "maestro-hc-court-a-singles";
 export const MAESTRO_HC_COURT_C_SINGLES_ID = "maestro-hc-court-c-singles";
 export const MAESTRO_HC_COURT_A_DOUBLES_ID = "maestro-hc-court-a-doubles";
+export const MAESTRO_HC_COURT_E_DOUBLES_ID = "maestro-hc-court-e-doubles";
 export const MAESTRO_HC_COURT_C_DOUBLES_ID = "maestro-hc-court-c-doubles";
 
 export const MAESTRO_HC_COURT_NAMES = {
   A: "Maestro Court A Own Pending",
   B: "Maestro Court B Verified",
   C: "Maestro Court C Other Pending",
+  E: "Maestro Court E Partner Pending",
   D: "Maestro Court D Verified",
   F: "Maestro Court F Other Ladder Pending",
   G: "Maestro Court G Unverified",
@@ -72,6 +74,7 @@ const EXTRA_COURT_NUMBERS = Array.from(
 );
 
 export const MAESTRO_HC_ALL_COURT_IDS = [
+  MAESTRO_HC_COURT_E_DOUBLES_ID,
   ...EXTRA_COURT_NUMBERS.map(maestroHcExtraCourtId),
   MAESTRO_HC_COURT_A_SINGLES_ID,
   MAESTRO_HC_COURT_A_DOUBLES_ID,
@@ -173,6 +176,7 @@ export const seedHomeCourtCourts = async ({
   ladderName,
   ownPendingCourtId,
   otherPendingCourtId,
+  partnerPendingCourtId,
   extraCourts = 0,
 }) => {
   const pending = (submittedBy, username, forLadderId, forLadderName) =>
@@ -245,6 +249,23 @@ export const seedHomeCourtCourts = async ({
       ),
     }),
   ];
+
+  if (partnerPendingCourtId) {
+    courts.push(
+      courtDoc({
+        courtId: partnerPendingCourtId,
+        courtName: MAESTRO_HC_COURT_NAMES.E,
+        verified: false,
+        submittedBy: MAESTRO_HC_PARTNER_ID,
+        submission: pending(
+          MAESTRO_HC_PARTNER_ID,
+          "maestro_hc_partner",
+          ladderId,
+          ladderName,
+        ),
+      }),
+    );
+  }
 
   const extras = EXTRA_COURT_NUMBERS.slice(0, extraCourts).map((n) =>
     courtDoc({

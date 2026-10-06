@@ -19,6 +19,7 @@ import {
   MAESTRO_HC_OPPONENT_ID,
   MAESTRO_HC_COURT_A_DOUBLES_ID,
   MAESTRO_HC_COURT_C_DOUBLES_ID,
+  MAESTRO_HC_COURT_E_DOUBLES_ID,
   deleteUserSubmittedCourts,
   homeCourtEntrantFields,
   postedMatchDocument,
@@ -90,6 +91,7 @@ export const seedHomeCourtFlowDoubles = async ({
     ladderName: MAESTRO_HC_DOUBLES_LADDER_NAME,
     ownPendingCourtId: MAESTRO_HC_COURT_A_DOUBLES_ID,
     otherPendingCourtId: MAESTRO_HC_COURT_C_DOUBLES_ID,
+    partnerPendingCourtId: MAESTRO_HC_COURT_E_DOUBLES_ID,
   });
 
   await seedHomeCourtLadder({

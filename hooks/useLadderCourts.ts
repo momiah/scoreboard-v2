@@ -1,12 +1,13 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
-import { COMPETITION_TYPES } from "@shared";
+import { COMPETITION_TYPES, LADDER_TYPE } from "@shared";
 import { buildLadderCourtSubmission } from "@shared/helpers";
 import type { Court, Ladder } from "@shared/types";
 import type {
   CourtDetails,
   CourtListItem,
 } from "../components/Modals/SearchLocationModal";
+import { LadderContext } from "../context/LadderContext";
 import { LeagueContext } from "../context/LeagueContext";
 import { UserContext } from "../context/UserContext";
 import { buildLadderCourtList } from "../helpers/ladderCourtList";
@@ -24,16 +25,18 @@ interface UseLadderCourtsResult {
 }
 
 export const useLadderCourts = (
-  ladder: Pick<Ladder, "ladderId" | "name" | "courtIds">,
+  ladder: Pick<Ladder, "ladderId" | "ladderType" | "name" | "courtIds">,
   visible: boolean,
 ): UseLadderCourtsResult => {
   const { getCourts, addCourt } = useContext(LeagueContext);
+  const { fetchLadderTeamMemberIds } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
 
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [courtsLoading, setCourtsLoading] = useState(true);
   const selectableRef = useRef<Court[]>([]);
   const allCourtsRef = useRef<Court[] | null>(null);
+  const teamMemberIdsRef = useRef<string[] | null>(null);
 
   const userId = currentUser?.userId;
 
@@ -43,7 +46,7 @@ export const useLadderCourts = (
       const { selectable, items } = buildLadderCourtList(
         allCourts,
         { ladderId: ladder.ladderId, courtIds: ladder.courtIds },
-        userId,
+        teamMemberIdsRef.current ?? (userId ? [userId] : []),
       );
       selectableRef.current = selectable;
       setCourtsList(items);
@@ -55,15 +58,24 @@ export const useLadderCourts = (
   getCourtsRef.current = getCourts;
   const applyCourtsRef = useRef(applyCourts);
   applyCourtsRef.current = applyCourts;
+  const fetchTeamMemberIdsRef = useRef(fetchLadderTeamMemberIds);
+  fetchTeamMemberIdsRef.current = fetchLadderTeamMemberIds;
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+  const ladderId = ladder.ladderId;
 
   useEffect(() => {
     if (!visible) return;
     let active = true;
     setCourtsLoading(true);
-    getCourtsRef
-      .current()
-      .then((allCourts: Court[]) => {
-        if (active) applyCourtsRef.current(allCourts);
+    const teamMemberIds =
+      isDoubles && userId
+        ? fetchTeamMemberIdsRef.current(ladderId, userId).catch(() => null)
+        : Promise.resolve<string[] | null>(null);
+    Promise.all([getCourtsRef.current(), teamMemberIds])
+      .then(([allCourts, memberIds]) => {
+        if (!active) return;
+        teamMemberIdsRef.current = memberIds;
+        applyCourtsRef.current(allCourts);
       })
       .catch((error: unknown) => {
         console.error("Error loading ladder courts:", error);
@@ -78,7 +90,7 @@ export const useLadderCourts = (
     return () => {
       active = false;
     };
-  }, [visible]);
+  }, [visible, isDoubles, ladderId, userId]);
 
   useEffect(() => {
     if (allCourtsRef.current) applyCourts(allCourtsRef.current);
