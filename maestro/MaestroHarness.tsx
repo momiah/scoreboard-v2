@@ -1,5 +1,5 @@
-import React from "react";
-import { Alert, Text, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { Alert, Pressable, Text, TouchableOpacity } from "react-native";
 import type { UserProfile } from "@shared/types";
 import {
   seedRejectGameFlow,
@@ -37,7 +37,9 @@ import {
   MAESTRO_HC_NEW_SUBMISSION_NAME,
 } from "./seeds/homeCourtFixtures";
 
-const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => (
+const UNLOCK_TAPS = 5;
+
+const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
   <>
     <TouchableOpacity
       testID="maestro-cleanup-ladder-test-data"
@@ -561,5 +563,23 @@ const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => (
     ))}
   </>
 );
+
+const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => {
+  const [taps, setTaps] = useState(0);
+
+  return (
+    <>
+      <Pressable
+        testID="maestro-harness-unlock"
+        accessibilityLabel="maestro-harness-unlock"
+        style={{ height: 24 }}
+        onPress={() => setTaps((count) => count + 1)}
+      />
+      {taps >= UNLOCK_TAPS ? (
+        <HarnessButtons currentUser={currentUser} />
+      ) : null}
+    </>
+  );
+};
 
 export default MaestroHarness;
