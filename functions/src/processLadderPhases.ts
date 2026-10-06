@@ -20,8 +20,7 @@ import type {
 import {
   LADDER_MIN_PLAYOFF_SIZE,
   buildLadderPlayoffTies,
-  getLadderPlayoffBracketSize,
-  rankLadderPlayoffEntrants,
+  getLadderPlayoffQualifiers,
 } from "courtchamps-shared/helpers";
 import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
 
@@ -248,10 +247,10 @@ const generatePlayoffs = async ({
   now: Date;
 }): Promise<"generated" | "cancelled" | null> => {
   const entrants = await loadEntrants(db, ladderRef, ladder);
-  const bracketSize = getLadderPlayoffBracketSize({
-    registeredCount: entrants.length,
+  const { bracketSize, qualifiers } = getLadderPlayoffQualifiers({
+    entrants,
+    registeredCount: Math.max(entrants.length, LADDER_MIN_PLAYOFF_SIZE),
     maxPlayers: ladder.maxPlayers,
-    entrantCount: entrants.length,
   });
 
   if (bracketSize === 0) {
@@ -265,7 +264,6 @@ const generatePlayoffs = async ({
     return cancelled ? "cancelled" : null;
   }
 
-  const qualifiers = rankLadderPlayoffEntrants(entrants).slice(0, bracketSize);
   const ties = buildLadderPlayoffTies({
     ladderId: ladder.ladderId,
     qualifiers,

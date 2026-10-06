@@ -175,6 +175,7 @@ const seedParticipant = (
     competitionXP: 0,
     numberOfWins: 0,
     totalPointDifference: 0,
+    homeCourt: homeCourt("london"),
     ...overrides,
   });
 };
@@ -374,7 +375,7 @@ describe("playoff generation (singles)", () => {
     const cities = Object.keys(CITIES);
     seedParticipants("L1", 140, (index) => ({
       competitionXP: 1000 - index,
-      homeCourt: index < 8 ? homeCourt(cities[index]) : null,
+      homeCourt: homeCourt(index < 8 ? cities[index] : "london"),
     }));
 
     await runProcessLadderPhases(now);
@@ -395,6 +396,46 @@ describe("playoff generation (singles)", () => {
       ["croydon", "london"],
       ["manchester", "salford"],
     ]);
+  });
+
+  it("fills leftover spots with entrants who never played and pairs them together", async () => {
+    seedLadder("L1", { maxPlayers: 256 });
+    const cities = ["london", "croydon", "manchester", "salford", "birmingham", "coventry"];
+    seedParticipants("L1", 128, (index) =>
+      index < 6
+        ? {
+            competitionXP: 100 - index,
+            numberOfWins: 3,
+            homeCourt: homeCourt(cities[index]),
+            joinedAt: daysFromNow(-60),
+          }
+        : { homeCourt: null, joinedAt: daysFromNow(-50 + index) },
+    );
+
+    await runProcessLadderPhases(now);
+
+    const roundOne = ties("L1").filter((tie) => tie.round === 1);
+    const pairs = roundOne
+      .map((tie) =>
+        [(tie.side1 as Data).entrantKey, (tie.side2 as Data).entrantKey].sort(),
+      )
+      .sort();
+    expect(pairs).toEqual([
+      ["p0000", "p0001"],
+      ["p0002", "p0003"],
+      ["p0004", "p0005"],
+      ["p0006", "p0007"],
+    ]);
+    const neverPlayed = roundOne
+      .flatMap((tie) => [tie.side1, tie.side2] as Data[])
+      .filter((side) => side.homeCourt === null)
+      .map((side) => [side.entrantKey, side.rank]);
+    expect(neverPlayed).toEqual(
+      expect.arrayContaining([
+        ["p0006", 7],
+        ["p0007", 8],
+      ]),
+    );
   });
 
   it("fills spots from entrants with no wins", async () => {
@@ -441,16 +482,19 @@ describe("playoff generation (singles)", () => {
     expect(ladder("L1").status).toBe(LADDER_STATUS.PLAYOFFS);
   });
 
-  it("cancels instead when entrants have dropped below the minimum", async () => {
+  it("still runs a top 8 when entrants dropped below 128 after registration closed", async () => {
     seedLadder("L1");
-    seedParticipants("L1", 100);
+    seedParticipants("L1", 127, (index) => ({ competitionXP: 1000 - index }));
 
     const summary = await runProcessLadderPhases(now);
 
-    expect(summary.cancelled).toEqual(["L1"]);
-    expect(ladder("L1").status).toBe(LADDER_STATUS.CANCELLED);
-    expect(ties("L1")).toHaveLength(0);
-    expect(mockRefund).toHaveBeenCalledTimes(1);
+    expect(summary.playoffsGenerated).toEqual(["L1"]);
+    expect(ladder("L1")).toMatchObject({
+      status: LADDER_STATUS.PLAYOFFS,
+      playoffBracketSize: 8,
+      playoffEntrantCount: 127,
+    });
+    expect(mockRefund).not.toHaveBeenCalled();
   });
 
   it("waits until playoffStartsAt", async () => {
@@ -528,7 +572,7 @@ describe("playoff generation (doubles)", () => {
         XP: 1000 - index,
         numberOfWins: 1,
         status: TEAM_STATUS.ACTIVE,
-        homeCourt: index === 0 ? homeCourt("london") : null,
+        homeCourt: homeCourt(index === 0 ? "london" : "croydon"),
       });
     }
     store.set("ladders/L1/ladderTeams/pending", {
