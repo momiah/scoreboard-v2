@@ -128,7 +128,15 @@ const TeamSettings: React.FC = () => {
     if (!team) return;
     setDisbanding(true);
     try {
-      const { success, activelyPlaying } = await disbandTeam(team);
+      const { success, activelyPlaying, registrationClosed } =
+        await disbandTeam(team);
+      if (registrationClosed) {
+        Alert.alert(
+          "Can't disband",
+          "Registration has closed for a ladder this team is in. The team can be disbanded once that ladder is complete.",
+        );
+        return;
+      }
       if (activelyPlaying) {
         Alert.alert(
           "Can't disband",

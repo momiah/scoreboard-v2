@@ -1,4 +1,5 @@
-import type { LadderMatch } from "@shared/types";
+import { LADDER_STATUS } from "@shared/types";
+import type { Ladder, LadderMatch } from "@shared/types";
 
 // A team is "actively playing" once it has ANY match in a ladder — posted
 // (scheduled), accepted, or completed. A match belongs to the team when any of
@@ -14,3 +15,15 @@ export const teamHasLadderMatch = (
     (match.participants ?? []).some((id) => memberIds.has(id)),
   );
 };
+
+// Once a ladder's registration has closed its entrants are fixed until the
+// ladder completes (or is cancelled), so a team in it cannot disband.
+const ENTRANTS_LOCKED_STATUSES: string[] = [
+  LADDER_STATUS.REGISTRATION_CLOSED,
+  LADDER_STATUS.PLAYOFFS,
+];
+
+export const isTeamLockedInLadder = (
+  ladders: Pick<Ladder, "status">[],
+): boolean =>
+  ladders.some((ladder) => ENTRANTS_LOCKED_STATUSES.includes(ladder.status));

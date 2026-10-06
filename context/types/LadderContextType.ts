@@ -39,6 +39,7 @@ export interface JoinLadderAsTeamOutcome {
 export interface DisbandTeamOutcome {
   success: boolean;
   activelyPlaying: boolean;
+  registrationClosed?: boolean;
 }
 
 export interface AcceptTeamJoinRequestOutcome {

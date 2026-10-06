@@ -1,4 +1,5 @@
-import { teamHasLadderMatch } from "./teamLadderActivity";
+import { LADDER_STATUS } from "@shared/types";
+import { isTeamLockedInLadder, teamHasLadderMatch } from "./teamLadderActivity";
 
 const match = (participants) => ({ participants });
 
@@ -32,5 +33,41 @@ describe("teamHasLadderMatch", () => {
 
   it("guards empty player ids", () => {
     expect(teamHasLadderMatch([match(["u1"])], [])).toBe(false);
+  });
+});
+
+describe("isTeamLockedInLadder", () => {
+  const ladder = (status) => ({ status });
+
+  it("lets a team leave while registration is open", () => {
+    expect(isTeamLockedInLadder([ladder(LADDER_STATUS.REGISTRATION_OPEN)])).toBe(
+      false,
+    );
+  });
+
+  it("locks a team once registration has closed or playoffs are on", () => {
+    expect(
+      isTeamLockedInLadder([ladder(LADDER_STATUS.REGISTRATION_CLOSED)]),
+    ).toBe(true);
+    expect(isTeamLockedInLadder([ladder(LADDER_STATUS.PLAYOFFS)])).toBe(true);
+  });
+
+  it("frees a team once the ladder is completed or cancelled", () => {
+    expect(
+      isTeamLockedInLadder([
+        ladder(LADDER_STATUS.COMPLETED),
+        ladder(LADDER_STATUS.CANCELLED),
+      ]),
+    ).toBe(false);
+  });
+
+  it("locks when any of the team's ladders has closed", () => {
+    expect(
+      isTeamLockedInLadder([
+        ladder(LADDER_STATUS.REGISTRATION_OPEN),
+        ladder(LADDER_STATUS.REGISTRATION_CLOSED),
+      ]),
+    ).toBe(true);
+    expect(isTeamLockedInLadder([])).toBe(false);
   });
 });

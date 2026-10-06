@@ -77,7 +77,10 @@ import {
   findLadderMemberConflicts,
 } from "../helpers/ladderTeamMembership";
 import { addMember, removeMember } from "../helpers/teamRoster";
-import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
+import {
+  isTeamLockedInLadder,
+  teamHasLadderMatch,
+} from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
 import { canApproveReportedGame } from "../helpers/reportedGameApproval";
@@ -1059,6 +1062,23 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     async (team: TeamStats): Promise<DisbandTeamOutcome> => {
       if (!team?.teamId) return { success: false, activelyPlaying: false };
       try {
+        const ladderSnaps = await Promise.all(
+          (team.ladderIds ?? []).map((ladderId) =>
+            getDoc(doc(db, LADDERS_COLLECTION, ladderId)),
+          ),
+        );
+        const ladders = ladderSnaps
+          .filter((snap) => snap.exists())
+          .map((snap) => ({
+            status: normalizeLadderStatus(snap.data()?.status),
+          }));
+        if (isTeamLockedInLadder(ladders)) {
+          return {
+            success: false,
+            activelyPlaying: false,
+            registrationClosed: true,
+          };
+        }
         if (await isTeamActivelyPlaying(team)) {
           return { success: false, activelyPlaying: true };
         }
