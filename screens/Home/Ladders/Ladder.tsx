@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useState } from "react";
 import { Dimensions, ScrollView } from "react-native";
 import {
   useFocusEffect,
@@ -50,10 +50,6 @@ const Ladder: React.FC = () => {
   const [ladderLoading, setLadderLoading] = useState(true);
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
-
-  useEffect(() => {
-    if (tab) setSelectedTab(tab);
-  }, [tab]);
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [teams, setTeams] = useState<TeamStats[]>([]);
 

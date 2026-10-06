@@ -54,7 +54,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
   // Court state
   const [courtsList, setCourtsList] = useState([]);
   const [courtData, setCourtData] = useState([]);
-  const [courtsLoading, setCourtsLoading] = useState(true);
   const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState({});
 
@@ -81,18 +80,12 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
   // Load courts on component mount
   useEffect(() => {
     const loadCourts = async () => {
-      try {
-        const courtData = await getCourts();
+      const courtData = await getCourts();
 
-        const formattedCourts = formatCourtDetailsForList(courtData);
+      const formattedCourts = formatCourtDetailsForList(courtData);
 
-        setCourtData(courtData);
-        setCourtsList(formattedCourts);
-      } catch (error) {
-        console.error("Error loading courts:", error);
-      } finally {
-        setCourtsLoading(false);
-      }
+      setCourtData(courtData);
+      setCourtsList(formattedCourts);
     };
     loadCourts();
   }, []);
@@ -342,7 +335,6 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
             setCourtData(courtData);
             setCourtsList(formatCourtDetailsForList(courtData));
           }}
-          loading={courtsLoading}
         />
       )}
     </Modal>

@@ -21,14 +21,11 @@ import PrizeDistribution from "./PrizeDistribution";
 import PrizeContenders from "./PrizeContenders";
 import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
-import LadderHomeCourtSection from "./LadderHomeCourtSection";
-import LadderSummarySkeleton from "./LadderSummarySkeleton";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import PerformanceRow from "../performance/Player/PerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
-import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
@@ -101,7 +98,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
-  const [participantsLoading, setParticipantsLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [joinVisible, setJoinVisible] = useState(false);
 
@@ -110,29 +106,17 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   useEffect(() => {
     let active = true;
-    setParticipantsLoading(true);
-    fetchLadderParticipants(ladderId)
-      .then((list) => {
-        if (active) setParticipants(list);
-      })
-      .finally(() => {
-        if (active) setParticipantsLoading(false);
-      });
+    fetchLadderParticipants(ladderId).then((list) => {
+      if (active) setParticipants(list);
+    });
     return () => {
       active = false;
     };
   }, [ladderId, fetchLadderParticipants]);
 
-  const { mode, openJoin, membershipChecking } = useLadderJoin(ladder, () =>
+  const { mode, openJoin } = useLadderJoin(ladder, () =>
     setJoinVisible(true),
   );
-  const {
-    homeCourt,
-    canChange: canChangeHomeCourt,
-    isEntrant,
-    loading: homeCourtLoading,
-    confirmHomeCourt,
-  } = useLadderHomeCourt(ladder);
 
   const prizePool = useMemo(
     () =>
@@ -150,21 +134,19 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     player: EnrichedPlayer;
     rank: number;
   } | null>(null);
-  const [userSummaryLoading, setUserSummaryLoading] = useState(true);
 
   useEffect(() => {
-    if (participantsLoading) return;
     const uid = currentUser?.userId;
-    const participant = uid
-      ? participants.find((p) => p.userId === uid)
-      : undefined;
-    if (!uid || !participant) {
+    if (!uid || participants.length === 0) {
       setUserSummaryRow(null);
-      setUserSummaryLoading(false);
+      return;
+    }
+    const participant = participants.find((p) => p.userId === uid);
+    if (!participant) {
+      setUserSummaryRow(null);
       return;
     }
     let active = true;
-    setUserSummaryLoading(true);
     const load = async () => {
       try {
         const [enrichedPlayer] = (await enrichPlayers(getUserById, [
@@ -180,31 +162,26 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       } catch (error) {
         console.error("Error building ladder summary row:", error);
         if (active) setUserSummaryRow(null);
-      } finally {
-        if (active) setUserSummaryLoading(false);
       }
     };
     load();
     return () => {
       active = false;
     };
-  }, [participants, participantsLoading, currentUser?.userId, getUserById]);
+  }, [participants, currentUser?.userId, getUserById]);
 
   const [userTeamRow, setUserTeamRow] = useState<{
     team: TeamStats;
     rank: number;
   } | null>(null);
-  const [userTeamLoading, setUserTeamLoading] = useState(isDoubles);
 
   useEffect(() => {
     const uid = currentUser?.userId;
     if (!isDoubles || !uid) {
       setUserTeamRow(null);
-      setUserTeamLoading(false);
       return;
     }
     let active = true;
-    setUserTeamLoading(true);
     const load = async () => {
       try {
         const teams = await fetchLadderTeams(ladderId);
@@ -223,8 +200,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       } catch (error) {
         console.error("Error building ladder team summary row:", error);
         if (active) setUserTeamRow(null);
-      } finally {
-        if (active) setUserTeamLoading(false);
       }
     };
     load();
@@ -234,7 +209,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
   }, [isDoubles, ladderId, currentUser?.userId, fetchLadderTeams]);
 
   useEffect(() => {
-    if (participantsLoading) return;
     let active = true;
     const loadContenders = async () => {
       setIsDataLoading(true);
@@ -261,22 +235,11 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     return () => {
       active = false;
     };
-  }, [participants, participantsLoading, getUserById]);
+  }, [participants, getUserById]);
 
   const renderContenders = isDataLoading
     ? PLACEHOLDER_CONTENDERS
     : topContenders;
-
-  const summaryLoading =
-    participantsLoading ||
-    isDataLoading ||
-    (isDoubles ? userTeamLoading : userSummaryLoading) ||
-    homeCourtLoading ||
-    membershipChecking;
-
-  if (summaryLoading) {
-    return <LadderSummarySkeleton isPaid={isPaid} />;
-  }
 
   return (
     <Container testID="ladder-summary">
@@ -321,14 +284,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
               </PositionCard>
             </PositionSection>
           )}
-
-      <LadderHomeCourtSection
-        ladder={ladder}
-        homeCourt={homeCourt}
-        canChange={canChangeHomeCourt}
-        isEntrant={isEntrant}
-        confirmHomeCourt={confirmHomeCourt}
-      />
 
       <PrizeDistribution
         prizePool={prizePool.xp}

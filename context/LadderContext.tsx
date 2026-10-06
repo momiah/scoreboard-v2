@@ -49,11 +49,9 @@ import {
   resolveLadderMatchOutcome,
   getReportableLadderGameId,
   hasOpenLadderDispute,
-  isSelectableLadderCourt,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
 import type {
-  Court,
   Ladder,
   LadderMatch,
   LadderMatchInput,
@@ -93,26 +91,13 @@ import type {
   UpdateLadderGameOutcome,
   CancelLadderMatchOutcome,
   ApproveLadderGameOutcome,
-  SetLadderHomeCourtOutcome,
-  SetLadderHomeCourtFailureReason,
 } from "./types/LadderContextType";
-import {
-  canChangeLadderHomeCourt,
-  nextLadderHomeCourtChanges,
-  toLadderHomeCourt,
-} from "../helpers/ladderHomeCourt";
-import type { LadderHomeCourtState } from "../helpers/ladderHomeCourt";
 
 class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
 class ApproveLadderGameError extends Error {}
 class ApproveLadderGameNotOpponentError extends Error {}
 class LadderReportBlockedError extends Error {}
-class SetLadderHomeCourtError extends Error {
-  constructor(public reason: Exclude<SetLadderHomeCourtFailureReason, "error">) {
-    super(reason);
-  }
-}
 
 // Firestore rejects `undefined` field values, so drop them before a write.
 const pruneUndefined = <T,>(value: T): T => {
@@ -137,7 +122,6 @@ const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
 const TEAMS_COLLECTION = "teams";
-const COURTS_COLLECTION = "courts";
 const TEAM_REQUESTS_SUBCOLLECTION = "requests";
 
 export const LadderContext = createContext<LadderContextType>(
@@ -638,35 +622,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const fetchLadderTeamMemberIds = useCallback(
-    async (ladderId: string, userId: string): Promise<string[]> => {
-      if (!ladderId || !userId) return [];
-      try {
-        const teamSnap = await getDocs(
-          query(
-            collection(
-              db,
-              LADDERS_COLLECTION,
-              ladderId,
-              LADDER_TEAMS_COLLECTION,
-            ),
-            where("playerIds", "array-contains", userId),
-            limit(1),
-          ),
-        );
-        if (teamSnap.empty) return [userId];
-        const playerIds = teamSnap.docs[0].data().playerIds as
-          | string[]
-          | undefined;
-        return playerIds?.length ? playerIds : [userId];
-      } catch (error) {
-        console.error("Error fetching ladder team members:", error);
-        return [userId];
-      }
-    },
-    [],
-  );
-
   const fetchLadderMemberIds = useCallback(
     async (ladderId: string): Promise<string[]> => {
       if (!ladderId) return [];
@@ -807,174 +762,32 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const resolveLadderHomeCourtRef = useCallback(
-    async (
-      ladder: Pick<Ladder, "ladderId" | "ladderType">,
-      userId: string,
-    ): Promise<DocumentReference | null> => {
-      if (ladder.ladderType !== LADDER_TYPE.DOUBLES) {
-        return doc(
-          db,
-          LADDERS_COLLECTION,
-          ladder.ladderId,
-          LADDER_PARTICIPANTS_COLLECTION,
-          userId,
-        );
-      }
-      const teamSnap = await getDocs(
-        query(
-          collection(
-            db,
-            LADDERS_COLLECTION,
-            ladder.ladderId,
-            LADDER_TEAMS_COLLECTION,
-          ),
-          where("playerIds", "array-contains", userId),
-          limit(1),
-        ),
-      );
-      return teamSnap.empty ? null : teamSnap.docs[0].ref;
-    },
-    [],
-  );
-
-  const subscribeToLadderHomeCourt = useCallback(
-    (
-      ladder: Pick<Ladder, "ladderId" | "ladderType">,
-      userId: string,
-      onUpdate: (state: LadderHomeCourtState | null) => void,
-      onError?: (error: Error) => void,
-    ): (() => void) => {
-      if (!ladder?.ladderId || !userId) {
-        onUpdate(null);
-        return () => {};
-      }
-
-      const toState = (
-        data: LadderHomeCourtState | undefined,
-      ): LadderHomeCourtState | null =>
-        data
-          ? {
-              homeCourt: data.homeCourt ?? null,
-              homeCourtChanges: data.homeCourtChanges ?? 0,
-            }
-          : null;
-
-      const handleError = (error: Error) => {
-        console.error("Error subscribing to ladder home court:", error);
-        onError?.(error);
-      };
-
-      if (ladder.ladderType !== LADDER_TYPE.DOUBLES) {
-        return onSnapshot(
-          doc(
-            db,
-            LADDERS_COLLECTION,
-            ladder.ladderId,
-            LADDER_PARTICIPANTS_COLLECTION,
-            userId,
-          ),
-          (snap) =>
-            onUpdate(
-              snap.exists()
-                ? toState(snap.data() as LadderHomeCourtState)
-                : null,
-            ),
-          handleError,
-        );
-      }
-
-      return onSnapshot(
-        query(
-          collection(
-            db,
-            LADDERS_COLLECTION,
-            ladder.ladderId,
-            LADDER_TEAMS_COLLECTION,
-          ),
-          where("playerIds", "array-contains", userId),
-          limit(1),
-        ),
-        (snap) =>
-          onUpdate(
-            snap.empty
-              ? null
-              : toState(snap.docs[0].data() as LadderHomeCourtState),
-          ),
-        handleError,
-      );
-    },
-    [],
-  );
-
-  const setLadderHomeCourt = useCallback(
-    async ({
-      ladder,
-      userId,
-      court,
-    }: {
-      ladder: Pick<Ladder, "ladderId" | "ladderType">;
-      userId: string;
-      court: Court;
-    }): Promise<SetLadderHomeCourtOutcome> => {
-      if (!ladder?.ladderId || !userId || !court?.courtId) {
-        return { success: false, reason: "error" };
-      }
+  const addCourtToLadder = useCallback(
+    async (ladderId: string, courtId: string): Promise<boolean> => {
+      if (!ladderId || !courtId) return false;
 
       try {
-        const entrantRef = await resolveLadderHomeCourtRef(ladder, userId);
-        if (!entrantRef) return { success: false, reason: "not_participant" };
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
+        await updateDoc(ladderRef, { courtIds: arrayUnion(courtId) });
 
-        const ladderRef = doc(db, LADDERS_COLLECTION, ladder.ladderId);
-        const courtRef = doc(db, COURTS_COLLECTION, court.courtId);
+        setLadderById((prev) =>
+          prev && prev.ladderId === ladderId
+            ? {
+                ...prev,
+                courtIds: prev.courtIds?.includes(courtId)
+                  ? prev.courtIds
+                  : [...(prev.courtIds ?? []), courtId],
+              }
+            : prev,
+        );
 
-        await runTransaction(db, async (transaction) => {
-          const [ladderSnap, entrantSnap, courtSnap] = await Promise.all([
-            transaction.get(ladderRef),
-            transaction.get(entrantRef),
-            transaction.get(courtRef),
-          ]);
-
-          if (!entrantSnap.exists()) {
-            throw new SetLadderHomeCourtError("not_participant");
-          }
-
-          const freshCourt = courtSnap.exists()
-            ? ({ ...courtSnap.data(), courtId: courtSnap.id } as Court)
-            : null;
-          const ladderCourtIds = ladderSnap.exists()
-            ? ((ladderSnap.data() as Ladder).courtIds ?? [])
-            : [];
-          if (
-            !freshCourt ||
-            !isSelectableLadderCourt(freshCourt, ladderCourtIds)
-          ) {
-            throw new SetLadderHomeCourtError("invalid_court");
-          }
-
-          const current = entrantSnap.data() as LadderHomeCourtState;
-          if (!canChangeLadderHomeCourt(current)) {
-            throw new SetLadderHomeCourtError("change_limit");
-          }
-
-          transaction.update(entrantRef, {
-            homeCourt: toLadderHomeCourt(freshCourt),
-            homeCourtChanges: nextLadderHomeCourtChanges(current),
-            homeCourtUpdatedAt: new Date(),
-            homeCourtUpdatedBy: userId,
-          });
-        });
-
-        return { success: true };
+        return true;
       } catch (error) {
-        if (error instanceof SetLadderHomeCourtError) {
-          return { success: false, reason: error.reason };
-        }
-        console.error("Error setting ladder home court:", error);
-        return { success: false, reason: "error" };
+        console.error("Error adding court to ladder:", error);
+        return false;
       }
     },
-    [resolveLadderHomeCourtRef],
+    [],
   );
 
   const fetchLadderMatches = useCallback(
@@ -1976,7 +1789,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         declineTeamInvite,
         fetchTeam,
         fetchUserTeams,
-        fetchLadderTeamMemberIds,
         fetchLadderMemberIds,
         joinLadderAsTeam,
         createLadderMatch,
@@ -1991,8 +1803,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         updateLadderGame,
         cancelLadderMatch,
         approveLadderGame,
-        subscribeToLadderHomeCourt,
-        setLadderHomeCourt,
+        addCourtToLadder,
       }}
     >
       {children}

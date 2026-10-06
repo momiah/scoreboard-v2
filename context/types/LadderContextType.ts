@@ -1,6 +1,4 @@
-import type { LadderHomeCourtState } from "../../helpers/ladderHomeCourt";
 import type {
-  Court,
   Ladder,
   LadderMatch,
   LadderMatchInput,
@@ -98,17 +96,6 @@ export interface ApproveLadderGameOutcome {
   matchCompleted?: boolean;
 }
 
-export type SetLadderHomeCourtFailureReason =
-  | "not_participant"
-  | "change_limit"
-  | "invalid_court"
-  | "error";
-
-export interface SetLadderHomeCourtOutcome {
-  success: boolean;
-  reason?: SetLadderHomeCourtFailureReason;
-}
-
 export interface LadderContextType {
   upcomingLadders: Ladder[];
   upcomingLaddersLoading: boolean;
@@ -164,10 +151,6 @@ export interface LadderContextType {
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;
   fetchUserTeams: (userId: string) => Promise<TeamStats[]>;
-  fetchLadderTeamMemberIds: (
-    ladderId: string,
-    userId: string,
-  ) => Promise<string[]>;
   fetchLadderMemberIds: (ladderId: string) => Promise<string[]>;
   joinLadderAsTeam: (
     ladderId: string,
@@ -237,17 +220,7 @@ export interface LadderContextType {
     userId: string;
     approver: { userId: string; username: string };
   }) => Promise<ApproveLadderGameOutcome>;
-  subscribeToLadderHomeCourt: (
-    ladder: Pick<Ladder, "ladderId" | "ladderType">,
-    userId: string,
-    onUpdate: (state: LadderHomeCourtState | null) => void,
-    onError?: (error: Error) => void,
-  ) => () => void;
-  setLadderHomeCourt: (args: {
-    ladder: Pick<Ladder, "ladderId" | "ladderType">;
-    userId: string;
-    court: Court;
-  }) => Promise<SetLadderHomeCourtOutcome>;
+  addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
 }
 
 export interface FetchLaddersOptions {

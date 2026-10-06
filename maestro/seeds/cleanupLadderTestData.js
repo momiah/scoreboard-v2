@@ -32,12 +32,6 @@ import {
   MAESTRO_AGD_OPP1_ID,
   MAESTRO_AGD_OPP2_ID,
 } from "./seedAddApproveGameFlowDoubles";
-import {
-  MAESTRO_HC_LADDER_IDS,
-  MAESTRO_HC_ALL_COURT_IDS,
-  MAESTRO_HC_FIXTURE_USER_IDS,
-  deleteUserSubmittedCourts,
-} from "./homeCourtFixtures";
 
 const LADDER_SUBCOLLECTIONS = [
   "ladderMatches",
@@ -50,7 +44,6 @@ const ALL_LADDER_IDS = [
   MAESTRO_D_LADDER_ID,
   MAESTRO_AG_LADDER_ID,
   MAESTRO_AGD_LADDER_ID,
-  ...MAESTRO_HC_LADDER_IDS,
 ];
 const ALL_GAME_IDS = [
   MAESTRO_GAME_ID,
@@ -67,7 +60,6 @@ const ALL_FIXTURE_USER_IDS = [
   MAESTRO_AGD_PARTNER_ID,
   MAESTRO_AGD_OPP1_ID,
   MAESTRO_AGD_OPP2_ID,
-  ...MAESTRO_HC_FIXTURE_USER_IDS,
 ];
 
 const deleteAllDocs = async (colRef) => {
@@ -96,15 +88,12 @@ export const cleanupLadderTestData = async ({
   ladderIds = ALL_LADDER_IDS,
   gameIds = ALL_GAME_IDS,
   fixtureUserIds = ALL_FIXTURE_USER_IDS,
-  courtIds = MAESTRO_HC_ALL_COURT_IDS,
 } = {}) => {
   await Promise.all([
     ...ladderIds.map((id) => deleteLadderTree(id)),
     ...gameIds.map((id) => deleteDisputesForGame(id)),
     ...fixtureUserIds.map((id) => deleteDoc(doc(db, "users", id))),
-    ...courtIds.map((id) => deleteDoc(doc(db, "courts", id))),
   ]);
-  const deletedCourts = await deleteUserSubmittedCourts(testUser);
 
   if (testUser?.userId && ladderIds.length) {
     const notificationsRef = collection(
@@ -119,9 +108,5 @@ export const cleanupLadderTestData = async ({
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   }
 
-  return {
-    deletedLadders: ladderIds,
-    deletedUsers: fixtureUserIds,
-    deletedCourts: [...courtIds, ...deletedCourts],
-  };
+  return { deletedLadders: ladderIds, deletedUsers: fixtureUserIds };
 };

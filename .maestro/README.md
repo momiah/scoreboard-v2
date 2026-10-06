@@ -55,8 +55,6 @@ The seed/mock-resolve/mock-request-evidence/cleanup buttons these flows tap
 live in `maestro/MaestroHarness.tsx` and the helpers in `maestro/seeds/`. Home
 loads the harness through a `require` guarded by `__DEV__`, so it renders in a
 dev-client build and is not included in a production/release build. The
-buttons stay hidden until a transparent strip (`maestro-harness-unlock`) is
-tapped five times, which `login.yaml` does at the start of every flow. The
 **Delete Ladder Test Data** button (`maestro/seeds/cleanupLadderTestData.js`)
 removes every ladder/match/dispute/fixture-user doc any of these flows create
 (reject-game and add-game both). See [maestro/README.md](../maestro/README.md).
