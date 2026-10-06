@@ -71,6 +71,31 @@ Flows to cover (singles and doubles):
    opponent").
 7. Game reported → Cancel Match shows "This match can no longer be cancelled".
 
+## Refunds and the platform fee
+
+The rule: the platform fee is refunded only when the **platform** cancels (the
+backend, e.g. fewer than 128 entrants at registration close, or the admin). It
+is kept whenever a **user** causes the refund (a match cancellation they
+requested or agreed to), because Stripe still charges the platform.
+
+| Cancellation | Who caused it | Refund |
+|---|---|---|
+| Ladder under 128 at registration close (`processLadderPhases`) | Platform | Full entry fee, platform fee included (`refundLadderEntryFees`) |
+| Ladder cancelled by the admin (no admin action yet) | Platform | Full entry fee, platform fee included |
+| Posted match cancelled before anyone accepted | User | Nothing to refund — the accepter is only charged on accept |
+| Accepted match cancelled by agreement | User | Accepter's court-fee share refunded; platform fee kept (`reconcileLadderCourtFee` via `onLadderMatchStatusChange`) |
+| Accepted match expired / poster no-show | — | Accepter's court-fee share refunded; platform fee kept |
+
+Payments are stubs today, so Maestro can only assert the UI. Flows to cover:
+
+1. Accept a cancellation request → the confirm alert says the court fee is
+   refunded to the player who accepted the match → match shows as cancelled.
+2. Paid ladder under 128 at registration close (seeded) → Playoffs tab shows
+   "This ladder was cancelled" with "Too few registrations".
+3. Once payments are built: assert the refund amounts above (with and without
+   the platform fee) through the payment provider's test mode, and that a
+   re-fired trigger never refunds twice.
+
 ## Ladder cancellation and playoffs
 
 Covered later by `maestro/seeds/seedLadderPlayoffs.js` (currently a stub):
