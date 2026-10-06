@@ -1,4 +1,4 @@
-import { LADDER_STATUS, notificationTypes } from "@shared";
+import { LADDER_MATCH_STATUS, LADDER_STATUS, notificationTypes } from "@shared";
 import type { Ladder, LadderMatch } from "@shared/types";
 
 // Once a ladder's registration has closed its entrants are fixed until the
@@ -35,5 +35,25 @@ export const teamHasCompletedLadderGame = (
         (game) =>
           game.approvalStatus === notificationTypes.RESPONSE.APPROVED_GAME,
       ),
+  );
+};
+
+const OPEN_MATCH_STATUSES: string[] = [
+  LADDER_MATCH_STATUS.POSTED,
+  LADDER_MATCH_STATUS.ACCEPTED,
+];
+
+// A posted or accepted match the team is in; it must be cancelled before the
+// team can disband.
+export const teamHasOpenLadderMatch = (
+  matches: Pick<LadderMatch, "participants" | "matchStatus">[],
+  playerIds: string[],
+): boolean => {
+  if (playerIds.length === 0) return false;
+  const memberIds = new Set(playerIds);
+  return matches.some(
+    (match) =>
+      OPEN_MATCH_STATUSES.includes(match.matchStatus) &&
+      (match.participants ?? []).some((id) => memberIds.has(id)),
   );
 };

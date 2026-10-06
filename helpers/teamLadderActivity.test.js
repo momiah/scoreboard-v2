@@ -1,8 +1,9 @@
-import { LADDER_STATUS } from "@shared/types";
+import { LADDER_MATCH_STATUS, LADDER_STATUS } from "@shared/types";
 import {
   isLadderFinished,
   isTeamLockedInLadder,
   teamHasCompletedLadderGame,
+  teamHasOpenLadderMatch,
 } from "./teamLadderActivity";
 
 describe("teamHasCompletedLadderGame", () => {
@@ -95,5 +96,50 @@ describe("isTeamLockedInLadder", () => {
       ]),
     ).toBe(true);
     expect(isTeamLockedInLadder([])).toBe(false);
+  });
+});
+
+describe("teamHasOpenLadderMatch", () => {
+  const teamIds = ["u1", "u2"];
+  const match = (matchStatus, participants) => ({ matchStatus, participants });
+
+  it("is true for a posted match the team is in", () => {
+    expect(
+      teamHasOpenLadderMatch(
+        [match(LADDER_MATCH_STATUS.POSTED, ["u1", "u2"])],
+        teamIds,
+      ),
+    ).toBe(true);
+  });
+
+  it("is true for an accepted match the team is in", () => {
+    expect(
+      teamHasOpenLadderMatch(
+        [match(LADDER_MATCH_STATUS.ACCEPTED, ["u3", "u4", "u2", "u1"])],
+        teamIds,
+      ),
+    ).toBe(true);
+  });
+
+  it("ignores cancelled, expired and completed matches", () => {
+    expect(
+      teamHasOpenLadderMatch(
+        [
+          match(LADDER_MATCH_STATUS.CANCELLED, ["u1", "u2"]),
+          match(LADDER_MATCH_STATUS.EXPIRED, ["u1", "u2"]),
+          match(LADDER_MATCH_STATUS.COMPLETED, ["u1", "u2"]),
+        ],
+        teamIds,
+      ),
+    ).toBe(false);
+  });
+
+  it("ignores other teams' open matches", () => {
+    expect(
+      teamHasOpenLadderMatch(
+        [match(LADDER_MATCH_STATUS.POSTED, ["u5", "u6"])],
+        teamIds,
+      ),
+    ).toBe(false);
   });
 });

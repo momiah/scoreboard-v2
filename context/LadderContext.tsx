@@ -81,6 +81,7 @@ import {
   isLadderFinished,
   isTeamLockedInLadder,
   teamHasCompletedLadderGame,
+  teamHasOpenLadderMatch,
 } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
@@ -91,6 +92,7 @@ import type {
   LadderJoinOutcome,
   JoinLadderAsTeamOutcome,
   DisbandTeamOutcome,
+  TeamLadderActivity,
   AcceptTeamJoinRequestOutcome,
   CreateTeamOutcome,
   CreateLadderMatchOutcome,
@@ -1044,17 +1046,27 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const isTeamActivelyPlaying = useCallback(
-    async (team: TeamStats, ladderIds?: string[]): Promise<boolean> => {
+  const getTeamLadderActivity = useCallback(
+    async (
+      team: TeamStats,
+      ladderIds?: string[],
+    ): Promise<TeamLadderActivity> => {
       const ids = ladderIds ?? team.ladderIds ?? [];
       const playerIds = teamMemberIds(team);
-      if (ids.length === 0 || playerIds.length === 0) return false;
+      if (ids.length === 0 || playerIds.length === 0) {
+        return { hasOpenMatch: false, hasCompletedGame: false };
+      }
       const matchLists = await Promise.all(
         ids.map((ladderId) => fetchLadderMatches(ladderId)),
       );
-      return matchLists.some((matches) =>
-        teamHasCompletedLadderGame(matches, playerIds),
-      );
+      return {
+        hasOpenMatch: matchLists.some((matches) =>
+          teamHasOpenLadderMatch(matches, playerIds),
+        ),
+        hasCompletedGame: matchLists.some((matches) =>
+          teamHasCompletedLadderGame(matches, playerIds),
+        ),
+      };
     },
     [fetchLadderMatches],
   );
@@ -1084,8 +1096,12 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         const activeLadderIds = ladders
           .filter((ladder) => !isLadderFinished(ladder))
           .map((ladder) => ladder.ladderId);
-        if (await isTeamActivelyPlaying(team, activeLadderIds)) {
+        const activity = await getTeamLadderActivity(team, activeLadderIds);
+        if (activity.hasCompletedGame) {
           return { success: false, activelyPlaying: true };
+        }
+        if (activity.hasOpenMatch) {
+          return { success: false, activelyPlaying: false, openMatch: true };
         }
         const batch = writeBatch(db);
         (team.ladderIds ?? []).forEach((ladderId) => {
@@ -1110,7 +1126,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, activelyPlaying: false };
       }
     },
-    [isTeamActivelyPlaying],
+    [getTeamLadderActivity],
   );
 
   const subscribeToLadderPlayoffTies = useCallback(
@@ -2039,7 +2055,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         subscribeToTeam,
         updateTeamProfilePic,
         updateTeamDetails,
-        isTeamActivelyPlaying,
+        getTeamLadderActivity,
         disbandTeam,
         acceptTeamInvite,
         declineTeamInvite,

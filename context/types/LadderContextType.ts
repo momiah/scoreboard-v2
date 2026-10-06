@@ -40,6 +40,12 @@ export interface DisbandTeamOutcome {
   success: boolean;
   activelyPlaying: boolean;
   registrationClosed?: boolean;
+  openMatch?: boolean;
+}
+
+export interface TeamLadderActivity {
+  hasOpenMatch: boolean;
+  hasCompletedGame: boolean;
 }
 
 export interface AcceptTeamJoinRequestOutcome {
@@ -160,10 +166,10 @@ export interface LadderContextType {
     teamId: string,
     updates: { teamName?: string; teamProfilePic?: string },
   ) => Promise<boolean>;
-  isTeamActivelyPlaying: (
+  getTeamLadderActivity: (
     team: TeamStats,
     ladderIds?: string[],
-  ) => Promise<boolean>;
+  ) => Promise<TeamLadderActivity>;
   disbandTeam: (team: TeamStats) => Promise<DisbandTeamOutcome>;
   acceptTeamInvite: (teamId: string) => Promise<boolean>;
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
