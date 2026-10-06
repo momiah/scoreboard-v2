@@ -46,10 +46,3 @@ merged (the pinned commit must exist on `main` first).
 - No explanatory code comments unless they are load-bearing or marking a stub.
 - Naming: use `user` for the current user and `opponent` for the other
   player/team. Do not use `me`/`mine` or `them`/`theirs`.
-
-## Firestore security rules
-
-Before any security-rules work, read `docs/firestore-access-requirements.md`:
-it lists every client write (app and website) the rules must keep allowing,
-with who may write which fields. When a feature adds a new client write to
-Firestore, add a row there in the same change.
