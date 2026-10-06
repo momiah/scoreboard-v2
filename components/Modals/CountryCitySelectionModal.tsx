@@ -78,6 +78,7 @@ export const CountrySelector = ({
 
   const renderItem: ListRenderItem<LocationOption> = ({ item }) => (
     <LocationItem
+      testID={`country-option-${item.key}`}
       onPress={() => {
         onSelect(item);
         setSearch("");
@@ -112,6 +113,7 @@ export const CountrySelector = ({
           </Header>
 
           <SearchInput
+            testID="country-search-input"
             placeholder="Search countries..."
             placeholderTextColor="#999"
             value={search}
@@ -208,6 +210,7 @@ export const CitySelector = ({
 
   const renderItem: ListRenderItem<LocationOption> = ({ item }) => (
     <LocationItem
+      testID={`city-option-${item.value}`}
       onPress={() => {
         onSelect(item);
         setSearch("");
@@ -237,6 +240,7 @@ export const CitySelector = ({
           </Header>
 
           <SearchInput
+            testID="city-search-input"
             placeholder="Search cities..."
             placeholderTextColor="#999"
             value={search}

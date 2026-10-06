@@ -94,6 +94,7 @@ const AddCourtModal = ({
 
                 <Label>Court Name</Label>
                 <Input
+                  testID="add-court-name-input"
                   value={courtDetails.courtName}
                   onChangeText={(v) => handleChange("courtName", v)}
                   autoCorrect={false}
@@ -102,7 +103,10 @@ const AddCourtModal = ({
                   spellCheck={false}
                 />
                 <Label>Country / City</Label>
-                <LocationButton onPress={() => setShowCountrySelector(true)}>
+                <LocationButton
+                  testID="add-court-country-city-button"
+                  onPress={() => setShowCountrySelector(true)}
+                >
                   <LocationButtonText
                     selected={
                       !!(
@@ -119,6 +123,7 @@ const AddCourtModal = ({
                 </LocationButton>
                 <Label>Post Code/ ZIP Code</Label>
                 <Input
+                  testID="add-court-postcode-input"
                   value={courtDetails.location.postCode}
                   onChangeText={(v) =>
                     handleChange("location", {
@@ -129,6 +134,7 @@ const AddCourtModal = ({
                 />
                 <Label>Address</Label>
                 <Input
+                  testID="add-court-address-input"
                   value={courtDetails.location.address}
                   onChangeText={(v) =>
                     handleChange("location", {
@@ -157,10 +163,11 @@ const AddCourtModal = ({
                   </DisclaimerText>
                 </View>
                 <ButtonContainer>
-                  <CancelButton onPress={onClose}>
+                  <CancelButton testID="add-court-cancel" onPress={onClose}>
                     <CancelText>Cancel</CancelText>
                   </CancelButton>
                   <CreateButton
+                    testID="add-court-submit"
                     disabled={!allFieldsFilled}
                     onPress={handleAddCourt}
                   >

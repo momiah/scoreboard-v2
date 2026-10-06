@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Dimensions,
   Modal,
@@ -23,7 +17,6 @@ import {
   LADDER_MATCH_BEST_OF_OPTIONS,
   SHUTTLE_TYPE,
   PLATFORM_FEE,
-  COMPETITION_TYPES,
   LADDER_TYPE,
   TEAM_STATUS,
 } from "@shared";
@@ -39,11 +32,8 @@ import type {
 import DatePicker from "../DatePicker";
 import OptionSelector from "../OptionSelector";
 import SearchCourt from "./SearchLocationModal";
-import type { CourtDetails, CourtListItem } from "./SearchLocationModal";
 import LadderTermsModal from "./LadderTermsModal";
-import { formatCourtDetailsForList } from "../../helpers/formatCourtDetails";
 import { LadderContext } from "../../context/LadderContext";
-import { LeagueContext } from "../../context/LeagueContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { toMoment } from "../../helpers/ladderPhases";
@@ -54,6 +44,10 @@ import {
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
+import {
+  COURT_SUBMITTED_MESSAGE,
+  useLadderCourts,
+} from "../../hooks/useLadderCourts";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -93,13 +87,18 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   setModalVisible,
   ladder,
 }) => {
-  const { createLadderMatch, addCourtToLadder, fetchUserTeams } =
-    useContext(LadderContext);
-  const { getCourts, addCourt } = useContext(LeagueContext);
+  const { createLadderMatch, fetchUserTeams } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
+  const {
+    courtsList,
+    courtsLoading,
+    findSelectableCourt,
+    submitCourt,
+    applyCourts,
+    getCourts,
+  } = useLadderCourts(ladder, modalVisible);
 
-  const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
   const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -141,9 +140,6 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     };
   }, [modalVisible, isDoubles, currentUser?.userId, ladder.ladderId, fetchUserTeams]);
 
-  const allowedCourtIdsRef = useRef<string[]>([]);
-  const courtsRef = useRef<Court[]>([]);
-
   const {
     control,
     handleSubmit,
@@ -164,61 +160,10 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const startDate = watch("startDate");
   const startTime = watch("startTime");
 
-  useEffect(() => {
-    allowedCourtIdsRef.current = ladder.courtIds ? [...ladder.courtIds] : [];
-  }, [ladder.courtIds]);
-
-  const applyLadderCourts = useCallback((allCourts: Court[]): Court[] => {
-    const ladderCourts = allCourts.filter((court) =>
-      allowedCourtIdsRef.current.includes(court.courtId),
-    );
-    courtsRef.current = ladderCourts;
-    setCourtsList(formatCourtDetailsForList(ladderCourts));
-    return ladderCourts;
-  }, []);
-
-  useEffect(() => {
-    if (!modalVisible) return;
-    let active = true;
-    const loadCourts = async () => {
-      try {
-        const allCourts = await getCourts();
-        if (active) applyLadderCourts(allCourts);
-      } catch (error) {
-        console.error("Error loading ladder courts:", error);
-        if (active) {
-          courtsRef.current = [];
-          setCourtsList([]);
-        }
-      }
-    };
-    loadCourts();
-    return () => {
-      active = false;
-    };
-  }, [modalVisible, getCourts, applyLadderCourts]);
-
   const handleCourtSelect = (value: string) => {
-    const court = courtsRef.current.find((c) => c.courtName.trim() === value);
-    setSelectedCourt(court ?? null);
+    const court = findSelectableCourt(value);
+    setSelectedCourt(court);
     if (court) setErrorMessage(null);
-  };
-
-  const handleAddCourt = async (
-    courtDetails: CourtDetails,
-  ): Promise<string | null> => {
-    const payload = {
-      ...(courtDetails as Court),
-      submittedBy: currentUser?.userId ?? "",
-      submittedVia: COMPETITION_TYPES.LADDER,
-      verified: false,
-    };
-    const newCourtId = await addCourt(payload);
-    if (newCourtId) {
-      allowedCourtIdsRef.current = [...allowedCourtIdsRef.current, newCourtId];
-      await addCourtToLadder(ladder.ladderId, newCourtId);
-    }
-    return newCourtId;
   };
 
   const resetAndClose = () => {
@@ -534,12 +479,12 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
           selectedCourtKey={selectedCourt?.courtId}
           onSelectCourt={handleCourtSelect}
           getCourts={getCourts}
-          addCourt={handleAddCourt}
-          onCourtsRefreshed={(rawCourtData: Court[]) =>
-            applyLadderCourts(rawCourtData)
-          }
+          addCourt={submitCourt}
+          onCourtsRefreshed={applyCourts}
           showCountryIcon={false}
-          highlightUnverified
+          selectAddedCourt={false}
+          addCourtSuccessMessage={COURT_SUBMITTED_MESSAGE}
+          loading={courtsLoading}
         />
       )}
 

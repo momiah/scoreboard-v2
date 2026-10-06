@@ -1,5 +1,5 @@
-import React from "react";
-import { Alert, Text, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { Alert, Pressable, Text, TouchableOpacity } from "react-native";
 import type { UserProfile } from "@shared/types";
 import {
   seedRejectGameFlow,
@@ -18,9 +18,45 @@ import { mockRequestMoreEvidence } from "./seeds/mockRequestMoreEvidence";
 import { cleanupLadderTestData } from "./seeds/cleanupLadderTestData";
 import { seedAddApproveGameFlow } from "./seeds/seedAddApproveGameFlow";
 import { seedAddApproveGameFlowDoubles } from "./seeds/seedAddApproveGameFlowDoubles";
+import { seedHomeCourtFlow } from "./seeds/seedHomeCourtFlow";
+import { seedHomeCourtFlowDoubles } from "./seeds/seedHomeCourtFlowDoubles";
+import {
+  findOwnPendingCourtId,
+  mockApproveCourtSubmission,
+  mockRejectCourtSubmission,
+} from "./seeds/mockCourtSubmissionReview";
+import { mockPartnerSetHomeCourt } from "./seeds/mockPartnerSetHomeCourt";
+import {
+  HOME_COURT_VARIANT,
+  MAESTRO_HC_COURT_A_SINGLES_ID,
+  MAESTRO_HC_COURT_B_ID,
+  MAESTRO_HC_COURT_D_ID,
+  MAESTRO_HC_DOUBLES_LADDER_ID,
+  MAESTRO_HC_EXTRA_COURT_COUNT,
+  MAESTRO_HC_LADDER_ID,
+  MAESTRO_HC_NEW_SUBMISSION_NAME,
+} from "./seeds/homeCourtFixtures";
 
-const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => (
+const UNLOCK_TAPS = 5;
+
+const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
   <>
+    <TouchableOpacity
+      testID="maestro-cleanup-ladder-test-data"
+      onPress={async () => {
+        try {
+          const outcome = await cleanupLadderTestData({
+            testUser: currentUser as never,
+          });
+          Alert.alert("Cleaned up", JSON.stringify(outcome));
+        } catch (error) {
+          Alert.alert("Cleanup failed", String(error));
+        }
+      }}
+    >
+      <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
+    </TouchableOpacity>
+
     <TouchableOpacity
       testID="maestro-seed-reject-game-flow"
       onPress={async () => {
@@ -371,22 +407,179 @@ const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => (
       </TouchableOpacity>
     ))}
 
-    <TouchableOpacity
-      testID="maestro-cleanup-ladder-test-data"
-      onPress={async () => {
-        try {
-          const outcome = await cleanupLadderTestData({
-            testUser: currentUser as never,
-          });
-          Alert.alert("Cleaned up", JSON.stringify(outcome));
-        } catch (error) {
-          Alert.alert("Cleanup failed", String(error));
-        }
-      }}
-    >
-      <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
-    </TouchableOpacity>
+    {[
+      {
+        id: "maestro-seed-home-court-flow",
+        label: "Seed Home Court Flow",
+        title: "Seeded",
+        run: () => seedHomeCourtFlow({ testUser: currentUser }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-set",
+        label: "Seed Home Court Flow (Home Court Set)",
+        title: "Seeded",
+        run: () =>
+          seedHomeCourtFlow({
+            testUser: currentUser,
+            homeCourt: HOME_COURT_VARIANT.SET,
+          }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-change-used",
+        label: "Seed Home Court Flow (Change Used)",
+        title: "Seeded",
+        run: () =>
+          seedHomeCourtFlow({
+            testUser: currentUser,
+            homeCourt: HOME_COURT_VARIANT.CHANGE_USED,
+          }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-large-ladder",
+        label: "Seed Home Court Flow (80 Extra Ladder Courts)",
+        title: "Seeded",
+        run: () =>
+          seedHomeCourtFlow({
+            testUser: currentUser,
+            extraLadderCourts: MAESTRO_HC_EXTRA_COURT_COUNT,
+          }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-doubles",
+        label: "Seed Home Court Flow (Doubles)",
+        title: "Seeded",
+        run: () => seedHomeCourtFlowDoubles({ testUser: currentUser }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-doubles-set",
+        label: "Seed Home Court Flow (Doubles, Home Court Set)",
+        title: "Seeded",
+        run: () =>
+          seedHomeCourtFlowDoubles({
+            testUser: currentUser,
+            homeCourt: HOME_COURT_VARIANT.SET,
+          }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-doubles-change-used",
+        label: "Seed Home Court Flow (Doubles, Change Used)",
+        title: "Seeded",
+        run: () =>
+          seedHomeCourtFlowDoubles({
+            testUser: currentUser,
+            homeCourt: HOME_COURT_VARIANT.CHANGE_USED,
+          }),
+      },
+      {
+        id: "maestro-mock-approve-court-submission",
+        label: "Mock Approve Court Submission",
+        title: "Mocked",
+        run: () =>
+          mockApproveCourtSubmission({
+            courtId: MAESTRO_HC_COURT_A_SINGLES_ID,
+            actorUserId: currentUser.userId,
+          }),
+      },
+      {
+        id: "maestro-mock-reject-court-submission",
+        label: "Mock Reject Court Submission",
+        title: "Mocked",
+        run: () =>
+          mockRejectCourtSubmission({
+            courtId: MAESTRO_HC_COURT_A_SINGLES_ID,
+          }),
+      },
+      ...[
+        { suffix: "", ladderId: MAESTRO_HC_LADDER_ID, label: "" },
+        {
+          suffix: "-doubles",
+          ladderId: MAESTRO_HC_DOUBLES_LADDER_ID,
+          label: " (Doubles)",
+        },
+      ].flatMap(({ suffix, ladderId, label }) => [
+        {
+          id: `maestro-mock-approve-new-submission${suffix}`,
+          label: `Mock Approve My New Court Submission${label}`,
+          title: "Mocked",
+          run: async () =>
+            mockApproveCourtSubmission({
+              courtId: await findOwnPendingCourtId({
+                userId: currentUser.userId,
+                ladderId,
+                courtName: MAESTRO_HC_NEW_SUBMISSION_NAME,
+              }),
+              actorUserId: currentUser.userId,
+            }),
+        },
+        {
+          id: `maestro-mock-reject-new-submission${suffix}`,
+          label: `Mock Reject My New Court Submission${label}`,
+          title: "Mocked",
+          run: async () =>
+            mockRejectCourtSubmission({
+              courtId: await findOwnPendingCourtId({
+                userId: currentUser.userId,
+                ladderId,
+                courtName: MAESTRO_HC_NEW_SUBMISSION_NAME,
+              }),
+            }),
+        },
+      ]),
+      {
+        id: "maestro-mock-partner-set-home-court-b",
+        label: "Mock Partner Sets Home Court (B)",
+        title: "Mocked",
+        run: () =>
+          mockPartnerSetHomeCourt({
+            testUser: currentUser,
+            courtId: MAESTRO_HC_COURT_B_ID,
+          }),
+      },
+      {
+        id: "maestro-mock-partner-set-home-court-d",
+        label: "Mock Partner Sets Home Court (D)",
+        title: "Mocked",
+        run: () =>
+          mockPartnerSetHomeCourt({
+            testUser: currentUser,
+            courtId: MAESTRO_HC_COURT_D_ID,
+          }),
+      },
+    ].map(({ id, label, title, run }) => (
+      <TouchableOpacity
+        key={id}
+        testID={id}
+        onPress={async () => {
+          try {
+            const outcome = await run();
+            Alert.alert(title, JSON.stringify(outcome));
+          } catch (error) {
+            Alert.alert(`${title} failed`, String(error));
+          }
+        }}
+      >
+        <Text style={{ color: "white" }}>{label}</Text>
+      </TouchableOpacity>
+    ))}
   </>
 );
+
+const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => {
+  const [taps, setTaps] = useState(0);
+
+  return (
+    <>
+      <Pressable
+        testID="maestro-harness-unlock"
+        accessibilityLabel="maestro-harness-unlock"
+        style={{ height: 24 }}
+        onPress={() => setTaps((count) => count + 1)}
+      />
+      {taps >= UNLOCK_TAPS ? (
+        <HarnessButtons currentUser={currentUser} />
+      ) : null}
+    </>
+  );
+};
 
 export default MaestroHarness;
