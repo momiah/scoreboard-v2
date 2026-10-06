@@ -47,12 +47,12 @@ const courts = [
 
 describe("buildLadderCourtList", () => {
   it("only lets verified ladder courts be selected", () => {
-    const { selectable } = buildLadderCourtList(courts, ladder, "u1");
+    const { selectable } = buildLadderCourtList(courts, ladder, ["u1"]);
     expect(selectable.map((c) => c.courtId)).toEqual(["verified-in"]);
   });
 
   it("lists pending submissions for this ladder as awaiting verification", () => {
-    const { items } = buildLadderCourtList(courts, ladder, "u1");
+    const { items } = buildLadderCourtList(courts, ladder, ["u1"]);
     expect(items.map((i) => [i.key, !!i.awaitingVerification])).toEqual([
       ["verified-in", false],
       ["pending-mine", true],
@@ -60,14 +60,20 @@ describe("buildLadderCourtList", () => {
     ]);
   });
 
+  it("pins a submission from any of the given submitters, such as a team mate", () => {
+    const { items } = buildLadderCourtList(courts, ladder, ["u1", "u2"]);
+    const pinned = items.filter((i) => i.pinned).map((i) => i.key);
+    expect(pinned).toEqual(["pending-mine", "pending-other"]);
+  });
+
   it("pins only the current user's own pending submissions", () => {
-    const { items } = buildLadderCourtList(courts, ladder, "u1");
+    const { items } = buildLadderCourtList(courts, ladder, ["u1"]);
     const pinned = items.filter((i) => i.pinned).map((i) => i.key);
     expect(pinned).toEqual(["pending-mine"]);
   });
 
   it("pins nothing when signed out", () => {
-    const { items } = buildLadderCourtList(courts, ladder, undefined);
+    const { items } = buildLadderCourtList(courts, ladder, []);
     expect(items.some((i) => i.pinned)).toBe(false);
   });
 });

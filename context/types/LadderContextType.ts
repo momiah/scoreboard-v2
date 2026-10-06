@@ -164,6 +164,10 @@ export interface LadderContextType {
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;
   fetchUserTeams: (userId: string) => Promise<TeamStats[]>;
+  fetchLadderTeamMemberIds: (
+    ladderId: string,
+    userId: string,
+  ) => Promise<string[]>;
   fetchLadderMemberIds: (ladderId: string) => Promise<string[]>;
   joinLadderAsTeam: (
     ladderId: string,

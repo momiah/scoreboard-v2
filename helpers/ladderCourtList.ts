@@ -9,7 +9,7 @@ import { formatCourtDetailsForList } from "./formatCourtDetails";
 export const buildLadderCourtList = (
   allCourts: Court[],
   ladder: Pick<Ladder, "ladderId" | "courtIds">,
-  userId: string | undefined,
+  pinnedSubmitterIds: string[],
 ): { selectable: Court[]; items: CourtListItem[] } => {
   const selectable = allCourts.filter((court) =>
     isSelectableLadderCourt(court, ladder.courtIds),
@@ -24,7 +24,9 @@ export const buildLadderCourtList = (
       ...formatCourtDetailsForList(pending).map((item, index) => ({
         ...item,
         awaitingVerification: true,
-        pinned: !!userId && pending[index].submission?.submittedBy === userId,
+        pinned: pinnedSubmitterIds.includes(
+          pending[index].submission?.submittedBy ?? "",
+        ),
       })),
     ],
   };

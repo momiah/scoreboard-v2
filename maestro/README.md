@@ -6,7 +6,10 @@ imported by app code except `screens/Home/Home.tsx`, which loads
 bundled into a release build.
 
 - `MaestroHarness.tsx` — the test-only buttons the flows tap (seed, mock
-  resolve/request evidence, cleanup). Each button has a `maestro-*` testID.
+  resolve/request evidence, cleanup). Each button has a `maestro-*` testID. The
+  buttons are hidden until a transparent strip at the top of the harness
+  (`maestro-harness-unlock`) is tapped five times; `.maestro/login.yaml` does
+  this for every flow, so normal dev use sees a clean Home screen.
 - `seeds/` — client-SDK seed and cleanup helpers. Every seed has a matching
   delete, keyed on the same hardcoded fixture ids, via
   `seeds/cleanupLadderTestData.js`.

@@ -16,6 +16,7 @@ import { Court } from "@shared/types";
 import Icon from "react-native-ico-flags";
 import AddCourtModal from "./AddCourtModal";
 import { SkeletonWrapper } from "../Skeletons/SkeletonComponents";
+import BottomToast from "../Toasts/BottomToast";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -50,6 +51,7 @@ interface SearchCourtProps {
   showCountryIcon?: boolean;
   selectAddedCourt?: boolean;
   emptyListMessage?: string;
+  addCourtSuccessMessage?: string;
   loading?: boolean;
 }
 
@@ -65,10 +67,12 @@ const SearchCourt = ({
   showCountryIcon = true,
   selectAddedCourt = true,
   emptyListMessage,
+  addCourtSuccessMessage,
   loading = false,
 }: SearchCourtProps) => {
   const [search, setSearch] = useState("");
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+  const [successToastVisible, setSuccessToastVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState<CourtDetails>(courtSchema);
 
   useEffect(() => {
@@ -125,7 +129,10 @@ const SearchCourt = ({
     ({ item }) => {
       if (item.key === ADD_COURT_KEY) {
         return (
-          <AddCourtItem onPress={() => setShowAddCourtModal(true)}>
+          <AddCourtItem
+            testID="search-court-add"
+            onPress={() => setShowAddCourtModal(true)}
+          >
             <AntDesign name="plus-circle" size={18} color="#00A2FF" />
             <AddCourtText>Add Court</AddCourtText>
           </AddCourtItem>
@@ -140,7 +147,11 @@ const SearchCourt = ({
           disabled={isAwaiting}
           style={isAwaiting ? { opacity: 0.5 } : undefined}
           onPress={() => handleSelect(item.value)}
-          testID={isAwaiting ? `search-court-awaiting-${item.key}` : undefined}
+          testID={
+            isAwaiting
+              ? `search-court-awaiting-${item.key}`
+              : `search-court-option-${item.key}`
+          }
         >
           <CourtTextWrap>
             <CourtName isSelected={isSelected}>{item.value}</CourtName>
@@ -180,6 +191,7 @@ const SearchCourt = ({
           <Header>
             <ModalTitle>Select Court</ModalTitle>
             <TouchableOpacity
+              testID="search-court-close"
               onPress={onClose}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -239,12 +251,21 @@ const SearchCourt = ({
             onClose={() => setShowAddCourtModal(false)}
             addCourt={addCourt}
             onCourtAdded={async (newCourt: CourtDetails) => {
+              if (addCourtSuccessMessage) setSuccessToastVisible(true);
               const courtData = await getCourts();
               onCourtsRefreshed(courtData);
               if (selectAddedCourt) handleSelect(newCourt.courtName);
             }}
           />
         )}
+
+        {addCourtSuccessMessage ? (
+          <BottomToast
+            visible={successToastVisible}
+            message={addCourtSuccessMessage}
+            onHide={() => setSuccessToastVisible(false)}
+          />
+        ) : null}
       </ModalContainer>
     </Modal>
   );

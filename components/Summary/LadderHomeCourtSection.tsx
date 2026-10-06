@@ -5,7 +5,10 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import type { Court, Ladder } from "@shared/types";
 import type { LadderHomeCourt } from "../../helpers/ladderHomeCourt";
 import SearchCourt from "../Modals/SearchLocationModal";
-import { useLadderCourts } from "../../hooks/useLadderCourts";
+import {
+  COURT_SUBMITTED_MESSAGE,
+  useLadderCourts,
+} from "../../hooks/useLadderCourts";
 
 export const NO_COURTS_MESSAGE =
   "No verified courts in this ladder yet. Add your court below and it will appear here once approved.";
@@ -89,6 +92,7 @@ const LadderHomeCourtSection: React.FC<LadderHomeCourtSectionProps> = ({
           onCourtsRefreshed={applyCourts}
           showCountryIcon={false}
           selectAddedCourt={false}
+          addCourtSuccessMessage={COURT_SUBMITTED_MESSAGE}
           loading={courtsLoading}
           emptyListMessage={NO_COURTS_MESSAGE}
         />

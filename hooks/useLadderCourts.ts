@@ -1,16 +1,19 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
-import { COMPETITION_TYPES } from "@shared";
+import { COMPETITION_TYPES, LADDER_TYPE } from "@shared";
 import { buildLadderCourtSubmission } from "@shared/helpers";
 import type { Court, Ladder } from "@shared/types";
 import type {
   CourtDetails,
   CourtListItem,
 } from "../components/Modals/SearchLocationModal";
+import { LadderContext } from "../context/LadderContext";
 import { LeagueContext } from "../context/LeagueContext";
 import { UserContext } from "../context/UserContext";
-import { PopupContext } from "../context/PopupContext";
 import { buildLadderCourtList } from "../helpers/ladderCourtList";
+
+export const COURT_SUBMITTED_MESSAGE =
+  "Court sent for approval. You'll be notified once it's verified.";
 
 interface UseLadderCourtsResult {
   courtsList: CourtListItem[];
@@ -22,25 +25,28 @@ interface UseLadderCourtsResult {
 }
 
 export const useLadderCourts = (
-  ladder: Pick<Ladder, "ladderId" | "name" | "courtIds">,
+  ladder: Pick<Ladder, "ladderId" | "ladderType" | "name" | "courtIds">,
   visible: boolean,
 ): UseLadderCourtsResult => {
   const { getCourts, addCourt } = useContext(LeagueContext);
+  const { fetchLadderTeamMemberIds } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
-  const { showBottomToast } = useContext(PopupContext);
 
   const [courtsList, setCourtsList] = useState<CourtListItem[]>([]);
   const [courtsLoading, setCourtsLoading] = useState(true);
   const selectableRef = useRef<Court[]>([]);
+  const allCourtsRef = useRef<Court[] | null>(null);
+  const teamMemberIdsRef = useRef<string[] | null>(null);
 
   const userId = currentUser?.userId;
 
   const applyCourts = useCallback(
     (allCourts: Court[]) => {
+      allCourtsRef.current = allCourts;
       const { selectable, items } = buildLadderCourtList(
         allCourts,
         { ladderId: ladder.ladderId, courtIds: ladder.courtIds },
-        userId,
+        teamMemberIdsRef.current ?? (userId ? [userId] : []),
       );
       selectableRef.current = selectable;
       setCourtsList(items);
@@ -48,13 +54,28 @@ export const useLadderCourts = (
     [ladder.courtIds, ladder.ladderId, userId],
   );
 
+  const getCourtsRef = useRef(getCourts);
+  getCourtsRef.current = getCourts;
+  const applyCourtsRef = useRef(applyCourts);
+  applyCourtsRef.current = applyCourts;
+  const fetchTeamMemberIdsRef = useRef(fetchLadderTeamMemberIds);
+  fetchTeamMemberIdsRef.current = fetchLadderTeamMemberIds;
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+  const ladderId = ladder.ladderId;
+
   useEffect(() => {
     if (!visible) return;
     let active = true;
     setCourtsLoading(true);
-    getCourts()
-      .then((allCourts: Court[]) => {
-        if (active) applyCourts(allCourts);
+    const teamMemberIds =
+      isDoubles && userId
+        ? fetchTeamMemberIdsRef.current(ladderId, userId).catch(() => null)
+        : Promise.resolve<string[] | null>(null);
+    Promise.all([getCourtsRef.current(), teamMemberIds])
+      .then(([allCourts, memberIds]) => {
+        if (!active) return;
+        teamMemberIdsRef.current = memberIds;
+        applyCourtsRef.current(allCourts);
       })
       .catch((error: unknown) => {
         console.error("Error loading ladder courts:", error);
@@ -69,7 +90,11 @@ export const useLadderCourts = (
     return () => {
       active = false;
     };
-  }, [visible, getCourts, applyCourts]);
+  }, [visible, isDoubles, ladderId, userId]);
+
+  useEffect(() => {
+    if (allCourtsRef.current) applyCourts(allCourtsRef.current);
+  }, [applyCourts]);
 
   const findSelectableCourt = useCallback(
     (courtName: string): Court | null =>
@@ -92,22 +117,9 @@ export const useLadderCourts = (
           ladderName: ladder.name,
         }),
       });
-      if (newCourtId) {
-        showBottomToast(
-          "Court sent for approval. You'll be notified once it's verified.",
-          "success",
-        );
-      }
       return newCourtId;
     },
-    [
-      addCourt,
-      userId,
-      currentUser?.username,
-      ladder.ladderId,
-      ladder.name,
-      showBottomToast,
-    ],
+    [addCourt, userId, currentUser?.username, ladder.ladderId, ladder.name],
   );
 
   return {

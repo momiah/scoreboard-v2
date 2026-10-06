@@ -638,6 +638,35 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const fetchLadderTeamMemberIds = useCallback(
+    async (ladderId: string, userId: string): Promise<string[]> => {
+      if (!ladderId || !userId) return [];
+      try {
+        const teamSnap = await getDocs(
+          query(
+            collection(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+            ),
+            where("playerIds", "array-contains", userId),
+            limit(1),
+          ),
+        );
+        if (teamSnap.empty) return [userId];
+        const playerIds = teamSnap.docs[0].data().playerIds as
+          | string[]
+          | undefined;
+        return playerIds?.length ? playerIds : [userId];
+      } catch (error) {
+        console.error("Error fetching ladder team members:", error);
+        return [userId];
+      }
+    },
+    [],
+  );
+
   const fetchLadderMemberIds = useCallback(
     async (ladderId: string): Promise<string[]> => {
       if (!ladderId) return [];
@@ -1947,6 +1976,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         declineTeamInvite,
         fetchTeam,
         fetchUserTeams,
+        fetchLadderTeamMemberIds,
         fetchLadderMemberIds,
         joinLadderAsTeam,
         createLadderMatch,

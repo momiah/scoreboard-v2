@@ -29,7 +29,10 @@ import AcceptLadderMatchModal from "../../../../components/Modals/AcceptLadderMa
 import MatchCard from "../../../../components/ladder/MatchCard";
 import SearchCourt from "../../../../components/Modals/SearchLocationModal";
 import { NO_COURTS_MESSAGE } from "../../../../components/Summary/LadderHomeCourtSection";
-import { useLadderCourts } from "../../../../hooks/useLadderCourts";
+import {
+  COURT_SUBMITTED_MESSAGE,
+  useLadderCourts,
+} from "../../../../hooks/useLadderCourts";
 import InfoModal from "../../../../components/Modals/InfoModal";
 import LineTabs from "../../../../components/LineTabs";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
@@ -317,6 +320,7 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
           onCourtsRefreshed={ladderCourts.applyCourts}
           showCountryIcon={false}
           selectAddedCourt={false}
+          addCourtSuccessMessage={COURT_SUBMITTED_MESSAGE}
           loading={ladderCourts.courtsLoading}
           emptyListMessage={NO_COURTS_MESSAGE}
         />
