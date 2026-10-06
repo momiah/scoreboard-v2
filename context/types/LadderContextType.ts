@@ -2,6 +2,7 @@ import type { LadderHomeCourtState } from "../../helpers/ladderHomeCourt";
 import type {
   Court,
   Ladder,
+  LadderPlayoffTie,
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
@@ -237,6 +238,11 @@ export interface LadderContextType {
     userId: string;
     approver: { userId: string; username: string };
   }) => Promise<ApproveLadderGameOutcome>;
+  subscribeToLadderPlayoffTies: (
+    ladderId: string,
+    onUpdate: (ties: LadderPlayoffTie[]) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
   subscribeToLadderHomeCourt: (
     ladder: Pick<Ladder, "ladderId" | "ladderType">,
     userId: string,

@@ -35,10 +35,24 @@ Rules the app enforces in a transaction that rules should also enforce:
 decrease. The ladder playoffs Cloud Function reads `homeCourt` for round-1
 pairing, so a player must not be able to set an arbitrary location.
 
-## Ladder playoffs (planned)
+## Ladder joining
 
-Bracket documents (`ladders/{ladderId}/playoffTies`) and the ladder's
-`status` / `playoffsGeneratedAt` / `playoffBracketSize` / `playoffEntrantCount`
-are written only by the `processLadderPhases` Cloud Function. Clients must not
-be able to create or edit them, or set a ladder's status. Payout must never
-depend on client-written data.
+| Path | Writer | Operation | Fields / conditions |
+|---|---|---|---|
+| `ladders/{ladderId}/ladderParticipants/{userId}` | That player (singles) | create | Participant built by `buildLadderParticipant` plus `joinedAt` (join time; a playoff tiebreak, so it must not be editable afterwards). |
+| `ladders/{ladderId}/ladderTeams/{teamKey}` | A team member (doubles) | create | Team built by `createRootTeam` plus `joinedAt`, same rule. |
+
+## Ladder phases and playoffs
+
+Written only by the `processLadderPhases` Cloud Function (Admin SDK). Clients
+must not be able to:
+
+- set a ladder's `status`, `cancelledAt`, `cancelledReason`,
+  `playoffsGeneratedAt`, `playoffBracketSize` or `playoffEntrantCount`;
+- create, edit or delete anything under `ladders/{ladderId}/playoffTies`
+  (read-only for clients; the Playoffs tab listens to it);
+- edit the ranking inputs the bracket is built from (`competitionXP` / `XP`,
+  `numberOfWins`, `totalPointDifference`, `joinedAt`, `homeCourt`) outside the
+  existing game-scoring and home-court flows.
+
+Payout must never depend on client-written data.

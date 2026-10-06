@@ -40,6 +40,7 @@ import {
   LADDER_REPORT_COUNTS_COLLECTION,
   REPORT_STATUS,
   REPORT_REASONS,
+  LADDER_PLAYOFF_TIES_COLLECTION,
 } from "@shared";
 import {
   createRootTeam,
@@ -55,6 +56,7 @@ import type { LadderJoinUser } from "@shared/helpers";
 import type {
   Court,
   Ladder,
+  LadderPlayoffTie,
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
@@ -246,7 +248,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const batch = writeBatch(db);
-        batch.set(participantRef, buildLadderParticipant(user));
+        batch.set(participantRef, {
+          ...buildLadderParticipant(user),
+          joinedAt: new Date(),
+        });
         batch.update(ladderRef, { participantCount: increment(1) });
         await batch.commit();
 
@@ -338,7 +343,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         );
         const existing = await getDoc(teamRef);
         const batch = writeBatch(db);
-        batch.set(teamRef, team);
+        batch.set(teamRef, {
+          ...team,
+          joinedAt:
+            (existing.exists()
+              ? (existing.data() as TeamStats).joinedAt
+              : undefined) ?? new Date(),
+        });
         if (!existing.exists()) {
           batch.update(doc(db, LADDERS_COLLECTION, ladderId), {
             participantCount: increment(1),
@@ -1075,6 +1086,39 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     [isTeamActivelyPlaying],
+  );
+
+  const subscribeToLadderPlayoffTies = useCallback(
+    (
+      ladderId: string,
+      onUpdate: (ties: LadderPlayoffTie[]) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!ladderId) {
+        onUpdate([]);
+        return () => {};
+      }
+      return onSnapshot(
+        collection(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_PLAYOFF_TIES_COLLECTION,
+        ),
+        (snapshot) =>
+          onUpdate(
+            snapshot.docs.map(
+              (docSnap) =>
+                ({ ...docSnap.data(), tieId: docSnap.id }) as LadderPlayoffTie,
+            ),
+          ),
+        (error) => {
+          console.error("Error subscribing to ladder playoff ties:", error);
+          onError?.(error);
+        },
+      );
+    },
+    [],
   );
 
   const subscribeToLadderMatches = useCallback(
@@ -1992,6 +2036,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         cancelLadderMatch,
         approveLadderGame,
         subscribeToLadderHomeCourt,
+        subscribeToLadderPlayoffTies,
         setLadderHomeCourt,
       }}
     >

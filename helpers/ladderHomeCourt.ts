@@ -1,12 +1,8 @@
-import type { Court, CourtLocation } from "@shared/types";
+import { LADDER_HOME_COURT_MAX_CHANGES } from "@shared/types";
+import type { Court, LadderHomeCourt } from "@shared/types";
 
-export const LADDER_HOME_COURT_MAX_CHANGES = 1;
-
-export interface LadderHomeCourt {
-  courtId: string;
-  courtName: string;
-  location: CourtLocation;
-}
+export { LADDER_HOME_COURT_MAX_CHANGES };
+export type { LadderHomeCourt };
 
 export interface LadderHomeCourtState {
   homeCourt?: LadderHomeCourt | null;
