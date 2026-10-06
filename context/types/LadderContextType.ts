@@ -160,7 +160,10 @@ export interface LadderContextType {
     teamId: string,
     updates: { teamName?: string; teamProfilePic?: string },
   ) => Promise<boolean>;
-  isTeamActivelyPlaying: (team: TeamStats) => Promise<boolean>;
+  isTeamActivelyPlaying: (
+    team: TeamStats,
+    ladderIds?: string[],
+  ) => Promise<boolean>;
   disbandTeam: (team: TeamStats) => Promise<DisbandTeamOutcome>;
   acceptTeamInvite: (teamId: string) => Promise<boolean>;
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;

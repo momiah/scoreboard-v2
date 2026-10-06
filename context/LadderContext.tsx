@@ -78,8 +78,9 @@ import {
 } from "../helpers/ladderTeamMembership";
 import { addMember, removeMember } from "../helpers/teamRoster";
 import {
+  isLadderFinished,
   isTeamLockedInLadder,
-  teamHasLadderMatch,
+  teamHasCompletedLadderGame,
 } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { assertGameTransition } from "../helpers/assertGameTransition";
@@ -1044,15 +1045,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const isTeamActivelyPlaying = useCallback(
-    async (team: TeamStats): Promise<boolean> => {
-      const ladderIds = team.ladderIds ?? [];
+    async (team: TeamStats, ladderIds?: string[]): Promise<boolean> => {
+      const ids = ladderIds ?? team.ladderIds ?? [];
       const playerIds = teamMemberIds(team);
-      if (ladderIds.length === 0 || playerIds.length === 0) return false;
+      if (ids.length === 0 || playerIds.length === 0) return false;
       const matchLists = await Promise.all(
-        ladderIds.map((ladderId) => fetchLadderMatches(ladderId)),
+        ids.map((ladderId) => fetchLadderMatches(ladderId)),
       );
       return matchLists.some((matches) =>
-        teamHasLadderMatch(matches, playerIds),
+        teamHasCompletedLadderGame(matches, playerIds),
       );
     },
     [fetchLadderMatches],
@@ -1070,6 +1071,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         const ladders = ladderSnaps
           .filter((snap) => snap.exists())
           .map((snap) => ({
+            ladderId: snap.id,
             status: normalizeLadderStatus(snap.data()?.status),
           }));
         if (isTeamLockedInLadder(ladders)) {
@@ -1079,7 +1081,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             registrationClosed: true,
           };
         }
-        if (await isTeamActivelyPlaying(team)) {
+        const activeLadderIds = ladders
+          .filter((ladder) => !isLadderFinished(ladder))
+          .map((ladder) => ladder.ladderId);
+        if (await isTeamActivelyPlaying(team, activeLadderIds)) {
           return { success: false, activelyPlaying: true };
         }
         const batch = writeBatch(db);

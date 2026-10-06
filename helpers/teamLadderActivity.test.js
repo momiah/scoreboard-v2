@@ -1,38 +1,64 @@
 import { LADDER_STATUS } from "@shared/types";
-import { isTeamLockedInLadder, teamHasLadderMatch } from "./teamLadderActivity";
+import {
+  isLadderFinished,
+  isTeamLockedInLadder,
+  teamHasCompletedLadderGame,
+} from "./teamLadderActivity";
 
-const match = (participants) => ({ participants });
-
-describe("teamHasLadderMatch", () => {
+describe("teamHasCompletedLadderGame", () => {
   const teamIds = ["u1", "u2"];
+  const game = (approvalStatus) => ({ approvalStatus });
+  const match = (participants, games = []) => ({ participants, games });
 
-  it("is false when the team has no matches", () => {
-    expect(teamHasLadderMatch([], teamIds)).toBe(false);
+  it("is false with no matches", () => {
+    expect(teamHasCompletedLadderGame([], teamIds)).toBe(false);
   });
 
-  it("is false when matches involve neither member", () => {
+  it("is false for posted or accepted matches with no approved game", () => {
     expect(
-      teamHasLadderMatch([match(["u3", "u4", "u5", "u6"])], teamIds),
+      teamHasCompletedLadderGame(
+        [
+          match(["u1", "u2", "u3", "u4"]),
+          match(["u1", "u2", "u3", "u4"], [game("Pending"), game("Scheduled")]),
+        ],
+        teamIds,
+      ),
     ).toBe(false);
   });
 
-  it("is true for a posted/scheduled match involving the team", () => {
-    // Only the team's members so far (their posted match, not yet accepted).
-    expect(teamHasLadderMatch([match(["u1", "u2"])], teamIds)).toBe(true);
-  });
-
-  it("is true when a member appears alongside an opponent team", () => {
+  it("is true once one of the team's matches has an approved game", () => {
     expect(
-      teamHasLadderMatch([match(["u3", "u4", "u1", "u2"])], teamIds),
+      teamHasCompletedLadderGame(
+        [match(["u2", "u5", "u3", "u4"], [game("approved")])],
+        teamIds,
+      ),
     ).toBe(true);
   });
 
-  it("is true when only one member is present", () => {
-    expect(teamHasLadderMatch([match(["u1", "u3"])], teamIds)).toBe(true);
+  it("ignores approved games in other teams' matches", () => {
+    expect(
+      teamHasCompletedLadderGame(
+        [match(["u5", "u6", "u7", "u8"], [game("approved")])],
+        teamIds,
+      ),
+    ).toBe(false);
   });
 
-  it("guards empty player ids", () => {
-    expect(teamHasLadderMatch([match(["u1"])], [])).toBe(false);
+  it("is false with no members", () => {
+    expect(
+      teamHasCompletedLadderGame([match(["u1"], [game("approved")])], []),
+    ).toBe(false);
+  });
+});
+
+describe("isLadderFinished", () => {
+  it("is true only for completed or cancelled ladders", () => {
+    expect(isLadderFinished({ status: LADDER_STATUS.COMPLETED })).toBe(true);
+    expect(isLadderFinished({ status: LADDER_STATUS.CANCELLED })).toBe(true);
+    expect(isLadderFinished({ status: LADDER_STATUS.REGISTRATION_OPEN })).toBe(
+      false,
+    );
+    expect(isLadderFinished({ status: LADDER_STATUS.PLAYOFFS })).toBe(false);
   });
 });
 

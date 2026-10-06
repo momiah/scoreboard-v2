@@ -140,7 +140,7 @@ const TeamSettings: React.FC = () => {
       if (activelyPlaying) {
         Alert.alert(
           "Can't disband",
-          "This team has matches in a ladder. Teams can't be disbanded once they've started playing.",
+          "This team has completed a game in a ladder that's still running. It can be disbanded once that ladder is complete.",
         );
         return;
       }
