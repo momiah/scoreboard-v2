@@ -24,6 +24,7 @@ import type { LadderMatch, LadderType } from "@shared/types";
 import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
+import MatchCancellationBanner from "../../../components/ladder/MatchCancellationBanner";
 import GameLobby from "../../../components/ladder/GameLobby";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
@@ -155,6 +156,8 @@ const MatchDetails: React.FC = () => {
           testID="match-details-card"
         />
       </Header>
+
+      <MatchCancellationBanner ladderId={ladderId} match={match} userId={userId} />
 
       <Tabs>
         {TABS.map((tab) => (

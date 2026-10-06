@@ -23,6 +23,7 @@ import TeamDetails from "../components/Modals/TeamDetailsModal";
 import PlayerDetails from "../components/Modals/PlayerDetailsModal";
 import TeamSettings from "../screens/Home/Ladders/TeamSettings";
 import LadderMenu from "../screens/Home/Ladders/LadderMenu";
+import LadderPostedMatches from "../screens/Home/Ladders/LadderPostedMatches";
 import MatchDetailsMenu from "../screens/Home/Ladders/MatchDetailsMenu";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
@@ -89,6 +90,7 @@ const renderLadderScreens = () => (
     <Stack.Screen name="PlayerDetails" component={PlayerDetails} />
     <Stack.Screen name="TeamSettings" component={TeamSettings} />
     <Stack.Screen name="LadderMenu" component={LadderMenu} />
+    <Stack.Screen name="LadderPostedMatches" component={LadderPostedMatches} />
     <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
   </>
 );

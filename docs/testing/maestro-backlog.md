@@ -37,6 +37,40 @@ Flows to cover (singles has no leave option, so doubles only):
    (registration has closed).
 9. Ladder completed → Disband succeeds.
 
+## Match cancellation
+
+Helpers in `helpers/ladderMatchCancellation.ts`, UI via
+`hooks/useLadderMatchCancellation.ts`.
+
+- **Posted** match (nobody accepted): the poster or their partner cancels it
+  straight away from (a) the Matchmaking modal on their own match ("Cancel
+  Match"), (b) Ladder Menu → Current Posted Matches → Cancel, or (c) Match
+  Details → menu → Cancel Match.
+- **Accepted** match, no game reported: Cancel Match sends a cancellation
+  request. The opposing side gets a notification and a banner on Match Details
+  with Accept Cancellation / Decline. The requester's side sees "Waiting for
+  your opponent to respond". The requester's partner cannot respond.
+- Accept → match cancelled, requester's side notified, court fee refunded to
+  the accepter server-side. Decline → request cleared, requester's side
+  notified, match goes ahead (play it or face a no-show).
+- A reported game → "This match can no longer be cancelled".
+
+Flows to cover (singles and doubles):
+
+1. Post a match → open it in Matchmaking → Cancel Match → it disappears from
+   Matchmaking.
+2. Post a match → Ladder Menu → Current Posted Matches lists it live → Cancel →
+   it leaves the list and Matchmaking.
+3. Accepted match → poster requests → opponent sees the banner → Accept →
+   match cancelled for both; requester notified.
+4. Same, opponent Declines → banner clears; match still accepted; requester
+   notified.
+5. Doubles: requester's partner sees "Waiting…" (no Accept/Decline); either
+   opponent can respond.
+6. A second request while one is pending is refused ("Waiting for your
+   opponent").
+7. Game reported → Cancel Match shows "This match can no longer be cancelled".
+
 ## Ladder cancellation and playoffs
 
 Covered later by `maestro/seeds/seedLadderPlayoffs.js` (currently a stub):

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, Alert, Linking, StyleSheet } from "react-native";
+import { View, Linking, StyleSheet } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -13,7 +13,7 @@ import type { LadderMatch, LadderType } from "@shared/types";
 
 import { PopupContext } from "../../../context/PopupContext";
 import { UserContext } from "../../../context/UserContext";
-import { LadderContext } from "../../../context/LadderContext";
+import { useLadderMatchCancellation } from "../../../hooks/useLadderMatchCancellation";
 import ReportPlayerModal from "../../../components/Modals/ReportPlayerModal";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
@@ -71,7 +71,7 @@ const MatchDetailsMenu: React.FC = () => {
   const { ladderId, matchId, match } = route.params;
   const { showBottomToast } = useContext(PopupContext);
   const { currentUser } = useContext(UserContext);
-  const { cancelLadderMatch } = useContext(LadderContext);
+  const { startCancellation } = useLadderMatchCancellation();
   const [reportVisible, setReportVisible] = useState(false);
 
   const handleReschedule = () => {
@@ -79,38 +79,11 @@ const MatchDetailsMenu: React.FC = () => {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      "Cancel Match",
-      "Are you sure you want to cancel this match? This cannot be undone.",
-      [
-        { text: "Keep Match", style: "cancel" },
-        {
-          text: "Cancel Match",
-          style: "destructive",
-          onPress: async () => {
-            if (!currentUser?.userId) return;
-            const outcome = await cancelLadderMatch({
-              ladderId,
-              matchId,
-              userId: currentUser.userId,
-            });
-            if (outcome.success) {
-              showBottomToast("Match cancelled", "success");
-              navigation.goBack();
-              return;
-            }
-            showBottomToast(
-              outcome.reason === "not_cancellable"
-                ? "This match can no longer be cancelled"
-                : outcome.reason === "not_participant"
-                  ? "Only a player in this match can cancel it"
-                  : "Couldn't cancel the match. Please try again.",
-              "error",
-            );
-          },
-        },
-      ],
-    );
+    if (!match) {
+      showBottomToast("Open the match to cancel it", "info");
+      return;
+    }
+    startCancellation({ ladderId, match, onDone: () => navigation.goBack() });
   };
 
   const handleSupport = () => {

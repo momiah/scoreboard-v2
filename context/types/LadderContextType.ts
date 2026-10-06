@@ -87,6 +87,13 @@ export type CancelLadderMatchFailureReason =
   | "not_cancellable"
   | "error";
 
+export interface LadderMatchCancellationOutcome {
+  success: boolean;
+  reason?: CancelLadderMatchFailureReason;
+  /** Players to notify: the opponent on a request, the requester's side on a response. */
+  notifyUserIds?: string[];
+}
+
 export interface CancelLadderMatchOutcome {
   success: boolean;
   reason?: CancelLadderMatchFailureReason;
@@ -241,6 +248,17 @@ export interface LadderContextType {
     matchId: string;
     userId: string;
   }) => Promise<CancelLadderMatchOutcome>;
+  requestLadderMatchCancellation: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+  }) => Promise<LadderMatchCancellationOutcome>;
+  respondToLadderMatchCancellation: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+    accept: boolean;
+  }) => Promise<LadderMatchCancellationOutcome>;
   approveLadderGame: (args: {
     ladderId: string;
     matchId: string;

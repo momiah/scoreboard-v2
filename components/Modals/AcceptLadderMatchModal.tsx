@@ -19,6 +19,7 @@ import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { useLadderMatchCancellation } from "../../hooks/useLadderMatchCancellation";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import MatchCard from "../ladder/MatchCard";
@@ -46,6 +47,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
   const { acceptLadderMatch, fetchUserTeams, checkLadderMembership } =
     useContext(LadderContext);
   const { currentUser, sendNotification } = useContext(UserContext);
+  const { cancelPostedMatch } = useLadderMatchCancellation();
   const { showBottomToast } = useContext(PopupContext);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -264,7 +266,8 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
                 color="#FFA500"
               />
               <DisclaimerText>
-                You cannot accept your own match.
+                This is your posted match. You can cancel it while nobody has
+                accepted it.
               </DisclaimerText>
             </Disclaimer>
           ) : !isLadderMember ? (
@@ -320,19 +323,38 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
           )}
           {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
 
-          <ActionButton
-            testID="accept-ladder-match-confirm"
-            activeOpacity={0.85}
-            disabled={disableAccept}
-            isDisabled={disableAccept}
-            onPress={handleAccept}
-          >
-            {processing ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <ActionButtonText>Accept</ActionButtonText>
-            )}
-          </ActionButton>
+          {isOwnMatch && match ? (
+            <CancelMatchButton
+              testID="accept-ladder-match-cancel"
+              activeOpacity={0.85}
+              onPress={() =>
+                cancelPostedMatch({
+                  ladderId: ladder.ladderId,
+                  match,
+                  onDone: () => {
+                    onUnavailable?.(match);
+                    resetAndClose();
+                  },
+                })
+              }
+            >
+              <ActionButtonText>Cancel Match</ActionButtonText>
+            </CancelMatchButton>
+          ) : (
+            <ActionButton
+              testID="accept-ladder-match-confirm"
+              activeOpacity={0.85}
+              disabled={disableAccept}
+              isDisabled={disableAccept}
+              onPress={handleAccept}
+            >
+              {processing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <ActionButtonText>Accept</ActionButtonText>
+              )}
+            </ActionButton>
+          )}
         </ModalContent>
       </ModalContainer>
 
@@ -442,6 +464,14 @@ const ActionButton = styled.TouchableOpacity<{ isDisabled: boolean }>(
     opacity: isDisabled ? 0.7 : 1,
   }),
 );
+
+const CancelMatchButton = styled.TouchableOpacity({
+  width: "100%",
+  paddingVertical: 16,
+  borderRadius: 12,
+  backgroundColor: "#FF4B6E",
+  alignItems: "center",
+});
 
 const ActionButtonText = styled.Text({
   color: "#ffffff",

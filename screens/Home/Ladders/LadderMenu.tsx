@@ -13,7 +13,11 @@ import { PopupContext } from "../../../context/PopupContext";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-type LadderMenuAction = "LadderRules" | "LadderTerms" | "LeaveLadder";
+type LadderMenuAction =
+  | "LadderPostedMatches"
+  | "LadderRules"
+  | "LadderTerms"
+  | "LeaveLadder";
 
 interface LadderMenuParams {
   ladderId: string;
@@ -27,6 +31,11 @@ interface MenuOption {
 }
 
 const MENU_OPTIONS: MenuOption[] = [
+  {
+    label: "Current Posted Matches",
+    icon: "calendar-outline",
+    action: "LadderPostedMatches",
+  },
   { label: "Rules", icon: "book-outline", action: "LadderRules" },
   {
     label: "Terms & Conditions",

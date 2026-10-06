@@ -42,6 +42,17 @@ pairing, so a player must not be able to set an arbitrary location.
 | `ladders/{ladderId}/ladderParticipants/{userId}` | That player (singles) | create | Participant built by `buildLadderParticipant` plus `joinedAt` (join time; a playoff tiebreak, so it must not be editable afterwards). |
 | `ladders/{ladderId}/ladderTeams/{teamKey}` | A team member (doubles) | create | Team built by `createRootTeam` plus `joinedAt`, same rule. |
 
+## Ladder match cancellation
+
+| Path | Writer | Operation | Fields / conditions |
+|---|---|---|---|
+| `ladders/{ladderId}/ladderMatches/{matchId}` | A player in the match (poster or partner) | update | **Posted** match only (nobody accepted): `matchStatus: "cancelled"`, `cancelledAt`, `cancelledReason`, `lastUpdated`. |
+| same | A player in the match | update | **Accepted** match with no reported game: set `cancellationRequest` (`requestedBy` = own uid, `requestedAt`) and `lastUpdated`, only when no request is pending. |
+| same | A player on the **opposing side** to `cancellationRequest.requestedBy` (not the requester or their partner) | update | Accept: `matchStatus: "cancelled"`, `cancelledAt`, `cancelledReason: "Cancelled by agreement"`, `cancellationRequest: null`. Decline: `cancellationRequest: null`. Both set `lastUpdated`. |
+
+Court-fee refunds on cancellation are settled server-side by
+`onLadderMatchStatusChange` → `reconcileLadderCourtFee`, never by the client.
+
 ## Ladder phases and playoffs
 
 Written only by the `processLadderPhases` Cloud Function (Admin SDK). Clients
