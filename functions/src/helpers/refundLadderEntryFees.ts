@@ -1,9 +1,10 @@
 import type { Ladder } from "courtchamps-shared/types";
 
 /**
- * Stub: refunds every paid entrant of a cancelled ladder their full entry fee,
- * platform fee included. Payments are not wired up yet, so this only logs what
- * would be refunded.
+ * Stub: refunds every paid entrant of a ladder the platform cancelled (the
+ * backend or an admin) their full entry fee, platform fee included. Refunds a
+ * user causes keep the platform fee. Payments are not wired up yet, so this
+ * only logs what would be refunded.
  */
 export const refundLadderEntryFees = async ({
   ladder,
