@@ -66,4 +66,7 @@ must not be able to:
   `numberOfWins`, `totalPointDifference`, `joinedAt`, `homeCourt`) outside the
   existing game-scoring and home-court flows.
 
+`processLadderPhases` also writes `users/{uid}/notifications` (cancellation
+to every entrant, promotion to every qualifier) via the Admin SDK.
+
 Payout must never depend on client-written data.

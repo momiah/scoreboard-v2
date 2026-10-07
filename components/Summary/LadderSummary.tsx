@@ -32,7 +32,11 @@ import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
-import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
+import {
+  LADDER_STATUS_TAGS,
+  timeLeftToPlayoffs,
+} from "../../helpers/ladderPhases";
+import Tag from "../Tag";
 
 const TOP_CONTENDER_COUNT = 4;
 const CAROUSEL_PARTICIPANT_LIMIT = 20;
@@ -50,6 +54,10 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
   const isPaid = ladder.entryFee > 0;
   const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
   const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
+  const beforePlayoffs =
+    ladder.status === LADDER_STATUS.REGISTRATION_OPEN ||
+    ladder.status === LADDER_STATUS.REGISTRATION_CLOSED;
+  const statusTag = LADDER_STATUS_TAGS[ladder.status];
 
   return (
     <StatsRow testID="ladder-stats-row">
@@ -77,15 +85,30 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
 
       <StatDivider />
 
-      <StatBlock>
-        <StatLabel>To Playoffs</StatLabel>
+      {beforePlayoffs ? (
+        <StatBlock>
+          <StatLabel>To Playoffs</StatLabel>
 
-        <StatHeadingContainer>
-          <StatValue testID="ladder-playoff-countdown">
-            {playoffCountdown}
-          </StatValue>
-        </StatHeadingContainer>
-      </StatBlock>
+          <StatHeadingContainer>
+            <StatValue testID="ladder-playoff-countdown">
+              {playoffCountdown}
+            </StatValue>
+          </StatHeadingContainer>
+        </StatBlock>
+      ) : (
+        <StatBlock>
+          <StatLabel>Status</StatLabel>
+          <StatHeadingContainer>
+            {statusTag ? (
+              <Tag
+                name={statusTag.label}
+                color={statusTag.color}
+                testID="ladder-status-tag"
+              />
+            ) : null}
+          </StatHeadingContainer>
+        </StatBlock>
+      )}
     </StatsRow>
   );
 };

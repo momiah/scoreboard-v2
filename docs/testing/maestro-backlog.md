@@ -96,6 +96,26 @@ Payments are stubs today, so Maestro can only assert the UI. Flows to cover:
    the platform fee) through the payment provider's test mode, and that a
    re-fired trigger never refunds twice.
 
+## Ladder notifications
+
+Sent by `processLadderPhases` through `functions/src/helpers/sendNotification.ts`
+(in-app + push), `type: "ladder"`, routed by `NotificationRow` to the Ladder
+screen on `data.tab`. The client can't run the function, so seeds must write
+the notification docs the function would produce (same message, title and
+data).
+
+1. **Cancellation:** notification "{ladder} has been cancelled because not
+   enough players signed up before registration closed. If you paid an entry
+   fee, it will be refunded to you in full." → tap → Ladder opens on Summary;
+   the third stat reads "Status" with the red "Cancelled" pill
+   (`ladder-status-tag`) instead of "To Playoffs".
+2. **Promotion:** "Congratulations! You've made the playoffs in {ladder}. You
+   have 10 days to play both your home and away games." → tap → Ladder opens
+   on the Playoffs tab, scrolled to the player's game with the glow.
+3. Summary stat by status: Registration Open/Closed → "To Playoffs" countdown;
+   Playoffs → "Status" + blue "Playoffs" pill; Completed → green "Completed";
+   Cancelled → red "Cancelled".
+
 ## Ladder cancellation and playoffs
 
 Seeds: `maestro/seeds/seedLadderPlayoffs.js` (harness buttons

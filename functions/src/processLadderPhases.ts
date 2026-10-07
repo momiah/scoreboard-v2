@@ -1,6 +1,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
+import { notificationSchema, notificationTypes } from "courtchamps-shared";
 import {
   LADDER_CANCELLED_REASON,
   LADDER_PLAYOFF_TIES_COLLECTION,
@@ -25,12 +26,15 @@ import {
 import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
 
 import { refundLadderEntryFees } from "./helpers/refundLadderEntryFees";
+import { sendNotification } from "./helpers/sendNotification";
 
 const LADDERS = "ladders";
 const LADDER_PARTICIPANTS = "ladderParticipants";
 const LADDER_TEAMS = "ladderTeams";
 const USERS = "users";
 const USERS_PER_READ = 300;
+const NOTIFICATIONS_PER_WAVE = 50;
+const PLAYOFF_ROUND_DAYS = 10;
 
 const PRE_PLAYOFF_STATUSES: LadderStatus[] = [
   LADDER_STATUS.REGISTRATION_OPEN,
@@ -103,6 +107,51 @@ const toHomeCourt = (value: unknown): LadderHomeCourt | null =>
   value && typeof value === "object" && (value as LadderHomeCourt).courtId
     ? (value as LadderHomeCourt)
     : null;
+
+const notifyPlayers = async ({
+  userIds,
+  ladder,
+  title,
+  message,
+  tab,
+}: {
+  userIds: string[];
+  ladder: Ladder;
+  title: string;
+  message: string;
+  tab: string;
+}): Promise<void> => {
+  const recipients = [...new Set(userIds.filter(Boolean))];
+  for (let start = 0; start < recipients.length; start += NOTIFICATIONS_PER_WAVE) {
+    await Promise.all(
+      recipients.slice(start, start + NOTIFICATIONS_PER_WAVE).map((recipientId) =>
+        sendNotification({
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId,
+          senderId: "system",
+          title,
+          message,
+          type: notificationTypes.INFORMATION.LADDER.TYPE,
+          data: { ladderId: ladder.ladderId, tab },
+        }),
+      ),
+    );
+  }
+};
+
+const loadEntrantPlayerIds = async (
+  ladderRef: DocRef,
+  ladder: Ladder,
+): Promise<string[]> => {
+  const snapshot = await entrantsCollection(ladderRef, ladder).get();
+  return snapshot.docs.flatMap((entrantDoc) => {
+    const data = entrantDoc.data() as ScoreboardProfile & TeamStats;
+    return ladder.ladderType === LADDER_TYPE.DOUBLES
+      ? data.playerIds ?? []
+      : [data.userId || entrantDoc.id];
+  });
+};
 
 const loadEntrants = async (
   db: Db,
@@ -193,7 +242,16 @@ const cancelLadder = async ({
     });
     return true;
   });
-  if (cancelled) await refundLadderEntryFees({ ladder, entrantCount });
+  if (cancelled) {
+    await refundLadderEntryFees({ ladder, entrantCount });
+    await notifyPlayers({
+      userIds: await loadEntrantPlayerIds(ladderRef, ladder),
+      ladder,
+      title: "Ladder cancelled",
+      message: `${ladder.name} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.`,
+      tab: "Summary",
+    });
+  }
   return cancelled;
 };
 
@@ -270,7 +328,7 @@ const generatePlayoffs = async ({
     createdAt: now,
   });
 
-  return db.runTransaction(async (transaction) => {
+  const outcome = await db.runTransaction(async (transaction) => {
     const fresh = await transaction.get(ladderRef);
     const data = fresh.data();
     if (!fresh.exists || !isPrePlayoff(data?.status) || data?.playoffsGeneratedAt) {
@@ -290,6 +348,19 @@ const generatePlayoffs = async ({
     });
     return "generated" as const;
   });
+
+  if (outcome === "generated") {
+    await notifyPlayers({
+      userIds: qualifiers.flatMap((qualifier) =>
+        qualifier.players.map((player) => player.userId),
+      ),
+      ladder,
+      title: "You made the playoffs!",
+      message: `Congratulations! You've made the playoffs in ${ladder.name}. You have ${PLAYOFF_ROUND_DAYS} days to play both your home and away games.`,
+      tab: "Playoffs",
+    });
+  }
+  return outcome;
 };
 
 /**

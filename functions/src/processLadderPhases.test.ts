@@ -103,6 +103,11 @@ const db = {
 
 jest.mock("firebase-admin", () => ({ firestore: () => db }));
 
+const mockSendNotification = jest.fn();
+jest.mock("./helpers/sendNotification", () => ({
+  sendNotification: (...args: unknown[]) => mockSendNotification(...args),
+}));
+
 const mockRefund = jest.fn();
 jest.mock("./helpers/refundLadderEntryFees", () => ({
   refundLadderEntryFees: (...args: unknown[]) => mockRefund(...args),
@@ -201,6 +206,8 @@ beforeEach(() => {
   store.clear();
   writeLog.length = 0;
   mockRefund.mockReset();
+  mockSendNotification.mockReset();
+  mockSendNotification.mockResolvedValue(undefined);
   jest.spyOn(console, "log").mockImplementation(() => undefined);
 });
 
@@ -611,5 +618,88 @@ describe("playoff generation (doubles)", () => {
       player1: { userId: "a0", username: "a0" },
       player2: { userId: "b0", username: "b0" },
     });
+  });
+});
+
+describe("notifications", () => {
+  const sent = () =>
+    mockSendNotification.mock.calls.map(([notification]) => notification);
+
+  it("tells every entrant when a ladder is cancelled", async () => {
+    seedLadder("L1", {
+      name: "North London Ladder",
+      status: LADDER_STATUS.REGISTRATION_OPEN,
+      registrationClosesAt: daysFromNow(-1),
+      playoffStartsAt: daysFromNow(30),
+    });
+    seedParticipants("L1", 127);
+
+    await runProcessLadderPhases(now);
+
+    expect(sent()).toHaveLength(127);
+    expect(sent()[0]).toMatchObject({
+      senderId: "system",
+      title: "Ladder cancelled",
+      message:
+        "North London Ladder has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.",
+      type: "ladder",
+      data: { ladderId: "L1", tab: "Summary" },
+    });
+    expect(new Set(sent().map((n) => n.recipientId)).size).toBe(127);
+  });
+
+  it("tells both players of each cancelled doubles team", async () => {
+    seedLadder("L1", {
+      ladderType: LADDER_TYPE.DOUBLES,
+      status: LADDER_STATUS.REGISTRATION_OPEN,
+      registrationClosesAt: daysFromNow(-1),
+      playoffStartsAt: daysFromNow(30),
+    });
+    for (let index = 0; index < 3; index += 1) {
+      store.set(`ladders/L1/ladderTeams/t${index}`, {
+        teamKey: `t${index}`,
+        playerIds: [`a${index}`, `b${index}`],
+      });
+    }
+
+    await runProcessLadderPhases(now);
+
+    expect(sent().map((n) => n.recipientId).sort()).toEqual([
+      "a0",
+      "a1",
+      "a2",
+      "b0",
+      "b1",
+      "b2",
+    ]);
+  });
+
+  it("congratulates only the qualifiers when playoffs are generated", async () => {
+    seedLadder("L1", { name: "North London Ladder", maxPlayers: 256 });
+    seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
+
+    await runProcessLadderPhases(now);
+
+    expect(sent().map((n) => n.recipientId).sort()).toEqual(
+      Array.from({ length: 8 }, (_, index) => `p${String(index).padStart(4, "0")}`),
+    );
+    expect(sent()[0]).toMatchObject({
+      title: "You made the playoffs!",
+      message:
+        "Congratulations! You've made the playoffs in North London Ladder. You have 10 days to play both your home and away games.",
+      data: { ladderId: "L1", tab: "Playoffs" },
+    });
+  });
+
+  it("sends nothing on a second run", async () => {
+    seedLadder("L1");
+    seedParticipants("L1", 300);
+
+    await runProcessLadderPhases(now);
+    const firstRun = mockSendNotification.mock.calls.length;
+    await runProcessLadderPhases(now);
+
+    expect(firstRun).toBe(16);
+    expect(mockSendNotification).toHaveBeenCalledTimes(firstRun);
   });
 });
