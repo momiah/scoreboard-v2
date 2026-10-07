@@ -86,8 +86,8 @@ export const maestroPlayoffFixtureUserIds = () => [
 
 const fixtureUser = (userId, n, xp) => ({
   userId,
-  firstName: "Playoff",
-  lastName: `P${padded(n)}`,
+  firstName: `P${padded(n)}`,
+  lastName: "Seed",
   username: `po_${padded(n)}`,
   profileImage: "",
   profileDetail: baselineProfileDetail(xp),

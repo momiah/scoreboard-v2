@@ -104,11 +104,11 @@ Seeds: `maestro/seeds/seedLadderPlayoffs.js` (harness buttons
 
 - Singles ladder `maestro-po-ladder` ("Maestro Playoffs 2048"): 2048 players,
   Registration Closed, playoff start already passed. The test user is ranked
-  #1; fixture `Playoff P0001`… is ranked 2… (CP strictly decreasing). Home
+  #1; fixture `P0001 S`… is ranked 2… (CP strictly decreasing). Home
   courts cycle London, Croydon, Birmingham, Coventry, Manchester, Salford,
   Leeds, Bradford (fixture n gets city n mod 8).
 - Doubles ladder `maestro-po-doubles-ladder` ("Maestro Playoffs Doubles 256"):
-  256 teams; the test user + `Playoff P0001` are team #1.
+  256 teams; the test user + `P0001 S` are team #1.
 - "Generated" writes the bracket immediately with the same shared helpers as
   `processLadderPhases`; "Awaiting Function" leaves it to the deployed
   function (every 15 minutes, or force-run the Cloud Scheduler job
@@ -131,7 +131,7 @@ Flows to cover (assert exact text):
 
 1. **Singles bracket (Generated):** Playoffs tab shows the bracket
    (`ladder-playoffs-bracket`); first round header "Round of 128"; the test
-   user's name appears in round 1; `Playoff P0127` appears and `Playoff P0128`
+   user's name appears in round 1; `P0127 S` appears and `P0128 S`
    does not (scroll/search the round). Rounds: Round of 128 → 64 → 32 → 16 →
    Quarter-Final → Semi-Final → Final, plus the 3rd-place playoff.
 2. **Proximity pairing:** the test user (London home court) is paired with
