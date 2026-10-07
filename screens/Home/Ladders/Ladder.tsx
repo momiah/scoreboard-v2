@@ -117,7 +117,11 @@ const Ladder: React.FC = () => {
         return <Matchmaking ladder={ladderById} />;
       case "Schedule":
         return (
-          <Schedule ladder={ladderById} highlightMatchId={highlightMatchId} />
+          <Schedule
+            ladder={ladderById}
+            highlightMatchId={highlightMatchId}
+            onOpenPlayoffs={() => setSelectedTab("Playoffs")}
+          />
         );
       case "Performance":
         // Reuse the competition performance components directly, exactly as

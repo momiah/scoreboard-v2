@@ -32,11 +32,16 @@ import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonCompon
 interface ScheduleProps {
   ladder: Ladder;
   highlightMatchId?: string;
+  onOpenPlayoffs?: () => void;
 }
 
 const SKELETON_ROWS = [0, 1, 2];
 
-const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
+const Schedule: React.FC<ScheduleProps> = ({
+  ladder,
+  highlightMatchId,
+  onOpenPlayoffs,
+}) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { currentUser } = useContext(UserContext);
   const { fetchLadderMatches, subscribeToLadderPlayoffTies } =
@@ -110,13 +115,10 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const playoffCard = userPlayoffTie ? (
     <ActionPlaceholder
       message="Congratulations on reaching playoffs! Please find your next game in the Playoffs tab"
-      icon="trophy-outline"
-      onPress={() =>
-        navigation.navigate("Ladder", {
-          ladderId: ladder.ladderId,
-          tab: "Playoffs",
-        })
-      }
+      icon="trophy"
+      accentColor="#FFC800"
+      backgroundColor="rgba(255, 200, 0, 0.08)"
+      onPress={() => onOpenPlayoffs?.()}
       testID="schedule-playoff-placeholder"
     />
   ) : null;

@@ -39,7 +39,7 @@ const CONNECTOR_STROKE = "rgba(255, 255, 255, 0.25)";
 const CONNECTOR_STROKE_WIDTH = 1;
 const FALLBACK_CARD_HEIGHT = 210;
 const CARD_GAP = 16;
-const SCROLL_TO_TOP_OFFSET = 40;
+const SCROLL_TO_TOP_OFFSET = 12;
 
 type BracketViewMode = "tree" | "list";
 
