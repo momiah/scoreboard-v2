@@ -34,7 +34,10 @@ import { formatCurrency } from "../../helpers/formatCurrency";
 import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
 import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
 
-const PLACEHOLDER_CONTENDERS = Array.from({ length: 4 }, (_, index) => ({
+const TOP_CONTENDER_COUNT = 4;
+const CAROUSEL_PARTICIPANT_LIMIT = 20;
+
+const PLACEHOLDER_CONTENDERS = Array.from({ length: TOP_CONTENDER_COUNT }, (_, index) => ({
   userId: `placeholder-${index}`,
   username: "",
   numberOfWins: 0,
@@ -247,9 +250,9 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         try {
           const enriched = (await enrichPlayers(
             getUserById,
-            ranked,
+            ranked.slice(0, TOP_CONTENDER_COUNT),
           )) as ScoreboardProfile[];
-          if (active) setTopContenders(enriched.slice(0, 4));
+          if (active) setTopContenders(enriched);
         } catch (error) {
           console.error("Error enriching ladder players:", error);
           if (active) setTopContenders([]);
@@ -262,6 +265,11 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
       active = false;
     };
   }, [participants, participantsLoading, getUserById]);
+
+  const carouselParticipants = useMemo(
+    () => participants.slice(0, CAROUSEL_PARTICIPANT_LIMIT),
+    [participants],
+  );
 
   const renderContenders = isDataLoading
     ? PLACEHOLDER_CONTENDERS
@@ -388,7 +396,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
       <View style={{ marginTop: 20 }}>
         <ParticipantCarousel
-          participants={participants}
+          participants={carouselParticipants}
           viewAllText="View All Participants"
           onViewAll={() => {}}
         />
