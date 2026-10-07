@@ -13,6 +13,10 @@ bundled into a release build.
 - `seeds/` — client-SDK seed and cleanup helpers. Every seed has a matching
   delete, keyed on the same hardcoded fixture ids, via
   `seeds/cleanupLadderTestData.js`.
-- `seeds/seedLadderPlayoffs.js` — stub for the ladder playoffs phase. It is not
-  imported anywhere yet; implement it (and wire a harness button plus flows)
-  once playoffs lands.
+- `seeds/seedLadderPlayoffs.js` — playoff fixtures: a 2048-player singles
+  ladder (top 128) and a 256-team doubles ladder (top 16), both past their
+  playoff start, with the test user ranked #1 and fixture players ranked in
+  order with home courts in 8 UK cities. "Awaiting Function" leaves the
+  bracket to the deployed `processLadderPhases` (runs every 15 minutes, or
+  force-run its Cloud Scheduler job); "Generated" writes it immediately with
+  the same shared helpers. Cleaned up by `cleanupLadderTestData`.

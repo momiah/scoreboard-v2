@@ -27,6 +27,10 @@ import {
 } from "./seeds/mockCourtSubmissionReview";
 import { mockPartnerSetHomeCourt } from "./seeds/mockPartnerSetHomeCourt";
 import {
+  seedLadderPlayoffs,
+  seedLadderPlayoffsDoubles,
+} from "./seeds/seedLadderPlayoffs";
+import {
   HOME_COURT_VARIANT,
   MAESTRO_HC_COURT_A_SINGLES_ID,
   MAESTRO_HC_COURT_B_ID,
@@ -544,6 +548,31 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             testUser: currentUser,
             courtId: MAESTRO_HC_COURT_D_ID,
           }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs",
+        label: "Seed Ladder Playoffs 2048 (Awaiting Function)",
+        title: "Seeded",
+        run: () => seedLadderPlayoffs({ testUser: currentUser }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-generated",
+        label: "Seed Ladder Playoffs 2048 (Generated)",
+        title: "Seeded",
+        run: () => seedLadderPlayoffs({ testUser: currentUser, generate: true }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-doubles",
+        label: "Seed Ladder Playoffs Doubles 256 (Awaiting Function)",
+        title: "Seeded",
+        run: () => seedLadderPlayoffsDoubles({ testUser: currentUser }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-doubles-generated",
+        label: "Seed Ladder Playoffs Doubles 256 (Generated)",
+        title: "Seeded",
+        run: () =>
+          seedLadderPlayoffsDoubles({ testUser: currentUser, generate: true }),
       },
     ].map(({ id, label, title, run }) => (
       <TouchableOpacity

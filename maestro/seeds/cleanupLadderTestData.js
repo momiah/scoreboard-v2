@@ -38,6 +38,7 @@ import {
   MAESTRO_HC_FIXTURE_USER_IDS,
   deleteUserSubmittedCourts,
 } from "./homeCourtFixtures";
+import { cleanupLadderPlayoffsTestData } from "./seedLadderPlayoffs";
 
 const LADDER_SUBCOLLECTIONS = [
   "ladderMatches",
@@ -105,6 +106,7 @@ export const cleanupLadderTestData = async ({
     ...courtIds.map((id) => deleteDoc(doc(db, "courts", id))),
   ]);
   const deletedCourts = await deleteUserSubmittedCourts(testUser);
+  const playoffs = await cleanupLadderPlayoffsTestData();
 
   if (testUser?.userId && ladderIds.length) {
     const notificationsRef = collection(
@@ -123,5 +125,6 @@ export const cleanupLadderTestData = async ({
     deletedLadders: ladderIds,
     deletedUsers: fixtureUserIds,
     deletedCourts: [...courtIds, ...deletedCourts],
+    playoffs,
   };
 };
