@@ -98,6 +98,64 @@ Payments are stubs today, so Maestro can only assert the UI. Flows to cover:
 
 ## Ladder cancellation and playoffs
 
-Covered later by `maestro/seeds/seedLadderPlayoffs.js` (currently a stub):
-under 128 entrants at registration close → Cancelled with the reason shown on
-the Playoffs tab; 128+ → bracket appears in the Playoffs tab at playoff start.
+Seeds: `maestro/seeds/seedLadderPlayoffs.js` (harness buttons
+`maestro-seed-ladder-playoffs`, `…-generated`, `…-doubles`,
+`…-doubles-generated`; cleanup via `cleanupLadderTestData`).
+
+- Singles ladder `maestro-po-ladder` ("Maestro Playoffs 2048"): 2048 players,
+  Registration Closed, playoff start already passed. The test user is ranked
+  #1; fixture `Playoff P0001`… is ranked 2… (CP strictly decreasing). Home
+  courts cycle London, Croydon, Birmingham, Coventry, Manchester, Salford,
+  Leeds, Bradford (fixture n gets city n mod 8).
+- Doubles ladder `maestro-po-doubles-ladder` ("Maestro Playoffs Doubles 256"):
+  256 teams; the test user + `Playoff P0001` are team #1.
+- "Generated" writes the bracket immediately with the same shared helpers as
+  `processLadderPhases`; "Awaiting Function" leaves it to the deployed
+  function (every 15 minutes, or force-run the Cloud Scheduler job
+  `firebase-schedule-processLadderPhases-us-central1`). Maestro flows should
+  use "Generated" — the function is covered by its Jest tests.
+
+Before writing flows, add to the seed:
+
+- a notification per seeded ladder ("open Maestro Playoffs 2048 on Playoffs",
+  `type: "ladder"`, `data: { ladderId, tab: "Playoffs" }`) so flows can reach
+  the ladder the same way the home-court flows do (Competitions →
+  notifications → tap);
+- a cancellation variant: a paid ladder with fewer than 128 participants, past
+  `registrationClosesAt`, already set to Cancelled with reason "Too few
+  registrations" (the client can't run the function, so write the cancelled
+  state the function would produce), plus an upcoming variant (playoff start in
+  the future) for the "not started" message.
+
+Flows to cover (assert exact text):
+
+1. **Singles bracket (Generated):** Playoffs tab shows the bracket
+   (`ladder-playoffs-bracket`); first round header "Round of 128"; the test
+   user's name appears in round 1; `Playoff P0127` appears and `Playoff P0128`
+   does not (scroll/search the round). Rounds: Round of 128 → 64 → 32 → 16 →
+   Quarter-Final → Semi-Final → Final, plus the 3rd-place playoff.
+2. **Proximity pairing:** the test user (London home court) is paired with
+   another London or Croydon player in round 1 (the seeded top 128 has 16
+   players per city, so London and Croydon players only meet each other in
+   the early rounds). Pin the exact opponent from the Generated seed's output
+   before asserting it.
+3. **Doubles bracket (Generated):** first round header "Round of 16"; the
+   test user's team appears in round 1 with both player names.
+4. **Not started:** upcoming ladder → `ladder-playoffs-empty` with "Playoffs
+   haven't started yet" and "The top 128 players in the ladder qualify…" (or
+   the matching top N for the seeded size).
+5. **Cancelled:** cancelled ladder → "This ladder was cancelled" and "Too few
+   registrations".
+6. **Loading:** `ladder-playoffs-loading` shows before the bracket.
+7. **Summary on a 2048 ladder:** Summary renders (no long stall); Top
+   Contenders shows exactly 4 rows with the test user first; the
+   Participants carousel shows at most 20 avatars.
+8. **Tapping a bracket game does nothing yet** (Phase 2 adds the playoff match
+   screen) — update this flow when Phase 2 lands.
+
+Manual checks that Maestro can't do:
+
+- After "Awaiting Function" + a force run: in the Firebase console
+  `ladders/maestro-po-ladder` has `status: playoffs`, `playoffBracketSize: 128`,
+  `playoffEntrantCount: 2048`, and `playoffTies` holds 128 docs. Force-running
+  again changes nothing (idempotency).
