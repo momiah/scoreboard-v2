@@ -27,7 +27,7 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
 
 | When | Recipients | Message | Opens |
 |---|---|---|---|
-| Ladder cancelled (done) | every entrant | "{ladder} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full." | Summary (status pill shows Cancelled) |
+| Ladder cancelled (done) | every entrant | "{ladder} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full." | Summary (Status reads Cancelled) |
 | Bracket generated (done) | qualifiers | "Congratulations! You've made the playoffs in {ladder}. You have 10 days to play both your home and away games." | Playoffs (scrolls to their game) |
 | A side wins its game | the winners | "Congratulations! You've reached the {Round of 64 / 32 / 16 / Quarter-Finals / Semi-Finals / Final} in {ladder}. You have 10 days to play both your home and away games." | Playoffs |
 | Ladder complete | every finisher | "Congratulations! You finished {1st / 2nd / 3rd / 4th / 5th–8th …} in {ladder} and won {prize money} and {prize CP}." (omit prizes they didn't win) | Summary |

@@ -11,6 +11,7 @@ import {
 import { LADDER_STATUS, COMPETITION_TYPES, LADDER_TYPE } from "@shared";
 import type { Ladder, ScoreboardProfile, TeamStats } from "@shared/types";
 import {
+  LADDER_STATUS_LABELS,
   calculateLadderPrizePool,
   sortLadderTeamsByPlacement,
 } from "@shared/helpers";
@@ -32,11 +33,7 @@ import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
-import {
-  LADDER_STATUS_TAGS,
-  timeLeftToPlayoffs,
-} from "../../helpers/ladderPhases";
-import Tag from "../Tag";
+import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
 
 const TOP_CONTENDER_COUNT = 4;
 const CAROUSEL_PARTICIPANT_LIMIT = 20;
@@ -57,7 +54,6 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
   const beforePlayoffs =
     ladder.status === LADDER_STATUS.REGISTRATION_OPEN ||
     ladder.status === LADDER_STATUS.REGISTRATION_CLOSED;
-  const statusTag = LADDER_STATUS_TAGS[ladder.status];
 
   return (
     <StatsRow testID="ladder-stats-row">
@@ -99,13 +95,9 @@ const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
         <StatBlock>
           <StatLabel>Status</StatLabel>
           <StatHeadingContainer>
-            {statusTag ? (
-              <Tag
-                name={statusTag.label}
-                color={statusTag.color}
-                testID="ladder-status-tag"
-              />
-            ) : null}
+            <StatValue testID="ladder-status">
+              {LADDER_STATUS_LABELS[ladder.status]}
+            </StatValue>
           </StatHeadingContainer>
         </StatBlock>
       )}

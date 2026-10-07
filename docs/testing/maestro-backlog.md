@@ -107,14 +107,14 @@ data).
 1. **Cancellation:** notification "{ladder} has been cancelled because not
    enough players signed up before registration closed. If you paid an entry
    fee, it will be refunded to you in full." → tap → Ladder opens on Summary;
-   the third stat reads "Status" with the red "Cancelled" pill
-   (`ladder-status-tag`) instead of "To Playoffs".
+   the third stat reads "Status" / "Cancelled" (plain text, `ladder-status`)
+   instead of "To Playoffs".
 2. **Promotion:** "Congratulations! You've made the playoffs in {ladder}. You
    have 10 days to play both your home and away games." → tap → Ladder opens
    on the Playoffs tab, scrolled to the player's game with the glow.
 3. Summary stat by status: Registration Open/Closed → "To Playoffs" countdown;
-   Playoffs → "Status" + blue "Playoffs" pill; Completed → green "Completed";
-   Cancelled → red "Cancelled".
+   otherwise "Status" with "Playoffs", "Completed" or "Cancelled" as plain
+   text (`ladder-status`).
 
 ## Ladder cancellation and playoffs
 
