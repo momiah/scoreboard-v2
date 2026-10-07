@@ -1,5 +1,5 @@
 import { LADDER_PLAYOFF_TIE_STATUS } from "@shared";
-import type { GameTeam, LadderPlayoffTie } from "@shared/types";
+import type { LadderPlayoffTie } from "@shared/types";
 
 const sideIncludes = (
   side: LadderPlayoffTie["side1"],
@@ -24,18 +24,3 @@ export const findUserPlayoffTie = (
         tie.status !== LADDER_PLAYOFF_TIE_STATUS.COMPLETED,
     )
     .sort((a, b) => b.round - a.round)[0] ?? null;
-
-export const playoffTieLabel = (
-  tie: Pick<LadderPlayoffTie, "round" | "isThirdPlacePlayoff">,
-): string =>
-  tie.isThirdPlacePlayoff
-    ? "Playoffs 3rd Place"
-    : `Playoffs Round ${tie.round}`;
-
-export const getPlayoffTieTeams = (
-  tie: LadderPlayoffTie,
-  userId: string | undefined,
-): { userTeam: GameTeam; opponentTeam: GameTeam } =>
-  userId && sideIncludes(tie.side2, userId)
-    ? { userTeam: tie.team2, opponentTeam: tie.team1 }
-    : { userTeam: tie.team1, opponentTeam: tie.team2 };

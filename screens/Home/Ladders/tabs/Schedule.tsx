@@ -23,7 +23,7 @@ import {
   todayDayKey,
 } from "../../../../helpers/ladderDayTabs";
 import MatchCard from "../../../../components/ladder/MatchCard";
-import PlayoffTieCard from "../../../../components/ladder/PlayoffTieCard";
+import ActionPlaceholder from "../../../../components/ActionPlaceholder";
 import { findUserPlayoffTie } from "../../../../helpers/ladderPlayoffTies";
 import LineTabs from "../../../../components/LineTabs";
 import GameGlow, { runGlow } from "../../../../components/GameCardGlow";
@@ -108,16 +108,16 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   );
 
   const playoffCard = userPlayoffTie ? (
-    <PlayoffTieCard
-      tie={userPlayoffTie}
-      userId={userId}
+    <ActionPlaceholder
+      message="Congratulations on reaching playoffs! Please find your next game in the Playoffs tab"
+      icon="trophy-outline"
       onPress={() =>
         navigation.navigate("Ladder", {
           ladderId: ladder.ladderId,
           tab: "Playoffs",
         })
       }
-      testID="schedule-playoff-card"
+      testID="schedule-playoff-placeholder"
     />
   ) : null;
 

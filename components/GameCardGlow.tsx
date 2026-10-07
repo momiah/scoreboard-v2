@@ -72,12 +72,14 @@ export const useScrollToGameGlow = (
     null,
   );
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const scrollToGameRef = useRef(scrollToGame);
+  scrollToGameRef.current = scrollToGame;
 
   useEffect(() => {
     if (!scrollToGameId) return;
 
     const timer = setTimeout(() => {
-      const found = scrollToGame(scrollToGameId);
+      const found = scrollToGameRef.current(scrollToGameId);
       if (!found) return;
 
       // Glow after the scroll settles so the card is in its final position.

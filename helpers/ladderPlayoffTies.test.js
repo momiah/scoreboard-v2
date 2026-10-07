@@ -1,9 +1,7 @@
 import { LADDER_PLAYOFF_TIE_STATUS } from "@shared";
 import {
   findUserPlayoffTie,
-  getPlayoffTieTeams,
   isUserInPlayoffTie,
-  playoffTieLabel,
 } from "./ladderPlayoffTies";
 
 const player = (userId) => ({ userId, firstName: userId, lastName: "", username: userId });
@@ -58,24 +56,5 @@ describe("findUserPlayoffTie", () => {
       ),
     ).toBeNull();
     expect(findUserPlayoffTie([tie(1, ["a"], ["b"])], "me")).toBeNull();
-  });
-});
-
-describe("playoffTieLabel", () => {
-  it("names the round, or the 3rd-place playoff", () => {
-    expect(playoffTieLabel({ round: 1, isThirdPlacePlayoff: false })).toBe(
-      "Playoffs Round 1",
-    );
-    expect(playoffTieLabel({ round: 7, isThirdPlacePlayoff: true })).toBe(
-      "Playoffs 3rd Place",
-    );
-  });
-});
-
-describe("getPlayoffTieTeams", () => {
-  it("puts the user's side first", () => {
-    const t = tie(1, ["opp"], ["me"]);
-    expect(getPlayoffTieTeams(t, "me").userTeam.player1.userId).toBe("me");
-    expect(getPlayoffTieTeams(t, "me").opponentTeam.player1.userId).toBe("opp");
   });
 });
