@@ -11,6 +11,8 @@ import type { Ladder, LadderPlayoffTie } from "@shared/types";
 import BracketTree from "../Tournaments/Brackets/BracketTree";
 import { SkeletonWrapper } from "../Skeletons/SkeletonComponents";
 import { LadderContext } from "../../context/LadderContext";
+import { UserContext } from "../../context/UserContext";
+import { findUserPlayoffTie } from "../../helpers/ladderPlayoffTies";
 import { toMoment } from "../../helpers/ladderPhases";
 
 const SKELETON_ROWS = [0, 1, 2];
@@ -21,6 +23,7 @@ interface LadderPlayoffsProps {
 
 const LadderPlayoffs: React.FC<LadderPlayoffsProps> = ({ ladder }) => {
   const { subscribeToLadderPlayoffTies } = useContext(LadderContext);
+  const { currentUser } = useContext(UserContext);
   const [ties, setTies] = useState<LadderPlayoffTie[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,6 +43,10 @@ const LadderPlayoffs: React.FC<LadderPlayoffsProps> = ({ ladder }) => {
   }, [ladder.ladderId, subscribeToLadderPlayoffTies]);
 
   const fixtures = useMemo(() => ladderPlayoffTiesToFixtures(ties), [ties]);
+  const userTieId = useMemo(
+    () => findUserPlayoffTie(ties, currentUser?.userId)?.tieId,
+    [ties, currentUser?.userId],
+  );
 
   if (loading) {
     return (
@@ -58,6 +65,7 @@ const LadderPlayoffs: React.FC<LadderPlayoffsProps> = ({ ladder }) => {
           fixtures={fixtures}
           tournamentType={ladder.ladderType}
           onGamePress={() => {}}
+          scrollToGameId={userTieId}
         />
       </BracketContainer>
     );

@@ -11,7 +11,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 
-import type { Ladder, LadderMatch } from "@shared/types";
+import type { Ladder, LadderMatch, LadderPlayoffTie } from "@shared/types";
 
 import { UserContext } from "../../../../context/UserContext";
 import { LadderContext } from "../../../../context/LadderContext";
@@ -23,6 +23,8 @@ import {
   todayDayKey,
 } from "../../../../helpers/ladderDayTabs";
 import MatchCard from "../../../../components/ladder/MatchCard";
+import PlayoffTieCard from "../../../../components/ladder/PlayoffTieCard";
+import { findUserPlayoffTie } from "../../../../helpers/ladderPlayoffTies";
 import LineTabs from "../../../../components/LineTabs";
 import GameGlow, { runGlow } from "../../../../components/GameCardGlow";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
@@ -37,7 +39,9 @@ const SKELETON_ROWS = [0, 1, 2];
 const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { currentUser } = useContext(UserContext);
-  const { fetchLadderMatches } = useContext(LadderContext);
+  const { fetchLadderMatches, subscribeToLadderPlayoffTies } =
+    useContext(LadderContext);
+  const [playoffTies, setPlayoffTies] = useState<LadderPlayoffTie[]>([]);
 
   const [matches, setMatches] = useState<LadderMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +94,33 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
     runGlow(glowAnim, () => setGlowMatchId(null));
   }, [highlightMatchId, matches, glowAnim]);
 
+  useEffect(
+    () =>
+      subscribeToLadderPlayoffTies(ladder.ladderId, setPlayoffTies, () =>
+        setPlayoffTies([]),
+      ),
+    [ladder.ladderId, subscribeToLadderPlayoffTies],
+  );
+
+  const userPlayoffTie = useMemo(
+    () => findUserPlayoffTie(playoffTies, userId),
+    [playoffTies, userId],
+  );
+
+  const playoffCard = userPlayoffTie ? (
+    <PlayoffTieCard
+      tie={userPlayoffTie}
+      userId={userId}
+      onPress={() =>
+        navigation.navigate("Ladder", {
+          ladderId: ladder.ladderId,
+          tab: "Playoffs",
+        })
+      }
+      testID="schedule-playoff-card"
+    />
+  ) : null;
+
   const handleOpenMatch = (match: LadderMatch) => {
     navigation.navigate("MatchDetails", {
       ladderId: ladder.ladderId,
@@ -114,6 +145,10 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
         ))}
       </Container>
     );
+  }
+
+  if (matches.length === 0 && playoffCard) {
+    return <Container testID="schedule-list">{playoffCard}</Container>;
   }
 
   if (matches.length === 0) {
@@ -154,6 +189,7 @@ const Schedule: React.FC<ScheduleProps> = ({ ladder, highlightMatchId }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ gap: 12, paddingBottom: 20 }}
       >
+        {playoffCard}
         {visibleMatches.map((match) => (
           <CardWrap key={match.ladderMatchId}>
             <MatchCard

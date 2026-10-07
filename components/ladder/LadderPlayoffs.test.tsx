@@ -6,6 +6,11 @@ import { buildLadderPlayoffTies } from "@shared/helpers";
 jest.mock("../../context/LadderContext", () => ({
   LadderContext: require("react").createContext({}),
 }));
+jest.mock("../../context/UserContext", () => ({
+  UserContext: require("react").createContext({
+    currentUser: { userId: "b" },
+  }),
+}));
 
 const mockBracketTree = jest.fn();
 jest.mock("../Tournaments/Brackets/BracketTree", () => {
@@ -120,8 +125,14 @@ describe("LadderPlayoffs", () => {
       expect.any(Function),
     );
     expect(getByTestId("ladder-playoffs-bracket")).toBeTruthy();
-    const { fixtures, tournamentType } = mockBracketTree.mock.calls[0][0];
+    const { fixtures, tournamentType, scrollToGameId } =
+      mockBracketTree.mock.calls[0][0];
     expect(tournamentType).toBe(LADDER_TYPE.SINGLES);
+    const userTie = ties.find(
+      (tie) =>
+        tie.side1?.entrantKey === "b" || tie.side2?.entrantKey === "b",
+    );
+    expect(scrollToGameId).toBe(userTie?.tieId);
     expect(
       fixtures.map((round: { games: { gameId: string }[] }) =>
         round.games.map((game) => game.gameId),
