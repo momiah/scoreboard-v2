@@ -48,7 +48,7 @@ pairing, so a player must not be able to set an arbitrary location.
 
 | Path | Writer | Operation | Fields / conditions |
 |---|---|---|---|
-| `ladders/{ladderId}/ladderMatches/{matchId}` | A player in the match | update | Game report/decline/dispute/approve: `games`, `lastUpdated`, and `gameReportedAt.{gameId}` = server timestamp (the clock the auto-approval job ages a game from). Blocked once the ladder has left registration (playoffs started). |
+| `ladders/{ladderId}/ladderMatches/{matchId}` | A player in the match | update | Game report/decline/dispute/approve: `games`, `lastUpdated`, and `gameReportedAt.{gameId}` = server timestamp (the clock the auto-approval job ages a game from). Blocked only once playoffs have started (ladder status playoffs, completed or cancelled); play continues after registration closes. |
 
 ## Ladder match cancellation
 
