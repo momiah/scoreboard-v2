@@ -1,0 +1,48 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-cancel-posted-own"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Summary.*"
+- tapOn:
+    id: "ladder-burger"
+- tapOn:
+    id: "ladder-menu-LadderPostedMatches"
+- extendedWaitUntil:
+    visible:
+      id: "posted-match-maestro-cancel-match"
+    timeout: 20000
+- tapOn:
+    id: "posted-match-cancel-maestro-cancel-match"
+- extendedWaitUntil:
+    visible: "Cancel this posted match.*"
+    timeout: 5000
+- tapOn:
+    text: "Cancel Match"
+    index: 1
+- extendedWaitUntil:
+    visible: "Match cancelled"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "posted-matches-empty"
+    timeout: 15000

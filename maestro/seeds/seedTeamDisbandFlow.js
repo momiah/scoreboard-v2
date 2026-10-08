@@ -57,6 +57,9 @@ export const DISBAND_VARIANT = {
   POSTED_MATCH: "postedMatch",
   ACCEPTED_MATCH: "acceptedMatch",
   APPROVED_GAME: "approvedGame",
+  ACCEPTED_REQUESTED_BY_USER: "acceptedRequestedByUser",
+  ACCEPTED_REQUESTED_BY_PARTNER: "acceptedRequestedByPartner",
+  ACCEPTED_GAME_REPORTED: "acceptedGameReported",
   REGISTRATION_CLOSED: "registrationClosed",
   PLAYOFFS: "playoffs",
   LADDER_COMPLETED: "ladderCompleted",
@@ -152,7 +155,7 @@ const writeNotifications = async ({ testUser, ladderId, ladderName }) => {
   );
   await Promise.all(stale.docs.map((d) => deleteDoc(d.ref)));
   await Promise.all(
-    ["Summary", "Matchmaking"].map((tab) =>
+    ["Summary", "Matchmaking", "Schedule"].map((tab) =>
       setDoc(doc(notificationsRef, `maestro-disband-${ladderId}-${tab}`), {
         ...notificationSchema,
         createdAt: new Date(),
@@ -282,7 +285,13 @@ export const seedTeamDisbandFlow = async ({
     );
   }
 
-  if (variant === DISBAND_VARIANT.ACCEPTED_MATCH) {
+  const acceptedVariants = [
+    DISBAND_VARIANT.ACCEPTED_MATCH,
+    DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_USER,
+    DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_PARTNER,
+    DISBAND_VARIANT.ACCEPTED_GAME_REPORTED,
+  ];
+  if (acceptedVariants.includes(variant)) {
     const rivalKey = normalizeTeamKey([opp1.userId, opp2.userId]);
     const posted = postedMatchDocument({
       matchId: MAESTRO_DISBAND_MATCH_ID,
@@ -298,11 +307,40 @@ export const seedTeamDisbandFlow = async ({
         ownTeam,
       ],
     });
+    const requestBy = (requestedBy) => ({
+      cancellationRequest: { requestedBy, requestedAt: new Date() },
+    });
+    const reportedGames = posted.games.map((game, index) =>
+      index === 0
+        ? {
+            ...game,
+            reporter: opp1.userId,
+            approvalStatus: "pending",
+            result: {
+              winner: {
+                team: "Team 1",
+                players: [opp1.userId, opp2.userId],
+                score: 21,
+              },
+              loser: { team: "Team 2", players: userIds, score: 15 },
+            },
+          }
+        : game,
+    );
     await setDoc(matchRef(MAESTRO_DISBAND_LADDER_ID), {
       ...posted,
       matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
       acceptedBy: testUser.userId,
       acceptedAt: new Date(),
+      ...(variant === DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_USER
+        ? requestBy(testUser.userId)
+        : {}),
+      ...(variant === DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_PARTNER
+        ? requestBy(partner.userId)
+        : {}),
+      ...(variant === DISBAND_VARIANT.ACCEPTED_GAME_REPORTED
+        ? { games: reportedGames }
+        : {}),
     });
   }
 

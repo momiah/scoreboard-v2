@@ -47,6 +47,10 @@ import {
   cleanupLadderJoinTestData,
 } from "./seedLadderJoinFlow";
 import {
+  MAESTRO_CANCEL_LADDER_ID,
+  cleanupMatchCancellationTestData,
+} from "./seedMatchCancellationFlow";
+import {
   MAESTRO_DISBAND_LADDER_IDS,
   cleanupTeamDisbandTestData,
 } from "./seedTeamDisbandFlow";
@@ -121,12 +125,14 @@ export const cleanupLadderTestData = async ({
   const playoffs = await cleanupLadderPlayoffsTestData();
   const join = await cleanupLadderJoinTestData();
   const disband = await cleanupTeamDisbandTestData();
+  const cancellation = await cleanupMatchCancellationTestData();
 
   const notificationLadderIds = [
     ...ladderIds,
     ...MAESTRO_PO_LADDER_IDS,
     ...MAESTRO_JOIN_LADDER_IDS,
     ...MAESTRO_DISBAND_LADDER_IDS,
+    MAESTRO_CANCEL_LADDER_ID,
   ];
   if (testUser?.userId && notificationLadderIds.length) {
     const notificationsRef = collection(
@@ -151,5 +157,6 @@ export const cleanupLadderTestData = async ({
     playoffs,
     join,
     disband,
+    cancellation,
   };
 };

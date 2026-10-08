@@ -27,7 +27,16 @@ import { seedAddApproveGameFlow } from "./seeds/seedAddApproveGameFlow";
 import { seedAddApproveGameFlowDoubles } from "./seeds/seedAddApproveGameFlowDoubles";
 import { seedHomeCourtFlow } from "./seeds/seedHomeCourtFlow";
 import {
+  CANCEL_VARIANT,
+  MAESTRO_CANCEL_LADDER_ID,
+  MAESTRO_CANCEL_MATCH_ID,
+  seedMatchCancellationFlow,
+} from "./seeds/seedMatchCancellationFlow";
+import { mockOpponentCancellationResponse } from "./seeds/mockOpponentCancellationResponse";
+import {
   DISBAND_VARIANT,
+  MAESTRO_DISBAND_LADDER_ID,
+  MAESTRO_DISBAND_MATCH_ID,
   seedTeamDisbandFlow,
 } from "./seeds/seedTeamDisbandFlow";
 import {
@@ -464,6 +473,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["approved-game", DISBAND_VARIANT.APPROVED_GAME],
         ["registration-closed", DISBAND_VARIANT.REGISTRATION_CLOSED],
         ["playoffs", DISBAND_VARIANT.PLAYOFFS],
+        ["accepted-requested-by-user", DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_USER],
+        ["accepted-requested-by-partner", DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_PARTNER],
+        ["accepted-game-reported", DISBAND_VARIANT.ACCEPTED_GAME_REPORTED],
         ["ladder-completed", DISBAND_VARIANT.LADDER_COMPLETED],
         ["other-ladder-completed", DISBAND_VARIANT.OTHER_LADDER_COMPLETED],
       ].map(([key, variant]) => ({
@@ -471,6 +483,42 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         label: `Seed Disband (${key})`,
         run: () => seedTeamDisbandFlow({ testUser: currentUser, variant }),
       })),
+      ...[
+        ["posted-own", CANCEL_VARIANT.POSTED_OWN],
+        ["accepted", CANCEL_VARIANT.ACCEPTED],
+        ["requested-by-opponent", CANCEL_VARIANT.REQUESTED_BY_OPPONENT],
+        ["requested-by-user", CANCEL_VARIANT.REQUESTED_BY_USER],
+        ["game-reported", CANCEL_VARIANT.GAME_REPORTED],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-cancel-${key}`,
+        label: `Seed Cancel (${key})`,
+        run: () => seedMatchCancellationFlow({ testUser: currentUser, variant }),
+      })),
+      ...[
+        ["accept", true],
+        ["decline", false],
+      ].flatMap(([key, accept]) => [
+        {
+          id: `maestro-mock-cancel-opponent-${key}`,
+          label: `Mock Cancel Opp ${key}`,
+          run: () =>
+            mockOpponentCancellationResponse({
+              ladderId: MAESTRO_CANCEL_LADDER_ID,
+              matchId: MAESTRO_CANCEL_MATCH_ID,
+              accept: accept as boolean,
+            }),
+        },
+        {
+          id: `maestro-mock-disband-opponent-${key}`,
+          label: `Mock Disband Opp ${key}`,
+          run: () =>
+            mockOpponentCancellationResponse({
+              ladderId: MAESTRO_DISBAND_LADDER_ID,
+              matchId: MAESTRO_DISBAND_MATCH_ID,
+              accept: accept as boolean,
+            }),
+        },
+      ]),
       {
         id: "maestro-seed-reject-playoffs-started",
         label: "Seed Active Dispute (Playoffs Started)",

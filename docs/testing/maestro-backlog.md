@@ -24,16 +24,10 @@ accepted match blocks (3, blocked only), one approved game blocks (6), games
 only in another completed ladder don't count (7), registration closed and
 playoffs block (8), completed ladder allows (9).
 
-Still to cover (singles has no leave option, so doubles only):
-
-4. Same as 3, but the **partner** cancels the match → Disband succeeds. Needs a
-   partner-side mock, because the flow only drives one signed-in user.
-5. Opponent's team posted, this team accepted, a game has been reported →
-   Cancel Match shows "This match can no longer be cancelled"; Disband still
-   blocked.
-3b. Accepted match: cancelling is a request the opponent must agree to
-   (Request cancellation), so the cancel-then-disband half of 3 needs an
-   opponent-side mock.
+Also covered: the partner's request agreed by the opponent (4), the user's own
+request agreed by the opponent (3b), an unanswered request blocks, and a
+reported game blocks both Cancel Match and Disband (5). Singles has no leave
+option, so disbanding is doubles only.
 
 ## Match cancellation
 
@@ -53,21 +47,20 @@ Helpers in `helpers/ladderMatchCancellation.ts`, UI via
   notified, match goes ahead (play it or face a no-show).
 - A reported game → "This match can no longer be cancelled".
 
-Flows to cover (singles and doubles):
+Covered by `cancel-*` flows (seeds in
+`maestro/seeds/seedMatchCancellationFlow.js` and `seedTeamDisbandFlow.js`; the
+opponent's response is mocked by `mockOpponentCancellationResponse`): cancelling
+a posted match from Matchmaking and from Ladder Menu → Current Posted Matches;
+requesting cancellation of an accepted match and the opponent accepting or
+declining; receiving an opponent's request and accepting or declining it; a
+second request being refused; a reported game blocking cancellation; and the
+requester's partner seeing "Waiting" with no Accept or Decline (doubles).
 
-1. Post a match → open it in Matchmaking → Cancel Match → it disappears from
-   Matchmaking.
-2. Post a match → Ladder Menu → Current Posted Matches lists it live → Cancel →
-   it leaves the list and Matchmaking.
-3. Accepted match → poster requests → opponent sees the banner → Accept →
-   match cancelled for both; requester notified.
-4. Same, opponent Declines → banner clears; match still accepted; requester
-   notified.
-5. Doubles: requester's partner sees "Waiting…" (no Accept/Decline); either
-   opponent can respond.
-6. A second request while one is pending is refused ("Waiting for your
-   opponent").
-7. Game reported → Cancel Match shows "This match can no longer be cancelled".
+Still to cover:
+
+- Doubles: either opponent can respond (the flows only use one opponent).
+- The requester's side receiving the notification after the response.
+- The court-fee refund on accept (server-side; see below).
 
 ## Refunds and the platform fee
 

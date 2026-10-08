@@ -99,3 +99,19 @@ team → ⋯ → Disband team. The claim cleanup is 🅹 (3.10).
 | 7.5 | Registration closed; playoffs | "Can't disband" (registration has closed) |
 | 7.6 | Ladder completed | Disbands |
 | 7.7 | Approved games only in another, completed ladder | Disbands |
+| 7.8 | The partner asked to cancel an accepted match and the opponent agreed | Disbands (`team-disband-allowed-after-partner-request-is-agreed`) |
+| 7.9 | The user asked to cancel and the opponent agreed | Disbands (`team-disband-allowed-after-own-request-is-agreed`) |
+| 7.10 | A cancellation request nobody has answered; a reported game | "Can't disband" (`team-disband-blocked-while-cancellation-request-is-unanswered`, `team-disband-blocked-once-a-game-is-reported`) |
+
+## 8. Match cancellation
+
+All 🅼 (`cancel-*`).
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 8.1 | Cancel your own posted match from the Matchmaking modal; from Ladder Menu → Current Posted Matches | "Match cancelled", it leaves Matchmaking / the list |
+| 8.2 | Accepted match: request cancellation | "Cancellation request sent" and an awaiting banner; if the opponent accepts the card reads Cancelled, if they decline the banner clears and the match stands |
+| 8.3 | The opponent has asked to cancel | Banner with Accept Cancellation and Decline; accepting cancels the match, declining shows "Cancellation declined" |
+| 8.4 | A second request while one is pending | "Waiting for your opponent to respond", no new request |
+| 8.5 | A game has been reported | "This match can no longer be cancelled" |
+| 8.6 | Doubles: the partner already asked | Awaiting banner, no Accept or Decline |
