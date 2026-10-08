@@ -1,5 +1,7 @@
 import {
+  DISPUTE_STAGE,
   LADDER_CANCELLED_REASON,
+  LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIE_STATUS,
   LADDER_STATUS,
   LADDER_TYPE,
@@ -33,6 +35,10 @@ function docRef(path: string): any {
     id: path.split("/").pop(),
     collection: (name: string) => collectionRef(`${path}/${name}`),
     get: async () => snapshot(path),
+    update: async (data: Data) => {
+      store.set(path, { ...(store.get(path) ?? {}), ...data });
+      writeLog.push({ op: "update", path });
+    },
   };
 }
 
@@ -191,7 +197,11 @@ const seedParticipants = (
   build: (index: number) => Data = () => ({}),
 ) => {
   for (let index = 0; index < count; index += 1) {
-    seedParticipant(ladderId, `p${String(index).padStart(4, "0")}`, build(index));
+    seedParticipant(
+      ladderId,
+      `p${String(index).padStart(4, "0")}`,
+      build(index),
+    );
   }
 };
 
@@ -284,6 +294,7 @@ describe("registration close", () => {
       registrationClosed: [],
       cancelled: [],
       playoffsGenerated: [],
+      playoffsHeld: [],
     });
     expect(writeLog).toHaveLength(0);
   });
@@ -314,9 +325,7 @@ describe("playoff generation (singles)", () => {
 
     const allTies = ties("L1");
     expect(allTies).toHaveLength(16);
-    expect(
-      allTies.map((tie) => tie.tieId as string).sort(),
-    ).toEqual(
+    expect(allTies.map((tie) => tie.tieId as string).sort()).toEqual(
       [
         ...Array.from({ length: 8 }, (_, slot) => `r1-s${slot}`),
         ...Array.from({ length: 4 }, (_, slot) => `r2-s${slot}`),
@@ -341,7 +350,10 @@ describe("playoff generation (singles)", () => {
       (a, b) => (a.rank as number) - (b.rank as number),
     );
     expect(byRank.map((side) => side.entrantKey)).toEqual(
-      Array.from({ length: 16 }, (_, index) => `p${String(index).padStart(4, "0")}`),
+      Array.from(
+        { length: 16 },
+        (_, index) => `p${String(index).padStart(4, "0")}`,
+      ),
     );
     expect(byRank.map((side) => side.rank)).toEqual(
       Array.from({ length: 16 }, (_, index) => index + 1),
@@ -407,7 +419,14 @@ describe("playoff generation (singles)", () => {
 
   it("fills leftover spots with entrants who never played and pairs them together", async () => {
     seedLadder("L1", { maxPlayers: 256 });
-    const cities = ["london", "croydon", "manchester", "salford", "birmingham", "coventry"];
+    const cities = [
+      "london",
+      "croydon",
+      "manchester",
+      "salford",
+      "birmingham",
+      "coventry",
+    ];
     seedParticipants("L1", 128, (index) =>
       index < 6
         ? {
@@ -462,8 +481,18 @@ describe("playoff generation (singles)", () => {
     }));
     const level = { competitionXP: 990, numberOfWins: 3 };
     seedParticipant("L1", "p0007", { ...level, joinedAt: daysFromNow(-5) }, 10);
-    seedParticipant("L1", "zz-higher-xp", { ...level, joinedAt: daysFromNow(-1) }, 500);
-    seedParticipant("L1", "zz-early", { ...level, joinedAt: daysFromNow(-90) }, 10);
+    seedParticipant(
+      "L1",
+      "zz-higher-xp",
+      { ...level, joinedAt: daysFromNow(-1) },
+      500,
+    );
+    seedParticipant(
+      "L1",
+      "zz-early",
+      { ...level, joinedAt: daysFromNow(-90) },
+      10,
+    );
 
     await runProcessLadderPhases(now);
 
@@ -613,7 +642,9 @@ describe("playoff generation (doubles)", () => {
         (tie.side2 as Data | null)?.entrantKey === "a0_b0",
     ) as Data;
     const topTeam =
-      (topTie.side1 as Data).entrantKey === "a0_b0" ? topTie.team1 : topTie.team2;
+      (topTie.side1 as Data).entrantKey === "a0_b0"
+        ? topTie.team1
+        : topTie.team2;
     expect(topTeam).toMatchObject({
       player1: { userId: "a0", username: "a0" },
       player2: { userId: "b0", username: "b0" },
@@ -664,14 +695,11 @@ describe("notifications", () => {
 
     await runProcessLadderPhases(now);
 
-    expect(sent().map((n) => n.recipientId).sort()).toEqual([
-      "a0",
-      "a1",
-      "a2",
-      "b0",
-      "b1",
-      "b2",
-    ]);
+    expect(
+      sent()
+        .map((n) => n.recipientId)
+        .sort(),
+    ).toEqual(["a0", "a1", "a2", "b0", "b1", "b2"]);
   });
 
   it("congratulates only the qualifiers when playoffs are generated", async () => {
@@ -682,7 +710,10 @@ describe("notifications", () => {
 
     const promoted = sent().filter((n) => n.title === "You made the playoffs!");
     expect(promoted.map((n) => n.recipientId).sort()).toEqual(
-      Array.from({ length: 8 }, (_, index) => `p${String(index).padStart(4, "0")}`),
+      Array.from(
+        { length: 8 },
+        (_, index) => `p${String(index).padStart(4, "0")}`,
+      ),
     );
     expect(promoted[0]).toMatchObject({
       message:
@@ -697,11 +728,14 @@ describe("notifications", () => {
 
     await runProcessLadderPhases(now);
 
-    const eliminated = sent().filter((n) => n.title === "Playoffs have started");
+    const eliminated = sent().filter(
+      (n) => n.title === "Playoffs have started",
+    );
     expect(eliminated).toHaveLength(132);
     expect(eliminated.map((n) => n.recipientId).sort()).toEqual(
-      Array.from({ length: 132 }, (_, index) =>
-        `p${String(index + 8).padStart(4, "0")}`,
+      Array.from(
+        { length: 132 },
+        (_, index) => `p${String(index + 8).padStart(4, "0")}`,
       ),
     );
     expect(eliminated[0]).toMatchObject({
@@ -736,7 +770,9 @@ describe("notifications", () => {
 
     await runProcessLadderPhases(now);
 
-    const eliminated = sent().filter((n) => n.title === "Playoffs have started");
+    const eliminated = sent().filter(
+      (n) => n.title === "Playoffs have started",
+    );
     expect(eliminated).toHaveLength((130 - 8) * 2);
     const recipients = eliminated.map((n) => n.recipientId);
     expect(recipients).toContain("a008");
@@ -768,5 +804,307 @@ describe("notifications", () => {
 
     expect(firstRun).toBe(300);
     expect(mockSendNotification).toHaveBeenCalledTimes(firstRun);
+  });
+});
+
+describe("playoff hold for unsettled games", () => {
+  const seedDueLadder = () => {
+    seedLadder("L1", { name: "North London Ladder", maxPlayers: 256 });
+    seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
+  };
+
+  it("waits while a dispute is still open and records why", async () => {
+    seedDueLadder();
+    store.set("disputes/d1", {
+      ladderId: "L1",
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+    });
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.playoffsHeld).toEqual(["L1"]);
+    expect(summary.playoffsGenerated).toEqual([]);
+    expect(ladder("L1").status).toBe(LADDER_STATUS.REGISTRATION_CLOSED);
+    expect(ladder("L1").playoffHold).toMatchObject({
+      openDisputes: 1,
+      pendingGames: 0,
+    });
+    expect(ties("L1")).toHaveLength(0);
+    expect(mockSendNotification).not.toHaveBeenCalled();
+  });
+
+  it("waits while a reported game is still pending approval", async () => {
+    seedDueLadder();
+    store.set("ladders/L1/ladderMatches/m1", {
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      games: [{ approvalStatus: "Pending" }, { approvalStatus: "approved" }],
+    });
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.playoffsHeld).toEqual(["L1"]);
+    expect(ladder("L1").playoffHold).toMatchObject({
+      openDisputes: 0,
+      pendingGames: 1,
+    });
+  });
+
+  it("ignores resolved disputes and approved games", async () => {
+    seedDueLadder();
+    store.set("disputes/d1", {
+      ladderId: "L1",
+      stage: DISPUTE_STAGE.RESOLVED,
+    });
+    store.set("disputes/d2", {
+      ladderId: "OTHER",
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+    });
+    store.set("ladders/L1/ladderMatches/m1", {
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      games: [{ approvalStatus: "approved" }, { approvalStatus: "" }],
+    });
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.playoffsGenerated).toEqual(["L1"]);
+  });
+
+  it("generates once the dispute is resolved and clears the hold", async () => {
+    seedDueLadder();
+    store.set("disputes/d1", {
+      ladderId: "L1",
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+    });
+    await runProcessLadderPhases(now);
+
+    store.set("disputes/d1", { ladderId: "L1", stage: DISPUTE_STAGE.RESOLVED });
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.playoffsGenerated).toEqual(["L1"]);
+    expect(ladder("L1").status).toBe(LADDER_STATUS.PLAYOFFS);
+    expect(ladder("L1").playoffHold).toBeNull();
+  });
+
+  it("stops waiting 48 hours after the playoff start", async () => {
+    seedDueLadder();
+    store.set("disputes/d1", {
+      ladderId: "L1",
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+    });
+    const afterHold = new Date(
+      (ladder("L1").playoffStartsAt as Date).getTime() + 49 * 60 * 60 * 1000,
+    );
+
+    const summary = await runProcessLadderPhases(afterHold);
+
+    expect(summary.playoffsGenerated).toEqual(["L1"]);
+  });
+});
+
+describe("who can qualify", () => {
+  it("never seeds an entrant whose account no longer exists", async () => {
+    seedLadder("L1", { maxPlayers: 256 });
+    seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
+    store.delete("users/p0000");
+    store.delete("users/p0003");
+
+    await runProcessLadderPhases(now);
+
+    const qualifiers = ties("L1")
+      .filter((tie) => tie.round === 1)
+      .flatMap((tie) => [tie.side1, tie.side2] as { entrantKey: string }[])
+      .map((side) => side.entrantKey);
+    expect(qualifiers).toHaveLength(8);
+    expect(qualifiers).not.toContain("p0000");
+    expect(qualifiers).not.toContain("p0003");
+    expect(qualifiers).toContain("p0008");
+    expect(qualifiers).toContain("p0009");
+    expect(ladder("L1").playoffEntrantCount).toBe(138);
+  });
+
+  it("does not notify an account that no longer exists", async () => {
+    seedLadder("L1", { maxPlayers: 256 });
+    seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
+    store.delete("users/p0000");
+
+    await runProcessLadderPhases(now);
+
+    const recipients = mockSendNotification.mock.calls.map(
+      ([notification]) => notification.recipientId,
+    );
+    expect(recipients).not.toContain("p0000");
+    expect(recipients).toHaveLength(139);
+  });
+
+  it("excludes a disqualified player, fills the spot, and tells them they missed out", async () => {
+    seedLadder("L1", { maxPlayers: 256 });
+    seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
+    store.set("ladders/L1/reportCounts/p0001", { strikes: { cheating: 3 } });
+    store.set("ladders/L1/reportCounts/p0002", { strikes: { no_show: 4 } });
+
+    await runProcessLadderPhases(now);
+
+    const qualifiers = ties("L1")
+      .filter((tie) => tie.round === 1)
+      .flatMap((tie) => [tie.side1, tie.side2] as { entrantKey: string }[])
+      .map((side) => side.entrantKey);
+    expect(qualifiers).not.toContain("p0001");
+    expect(qualifiers).toContain("p0002");
+    expect(qualifiers).toContain("p0008");
+    const eliminated = mockSendNotification.mock.calls
+      .map(([notification]) => notification)
+      .filter((n) => n.title === "Playoffs have started")
+      .map((n) => n.recipientId);
+    expect(eliminated).toContain("p0001");
+    expect(eliminated).not.toContain("p0002");
+  });
+
+  it("excludes a doubles team when either player is disqualified or gone", async () => {
+    seedLadder("L1", {
+      ladderType: LADDER_TYPE.DOUBLES,
+      maxPlayers: 256,
+    });
+    for (let index = 0; index < 130; index += 1) {
+      const id = String(index).padStart(3, "0");
+      seedUser(`a${id}`);
+      seedUser(`b${id}`);
+      store.set(`ladders/L1/ladderTeams/t${id}`, {
+        teamKey: `t${id}`,
+        teamId: `t${id}`,
+        playerIds: [`a${id}`, `b${id}`],
+        status: TEAM_STATUS.ACTIVE,
+        XP: 1000 - index,
+        homeCourt: homeCourt("london"),
+      });
+    }
+    store.set("ladders/L1/reportCounts/b000", { strikes: { abuse: 3 } });
+    store.delete("users/a001");
+
+    await runProcessLadderPhases(now);
+
+    const qualifiers = ties("L1")
+      .filter((tie) => tie.round === 1)
+      .flatMap((tie) => [tie.side1, tie.side2] as { entrantKey: string }[])
+      .map((side) => side.entrantKey);
+    expect(qualifiers).not.toContain("t000");
+    expect(qualifiers).not.toContain("t001");
+    expect(qualifiers).toContain("t002");
+    expect(qualifiers).toContain("t009");
+  });
+});
+
+describe("registration count for doubles", () => {
+  it("does not count pending or one-player teams towards the 128 minimum", async () => {
+    seedLadder("L1", {
+      ladderType: LADDER_TYPE.DOUBLES,
+      status: LADDER_STATUS.REGISTRATION_OPEN,
+      registrationClosesAt: daysFromNow(-1),
+      playoffStartsAt: daysFromNow(30),
+    });
+    for (let index = 0; index < 100; index += 1) {
+      store.set(`ladders/L1/ladderTeams/t${index}`, {
+        teamKey: `t${index}`,
+        playerIds: [`a${index}`, `b${index}`],
+        status: TEAM_STATUS.ACTIVE,
+      });
+    }
+    for (let index = 0; index < 40; index += 1) {
+      store.set(`ladders/L1/ladderTeams/pending${index}`, {
+        teamKey: `pending${index}`,
+        playerIds: [`c${index}`],
+        status: TEAM_STATUS.PENDING,
+      });
+    }
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.cancelled).toEqual(["L1"]);
+    expect(ladder("L1").status).toBe(LADDER_STATUS.CANCELLED);
+  });
+});
+
+describe("resuming notifications", () => {
+  const sentIds = () =>
+    mockSendNotification.mock.calls.map(([, options]) => options?.id);
+
+  const seedGeneratedLadder = async () => {
+    seedLadder("L1", { name: "North London Ladder", maxPlayers: 256 });
+    seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
+  };
+
+  it("sends every message with a deterministic id and marks the ladder notified", async () => {
+    await seedGeneratedLadder();
+
+    await runProcessLadderPhases(now);
+
+    expect(sentIds()).toHaveLength(140);
+    expect(new Set(sentIds()).size).toBe(140);
+    expect(sentIds()).toContain("playoffs-promotion-L1-p0000");
+    expect(sentIds()).toContain("playoffs-elimination-L1-p0139");
+    expect(ladder("L1").playoffNotificationsSentAt).toBeInstanceOf(Date);
+  });
+
+  it("finishes sending on the next run when the first run failed part-way", async () => {
+    await seedGeneratedLadder();
+    let calls = 0;
+    mockSendNotification.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 60) throw new Error("function timed out");
+    });
+
+    const first = await runProcessLadderPhases(now);
+
+    expect(first.playoffsGenerated).toEqual([]);
+    expect(ladder("L1").status).toBe(LADDER_STATUS.PLAYOFFS);
+    expect(ladder("L1").playoffNotificationsSentAt).toBeUndefined();
+
+    mockSendNotification.mockReset();
+    mockSendNotification.mockResolvedValue(undefined);
+    await runProcessLadderPhases(now);
+
+    expect(sentIds()).toHaveLength(140);
+    expect(ladder("L1").playoffNotificationsSentAt).toBeInstanceOf(Date);
+
+    mockSendNotification.mockClear();
+    await runProcessLadderPhases(now);
+    expect(mockSendNotification).not.toHaveBeenCalled();
+  });
+
+  it("finishes cancellation messages the same way", async () => {
+    seedLadder("L1", {
+      status: LADDER_STATUS.REGISTRATION_OPEN,
+      registrationClosesAt: daysFromNow(-1),
+      playoffStartsAt: daysFromNow(30),
+    });
+    seedParticipants("L1", 127);
+    let calls = 0;
+    mockSendNotification.mockImplementation(async () => {
+      calls += 1;
+      if (calls === 20) throw new Error("function timed out");
+    });
+    await runProcessLadderPhases(now);
+    expect(ladder("L1").cancellationNotificationsSentAt).toBeUndefined();
+
+    mockSendNotification.mockReset();
+    mockSendNotification.mockResolvedValue(undefined);
+    await runProcessLadderPhases(now);
+
+    expect(sentIds()).toHaveLength(127);
+    expect(sentIds()[0]).toMatch(/^ladder-cancelled-L1-/);
+    expect(ladder("L1").cancellationNotificationsSentAt).toBeInstanceOf(Date);
+  });
+
+  it("does not resend for a ladder that finished long ago", async () => {
+    store.set("ladders/OLD", {
+      name: "Old",
+      ladderType: LADDER_TYPE.SINGLES,
+      status: LADDER_STATUS.PLAYOFFS,
+      playoffsGeneratedAt: daysFromNow(-10),
+    });
+    seedParticipant("OLD", "p0000");
+
+    await runProcessLadderPhases(now);
+
+    expect(mockSendNotification).not.toHaveBeenCalled();
   });
 });

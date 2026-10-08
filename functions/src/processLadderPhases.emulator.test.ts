@@ -1,6 +1,8 @@
 import * as admin from "firebase-admin";
 import {
+  DISPUTE_STAGE,
   LADDER_CANCELLED_REASON,
+  LADDER_MATCH_STATUS,
   LADDER_STATUS,
   LADDER_TYPE,
   TEAM_STATUS,
@@ -196,6 +198,7 @@ describe("playoffs generated for a 2048-player ladder", () => {
       registrationClosed: [],
       cancelled: [],
       playoffsGenerated: ["L2048"],
+      playoffsHeld: [],
     });
     expect(await ladderData("L2048")).toMatchObject({
       status: LADDER_STATUS.PLAYOFFS,
@@ -384,6 +387,129 @@ describe("playoffs generated for a 128-team doubles ladder", () => {
     expect(eliminated.map((n) => n.recipientId)).toEqual(
       expect.arrayContaining([`a${pad(8)}`, `b${pad(8)}`]),
     );
+  });
+});
+
+describe("two scheduler runs at the same time", () => {
+  it("generate one bracket and notify every player exactly once", async () => {
+    await seedLadder("LRACE", { name: "Emulator Race", maxPlayers: 512 });
+    await seedSingles("LRACE", 300);
+
+    const [first, second] = await Promise.all([
+      runProcessLadderPhases(now),
+      runProcessLadderPhases(now),
+    ]);
+
+    expect(
+      first.playoffsGenerated.length + second.playoffsGenerated.length,
+    ).toBe(1);
+    expect(await tieCount("LRACE")).toBe(16);
+    const all = await notifications();
+    expect(all).toHaveLength(300);
+    expect(new Set(all.map((n) => n.recipientId)).size).toBe(300);
+  });
+});
+
+describe("a run that stopped part-way", () => {
+  it("sends only the missing notifications on the next run", async () => {
+    await seedLadder("LRESUME", { name: "Emulator Resume", maxPlayers: 512 });
+    await seedSingles("LRESUME", 300);
+    await runProcessLadderPhases(now);
+    expect(await notifications()).toHaveLength(300);
+
+    await db.doc("ladders/LRESUME").update({
+      playoffNotificationsSentAt: admin.firestore.FieldValue.delete(),
+    });
+    const missing = ["u0000", "u0005", "u0200", "u0299"];
+    for (const userId of missing) {
+      const docs = await db.collection(`users/${userId}/notifications`).get();
+      await Promise.all(docs.docs.map((doc) => doc.ref.delete()));
+    }
+    pushRequests.length = 0;
+
+    await runProcessLadderPhases(now);
+
+    const all = await notifications();
+    expect(all).toHaveLength(300);
+    expect(new Set(all.map((n) => n.recipientId)).size).toBe(300);
+    expect(pushRequests).toHaveLength(missing.length);
+    expect(
+      (await ladderData("LRESUME")).playoffNotificationsSentAt,
+    ).toBeDefined();
+
+    pushRequests.length = 0;
+    await runProcessLadderPhases(now);
+    expect(pushRequests).toHaveLength(0);
+    expect(await notifications()).toHaveLength(300);
+  });
+});
+
+describe("games and disputes still open at the playoff start", () => {
+  it("holds the bracket until the dispute is resolved, then generates", async () => {
+    await seedLadder("LHOLD", { name: "Emulator Hold", maxPlayers: 512 });
+    await seedSingles("LHOLD", 300);
+    await db.doc("disputes/d1").set({
+      ladderId: "LHOLD",
+      stage: DISPUTE_STAGE.UNDER_REVIEW,
+    });
+    await db.doc("ladders/LHOLD/ladderMatches/m1").set({
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      games: [{ approvalStatus: "Pending" }],
+    });
+
+    const held = await runProcessLadderPhases(now);
+
+    expect(held.playoffsHeld).toEqual(["LHOLD"]);
+    expect(await ladderData("LHOLD")).toMatchObject({
+      status: LADDER_STATUS.REGISTRATION_CLOSED,
+      playoffHold: { openDisputes: 1, pendingGames: 1 },
+    });
+    expect(await tieCount("LHOLD")).toBe(0);
+    expect(await notifications()).toHaveLength(0);
+
+    await db.doc("disputes/d1").update({ stage: DISPUTE_STAGE.RESOLVED });
+    await db
+      .doc("ladders/LHOLD/ladderMatches/m1")
+      .update({ games: [{ approvalStatus: "approved" }] });
+    const released = await runProcessLadderPhases(now);
+
+    expect(released.playoffsGenerated).toEqual(["LHOLD"]);
+    expect((await ladderData("LHOLD")).playoffHold).toBeNull();
+    expect(await tieCount("LHOLD")).toBe(16);
+  });
+});
+
+describe("who can qualify", () => {
+  it("skips deleted accounts and disqualified players but still tells the disqualified they missed out", async () => {
+    await seedLadder("LELIG", {
+      name: "Emulator Eligibility",
+      maxPlayers: 256,
+    });
+    await seedSingles("LELIG", 140);
+    await db.doc("users/u0000").delete();
+    await db.doc("ladders/LELIG/reportCounts/u0001").set({
+      strikes: { cheating: 3 },
+    });
+
+    await runProcessLadderPhases(now);
+
+    const ties = await db.collection("ladders/LELIG/playoffTies").get();
+    const qualifiers = ties.docs
+      .map((doc) => doc.data())
+      .filter((tie) => tie.round === 1)
+      .flatMap((tie) => [tie.side1.entrantKey, tie.side2.entrantKey]);
+    expect(qualifiers).toHaveLength(8);
+    expect(qualifiers).not.toContain("u0000");
+    expect(qualifiers).not.toContain("u0001");
+    expect(qualifiers).toContain("u0009");
+
+    const all = await notifications();
+    const recipients = all.map((n) => n.recipientId);
+    expect(recipients).not.toContain("u0000");
+    expect(
+      byTitle(all, "Playoffs have started").map((n) => n.recipientId),
+    ).toContain("u0001");
+    expect(all).toHaveLength(139);
   });
 });
 
