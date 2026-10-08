@@ -24,10 +24,15 @@ const ParticipantCarousel = ({
         ) : null}
       </HeaderRow>
       {participants?.length > 0 ? (
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          testID="participant-carousel"
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+        >
           {participants.map((participant, index) => (
             <ParticipantView
               key={index}
+              testID={`participant-carousel-item-${index}`}
               onPress={() => {
                 navigation.navigate("UserProfile", {
                   userId: participant.userId,

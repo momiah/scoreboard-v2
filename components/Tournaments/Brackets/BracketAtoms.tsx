@@ -68,12 +68,14 @@ export const BracketGameCard = ({
   tournamentType,
   shell,
   onPress,
+  testID,
 }: {
   game: Game;
   label?: string | null;
   tournamentType: string;
   shell: boolean;
   onPress: () => void;
+  testID?: string;
 }) => {
   const status = game?.approvalStatus;
   const statusKey = typeof status === "string" ? status.toLowerCase() : null;
@@ -87,7 +89,12 @@ export const BracketGameCard = ({
           : null;
 
   return (
-    <CardPressable shell={shell} disabled={shell} onPress={onPress}>
+    <CardPressable
+      testID={testID}
+      shell={shell}
+      disabled={shell}
+      onPress={onPress}
+    >
       <CardHeader game={game} label={label} />
       <Divider />
       <BodyRow>

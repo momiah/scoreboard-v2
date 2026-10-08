@@ -172,7 +172,7 @@ const LadderStandings: React.FC = () => {
   const title = ladderName ?? "Standings";
 
   return (
-    <Screen>
+    <Screen testID="ladder-standings-screen">
       <Header>
         <BackButton
           onPress={() => navigation.goBack()}

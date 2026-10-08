@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Alert, Pressable, Text, TouchableOpacity } from "react-native";
+import {
+  Alert,
+  Pressable,
+  Text as RNText,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import type { UserProfile } from "@shared/types";
 import {
   seedRejectGameFlow,
@@ -27,6 +33,8 @@ import {
 } from "./seeds/mockCourtSubmissionReview";
 import { mockPartnerSetHomeCourt } from "./seeds/mockPartnerSetHomeCourt";
 import {
+  MAESTRO_PO_CANCELLED_SIZE,
+  PLAYOFF_VARIANT,
   seedLadderPlayoffs,
   seedLadderPlayoffsDoubles,
 } from "./seeds/seedLadderPlayoffs";
@@ -43,9 +51,23 @@ import {
 
 const UNLOCK_TAPS = 5;
 
+const HarnessButton = (
+  props: React.ComponentProps<typeof TouchableOpacity>,
+) => (
+  <TouchableOpacity
+    {...props}
+    style={[{ width: "25%", paddingVertical: 1 }, props.style]}
+  />
+);
+
+const Text = (props: React.ComponentProps<typeof RNText>) => (
+  <RNText numberOfLines={1} {...props} style={[{ fontSize: 7 }, props.style]} />
+);
+const PLAYOFF_SIZES = [2048, 1024, 512, 256, 128, 255, 511, 1023];
+
 const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
-  <>
-    <TouchableOpacity
+  <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+    <HarnessButton
       testID="maestro-cleanup-ladder-test-data"
       onPress={async () => {
         try {
@@ -59,9 +81,93 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       }}
     >
       <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    {[
+      {
+        id: "maestro-seed-ladder-playoffs",
+        label: "Seed Ladder Playoffs 2048 (Awaiting Function)",
+        run: () => seedLadderPlayoffs({ testUser: currentUser }),
+      },
+      ...PLAYOFF_SIZES.map((size) => ({
+        id:
+          size === 2048
+            ? "maestro-seed-ladder-playoffs-generated"
+            : `maestro-seed-ladder-playoffs-generated-${size}`,
+        label: `Seed Ladder Playoffs ${size} (Generated)`,
+        run: () =>
+          seedLadderPlayoffs({ testUser: currentUser, generate: true, size }),
+      })),
+      {
+        id: "maestro-seed-ladder-playoffs-not-qualified",
+        label: "Seed Ladder Playoffs 256 (Not Qualified)",
+        run: () =>
+          seedLadderPlayoffs({
+            testUser: currentUser,
+            generate: true,
+            size: 256,
+            variant: PLAYOFF_VARIANT.NOT_QUALIFIED,
+          }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-upcoming",
+        label: "Seed Ladder Playoffs 256 (Upcoming)",
+        run: () =>
+          seedLadderPlayoffs({
+            testUser: currentUser,
+            size: 256,
+            variant: PLAYOFF_VARIANT.UPCOMING,
+          }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-cancelled",
+        label: "Seed Ladder Playoffs 127 (Cancelled)",
+        run: () =>
+          seedLadderPlayoffs({
+            testUser: currentUser,
+            size: MAESTRO_PO_CANCELLED_SIZE,
+            variant: PLAYOFF_VARIANT.CANCELLED,
+          }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-doubles",
+        label: "Seed Ladder Playoffs Doubles 256 (Awaiting Function)",
+        run: () => seedLadderPlayoffsDoubles({ testUser: currentUser }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-doubles-generated",
+        label: "Seed Ladder Playoffs Doubles 256 (Generated)",
+        run: () =>
+          seedLadderPlayoffsDoubles({ testUser: currentUser, generate: true }),
+      },
+      {
+        id: "maestro-seed-ladder-playoffs-doubles-generated-128",
+        label: "Seed Ladder Playoffs Doubles 128 (Generated)",
+        run: () =>
+          seedLadderPlayoffsDoubles({
+            testUser: currentUser,
+            generate: true,
+            teams: 128,
+          }),
+      },
+    ].map(({ id, label, run }) => (
+      <HarnessButton
+        key={id}
+        testID={id}
+        onPress={async () => {
+          try {
+            const outcome = await run();
+            Alert.alert("Seeded", JSON.stringify(outcome));
+          } catch (error) {
+            Alert.alert("Seed failed", String(error));
+          }
+        }}
+      >
+        <Text style={{ color: "white" }}>{label}</Text>
+      </HarnessButton>
+    ))}
+
+    <HarnessButton
       testID="maestro-seed-reject-game-flow"
       onPress={async () => {
         try {
@@ -75,9 +181,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       }}
     >
       <Text style={{ color: "white" }}>Seed Reject-Game Flow</Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-seed-active-dispute"
       onPress={async () => {
         try {
@@ -94,9 +200,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       <Text style={{ color: "white" }}>
         Seed Reject-Game Flow (Active Dispute)
       </Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-seed-doubles-reject-game-flow"
       onPress={async () => {
         try {
@@ -110,9 +216,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       }}
     >
       <Text style={{ color: "white" }}>Seed Doubles Reject-Game Flow</Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-seed-doubles-active-dispute"
       onPress={async () => {
         try {
@@ -129,10 +235,10 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       <Text style={{ color: "white" }}>
         Seed Doubles Reject-Game Flow (Active Dispute)
       </Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
     {(["upheld", "rejected", "void"] as const).map((resolution) => (
-      <TouchableOpacity
+      <HarnessButton
         key={resolution}
         testID={`maestro-mock-resolve-${resolution}`}
         onPress={async () => {
@@ -154,10 +260,10 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         <Text style={{ color: "white" }}>
           Mock Resolve Dispute ({resolution})
         </Text>
-      </TouchableOpacity>
+      </HarnessButton>
     ))}
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-mock-request-more-evidence"
       onPress={async () => {
         try {
@@ -173,10 +279,10 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       }}
     >
       <Text style={{ color: "white" }}>Mock Request More Evidence</Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
     {(["upheld", "rejected", "void"] as const).map((resolution) => (
-      <TouchableOpacity
+      <HarnessButton
         key={resolution}
         testID={`maestro-mock-resolve-doubles-${resolution}`}
         onPress={async () => {
@@ -198,10 +304,10 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         <Text style={{ color: "white" }}>
           Mock Resolve Doubles Dispute ({resolution})
         </Text>
-      </TouchableOpacity>
+      </HarnessButton>
     ))}
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-mock-request-doubles-more-evidence"
       onPress={async () => {
         try {
@@ -219,9 +325,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       <Text style={{ color: "white" }}>
         Mock Request More Evidence (Doubles)
       </Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-seed-add-game-flow"
       onPress={async () => {
         try {
@@ -235,9 +341,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       }}
     >
       <Text style={{ color: "white" }}>Seed Add-Game Flow</Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-seed-add-game-flow-reported"
       onPress={async () => {
         try {
@@ -252,9 +358,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       }}
     >
       <Text style={{ color: "white" }}>Seed Add-Game Flow (Reported)</Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-seed-add-game-flow-doubles"
       onPress={async () => {
         try {
@@ -268,9 +374,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       }}
     >
       <Text style={{ color: "white" }}>Seed Add-Game Flow (Doubles)</Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
-    <TouchableOpacity
+    <HarnessButton
       testID="maestro-seed-add-game-flow-doubles-reported"
       onPress={async () => {
         try {
@@ -287,7 +393,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       <Text style={{ color: "white" }}>
         Seed Add-Game Flow (Doubles, Reported)
       </Text>
-    </TouchableOpacity>
+    </HarnessButton>
 
     {[
       {
@@ -395,7 +501,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
           }),
       },
     ].map(({ id, label, run }) => (
-      <TouchableOpacity
+      <HarnessButton
         key={id}
         testID={id}
         onPress={async () => {
@@ -408,7 +514,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         }}
       >
         <Text style={{ color: "white" }}>{label}</Text>
-      </TouchableOpacity>
+      </HarnessButton>
     ))}
 
     {[
@@ -549,33 +655,8 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             courtId: MAESTRO_HC_COURT_D_ID,
           }),
       },
-      {
-        id: "maestro-seed-ladder-playoffs",
-        label: "Seed Ladder Playoffs 2048 (Awaiting Function)",
-        title: "Seeded",
-        run: () => seedLadderPlayoffs({ testUser: currentUser }),
-      },
-      {
-        id: "maestro-seed-ladder-playoffs-generated",
-        label: "Seed Ladder Playoffs 2048 (Generated)",
-        title: "Seeded",
-        run: () => seedLadderPlayoffs({ testUser: currentUser, generate: true }),
-      },
-      {
-        id: "maestro-seed-ladder-playoffs-doubles",
-        label: "Seed Ladder Playoffs Doubles 256 (Awaiting Function)",
-        title: "Seeded",
-        run: () => seedLadderPlayoffsDoubles({ testUser: currentUser }),
-      },
-      {
-        id: "maestro-seed-ladder-playoffs-doubles-generated",
-        label: "Seed Ladder Playoffs Doubles 256 (Generated)",
-        title: "Seeded",
-        run: () =>
-          seedLadderPlayoffsDoubles({ testUser: currentUser, generate: true }),
-      },
     ].map(({ id, label, title, run }) => (
-      <TouchableOpacity
+      <HarnessButton
         key={id}
         testID={id}
         onPress={async () => {
@@ -588,9 +669,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         }}
       >
         <Text style={{ color: "white" }}>{label}</Text>
-      </TouchableOpacity>
+      </HarnessButton>
     ))}
-  </>
+  </View>
 );
 
 const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => {

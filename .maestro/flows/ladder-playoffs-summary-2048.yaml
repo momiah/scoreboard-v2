@@ -1,0 +1,67 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-ladder-playoffs-generated"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 300000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Playoffs 2048 on Summary.*"
+    timeout: 20000
+- tapOn: ".*open Maestro Playoffs 2048 on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-summary"
+    timeout: 40000
+- assertVisible:
+    id: "ladder-players"
+    text: "2048 / 2048"
+- scrollUntilVisible:
+    element:
+      id: "ladder-top-contender-3"
+    direction: DOWN
+    timeout: 60000
+- assertVisible:
+    id: "ladder-top-contender-0"
+- assertVisible:
+    id: "ladder-top-contender-1"
+- assertVisible:
+    id: "ladder-top-contender-2"
+- assertVisible:
+    id: "ladder-top-contender-3"
+- assertNotVisible:
+    id: "ladder-top-contender-4"
+- assertVisible: ".*Mohsin M.*"
+- assertVisible:
+    text: ".*P0001 S.*"
+    below: ".*Mohsin M.*"
+- scrollUntilVisible:
+    element:
+      id: "participant-carousel-item-0"
+    direction: DOWN
+    timeout: 60000
+- repeat:
+    times: 8
+    commands:
+      - swipe:
+          from:
+            id: "participant-carousel"
+          direction: LEFT
+- assertVisible:
+    id: "participant-carousel-item-19"
+- assertNotVisible:
+    id: "participant-carousel-item-20"

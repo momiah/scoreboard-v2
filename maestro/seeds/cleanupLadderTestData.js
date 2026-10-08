@@ -38,7 +38,10 @@ import {
   MAESTRO_HC_FIXTURE_USER_IDS,
   deleteUserSubmittedCourts,
 } from "./homeCourtFixtures";
-import { cleanupLadderPlayoffsTestData } from "./seedLadderPlayoffs";
+import {
+  MAESTRO_PO_LADDER_IDS,
+  cleanupLadderPlayoffsTestData,
+} from "./seedLadderPlayoffs";
 
 const LADDER_SUBCOLLECTIONS = [
   "ladderMatches",
@@ -108,7 +111,8 @@ export const cleanupLadderTestData = async ({
   const deletedCourts = await deleteUserSubmittedCourts(testUser);
   const playoffs = await cleanupLadderPlayoffsTestData();
 
-  if (testUser?.userId && ladderIds.length) {
+  const notificationLadderIds = [...ladderIds, ...MAESTRO_PO_LADDER_IDS];
+  if (testUser?.userId && notificationLadderIds.length) {
     const notificationsRef = collection(
       db,
       "users",
@@ -116,7 +120,10 @@ export const cleanupLadderTestData = async ({
       "notifications",
     );
     const snap = await getDocs(
-      query(notificationsRef, where("data.ladderId", "in", ladderIds)),
+      query(
+        notificationsRef,
+        where("data.ladderId", "in", notificationLadderIds),
+      ),
     );
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   }
