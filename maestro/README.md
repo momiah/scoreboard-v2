@@ -22,8 +22,9 @@ bundled into a release build.
   (just below the cutoff for `notQualified`) and fixture players `P0001 S`…
   follow in rank order with home courts in 8 UK cities. "Generated" writes the
   bracket immediately with the same shared helpers as `processLadderPhases`
-  and the promotion notification the function would send; the cancelled seed
-  writes the cancellation notification. Every seed also writes a neutral
+  and the promotion notification the function would send (the elimination
+  notice for `notQualified`); the cancelled seed writes the cancellation
+  notification. Every seed also writes a neutral
   "Maestro: open `<ladder>` on `<tab>`" notification so flows can reach the
   ladder. "Awaiting Function" leaves the bracket to the deployed function
   (every 15 minutes, or force-run its Cloud Scheduler job). Cleaned up by

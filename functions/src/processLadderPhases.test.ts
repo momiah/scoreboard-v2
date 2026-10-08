@@ -680,15 +680,82 @@ describe("notifications", () => {
 
     await runProcessLadderPhases(now);
 
-    expect(sent().map((n) => n.recipientId).sort()).toEqual(
+    const promoted = sent().filter((n) => n.title === "You made the playoffs!");
+    expect(promoted.map((n) => n.recipientId).sort()).toEqual(
       Array.from({ length: 8 }, (_, index) => `p${String(index).padStart(4, "0")}`),
     );
-    expect(sent()[0]).toMatchObject({
-      title: "You made the playoffs!",
+    expect(promoted[0]).toMatchObject({
       message:
         "Congratulations! You've made the playoffs in North London Ladder. You have 10 days to play both your home and away games.",
       data: { ladderId: "L1", tab: "Playoffs" },
     });
+  });
+
+  it("tells every player who did not qualify that the ladder is closed", async () => {
+    seedLadder("L1", { name: "North London Ladder", maxPlayers: 256 });
+    seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
+
+    await runProcessLadderPhases(now);
+
+    const eliminated = sent().filter((n) => n.title === "Playoffs have started");
+    expect(eliminated).toHaveLength(132);
+    expect(eliminated.map((n) => n.recipientId).sort()).toEqual(
+      Array.from({ length: 132 }, (_, index) =>
+        `p${String(index + 8).padStart(4, "0")}`,
+      ),
+    );
+    expect(eliminated[0]).toMatchObject({
+      senderId: "system",
+      type: "ladder",
+      message:
+        "The playoffs in North London Ladder have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!",
+      data: { ladderId: "L1", tab: "Playoffs" },
+    });
+    expect(sent()).toHaveLength(140);
+  });
+
+  it("tells both players of every doubles team that did not qualify", async () => {
+    seedLadder("L1", {
+      ladderType: LADDER_TYPE.DOUBLES,
+      name: "Doubles Ladder",
+      maxPlayers: 256,
+    });
+    for (let index = 0; index < 130; index += 1) {
+      const id = String(index).padStart(3, "0");
+      seedUser(`a${id}`);
+      seedUser(`b${id}`);
+      store.set(`ladders/L1/ladderTeams/t${id}`, {
+        teamKey: `t${id}`,
+        teamId: `t${id}`,
+        playerIds: [`a${id}`, `b${id}`],
+        status: TEAM_STATUS.ACTIVE,
+        XP: 1000 - index,
+        homeCourt: homeCourt("london"),
+      });
+    }
+
+    await runProcessLadderPhases(now);
+
+    const eliminated = sent().filter((n) => n.title === "Playoffs have started");
+    expect(eliminated).toHaveLength((130 - 8) * 2);
+    const recipients = eliminated.map((n) => n.recipientId);
+    expect(recipients).toContain("a008");
+    expect(recipients).toContain("b008");
+    expect(recipients).not.toContain("a007");
+    expect(recipients).not.toContain("b007");
+  });
+
+  it("sends no elimination notice when a ladder is cancelled instead", async () => {
+    seedLadder("L1", {
+      status: LADDER_STATUS.REGISTRATION_OPEN,
+      registrationClosesAt: daysFromNow(-1),
+      playoffStartsAt: daysFromNow(30),
+    });
+    seedParticipants("L1", 127);
+
+    await runProcessLadderPhases(now);
+
+    expect(sent().some((n) => n.title === "Playoffs have started")).toBe(false);
   });
 
   it("sends nothing on a second run", async () => {
@@ -699,7 +766,7 @@ describe("notifications", () => {
     const firstRun = mockSendNotification.mock.calls.length;
     await runProcessLadderPhases(now);
 
-    expect(firstRun).toBe(16);
+    expect(firstRun).toBe(300);
     expect(mockSendNotification).toHaveBeenCalledTimes(firstRun);
   });
 });

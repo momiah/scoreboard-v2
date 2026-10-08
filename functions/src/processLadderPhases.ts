@@ -359,6 +359,18 @@ const generatePlayoffs = async ({
       message: `Congratulations! You've made the playoffs in ${ladder.name}. You have ${PLAYOFF_ROUND_DAYS} days to play both your home and away games.`,
       tab: "Playoffs",
     });
+    const qualifierKeys = new Set(
+      qualifiers.map((qualifier) => qualifier.entrantKey),
+    );
+    await notifyPlayers({
+      userIds: entrants
+        .filter((entrant) => !qualifierKeys.has(entrant.entrantKey))
+        .flatMap((entrant) => entrant.players.map((player) => player.userId)),
+      ladder,
+      title: "Playoffs have started",
+      message: `The playoffs in ${ladder.name} have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!`,
+      tab: "Playoffs",
+    });
   }
   return outcome;
 };

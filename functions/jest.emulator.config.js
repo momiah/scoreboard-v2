@@ -3,5 +3,6 @@ module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
   roots: ["<rootDir>/src"],
-  testPathIgnorePatterns: ["/node_modules/", "\\.emulator\\.test\\.ts$"],
+  testMatch: ["**/*.emulator.test.ts"],
+  testTimeout: 300000,
 };

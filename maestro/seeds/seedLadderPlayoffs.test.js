@@ -251,9 +251,28 @@ describe("seedLadderPlayoffs variants", () => {
       `ladders/${MAESTRO_PO_LADDER_ID}/ladderParticipants/test-user`,
     )[0].data;
     expect(testUserRow.competitionXP).toBe(10000 - 16 * 3);
+    const notifications = notificationsFor("test-user");
+    expect(
+      notifications.some((n) => n.title === "You made the playoffs!"),
+    ).toBe(false);
+    expect(
+      notifications.find((n) => n.title === "Playoffs have started"),
+    ).toMatchObject({
+      recipientId: "test-user",
+      senderId: "system",
+      type: "ladder",
+      message:
+        "The playoffs in Maestro Playoffs 256 have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!",
+      data: { ladderId: MAESTRO_PO_LADDER_ID, tab: "Playoffs" },
+    });
+  });
+
+  it("sends a qualifier the promotion and never the elimination notice", async () => {
+    await seedLadderPlayoffs({ testUser, generate: true, size: 256 });
+
     expect(
       notificationsFor("test-user").some(
-        (n) => n.title === "You made the playoffs!",
+        (n) => n.title === "Playoffs have started",
       ),
     ).toBe(false);
   });

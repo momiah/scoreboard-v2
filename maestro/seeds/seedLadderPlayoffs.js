@@ -257,6 +257,7 @@ const writePlayoffNotifications = async ({
   ladderId,
   ladderName,
   promoted = false,
+  eliminated = false,
   cancelled = false,
 }) => {
   const notificationsRef = collection(
@@ -296,6 +297,18 @@ const writePlayoffNotifications = async ({
         senderId: "system",
         title: "You made the playoffs!",
         message: `Congratulations! You've made the playoffs in ${ladderName}. You have 10 days to play both your home and away games.`,
+        data: { ladderId, tab: "Playoffs" },
+      },
+    });
+  }
+  if (eliminated) {
+    phase.push({
+      id: `maestro-po-eliminated-${ladderId}`,
+      data: {
+        ...base,
+        senderId: "system",
+        title: "Playoffs have started",
+        message: `The playoffs in ${ladderName} have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!`,
         data: { ladderId, tab: "Playoffs" },
       },
     });
@@ -438,6 +451,7 @@ export const seedLadderPlayoffs = async ({
     ladderId: MAESTRO_PO_LADDER_ID,
     ladderName,
     promoted: shouldGenerate && testUserRank < bracketSize,
+    eliminated: shouldGenerate && testUserRank >= bracketSize,
     cancelled,
   });
 

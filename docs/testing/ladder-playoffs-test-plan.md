@@ -7,7 +7,8 @@ notifications**, with the expected outcome for each. Layers:
 - **Jest** — the seed fixtures (exact qualifiers per tier, pinned games,
   notifications, variants), the bracket component and the function. Marked 🅹.
 - **E2E** (Maestro) — real journeys on the iOS simulator. Marked 🅼.
-- **Manual** — the deployed Cloud Function, which neither layer can run.
+- **Emulator** — the real `processLadderPhases` function against a Firestore
+  emulator (`npm --prefix functions run test:emulator`). Marked 🅴.
 
 Phase 2 (the playoff match screen, aggregate scoring, scheduling) and Phase 3
 (payout) are not covered; see `docs/ladder-playoffs-phase2-notes.md`.
@@ -31,6 +32,13 @@ Phase 2 (the playoff match screen, aggregate scoring, scheduling) and Phase 3
   - Playoffs generated → every qualifier, `tab: "Playoffs"`: "Congratulations!
     You've made the playoffs in {ladder}. You have 10 days to play both your
     home and away games."
+  - Playoffs generated → every entrant who did not qualify (both players of an
+    eliminated doubles team), `tab: "Playoffs"`: "The playoffs in {ladder}
+    have started, and unfortunately you didn't make the cut this time. The
+    ladder is now closed, so you can no longer post matches. Thank you for
+    playing, and come back next season for another chance to win!" Sent once,
+    only when the bracket is generated (never on a cancelled ladder or a
+    re-run).
 - **Summary third stat:** Registration Open/Closed shows the "To Playoffs"
   countdown (`ladder-playoff-countdown`); otherwise "Status" with "Playoffs",
   "Completed" or "Cancelled" as plain text (`ladder-status`).
@@ -87,7 +95,7 @@ guard fails if they drift):
 | 3.1 | Promotion notification | The exact promotion message; tapping it opens the Playoffs tab with the bracket and the user's game (2048 → `r1-s8` v P0008 S) on screen 🅼 🅹 |
 | 3.2 | Playoffs tab from the ladder | Open the ladder on Summary, tap the Playoffs tab: same game on screen 🅼 |
 | 3.3 | Schedule placeholder | Schedule shows the gold placeholder text; tapping it switches to the Playoffs tab with the user's game on screen 🅼 |
-| 3.4 | Not qualified (ranked just below the cutoff) | No promotion notification, no Schedule placeholder; the Playoffs tab opens at the top (`r1-s0`) and the user is not in the bracket 🅼 🅹 |
+| 3.4 | Not qualified (ranked just below the cutoff) | The exact elimination message and no promotion message; tapping it opens the Playoffs tab at the top (`r1-s0`) with the user not in the bracket; no Schedule placeholder 🅼 🅹 🅴 |
 
 ## 4. Summary and standings
 
@@ -99,21 +107,34 @@ guard fails if they drift):
 | 4.4 | Summary on a 2048 ladder | Renders; "Players" reads "2048 / 2048"; Top Contenders shows exactly 4 rows with the test user first; the Participants carousel shows at most 20 avatars 🅼 |
 | 4.5 | Standings | Performance → "View all players" opens the full-screen standings; tapping a player opens Player Details as a full screen, not a modal 🅼 |
 
-## 5. Manual checks (deployed function)
+## 5. The Cloud Function and push (automated)
 
-Seed "Ladder Playoffs 2048 (Awaiting Function)" (`maestro-seed-ladder-playoffs`),
-then force-run the scheduler job:
+`functions/src/processLadderPhases.emulator.test.ts` runs the real
+`runProcessLadderPhases` against a Firestore emulator (real transactions,
+`where in`, counts, bulk reads) with only the Expo push HTTP call intercepted.
+Run it with:
 
 ```bash
-gcloud scheduler jobs run firebase-schedule-processLadderPhases-us-central1 --location=us-central1
+npm --prefix functions run test:emulator
 ```
 
-- `ladders/maestro-po-ladder` has `status: playoffs`, `playoffBracketSize: 128`,
-  `playoffEntrantCount: 2048` and 128 `playoffTies` documents.
-- The test user received the promotion notification, in the app and as a push.
-- Running the job again changes nothing and sends nothing (idempotent).
-- A 127-player ladder past registration close becomes Cancelled and every
-  entrant receives the cancellation notification, in the app and as a push.
+It needs Java 17 or newer and downloads a pinned `firebase-tools@13` through
+`npx` on first use. The plain `npm test` skips it. Cases 🅴:
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 5.1 | 2048 registrations at playoff start | Ladder `status: playoffs`, `playoffBracketSize: 128`, `playoffEntrantCount: 2048`, 128 `playoffTies`; 2048 notifications, one per user: 128 promotions to exactly ranks 1–128 and 1920 elimination notices, with the exact messages and `data { ladderId, tab: "Playoffs" }` |
+| 5.2 | Push for the same run | 2048 Expo requests, one per device token; the qualifier's push carries "You made the playoffs!" and its message, an eliminated player's carries "Playoffs have started" and its message, each with `sound`, `priority: high` and `data { ladderId, tab, type: "ladder" }` |
+| 5.3 | Running it again | Ladder unchanged, still 128 ties, no new notifications and no new push requests |
+| 5.4 | 127 registrations at registration close | Ladder Cancelled with "Too few registrations", no ties, the refund runs, every entrant gets the exact cancellation message once (and a push); a second run adds nothing |
+| 5.5 | 300 registrations at registration close | Registration Closed, no bracket, no notifications |
+| 5.6 | 100 entrants at playoff start (dropped below 128 after close) | Not cancelled; top 8, 8 promotions and 92 elimination notices |
+| 5.7 | 128-team doubles ladder | Top 8, 8 ties; both players of each team are notified, 16 promotions and 240 elimination notices |
+| 5.8 | Schedule | The function runs every 15 minutes |
+
+The unit tests in `functions/src/processLadderPhases.test.ts` cover the same
+rules with a faked Firestore (including qualifier ranking, tie-breaks and
+doubles teams).
 
 ## Not covered
 
@@ -121,7 +142,10 @@ gcloud scheduler jobs run firebase-schedule-processLadderPhases-us-central1 --lo
   milliseconds); both are covered in Jest.
 - Phase 2 (playoff match screen, aggregate scoring, scheduling, result
   notifications) and Phase 3 (payout).
-- Push delivery of the notifications (manual check above).
+- A push actually arriving on a physical phone, and the deployed Cloud
+  Scheduler job firing in production. The tests assert the exact Expo request
+  the function sends and the schedule it declares; delivery by Expo and
+  Apple/Google is outside what can be asserted automatically.
 
 ## Fixtures
 
@@ -132,8 +156,9 @@ teams, past their playoff start with home courts cycling through 8 UK cities.
 Variants: `notQualified` (the test user ranked just below the cutoff),
 `upcoming` (playoff start in three days) and `cancelled` (127 registrations,
 status Cancelled, reason "Too few registrations", no ties). Generated seeds
-write the promotion notification and the cancelled seed writes the cancellation
-notification, each exactly as the function would; every seed also writes a
+write the promotion notification (or, for `notQualified`, the elimination
+notice) and the cancelled seed writes the cancellation notification, each
+exactly as the function would; every seed also writes a
 neutral "Maestro: open `<ladder>` on `<tab>`" notification per tab to reach the
 ladder. `cleanupLadderTestData` deletes the ladders, fixture users, courts and
 notifications.
