@@ -41,6 +41,7 @@ import AddClubModal from "../../components/Modals/AddClubModal";
 import HomeLeagueSection from "../../components/Home/HomeLeagueSection";
 import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
 import HomeClubsSection from "../../components/Home/HomeClubsSection";
+import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
@@ -233,6 +234,8 @@ const Home = () => {
             <Text style={{ color: "white" }}>Sign In</Text>
           </TouchableOpacity>
         )}
+
+        <LadderPreRegistrationBanner />
 
         <HomeLeagueSection
           loading={loading}

@@ -50,6 +50,8 @@ import { LeagueContext } from "../context/LeagueContext";
 import { View } from "react-native";
 import InvitePlayer from "../screens/InvitePlayer";
 import GameScreen from "../screens/GameScreen";
+import LadderPreRegistrations from "../screens/Home/LadderPreRegistration/LadderPreRegistrations";
+import LadderPreRegistrationSignup from "../screens/Home/LadderPreRegistration/LadderPreRegistrationSignup";
 // import { getUnitId } from "../utils/getAdMobUnitId";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
@@ -107,6 +109,14 @@ const HomeStack = () => {
       />
       <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
       <Stack.Screen name="EditTournament" component={EditTournament} />
+      <Stack.Screen
+        name="LadderPreRegistrations"
+        component={LadderPreRegistrations}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationSignup"
+        component={LadderPreRegistrationSignup}
+      />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
