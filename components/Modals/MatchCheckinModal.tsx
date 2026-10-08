@@ -40,6 +40,7 @@ import {
   getCourtCoords,
 } from "../../helpers/locationCheckIn";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
+import { getDevicePosition } from "../../helpers/devicePosition";
 import type { Court } from "@shared/types";
 
 const screenWidth = Dimensions.get("window").width;
@@ -119,9 +120,8 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
         if (!granted) {
           denied = true;
         } else {
-          const position = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
+          const position = await getDevicePosition();
+          if (!position) throw new Error("Location unavailable");
           const device = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,

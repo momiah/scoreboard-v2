@@ -29,6 +29,7 @@ const childPaths = (collectionPath: string): string[] =>
       !path.slice(collectionPath.length + 1).includes("/"),
   );
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function docRef(path: string): any {
   return {
     path,
@@ -42,6 +43,7 @@ function docRef(path: string): any {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function collectionRef(path: string): any {
   const docs = () => childPaths(path).map(snapshot);
   return {

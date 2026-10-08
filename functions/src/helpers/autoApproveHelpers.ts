@@ -25,8 +25,11 @@ export const getGamePlayerIds = (game: Game): string[] =>
     game.team2.player2?.userId,
   ].filter((id): id is string => !!id);
 
-export const isDueForAutoApproval = (game: Game): boolean => {
-  const gameCreatedAt = toMomentTimezone(game.createdAt);
+export const isDueForAutoApproval = (
+  game: Game,
+  reportedAt?: admin.firestore.Timestamp | Date | string | null,
+): boolean => {
+  const gameCreatedAt = toMomentTimezone(reportedAt ?? game.createdAt);
   if (!gameCreatedAt.isValid()) return false;
   const hoursSinceCreation = moment
     .tz(TIMEZONE)

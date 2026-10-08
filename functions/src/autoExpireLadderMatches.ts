@@ -8,36 +8,48 @@ import { isLadderMatchExpired } from "courtchamps-shared/helpers";
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
 
+const BATCH_LIMIT = 400;
+
 export const autoExpireLadderMatches = onSchedule(
-  "every 30 minutes",
+  { schedule: "every 30 minutes", timeoutSeconds: 540, memory: "512MiB" },
   async () => {
     const db = admin.firestore();
     const now = Date.now();
     try {
       const laddersSnapshot = await db.collection(LADDERS).get();
-      const counts = await Promise.all(
+      const results = await Promise.allSettled(
         laddersSnapshot.docs.map(async (ladderDoc) => {
           const matchesSnapshot = await ladderDoc.ref
             .collection(LADDER_MATCHES)
             .where("matchStatus", "==", LADDER_MATCH_STATUS.ACCEPTED)
             .get();
 
-          const batch = db.batch();
-          let expired = 0;
-          matchesSnapshot.docs.forEach((matchDoc) => {
-            const match = matchDoc.data() as LadderMatch;
-            if (isLadderMatchExpired(match, now)) {
-              batch.update(matchDoc.ref, {
+          const expiredRefs = matchesSnapshot.docs
+            .filter((matchDoc) =>
+              isLadderMatchExpired(matchDoc.data() as LadderMatch, now),
+            )
+            .map((matchDoc) => matchDoc.ref);
+          for (let i = 0; i < expiredRefs.length; i += BATCH_LIMIT) {
+            const batch = db.batch();
+            expiredRefs.slice(i, i + BATCH_LIMIT).forEach((ref) =>
+              batch.update(ref, {
                 matchStatus: LADDER_MATCH_STATUS.EXPIRED,
                 expiredAt: new Date(),
-              });
-              expired += 1;
-            }
-          });
-          if (expired > 0) await batch.commit();
-          return expired;
+              }),
+            );
+            await batch.commit();
+          }
+          return expiredRefs.length;
         }),
       );
+      const counts = results.map((result, index) => {
+        if (result.status === "fulfilled") return result.value;
+        console.error(
+          `❌ Auto-expire failed for ${laddersSnapshot.docs[index].id}:`,
+          result.reason,
+        );
+        return 0;
+      });
 
       const expired = counts.reduce((sum, n) => sum + n, 0);
       console.log(

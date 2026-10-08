@@ -23,6 +23,15 @@ interface SelectDoublesTeamParams {
   ladder: Ladder;
 }
 
+const TEAM_JOIN_FAILURE_MESSAGES: Record<string, string> = {
+  closed: "Registration for this ladder has closed.",
+  not_open: "Registration for this ladder hasn't opened yet.",
+  full: "This ladder is full.",
+  team_not_found: "This team no longer exists.",
+  team_pending: "Your partner needs to accept before the team can join.",
+  team_incomplete: "A team needs two players before it can join.",
+};
+
 const teamLabel = (team: TeamStats): string =>
   team.teamName?.trim() || (team.team ?? []).join(" & ");
 
@@ -74,7 +83,7 @@ const SelectDoublesTeam: React.FC = () => {
     }
     setJoining(true);
     try {
-      const { success, conflict } = await joinLadderAsTeam(
+      const { success, conflict, reason } = await joinLadderAsTeam(
         ladder.ladderId,
         selectedTeam,
       );
@@ -92,7 +101,11 @@ const SelectDoublesTeam: React.FC = () => {
           "error",
         );
       } else {
-        showBottomToast("Couldn't join. Please try again.", "error");
+        showBottomToast(
+          (reason && TEAM_JOIN_FAILURE_MESSAGES[reason]) ||
+            "Couldn't join. Please try again.",
+          "error",
+        );
       }
     } finally {
       setJoining(false);
