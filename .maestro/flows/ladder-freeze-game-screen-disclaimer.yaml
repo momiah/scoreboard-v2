@@ -1,0 +1,37 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-playoffs-started"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-add-game-flow-match"
+    timeout: 15000
+- tapOn:
+    id: "schedule-card-maestro-add-game-flow-match"
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-maestro-add-game-flow-match-g1"
+    direction: DOWN
+- tapOn:
+    id: "ladder-game-maestro-add-game-flow-match-g1"
+- extendedWaitUntil:
+    visible:
+      id: "game-screen-approval"
+    timeout: 15000
+- assertVisible: ".*This game can no longer be actioned as playoffs has started.*"
+- assertNotVisible: ".*Auto-approved.*"
+- assertNotVisible: ".*Game approved.*"

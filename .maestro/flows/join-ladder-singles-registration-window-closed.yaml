@@ -1,0 +1,46 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-join-singles-window-closed"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Join Singles on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Join Singles on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+- tapOn:
+    id: "ladder-summary-join"
+- extendedWaitUntil:
+    visible:
+      id: "join-ladder-modal"
+    timeout: 10000
+- tapOn:
+    id: "join-ladder-terms"
+- tapOn:
+    id: "join-ladder-confirm"
+- extendedWaitUntil:
+    visible: "Registration for this ladder has closed."
+    timeout: 15000
+- assertVisible:
+    id: "join-ladder-modal"
+- assertNotVisible:
+    id: "join-ladder-confirmation"

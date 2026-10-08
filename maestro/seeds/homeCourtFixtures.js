@@ -292,6 +292,7 @@ export const seedHomeCourtLadder = ({
   ladderType,
   maxPlayers,
   extraCourts = 0,
+  status = LADDER_STATUS.REGISTRATION_OPEN,
 }) =>
   setDoc(doc(db, "ladders", ladderId), {
     ladderId,
@@ -308,7 +309,7 @@ export const seedHomeCourtLadder = ({
       MAESTRO_HC_COURT_D_ID,
       ...EXTRA_COURT_NUMBERS.slice(0, extraCourts).map(maestroHcExtraCourtId),
     ],
-    status: LADDER_STATUS.REGISTRATION_OPEN,
+    status,
     registrationOpensAt: daysFromNow(-1),
     registrationClosesAt: daysFromNow(7),
     seasonStartsAt: daysFromNow(-1),

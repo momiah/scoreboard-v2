@@ -26,6 +26,11 @@ import { cleanupLadderTestData } from "./seeds/cleanupLadderTestData";
 import { seedAddApproveGameFlow } from "./seeds/seedAddApproveGameFlow";
 import { seedAddApproveGameFlowDoubles } from "./seeds/seedAddApproveGameFlowDoubles";
 import { seedHomeCourtFlow } from "./seeds/seedHomeCourtFlow";
+import {
+  JOIN_VARIANT,
+  seedLadderJoinFlowDoubles,
+  seedLadderJoinFlowSingles,
+} from "./seeds/seedLadderJoinFlow";
 import { seedHomeCourtFlowDoubles } from "./seeds/seedHomeCourtFlowDoubles";
 import {
   findOwnPendingCourtId,
@@ -417,6 +422,47 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             ladderStatus: LADDER_STATUS.PLAYOFFS,
           }),
       },
+      ...[
+        ["open", JOIN_VARIANT.OPEN],
+        ["full", JOIN_VARIANT.FULL],
+        ["window-closed", JOIN_VARIANT.WINDOW_CLOSED],
+        ["status-closed", JOIN_VARIANT.STATUS_CLOSED],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-join-singles-${key}`,
+        label: `Seed Join Singles (${key})`,
+        run: () => seedLadderJoinFlowSingles({ testUser: currentUser, variant }),
+      })),
+      ...[
+        ["open", JOIN_VARIANT.OPEN],
+        ["full", JOIN_VARIANT.FULL],
+        ["window-closed", JOIN_VARIANT.WINDOW_CLOSED],
+        ["partner-in-ladder", JOIN_VARIANT.PARTNER_IN_LADDER],
+        ["claim-race", JOIN_VARIANT.CLAIM_RACE],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-join-doubles-${key}`,
+        label: `Seed Join Doubles (${key})`,
+        run: () => seedLadderJoinFlowDoubles({ testUser: currentUser, variant }),
+      })),
+      {
+        id: "maestro-seed-add-game-flow-checkin-court-coords",
+        label: "Seed Add-Game Flow (Check-in, Court Coords)",
+        run: () =>
+          seedAddApproveGameFlow({
+            testUser: currentUser,
+            allCheckedIn: false,
+            courtCoords: { latitude: 51.5074, longitude: -0.1278 },
+          }),
+      },
+      {
+        id: "maestro-seed-reject-playoffs-started",
+        label: "Seed Active Dispute (Playoffs Started)",
+        run: () =>
+          seedRejectGameFlow({
+            testUser: currentUser,
+            withActiveDispute: true,
+            ladderStatus: LADDER_STATUS.PLAYOFFS,
+          }),
+      },
       {
         id: "maestro-seed-add-game-flow-not-checked-in",
         label: "Seed Add-Game Flow (Not Checked In)",
@@ -553,6 +599,17 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
           seedHomeCourtFlow({
             testUser: currentUser,
             homeCourt: HOME_COURT_VARIANT.CHANGE_USED,
+          }),
+      },
+      {
+        id: "maestro-seed-home-court-flow-playoffs-started",
+        label: "Seed Home Court Flow (Playoffs Started)",
+        title: "Seeded",
+        run: () =>
+          seedHomeCourtFlow({
+            testUser: currentUser,
+            homeCourt: HOME_COURT_VARIANT.SET,
+            ladderStatus: LADDER_STATUS.PLAYOFFS,
           }),
       },
       {

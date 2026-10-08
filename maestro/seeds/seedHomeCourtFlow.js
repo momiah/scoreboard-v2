@@ -29,6 +29,7 @@ export const seedHomeCourtFlow = async ({
   testUser,
   homeCourt = HOME_COURT_VARIANT.NONE,
   extraLadderCourts = 0,
+  ladderStatus = /** @type {string | undefined} */ (undefined),
 }) => {
   if (!testUser?.userId) {
     throw new Error("seedHomeCourtFlow: testUser with a userId is required");
@@ -69,6 +70,7 @@ export const seedHomeCourtFlow = async ({
     ladderType: LADDER_TYPE.SINGLES,
     maxPlayers: 2,
     extraCourts: extraLadderCourts,
+    ...(ladderStatus ? { status: ladderStatus } : {}),
   });
 
   await setDoc(

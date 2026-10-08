@@ -35,7 +35,7 @@ both read the docs inside a transaction, call it, and persist what it returns.
 | 2.3 | Report a score, accept a posted match, open a dispute, add evidence, cancel a dispute or approve a disputed score once frozen | `frozen`, nothing written 🅹 |
 | 2.4 | Auto-approval on a frozen ladder | Skipped 🅹 |
 | 2.5 | Approval notification modal | Shows the disclaimer, Accept and Decline do nothing 🅼 (`ladder-freeze-approval-modal-disclaimer`) 🅹 |
-| 2.6 | Accept-match modal, Game screen, dispute screen | Disclaimer shown and actions locked (no Maestro seed yet; rules proven in 2.3) |
+| 2.6 | Accept-match modal, Game screen, dispute screen | Disclaimer shown and actions locked 🅼 (`ladder-freeze-accept-match-modal-disclaimer`, `ladder-freeze-game-screen-disclaimer`, `ladder-freeze-dispute-screen-disclaimer`) |
 
 ## 3. Joining
 
@@ -47,9 +47,17 @@ both read the docs inside a transaction, call it, and persist what it returns.
 | 3.4 | A team joins | The `teams/{teamId}` doc is re-read: pending, one-player or missing teams are refused whatever the client sends 🅹 |
 | 3.5 | A team joins after registration closed | Refused 🅹 |
 
-Not enforceable client-side: two different teams containing the same player
-joining at the same instant (needs a query inside the transaction). Tracked for
-the server-enforcement work.
+| 3.6 | A team with a player already in another team on the ladder | Refused `conflict`, naming the player: found by the query on `ladderTeams` `playerIds array-contains-any` (single-field index, no composite index needed) 🅹 🅼 |
+| 3.7 | A team with a player who is already a ladder participant | Refused `conflict` 🅹 |
+| 3.8 | Two teams sharing a player join at the same instant | Each join writes one `ladderMembers/{userId}` claim per player inside its transaction, so the second to commit sees the first's claim and is refused 🅹 🅼 (a claim seeded with no team doc) |
+| 3.9 | The conflict query fails (offline) | Join refused, never allowed (fails closed) 🅹 |
+| 3.10 | Disbanding a team | Deletes its `ladderMembers` claims with the team doc, so the players can join again 🅹 |
+
+Maestro flows: `join-ladder-singles-success`, `-full`,
+`-registration-window-closed`, `-registration-closed-status`;
+`join-ladder-doubles-success`, `-incomplete-teams-cannot-be-selected`,
+`-partner-already-in-ladder`, `-simultaneous-join-claim`, `-full`,
+`-registration-window-closed`.
 
 ## 4. Clocks and ranking
 
@@ -73,4 +81,6 @@ run resumes without duplicate notifications (deterministic notification ids).
 | # | Scenario | Expected |
 |---|----------|----------|
 | 6.1 | GPS fix arrives | Used 🅹 |
-| 6.2 | No fix within 15s | Falls back to the last known position (60s old at most), otherwise the check fails and can be retried 🅹 |
+| 6.2 | No fix within 15s | Falls back to the last known position (60s old at most), otherwise the check fails and can be retried 🅹 (cannot be reproduced in Maestro: the simulator always returns a fix) |
+| 6.3 | Within 500m of the court | "Location verified" and the Checkin button 🅼 (`checkin-near-court-verifies-location`) |
+| 6.4 | Far from the court | Failed state naming the distance and the 500m limit; after moving to the court, "Check again" verifies 🅼 (`checkin-far-from-court-blocks-then-retry-verifies`) |

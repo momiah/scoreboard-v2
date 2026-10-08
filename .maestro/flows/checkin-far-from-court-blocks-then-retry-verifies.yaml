@@ -1,0 +1,50 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-checkin-court-coords"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 15000
+- tapOn: "OK"
+- setLocation:
+    latitude: 53.4808
+    longitude: -2.2426
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-add-game-flow-match"
+    timeout: 15000
+- tapOn:
+    id: "schedule-card-maestro-add-game-flow-match"
+- extendedWaitUntil:
+    visible: ".*Press here to checkin.*"
+    timeout: 15000
+- tapOn:
+    point: "78%,23%"
+- extendedWaitUntil:
+    visible:
+      id: "location-verifier-failed"
+    timeout: 30000
+- assertVisible: ".*you're about.*m away.*need to be within 500m.*"
+- assertNotVisible:
+    id: "location-verifier-verified"
+- setLocation:
+    latitude: 51.5074
+    longitude: -0.1278
+- tapOn:
+    id: "location-verifier-retry"
+- extendedWaitUntil:
+    visible:
+      id: "location-verifier-verified"
+    timeout: 30000
+- assertVisible:
+    id: "location-verifier-checkin"

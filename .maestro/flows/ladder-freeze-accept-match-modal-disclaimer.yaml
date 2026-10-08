@@ -1,0 +1,40 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow-playoffs-started"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Ladder on Matchmaking.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Ladder on Matchmaking.*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-card-maestro-hc-match"
+    timeout: 20000
+- tapOn:
+    id: "matchmaking-card-maestro-hc-match"
+- extendedWaitUntil:
+    visible:
+      id: "accept-ladder-match-modal"
+    timeout: 15000
+- assertVisible:
+    id: "accept-ladder-match-frozen"
+- assertVisible: "This game can no longer be actioned as playoffs has started"
+- assertVisible:
+    id: "accept-ladder-match-modal"

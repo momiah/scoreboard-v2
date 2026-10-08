@@ -98,8 +98,9 @@ import type {
   LadderContextType,
   FetchLaddersOptions,
   LadderJoinOutcome,
-  LadderJoinFailureReason,
+  AddLadderTeamFailureReason,
   AddLadderTeamOutcome,
+  LadderJoinFailureReason,
   JoinLadderAsTeamOutcome,
   DisbandTeamOutcome,
   TeamLadderActivity,
@@ -125,7 +126,10 @@ import type { LadderHomeCourtState } from "../helpers/ladderHomeCourt";
 class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
 class LadderRegistrationError extends Error {
-  constructor(public reason: LadderJoinFailureReason) {
+  constructor(
+    public reason: AddLadderTeamFailureReason,
+    public conflictUserIds: string[] = [],
+  ) {
     super(reason);
   }
 }
@@ -156,6 +160,7 @@ const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
+const LADDER_MEMBERS_COLLECTION = "ladderMembers";
 const TEAMS_COLLECTION = "teams";
 const COURTS_COLLECTION = "courts";
 const TEAM_REQUESTS_SUBCOLLECTION = "requests";
@@ -297,7 +302,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: true, alreadyJoined: false };
       } catch (error) {
         if (error instanceof LadderRegistrationError) {
-          return { success: false, alreadyJoined: false, reason: error.reason };
+          return {
+            success: false,
+            alreadyJoined: false,
+            reason: error.reason as LadderJoinFailureReason,
+          };
         }
         console.error("Error joining ladder:", error);
         return { success: false, alreadyJoined: false };
@@ -375,10 +384,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           LADDER_TEAMS_COLLECTION,
           team.teamKey,
         );
+        const memberIds = teamMemberIds(team);
+        const claimRefs = memberIds.map((userId) =>
+          doc(db, LADDERS_COLLECTION, ladderId, LADDER_MEMBERS_COLLECTION, userId),
+        );
         await runTransaction(db, async (transaction) => {
-          const [ladderSnap, existing] = await Promise.all([
+          const [ladderSnap, existing, ...claimSnaps] = await Promise.all([
             transaction.get(ladderRef),
             transaction.get(teamRef),
+            ...claimRefs.map((ref) => transaction.get(ref)),
           ]);
           if (!ladderSnap.exists()) throw new LadderRegistrationError("closed");
           if (!existing.exists()) {
@@ -387,6 +401,21 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               Date.now(),
             );
             if (block) throw new LadderRegistrationError(block);
+            const conflicts = memberIds.filter(
+              (_, index) =>
+                claimSnaps[index].exists() &&
+                claimSnaps[index].data()?.teamKey !== team.teamKey,
+            );
+            if (conflicts.length > 0) {
+              throw new LadderRegistrationError("member_conflict", conflicts);
+            }
+            claimRefs.forEach((ref, index) =>
+              transaction.set(ref, {
+                userId: memberIds[index],
+                teamKey: team.teamKey,
+                joinedAt: serverTimestamp(),
+              }),
+            );
           }
           transaction.set(teamRef, {
             ...team,
@@ -402,7 +431,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       } catch (error) {
         if (error instanceof LadderRegistrationError) {
-          return { success: false, reason: error.reason };
+          return {
+            success: false,
+            reason: error.reason,
+            conflictUserIds: error.conflictUserIds,
+          };
         }
         console.error("Error adding ladder team:", error);
         return { success: false };
@@ -759,6 +792,47 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const fetchLadderMemberConflicts = useCallback(
+    async (ladderId: string, userIds: string[]): Promise<string[]> => {
+      if (!ladderId || userIds.length === 0) return [];
+      const [teamSnap, participantSnaps] = await Promise.all([
+        getDocs(
+          query(
+            collection(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+            ),
+            where("playerIds", "array-contains-any", userIds),
+          ),
+        ),
+        Promise.all(
+          userIds.map((userId) =>
+            getDoc(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_PARTICIPANTS_COLLECTION,
+                userId,
+              ),
+            ),
+          ),
+        ),
+      ]);
+      const memberIds = new Set<string>();
+      teamSnap.docs.forEach((d) =>
+        teamMemberIds(d.data() as TeamStats).forEach((id) => memberIds.add(id)),
+      );
+      participantSnaps.forEach((snap) => {
+        if (snap.exists()) memberIds.add(snap.id);
+      });
+      return findLadderMemberConflicts(userIds, memberIds);
+    },
+    [],
+  );
+
   const joinLadderAsTeam = useCallback(
     async (
       ladderId: string,
@@ -786,10 +860,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         const teamBlock = getTeamRegistrationBlock(serverTeam);
         if (teamBlock || !serverTeam) return failure(teamBlock ?? "team_not_found");
 
-        const memberIds = await fetchLadderMemberIds(ladderId);
-        const conflictUserIds = findLadderMemberConflicts(
+        const conflictUserIds = await fetchLadderMemberConflicts(
+          ladderId,
           teamMemberIds(serverTeam),
-          memberIds,
         );
         if (conflictUserIds.length > 0) {
           return {
@@ -807,6 +880,14 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           teamProfilePic: serverTeam.teamProfilePic,
         });
         const added = await addLadderTeam(ladderId, ladderTeam);
+        if (added.reason === "member_conflict") {
+          return {
+            success: false,
+            alreadyJoined: false,
+            conflict: true,
+            conflictUserIds: added.conflictUserIds ?? [],
+          };
+        }
         if (!added.success) return failure(added.reason);
         await updateDoc(doc(db, TEAMS_COLLECTION, rootTeam.teamId), {
           ladderIds: arrayUnion(ladderId),
@@ -825,7 +906,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return failure();
       }
     },
-    [addLadderTeam, fetchLadderMemberIds],
+    [addLadderTeam, fetchLadderMemberConflicts],
   );
 
   const createLadderMatch = useCallback(
@@ -1157,6 +1238,17 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               ladderId,
               LADDER_TEAMS_COLLECTION,
               team.teamKey,
+            ),
+          );
+          teamMemberIds(team).forEach((userId) =>
+            batch.delete(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_MEMBERS_COLLECTION,
+                userId,
+              ),
             ),
           );
           batch.update(doc(db, LADDERS_COLLECTION, ladderId), {

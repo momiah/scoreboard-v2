@@ -39,6 +39,9 @@ export const seedAddApproveGameFlow = async ({
   allCheckedIn = true,
   withOpponentDispute = false,
   ladderStatus = /** @type {string} */ (LADDER_STATUS.REGISTRATION_CLOSED),
+  courtCoords = /** @type {{ latitude: number; longitude: number } | null} */ (
+    null
+  ),
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -220,6 +223,7 @@ export const seedAddApproveGameFlow = async ({
           city: "Test",
           country: "United Kingdom",
           countryCode: "GB",
+          ...(courtCoords ?? {}),
         },
       },
       bestOf: BEST_OF,

@@ -21,8 +21,12 @@ import type { LadderJoinUser } from "@shared/helpers";
 
 export type LadderJoinFailureReason = "closed" | "not_open" | "full";
 
-export type TeamJoinFailureReason =
+export type AddLadderTeamFailureReason =
   | LadderJoinFailureReason
+  | "member_conflict";
+
+export type TeamJoinFailureReason =
+  | AddLadderTeamFailureReason
   | "team_not_found"
   | "team_pending"
   | "team_incomplete";
@@ -35,7 +39,8 @@ export interface LadderJoinOutcome {
 
 export interface AddLadderTeamOutcome {
   success: boolean;
-  reason?: LadderJoinFailureReason;
+  reason?: AddLadderTeamFailureReason;
+  conflictUserIds?: string[];
 }
 
 export interface CreateTeamOutcome {
