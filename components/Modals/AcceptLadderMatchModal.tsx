@@ -13,6 +13,7 @@ import {
   TEAM_STATUS,
 } from "@shared";
 import type { Ladder, LadderMatch, MatchTeam, TeamStats } from "@shared/types";
+import { LADDER_FROZEN_MESSAGE, isLadderMatchPlayFrozen } from "@shared/helpers";
 
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
@@ -216,6 +217,8 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
           "This game has been accepted by someone else",
           "error",
         );
+      } else if (reason === "frozen") {
+        setErrorMessage(LADDER_FROZEN_MESSAGE);
       } else {
         setErrorMessage("Something went wrong. Please try again.");
       }
@@ -231,8 +234,15 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     gateUserIds,
   );
 
+  const frozen = isLadderMatchPlayFrozen(ladder.status);
+
   const disableAccept =
-    isOwnMatch || !acceptedTerms || processing || !canAccept || disqualified;
+    isOwnMatch ||
+    !acceptedTerms ||
+    processing ||
+    !canAccept ||
+    disqualified ||
+    frozen;
 
   return (
     <Modal
@@ -321,7 +331,13 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
               {disclaimer}
             </ErrorText>
           )}
-          {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+          {frozen ? (
+            <ErrorText testID="accept-ladder-match-frozen">
+              {LADDER_FROZEN_MESSAGE}
+            </ErrorText>
+          ) : (
+            !!errorMessage && <ErrorText>{errorMessage}</ErrorText>
+          )}
 
           {isOwnMatch && match ? (
             <CancelMatchButton

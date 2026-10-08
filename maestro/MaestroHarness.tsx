@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import type { UserProfile } from "@shared/types";
+import { LADDER_STATUS } from "@shared";
 import {
   seedRejectGameFlow,
   MAESTRO_LADDER_ID,
@@ -404,6 +405,16 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             testUser: currentUser,
             withReportedGame: true,
             priorApprovedGames: 2,
+          }),
+      },
+      {
+        id: "maestro-seed-add-game-flow-playoffs-started",
+        label: "Seed Add-Game Flow (Playoffs Started, Reported)",
+        run: () =>
+          seedAddApproveGameFlow({
+            testUser: currentUser,
+            withReportedGame: true,
+            ladderStatus: LADDER_STATUS.PLAYOFFS,
           }),
       },
       {

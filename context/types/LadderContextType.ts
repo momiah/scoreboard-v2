@@ -73,7 +73,7 @@ export interface CreateLadderMatchOutcome {
   ladderMatch: LadderMatch | null;
 }
 
-export type AcceptLadderMatchFailureReason = "unavailable" | "error";
+export type AcceptLadderMatchFailureReason = "unavailable" | "frozen" | "error";
 
 export interface AcceptLadderMatchOutcome {
   success: boolean;
@@ -90,6 +90,7 @@ export interface CheckInLadderMatchOutcome {
 export type UpdateLadderGameFailureReason =
   | "unavailable"
   | "error"
+  | "frozen"
   | "match_decided";
 
 export interface UpdateLadderGameOutcome {
@@ -117,6 +118,7 @@ export interface CancelLadderMatchOutcome {
 export type ApproveLadderGameFailureReason =
   | "unavailable"
   | "not_opponent"
+  | "frozen"
   | "error";
 
 export interface ApproveLadderGameOutcome {

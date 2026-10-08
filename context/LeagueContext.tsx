@@ -37,7 +37,7 @@ import { generateCourtId } from "../helpers/generateCourtId";
 import {
   canApproveReportedGame,
   getEffectiveApprovalLimit,
-} from "../helpers/reportedGameApproval";
+} from "@shared/helpers";
 import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {

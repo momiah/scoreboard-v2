@@ -38,6 +38,7 @@ export const seedAddApproveGameFlow = async ({
   extraPendingGames = 0,
   allCheckedIn = true,
   withOpponentDispute = false,
+  ladderStatus = /** @type {string} */ (LADDER_STATUS.REGISTRATION_CLOSED),
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -161,7 +162,7 @@ export const seedAddApproveGameFlow = async ({
     ladderType: LADDER_TYPE.SINGLES,
     genderType: "Mixed",
     courtIds: [],
-    status: LADDER_STATUS.REGISTRATION_CLOSED,
+    status: ladderStatus,
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),

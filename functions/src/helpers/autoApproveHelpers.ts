@@ -29,7 +29,9 @@ export const isDueForAutoApproval = (
   game: Game,
   reportedAt?: admin.firestore.Timestamp | Date | string | null,
 ): boolean => {
-  const gameCreatedAt = toMomentTimezone(reportedAt ?? game.createdAt);
+  const startedAt = reportedAt ?? game.createdAt;
+  if (!startedAt) return false;
+  const gameCreatedAt = toMomentTimezone(startedAt);
   if (!gameCreatedAt.isValid()) return false;
   const hoursSinceCreation = moment
     .tz(TIMEZONE)
