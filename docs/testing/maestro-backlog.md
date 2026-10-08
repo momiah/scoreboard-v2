@@ -18,24 +18,22 @@ count. Cancelling: Match Details → menu (☰) → Cancel Match. Any player in 
 match (poster, accepter, or either partner) can cancel a posted or accepted
 match until a game has been reported.
 
-Flows to cover (singles has no leave option, so doubles only):
+Covered by `team-disband-*` flows (seeds in `maestro/seeds/seedTeamDisbandFlow.js`):
+registration open (1), posted match blocks then cancelling it allows (2), an
+accepted match blocks (3, blocked only), one approved game blocks (6), games
+only in another completed ladder don't count (7), registration closed and
+playoffs block (8), completed ladder allows (9).
 
-1. Registration open, no matches → Disband succeeds; the team is gone from the
-   ladder and the participant count drops by one.
-2. Team has a **posted** match → "Can't disband" (cancel it first). Cancel the
-   match from Match Details → Cancel Match → Disband now succeeds.
-3. Team has an **accepted** match it accepted from an opponent → "Can't
-   disband". Cancel it from Match Details → Cancel Match → Disband succeeds.
-4. Same as 3, but the **partner** cancels the match → Disband succeeds.
+Still to cover (singles has no leave option, so doubles only):
+
+4. Same as 3, but the **partner** cancels the match → Disband succeeds. Needs a
+   partner-side mock, because the flow only drives one signed-in user.
 5. Opponent's team posted, this team accepted, a game has been reported →
    Cancel Match shows "This match can no longer be cancelled"; Disband still
    blocked.
-6. One approved game in this ladder → "Can't disband" (completed a game in a
-   ladder that's still running).
-7. Approved games only in a different, completed ladder → Disband succeeds.
-8. Ladder registration closed (and separately, in playoffs) → "Can't disband"
-   (registration has closed).
-9. Ladder completed → Disband succeeds.
+3b. Accepted match: cancelling is a request the opponent must agree to
+   (Request cancellation), so the cancel-then-disband half of 3 needs an
+   opponent-side mock.
 
 ## Match cancellation
 

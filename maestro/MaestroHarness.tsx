@@ -27,6 +27,10 @@ import { seedAddApproveGameFlow } from "./seeds/seedAddApproveGameFlow";
 import { seedAddApproveGameFlowDoubles } from "./seeds/seedAddApproveGameFlowDoubles";
 import { seedHomeCourtFlow } from "./seeds/seedHomeCourtFlow";
 import {
+  DISBAND_VARIANT,
+  seedTeamDisbandFlow,
+} from "./seeds/seedTeamDisbandFlow";
+import {
   JOIN_VARIANT,
   seedLadderJoinFlowDoubles,
   seedLadderJoinFlowSingles,
@@ -453,6 +457,20 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             courtCoords: { latitude: 51.5074, longitude: -0.1278 },
           }),
       },
+      ...[
+        ["open", DISBAND_VARIANT.OPEN],
+        ["posted-match", DISBAND_VARIANT.POSTED_MATCH],
+        ["accepted-match", DISBAND_VARIANT.ACCEPTED_MATCH],
+        ["approved-game", DISBAND_VARIANT.APPROVED_GAME],
+        ["registration-closed", DISBAND_VARIANT.REGISTRATION_CLOSED],
+        ["playoffs", DISBAND_VARIANT.PLAYOFFS],
+        ["ladder-completed", DISBAND_VARIANT.LADDER_COMPLETED],
+        ["other-ladder-completed", DISBAND_VARIANT.OTHER_LADDER_COMPLETED],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-disband-${key}`,
+        label: `Seed Disband (${key})`,
+        run: () => seedTeamDisbandFlow({ testUser: currentUser, variant }),
+      })),
       {
         id: "maestro-seed-reject-playoffs-started",
         label: "Seed Active Dispute (Playoffs Started)",

@@ -84,3 +84,18 @@ run resumes without duplicate notifications (deterministic notification ids).
 | 6.2 | No fix within 15s | Falls back to the last known position (60s old at most), otherwise the check fails and can be retried 🅹 (cannot be reproduced in Maestro: the simulator always returns a fix) |
 | 6.3 | Within 500m of the court | "Location verified" and the Checkin button 🅼 (`checkin-near-court-verifies-location`) |
 | 6.4 | Far from the court | Failed state naming the distance and the 500m limit; after moving to the court, "Check again" verifies 🅼 (`checkin-far-from-court-blocks-then-retry-verifies`) |
+
+## 7. Disbanding a doubles team
+
+All 🅼 (`team-disband-*`), reached from the ladder Summary → Current Position →
+team → ⋯ → Disband team. The claim cleanup is 🅹 (3.10).
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 7.1 | Registration open, no matches | "Team disbanded", back on the ladder, team gone from Current Position |
+| 7.2 | A posted match | "Can't disband" (posted or accepted match); cancel it from Matchmaking, then Disband succeeds |
+| 7.3 | An accepted match | "Can't disband" (posted or accepted match) |
+| 7.4 | One approved game in a running ladder | "Can't disband" (completed a game) |
+| 7.5 | Registration closed; playoffs | "Can't disband" (registration has closed) |
+| 7.6 | Ladder completed | Disbands |
+| 7.7 | Approved games only in another, completed ladder | Disbands |
