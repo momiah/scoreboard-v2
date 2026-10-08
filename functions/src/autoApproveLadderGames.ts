@@ -32,19 +32,57 @@ const USERS = "users";
  * mirror of the app's approveLadderGame. Completion is held while any game is
  * disputed, exactly as in the app.
  */
+const LADDER_CONCURRENCY = 5;
+
+const processLadder = async (
+  db: admin.firestore.Firestore,
+  ladderDoc: admin.firestore.QueryDocumentSnapshot,
+): Promise<number> => {
+  let approved = 0;
+  const matchesSnapshot = await ladderDoc.ref
+    .collection(LADDER_MATCHES)
+    .where("matchStatus", "==", LADDER_MATCH_STATUS.ACCEPTED)
+    .get();
+  for (const matchDoc of matchesSnapshot.docs) {
+    try {
+      approved += await processMatch(db, ladderDoc.id, matchDoc);
+    } catch (error) {
+      console.error(
+        `❌ Ladder auto-approval failed for ${ladderDoc.id}/${matchDoc.id}:`,
+        error,
+      );
+    }
+  }
+  return approved;
+};
+
+/**
+ * Auto-approves ladder games left pending past the window, then scores them and
+ * completes the match through the shared ladder scoring path — the admin-SDK
+ * mirror of the app's approveLadderGame. Completion is held while any game is
+ * disputed, exactly as in the app. A failing match or ladder never stops the
+ * rest of the run.
+ */
 export const runAutoApproveLadderGames = async (): Promise<void> => {
   const db = admin.firestore();
   try {
     const laddersSnapshot = await db.collection(LADDERS).get();
     let approved = 0;
-    for (const ladderDoc of laddersSnapshot.docs) {
-      const matchesSnapshot = await ladderDoc.ref
-        .collection(LADDER_MATCHES)
-        .where("matchStatus", "==", LADDER_MATCH_STATUS.ACCEPTED)
-        .get();
-      for (const matchDoc of matchesSnapshot.docs) {
-        approved += await processMatch(db, ladderDoc.id, matchDoc);
-      }
+    for (let i = 0; i < laddersSnapshot.docs.length; i += LADDER_CONCURRENCY) {
+      const chunk = laddersSnapshot.docs.slice(i, i + LADDER_CONCURRENCY);
+      const results = await Promise.allSettled(
+        chunk.map((ladderDoc) => processLadder(db, ladderDoc)),
+      );
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          approved += result.value;
+        } else {
+          console.error(
+            `❌ Ladder auto-approval failed for ${chunk[index].id}:`,
+            result.reason,
+          );
+        }
+      });
     }
     console.log(
       `✅ Ladder auto-approval finished. Approved ${approved} game(s).`,
@@ -55,8 +93,10 @@ export const runAutoApproveLadderGames = async (): Promise<void> => {
 };
 
 export const autoApproveLadderGames = onSchedule(
-  "every 30 minutes",
-  runAutoApproveLadderGames,
+  { schedule: "every 30 minutes", timeoutSeconds: 540, memory: "1GiB" },
+  async () => {
+    await runAutoApproveLadderGames();
+  },
 );
 
 const processMatch = async (
@@ -66,9 +106,18 @@ const processMatch = async (
 ): Promise<number> => {
   const match = matchDoc.data() as LadderMatch;
   const games = match.games ?? [];
+  const reportedAtByGame = (
+    match as LadderMatch & {
+      gameReportedAt?: Record<string, admin.firestore.Timestamp>;
+    }
+  ).gameReportedAt;
   const due = games
     .map((game, index) => ({ game, index }))
-    .filter(({ game }) => isDueForAutoApproval(game) && !!game.result?.winner);
+    .filter(
+      ({ game }) =>
+        isDueForAutoApproval(game, reportedAtByGame?.[game.gameId]) &&
+        !!game.result?.winner,
+    );
   if (!due.length) return 0;
 
   const isDoubles = (match.teams?.length ?? 0) >= 2;
