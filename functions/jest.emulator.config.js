@@ -5,4 +5,5 @@ module.exports = {
   roots: ["<rootDir>/src"],
   testMatch: ["**/*.emulator.test.ts"],
   testTimeout: 300000,
+  maxWorkers: 1,
 };

@@ -24,7 +24,9 @@ both read the docs inside a transaction, call it, and persist what it returns.
 | 1.4 | Auto-approval after 24h | Same scoring as 1.1 with approver `AutoApproval`, in a transaction per game 🅹 (`autoApproveLadderGames.test.ts`) |
 | 1.5 | Two overdue games in one match | Each in its own transaction on fresh data, streaks accumulate 🅹 |
 | 1.6 | A disputed sibling game | Match completion held 🅹 |
-| 1.7 | One match fails | The rest of the ladder and run continue 🅹 |
+| 1.7 | One match fails | The rest of the ladder and run continue 🅹 🅴 |
+| 1.8 | The job runs against a real Firestore | Scored once with the server report time, skipped in playoffs, decider completes the match once, a disputed sibling holds completion 🅴 (`autoApproveLadderGames.emulator.test.ts`) |
+| 1.9 | A player approves at the same moment the job runs; three job runs overlap | Each game is approved and scored exactly once (25 matches raced at once) 🅴. Verified by swapping the job for a non-transactional version: both race tests then fail |
 
 ## 2. Playoff freeze
 
