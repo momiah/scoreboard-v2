@@ -46,6 +46,7 @@ import {
   MAESTRO_JOIN_LADDER_IDS,
   cleanupLadderJoinTestData,
 } from "./seedLadderJoinFlow";
+import { cleanupChatsTabTestData } from "./seedChatsTab";
 import { deleteReportsForLadder } from "./reportFixtures";
 import {
   MAESTRO_TEAM_LADDER_ID,
@@ -132,6 +133,7 @@ export const cleanupLadderTestData = async ({
   const disband = await cleanupTeamDisbandTestData();
   const cancellation = await cleanupMatchCancellationTestData();
   const teams = await cleanupTeamFlowTestData();
+  const chats = await cleanupChatsTabTestData(testUser);
 
   const notificationLadderIds = [
     ...ladderIds,
@@ -167,5 +169,6 @@ export const cleanupLadderTestData = async ({
     disband,
     cancellation,
     teams,
+    chats,
   };
 };

@@ -39,6 +39,7 @@ import {
   TEAM_VARIANT,
   seedTeamFlow,
 } from "./seeds/seedTeamFlow";
+import { CHAT_VARIANT, seedChatsTab } from "./seeds/seedChatsTab";
 import { mockOpponentCheckIn } from "./seeds/mockOpponentCheckIn";
 import { assertReportFiled } from "./seeds/assertReportFiled";
 import { assertChatMessageDelivered } from "./seeds/assertChatMessageDelivered";
@@ -645,6 +646,15 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
           return { scheduledInSeconds: 60 };
         },
       },
+      ...[
+        ["typed", CHAT_VARIANT.TYPED],
+        ["legacy", CHAT_VARIANT.LEGACY],
+        ["empty", CHAT_VARIANT.EMPTY],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-chats-${key}`,
+        label: `Seed Chats (${key})`,
+        run: () => seedChatsTab({ testUser: currentUser, variant }),
+      })),
       {
         id: "maestro-assert-no-show-filed",
         label: "Assert No-Show Filed",

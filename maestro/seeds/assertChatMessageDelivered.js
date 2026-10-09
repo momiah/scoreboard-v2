@@ -16,7 +16,13 @@ export const assertChatMessageDelivered = async ({
   if (!sent) throw new Error(`Chat message "${text}" was not stored`);
   const chat = await getDoc(doc(db, "users", recipientId, "chats", matchId));
   if (!chat.exists()) throw new Error("Recipient has no chat entry");
-  const { isRead, lastMessage } = chat.data();
+  const { isRead, lastMessage, competitionType, ladderId: storedLadderId } =
+    chat.data();
+  if (competitionType !== "ladder" || storedLadderId !== ladderId) {
+    throw new Error(
+      `Chat entry cannot be routed back to the match: ${JSON.stringify(chat.data())}`,
+    );
+  }
   if (isRead !== false || !String(lastMessage ?? "").includes(text)) {
     throw new Error(`Recipient chat entry is wrong: ${JSON.stringify(chat.data())}`);
   }

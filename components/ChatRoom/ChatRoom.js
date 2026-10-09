@@ -126,6 +126,11 @@ const ChatRoom = ({
     // Scroll to end after sending message
     scrollToEnd(true);
 
+    const chatTarget = {
+      competitionType,
+      ...(chatPath?.[0] === "ladders" ? { ladderId: chatPath[1] } : {}),
+    };
+
     const recipients = competitionParticipants.filter(
       (u) => u.userId !== currentUser?.userId,
     );
@@ -149,6 +154,7 @@ const ChatRoom = ({
             lastMessage: `${currentUser?.username}: ${newMessage.text}`,
             createdAt: new Date(),
             competitionName,
+            ...chatTarget,
           },
           { merge: true },
         );
@@ -161,6 +167,7 @@ const ChatRoom = ({
           lastMessage: `${currentUser?.username}: ${newMessage.text}`,
           createdAt: new Date(),
           competitionName,
+          ...chatTarget,
         });
       }
     }

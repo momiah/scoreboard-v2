@@ -158,3 +158,19 @@ All 🅼 unless noted.
 Not covered: scanning a QR with the camera (the simulator has none; the
 reference-code path is the same write for the scanner's own check-in), and
 approving a report or applying strikes (done in the admin website).
+
+## 11. Chats tab
+
+All 🅼 (`chats-tab-*`), seeded by `maestro/seeds/seedChatsTab.js`, plus 🅹
+`helpers/chatDestination.test.ts`.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 11.1 | The list | League, tournament and ladder-match chats show their real names and last message, no "Unknown League" and no React key warning |
+| 11.2 | Tapping a league / tournament / ladder-match chat | Opens that competition's Chat Room (a ladder chat opens the match on its Chat Room tab); the unread count clears |
+| 11.3 | Chat entries written before competition types were stored (`leagueId`, `leagueName`) | Still list by name and open the right league or tournament, found by which one exists |
+| 11.4 | A chat whose competition no longer exists | "This chat is no longer available", nothing opens |
+| 11.5 | Sending a message | The recipient's chat entry now stores the competition type (and the ladder for a match chat) so it routes back |
+
+Not covered: the empty state, because the test account has real chats the seed
+cannot clear.
