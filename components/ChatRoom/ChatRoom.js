@@ -280,8 +280,10 @@ const ChatRoom = ({
               : "Type a message..."
           }
           placeholderTextColor="#aaa"
+          testID="chat-room-input"
         />
         <SendButton
+          testID="chat-room-send"
           onPress={handleSend}
           disabled={!inputText.trim() || leagueHasEnded}
         >

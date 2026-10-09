@@ -1,0 +1,50 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-join-singles-open"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Join Singles on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Join Singles on Summary.*"
+- tapOn: ".*How to Play.*"
+- extendedWaitUntil:
+    visible:
+      id: "how-to-play-dots"
+    timeout: 15000
+- assertVisible:
+    id: "how-to-play-next"
+- repeat:
+    while:
+      visible:
+        id: "how-to-play-next"
+    times: 12
+    commands:
+      - tapOn:
+          id: "how-to-play-next"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertVisible:
+    id: "how-to-play-join"
+- tapOn:
+    id: "how-to-play-join"
+- extendedWaitUntil:
+    visible:
+      id: "join-ladder-modal"
+    timeout: 10000

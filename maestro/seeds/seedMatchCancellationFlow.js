@@ -1,4 +1,5 @@
 import {
+  Timestamp,
   collection,
   deleteDoc,
   doc,
@@ -45,6 +46,11 @@ const opponent = {
   firstName: "Maestro",
   lastName: "CancelOpponent",
   username: "maestro_cancel_opponent",
+};
+
+const deleteAllDocs = async (colRef) => {
+  const snap = await getDocs(colRef);
+  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
 };
 
 const resetTree = () =>
@@ -199,6 +205,23 @@ export const seedMatchCancellationFlow = async ({
   await setDoc(
     doc(db, "ladders", MAESTRO_CANCEL_LADDER_ID, "ladderMatches", MAESTRO_CANCEL_MATCH_ID),
     documentByVariant[variant],
+  );
+  const chatRef = collection(
+    db,
+    "ladders",
+    MAESTRO_CANCEL_LADDER_ID,
+    "ladderMatches",
+    MAESTRO_CANCEL_MATCH_ID,
+    "chat",
+  );
+  await deleteAllDocs(chatRef);
+  await setDoc(doc(chatRef, "maestro-cancel-chat-1"), {
+    text: "See you at the court at 6",
+    createdAt: Timestamp.now(),
+    user: { _id: opponent.userId, name: opponent.username, avatar: "" },
+  });
+  await deleteDoc(
+    doc(db, "users", opponent.userId, "chats", MAESTRO_CANCEL_MATCH_ID),
   );
   await writeNotifications(testUser);
   return { ladderId: MAESTRO_CANCEL_LADDER_ID, variant };

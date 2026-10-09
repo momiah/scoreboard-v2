@@ -39,6 +39,7 @@ import {
   TEAM_VARIANT,
   seedTeamFlow,
 } from "./seeds/seedTeamFlow";
+import { assertChatMessageDelivered } from "./seeds/assertChatMessageDelivered";
 import { assertTeamInviteSent } from "./seeds/assertTeamInviteSent";
 import { mockOpponentCancellationResponse } from "./seeds/mockOpponentCancellationResponse";
 import { assertCancellationNotification } from "./seeds/assertCancellationNotification";
@@ -571,6 +572,17 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         label: `Seed Team (${key})`,
         run: () => seedTeamFlow({ testUser: currentUser, variant }),
       })),
+      {
+        id: "maestro-assert-cancel-chat-delivered",
+        label: "Assert Chat Delivered",
+        run: () =>
+          assertChatMessageDelivered({
+            ladderId: MAESTRO_CANCEL_LADDER_ID,
+            matchId: MAESTRO_CANCEL_MATCH_ID,
+            recipientId: MAESTRO_CANCEL_OPPONENT_ID,
+            text: "On my way, bringing the shuttles",
+          }),
+      },
       {
         id: "maestro-assert-team-invite-sent",
         label: "Assert Team Invite Sent",
