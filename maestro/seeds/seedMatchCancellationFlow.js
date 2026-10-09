@@ -8,6 +8,7 @@ import {
   setDoc,
   where,
 } from "firebase/firestore";
+import moment from "moment";
 import { db } from "../../services/firebase.config";
 import {
   LADDER_MATCH_STATUS,
@@ -41,6 +42,9 @@ export const CANCEL_VARIANT = {
   REQUESTED_BY_USER: "requestedByUser",
   GAME_REPORTED: "gameReported",
   USER_DISQUALIFIED: "userDisqualified",
+  ACCEPTED_OPPONENT_POSTED: "acceptedOpponentPosted",
+  OVERDUE_OPPONENT_POSTED: "overdueOpponentPosted",
+  OVERDUE_USER_POSTED: "overdueUserPosted",
 };
 
 const opponent = {
@@ -174,6 +178,13 @@ export const seedMatchCancellationFlow = async ({
     acceptedBy: opponent.userId,
     acceptedAt: new Date(),
   };
+  const opponentPosted = {
+    ...accepted,
+    createdBy: opponent.userId,
+    participants: [opponent.userId, testUser.userId],
+    acceptedBy: testUser.userId,
+  };
+  const yesterday = moment().subtract(1, "days").format("DD-MM-YYYY");
   const requestBy = (requestedBy) => ({
     cancellationRequest: { requestedBy, requestedAt: new Date() },
   });
@@ -188,6 +199,12 @@ export const seedMatchCancellationFlow = async ({
       ...accepted,
       ...requestBy(testUser.userId),
     },
+    [CANCEL_VARIANT.ACCEPTED_OPPONENT_POSTED]: opponentPosted,
+    [CANCEL_VARIANT.OVERDUE_OPPONENT_POSTED]: {
+      ...opponentPosted,
+      matchDate: yesterday,
+    },
+    [CANCEL_VARIANT.OVERDUE_USER_POSTED]: { ...accepted, matchDate: yesterday },
     [CANCEL_VARIANT.USER_DISQUALIFIED]: {
       ...posted,
       createdBy: opponent.userId,

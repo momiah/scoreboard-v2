@@ -39,6 +39,7 @@ import {
   TEAM_VARIANT,
   seedTeamFlow,
 } from "./seeds/seedTeamFlow";
+import { mockOpponentCheckIn } from "./seeds/mockOpponentCheckIn";
 import { assertReportFiled } from "./seeds/assertReportFiled";
 import { assertChatMessageDelivered } from "./seeds/assertChatMessageDelivered";
 import { assertTeamInviteSent } from "./seeds/assertTeamInviteSent";
@@ -505,6 +506,9 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["requested-by-user", CANCEL_VARIANT.REQUESTED_BY_USER],
         ["game-reported", CANCEL_VARIANT.GAME_REPORTED],
         ["user-disqualified", CANCEL_VARIANT.USER_DISQUALIFIED],
+        ["accepted-opponent-posted", CANCEL_VARIANT.ACCEPTED_OPPONENT_POSTED],
+        ["overdue-opponent-posted", CANCEL_VARIANT.OVERDUE_OPPONENT_POSTED],
+        ["overdue-user-posted", CANCEL_VARIANT.OVERDUE_USER_POSTED],
       ].map(([key, variant]) => ({
         id: `maestro-seed-cancel-${key}`,
         label: `Seed Cancel (${key})`,
@@ -613,6 +617,45 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             ...expected,
           }),
       })),
+      {
+        id: "maestro-mock-checkin-opponent-scans-user-delayed",
+        label: "Mock Opp Scans User (20s)",
+        run: async () => {
+          setTimeout(() => {
+            void mockOpponentCheckIn({
+              ladderId: MAESTRO_CANCEL_LADDER_ID,
+              matchId: MAESTRO_CANCEL_MATCH_ID,
+              userIds: [MAESTRO_CANCEL_OPPONENT_ID, currentUser.userId],
+            });
+          }, 20000);
+          return { scheduledInSeconds: 20 };
+        },
+      },
+      {
+        id: "maestro-mock-checkin-poster-checks-in-delayed",
+        label: "Mock Poster Checks In (60s)",
+        run: async () => {
+          setTimeout(() => {
+            void mockOpponentCheckIn({
+              ladderId: MAESTRO_CANCEL_LADDER_ID,
+              matchId: MAESTRO_CANCEL_MATCH_ID,
+              userIds: [MAESTRO_CANCEL_OPPONENT_ID],
+            });
+          }, 60000);
+          return { scheduledInSeconds: 60 };
+        },
+      },
+      {
+        id: "maestro-assert-no-show-filed",
+        label: "Assert No-Show Filed",
+        run: () =>
+          assertReportFiled({
+            matchId: MAESTRO_CANCEL_MATCH_ID,
+            reason: "no_show",
+            reportedBy: currentUser.userId,
+            targetUserIds: [MAESTRO_CANCEL_OPPONENT_ID],
+          }),
+      },
       {
         id: "maestro-assert-cancel-chat-delivered",
         label: "Assert Chat Delivered",
