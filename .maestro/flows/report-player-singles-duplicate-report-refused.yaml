@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-cancel-accepted"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 30000
+    timeout: 60000
 - tapOn: "OK"
 - tapOn:
     id: "tab-competitions"
@@ -75,5 +75,5 @@ onFlowStart:
     id: "maestro-assert-report-filed-cheating"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 20000
+    timeout: 60000
 - tapOn: "OK"

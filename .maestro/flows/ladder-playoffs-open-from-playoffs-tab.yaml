@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-ladder-playoffs-generated"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 300000
+    timeout: 60000
 - tapOn: "OK"
 - tapOn:
     id: "tab-competitions"

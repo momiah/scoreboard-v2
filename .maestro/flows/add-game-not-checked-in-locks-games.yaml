@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-add-game-flow-not-checked-in"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 15000
+    timeout: 60000
 - tapOn: "OK"
 
 - tapOn:

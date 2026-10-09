@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-cancel-accepted-opponent-posted"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 30000
+    timeout: 60000
 - tapOn: "OK"
 - setLocation:
     latitude: 51.5

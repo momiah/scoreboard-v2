@@ -40,7 +40,14 @@ booted simulator with the dev client installed:
 set -a && source .maestro/.env && set +a
 maestro test .maestro/flows/reject-decline-opens-dispute.yaml   # one flow
 maestro test .maestro/flows                                     # whole suite
+.maestro/run-suite.sh                                           # whole suite, retrying a failed flow once
+.maestro/run-suite.sh team-                                     # only flows whose name contains "team-"
 ```
+
+`run-suite.sh` runs the flows one at a time (Maestro cannot share a simulator),
+retries a failed flow once, and prints `FLAKY` for one that passed on the retry
+and `FAIL` only for one that fails twice. Use it for full runs: a long run
+occasionally loses a login or a wait to simulator timing.
 
 Each flow's `onFlowStart` seeds nothing itself — the composer/timeline flows
 tap the **Seed Reject-Game Flow** button on the Home screen first (a

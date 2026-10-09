@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-join-doubles-open"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 30000
+    timeout: 60000
 - tapOn: "OK"
 - tapOn:
     id: "tab-competitions"

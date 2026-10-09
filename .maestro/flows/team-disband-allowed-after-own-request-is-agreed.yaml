@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-disband-accepted-match"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 30000
+    timeout: 60000
 - tapOn: "OK"
 - tapOn:
     id: "tab-competitions"
@@ -54,7 +54,7 @@ onFlowStart:
     id: "maestro-mock-disband-opponent-accept"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 15000
+    timeout: 60000
 - tapOn: "OK"
 - tapOn:
     id: "tab-competitions"

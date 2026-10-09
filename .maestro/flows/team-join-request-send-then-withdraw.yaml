@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-team-request-out"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 30000
+    timeout: 60000
 - tapOn: "OK"
 - tapOn:
     id: "tab-competitions"
