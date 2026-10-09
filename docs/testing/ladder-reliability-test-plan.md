@@ -120,3 +120,41 @@ All 🅼 (`cancel-*`).
 | 8.7 | Sending a request; accepting; declining | The opponent (singles) or both opposing players (doubles) get "asked to / agreed to / declined to cancel your ladder match", opening the ladder on Schedule |
 | 8.8 | The opponent answers your request | You get the response notification and tapping it opens the ladder on Schedule (card reads Cancelled, or the request is cleared) |
 | 8.9 | Doubles: the opposing team's player requested | The user sees Accept and Decline and can accept or decline (`cancel-doubles-opponent-request-user-accepts`, `-declines`) |
+
+## 9. Teams
+
+All 🅼. Seeds: `maestro/seeds/seedTeamFlow.js` (fixture players, an invite, a join
+request) and the disband seed.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 9.1 | Create a team from Select Team, then invite a partner by search | Team Details shows the new name; "Invite sent"; the team reads "Waiting for partner to accept"; the app wrote a pending team and an invite notification to the invitee (`team-create-then-invite-partner`) |
+| 9.2 | Accept a team invite from the notification | The team becomes active, shows both players, and joins the ladder (`team-invite-accept`) |
+| 9.3 | Decline a team invite | The team no longer appears in Select Team (`team-invite-decline`) |
+| 9.4 | Ask to join a team with room, then withdraw | "Request sent", then "Request withdrawn" (`team-join-request-send-then-withdraw`) |
+| 9.5 | The owner accepts or declines a join request | Accepting makes the team a full active pair; declining leaves it "No partner yet" (`team-join-request-owner-accepts`, `-declines`) |
+| 9.6 | Team settings: rename; blank name | Rename shows on Team Details; a blank name cannot be saved (`team-settings-rename-saves`, `-blank-name-cannot-be-saved`) |
+| 9.7 | Disband, then join the ladder with a different team that shares the user | Succeeds, proving the membership claims were released (`team-disband-frees-the-player-to-join-with-another-team`) |
+
+Not covered: changing the team photo (needs the system photo picker and real
+Storage uploads).
+
+## 10. Reports, strikes and check-in
+
+All 🅼 unless noted.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 10.1 | Report the opponent for cheating, abuse or harassment (singles; doubles: the whole team or one player) | "Report submitted for review"; a pending report with the right target is stored (`report-player-*`) |
+| 10.2 | "Other" without a description; with one | Submit is refused until a description is entered, then it files (`report-player-other-reason-needs-a-description`) |
+| 10.3 | The same report twice | The sheet says "You've already reported this" inline and nothing is duplicated (`report-player-singles-duplicate-report-refused`) |
+| 10.4 | A player with enough strikes | Post a Match and Accept Match show the disqualification message and are locked (`disqualified-player-cannot-post-a-match`, `-accept-a-match`) |
+| 10.5 | Check-in by reference code, poster side | The code and the waiting line show; the opponent's scan completes check-in live (`checkin-poster-shows-code-and-is-checked-in-when-opponent-scans`) |
+| 10.6 | Check-in by reference code, scanner side | A wrong code is refused inline; the right code checks the user in; the poster checking in completes it (`checkin-scanner-*`) |
+| 10.7 | No-show | Locked with a countdown until 30 minutes after the start; afterwards it can be reported and a pending no-show report is stored (`checkin-no-show-*`) |
+| 10.8 | Match chat | The opponent's message shows; a sent message is stored and marks the opponent's chat unread (`match-chat-room-send-and-receive`) |
+| 10.9 | Rules, Terms and How to Play | Each screen opens; How to Play ends on Join Now (non-member, opens the join sheet) or Participant (`ladder-info-*`) |
+
+Not covered: scanning a QR with the camera (the simulator has none; the
+reference-code path is the same write for the scanner's own check-in), and
+approving a report or applying strikes (done in the admin website).
