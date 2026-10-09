@@ -28,10 +28,13 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
   if (action === LADDER_MATCH_CANCEL_ACTION.AWAITING_RESPONSE) {
     return (
       <Banner testID="match-cancellation-awaiting">
-        <Ionicons name="time-outline" size={18} color="#f5c451" />
-        <BannerText>
-          You asked to cancel this match. Waiting for your opponent to respond.
-        </BannerText>
+        <MessageRow>
+          <Ionicons name="time-outline" size={20} color="#f5c451" />
+          <BannerText>
+            You asked to cancel this match. Waiting for your opponent to
+            respond.
+          </BannerText>
+        </MessageRow>
       </Banner>
     );
   }
@@ -49,30 +52,30 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
 
   return (
     <Banner testID="match-cancellation-request">
-      <Ionicons name="alert-circle-outline" size={18} color="#f5c451" />
-      <BannerBody>
+      <MessageRow>
+        <Ionicons name="alert-circle-outline" size={20} color="#f5c451" />
         <BannerText>
           Your opponent has asked to cancel this match. If you decline, the
           match goes ahead and must be played. Use the Chat Room to talk it
           over.
         </BannerText>
-        <Actions>
-          <DeclineButton
-            disabled={responding}
-            onPress={decline}
-            testID="match-cancellation-decline"
-          >
-            <DeclineText>Decline</DeclineText>
-          </DeclineButton>
-          <AcceptButton
-            disabled={responding}
-            onPress={() => confirmAcceptCancellation({ ladderId, match })}
-            testID="match-cancellation-accept"
-          >
-            <AcceptText>Accept Cancellation</AcceptText>
-          </AcceptButton>
-        </Actions>
-      </BannerBody>
+      </MessageRow>
+      <Actions>
+        <DeclineButton
+          disabled={responding}
+          onPress={decline}
+          testID="match-cancellation-decline"
+        >
+          <DeclineText>Decline</DeclineText>
+        </DeclineButton>
+        <AcceptButton
+          disabled={responding}
+          onPress={() => confirmAcceptCancellation({ ladderId, match })}
+          testID="match-cancellation-accept"
+        >
+          <AcceptText>Accept Cancellation</AcceptText>
+        </AcceptButton>
+      </Actions>
     </Banner>
   );
 };
@@ -80,19 +83,20 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
 export default MatchCancellationBanner;
 
 const Banner = styled.View({
-  flexDirection: "row",
-  gap: 10,
+  gap: 14,
   marginHorizontal: 20,
-  marginBottom: 12,
-  padding: 12,
-  borderRadius: 10,
+  marginTop: 16,
+  marginBottom: 16,
+  padding: 14,
+  borderRadius: 12,
   backgroundColor: "rgba(245, 196, 81, 0.1)",
   borderWidth: 1,
   borderColor: "rgba(245, 196, 81, 0.4)",
 });
 
-const BannerBody = styled.View({
-  flex: 1,
+const MessageRow = styled.View({
+  flexDirection: "row",
+  alignItems: "flex-start",
   gap: 10,
 });
 
@@ -100,39 +104,44 @@ const BannerText = styled.Text({
   flex: 1,
   color: "#f5c451",
   fontSize: 13,
-  lineHeight: 18,
+  lineHeight: 19,
 });
 
 const Actions = styled.View({
   flexDirection: "row",
-  gap: 8,
+  gap: 10,
 });
 
 const DeclineButton = styled.TouchableOpacity({
   flex: 1,
-  paddingVertical: 10,
-  borderRadius: 8,
+  minHeight: 44,
+  paddingHorizontal: 8,
+  borderRadius: 10,
   borderWidth: 1,
   borderColor: "#f5c451",
   alignItems: "center",
+  justifyContent: "center",
 });
 
 const DeclineText = styled.Text({
   color: "#f5c451",
   fontWeight: "bold",
-  fontSize: 13,
+  fontSize: 14,
 });
 
 const AcceptButton = styled.TouchableOpacity({
   flex: 1,
-  paddingVertical: 10,
-  borderRadius: 8,
+  minHeight: 44,
+  paddingHorizontal: 8,
+  borderRadius: 10,
   backgroundColor: "#FF4B6E",
   alignItems: "center",
+  justifyContent: "center",
 });
 
 const AcceptText = styled.Text({
   color: "#ffffff",
   fontWeight: "bold",
-  fontSize: 13,
+  fontSize: 14,
+  textAlign: "center",
 });
