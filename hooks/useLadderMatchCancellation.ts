@@ -205,7 +205,7 @@ export const useLadderMatchCancellation = () => {
           requestCancellation(args);
           return;
         case LADDER_MATCH_CANCEL_ACTION.AWAITING_RESPONSE:
-          showBottomToast("Waiting for your opponent to respond", "info");
+          showBottomToast("Cancellation already requested", "info");
           return;
         case LADDER_MATCH_CANCEL_ACTION.RESPOND:
           showBottomToast(

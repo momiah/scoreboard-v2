@@ -40,7 +40,7 @@ Helpers in `helpers/ladderMatchCancellation.ts`, UI via
   Details → menu → Cancel Match.
 - **Accepted** match, no game reported: Cancel Match sends a cancellation
   request. The opposing side gets a notification and a banner on Match Details
-  with Accept Cancellation / Decline. The requester's side sees "Waiting for
+  with Accept / Decline. The requester's side sees "Waiting for
   your opponent to respond". The requester's partner cannot respond.
 - Accept → match cancelled, requester's side notified, court fee refunded to
   the accepter server-side. Decline → request cleared, requester's side

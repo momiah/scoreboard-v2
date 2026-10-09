@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { StyleSheet } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -29,11 +30,8 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
     return (
       <Banner testID="match-cancellation-awaiting">
         <MessageRow>
-          <Ionicons name="time-outline" size={20} color="#f5c451" />
-          <BannerText>
-            You asked to cancel this match. Waiting for your opponent to
-            respond.
-          </BannerText>
+          <Ionicons name="time-outline" size={16} color="#9fb8c8" />
+          <BannerText>Waiting for your opponent to respond</BannerText>
         </MessageRow>
       </Banner>
     );
@@ -53,12 +51,8 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
   return (
     <Banner testID="match-cancellation-request">
       <MessageRow>
-        <Ionicons name="alert-circle-outline" size={20} color="#f5c451" />
-        <BannerText>
-          Your opponent has asked to cancel this match. If you decline, the
-          match goes ahead and must be played. Use the Chat Room to talk it
-          over.
-        </BannerText>
+        <Ionicons name="alert-circle-outline" size={16} color="#9fb8c8" />
+        <BannerText>Your opponent asked to cancel this match</BannerText>
       </MessageRow>
       <Actions>
         <DeclineButton
@@ -73,7 +67,7 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
           onPress={() => confirmAcceptCancellation({ ladderId, match })}
           testID="match-cancellation-accept"
         >
-          <AcceptText>Accept Cancellation</AcceptText>
+          <AcceptText>Accept</AcceptText>
         </AcceptButton>
       </Actions>
     </Banner>
@@ -83,65 +77,63 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
 export default MatchCancellationBanner;
 
 const Banner = styled.View({
-  gap: 14,
+  gap: 10,
   marginHorizontal: 20,
-  marginTop: 16,
-  marginBottom: 16,
-  padding: 14,
+  marginTop: 12,
+  marginBottom: 12,
+  padding: 12,
   borderRadius: 12,
-  backgroundColor: "rgba(245, 196, 81, 0.1)",
-  borderWidth: 1,
-  borderColor: "rgba(245, 196, 81, 0.4)",
+  backgroundColor: "rgba(255, 255, 255, 0.05)",
+  borderWidth: StyleSheet.hairlineWidth,
+  borderColor: "rgba(255, 255, 255, 0.15)",
 });
 
 const MessageRow = styled.View({
   flexDirection: "row",
-  alignItems: "flex-start",
-  gap: 10,
+  alignItems: "center",
+  gap: 8,
 });
 
 const BannerText = styled.Text({
   flex: 1,
-  color: "#f5c451",
+  color: "#cbd5e1",
   fontSize: 13,
-  lineHeight: 19,
 });
 
 const Actions = styled.View({
   flexDirection: "row",
-  gap: 10,
+  gap: 8,
 });
 
 const DeclineButton = styled.TouchableOpacity({
   flex: 1,
-  minHeight: 44,
-  paddingHorizontal: 8,
-  borderRadius: 10,
+  height: 36,
+  borderRadius: 8,
   borderWidth: 1,
-  borderColor: "#f5c451",
+  borderColor: "rgba(255, 255, 255, 0.25)",
   alignItems: "center",
   justifyContent: "center",
 });
 
 const DeclineText = styled.Text({
-  color: "#f5c451",
-  fontWeight: "bold",
-  fontSize: 14,
+  color: "#cbd5e1",
+  fontWeight: "600",
+  fontSize: 13,
 });
 
 const AcceptButton = styled.TouchableOpacity({
   flex: 1,
-  minHeight: 44,
-  paddingHorizontal: 8,
-  borderRadius: 10,
-  backgroundColor: "#FF4B6E",
+  height: 36,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: "rgba(255, 75, 110, 0.6)",
+  backgroundColor: "rgba(255, 75, 110, 0.12)",
   alignItems: "center",
   justifyContent: "center",
 });
 
 const AcceptText = styled.Text({
-  color: "#ffffff",
-  fontWeight: "bold",
-  fontSize: 14,
-  textAlign: "center",
+  color: "#ff8aa0",
+  fontWeight: "600",
+  fontSize: 13,
 });

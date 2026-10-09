@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - tapOn:
-    id: "maestro-seed-cancel-requested-by-user"
+    id: "maestro-seed-cancel-requested-by-opponent"
 - extendedWaitUntil:
     visible: "Seeded"
     timeout: 60000
@@ -33,14 +33,12 @@ onFlowStart:
     visible:
       id: "match-details"
     timeout: 15000
-- assertVisible:
-    id: "match-cancellation-awaiting"
 - tapOn:
     id: "match-details-burger"
 - extendedWaitUntil:
     visible:
       id: "match-menu-CancelMatch"
-      text: ".*Cancellation requested.*"
+      text: ".*Respond to request.*"
     timeout: 10000
 - assertNotVisible:
     id: "match-menu-CancelMatch"
@@ -48,6 +46,6 @@ onFlowStart:
 - tapOn:
     id: "match-menu-CancelMatch"
 - extendedWaitUntil:
-    visible: "Cancellation already requested"
+    visible: "Your opponent has asked to cancel.*"
     timeout: 10000
 - assertNotVisible: "Send Request"
