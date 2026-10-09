@@ -1,0 +1,72 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-team-request-in"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*wants to join your team.*"
+    timeout: 15000
+- tapOn: ".*wants to join your team.*"
+- extendedWaitUntil:
+    visible:
+      id: "join-request-modal"
+    timeout: 15000
+- tapOn:
+    id: "join-request-decline"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible:
+    id: "join-request-modal"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Team Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Team Ladder on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "ladder-summary-join"
+- runFlow:
+    when:
+      notVisible: "Select Team"
+    commands:
+      - tapOn:
+          id: "ladder-summary-join"
+- extendedWaitUntil:
+    visible: "Select Team"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Maestro Request Team.*"
+    timeout: 15000
+- assertVisible: ".*No partner yet.*"
+- assertNotVisible: ".*Maestro Requester.*"

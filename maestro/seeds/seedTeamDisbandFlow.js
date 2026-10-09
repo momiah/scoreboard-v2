@@ -17,6 +17,7 @@ import {
   normalizeTeamKey,
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
+import { deleteAllMaestroFixtureTeams } from "./teamFixtures";
 import {
   HOME_COURT_VARIANT,
   homeCourtEntrantFields,
@@ -34,10 +35,12 @@ export const MAESTRO_DISBAND_LADDER_NAME = "Maestro Disband Ladder";
 export const MAESTRO_DISBAND_DONE_LADDER_NAME = "Maestro Disband Done Ladder";
 export const MAESTRO_DISBAND_MATCH_ID = "maestro-disband-match";
 export const MAESTRO_DISBAND_PARTNER_ID = "maestro-disband-partner";
+export const MAESTRO_DISBAND_PARTNER_B_ID = "maestro-disband-partner-b";
 export const MAESTRO_DISBAND_OPP1_ID = "maestro-disband-opp1";
 export const MAESTRO_DISBAND_OPP2_ID = "maestro-disband-opp2";
 export const MAESTRO_DISBAND_FIXTURE_USER_IDS = [
   MAESTRO_DISBAND_PARTNER_ID,
+  MAESTRO_DISBAND_PARTNER_B_ID,
   MAESTRO_DISBAND_OPP1_ID,
   MAESTRO_DISBAND_OPP2_ID,
 ];
@@ -54,6 +57,7 @@ const daysFromNow = (days) => new Date(Date.now() + days * DAY_MS);
 
 export const DISBAND_VARIANT = {
   OPEN: "open",
+  OPEN_WITH_SPARE_TEAM: "openWithSpareTeam",
   POSTED_MATCH: "postedMatch",
   ACCEPTED_MATCH: "acceptedMatch",
   APPROVED_GAME: "approvedGame",
@@ -72,6 +76,12 @@ const partner = {
   firstName: "Maestro",
   lastName: "DisbandPartner",
   username: "maestro_disband_partner",
+};
+const partnerB = {
+  userId: MAESTRO_DISBAND_PARTNER_B_ID,
+  firstName: "Maestro",
+  lastName: "DisbandPartnerB",
+  username: "maestro_disband_partner_b",
 };
 const opp1 = {
   userId: MAESTRO_DISBAND_OPP1_ID,
@@ -104,12 +114,6 @@ const resetLadderTree = (ladderId) =>
     ),
   );
 
-const deleteFixtureTeams = async () => {
-  const snap = await getDocs(
-    query(collection(db, "teams"), where("maestroFixture", "==", FIXTURE_TAG)),
-  );
-  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-};
 
 const ladderDocument = ({ testUser, ladderId, name, status }) => ({
   ladderId,
@@ -197,11 +201,12 @@ export const seedTeamDisbandFlow = async ({
 
   await Promise.all([
     seedFixtureUser(partner, "maestro-disband-partner@example.com"),
+    seedFixtureUser(partnerB, "maestro-disband-partner-b@example.com"),
     seedFixtureUser(opp1, "maestro-disband-opp1@example.com"),
     seedFixtureUser(opp2, "maestro-disband-opp2@example.com"),
   ]);
   await Promise.all(MAESTRO_DISBAND_LADDER_IDS.map(resetLadderTree));
-  await deleteFixtureTeams();
+  await deleteAllMaestroFixtureTeams();
   await Promise.all(
     [partner, opp1, opp2].flatMap((fixture) =>
       MAESTRO_DISBAND_LADDER_IDS.map(async (ladderId) => {
@@ -236,6 +241,18 @@ export const seedTeamDisbandFlow = async ({
   const userIds = [testUser.userId, partner.userId];
 
   await setDoc(doc(db, "teams", teamId), team);
+
+  if (variant === DISBAND_VARIANT.OPEN_WITH_SPARE_TEAM) {
+    const spareTeam = {
+      ...buildSeedLadderTeam({
+        players: [testUser, partnerB],
+        createdBy: testUser,
+        teamName: "Maestro Disband Spare",
+      }),
+      maestroFixture: FIXTURE_TAG,
+    };
+    await setDoc(doc(db, "teams", spareTeam.teamId), spareTeam);
+  }
 
   const ladders = [
     {
@@ -394,7 +411,7 @@ export const cleanupTeamDisbandTestData = async () => {
   await Promise.all(
     MAESTRO_DISBAND_LADDER_IDS.map((id) => deleteDoc(doc(db, "ladders", id))),
   );
-  await deleteFixtureTeams();
+  await deleteAllMaestroFixtureTeams();
   await Promise.all(
     MAESTRO_DISBAND_FIXTURE_USER_IDS.map((id) =>
       deleteDoc(doc(db, "users", id)),

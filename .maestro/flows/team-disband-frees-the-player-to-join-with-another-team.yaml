@@ -1,0 +1,87 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-disband-open-with-spare-team"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+- assertVisible: ".*Participant.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-team-summary"
+    direction: UP
+- tapOn:
+    id: "ladder-team-summary"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- tapOn:
+    id: "team-details-menu"
+- scrollUntilVisible:
+    element:
+      id: "team-settings-disband"
+    direction: DOWN
+- tapOn:
+    id: "team-settings-disband"
+- extendedWaitUntil:
+    visible: "Disband team"
+    timeout: 5000
+- tapOn: "Disband"
+- extendedWaitUntil:
+    visible: "Team disbanded"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+- assertVisible: ".*Join Now.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "ladder-summary-join"
+- runFlow:
+    when:
+      notVisible: "Select Team"
+    commands:
+      - tapOn:
+          id: "ladder-summary-join"
+- extendedWaitUntil:
+    visible: "Select Team"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Maestro Disband Spare.*"
+    timeout: 15000
+- assertNotVisible: ".*Maestro Disband Aces.*"
+- tapOn: ".*Maestro Disband Spare.*"
+- tapOn:
+    id: "select-team-join"
+- extendedWaitUntil:
+    visible: "Joined the ladder"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-post-match"
+    timeout: 20000

@@ -1,0 +1,102 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-team-create"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Team Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Team Ladder on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: "ladder-summary-join"
+- runFlow:
+    when:
+      notVisible: "Select Team"
+    commands:
+      - tapOn:
+          id: "ladder-summary-join"
+- extendedWaitUntil:
+    visible: "Select Team"
+    timeout: 15000
+- tapOn:
+    id: "select-team-create"
+- extendedWaitUntil:
+    visible:
+      id: "create-team-name"
+    timeout: 15000
+- tapOn:
+    id: "create-team-name"
+- inputText: "Maestro Created Team"
+- pressKey: Enter
+- tapOn:
+    id: "create-team-submit"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 20000
+- assertVisible: ".*Maestro Created Team.*"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-invite"
+    timeout: 15000
+- tapOn:
+    id: "team-details-invite"
+- extendedWaitUntil:
+    visible:
+      id: "invite-player-search"
+    timeout: 15000
+- tapOn:
+    id: "invite-player-search"
+- inputText: "Invitee"
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: "invite-player-suggestion-maestro-team-invitee"
+    timeout: 20000
+- tapOn:
+    id: "invite-player-suggestion-maestro-team-invitee"
+- tapOn:
+    id: "invite-player-submit"
+- extendedWaitUntil:
+    visible: "Invite sent"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- tapOn:
+    id: "team-details-back"
+- extendedWaitUntil:
+    visible: ".*Maestro Created Team.*"
+    timeout: 15000
+- assertVisible: ".*Waiting for partner to accept.*"
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-assert-team-invite-sent"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 20000
+- tapOn: "OK"

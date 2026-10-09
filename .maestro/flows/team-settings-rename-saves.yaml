@@ -1,0 +1,61 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-disband-open"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-team-summary"
+    direction: DOWN
+- tapOn:
+    id: "ladder-team-summary"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- assertVisible: ".*Maestro Disband Aces.*"
+- tapOn:
+    id: "team-details-menu"
+- extendedWaitUntil:
+    visible:
+      id: "team-settings-name"
+    timeout: 15000
+- assertVisible:
+    id: "team-settings-name"
+    text: "Maestro Disband Aces"
+- tapOn:
+    id: "team-settings-name"
+- eraseText: 40
+- inputText: "Maestro Renamed Aces"
+- pressKey: Enter
+- tapOn:
+    id: "team-settings-save"
+- extendedWaitUntil:
+    visible: "Team updated"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- assertVisible: ".*Maestro Renamed Aces.*"
+- assertNotVisible: ".*Maestro Disband Aces.*"

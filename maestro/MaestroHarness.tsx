@@ -33,6 +33,13 @@ import {
   MAESTRO_CANCEL_OPPONENT_ID,
   seedMatchCancellationFlow,
 } from "./seeds/seedMatchCancellationFlow";
+import {
+  MAESTRO_CREATED_TEAM_NAME,
+  MAESTRO_TEAM_INVITEE_ID,
+  TEAM_VARIANT,
+  seedTeamFlow,
+} from "./seeds/seedTeamFlow";
+import { assertTeamInviteSent } from "./seeds/assertTeamInviteSent";
 import { mockOpponentCancellationResponse } from "./seeds/mockOpponentCancellationResponse";
 import { assertCancellationNotification } from "./seeds/assertCancellationNotification";
 import {
@@ -472,6 +479,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       },
       ...[
         ["open", DISBAND_VARIANT.OPEN],
+        ["open-with-spare-team", DISBAND_VARIANT.OPEN_WITH_SPARE_TEAM],
         ["posted-match", DISBAND_VARIANT.POSTED_MATCH],
         ["accepted-match", DISBAND_VARIANT.ACCEPTED_MATCH],
         ["approved-game", DISBAND_VARIANT.APPROVED_GAME],
@@ -553,6 +561,25 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             }),
         },
       ]),
+      ...[
+        ["create", TEAM_VARIANT.CREATE],
+        ["invited", TEAM_VARIANT.INVITED],
+        ["request-out", TEAM_VARIANT.REQUEST_OUT],
+        ["request-in", TEAM_VARIANT.REQUEST_IN],
+      ].map(([key, variant]) => ({
+        id: `maestro-seed-team-${key}`,
+        label: `Seed Team (${key})`,
+        run: () => seedTeamFlow({ testUser: currentUser, variant }),
+      })),
+      {
+        id: "maestro-assert-team-invite-sent",
+        label: "Assert Team Invite Sent",
+        run: () =>
+          assertTeamInviteSent({
+            recipientId: MAESTRO_TEAM_INVITEE_ID,
+            teamName: MAESTRO_CREATED_TEAM_NAME,
+          }),
+      },
       {
         id: "maestro-seed-reject-playoffs-started",
         label: "Seed Active Dispute (Playoffs Started)",

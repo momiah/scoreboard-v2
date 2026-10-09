@@ -16,6 +16,7 @@ import {
   normalizeTeamKey,
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
+import { deleteAllMaestroFixtureTeams } from "./teamFixtures";
 import { resetHomeCourtNotifications, seedFixtureUser } from "./homeCourtFixtures";
 
 export const MAESTRO_JOIN_SINGLES_LADDER_ID = "maestro-join-singles-ladder";
@@ -88,12 +89,6 @@ const resetLadderTree = async (ladderId) => {
   );
 };
 
-const deleteFixtureTeams = async () => {
-  const snap = await getDocs(
-    query(collection(db, "teams"), where("maestroFixture", "==", FIXTURE_TAG)),
-  );
-  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-};
 
 const ladderDocument = ({ testUser, ladderId, name, ladderType, variant }) => {
   const full = variant === JOIN_VARIANT.FULL;
@@ -177,7 +172,7 @@ export const seedLadderJoinFlowDoubles = async ({
   ]);
 
   await resetLadderTree(MAESTRO_JOIN_DOUBLES_LADDER_ID);
-  await deleteFixtureTeams();
+  await deleteAllMaestroFixtureTeams();
 
   await setDoc(
     doc(db, "ladders", MAESTRO_JOIN_DOUBLES_LADDER_ID),
@@ -279,7 +274,7 @@ export const cleanupLadderJoinTestData = async () => {
   await Promise.all(
     MAESTRO_JOIN_LADDER_IDS.map((id) => deleteDoc(doc(db, "ladders", id))),
   );
-  await deleteFixtureTeams();
+  await deleteAllMaestroFixtureTeams();
   await Promise.all(
     MAESTRO_JOIN_FIXTURE_USER_IDS.map((id) => deleteDoc(doc(db, "users", id))),
   );
