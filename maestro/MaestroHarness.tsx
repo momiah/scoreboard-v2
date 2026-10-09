@@ -39,6 +39,7 @@ import {
   TEAM_VARIANT,
   seedTeamFlow,
 } from "./seeds/seedTeamFlow";
+import { assertReportFiled } from "./seeds/assertReportFiled";
 import { assertChatMessageDelivered } from "./seeds/assertChatMessageDelivered";
 import { assertTeamInviteSent } from "./seeds/assertTeamInviteSent";
 import { mockOpponentCancellationResponse } from "./seeds/mockOpponentCancellationResponse";
@@ -503,6 +504,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["requested-by-opponent", CANCEL_VARIANT.REQUESTED_BY_OPPONENT],
         ["requested-by-user", CANCEL_VARIANT.REQUESTED_BY_USER],
         ["game-reported", CANCEL_VARIANT.GAME_REPORTED],
+        ["user-disqualified", CANCEL_VARIANT.USER_DISQUALIFIED],
       ].map(([key, variant]) => ({
         id: `maestro-seed-cancel-${key}`,
         label: `Seed Cancel (${key})`,
@@ -571,6 +573,45 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         id: `maestro-seed-team-${key}`,
         label: `Seed Team (${key})`,
         run: () => seedTeamFlow({ testUser: currentUser, variant }),
+      })),
+      ...(
+        [
+          ["cheating", { reason: "cheating", targetType: "player" }],
+          [
+            "other",
+            {
+              reason: "other",
+              targetType: "player",
+              description: "Maestro: refused to play the agreed best of three",
+            },
+          ],
+        ] as const
+      ).map(([key, expected]) => ({
+        id: `maestro-assert-report-filed-${key}`,
+        label: `Assert Report ${key}`,
+        run: () =>
+          assertReportFiled({
+            matchId: MAESTRO_CANCEL_MATCH_ID,
+            targetUserIds: [MAESTRO_CANCEL_OPPONENT_ID],
+            reportedBy: currentUser.userId,
+            ...expected,
+          }),
+      })),
+      ...(
+        [
+          ["team", { targetType: "team", targetUserIds: [MAESTRO_DISBAND_OPP1_ID, MAESTRO_DISBAND_OPP2_ID] }],
+          ["player", { targetType: "player", targetUserIds: [MAESTRO_DISBAND_OPP1_ID] }],
+        ] as const
+      ).map(([key, expected]) => ({
+        id: `maestro-assert-disband-report-filed-${key}`,
+        label: `Assert Doubles Report ${key}`,
+        run: () =>
+          assertReportFiled({
+            matchId: MAESTRO_DISBAND_MATCH_ID,
+            reportedBy: currentUser.userId,
+            reason: "abuse",
+            ...expected,
+          }),
       })),
       {
         id: "maestro-assert-cancel-chat-delivered",

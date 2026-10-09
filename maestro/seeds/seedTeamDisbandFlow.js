@@ -18,6 +18,7 @@ import {
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { deleteAllMaestroFixtureTeams } from "./teamFixtures";
+import { deleteReportsForLadder } from "./reportFixtures";
 import {
   HOME_COURT_VARIANT,
   homeCourtEntrantFields,
@@ -206,6 +207,7 @@ export const seedTeamDisbandFlow = async ({
     seedFixtureUser(opp2, "maestro-disband-opp2@example.com"),
   ]);
   await Promise.all(MAESTRO_DISBAND_LADDER_IDS.map(resetLadderTree));
+  await Promise.all(MAESTRO_DISBAND_LADDER_IDS.map(deleteReportsForLadder));
   await deleteAllMaestroFixtureTeams();
   await Promise.all(
     [partner, opp1, opp2].flatMap((fixture) =>

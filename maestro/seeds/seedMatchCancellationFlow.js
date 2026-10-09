@@ -17,6 +17,7 @@ import {
   notificationSchema,
   notificationTypes,
 } from "@shared";
+import { deleteReportsForLadder, seedStrikes } from "./reportFixtures";
 import {
   HOME_COURT_VARIANT,
   homeCourtEntrantFields,
@@ -39,6 +40,7 @@ export const CANCEL_VARIANT = {
   REQUESTED_BY_OPPONENT: "requestedByOpponent",
   REQUESTED_BY_USER: "requestedByUser",
   GAME_REPORTED: "gameReported",
+  USER_DISQUALIFIED: "userDisqualified",
 };
 
 const opponent = {
@@ -115,6 +117,7 @@ export const seedMatchCancellationFlow = async ({
   }
   await seedFixtureUser(opponent, "maestro-cancel-opponent@example.com");
   await resetTree();
+  await deleteReportsForLadder(MAESTRO_CANCEL_LADDER_ID);
   await clearFixtureNotifications([opponent.userId], MAESTRO_CANCEL_LADDER_ID);
 
   await setDoc(doc(db, "ladders", MAESTRO_CANCEL_LADDER_ID), {
@@ -185,6 +188,11 @@ export const seedMatchCancellationFlow = async ({
       ...accepted,
       ...requestBy(testUser.userId),
     },
+    [CANCEL_VARIANT.USER_DISQUALIFIED]: {
+      ...posted,
+      createdBy: opponent.userId,
+      participants: [opponent.userId],
+    },
     [CANCEL_VARIANT.GAME_REPORTED]: {
       ...accepted,
       games: accepted.games.map((game, index) =>
@@ -206,6 +214,9 @@ export const seedMatchCancellationFlow = async ({
     doc(db, "ladders", MAESTRO_CANCEL_LADDER_ID, "ladderMatches", MAESTRO_CANCEL_MATCH_ID),
     documentByVariant[variant],
   );
+  if (variant === CANCEL_VARIANT.USER_DISQUALIFIED) {
+    await seedStrikes(MAESTRO_CANCEL_LADDER_ID, testUser.userId, { cheating: 3 });
+  }
   const chatRef = collection(
     db,
     "ladders",

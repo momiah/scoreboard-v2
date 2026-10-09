@@ -46,6 +46,7 @@ import {
   MAESTRO_JOIN_LADDER_IDS,
   cleanupLadderJoinTestData,
 } from "./seedLadderJoinFlow";
+import { deleteReportsForLadder } from "./reportFixtures";
 import {
   MAESTRO_TEAM_LADDER_ID,
   cleanupTeamFlowTestData,
@@ -140,6 +141,7 @@ export const cleanupLadderTestData = async ({
     MAESTRO_CANCEL_LADDER_ID,
     MAESTRO_TEAM_LADDER_ID,
   ];
+  await Promise.all(notificationLadderIds.map(deleteReportsForLadder));
   if (testUser?.userId && notificationLadderIds.length) {
     const notificationsRef = collection(
       db,

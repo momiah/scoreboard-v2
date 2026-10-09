@@ -1,0 +1,60 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-disband-accepted-match"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Schedule.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Schedule.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-disband-match"
+    timeout: 20000
+- tapOn:
+    id: "schedule-card-maestro-disband-match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-Report"
+- extendedWaitUntil:
+    visible:
+      id: "report-submit"
+    timeout: 15000
+- tapOn:
+    id: "report-target-player-maestro-disband-opp1"
+- tapOn:
+    id: "report-reason-abuse"
+- tapOn:
+    id: "report-submit"
+- extendedWaitUntil:
+    visible: "Report submitted for review"
+    timeout: 15000
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-assert-disband-report-filed-player"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 20000
+- tapOn: "OK"
