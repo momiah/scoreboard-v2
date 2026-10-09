@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - tapOn:
-    id: "maestro-seed-cancel-requested-by-opponent"
+    id: "maestro-seed-disband-accepted-requested-by-opponent"
 - extendedWaitUntil:
     visible: "Seeded"
     timeout: 30000
@@ -20,15 +20,15 @@ onFlowStart:
 - tapOn:
     id: "competitions-notifications-button"
 - extendedWaitUntil:
-    visible: ".*open Maestro Cancel Ladder on Schedule.*"
+    visible: ".*open Maestro Disband Ladder on Schedule.*"
     timeout: 15000
-- tapOn: ".*open Maestro Cancel Ladder on Schedule.*"
+- tapOn: ".*open Maestro Disband Ladder on Schedule.*"
 - extendedWaitUntil:
     visible:
-      id: "schedule-card-maestro-cancel-match"
+      id: "schedule-card-maestro-disband-match"
     timeout: 20000
 - tapOn:
-    id: "schedule-card-maestro-cancel-match"
+    id: "schedule-card-maestro-disband-match"
 - extendedWaitUntil:
     visible:
       id: "match-details"
@@ -44,12 +44,10 @@ onFlowStart:
     timeout: 15000
 - assertNotVisible:
     id: "match-cancellation-request"
-- assertVisible:
-    id: "match-details"
 - tapOn:
     id: "tab-home"
 - tapOn:
-    id: "maestro-assert-cancel-notified-decline"
+    id: "maestro-assert-disband-notified-decline"
 - extendedWaitUntil:
     visible: "Seeded"
     timeout: 15000

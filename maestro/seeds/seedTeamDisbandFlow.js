@@ -58,6 +58,7 @@ export const DISBAND_VARIANT = {
   ACCEPTED_MATCH: "acceptedMatch",
   APPROVED_GAME: "approvedGame",
   ACCEPTED_REQUESTED_BY_USER: "acceptedRequestedByUser",
+  ACCEPTED_REQUESTED_BY_OPPONENT: "acceptedRequestedByOpponent",
   ACCEPTED_REQUESTED_BY_PARTNER: "acceptedRequestedByPartner",
   ACCEPTED_GAME_REPORTED: "acceptedGameReported",
   REGISTRATION_CLOSED: "registrationClosed",
@@ -201,6 +202,19 @@ export const seedTeamDisbandFlow = async ({
   ]);
   await Promise.all(MAESTRO_DISBAND_LADDER_IDS.map(resetLadderTree));
   await deleteFixtureTeams();
+  await Promise.all(
+    [partner, opp1, opp2].flatMap((fixture) =>
+      MAESTRO_DISBAND_LADDER_IDS.map(async (ladderId) => {
+        const snap = await getDocs(
+          query(
+            collection(db, "users", fixture.userId, "notifications"),
+            where("data.ladderId", "==", ladderId),
+          ),
+        );
+        await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+      }),
+    ),
+  );
 
   const otherLadderDone = variant === DISBAND_VARIANT.OTHER_LADDER_COMPLETED;
   const mainStatus =
@@ -288,6 +302,7 @@ export const seedTeamDisbandFlow = async ({
   const acceptedVariants = [
     DISBAND_VARIANT.ACCEPTED_MATCH,
     DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_USER,
+    DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_OPPONENT,
     DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_PARTNER,
     DISBAND_VARIANT.ACCEPTED_GAME_REPORTED,
   ];
@@ -334,6 +349,9 @@ export const seedTeamDisbandFlow = async ({
       acceptedAt: new Date(),
       ...(variant === DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_USER
         ? requestBy(testUser.userId)
+        : {}),
+      ...(variant === DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_OPPONENT
+        ? requestBy(opp1.userId)
         : {}),
       ...(variant === DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_PARTNER
         ? requestBy(partner.userId)

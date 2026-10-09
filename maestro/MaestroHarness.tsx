@@ -30,13 +30,17 @@ import {
   CANCEL_VARIANT,
   MAESTRO_CANCEL_LADDER_ID,
   MAESTRO_CANCEL_MATCH_ID,
+  MAESTRO_CANCEL_OPPONENT_ID,
   seedMatchCancellationFlow,
 } from "./seeds/seedMatchCancellationFlow";
 import { mockOpponentCancellationResponse } from "./seeds/mockOpponentCancellationResponse";
+import { assertCancellationNotification } from "./seeds/assertCancellationNotification";
 import {
   DISBAND_VARIANT,
   MAESTRO_DISBAND_LADDER_ID,
   MAESTRO_DISBAND_MATCH_ID,
+  MAESTRO_DISBAND_OPP1_ID,
+  MAESTRO_DISBAND_OPP2_ID,
   seedTeamDisbandFlow,
 } from "./seeds/seedTeamDisbandFlow";
 import {
@@ -474,6 +478,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["registration-closed", DISBAND_VARIANT.REGISTRATION_CLOSED],
         ["playoffs", DISBAND_VARIANT.PLAYOFFS],
         ["accepted-requested-by-user", DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_USER],
+        ["accepted-requested-by-opponent", DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_OPPONENT],
         ["accepted-requested-by-partner", DISBAND_VARIANT.ACCEPTED_REQUESTED_BY_PARTNER],
         ["accepted-game-reported", DISBAND_VARIANT.ACCEPTED_GAME_REPORTED],
         ["ladder-completed", DISBAND_VARIANT.LADDER_COMPLETED],
@@ -506,6 +511,13 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
               ladderId: MAESTRO_CANCEL_LADDER_ID,
               matchId: MAESTRO_CANCEL_MATCH_ID,
               accept: accept as boolean,
+              responder: {
+                userId: MAESTRO_CANCEL_OPPONENT_ID,
+                firstName: "Maestro",
+                lastName: "CancelOpponent",
+                username: "maestro_cancel_opponent",
+              },
+              notifyUserId: currentUser.userId,
             }),
         },
         {
@@ -516,6 +528,28 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
               ladderId: MAESTRO_DISBAND_LADDER_ID,
               matchId: MAESTRO_DISBAND_MATCH_ID,
               accept: accept as boolean,
+            }),
+        },
+      ]),
+      ...(["request", "accept", "decline"] as const).flatMap((kind) => [
+        {
+          id: `maestro-assert-cancel-notified-${kind}`,
+          label: `Assert Cancel Notified ${kind}`,
+          run: () =>
+            assertCancellationNotification({
+              recipientIds: [MAESTRO_CANCEL_OPPONENT_ID],
+              matchId: MAESTRO_CANCEL_MATCH_ID,
+              kind,
+            }),
+        },
+        {
+          id: `maestro-assert-disband-notified-${kind}`,
+          label: `Assert Disband Notified ${kind}`,
+          run: () =>
+            assertCancellationNotification({
+              recipientIds: [MAESTRO_DISBAND_OPP1_ID, MAESTRO_DISBAND_OPP2_ID],
+              matchId: MAESTRO_DISBAND_MATCH_ID,
+              kind,
             }),
         },
       ]),

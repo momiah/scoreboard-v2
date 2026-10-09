@@ -57,6 +57,20 @@ const resetTree = () =>
     }),
   );
 
+const clearFixtureNotifications = async (userIds, ladderId) => {
+  await Promise.all(
+    userIds.map(async (userId) => {
+      const snap = await getDocs(
+        query(
+          collection(db, "users", userId, "notifications"),
+          where("data.ladderId", "==", ladderId),
+        ),
+      );
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    }),
+  );
+};
+
 const writeNotifications = async (testUser) => {
   const notificationsRef = collection(
     db,
@@ -95,6 +109,7 @@ export const seedMatchCancellationFlow = async ({
   }
   await seedFixtureUser(opponent, "maestro-cancel-opponent@example.com");
   await resetTree();
+  await clearFixtureNotifications([opponent.userId], MAESTRO_CANCEL_LADDER_ID);
 
   await setDoc(doc(db, "ladders", MAESTRO_CANCEL_LADDER_ID), {
     ladderId: MAESTRO_CANCEL_LADDER_ID,

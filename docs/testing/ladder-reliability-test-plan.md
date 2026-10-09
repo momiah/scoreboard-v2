@@ -115,3 +115,6 @@ All 🅼 (`cancel-*`).
 | 8.4 | A second request while one is pending | "Waiting for your opponent to respond", no new request |
 | 8.5 | A game has been reported | "This match can no longer be cancelled" |
 | 8.6 | Doubles: the partner already asked | Awaiting banner, no Accept or Decline |
+| 8.7 | Sending a request; accepting; declining | The opponent (singles) or both opposing players (doubles) get "asked to / agreed to / declined to cancel your ladder match", opening the ladder on Schedule |
+| 8.8 | The opponent answers your request | You get the response notification and tapping it opens the ladder on Schedule (card reads Cancelled, or the request is cleared) |
+| 8.9 | Doubles: the opposing team's player requested | The user sees Accept and Decline and can accept or decline (`cancel-doubles-opponent-request-user-accepts`, `-declines`) |

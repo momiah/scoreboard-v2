@@ -56,10 +56,14 @@ declining; receiving an opponent's request and accepting or declining it; a
 second request being refused; a reported game blocking cancellation; and the
 requester's partner seeing "Waiting" with no Accept or Decline (doubles).
 
+Also covered: the app sends the right notification on each step (the request
+reaches the opponent; accepting or declining reaches the requester's whole
+side, both players in doubles), the requester sees the response notification
+and it opens the match's ladder, and in doubles either opposing player can
+respond.
+
 Still to cover:
 
-- Doubles: either opponent can respond (the flows only use one opponent).
-- The requester's side receiving the notification after the response.
 - The court-fee refund on accept (server-side; see below).
 
 ## Refunds and the platform fee
