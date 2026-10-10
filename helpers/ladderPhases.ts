@@ -46,6 +46,14 @@ const PHASE_DESCRIPTIONS: Record<LadderStatus, string> = {
   [LADDER_STATUS.CANCELLED]: "This ladder was cancelled.",
 };
 
+export const LADDER_STATUS_TAGS: Record<string, { label: string; color: string }> = {
+  [LADDER_STATUS.REGISTRATION_OPEN]: { label: "Registration Open", color: "#FAB234" },
+  [LADDER_STATUS.REGISTRATION_CLOSED]: { label: "Registration Closed", color: "#FF9800" },
+  [LADDER_STATUS.PLAYOFFS]: { label: "Playoffs", color: "#286EFA" },
+  [LADDER_STATUS.COMPLETED]: { label: "Completed", color: "#1A6B1A" },
+  [LADDER_STATUS.CANCELLED]: { label: "Cancelled", color: "#FF4757" },
+};
+
 export const getLadderPhases = (ladder: Ladder): LadderPhase[] => {
   const windows: Record<string, { start: Moment | null; end: Moment | null }> =
     {

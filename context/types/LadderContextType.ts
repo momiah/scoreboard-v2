@@ -1,5 +1,8 @@
+import type { LadderHomeCourtState } from "../../helpers/ladderHomeCourt";
 import type {
+  Court,
   Ladder,
+  LadderPlayoffTie,
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
@@ -16,9 +19,28 @@ import type {
 export type { CreateReportOutcome };
 import type { LadderJoinUser } from "@shared/helpers";
 
+export type LadderJoinFailureReason = "closed" | "not_open" | "full";
+
+export type AddLadderTeamFailureReason =
+  | LadderJoinFailureReason
+  | "member_conflict";
+
+export type TeamJoinFailureReason =
+  | AddLadderTeamFailureReason
+  | "team_not_found"
+  | "team_pending"
+  | "team_incomplete";
+
 export interface LadderJoinOutcome {
   success: boolean;
   alreadyJoined: boolean;
+  reason?: LadderJoinFailureReason;
+}
+
+export interface AddLadderTeamOutcome {
+  success: boolean;
+  reason?: AddLadderTeamFailureReason;
+  conflictUserIds?: string[];
 }
 
 export interface CreateTeamOutcome {
@@ -31,11 +53,19 @@ export interface JoinLadderAsTeamOutcome {
   alreadyJoined: boolean;
   conflict: boolean;
   conflictUserIds: string[];
+  reason?: TeamJoinFailureReason;
 }
 
 export interface DisbandTeamOutcome {
   success: boolean;
   activelyPlaying: boolean;
+  registrationClosed?: boolean;
+  openMatch?: boolean;
+}
+
+export interface TeamLadderActivity {
+  hasOpenMatch: boolean;
+  hasCompletedGame: boolean;
 }
 
 export interface AcceptTeamJoinRequestOutcome {
@@ -48,7 +78,7 @@ export interface CreateLadderMatchOutcome {
   ladderMatch: LadderMatch | null;
 }
 
-export type AcceptLadderMatchFailureReason = "unavailable" | "error";
+export type AcceptLadderMatchFailureReason = "unavailable" | "frozen" | "error";
 
 export interface AcceptLadderMatchOutcome {
   success: boolean;
@@ -65,6 +95,7 @@ export interface CheckInLadderMatchOutcome {
 export type UpdateLadderGameFailureReason =
   | "unavailable"
   | "error"
+  | "frozen"
   | "match_decided";
 
 export interface UpdateLadderGameOutcome {
@@ -77,6 +108,13 @@ export type CancelLadderMatchFailureReason =
   | "not_cancellable"
   | "error";
 
+export interface LadderMatchCancellationOutcome {
+  success: boolean;
+  reason?: CancelLadderMatchFailureReason;
+  /** Players to notify: the opponent on a request, the requester's side on a response. */
+  notifyUserIds?: string[];
+}
+
 export interface CancelLadderMatchOutcome {
   success: boolean;
   reason?: CancelLadderMatchFailureReason;
@@ -85,6 +123,7 @@ export interface CancelLadderMatchOutcome {
 export type ApproveLadderGameFailureReason =
   | "unavailable"
   | "not_opponent"
+  | "frozen"
   | "error";
 
 export interface ApproveLadderGameOutcome {
@@ -94,6 +133,17 @@ export interface ApproveLadderGameOutcome {
   fullyApproved?: boolean;
   /** True when this approval also completed the match (recent-form written). */
   matchCompleted?: boolean;
+}
+
+export type SetLadderHomeCourtFailureReason =
+  | "not_participant"
+  | "change_limit"
+  | "invalid_court"
+  | "error";
+
+export interface SetLadderHomeCourtOutcome {
+  success: boolean;
+  reason?: SetLadderHomeCourtFailureReason;
 }
 
 export interface LadderContextType {
@@ -110,7 +160,10 @@ export interface LadderContextType {
   joinedLadderIds: string[];
   checkLadderMembership: (ladderId: string, userId: string) => Promise<boolean>;
   fetchLadderParticipants: (ladderId: string) => Promise<ScoreboardProfile[]>;
-  addLadderTeam: (ladderId: string, team: TeamStats) => Promise<boolean>;
+  addLadderTeam: (
+    ladderId: string,
+    team: TeamStats,
+  ) => Promise<AddLadderTeamOutcome>;
   fetchLadderTeams: (ladderId: string) => Promise<TeamStats[]>;
   createTeam: (
     creator: TeamMember,
@@ -145,12 +198,19 @@ export interface LadderContextType {
     teamId: string,
     updates: { teamName?: string; teamProfilePic?: string },
   ) => Promise<boolean>;
-  isTeamActivelyPlaying: (team: TeamStats) => Promise<boolean>;
+  getTeamLadderActivity: (
+    team: TeamStats,
+    ladderIds?: string[],
+  ) => Promise<TeamLadderActivity>;
   disbandTeam: (team: TeamStats) => Promise<DisbandTeamOutcome>;
   acceptTeamInvite: (teamId: string) => Promise<boolean>;
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;
   fetchUserTeams: (userId: string) => Promise<TeamStats[]>;
+  fetchLadderTeamMemberIds: (
+    ladderId: string,
+    userId: string,
+  ) => Promise<string[]>;
   fetchLadderMemberIds: (ladderId: string) => Promise<string[]>;
   joinLadderAsTeam: (
     ladderId: string,
@@ -213,6 +273,17 @@ export interface LadderContextType {
     matchId: string;
     userId: string;
   }) => Promise<CancelLadderMatchOutcome>;
+  requestLadderMatchCancellation: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+  }) => Promise<LadderMatchCancellationOutcome>;
+  respondToLadderMatchCancellation: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+    accept: boolean;
+  }) => Promise<LadderMatchCancellationOutcome>;
   approveLadderGame: (args: {
     ladderId: string;
     matchId: string;
@@ -220,7 +291,22 @@ export interface LadderContextType {
     userId: string;
     approver: { userId: string; username: string };
   }) => Promise<ApproveLadderGameOutcome>;
-  addCourtToLadder: (ladderId: string, courtId: string) => Promise<boolean>;
+  subscribeToLadderPlayoffTies: (
+    ladderId: string,
+    onUpdate: (ties: LadderPlayoffTie[]) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
+  subscribeToLadderHomeCourt: (
+    ladder: Pick<Ladder, "ladderId" | "ladderType">,
+    userId: string,
+    onUpdate: (state: LadderHomeCourtState | null) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
+  setLadderHomeCourt: (args: {
+    ladder: Pick<Ladder, "ladderId" | "ladderType">;
+    userId: string;
+    court: Court;
+  }) => Promise<SetLadderHomeCourtOutcome>;
 }
 
 export interface FetchLaddersOptions {

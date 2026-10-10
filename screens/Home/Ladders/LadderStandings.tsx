@@ -26,7 +26,6 @@ import { enrichPlayers } from "../../../helpers/enrichPlayers";
 import { formatDisplayName } from "../../../helpers/formatDisplayName";
 import PaginatedList from "../../../components/PaginatedList";
 import PerformanceRow from "../../../components/performance/Player/PerformanceRow";
-import PlayerDetails from "../../../components/Modals/PlayerDetailsModal";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 
 type StandingsMode = "players" | "teams";
@@ -53,9 +52,6 @@ const LadderStandings: React.FC = () => {
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [teams, setTeams] = useState<TeamStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlayer, setSelectedPlayer] = useState<ScoreboardProfile | null>(
-    null,
-  );
 
   useEffect(() => {
     let active = true;
@@ -150,10 +146,12 @@ const LadderStandings: React.FC = () => {
         player={item}
         rank={item.rank}
         ladder
-        onPress={(p: ScoreboardProfile) => setSelectedPlayer(p)}
+        onPress={(p: ScoreboardProfile) =>
+          navigation.navigate("PlayerDetails", { selectedPlayer: p })
+        }
       />
     ),
-    [],
+    [navigation],
   );
 
   const renderTeam = useCallback(
@@ -174,7 +172,7 @@ const LadderStandings: React.FC = () => {
   const title = ladderName ?? "Standings";
 
   return (
-    <Screen>
+    <Screen testID="ladder-standings-screen">
       <Header>
         <BackButton
           onPress={() => navigation.goBack()}
@@ -210,13 +208,6 @@ const LadderStandings: React.FC = () => {
         />
       )}
 
-      {selectedPlayer && (
-        <PlayerDetails
-          selectedPlayer={selectedPlayer}
-          showPlayerDetails={!!selectedPlayer}
-          setShowPlayerDetails={() => setSelectedPlayer(null)}
-        />
-      )}
 
     </Screen>
   );

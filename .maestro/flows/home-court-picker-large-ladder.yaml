@@ -1,0 +1,57 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow-large-ladder"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Ladder on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-home-court"
+    timeout: 20000
+- tapOn:
+    id: "ladder-home-court-add"
+
+- extendedWaitUntil:
+    visible: ".*Maestro Court A Own Pending.*"
+    timeout: 20000
+- assertVisible: ".*Maestro Court B Verified.*"
+- assertNotVisible:
+    id: "search-court-empty"
+- scrollUntilVisible:
+    element: ".*Maestro Extra Court 80.*"
+    direction: DOWN
+    timeout: 60000
+- tapOn: ".*Maestro Extra Court 80.*"
+- assertVisible: "Set home court?"
+- assertVisible: ".*Set Maestro Extra Court 80 as your home court. You can change it once for this ladder..*"
+- tapOn: "Confirm"
+- extendedWaitUntil:
+    visible: "Home court saved"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "ladder-home-court-card"
+    timeout: 15000
+- assertVisible:
+    id: "ladder-home-court-name"
+    text: "Maestro Extra Court 80"

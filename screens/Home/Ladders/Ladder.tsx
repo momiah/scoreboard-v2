@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { Dimensions, ScrollView } from "react-native";
 import {
   useFocusEffect,
@@ -25,13 +25,14 @@ import { LadderContext } from "../../../context/LadderContext";
 import { ccDefaultImage } from "../../../mockImages/index";
 import Matchmaking from "./tabs/Matchmaking";
 import Schedule from "./tabs/Schedule";
+import LadderPlayoffs from "../../../components/ladder/LadderPlayoffs";
 
 type LadderTab =
   | "Summary"
   | "Matchmaking"
   | "Schedule"
   | "Performance"
-  | "Playoff Bracket";
+  | "Playoffs";
 
 type LadderRouteParams = {
   ladderId: string;
@@ -50,6 +51,10 @@ const Ladder: React.FC = () => {
   const [ladderLoading, setLadderLoading] = useState(true);
   const [ladderNotFound, setLadderNotFound] = useState(false);
   const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
+
+  useEffect(() => {
+    if (tab) setSelectedTab(tab);
+  }, [tab]);
   const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
   const [teams, setTeams] = useState<TeamStats[]>([]);
 
@@ -100,7 +105,7 @@ const Ladder: React.FC = () => {
     { key: "Matchmaking", label: "Matchmaking" },
     { key: "Schedule", label: "Schedule" },
     { key: performanceLabel, label: performanceDisplay },
-    { key: "Playoff Bracket", label: "Playoff Bracket" },
+    { key: "Playoffs", label: "Playoffs" },
   ];
 
   const renderTab = () => {
@@ -112,7 +117,11 @@ const Ladder: React.FC = () => {
         return <Matchmaking ladder={ladderById} />;
       case "Schedule":
         return (
-          <Schedule ladder={ladderById} highlightMatchId={highlightMatchId} />
+          <Schedule
+            ladder={ladderById}
+            highlightMatchId={highlightMatchId}
+            onOpenPlayoffs={() => setSelectedTab("Playoffs")}
+          />
         );
       case "Performance":
         // Reuse the competition performance components directly, exactly as
@@ -123,12 +132,8 @@ const Ladder: React.FC = () => {
         ) : (
           <PlayerPerformance playersData={participants} ladder={ladderById} />
         );
-      case "Playoff Bracket":
-        return (
-          <ComingSoon testID="ladder-coming-soon">
-            <ComingSoonText>Coming soon</ComingSoonText>
-          </ComingSoon>
-        );
+      case "Playoffs":
+        return <LadderPlayoffs ladder={ladderById} />;
       default:
         return null;
     }
@@ -295,13 +300,4 @@ const TabText = styled.Text({
   fontSize: screenWidth <= 400 ? 12 : 14,
 });
 
-const ComingSoon = styled.View({
-  padding: 40,
-  alignItems: "center",
-  justifyContent: "center",
-});
 
-const ComingSoonText = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 15,
-});

@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
@@ -6,6 +12,7 @@ import styled from "styled-components/native";
 import type { Ladder, LadderMatch } from "@shared/types";
 
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
+import { useLadderHomeCourt } from "../../../../hooks/useLadderHomeCourt";
 import { LadderContext } from "../../../../context/LadderContext";
 import { PopupContext } from "../../../../context/PopupContext";
 import { getOpenMatchmakingMatches } from "../../../../helpers/ladderScheduleMatches";
@@ -20,6 +27,13 @@ import {
 import AddLadderMatchModal from "../../../../components/Modals/AddLadderMatchModal";
 import AcceptLadderMatchModal from "../../../../components/Modals/AcceptLadderMatchModal";
 import MatchCard from "../../../../components/ladder/MatchCard";
+import SearchCourt from "../../../../components/Modals/SearchLocationModal";
+import { NO_COURTS_MESSAGE } from "../../../../components/Summary/LadderHomeCourtSection";
+import {
+  COURT_SUBMITTED_MESSAGE,
+  useLadderCourts,
+} from "../../../../hooks/useLadderCourts";
+import InfoModal from "../../../../components/Modals/InfoModal";
 import LineTabs from "../../../../components/LineTabs";
 import { SkeletonWrapper } from "../../../../components/Skeletons/SkeletonComponents";
 
@@ -28,6 +42,7 @@ interface MatchmakingProps {
 }
 
 const SKELETON_ROWS = [0, 1, 2];
+const MODAL_HANDOFF_MS = 350;
 
 const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -52,6 +67,40 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     ladder,
     () => setPostModalVisible(true),
   );
+
+  const {
+    homeCourt,
+    hasHomeCourt,
+    loading: homeCourtLoading,
+    confirmHomeCourt,
+  } = useLadderHomeCourt(ladder);
+  const [homeCourtInfoVisible, setHomeCourtInfoVisible] = useState(false);
+  const [homeCourtSelectorVisible, setHomeCourtSelectorVisible] =
+    useState(false);
+  const ladderCourts = useLadderCourts(ladder, homeCourtSelectorVisible);
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
+  const requireHomeCourt = (action: () => void) => {
+    if (hasHomeCourt) {
+      action();
+      return;
+    }
+    if (homeCourtLoading) return;
+    pendingActionRef.current = action;
+    setHomeCourtInfoVisible(true);
+  };
+
+  const handleSelectHomeCourt = () => {
+    setHomeCourtInfoVisible(false);
+    setTimeout(() => setHomeCourtSelectorVisible(true), MODAL_HANDOFF_MS);
+  };
+
+  const handleHomeCourtSaved = () => {
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    setHomeCourtSelectorVisible(false);
+    if (action) setTimeout(action, MODAL_HANDOFF_MS);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -100,7 +149,7 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
       return;
     }
     if (!isParticipant) return;
-    setPostModalVisible(true);
+    requireHomeCourt(() => setPostModalVisible(true));
   };
 
   const handleAcceptPress = (match: LadderMatch) => {
@@ -112,8 +161,10 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
       showBottomToast("Join the ladder to accept a match", "info");
       return;
     }
-    setSelectedMatch(match);
-    setAcceptModalVisible(true);
+    requireHomeCourt(() => {
+      setSelectedMatch(match);
+      setAcceptModalVisible(true);
+    });
   };
 
   const handleMatchGone = (gone: LadderMatch) => {
@@ -122,17 +173,10 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     );
   };
 
-  const renderMatches = () => {
-    if (matchesLoading) {
-      return (
-        <List testID="matchmaking-loading">
-          {SKELETON_ROWS.map((row) => (
-            <SkeletonWrapper key={row} show height={116} width="100%" radius={10} />
-          ))}
-        </List>
-      );
-    }
+  const screenLoading =
+    membershipChecking || homeCourtLoading || matchesLoading;
 
+  const renderMatches = () => {
     if (visibleMatches.length === 0) {
       const dayFiltered = selectedDay !== ALL_DAYS_KEY;
       return (
@@ -165,23 +209,41 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     );
   };
 
-  return (
-    <Container testID="ladder-matchmaking">
-      {membershipChecking ? (
+  if (screenLoading) {
+    return (
+      <Container testID="ladder-matchmaking">
         <SkeletonButtonWrap testID="matchmaking-post-skeleton">
           <SkeletonWrapper show height={44} width="100%" radius={8} />
         </SkeletonButtonWrap>
-      ) : (
-        <PostButton
-          testID="matchmaking-post-match"
-          activeOpacity={0.85}
-          disabled={cannotPost}
-          isDisabled={cannotPost}
-          onPress={handlePostMatch}
-        >
-          <PostButtonText>{buttonLabel}</PostButtonText>
-        </PostButton>
-      )}
+        <SkeletonButtonWrap>
+          <SkeletonWrapper show height={40} width="100%" radius={8} />
+        </SkeletonButtonWrap>
+        <List testID="matchmaking-loading">
+          {SKELETON_ROWS.map((row) => (
+            <SkeletonWrapper
+              key={row}
+              show
+              height={116}
+              width="100%"
+              radius={10}
+            />
+          ))}
+        </List>
+      </Container>
+    );
+  }
+
+  return (
+    <Container testID="ladder-matchmaking">
+      <PostButton
+        testID="matchmaking-post-match"
+        activeOpacity={0.85}
+        disabled={cannotPost}
+        isDisabled={cannotPost}
+        onPress={handlePostMatch}
+      >
+        <PostButtonText>{buttonLabel}</PostButtonText>
+      </PostButton>
 
       <TabsRow>
         <AllTab
@@ -226,6 +288,43 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
         onAccepted={handleMatchGone}
         onUnavailable={handleMatchGone}
       />
+
+      <InfoModal
+        visible={homeCourtInfoVisible}
+        onClose={() => {
+          pendingActionRef.current = null;
+          setHomeCourtInfoVisible(false);
+        }}
+        title="Select a home court"
+        description="You need to select a home court before you can post or accept matches in this ladder. You only need to do this once, and you can change it once per ladder."
+        ctaLabel="Select Home Court"
+        onCtaPress={handleSelectHomeCourt}
+        icon="location-outline"
+        testID="home-court-required-modal"
+      />
+
+      {homeCourtSelectorVisible && (
+        <SearchCourt
+          visible={homeCourtSelectorVisible}
+          onClose={() => setHomeCourtSelectorVisible(false)}
+          courts={ladderCourts.courtsList}
+          selectedCourtKey={homeCourt?.courtId}
+          onSelectCourt={(value) =>
+            confirmHomeCourt(
+              ladderCourts.findSelectableCourt(value),
+              handleHomeCourtSaved,
+            )
+          }
+          getCourts={ladderCourts.getCourts}
+          addCourt={ladderCourts.submitCourt}
+          onCourtsRefreshed={ladderCourts.applyCourts}
+          showCountryIcon={false}
+          selectAddedCourt={false}
+          addCourtSuccessMessage={COURT_SUBMITTED_MESSAGE}
+          loading={ladderCourts.courtsLoading}
+          emptyListMessage={NO_COURTS_MESSAGE}
+        />
+      )}
     </Container>
   );
 };

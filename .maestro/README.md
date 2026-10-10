@@ -31,6 +31,9 @@ for the scenarios each flow covers.
    `${VAR}`, so these just need to be exported before running — no `-e` flags
    needed.
 
+> The harness is currently detached from Home (see `maestro/README.md`,
+> "Re-attaching the harness"). Put it back before running any flow.
+
 ## Running
 
 Export the test credentials, then run a flow (or the whole suite) against a
@@ -40,7 +43,14 @@ booted simulator with the dev client installed:
 set -a && source .maestro/.env && set +a
 maestro test .maestro/flows/reject-decline-opens-dispute.yaml   # one flow
 maestro test .maestro/flows                                     # whole suite
+.maestro/run-suite.sh                                           # whole suite, retrying a failed flow once
+.maestro/run-suite.sh team-                                     # only flows whose name contains "team-"
 ```
+
+`run-suite.sh` runs the flows one at a time (Maestro cannot share a simulator),
+retries a failed flow once, and prints `FLAKY` for one that passed on the retry
+and `FAIL` only for one that fails twice. Use it for full runs: a long run
+occasionally loses a login or a wait to simulator timing.
 
 Each flow's `onFlowStart` seeds nothing itself — the composer/timeline flows
 tap the **Seed Reject-Game Flow** button on the Home screen first (a
@@ -55,6 +65,8 @@ The seed/mock-resolve/mock-request-evidence/cleanup buttons these flows tap
 live in `maestro/MaestroHarness.tsx` and the helpers in `maestro/seeds/`. Home
 loads the harness through a `require` guarded by `__DEV__`, so it renders in a
 dev-client build and is not included in a production/release build. The
+buttons stay hidden until a transparent strip (`maestro-harness-unlock`) is
+tapped five times, which `login.yaml` does at the start of every flow. The
 **Delete Ladder Test Data** button (`maestro/seeds/cleanupLadderTestData.js`)
 removes every ladder/match/dispute/fixture-user doc any of these flows create
 (reject-game and add-game both). See [maestro/README.md](../maestro/README.md).

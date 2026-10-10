@@ -1,0 +1,46 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-cancel-accepted"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Summary.*"
+- tapOn: ".*How to Play.*"
+- extendedWaitUntil:
+    visible:
+      id: "how-to-play-dots"
+    timeout: 15000
+- assertVisible:
+    id: "how-to-play-next"
+- repeat:
+    while:
+      visible:
+        id: "how-to-play-next"
+    times: 12
+    commands:
+      - tapOn:
+          id: "how-to-play-next"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertVisible:
+    id: "how-to-play-participant"
+- assertNotVisible:
+    id: "how-to-play-join"

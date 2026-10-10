@@ -1,0 +1,79 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-cancel-accepted"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Schedule.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Schedule.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-cancel-match"
+    timeout: 20000
+- tapOn:
+    id: "schedule-card-maestro-cancel-match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-Report"
+- extendedWaitUntil:
+    visible:
+      id: "report-submit"
+    timeout: 15000
+- tapOn:
+    id: "report-reason-cheating"
+- tapOn:
+    id: "report-submit"
+- extendedWaitUntil:
+    visible: "Report submitted for review"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "match-menu-Report"
+- extendedWaitUntil:
+    visible:
+      id: "report-submit"
+    timeout: 15000
+- tapOn:
+    id: "report-reason-cheating"
+- tapOn:
+    id: "report-submit"
+- extendedWaitUntil:
+    visible:
+      id: "report-notice"
+    timeout: 15000
+- assertVisible: "You've already reported this"
+- assertVisible:
+    id: "report-submit"
+- tapOn:
+    id: "report-close"
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-assert-report-filed-cheating"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"

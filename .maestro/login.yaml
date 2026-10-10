@@ -4,13 +4,13 @@ appId: com.courtchamp
     clearState: false
 - extendedWaitUntil:
     visible:
-      id: "maestro-seed-reject-game-flow"
-    timeout: 15000
+      id: "maestro-harness-unlock"
+    timeout: 60000
     optional: true
 - runFlow:
     when:
       notVisible:
-        id: "maestro-seed-reject-game-flow"
+        id: "maestro-harness-unlock"
     commands:
       - tapOn:
           id: "home-sign-in-link"
@@ -24,5 +24,13 @@ appId: com.courtchamp
           id: "login-submit"
       - extendedWaitUntil:
           visible:
-            id: "maestro-seed-reject-game-flow"
-          timeout: 15000
+            id: "maestro-harness-unlock"
+          timeout: 60000
+- tapOn:
+    id: "maestro-harness-unlock"
+    repeat: 5
+    delay: 150
+- extendedWaitUntil:
+    visible:
+      id: "maestro-seed-reject-game-flow"
+    timeout: 30000

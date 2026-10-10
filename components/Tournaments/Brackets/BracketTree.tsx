@@ -39,7 +39,7 @@ const CONNECTOR_STROKE = "rgba(255, 255, 255, 0.25)";
 const CONNECTOR_STROKE_WIDTH = 1;
 const FALLBACK_CARD_HEIGHT = 210;
 const CARD_GAP = 16;
-const SCROLL_TO_TOP_OFFSET = 40;
+const SCROLL_TO_TOP_OFFSET = 12;
 
 type BracketViewMode = "tree" | "list";
 
@@ -147,6 +147,7 @@ interface CardProps {
   isHighlighted: boolean;
   glowAnim: unknown;
   glowColor: string;
+  testID?: string;
 }
 
 const AnimatedBracketCard = ({
@@ -165,6 +166,7 @@ const AnimatedBracketCard = ({
   isHighlighted,
   glowAnim,
   glowColor,
+  testID,
 }: CardProps) => {
   const animatedStyle = useAnimatedStyle(() => {
     "worklet";
@@ -188,6 +190,7 @@ const AnimatedBracketCard = ({
         tournamentType={tournamentType}
         shell={isShellGame(game)}
         onPress={onPress}
+        testID={testID}
       />
       {isHighlighted && (
         <GameGlow glowAnim={glowAnim as never} color={glowColor} />
@@ -411,6 +414,7 @@ const BracketTree = ({
       <HeaderRow>
         <ViewToggleGroup>
           <ViewToggleButton
+            testID="bracket-view-tree"
             isActive={viewMode === "tree"}
             onPress={() => handleViewModePress("tree")}
           >
@@ -421,6 +425,7 @@ const BracketTree = ({
             />
           </ViewToggleButton>
           <ViewToggleButton
+            testID="bracket-view-list"
             isActive={viewMode === "list"}
             onPress={() => handleViewModePress("list")}
           >
@@ -438,6 +443,7 @@ const BracketTree = ({
             onTabPress={handleTabPress}
             scrollable
             fontSize={isSmallScreen ? 12 : 14}
+            testIDPrefix="bracket-round-tab"
           />
         </TabsWrapper>
       </HeaderRow>
@@ -512,6 +518,7 @@ const BracketTree = ({
                       isHighlighted={game.gameId === highlightedGameId}
                       glowAnim={glowAnim}
                       glowColor={glowColor}
+                      testID={`bracket-game-${game.gameId}`}
                     />
                   );
                 });
@@ -529,6 +536,7 @@ const BracketTree = ({
                   tournamentType={tournamentType}
                   shell={isShellGame(playoffGame)}
                   onPress={() => onGamePress(playoffGame)}
+                  testID={`bracket-game-${playoffGame.gameId}`}
                 />
                 {playoffGame.gameId === highlightedGameId && (
                   <GameGlow glowAnim={glowAnim} color={glowColor} />
@@ -548,6 +556,7 @@ const BracketTree = ({
                   tournamentType={tournamentType}
                   shell={isShellGame(game)}
                   onPress={() => onGamePress(game)}
+                  testID={`bracket-game-${game.gameId}`}
                 />
               </ListCardWrapper>
             ))}
@@ -563,6 +572,7 @@ const BracketTree = ({
                   tournamentType={tournamentType}
                   shell={isShellGame(playoffGame)}
                   onPress={() => onGamePress(playoffGame)}
+                  testID={`bracket-game-${playoffGame.gameId}`}
                 />
               </ListPlayoffSection>
             )}

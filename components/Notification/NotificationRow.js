@@ -77,7 +77,7 @@ const NotificationRow = ({
       },
       Ladder: {
         ladderId: item.data?.ladderId,
-        tab: "Schedule",
+        tab: item.data?.tab || "Schedule",
         highlightMatchId: item.data?.matchId,
       },
       UserProfile: { userId: item.data?.userId, tab: item.data?.tab },

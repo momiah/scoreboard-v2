@@ -1,0 +1,134 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-disband-posted-match"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-team-summary"
+    direction: DOWN
+- tapOn:
+    id: "ladder-team-summary"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- tapOn:
+    id: "team-details-menu"
+- scrollUntilVisible:
+    element:
+      id: "team-settings-disband"
+    direction: DOWN
+- tapOn:
+    id: "team-settings-disband"
+- extendedWaitUntil:
+    visible: "Disband team"
+    timeout: 5000
+- tapOn: "Disband"
+- extendedWaitUntil:
+    visible: "Can't disband"
+    timeout: 20000
+- assertVisible: ".*posted or accepted match.*"
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Matchmaking.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Matchmaking.*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-card-maestro-disband-match"
+    timeout: 20000
+- tapOn:
+    id: "matchmaking-card-maestro-disband-match"
+- extendedWaitUntil:
+    visible:
+      id: "accept-ladder-match-cancel"
+    timeout: 15000
+- tapOn:
+    id: "accept-ladder-match-cancel"
+- extendedWaitUntil:
+    visible: "Cancel this posted match.*"
+    timeout: 5000
+- tapOn:
+    text: "Cancel Match"
+    index: 1
+- extendedWaitUntil:
+    visible: "Match cancelled"
+    timeout: 15000
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-team-summary"
+    direction: DOWN
+- tapOn:
+    id: "ladder-team-summary"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- tapOn:
+    id: "team-details-menu"
+- scrollUntilVisible:
+    element:
+      id: "team-settings-disband"
+    direction: DOWN
+- tapOn:
+    id: "team-settings-disband"
+- extendedWaitUntil:
+    visible: "Disband team"
+    timeout: 5000
+- tapOn: "Disband"
+- extendedWaitUntil:
+    visible: "Team disbanded"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "ladder-summary"
+    timeout: 15000
+- assertNotVisible:
+    id: "ladder-team-summary"

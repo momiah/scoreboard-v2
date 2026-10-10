@@ -1,0 +1,54 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow-doubles"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Doubles Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Doubles Ladder on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-home-court"
+    timeout: 20000
+- tapOn:
+    id: "ladder-home-court-add"
+
+- extendedWaitUntil:
+    visible: ".*Maestro Court E Partner Pending.*"
+    timeout: 20000
+- assertVisible:
+    id: "search-court-awaiting-maestro-hc-court-e-doubles"
+- assertVisible:
+    id: "search-court-awaiting-maestro-hc-court-a-doubles"
+- assertVisible:
+    text: ".*Maestro Court E Partner Pending.*"
+    below: ".*Maestro Court A Own Pending.*"
+- assertVisible:
+    text: ".*Maestro Court B Verified.*"
+    below: ".*Maestro Court E Partner Pending.*"
+- assertVisible:
+    text: ".*Maestro Court C Other Pending.*"
+    below: ".*Maestro Court B Verified.*"
+- tapOn:
+    id: "search-court-awaiting-maestro-hc-court-e-doubles"
+- assertNotVisible: "Set home court?"
+- assertVisible:
+    id: "search-court-add"

@@ -79,6 +79,9 @@ const validCreateInput = (
   ...overrides,
 });
 
+const openLadder = () => snapOf(true, { status: "registrationClosed" });
+const playoffsLadder = () => snapOf(true, { status: "playoffs" });
+
 const makeTx = (getResults: Array<ReturnType<typeof snapOf>>) => {
   const get = jest.fn();
   getResults.forEach((r) => get.mockResolvedValueOnce(r));
@@ -140,7 +143,7 @@ describe("createDispute", () => {
     mockGetDocs.mockResolvedValueOnce(
       docsSnap([snapOf(true, { stage: DISPUTE_STAGE.RESOLVED })]),
     );
-    const tx = makeTx([snapOf(true, makeMatch())]);
+    const tx = makeTx([snapOf(true, makeMatch()), openLadder()]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
 
     const result = await createDispute(validCreateInput());
@@ -149,7 +152,7 @@ describe("createDispute", () => {
 
   it("opens the dispute UNDER_REVIEW and flags the game as disputed", async () => {
     mockGetDocs.mockResolvedValueOnce(docsSnap([]));
-    const tx = makeTx([snapOf(true, makeMatch())]);
+    const tx = makeTx([snapOf(true, makeMatch()), openLadder()]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
 
     const result = await createDispute(validCreateInput());
@@ -166,7 +169,7 @@ describe("createDispute", () => {
 
   it("returns invalid without touching the match when the game shell is missing", async () => {
     mockGetDocs.mockResolvedValueOnce(docsSnap([]));
-    const tx = makeTx([snapOf(true, makeMatch([{ gameId: "other" }]))]);
+    const tx = makeTx([snapOf(true, makeMatch([{ gameId: "other" }])), openLadder()]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
 
     const result = await createDispute(validCreateInput());
@@ -221,6 +224,7 @@ describe("addDisputeEvidence", () => {
           },
         ],
       }),
+      openLadder(),
     ]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
     const result = await addDisputeEvidence("d1", "reporter", {
@@ -234,7 +238,7 @@ describe("addDisputeEvidence", () => {
   });
 
   it("appends a note submission and keeps the dispute under review", async () => {
-    const tx = makeTx([snapOf(true, activeDispute)]);
+    const tx = makeTx([snapOf(true, activeDispute), openLadder()]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
     const result = await addDisputeEvidence("d1", "reporter", {
       note: "Here is what happened",
@@ -276,7 +280,7 @@ describe("cancelDispute", () => {
   });
 
   it("withdraws via the CANCELLED resolution plan and writes it", async () => {
-    const tx = makeTx([snapOf(true, dispute), snapOf(true, makeMatch())]);
+    const tx = makeTx([snapOf(true, dispute), openLadder(), snapOf(true, makeMatch())]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
     mockPlanDisputeResolution.mockResolvedValueOnce({
       participants: [],
@@ -367,7 +371,7 @@ describe("approveDisputedScore", () => {
   it.each(["reporter", "mate"])(
     "upholds the corrected score for reporter-side player %s without an admin",
     async (userId) => {
-      const tx = makeTx([snapOf(true, dispute), snapOf(true, makeMatch())]);
+      const tx = makeTx([snapOf(true, dispute), openLadder(), snapOf(true, makeMatch())]);
       mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
       mockPlanDisputeResolution.mockResolvedValueOnce(plan);
 
@@ -383,4 +387,60 @@ describe("approveDisputedScore", () => {
       expect(tx.update).toHaveBeenCalledTimes(2);
     },
   );
+});
+
+describe("playoff freeze", () => {
+  it("refuses to open a dispute once the ladder is in playoffs", async () => {
+    mockGetDocs.mockResolvedValueOnce(docsSnap([]));
+    const tx = makeTx([snapOf(true, makeMatch()), playoffsLadder()]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+
+    const result = await createDispute(validCreateInput());
+
+    expect(result).toEqual({ success: false, reason: "frozen" });
+    expect(tx.set).not.toHaveBeenCalled();
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses new evidence once the ladder is in playoffs", async () => {
+    const tx = makeTx([
+      snapOf(true, {
+        disputeId: "d1",
+        ladderId: "L1",
+        stage: DISPUTE_STAGE.UNDER_REVIEW,
+        participantIds: ["opener", "reporter"],
+        events: [],
+      }),
+      playoffsLadder(),
+    ]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+
+    const result = await addDisputeEvidence("d1", "reporter", { note: "late" });
+
+    expect(result).toEqual({ success: false, reason: "frozen" });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["cancelling", () => cancelDispute("d1", "opener")],
+    ["approving the disputed score", () => approveDisputedScore("d1", "reporter")],
+  ])("refuses %s once the ladder is in playoffs", async (_label, act) => {
+    const tx = makeTx([
+      snapOf(true, {
+        disputeId: "d1",
+        ladderId: "L1",
+        ladderMatchId: "m1",
+        openedBy: "opener",
+        stage: DISPUTE_STAGE.UNDER_REVIEW,
+        participantIds: ["opener", "reporter"],
+        originalGame: baseGame,
+      }),
+      playoffsLadder(),
+    ]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+
+    expect(await act()).toEqual({ success: false, reason: "frozen" });
+    expect(mockPlanDisputeResolution).not.toHaveBeenCalled();
+    expect(tx.update).not.toHaveBeenCalled();
+  });
 });

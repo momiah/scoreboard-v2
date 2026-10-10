@@ -14,7 +14,11 @@ import {
   ParamListBase,
 } from "@react-navigation/native";
 import { notificationTypes, notificationSchema, LADDER_TYPE } from "@shared";
-import { canApproveReportedGame } from "../../helpers/reportedGameApproval";
+import {
+  LADDER_FROZEN_MESSAGE,
+  canApproveReportedGame,
+  isLadderMatchPlayFrozen,
+} from "@shared/helpers";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import {
   NormalizedCompetition,
@@ -357,10 +361,12 @@ const LadderGameApprovalModal = ({
   const [gameGone, setGameGone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeDispute, setActiveDispute] = useState<Dispute | null>(null);
+  const [frozen, setFrozen] = useState(false);
 
   useEffect(() => {
     if (!visible) {
       setGame(null);
+      setFrozen(false);
       setMatch(null);
       setActiveDispute(null);
       setLoading(true);
@@ -386,6 +392,7 @@ const LadderGameApprovalModal = ({
           matches.find((m: LadderMatch) => m.ladderMatchId === matchId) ?? null;
         const found = matchFound?.games.find((g) => g.gameId === gameId) ?? null;
 
+        setFrozen(isLadderMatchPlayFrozen(ladder?.status));
         setLadderName(ladder?.name ?? "this ladder");
         setLadderType(ladder?.ladderType ?? LADDER_TYPE.SINGLES);
         setCompetitionType(
@@ -435,7 +442,8 @@ const LadderGameApprovalModal = ({
     gameGone ||
     alreadyApproved ||
     !!activeDispute ||
-    notOpponent;
+    notOpponent ||
+    frozen;
 
   const handleApprove = async () => {
     if (!currentUser?.userId || !game) return;
@@ -530,11 +538,17 @@ const LadderGameApprovalModal = ({
         </Description>
       )}
 
-      {alreadyApproved && (
+      {frozen && !gameGone && (
+        <Description testID="game-approval-frozen">
+          {LADDER_FROZEN_MESSAGE}
+        </Description>
+      )}
+
+      {alreadyApproved && !frozen && (
         <Description>This game has already been approved.</Description>
       )}
 
-      {notOpponent && !alreadyApproved && (
+      {notOpponent && !alreadyApproved && !frozen && (
         <Description>
           Only a player on the other side can approve this game.
         </Description>

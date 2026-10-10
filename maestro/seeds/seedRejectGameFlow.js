@@ -61,6 +61,7 @@ export const toPlayer = (user) => ({
 export const seedRejectGameFlow = async ({
   testUser,
   withActiveDispute = false,
+  ladderStatus = /** @type {string} */ (LADDER_STATUS.REGISTRATION_CLOSED),
 }) => {
   if (!testUser?.userId) {
     throw new Error("seedRejectGameFlow: testUser with a userId is required");
@@ -139,7 +140,7 @@ export const seedRejectGameFlow = async ({
     ladderType: LADDER_TYPE.SINGLES,
     genderType: "Mixed",
     courtIds: [],
-    status: LADDER_STATUS.REGISTRATION_CLOSED,
+    status: ladderStatus,
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),

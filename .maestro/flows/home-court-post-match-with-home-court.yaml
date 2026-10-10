@@ -1,0 +1,38 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow-set"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Ladder on Matchmaking.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Ladder on Matchmaking.*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-post-match"
+    timeout: 20000
+- tapOn:
+    id: "matchmaking-post-match"
+- extendedWaitUntil:
+    visible:
+      id: "add-ladder-match-court-selector"
+    timeout: 10000
+- assertNotVisible:
+    id: "home-court-required-modal"
+- assertNotVisible: "Select a home court"

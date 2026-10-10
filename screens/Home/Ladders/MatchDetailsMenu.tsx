@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, Alert, Linking, StyleSheet } from "react-native";
+import { View, Linking, StyleSheet } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -13,7 +13,11 @@ import type { LadderMatch, LadderType } from "@shared/types";
 
 import { PopupContext } from "../../../context/PopupContext";
 import { UserContext } from "../../../context/UserContext";
-import { LadderContext } from "../../../context/LadderContext";
+import { useLadderMatchCancellation } from "../../../hooks/useLadderMatchCancellation";
+import {
+  LADDER_MATCH_CANCEL_ACTION,
+  getLadderMatchCancelAction,
+} from "../../../helpers/ladderMatchCancellation";
 import ReportPlayerModal from "../../../components/Modals/ReportPlayerModal";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
@@ -71,46 +75,46 @@ const MatchDetailsMenu: React.FC = () => {
   const { ladderId, matchId, match } = route.params;
   const { showBottomToast } = useContext(PopupContext);
   const { currentUser } = useContext(UserContext);
-  const { cancelLadderMatch } = useContext(LadderContext);
+  const { startCancellation } = useLadderMatchCancellation();
   const [reportVisible, setReportVisible] = useState(false);
+
+  const cancelAction = getLadderMatchCancelAction(match, currentUser?.userId);
+  const cancelPending =
+    cancelAction === LADDER_MATCH_CANCEL_ACTION.AWAITING_RESPONSE;
+  const cancelNeedsResponse =
+    cancelAction === LADDER_MATCH_CANCEL_ACTION.RESPOND;
+
+  const displayOption = (option: MenuOption): MenuOption => {
+    if (option.action !== "CancelMatch") return option;
+    if (cancelPending) {
+      return {
+        ...option,
+        label: "Cancellation requested",
+        icon: "time-outline",
+        color: "#9fb8c8",
+      };
+    }
+    if (cancelNeedsResponse) {
+      return {
+        ...option,
+        label: "Respond to request",
+        icon: "alert-circle-outline",
+        color: "#f5c451",
+      };
+    }
+    return option;
+  };
 
   const handleReschedule = () => {
     showBottomToast("Rescheduling a match is coming soon", "info");
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      "Cancel Match",
-      "Are you sure you want to cancel this match? This cannot be undone.",
-      [
-        { text: "Keep Match", style: "cancel" },
-        {
-          text: "Cancel Match",
-          style: "destructive",
-          onPress: async () => {
-            if (!currentUser?.userId) return;
-            const outcome = await cancelLadderMatch({
-              ladderId,
-              matchId,
-              userId: currentUser.userId,
-            });
-            if (outcome.success) {
-              showBottomToast("Match cancelled", "success");
-              navigation.goBack();
-              return;
-            }
-            showBottomToast(
-              outcome.reason === "not_cancellable"
-                ? "This match can no longer be cancelled"
-                : outcome.reason === "not_participant"
-                  ? "Only a player in this match can cancel it"
-                  : "Couldn't cancel the match. Please try again.",
-              "error",
-            );
-          },
-        },
-      ],
-    );
+    if (!match) {
+      showBottomToast("Open the match to cancel it", "info");
+      return;
+    }
+    startCancellation({ ladderId, match, onDone: () => navigation.goBack() });
   };
 
   const handleSupport = () => {
@@ -160,11 +164,17 @@ const MatchDetailsMenu: React.FC = () => {
       </Header>
 
       <MenuList>
-        {MENU_OPTIONS.map((option) => (
+        {MENU_OPTIONS.map(displayOption).map((option) => (
           <MenuItem
-            key={option.label}
+            key={option.action}
             onPress={() => handlePress(option.action)}
             testID={`match-menu-${option.action}`}
+            activeOpacity={
+              option.action === "CancelMatch" && cancelPending ? 1 : 0.2
+            }
+            style={{
+              opacity: option.action === "CancelMatch" && cancelPending ? 0.6 : 1,
+            }}
           >
             <LeftContainer>
               <Ionicons
@@ -176,7 +186,9 @@ const MatchDetailsMenu: React.FC = () => {
                 {option.label}
               </MenuText>
             </LeftContainer>
-            <Ionicons name="chevron-forward" size={18} color="#666" />
+            {!(option.action === "CancelMatch" && cancelPending) && (
+              <Ionicons name="chevron-forward" size={18} color="#666" />
+            )}
           </MenuItem>
         ))}
       </MenuList>

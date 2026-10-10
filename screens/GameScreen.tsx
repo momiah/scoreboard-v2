@@ -41,7 +41,8 @@ import {
   LadderMatch,
 } from "@shared/types";
 import { buildCompetitionConfig } from "@/helpers/getCompetitionConfig";
-import { canApproveReportedGame } from "../helpers/reportedGameApproval";
+import { LADDER_FROZEN_MESSAGE, canApproveReportedGame } from "@shared/helpers";
+import { useLadderPlayFrozen } from "../hooks/useLadderPlayFrozen";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { UserContext } from "../context/UserContext";
 import { LadderContext } from "../context/LadderContext";
@@ -160,8 +161,10 @@ const GameScreen: React.FC = () => {
   const hasApproved = !!liveGame?.approvers?.some(
     (approver) => approver.userId === currentUser?.userId,
   );
+  const ladderFrozen = useLadderPlayFrozen(isLadder ? ladderId : undefined);
   const canApprove =
     showApproval &&
+    !ladderFrozen &&
     isPending &&
     !approvalLimitReached &&
     !autoApproved &&
@@ -174,7 +177,9 @@ const GameScreen: React.FC = () => {
       ? "Auto-approved"
       : hasApproved
         ? "You approved this game"
-        : "Approve this game?";
+        : ladderFrozen
+          ? LADDER_FROZEN_MESSAGE
+          : "Approve this game?";
 
   // ── Live game subscription ────────────────────────────────────────────────
   useEffect(() => {

@@ -15,6 +15,7 @@ import {
   Player,
 } from "@shared/types";
 import { calculateWin } from "../../helpers/calculateWin";
+import { LADDER_FROZEN_MESSAGE } from "@shared/helpers";
 import { UserContext } from "@/context/UserContext";
 import { PopupContext } from "@/context/PopupContext";
 import {
@@ -243,7 +244,9 @@ const AddTournamentGameModal = ({
               ? "already been reported"
               : outcome.reason === "match_decided"
                 ? "match already decided"
-                : "Failed to submit ladder game result.",
+                : outcome.reason === "frozen"
+                  ? LADDER_FROZEN_MESSAGE
+                  : "Failed to submit ladder game result.",
           );
         }
       } else {
@@ -260,6 +263,7 @@ const AddTournamentGameModal = ({
         errorMessage.includes("already been reported") ||
         errorMessage.includes("already been processed");
       const matchDecided = errorMessage.includes("match already decided");
+      const frozen = errorMessage.includes(LADDER_FROZEN_MESSAGE);
 
       setLoading(false);
       setErrorText(
@@ -267,7 +271,9 @@ const AddTournamentGameModal = ({
           ? "This game has already been reported. Please refresh to see the latest status."
           : matchDecided
             ? "This match is already decided — no further games can be reported."
-            : "Failed to submit game result. Please try again.",
+            : frozen
+              ? `${LADDER_FROZEN_MESSAGE}.`
+              : "Failed to submit game result. Please try again.",
       );
       return;
     }
