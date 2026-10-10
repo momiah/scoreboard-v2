@@ -46,7 +46,16 @@ onFlowStart:
 - tapOn:
     id: "team-settings-name"
 - eraseText: 40
+- runFlow:
+    when:
+      notVisible: "e.g. Smash Bros"
+    commands:
+      - eraseText: 40
+- assertVisible: "e.g. Smash Bros"
 - inputText: "Maestro Renamed Aces"
+- assertVisible:
+    id: "team-settings-name"
+    text: "Maestro Renamed Aces"
 - pressKey: Enter
 - tapOn:
     id: "team-settings-save"
