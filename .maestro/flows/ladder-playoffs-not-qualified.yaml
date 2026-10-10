@@ -1,0 +1,40 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-ladder-playoffs-not-qualified"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*The playoffs in Maestro Playoffs 256 have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!.*"
+    timeout: 20000
+- assertNotVisible: ".*You've made the playoffs in Maestro Playoffs 256.*"
+- tapOn: ".*The playoffs in Maestro Playoffs 256 have started.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoffs-bracket"
+    timeout: 40000
+- assertVisible:
+    id: "bracket-game-r1-s0"
+- assertVisible: ".*P00[0-9][0-9] S.*"
+- tapOn:
+    id: "bracket-view-list"
+- assertNotVisible: ".*Mohsin M.*"
+- tapOn:
+    id: "ladder-tab-Schedule"
+- assertNotVisible:
+    id: "schedule-playoff-placeholder"

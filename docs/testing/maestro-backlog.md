@@ -18,24 +18,16 @@ count. Cancelling: Match Details → menu (☰) → Cancel Match. Any player in 
 match (poster, accepter, or either partner) can cancel a posted or accepted
 match until a game has been reported.
 
-Flows to cover (singles has no leave option, so doubles only):
+Covered by `team-disband-*` flows (seeds in `maestro/seeds/seedTeamDisbandFlow.js`):
+registration open (1), posted match blocks then cancelling it allows (2), an
+accepted match blocks (3, blocked only), one approved game blocks (6), games
+only in another completed ladder don't count (7), registration closed and
+playoffs block (8), completed ladder allows (9).
 
-1. Registration open, no matches → Disband succeeds; the team is gone from the
-   ladder and the participant count drops by one.
-2. Team has a **posted** match → "Can't disband" (cancel it first). Cancel the
-   match from Match Details → Cancel Match → Disband now succeeds.
-3. Team has an **accepted** match it accepted from an opponent → "Can't
-   disband". Cancel it from Match Details → Cancel Match → Disband succeeds.
-4. Same as 3, but the **partner** cancels the match → Disband succeeds.
-5. Opponent's team posted, this team accepted, a game has been reported →
-   Cancel Match shows "This match can no longer be cancelled"; Disband still
-   blocked.
-6. One approved game in this ladder → "Can't disband" (completed a game in a
-   ladder that's still running).
-7. Approved games only in a different, completed ladder → Disband succeeds.
-8. Ladder registration closed (and separately, in playoffs) → "Can't disband"
-   (registration has closed).
-9. Ladder completed → Disband succeeds.
+Also covered: the partner's request agreed by the opponent (4), the user's own
+request agreed by the opponent (3b), an unanswered request blocks, and a
+reported game blocks both Cancel Match and Disband (5). Singles has no leave
+option, so disbanding is doubles only.
 
 ## Match cancellation
 
@@ -48,28 +40,31 @@ Helpers in `helpers/ladderMatchCancellation.ts`, UI via
   Details → menu → Cancel Match.
 - **Accepted** match, no game reported: Cancel Match sends a cancellation
   request. The opposing side gets a notification and a banner on Match Details
-  with Accept Cancellation / Decline. The requester's side sees "Waiting for
+  with Accept / Decline. The requester's side sees "Waiting for
   your opponent to respond". The requester's partner cannot respond.
 - Accept → match cancelled, requester's side notified, court fee refunded to
   the accepter server-side. Decline → request cleared, requester's side
   notified, match goes ahead (play it or face a no-show).
 - A reported game → "This match can no longer be cancelled".
 
-Flows to cover (singles and doubles):
+Covered by `cancel-*` flows (seeds in
+`maestro/seeds/seedMatchCancellationFlow.js` and `seedTeamDisbandFlow.js`; the
+opponent's response is mocked by `mockOpponentCancellationResponse`): cancelling
+a posted match from Matchmaking and from Ladder Menu → Current Posted Matches;
+requesting cancellation of an accepted match and the opponent accepting or
+declining; receiving an opponent's request and accepting or declining it; a
+second request being refused; a reported game blocking cancellation; and the
+requester's partner seeing "Waiting" with no Accept or Decline (doubles).
 
-1. Post a match → open it in Matchmaking → Cancel Match → it disappears from
-   Matchmaking.
-2. Post a match → Ladder Menu → Current Posted Matches lists it live → Cancel →
-   it leaves the list and Matchmaking.
-3. Accepted match → poster requests → opponent sees the banner → Accept →
-   match cancelled for both; requester notified.
-4. Same, opponent Declines → banner clears; match still accepted; requester
-   notified.
-5. Doubles: requester's partner sees "Waiting…" (no Accept/Decline); either
-   opponent can respond.
-6. A second request while one is pending is refused ("Waiting for your
-   opponent").
-7. Game reported → Cancel Match shows "This match can no longer be cancelled".
+Also covered: the app sends the right notification on each step (the request
+reaches the opponent; accepting or declining reaches the requester's whole
+side, both players in doubles), the requester sees the response notification
+and it opens the match's ladder, and in doubles either opposing player can
+respond.
+
+Still to cover:
+
+- The court-fee refund on accept (server-side; see below).
 
 ## Refunds and the platform fee
 
@@ -96,86 +91,15 @@ Payments are stubs today, so Maestro can only assert the UI. Flows to cover:
    the platform fee) through the payment provider's test mode, and that a
    re-fired trigger never refunds twice.
 
-## Ladder notifications
+## Ladder playoffs
 
-Sent by `processLadderPhases` through `functions/src/helpers/sendNotification.ts`
-(in-app + push), `type: "ladder"`, routed by `NotificationRow` to the Ladder
-screen on `data.tab`. The client can't run the function, so seeds must write
-the notification docs the function would produce (same message, title and
-data).
+Phase 1 (bracket generation, Playoffs tab, cancellation and promotion
+notifications) is covered in
+[ladder-playoffs-test-plan.md](ladder-playoffs-test-plan.md), including the
+manual Cloud Scheduler checks. Remaining:
 
-1. **Cancellation:** notification "{ladder} has been cancelled because not
-   enough players signed up before registration closed. If you paid an entry
-   fee, it will be refunded to you in full." → tap → Ladder opens on Summary;
-   the third stat reads "Status" / "Cancelled" (plain text, `ladder-status`)
-   instead of "To Playoffs".
-2. **Promotion:** "Congratulations! You've made the playoffs in {ladder}. You
-   have 10 days to play both your home and away games." → tap → Ladder opens
-   on the Playoffs tab, scrolled to the player's game with the glow.
-3. Summary stat by status: Registration Open/Closed → "To Playoffs" countdown;
-   otherwise "Status" with "Playoffs", "Completed" or "Cancelled" as plain
-   text (`ladder-status`).
-
-## Ladder cancellation and playoffs
-
-Seeds: `maestro/seeds/seedLadderPlayoffs.js` (harness buttons
-`maestro-seed-ladder-playoffs`, `…-generated`, `…-doubles`,
-`…-doubles-generated`; cleanup via `cleanupLadderTestData`).
-
-- Singles ladder `maestro-po-ladder` ("Maestro Playoffs 2048"): 2048 players,
-  Registration Closed, playoff start already passed. The test user is ranked
-  #1; fixture `P0001 S`… is ranked 2… (CP strictly decreasing). Home
-  courts cycle London, Croydon, Birmingham, Coventry, Manchester, Salford,
-  Leeds, Bradford (fixture n gets city n mod 8).
-- Doubles ladder `maestro-po-doubles-ladder` ("Maestro Playoffs Doubles 256"):
-  256 teams; the test user + `P0001 S` are team #1.
-- "Generated" writes the bracket immediately with the same shared helpers as
-  `processLadderPhases`; "Awaiting Function" leaves it to the deployed
-  function (every 15 minutes, or force-run the Cloud Scheduler job
-  `firebase-schedule-processLadderPhases-us-central1`). Maestro flows should
-  use "Generated" — the function is covered by its Jest tests.
-
-Before writing flows, add to the seed:
-
-- a notification per seeded ladder ("open Maestro Playoffs 2048 on Playoffs",
-  `type: "ladder"`, `data: { ladderId, tab: "Playoffs" }`) so flows can reach
-  the ladder the same way the home-court flows do (Competitions →
-  notifications → tap);
-- a cancellation variant: a paid ladder with fewer than 128 participants, past
-  `registrationClosesAt`, already set to Cancelled with reason "Too few
-  registrations" (the client can't run the function, so write the cancelled
-  state the function would produce), plus an upcoming variant (playoff start in
-  the future) for the "not started" message.
-
-Flows to cover (assert exact text):
-
-1. **Singles bracket (Generated):** Playoffs tab shows the bracket
-   (`ladder-playoffs-bracket`); first round header "Round of 128"; the test
-   user's name appears in round 1; `P0127 S` appears and `P0128 S`
-   does not (scroll/search the round). Rounds: Round of 128 → 64 → 32 → 16 →
-   Quarter-Final → Semi-Final → Final, plus the 3rd-place playoff.
-2. **Proximity pairing:** the test user (London home court) is paired with
-   another London or Croydon player in round 1 (the seeded top 128 has 16
-   players per city, so London and Croydon players only meet each other in
-   the early rounds). Pin the exact opponent from the Generated seed's output
-   before asserting it.
-3. **Doubles bracket (Generated):** first round header "Round of 16"; the
-   test user's team appears in round 1 with both player names.
-4. **Not started:** upcoming ladder → `ladder-playoffs-empty` with "Playoffs
-   haven't started yet" and "The top 128 players in the ladder qualify…" (or
-   the matching top N for the seeded size).
-5. **Cancelled:** cancelled ladder → "This ladder was cancelled" and "Too few
-   registrations".
-6. **Loading:** `ladder-playoffs-loading` shows before the bracket.
-7. **Summary on a 2048 ladder:** Summary renders (no long stall); Top
-   Contenders shows exactly 4 rows with the test user first; the
-   Participants carousel shows at most 20 avatars.
-8. **Tapping a bracket game does nothing yet** (Phase 2 adds the playoff match
-   screen) — update this flow when Phase 2 lands.
-
-Manual checks that Maestro can't do:
-
-- After "Awaiting Function" + a force run: in the Firebase console
-  `ladders/maestro-po-ladder` has `status: playoffs`, `playoffBracketSize: 128`,
-  `playoffEntrantCount: 2048`, and `playoffTies` holds 128 docs. Force-running
-  again changes nothing (idempotency).
+- Update `ladder-playoffs-tap-game-does-nothing` when Phase 2 adds the playoff
+  match screen, and add flows for the match, scheduling and result notifications
+  once they exist.
+- The bracket glow is an animation, so Maestro only asserts the game is on
+  screen; the scroll target logic stays covered in Jest.

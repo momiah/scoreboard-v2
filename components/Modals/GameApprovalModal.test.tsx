@@ -79,11 +79,13 @@ const makeMatch = (game = makeGame()) => ({
 
 const renderModal = ({
   match = makeMatch(),
-}: { match?: ReturnType<typeof makeMatch> } = {}) => {
+  ladderStatus = "registrationClosed",
+}: { match?: ReturnType<typeof makeMatch>; ladderStatus?: string } = {}) => {
   const ladderValue = {
     fetchLadderById: jest.fn(async () => ({
       name: "Autumn Ladder",
       ladderType: "Singles",
+      status: ladderStatus,
     })),
     fetchLadderMatches: jest.fn(async () => [match]),
     approveLadderGame: jest.fn(async () => ({ success: true })),
@@ -168,5 +170,34 @@ describe("LadderGameApprovalModal — reject entry point", () => {
     const emptyMatch = { ...makeMatch(), games: [] };
     const { findByText } = renderModal({ match: emptyMatch });
     expect(await findByText(/no longer exists/)).toBeTruthy();
+  });
+});
+
+describe("LadderGameApprovalModal — playoff freeze", () => {
+  it("shows the disclaimer and locks Accept and Decline once playoffs have started", async () => {
+    const { findByTestId, getByText, ladderValue } = renderModal({
+      ladderStatus: "playoffs",
+    });
+
+    const notice = await findByTestId("game-approval-frozen");
+    expect(notice.props.children).toBe(
+      "This game can no longer be actioned as playoffs has started",
+    );
+
+    fireEvent.press(getByText("Accept"));
+    fireEvent.press(getByText("Decline"));
+    expect(ladderValue.approveLadderGame).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("leaves the actions open while registration is merely closed", async () => {
+    const { findByText, queryByTestId, ladderValue } = renderModal({
+      ladderStatus: "registrationClosed",
+    });
+
+    fireEvent.press(await findByText("Accept"));
+
+    expect(queryByTestId("game-approval-frozen")).toBeNull();
+    expect(ladderValue.approveLadderGame).toHaveBeenCalled();
   });
 });

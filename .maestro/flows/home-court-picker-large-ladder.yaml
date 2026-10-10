@@ -6,7 +6,7 @@ onFlowStart:
     id: "maestro-seed-home-court-flow-large-ladder"
 - extendedWaitUntil:
     visible: "Seeded"
-    timeout: 90000
+    timeout: 60000
 - tapOn: "OK"
 
 - tapOn:

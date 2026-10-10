@@ -10,7 +10,8 @@
     "start": "npm run shell",
     "deploy": "npm run build && firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "jest"
+    "test": "jest",
+    "test:emulator": "npx -y firebase-tools@13.35.1 emulators:exec --config ../firebase.json --only firestore --project demo-courtchamps \"npx jest -c jest.emulator.config.js\""
   },
   "engines": {
     "node": "22"

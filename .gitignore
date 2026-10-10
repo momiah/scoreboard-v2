@@ -38,3 +38,6 @@ yarn-error.*
 /android/
 /ios/
 /local-files/
+
+# Firebase emulator
+*-debug.log

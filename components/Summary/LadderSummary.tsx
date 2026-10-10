@@ -386,18 +386,19 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           </EmptyState>
         ) : (
           renderContenders.map((player, index) => (
-            <PrizeContenders
-              key={player.userId}
-              item={player}
-              index={index}
-              isDataLoading={isDataLoading}
-              distribution={LADDER_DISTRIBUTION}
-              prizePool={prizePool.xp}
-              cashPool={isPaid ? prizePool.cash : undefined}
-              currencyType={ladder.currencyType}
-              hasPrizesDistributed={hasPrizesDistributed}
-              competitionType={COMPETITION_TYPES.LADDER}
-            />
+            <View key={player.userId} testID={`ladder-top-contender-${index}`}>
+              <PrizeContenders
+                item={player}
+                index={index}
+                isDataLoading={isDataLoading}
+                distribution={LADDER_DISTRIBUTION}
+                prizePool={prizePool.xp}
+                cashPool={isPaid ? prizePool.cash : undefined}
+                currencyType={ladder.currencyType}
+                hasPrizesDistributed={hasPrizesDistributed}
+                competitionType={COMPETITION_TYPES.LADDER}
+              />
+            </View>
           ))
         )}
       </TableContainer>

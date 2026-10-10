@@ -17,6 +17,7 @@ interface LineTabsProps<T extends string> {
   highlightKey?: T;
   /** Scroll this tab into view on mount, independent of the active tab. */
   scrollToKey?: T;
+  testIDPrefix?: string;
 }
 
 function LineTabs<T extends string>({
@@ -27,6 +28,7 @@ function LineTabs<T extends string>({
   fontSize = 14,
   highlightKey,
   scrollToKey,
+  testIDPrefix,
 }: LineTabsProps<T>) {
   const scrollRef = useRef<ScrollView>(null);
   const tabPositionsRef = useRef<Record<string, number>>({});
@@ -88,6 +90,7 @@ function LineTabs<T extends string>({
     tabs.map((tab) => (
       <TabItem
         key={tab.key}
+        testID={testIDPrefix ? `${testIDPrefix}-${tab.key}` : undefined}
         isActive={activeTab === tab.key}
         scrollable={scrollable}
         onPress={() => onTabPress(tab.key)}

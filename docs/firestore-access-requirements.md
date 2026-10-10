@@ -39,8 +39,18 @@ pairing, so a player must not be able to set an arbitrary location.
 
 | Path | Writer | Operation | Fields / conditions |
 |---|---|---|---|
-| `ladders/{ladderId}/ladderParticipants/{userId}` | That player (singles) | create | Participant built by `buildLadderParticipant` plus `joinedAt` (join time; a playoff tiebreak, so it must not be editable afterwards). |
-| `ladders/{ladderId}/ladderTeams/{teamKey}` | A team member (doubles) | create | Team built by `createRootTeam` plus `joinedAt`, same rule. |
+| `ladders/{ladderId}/ladderParticipants/{userId}` | That player (singles) | create | Participant built by `buildLadderParticipant` plus `joinedAt` = server timestamp (a playoff tiebreak, so it must not be editable afterwards). Written in a transaction with the ladder `participantCount` increment; allowed only while the ladder is `registrationOpen`, inside the registration window and under `maxPlayers`. |
+| `ladders/{ladderId}/ladderTeams/{teamKey}` | A team member (doubles) | create | Team built by `createRootTeam` plus `joinedAt` (server timestamp), same rules. The `teams/{teamId}` doc must be `active` with two players. |
+| `ladders/{ladderId}/ladderMembers/{userId}` | A team member (doubles) | create | Claim written in the same transaction as the `ladderTeams` create: `{ userId, teamKey, joinedAt }` (server timestamp), one per player. Must not exist for that player under another `teamKey` — this is what stops two teams sharing a player when they join at the same instant. |
+| `ladders/{ladderId}/ladderMembers/{userId}` | A team member (doubles) | delete | Only in the batch that disbands the team (removes the `ladderTeams` doc and these claims together). |
+| `ladders/{ladderId}` | A joining player or team member | update | `participantCount` +1, only in the same transaction as the participant/team create above. |
+| `teams/{teamId}` | A team member | update | `ladderIds` (arrayUnion) after joining a ladder. |
+
+## Ladder match reporting
+
+| Path | Writer | Operation | Fields / conditions |
+|---|---|---|---|
+| `ladders/{ladderId}/ladderMatches/{matchId}` | A player in the match | update | Game report/decline/dispute/approve: `games`, `lastUpdated`, and `gameReportedAt.{gameId}` = server timestamp (the clock the auto-approval job ages a game from). Blocked only once playoffs have started (ladder status playoffs, completed or cancelled); play continues after registration closes. |
 
 ## Ladder match cancellation
 

@@ -1,0 +1,39 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-reject-playoffs-started"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+- extendedWaitUntil:
+    visible:
+      id: "game-approval-disputed-link"
+    timeout: 15000
+- assertVisible:
+    id: "game-approval-frozen"
+- tapOn:
+    id: "game-approval-disputed-link"
+- extendedWaitUntil:
+    visible:
+      id: "game-dispute-screen"
+    timeout: 15000
+- assertVisible:
+    id: "dispute-frozen"
+- assertVisible: "This game can no longer be actioned as playoffs has started"
+- assertNotVisible:
+    id: "dispute-evidence-note-input"
+- assertNotVisible:
+    id: "dispute-approve-score"
+- assertNotVisible:
+    id: "dispute-cancel"

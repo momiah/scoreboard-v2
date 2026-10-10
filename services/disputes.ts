@@ -7,10 +7,10 @@ import {
   query,
   runTransaction,
   where,
+  type Transaction,
 } from "firebase/firestore";
 
 import { db } from "./firebase.config";
-import { canApproveReportedGame } from "../helpers/reportedGameApproval";
 import { COLLECTION_NAMES } from "@shared";
 import {
   DISPUTES_COLLECTION,
@@ -41,8 +41,10 @@ import {
   getDisputePlayerIds,
   isDoublesDispute,
   planDisputeResolution,
+  isLadderMatchPlayFrozen,
+  canApproveReportedGame,
+  getReporterSideIds,
 } from "@shared/helpers";
-import { getReporterSideIds } from "../helpers/disputeReporterSide";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
@@ -130,8 +132,16 @@ export interface CreateDisputeInput {
  * game (mirrors the report/no-show duplicate guard).
  */
 export type CreateDisputeResult = Omit<CreateDisputeOutcome, "reason"> & {
-  reason?: CreateDisputeOutcome["reason"] | "not_opponent";
+  reason?: CreateDisputeOutcome["reason"] | "not_opponent" | "frozen";
   disputeId?: string;
+};
+
+const readLadderFrozen = async (
+  tx: Transaction,
+  ladderId: string,
+): Promise<boolean> => {
+  const ladderSnap = await tx.get(doc(db, LADDERS, ladderId));
+  return isLadderMatchPlayFrozen(ladderSnap.data()?.status);
 };
 
 export const createDispute = async (
@@ -209,18 +219,21 @@ export const createDispute = async (
     // Write the dispute and flag its game as `disputed` in the match together,
     // so the fixture list shows the pill. Resolution reverts the game's status
     // through the shared resolution path (getDisputeFinalGame).
-    await runTransaction(db, async (tx) => {
+    const frozen = await runTransaction(db, async (tx) => {
       const matchSnap = await tx.get(matchRef);
+      if (await readLadderFrozen(tx, input.ladderId)) return true;
       tx.set(disputeRef, pruneUndefined(dispute));
-      if (!matchSnap.exists()) return;
+      if (!matchSnap.exists()) return false;
       const match = matchSnap.data() as LadderMatch;
       const games = match.games ?? [];
       const index = games.findIndex((g) => g.gameId === input.gameId);
-      if (index === -1) return;
+      if (index === -1) return false;
       const nextGames = [...games];
       nextGames[index] = { ...nextGames[index], approvalStatus: "disputed" };
       tx.update(matchRef, { games: nextGames });
+      return false;
     });
+    if (frozen) return { success: false, reason: "frozen" };
     return { success: true, disputeId };
   } catch (error) {
     console.error("Error creating dispute:", error);
@@ -272,7 +285,7 @@ export type AddDisputeEvidenceOutcome =
   | { success: true }
   | {
       success: false;
-      reason: "invalid" | "resolved" | "video_limit" | "error";
+      reason: "invalid" | "resolved" | "video_limit" | "frozen" | "error";
     };
 
 /**
@@ -301,6 +314,9 @@ export const addDisputeEvidence = async (
       if (!(dispute.participantIds ?? []).includes(userId)) {
         return { success: false, reason: "invalid" } as const;
       }
+      if (await readLadderFrozen(tx, dispute.ladderId)) {
+        return { success: false, reason: "frozen" } as const;
+      }
       if (
         evidence.videoId &&
         !canUploadDisputeVideo(dispute.events ?? [], userId)
@@ -328,7 +344,8 @@ export const addDisputeEvidence = async (
 };
 
 type ResolveOutcome<Denied extends string> =
-  { success: true } | { success: false; reason: Denied | "resolved" | "error" };
+  | { success: true }
+  | { success: false; reason: Denied | "resolved" | "frozen" | "error" };
 
 const DENIED_REASON = {
   opener: "not_opener",
@@ -365,6 +382,10 @@ const resolveActiveDispute = async <Role extends keyof typeof DENIED_REASON>({
       }
       if (!DISPUTE_ACTIVE_STAGES.includes(dispute.stage)) {
         return { success: false, reason: "resolved" } as const;
+      }
+
+      if (await readLadderFrozen(tx, dispute.ladderId)) {
+        return { success: false, reason: "frozen" } as const;
       }
 
       const ladderPath = [LADDERS, dispute.ladderId] as const;

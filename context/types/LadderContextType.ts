@@ -19,9 +19,28 @@ import type {
 export type { CreateReportOutcome };
 import type { LadderJoinUser } from "@shared/helpers";
 
+export type LadderJoinFailureReason = "closed" | "not_open" | "full";
+
+export type AddLadderTeamFailureReason =
+  | LadderJoinFailureReason
+  | "member_conflict";
+
+export type TeamJoinFailureReason =
+  | AddLadderTeamFailureReason
+  | "team_not_found"
+  | "team_pending"
+  | "team_incomplete";
+
 export interface LadderJoinOutcome {
   success: boolean;
   alreadyJoined: boolean;
+  reason?: LadderJoinFailureReason;
+}
+
+export interface AddLadderTeamOutcome {
+  success: boolean;
+  reason?: AddLadderTeamFailureReason;
+  conflictUserIds?: string[];
 }
 
 export interface CreateTeamOutcome {
@@ -34,6 +53,7 @@ export interface JoinLadderAsTeamOutcome {
   alreadyJoined: boolean;
   conflict: boolean;
   conflictUserIds: string[];
+  reason?: TeamJoinFailureReason;
 }
 
 export interface DisbandTeamOutcome {
@@ -58,7 +78,7 @@ export interface CreateLadderMatchOutcome {
   ladderMatch: LadderMatch | null;
 }
 
-export type AcceptLadderMatchFailureReason = "unavailable" | "error";
+export type AcceptLadderMatchFailureReason = "unavailable" | "frozen" | "error";
 
 export interface AcceptLadderMatchOutcome {
   success: boolean;
@@ -75,6 +95,7 @@ export interface CheckInLadderMatchOutcome {
 export type UpdateLadderGameFailureReason =
   | "unavailable"
   | "error"
+  | "frozen"
   | "match_decided";
 
 export interface UpdateLadderGameOutcome {
@@ -102,6 +123,7 @@ export interface CancelLadderMatchOutcome {
 export type ApproveLadderGameFailureReason =
   | "unavailable"
   | "not_opponent"
+  | "frozen"
   | "error";
 
 export interface ApproveLadderGameOutcome {
@@ -138,7 +160,10 @@ export interface LadderContextType {
   joinedLadderIds: string[];
   checkLadderMembership: (ladderId: string, userId: string) => Promise<boolean>;
   fetchLadderParticipants: (ladderId: string) => Promise<ScoreboardProfile[]>;
-  addLadderTeam: (ladderId: string, team: TeamStats) => Promise<boolean>;
+  addLadderTeam: (
+    ladderId: string,
+    team: TeamStats,
+  ) => Promise<AddLadderTeamOutcome>;
   fetchLadderTeams: (ladderId: string) => Promise<TeamStats[]>;
   createTeam: (
     creator: TeamMember,

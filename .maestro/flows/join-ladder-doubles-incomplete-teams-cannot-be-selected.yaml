@@ -1,0 +1,54 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-join-doubles-open"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Join Doubles on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Join Doubles on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+- tapOn:
+    id: "ladder-summary-join"
+- extendedWaitUntil:
+    visible: "Select Team"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: ".*Maestro Join Aces.*"
+    timeout: 15000
+- assertVisible: ".*Waiting for partner to accept.*"
+- assertVisible: ".*No partner yet.*"
+- assertVisible:
+    id: "select-team-join"
+    enabled: false
+- tapOn: ".*Maestro Join Pending.*"
+- assertVisible:
+    id: "select-team-join"
+    enabled: false
+- tapOn: ".*Maestro Join Solo.*"
+- assertVisible:
+    id: "select-team-join"
+    enabled: false
+- tapOn: ".*Maestro Join Aces.*"
+- assertVisible:
+    id: "select-team-join"
+    enabled: true

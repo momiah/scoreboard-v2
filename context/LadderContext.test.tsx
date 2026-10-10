@@ -13,12 +13,14 @@ jest.mock("../services/firebase.config", () => ({ db: {} }));
 
 const mockRunTransaction = jest.fn();
 const mockGetDocs = jest.fn();
+const mockGetDoc = jest.fn();
+const mockWriteBatch = jest.fn();
 jest.mock("firebase/firestore", () => ({
   arrayUnion: jest.fn(),
   collection: jest.fn((_db, ...path: string[]) => ({ __col: path.join("/") })),
   deleteDoc: jest.fn(),
   doc: jest.fn((_db, ...path: string[]) => ({ path: path.join("/") })),
-  getDoc: jest.fn(),
+  getDoc: (...args: unknown[]) => mockGetDoc(...args),
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
   increment: jest.fn(),
   limit: jest.fn(),
@@ -26,10 +28,11 @@ jest.mock("firebase/firestore", () => ({
   orderBy: jest.fn(),
   query: jest.fn((...args: unknown[]) => ({ __query: args })),
   runTransaction: (...args: unknown[]) => mockRunTransaction(...args),
+  serverTimestamp: jest.fn(() => "SERVER_TS"),
   setDoc: jest.fn(),
   updateDoc: jest.fn(),
   where: jest.fn(),
-  writeBatch: jest.fn(),
+  writeBatch: (...args: unknown[]) => mockWriteBatch(...args),
 }));
 
 import LadderProvider, { LadderContext } from "./LadderContext";
@@ -682,5 +685,385 @@ describe("approval eligibility", () => {
       (store[MATCH_PATH] as { games: { approvalStatus: string }[] }).games[0]
         .approvalStatus,
     ).toBe(APPROVED);
+  });
+});
+
+const LADDER_PATH = `ladders/${LADDER}`;
+
+const withLadder = (status: string, extra: Record<string, unknown> = {}) => ({
+  [LADDER_PATH]: { status, ...extra },
+});
+
+describe("playoff freeze", () => {
+  const frozenStore = (games: Game[], status = "playoffs") =>
+    makeStore({
+      [MATCH_PATH]: makeMatch(games),
+      [participantPath("opp")]: buildLadderParticipant(user("opp")),
+      [participantPath("me")]: buildLadderParticipant(user("me")),
+      [userPath("opp")]: user("opp"),
+      [userPath("me")]: user("me"),
+      ...withLadder(status),
+    });
+
+  it.each(["playoffs", "completed", "cancelled"])(
+    "refuses to approve a game once the ladder is %s",
+    async (status) => {
+      const { store, tx } = frozenStore([singlesGame(1), shell(2)], status);
+      const result = await renderLadder();
+
+      expect(await approve(result, `${MATCH}-g1`)).toEqual({
+        success: false,
+        reason: "frozen",
+      });
+      expect(tx.update).not.toHaveBeenCalled();
+      expect(tx.set).not.toHaveBeenCalled();
+      expect(
+        (store[MATCH_PATH] as { games: { approvalStatus: string }[] }).games[0]
+          .approvalStatus,
+      ).toBe("Pending");
+    },
+  );
+
+  it("still approves while registration is closed but playoffs have not started", async () => {
+    const { tx } = frozenStore([singlesGame(1), shell(2)], "registrationClosed");
+    const result = await renderLadder();
+
+    expect(await approve(result, `${MATCH}-g1`)).toMatchObject({
+      success: true,
+      fullyApproved: true,
+    });
+    expect(tx.update).toHaveBeenCalled();
+  });
+
+  it("refuses to report a score once the ladder is in playoffs", async () => {
+    const { tx } = frozenStore([shell(1), shell(2), shell(3), shell(4), shell(5)]);
+    const result = await renderLadder();
+
+    const outcome = await result.current.updateLadderGame({
+      ladderId: LADDER,
+      matchId: MATCH,
+      updatedGame: reportPayload(1),
+    });
+
+    expect(outcome).toEqual({ success: false, reason: "frozen" });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it("still lets a score be reported while registration is closed", async () => {
+    const { tx } = frozenStore(
+      [shell(1), shell(2), shell(3), shell(4), shell(5)],
+      "registrationClosed",
+    );
+    const result = await renderLadder();
+
+    const outcome = await result.current.updateLadderGame({
+      ladderId: LADDER,
+      matchId: MATCH,
+      updatedGame: reportPayload(1),
+    });
+
+    expect(outcome).toEqual({ success: true });
+    const update = tx.update.mock.calls[0][1] as Record<string, unknown>;
+    expect(update[`gameReportedAt.${MATCH}-g1`]).toBe("SERVER_TS");
+  });
+
+  it("refuses to accept a posted match once the ladder is in playoffs", async () => {
+    const { tx } = makeStore({
+      [MATCH_PATH]: makeMatch([shell(1)], {
+        matchStatus: LADDER_MATCH_STATUS.POSTED,
+        participants: ["opp"],
+      }),
+      ...withLadder("playoffs"),
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.acceptLadderMatch(LADDER, MATCH, "me");
+
+    expect(outcome).toEqual({ success: false, reason: "frozen" });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("joinLadder", () => {
+  const user1 = {
+    userId: "me",
+    username: "me",
+    firstName: "Me",
+    lastName: "Player",
+    profileDetail: baseProfile(100),
+  } as unknown as Parameters<
+    Awaited<ReturnType<typeof renderLadder>>["current"]["joinLadder"]
+  >[1];
+
+  const openWindow = {
+    registrationOpensAt: new Date(Date.now() - 86400000),
+    registrationClosesAt: new Date(Date.now() + 86400000),
+    participantCount: 3,
+    maxPlayers: 2048,
+  };
+
+  it("writes the participant with a server joinedAt and bumps the count", async () => {
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadder(LADDER, user1)).toEqual({
+      success: true,
+      alreadyJoined: false,
+    });
+    const participantWrite = tx.set.mock.calls.find(
+      ([ref]) => ref.path === participantPath("me"),
+    );
+    expect((participantWrite?.[1] as { joinedAt: unknown }).joinedAt).toBe(
+      "SERVER_TS",
+    );
+    expect(tx.update).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["registrationClosed", {}, "closed"],
+    ["playoffs", {}, "closed"],
+    ["registrationOpen", { registrationClosesAt: new Date(Date.now() - 1000) }, "closed"],
+    ["registrationOpen", { registrationOpensAt: new Date(Date.now() + 86400000) }, "not_open"],
+    ["registrationOpen", { participantCount: 2048 }, "full"],
+  ])("blocks a join when status is %s (%j)", async (status, patch, reason) => {
+    const { tx } = makeStore(
+      withLadder(status as string, { ...openWindow, ...(patch as object) }),
+    );
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadder(LADDER, user1)).toEqual({
+      success: false,
+      alreadyJoined: false,
+      reason,
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("does not double-count a player who already joined", async () => {
+    const { tx } = makeStore({
+      ...withLadder("registrationOpen", openWindow),
+      [participantPath("me")]: buildLadderParticipant(user("me")),
+    });
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadder(LADDER, user1)).toEqual({
+      success: true,
+      alreadyJoined: true,
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("joinLadderAsTeam", () => {
+  const teamKey = normalizeTeamKey(["me", "pt"]);
+  const rootTeam = {
+    teamId: "T1",
+    teamKey,
+    players: [
+      { userId: "me", username: "me" },
+      { userId: "pt", username: "pt" },
+    ],
+    createdBy: "me",
+  } as unknown as Parameters<
+    Awaited<ReturnType<typeof renderLadder>>["current"]["joinLadderAsTeam"]
+  >[1];
+  const openWindow = {
+    registrationOpensAt: new Date(Date.now() - 86400000),
+    registrationClosesAt: new Date(Date.now() + 86400000),
+    participantCount: 3,
+    maxPlayers: 2048,
+  };
+  const serverTeam = (patch: Record<string, unknown>) => ({
+    exists: () => true,
+    id: "T1",
+    data: () => ({
+      ...rootTeam,
+      playerIds: ["me", "pt"],
+      status: "active",
+      ...patch,
+    }),
+  });
+
+  it.each([
+    ["pending", { status: "pending" }, "team_pending"],
+    ["one-player", { playerIds: ["me"], players: [{ userId: "me" }] }, "team_incomplete"],
+  ])("blocks a %s team even when the client sends a full one", async (_n, patch, reason) => {
+    mockGetDoc.mockResolvedValueOnce(serverTeam(patch));
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    const outcome = await result.current.joinLadderAsTeam(LADDER, rootTeam);
+
+    expect(outcome).toMatchObject({ success: false, reason });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("blocks a team whose doc no longer exists", async () => {
+    mockGetDoc.mockResolvedValueOnce({ exists: () => false, data: () => undefined });
+    makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: false,
+      reason: "team_not_found",
+    });
+  });
+
+  const noParticipantDoc = { exists: () => false, id: "x", data: () => undefined };
+
+  it("blocks joining once registration has closed", async () => {
+    mockGetDoc
+      .mockResolvedValueOnce(serverTeam({}))
+      .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockResolvedValue({ docs: [] });
+    const { tx } = makeStore(withLadder("registrationClosed", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: false,
+      reason: "closed",
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("writes a membership claim for each player when the team joins", async () => {
+    mockGetDoc
+      .mockResolvedValueOnce(serverTeam({}))
+      .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockResolvedValue({ docs: [] });
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: true,
+    });
+    const claimPaths = tx.set.mock.calls
+      .map(([ref]) => (ref as { path: string }).path)
+      .filter((path) => path.includes("/ladderMembers/"));
+    expect(claimPaths.sort()).toEqual([
+      `${LADDER_PATH}/ladderMembers/me`,
+      `${LADDER_PATH}/ladderMembers/pt`,
+    ]);
+  });
+
+  it("refuses a team when one of its players is already in another team on the ladder", async () => {
+    mockGetDoc
+      .mockResolvedValueOnce(serverTeam({}))
+      .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockResolvedValue({
+      docs: [
+        { id: "other", data: () => ({ teamKey: "other", playerIds: ["pt", "x"] }) },
+      ],
+    });
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: false,
+      conflict: true,
+      conflictUserIds: ["pt"],
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("refuses a team when one of its players is already a ladder participant", async () => {
+    mockGetDoc
+      .mockResolvedValueOnce(serverTeam({}))
+      .mockResolvedValueOnce({ exists: () => true, id: "me", data: () => ({}) })
+      .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockResolvedValue({ docs: [] });
+    makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      conflict: true,
+      conflictUserIds: ["me"],
+    });
+  });
+
+  it("catches two simultaneous joins through the claim even when the query saw nothing", async () => {
+    mockGetDoc
+      .mockResolvedValueOnce(serverTeam({}))
+      .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockResolvedValue({ docs: [] });
+    const { tx } = makeStore({
+      ...withLadder("registrationOpen", openWindow),
+      [`${LADDER_PATH}/ladderMembers/pt`]: { userId: "pt", teamKey: "someone-else" },
+    });
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: false,
+      conflict: true,
+      conflictUserIds: ["pt"],
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when the conflict query errors", async () => {
+    mockGetDoc
+      .mockResolvedValueOnce(serverTeam({}))
+      .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockRejectedValue(new Error("offline"));
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: false,
+      conflict: false,
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+});
+
+describe("disbandTeam", () => {
+  const team = {
+    teamId: "T1",
+    teamKey: "me_pt",
+    playerIds: ["me", "pt"],
+    ladderIds: [LADDER],
+  } as unknown as Parameters<
+    Awaited<ReturnType<typeof renderLadder>>["current"]["disbandTeam"]
+  >[0];
+
+  it("deletes the ladder team and both players' membership claims together", async () => {
+    const batch = { delete: jest.fn(), update: jest.fn(), commit: jest.fn() };
+    mockWriteBatch.mockReturnValue(batch);
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      id: LADDER,
+      data: () => ({ status: "registrationOpen" }),
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.disbandTeam(team);
+
+    expect(outcome.success).toBe(true);
+    const deleted = batch.delete.mock.calls.map(
+      ([ref]) => (ref as { path: string }).path,
+    );
+    expect(deleted.sort()).toEqual([
+      `${LADDER_PATH}/ladderMembers/me`,
+      `${LADDER_PATH}/ladderMembers/pt`,
+      `${LADDER_PATH}/ladderTeams/me_pt`,
+    ]);
+    expect(batch.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses to disband once registration has closed and leaves the claims alone", async () => {
+    const batch = { delete: jest.fn(), update: jest.fn(), commit: jest.fn() };
+    mockWriteBatch.mockReturnValue(batch);
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      id: LADDER,
+      data: () => ({ status: "registrationClosed" }),
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.disbandTeam(team);
+
+    expect(outcome).toMatchObject({ success: false, registrationClosed: true });
+    expect(batch.delete).not.toHaveBeenCalled();
   });
 });

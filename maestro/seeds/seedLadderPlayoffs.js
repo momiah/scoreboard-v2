@@ -1,6 +1,14 @@
-import { collection, doc, getDocs, writeBatch } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  query,
+  where,
+  writeBatch,
+} from "firebase/firestore";
 import { db } from "../../services/firebase.config";
 import {
+  LADDER_CANCELLED_REASON,
   LADDER_PLAYOFF_TIES_COLLECTION,
   LADDER_STATUS,
   LADDER_TYPE,
@@ -8,8 +16,11 @@ import {
   buildLadderParticipant,
   buildLadderPlayoffTies,
   createRootTeam,
+  getLadderPlayoffBracketSize,
   getLadderPlayoffQualifiers,
   LADDER_MIN_PLAYOFF_SIZE,
+  notificationSchema,
+  notificationTypes,
 } from "@shared";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 
@@ -21,6 +32,14 @@ export const MAESTRO_PO_LADDER_IDS = [
 ];
 export const MAESTRO_PO_SINGLES_SIZE = 2048;
 export const MAESTRO_PO_DOUBLES_TEAMS = 256;
+export const MAESTRO_PO_CANCELLED_SIZE = LADDER_MIN_PLAYOFF_SIZE - 1;
+
+export const PLAYOFF_VARIANT = {
+  STANDARD: "standard",
+  NOT_QUALIFIED: "notQualified",
+  UPCOMING: "upcoming",
+  CANCELLED: "cancelled",
+};
 
 const SINGLES_USER_PREFIX = "maestro-po-u";
 const DOUBLES_USER_PREFIX = "maestro-pod-u";
@@ -124,38 +143,64 @@ const deleteLadder = async (ladderId) => {
       "ladderMatches",
     ].map((sub) => deleteCollection(["ladders", ladderId, sub])),
   );
-  await commitInBatches([(batch) => batch.delete(doc(db, "ladders", ladderId))]);
+  await commitInBatches([
+    (batch) => batch.delete(doc(db, "ladders", ladderId)),
+  ]);
 };
 
-const buildLadderDoc = ({ ladderId, name, ladderType, size, testUser, now }) => ({
+const buildLadderDoc = ({
   ladderId,
   name,
-  description:
-    "Seeded by maestro/seeds/seedLadderPlayoffs.js for playoff testing. Safe to ignore.",
-  image: "",
-  region: "Test",
-  countryCode: "GB",
   ladderType,
-  genderType: "Mixed",
-  courtIds: MAESTRO_PO_COURT_IDS,
-  status: LADDER_STATUS.REGISTRATION_CLOSED,
-  registrationOpensAt: new Date(now.getTime() - 120 * DAY_MS),
-  registrationClosesAt: new Date(now.getTime() - 60 * DAY_MS),
-  seasonStartsAt: new Date(now.getTime() - 90 * DAY_MS),
-  seasonEndsAt: new Date(now.getTime() - 60 * 1000),
-  playoffStartsAt: new Date(now.getTime() - 60 * 1000),
-  playoffEndsAt: new Date(now.getTime() + 30 * DAY_MS),
-  entryFee: 0,
-  currencyType: "GBP",
-  minRank: 0,
-  maxPlayers: size,
-  participantCount: size,
-  prizesDistributed: false,
-  createdBy: testUser.userId,
-  createdAt: now,
-  updatedBy: testUser.userId,
-  updatedAt: now,
-});
+  size,
+  testUser,
+  now,
+  variant = PLAYOFF_VARIANT.STANDARD,
+}) => {
+  const upcoming = variant === PLAYOFF_VARIANT.UPCOMING;
+  const cancelled = variant === PLAYOFF_VARIANT.CANCELLED;
+  return {
+    ladderId,
+    name,
+    description:
+      "Seeded by maestro/seeds/seedLadderPlayoffs.js for playoff testing. Safe to ignore.",
+    image: "",
+    region: "Test",
+    countryCode: "GB",
+    ladderType,
+    genderType: "Mixed",
+    courtIds: MAESTRO_PO_COURT_IDS,
+    status: cancelled
+      ? LADDER_STATUS.CANCELLED
+      : LADDER_STATUS.REGISTRATION_CLOSED,
+    ...(cancelled
+      ? {
+          cancelledAt: now,
+          cancelledReason: LADDER_CANCELLED_REASON.TOO_FEW_REGISTRATIONS,
+        }
+      : {}),
+    registrationOpensAt: new Date(now.getTime() - 120 * DAY_MS),
+    registrationClosesAt: new Date(now.getTime() - 60 * DAY_MS),
+    seasonStartsAt: new Date(now.getTime() - 90 * DAY_MS),
+    seasonEndsAt: upcoming
+      ? new Date(now.getTime() + 3 * DAY_MS)
+      : new Date(now.getTime() - 60 * 1000),
+    playoffStartsAt: upcoming
+      ? new Date(now.getTime() + 3 * DAY_MS)
+      : new Date(now.getTime() - 60 * 1000),
+    playoffEndsAt: new Date(now.getTime() + 30 * DAY_MS),
+    entryFee: 0,
+    currencyType: "GBP",
+    minRank: 0,
+    maxPlayers: size,
+    participantCount: size,
+    prizesDistributed: false,
+    createdBy: testUser.userId,
+    createdAt: now,
+    updatedBy: testUser.userId,
+    updatedAt: now,
+  };
+};
 
 const toEntrant = ({ entrantKey, teamId, players, stats, homeCourt, xp }) => ({
   entrantKey,
@@ -181,11 +226,18 @@ const generateBracket = async ({ ladderId, entrants, maxPlayers, now }) => {
   });
   const ties = buildLadderPlayoffTies({ ladderId, qualifiers, createdAt: now });
   await commitInBatches([
-    ...ties.map((tie) => (batch) =>
-      batch.set(
-        doc(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION, tie.tieId),
-        tie,
-      ),
+    ...ties.map(
+      (tie) => (batch) =>
+        batch.set(
+          doc(
+            db,
+            "ladders",
+            ladderId,
+            LADDER_PLAYOFF_TIES_COLLECTION,
+            tie.tieId,
+          ),
+          tie,
+        ),
     ),
     (batch) =>
       batch.update(doc(db, "ladders", ladderId), {
@@ -198,25 +250,124 @@ const generateBracket = async ({ ladderId, entrants, maxPlayers, now }) => {
   return { bracketSize, tieCount: ties.length };
 };
 
-const seedCourts = (courts) =>
-  courts.map((court) => (batch) =>
-    batch.set(doc(db, "courts", court.courtId), court),
+const NOTIFICATION_TABS = ["Summary", "Playoffs"];
+
+const writePlayoffNotifications = async ({
+  testUser,
+  ladderId,
+  ladderName,
+  promoted = false,
+  eliminated = false,
+  cancelled = false,
+}) => {
+  const notificationsRef = collection(
+    db,
+    "users",
+    testUser.userId,
+    "notifications",
+  );
+  const stale = await getDocs(
+    query(notificationsRef, where("data.ladderId", "==", ladderId)),
+  );
+  await commitInBatches(
+    stale.docs.map((docSnap) => (batch) => batch.delete(docSnap.ref)),
   );
 
-/**
- * A 2048-player singles ladder past its playoff start. The test user is ranked
- * #1 and fixture n is ranked n + 1 (CP strictly decreasing), with home courts
- * cycling through 8 UK cities, so the top 128 are the test user and fixtures
- * 0001–0127. With `generate` the bracket is written now; otherwise the
- * deployed processLadderPhases creates it on its next run.
- */
-export const seedLadderPlayoffs = async ({ testUser, generate = false }) => {
+  const base = {
+    ...notificationSchema,
+    createdAt: new Date(),
+    recipientId: testUser.userId,
+    type: notificationTypes.INFORMATION.LADDER.TYPE,
+  };
+  const entries = NOTIFICATION_TABS.map((tab) => ({
+    id: `maestro-po-entry-${ladderId}-${tab}`,
+    data: {
+      ...base,
+      senderId: "system",
+      message: `Maestro: open ${ladderName} on ${tab}`,
+      data: { ladderId, tab },
+    },
+  }));
+  const phase = [];
+  if (promoted) {
+    phase.push({
+      id: `maestro-po-promotion-${ladderId}`,
+      data: {
+        ...base,
+        senderId: "system",
+        title: "You made the playoffs!",
+        message: `Congratulations! You've made the playoffs in ${ladderName}. You have 10 days to play both your home and away games.`,
+        data: { ladderId, tab: "Playoffs" },
+      },
+    });
+  }
+  if (eliminated) {
+    phase.push({
+      id: `maestro-po-eliminated-${ladderId}`,
+      data: {
+        ...base,
+        senderId: "system",
+        title: "Playoffs have started",
+        message: `The playoffs in ${ladderName} have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!`,
+        data: { ladderId, tab: "Playoffs" },
+      },
+    });
+  }
+  if (cancelled) {
+    phase.push({
+      id: `maestro-po-cancelled-${ladderId}`,
+      data: {
+        ...base,
+        senderId: "system",
+        title: "Ladder cancelled",
+        message: `${ladderName} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full.`,
+        data: { ladderId, tab: "Summary" },
+      },
+    });
+  }
+  await commitInBatches(
+    [...entries, ...phase].map(
+      ({ id, data }) =>
+        (batch) =>
+          batch.set(doc(notificationsRef, id), data),
+    ),
+  );
+};
+
+const seedCourts = (courts) =>
+  courts.map(
+    (court) => (batch) => batch.set(doc(db, "courts", court.courtId), court),
+  );
+
+const expectedBracketSize = (size) =>
+  getLadderPlayoffBracketSize({
+    registeredCount: Math.max(size, LADDER_MIN_PLAYOFF_SIZE),
+    maxPlayers: size,
+    entrantCount: size,
+  });
+
+export const seedLadderPlayoffs = async ({
+  testUser,
+  generate = false,
+  size = MAESTRO_PO_SINGLES_SIZE,
+  variant = PLAYOFF_VARIANT.STANDARD,
+}) => {
   if (!testUser?.userId) {
     throw new Error("seedLadderPlayoffs: testUser with a userId is required");
   }
+  if (size < 2 || size > MAESTRO_PO_SINGLES_SIZE) {
+    throw new Error(
+      `seedLadderPlayoffs: size must be between 2 and ${MAESTRO_PO_SINGLES_SIZE}`,
+    );
+  }
   const now = new Date();
   const courts = CITIES.map(toCourt);
-  const size = MAESTRO_PO_SINGLES_SIZE;
+  const bracketSize = expectedBracketSize(size);
+  const testUserRank =
+    variant === PLAYOFF_VARIANT.NOT_QUALIFIED ? bracketSize : 0;
+  const cancelled = variant === PLAYOFF_VARIANT.CANCELLED;
+  const upcoming = variant === PLAYOFF_VARIANT.UPCOMING;
+  const ladderName = `Maestro Playoffs ${size}`;
 
   await deleteLadder(MAESTRO_PO_LADDER_ID);
 
@@ -226,22 +377,28 @@ export const seedLadderPlayoffs = async ({ testUser, generate = false }) => {
       doc(db, "ladders", MAESTRO_PO_LADDER_ID),
       buildLadderDoc({
         ladderId: MAESTRO_PO_LADDER_ID,
-        name: "Maestro Playoffs 2048",
+        name: ladderName,
         ladderType: LADDER_TYPE.SINGLES,
         size,
         testUser,
         now,
+        variant,
       }),
     ),
   );
 
   const entrants = [];
   for (let rank = 0; rank < size; rank += 1) {
-    const isTestUser = rank === 0;
+    const isTestUser = rank === testUserRank;
+    const fixtureNumber = rank < testUserRank ? rank + 1 : rank;
     const xp = 500;
     const user = isTestUser
       ? testUser
-      : fixtureUser(fixtureUserId(SINGLES_USER_PREFIX, rank), rank, xp);
+      : fixtureUser(
+          fixtureUserId(SINGLES_USER_PREFIX, fixtureNumber),
+          fixtureNumber,
+          xp,
+        );
     const stats = rankedStats(rank, now);
     const homeCourt = toHomeCourt(courts[rank % courts.length]);
 
@@ -250,7 +407,13 @@ export const seedLadderPlayoffs = async ({ testUser, generate = false }) => {
     }
     writes.push((batch) =>
       batch.set(
-        doc(db, "ladders", MAESTRO_PO_LADDER_ID, "ladderParticipants", user.userId),
+        doc(
+          db,
+          "ladders",
+          MAESTRO_PO_LADDER_ID,
+          "ladderParticipants",
+          user.userId,
+        ),
         {
           ...buildLadderParticipant(user),
           ...stats,
@@ -266,14 +429,15 @@ export const seedLadderPlayoffs = async ({ testUser, generate = false }) => {
         players: [toPlayer(user)],
         stats,
         homeCourt,
-        xp: isTestUser ? testUser.profileDetail?.XP ?? 0 : xp,
+        xp: isTestUser ? (testUser.profileDetail?.XP ?? 0) : xp,
       }),
     );
   }
 
   await commitInBatches(writes);
 
-  const bracket = generate
+  const shouldGenerate = generate && !cancelled && !upcoming;
+  const bracket = shouldGenerate
     ? await generateBracket({
         ladderId: MAESTRO_PO_LADDER_ID,
         entrants,
@@ -282,31 +446,43 @@ export const seedLadderPlayoffs = async ({ testUser, generate = false }) => {
       })
     : null;
 
+  await writePlayoffNotifications({
+    testUser,
+    ladderId: MAESTRO_PO_LADDER_ID,
+    ladderName,
+    promoted: shouldGenerate && testUserRank < bracketSize,
+    eliminated: shouldGenerate && testUserRank >= bracketSize,
+    cancelled,
+  });
+
   return {
     ladderId: MAESTRO_PO_LADDER_ID,
+    ladderName,
     entrants: size,
-    expectedBracketSize: 128,
+    expectedBracketSize: cancelled ? 0 : bracketSize,
     generated: bracket,
   };
 };
 
-/**
- * A 256-team doubles ladder past its playoff start (top 16). The test user's
- * team (with fixture partner 0001) is ranked #1; team n is fixtures
- * 2n and 2n + 1.
- */
 export const seedLadderPlayoffsDoubles = async ({
   testUser,
   generate = false,
+  teams: teamCount = MAESTRO_PO_DOUBLES_TEAMS,
 }) => {
   if (!testUser?.userId) {
     throw new Error(
       "seedLadderPlayoffsDoubles: testUser with a userId is required",
     );
   }
+  if (teamCount < 2 || teamCount > MAESTRO_PO_DOUBLES_TEAMS) {
+    throw new Error(
+      `seedLadderPlayoffsDoubles: teams must be between 2 and ${MAESTRO_PO_DOUBLES_TEAMS}`,
+    );
+  }
   const now = new Date();
   const courts = CITIES.map(toCourt);
-  const teamCount = MAESTRO_PO_DOUBLES_TEAMS;
+  const bracketSize = expectedBracketSize(teamCount);
+  const ladderName = `Maestro Playoffs Doubles ${teamCount}`;
 
   await deleteLadder(MAESTRO_PO_DOUBLES_LADDER_ID);
 
@@ -316,7 +492,7 @@ export const seedLadderPlayoffsDoubles = async ({
       doc(db, "ladders", MAESTRO_PO_DOUBLES_LADDER_ID),
       buildLadderDoc({
         ladderId: MAESTRO_PO_DOUBLES_LADDER_ID,
-        name: "Maestro Playoffs Doubles 256",
+        name: ladderName,
         ladderType: LADDER_TYPE.DOUBLES,
         size: teamCount,
         testUser,
@@ -359,7 +535,13 @@ export const seedLadderPlayoffsDoubles = async ({
     const homeCourt = toHomeCourt(courts[rank % courts.length]);
     writes.push((batch) =>
       batch.set(
-        doc(db, "ladders", MAESTRO_PO_DOUBLES_LADDER_ID, "ladderTeams", root.teamKey),
+        doc(
+          db,
+          "ladders",
+          MAESTRO_PO_DOUBLES_LADDER_ID,
+          "ladderTeams",
+          root.teamKey,
+        ),
         {
           ...root,
           XP: stats.competitionXP,
@@ -379,7 +561,7 @@ export const seedLadderPlayoffsDoubles = async ({
         players: players.map(toPlayer),
         stats,
         homeCourt,
-        xp: (rank === 0 ? testUser.profileDetail?.XP ?? 0 : xp) + xp,
+        xp: (rank === 0 ? (testUser.profileDetail?.XP ?? 0) : xp) + xp,
       }),
     );
   }
@@ -395,10 +577,18 @@ export const seedLadderPlayoffsDoubles = async ({
       })
     : null;
 
+  await writePlayoffNotifications({
+    testUser,
+    ladderId: MAESTRO_PO_DOUBLES_LADDER_ID,
+    ladderName,
+    promoted: generate,
+  });
+
   return {
     ladderId: MAESTRO_PO_DOUBLES_LADDER_ID,
+    ladderName,
     entrants: teamCount,
-    expectedBracketSize: 16,
+    expectedBracketSize: bracketSize,
     generated: bracket,
   };
 };
@@ -406,11 +596,11 @@ export const seedLadderPlayoffsDoubles = async ({
 export const cleanupLadderPlayoffsTestData = async () => {
   await Promise.all(MAESTRO_PO_LADDER_IDS.map(deleteLadder));
   await commitInBatches([
-    ...maestroPlayoffFixtureUserIds().map((userId) => (batch) =>
-      batch.delete(doc(db, "users", userId)),
+    ...maestroPlayoffFixtureUserIds().map(
+      (userId) => (batch) => batch.delete(doc(db, "users", userId)),
     ),
-    ...MAESTRO_PO_COURT_IDS.map((id) => (batch) =>
-      batch.delete(doc(db, "courts", id)),
+    ...MAESTRO_PO_COURT_IDS.map(
+      (id) => (batch) => batch.delete(doc(db, "courts", id)),
     ),
   ]);
   return {

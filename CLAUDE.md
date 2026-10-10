@@ -44,6 +44,12 @@ merged (the pinned commit must exist on `main` first).
 - No pull requests unless explicitly asked (the shared PR above is the exception,
   since landing shared changes requires one).
 - No explanatory code comments unless they are load-bearing or marking a stub.
+- DRY: logic that the app and `functions/` both need lives once in
+  `courtchamps-shared`; never write a second implementation of it (e.g. ladder
+  approve-and-score is `planLadderGameApproval`, called by both the app and the
+  auto-approval job). Before adding a function, search the repo and shared for
+  an existing one and reuse or extend it. Add a new version only when it is
+  absolutely necessary, and say why in the change.
 - Naming: use `user` for the current user and `opponent` for the other
   player/team. Do not use `me`/`mine` or `them`/`theirs`.
 

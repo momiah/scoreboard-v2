@@ -343,7 +343,7 @@ const JoinRequestModal = ({
   return (
     <Modal transparent visible={visible} animationType="slide">
       <ModalContainer>
-        <ModalContent>
+        <ModalContent testID="join-request-modal">
           {/* close button always present */}
           {loading ? (
             <>
@@ -457,11 +457,13 @@ const JoinRequestModal = ({
                     joiningCompetition
                   }
                   onPress={handleDeclineJoinRequest}
+                  testID="join-request-decline"
                 >
                   <CloseButtonText>Decline</CloseButtonText>
                 </Button>
                 <Button
                   onPress={handleAcceptJoinRequest}
+                  testID="join-request-accept"
                   disabled={
                     isRead ||
                     competitionFull ||

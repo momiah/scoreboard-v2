@@ -38,6 +38,10 @@ export const seedAddApproveGameFlow = async ({
   extraPendingGames = 0,
   allCheckedIn = true,
   withOpponentDispute = false,
+  ladderStatus = /** @type {string} */ (LADDER_STATUS.REGISTRATION_CLOSED),
+  courtCoords = /** @type {{ latitude: number; longitude: number } | null} */ (
+    null
+  ),
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -161,7 +165,7 @@ export const seedAddApproveGameFlow = async ({
     ladderType: LADDER_TYPE.SINGLES,
     genderType: "Mixed",
     courtIds: [],
-    status: LADDER_STATUS.REGISTRATION_CLOSED,
+    status: ladderStatus,
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
@@ -219,6 +223,7 @@ export const seedAddApproveGameFlow = async ({
           city: "Test",
           country: "United Kingdom",
           countryCode: "GB",
+          ...(courtCoords ?? {}),
         },
       },
       bestOf: BEST_OF,

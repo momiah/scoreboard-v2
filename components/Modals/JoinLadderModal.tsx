@@ -21,6 +21,12 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 const SERVICE_CHARGE_RATE = 0.1;
 
+const JOIN_FAILURE_MESSAGES: Record<string, string> = {
+  closed: "Registration for this ladder has closed.",
+  not_open: "Registration for this ladder hasn't opened yet.",
+  full: "This ladder is full.",
+};
+
 const currencySymbol = (currencyType: string): string =>
   CURRENCY_SYMBOLS[currencyType] ?? "";
 
@@ -74,11 +80,17 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
     setErrorMessage(null);
     setProcessing(true);
     try {
-      const { success } = await joinLadder(ladder.ladderId, currentUser);
+      const { success, reason } = await joinLadder(
+        ladder.ladderId,
+        currentUser,
+      );
       if (success) {
         setConfirmationVisible(true);
       } else {
-        setErrorMessage("Something went wrong joining the ladder.");
+        setErrorMessage(
+          (reason && JOIN_FAILURE_MESSAGES[reason]) ||
+            "Something went wrong joining the ladder.",
+        );
       }
     } finally {
       setProcessing(false);

@@ -1,0 +1,33 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-ladder-playoffs-generated"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Congratulations! You've made the playoffs in Maestro Playoffs 2048. You have 10 days to play both your home and away games..*"
+    timeout: 20000
+- tapOn: ".*Congratulations! You've made the playoffs in Maestro Playoffs 2048. You have 10 days to play both your home and away games..*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoffs-bracket"
+    timeout: 40000
+- assertVisible:
+    id: "bracket-game-r1-s8"
+- assertVisible: ".*P0008 S.*"
+- assertVisible: ".*Round of 128.*"
