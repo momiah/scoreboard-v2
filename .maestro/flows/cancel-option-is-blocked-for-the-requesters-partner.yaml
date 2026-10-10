@@ -1,0 +1,51 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-disband-accepted-requested-by-partner"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Schedule.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Schedule.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-disband-match"
+    timeout: 20000
+- tapOn:
+    id: "schedule-card-maestro-disband-match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- tapOn:
+    id: "match-details-burger"
+- extendedWaitUntil:
+    visible:
+      id: "match-menu-CancelMatch"
+      text: ".*Cancellation requested.*"
+    timeout: 10000
+- assertNotVisible:
+    id: "match-menu-CancelMatch"
+    text: ".*Cancel Match.*"
+- tapOn:
+    id: "match-menu-CancelMatch"
+- extendedWaitUntil:
+    visible: "Cancellation already requested"
+    timeout: 10000
+- assertNotVisible: "Send Request"

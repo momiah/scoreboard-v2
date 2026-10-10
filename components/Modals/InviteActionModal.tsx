@@ -325,7 +325,7 @@ const InviteActionModal = ({
   return (
     <Modal transparent visible={visible} animationType="slide">
       <ModalContainer>
-        <ModalContent>
+        <ModalContent testID="invite-action-modal">
           {loading ? (
             <ActivityIndicator size="large" color="#fff" />
           ) : (
@@ -527,6 +527,7 @@ const InviteActionModal = ({
                     style={{ backgroundColor: "red" }}
                     onPress={handleDeclineInvite}
                     disabled={isDisabled}
+                    testID="invite-action-decline"
                   >
                     <CloseButtonText>Decline</CloseButtonText>
                     {declining && (
@@ -537,7 +538,11 @@ const InviteActionModal = ({
                       />
                     )}
                   </Button>
-                  <Button onPress={handleAcceptInvite} disabled={isDisabled}>
+                  <Button
+                    onPress={handleAcceptInvite}
+                    disabled={isDisabled}
+                    testID="invite-action-accept"
+                  >
                     <AcceptButtonText>Accept</AcceptButtonText>
                     {accepting && (
                       <ActivityIndicator

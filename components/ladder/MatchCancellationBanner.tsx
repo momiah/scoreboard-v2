@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { StyleSheet } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -28,10 +29,12 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
   if (action === LADDER_MATCH_CANCEL_ACTION.AWAITING_RESPONSE) {
     return (
       <Banner testID="match-cancellation-awaiting">
-        <Ionicons name="time-outline" size={18} color="#f5c451" />
-        <BannerText>
-          You asked to cancel this match. Waiting for your opponent to respond.
-        </BannerText>
+        <MessageRow>
+          <Ionicons name="time-outline" size={16} color="#9fb8c8" />
+          <BannerText>
+            Waiting for your opponent to respond to the cancellation
+          </BannerText>
+        </MessageRow>
       </Banner>
     );
   }
@@ -49,30 +52,26 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
 
   return (
     <Banner testID="match-cancellation-request">
-      <Ionicons name="alert-circle-outline" size={18} color="#f5c451" />
-      <BannerBody>
-        <BannerText>
-          Your opponent has asked to cancel this match. If you decline, the
-          match goes ahead and must be played. Use the Chat Room to talk it
-          over.
-        </BannerText>
-        <Actions>
-          <DeclineButton
-            disabled={responding}
-            onPress={decline}
-            testID="match-cancellation-decline"
-          >
-            <DeclineText>Decline</DeclineText>
-          </DeclineButton>
-          <AcceptButton
-            disabled={responding}
-            onPress={() => confirmAcceptCancellation({ ladderId, match })}
-            testID="match-cancellation-accept"
-          >
-            <AcceptText>Accept Cancellation</AcceptText>
-          </AcceptButton>
-        </Actions>
-      </BannerBody>
+      <MessageRow>
+        <Ionicons name="alert-circle-outline" size={16} color="#9fb8c8" />
+        <BannerText>Your opponent asked to cancel this match</BannerText>
+      </MessageRow>
+      <Actions>
+        <DeclineButton
+          disabled={responding}
+          onPress={decline}
+          testID="match-cancellation-decline"
+        >
+          <DeclineText>Decline</DeclineText>
+        </DeclineButton>
+        <AcceptButton
+          disabled={responding}
+          onPress={() => confirmAcceptCancellation({ ladderId, match })}
+          testID="match-cancellation-accept"
+        >
+          <AcceptText>Accept</AcceptText>
+        </AcceptButton>
+      </Actions>
     </Banner>
   );
 };
@@ -80,27 +79,27 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
 export default MatchCancellationBanner;
 
 const Banner = styled.View({
-  flexDirection: "row",
   gap: 10,
   marginHorizontal: 20,
+  marginTop: 12,
   marginBottom: 12,
   padding: 12,
-  borderRadius: 10,
-  backgroundColor: "rgba(245, 196, 81, 0.1)",
-  borderWidth: 1,
-  borderColor: "rgba(245, 196, 81, 0.4)",
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.05)",
+  borderWidth: StyleSheet.hairlineWidth,
+  borderColor: "rgba(255, 255, 255, 0.15)",
 });
 
-const BannerBody = styled.View({
-  flex: 1,
-  gap: 10,
+const MessageRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
 });
 
 const BannerText = styled.Text({
   flex: 1,
-  color: "#f5c451",
+  color: "#cbd5e1",
   fontSize: 13,
-  lineHeight: 18,
 });
 
 const Actions = styled.View({
@@ -110,29 +109,33 @@ const Actions = styled.View({
 
 const DeclineButton = styled.TouchableOpacity({
   flex: 1,
-  paddingVertical: 10,
+  height: 36,
   borderRadius: 8,
   borderWidth: 1,
-  borderColor: "#f5c451",
+  borderColor: "rgba(255, 255, 255, 0.25)",
   alignItems: "center",
+  justifyContent: "center",
 });
 
 const DeclineText = styled.Text({
-  color: "#f5c451",
-  fontWeight: "bold",
+  color: "#cbd5e1",
+  fontWeight: "600",
   fontSize: 13,
 });
 
 const AcceptButton = styled.TouchableOpacity({
   flex: 1,
-  paddingVertical: 10,
+  height: 36,
   borderRadius: 8,
-  backgroundColor: "#FF4B6E",
+  borderWidth: 1,
+  borderColor: "rgba(255, 75, 110, 0.6)",
+  backgroundColor: "rgba(255, 75, 110, 0.12)",
   alignItems: "center",
+  justifyContent: "center",
 });
 
 const AcceptText = styled.Text({
-  color: "#ffffff",
-  fontWeight: "bold",
+  color: "#ff8aa0",
+  fontWeight: "600",
   fontSize: 13,
 });

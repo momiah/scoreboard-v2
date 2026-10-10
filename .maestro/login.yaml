@@ -5,7 +5,7 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible:
       id: "maestro-harness-unlock"
-    timeout: 15000
+    timeout: 60000
     optional: true
 - runFlow:
     when:
@@ -25,7 +25,7 @@ appId: com.courtchamp
       - extendedWaitUntil:
           visible:
             id: "maestro-harness-unlock"
-          timeout: 15000
+          timeout: 60000
 - tapOn:
     id: "maestro-harness-unlock"
     repeat: 5
@@ -33,4 +33,4 @@ appId: com.courtchamp
 - extendedWaitUntil:
     visible:
       id: "maestro-seed-reject-game-flow"
-    timeout: 10000
+    timeout: 30000

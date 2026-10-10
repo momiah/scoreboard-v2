@@ -1,5 +1,10 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { Modal, ActivityIndicator } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+} from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -50,6 +55,7 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const isDoubles =
     match.ladderType === LADDER_TYPE.DOUBLES ||
@@ -60,6 +66,7 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
       setTargetKey(null);
       setReason(null);
       setDescription("");
+      setNotice(null);
       return;
     }
     let active = true;
@@ -159,6 +166,7 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
   const handleSubmit = async () => {
     const option = options.find((o) => o.key === targetKey);
     if (!option || !reason || !currentUserId) return;
+    setNotice(null);
     setSubmitting(true);
     try {
       const { success, reason: failure } = await submitReport({
@@ -174,9 +182,9 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
         showBottomToast("Report submitted for review", "success");
         onClose();
       } else if (failure === "exists") {
-        showBottomToast("You've already reported this", "info");
+        setNotice("You've already reported this");
       } else {
-        showBottomToast("Couldn't submit the report", "error");
+        setNotice("Couldn't submit the report. Please try again.");
       }
     } finally {
       setSubmitting(false);
@@ -190,8 +198,16 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Backdrop activeOpacity={1} onPress={onClose}>
-        <Sheet activeOpacity={1} onPress={() => {}} testID="report-player-modal">
+      <Backdrop accessible={false} activeOpacity={1} onPress={onClose}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+        <Sheet
+          accessible={false}
+          activeOpacity={1}
+          onPress={() => {}}
+          testID="report-player-modal"
+        >
           <Handle />
           <TitleRow>
             <Title>Report a player</Title>
@@ -252,6 +268,8 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
                 />
               )}
 
+              {notice && <Notice testID="report-notice">{notice}</Notice>}
+
               <SubmitButton
                 disabled={!canSubmit}
                 isDisabled={!canSubmit}
@@ -266,6 +284,7 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
             </>
           )}
         </Sheet>
+        </KeyboardAvoidingView>
       </Backdrop>
     </Modal>
   );
@@ -373,6 +392,13 @@ const ReasonChipText = styled.Text<{ selected: boolean }>(
     fontWeight: "500",
   }),
 );
+
+const Notice = styled.Text({
+  marginTop: 14,
+  color: "#f5c451",
+  fontSize: 13,
+  textAlign: "center",
+});
 
 const DescriptionInput = styled.TextInput({
   marginTop: 14,

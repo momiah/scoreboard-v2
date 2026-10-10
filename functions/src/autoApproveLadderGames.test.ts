@@ -109,26 +109,43 @@ interface Fixture {
   users: Record<string, unknown>;
   participants?: Record<string, unknown>;
   teams?: Record<string, unknown>;
+  ladderStatus?: string;
 }
 
-const makeDb = ({ match, users, participants = {}, teams = {} }: Fixture) => {
+type Store = Record<string, unknown>;
+
+interface Ref {
+  path: string;
+  store: Store;
+  id: string;
+  get: () => Promise<{ exists: boolean; data: () => unknown }>;
+}
+
+const makeDb = ({
+  match,
+  users,
+  participants = {},
+  teams = {},
+  ladderStatus = "registrationClosed",
+}: Fixture) => {
+  const matches: Store = { m1: match };
   const batch = {
     update: jest.fn(),
     set: jest.fn(),
     commit: jest.fn().mockResolvedValue(undefined),
   };
   const matchWhere = jest.fn();
-  const docRef = (
-    path: string,
-    store: Record<string, unknown>,
-    id: string,
-  ) => ({
+  const docRef = (path: string, store: Store, id: string): Ref => ({
     path,
+    store,
+    id,
     get: async () => ({
       exists: store[id] !== undefined,
-      data: () => store[id],
+      data: () =>
+        store[id] === undefined ? undefined : structuredClone(store[id]),
     }),
   });
+  const matchRef = docRef("ladderMatches/m1", matches, "m1");
   const ladderCollections = (name: string) => {
     if (name === "ladderMatches") {
       return {
@@ -139,8 +156,8 @@ const makeDb = ({ match, users, participants = {}, teams = {} }: Fixture) => {
               docs: [
                 {
                   id: "m1",
-                  ref: { path: "ladderMatches/m1" },
-                  data: () => match,
+                  ref: matchRef,
+                  data: () => structuredClone(matches.m1),
                 },
               ],
             }),
@@ -153,13 +170,45 @@ const makeDb = ({ match, users, participants = {}, teams = {} }: Fixture) => {
       doc: (id: string) => docRef(`${name}/${id}`, store, id),
     };
   };
-  const ladderRef = { collection: ladderCollections };
+  const ladderRef = {
+    collection: ladderCollections,
+    get: async () => ({
+      exists: true,
+      data: () => ({ status: ladderStatus }),
+    }),
+  };
+  const transaction = {
+    get: (ref: Ref) => ref.get(),
+    set: (ref: Ref, data: unknown) => {
+      ref.store[ref.id] = structuredClone(data);
+      batch.set(ref, data);
+    },
+    update: (ref: Ref, data: Record<string, unknown>) => {
+      ref.store[ref.id] = {
+        ...(ref.store[ref.id] as Record<string, unknown>),
+        ...structuredClone(data),
+      };
+      batch.update(ref, data);
+    },
+  };
   const db = {
-    batch: () => batch,
+    runTransaction: async <T,>(fn: (tx: typeof transaction) => Promise<T>) => {
+      const result = await fn(transaction);
+      await batch.commit();
+      return result;
+    },
     collection: (name: string) => {
       if (name === "ladders") {
         return {
-          get: async () => ({ docs: [{ id: "L1", ref: ladderRef }] }),
+          get: async () => ({
+            docs: [
+              {
+                id: "L1",
+                ref: ladderRef,
+                data: () => ({ status: ladderStatus }),
+              },
+            ],
+          }),
           doc: () => ladderRef,
         };
       }
@@ -169,11 +218,14 @@ const makeDb = ({ match, users, participants = {}, teams = {} }: Fixture) => {
   return { db, batch, matchWhere };
 };
 
+const lastCallByPath = (mock: jest.Mock, path: string) =>
+  [...mock.mock.calls].reverse().find(([ref]) => ref.path === path)?.[1];
+
 const setByPath = (batch: { set: jest.Mock }, path: string) =>
-  batch.set.mock.calls.find(([ref]) => ref.path === path)?.[1];
+  lastCallByPath(batch.set, path);
 
 const updateByPath = (batch: { update: jest.Mock }, path: string) =>
-  batch.update.mock.calls.find(([ref]) => ref.path === path)?.[1];
+  lastCallByPath(batch.update, path);
 
 const singlesFixture = (games: unknown[]): Fixture => ({
   match: {
@@ -427,6 +479,75 @@ describe("runAutoApproveLadderGames", () => {
     expect(updateByPath(batch, "users/pt").profileDetail.XP).toBe(85);
     expect(updateByPath(batch, "users/o1").profileDetail.XP).toBe(120);
     expect(updateByPath(batch, "users/o2").profileDetail.XP).toBe(120);
+  });
+
+  it("leaves every game alone once the ladder is in playoffs", async () => {
+    const { db, batch } = makeDb({
+      ...singlesFixture([singlesGame(1), shell(2)]),
+      ladderStatus: "playoffs",
+    });
+    mockFirestore.mockReturnValue(db);
+
+    await runAutoApproveLadderGames();
+
+    expect(batch.commit).not.toHaveBeenCalled();
+    expect(batch.update).not.toHaveBeenCalled();
+  });
+
+  it("keeps approving while registration is closed but playoffs have not started", async () => {
+    const { db, batch } = makeDb({
+      ...singlesFixture([singlesGame(1), shell(2)]),
+      ladderStatus: "registrationClosed",
+    });
+    mockFirestore.mockReturnValue(db);
+
+    await runAutoApproveLadderGames();
+
+    expect(batch.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("ages a game from the server report time, not the client createdAt", async () => {
+    const fixture = singlesFixture([
+      singlesGame(1, { createdAt: hoursAgo(100) }),
+      shell(2),
+    ]);
+    fixture.match.gameReportedAt = { "m1-g1": hoursAgo(2) };
+    const { db, batch } = makeDb(fixture);
+    mockFirestore.mockReturnValue(db);
+
+    await runAutoApproveLadderGames();
+
+    expect(batch.commit).not.toHaveBeenCalled();
+  });
+
+  it("approves once the server report time is past 24h even if the client clock says new", async () => {
+    const fixture = singlesFixture([
+      singlesGame(1, { createdAt: hoursAgo(1) }),
+      shell(2),
+    ]);
+    fixture.match.gameReportedAt = { "m1-g1": hoursAgo(30) };
+    const { db, batch } = makeDb(fixture);
+    mockFirestore.mockReturnValue(db);
+
+    await runAutoApproveLadderGames();
+
+    expect(batch.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("survives a failed transaction without throwing", async () => {
+    const { db, batch } = makeDb(
+      singlesFixture([singlesGame(1), shell(2), shell(3), shell(4), shell(5)]),
+    );
+    const failing = jest
+      .spyOn(db, "runTransaction")
+      .mockRejectedValueOnce(new Error("contention"));
+    mockFirestore.mockReturnValue(db);
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await expect(runAutoApproveLadderGames()).resolves.toBeUndefined();
+
+    expect(failing).toHaveBeenCalledTimes(1);
+    expect(batch.commit).not.toHaveBeenCalled();
   });
 
   it("does not throw when reading ladders fails", async () => {

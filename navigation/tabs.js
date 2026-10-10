@@ -428,6 +428,7 @@ const Tabs = () => {
           name="ChatsTab"
           component={ChatsStack}
           options={{
+            tabBarButtonTestID: "tab-chats",
             tabBarBadge: unreadChats > 0 ? unreadChats : null,
             tabBarBadgeStyle: {
               backgroundColor: "red",

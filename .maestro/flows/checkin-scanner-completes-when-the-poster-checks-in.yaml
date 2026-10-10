@@ -1,0 +1,88 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-cancel-accepted-opponent-posted"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "maestro-mock-checkin-poster-checks-in-delayed"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- setLocation:
+    latitude: 51.5
+    longitude: -0.12
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Schedule.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Schedule.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-cancel-match"
+    timeout: 20000
+- tapOn:
+    id: "schedule-card-maestro-cancel-match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Press here to checkin.*"
+    timeout: 15000
+- tapOn:
+    point: "78%,23%"
+- extendedWaitUntil:
+    visible:
+      id: "location-verifier-verified"
+    timeout: 30000
+- tapOn:
+    id: "location-verifier-checkin"
+- extendedWaitUntil:
+    visible:
+      id: "match-checkin-modal"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "match-checkin-grant-permission"
+    commands:
+      - tapOn:
+          id: "match-checkin-grant-permission"
+      - runFlow:
+          when:
+            visible: "OK"
+          commands:
+            - tapOn: "OK"
+- extendedWaitUntil:
+    visible:
+      id: "match-checkin-code-input"
+    timeout: 20000
+- tapOn:
+    id: "match-checkin-code-input"
+- inputText: "-MATCH"
+- tapOn:
+    id: "match-checkin-code-submit"
+- extendedWaitUntil:
+    visible:
+      id: "match-checkin-waiting-self"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "match-checkin-success"
+    timeout: 120000

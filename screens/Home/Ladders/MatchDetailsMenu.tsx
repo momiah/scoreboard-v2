@@ -14,6 +14,10 @@ import type { LadderMatch, LadderType } from "@shared/types";
 import { PopupContext } from "../../../context/PopupContext";
 import { UserContext } from "../../../context/UserContext";
 import { useLadderMatchCancellation } from "../../../hooks/useLadderMatchCancellation";
+import {
+  LADDER_MATCH_CANCEL_ACTION,
+  getLadderMatchCancelAction,
+} from "../../../helpers/ladderMatchCancellation";
 import ReportPlayerModal from "../../../components/Modals/ReportPlayerModal";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
@@ -74,6 +78,33 @@ const MatchDetailsMenu: React.FC = () => {
   const { startCancellation } = useLadderMatchCancellation();
   const [reportVisible, setReportVisible] = useState(false);
 
+  const cancelAction = getLadderMatchCancelAction(match, currentUser?.userId);
+  const cancelPending =
+    cancelAction === LADDER_MATCH_CANCEL_ACTION.AWAITING_RESPONSE;
+  const cancelNeedsResponse =
+    cancelAction === LADDER_MATCH_CANCEL_ACTION.RESPOND;
+
+  const displayOption = (option: MenuOption): MenuOption => {
+    if (option.action !== "CancelMatch") return option;
+    if (cancelPending) {
+      return {
+        ...option,
+        label: "Cancellation requested",
+        icon: "time-outline",
+        color: "#9fb8c8",
+      };
+    }
+    if (cancelNeedsResponse) {
+      return {
+        ...option,
+        label: "Respond to request",
+        icon: "alert-circle-outline",
+        color: "#f5c451",
+      };
+    }
+    return option;
+  };
+
   const handleReschedule = () => {
     showBottomToast("Rescheduling a match is coming soon", "info");
   };
@@ -133,11 +164,17 @@ const MatchDetailsMenu: React.FC = () => {
       </Header>
 
       <MenuList>
-        {MENU_OPTIONS.map((option) => (
+        {MENU_OPTIONS.map(displayOption).map((option) => (
           <MenuItem
-            key={option.label}
+            key={option.action}
             onPress={() => handlePress(option.action)}
             testID={`match-menu-${option.action}`}
+            activeOpacity={
+              option.action === "CancelMatch" && cancelPending ? 1 : 0.2
+            }
+            style={{
+              opacity: option.action === "CancelMatch" && cancelPending ? 0.6 : 1,
+            }}
           >
             <LeftContainer>
               <Ionicons
@@ -149,7 +186,9 @@ const MatchDetailsMenu: React.FC = () => {
                 {option.label}
               </MenuText>
             </LeftContainer>
-            <Ionicons name="chevron-forward" size={18} color="#666" />
+            {!(option.action === "CancelMatch" && cancelPending) && (
+              <Ionicons name="chevron-forward" size={18} color="#666" />
+            )}
           </MenuItem>
         ))}
       </MenuList>

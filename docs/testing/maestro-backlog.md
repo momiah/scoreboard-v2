@@ -18,24 +18,16 @@ count. Cancelling: Match Details → menu (☰) → Cancel Match. Any player in 
 match (poster, accepter, or either partner) can cancel a posted or accepted
 match until a game has been reported.
 
-Flows to cover (singles has no leave option, so doubles only):
+Covered by `team-disband-*` flows (seeds in `maestro/seeds/seedTeamDisbandFlow.js`):
+registration open (1), posted match blocks then cancelling it allows (2), an
+accepted match blocks (3, blocked only), one approved game blocks (6), games
+only in another completed ladder don't count (7), registration closed and
+playoffs block (8), completed ladder allows (9).
 
-1. Registration open, no matches → Disband succeeds; the team is gone from the
-   ladder and the participant count drops by one.
-2. Team has a **posted** match → "Can't disband" (cancel it first). Cancel the
-   match from Match Details → Cancel Match → Disband now succeeds.
-3. Team has an **accepted** match it accepted from an opponent → "Can't
-   disband". Cancel it from Match Details → Cancel Match → Disband succeeds.
-4. Same as 3, but the **partner** cancels the match → Disband succeeds.
-5. Opponent's team posted, this team accepted, a game has been reported →
-   Cancel Match shows "This match can no longer be cancelled"; Disband still
-   blocked.
-6. One approved game in this ladder → "Can't disband" (completed a game in a
-   ladder that's still running).
-7. Approved games only in a different, completed ladder → Disband succeeds.
-8. Ladder registration closed (and separately, in playoffs) → "Can't disband"
-   (registration has closed).
-9. Ladder completed → Disband succeeds.
+Also covered: the partner's request agreed by the opponent (4), the user's own
+request agreed by the opponent (3b), an unanswered request blocks, and a
+reported game blocks both Cancel Match and Disband (5). Singles has no leave
+option, so disbanding is doubles only.
 
 ## Match cancellation
 
@@ -48,28 +40,31 @@ Helpers in `helpers/ladderMatchCancellation.ts`, UI via
   Details → menu → Cancel Match.
 - **Accepted** match, no game reported: Cancel Match sends a cancellation
   request. The opposing side gets a notification and a banner on Match Details
-  with Accept Cancellation / Decline. The requester's side sees "Waiting for
+  with Accept / Decline. The requester's side sees "Waiting for
   your opponent to respond". The requester's partner cannot respond.
 - Accept → match cancelled, requester's side notified, court fee refunded to
   the accepter server-side. Decline → request cleared, requester's side
   notified, match goes ahead (play it or face a no-show).
 - A reported game → "This match can no longer be cancelled".
 
-Flows to cover (singles and doubles):
+Covered by `cancel-*` flows (seeds in
+`maestro/seeds/seedMatchCancellationFlow.js` and `seedTeamDisbandFlow.js`; the
+opponent's response is mocked by `mockOpponentCancellationResponse`): cancelling
+a posted match from Matchmaking and from Ladder Menu → Current Posted Matches;
+requesting cancellation of an accepted match and the opponent accepting or
+declining; receiving an opponent's request and accepting or declining it; a
+second request being refused; a reported game blocking cancellation; and the
+requester's partner seeing "Waiting" with no Accept or Decline (doubles).
 
-1. Post a match → open it in Matchmaking → Cancel Match → it disappears from
-   Matchmaking.
-2. Post a match → Ladder Menu → Current Posted Matches lists it live → Cancel →
-   it leaves the list and Matchmaking.
-3. Accepted match → poster requests → opponent sees the banner → Accept →
-   match cancelled for both; requester notified.
-4. Same, opponent Declines → banner clears; match still accepted; requester
-   notified.
-5. Doubles: requester's partner sees "Waiting…" (no Accept/Decline); either
-   opponent can respond.
-6. A second request while one is pending is refused ("Waiting for your
-   opponent").
-7. Game reported → Cancel Match shows "This match can no longer be cancelled".
+Also covered: the app sends the right notification on each step (the request
+reaches the opponent; accepting or declining reaches the requester's whole
+side, both players in doubles), the requester sees the response notification
+and it opens the match's ladder, and in doubles either opposing player can
+respond.
+
+Still to cover:
+
+- The court-fee refund on accept (server-side; see below).
 
 ## Refunds and the platform fee
 

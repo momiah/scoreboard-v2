@@ -21,8 +21,12 @@ import type { LadderJoinUser } from "@shared/helpers";
 
 export type LadderJoinFailureReason = "closed" | "not_open" | "full";
 
-export type TeamJoinFailureReason =
+export type AddLadderTeamFailureReason =
   | LadderJoinFailureReason
+  | "member_conflict";
+
+export type TeamJoinFailureReason =
+  | AddLadderTeamFailureReason
   | "team_not_found"
   | "team_pending"
   | "team_incomplete";
@@ -35,7 +39,8 @@ export interface LadderJoinOutcome {
 
 export interface AddLadderTeamOutcome {
   success: boolean;
-  reason?: LadderJoinFailureReason;
+  reason?: AddLadderTeamFailureReason;
+  conflictUserIds?: string[];
 }
 
 export interface CreateTeamOutcome {
@@ -73,7 +78,7 @@ export interface CreateLadderMatchOutcome {
   ladderMatch: LadderMatch | null;
 }
 
-export type AcceptLadderMatchFailureReason = "unavailable" | "error";
+export type AcceptLadderMatchFailureReason = "unavailable" | "frozen" | "error";
 
 export interface AcceptLadderMatchOutcome {
   success: boolean;
@@ -90,6 +95,7 @@ export interface CheckInLadderMatchOutcome {
 export type UpdateLadderGameFailureReason =
   | "unavailable"
   | "error"
+  | "frozen"
   | "match_decided";
 
 export interface UpdateLadderGameOutcome {
@@ -117,6 +123,7 @@ export interface CancelLadderMatchOutcome {
 export type ApproveLadderGameFailureReason =
   | "unavailable"
   | "not_opponent"
+  | "frozen"
   | "error";
 
 export interface ApproveLadderGameOutcome {

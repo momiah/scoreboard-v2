@@ -3,8 +3,10 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
@@ -359,6 +361,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const { showBottomToast } = useContext(PopupContext);
   const [permission, requestPermission] = useCameraPermissions();
   const [noShowReported, setNoShowReported] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [codeFocused, setCodeFocused] = useState(false);
 
   const isPoster = !!currentUserId && currentUserId === match.createdBy;
   const reference = getLadderMatchReference(match.ladderMatchId);
@@ -410,6 +414,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     return () => clearInterval(id);
   }, [visible, noShowUnlockMs]);
 
+  const matchStarted = matchStart != null && nowMs >= matchStart.getTime();
   const graceElapsed = noShowUnlockMs != null && nowMs >= noShowUnlockMs;
   const noShowCountdownMs =
     noShowUnlockMs != null ? Math.max(0, noShowUnlockMs - nowMs) : 0;
@@ -419,7 +424,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     match.participants.includes(currentUserId) &&
     !checkinComplete &&
     !noShowReported &&
-    noShowUnlockMs != null;
+    matchStarted;
   const canReportNoShow = showNoShowSection && graceElapsed;
 
   const handleReportNoShow = () => {
@@ -445,10 +450,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
                 "success",
               );
             } else {
-              showBottomToast(
-                "Couldn't report the no-show. Please try again.",
-                "error",
-              );
+              setNotice("Couldn't report the no-show. Please try again.");
             }
           },
         },
@@ -463,6 +465,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       setCode("");
       setLiveMatch(match);
       setNoShowReported(false);
+      setNotice(null);
     }
   }, [visible, match]);
 
@@ -487,11 +490,11 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
 
   const guardParticipant = (): boolean => {
     if (!currentUserId) {
-      showBottomToast("You need to be signed in to check in", "error");
+      setNotice("You need to be signed in to check in");
       return false;
     }
     if (!match.participants.includes(currentUserId)) {
-      showBottomToast("This code isn't for a match you're in", "error");
+      setNotice("This code isn't for a match you're in");
       return false;
     }
     return true;
@@ -512,7 +515,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     );
     setProcessing(false);
     if (!success) {
-      showBottomToast("Couldn't complete check-in. Please try again.", "error");
+      setNotice("Couldn't complete check-in. Please try again.");
       handledRef.current = false;
     }
   };
@@ -532,7 +535,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     );
     setProcessing(false);
     if (!success) {
-      showBottomToast("Couldn't complete check-in. Please try again.", "error");
+      setNotice("Couldn't complete check-in. Please try again.");
       handledRef.current = false;
     }
   };
@@ -541,22 +544,19 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     if (handledRef.current || processing) return;
     const payload = parseLadderCheckInPayload(result.data);
     if (!payload || !isValidLadderCheckInScan(match, result.data)) {
-      showBottomToast("That QR code is for a different match", "error");
+      setNotice("That QR code is for a different match");
       return;
     }
     if (payload.userId === currentUserId) {
-      showBottomToast("That's your own code — scan another player's", "info");
+      setNotice("That's your own code — scan another player's");
       return;
     }
     if (!match.participants.includes(payload.userId)) {
-      showBottomToast("That code isn't for a player in this match", "error");
+      setNotice("That code isn't for a player in this match");
       return;
     }
     if (hasUserCheckedIn(liveMatch, payload.userId)) {
-      showBottomToast(
-        "That player is already checked in — scan the other player's QR",
-        "info",
-      );
+      setNotice("That player is already checked in — scan the other player's QR");
       return;
     }
     recordHandshake(payload.userId);
@@ -565,12 +565,10 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const handleSubmitCode = () => {
     if (processing) return;
     if (code.trim().toUpperCase() !== reference) {
-      showBottomToast(
-        "That code doesn't match. Check it with your opponent.",
-        "error",
-      );
+      setNotice("That code doesn't match. Check it with your opponent.");
       return;
     }
+    setNotice(null);
     recordSelfCheckIn();
   };
 
@@ -620,6 +618,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       <>
         <SectionTitle>Scan another player&apos;s code</SectionTitle>
         <Helper>Point your camera at the QR code on their screen.</Helper>
+        {!codeFocused && (
         <ScannerFrame>
           <CameraView
             style={{ flex: 1 }}
@@ -634,6 +633,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             </ScannerOverlay>
           )}
         </ScannerFrame>
+        )}
         <EmergencyRow testID="match-checkin-reference">
           <EmergencyLabel>
             Can&apos;t scan? Enter the match code to check in
@@ -650,6 +650,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               editable={!processing}
               returnKeyType="done"
               onSubmitEditing={handleSubmitCode}
+              onFocus={() => setCodeFocused(true)}
+              onBlur={() => setCodeFocused(false)}
               testID="match-checkin-code-input"
             />
             <CodeSubmit
@@ -675,6 +677,10 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       onRequestClose={onClose}
     >
       <ModalContainer>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
         <ModalContent testID="match-checkin-modal">
           <CloseButton onPress={onClose} testID="match-checkin-close">
             <AntDesign name="close-circle" size={30} color="red" />
@@ -750,6 +756,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               </NoShowButtonText>
             </NoShowButton>
           )}
+          {notice && <Notice testID="match-checkin-notice">{notice}</Notice>}
           {noShowReported && (
             <NoShowNote testID="match-checkin-no-show-reported">
               <Ionicons name="time-outline" size={16} color="#9fb8c8" />
@@ -759,6 +766,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
             </NoShowNote>
           )}
         </ModalContent>
+        </KeyboardAvoidingView>
       </ModalContainer>
     </Modal>
   );
@@ -773,6 +781,13 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+});
+
+const Notice = styled.Text({
+  marginTop: 14,
+  color: "#f5c451",
+  fontSize: 13,
+  textAlign: "center",
 });
 
 const ModalContent = styled.View({

@@ -9,16 +9,11 @@ import type {
   UserProfile,
 } from "courtchamps-shared/types";
 import {
-  resolveLadderMatchOutcome,
-  hasOpenLadderDispute,
-  scoreSinglesLadderGame,
-  scoreDoublesLadderGame,
+  isLadderMatchPlayFrozen,
+  planLadderGameApproval,
 } from "courtchamps-shared/helpers";
 
-import {
-  isDueForAutoApproval,
-  markGameApproved,
-} from "./helpers/autoApproveHelpers";
+import { isDueForAutoApproval } from "./helpers/autoApproveHelpers";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
@@ -38,6 +33,7 @@ const processLadder = async (
   db: admin.firestore.Firestore,
   ladderDoc: admin.firestore.QueryDocumentSnapshot,
 ): Promise<number> => {
+  if (isLadderMatchPlayFrozen(ladderDoc.data().status)) return 0;
   let approved = 0;
   const matchesSnapshot = await ladderDoc.ref
     .collection(LADDER_MATCHES)
@@ -99,124 +95,109 @@ export const autoApproveLadderGames = onSchedule(
   },
 );
 
+const approveDueGame = (
+  db: admin.firestore.Firestore,
+  ladderRef: admin.firestore.DocumentReference,
+  matchRef: admin.firestore.DocumentReference,
+  gameId: string,
+): Promise<boolean> =>
+  db.runTransaction(async (transaction) => {
+    const [matchSnap, ladderSnap] = await Promise.all([
+      transaction.get(matchRef),
+      transaction.get(ladderRef),
+    ]);
+    if (!matchSnap.exists) return false;
+
+    const match = matchSnap.data() as LadderMatch;
+    const game = (match.games ?? []).find((g) => g.gameId === gameId);
+    if (!game || !game.result?.winner) return false;
+    if (!isDueForAutoApproval(game, match.gameReportedAt?.[gameId])) {
+      return false;
+    }
+
+    const playerIds = match.participants ?? [];
+    const teamKeys =
+      (match.teams?.length ?? 0) >= 2
+        ? (match.teams ?? []).map((team) => team.teamKey)
+        : [];
+    const [participantSnaps, userSnaps, teamSnaps] = await Promise.all([
+      Promise.all(
+        playerIds.map((uid) =>
+          transaction.get(ladderRef.collection(LADDER_PARTICIPANTS).doc(uid)),
+        ),
+      ),
+      Promise.all(
+        playerIds.map((uid) => transaction.get(db.collection(USERS).doc(uid))),
+      ),
+      Promise.all(
+        teamKeys.map((key) =>
+          transaction.get(ladderRef.collection(LADDER_TEAMS).doc(key)),
+        ),
+      ),
+    ]);
+
+    const plan = await planLadderGameApproval({
+      match,
+      gameId,
+      actor: { kind: "auto" },
+      ladderStatus: ladderSnap.data()?.status,
+      participants: participantSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as ScoreboardProfile),
+      users: userSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as UserProfile),
+      ladderTeams: teamSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as TeamStats),
+      now: new Date(),
+    });
+    if (!plan.ok) return false;
+
+    plan.participants.forEach((p) => {
+      if (p.userId) {
+        transaction.set(
+          ladderRef.collection(LADDER_PARTICIPANTS).doc(p.userId),
+          p,
+        );
+      }
+    });
+    plan.users.forEach((u) => {
+      if (u.userId) {
+        transaction.update(db.collection(USERS).doc(u.userId), {
+          profileDetail: u.profileDetail,
+        });
+      }
+    });
+    plan.teams.forEach((team) => {
+      transaction.set(
+        ladderRef.collection(LADDER_TEAMS).doc(team.teamKey),
+        team,
+      );
+    });
+    transaction.update(matchRef, plan.matchUpdate as Record<string, unknown>);
+    return true;
+  });
+
 const processMatch = async (
   db: admin.firestore.Firestore,
   ladderId: string,
   matchDoc: admin.firestore.QueryDocumentSnapshot,
 ): Promise<number> => {
   const match = matchDoc.data() as LadderMatch;
-  const games = match.games ?? [];
-  const reportedAtByGame = (
-    match as LadderMatch & {
-      gameReportedAt?: Record<string, admin.firestore.Timestamp>;
-    }
-  ).gameReportedAt;
-  const due = games
-    .map((game, index) => ({ game, index }))
+  const dueGameIds = (match.games ?? [])
     .filter(
-      ({ game }) =>
-        isDueForAutoApproval(game, reportedAtByGame?.[game.gameId]) &&
+      (game) =>
+        isDueForAutoApproval(game, match.gameReportedAt?.[game.gameId]) &&
         !!game.result?.winner,
-    );
-  if (!due.length) return 0;
+    )
+    .map((game) => game.gameId);
 
-  const isDoubles = (match.teams?.length ?? 0) >= 2;
-  const playerIds = match.participants ?? [];
   const ladderRef = db.collection(LADDERS).doc(ladderId);
-
-  const participantSnaps = await Promise.all(
-    playerIds.map((uid) =>
-      ladderRef.collection(LADDER_PARTICIPANTS).doc(uid).get(),
-    ),
-  );
-  let participants = participantSnaps
-    .filter((snap) => snap.exists)
-    .map((snap) => snap.data() as ScoreboardProfile);
-
-  const userSnaps = await Promise.all(
-    playerIds.map((uid) => db.collection(USERS).doc(uid).get()),
-  );
-  const users = userSnaps
-    .filter((snap) => snap.exists)
-    .map((snap) => snap.data() as UserProfile);
-
-  let teams: TeamStats[] = [];
-  if (isDoubles) {
-    const teamSnaps = await Promise.all(
-      (match.teams ?? []).map((team) =>
-        ladderRef.collection(LADDER_TEAMS).doc(team.teamKey).get(),
-      ),
-    );
-    teams = teamSnaps
-      .filter((snap) => snap.exists)
-      .map((snap) => snap.data() as TeamStats);
+  let approved = 0;
+  for (const gameId of dueGameIds) {
+    if (await approveDueGame(db, ladderRef, matchDoc.ref, gameId))
+      approved += 1;
   }
-
-  const nextGames = [...games];
-  const bestOf = match.bestOf ?? games.length;
-  let completed = false;
-
-  for (const { game, index } of due) {
-    const approvedGame = markGameApproved(game);
-    nextGames[index] = approvedGame;
-    const outcome = resolveLadderMatchOutcome(nextGames, bestOf);
-    const matchDecided =
-      !completed &&
-      outcome.decided &&
-      !!outcome.winnerTeam &&
-      !hasOpenLadderDispute(nextGames);
-
-    if (isDoubles) {
-      const scored = await scoreDoublesLadderGame({
-        game: approvedGame,
-        participants,
-        users,
-        ladderTeams: teams,
-        matchDecided,
-        matchWinnerSide: outcome.winnerTeam,
-      });
-      participants = scored.scoringParticipants;
-      teams = scored.teams;
-      if (scored.matchCompleted) completed = true;
-    } else {
-      const scored = scoreSinglesLadderGame({
-        game: approvedGame,
-        participants,
-        users,
-        matchDecided,
-        matchWinnerSide: outcome.winnerTeam,
-      });
-      participants = scored.participants;
-      if (scored.matchCompleted) completed = true;
-    }
-  }
-
-  const batch = db.batch();
-  const matchUpdate: Record<string, unknown> = {
-    games: nextGames,
-    lastUpdated: new Date(),
-  };
-  if (completed) {
-    matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
-    matchUpdate.completedAt = new Date();
-  }
-  batch.update(matchDoc.ref, matchUpdate);
-  participants.forEach((p) => {
-    if (p.userId) {
-      batch.set(ladderRef.collection(LADDER_PARTICIPANTS).doc(p.userId), p);
-    }
-  });
-  users.forEach((u) => {
-    if (u.userId) {
-      batch.update(db.collection(USERS).doc(u.userId), {
-        profileDetail: u.profileDetail,
-      });
-    }
-  });
-  teams.forEach((team) => {
-    batch.set(ladderRef.collection(LADDER_TEAMS).doc(team.teamKey), team);
-  });
-  await batch.commit();
-
-  return due.length;
+  return approved;
 };

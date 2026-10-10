@@ -71,6 +71,7 @@ import type {
 import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
 import { usePendingUpload } from "../hooks/usePendingUpload";
+import { useLadderPlayFrozen } from "../hooks/useLadderPlayFrozen";
 import {
   TeamColumn,
   ScoreDisplay,
@@ -88,7 +89,7 @@ import {
   cancelDispute,
   approveDisputedScore,
 } from "../services/disputes";
-import { canApproveDisputedScore } from "../helpers/disputeReporterSide";
+import { LADDER_FROZEN_MESSAGE, canApproveDisputedScore } from "@shared/helpers";
 
 if (
   Platform.OS === "android" &&
@@ -419,6 +420,7 @@ const GameDisputeScreen = () => {
   const userId = currentUser?.userId;
 
   const effectiveLadderId = dispute?.ladderId ?? ladderId;
+  const frozen = useLadderPlayFrozen(effectiveLadderId);
   const effectiveMatchId = dispute?.ladderMatchId ?? matchId;
   const effectiveLadderName = dispute?.ladderName ?? ladderName;
 
@@ -497,7 +499,10 @@ const GameDisputeScreen = () => {
 
   const isOpener = !!userId && dispute?.openedBy === userId;
   const canApproveScore =
-    !!dispute && !isResolved && canApproveDisputedScore(dispute, userId);
+    !!dispute &&
+    !isResolved &&
+    !frozen &&
+    canApproveDisputedScore(dispute, userId);
 
   const buildEvidence = (): DisputeEvidence | null => {
     if (!userId) return null;
@@ -571,7 +576,9 @@ const GameDisputeScreen = () => {
           ? "This game is already under dispute."
           : outcome.reason === "not_opponent"
             ? "Only a player on the other side can dispute this game."
-            : "Could not open the dispute. Please try again.",
+            : outcome.reason === "frozen"
+              ? LADDER_FROZEN_MESSAGE
+              : "Could not open the dispute. Please try again.",
         "error",
       );
       return;
@@ -604,7 +611,9 @@ const GameDisputeScreen = () => {
           ? "This dispute has already been resolved."
           : outcome.reason === "video_limit"
             ? "You can upload another video when the admin requests more evidence."
-            : "Could not submit evidence. Please try again.",
+            : outcome.reason === "frozen"
+              ? LADDER_FROZEN_MESSAGE
+              : "Could not submit evidence. Please try again.",
         "error",
       );
       return;
@@ -644,7 +653,9 @@ const GameDisputeScreen = () => {
               showBottomToast(
                 outcome.reason === "resolved"
                   ? "This dispute has already been resolved."
-                  : "Could not cancel the dispute. Please try again.",
+                  : outcome.reason === "frozen"
+                    ? LADDER_FROZEN_MESSAGE
+                    : "Could not cancel the dispute. Please try again.",
                 "error",
               );
               return;
@@ -685,7 +696,9 @@ const GameDisputeScreen = () => {
                   ? "This dispute has already been resolved."
                   : outcome.reason === "not_reporter_side"
                     ? "Only the player who reported the game can approve this score."
-                    : "Could not approve the score. Please try again.",
+                    : outcome.reason === "frozen"
+                      ? LADDER_FROZEN_MESSAGE
+                      : "Could not approve the score. Please try again.",
                 "error",
               );
               return;
@@ -717,7 +730,7 @@ const GameDisputeScreen = () => {
   const finalGame = dispute?.finalGame ?? dispute?.disputedGame ?? null;
 
   const showEvidenceForm =
-    !!lastKey && isOpen(lastKey) && !isResolved && canContribute;
+    !!lastKey && isOpen(lastKey) && !isResolved && !frozen && canContribute;
   const evidenceRequested =
     dispute?.stage === DISPUTE_STAGE.MORE_EVIDENCE_REQUESTED;
   const canUploadVideo = !!userId && canUploadDisputeVideo(events, userId);
@@ -751,6 +764,12 @@ const GameDisputeScreen = () => {
           contentContainerStyle={{ padding: 16, paddingBottom: 48 }}
           keyboardShouldPersistTaps="handled"
         >
+          {frozen && !isResolved && (
+            <FrozenNotice testID="dispute-frozen">
+              {LADDER_FROZEN_MESSAGE}
+            </FrozenNotice>
+          )}
+
           {(effectiveLadderId || effectiveMatchId) && (
             <MatchLinks>
               {effectiveLadderId ? (
@@ -843,9 +862,11 @@ const GameDisputeScreen = () => {
               submitting={submitting}
               onSubmit={handleOpenDispute}
               blockedMessage={
-                correctedGame
-                  ? null
-                  : "Tap the card above to enter the corrected score."
+                frozen
+                  ? LADDER_FROZEN_MESSAGE
+                  : correctedGame
+                    ? null
+                    : "Tap the card above to enter the corrected score."
               }
             />
           )}
@@ -968,7 +989,7 @@ const GameDisputeScreen = () => {
                 </ApproveButton>
               )}
 
-              {isOpener && !isResolved && (
+              {isOpener && !isResolved && !frozen && (
                 <CancelButton
                   testID="dispute-cancel"
                   disabled={submitting}
@@ -1226,6 +1247,13 @@ const HeaderTitle = styled.Text({
 const Block = styled.View({ marginBottom: 20 });
 
 const MatchLinks = styled.View({ marginBottom: 20, gap: 8 });
+
+const FrozenNotice = styled.Text({
+  color: "#FAB234",
+  fontSize: 14,
+  textAlign: "center",
+  marginBottom: 16,
+});
 
 const LinkRow = styled.TouchableOpacity({
   flexDirection: "row",
