@@ -35,6 +35,7 @@ onFlowStart:
     timeout: 15000
 - assertVisible:
     id: "match-cancellation-awaiting"
+- assertVisible: ".*respond to the cancellation.*"
 - tapOn:
     id: "match-details-burger"
 - extendedWaitUntil:

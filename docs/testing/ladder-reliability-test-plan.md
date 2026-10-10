@@ -114,7 +114,7 @@ All 🅼 (`cancel-*`).
 | 8.1 | Cancel your own posted match from the Matchmaking modal; from Ladder Menu → Current Posted Matches | "Match cancelled", it leaves Matchmaking / the list |
 | 8.2 | Accepted match: request cancellation | "Cancellation request sent" and an awaiting banner; if the opponent accepts the card reads Cancelled, if they decline the banner clears and the match stands |
 | 8.3 | The opponent has asked to cancel | Banner with Accept and Decline; accepting cancels the match, declining shows "Cancellation declined" |
-| 8.4 | A second request while one is pending | "Waiting for your opponent to respond", no new request |
+| 8.4 | A second request while one is pending | The banner reads "Waiting for your opponent to respond to the cancellation", the menu item reads "Cancellation requested" and no new request starts |
 | 8.5 | A game has been reported | "This match can no longer be cancelled" |
 | 8.6 | Doubles: the partner already asked | Awaiting banner, no Accept or Decline |
 | 8.7 | Sending a request; accepting; declining | The opponent (singles) or both opposing players (doubles) get "asked to / agreed to / declined to cancel your ladder match", opening the ladder on Schedule |

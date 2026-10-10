@@ -31,7 +31,9 @@ const MatchCancellationBanner: React.FC<MatchCancellationBannerProps> = ({
       <Banner testID="match-cancellation-awaiting">
         <MessageRow>
           <Ionicons name="time-outline" size={16} color="#9fb8c8" />
-          <BannerText>Waiting for your opponent to respond</BannerText>
+          <BannerText>
+            Waiting for your opponent to respond to the cancellation
+          </BannerText>
         </MessageRow>
       </Banner>
     );
