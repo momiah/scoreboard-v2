@@ -31,6 +31,9 @@ for the scenarios each flow covers.
    `${VAR}`, so these just need to be exported before running — no `-e` flags
    needed.
 
+> The harness is currently detached from Home (see `maestro/README.md`,
+> "Re-attaching the harness"). Put it back before running any flow.
+
 ## Running
 
 Export the test credentials, then run a flow (or the whole suite) against a
