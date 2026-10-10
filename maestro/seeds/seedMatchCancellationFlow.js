@@ -45,6 +45,7 @@ export const CANCEL_VARIANT = {
   ACCEPTED_OPPONENT_POSTED: "acceptedOpponentPosted",
   OVERDUE_OPPONENT_POSTED: "overdueOpponentPosted",
   OVERDUE_USER_POSTED: "overdueUserPosted",
+  STARTED_RECENTLY_OPPONENT_POSTED: "startedRecentlyOpponentPosted",
 };
 
 const opponent = {
@@ -203,6 +204,11 @@ export const seedMatchCancellationFlow = async ({
     [CANCEL_VARIANT.OVERDUE_OPPONENT_POSTED]: {
       ...opponentPosted,
       matchDate: yesterday,
+    },
+    [CANCEL_VARIANT.STARTED_RECENTLY_OPPONENT_POSTED]: {
+      ...opponentPosted,
+      matchDate: moment().subtract(10, "minutes").format("DD-MM-YYYY"),
+      matchTime: { start: moment().subtract(10, "minutes").format("HH:mm") },
     },
     [CANCEL_VARIANT.OVERDUE_USER_POSTED]: { ...accepted, matchDate: yesterday },
     [CANCEL_VARIANT.USER_DISQUALIFIED]: {

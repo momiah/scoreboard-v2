@@ -151,7 +151,7 @@ All 🅼 unless noted.
 | 10.4 | A player with enough strikes | Post a Match and Accept Match show the disqualification message and are locked (`disqualified-player-cannot-post-a-match`, `-accept-a-match`) |
 | 10.5 | Check-in by reference code, poster side | The code and the waiting line show; the opponent's scan completes check-in live (`checkin-poster-shows-code-and-is-checked-in-when-opponent-scans`) |
 | 10.6 | Check-in by reference code, scanner side | A wrong code is refused inline; the right code checks the user in; the poster checking in completes it (`checkin-scanner-*`) |
-| 10.7 | No-show | Locked with a countdown until 30 minutes after the start; afterwards it can be reported and a pending no-show report is stored (`checkin-no-show-*`) |
+| 10.7 | No-show | Hidden until the match starts; from the start it shows a countdown of at most 30:00, then can be reported and a pending no-show report is stored (`checkin-no-show-*`) |
 | 10.8 | Match chat | The opponent's message shows; a sent message is stored and marks the opponent's chat unread (`match-chat-room-send-and-receive`) |
 | 10.9 | Rules, Terms and How to Play | Each screen opens; How to Play ends on Join Now (non-member, opens the join sheet) or Participant (`ladder-info-*`) |
 

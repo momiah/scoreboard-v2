@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - tapOn:
-    id: "maestro-seed-cancel-started-recently-opponent-posted"
+    id: "maestro-seed-cancel-accepted-opponent-posted"
 - extendedWaitUntil:
     visible: "Seeded"
     timeout: 60000
@@ -51,13 +51,22 @@ onFlowStart:
     visible:
       id: "match-checkin-modal"
     timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "match-checkin-grant-permission"
+    commands:
+      - tapOn:
+          id: "match-checkin-grant-permission"
+      - runFlow:
+          when:
+            visible: "OK"
+          commands:
+            - tapOn: "OK"
 - extendedWaitUntil:
     visible:
-      id: "match-checkin-report-no-show"
-    timeout: 15000
-- assertVisible: ".*Report no-show in [0-2][0-9]:[0-5][0-9].*"
-- tapOn:
-    id: "match-checkin-report-no-show"
-- assertNotVisible: "Report a no-show"
+      id: "match-checkin-code-input"
+    timeout: 20000
 - assertNotVisible:
-    id: "match-checkin-no-show-reported"
+    id: "match-checkin-report-no-show"
+- assertNotVisible: ".*Report no-show in.*"

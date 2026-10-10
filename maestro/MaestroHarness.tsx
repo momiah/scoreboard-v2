@@ -510,6 +510,10 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["accepted-opponent-posted", CANCEL_VARIANT.ACCEPTED_OPPONENT_POSTED],
         ["overdue-opponent-posted", CANCEL_VARIANT.OVERDUE_OPPONENT_POSTED],
         ["overdue-user-posted", CANCEL_VARIANT.OVERDUE_USER_POSTED],
+        [
+          "started-recently-opponent-posted",
+          CANCEL_VARIANT.STARTED_RECENTLY_OPPONENT_POSTED,
+        ],
       ].map(([key, variant]) => ({
         id: `maestro-seed-cancel-${key}`,
         label: `Seed Cancel (${key})`,

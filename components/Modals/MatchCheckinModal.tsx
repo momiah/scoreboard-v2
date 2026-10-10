@@ -414,6 +414,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     return () => clearInterval(id);
   }, [visible, noShowUnlockMs]);
 
+  const matchStarted = matchStart != null && nowMs >= matchStart.getTime();
   const graceElapsed = noShowUnlockMs != null && nowMs >= noShowUnlockMs;
   const noShowCountdownMs =
     noShowUnlockMs != null ? Math.max(0, noShowUnlockMs - nowMs) : 0;
@@ -423,7 +424,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     match.participants.includes(currentUserId) &&
     !checkinComplete &&
     !noShowReported &&
-    noShowUnlockMs != null;
+    matchStarted;
   const canReportNoShow = showNoShowSection && graceElapsed;
 
   const handleReportNoShow = () => {
