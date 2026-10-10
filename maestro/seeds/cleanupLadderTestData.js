@@ -47,6 +47,11 @@ import {
   cleanupLadderJoinTestData,
 } from "./seedLadderJoinFlow";
 import { cleanupChatsTabTestData } from "./seedChatsTab";
+import { deleteFixtureUserSubcollections } from "./fixtureUserCleanup";
+import { MAESTRO_JOIN_FIXTURE_USER_IDS } from "./seedLadderJoinFlow";
+import { MAESTRO_DISBAND_FIXTURE_USER_IDS } from "./seedTeamDisbandFlow";
+import { MAESTRO_TEAM_FIXTURE_USER_IDS } from "./seedTeamFlow";
+import { MAESTRO_CANCEL_OPPONENT_ID } from "./seedMatchCancellationFlow";
 import { deleteReportsForLadder } from "./reportFixtures";
 import {
   MAESTRO_TEAM_LADDER_ID,
@@ -121,6 +126,13 @@ export const cleanupLadderTestData = async ({
   fixtureUserIds = ALL_FIXTURE_USER_IDS,
   courtIds = MAESTRO_HC_ALL_COURT_IDS,
 } = {}) => {
+  await deleteFixtureUserSubcollections([
+    ...fixtureUserIds,
+    ...MAESTRO_JOIN_FIXTURE_USER_IDS,
+    ...MAESTRO_DISBAND_FIXTURE_USER_IDS,
+    ...MAESTRO_TEAM_FIXTURE_USER_IDS,
+    MAESTRO_CANCEL_OPPONENT_ID,
+  ]);
   await Promise.all([
     ...ladderIds.map((id) => deleteLadderTree(id)),
     ...gameIds.map((id) => deleteDisputesForGame(id)),

@@ -29,3 +29,28 @@ bundled into a release build.
   ladder. "Awaiting Function" leaves the bracket to the deployed function
   (every 15 minutes, or force-run its Cloud Scheduler job). Cleaned up by
   `cleanupLadderTestData`.
+
+## Re-attaching the harness
+
+The harness is not mounted in the app while testing is finished, so Maestro
+flows cannot find its buttons. To run them again, put these back in
+`screens/Home/Home.tsx`:
+
+```tsx
+const MaestroHarness = __DEV__
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("../../maestro/MaestroHarness").default
+  : null;
+```
+
+(above the video feed config), and, where the Home content renders (above the
+"Hello" greeting):
+
+```tsx
+{MaestroHarness && currentUser ? (
+  <MaestroHarness currentUser={currentUser} />
+) : null}
+```
+
+When testing is done again, remove those two pieces and run the cleanup utility
+first (`.maestro/utilities/cleanup-ladder-test-data.yaml`).
