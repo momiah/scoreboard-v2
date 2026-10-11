@@ -10,6 +10,7 @@ const ignorePatterns = [
   ".expo/**",
   "dist/**",
   "build/**",
+  "functions/lib/**",
   "_d_/**",
   "__drafts__/**",
   "coverage/**",
