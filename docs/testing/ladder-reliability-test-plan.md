@@ -200,3 +200,16 @@ one is, or a greyed **Already extended**.
 | 12.11 | Last day of an extension | Every player gets "Your extension has 1 day left to complete your match at X." once 🅹 (functions) |
 | 12.12 | Requests and playoff accepts | Do not touch `lastUpdated`, so they never restart the 72-hour clock 🅹 |
 | 12.13 | Posted match, completed match, or a viewer | Neither option shown 🅹 |
+
+## 13. Match reminders
+
+`functions/src/sendLadderMatchReminders.ts` runs every 15 minutes and reads
+match times as Europe/London. All 🅹 (`sendLadderMatchReminders.test.ts`).
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 13.1 | Accepted match starting within 24 hours | Every player gets "Reminder: your ladder match at X is today/tomorrow at HH:mm." once |
+| 13.2 | Accepted match starting within the hour | Every player gets "Your ladder match at X starts at HH:mm. Remember to check in at the court." once |
+| 13.3 | Posted, completed, cancelled or expired match | No reminder (only accepted matches are read) |
+| 13.4 | Match rescheduled after a reminder | The notification id includes the date and time, so the new time gets its own reminders |
+| 13.5 | Playoff legs | Reminded like any accepted match |

@@ -106,6 +106,15 @@ The 1-day-left reminder is server-side (`autoExpireLadderMatches`), covered in
 the functions unit tests; a seeded notification with that text can be asserted
 to open the match.
 
+## Match reminders
+
+Sent by the scheduled `sendLadderMatchReminders` (section 13 of
+[ladder-reliability-test-plan.md](ladder-reliability-test-plan.md)), covered
+in the functions unit tests. Maestro: seed the two reminder notifications
+exactly as the function writes them (title "Match reminder", `data { ladderId,
+tab: "Schedule", matchId }`) and assert each opens the match
+(`match-reminder-day-opens-match`, `match-reminder-hour-opens-match`).
+
 ## Refunds and the platform fee
 
 The rule: the platform fee is refunded only when the **platform** cancels (the

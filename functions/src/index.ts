@@ -14,6 +14,7 @@ import { onLadderMatchStatusChange } from "./onLadderMatchStatusChange";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { processLadderPhases } from "./processLadderPhases";
 import { flipLadderPlayoffCoin } from "./flipLadderPlayoffCoin";
+import { sendLadderMatchReminders } from "./sendLadderMatchReminders";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
@@ -40,6 +41,7 @@ export {
   autoVoidLadderDisputes,
   processLadderPhases,
   flipLadderPlayoffCoin,
+  sendLadderMatchReminders,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,
   updateGameVideoUrl,
