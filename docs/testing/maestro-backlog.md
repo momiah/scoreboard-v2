@@ -79,7 +79,8 @@ requested or agreed to), because Stripe still charges the platform.
 | Ladder cancelled by the admin (no admin action yet) | Platform | Full entry fee, platform fee included |
 | Posted match cancelled before anyone accepted | User | Nothing to refund — the accepter is only charged on accept |
 | Accepted match cancelled by agreement | User | Accepter's court-fee share refunded; platform fee kept (`reconcileLadderCourtFee` via `onLadderMatchStatusChange`) |
-| Accepted match expired / poster no-show | — | Accepter's court-fee share refunded; platform fee kept |
+| Accepted match expired | Both sides inactive | Nothing refunded — the court-fee share is released to the poster, who paid for the court |
+| Poster no-show | Poster | Accepter's court-fee share refunded; platform fee kept |
 
 Payments are stubs today, so Maestro can only assert the UI. Flows to cover:
 

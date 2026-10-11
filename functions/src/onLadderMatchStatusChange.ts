@@ -96,7 +96,7 @@ export const onLadderMatchStatusChange = onDocumentUpdated(
       //   - completed → release the held fee to the poster.
       //   - walkover  → charge the no-show, reimburse the player who showed.
       //   - cancelled → refund the accepter's share (a player called it off).
-      //   - expired   → refund the accepter's share (no one played it out).
+      //   - expired   → release the share to the poster (they paid for the court).
       await reconcileLadderCourtFee(after, outcome);
     } catch (err) {
       console.error(

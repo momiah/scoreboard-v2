@@ -41,7 +41,7 @@ export const LADDER_TERMS: TermsSection[] = [
   },
   {
     title: "9. Court fees",
-    body: "Where a match sets a court fee, the accepting player pays their share, plus a 10% platform fee, when they accept the match — this secures the match so the poster is never left with an unpaid opponent. The court-fee share is released to the poster once the match completes. If the match is cancelled or expires before it is played, the court-fee share is refunded to the accepting player; the 10% platform fee is non-refundable in all cases and is retained by Court Champs to cover payment processing.",
+    body: "Where a match sets a court fee, the accepting player pays their share, plus a 10% platform fee, when they accept the match — this secures the match so the poster is never left with an unpaid opponent. The court-fee share is released to the poster once the match completes or expires, since the poster has already paid for the court. If the match is cancelled, the court-fee share is refunded to the accepting player. The 10% platform fee is non-refundable in all cases and is retained by Court Champs to cover payment processing.",
   },
   {
     title: "10. Changes",
