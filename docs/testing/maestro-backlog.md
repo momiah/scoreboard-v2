@@ -168,27 +168,28 @@ add: `noHomeCourt` and `playoffRegular` (a regular match alongside a playoff
 match during playoffs).
 
 Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
-`ScheduleMatchModal`):
+`AddLadderMatchModal` in playoff mode via `PlayoffMatchScheduleModal`):
 
 1. `ladder-playoffs-coin-flip` (`coinPending`): tap `playoff-coin-flip` →
    "Coin toss: .* hosts the first match" (`playoff-coin-result`).
 2. `ladder-playoffs-coin-viewer` (`viewer`): `playoff-coin-waiting` visible,
    no `playoff-coin-flip`.
 3. `ladder-playoffs-arrange-home` (`coinWon`): tap
-   `playoff-match-leg1-arrange` → `arrange-playoff-match` with "Arrange match
-   1", the court name and `arrange-playoff-match-court-time` ("about 2 hours
-   for best of 7"); send without a date → `arrange-playoff-match-error` "Pick a
-   date."; pick a date and time → send → match 1 card shows posted.
-4. `ladder-playoffs-arrange-away-waiting` (`coinLost`): "Waiting for .* to
-   arrange this match" on match 1; `playoff-match-leg2-arrange` visible.
-5. `ladder-playoffs-arrange-needs-home-court` (`noHomeCourt`): "Choose your
-   home court to arrange this match." and the home court picker; choose one →
-   the Arrange button appears.
+   `playoff-match-leg1-arrange` → "Arrange match 1" with the home court in
+   `add-ladder-match-court-selector`, best of 7, `add-ladder-match-court-time`
+   and `add-ladder-match-no-fee` (no `add-ladder-match-fee`); change the court;
+   pick a date, accept the terms → "Send to opponent" → match 1 card shows
+   posted.
+4. `ladder-playoffs-arrange-away-waiting` (`coinLost`): `playoff-match-leg1-waiting`
+   reads "Waiting for your opponent to arrange their home match";
+   `playoff-match-leg2-arrange` visible.
+5. `ladder-playoffs-arrange-without-home-court` (`noHomeCourt`): the modal opens
+   with "Select Court"; choosing any court lets the match be sent.
 6. `ladder-playoffs-accept-match` (`leg1Posted`): tap
    `playoff-match-leg1-accept` → card shows accepted. A host-side run of the
    same seed asserts no accept button.
-7. `ladder-playoffs-play-here-now` (`leg1Complete`): `playoff-match-play-here`
-   visible on match 2; aggregate reads "2 – 1".
+7. `ladder-playoffs-aggregate` (`leg1Complete`): aggregate reads "4 – 2";
+   match 2 shows the arrange placeholder for its host.
 8. `ladder-playoffs-report-during-playoffs` (`playoffRegular`): open the playoff
    match → report a score, approve from the notification modal, open a
    dispute: all allowed. Then open the regular match → the freeze disclaimers

@@ -15,17 +15,29 @@ jest.mock("../../../context/UserContext", () => ({
 }));
 jest.mock("../../../components/ladder/MatchCard", () => {
   const { Text } = require("react-native");
-  return ({ match, testID }: { match: { matchStatus: string }; testID?: string }) => (
-    <Text testID={testID}>{`card ${match.matchStatus}`}</Text>
+  return ({
+    match,
+    testID,
+  }: {
+    match: { matchStatus: string };
+    testID?: string;
+  }) => <Text testID={testID}>{`card ${match.matchStatus}`}</Text>;
+});
+jest.mock("../../../components/Modals/PlayoffMatchScheduleModal", () => {
+  const { Text } = require("react-native");
+  return ({
+    title,
+    bestOf,
+    defaultCourt,
+  }: {
+    title: string;
+    bestOf: number;
+    defaultCourt: { courtName: string } | null;
+  }) => (
+    <Text testID="arrange-modal">
+      {`${title} | best of ${bestOf} | ${defaultCourt?.courtName ?? "no court"}`}
+    </Text>
   );
-});
-jest.mock("../../../components/Summary/LadderHomeCourtSection", () => {
-  const { Text } = require("react-native");
-  return () => <Text testID="home-court-section">home court</Text>;
-});
-jest.mock("../../../components/Modals/ScheduleMatchModal", () => {
-  const { Text } = require("react-native");
-  return ({ title }: { title: string }) => <Text testID="arrange-modal">{title}</Text>;
 });
 const mockHomeCourt = jest.fn();
 jest.mock("../../../hooks/useLadderHomeCourt", () => ({
@@ -40,7 +52,9 @@ const { UserContext } = require("../../../context/UserContext");
 const entrant = (key: string) => ({
   entrantKey: key,
   teamId: null,
-  players: [{ userId: key, firstName: key.toUpperCase(), lastName: "", username: key }],
+  players: [
+    { userId: key, firstName: key.toUpperCase(), lastName: "", username: key },
+  ],
   competitionXP: 0,
   numberOfWins: 0,
   totalPointDifference: 0,
@@ -99,11 +113,18 @@ const renderScreen = ({
   const value = {
     ladderById: ladder,
     fetchLadderById: jest.fn(async () => ladder),
-    subscribeToLadderPlayoffTies: (_id: string, onUpdate: (t: unknown[]) => void) => {
+    subscribeToLadderPlayoffTies: (
+      _id: string,
+      onUpdate: (t: unknown[]) => void,
+    ) => {
       onUpdate([tie]);
       return () => {};
     },
-    subscribeToPlayoffMatches: (_l: string, _t: string, onUpdate: (m: unknown[]) => void) => {
+    subscribeToPlayoffMatches: (
+      _l: string,
+      _t: string,
+      onUpdate: (m: unknown[]) => void,
+    ) => {
       onUpdate(matches);
       return () => {};
     },
@@ -139,7 +160,10 @@ beforeEach(() => {
 
 describe("PlayoffMatchDetails", () => {
   it("shows the round, format and deadline", () => {
-    const { getByText, getByTestId } = renderScreen({ userId: "u1", tie: baseTie() });
+    const { getByText, getByTestId } = renderScreen({
+      userId: "u1",
+      tie: baseTie(),
+    });
     expect(getByText("Final")).toBeTruthy();
     expect(getByTestId("playoff-match-format").props.children.join("")).toMatch(
       /^Best of 7 per match · Finish by /,
@@ -147,19 +171,21 @@ describe("PlayoffMatchDetails", () => {
   });
 
   it("lets a player flip the coin", async () => {
-    const { getByTestId, value } = renderScreen({ userId: "u2", tie: baseTie() });
+    const { getByTestId, value } = renderScreen({
+      userId: "u2",
+      tie: baseTie(),
+    });
     fireEvent.press(getByTestId("playoff-coin-flip"));
-    await waitFor(() => expect(value.flipPlayoffCoin).toHaveBeenCalledWith("L1", "r1-s0"));
-  });
-
-  it("shows a match card for each match before it is arranged", () => {
-    const { getByTestId } = renderScreen({ userId: "u1", tie: tossed("team1") });
-    expect(getByTestId("playoff-match-leg1-tbd")).toBeTruthy();
-    expect(getByTestId("playoff-match-leg2-tbd")).toBeTruthy();
+    await waitFor(() =>
+      expect(value.flipPlayoffCoin).toHaveBeenCalledWith("L1", "r1-s0"),
+    );
   });
 
   it("makes viewers wait for the coin toss", () => {
-    const { getByTestId } = renderScreen({ userId: "stranger", tie: baseTie() });
+    const { getByTestId } = renderScreen({
+      userId: "stranger",
+      tie: baseTie(),
+    });
     expect(getByTestId("playoff-coin-waiting")).toBeTruthy();
   });
 
@@ -167,14 +193,28 @@ describe("PlayoffMatchDetails", () => {
     const host = renderScreen({ userId: "u1", tie: tossed("team1") });
     expect(host.getByText("Coin toss: U1 hosts the first match")).toBeTruthy();
     fireEvent.press(host.getByTestId("playoff-match-leg1-arrange"));
-    expect(host.getByTestId("arrange-modal").props.children).toBe("Arrange match 1");
+    expect(host.getByTestId("arrange-modal").props.children).toBe(
+      "Arrange match 1 | best of 7 | Home",
+    );
+    expect(host.getByTestId("playoff-match-leg2-waiting")).toBeTruthy();
 
     const away = renderScreen({ userId: "u2", tie: tossed("team1") });
-    expect(away.getByText("Waiting for U1 to arrange this match")).toBeTruthy();
+    expect(
+      away.getByText("Waiting for your opponent to arrange their home match"),
+    ).toBeTruthy();
     expect(away.getByTestId("playoff-match-leg2-arrange")).toBeTruthy();
   });
 
-  it("asks a host without a home court to choose one first", () => {
+  it("names the host for onlookers and waits for the coin before that", () => {
+    const viewer = renderScreen({ userId: "stranger", tie: tossed("team1") });
+    expect(
+      viewer.getByText("Waiting for U1 to arrange their home match"),
+    ).toBeTruthy();
+    const early = renderScreen({ userId: "u1", tie: baseTie() });
+    expect(early.getAllByText("Arranged after the coin toss")).toHaveLength(2);
+  });
+
+  it("lets a host without a home court pick any court", () => {
     mockHomeCourt.mockReturnValue({
       homeCourt: null,
       canChange: true,
@@ -182,9 +222,14 @@ describe("PlayoffMatchDetails", () => {
       loading: false,
       confirmHomeCourt: jest.fn(),
     });
-    const { getByTestId, getByText } = renderScreen({ userId: "u1", tie: tossed("team1") });
-    expect(getByText("Choose your home court to arrange this match.")).toBeTruthy();
-    expect(getByTestId("home-court-section")).toBeTruthy();
+    const { getByTestId } = renderScreen({
+      userId: "u1",
+      tie: tossed("team1"),
+    });
+    fireEvent.press(getByTestId("playoff-match-leg1-arrange"));
+    expect(getByTestId("arrange-modal").props.children).toBe(
+      "Arrange match 1 | best of 7 | no court",
+    );
   });
 
   it("lets only the opposing side accept a posted match", async () => {
@@ -205,17 +250,18 @@ describe("PlayoffMatchDetails", () => {
 
   it("totals the aggregate across both matches", () => {
     const matches = [
-      leg(1, { matchStatus: "completed", games: [game("u1", "u2"), game("u1", "u2")] }),
+      leg(1, {
+        matchStatus: "completed",
+        games: [game("u1", "u2"), game("u1", "u2")],
+      }),
       leg(2, { games: [game("u2", "u1")] }),
     ];
-    const { getByTestId } = renderScreen({ userId: "u1", tie: tossed("team1"), matches });
+    const { getByTestId } = renderScreen({
+      userId: "u1",
+      tie: tossed("team1"),
+      matches,
+    });
     expect(getByTestId("playoff-match-aggregate")).toHaveTextContent(/2 – 1/);
-  });
-
-  it("offers to play the second match at the same court once match 1 is complete", () => {
-    const matches = [leg(1, { matchStatus: "completed" })];
-    const { getByTestId } = renderScreen({ userId: "u2", tie: tossed("team1"), matches });
-    expect(getByTestId("playoff-match-play-here")).toBeTruthy();
   });
 
   it("shows the deciding game", () => {
@@ -224,17 +270,30 @@ describe("PlayoffMatchDetails", () => {
       leg(2, { matchStatus: "completed" }),
       leg(3, { bestOf: 1 }),
     ];
-    const { getByText, getByTestId } = renderScreen({ userId: "u1", tie: tossed("team1"), matches });
-    expect(getByText("Level on aggregate. One deciding game to play.")).toBeTruthy();
+    const { getByText, getByTestId } = renderScreen({
+      userId: "u1",
+      tie: tossed("team1"),
+      matches,
+    });
+    expect(
+      getByText("Level on aggregate. One deciding game to play."),
+    ).toBeTruthy();
     expect(getByTestId("playoff-match-decider")).toBeTruthy();
   });
 
   it("shows who went through once the game is settled", () => {
     const { getByTestId, queryByTestId } = renderScreen({
       userId: "u1",
-      tie: { ...tossed("team1"), status: "completed", winner: "team2", outcome: "played" },
+      tie: {
+        ...tossed("team1"),
+        status: "completed",
+        winner: "team2",
+        outcome: "played",
+      },
     });
-    expect(getByTestId("playoff-match-outcome").props.children).toBe("U2 goes through.");
+    expect(getByTestId("playoff-match-outcome").props.children).toBe(
+      "U2 goes through.",
+    );
     expect(queryByTestId("playoff-coin-result")).toBeNull();
   });
 

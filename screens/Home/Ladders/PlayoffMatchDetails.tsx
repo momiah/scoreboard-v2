@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -8,16 +8,13 @@ import type {
   ParamListBase,
   RouteProp,
 } from "@react-navigation/native";
-import moment from "moment";
 
 import {
   LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_PLAYOFF_TIE_STATUS,
-  SHUTTLE_TYPE,
 } from "@shared";
 import {
-  buildLadderPlayoffLegMatch,
   getLadderPlayoffLegHost,
   roundLabel,
   tallyLadderPlayoffTie,
@@ -35,8 +32,7 @@ import { UserContext } from "../../../context/UserContext";
 import MatchCard from "../../../components/ladder/MatchCard";
 import PlayoffCoinFlip from "../../../components/ladder/PlayoffCoinFlip";
 import ActionPlaceholder from "../../../components/ActionPlaceholder";
-import ScheduleMatchModal from "../../../components/Modals/ScheduleMatchModal";
-import LadderHomeCourtSection from "../../../components/Summary/LadderHomeCourtSection";
+import PlayoffMatchScheduleModal from "../../../components/Modals/PlayoffMatchScheduleModal";
 import { SkeletonWrapper } from "../../../components/Skeletons/SkeletonComponents";
 import { useLadderHomeCourt } from "../../../hooks/useLadderHomeCourt";
 import { toMoment } from "../../../helpers/ladderPhases";
@@ -192,56 +188,10 @@ const PlayoffMatchDetails: React.FC = () => {
       : "Couldn't arrange this match. Try again.";
   };
 
-  const playSecondHere = (firstMatch: LadderMatch, host: LadderPlayoffTieSide) => {
-    Alert.alert(
-      "Play the second match here now?",
-      "Your opponent will be asked to accept. Both matches are then played at this court today.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Send",
-          onPress: async () => {
-            const failure = await arrange(2, host, {
-              court: firstMatch.court,
-              matchDate: moment().format("DD-MM-YYYY"),
-              matchTime: { start: moment().format("HH:mm") },
-              currencyType: firstMatch.currencyType,
-              shuttleType: firstMatch.shuttleType,
-            });
-            setActionError(failure);
-          },
-        },
-      ],
-    );
-  };
-
   const renderLeg = (leg: Leg) => {
     const match = legs.get(leg);
     const host = tie.coinToss ? getLadderPlayoffLegHost(tie.coinToss, leg) : null;
     const label = `Match ${leg}${host ? ` · ${nameOf(host)} at home` : ""}`;
-    const hostCourt = host ? tie[host === "team1" ? "side1" : "side2"]?.homeCourt : null;
-    const unarranged =
-      tie.side1 && tie.side2
-        ? buildLadderPlayoffLegMatch({
-            tie,
-            leg,
-            host: host ?? "team1",
-            ladderMatchId: `${tie.tieId}-leg${leg}`,
-            ladderType: ladder.ladderType,
-            input: {
-              court: (hostCourt ?? { courtName: "" }) as unknown as Court,
-              matchDate: "",
-              matchTime: { start: "" },
-              currencyType: ladder.currencyType,
-              shuttleType: SHUTTLE_TYPE.FEATHER,
-            },
-            createdBy: "",
-            now: new Date(),
-          })
-        : null;
-    const unarrangedCard = unarranged ? (
-      <MatchCard match={unarranged} testID={`playoff-match-leg${leg}-tbd`} />
-    ) : null;
 
     if (match) {
       const awaitingUser =
@@ -271,71 +221,23 @@ const PlayoffMatchDetails: React.FC = () => {
       );
     }
 
-    if (!isOpen || !host) {
+    if (!isOpen) {
       return (
         <LegSection key={leg}>
           <LegLabel>{label}</LegLabel>
-          {unarrangedCard}
-          <Muted>{host ? "Not arranged" : "Arranged after the coin toss"}</Muted>
+          <Muted>Not played</Muted>
         </LegSection>
       );
     }
 
-    const firstMatch = legs.get(1);
-    if (
-      leg === 2 &&
-      userSide &&
-      firstMatch?.matchStatus === LADDER_MATCH_STATUS.COMPLETED
-    ) {
+    if (host && userSide === host) {
       return (
         <LegSection key={leg}>
           <LegLabel>{label}</LegLabel>
-          {unarrangedCard}
-          {userSide === host ? (
-            <ActionPlaceholder
-              message="Arrange your home match"
-              icon="calendar-outline"
-              height={90}
-              onPress={() => setArrangeLeg(leg)}
-              testID="playoff-match-leg2-arrange"
-            />
-          ) : null}
-          <ActionPlaceholder
-            message="Play the second match here now"
-            icon="repeat-outline"
-            height={90}
-            onPress={() => playSecondHere(firstMatch, host)}
-            testID="playoff-match-play-here"
-          />
-        </LegSection>
-      );
-    }
-
-    if (userSide === host) {
-      if (!homeCourtState.loading && !homeCourtState.homeCourt) {
-        return (
-          <LegSection key={leg}>
-            <LegLabel>{label}</LegLabel>
-            {unarrangedCard}
-            <Muted>Choose your home court to arrange this match.</Muted>
-            <LadderHomeCourtSection
-              ladder={ladder}
-              homeCourt={homeCourtState.homeCourt}
-              canChange={homeCourtState.canChange}
-              isEntrant={homeCourtState.isEntrant}
-              confirmHomeCourt={homeCourtState.confirmHomeCourt}
-            />
-          </LegSection>
-        );
-      }
-      return (
-        <LegSection key={leg}>
-          <LegLabel>{label}</LegLabel>
-          {unarrangedCard}
           <ActionPlaceholder
             message="Arrange your home match"
             icon="calendar-outline"
-            height={90}
+            height={110}
             onPress={() => setArrangeLeg(leg)}
             testID={`playoff-match-leg${leg}-arrange`}
           />
@@ -343,11 +245,23 @@ const PlayoffMatchDetails: React.FC = () => {
       );
     }
 
+    const waitingFor = !host
+      ? "Arranged after the coin toss"
+      : userSide
+        ? "Waiting for your opponent to arrange their home match"
+        : `Waiting for ${nameOf(host)} to arrange their home match`;
     return (
       <LegSection key={leg}>
         <LegLabel>{label}</LegLabel>
-        {unarrangedCard}
-        <Muted>Waiting for {nameOf(host)} to arrange this match</Muted>
+        <ActionPlaceholder
+          message={waitingFor}
+          icon="time-outline"
+          height={110}
+          onPress={() => {}}
+          disabled
+          accentColor="#5b7083"
+          testID={`playoff-match-leg${leg}-waiting`}
+        />
       </LegSection>
     );
   };
@@ -366,7 +280,7 @@ const PlayoffMatchDetails: React.FC = () => {
 
   const arrangeHost =
     arrangeLeg && tie.coinToss ? getLadderPlayoffLegHost(tie.coinToss, arrangeLeg) : null;
-  const arrangeCourt: Court | null = homeCourtState.homeCourt
+  const homeCourt: Court | null = homeCourtState.homeCourt
     ? (homeCourtState.homeCourt as unknown as Court)
     : null;
 
@@ -381,6 +295,16 @@ const PlayoffMatchDetails: React.FC = () => {
       </TopBar>
 
       <Scroll contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
+        {isOpen ? (
+          <PlayoffCoinFlip
+            result={tie.coinToss?.firstHost ?? null}
+            team1Name={team1Name}
+            team2Name={team2Name}
+            canFlip={!!userSide}
+            onFlip={() => flipPlayoffCoin(ladderId, tieId)}
+          />
+        ) : null}
+
         <ScoreCard testID="playoff-match-aggregate">
           <SideName numberOfLines={2}>{team1Name}</SideName>
           <Aggregate>
@@ -402,16 +326,6 @@ const PlayoffMatchDetails: React.FC = () => {
         </Muted>
         {outcomeLine ? <Result testID="playoff-match-outcome">{outcomeLine}</Result> : null}
 
-        {isOpen ? (
-          <PlayoffCoinFlip
-            result={tie.coinToss?.firstHost ?? null}
-            team1Name={team1Name}
-            team2Name={team2Name}
-            canFlip={!!userSide}
-            onFlip={() => flipPlayoffCoin(ladderId, tieId)}
-          />
-        ) : null}
-
         {renderLeg(1)}
         {renderLeg(2)}
 
@@ -432,24 +346,16 @@ const PlayoffMatchDetails: React.FC = () => {
         {actionError ? <ErrorText testID="playoff-match-error">{actionError}</ErrorText> : null}
       </Scroll>
 
-      {arrangeLeg && arrangeHost && arrangeCourt ? (
-        <ScheduleMatchModal
+      {arrangeLeg && arrangeHost ? (
+        <PlayoffMatchScheduleModal
           visible
           onClose={() => setArrangeLeg(null)}
+          ladder={ladder}
           title={`Arrange match ${arrangeLeg}`}
-          courtName={arrangeCourt.courtName}
           bestOf={tie.bestOf ?? 5}
-          deadline={tie.deadlineAt ? toMoment(tie.deadlineAt)?.toDate() ?? null : null}
-          submitLabel="Send to opponent"
-          testID="arrange-playoff-match"
-          onSubmit={(time) =>
-            arrange(arrangeLeg, arrangeHost, {
-              ...time,
-              court: arrangeCourt,
-              currencyType: ladder.currencyType,
-              shuttleType: SHUTTLE_TYPE.FEATHER,
-            })
-          }
+          deadline={deadline?.toDate() ?? null}
+          defaultCourt={homeCourt}
+          onSubmit={(input) => arrange(arrangeLeg, arrangeHost, input)}
         />
       ) : null}
     </Screen>

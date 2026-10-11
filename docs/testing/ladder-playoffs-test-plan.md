@@ -149,17 +149,17 @@ update the global profile only, never ladder standings.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 6.1 | A player opens a game with no coin toss | Coin shows "Tap the coin to decide who hosts first"; tapping spins it and shows "Coin toss: X hosts the first match" 🅹 🅼 |
-| 6.2 | A viewer opens the same game | "Waiting for the coin toss", no coin 🅹 🅼 |
+| 6.1 | A player opens a game with no coin toss | The coin is at the top above the aggregate, with "Heads: X hosts first · Tails: Y hosts first"; tapping tosses it, it lands on the result face and only then shows "Coin toss: X hosts the first match" 🅹 🅼 |
+| 6.2 | A viewer opens the same game | "Waiting for the coin toss", the coin cannot be tapped 🅹 🅼 |
 | 6.3 | Both players flip at once | One saved result; the second call returns it; the other side is notified once 🅴 |
 | 6.4 | Someone outside the game, or signed out, calls the flip | Refused ("Only players in this game can flip." / "Sign in to flip the coin.") 🅴 |
-| 6.5 | Coin winner, match 1 not arranged | "Arrange your home match" opens "Arrange match 1" at their home court with the date, time and court-time line ("about 2 hours for best of 7") 🅹 🅼 |
-| 6.6 | Coin loser, match 1 not arranged | "Waiting for X to arrange this match" on match 1; their own "Arrange" on match 2 🅹 🅼 |
-| 6.7 | Host without a home court | "Choose your home court to arrange this match." with the home court picker 🅹 🅼 |
-| 6.8 | Arrange: past time, no date, after the deadline | Inline error inside the modal; nothing written 🅹 🅼 |
+| 6.5 | Coin winner, match 1 not arranged | The "Arrange your home match" placeholder opens the Post a Match modal titled "Arrange match 1": home court preselected (any court can be chosen), best of 7 fixed, shuttle type to choose, the court-time line, "There are no court fees in the playoffs…" instead of a fee, and "Send to opponent" 🅹 🅼 |
+| 6.6 | Coin loser, match 1 not arranged | "Waiting for your opponent to arrange their home match" on match 1; their own "Arrange your home match" on match 2. Onlookers see "Waiting for X to arrange their home match"; before the toss both read "Arranged after the coin toss" 🅹 🅼 |
+| 6.7 | Host without a home court | No court preselected; they pick any court in the modal 🅹 🅼 |
+| 6.8 | Arrange: past time, no date, after the tie deadline | Inline error inside the modal; nothing written 🅹 🅼 |
 | 6.9 | Arrange the same match twice | The second write is refused ("exists") 🅹 |
 | 6.10 | A posted match | Only the other side sees Accept; accepting makes it accepted 🅹 🅼 |
-| 6.11 | Match 1 complete | "Play the second match here now" offered 🅹 🅼 |
+| 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag 🅹 🅼 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
 | 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |
 | 6.14 | Same actions on a regular ladder match during playoffs | Still frozen (section 2 of the reliability plan) 🅹 🅼 |

@@ -28,13 +28,14 @@ describe("MatchCard", () => {
     expect(getByText("18 Oct")).toBeTruthy();
   });
 
-  it("falls back to TBD before a court and date are set", () => {
-    const { getByText } = render(
-      <MatchCard
-        match={match({ court: { courtName: "" }, matchDate: "", matchTime: { start: "" } })}
-      />,
-    );
-    expect(getByText(/Court location TBD/)).toBeTruthy();
-    expect(getByText("TBD")).toBeTruthy();
+  it("shows the court fee on ladder matches but not on playoff matches", () => {
+    expect(
+      render(<MatchCard match={match()} />).getByText("No court fee"),
+    ).toBeTruthy();
+    expect(
+      render(
+        <MatchCard match={match({ playoffTieId: "r1-s0" })} />,
+      ).queryByText("No court fee"),
+    ).toBeNull();
   });
 });
