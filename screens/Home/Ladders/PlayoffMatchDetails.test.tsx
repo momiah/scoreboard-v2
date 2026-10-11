@@ -152,6 +152,12 @@ describe("PlayoffMatchDetails", () => {
     await waitFor(() => expect(value.flipPlayoffCoin).toHaveBeenCalledWith("L1", "r1-s0"));
   });
 
+  it("shows a match card for each match before it is arranged", () => {
+    const { getByTestId } = renderScreen({ userId: "u1", tie: tossed("team1") });
+    expect(getByTestId("playoff-match-leg1-tbd")).toBeTruthy();
+    expect(getByTestId("playoff-match-leg2-tbd")).toBeTruthy();
+  });
+
   it("makes viewers wait for the coin toss", () => {
     const { getByTestId } = renderScreen({ userId: "stranger", tie: baseTie() });
     expect(getByTestId("playoff-coin-waiting")).toBeTruthy();

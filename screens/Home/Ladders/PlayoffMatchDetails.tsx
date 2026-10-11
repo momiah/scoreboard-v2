@@ -17,6 +17,7 @@ import {
   SHUTTLE_TYPE,
 } from "@shared";
 import {
+  buildLadderPlayoffLegMatch,
   getLadderPlayoffLegHost,
   roundLabel,
   tallyLadderPlayoffTie,
@@ -218,6 +219,29 @@ const PlayoffMatchDetails: React.FC = () => {
     const match = legs.get(leg);
     const host = tie.coinToss ? getLadderPlayoffLegHost(tie.coinToss, leg) : null;
     const label = `Match ${leg}${host ? ` · ${nameOf(host)} at home` : ""}`;
+    const hostCourt = host ? tie[host === "team1" ? "side1" : "side2"]?.homeCourt : null;
+    const unarranged =
+      tie.side1 && tie.side2
+        ? buildLadderPlayoffLegMatch({
+            tie,
+            leg,
+            host: host ?? "team1",
+            ladderMatchId: `${tie.tieId}-leg${leg}`,
+            ladderType: ladder.ladderType,
+            input: {
+              court: (hostCourt ?? { courtName: "" }) as unknown as Court,
+              matchDate: "",
+              matchTime: { start: "" },
+              currencyType: ladder.currencyType,
+              shuttleType: SHUTTLE_TYPE.FEATHER,
+            },
+            createdBy: "",
+            now: new Date(),
+          })
+        : null;
+    const unarrangedCard = unarranged ? (
+      <MatchCard match={unarranged} testID={`playoff-match-leg${leg}-tbd`} />
+    ) : null;
 
     if (match) {
       const awaitingUser =
@@ -251,6 +275,7 @@ const PlayoffMatchDetails: React.FC = () => {
       return (
         <LegSection key={leg}>
           <LegLabel>{label}</LegLabel>
+          {unarrangedCard}
           <Muted>{host ? "Not arranged" : "Arranged after the coin toss"}</Muted>
         </LegSection>
       );
@@ -265,6 +290,7 @@ const PlayoffMatchDetails: React.FC = () => {
       return (
         <LegSection key={leg}>
           <LegLabel>{label}</LegLabel>
+          {unarrangedCard}
           {userSide === host ? (
             <ActionPlaceholder
               message="Arrange your home match"
@@ -290,6 +316,7 @@ const PlayoffMatchDetails: React.FC = () => {
         return (
           <LegSection key={leg}>
             <LegLabel>{label}</LegLabel>
+            {unarrangedCard}
             <Muted>Choose your home court to arrange this match.</Muted>
             <LadderHomeCourtSection
               ladder={ladder}
@@ -304,6 +331,7 @@ const PlayoffMatchDetails: React.FC = () => {
       return (
         <LegSection key={leg}>
           <LegLabel>{label}</LegLabel>
+          {unarrangedCard}
           <ActionPlaceholder
             message="Arrange your home match"
             icon="calendar-outline"
@@ -318,6 +346,7 @@ const PlayoffMatchDetails: React.FC = () => {
     return (
       <LegSection key={leg}>
         <LegLabel>{label}</LegLabel>
+        {unarrangedCard}
         <Muted>Waiting for {nameOf(host)} to arrange this match</Muted>
       </LegSection>
     );
@@ -375,7 +404,9 @@ const PlayoffMatchDetails: React.FC = () => {
 
         {isOpen ? (
           <PlayoffCoinFlip
-            hostName={tie.coinToss ? nameOf(tie.coinToss.firstHost) : null}
+            result={tie.coinToss?.firstHost ?? null}
+            team1Name={team1Name}
+            team2Name={team2Name}
             canFlip={!!userSide}
             onFlip={() => flipPlayoffCoin(ladderId, tieId)}
           />

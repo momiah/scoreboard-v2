@@ -54,7 +54,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   testID,
 }) => {
   const city = match.court?.location?.city;
-  const courtName = match.court?.courtName ?? "";
+  const courtName = match.court?.courtName || "Court location TBD";
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
   const isCompleted = match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
@@ -131,7 +131,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
 
         <StatCell>
           <StatDate numberOfLines={1}>
-            {formatMatchDateShort(match.matchDate)}
+            {match.matchDate ? formatMatchDateShort(match.matchDate) : "TBD"}
           </StatDate>
           <StatTime numberOfLines={1}>
             {match.matchTime?.start?.trim()}

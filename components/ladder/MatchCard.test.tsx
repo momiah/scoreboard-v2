@@ -1,0 +1,40 @@
+import React from "react";
+import { render } from "@testing-library/react-native";
+
+import MatchCard from "./MatchCard";
+
+const match = (overrides: Record<string, unknown> = {}) =>
+  ({
+    ladderMatchId: "m1",
+    court: { courtId: "c1", courtName: "Bethnal Green" },
+    bestOf: 7,
+    matchDate: "18-10-2026",
+    matchTime: { start: "18:00" },
+    courtFee: 0,
+    currencyType: "GBP",
+    participants: [],
+    games: [],
+    matchStatus: "posted",
+    shuttleType: "Feather",
+    createdBy: "u1",
+    createdAt: new Date(),
+    ...overrides,
+  }) as never;
+
+describe("MatchCard", () => {
+  it("shows the court and date", () => {
+    const { getByText } = render(<MatchCard match={match()} />);
+    expect(getByText(/Bethnal Green/)).toBeTruthy();
+    expect(getByText("18 Oct")).toBeTruthy();
+  });
+
+  it("falls back to TBD before a court and date are set", () => {
+    const { getByText } = render(
+      <MatchCard
+        match={match({ court: { courtName: "" }, matchDate: "", matchTime: { start: "" } })}
+      />,
+    );
+    expect(getByText(/Court location TBD/)).toBeTruthy();
+    expect(getByText("TBD")).toBeTruthy();
+  });
+});
