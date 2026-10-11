@@ -10,8 +10,8 @@ notifications**, with the expected outcome for each. Layers:
 - **Emulator** — the real `processLadderPhases` function against a Firestore
   emulator (`npm --prefix functions run test:emulator`). Marked 🅴.
 
-Phase 2 (the playoff match screen, aggregate scoring, scheduling) and Phase 3
-(payout) are not covered; see `docs/ladder-playoffs-phase2-notes.md`.
+Phase 2 (the playoff match screen, aggregate scoring, scheduling) is in
+section 6. Phase 3 (payout) is not covered.
 
 ## Rules under test (not changed here)
 
@@ -84,7 +84,7 @@ guard fails if they drift):
 | 2.1 | Round structure (256 → top 16) | Tabs Round of 16, Quarter-Final, Semi-Final, Final; each round's first game is visible; the Final tab shows the Final (`r4-s0`) and the 3rd/4th Playoff (`r4-s1`) as TBD 🅼 |
 | 2.2 | Proximity pairing (2048) | The user's London opponent is P0008 S and the neighbouring game is P0016 S v P0024 S, all London 🅼 🅹 |
 | 2.3 | Tree / list toggle | Switching view keeps the selected round (Quarter-Final) in both directions 🅼 |
-| 2.4 | Tapping a bracket game | Nothing happens (no navigation, no modal). Update when Phase 2 adds the playoff match screen 🅼 |
+| 2.4 | Tapping a bracket game | Opens the playoff match screen for that game: round title, aggregate card and "Best of N per match · Finish by …"; no score input or approval modal 🅼 |
 | 2.5 | Bracket scroll target and glow | The user's game is on screen without scrolling (see section 3); the glow itself is an animation and is covered by the scroll-target tests in Jest 🅹 |
 | 2.6 | Loading skeleton | `ladder-playoffs-loading` shows until the ties load 🅹 (the skeleton lasts milliseconds, so Maestro does not assert it) |
 
@@ -136,12 +136,53 @@ The unit tests in `functions/src/processLadderPhases.test.ts` cover the same
 rules with a faked Firestore (including qualifier ranking, tie-breaks and
 doubles teams).
 
+## 6. Phase 2: playoff matches
+
+Each game in the bracket is two matches, home and away, plus one deciding game
+if the aggregate is level. Rules: games won across both matches decide it; best
+of 5 up to the Round of 32, best of 7 from the Round of 16 (3rd place included);
+the decider is best of 1 at match 2's court. A server-drawn coin toss picks who
+hosts match 1. Each game has 10 days, with reminders on day 3, 6 and 9. At the
+deadline: games won, then point difference, then the higher rank; nothing
+played means void, and the next-round opponent gets a walkover. Playoff games
+update the global profile only, never ladder standings.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.1 | A player opens a game with no coin toss | Coin shows "Tap the coin to decide who hosts first"; tapping spins it and shows "Coin toss: X hosts the first match" 🅹 🅼 |
+| 6.2 | A viewer opens the same game | "Waiting for the coin toss", no coin 🅹 🅼 |
+| 6.3 | Both players flip at once | One saved result; the second call returns it; the other side is notified once 🅴 |
+| 6.4 | Someone outside the game, or signed out, calls the flip | Refused ("Only players in this game can flip." / "Sign in to flip the coin.") 🅴 |
+| 6.5 | Coin winner, match 1 not arranged | "Arrange your home match" opens "Arrange match 1" at their home court with the date, time and court-time line ("about 2 hours for best of 7") 🅹 🅼 |
+| 6.6 | Coin loser, match 1 not arranged | "Waiting for X to arrange this match" on match 1; their own "Arrange" on match 2 🅹 🅼 |
+| 6.7 | Host without a home court | "Choose your home court to arrange this match." with the home court picker 🅹 🅼 |
+| 6.8 | Arrange: past time, no date, after the deadline | Inline error inside the modal; nothing written 🅹 🅼 |
+| 6.9 | Arrange the same match twice | The second write is refused ("exists") 🅹 |
+| 6.10 | A posted match | Only the other side sees Accept; accepting makes it accepted 🅹 🅼 |
+| 6.11 | Match 1 complete | "Play the second match here now" offered 🅹 🅼 |
+| 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
+| 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |
+| 6.14 | Same actions on a regular ladder match during playoffs | Still frozen (section 2 of the reliability plan) 🅹 🅼 |
+| 6.15 | Both matches complete, aggregate level | One checked-in best-of-1 decider at match 2's court; both sides notified 🅴 🅼 |
+| 6.16 | Both matches complete, one side ahead | Winner goes through; the next-round game fills; both semi winners open the Final; "Congratulations! You've reached the …" sent 🅴 |
+| 6.17 | Deadline passes with games played | Decided on games, then points, then rank; outcome "deadline" 🅴 |
+| 6.18 | Deadline passes with nothing played | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |
+| 6.19 | Day 3, 6, 9 | One reminder each ("N days left to finish your …"), never repeated 🅴 |
+| 6.20 | Posted playoff matches | Not listed in Matchmaking 🅹 |
+| 6.21 | Settled game | "X goes through." or the void line; the coin result is hidden 🅹 🅼 |
+
+Emulator cases are in `functions/src/ladderPlayoffTies.emulator.test.ts` and
+`functions/src/autoApproveLadderGames.emulator.test.ts`; the screen in
+`screens/Home/Ladders/PlayoffMatchDetails.test.tsx`; the rules in the shared
+`ladderPlayoffMatches.test.js`.
+
 ## Not covered
 
 - The bracket glow animation and the loading skeleton in Maestro (they last
   milliseconds); both are covered in Jest.
-- Phase 2 (playoff match screen, aggregate scoring, scheduling, result
-  notifications) and Phase 3 (payout).
+- Phase 3 (payout).
+- Phase 2 flows beyond 2.4 until their seeds exist (see the playoff section of
+  [maestro-backlog.md](maestro-backlog.md)).
 - A push actually arriving on a physical phone, and the deployed Cloud
   Scheduler job firing in production. The tests assert the exact Expo request
   the function sends and the schedule it declares; delivery by Expo and
@@ -172,7 +213,7 @@ notifications.
 | `ladder-playoffs-round-structure` | 2.1 |
 | `ladder-playoffs-proximity-opponent` | 2.2 |
 | `ladder-playoffs-bracket-view-toggle` | 2.3 |
-| `ladder-playoffs-tap-game-does-nothing` | 2.4 |
+| `ladder-playoffs-tap-game-opens-match` | 2.4 |
 | `ladder-playoffs-promotion-notification` | 3.1 |
 | `ladder-playoffs-open-from-playoffs-tab` | 3.2 |
 | `ladder-playoffs-open-from-schedule-placeholder` | 3.3 |

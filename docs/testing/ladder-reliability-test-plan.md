@@ -38,6 +38,8 @@ both read the docs inside a transaction, call it, and persist what it returns.
 | 2.4 | Auto-approval on a frozen ladder | Skipped 🅹 |
 | 2.5 | Approval notification modal | Shows the disclaimer, Accept and Decline do nothing 🅼 (`ladder-freeze-approval-modal-disclaimer`) 🅹 |
 | 2.6 | Accept-match modal, Game screen, dispute screen | Disclaimer shown and actions locked 🅼 (`ladder-freeze-accept-match-modal-disclaimer`, `ladder-freeze-game-screen-disclaimer`, `ladder-freeze-dispute-screen-disclaimer`) |
+| 2.7 | Any of 2.1, 2.3, 2.4 on a playoff match (`playoffTieId` set) during playoffs | Allowed; the user is scored, ladder participants and teams are not 🅹 🅴 |
+| 2.8 | A playoff match once the ladder is completed or cancelled | `frozen` 🅹 |
 
 ## 3. Joining
 

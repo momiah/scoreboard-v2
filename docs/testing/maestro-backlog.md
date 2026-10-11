@@ -98,8 +98,72 @@ notifications) is covered in
 [ladder-playoffs-test-plan.md](ladder-playoffs-test-plan.md), including the
 manual Cloud Scheduler checks. Remaining:
 
-- Update `ladder-playoffs-tap-game-does-nothing` when Phase 2 adds the playoff
-  match screen, and add flows for the match, scheduling and result notifications
-  once they exist.
+- `ladder-playoffs-tap-game-opens-match` replaces the old "tap does nothing"
+  flow (2.4).
 - The bracket glow is an animation, so Maestro only asserts the game is on
   screen; the scroll target logic stays covered in Jest.
+
+### Phase 2: playoff matches
+
+Rules and scenario numbers are in section 6 of
+[ladder-playoffs-test-plan.md](ladder-playoffs-test-plan.md). Backend-only
+cases (simultaneous coin flips, deadlines, voids, walkovers, reminders) are
+covered by the emulator; Maestro covers what a player sees.
+
+Seeds to add to `maestro/seeds/seedLadderPlayoffs.js` (a small bracket, the test
+user in `r1-s0`, written as the functions would):
+
+- `coinPending`: no `coinToss`.
+- `coinWon` / `coinLost`: `coinToss.firstHost` on the test user's side / the
+  other side, no matches.
+- `noHomeCourt`: `coinWon`, test user without a home court.
+- `leg1Posted`: match 1 `posted` by the opponent (`r1-s0-leg1`).
+- `leg1Complete`: match 1 completed with games (test user 2–1 up).
+- `level`: both matches complete and level, with the decider (`-leg3`,
+  best of 1, accepted, checked in) and its notification.
+- `settled` / `void`: tie `completed` with `outcome` `played` / `void`.
+- `viewer`: the test user is not in the game.
+- `playoffRegular`: an accepted regular ladder match with a reported game,
+  alongside a playoff match with a reported game, ladder in playoffs.
+
+Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
+`ArrangePlayoffMatchModal`):
+
+1. `ladder-playoffs-coin-flip` (`coinPending`): tap `playoff-coin-flip` →
+   "Coin toss: .* hosts the first match" (`playoff-coin-result`).
+2. `ladder-playoffs-coin-viewer` (`viewer`): `playoff-coin-waiting` visible,
+   no `playoff-coin-flip`.
+3. `ladder-playoffs-arrange-home` (`coinWon`): tap
+   `playoff-match-leg1-arrange` → `arrange-playoff-match` with "Arrange match
+   1", the court name and `arrange-playoff-match-court-time` ("about 2 hours
+   for best of 7"); send without a date → `arrange-playoff-match-error` "Pick a
+   date."; pick a date and time → send → match 1 card shows posted.
+4. `ladder-playoffs-arrange-away-waiting` (`coinLost`): "Waiting for .* to
+   arrange this match" on match 1; `playoff-match-leg2-arrange` visible.
+5. `ladder-playoffs-arrange-needs-home-court` (`noHomeCourt`): "Choose your
+   home court to arrange this match." and the home court picker; choose one →
+   the Arrange button appears.
+6. `ladder-playoffs-accept-match` (`leg1Posted`): tap
+   `playoff-match-leg1-accept` → card shows accepted. A host-side run of the
+   same seed asserts no accept button.
+7. `ladder-playoffs-play-here-now` (`leg1Complete`): `playoff-match-play-here`
+   visible on match 2; aggregate reads "2 – 1".
+8. `ladder-playoffs-report-during-playoffs` (`playoffRegular`): open the playoff
+   match → report a score, approve from the notification modal, open a
+   dispute: all allowed. Then open the regular match → the freeze disclaimers
+   still show and actions stay locked.
+9. `ladder-playoffs-decider` (`level`): "Level on aggregate. One deciding game
+   to play." and `playoff-match-decider`; the decider notification opens the
+   screen.
+10. `ladder-playoffs-settled` (`settled`, `void`): `playoff-match-outcome`
+    reads "X goes through." / "Not played in time, so neither side goes
+    through.", no coin result.
+11. `ladder-playoffs-round-reached-notification`: the seeded "Congratulations!
+    You've reached the …" notification opens the next game's screen.
+12. `ladder-post-match-court-time`: Post a Match shows the court-time line for
+    the ladder's best-of.
+13. Matchmaking (`leg1Posted`): the posted playoff match is not listed.
+
+Cleanup: `cleanupLadderTestData` must also delete `playoffTies` legs (match
+ids ending `-leg1`, `-leg2`, `-leg3`) and the coin-flip, decider, reminder and
+round-reached notifications.
