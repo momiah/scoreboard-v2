@@ -159,15 +159,29 @@ beforeEach(() => {
 });
 
 describe("PlayoffMatchDetails", () => {
-  it("shows the round, format and deadline", () => {
+  it("shows the round, the best-of and a live countdown to the deadline", () => {
     const { getByText, getByTestId } = renderScreen({
       userId: "u1",
       tie: baseTie(),
     });
     expect(getByText("Final")).toBeTruthy();
-    expect(getByTestId("playoff-match-format").props.children.join("")).toMatch(
-      /^Best of 7 per match · Finish by /,
+    expect(getByTestId("playoff-match-format")).toHaveTextContent(
+      /Best of 7.*per match/,
     );
+    expect(getByTestId("playoff-match-deadline")).toHaveTextContent(
+      /\d+ days? and \d+ hours?to complete both matches|Time's up/,
+    );
+  });
+
+  it("lets the host arrange a match again after it was cancelled", () => {
+    const matches = [leg(1, { matchStatus: "cancelled" })];
+    const { getByTestId, queryByTestId } = renderScreen({
+      userId: "u1",
+      tie: tossed("team1"),
+      matches,
+    });
+    expect(queryByTestId("playoff-match-leg1")).toBeNull();
+    expect(getByTestId("playoff-match-leg1-arrange")).toBeTruthy();
   });
 
   it("lets a player flip the coin", async () => {

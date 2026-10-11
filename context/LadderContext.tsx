@@ -90,6 +90,7 @@ import {
   canExtendLadderMatch,
   getOpponentSideIds,
   getSameSideIds,
+  isLadderMatchCalledOff,
 } from "../helpers/ladderMatchCancellation";
 import {
   isLadderFinished,
@@ -1341,7 +1342,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       try {
         return await runTransaction(db, async (transaction) => {
           const existing = await transaction.get(matchRef);
-          if (existing.exists()) {
+          if (
+            existing.exists() &&
+            !isLadderMatchCalledOff(existing.data() as LadderMatch)
+          ) {
             return { success: false, reason: "exists" } as const;
           }
           transaction.set(

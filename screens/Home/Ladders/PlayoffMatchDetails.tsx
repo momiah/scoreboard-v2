@@ -36,7 +36,11 @@ import PlayoffMatchScheduleModal from "../../../components/Modals/PlayoffMatchSc
 import { SkeletonWrapper } from "../../../components/Skeletons/SkeletonComponents";
 import { useLadderHomeCourt } from "../../../hooks/useLadderHomeCourt";
 import { toMoment } from "../../../helpers/ladderPhases";
-import { getOpponentSideIds } from "../../../helpers/ladderMatchCancellation";
+import { formatTimeLeft } from "../../../helpers/ladderMatchTime";
+import {
+  getOpponentSideIds,
+  isLadderMatchCalledOff,
+} from "../../../helpers/ladderMatchCancellation";
 
 interface PlayoffMatchDetailsParams {
   ladderId: string;
@@ -85,6 +89,12 @@ const PlayoffMatchDetails: React.FC = () => {
   const [matches, setMatches] = useState<LadderMatch[]>([]);
   const [arrangeLeg, setArrangeLeg] = useState<Leg | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (ladder) return;
@@ -119,7 +129,9 @@ const PlayoffMatchDetails: React.FC = () => {
   const legs = useMemo(() => {
     const byLeg = new Map<number, LadderMatch>();
     matches.forEach((match) => {
-      if (match.playoffLeg) byLeg.set(match.playoffLeg, match);
+      if (match.playoffLeg && !isLadderMatchCalledOff(match)) {
+        byLeg.set(match.playoffLeg, match);
+      }
     });
     return byLeg;
   }, [matches]);
@@ -318,12 +330,20 @@ const PlayoffMatchDetails: React.FC = () => {
           </SideName>
         </ScoreCard>
 
-        <Muted testID="playoff-match-format">
-          Best of {tie.bestOf ?? 5} per match
-          {isOpen && deadline?.isValid()
-            ? ` · Finish by ${deadline.format("ddd D MMM")}`
-            : ""}
-        </Muted>
+        <InfoRow>
+          <InfoBox testID="playoff-match-format">
+            <Ionicons name="trophy-outline" size={18} color="#FFC800" />
+            <InfoValue>Best of {tie.bestOf ?? 5}</InfoValue>
+            <InfoLabel>per match</InfoLabel>
+          </InfoBox>
+          {isOpen && deadline?.isValid() ? (
+            <InfoBox testID="playoff-match-deadline">
+              <Ionicons name="hourglass-outline" size={18} color="#00A2FF" />
+              <InfoValue>{formatTimeLeft(deadline.valueOf() - now)}</InfoValue>
+              <InfoLabel>to complete both matches</InfoLabel>
+            </InfoBox>
+          ) : null}
+        </InfoRow>
         {outcomeLine ? <Result testID="playoff-match-outcome">{outcomeLine}</Result> : null}
 
         {renderLeg(1)}
@@ -423,6 +443,34 @@ const AggregateText = styled.Text({
 const AggregateLabel = styled.Text({
   color: "#9fb8c8",
   fontSize: 11,
+});
+
+const InfoRow = styled.View({
+  flexDirection: "row",
+  gap: 12,
+});
+
+const InfoBox = styled.View({
+  flex: 1,
+  alignItems: "center",
+  gap: 4,
+  paddingVertical: 12,
+  paddingHorizontal: 8,
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.05)",
+});
+
+const InfoValue = styled.Text({
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: "bold",
+  textAlign: "center",
+});
+
+const InfoLabel = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 12,
+  textAlign: "center",
 });
 
 const Muted = styled.Text({

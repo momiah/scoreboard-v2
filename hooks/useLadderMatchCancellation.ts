@@ -42,7 +42,9 @@ export const useLadderMatchCancellation = () => {
       if (!userId) return;
       Alert.alert(
         "Cancel Match",
-        "Cancel this posted match? It will be removed from matchmaking.",
+        args.match.playoffTieId
+          ? "Cancel this playoff match? You can arrange it again before the playoff deadline."
+          : "Cancel this posted match? It will be removed from matchmaking.",
         [
           { text: "Keep Match", style: "cancel" },
           {
@@ -78,7 +80,7 @@ export const useLadderMatchCancellation = () => {
       if (!userId) return;
       Alert.alert(
         "Request cancellation",
-        "Your opponent will be asked to agree to cancel this match. If they decline, the match goes ahead and must be played.",
+        `Your opponent will be asked to agree to cancel this ${args.match.playoffTieId ? "playoff " : ""}match. If they decline, the match goes ahead and must be played.`,
         [
           { text: "Keep Match", style: "cancel" },
           {
@@ -152,7 +154,9 @@ export const useLadderMatchCancellation = () => {
     (args: CancellationArgs) => {
       Alert.alert(
         "Accept cancellation",
-        "Cancel this match? Any court fee paid is refunded to the player who accepted the match.",
+        args.match.playoffTieId
+          ? "Cancel this playoff match? It can be arranged again before the playoff deadline."
+          : "Cancel this match? Any court fee paid is refunded to the player who accepted the match.",
         [
           { text: "Keep Match", style: "cancel" },
           {

@@ -63,6 +63,12 @@ export const getOpponentSideIds = (
   return [];
 };
 
+export const isLadderMatchCalledOff = (
+  match: Pick<LadderMatch, "matchStatus">,
+): boolean =>
+  match.matchStatus === LADDER_MATCH_STATUS.CANCELLED ||
+  match.matchStatus === LADDER_MATCH_STATUS.EXPIRED;
+
 export const hasReportedLadderGame = (
   match: Pick<LadderMatch, "games">,
 ): boolean =>
