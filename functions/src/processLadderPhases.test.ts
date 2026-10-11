@@ -53,13 +53,13 @@ function collectionRef(path: string): any {
     count: () => ({
       get: async () => ({ data: () => ({ count: docs().length }) }),
     }),
-    where: (field: string, op: string, values: unknown[]) => {
-      if (op !== "in") throw new Error(`unsupported op ${op}`);
+    where: (field: string, op: string, value: unknown) => {
+      if (op !== "in" && op !== "==") throw new Error(`unsupported op ${op}`);
+      const matches = (fieldValue: unknown) =>
+        op === "in" ? (value as unknown[]).includes(fieldValue) : fieldValue === value;
       return {
         get: async () => ({
-          docs: docs().filter((doc) =>
-            values.includes((doc.data() as Data)[field]),
-          ),
+          docs: docs().filter((doc) => matches((doc.data() as Data)[field])),
         }),
       };
     },
@@ -297,6 +297,8 @@ describe("registration close", () => {
       cancelled: [],
       playoffsGenerated: [],
       playoffsHeld: [],
+      playoffTiesSettled: [],
+      playoffRemindersSent: 0,
     });
     expect(writeLog).toHaveLength(0);
   });

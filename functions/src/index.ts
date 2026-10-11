@@ -13,6 +13,7 @@ import { autoExpireLadderMatches } from "./autoExpireLadderMatches";
 import { onLadderMatchStatusChange } from "./onLadderMatchStatusChange";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { processLadderPhases } from "./processLadderPhases";
+import { flipLadderPlayoffCoin } from "./flipLadderPlayoffCoin";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
@@ -38,6 +39,7 @@ export {
   onLadderMatchStatusChange,
   autoVoidLadderDisputes,
   processLadderPhases,
+  flipLadderPlayoffCoin,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,
   updateGameVideoUrl,

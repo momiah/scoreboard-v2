@@ -199,6 +199,8 @@ describe("playoffs generated for a 2048-player ladder", () => {
       cancelled: [],
       playoffsGenerated: ["L2048"],
       playoffsHeld: [],
+      playoffTiesSettled: [],
+      playoffRemindersSent: 0,
     });
     expect(await ladderData("L2048")).toMatchObject({
       status: LADDER_STATUS.PLAYOFFS,

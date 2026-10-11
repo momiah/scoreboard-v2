@@ -1,12 +1,44 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 
 import { LADDER_MATCH_STATUS } from "courtchamps-shared/types";
-import type { LadderMatch } from "courtchamps-shared/types";
+import type { Ladder, LadderMatch } from "courtchamps-shared/types";
+import * as admin from "firebase-admin";
+
+import {
+  notifyLadderPlayoffResolution,
+  resolveLadderPlayoffTie,
+} from "./helpers/ladderPlayoffTies";
 
 import {
   reconcileLadderCourtFee,
   type LadderMatchOutcomeKind,
 } from "./helpers/courtFee";
+
+const settleLadderPlayoffTie = async (
+  ladderId: string,
+  tieId: string,
+): Promise<void> => {
+  try {
+    const db = admin.firestore();
+    const resolution = await resolveLadderPlayoffTie({
+      db,
+      ladderId,
+      tieId,
+      now: new Date(),
+    });
+    if (!resolution) return;
+    const ladderSnapshot = await db.collection("ladders").doc(ladderId).get();
+    await notifyLadderPlayoffResolution({
+      ladder: { ladderId, name: (ladderSnapshot.data() as Ladder)?.name ?? "the ladder" },
+      resolution,
+    });
+  } catch (error) {
+    console.error(
+      `[playoffs] could not settle tie ${ladderId}/${tieId}:`,
+      error,
+    );
+  }
+};
 
 const TERMINAL_STATUSES: string[] = [
   LADDER_MATCH_STATUS.COMPLETED,
@@ -43,6 +75,14 @@ export const onLadderMatchStatusChange = onDocumentUpdated(
     const before = event.data?.before.data() as LadderMatch | undefined;
     const after = event.data?.after.data() as LadderMatch | undefined;
     if (!before || !after) return;
+
+    if (
+      after.playoffTieId &&
+      after.matchStatus === LADDER_MATCH_STATUS.COMPLETED &&
+      before.matchStatus !== LADDER_MATCH_STATUS.COMPLETED
+    ) {
+      await settleLadderPlayoffTie(event.params.ladderId, after.playoffTieId);
+    }
 
     // Only act when the status actually transitions into a terminal state.
     if (before.matchStatus === after.matchStatus) return;
