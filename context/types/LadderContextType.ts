@@ -2,6 +2,7 @@ import type { LadderHomeCourtState } from "../../helpers/ladderHomeCourt";
 import type {
   Court,
   Ladder,
+  LadderPlayoffCoinCall,
   LadderPlayoffTie,
   LadderPlayoffTieSide,
   LadderMatch,
@@ -349,7 +350,11 @@ export interface LadderContextType {
     matchId: string;
     userId: string;
   }) => Promise<PlayoffMatchOutcome>;
-  flipPlayoffCoin: (ladderId: string, tieId: string) => Promise<boolean>;
+  flipPlayoffCoin: (
+    ladderId: string,
+    tieId: string,
+    call: LadderPlayoffCoinCall,
+  ) => Promise<boolean>;
   subscribeToLadderPlayoffTies: (
     ladderId: string,
     onUpdate: (ties: LadderPlayoffTie[]) => void,

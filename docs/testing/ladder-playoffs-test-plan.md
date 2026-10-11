@@ -149,9 +149,9 @@ update the global profile only, never ladder standings.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 6.1 | A player opens a game with no coin toss | The coin is at the top above the aggregate, with "Heads: X hosts first · Tails: Y hosts first"; tapping tosses it, it lands on the result face and only then shows "Coin toss: X hosts the first match" 🅹 🅼 |
+| 6.1 | A player opens a game with no coin toss | The big coin is at the top above the aggregate, then "Choose where you want the first match to be played" and two coin buttons: the logo for Home, the trophy for Away. Tapping one tosses the big coin ("You called Home…"); it lands on the drawn face and only then says, for example, "You called Home. It landed on the trophy, so you're away first." The opponent sees "X called Home… so you're at home first"; onlookers "…so Y is at home first". Match labels read Home/Away from each player's side 🅹 🅼 |
 | 6.2 | A viewer opens the same game | "Waiting for the coin toss", the coin cannot be tapped 🅹 🅼 |
-| 6.3 | Both players flip at once | One saved result; the second call returns it; the other side is notified once 🅴 |
+| 6.3 | Both players flip at once | One saved result inside one transaction; the other call returns it; the other side is notified once 🅴 |
 | 6.4 | Someone outside the game, or signed out, calls the flip | Refused ("Only players in this game can flip." / "Sign in to flip the coin.") 🅴 |
 | 6.5 | Coin winner, match 1 not arranged | The "Arrange your home match" placeholder opens the Post a Match modal titled "Arrange match 1": home court preselected (any court can be chosen), best of 7 fixed, shuttle type to choose, the court-time line, "There are no court fees in the playoffs…" instead of a fee, and "Send to opponent" 🅹 🅼 |
 | 6.6 | Coin loser, match 1 not arranged | "Waiting for your opponent to arrange their home match" on match 1; their own "Arrange your home match" on match 2. Onlookers see "Waiting for X to arrange their home match"; before the toss both read "Arranged after the coin toss" 🅹 🅼 |

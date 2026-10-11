@@ -8,6 +8,7 @@ import {
 } from "courtchamps-shared/types";
 import type {
   Ladder,
+  LadderPlayoffCoinCall,
   LadderPlayoffCoinToss,
   LadderPlayoffTie,
 } from "courtchamps-shared/types";
@@ -21,19 +22,25 @@ const RANDOM_RANGE = 1_000_000;
 export interface FlipLadderPlayoffCoinData {
   ladderId: string;
   tieId: string;
+  call: LadderPlayoffCoinCall;
 }
 
 export interface FlipLadderPlayoffCoinResult {
   firstHost: LadderPlayoffCoinToss["firstHost"];
   flippedBy: string;
   flippedAt: string;
+  call: LadderPlayoffCoinToss["call"] | null;
+  face: LadderPlayoffCoinToss["face"] | null;
   alreadyFlipped: boolean;
 }
 
+const COIN_CALLS: LadderPlayoffCoinCall[] = ["home", "away"];
+
 /**
- * Flips the coin for a scheduled tie: any player in the tie can flip, the
- * result is drawn on the server and saved once. A second flip returns the
- * saved result. The opposing side is told who hosts the first match.
+ * Flips the coin for a scheduled tie: any player in the tie calls Home or Away
+ * and flips; the face is drawn on the server and saved once, inside a
+ * transaction, so a second or simultaneous flip gets the saved result. The
+ * opposing side is told who hosts the first match.
  */
 export const runFlipLadderPlayoffCoin = async ({
   userId,
@@ -51,8 +58,12 @@ export const runFlipLadderPlayoffCoin = async ({
   }
   const ladderId = data?.ladderId;
   const tieId = data?.tieId;
+  const call = data?.call;
   if (!ladderId || !tieId) {
     throw new HttpsError("invalid-argument", "ladderId and tieId are required.");
+  }
+  if (!call || !COIN_CALLS.includes(call)) {
+    throw new HttpsError("invalid-argument", "Call Home or Away.");
   }
 
   const db = admin.firestore();
@@ -78,7 +89,8 @@ export const runFlipLadderPlayoffCoin = async ({
     if (current.status !== LADDER_PLAYOFF_TIE_STATUS.SCHEDULED) {
       throw new HttpsError("failed-precondition", "This playoff game isn't open.");
     }
-    const flipped = flipCoin({ random, userId, now });
+    const side = current.side1?.playerIds.includes(userId) ? "team1" : "team2";
+    const flipped = flipCoin({ random, userId, side, call, now });
     transaction.update(tieRef, { coinToss: flipped });
     return { toss: flipped, alreadyFlipped: false, tie: current };
   });
@@ -93,6 +105,10 @@ export const runFlipLadderPlayoffCoin = async ({
     const hostName = ladderPlayoffTeamName(
       toss.firstHost === "team1" ? tie.team1 : tie.team2,
     );
+    const flipperName = ladderPlayoffTeamName(
+      flipperSide === "team1" ? tie.team1 : tie.team2,
+    );
+    const faceName = toss.face === "trophy" ? "the trophy" : "the Court Champs logo";
     const ladderSnapshot = await ladderRef.get();
     const ladderName = (ladderSnapshot.data() as Ladder | undefined)?.name ?? "the ladder";
     await notifyLadderPlayers({
@@ -100,7 +116,7 @@ export const runFlipLadderPlayoffCoin = async ({
       ladder: { ladderId },
       kind: `playoff-coin-${tieId}`,
       title: "Coin flipped",
-      message: `The coin has been flipped for your playoff game in ${ladderName}: ${hostName} hosts the first match.`,
+      message: `${flipperName} called ${call === "home" ? "Home" : "Away"} in your playoff game in ${ladderName}. It landed on ${faceName}, so ${hostName} hosts the first match.`,
       tab: "Playoffs",
       data: { tieId },
     });
@@ -114,6 +130,8 @@ export const runFlipLadderPlayoffCoin = async ({
     firstHost: toss.firstHost,
     flippedBy: toss.flippedBy,
     flippedAt: flippedAt.toISOString(),
+    call: toss.call ?? null,
+    face: toss.face ?? null,
     alreadyFlipped,
   };
 };

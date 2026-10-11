@@ -12,6 +12,7 @@ import type {
 import {
   LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIE_OUTCOME,
+  LADDER_PLAYOFF_COIN_FACE,
   LADDER_PLAYOFF_TIE_STATUS,
 } from "@shared";
 import {
@@ -98,7 +99,9 @@ const PlayoffMatchDetails: React.FC = () => {
 
   useEffect(() => {
     if (ladder) return;
-    fetchLadderById(ladderId).then((loaded: Ladder | null) => setLadder(loaded));
+    fetchLadderById(ladderId).then((loaded: Ladder | null) =>
+      setLadder(loaded),
+    );
   }, [ladder, ladderId, fetchLadderById]);
 
   useEffect(
@@ -106,7 +109,10 @@ const PlayoffMatchDetails: React.FC = () => {
     [ladderId, subscribeToLadderPlayoffTies],
   );
   useEffect(
-    () => subscribeToPlayoffMatches(ladderId, tieId, setMatches, () => setMatches([])),
+    () =>
+      subscribeToPlayoffMatches(ladderId, tieId, setMatches, () =>
+        setMatches([]),
+      ),
     [ladderId, tieId, subscribeToPlayoffMatches],
   );
 
@@ -177,7 +183,8 @@ const PlayoffMatchDetails: React.FC = () => {
       matchId: match.ladderMatchId,
       userId,
     });
-    if (!outcome.success) setActionError("Couldn't accept this match. Try again.");
+    if (!outcome.success)
+      setActionError("Couldn't accept this match. Try again.");
   };
 
   const arrange = async (
@@ -202,7 +209,9 @@ const PlayoffMatchDetails: React.FC = () => {
 
   const renderLeg = (leg: Leg) => {
     const match = legs.get(leg);
-    const host = tie.coinToss ? getLadderPlayoffLegHost(tie.coinToss, leg) : null;
+    const host = tie.coinToss
+      ? getLadderPlayoffLegHost(tie.coinToss, leg)
+      : null;
     const venue = !host
       ? ""
       : userSide
@@ -285,6 +294,29 @@ const PlayoffMatchDetails: React.FC = () => {
     );
   };
 
+  const coinResultText = (() => {
+    const toss = tie.coinToss;
+    if (!toss) return null;
+    const hostName = nameOf(toss.firstHost);
+    if (!toss.call || !toss.face)
+      return `Coin toss: ${hostName} hosts the first match`;
+    const flipperSide: LadderPlayoffTieSide = tie.side1?.playerIds.includes(
+      toss.flippedBy,
+    )
+      ? "team1"
+      : "team2";
+    const flipper = toss.flippedBy === userId ? "You" : nameOf(flipperSide);
+    const callName = toss.call === "home" ? "Home" : "Away";
+    const faceName =
+      toss.face === LADDER_PLAYOFF_COIN_FACE.LOGO ? "the logo" : "the trophy";
+    const where = !userSide
+      ? `${hostName} is at home first`
+      : userSide === toss.firstHost
+        ? "you're at home first"
+        : "you're away first";
+    return `${flipper} called ${callName}. It landed on ${faceName}, so ${where}.`;
+  })();
+
   const decider = legs.get(3);
   const outcomeLine = (() => {
     if (tie.status !== LADDER_PLAYOFF_TIE_STATUS.COMPLETED) return null;
@@ -298,7 +330,9 @@ const PlayoffMatchDetails: React.FC = () => {
   })();
 
   const arrangeHost =
-    arrangeLeg && tie.coinToss ? getLadderPlayoffLegHost(tie.coinToss, arrangeLeg) : null;
+    arrangeLeg && tie.coinToss
+      ? getLadderPlayoffLegHost(tie.coinToss, arrangeLeg)
+      : null;
   const homeCourt: Court | null = homeCourtState.homeCourt
     ? (homeCourtState.homeCourt as unknown as Court)
     : null;
@@ -306,21 +340,29 @@ const PlayoffMatchDetails: React.FC = () => {
   return (
     <Screen testID="playoff-match-details">
       <TopBar>
-        <BackButton onPress={() => navigation.goBack()} testID="playoff-match-back">
+        <BackButton
+          onPress={() => navigation.goBack()}
+          testID="playoff-match-back"
+        >
           <Ionicons name="arrow-back" size={24} color="white" />
         </BackButton>
         <TopTitle numberOfLines={1}>{roundName}</TopTitle>
         <View style={{ width: 24 }} />
       </TopBar>
 
-      <Scroll contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}>
+      <Scroll
+        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
+      >
         {isOpen ? (
           <PlayoffCoinFlip
-            result={tie.coinToss?.firstHost ?? null}
-            team1Name={team1Name}
-            team2Name={team2Name}
+            face={
+              tie.coinToss
+                ? (tie.coinToss.face ?? LADDER_PLAYOFF_COIN_FACE.LOGO)
+                : null
+            }
+            resultText={coinResultText}
             canFlip={!!userSide}
-            onFlip={() => flipPlayoffCoin(ladderId, tieId)}
+            onFlip={(call) => flipPlayoffCoin(ladderId, tieId, call)}
           />
         ) : null}
 
@@ -351,7 +393,9 @@ const PlayoffMatchDetails: React.FC = () => {
             </InfoBox>
           ) : null}
         </InfoRow>
-        {outcomeLine ? <Result testID="playoff-match-outcome">{outcomeLine}</Result> : null}
+        {outcomeLine ? (
+          <Result testID="playoff-match-outcome">{outcomeLine}</Result>
+        ) : null}
 
         {renderLeg(1)}
         {renderLeg(2)}
@@ -370,7 +414,9 @@ const PlayoffMatchDetails: React.FC = () => {
           </LegSection>
         ) : null}
 
-        {actionError ? <ErrorText testID="playoff-match-error">{actionError}</ErrorText> : null}
+        {actionError ? (
+          <ErrorText testID="playoff-match-error">{actionError}</ErrorText>
+        ) : null}
       </Scroll>
 
       {arrangeLeg && arrangeHost ? (

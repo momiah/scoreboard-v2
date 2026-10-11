@@ -32,10 +32,12 @@ const sideKey = (side) => (side === "team1" ? "side1" : "side2");
 const legId = (tie, leg) => `${tie.tieId}-leg${leg}`;
 const day = (offset) => moment().add(offset, "days").format("DD-MM-YYYY");
 
-const coinToss = (firstHost, flippedBy, now) => ({
+const coinToss = (firstHost, flippedBy, flipperSide, now) => ({
   firstHost,
   flippedBy,
   flippedAt: now,
+  call: "home",
+  face: firstHost === flipperSide ? "logo" : "trophy",
 });
 
 const playedGame = (tie, shell, winner, index) => {
@@ -179,13 +181,13 @@ export const seedLadderPlayoffMatches = async ({
 
   switch (stage) {
     case PLAYOFF_MATCH_STAGE.COIN_WON:
-      setTie(mine.tieId, { coinToss: coinToss(me, theirId, now) });
+      setTie(mine.tieId, { coinToss: coinToss(me, theirId, them, now) });
       break;
     case PLAYOFF_MATCH_STAGE.COIN_LOST:
-      setTie(mine.tieId, { coinToss: coinToss(them, theirId, now) });
+      setTie(mine.tieId, { coinToss: coinToss(them, theirId, them, now) });
       break;
     case PLAYOFF_MATCH_STAGE.LEG1_POSTED:
-      setTie(mine.tieId, { coinToss: coinToss(them, theirId, now) });
+      setTie(mine.tieId, { coinToss: coinToss(them, theirId, them, now) });
       matches.push(
         legMatch({
           tie: mine,
@@ -197,7 +199,7 @@ export const seedLadderPlayoffMatches = async ({
       );
       break;
     case PLAYOFF_MATCH_STAGE.LEG1_COMPLETE:
-      setTie(mine.tieId, { coinToss: coinToss(them, theirId, now) });
+      setTie(mine.tieId, { coinToss: coinToss(them, theirId, them, now) });
       matches.push(
         legMatch({
           tie: mine,
@@ -211,7 +213,7 @@ export const seedLadderPlayoffMatches = async ({
       break;
     case PLAYOFF_MATCH_STAGE.LEVEL:
       setTie(mine.tieId, {
-        coinToss: coinToss(me, myId, now),
+        coinToss: coinToss(me, myId, me, now),
         deciderRequired: true,
       });
       matches.push(
@@ -241,7 +243,7 @@ export const seedLadderPlayoffMatches = async ({
       );
       break;
     case PLAYOFF_MATCH_STAGE.SETTLED:
-      setTie(mine.tieId, { coinToss: coinToss(me, myId, now) });
+      setTie(mine.tieId, { coinToss: coinToss(me, myId, me, now) });
       matches.push(
         legMatch({
           tie: mine,
@@ -262,7 +264,7 @@ export const seedLadderPlayoffMatches = async ({
       );
       settle(mine.tieId, me, LADDER_PLAYOFF_TIE_OUTCOME.PLAYED);
       setTie(neighbour.tieId, {
-        coinToss: coinToss("team1", neighbour.side1.playerIds[0], now),
+        coinToss: coinToss("team1", neighbour.side1.playerIds[0], "team1", now),
       });
       matches.push(
         legMatch({
@@ -290,7 +292,7 @@ export const seedLadderPlayoffMatches = async ({
 
   if (stage !== PLAYOFF_MATCH_STAGE.SETTLED) {
     setTie(neighbour.tieId, {
-      coinToss: coinToss("team1", neighbour.side1.playerIds[0], now),
+      coinToss: coinToss("team1", neighbour.side1.playerIds[0], "team1", now),
     });
     matches.push(
       legMatch({
@@ -312,7 +314,7 @@ export const seedLadderPlayoffMatches = async ({
     );
   }
   setTie(played.tieId, {
-    coinToss: coinToss("team2", played.side1.playerIds[0], now),
+    coinToss: coinToss("team2", played.side1.playerIds[0], "team1", now),
   });
   matches.push(
     legMatch({
@@ -335,7 +337,7 @@ export const seedLadderPlayoffMatches = async ({
   settle(played.tieId, "team1", LADDER_PLAYOFF_TIE_OUTCOME.PLAYED);
   settle(voided.tieId, null, LADDER_PLAYOFF_TIE_OUTCOME.VOID);
   setTie(level.tieId, {
-    coinToss: coinToss("team1", level.side2.playerIds[0], now),
+    coinToss: coinToss("team1", level.side2.playerIds[0], "team2", now),
     deciderRequired: true,
   });
   matches.push(

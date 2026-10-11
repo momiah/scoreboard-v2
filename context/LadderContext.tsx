@@ -60,6 +60,7 @@ import type { LadderJoinUser } from "@shared/helpers";
 import type {
   Court,
   Ladder,
+  LadderPlayoffCoinCall,
   MatchTime,
   LadderPlayoffTie,
   LadderPlayoffTieSide,
@@ -1418,11 +1419,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const flipPlayoffCoin = useCallback(
-    async (ladderId: string, tieId: string): Promise<boolean> => {
+    async (
+      ladderId: string,
+      tieId: string,
+      call: LadderPlayoffCoinCall,
+    ): Promise<boolean> => {
       try {
         await httpsCallable(getFunctions(), "flipLadderPlayoffCoin")({
           ladderId,
           tieId,
+          call,
         });
         return true;
       } catch (error) {
