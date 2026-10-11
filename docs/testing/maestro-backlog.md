@@ -160,21 +160,12 @@ Rules and scenario numbers are in section 6 of
 cases (simultaneous coin flips, deadlines, voids, walkovers, reminders) are
 covered by the emulator; Maestro covers what a player sees.
 
-Seeds to add to `maestro/seeds/seedLadderPlayoffs.js` (a small bracket, the test
-user in `r1-s0`, written as the functions would):
-
-- `coinPending`: no `coinToss`.
-- `coinWon` / `coinLost`: `coinToss.firstHost` on the test user's side / the
-  other side, no matches.
-- `noHomeCourt`: `coinWon`, test user without a home court.
-- `leg1Posted`: match 1 `posted` by the opponent (`r1-s0-leg1`).
-- `leg1Complete`: match 1 completed with games (test user 2–1 up).
-- `level`: both matches complete and level, with the decider (`-leg3`,
-  best of 1, accepted, checked in) and its notification.
-- `settled` / `void`: tie `completed` with `outcome` `played` / `void`.
-- `viewer`: the test user is not in the game.
-- `playoffRegular`: an accepted regular ladder match with a reported game,
-  alongside a playoff match with a reported game, ladder in playoffs.
+Seeds: `maestro/seeds/seedLadderPlayoffMatches.js` (harness buttons
+`maestro-seed-playoff-match-<stage>`) covers `coinPending`, `coinWon`,
+`coinLost`, `leg1Posted`, `leg1Complete`, `level` and `settled`, and dresses
+other games as a viewer sees them (in progress, played, void, level). Still to
+add: `noHomeCourt` and `playoffRegular` (a regular match alongside a playoff
+match during playoffs).
 
 Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
 `ScheduleMatchModal`):

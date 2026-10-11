@@ -73,6 +73,10 @@ import {
   seedLadderPlayoffsDoubles,
 } from "./seeds/seedLadderPlayoffs";
 import {
+  PLAYOFF_MATCH_STAGE,
+  seedLadderPlayoffMatches,
+} from "./seeds/seedLadderPlayoffMatches";
+import {
   HOME_COURT_VARIANT,
   MAESTRO_HC_COURT_A_SINGLES_ID,
   MAESTRO_HC_COURT_B_ID,
@@ -163,6 +167,11 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             variant: PLAYOFF_VARIANT.CANCELLED,
           }),
       },
+      ...Object.values(PLAYOFF_MATCH_STAGE).map((stage) => ({
+        id: `maestro-seed-playoff-match-${stage}`,
+        label: `Seed Playoff Match (${stage})`,
+        run: () => seedLadderPlayoffMatches({ testUser: currentUser, stage }),
+      })),
       {
         id: "maestro-seed-ladder-playoffs-doubles",
         label: "Seed Ladder Playoffs Doubles 256 (Awaiting Function)",

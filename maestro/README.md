@@ -29,6 +29,15 @@ bundled into a release build.
   ladder. "Awaiting Function" leaves the bracket to the deployed function
   (every 15 minutes, or force-run its Cloud Scheduler job). Cleaned up by
   `cleanupLadderTestData`.
+- `seeds/seedLadderPlayoffMatches.js` — the playoff match screen. Seeds the
+  generated 256 ladder (a 16-player bracket, best of 7) and puts the test
+  user's own game at one `stage`: `coinPending`, `coinWon`, `coinLost`,
+  `leg1Posted` (the opponent posted match 1), `leg1Complete` (user 4-2 up and
+  hosting match 2), `level` (6-6 with a decider and its notification) or
+  `settled` (user through, the Quarter-Final open, with the round-reached
+  notification). Every stage also dresses other round-1 games for browsing as a
+  viewer: the user's neighbour in progress, one played, one void (its
+  neighbour gets a walkover) and one level with a decider. Same cleanup.
 
 ## Re-attaching the harness
 
