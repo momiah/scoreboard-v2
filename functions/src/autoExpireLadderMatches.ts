@@ -3,12 +3,62 @@ import * as admin from "firebase-admin";
 
 import { LADDER_MATCH_STATUS } from "courtchamps-shared/types";
 import type { LadderMatch } from "courtchamps-shared/types";
-import { isLadderMatchExpired } from "courtchamps-shared/helpers";
+import {
+  getLadderMatchExtensionDaysLeft,
+  isLadderMatchExpired,
+} from "courtchamps-shared/helpers";
+
+import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
 
 const BATCH_LIMIT = 400;
+
+const toMs = (value: unknown): number | null => {
+  if (!value) return null;
+  if (value instanceof Date) return value.getTime();
+  if (typeof (value as { toDate?: unknown }).toDate === "function") {
+    return (value as { toDate: () => Date }).toDate().getTime();
+  }
+  return null;
+};
+
+export const isLadderMatchExtensionEnding = (
+  match: Pick<LadderMatch, "extension">,
+  now: number,
+): boolean => {
+  const expiresAt = toMs(match.extension?.expiresAt);
+  return (
+    expiresAt !== null &&
+    expiresAt > now &&
+    getLadderMatchExtensionDaysLeft(expiresAt, now) === 1
+  );
+};
+
+export const remindEndingLadderMatchExtensions = async (
+  ladderId: string,
+  matches: LadderMatch[],
+  now: number,
+): Promise<number> => {
+  const ending = matches.filter((match) =>
+    isLadderMatchExtensionEnding(match, now),
+  );
+  await Promise.all(
+    ending.map((match) =>
+      notifyLadderPlayers({
+        userIds: match.participants ?? [],
+        ladder: { ladderId },
+        kind: `extension-ending-${match.ladderMatchId}`,
+        title: "Ladder match",
+        message: `Your extension has 1 day left to complete your match at ${match.court?.courtName ?? "your court"}.`,
+        tab: "Schedule",
+        data: { matchId: match.ladderMatchId },
+      }),
+    ),
+  );
+  return ending.length;
+};
 
 export const autoExpireLadderMatches = onSchedule(
   { schedule: "every 30 minutes", timeoutSeconds: 540, memory: "512MiB" },
@@ -23,6 +73,12 @@ export const autoExpireLadderMatches = onSchedule(
             .collection(LADDER_MATCHES)
             .where("matchStatus", "==", LADDER_MATCH_STATUS.ACCEPTED)
             .get();
+
+          await remindEndingLadderMatchExtensions(
+            ladderDoc.id,
+            matchesSnapshot.docs.map((matchDoc) => matchDoc.data() as LadderMatch),
+            now,
+          );
 
           const expiredRefs = matchesSnapshot.docs
             .filter((matchDoc) =>

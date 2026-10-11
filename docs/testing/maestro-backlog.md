@@ -66,6 +66,46 @@ Still to cover:
 
 - The court-fee refund on accept (server-side; see below).
 
+## Reschedule and extension
+
+Scenarios are in section 12 of
+[ladder-reliability-test-plan.md](ladder-reliability-test-plan.md). Seeds to
+add (extend `maestro/seeds/seedMatchCancellationFlow.js` rather than a new
+file): an accepted singles match with no games; one with an opponent's
+`rescheduleRequest` pending; one with one reported game; one already extended;
+a playoff leg with one reported game and a tie deadline 3 days away. Mock the
+opponent's response like `mockOpponentCancellationResponse.js`.
+
+Flows (testIDs: `match-menu-RescheduleMatch`, `match-menu-Extension`,
+`reschedule-info-modal`, `reschedule-match` (+ `-start-plus`, `-send`,
+`-error`), `extension-info-modal`, `match-reschedule-awaiting`,
+`match-reschedule-request`, `match-reschedule-accept`,
+`match-reschedule-decline`):
+
+1. `reschedule-request-sent`: menu → Reschedule Match → info modal → Choose a
+   time → pick a date → Send to opponent → back on Match Details with
+   `match-reschedule-awaiting`; the menu shows "Reschedule requested".
+2. `reschedule-past-time-refused`: pick today with a start time already passed
+   → `reschedule-match-error` "Pick a date and time in the future."
+3. `reschedule-opponent-request-accept`: `match-reschedule-request` reads "Your
+   opponent asked to move this match to .*" → Accept → the card shows the new
+   date.
+4. `reschedule-opponent-request-decline`: Decline → banner gone, date unchanged.
+5. `reschedule-requester-sees-accept` (mocked response): after the opponent
+   accepts, the notification ".* agreed to move your ladder match.*" opens the
+   match with the new date.
+6. `extension-request`: one reported game → menu shows "Request Extension", no
+   Reschedule → info modal → Extend match → "Already extended" on reopening the
+   menu.
+7. `extension-playoff-deadline`: playoff leg → the info modal shows "This
+   playoff game must be finished by .*".
+8. `extension-already-used`: "Already extended" is greyed and opens nothing.
+9. `reschedule-hidden-when-posted`: a posted match's menu has neither option.
+
+The 1-day-left reminder is server-side (`autoExpireLadderMatches`), covered in
+the functions unit tests; a seeded notification with that text can be asserted
+to open the match.
+
 ## Refunds and the platform fee
 
 The rule: the platform fee is refunded only when the **platform** cancels (the
@@ -128,7 +168,7 @@ user in `r1-s0`, written as the functions would):
   alongside a playoff match with a reported game, ladder in playoffs.
 
 Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
-`ArrangePlayoffMatchModal`):
+`ScheduleMatchModal`):
 
 1. `ladder-playoffs-coin-flip` (`coinPending`): tap `playoff-coin-flip` →
    "Coin toss: .* hosts the first match" (`playoff-coin-result`).

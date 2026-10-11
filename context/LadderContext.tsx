@@ -9,6 +9,7 @@ import {
   arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -52,11 +53,14 @@ import {
   planLadderGameApproval,
   isLadderMatchPlayFrozen,
   buildLadderPlayoffLegMatch,
+  buildLadderMatchExtension,
+  validateLadderMatchReschedule,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
 import type {
   Court,
   Ladder,
+  MatchTime,
   LadderPlayoffTie,
   LadderPlayoffTieSide,
   LadderMatch,
@@ -82,6 +86,8 @@ import { addMember, removeMember } from "../helpers/teamRoster";
 import {
   LADDER_MATCH_CANCEL_ACTION,
   getLadderMatchCancelAction,
+  getLadderMatchRescheduleAction,
+  canExtendLadderMatch,
   getOpponentSideIds,
   getSameSideIds,
 } from "../helpers/ladderMatchCancellation";
@@ -92,6 +98,8 @@ import {
   teamHasOpenLadderMatch,
 } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
+import { toMoment } from "../helpers/ladderPhases";
+import { ladderPostingDeadline } from "../helpers/ladderDayTabs";
 import { assertGameTransition } from "../helpers/assertGameTransition";
 import {
   getLadderRegistrationBlock,
@@ -115,6 +123,7 @@ import type {
   UpdateLadderGameOutcome,
   CancelLadderMatchOutcome,
   LadderMatchCancellationOutcome,
+  LadderMatchChangeOutcome,
   PlayoffMatchOutcome,
   ApproveLadderGameOutcome,
   SetLadderHomeCourtOutcome,
@@ -1393,7 +1402,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
             acceptedBy: userId,
             acceptedAt: new Date(),
-            lastUpdated: new Date(),
           });
           return { success: true } as const;
         });
@@ -2074,7 +2082,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           }
           transaction.update(matchRef, {
             cancellationRequest: { requestedBy: userId, requestedAt: new Date() },
-            lastUpdated: new Date(),
           });
           return {
             success: true,
@@ -2125,7 +2132,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           const requestedBy = match.cancellationRequest?.requestedBy ?? "";
           transaction.update(matchRef, {
             cancellationRequest: null,
-            lastUpdated: new Date(),
             ...(accept
               ? {
                   matchStatus: LADDER_MATCH_STATUS.CANCELLED,
@@ -2141,6 +2147,237 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         });
       } catch (error) {
         console.error("Error responding to ladder match cancellation:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const fetchLadderMatchDeadline = useCallback(
+    async (
+      ladderId: string,
+      match: Pick<LadderMatch, "playoffTieId">,
+    ): Promise<Date | null> => {
+      try {
+        if (match.playoffTieId) {
+          const tieSnap = await getDoc(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_PLAYOFF_TIES_COLLECTION,
+              match.playoffTieId,
+            ),
+          );
+          return toMoment(tieSnap.data()?.deadlineAt)?.toDate() ?? null;
+        }
+        const ladderSnap = await getDoc(doc(db, LADDERS_COLLECTION, ladderId));
+        return ladderSnap.exists()
+          ? ladderPostingDeadline(ladderSnap.data() as Ladder)
+          : null;
+      } catch (error) {
+        console.error("Error fetching ladder match deadline:", error);
+        return null;
+      }
+    },
+    [],
+  );
+
+  const requestLadderMatchReschedule = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+      matchDate,
+      matchTime,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+      matchDate: string;
+      matchTime: MatchTime;
+    }): Promise<LadderMatchChangeOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchSnap = await getDoc(
+        doc(db, LADDERS_COLLECTION, ladderId, LADDER_MATCHES_COLLECTION, matchId),
+      ).catch(() => null);
+      const deadline = matchSnap?.exists()
+        ? await fetchLadderMatchDeadline(ladderId, matchSnap.data() as LadderMatch)
+        : null;
+      const invalid = validateLadderMatchReschedule({
+        matchDate,
+        matchTime,
+        nowMs: Date.now(),
+        deadlineMs: deadline?.getTime() ?? null,
+      });
+      if (invalid) return { success: false, reason: "invalid_time" };
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (
+            getLadderMatchRescheduleAction(match, userId) !==
+            LADDER_MATCH_CANCEL_ACTION.REQUEST
+          ) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          transaction.update(matchRef, {
+            rescheduleRequest: {
+              requestedBy: userId,
+              requestedAt: new Date(),
+              matchDate,
+              matchTime,
+            },
+          });
+          return {
+            success: true,
+            notifyUserIds: getOpponentSideIds(match, userId),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error requesting ladder match reschedule:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [fetchLadderMatchDeadline],
+  );
+
+  const respondToLadderMatchReschedule = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+      accept,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+      accept: boolean;
+    }): Promise<LadderMatchChangeOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          const request = match.rescheduleRequest;
+          if (
+            !request ||
+            getLadderMatchRescheduleAction(match, userId) !==
+              LADDER_MATCH_CANCEL_ACTION.RESPOND
+          ) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          if (
+            accept &&
+            validateLadderMatchReschedule({
+              matchDate: request.matchDate,
+              matchTime: request.matchTime,
+              nowMs: Date.now(),
+            })
+          ) {
+            transaction.update(matchRef, { rescheduleRequest: null });
+            return { success: false, reason: "invalid_time" } as const;
+          }
+          transaction.update(matchRef, {
+            rescheduleRequest: null,
+            ...(accept
+              ? {
+                  matchDate: request.matchDate,
+                  matchTime: request.matchTime,
+                  checkIn: deleteField(),
+                }
+              : {}),
+          });
+          return {
+            success: true,
+            notifyUserIds: getSameSideIds(match, request.requestedBy),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error responding to ladder match reschedule:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const extendLadderMatch = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+    }): Promise<LadderMatchChangeOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (!canExtendLadderMatch(match, userId)) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          const tieSnap = match.playoffTieId
+            ? await transaction.get(
+                doc(
+                  db,
+                  LADDERS_COLLECTION,
+                  ladderId,
+                  LADDER_PLAYOFF_TIES_COLLECTION,
+                  match.playoffTieId,
+                ),
+              )
+            : null;
+          const capAt =
+            toMoment(tieSnap?.data()?.deadlineAt)?.toDate() ?? null;
+          const extension = buildLadderMatchExtension({
+            userId,
+            now: new Date(),
+            capAt,
+          });
+          transaction.update(matchRef, { extension });
+          return {
+            success: true,
+            expiresAt: extension.expiresAt,
+            notifyUserIds: (match.participants ?? []).filter(
+              (id) => id !== userId,
+            ),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error extending ladder match:", error);
         return { success: false, reason: "error" };
       }
     },
@@ -2405,6 +2642,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         cancelLadderMatch,
         requestLadderMatchCancellation,
         respondToLadderMatchCancellation,
+        fetchLadderMatchDeadline,
+        requestLadderMatchReschedule,
+        respondToLadderMatchReschedule,
+        extendLadderMatch,
         approveLadderGame,
         subscribeToLadderHomeCourt,
         subscribeToLadderPlayoffTies,

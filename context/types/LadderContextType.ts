@@ -7,6 +7,7 @@ import type {
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
+  MatchTime,
   Game,
   ScoreboardProfile,
   TeamStats,
@@ -112,6 +113,13 @@ export type CancelLadderMatchFailureReason =
 export interface PlayoffMatchOutcome {
   success: boolean;
   reason?: "exists" | "not_allowed" | "error";
+}
+
+export interface LadderMatchChangeOutcome {
+  success: boolean;
+  reason?: "not_allowed" | "invalid_time" | "error";
+  notifyUserIds?: string[];
+  expiresAt?: Date;
 }
 
 export interface LadderMatchCancellationOutcome {
@@ -290,6 +298,28 @@ export interface LadderContextType {
     userId: string;
     accept: boolean;
   }) => Promise<LadderMatchCancellationOutcome>;
+  fetchLadderMatchDeadline: (
+    ladderId: string,
+    match: Pick<LadderMatch, "playoffTieId">,
+  ) => Promise<Date | null>;
+  requestLadderMatchReschedule: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+    matchDate: string;
+    matchTime: MatchTime;
+  }) => Promise<LadderMatchChangeOutcome>;
+  respondToLadderMatchReschedule: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+    accept: boolean;
+  }) => Promise<LadderMatchChangeOutcome>;
+  extendLadderMatch: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+  }) => Promise<LadderMatchChangeOutcome>;
   approveLadderGame: (args: {
     ladderId: string;
     matchId: string;

@@ -5,39 +5,39 @@ import { BlurView } from "expo-blur";
 import { AntDesign } from "@expo/vector-icons";
 import { useForm } from "react-hook-form";
 
-import { SHUTTLE_TYPE } from "@shared";
-import type { Court, LadderMatchInput } from "@shared/types";
+import type { MatchTime } from "@shared/types";
 import MatchDateTimeFields from "../ladder/MatchDateTimeFields";
 import type { MatchDateTimeValues } from "../ladder/MatchDateTimeFields";
 import { courtTimeHint } from "../../helpers/ladderCourtTime";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
+import { toMoment } from "../../helpers/ladderPhases";
 
 const { width: screenWidth } = Dimensions.get("window");
 
-interface ArrangePlayoffMatchModalProps {
+interface ScheduleMatchModalProps {
   visible: boolean;
   onClose: () => void;
   title: string;
-  court: Court;
-  bestOf: number;
+  courtName: string;
+  bestOf?: number;
   deadline: Date | null;
-  currencyType: string;
-  onSubmit: (
-    input: Pick<
-      LadderMatchInput,
-      "court" | "matchDate" | "matchTime" | "currencyType" | "shuttleType"
-    >,
-  ) => Promise<string | null>;
+  submitLabel: string;
+  testID: string;
+  onSubmit: (time: {
+    matchDate: string;
+    matchTime: MatchTime;
+  }) => Promise<string | null>;
 }
 
-const ArrangePlayoffMatchModal: React.FC<ArrangePlayoffMatchModalProps> = ({
+const ScheduleMatchModal: React.FC<ScheduleMatchModalProps> = ({
   visible,
   onClose,
   title,
-  court,
+  courtName,
   bestOf,
   deadline,
-  currencyType,
+  submitLabel,
+  testID,
   onSubmit,
 }) => {
   const { setValue, watch, reset } = useForm<MatchDateTimeValues>({
@@ -67,18 +67,12 @@ const ArrangePlayoffMatchModal: React.FC<ArrangePlayoffMatchModalProps> = ({
       return;
     }
     if (deadline && start.getTime() > deadline.getTime()) {
-      setError("This match must be played before the deadline.");
+      setError(`Pick a time before ${toMoment(deadline)?.format("ddd D MMM, HH:mm")}.`);
       return;
     }
     setError(null);
     setSubmitting(true);
-    const failure = await onSubmit({
-      court,
-      matchDate,
-      matchTime,
-      currencyType,
-      shuttleType: SHUTTLE_TYPE.FEATHER,
-    });
+    const failure = await onSubmit({ matchDate, matchTime });
     setSubmitting(false);
     if (failure) {
       setError(failure);
@@ -90,40 +84,40 @@ const ArrangePlayoffMatchModal: React.FC<ArrangePlayoffMatchModalProps> = ({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
       <Backdrop>
-        <Card testID="arrange-playoff-match">
+        <Card testID={testID}>
           <Header>
             <Title>{title}</Title>
             <TouchableOpacity
               onPress={close}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              testID="arrange-playoff-match-close"
+              testID={`${testID}-close`}
             >
               <AntDesign name="close-circle" size={22} color="red" />
             </TouchableOpacity>
           </Header>
 
-          <CourtLine numberOfLines={1}>{court.courtName}</CourtLine>
+          <CourtLine numberOfLines={1}>{courtName}</CourtLine>
 
           <MatchDateTimeFields
             setValue={setValue}
             watch={watch}
             maxDate={deadline}
             playoffStartDate={null}
-            testIDPrefix="arrange-playoff-match"
+            testIDPrefix={testID}
           />
 
-          <Hint testID="arrange-playoff-match-court-time">
-            {courtTimeHint(bestOf)}
-          </Hint>
-          {error ? <ErrorText testID="arrange-playoff-match-error">{error}</ErrorText> : null}
+          {bestOf ? (
+            <Hint testID={`${testID}-court-time`}>{courtTimeHint(bestOf)}</Hint>
+          ) : null}
+          {error ? <ErrorText testID={`${testID}-error`}>{error}</ErrorText> : null}
 
           <SendButton
             activeOpacity={0.85}
             disabled={submitting}
             onPress={handleSubmit}
-            testID="arrange-playoff-match-send"
+            testID={`${testID}-send`}
           >
-            <SendText>{submitting ? "Sending…" : "Send to opponent"}</SendText>
+            <SendText>{submitting ? "Sending…" : submitLabel}</SendText>
           </SendButton>
         </Card>
       </Backdrop>
@@ -131,7 +125,7 @@ const ArrangePlayoffMatchModal: React.FC<ArrangePlayoffMatchModalProps> = ({
   );
 };
 
-export default ArrangePlayoffMatchModal;
+export default ScheduleMatchModal;
 
 const Backdrop = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,

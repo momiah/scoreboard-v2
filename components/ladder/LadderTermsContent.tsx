@@ -33,7 +33,7 @@ export const LADDER_TERMS: TermsSection[] = [
   },
   {
     title: "7. Inactive matches",
-    body: "If an accepted match sees no activity — no check-in, game or report — for 72 hours, it automatically expires. The clock starts at the scheduled start and resets whenever something happens, so any progress keeps the match alive. An expired match carries no result and no penalty for either side.",
+    body: "If an accepted match sees no activity — no check-in, game or report — for 72 hours, it automatically expires. The clock starts at the scheduled start and resets whenever something happens, so any progress keeps the match alive. An expired match carries no result and no penalty for either side. Before any game is reported, either side can ask to reschedule; the match moves only if the opponent accepts. Once a game has been reported, either side can extend the match once, giving 7 days from the request to finish it (playoff games must still finish by their deadline).",
   },
   {
     title: "8. Refunds & cancellations",

@@ -1,4 +1,5 @@
 import { LADDER_MATCH_STATUS } from "@shared";
+import { getLadderMatchChangeOption } from "@shared/helpers";
 import type { LadderMatch } from "@shared/types";
 
 type CancellableMatch = Pick<
@@ -10,6 +11,12 @@ type CancellableMatch = Pick<
   | "games"
   | "cancellationRequest"
 >;
+
+type ChangeableMatch = CancellableMatch &
+  Pick<
+    LadderMatch,
+    "rescheduleRequest" | "extension" | "walkover" | "noShowReported"
+  >;
 
 export const LADDER_MATCH_CANCEL_ACTION = {
   /** Posted and not yet accepted: cancel straight away. */
@@ -79,9 +86,41 @@ export const getLadderMatchCancelAction = (
   ) {
     return LADDER_MATCH_CANCEL_ACTION.NONE;
   }
-  const requestedBy = match.cancellationRequest?.requestedBy;
+  return getRequestAction(match, userId, match.cancellationRequest?.requestedBy);
+};
+
+const getRequestAction = (
+  match: CancellableMatch,
+  userId: string,
+  requestedBy: string | undefined,
+): LadderMatchCancelAction => {
   if (!requestedBy) return LADDER_MATCH_CANCEL_ACTION.REQUEST;
   return getSameSideIds(match, requestedBy).includes(userId)
     ? LADDER_MATCH_CANCEL_ACTION.AWAITING_RESPONSE
     : LADDER_MATCH_CANCEL_ACTION.RESPOND;
 };
+
+export const getLadderMatchRescheduleAction = (
+  match: ChangeableMatch | null | undefined,
+  userId: string | undefined,
+): LadderMatchCancelAction => {
+  if (!match || !userId || !(match.participants ?? []).includes(userId)) {
+    return LADDER_MATCH_CANCEL_ACTION.NONE;
+  }
+  if (
+    getLadderMatchChangeOption(match) !== "reschedule" ||
+    hasReportedLadderGame(match)
+  ) {
+    return LADDER_MATCH_CANCEL_ACTION.NONE;
+  }
+  return getRequestAction(match, userId, match.rescheduleRequest?.requestedBy);
+};
+
+export const canExtendLadderMatch = (
+  match: ChangeableMatch | null | undefined,
+  userId: string | undefined,
+): boolean =>
+  !!match &&
+  !!userId &&
+  (match.participants ?? []).includes(userId) &&
+  getLadderMatchChangeOption(match) === "extension";

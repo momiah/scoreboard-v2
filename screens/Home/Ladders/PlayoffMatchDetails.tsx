@@ -14,6 +14,7 @@ import {
   LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_PLAYOFF_TIE_STATUS,
+  SHUTTLE_TYPE,
 } from "@shared";
 import {
   getLadderPlayoffLegHost,
@@ -33,7 +34,7 @@ import { UserContext } from "../../../context/UserContext";
 import MatchCard from "../../../components/ladder/MatchCard";
 import PlayoffCoinFlip from "../../../components/ladder/PlayoffCoinFlip";
 import ActionPlaceholder from "../../../components/ActionPlaceholder";
-import ArrangePlayoffMatchModal from "../../../components/Modals/ArrangePlayoffMatchModal";
+import ScheduleMatchModal from "../../../components/Modals/ScheduleMatchModal";
 import LadderHomeCourtSection from "../../../components/Summary/LadderHomeCourtSection";
 import { SkeletonWrapper } from "../../../components/Skeletons/SkeletonComponents";
 import { useLadderHomeCourt } from "../../../hooks/useLadderHomeCourt";
@@ -401,15 +402,23 @@ const PlayoffMatchDetails: React.FC = () => {
       </Scroll>
 
       {arrangeLeg && arrangeHost && arrangeCourt ? (
-        <ArrangePlayoffMatchModal
+        <ScheduleMatchModal
           visible
           onClose={() => setArrangeLeg(null)}
           title={`Arrange match ${arrangeLeg}`}
-          court={arrangeCourt}
+          courtName={arrangeCourt.courtName}
           bestOf={tie.bestOf ?? 5}
           deadline={tie.deadlineAt ? toMoment(tie.deadlineAt)?.toDate() ?? null : null}
-          currencyType={ladder.currencyType}
-          onSubmit={(input) => arrange(arrangeLeg, arrangeHost, input)}
+          submitLabel="Send to opponent"
+          testID="arrange-playoff-match"
+          onSubmit={(time) =>
+            arrange(arrangeLeg, arrangeHost, {
+              ...time,
+              court: arrangeCourt,
+              currencyType: ladder.currencyType,
+              shuttleType: SHUTTLE_TYPE.FEATHER,
+            })
+          }
         />
       ) : null}
     </Screen>

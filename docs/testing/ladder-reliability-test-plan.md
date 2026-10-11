@@ -176,3 +176,27 @@ All 🅼 (`chats-tab-*`), seeded by `maestro/seeds/seedChatsTab.js`, plus 🅹
 
 Not covered: the empty state, because the test account has real chats the seed
 cannot clear.
+
+## 12. Reschedule and extension
+
+Rules in the shared `ladderMatchChanges.ts`; app eligibility in
+`helpers/ladderMatchCancellation.ts`; writes in `LadderContext`; menu in
+`MatchDetailsMenu`. An accepted match offers exactly one of these in Match
+Options: **Reschedule** before any game is reported, **Request Extension** once
+one is, or a greyed **Already extended**.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 12.1 | Accepted match, no game reported | "Reschedule Match" shown, no extension; tapping opens the info modal, then the date and time picker 🅹 |
+| 12.2 | Reschedule to a past time, or after the posting deadline (regular) or the tie deadline (playoff) | Refused inline in the picker; nothing written 🅹 |
+| 12.3 | Reschedule sent | `rescheduleRequest` stored; the opponent is notified "… asked to move your ladder match at X to Ddd D MMM, HH:mm"; the requester's side sees "Reschedule requested" (greyed) and the waiting banner 🅹 |
+| 12.4 | Opponent accepts | `matchDate` and `matchTime` change, `checkIn` cleared, the request cleared, the requester notified 🅹 |
+| 12.5 | Opponent declines | Request cleared, the time stands, the requester notified 🅹 |
+| 12.6 | Accepting after the proposed time has passed | Refused and the request cleared 🅹 |
+| 12.7 | A game is reported | Reschedule disappears; "Request Extension" appears 🅹 |
+| 12.8 | Extension taken | Applies at once: `extension.expiresAt` 7 days after the request; the other players are notified "… Your extension has 7 days left to complete your match."; the menu shows "Already extended" 🅹 |
+| 12.9 | Extension on a playoff match | The modal says "This playoff game must be finished by Ddd D MMM."; `expiresAt` is capped at the tie deadline 🅹 |
+| 12.10 | Expiry during an extension | Never before `expiresAt`; after it, the 72-hour inactivity rule applies 🅹 (shared) |
+| 12.11 | Last day of an extension | Every player gets "Your extension has 1 day left to complete your match at X." once 🅹 (functions) |
+| 12.12 | Requests and playoff accepts | Do not touch `lastUpdated`, so they never restart the 72-hour clock 🅹 |
+| 12.13 | Posted match, completed match, or a viewer | Neither option shown 🅹 |

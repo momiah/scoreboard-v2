@@ -23,7 +23,7 @@ jest.mock("../../../components/Summary/LadderHomeCourtSection", () => {
   const { Text } = require("react-native");
   return () => <Text testID="home-court-section">home court</Text>;
 });
-jest.mock("../../../components/Modals/ArrangePlayoffMatchModal", () => {
+jest.mock("../../../components/Modals/ScheduleMatchModal", () => {
   const { Text } = require("react-native");
   return ({ title }: { title: string }) => <Text testID="arrange-modal">{title}</Text>;
 });
