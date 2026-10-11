@@ -29,7 +29,7 @@ import type {
   TeamStats,
 } from "@shared/types";
 
-import DatePicker from "../DatePicker";
+import MatchDateTimeFields from "../ladder/MatchDateTimeFields";
 import OptionSelector from "../OptionSelector";
 import SearchCourt from "./SearchLocationModal";
 import LadderTermsModal from "./LadderTermsModal";
@@ -48,22 +48,11 @@ import {
   COURT_SUBMITTED_MESSAGE,
   useLadderCourts,
 } from "../../hooks/useLadderCourts";
+import { courtTimeHint } from "../../helpers/ladderCourtTime";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE * 100);
-const TIME_STEP_MINUTES = 15;
-const MINUTES_IN_DAY = 24 * 60;
-
-const pad = (n: number): string => n.toString().padStart(2, "0");
-
-const shiftTime = (time: string, deltaMinutes: number): string => {
-  const [hours, minutes] = time.split(":").map(Number);
-  let total = hours * 60 + minutes + deltaMinutes;
-  total = ((total % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
-  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
-};
-
 // A paid court fee is capped so users cannot abuse it; 0 means a free match.
 const MIN_COURT_FEE = 5;
 const MAX_COURT_FEE = 20;
@@ -330,44 +319,14 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   </WarningTag>
                 )}
 
-                <DatePicker
+                <MatchDateTimeFields
                   setValue={setValue}
                   watch={watch}
-                  errorText={errors.startDate?.message}
-                  hasEndDate={false}
-                  labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
+                  dateError={errors.startDate?.message}
                   playoffStartDate={playoffStartDate}
                   maxDate={postingDeadline}
+                  testIDPrefix="add-ladder-match"
                 />
-
-                <Label style={{ marginTop: 15, marginLeft: 5 }}>
-                  Start Time
-                </Label>
-                <TimeStepper>
-                  <TouchableOpacity
-                    testID="add-ladder-match-start-minus"
-                    onPress={() =>
-                      setValue(
-                        "startTime",
-                        shiftTime(startTime, -TIME_STEP_MINUTES),
-                      )
-                    }
-                  >
-                    <AntDesign name="minus" size={20} color="#ffffff" />
-                  </TouchableOpacity>
-                  <TimeText>{startTime}</TimeText>
-                  <TouchableOpacity
-                    testID="add-ladder-match-start-plus"
-                    onPress={() =>
-                      setValue(
-                        "startTime",
-                        shiftTime(startTime, TIME_STEP_MINUTES),
-                      )
-                    }
-                  >
-                    <AntDesign name="plus" size={20} color="#ffffff" />
-                  </TouchableOpacity>
-                </TimeStepper>
 
                 <OptionSelector
                   setValue={setValue}
@@ -376,6 +335,9 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   label="Best of"
                   options={[...LADDER_MATCH_BEST_OF_OPTIONS]}
                 />
+                <CourtTimeHint testID="add-ladder-match-court-time">
+                  {courtTimeHint(watch("bestOf"))}
+                </CourtTimeHint>
 
                 <OptionSelector
                   setValue={setValue}
@@ -574,23 +536,7 @@ const CourtSelectorText = styled.Text<{ selected: boolean }>(
   }),
 );
 
-const TimeStepper = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  height: 40,
-  borderRadius: 6,
-  paddingHorizontal: 16,
-  marginBottom: 10,
-  marginHorizontal: 10,
-  backgroundColor: "rgba(255, 255, 255, 0.1)",
-});
 
-const TimeText = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
-});
 
 const WarningTag = styled.View({
   flexDirection: "row",
@@ -601,6 +547,14 @@ const WarningTag = styled.View({
   borderRadius: 8,
   marginBottom: 16,
   backgroundColor: "rgba(245, 166, 35, 0.12)",
+});
+
+const CourtTimeHint = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 12,
+  marginTop: -4,
+  marginBottom: 10,
+  marginHorizontal: 10,
 });
 
 const WarningText = styled.Text({

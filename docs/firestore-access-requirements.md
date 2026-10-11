@@ -63,6 +63,20 @@ pairing, so a player must not be able to set an arbitrary location.
 Court-fee refunds on cancellation are settled server-side by
 `onLadderMatchStatusChange` → `reconcileLadderCourtFee`, never by the client.
 
+## Playoff matches
+
+| Path | Writer | Operation | Fields / conditions |
+|---|---|---|---|
+| `ladders/{ladderId}/ladderMatches/{tieId}-leg{1\|2}` | A player on the side hosting that match (per the tie's `coinToss`), or either side for "play the second match here now" | create | Built by `buildLadderPlayoffLegMatch`: `playoffTieId`, `playoffLeg`, both sides as `participants`, `courtFee: 0`, `matchStatus: "posted"`, the tie's `bestOf`. Only once per id (transaction); only while the tie is `scheduled`; the start must be before the tie's `deadlineAt`. |
+| same | A player on the side opposite `createdBy` | update | Accept: `matchStatus: "accepted"`, `acceptedBy`, `acceptedAt`, `lastUpdated`. Posted playoff matches never appear in Matchmaking. |
+| same | Players in the match | update | Reporting, approving and disputing exactly as regular matches (`isLadderMatchPlayFrozen` lets matches with a `playoffTieId` through while the ladder is in `playoffs`). |
+
+The decider (`playoffLeg: 3`), tie results, bracket advancement, reminders
+and the coin toss are written only by Cloud Functions
+(`onLadderMatchStatusChange`, `processLadderPhases`, the callable
+`flipLadderPlayoffCoin`). Clients must not write `playoffTies`, including
+`coinToss`.
+
 ## Ladder phases and playoffs
 
 Written only by the `processLadderPhases` Cloud Function (Admin SDK). Clients

@@ -3,6 +3,7 @@ import type {
   Court,
   Ladder,
   LadderPlayoffTie,
+  LadderPlayoffTieSide,
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
@@ -107,6 +108,11 @@ export type CancelLadderMatchFailureReason =
   | "not_participant"
   | "not_cancellable"
   | "error";
+
+export interface PlayoffMatchOutcome {
+  success: boolean;
+  reason?: "exists" | "not_allowed" | "error";
+}
 
 export interface LadderMatchCancellationOutcome {
   success: boolean;
@@ -291,6 +297,29 @@ export interface LadderContextType {
     userId: string;
     approver: { userId: string; username: string };
   }) => Promise<ApproveLadderGameOutcome>;
+  subscribeToPlayoffMatches: (
+    ladderId: string,
+    tieId: string,
+    onUpdate: (matches: LadderMatch[]) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
+  arrangePlayoffMatch: (args: {
+    ladder: Pick<Ladder, "ladderId" | "ladderType">;
+    tie: LadderPlayoffTie;
+    leg: 1 | 2;
+    host: LadderPlayoffTieSide;
+    input: Pick<
+      LadderMatchInput,
+      "court" | "matchDate" | "matchTime" | "currencyType" | "shuttleType"
+    >;
+    userId: string;
+  }) => Promise<PlayoffMatchOutcome>;
+  acceptPlayoffMatch: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+  }) => Promise<PlayoffMatchOutcome>;
+  flipPlayoffCoin: (ladderId: string, tieId: string) => Promise<boolean>;
   subscribeToLadderPlayoffTies: (
     ladderId: string,
     onUpdate: (ties: LadderPlayoffTie[]) => void,

@@ -27,6 +27,7 @@ import {
   QueryConstraint,
 } from "firebase/firestore";
 import { db } from "../services/firebase.config";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import {
   normalizeLadderStatus,
   canAcceptLadderMatch,
@@ -50,12 +51,14 @@ import {
   isSelectableLadderCourt,
   planLadderGameApproval,
   isLadderMatchPlayFrozen,
+  buildLadderPlayoffLegMatch,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
 import type {
   Court,
   Ladder,
   LadderPlayoffTie,
+  LadderPlayoffTieSide,
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
@@ -112,6 +115,7 @@ import type {
   UpdateLadderGameOutcome,
   CancelLadderMatchOutcome,
   LadderMatchCancellationOutcome,
+  PlayoffMatchOutcome,
   ApproveLadderGameOutcome,
   SetLadderHomeCourtOutcome,
   SetLadderHomeCourtFailureReason,
@@ -1266,6 +1270,157 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [getTeamLadderActivity],
   );
 
+  const subscribeToPlayoffMatches = useCallback(
+    (
+      ladderId: string,
+      tieId: string,
+      onUpdate: (matches: LadderMatch[]) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!ladderId || !tieId) {
+        onUpdate([]);
+        return () => {};
+      }
+      return onSnapshot(
+        query(
+          collection(db, LADDERS_COLLECTION, ladderId, LADDER_MATCHES_COLLECTION),
+          where("playoffTieId", "==", tieId),
+        ),
+        (snapshot) =>
+          onUpdate(
+            snapshot.docs.map(
+              (docSnap) =>
+                ({ ...docSnap.data(), ladderMatchId: docSnap.id }) as LadderMatch,
+            ),
+          ),
+        (error) => {
+          console.error("Error subscribing to playoff matches:", error);
+          onError?.(error);
+        },
+      );
+    },
+    [],
+  );
+
+  const arrangePlayoffMatch = useCallback(
+    async ({
+      ladder,
+      tie,
+      leg,
+      host,
+      input,
+      userId,
+    }: {
+      ladder: Pick<Ladder, "ladderId" | "ladderType">;
+      tie: LadderPlayoffTie;
+      leg: 1 | 2;
+      host: LadderPlayoffTieSide;
+      input: Pick<
+        LadderMatchInput,
+        "court" | "matchDate" | "matchTime" | "currencyType" | "shuttleType"
+      >;
+      userId: string;
+    }): Promise<PlayoffMatchOutcome> => {
+      const matchId = `${tie.tieId}-leg${leg}`;
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladder.ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const existing = await transaction.get(matchRef);
+          if (existing.exists()) {
+            return { success: false, reason: "exists" } as const;
+          }
+          transaction.set(
+            matchRef,
+            pruneUndefined(
+              buildLadderPlayoffLegMatch({
+                tie,
+                leg,
+                host,
+                ladderMatchId: matchId,
+                ladderType: ladder.ladderType,
+                input,
+                createdBy: userId,
+                now: new Date(),
+              }),
+            ),
+          );
+          return { success: true } as const;
+        });
+      } catch (error) {
+        console.error("Error arranging playoff match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const acceptPlayoffMatch = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+    }): Promise<PlayoffMatchOutcome> => {
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists()) return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (
+            !match.playoffTieId ||
+            match.matchStatus !== LADDER_MATCH_STATUS.POSTED ||
+            !getOpponentSideIds(match, match.createdBy).includes(userId)
+          ) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          transaction.update(matchRef, {
+            matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+            acceptedBy: userId,
+            acceptedAt: new Date(),
+            lastUpdated: new Date(),
+          });
+          return { success: true } as const;
+        });
+      } catch (error) {
+        console.error("Error accepting playoff match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const flipPlayoffCoin = useCallback(
+    async (ladderId: string, tieId: string): Promise<boolean> => {
+      try {
+        await httpsCallable(getFunctions(), "flipLadderPlayoffCoin")({
+          ladderId,
+          tieId,
+        });
+        return true;
+      } catch (error) {
+        console.error("Error flipping the playoff coin:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
   const subscribeToLadderPlayoffTies = useCallback(
     (
       ladderId: string,
@@ -2253,6 +2408,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         approveLadderGame,
         subscribeToLadderHomeCourt,
         subscribeToLadderPlayoffTies,
+        subscribeToPlayoffMatches,
+        arrangePlayoffMatch,
+        acceptPlayoffMatch,
+        flipPlayoffCoin,
         setLadderHomeCourt,
       }}
     >
