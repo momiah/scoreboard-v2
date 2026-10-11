@@ -203,7 +203,14 @@ const PlayoffMatchDetails: React.FC = () => {
   const renderLeg = (leg: Leg) => {
     const match = legs.get(leg);
     const host = tie.coinToss ? getLadderPlayoffLegHost(tie.coinToss, leg) : null;
-    const label = `Match ${leg}${host ? ` · ${nameOf(host)} at home` : ""}`;
+    const venue = !host
+      ? ""
+      : userSide
+        ? userSide === host
+          ? " · Home"
+          : " · Away"
+        : ` · ${nameOf(host)} at home`;
+    const label = `Match ${leg}${venue}`;
 
     if (match) {
       const awaitingUser =

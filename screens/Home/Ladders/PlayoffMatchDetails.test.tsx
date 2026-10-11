@@ -211,12 +211,16 @@ describe("PlayoffMatchDetails", () => {
       "Arrange match 1 | best of 7 | Home",
     );
     expect(host.getByTestId("playoff-match-leg2-waiting")).toBeTruthy();
+    expect(host.getByText("Match 1 · Home")).toBeTruthy();
+    expect(host.getByText("Match 2 · Away")).toBeTruthy();
 
     const away = renderScreen({ userId: "u2", tie: tossed("team1") });
     expect(
       away.getByText("Waiting for your opponent to arrange their home match"),
     ).toBeTruthy();
     expect(away.getByTestId("playoff-match-leg2-arrange")).toBeTruthy();
+    expect(away.getByText("Match 1 · Away")).toBeTruthy();
+    expect(away.getByText("Match 2 · Home")).toBeTruthy();
   });
 
   it("names the host for onlookers and waits for the coin before that", () => {
