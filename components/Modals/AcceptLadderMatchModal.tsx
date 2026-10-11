@@ -234,7 +234,7 @@ const AcceptLadderMatchModal: React.FC<AcceptLadderMatchModalProps> = ({
     gateUserIds,
   );
 
-  const frozen = isLadderMatchPlayFrozen(ladder.status);
+  const frozen = isLadderMatchPlayFrozen(ladder.status, match);
 
   const disableAccept =
     isOwnMatch ||

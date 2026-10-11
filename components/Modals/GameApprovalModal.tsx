@@ -392,7 +392,7 @@ const LadderGameApprovalModal = ({
           matches.find((m: LadderMatch) => m.ladderMatchId === matchId) ?? null;
         const found = matchFound?.games.find((g) => g.gameId === gameId) ?? null;
 
-        setFrozen(isLadderMatchPlayFrozen(ladder?.status));
+        setFrozen(isLadderMatchPlayFrozen(ladder?.status, matchFound));
         setLadderName(ladder?.name ?? "this ladder");
         setLadderType(ladder?.ladderType ?? LADDER_TYPE.SINGLES);
         setCompetitionType(

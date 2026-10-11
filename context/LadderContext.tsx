@@ -1366,7 +1366,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (!snap.exists()) {
             throw new AcceptLadderMatchError("MATCH_NOT_FOUND");
           }
-          if (isLadderMatchPlayFrozen(ladderSnap.data()?.status)) {
+          if (isLadderMatchPlayFrozen(ladderSnap.data()?.status, snap.data())) {
             throw new AcceptLadderMatchError("FROZEN");
           }
 
@@ -1755,7 +1755,12 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (!snap.exists()) {
             throw new Error("Ladder match not found");
           }
-          if (isLadderMatchPlayFrozen(ladderSnap.data()?.status)) {
+          if (
+            isLadderMatchPlayFrozen(
+              ladderSnap.data()?.status,
+              snap.data() as LadderMatch,
+            )
+          ) {
             throw new LadderReportBlockedError("frozen");
           }
 

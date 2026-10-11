@@ -161,7 +161,10 @@ const GameScreen: React.FC = () => {
   const hasApproved = !!liveGame?.approvers?.some(
     (approver) => approver.userId === currentUser?.userId,
   );
-  const ladderFrozen = useLadderPlayFrozen(isLadder ? ladderId : undefined);
+  const ladderFrozen = useLadderPlayFrozen(
+    isLadder ? ladderId : undefined,
+    isLadder ? matchId : undefined,
+  );
   const canApprove =
     showApproval &&
     !ladderFrozen &&

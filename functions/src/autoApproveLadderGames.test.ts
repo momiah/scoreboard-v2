@@ -494,6 +494,24 @@ describe("runAutoApproveLadderGames", () => {
     expect(batch.update).not.toHaveBeenCalled();
   });
 
+  it("still approves a playoff match during playoffs without touching ladder standings", async () => {
+    const fixture = singlesFixture([singlesGame(1), shell(2)]);
+    fixture.match.playoffTieId = "r1-s0";
+    fixture.match.playoffLeg = 1;
+    const { db, batch } = makeDb({ ...fixture, ladderStatus: "playoffs" });
+    mockFirestore.mockReturnValue(db);
+
+    await runAutoApproveLadderGames();
+
+    expect(batch.commit).toHaveBeenCalledTimes(1);
+    expect(updateByPath(batch, "ladderMatches/m1").games[0].approvalStatus).toBe(
+      notificationTypes.RESPONSE.APPROVED_GAME,
+    );
+    expect(setByPath(batch, "ladderParticipants/opp")).toBeUndefined();
+    expect(setByPath(batch, "ladderParticipants/me")).toBeUndefined();
+    expect(updateByPath(batch, "users/opp")).toBeDefined();
+  });
+
   it("keeps approving while registration is closed but playoffs have not started", async () => {
     const { db, batch } = makeDb({
       ...singlesFixture([singlesGame(1), shell(2)]),

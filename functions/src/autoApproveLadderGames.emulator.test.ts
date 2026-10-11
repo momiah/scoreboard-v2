@@ -130,6 +130,7 @@ const seedMatch = async ({
   reportedHoursAgo = 25,
   extraGames = [] as Record<string, unknown>[],
   bestOf = 3,
+  playoffTieId,
 }: {
   ladderId: string;
   matchId: string;
@@ -138,6 +139,7 @@ const seedMatch = async ({
   reportedHoursAgo?: number;
   extraGames?: Record<string, unknown>[];
   bestOf?: number;
+  playoffTieId?: string;
 }) => {
   const gameId = `${matchId}-g1`;
   await Promise.all([
@@ -152,6 +154,7 @@ const seedMatch = async ({
     db.doc(`ladders/${ladderId}/ladderMatches/${matchId}`).set({
       ladderMatchId: matchId,
       bestOf,
+      ...(playoffTieId ? { playoffTieId, playoffLeg: 1 } : {}),
       participants: [reporter, opponent],
       matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
       ladderType: LADDER_TYPE.SINGLES,
@@ -301,6 +304,24 @@ describe("runAutoApproveLadderGames against the Firestore emulator", () => {
     const match = await read("ladders/L1/ladderMatches/m1");
     expect(match.games[0].approvalStatus).toBe("pending");
     expect((await read("users/a")).profileDetail.XP).toBe(100);
+  });
+
+  it("approves a playoff match during playoffs without changing ladder standings", async () => {
+    await seedLadder("L1", LADDER_STATUS.PLAYOFFS);
+    await seedMatch({
+      ladderId: "L1",
+      matchId: "m1",
+      reporter: "a",
+      opponent: "b",
+      playoffTieId: "r1-s0",
+    });
+
+    await runAutoApproveLadderGames();
+
+    const match = await read("ladders/L1/ladderMatches/m1");
+    expect(match.games[0].approvalStatus).toBe("approved");
+    expect((await read("ladders/L1/ladderParticipants/a")).numberOfWins).toBe(0);
+    expect((await read("users/a")).profileDetail.XP).not.toBe(100);
   });
 
   it("scores once when two job runs overlap", async () => {
