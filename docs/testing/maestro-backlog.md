@@ -112,7 +112,8 @@ Sent by the scheduled `sendLadderMatchReminders` (section 13 of
 [ladder-reliability-test-plan.md](ladder-reliability-test-plan.md)), covered
 in the functions unit tests. Maestro: seed the two reminder notifications
 exactly as the function writes them (title "Match reminder", `data { ladderId,
-tab: "Schedule", matchId }`) and assert each opens the match
+tab: "Schedule", matchId }`, or `tab: "Playoffs", tieId` for a playoff match)
+and assert each opens the match
 (`match-reminder-day-opens-match`, `match-reminder-hour-opens-match`).
 
 ## Refunds and the platform fee
@@ -157,63 +158,142 @@ manual Cloud Scheduler checks. Remaining:
 
 Rules and scenario numbers are in section 6 of
 [ladder-playoffs-test-plan.md](ladder-playoffs-test-plan.md). Backend-only
-cases (simultaneous coin flips, deadlines, voids, walkovers, reminders) are
-covered by the emulator; Maestro covers what a player sees.
+cases (simultaneous coin flips, deadlines, voids, walkovers, the day 3/6/9
+reminders, settlement and the decider) are covered by the emulator suite;
+these flows cover what a player and a spectator see.
 
-Seeds: `maestro/seeds/seedLadderPlayoffMatches.js` (harness buttons
-`maestro-seed-playoff-match-<stage>`) covers `coinPending`, `coinWon`,
-`coinLost`, `leg1Posted`, `leg1Complete`, `level` and `settled`, and dresses
-other games as a viewer sees them (in progress, played, void, level). Still to
-add: `noHomeCourt` and `playoffRegular` (a regular match alongside a playoff
-match during playoffs).
+**Seed.** `maestro/seeds/seedLadderPlayoffMatches.js` (harness buttons
+`maestro-seed-playoff-match-<stage>`). It seeds "Maestro Playoffs 256", a
+16-player bracket (best of 7) a week into round 1, with 3 days left. The test
+user's own game is set by `stage`: `coinPending`, `coinWon`, `coinLost`,
+`leg1Posted`, `leg1Complete`, `level` or `settled`. The other round-1 games are
+always the same, so spectator flows can rely on them:
 
-Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
-`AddLadderMatchModal` in playoff mode via `PlayoffMatchScheduleModal`):
+- **neighbour** (the game next to the user's): match 1 complete (4-3), match 2
+  in progress today, checked in, 1 game approved and 1 awaiting approval;
+- **settled**: both matches complete, aggregate 7-5, the winner through to the
+  Quarter-Final;
+- **level**: 7-7 on aggregate, the deciding game accepted and checked in;
+- **awaiting**: match 1 posted, awaiting the away side's confirmation;
+- **upcoming**: both matches accepted, tomorrow and the day after, not
+  checked in;
+- **halfway**: match 1 complete (4-0), match 2 posted;
+- **untossed**: no coin toss yet.
 
-1. `ladder-playoffs-coin-flip` (`coinPending`): "Flip the coin to see who
-   starts at home first"; tap `playoff-coin-call-heads` → both
-   `playoff-coin-call-*` still visible, `playoff-coin-called-heads` (the glow) → `playoff-coin-result` with
-   "You're (at home|away) first"; the match labels read "Match 1 · Home"/"Away" accordingly.
-2. `ladder-playoffs-coin-viewer` (`viewer`): `playoff-coin-waiting` visible,
-   no `playoff-coin-call-heads`.
-3. `ladder-playoffs-arrange-home` (`coinWon`): tap
-   `playoff-match-leg1-arrange` → "Arrange match 1" with the home court in
-   `add-ladder-match-court-selector`, best of 7, `add-ladder-match-court-time`
-   and `add-ladder-match-no-fee` (no `add-ladder-match-fee`); change the court;
-   pick a date, accept the terms → "Send to opponent" → match 1 card shows
-   posted.
-4. `ladder-playoffs-arrange-away-waiting` (`coinLost`): `playoff-match-leg1-waiting`
-   reads "Waiting for your opponent to arrange their home match";
-   `playoff-match-leg2-arrange` visible.
-5. `ladder-playoffs-arrange-without-home-court` (`noHomeCourt`): the modal opens
-   with "Select Court"; choosing any court lets the match be sent.
-6. `ladder-playoffs-accept-match` (`leg1Posted`): the match 1 card reads
-   "Awaiting your confirmation"; the arranged notification opens the match;
-   `playoff-match-confirm-accept` → the card shows accepted. A host-side run of
-   the same seed shows "Awaiting opponent's confirmation" and
-   `playoff-match-confirm-awaiting`.
-6a. `ladder-playoffs-decline-match` (`leg1Posted`): `playoff-match-confirm-decline`
-   → back on the tie screen match 1 shows the waiting placeholder again. Needs a
-   `leg1PostedAfterDecline` seed (`scheduleDeclines: 1`) to assert only
-   `playoff-match-confirm-accept` and "You've used your one decline".
-7. `ladder-playoffs-aggregate` (`leg1Complete`): aggregate reads "4 – 2";
-   match 2 shows the arrange placeholder for its host.
-8. `ladder-playoffs-report-during-playoffs` (`playoffRegular`): open the playoff
-   match → report a score, approve from the notification modal, open a
-   dispute: all allowed. Then open the regular match → the freeze disclaimers
-   still show and actions stay locked.
-9. `ladder-playoffs-decider` (`level`): "Level on aggregate. One deciding game
-   to play." and `playoff-match-decider`; the decider notification opens the
-   screen.
-10. `ladder-playoffs-settled` (`settled`, `void`): `playoff-match-outcome`
-    reads "X goes through." / "Not played in time, so neither side goes
-    through.", no coin result.
-11. `ladder-playoffs-round-reached-notification`: the seeded "Congratulations!
-    You've reached the …" notification opens the next game's screen.
-12. `ladder-post-match-court-time`: Post a Match shows the court-time line for
-    the ladder's best-of.
-13. Matchmaking (`leg1Posted`): the posted playoff match is not listed.
+Every started match is checked in by both players, every completed match has a
+side on the majority, and every match is inside its tie's 10 days.
 
-Cleanup: `cleanupLadderTestData` must also delete `playoffTies` legs (match
-ids ending `-leg1`, `-leg2`, `-leg3`) and the coin-flip, decider, reminder and
-round-reached notifications.
+Still to add: `leg1PostedAfterDecline` (`scheduleDeclines: 1`), `noHomeCourt`
+(host with no home court) and `playoffRegular` (a regular match alongside a
+playoff match during playoffs).
+
+TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
+`AddLadderMatchModal` (playoff mode, via `PlayoffMatchScheduleModal`),
+`PlayoffMatchConfirmBanner`, `MatchDetails` and `MatchDetailsMenu`.
+
+**Opening a game**
+
+1. `ladder-playoffs-tap-game-opens-match`: tap a bracket game →
+   `playoff-match-details` with the round title, `playoff-coin`,
+   `playoff-match-aggregate` and both info boxes.
+2. `ladder-playoffs-tie-layout-spectator`: open each of the seeded spectator
+   games in turn. Every screen has the same layout: the coin, then the
+   aggregate, then `playoff-match-format` and `playoff-match-deadline`
+   ("N days and N hours" / "to complete both matches"), then match 1 and
+   match 2 headed "Match N · {name} (Home)". Nothing is tappable except match
+   cards: no `playoff-match-leg*-arrange`, no `playoff-coin-call-*` before a toss.
+
+**Coin toss (heads or tails)**
+
+3. `ladder-playoffs-coin-flip` (`coinPending`): "Flip the coin to see who
+   starts at home first", with `playoff-coin-call-heads` (logo) and
+   `playoff-coin-call-tails` (trophy). Tap heads → both call coins stay,
+   `playoff-coin-called-heads` (the glow) → `playoff-coin-result` reads
+   "You're (at home|away) first"; the match headings name the home player.
+4. `ladder-playoffs-coin-spectator-before`: untossed spectator game →
+   `playoff-coin-waiting` "Waiting for a player to flip the coin", no call coins.
+5. `ladder-playoffs-coin-spectator-after`: a tossed spectator game →
+   `playoff-coin-called-heads` glowing and "{name} is at home first".
+6. `ladder-playoffs-coin-opponent-view`: needs a mocked opponent flip on the
+   user's game → the user sees the toss land, the opponent's call glowing, and
+   the opposite result to the flipper's.
+
+**Arranging, confirming and declining**
+
+7. `ladder-playoffs-arrange-home` (`coinWon`): `playoff-match-leg1-arrange` →
+   "Arrange match 1" with the home court in `add-ladder-match-court-selector`,
+   best of 7 only, `add-ladder-match-court-time`, `add-ladder-match-no-fee` (no
+   `add-ladder-match-fee`), and the date picker note "Please select a date
+   within the 10 days for this playoff game (by …)". Change the court, pick a
+   date, accept the terms → "Send to opponent" → match 1's card reads
+   "Awaiting opponent's confirmation".
+8. `ladder-playoffs-arrange-without-home-court` (`noHomeCourt`): the modal opens
+   on "Select Court"; any court can be chosen and sent.
+9. `ladder-playoffs-arrange-away-waiting` (`coinLost`): `playoff-match-leg1-waiting`
+   "Waiting for your opponent to arrange their home match";
+   `playoff-match-leg2-arrange` visible straight away.
+10. `ladder-playoffs-confirm-match` (`leg1Posted`): the card reads "Awaiting your
+    confirmation"; the arranged notification ("… Open it to accept or
+    decline.") opens the Playoffs tab; open the match →
+    `playoff-match-confirm-request` → `playoff-match-confirm-accept` → card
+    accepted.
+11. `ladder-playoffs-decline-match` (`leg1Posted`): `playoff-match-confirm-decline`
+    → back on the tie screen match 1 is the waiting placeholder again.
+12. `ladder-playoffs-decline-limit` (`leg1PostedAfterDecline`): only
+    `playoff-match-confirm-accept`, with "You've used your one decline, so
+    please accept."; the notification ends "Open it to accept."
+13. `ladder-playoffs-host-awaiting` (`leg1Posted`, as host via a second account
+    or by seeding the user as host): `playoff-match-confirm-awaiting`.
+
+**Cancelling, rescheduling and extending a playoff match**
+
+14. `ladder-playoffs-cancel-posted` (`coinWon` after flow 7): Match Options →
+    Cancel Match → "Cancel this playoff match? You can arrange it again before
+    the playoff deadline." → straight back to the tie screen with
+    `playoff-match-leg1-arrange`.
+15. `ladder-playoffs-cancel-accepted`: an accepted playoff match → Cancel Match
+    asks the opponent ("…cancel this playoff match…"); once accepted (mocked),
+    the open match screen returns to the tie screen by itself.
+16. `ladder-playoffs-reschedule`: an accepted playoff match with no games →
+    Reschedule Match → the picker says "Please select a date by …" (the tie
+    deadline); a later date is refused.
+17. `ladder-playoffs-extension`: a playoff match with one game → Request
+    Extension → "This playoff game must be finished by …".
+
+**Scores, aggregates and spectators**
+
+18. `ladder-playoffs-aggregate` (`leg1Complete`): `playoff-match-aggregate`
+    reads "Aggregate" and "4 - 2" with the user on the left.
+19. `ladder-playoffs-spectator-scores`: open the **settled** game → aggregate
+    "7 - 5", the outcome "{name} goes through.", the deadline box "Finished";
+    open its match 2 → Total Score names both players (the poster on the left),
+    shows "4 - 3" from the poster's side in grey, both players checked in, and
+    no `match-details-burger`.
+20. `ladder-playoffs-spectator-live`: open the **neighbour** game's match 2 →
+    "1 game awaiting approval" on the card, Total Score "0 - 1" from the
+    poster's side (only the approved game counts), and the tie's aggregate
+    reads "4 - 4" (match 1's 3-4 plus the approved game).
+21. `ladder-playoffs-decider` (`level`): "Level on aggregate. One deciding game
+    to play.", `playoff-match-decider` checked in; the decider notification
+    opens the Playoffs tab.
+22. `ladder-playoffs-settled` (`settled`): `playoff-match-outcome` "{user's
+    name} goes through.", the coin result still shown, and the round-reached
+    notification opens the Playoffs tab with the Quarter-Final open.
+
+**Elsewhere**
+
+23. `ladder-playoffs-not-in-matchmaking` (`leg1Posted`): the posted playoff match
+    isn't in Matchmaking.
+24. `ladder-post-match-court-time`: Post a Match shows "Book enough court time
+    to finish: …" for the chosen best-of, and its date picker still says
+    "within the next 3 months".
+25. `ladder-playoffs-report-during-playoffs` (`playoffRegular`): report,
+    approve and dispute a playoff game while the ladder is in playoffs; the
+    regular match next to it stays frozen.
+26. `ladder-playoffs-notifications-open-playoffs`: arranged, accepted,
+    declined, cancellation, reschedule, extension and match-reminder
+    notifications for a playoff match open the Playoffs tab, not Schedule.
+
+Cleanup: `cleanupLadderTestData` deletes the whole playoffs ladder (ties and
+every match, including `-leg1`, `-leg2`, `-leg3`), the fixture users and courts,
+and the test user's notifications for the ladder.

@@ -224,14 +224,7 @@ const PlayoffMatchDetails: React.FC = () => {
     const host = tie.coinToss
       ? getLadderPlayoffLegHost(tie.coinToss, leg)
       : null;
-    const venue = !host
-      ? ""
-      : userSide
-        ? userSide === host
-          ? " · Home"
-          : " · Away"
-        : ` · ${nameOf(host)} at home`;
-    const label = `Match ${leg}${venue}`;
+    const label = `Match ${leg}${host ? ` · ${nameOf(host)} (Home)` : ""}`;
 
     if (match) {
       return (
@@ -359,7 +352,7 @@ const PlayoffMatchDetails: React.FC = () => {
           canFlip={!!userSide && isOpen}
           idleText={
             isCompleted
-              ? "No coin toss"
+              ? ""
               : !isOpen
                 ? "The coin toss opens once both players are known"
                 : undefined

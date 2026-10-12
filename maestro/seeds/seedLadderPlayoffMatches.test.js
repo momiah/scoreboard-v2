@@ -136,6 +136,7 @@ describe("seedLadderPlayoffMatches", () => {
 
   it("settles the user's game and opens the quarter-final", async () => {
     await seed(PLAYOFF_MATCH_STAGE.SETTLED);
+    expect(tie(my.tieId).coinToss).toBeTruthy();
     expect(tie(my.tieId)).toMatchObject({
       status: "completed",
       winner: my.side,
@@ -149,20 +150,101 @@ describe("seedLadderPlayoffMatches", () => {
     expect(next.deadlineAt).toBeInstanceOf(Date);
   });
 
-  it("dresses other games for browsing: in progress, played, void and level", async () => {
+  it("dresses every other game as production would, with scores that add up", async () => {
     await seed(PLAYOFF_MATCH_STAGE.COIN_PENDING);
-    const others = Array.from({ length: 8 }, (_, slot) =>
-      tie(`r1-s${slot}`),
-    ).filter((t) => t.tieId !== my.tieId);
-    const neighbour = tie(`r1-s${tie(my.tieId).slot ^ 1}`);
-    expect(
-      legs(neighbour.tieId)
-        .map((m) => m.matchStatus)
-        .sort(),
-    ).toEqual(["accepted", "completed"]);
-    const settled = others.filter((t) => t.status === "completed");
-    expect(settled.map((t) => t.outcome).sort()).toEqual(["played", "void"]);
+    const roundOne = Array.from({ length: 8 }, (_, slot) => tie(`r1-s${slot}`));
+    const others = roundOne.filter((t) => t.tieId !== my.tieId);
+    const legsOf = (t) => legs(t.tieId);
+
+    const settledTies = others.filter((t) => t.status === "completed");
+    expect(settledTies.map((t) => t.outcome)).toEqual(["played"]);
+    settledTies.forEach((t) => {
+      expect(t.coinToss).toMatchObject({ call: "logo" });
+      const tally = tallyLadderPlayoffTie(t, legsOf(t));
+      expect(tally[games(t.winner)]).toBeGreaterThan(
+        tally[games(t.winner === "team1" ? "team2" : "team1")],
+      );
+    });
+
     const levelTie = others.find((t) => t.deciderRequired);
-    expect(legs(levelTie.tieId)).toHaveLength(3);
+    const levelTally = tallyLadderPlayoffTie(
+      levelTie,
+      legsOf(levelTie).filter((m) => m.playoffLeg !== 3),
+    );
+    expect(levelTally.team1Games).toBe(levelTally.team2Games);
+    expect(legsOf(levelTie).find((m) => m.playoffLeg === 3)).toMatchObject({
+      bestOf: 1,
+      matchStatus: "accepted",
+    });
+
+    const neighbour = tie(`r1-s${tie(my.tieId).slot ^ 1}`);
+    const live = legsOf(neighbour).find((m) => m.matchStatus === "accepted");
+    expect(
+      live.games.filter((g) => g.approvalStatus === "pending"),
+    ).toHaveLength(1);
+    expect(others.filter((t) => !t.coinToss)).toHaveLength(1);
+    expect(legsOf(others.find((t) => !t.coinToss))).toHaveLength(0);
+    expect(
+      others.some((t) => legsOf(t).some((m) => m.matchStatus === "posted")),
+    ).toBe(true);
+  });
+
+  it("keeps every seeded match internally consistent", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEVEL);
+    const all = [...mockDocs]
+      .filter(([path]) =>
+        path.startsWith(`ladders/${MAESTRO_PO_LADDER_ID}/ladderMatches/`),
+      )
+      .map(([, data]) => data);
+    expect(all.length).toBeGreaterThan(10);
+    all.forEach((m) => {
+      const t = tie(m.playoffTieId);
+      const majority = Math.floor(m.bestOf / 2) + 1;
+      const approved = m.games.filter((g) => g.approvalStatus === "approved");
+      const won = (label) =>
+        approved.filter((g) => g.result.winner.team === label).length;
+      const decided = won("Team 1") >= majority || won("Team 2") >= majority;
+      expect([m.ladderMatchId, decided]).toEqual([
+        m.ladderMatchId,
+        m.matchStatus === "completed",
+      ]);
+      expect(Math.max(won("Team 1"), won("Team 2"))).toBeLessThanOrEqual(
+        majority,
+      );
+
+      m.games
+        .filter((g) => g.result)
+        .forEach((g) => {
+          const winnerScore =
+            g.result.winner.team === "Team 1" ? g.team1.score : g.team2.score;
+          const loserScore =
+            g.result.winner.team === "Team 1" ? g.team2.score : g.team1.score;
+          expect(winnerScore).toBe(g.result.winner.score);
+          expect(loserScore).toBe(g.result.loser.score);
+          expect(winnerScore - loserScore).toBeGreaterThanOrEqual(2);
+          expect(winnerScore).toBeGreaterThanOrEqual(21);
+          expect(g.gamescore).toBe(`${g.team1.score}-${g.team2.score}`);
+          expect(g.numberOfApprovals).toBe(
+            g.approvalStatus === "approved" ? 1 : 0,
+          );
+          expect(g.approvers).toHaveLength(g.numberOfApprovals);
+          expect(g.reportedAt.getTime()).toBeLessThanOrEqual(Date.now());
+        });
+
+      if (m.games.some((g) => g.result) || m.playoffLeg === 3) {
+        expect(m.checkIn).toMatchObject({ completed: true });
+        expect([...m.checkIn.checkedInBy].sort()).toEqual(
+          [...m.participants].sort(),
+        );
+      } else {
+        expect(m.checkIn).toBeUndefined();
+      }
+
+      const [d, mo, y] = m.matchDate.split("-").map(Number);
+      const [h, mi] = m.matchTime.start.split(":").map(Number);
+      const startMs = new Date(y, mo - 1, d, h, mi).getTime();
+      expect(startMs).toBeGreaterThanOrEqual(t.scheduledAt.getTime());
+      expect(startMs).toBeLessThanOrEqual(t.deadlineAt.getTime());
+    });
   });
 });

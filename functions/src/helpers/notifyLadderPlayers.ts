@@ -1,5 +1,5 @@
 import { notificationSchema, notificationTypes } from "courtchamps-shared";
-import type { Ladder } from "courtchamps-shared/types";
+import type { Ladder, LadderMatch } from "courtchamps-shared/types";
 
 import { sendNotification } from "./sendNotification";
 
@@ -48,3 +48,11 @@ export const notifyLadderPlayers = async ({
     );
   }
 };
+
+/** Where a notification about a match opens: a playoff match opens its tie on the Playoffs tab. */
+export const ladderMatchNotificationTarget = (
+  match: Pick<LadderMatch, "ladderMatchId" | "playoffTieId">,
+): { tab: string; data: Record<string, unknown> } =>
+  match.playoffTieId
+    ? { tab: "Playoffs", data: { tieId: match.playoffTieId } }
+    : { tab: "Schedule", data: { matchId: match.ladderMatchId } };

@@ -5,7 +5,10 @@ import moment from "moment-timezone";
 import { LADDER_MATCH_STATUS } from "courtchamps-shared/types";
 import type { LadderMatch } from "courtchamps-shared/types";
 
-import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
+import {
+  ladderMatchNotificationTarget,
+  notifyLadderPlayers,
+} from "./helpers/notifyLadderPlayers";
 
 const TIMEZONE = "Europe/London";
 const LADDERS = "ladders";
@@ -80,8 +83,7 @@ export const runSendLadderMatchReminders = async ({
           kind: `match-reminder-${reminder}-${match.ladderMatchId}-${match.matchDate}-${match.matchTime.start}`,
           title: "Match reminder",
           message: ladderMatchReminderMessage(match, reminder, nowMs),
-          tab: "Schedule",
-          data: { matchId: match.ladderMatchId },
+          ...ladderMatchNotificationTarget(match),
         });
         sent += 1;
       }

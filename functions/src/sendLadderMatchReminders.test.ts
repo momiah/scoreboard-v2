@@ -92,4 +92,13 @@ describe("runSendLadderMatchReminders", () => {
     });
     expect(options).toEqual({ id: "match-reminder-hour-m1-11-10-2026-18:30-L1-u1" });
   });
+
+  it("sends a playoff match reminder to its tie on the Playoffs tab", async () => {
+    const playoff = { ...match("p1", "11-10-2026", "18:30"), playoffTieId: "r1-s0" } as LadderMatch;
+    const { db } = fakeDb([playoff]);
+    await runSendLadderMatchReminders({ db, nowMs: NOW });
+    expect(mockSendNotification.mock.calls[0][0]).toMatchObject({
+      data: { ladderId: "L1", tab: "Playoffs", tieId: "r1-s0" },
+    });
+  });
 });

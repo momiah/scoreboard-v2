@@ -241,16 +241,16 @@ describe("PlayoffMatchDetails", () => {
       "Arrange match 1 | best of 7 | Home",
     );
     expect(host.getByTestId("playoff-match-leg2-waiting")).toBeTruthy();
-    expect(host.getByText("Match 1 · Home")).toBeTruthy();
-    expect(host.getByText("Match 2 · Away")).toBeTruthy();
+    expect(host.getByText("Match 1 · U1 (Home)")).toBeTruthy();
+    expect(host.getByText("Match 2 · U2 (Home)")).toBeTruthy();
 
     const away = renderScreen({ userId: "u2", tie: tossed("team1") });
     expect(
       away.getByText("Waiting for your opponent to arrange their home match"),
     ).toBeTruthy();
     expect(away.getByTestId("playoff-match-leg2-arrange")).toBeTruthy();
-    expect(away.getByText("Match 1 · Away")).toBeTruthy();
-    expect(away.getByText("Match 2 · Home")).toBeTruthy();
+    expect(away.getByText("Match 1 · U1 (Home)")).toBeTruthy();
+    expect(away.getByText("Match 2 · U2 (Home)")).toBeTruthy();
   });
 
   it("names the host for onlookers and waits for the coin before that", () => {
@@ -259,6 +259,7 @@ describe("PlayoffMatchDetails", () => {
       viewer.getByText("Waiting for U1 to arrange their home match"),
     ).toBeTruthy();
     const early = renderScreen({ userId: "u1", tie: baseTie() });
+    expect(viewer.getByText("Match 1 · U1 (Home)")).toBeTruthy();
     expect(early.getAllByText("Arranged after the coin toss")).toHaveLength(2);
   });
 
@@ -350,8 +351,8 @@ describe("PlayoffMatchDetails", () => {
     expect(getByTestId("playoff-match-outcome").props.children).toBe(
       "Not played in time, so neither side goes through.",
     );
-    expect(getByTestId("playoff-coin-waiting")).toHaveTextContent(
-      /No coin toss/,
+    expect(getByTestId("playoff-coin-waiting")).not.toHaveTextContent(
+      /coin/i,
     );
     expect(getByTestId("playoff-match-aggregate")).toBeTruthy();
     expect(getByTestId("playoff-match-deadline")).toHaveTextContent(/Finished/);

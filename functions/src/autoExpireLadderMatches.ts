@@ -8,7 +8,10 @@ import {
   isLadderMatchExpired,
 } from "courtchamps-shared/helpers";
 
-import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
+import {
+  ladderMatchNotificationTarget,
+  notifyLadderPlayers,
+} from "./helpers/notifyLadderPlayers";
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
@@ -52,8 +55,7 @@ export const remindEndingLadderMatchExtensions = async (
         kind: `extension-ending-${match.ladderMatchId}`,
         title: "Ladder match",
         message: `Your extension has 1 day left to complete your match at ${match.court?.courtName ?? "your court"}.`,
-        tab: "Schedule",
-        data: { matchId: match.ladderMatchId },
+        ...ladderMatchNotificationTarget(match),
       }),
     ),
   );
@@ -76,7 +78,9 @@ export const autoExpireLadderMatches = onSchedule(
 
           await remindEndingLadderMatchExtensions(
             ladderDoc.id,
-            matchesSnapshot.docs.map((matchDoc) => matchDoc.data() as LadderMatch),
+            matchesSnapshot.docs.map(
+              (matchDoc) => matchDoc.data() as LadderMatch,
+            ),
             now,
           );
 

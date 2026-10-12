@@ -16,6 +16,8 @@ import { MAESTRO_PO_LADDER_ID, seedLadderPlayoffs } from "./seedLadderPlayoffs";
 
 const SIZE = 256;
 const LADDER_NAME = `Maestro Playoffs ${SIZE}`;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const ROUND_ONE_STARTED_DAYS_AGO = 7;
 
 export const PLAYOFF_MATCH_STAGE = {
   COIN_PENDING: "coinPending",
@@ -27,52 +29,106 @@ export const PLAYOFF_MATCH_STAGE = {
   SETTLED: "settled",
 };
 
+const APPROVED = notificationTypes.RESPONSE.APPROVED_GAME;
+const LOSER_SCORES = [17, 14, 19, 12, 21, 16, 18];
+
 const other = (side) => (side === "team1" ? "team2" : "team1");
 const sideKey = (side) => (side === "team1" ? "side1" : "side2");
 const legId = (tie, leg) => `${tie.tieId}-leg${leg}`;
-const day = (offset) => moment().add(offset, "days").format("DD-MM-YYYY");
 
-const coinToss = (firstHost, flippedBy, flipperSide, now) => ({
-  firstHost,
-  flippedBy,
-  flippedAt: now,
+const at = (dayOffset, time) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return moment()
+    .add(dayOffset, "days")
+    .set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
+};
+
+const coinToss = (tie, flipperSide, landsOnCall, flippedAt) => ({
+  firstHost: landsOnCall ? flipperSide : other(flipperSide),
+  flippedBy: tie[sideKey(flipperSide)].playerIds[0],
+  flippedAt,
   call: "logo",
-  face: firstHost === flipperSide ? "logo" : "trophy",
+  face: landsOnCall ? "logo" : "trophy",
 });
 
-const playedGame = (tie, shell, winner, index) => {
-  const winnerScore = 21;
-  const loserScore = 12 + (index % 7);
+const playedGame = ({ tie, shell, winner, index, start, approved }) => {
+  const loserScore = LOSER_SCORES[index % LOSER_SCORES.length];
+  const winnerScore = loserScore >= 20 ? loserScore + 2 : 21;
   const team1Wins = winner === "team1";
   const team1Score = team1Wins ? winnerScore : loserScore;
   const team2Score = team1Wins ? loserScore : winnerScore;
-  const winnerLabel = team1Wins ? "Team 1" : "Team 2";
-  const loserLabel = team1Wins ? "Team 2" : "Team 1";
   const winnerIds = tie[sideKey(winner)].playerIds;
   const loserIds = tie[sideKey(other(winner))].playerIds;
+  const reportedAt = start
+    .clone()
+    .add(25 * (index + 1), "minutes")
+    .toDate();
+  const approver = tie[other(winner)].player1;
   return {
     ...shell,
     team1: { ...tie.team1, score: team1Score },
     team2: { ...tie.team2, score: team2Score },
     gamescore: `${team1Score}-${team2Score}`,
-    date: day(-2),
-    reportedAt: new Date(),
-    reportedTime: "19:00",
+    date: start.format("DD-MM-YYYY"),
+    createdAt: reportedAt,
+    reportedAt,
+    reportedTime: moment(reportedAt).format("HH:mm"),
     result: {
-      winner: { team: winnerLabel, players: winnerIds, score: winnerScore },
-      loser: { team: loserLabel, players: loserIds, score: loserScore },
+      winner: {
+        team: team1Wins ? "Team 1" : "Team 2",
+        players: winnerIds,
+        score: winnerScore,
+      },
+      loser: {
+        team: team1Wins ? "Team 2" : "Team 1",
+        players: loserIds,
+        score: loserScore,
+      },
     },
-    approvalStatus: notificationTypes.RESPONSE.APPROVED_GAME,
-    reporter: winnerIds[0],
-    numberOfApprovals: 1,
+    approvalStatus: approved ? APPROVED : "pending",
+    reporter: tie[winner].player1.userId,
+    numberOfApprovals: approved ? 1 : 0,
     numberOfDeclines: 0,
-    approvers: [],
+    approvers: approved
+      ? [{ userId: approver.userId, username: approver.username ?? "" }]
+      : [],
   };
 };
 
-const legMatch = ({ tie, leg, host, status, wins = [], now }) => {
+const checkInFor = (participants, start) => ({
+  checkedInBy: participants,
+  checkedInAt: Object.fromEntries(
+    participants.map((id, i) => [
+      id,
+      start
+        .clone()
+        .subtract(10 - i * 3, "minutes")
+        .toDate(),
+    ]),
+  ),
+  completed: true,
+  completedAt: start.clone().subtract(1, "minutes").toDate(),
+});
+
+/**
+ * One leg of a tie, played on `day` (days from today) at `time`. Legs that
+ * have started are checked in by every player; `pendingLast` leaves the last
+ * reported game awaiting approval. A completed leg must have a side on the
+ * best-of majority, and an open one must not.
+ */
+const legMatch = ({
+  tie,
+  leg,
+  host,
+  status,
+  day,
+  time = "18:00",
+  wins = [],
+  pendingLast = false,
+  now,
+}) => {
   const hostSide = tie[sideKey(host)];
-  const completed = status === LADDER_MATCH_STATUS.COMPLETED;
+  const start = at(day, time);
   const match = buildLadderPlayoffLegMatch({
     tie,
     leg,
@@ -81,29 +137,84 @@ const legMatch = ({ tie, leg, host, status, wins = [], now }) => {
     ladderType: LADDER_TYPE.SINGLES,
     input: {
       court: hostSide.homeCourt,
-      matchDate: completed || wins.length ? day(-2) : day(3),
-      matchTime: { start: "18:00" },
+      matchDate: start.format("DD-MM-YYYY"),
+      matchTime: { start: time },
       currencyType: "GBP",
       shuttleType: SHUTTLE_TYPE.FEATHER,
     },
     createdBy: leg === 3 ? "system" : hostSide.playerIds[0],
-    now,
+    now: start.clone().subtract(3, "days").toDate(),
     accepted: status !== LADDER_MATCH_STATUS.POSTED,
   });
+  const majority = Math.floor(match.bestOf / 2) + 1;
+  const approvedWins = (side) =>
+    wins.filter((w, i) => w === side && !(pendingLast && i === wins.length - 1))
+      .length;
+  const decided =
+    approvedWins("team1") >= majority || approvedWins("team2") >= majority;
+  if ((status === LADDER_MATCH_STATUS.COMPLETED) !== decided) {
+    throw new Error(
+      `seedLadderPlayoffMatches: ${legId(tie, leg)} games don't match ${status}`,
+    );
+  }
+  const games = match.games.map((shell, index) =>
+    index < wins.length
+      ? playedGame({
+          tie,
+          shell,
+          winner: wins[index],
+          index,
+          start,
+          approved: !(pendingLast && index === wins.length - 1),
+        })
+      : shell,
+  );
+  const played = games.filter((game) => game.result);
+  const lastReport = played.length
+    ? played[played.length - 1].reportedAt
+    : null;
+  const started =
+    wins.length > 0 || (leg === 3 && status === LADDER_MATCH_STATUS.ACCEPTED);
   return {
     ...match,
     matchStatus: status,
-    games: match.games.map((shell, index) =>
-      index < wins.length ? playedGame(tie, shell, wins[index], index) : shell,
-    ),
-    ...(completed ? { completedAt: now } : {}),
+    games,
+    ...(status !== LADDER_MATCH_STATUS.POSTED
+      ? { acceptedBy: tie[sideKey(other(host))].playerIds[0] }
+      : {}),
+    ...(started ? { checkIn: checkInFor(match.participants, start) } : {}),
+    ...(lastReport
+      ? {
+          lastUpdated: lastReport,
+          gameReportedAt: Object.fromEntries(
+            played.map((game) => [game.gameId, game.reportedAt]),
+          ),
+        }
+      : started
+        ? { lastUpdated: now }
+        : {}),
+    ...(status === LADDER_MATCH_STATUS.COMPLETED
+      ? { completedAt: lastReport }
+      : {}),
   };
 };
 
+/** Wins in play order: the loser takes alternate early games, the winner closes it out. */
+const wins = (side, count, otherCount) => {
+  const result = [];
+  for (let i = 0; i < Math.max(count, otherCount); i += 1) {
+    if (i < otherCount) result.push(other(side));
+    if (i < count) result.push(side);
+  }
+  return result;
+};
+
 const commit = async (writes) => {
-  const batch = writeBatch(db);
-  writes.forEach((write) => write(batch));
-  await batch.commit();
+  for (let i = 0; i < writes.length; i += 400) {
+    const batch = writeBatch(db);
+    writes.slice(i, i + 400).forEach((write) => write(batch));
+    await batch.commit();
+  }
 };
 
 const tieRef = (tieId) =>
@@ -117,15 +228,14 @@ const tieRef = (tieId) =>
 const matchRef = (matchId) =>
   doc(db, "ladders", MAESTRO_PO_LADDER_ID, "ladderMatches", matchId);
 
-const wins = (side, count, otherCount) => {
-  const result = [];
-  for (let i = 0; i < Math.max(count, otherCount); i += 1) {
-    if (i < otherCount) result.push(other(side));
-    if (i < count) result.push(side);
-  }
-  return result;
-};
-
+/**
+ * A round of 16 a week into its 10 days, as production would have it: the
+ * test user's own game at `stage`, and the other games spread across every
+ * state a spectator can open (in progress today with a game awaiting
+ * approval, settled, level with a decider, awaiting confirmation, upcoming,
+ * half played and not yet tossed). Every score adds up and every started
+ * match is checked in.
+ */
 export const seedLadderPlayoffMatches = async ({
   testUser,
   stage = PLAYOFF_MATCH_STAGE.COIN_PENDING,
@@ -137,6 +247,9 @@ export const seedLadderPlayoffMatches = async ({
   }
   await seedLadderPlayoffs({ testUser, generate: true, size: SIZE });
   const now = new Date();
+  const roundOneStart = new Date(
+    now.getTime() - ROUND_ONE_STARTED_DAYS_AGO * DAY_MS,
+  );
   const snapshot = await getDocs(
     collection(
       db,
@@ -145,7 +258,22 @@ export const seedLadderPlayoffMatches = async ({
       LADDER_PLAYOFF_TIES_COLLECTION,
     ),
   );
-  let ties = snapshot.docs.map((docSnap) => docSnap.data());
+  const tieUpdates = new Map();
+  const setTie = (tieId, fields) =>
+    tieUpdates.set(tieId, { ...(tieUpdates.get(tieId) ?? {}), ...fields });
+
+  let ties = snapshot.docs.map((docSnap) => {
+    const tie = docSnap.data();
+    if (tie.round !== 1 || tie.isThirdPlacePlayoff) return tie;
+    const window = {
+      scheduledAt: roundOneStart,
+      deadlineAt: new Date(roundOneStart.getTime() + 10 * DAY_MS),
+      remindersSentDays: [3, 6],
+    };
+    setTie(tie.tieId, window);
+    return { ...tie, ...window };
+  });
+
   const myId = testUser.userId;
   const roundOne = ties
     .filter((tie) => tie.round === 1 && !tie.isThirdPlacePlayoff)
@@ -157,71 +285,83 @@ export const seedLadderPlayoffMatches = async ({
     throw new Error("seedLadderPlayoffMatches: the test user has no game");
   const me = mine.side1.playerIds.includes(myId) ? "team1" : "team2";
   const them = other(me);
-  const theirId = mine[sideKey(them)].playerIds[0];
   const neighbour = roundOne.find((tie) => tie.slot === (mine.slot ^ 1));
-  const [played, voided, level] = roundOne.filter(
+  const [settled, level, awaiting, upcoming, halfway] = roundOne.filter(
     (tie) => tie !== mine && tie !== neighbour,
   );
 
-  const tieUpdates = new Map();
   const matches = [];
-  const setTie = (tieId, fields) =>
-    tieUpdates.set(tieId, { ...(tieUpdates.get(tieId) ?? {}), ...fields });
-  const settle = (tieId, winner, outcome) => {
+  const settle = (tieId, winner) => {
     const changed = advanceLadderPlayoffBracket({
       ties,
       tieId,
       winner,
-      outcome,
+      outcome: LADDER_PLAYOFF_TIE_OUTCOME.PLAYED,
       now,
     });
     ties = ties.map((tie) => changed.find((c) => c.tieId === tie.tieId) ?? tie);
     changed.forEach((tie) => setTie(tie.tieId, tie));
   };
+  const toss = (tie, flipperSide, landsOnCall) => {
+    const flippedAt = new Date(
+      roundOneStart.getTime() + (tie.slot + 1) * 3600 * 1000,
+    );
+    const result = coinToss(tie, flipperSide, landsOnCall, flippedAt);
+    setTie(tie.tieId, { coinToss: result });
+    ties = ties.map((t) =>
+      t.tieId === tie.tieId ? { ...t, coinToss: result } : t,
+    );
+    return result.firstHost;
+  };
+  const C = LADDER_MATCH_STATUS.COMPLETED;
+  const A = LADDER_MATCH_STATUS.ACCEPTED;
+  const P = LADDER_MATCH_STATUS.POSTED;
 
   switch (stage) {
     case PLAYOFF_MATCH_STAGE.COIN_WON:
-      setTie(mine.tieId, { coinToss: coinToss(me, theirId, them, now) });
+      toss(mine, them, false);
       break;
     case PLAYOFF_MATCH_STAGE.COIN_LOST:
-      setTie(mine.tieId, { coinToss: coinToss(them, theirId, them, now) });
+      toss(mine, them, true);
       break;
     case PLAYOFF_MATCH_STAGE.LEG1_POSTED:
-      setTie(mine.tieId, { coinToss: coinToss(them, theirId, them, now) });
+      toss(mine, them, true);
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
           host: them,
-          status: LADDER_MATCH_STATUS.POSTED,
+          status: P,
+          day: 2,
+          time: "19:30",
           now,
         }),
       );
       break;
     case PLAYOFF_MATCH_STAGE.LEG1_COMPLETE:
-      setTie(mine.tieId, { coinToss: coinToss(them, theirId, them, now) });
+      toss(mine, them, true);
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
           host: them,
-          status: LADDER_MATCH_STATUS.COMPLETED,
+          status: C,
+          day: -3,
           wins: wins(me, 4, 2),
           now,
         }),
       );
       break;
     case PLAYOFF_MATCH_STAGE.LEVEL:
-      setTie(mine.tieId, {
-        coinToss: coinToss(me, myId, me, now),
-        deciderRequired: true,
-      });
+      toss(mine, me, true);
+      setTie(mine.tieId, { deciderRequired: true });
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
           host: me,
-          status: LADDER_MATCH_STATUS.COMPLETED,
+          status: C,
+          day: -5,
           wins: wins(me, 4, 2),
           now,
         }),
@@ -229,7 +369,8 @@ export const seedLadderPlayoffMatches = async ({
           tie: mine,
           leg: 2,
           host: them,
-          status: LADDER_MATCH_STATUS.COMPLETED,
+          status: C,
+          day: -1,
           wins: wins(them, 4, 2),
           now,
         }),
@@ -237,19 +378,22 @@ export const seedLadderPlayoffMatches = async ({
           tie: mine,
           leg: 3,
           host: them,
-          status: LADDER_MATCH_STATUS.ACCEPTED,
+          status: A,
+          day: -1,
+          time: "20:30",
           now,
         }),
       );
       break;
     case PLAYOFF_MATCH_STAGE.SETTLED:
-      setTie(mine.tieId, { coinToss: coinToss(me, myId, me, now) });
+      toss(mine, me, true);
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
           host: me,
-          status: LADDER_MATCH_STATUS.COMPLETED,
+          status: C,
+          day: -5,
           wins: wins(me, 4, 1),
           now,
         }),
@@ -257,113 +401,170 @@ export const seedLadderPlayoffMatches = async ({
           tie: mine,
           leg: 2,
           host: them,
-          status: LADDER_MATCH_STATUS.COMPLETED,
+          status: C,
+          day: -2,
           wins: wins(me, 4, 2),
           now,
         }),
       );
-      settle(mine.tieId, me, LADDER_PLAYOFF_TIE_OUTCOME.PLAYED);
-      setTie(neighbour.tieId, {
-        coinToss: coinToss("team1", neighbour.side1.playerIds[0], "team1", now),
-      });
-      matches.push(
-        legMatch({
-          tie: neighbour,
-          leg: 1,
-          host: "team1",
-          status: LADDER_MATCH_STATUS.COMPLETED,
-          wins: wins("team2", 4, 3),
-          now,
-        }),
-        legMatch({
-          tie: neighbour,
-          leg: 2,
-          host: "team2",
-          status: LADDER_MATCH_STATUS.COMPLETED,
-          wins: wins("team2", 4, 0),
-          now,
-        }),
-      );
-      settle(neighbour.tieId, "team2", LADDER_PLAYOFF_TIE_OUTCOME.PLAYED);
+      settle(mine.tieId, me);
       break;
     default:
       break;
   }
 
-  if (stage !== PLAYOFF_MATCH_STAGE.SETTLED) {
-    setTie(neighbour.tieId, {
-      coinToss: coinToss("team1", neighbour.side1.playerIds[0], "team1", now),
-    });
+  const liveStart = moment().subtract(70, "minutes");
+  const n1 = toss(neighbour, "team1", true);
+  if (stage === PLAYOFF_MATCH_STAGE.SETTLED) {
     matches.push(
       legMatch({
         tie: neighbour,
         leg: 1,
-        host: "team1",
-        status: LADDER_MATCH_STATUS.COMPLETED,
+        host: n1,
+        status: C,
+        day: -6,
         wins: wins("team2", 4, 3),
         now,
       }),
       legMatch({
         tie: neighbour,
         leg: 2,
-        host: "team2",
-        status: LADDER_MATCH_STATUS.ACCEPTED,
-        wins: ["team1"],
+        host: other(n1),
+        status: C,
+        day: -2,
+        time: "19:00",
+        wins: wins("team2", 4, 0),
+        now,
+      }),
+    );
+    settle(neighbour.tieId, "team2");
+  } else {
+    matches.push(
+      legMatch({
+        tie: neighbour,
+        leg: 1,
+        host: n1,
+        status: C,
+        day: -4,
+        wins: wins("team2", 4, 3),
+        now,
+      }),
+      legMatch({
+        tie: neighbour,
+        leg: 2,
+        host: other(n1),
+        status: A,
+        day: liveStart.isSame(moment(), "day") ? 0 : -1,
+        time: liveStart.format("HH:mm"),
+        wins: ["team1", "team2"],
+        pendingLast: true,
         now,
       }),
     );
   }
-  setTie(played.tieId, {
-    coinToss: coinToss("team2", played.side1.playerIds[0], "team1", now),
-  });
+
+  const s1 = toss(settled, "team2", false);
   matches.push(
     legMatch({
-      tie: played,
+      tie: settled,
       leg: 1,
-      host: "team2",
-      status: LADDER_MATCH_STATUS.COMPLETED,
+      host: s1,
+      status: C,
+      day: -6,
       wins: wins("team1", 4, 1),
       now,
     }),
     legMatch({
-      tie: played,
+      tie: settled,
       leg: 2,
-      host: "team1",
-      status: LADDER_MATCH_STATUS.COMPLETED,
+      host: other(s1),
+      status: C,
+      day: -3,
       wins: wins("team2", 4, 3),
       now,
     }),
   );
-  settle(played.tieId, "team1", LADDER_PLAYOFF_TIE_OUTCOME.PLAYED);
-  settle(voided.tieId, null, LADDER_PLAYOFF_TIE_OUTCOME.VOID);
-  setTie(level.tieId, {
-    coinToss: coinToss("team1", level.side2.playerIds[0], "team2", now),
-    deciderRequired: true,
-  });
+  settle(settled.tieId, "team1");
+
+  const l1 = toss(level, "team2", true);
+  setTie(level.tieId, { deciderRequired: true });
   matches.push(
     legMatch({
       tie: level,
       leg: 1,
-      host: "team1",
-      status: LADDER_MATCH_STATUS.COMPLETED,
+      host: l1,
+      status: C,
+      day: -5,
       wins: wins("team1", 4, 3),
       now,
     }),
     legMatch({
       tie: level,
       leg: 2,
-      host: "team2",
-      status: LADDER_MATCH_STATUS.COMPLETED,
+      host: other(l1),
+      status: C,
+      day: -1,
       wins: wins("team2", 4, 3),
       now,
     }),
     legMatch({
       tie: level,
       leg: 3,
-      host: "team2",
-      status: LADDER_MATCH_STATUS.ACCEPTED,
+      host: other(l1),
+      status: A,
+      day: -1,
+      time: "20:45",
       now,
     }),
+  );
+
+  const a1 = toss(awaiting, "team1", false);
+  matches.push(
+    legMatch({
+      tie: awaiting,
+      leg: 1,
+      host: a1,
+      status: P,
+      day: 1,
+      time: "19:00",
+      now,
+    }),
+  );
+
+  const u1 = toss(upcoming, "team2", true);
+  matches.push(
+    legMatch({
+      tie: upcoming,
+      leg: 1,
+      host: u1,
+      status: A,
+      day: 1,
+      time: "18:30",
+      now,
+    }),
+    legMatch({
+      tie: upcoming,
+      leg: 2,
+      host: other(u1),
+      status: A,
+      day: 2,
+      time: "20:00",
+      now,
+    }),
+  );
+
+  const h1 = toss(halfway, "team1", true);
+  matches.push(
+    legMatch({
+      tie: halfway,
+      leg: 1,
+      host: h1,
+      status: C,
+      day: -2,
+      wins: wins("team2", 4, 0),
+      now,
+    }),
+    legMatch({ tie: halfway, leg: 2, host: other(h1), status: P, day: 2, now }),
   );
 
   const notifications =
@@ -389,7 +590,7 @@ export const seedLadderPlayoffMatches = async ({
               data: {
                 ladderId: MAESTRO_PO_LADDER_ID,
                 tab: "Playoffs",
-                tieId: "r2-s0",
+                tieId: `r2-s${Math.floor(mine.slot / 2)}`,
               },
             },
           ]
