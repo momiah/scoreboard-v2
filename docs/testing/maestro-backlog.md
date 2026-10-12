@@ -208,15 +208,17 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
 3. `ladder-playoffs-coin-flip` (`coinPending`): "Flip the coin to see who
    starts at home first", with `playoff-coin-call-heads` (logo) and
    `playoff-coin-call-tails` (trophy). Tap heads → both call coins stay,
-   `playoff-coin-called-heads` (the glow) → `playoff-coin-result` reads
-   "You're (at home|away) first"; the match headings name the home player.
+   `playoff-coin-called-heads` (the glow) with `playoff-coin-caller` showing
+   the user's name → the coin lands (`playoff-coin-result`); there is no "at
+   home first" line, and the match headings name the home player.
 4. `ladder-playoffs-coin-spectator-before`: untossed spectator game →
    `playoff-coin-waiting` "Waiting for a player to flip the coin", no call coins.
 5. `ladder-playoffs-coin-spectator-after`: a tossed spectator game →
-   `playoff-coin-called-heads` glowing and "{name} is at home first".
+   `playoff-coin-called-heads` glowing with `playoff-coin-caller` naming who
+   called it, and the headings naming each match's home player.
 6. `ladder-playoffs-coin-opponent-view`: needs a mocked opponent flip on the
-   user's game → the user sees the toss land, the opponent's call glowing, and
-   the opposite result to the flipper's.
+   user's game → the user sees the toss land, the opponent's call glowing with
+   the opponent's name under it.
 
 **Arranging, confirming and declining**
 
@@ -265,7 +267,8 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
 18. `ladder-playoffs-aggregate` (`leg1Complete`): `playoff-match-aggregate`
     reads "Aggregate" and "4 - 2" with the user on the left.
 19. `ladder-playoffs-spectator-scores`: open the **settled** game → aggregate
-    "7 - 5", the outcome "{name} goes through.", the deadline box "Finished";
+    "7 - 5", the gold `playoff-match-outcome` card "Winner · {name} · Through
+    to the Quarter-Final", the deadline box "Finished";
     open its match 2 → Total Score names both players (the poster on the left),
     shows "4 - 3" from the poster's side in grey, both players checked in, and
     no `match-details-burger`.
@@ -276,8 +279,9 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
 21. `ladder-playoffs-decider` (`level`): "Level on aggregate. One deciding game
     to play.", `playoff-match-decider` checked in; the decider notification
     opens the Playoffs tab.
-22. `ladder-playoffs-settled` (`settled`): `playoff-match-outcome` "{user's
-    name} goes through.", the coin result still shown, and the round-reached
+22. `ladder-playoffs-settled` (`settled`): the gold `playoff-match-outcome`
+    card names the user and "Through to the Quarter-Final"; the coin and caller
+    are still shown, and the round-reached
     notification opens the Playoffs tab with the Quarter-Final open.
 
 **Elsewhere**

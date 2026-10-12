@@ -43,7 +43,7 @@ const faceTurn = (face: LadderPlayoffCoinFace): number =>
 interface PlayoffCoinFlipProps {
   face: LadderPlayoffCoinFace | null;
   call: LadderPlayoffCoinCall | null;
-  resultText: string | null;
+  callerName: string | null;
   canFlip: boolean;
   idleText?: string;
   onFlip: (call: LadderPlayoffCoinCall) => Promise<boolean>;
@@ -52,7 +52,7 @@ interface PlayoffCoinFlipProps {
 const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   face,
   call,
-  resultText,
+  callerName,
   canFlip,
   idleText,
   onFlip,
@@ -213,11 +213,15 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
                 <Coin size={CALL_COIN_SIZE} face={option} />
               </CallRing>
               <CallLabel chosen={chosen}>{label}</CallLabel>
+              {chosen && callerName ? (
+                <CallerName numberOfLines={1} testID="playoff-coin-caller">
+                  {callerName}
+                </CallerName>
+              ) : null}
             </CallButton>
           );
         })}
       </Calls>
-      {landed && resultText ? <Result>{resultText}</Result> : null}
       {error ? (
         <ErrorText testID="playoff-coin-error">{error}</ErrorText>
       ) : null}
@@ -334,20 +338,17 @@ const CallLabel = styled.Text(({ chosen }: { chosen: boolean }) => ({
   fontWeight: "600",
 }));
 
+const CallerName = styled.Text({
+  maxWidth: 120,
+  color: "#cbd5e1",
+  fontSize: 12,
+  textAlign: "center",
+});
+
 const Caption = styled.Text({
   color: "#cbd5e1",
   fontSize: 13,
   textAlign: "center",
-});
-
-const Result = styled.Text({
-  color: "#ffffff",
-  fontSize: 15,
-  fontWeight: "600",
-  textAlign: "center",
-  marginTop: 8,
-  marginBottom: 4,
-  marginHorizontal: 16,
 });
 
 const ErrorText = styled.Text({

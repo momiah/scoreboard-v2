@@ -149,7 +149,7 @@ update the global profile only, never ladder standings.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 6.1 | A player opens a game with no coin toss | The big coin is at the top above the aggregate (logo side navy, trophy side gold), then "Flip the coin to see who starts at home first" and two coin buttons: the logo labelled Heads and the trophy labelled Tails. Tapping one keeps both buttons and gives the called one a glowing border while the big coin tosses. If it lands on the call, the flipper is at home first; otherwise the opponent is. Each player then sees "You're at home first" or "You're away first"; onlookers see "{name} is at home first" and, before the toss, "Waiting for a player to flip the coin". The opponent's notification reads "{name} called heads… It landed on tails, so {name} is at home first." Every viewer sees the match headings as "Match N · {name} (Home)" 🅹 🅼 |
+| 6.1 | A player opens a game with no coin toss | The big coin is at the top above the aggregate (logo side navy, trophy side gold), then "Flip the coin to see who starts at home first" and two coin buttons: the logo labelled Heads and the trophy labelled Tails. Tapping one keeps both buttons, gives the called one a glowing border with the caller's name under it, and tosses the big coin. If it lands on the call the caller is at home first, otherwise the opponent is; the match headings ("Match N · {name} (Home)") show the result, with no separate "at home first" line. Everyone, spectators included, sees the glow and the caller's name. Before the toss spectators see "Waiting for a player to flip the coin" 🅹 🅼 |
 | 6.2 | A viewer opens the same game | "Waiting for the coin toss", the coin cannot be tapped 🅹 🅼 |
 | 6.3 | Both players flip at once | One saved result inside one transaction; the other call returns it; the other side is notified once 🅴 |
 | 6.4 | Someone outside the game, or signed out, calls the flip | Refused ("Only players in this game can flip." / "Sign in to flip the coin.") 🅴 |
@@ -176,7 +176,7 @@ update the global profile only, never ladder standings.
 | 6.18 | Deadline passes with nothing played | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |
 | 6.19 | Day 3, 6, 9 | One reminder each ("N days left to finish your …"), never repeated 🅴 |
 | 6.20 | Posted playoff matches | Not listed in Matchmaking 🅹 |
-| 6.21 | Settled game | "X goes through." or the void line; the coin result is hidden 🅹 🅼 |
+| 6.21 | Settled game | A gold winner card under the aggregate: "Winner", the winner's name, and "Through to the {next round}" ("on a walkover" when it was one; "Ladder champion" for the Final, "Takes 3rd place" for the 3rd-place game). A void game shows a grey card "Not played in time, so neither side goes through." The coin and caller stay visible 🅹 🅼 |
 
 Emulator cases are in `functions/src/ladderPlayoffTies.emulator.test.ts` and
 `functions/src/autoApproveLadderGames.emulator.test.ts`; the screen in

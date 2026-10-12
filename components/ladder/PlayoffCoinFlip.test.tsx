@@ -7,7 +7,7 @@ const onFlip = jest.fn(async () => true);
 const props = {
   canFlip: true,
   onFlip,
-  resultText: null,
+  callerName: "Mo",
   face: null,
   call: null,
 };
@@ -24,7 +24,7 @@ describe("PlayoffCoinFlip", () => {
     expect(getByTestId("playoff-coin-call-tails")).toHaveTextContent("Tails");
   });
 
-  it("keeps both coins with the call glowing, then shows where the coin landed", () => {
+  it("keeps both coins with the call glowing and the caller named, then lands", () => {
     jest.useFakeTimers();
     const view = render(<PlayoffCoinFlip {...props} />);
     fireEvent.press(view.getByTestId("playoff-coin-call-tails"));
@@ -32,35 +32,30 @@ describe("PlayoffCoinFlip", () => {
     expect(view.getByTestId("playoff-coin-call-heads")).toBeTruthy();
     expect(view.getByTestId("playoff-coin-called-tails")).toBeTruthy();
     expect(view.queryByTestId("playoff-coin-called-heads")).toBeNull();
+    expect(view.getByTestId("playoff-coin-caller")).toHaveTextContent("Mo");
 
-    const result = "You're away first";
-    view.rerender(
-      <PlayoffCoinFlip
-        {...props}
-        face="trophy"
-        call="trophy"
-        resultText={result}
-      />,
-    );
-    expect(view.queryByText(result)).toBeNull();
+    view.rerender(<PlayoffCoinFlip {...props} face="trophy" call="trophy" />);
+    expect(view.queryByTestId("playoff-coin-result")).toBeNull();
     act(() => {
       jest.advanceTimersByTime(10000);
     });
-    expect(view.getByText(result)).toBeTruthy();
+    expect(view.getByTestId("playoff-coin-result")).toBeTruthy();
+    expect(view.queryByText(/home first|away first/)).toBeNull();
     jest.useRealTimers();
   });
 
-  it("shows the opponent which coin was called, glowing, and where they play", () => {
-    const { getByTestId, getByText } = render(
+  it("shows everyone which coin was called and who called it", () => {
+    const { getByTestId } = render(
       <PlayoffCoinFlip
         {...props}
         face="logo"
         call="logo"
-        resultText="You're away first"
+        callerName="Sam"
+        canFlip={false}
       />,
     );
     expect(getByTestId("playoff-coin-called-heads")).toBeTruthy();
-    expect(getByText("You're away first")).toBeTruthy();
+    expect(getByTestId("playoff-coin-caller")).toHaveTextContent("Sam");
   });
 
   it("makes onlookers wait", () => {

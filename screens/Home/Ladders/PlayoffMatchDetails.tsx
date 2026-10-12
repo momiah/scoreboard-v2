@@ -297,24 +297,35 @@ const PlayoffMatchDetails: React.FC = () => {
   };
 
   const toss = tie.coinToss;
-  const coinResultText = (() => {
-    if (!toss) return null;
-    if (!userSide) return `${nameOf(toss.firstHost)} is at home first`;
-    return userSide === toss.firstHost
-      ? "You're at home first"
-      : "You're away first";
-  })();
+  const callerSide: LadderPlayoffTieSide | null = toss
+    ? tie.side1?.playerIds.includes(toss.flippedBy)
+      ? "team1"
+      : "team2"
+    : userSide;
+  const callerName = callerSide ? nameOf(callerSide) : null;
 
   const decider = legs.get(3);
-  const outcomeLine = (() => {
-    if (tie.status !== LADDER_PLAYOFF_TIE_STATUS.COMPLETED) return null;
+  const outcome = (() => {
+    if (!isCompleted) return null;
     if (tie.outcome === LADDER_PLAYOFF_TIE_OUTCOME.VOID || !tie.winner) {
-      return "Not played in time, so neither side goes through.";
+      return {
+        winner: null,
+        detail: "Not played in time, so neither side goes through.",
+      };
     }
-    if (tie.outcome === LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER) {
-      return `${nameOf(tie.winner)} goes through on a walkover.`;
-    }
-    return `${nameOf(tie.winner)} goes through.`;
+    const isFinal = !tie.isThirdPlacePlayoff && tie.round >= totalRounds;
+    const destination = tie.isThirdPlacePlayoff
+      ? "Takes 3rd place"
+      : isFinal
+        ? "Ladder champion"
+        : `Through to the ${roundLabel(2 ** (totalRounds - tie.round))}`;
+    return {
+      winner: nameOf(tie.winner),
+      detail:
+        tie.outcome === LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER
+          ? `${destination} on a walkover`
+          : destination,
+    };
   })();
 
   const arrangeHost =
@@ -348,7 +359,7 @@ const PlayoffMatchDetails: React.FC = () => {
               : null
           }
           call={toss?.call ?? null}
-          resultText={coinResultText}
+          callerName={callerName}
           canFlip={!!userSide && isOpen}
           idleText={
             isCompleted
@@ -376,6 +387,28 @@ const PlayoffMatchDetails: React.FC = () => {
           testID="playoff-match-aggregate"
         />
 
+        {outcome ? (
+          outcome.winner ? (
+            <WinnerCard testID="playoff-match-outcome">
+              <Ionicons name="trophy" size={28} color="#FFC800" />
+              <WinnerText>
+                <WinnerLabel>Winner</WinnerLabel>
+                <WinnerName numberOfLines={1}>{outcome.winner}</WinnerName>
+                <WinnerDetail>{outcome.detail}</WinnerDetail>
+              </WinnerText>
+            </WinnerCard>
+          ) : (
+            <VoidCard testID="playoff-match-outcome">
+              <Ionicons
+                name="remove-circle-outline"
+                size={20}
+                color="#9fb8c8"
+              />
+              <VoidText>{outcome.detail}</VoidText>
+            </VoidCard>
+          )
+        ) : null}
+
         <InfoRow>
           <InfoBox testID="playoff-match-format">
             <Ionicons name="trophy-outline" size={18} color="#FFC800" />
@@ -402,9 +435,6 @@ const PlayoffMatchDetails: React.FC = () => {
             </InfoLabel>
           </InfoBox>
         </InfoRow>
-        {outcomeLine ? (
-          <Result testID="playoff-match-outcome">{outcomeLine}</Result>
-        ) : null}
 
         {renderLeg(1)}
         {renderLeg(2)}
@@ -505,10 +535,54 @@ const Muted = styled.Text({
   fontSize: 13,
 });
 
-const Result = styled.Text({
+const WinnerCard = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 14,
+  padding: 16,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "rgba(255, 200, 0, 0.6)",
+  backgroundColor: "rgba(255, 200, 0, 0.1)",
+});
+
+const WinnerText = styled.View({
+  flex: 1,
+  gap: 2,
+});
+
+const WinnerLabel = styled.Text({
   color: "#FFC800",
-  fontSize: 14,
-  fontWeight: "600",
+  fontSize: 11,
+  fontWeight: "700",
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+});
+
+const WinnerName = styled.Text({
+  color: "#ffffff",
+  fontSize: 20,
+  fontWeight: "bold",
+});
+
+const WinnerDetail = styled.Text({
+  color: "#e6d28a",
+  fontSize: 13,
+});
+
+const VoidCard = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+  padding: 14,
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.05)",
+});
+
+const VoidText = styled.Text({
+  flex: 1,
+  color: "#cbd5e1",
+  fontSize: 13,
 });
 
 const LegSection = styled.View({

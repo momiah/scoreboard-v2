@@ -111,10 +111,12 @@ const renderScreen = ({
   userId,
   tie,
   matches = [],
+  otherTies = [],
 }: {
   userId: string;
   tie: object;
   matches?: unknown[];
+  otherTies?: object[];
 }) => {
   const value = {
     ladderById: ladder,
@@ -123,7 +125,7 @@ const renderScreen = ({
       _id: string,
       onUpdate: (t: unknown[]) => void,
     ) => {
-      onUpdate([tie]);
+      onUpdate([tie, ...otherTies]);
       return () => {};
     },
     subscribeToPlayoffMatches: (
@@ -201,7 +203,7 @@ describe("PlayoffMatchDetails", () => {
     );
   });
 
-  it("tells each side where they play first and glows the called coin", () => {
+  it("glows the called coin and names who called it, for everyone", () => {
     const tie = {
       ...baseTie(),
       coinToss: {
@@ -212,17 +214,13 @@ describe("PlayoffMatchDetails", () => {
         face: "trophy",
       },
     };
-    const flipper = renderScreen({ userId: "u1", tie });
-    expect(flipper.getByText("You're away first")).toBeTruthy();
-
-    expect(flipper.getByTestId("playoff-coin-called-heads")).toBeTruthy();
-
-    const opponent = renderScreen({ userId: "u2", tie });
-    expect(opponent.getByTestId("playoff-coin-called-heads")).toBeTruthy();
-    expect(opponent.getByText("You're at home first")).toBeTruthy();
-
-    const viewer = renderScreen({ userId: "stranger", tie });
-    expect(viewer.getByText("U2 is at home first")).toBeTruthy();
+    for (const userId of ["u1", "u2", "stranger"]) {
+      const view = renderScreen({ userId, tie });
+      expect(view.getByTestId("playoff-coin-called-heads")).toBeTruthy();
+      expect(view.getByTestId("playoff-coin-caller")).toHaveTextContent("U1");
+      expect(view.getByText("Match 1 · U2 (Home)")).toBeTruthy();
+      expect(view.queryByText(/home first|away first/)).toBeNull();
+    }
   });
 
   it("makes viewers wait for the coin toss", () => {
@@ -235,7 +233,6 @@ describe("PlayoffMatchDetails", () => {
 
   it("asks the coin winner to arrange match 1 and the opponent to wait", () => {
     const host = renderScreen({ userId: "u1", tie: tossed("team1") });
-    expect(host.getByText("You're at home first")).toBeTruthy();
     fireEvent.press(host.getByTestId("playoff-match-leg1-arrange"));
     expect(host.getByTestId("arrange-modal").props.children).toBe(
       "Arrange match 1 | best of 7 | Home",
@@ -333,12 +330,10 @@ describe("PlayoffMatchDetails", () => {
         outcome: "played",
       },
     });
-    expect(getByTestId("playoff-match-outcome").props.children).toBe(
-      "U2 goes through.",
+    expect(getByTestId("playoff-match-outcome")).toHaveTextContent(
+      /Winner.*U2.*Ladder champion/,
     );
-    expect(getByTestId("playoff-coin-result")).toHaveTextContent(
-      /You're at home first/,
-    );
+    expect(getByTestId("playoff-coin-result")).toBeTruthy();
     expect(queryByTestId("playoff-coin-call-heads")).toBeTruthy();
     expect(getByTestId("playoff-match-deadline")).toHaveTextContent(/Finished/);
   });
@@ -348,12 +343,10 @@ describe("PlayoffMatchDetails", () => {
       userId: "stranger",
       tie: { ...baseTie(), status: "completed", winner: null, outcome: "void" },
     });
-    expect(getByTestId("playoff-match-outcome").props.children).toBe(
-      "Not played in time, so neither side goes through.",
+    expect(getByTestId("playoff-match-outcome")).toHaveTextContent(
+      /Not played in time, so neither side goes through\./,
     );
-    expect(getByTestId("playoff-coin-waiting")).not.toHaveTextContent(
-      /coin/i,
-    );
+    expect(getByTestId("playoff-coin-waiting")).not.toHaveTextContent(/coin/i);
     expect(getByTestId("playoff-match-aggregate")).toBeTruthy();
     expect(getByTestId("playoff-match-deadline")).toHaveTextContent(/Finished/);
     expect(getByTestId("playoff-match-leg1-closed")).toBeTruthy();
@@ -375,11 +368,27 @@ describe("PlayoffMatchDetails", () => {
       userId: "stranger",
       tie,
     });
-    expect(getByTestId("playoff-coin-result")).toHaveTextContent(
-      /U1 is at home first/,
-    );
     expect(getByTestId("playoff-coin-called-heads")).toBeTruthy();
+    expect(getByTestId("playoff-coin-caller")).toHaveTextContent("U1");
     expect(queryByTestId("playoff-match-leg1-arrange")).toBeNull();
     expect(getByTestId("playoff-match-leg1-waiting")).toBeTruthy();
+  });
+
+  it("names the next round for a winner, and says when it was a walkover", () => {
+    const tie = {
+      ...tossed("team1"),
+      status: "completed",
+      winner: "team1",
+      outcome: "walkover",
+    };
+    const semi = { ...baseTie(), tieId: "r2-s0", round: 2, slot: 0 };
+    const { getByTestId } = renderScreen({
+      userId: "stranger",
+      tie,
+      otherTies: [semi],
+    });
+    expect(getByTestId("playoff-match-outcome")).toHaveTextContent(
+      /Winner.*U1.*Through to the Final on a walkover/,
+    );
   });
 });
