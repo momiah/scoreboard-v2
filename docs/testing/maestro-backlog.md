@@ -171,9 +171,11 @@ Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
 `AddLadderMatchModal` in playoff mode via `PlayoffMatchScheduleModal`):
 
 1. `ladder-playoffs-coin-flip` (`coinPending`): "Choose where you want the
-   first match to be played"; tap `playoff-coin-call-home` → "You called
-   Home…" → `playoff-coin-result` "You called Home. It landed on .*, so you're
-   .* first."; the match labels read "Match 1 · Home"/"Away" accordingly.
+   first match to be played"; tap `playoff-coin-call-home` → both
+   `playoff-coin-call-*` still visible, `playoff-coin-called-home` (the glow) and
+   `playoff-coin-call-line` "You called Home…" → `playoff-coin-result` with
+   "You called Home." and "It landed on (Home|Away), so you play the first match
+   .*"; the match labels read "Match 1 · Home"/"Away" accordingly.
 2. `ladder-playoffs-coin-viewer` (`viewer`): `playoff-coin-waiting` visible,
    no `playoff-coin-call-home`.
 3. `ladder-playoffs-arrange-home` (`coinWon`): tap

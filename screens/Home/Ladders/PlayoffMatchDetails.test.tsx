@@ -195,7 +195,7 @@ describe("PlayoffMatchDetails", () => {
     );
   });
 
-  it("tells each side where they play first after the call", () => {
+  it("tells each side who called what and where they play first", () => {
     const tie = {
       ...baseTie(),
       coinToss: {
@@ -206,23 +206,28 @@ describe("PlayoffMatchDetails", () => {
         face: "trophy",
       },
     };
-    expect(
-      renderScreen({ userId: "u1", tie }).getByTestId("playoff-coin-result"),
-    ).toHaveTextContent(
-      "You called Home. It landed on the trophy, so you're away first.",
+    const flipper = renderScreen({ userId: "u1", tie });
+    expect(flipper.getByTestId("playoff-coin-call-line")).toHaveTextContent(
+      "You called Home.",
     );
     expect(
-      renderScreen({ userId: "u2", tie }).getByTestId("playoff-coin-result"),
-    ).toHaveTextContent(
-      "U1 called Home. It landed on the trophy, so you're at home first.",
+      flipper.getByText("It landed on Away, so you play the first match away."),
+    ).toBeTruthy();
+
+    const opponent = renderScreen({ userId: "u2", tie });
+    expect(opponent.getByTestId("playoff-coin-call-line")).toHaveTextContent(
+      "U1 called Home.",
     );
     expect(
-      renderScreen({ userId: "stranger", tie }).getByTestId(
-        "playoff-coin-result",
+      opponent.getByText(
+        "It landed on Away, so U1 is away and you're at home for the first match.",
       ),
-    ).toHaveTextContent(
-      "U1 called Home. It landed on the trophy, so U2 is at home first.",
-    );
+    ).toBeTruthy();
+
+    const viewer = renderScreen({ userId: "stranger", tie });
+    expect(
+      viewer.getByText("It landed on Away, so U2 hosts the first match."),
+    ).toBeTruthy();
   });
 
   it("makes viewers wait for the coin toss", () => {

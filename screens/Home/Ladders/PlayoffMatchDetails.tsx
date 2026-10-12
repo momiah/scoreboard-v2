@@ -294,27 +294,33 @@ const PlayoffMatchDetails: React.FC = () => {
     );
   };
 
+  const toss = tie.coinToss;
+  const flipperSide: LadderPlayoffTieSide | null = toss
+    ? tie.side1?.playerIds.includes(toss.flippedBy)
+      ? "team1"
+      : "team2"
+    : null;
+  const callerName =
+    toss && flipperSide
+      ? toss.flippedBy === userId
+        ? "You"
+        : nameOf(flipperSide)
+      : null;
   const coinResultText = (() => {
-    const toss = tie.coinToss;
     if (!toss) return null;
     const hostName = nameOf(toss.firstHost);
-    if (!toss.call || !toss.face)
+    if (!toss.call || !toss.face || !flipperSide) {
       return `Coin toss: ${hostName} hosts the first match`;
-    const flipperSide: LadderPlayoffTieSide = tie.side1?.playerIds.includes(
-      toss.flippedBy,
-    )
-      ? "team1"
-      : "team2";
-    const flipper = toss.flippedBy === userId ? "You" : nameOf(flipperSide);
-    const callName = toss.call === "home" ? "Home" : "Away";
-    const faceName =
-      toss.face === LADDER_PLAYOFF_COIN_FACE.LOGO ? "the logo" : "the trophy";
-    const where = !userSide
-      ? `${hostName} is at home first`
-      : userSide === toss.firstHost
-        ? "you're at home first"
-        : "you're away first";
-    return `${flipper} called ${callName}. It landed on ${faceName}, so ${where}.`;
+    }
+    const landedHome = toss.face === LADDER_PLAYOFF_COIN_FACE.LOGO;
+    const landed = `It landed on ${landedHome ? "Home" : "Away"}`;
+    if (userSide === flipperSide) {
+      return `${landed}, so you play the first match ${landedHome ? "at home" : "away"}.`;
+    }
+    if (userSide) {
+      return `${landed}, so ${nameOf(flipperSide)} is ${landedHome ? "at home" : "away"} and you're ${landedHome ? "away" : "at home"} for the first match.`;
+    }
+    return `${landed}, so ${hostName} hosts the first match.`;
   })();
 
   const decider = legs.get(3);
@@ -360,6 +366,8 @@ const PlayoffMatchDetails: React.FC = () => {
                 ? (tie.coinToss.face ?? LADDER_PLAYOFF_COIN_FACE.LOGO)
                 : null
             }
+            call={toss?.call ?? null}
+            callerName={callerName}
             resultText={coinResultText}
             canFlip={!!userSide}
             onFlip={(call) => flipPlayoffCoin(ladderId, tieId, call)}

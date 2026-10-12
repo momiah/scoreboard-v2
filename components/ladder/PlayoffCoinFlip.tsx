@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Easing, StyleSheet } from "react-native";
+import { Animated, Easing, StyleSheet, View } from "react-native";
 import styled from "styled-components/native";
 
 import { LADDER_PLAYOFF_COIN_FACE } from "@shared";
@@ -15,11 +15,21 @@ const CALL_COIN_SIZE = 48;
 const SPIN_MS_PER_TURN = 260;
 const LANDING_TURNS = 4;
 const LANDING_MS = 2400;
-const ENGRAVING = "#8a6400";
+const GLOW = "#9be7ff";
 
-const FACE_IMAGE = {
-  [LADDER_PLAYOFF_COIN_FACE.LOGO]: courtChampsLogo,
-  [LADDER_PLAYOFF_COIN_FACE.TROPHY]: ladders[0],
+const FACE_STYLE = {
+  [LADDER_PLAYOFF_COIN_FACE.LOGO]: {
+    image: courtChampsLogo,
+    fill: "#1F6BFF",
+    rim: "#0040C8",
+    engraving: "#ffffff",
+  },
+  [LADDER_PLAYOFF_COIN_FACE.TROPHY]: {
+    image: ladders[0],
+    fill: "#FFC800",
+    rim: "#e0a800",
+    engraving: "#8a6400",
+  },
 };
 
 const CALLS: {
@@ -31,11 +41,16 @@ const CALLS: {
   { call: "away", face: LADDER_PLAYOFF_COIN_FACE.TROPHY, label: "Away" },
 ];
 
+const callLabel = (call: LadderPlayoffCoinCall): string =>
+  call === "home" ? "Home" : "Away";
+
 const faceTurn = (face: LadderPlayoffCoinFace): number =>
   face === LADDER_PLAYOFF_COIN_FACE.LOGO ? 0 : 0.5;
 
 interface PlayoffCoinFlipProps {
   face: LadderPlayoffCoinFace | null;
+  call: LadderPlayoffCoinCall | null;
+  callerName: string | null;
   resultText: string | null;
   canFlip: boolean;
   onFlip: (call: LadderPlayoffCoinCall) => Promise<boolean>;
@@ -43,6 +58,8 @@ interface PlayoffCoinFlipProps {
 
 const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   face,
+  call,
+  callerName,
   resultText,
   canFlip,
   onFlip,
@@ -55,8 +72,10 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   const [phase, setPhase] = useState<"idle" | "tossing" | "landed">(
     face ? "landed" : "idle",
   );
-  const [called, setCalled] = useState<LadderPlayoffCoinCall | null>(null);
+  const [ownCall, setOwnCall] = useState<LadderPlayoffCoinCall | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const called = ownCall ?? call;
+  const caller = ownCall ? "You" : callerName;
 
   const startSpin = () => {
     spinning.current = true;
@@ -110,19 +129,19 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
     land(face);
   }, [face]);
 
-  const handleCall = async (call: LadderPlayoffCoinCall) => {
+  const handleCall = async (choice: LadderPlayoffCoinCall) => {
     if (spinning.current || face) return;
     setError(null);
-    setCalled(call);
+    setOwnCall(choice);
     startSpin();
-    const ok = await onFlip(call);
+    const ok = await onFlip(choice);
     if (!ok) {
       turns.stopAnimation();
       lift.stopAnimation();
       turns.setValue(0);
       lift.setValue(0);
       spinning.current = false;
-      setCalled(null);
+      setOwnCall(null);
       setPhase("idle");
       setError("Couldn't flip the coin. Try again.");
     }
@@ -143,60 +162,73 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   });
 
   const landed = phase === "landed" && !!face;
-  const caption = (() => {
-    if (landed) return resultText ?? "";
-    if (phase === "tossing") {
-      return called
-        ? `You called ${called === "home" ? "Home" : "Away"}…`
-        : "Flipping…";
-    }
-    if (!canFlip) return "Waiting for the coin toss";
-    return "Choose where you want the first match to be played";
-  })();
-  const testID = landed
-    ? "playoff-coin-result"
-    : !canFlip && phase === "idle"
-      ? "playoff-coin-waiting"
-      : undefined;
+  const prompt =
+    phase === "idle" && !face
+      ? canFlip
+        ? "Choose where you want the first match to be played"
+        : "Waiting for the coin toss"
+      : null;
+  const callLine =
+    called && caller
+      ? `${caller} called ${callLabel(called)}${landed ? "." : "…"}`
+      : null;
 
   return (
-    <FlipArea testID={testID}>
+    <FlipArea
+      testID={
+        landed
+          ? "playoff-coin-result"
+          : !canFlip && phase === "idle"
+            ? "playoff-coin-waiting"
+            : undefined
+      }
+    >
       <CoinStage testID="playoff-coin">
         <Animated.View style={{ transform: [{ translateY }] }}>
-          <BigFace style={faceStyle(rotation(0))}>
-            <Engraving size={COIN_SIZE} source={FACE_IMAGE.logo} />
-          </BigFace>
-          <BigFace style={[StyleSheet.absoluteFill, faceStyle(rotation(0.5))]}>
-            <Engraving size={COIN_SIZE} source={FACE_IMAGE.trophy} />
-          </BigFace>
+          <Coin
+            size={COIN_SIZE}
+            face={LADDER_PLAYOFF_COIN_FACE.LOGO}
+            style={faceStyle(rotation(0))}
+          />
+          <Coin
+            size={COIN_SIZE}
+            face={LADDER_PLAYOFF_COIN_FACE.TROPHY}
+            style={[StyleSheet.absoluteFill, faceStyle(rotation(0.5))]}
+          />
         </Animated.View>
         <Shadow style={{ transform: [{ scaleX: shadowScale }] }} />
       </CoinStage>
 
-      <Caption>{caption}</Caption>
+      {prompt ? <Caption>{prompt}</Caption> : null}
 
-      {canFlip && phase === "idle" && !face ? (
-        <Calls>
-          {CALLS.map(({ call, face: callFace, label }) => (
+      <Calls>
+        {CALLS.map(({ call: option, face: optionFace, label }) => {
+          const chosen = called === option;
+          return (
             <CallButton
-              key={call}
+              key={option}
               activeOpacity={0.8}
-              onPress={() => handleCall(call)}
+              onPress={() => handleCall(option)}
+              disabled={!canFlip || phase !== "idle" || !!face}
               accessible={false}
-              testID={`playoff-coin-call-${call}`}
+              testID={`playoff-coin-call-${option}`}
             >
-              <SmallCoin>
-                <Engraving
-                  size={CALL_COIN_SIZE}
-                  source={FACE_IMAGE[callFace]}
-                />
-              </SmallCoin>
-              <CallLabel>{label}</CallLabel>
+              <CallRing
+                chosen={chosen}
+                testID={chosen ? `playoff-coin-called-${option}` : undefined}
+              >
+                <Coin size={CALL_COIN_SIZE} face={optionFace} />
+              </CallRing>
+              <CallLabel chosen={chosen}>{label}</CallLabel>
             </CallButton>
-          ))}
-        </Calls>
-      ) : null}
+          );
+        })}
+      </Calls>
 
+      {callLine ? (
+        <Caption testID="playoff-coin-call-line">{callLine}</Caption>
+      ) : null}
+      {landed && resultText ? <Result>{resultText}</Result> : null}
       {error ? (
         <ErrorText testID="playoff-coin-error">{error}</ErrorText>
       ) : null}
@@ -206,20 +238,47 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
 
 export default PlayoffCoinFlip;
 
+const Coin = ({
+  size,
+  face,
+  style,
+}: {
+  size: number;
+  face: LadderPlayoffCoinFace;
+  style?: React.ComponentProps<typeof Animated.View>["style"];
+}) => {
+  const look = FACE_STYLE[face];
+  return (
+    <Animated.View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: look.fill,
+          borderWidth: size > 60 ? 5 : 3,
+          borderColor: look.rim,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        style,
+      ]}
+    >
+      <Engraving
+        source={look.image}
+        style={{
+          width: size * 0.58,
+          height: size * 0.58,
+          tintColor: look.engraving,
+        }}
+      />
+    </Animated.View>
+  );
+};
+
 const faceStyle = (rotateX: Animated.AnimatedInterpolation<string>) => ({
   backfaceVisibility: "hidden" as const,
   transform: [{ perspective: 800 }, { rotateX }],
-});
-
-const goldCoin = (size: number) => ({
-  width: size,
-  height: size,
-  borderRadius: size / 2,
-  backgroundColor: "#FFC800",
-  borderWidth: size > 60 ? 5 : 3,
-  borderColor: "#e0a800",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
 });
 
 const FlipArea = styled.View({
@@ -233,17 +292,7 @@ const CoinStage = styled.View({
   alignItems: "center",
 });
 
-const BigFace = styled(Animated.View)(goldCoin(COIN_SIZE));
-
-const SmallCoin = styled.View(goldCoin(CALL_COIN_SIZE));
-
-const Engraving = styled.Image.attrs({ resizeMode: "contain" })(
-  ({ size }: { size: number }) => ({
-    width: size * 0.58,
-    height: size * 0.58,
-    tintColor: ENGRAVING,
-  }),
-);
+const Engraving = styled.Image.attrs({ resizeMode: "contain" })({});
 
 const Shadow = styled(Animated.View)({
   width: COIN_SIZE * 0.8,
@@ -263,15 +312,49 @@ const CallButton = styled.TouchableOpacity({
   gap: 6,
 });
 
-const CallLabel = styled.Text({
-  color: "#ffffff",
+const CallRing = ({
+  chosen,
+  testID,
+  children,
+}: {
+  chosen: boolean;
+  testID?: string;
+  children: React.ReactNode;
+}) => (
+  <View
+    testID={testID}
+    style={{
+      padding: 3,
+      borderRadius: (CALL_COIN_SIZE + 12) / 2,
+      borderWidth: 2,
+      borderColor: chosen ? GLOW : "transparent",
+      shadowColor: GLOW,
+      shadowOpacity: chosen ? 0.9 : 0,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: chosen ? 8 : 0,
+    }}
+  >
+    {children}
+  </View>
+);
+
+const CallLabel = styled.Text(({ chosen }: { chosen: boolean }) => ({
+  color: chosen ? GLOW : "#ffffff",
   fontSize: 13,
   fontWeight: "600",
-});
+}));
 
 const Caption = styled.Text({
   color: "#cbd5e1",
   fontSize: 13,
+  textAlign: "center",
+});
+
+const Result = styled.Text({
+  color: "#ffffff",
+  fontSize: 14,
+  fontWeight: "600",
   textAlign: "center",
 });
 

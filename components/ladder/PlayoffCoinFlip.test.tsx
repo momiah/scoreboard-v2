@@ -4,7 +4,14 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 import PlayoffCoinFlip from "./PlayoffCoinFlip";
 
 const onFlip = jest.fn(async () => true);
-const props = { canFlip: true, onFlip, resultText: null, face: null };
+const props = {
+  canFlip: true,
+  onFlip,
+  resultText: null,
+  face: null,
+  call: null,
+  callerName: null,
+};
 
 beforeEach(() => onFlip.mockClear());
 
@@ -18,48 +25,66 @@ describe("PlayoffCoinFlip", () => {
     expect(getByTestId("playoff-coin-call-away")).toHaveTextContent("Away");
   });
 
-  it("tosses with the call, spins until the face lands, then shows the result", () => {
+  it("keeps both coins with the call glowing, then shows where the coin landed", () => {
     jest.useFakeTimers();
     const view = render(<PlayoffCoinFlip {...props} />);
     fireEvent.press(view.getByTestId("playoff-coin-call-away"));
     expect(onFlip).toHaveBeenCalledWith("away");
-    expect(view.getByText("You called Away…")).toBeTruthy();
-    expect(view.queryByTestId("playoff-coin-call-home")).toBeNull();
-
-    const result =
-      "You called Away. It landed on the trophy, so you're away first.";
-    view.rerender(
-      <PlayoffCoinFlip {...props} face="trophy" resultText={result} />,
+    expect(view.getByTestId("playoff-coin-call-line")).toHaveTextContent(
+      "You called Away…",
     );
-    expect(view.queryByTestId("playoff-coin-result")).toBeNull();
+    expect(view.getByTestId("playoff-coin-call-home")).toBeTruthy();
+    expect(view.getByTestId("playoff-coin-called-away")).toBeTruthy();
+    expect(view.queryByTestId("playoff-coin-called-home")).toBeNull();
+
+    const result = "It landed on Away, so you play the first match away.";
+    view.rerender(
+      <PlayoffCoinFlip
+        {...props}
+        face="trophy"
+        call="away"
+        callerName="You"
+        resultText={result}
+      />,
+    );
+    expect(view.queryByText(result)).toBeNull();
     act(() => {
       jest.advanceTimersByTime(10000);
     });
-    expect(view.getByTestId("playoff-coin-result")).toHaveTextContent(result);
+    expect(view.getByTestId("playoff-coin-call-line")).toHaveTextContent(
+      "You called Away.",
+    );
+    expect(view.getByText(result)).toBeTruthy();
     jest.useRealTimers();
   });
 
-  it("shows a settled toss straight away, with no call buttons", () => {
-    const { getByTestId, queryByTestId } = render(
+  it("shows the opponent who called what, with that coin glowing", () => {
+    const { getByTestId, getByText } = render(
       <PlayoffCoinFlip
         {...props}
         face="logo"
-        resultText="Coin toss: Mo hosts the first match"
+        call="home"
+        callerName="Sam"
+        resultText="It landed on Home, so Sam is at home and you're away for the first match."
       />,
     );
-    expect(getByTestId("playoff-coin-result")).toHaveTextContent(
-      "Coin toss: Mo hosts the first match",
+    expect(getByTestId("playoff-coin-call-line")).toHaveTextContent(
+      "Sam called Home.",
     );
-    expect(queryByTestId("playoff-coin-call-home")).toBeNull();
+    expect(getByTestId("playoff-coin-called-home")).toBeTruthy();
+    expect(
+      getByText(
+        "It landed on Home, so Sam is at home and you're away for the first match.",
+      ),
+    ).toBeTruthy();
   });
 
-  it("makes onlookers wait without call buttons", () => {
-    const { getByTestId, queryByTestId } = render(
+  it("makes onlookers wait", () => {
+    const { getByTestId } = render(
       <PlayoffCoinFlip {...props} canFlip={false} />,
     );
     expect(getByTestId("playoff-coin-waiting")).toHaveTextContent(
-      "Waiting for the coin toss",
+      /Waiting for the coin toss/,
     );
-    expect(queryByTestId("playoff-coin-call-home")).toBeNull();
   });
 });
