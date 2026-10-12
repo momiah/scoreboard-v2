@@ -207,24 +207,16 @@ describe("PlayoffMatchDetails", () => {
       },
     };
     const flipper = renderScreen({ userId: "u1", tie });
-    expect(
-      flipper.getByText("It landed on Away, so you play the first match away."),
-    ).toBeTruthy();
+    expect(flipper.getByText("You're away first")).toBeTruthy();
 
     expect(flipper.getByTestId("playoff-coin-called-home")).toBeTruthy();
 
     const opponent = renderScreen({ userId: "u2", tie });
     expect(opponent.getByTestId("playoff-coin-called-home")).toBeTruthy();
-    expect(
-      opponent.getByText(
-        "It landed on Away, so U1 is away and you're at home for the first match.",
-      ),
-    ).toBeTruthy();
+    expect(opponent.getByText("You're at home first")).toBeTruthy();
 
     const viewer = renderScreen({ userId: "stranger", tie });
-    expect(
-      viewer.getByText("It landed on Away, so U2 hosts the first match."),
-    ).toBeTruthy();
+    expect(viewer.getByText("U2 is at home first")).toBeTruthy();
   });
 
   it("makes viewers wait for the coin toss", () => {
@@ -237,7 +229,7 @@ describe("PlayoffMatchDetails", () => {
 
   it("asks the coin winner to arrange match 1 and the opponent to wait", () => {
     const host = renderScreen({ userId: "u1", tie: tossed("team1") });
-    expect(host.getByText("Coin toss: U1 hosts the first match")).toBeTruthy();
+    expect(host.getByText("You're at home first")).toBeTruthy();
     fireEvent.press(host.getByTestId("playoff-match-leg1-arrange"));
     expect(host.getByTestId("arrange-modal").props.children).toBe(
       "Arrange match 1 | best of 7 | Home",

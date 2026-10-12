@@ -33,7 +33,7 @@ describe("PlayoffCoinFlip", () => {
     expect(view.getByTestId("playoff-coin-called-away")).toBeTruthy();
     expect(view.queryByTestId("playoff-coin-called-home")).toBeNull();
 
-    const result = "It landed on Away, so you play the first match away.";
+    const result = "You're away first";
     view.rerender(
       <PlayoffCoinFlip
         {...props}
@@ -56,15 +56,11 @@ describe("PlayoffCoinFlip", () => {
         {...props}
         face="logo"
         call="home"
-        resultText="It landed on Home, so Sam is at home and you're away for the first match."
+        resultText="You're away first"
       />,
     );
     expect(getByTestId("playoff-coin-called-home")).toBeTruthy();
-    expect(
-      getByText(
-        "It landed on Home, so Sam is at home and you're away for the first match.",
-      ),
-    ).toBeTruthy();
+    expect(getByText("You're away first")).toBeTruthy();
   });
 
   it("makes onlookers wait", () => {
@@ -72,7 +68,7 @@ describe("PlayoffCoinFlip", () => {
       <PlayoffCoinFlip {...props} canFlip={false} />,
     );
     expect(getByTestId("playoff-coin-waiting")).toHaveTextContent(
-      /Waiting for the coin toss/,
+      /Waiting for a player to flip the coin for home or away/,
     );
   });
 });

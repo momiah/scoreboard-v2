@@ -295,26 +295,12 @@ const PlayoffMatchDetails: React.FC = () => {
   };
 
   const toss = tie.coinToss;
-  const flipperSide: LadderPlayoffTieSide | null = toss
-    ? tie.side1?.playerIds.includes(toss.flippedBy)
-      ? "team1"
-      : "team2"
-    : null;
   const coinResultText = (() => {
     if (!toss) return null;
-    const hostName = nameOf(toss.firstHost);
-    if (!toss.call || !toss.face || !flipperSide) {
-      return `Coin toss: ${hostName} hosts the first match`;
-    }
-    const landedHome = toss.face === LADDER_PLAYOFF_COIN_FACE.LOGO;
-    const landed = `It landed on ${landedHome ? "Home" : "Away"}`;
-    if (userSide === flipperSide) {
-      return `${landed}, so you play the first match ${landedHome ? "at home" : "away"}.`;
-    }
-    if (userSide) {
-      return `${landed}, so ${nameOf(flipperSide)} is ${landedHome ? "at home" : "away"} and you're ${landedHome ? "away" : "at home"} for the first match.`;
-    }
-    return `${landed}, so ${hostName} hosts the first match.`;
+    if (!userSide) return `${nameOf(toss.firstHost)} is at home first`;
+    return userSide === toss.firstHost
+      ? "You're at home first"
+      : "You're away first";
   })();
 
   const decider = legs.get(3);

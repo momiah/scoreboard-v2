@@ -173,7 +173,7 @@ Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
 1. `ladder-playoffs-coin-flip` (`coinPending`): "Choose where you want the
    first match to be played"; tap `playoff-coin-call-home` → both
    `playoff-coin-call-*` still visible, `playoff-coin-called-home` (the glow) → `playoff-coin-result` with
-   "It landed on (Home|Away), so you play the first match .*"; the match labels read "Match 1 · Home"/"Away" accordingly.
+   "You're (at home|away) first"; the match labels read "Match 1 · Home"/"Away" accordingly.
 2. `ladder-playoffs-coin-viewer` (`viewer`): `playoff-coin-waiting` visible,
    no `playoff-coin-call-home`.
 3. `ladder-playoffs-arrange-home` (`coinWon`): tap

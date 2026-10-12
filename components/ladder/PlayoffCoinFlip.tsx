@@ -21,7 +21,7 @@ const FACE_STYLE = {
   [LADDER_PLAYOFF_COIN_FACE.LOGO]: {
     image: courtChampsLogo,
     fill: "#032462ff",
-    rim: "#021a47",
+    rim: "#0040C8",
     engraving: "#ffffff",
   },
   [LADDER_PLAYOFF_COIN_FACE.TROPHY]: {
@@ -160,7 +160,7 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
     phase === "idle" && !face
       ? canFlip
         ? "Choose where you want the first match to be played"
-        : "Waiting for the coin toss"
+        : "Waiting for a player to flip the coin for home or away"
       : null;
 
   return (
@@ -339,9 +339,12 @@ const Caption = styled.Text({
 
 const Result = styled.Text({
   color: "#ffffff",
-  fontSize: 14,
+  fontSize: 15,
   fontWeight: "600",
   textAlign: "center",
+  marginTop: 8,
+  marginBottom: 4,
+  marginHorizontal: 16,
 });
 
 const ErrorText = styled.Text({
