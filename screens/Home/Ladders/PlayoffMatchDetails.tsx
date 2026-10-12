@@ -17,6 +17,7 @@ import {
 } from "@shared";
 import {
   getLadderPlayoffLegHost,
+  otherLadderPlayoffSide,
   roundLabel,
   tallyLadderPlayoffTie,
 } from "@shared/helpers";
@@ -31,6 +32,7 @@ import type {
 import { LadderContext } from "../../../context/LadderContext";
 import { UserContext } from "../../../context/UserContext";
 import MatchCard from "../../../components/ladder/MatchCard";
+import MatchScoreBar from "../../../components/ladder/MatchScoreBar";
 import PlayoffCoinFlip from "../../../components/ladder/PlayoffCoinFlip";
 import ActionPlaceholder from "../../../components/ActionPlaceholder";
 import PlayoffMatchScheduleModal from "../../../components/Modals/PlayoffMatchScheduleModal";
@@ -161,6 +163,9 @@ const PlayoffMatchDetails: React.FC = () => {
   const team2Name = teamName(tie.team2);
   const nameOf = (side: LadderPlayoffTieSide) =>
     side === "team1" ? team1Name : team2Name;
+  const leftSide: LadderPlayoffTieSide = userSide ?? "team1";
+  const gamesOf = (side: LadderPlayoffTieSide) =>
+    side === "team1" ? tally.team1Games : tally.team2Games;
   const deadline = tie.deadlineAt ? toMoment(tie.deadlineAt) : null;
 
   const openMatch = (match: LadderMatch) =>
@@ -343,18 +348,21 @@ const PlayoffMatchDetails: React.FC = () => {
           />
         ) : null}
 
-        <ScoreCard testID="playoff-match-aggregate">
-          <SideName numberOfLines={2}>{team1Name}</SideName>
-          <Aggregate>
-            <AggregateText>
-              {tally.team1Games} – {tally.team2Games}
-            </AggregateText>
-            <AggregateLabel>Aggregate</AggregateLabel>
-          </Aggregate>
-          <SideName numberOfLines={2} style={{ textAlign: "right" }}>
-            {team2Name}
-          </SideName>
-        </ScoreCard>
+        <MatchScoreBar
+          label="Aggregate"
+          leftNames={[nameOf(leftSide)]}
+          rightNames={[nameOf(otherLadderPlayoffSide(leftSide))]}
+          leftScore={gamesOf(leftSide)}
+          rightScore={gamesOf(otherLadderPlayoffSide(leftSide))}
+          outcome={
+            userSide && tie.winner
+              ? tie.winner === userSide
+                ? "win"
+                : "loss"
+              : "undecided"
+          }
+          testID="playoff-match-aggregate"
+        />
 
         <InfoRow>
           <InfoBox testID="playoff-match-format">
@@ -438,37 +446,6 @@ const TopTitle = styled.Text({
 
 const Scroll = styled.ScrollView({
   flex: 1,
-});
-
-const ScoreCard = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 12,
-  padding: 16,
-  borderRadius: 12,
-  backgroundColor: "rgba(255, 255, 255, 0.05)",
-});
-
-const SideName = styled.Text({
-  flex: 1,
-  color: "#ffffff",
-  fontSize: 15,
-  fontWeight: "600",
-});
-
-const Aggregate = styled.View({
-  alignItems: "center",
-});
-
-const AggregateText = styled.Text({
-  color: "#ffffff",
-  fontSize: 26,
-  fontWeight: "bold",
-});
-
-const AggregateLabel = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 11,
 });
 
 const InfoRow = styled.View({

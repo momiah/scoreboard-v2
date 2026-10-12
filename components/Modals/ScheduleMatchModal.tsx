@@ -67,7 +67,9 @@ const ScheduleMatchModal: React.FC<ScheduleMatchModalProps> = ({
       return;
     }
     if (deadline && start.getTime() > deadline.getTime()) {
-      setError(`Pick a time before ${toMoment(deadline)?.format("ddd D MMM, HH:mm")}.`);
+      setError(
+        `Pick a time before ${toMoment(deadline)?.format("ddd D MMM, HH:mm")}.`,
+      );
       return;
     }
     setError(null);
@@ -82,7 +84,12 @@ const ScheduleMatchModal: React.FC<ScheduleMatchModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={close}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={close}
+    >
       <Backdrop>
         <Card testID={testID}>
           <Header>
@@ -102,6 +109,11 @@ const ScheduleMatchModal: React.FC<ScheduleMatchModalProps> = ({
             setValue={setValue}
             watch={watch}
             maxDate={deadline}
+            rangeMessage={
+              deadline
+                ? `Please select a date by ${toMoment(deadline)?.format("ddd D MMM")}.`
+                : undefined
+            }
             playoffStartDate={null}
             testIDPrefix={testID}
           />
@@ -109,7 +121,9 @@ const ScheduleMatchModal: React.FC<ScheduleMatchModalProps> = ({
           {bestOf ? (
             <Hint testID={`${testID}-court-time`}>{courtTimeHint(bestOf)}</Hint>
           ) : null}
-          {error ? <ErrorText testID={`${testID}-error`}>{error}</ErrorText> : null}
+          {error ? (
+            <ErrorText testID={`${testID}-error`}>{error}</ErrorText>
+          ) : null}
 
           <SendButton
             activeOpacity={0.85}

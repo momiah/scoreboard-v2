@@ -25,11 +25,9 @@ export const useNotifyMatchPlayers = () => {
               senderId: userId,
               message,
               type: notificationTypes.INFORMATION.LADDER.TYPE,
-              data: {
-                ladderId,
-                matchId: match.ladderMatchId,
-                tab: "Schedule",
-              },
+              data: match.playoffTieId
+                ? { ladderId, tieId: match.playoffTieId, tab: "Playoffs" }
+                : { ladderId, matchId: match.ladderMatchId, tab: "Schedule" },
             }).catch((error: unknown) =>
               console.error("Error sending match notification:", error),
             ),

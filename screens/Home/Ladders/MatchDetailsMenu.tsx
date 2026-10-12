@@ -2,7 +2,11 @@ import React, { useContext, useEffect, useState } from "react";
 import { View, Linking, StyleSheet } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  StackActions,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import type {
   NavigationProp,
   ParamListBase,
@@ -122,7 +126,10 @@ const MatchDetailsMenu: React.FC = () => {
   };
 
   const changeOption = (): MenuOption | null => {
-    const base = { icon: "calendar-outline" as IoniconName, action: "RescheduleMatch" as const };
+    const base = {
+      icon: "calendar-outline" as IoniconName,
+      action: "RescheduleMatch" as const,
+    };
     switch (rescheduleAction) {
       case LADDER_MATCH_CANCEL_ACTION.REQUEST:
         return { ...base, label: "Reschedule Match" };
@@ -145,9 +152,17 @@ const MatchDetailsMenu: React.FC = () => {
         break;
     }
     if (canExtendLadderMatch(match, userId)) {
-      return { label: "Request Extension", icon: "hourglass-outline", action: "Extension" };
+      return {
+        label: "Request Extension",
+        icon: "hourglass-outline",
+        action: "Extension",
+      };
     }
-    if (isParticipant && match && getLadderMatchChangeOption(match) === "extended") {
+    if (
+      isParticipant &&
+      match &&
+      getLadderMatchChangeOption(match) === "extended"
+    ) {
       return {
         label: "Already extended",
         icon: "hourglass-outline",
@@ -199,7 +214,21 @@ const MatchDetailsMenu: React.FC = () => {
       showBottomToast("Open the match to cancel it", "info");
       return;
     }
-    startCancellation({ ladderId, match, onDone: () => navigation.goBack() });
+    const playoffTieId = match.playoffTieId;
+    const cancelsNow = cancelAction === LADDER_MATCH_CANCEL_ACTION.CANCEL;
+    startCancellation({
+      ladderId,
+      match,
+      onDone: () =>
+        playoffTieId && cancelsNow
+          ? navigation.dispatch(
+              StackActions.popTo("PlayoffMatchDetails", {
+                ladderId,
+                tieId: playoffTieId,
+              }),
+            )
+          : navigation.goBack(),
+    });
   };
 
   const handleSupport = () => {
@@ -325,8 +354,13 @@ const MatchDetailsMenu: React.FC = () => {
           submitLabel="Send to opponent"
           testID="reschedule-match"
           onSubmit={async (time) => {
-            const failure = await requestReschedule({ ladderId, match, ...time });
-            if (!failure) setTimeout(() => navigation.goBack(), MODAL_HANDOFF_MS);
+            const failure = await requestReschedule({
+              ladderId,
+              match,
+              ...time,
+            });
+            if (!failure)
+              setTimeout(() => navigation.goBack(), MODAL_HANDOFF_MS);
             return failure;
           }}
         />

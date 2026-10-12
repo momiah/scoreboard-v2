@@ -117,7 +117,9 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     ? null
     : (toMoment(ladder.playoffStartsAt)?.toDate() ?? null);
   // Latest a match may be posted: the buffer before playoffs begin.
-  const postingDeadline = playoff ? playoff.deadline : ladderPostingDeadline(ladder);
+  const postingDeadline = playoff
+    ? playoff.deadline
+    : ladderPostingDeadline(ladder);
 
   // Doubles posts on behalf of the user's active team in this ladder. Resolve it
   // when the modal opens so the fixture can record both sides.
@@ -144,7 +146,13 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     return () => {
       active = false;
     };
-  }, [modalVisible, needsPosterTeam, currentUser?.userId, ladder.ladderId, fetchUserTeams]);
+  }, [
+    modalVisible,
+    needsPosterTeam,
+    currentUser?.userId,
+    ladder.ladderId,
+    fetchUserTeams,
+  ]);
 
   const {
     control,
@@ -226,7 +234,11 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       setErrorMessage("Please choose a date and time in the future.");
       return;
     }
-    if (start && postingDeadline && start.getTime() > postingDeadline.getTime()) {
+    if (
+      start &&
+      postingDeadline &&
+      start.getTime() > postingDeadline.getTime()
+    ) {
       setErrorMessage(
         playoff
           ? `This match must be played by ${toMoment(postingDeadline)?.format("ddd D MMM, HH:mm")}.`
@@ -343,7 +355,9 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
             showsVerticalScrollIndicator={false}
             renderItem={() => (
               <>
-                <ModalTitle>{playoff ? playoff.title : "Post a Match"}</ModalTitle>
+                <ModalTitle>
+                  {playoff ? playoff.title : "Post a Match"}
+                </ModalTitle>
                 <Subtitle>{ladder.name}</Subtitle>
 
                 <Label style={{ marginLeft: 5 }}>Court</Label>
@@ -372,6 +386,11 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   dateError={errors.startDate?.message}
                   playoffStartDate={playoffStartDate}
                   maxDate={postingDeadline}
+                  rangeMessage={
+                    playoff && postingDeadline
+                      ? `Please select a date within the 10 days for this playoff game (by ${toMoment(postingDeadline)?.format("ddd D MMM")}).`
+                      : undefined
+                  }
                   testIDPrefix="add-ladder-match"
                 />
 
@@ -380,7 +399,11 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   watch={watch}
                   name="bestOf"
                   label="Best of"
-                  options={playoff ? [playoff.bestOf] : [...LADDER_MATCH_BEST_OF_OPTIONS]}
+                  options={
+                    playoff
+                      ? [playoff.bestOf]
+                      : [...LADDER_MATCH_BEST_OF_OPTIONS]
+                  }
                 />
                 <CourtTimeHint testID="add-ladder-match-court-time">
                   {courtTimeHint(watch("bestOf"))}
@@ -425,9 +448,9 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                       )}
                     />
                     <DisclaimerText>
-                      Matches posted with no court fee tend to get accepted faster.
-                      If you&apos;d prefer to split the venue cost, set a court fee
-                      for this match.
+                      Matches posted with no court fee tend to get accepted
+                      faster. If you&apos;d prefer to split the venue cost, set
+                      a court fee for this match.
                     </DisclaimerText>
                     {Number(watch("courtFee") || "0") > 0 && (
                       <DisclaimerText>
@@ -479,7 +502,9 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                     {submitting ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <CreateText>{playoff ? "Send to opponent" : "Post Match"}</CreateText>
+                      <CreateText>
+                        {playoff ? "Send to opponent" : "Post Match"}
+                      </CreateText>
                     )}
                   </CreateButton>
                 </ButtonContainer>
@@ -591,8 +616,6 @@ const CourtSelectorText = styled.Text<{ selected: boolean }>(
     fontSize: 14,
   }),
 );
-
-
 
 const WarningTag = styled.View({
   flexDirection: "row",

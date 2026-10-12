@@ -29,6 +29,7 @@ interface MatchDateTimeFieldsProps<T extends MatchDateTimeValues> {
   dateError?: string;
   playoffStartDate?: Date | null;
   maxDate?: Date | null;
+  rangeMessage?: string;
   testIDPrefix: string;
 }
 
@@ -38,6 +39,7 @@ const MatchDateTimeFields = <T extends MatchDateTimeValues>({
   dateError,
   playoffStartDate,
   maxDate,
+  rangeMessage,
   testIDPrefix,
 }: MatchDateTimeFieldsProps<T>) => {
   const setField = setValue as unknown as UseFormSetValue<MatchDateTimeValues>;
@@ -55,6 +57,7 @@ const MatchDateTimeFields = <T extends MatchDateTimeValues>({
         labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
         playoffStartDate={playoffStartDate}
         maxDate={maxDate}
+        rangeMessage={rangeMessage}
       />
 
       <Label style={{ marginTop: 15, marginLeft: 5 }}>Start Time</Label>

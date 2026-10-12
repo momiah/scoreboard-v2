@@ -36,10 +36,8 @@ import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
 import { useFixturesScrollToGame } from "../Tournaments/Fixtures/useFixturesScrollToGame";
 import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import {
-  getLadderMatchScore,
-  type LadderMatchOutcome,
-} from "../../helpers/ladderMatchProgress";
+import { getLadderMatchScore } from "../../helpers/ladderMatchProgress";
+import MatchScoreBar from "./MatchScoreBar";
 import { ccDefaultImage } from "../../mockImages/index";
 
 interface ParticipantProfile {
@@ -62,12 +60,6 @@ interface GameLobbyProps {
   /** Glow colour for the highlighted game; defaults to the ladder blue. */
   highlightColor?: string;
 }
-
-const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
-  win: "#19a800ff",
-  loss: "#FF4B6E",
-  undecided: "#64748b",
-};
 
 type LobbyGameTeam = GameTeam & { teamName?: string };
 type LobbyGame = Omit<Game, "team1" | "team2"> & {
@@ -492,28 +484,15 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           )}
         </PaddedBlock>
 
-        <ScoreBar>
-          <ScoreLabel>Total score</ScoreLabel>
-          <ScoreRow>
-            <SideCol>
-              {leftNames.map((name, i) => (
-                <SideName key={`${i}-${name}`} numberOfLines={1}>
-                  {name}
-                </SideName>
-              ))}
-            </SideCol>
-            <ScoreValue outcome={score.outcome}>
-              {score.user} - {score.opponent}
-            </ScoreValue>
-            <SideCol align="right">
-              {rightNames.map((name, i) => (
-                <SideName key={`${i}-${name}`} numberOfLines={1} align="right">
-                  {name}
-                </SideName>
-              ))}
-            </SideCol>
-          </ScoreRow>
-        </ScoreBar>
+        <MatchScoreBar
+          label="Total score"
+          leftNames={leftNames}
+          rightNames={rightNames}
+          leftScore={score.user}
+          rightScore={score.opponent}
+          outcome={score.outcome}
+          style={{ marginHorizontal: 20, marginBottom: 16 }}
+        />
 
         <GamesHeader>
           <BlockTitle>Games</BlockTitle>
@@ -734,61 +713,6 @@ const Dot = styled.View<{ isCheckedIn: boolean }>(
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
     elevation: 4,
-  }),
-);
-
-const ScoreBar = styled.View({
-  marginHorizontal: 20,
-  marginBottom: 16,
-  backgroundColor: "rgba(0, 162, 255, 0.08)",
-  borderWidth: 1,
-  borderColor: "rgb(26, 28, 54)",
-  borderRadius: 12,
-  paddingVertical: 12,
-  alignItems: "center",
-});
-
-const ScoreLabel = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 11,
-  fontWeight: "600",
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-});
-
-const ScoreRow = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  alignSelf: "stretch",
-  paddingHorizontal: 14,
-  marginTop: 6,
-});
-
-const SideCol = styled.View<{ align?: "left" | "right" }>(
-  ({ align }: { align?: "left" | "right" }) => ({
-    flex: 1,
-    gap: 2,
-    alignItems: align === "right" ? "flex-end" : "flex-start",
-  }),
-);
-
-const SideName = styled.Text<{ align?: "left" | "right" }>(
-  ({ align }: { align?: "left" | "right" }) => ({
-    maxWidth: "100%",
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: align === "right" ? "right" : "left",
-  }),
-);
-
-const ScoreValue = styled.Text<{ outcome: LadderMatchOutcome }>(
-  ({ outcome }: { outcome: LadderMatchOutcome }) => ({
-    color: SCORE_COLORS[outcome],
-    fontSize: 32,
-    fontWeight: "bold",
-    marginHorizontal: 12,
-    fontVariant: ["tabular-nums"],
   }),
 );
 

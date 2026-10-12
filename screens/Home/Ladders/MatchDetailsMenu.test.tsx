@@ -2,9 +2,18 @@ import React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockGoBack = jest.fn();
+const mockDispatch = jest.fn();
+const mockStartCancellation = jest.fn();
 let mockParams: Record<string, unknown> = {};
 jest.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({ navigate: jest.fn(), goBack: mockGoBack }),
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: mockGoBack,
+    dispatch: mockDispatch,
+  }),
+  StackActions: {
+    popTo: (name: string, params: object) => ({ type: "POP_TO", name, params }),
+  },
   useRoute: () => ({ params: mockParams }),
 }));
 jest.mock("../../../context/LadderContext", () => ({
@@ -47,7 +56,9 @@ jest.mock("../../../components/Modals/InfoModal", () => {
     ) : null;
 });
 jest.mock("../../../hooks/useLadderMatchCancellation", () => ({
-  useLadderMatchCancellation: () => ({ startCancellation: jest.fn() }),
+  useLadderMatchCancellation: () => ({
+    startCancellation: mockStartCancellation,
+  }),
 }));
 const mockExtendMatch = jest.fn(async () => true);
 jest.mock("../../../hooks/useLadderMatchChanges", () => ({
@@ -103,6 +114,8 @@ const label = (utils: ReturnType<typeof render>, id: string) =>
 
 beforeEach(() => {
   mockGoBack.mockClear();
+  mockDispatch.mockClear();
+  mockStartCancellation.mockClear();
   mockExtendMatch.mockClear();
 });
 
@@ -113,20 +126,27 @@ describe("MatchDetailsMenu changes", () => {
     expect(utils.queryByTestId("match-menu-Extension")).toBeNull();
     fireEvent.press(label(utils, "RescheduleMatch"));
     fireEvent.press(utils.getByTestId("reschedule-info-modal-cta"));
-    await waitFor(() => expect(utils.getByTestId("reschedule-match")).toBeTruthy());
+    await waitFor(() =>
+      expect(utils.getByTestId("reschedule-match")).toBeTruthy(),
+    );
   });
 
   it("shows a pending reschedule as requested on the requester's side", () => {
-    const utils = renderMenu(baseMatch({ rescheduleRequest: { requestedBy: "u1" } }));
+    const utils = renderMenu(
+      baseMatch({ rescheduleRequest: { requestedBy: "u1" } }),
+    );
     expect(utils.getByText("Reschedule requested")).toBeTruthy();
     fireEvent.press(label(utils, "RescheduleMatch"));
     expect(utils.queryByTestId("reschedule-info-modal")).toBeNull();
   });
 
   it("asks the other side to respond to a reschedule", () => {
-    const utils = renderMenu(baseMatch({ rescheduleRequest: { requestedBy: "u1" } }), {
-      userId: "u2",
-    });
+    const utils = renderMenu(
+      baseMatch({ rescheduleRequest: { requestedBy: "u1" } }),
+      {
+        userId: "u2",
+      },
+    );
     expect(utils.getByText("Respond to reschedule")).toBeTruthy();
   });
 
@@ -167,7 +187,30 @@ describe("MatchDetailsMenu changes", () => {
         "match-menu-RescheduleMatch",
       ),
     ).toBeNull();
-    const viewer = renderMenu(baseMatch({ games: [reported] }), { userId: "x" });
+    const viewer = renderMenu(baseMatch({ games: [reported] }), {
+      userId: "x",
+    });
     expect(viewer.queryByTestId("match-menu-Extension")).toBeNull();
+  });
+
+  it("goes straight back to the tie screen after cancelling a posted playoff match", () => {
+    const utils = renderMenu(
+      baseMatch({ matchStatus: "posted", playoffTieId: "r1-s0" }),
+    );
+    fireEvent.press(label(utils, "CancelMatch"));
+    mockStartCancellation.mock.calls[0][0].onDone();
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: "POP_TO",
+      name: "PlayoffMatchDetails",
+      params: { ladderId: "L1", tieId: "r1-s0" },
+    });
+    expect(mockGoBack).not.toHaveBeenCalled();
+  });
+
+  it("goes back to the match after asking to cancel an accepted playoff match", () => {
+    const utils = renderMenu(baseMatch({ playoffTieId: "r1-s0" }));
+    fireEvent.press(label(utils, "CancelMatch"));
+    mockStartCancellation.mock.calls[0][0].onDone();
+    expect(mockGoBack).toHaveBeenCalled();
   });
 });

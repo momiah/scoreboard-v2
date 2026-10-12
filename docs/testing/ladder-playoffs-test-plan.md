@@ -160,6 +160,10 @@ update the global profile only, never ladder standings.
 | 6.9 | Arrange the same match twice | The second write is refused ("exists") 🅹 |
 | 6.10 | A posted match | The away side's card reads "Awaiting your confirmation", the host's "Awaiting opponent's confirmation". The away side gets "{host} arranged playoff match N at {court}, {date}. Open it to accept or decline." On the match screen they Accept or Decline; the host sees "Waiting for your opponent to confirm this time". Accepting notifies the host "{name} accepted…". Declining cancels the posted match, notifies the host "{name} can't make… Arrange another time." and the host's "Arrange your home match" returns 🅹 🅼 |
 | 6.10a | A second arrangement after one decline | The decline count carries over; the away side can only Accept ("You've used your one decline, so please accept."), and the notification says "Open it to accept." 🅹 🅼 |
+| 6.10b | The host cancels a posted playoff match from Match Options | "Cancel this playoff match? You can arrange it again before the playoff deadline." → straight back to the tie screen with "Arrange your home match" 🅹 🅼 |
+| 6.10c | A playoff match is cancelled or expires while its Match Details is open | The screen returns to the tie screen instead of showing a stale cancelled match 🅹 |
+| 6.10d | Notifications about a playoff match (arranged, accepted, declined, cancellation) | Open the ladder on the Playoffs tab, where the user's game is highlighted, not the Schedule tab 🅹 |
+| 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this playoff game (by Ddd D MMM)." 🅹 🅼 |
 | 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag 🅹 🅼 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
 | 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |

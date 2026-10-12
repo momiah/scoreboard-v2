@@ -1,9 +1,16 @@
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Dimensions, Linking } from "react-native";
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
+  StackActions,
 } from "@react-navigation/native";
 import type {
   NavigationProp,
@@ -32,6 +39,7 @@ import MatchCard from "../../../components/ladder/MatchCard";
 import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 import { useForfeitLabel } from "../../../helpers/useForfeitLabel";
+import { isLadderMatchCalledOff } from "../../../helpers/ladderMatchCancellation";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -71,7 +79,9 @@ const MatchDetails: React.FC = () => {
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<LobbyTab>(initialTab ?? "Game Lobby");
+  const [selectedTab, setSelectedTab] = useState<LobbyTab>(
+    initialTab ?? "Game Lobby",
+  );
   const [checkinModalVisible, setCheckinModalVisible] = useState(false);
 
   const userId = currentUser?.userId;
@@ -95,6 +105,20 @@ const MatchDetails: React.FC = () => {
       return unsubscribe;
     }, [ladderId, matchId, matchParam, subscribeToLadderMatches]),
   );
+
+  const calledOffTieId =
+    match?.playoffTieId && isLadderMatchCalledOff(match)
+      ? match.playoffTieId
+      : null;
+  useEffect(() => {
+    if (!calledOffTieId) return;
+    navigation.dispatch(
+      StackActions.popTo("PlayoffMatchDetails", {
+        ladderId,
+        tieId: calledOffTieId,
+      }),
+    );
+  }, [calledOffTieId, ladderId, navigation]);
 
   const chatPath = useMemo(
     () => ["ladders", ladderId, "ladderMatches", matchId, "chat"],
@@ -161,9 +185,21 @@ const MatchDetails: React.FC = () => {
         />
       </Header>
 
-      <MatchCancellationBanner ladderId={ladderId} match={match} userId={userId} />
-      <MatchRescheduleBanner ladderId={ladderId} match={match} userId={userId} />
-      <PlayoffMatchConfirmBanner ladderId={ladderId} match={match} userId={userId} />
+      <MatchCancellationBanner
+        ladderId={ladderId}
+        match={match}
+        userId={userId}
+      />
+      <MatchRescheduleBanner
+        ladderId={ladderId}
+        match={match}
+        userId={userId}
+      />
+      <PlayoffMatchConfirmBanner
+        ladderId={ladderId}
+        match={match}
+        userId={userId}
+      />
 
       <Tabs>
         {TABS.map((tab) => (

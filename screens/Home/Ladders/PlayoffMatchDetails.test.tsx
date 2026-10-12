@@ -300,7 +300,7 @@ describe("PlayoffMatchDetails", () => {
       tie: tossed("team1"),
       matches,
     });
-    expect(getByTestId("playoff-match-aggregate")).toHaveTextContent(/2 – 1/);
+    expect(getByTestId("playoff-match-aggregate")).toHaveTextContent(/Aggregate.*2 - 1/);
   });
 
   it("shows the deciding game", () => {
