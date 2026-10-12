@@ -164,6 +164,8 @@ update the global profile only, never ladder standings.
 | 6.10c | A playoff match is cancelled or expires while its Match Details is open | The screen returns to the tie screen instead of showing a stale cancelled match 🅹 |
 | 6.10d | Notifications about a playoff match (arranged, accepted, declined, cancellation) | Open the ladder on the Playoffs tab, where the user's game is highlighted, not the Schedule tab 🅹 |
 | 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this playoff game (by Ddd D MMM)." 🅹 🅼 |
+| 6.10f | An onlooker opens any tie (open, waiting or finished) | Same layout as players: the coin (with its result and the glowing call once tossed, "No coin toss" if it never was), the aggregate, both info boxes ("Finished" once settled), and a placeholder or card for each match. Only players can tap anything 🅹 🅼 |
+| 6.10g | An onlooker opens a match in a tie | No match menu; the Total Score names both players and counts the approved games from the poster's side, in neutral grey 🅹 🅼 |
 | 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag 🅹 🅼 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
 | 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |

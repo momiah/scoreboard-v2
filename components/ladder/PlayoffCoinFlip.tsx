@@ -45,6 +45,7 @@ interface PlayoffCoinFlipProps {
   call: LadderPlayoffCoinCall | null;
   resultText: string | null;
   canFlip: boolean;
+  idleText?: string;
   onFlip: (call: LadderPlayoffCoinCall) => Promise<boolean>;
 }
 
@@ -53,6 +54,7 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   call,
   resultText,
   canFlip,
+  idleText,
   onFlip,
 }) => {
   const turns = useRef(new Animated.Value(face ? faceTurn(face) : 0)).current;
@@ -154,9 +156,10 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   const landed = phase === "landed" && !!face;
   const prompt =
     phase === "idle" && !face
-      ? canFlip
-        ? "Flip the coin to see who starts at home first"
-        : "Waiting for a player to flip the coin"
+      ? (idleText ??
+        (canFlip
+          ? "Flip the coin to see who starts at home first"
+          : "Waiting for a player to flip the coin"))
       : null;
 
   return (

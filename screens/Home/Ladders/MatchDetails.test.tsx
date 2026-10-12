@@ -58,14 +58,14 @@ const match = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const renderWith = (current: Record<string, unknown>) => {
+const renderWith = (current: Record<string, unknown>, userId = "u1") => {
   mockParams = {
     ladderId: "L1",
     matchId: current.ladderMatchId,
     match: current,
   };
   return render(
-    <UserContext.Provider value={{ currentUser: { userId: "u1" } }}>
+    <UserContext.Provider value={{ currentUser: { userId } }}>
       <LadderContext.Provider
         value={{
           subscribeToLadderMatches: (
@@ -105,5 +105,18 @@ describe("MatchDetails for a playoff match", () => {
       }),
     );
     expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it("shows the match menu to players only", () => {
+    expect(
+      renderWith(match({ matchStatus: "accepted" })).getByTestId(
+        "match-details-burger",
+      ),
+    ).toBeTruthy();
+    expect(
+      renderWith(match({ matchStatus: "accepted" }), "stranger").queryByTestId(
+        "match-details-burger",
+      ),
+    ).toBeNull();
   });
 });

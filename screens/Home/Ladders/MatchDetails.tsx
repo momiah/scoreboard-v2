@@ -137,6 +137,8 @@ const MatchDetails: React.FC = () => {
     );
   }
 
+  const isParticipant = !!userId && (match.participants ?? []).includes(userId);
+
   const openMap = () =>
     Linking.openURL(buildCourtMapsUrl(match.court)).catch((err) =>
       console.error("Error opening Google Maps:", err),
@@ -160,20 +162,24 @@ const MatchDetails: React.FC = () => {
     <Screen testID="match-details">
       <Header>
         <TopBar>
-          <IconButton
-            activeOpacity={0.8}
-            onPress={() =>
-              navigation.navigate("MatchDetailsMenu", {
-                ladderId,
-                matchId,
-                match,
-                ladderType,
-              })
-            }
-            testID="match-details-burger"
-          >
-            <Ionicons name="menu" size={24} color="#ffffff" />
-          </IconButton>
+          {isParticipant ? (
+            <IconButton
+              activeOpacity={0.8}
+              onPress={() =>
+                navigation.navigate("MatchDetailsMenu", {
+                  ladderId,
+                  matchId,
+                  match,
+                  ladderType,
+                })
+              }
+              testID="match-details-burger"
+            >
+              <Ionicons name="menu" size={24} color="#ffffff" />
+            </IconButton>
+          ) : (
+            <MenuSpacer />
+          )}
         </TopBar>
         <MatchCard
           match={match}
@@ -275,6 +281,10 @@ const IconButton = styled.TouchableOpacity({
   borderRadius: 20,
   alignItems: "center",
   justifyContent: "center",
+});
+
+const MenuSpacer = styled.View({
+  height: 40,
 });
 
 const Tabs = styled.View({

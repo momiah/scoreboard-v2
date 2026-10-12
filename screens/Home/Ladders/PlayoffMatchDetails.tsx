@@ -159,6 +159,10 @@ const PlayoffMatchDetails: React.FC = () => {
     : roundLabel(2 ** (totalRounds - tie.round + 1));
   const tally = tallyLadderPlayoffTie(tie, [...legs.values()]);
   const isOpen = tie.status === LADDER_PLAYOFF_TIE_STATUS.SCHEDULED;
+  const isCompleted = tie.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED;
+  const completedOn = tie.completedAt
+    ? toMoment(tie.completedAt)?.format("ddd D MMM")
+    : null;
   const team1Name = teamName(tie.team1);
   const team2Name = teamName(tie.team2);
   const nameOf = (side: LadderPlayoffTieSide) =>
@@ -248,7 +252,17 @@ const PlayoffMatchDetails: React.FC = () => {
       return (
         <LegSection key={leg}>
           <LegLabel>{label}</LegLabel>
-          <Muted>Not played</Muted>
+          <ActionPlaceholder
+            message={
+              isCompleted ? "Not played" : "Arranged after the coin toss"
+            }
+            icon={isCompleted ? "remove-circle-outline" : "time-outline"}
+            height={110}
+            onPress={() => {}}
+            disabled
+            accentColor="#5b7083"
+            testID={`playoff-match-leg${leg}-closed`}
+          />
         </LegSection>
       );
     }
@@ -334,19 +348,24 @@ const PlayoffMatchDetails: React.FC = () => {
       <Scroll
         contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
       >
-        {isOpen ? (
-          <PlayoffCoinFlip
-            face={
-              tie.coinToss
-                ? (tie.coinToss.face ?? LADDER_PLAYOFF_COIN_FACE.LOGO)
-                : null
-            }
-            call={toss?.call ?? null}
-            resultText={coinResultText}
-            canFlip={!!userSide}
-            onFlip={(call) => flipPlayoffCoin(ladderId, tieId, call)}
-          />
-        ) : null}
+        <PlayoffCoinFlip
+          face={
+            tie.coinToss
+              ? (tie.coinToss.face ?? LADDER_PLAYOFF_COIN_FACE.LOGO)
+              : null
+          }
+          call={toss?.call ?? null}
+          resultText={coinResultText}
+          canFlip={!!userSide && isOpen}
+          idleText={
+            isCompleted
+              ? "No coin toss"
+              : !isOpen
+                ? "The coin toss opens once both players are known"
+                : undefined
+          }
+          onFlip={(call) => flipPlayoffCoin(ladderId, tieId, call)}
+        />
 
         <MatchScoreBar
           label="Aggregate"
@@ -370,13 +389,25 @@ const PlayoffMatchDetails: React.FC = () => {
             <InfoValue>Best of {tie.bestOf ?? 5}</InfoValue>
             <InfoLabel>per match</InfoLabel>
           </InfoBox>
-          {isOpen && deadline?.isValid() ? (
-            <InfoBox testID="playoff-match-deadline">
-              <Ionicons name="hourglass-outline" size={18} color="#00A2FF" />
-              <InfoValue>{formatTimeLeft(deadline.valueOf() - now)}</InfoValue>
-              <InfoLabel>to complete both matches</InfoLabel>
-            </InfoBox>
-          ) : null}
+          <InfoBox testID="playoff-match-deadline">
+            <Ionicons name="hourglass-outline" size={18} color="#00A2FF" />
+            <InfoValue>
+              {isCompleted
+                ? "Finished"
+                : isOpen && deadline?.isValid()
+                  ? formatTimeLeft(deadline.valueOf() - now)
+                  : "10 days"}
+            </InfoValue>
+            <InfoLabel>
+              {isCompleted
+                ? completedOn
+                  ? `on ${completedOn}`
+                  : "playoff game over"
+                : isOpen
+                  ? "to complete both matches"
+                  : "to play both matches once it starts"}
+            </InfoLabel>
+          </InfoBox>
         </InfoRow>
         {outcomeLine ? (
           <Result testID="playoff-match-outcome">{outcomeLine}</Result>

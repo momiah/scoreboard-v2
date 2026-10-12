@@ -300,7 +300,9 @@ describe("PlayoffMatchDetails", () => {
       tie: tossed("team1"),
       matches,
     });
-    expect(getByTestId("playoff-match-aggregate")).toHaveTextContent(/Aggregate.*2 - 1/);
+    expect(getByTestId("playoff-match-aggregate")).toHaveTextContent(
+      /Aggregate.*2 - 1/,
+    );
   });
 
   it("shows the deciding game", () => {
@@ -333,16 +335,50 @@ describe("PlayoffMatchDetails", () => {
     expect(getByTestId("playoff-match-outcome").props.children).toBe(
       "U2 goes through.",
     );
-    expect(queryByTestId("playoff-coin-result")).toBeNull();
+    expect(getByTestId("playoff-coin-result")).toHaveTextContent(
+      /You're at home first/,
+    );
+    expect(queryByTestId("playoff-coin-call-heads")).toBeTruthy();
+    expect(getByTestId("playoff-match-deadline")).toHaveTextContent(/Finished/);
   });
 
-  it("explains a void game", () => {
-    const { getByTestId } = renderScreen({
-      userId: "u1",
+  it("explains a void game with the same layout for onlookers", () => {
+    const { getByTestId, getAllByText } = renderScreen({
+      userId: "stranger",
       tie: { ...baseTie(), status: "completed", winner: null, outcome: "void" },
     });
     expect(getByTestId("playoff-match-outcome").props.children).toBe(
       "Not played in time, so neither side goes through.",
     );
+    expect(getByTestId("playoff-coin-waiting")).toHaveTextContent(
+      /No coin toss/,
+    );
+    expect(getByTestId("playoff-match-aggregate")).toBeTruthy();
+    expect(getByTestId("playoff-match-deadline")).toHaveTextContent(/Finished/);
+    expect(getByTestId("playoff-match-leg1-closed")).toBeTruthy();
+    expect(getAllByText("Not played")).toHaveLength(2);
+  });
+
+  it("shows onlookers the coin result and who called it", () => {
+    const tie = {
+      ...baseTie(),
+      coinToss: {
+        firstHost: "team1",
+        flippedBy: "u1",
+        flippedAt: new Date(),
+        call: "logo",
+        face: "logo",
+      },
+    };
+    const { getByTestId, queryByTestId } = renderScreen({
+      userId: "stranger",
+      tie,
+    });
+    expect(getByTestId("playoff-coin-result")).toHaveTextContent(
+      /U1 is at home first/,
+    );
+    expect(getByTestId("playoff-coin-called-heads")).toBeTruthy();
+    expect(queryByTestId("playoff-match-leg1-arrange")).toBeNull();
+    expect(getByTestId("playoff-match-leg1-waiting")).toBeTruthy();
   });
 });

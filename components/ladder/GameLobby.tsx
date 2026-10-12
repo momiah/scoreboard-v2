@@ -111,7 +111,10 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     useFixturesScrollToGame(highlightGameId);
   const gamesLocked = isCompleted || !allCheckedIn;
 
-  const score = getLadderMatchScore(match, currentUserId ?? "");
+  const isParticipant =
+    !!currentUserId && (match.participants ?? []).includes(currentUserId);
+  const sideOf = isParticipant ? (currentUserId as string) : match.createdBy;
+  const score = getLadderMatchScore(match, sideOf);
 
   const isDoubles =
     match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
@@ -237,7 +240,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   const userTeamIdx = hasTwoTeams
     ? Math.max(
         0,
-        matchTeams.findIndex((t) => t.playerIds.includes(currentUserId ?? "")),
+        matchTeams.findIndex((t) => t.playerIds.includes(sideOf)),
       )
     : -1;
   const userTeam = hasTwoTeams ? matchTeams[userTeamIdx] : undefined;
@@ -247,8 +250,8 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   const teamForKey = (key?: string): TeamStats | undefined =>
     key ? ladderTeamByKey[key] : undefined;
 
-  const user = players.find((p) => p.userId === currentUserId);
-  const opponents = players.filter((p) => p.userId !== currentUserId);
+  const user = players.find((p) => p.userId === sideOf);
+  const opponents = players.filter((p) => p.userId !== sideOf);
   const leftNames = hasTwoTeams
     ? [teamName(teamForKey(userTeam?.teamKey))]
     : user
@@ -490,7 +493,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           rightNames={rightNames}
           leftScore={score.user}
           rightScore={score.opponent}
-          outcome={score.outcome}
+          outcome={isParticipant ? score.outcome : "undecided"}
           style={{ marginHorizontal: 20, marginBottom: 16 }}
         />
 
