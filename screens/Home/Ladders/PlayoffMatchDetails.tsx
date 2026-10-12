@@ -36,12 +36,10 @@ import ActionPlaceholder from "../../../components/ActionPlaceholder";
 import PlayoffMatchScheduleModal from "../../../components/Modals/PlayoffMatchScheduleModal";
 import { SkeletonWrapper } from "../../../components/Skeletons/SkeletonComponents";
 import { useLadderHomeCourt } from "../../../hooks/useLadderHomeCourt";
+import { usePlayoffMatchScheduling } from "../../../hooks/usePlayoffMatchScheduling";
 import { toMoment } from "../../../helpers/ladderPhases";
 import { formatTimeLeft } from "../../../helpers/ladderMatchTime";
-import {
-  getOpponentSideIds,
-  isLadderMatchCalledOff,
-} from "../../../helpers/ladderMatchCancellation";
+import { isLadderMatchCalledOff } from "../../../helpers/ladderMatchCancellation";
 
 interface PlayoffMatchDetailsParams {
   ladderId: string;
@@ -77,11 +75,11 @@ const PlayoffMatchDetails: React.FC = () => {
     subscribeToLadderPlayoffTies,
     subscribeToPlayoffMatches,
     arrangePlayoffMatch,
-    acceptPlayoffMatch,
     flipPlayoffCoin,
   } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
   const userId: string | undefined = currentUser?.userId;
+  const { notifyArranged } = usePlayoffMatchScheduling();
 
   const [ladder, setLadder] = useState<Ladder | null>(
     ladderById?.ladderId === ladderId ? ladderById : null,
@@ -89,7 +87,6 @@ const PlayoffMatchDetails: React.FC = () => {
   const [ties, setTies] = useState<LadderPlayoffTie[] | null>(null);
   const [matches, setMatches] = useState<LadderMatch[]>([]);
   const [arrangeLeg, setArrangeLeg] = useState<Leg | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -175,18 +172,6 @@ const PlayoffMatchDetails: React.FC = () => {
       ladderName: ladder.name,
     });
 
-  const handleAccept = async (match: LadderMatch) => {
-    if (!userId) return;
-    setActionError(null);
-    const outcome = await acceptPlayoffMatch({
-      ladderId,
-      matchId: match.ladderMatchId,
-      userId,
-    });
-    if (!outcome.success)
-      setActionError("Couldn't accept this match. Try again.");
-  };
-
   const arrange = async (
     leg: Leg,
     host: LadderPlayoffTieSide,
@@ -201,7 +186,25 @@ const PlayoffMatchDetails: React.FC = () => {
       input,
       userId,
     });
-    if (outcome.success) return null;
+    if (outcome.success) {
+      const previous = matches.find(
+        (candidate) => candidate.playoffLeg === leg,
+      );
+      await notifyArranged({
+        ladderId,
+        match: {
+          ...(previous ?? {}),
+          ...input,
+          ladderMatchId: `${tie.tieId}-leg${leg}`,
+          playoffTieId: tie.tieId,
+          playoffLeg: leg,
+          matchStatus: LADDER_MATCH_STATUS.POSTED,
+          scheduleDeclines: previous?.scheduleDeclines ?? 0,
+        } as LadderMatch,
+        opponentIds: tie[host === "team1" ? "side2" : "side1"]?.playerIds ?? [],
+      });
+      return null;
+    }
     return outcome.reason === "exists"
       ? "This match has already been arranged."
       : "Couldn't arrange this match. Try again.";
@@ -222,10 +225,6 @@ const PlayoffMatchDetails: React.FC = () => {
     const label = `Match ${leg}${venue}`;
 
     if (match) {
-      const awaitingUser =
-        match.matchStatus === LADDER_MATCH_STATUS.POSTED &&
-        !!userId &&
-        getOpponentSideIds(match, match.createdBy).includes(userId);
       return (
         <LegSection key={leg}>
           <LegLabel>{label}</LegLabel>
@@ -236,15 +235,6 @@ const PlayoffMatchDetails: React.FC = () => {
             showProgress
             testID={`playoff-match-leg${leg}`}
           />
-          {awaitingUser ? (
-            <AcceptButton
-              activeOpacity={0.85}
-              onPress={() => handleAccept(match)}
-              testID={`playoff-match-leg${leg}-accept`}
-            >
-              <AcceptText>Accept</AcceptText>
-            </AcceptButton>
-          ) : null}
         </LegSection>
       );
     }
@@ -400,10 +390,6 @@ const PlayoffMatchDetails: React.FC = () => {
             />
           </LegSection>
         ) : null}
-
-        {actionError ? (
-          <ErrorText testID="playoff-match-error">{actionError}</ErrorText>
-        ) : null}
       </Scroll>
 
       {arrangeLeg && arrangeHost ? (
@@ -532,23 +518,4 @@ const LegLabel = styled.Text({
   color: "#ffffff",
   fontSize: 14,
   fontWeight: "bold",
-});
-
-const AcceptButton = styled.TouchableOpacity({
-  height: 36,
-  borderRadius: 8,
-  backgroundColor: "#00A2FF",
-  alignItems: "center",
-  justifyContent: "center",
-});
-
-const AcceptText = styled.Text({
-  color: "#ffffff",
-  fontSize: 13,
-  fontWeight: "bold",
-});
-
-const ErrorText = styled.Text({
-  color: "#ff8aa0",
-  fontSize: 12,
 });

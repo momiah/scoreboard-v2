@@ -94,3 +94,28 @@ describe("deriveLadderMatchStatus", () => {
     expect(s.label).toBe("Forfeit (No show)");
   });
 });
+
+describe("playoff matches awaiting confirmation", () => {
+  const posted = {
+    matchStatus: "posted",
+    playoffTieId: "r1-s0",
+    participants: ["host", "away"],
+    createdBy: "host",
+    games: [],
+  };
+
+  it("asks the away side to confirm and tells the host it's waiting", () => {
+    expect(
+      deriveLadderMatchStatus(posted, { selfCheckedIn: false, currentUserId: "away" }),
+    ).toEqual({ phase: "awaiting-confirmation", label: "Awaiting your confirmation" });
+    expect(
+      deriveLadderMatchStatus(posted, { selfCheckedIn: false, currentUserId: "host" }).label,
+    ).toBe("Awaiting opponent's confirmation");
+  });
+
+  it("leaves regular posted matches alone", () => {
+    expect(
+      deriveLadderMatchStatus({ ...posted, playoffTieId: null }, { selfCheckedIn: false }).phase,
+    ).toBe("awaiting-checkin");
+  });
+});

@@ -187,9 +187,15 @@ Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
    `playoff-match-leg2-arrange` visible.
 5. `ladder-playoffs-arrange-without-home-court` (`noHomeCourt`): the modal opens
    with "Select Court"; choosing any court lets the match be sent.
-6. `ladder-playoffs-accept-match` (`leg1Posted`): tap
-   `playoff-match-leg1-accept` → card shows accepted. A host-side run of the
-   same seed asserts no accept button.
+6. `ladder-playoffs-accept-match` (`leg1Posted`): the match 1 card reads
+   "Awaiting your confirmation"; the arranged notification opens the match;
+   `playoff-match-confirm-accept` → the card shows accepted. A host-side run of
+   the same seed shows "Awaiting opponent's confirmation" and
+   `playoff-match-confirm-awaiting`.
+6a. `ladder-playoffs-decline-match` (`leg1Posted`): `playoff-match-confirm-decline`
+   → back on the tie screen match 1 shows the waiting placeholder again. Needs a
+   `leg1PostedAfterDecline` seed (`scheduleDeclines: 1`) to assert only
+   `playoff-match-confirm-accept` and "You've used your one decline".
 7. `ladder-playoffs-aggregate` (`leg1Complete`): aggregate reads "4 – 2";
    match 2 shows the arrange placeholder for its host.
 8. `ladder-playoffs-report-during-playoffs` (`playoffRegular`): open the playoff

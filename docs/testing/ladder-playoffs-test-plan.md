@@ -158,7 +158,8 @@ update the global profile only, never ladder standings.
 | 6.7 | Host without a home court | No court preselected; they pick any court in the modal 🅹 🅼 |
 | 6.8 | Arrange: past time, no date, after the tie deadline | Inline error inside the modal; nothing written 🅹 🅼 |
 | 6.9 | Arrange the same match twice | The second write is refused ("exists") 🅹 |
-| 6.10 | A posted match | Only the other side sees Accept; accepting makes it accepted 🅹 🅼 |
+| 6.10 | A posted match | The away side's card reads "Awaiting your confirmation", the host's "Awaiting opponent's confirmation". The away side gets "{host} arranged playoff match N at {court}, {date}. Open it to accept or decline." On the match screen they Accept or Decline; the host sees "Waiting for your opponent to confirm this time". Accepting notifies the host "{name} accepted…". Declining cancels the posted match, notifies the host "{name} can't make… Arrange another time." and the host's "Arrange your home match" returns 🅹 🅼 |
+| 6.10a | A second arrangement after one decline | The decline count carries over; the away side can only Accept ("You've used your one decline, so please accept."), and the notification says "Open it to accept." 🅹 🅼 |
 | 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag 🅹 🅼 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
 | 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |

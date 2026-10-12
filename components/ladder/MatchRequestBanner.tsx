@@ -50,13 +50,15 @@ const MatchRequestBanner: React.FC<MatchRequestBannerProps> = ({
         <BannerText>{message}</BannerText>
       </MessageRow>
       <Actions>
-        <DeclineButton
-          disabled={responding}
-          onPress={() => respond(onDecline)}
-          testID={`${testID}-decline`}
-        >
-          <DeclineText>Decline</DeclineText>
-        </DeclineButton>
+        {onDecline ? (
+          <DeclineButton
+            disabled={responding}
+            onPress={() => respond(onDecline)}
+            testID={`${testID}-decline`}
+          >
+            <DeclineText>Decline</DeclineText>
+          </DeclineButton>
+        ) : null}
         <AcceptButton
           disabled={responding}
           onPress={() => respond(onAccept)}

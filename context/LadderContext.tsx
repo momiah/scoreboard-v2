@@ -54,6 +54,7 @@ import {
   isLadderMatchPlayFrozen,
   buildLadderPlayoffLegMatch,
   buildLadderMatchExtension,
+  canDeclineLadderPlayoffMatch,
   validateLadderMatchReschedule,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
@@ -1343,16 +1344,16 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       try {
         return await runTransaction(db, async (transaction) => {
           const existing = await transaction.get(matchRef);
-          if (
-            existing.exists() &&
-            !isLadderMatchCalledOff(existing.data() as LadderMatch)
-          ) {
+          const previous = existing.exists()
+            ? (existing.data() as LadderMatch)
+            : null;
+          if (previous && !isLadderMatchCalledOff(previous)) {
             return { success: false, reason: "exists" } as const;
           }
           transaction.set(
             matchRef,
-            pruneUndefined(
-              buildLadderPlayoffLegMatch({
+            pruneUndefined({
+              ...buildLadderPlayoffLegMatch({
                 tie,
                 leg,
                 host,
@@ -1362,7 +1363,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
                 createdBy: userId,
                 now: new Date(),
               }),
-            ),
+              scheduleDeclines: previous?.scheduleDeclines ?? 0,
+            }),
           );
           return { success: true } as const;
         });
@@ -1374,15 +1376,17 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const acceptPlayoffMatch = useCallback(
+  const respondToPlayoffMatch = useCallback(
     async ({
       ladderId,
       matchId,
       userId,
+      accept,
     }: {
       ladderId: string;
       matchId: string;
       userId: string;
+      accept: boolean;
     }): Promise<PlayoffMatchOutcome> => {
       const matchRef = doc(
         db,
@@ -1399,19 +1403,33 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (
             !match.playoffTieId ||
             match.matchStatus !== LADDER_MATCH_STATUS.POSTED ||
-            !getOpponentSideIds(match, match.createdBy).includes(userId)
+            !getOpponentSideIds(match, match.createdBy).includes(userId) ||
+            (!accept && !canDeclineLadderPlayoffMatch(match))
           ) {
             return { success: false, reason: "not_allowed" } as const;
           }
-          transaction.update(matchRef, {
-            matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
-            acceptedBy: userId,
-            acceptedAt: new Date(),
-          });
-          return { success: true } as const;
+          transaction.update(
+            matchRef,
+            accept
+              ? {
+                  matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+                  acceptedBy: userId,
+                  acceptedAt: new Date(),
+                }
+              : {
+                  matchStatus: LADDER_MATCH_STATUS.CANCELLED,
+                  cancelledAt: new Date(),
+                  cancelledReason: "Time declined",
+                  scheduleDeclines: (match.scheduleDeclines ?? 0) + 1,
+                },
+          );
+          return {
+            success: true,
+            notifyUserIds: getSameSideIds(match, match.createdBy),
+          } as const;
         });
       } catch (error) {
-        console.error("Error accepting playoff match:", error);
+        console.error("Error responding to playoff match:", error);
         return { success: false, reason: "error" };
       }
     },
@@ -2661,7 +2679,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         subscribeToLadderPlayoffTies,
         subscribeToPlayoffMatches,
         arrangePlayoffMatch,
-        acceptPlayoffMatch,
+        respondToPlayoffMatch,
         flipPlayoffCoin,
         setLadderHomeCourt,
       }}

@@ -114,6 +114,7 @@ export type CancelLadderMatchFailureReason =
 export interface PlayoffMatchOutcome {
   success: boolean;
   reason?: "exists" | "not_allowed" | "error";
+  notifyUserIds?: string[];
 }
 
 export interface LadderMatchChangeOutcome {
@@ -345,10 +346,11 @@ export interface LadderContextType {
     >;
     userId: string;
   }) => Promise<PlayoffMatchOutcome>;
-  acceptPlayoffMatch: (args: {
+  respondToPlayoffMatch: (args: {
     ladderId: string;
     matchId: string;
     userId: string;
+    accept: boolean;
   }) => Promise<PlayoffMatchOutcome>;
   flipPlayoffCoin: (
     ladderId: string,

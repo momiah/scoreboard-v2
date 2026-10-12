@@ -70,6 +70,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
     selfCheckedIn: !!checkin?.checkedIn,
     pendingApproval: progress.pendingApproval,
     forfeitLabel,
+    currentUserId,
   });
   const showStatus = showProgress || !!checkin;
   const outcome =
@@ -466,5 +467,6 @@ const PHASE_TAGS: Partial<Record<LadderMatchPhase, PhaseTagSpec>> = {
   },
   started: { Tag: StartedTag, Text: StartedTagText },
   "awaiting-approval": { Tag: AwaitingTag, Text: AwaitingTagText },
+  "awaiting-confirmation": { Tag: AwaitingTag, Text: AwaitingTagText },
   "waiting-players": { Tag: WaitingTag, Text: WaitingTagText },
 };

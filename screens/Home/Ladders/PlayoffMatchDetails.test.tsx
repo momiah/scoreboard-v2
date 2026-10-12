@@ -39,6 +39,12 @@ jest.mock("../../../components/Modals/PlayoffMatchScheduleModal", () => {
     </Text>
   );
 });
+jest.mock("../../../hooks/usePlayoffMatchScheduling", () => ({
+  usePlayoffMatchScheduling: () => ({
+    notifyArranged: jest.fn(),
+    respond: jest.fn(),
+  }),
+}));
 const mockHomeCourt = jest.fn();
 jest.mock("../../../hooks/useLadderHomeCourt", () => ({
   useLadderHomeCourt: () => mockHomeCourt(),
@@ -129,7 +135,7 @@ const renderScreen = ({
       return () => {};
     },
     arrangePlayoffMatch: jest.fn(async () => ({ success: true })),
-    acceptPlayoffMatch: jest.fn(async () => ({ success: true })),
+    respondToPlayoffMatch: jest.fn(async () => ({ success: true })),
     flipPlayoffCoin: jest.fn(async () => true),
   };
   const utils = render(
@@ -274,20 +280,11 @@ describe("PlayoffMatchDetails", () => {
     );
   });
 
-  it("lets only the opposing side accept a posted match", async () => {
+  it("shows a posted match as its card, with no accept button on this screen", () => {
     const matches = [leg(1, { matchStatus: "posted" })];
     const away = renderScreen({ userId: "u2", tie: tossed("team1"), matches });
-    fireEvent.press(away.getByTestId("playoff-match-leg1-accept"));
-    await waitFor(() =>
-      expect(away.value.acceptPlayoffMatch).toHaveBeenCalledWith({
-        ladderId: "L1",
-        matchId: "r1-s0-leg1",
-        userId: "u2",
-      }),
-    );
-
-    const host = renderScreen({ userId: "u1", tie: tossed("team1"), matches });
-    expect(host.queryByTestId("playoff-match-leg1-accept")).toBeNull();
+    expect(away.getByTestId("playoff-match-leg1")).toBeTruthy();
+    expect(away.queryByTestId("playoff-match-leg1-accept")).toBeNull();
   });
 
   it("totals the aggregate across both matches", () => {
