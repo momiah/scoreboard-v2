@@ -146,7 +146,7 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
     });
   const translateY = lift.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -56],
+    outputRange: [0, -36],
   });
   const shadowScale = lift.interpolate({
     inputRange: [0, 1],
@@ -277,7 +277,7 @@ const faceStyle = (rotateX: Animated.AnimatedInterpolation<string>) => ({
 const FlipArea = styled.View({
   alignItems: "center",
   gap: 10,
-  paddingTop: 48,
+  paddingTop: 16,
   paddingBottom: 4,
 });
 

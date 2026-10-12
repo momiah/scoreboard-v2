@@ -345,7 +345,9 @@ const PlayoffMatchDetails: React.FC = () => {
         >
           <Ionicons name="arrow-back" size={24} color="white" />
         </BackButton>
-        <TopTitle numberOfLines={1}>{roundName}</TopTitle>
+        <TopTitle numberOfLines={1}>
+          {tie.gameNumber ? `${roundName} · Game ${tie.gameNumber}` : roundName}
+        </TopTitle>
         <View style={{ width: 24 }} />
       </TopBar>
 
@@ -371,22 +373,6 @@ const PlayoffMatchDetails: React.FC = () => {
           onFlip={(call) => flipPlayoffCoin(ladderId, tieId, call)}
         />
 
-        <MatchScoreBar
-          label="Aggregate"
-          leftNames={[nameOf(leftSide)]}
-          rightNames={[nameOf(otherLadderPlayoffSide(leftSide))]}
-          leftScore={gamesOf(leftSide)}
-          rightScore={gamesOf(otherLadderPlayoffSide(leftSide))}
-          outcome={
-            userSide && tie.winner
-              ? tie.winner === userSide
-                ? "win"
-                : "loss"
-              : "undecided"
-          }
-          testID="playoff-match-aggregate"
-        />
-
         {outcome ? (
           outcome.winner ? (
             <WinnerCard testID="playoff-match-outcome">
@@ -408,6 +394,22 @@ const PlayoffMatchDetails: React.FC = () => {
             </VoidCard>
           )
         ) : null}
+
+        <MatchScoreBar
+          label="Aggregate"
+          leftNames={[nameOf(leftSide)]}
+          rightNames={[nameOf(otherLadderPlayoffSide(leftSide))]}
+          leftScore={gamesOf(leftSide)}
+          rightScore={gamesOf(otherLadderPlayoffSide(leftSide))}
+          outcome={
+            userSide && tie.winner
+              ? tie.winner === userSide
+                ? "win"
+                : "loss"
+              : "undecided"
+          }
+          testID="playoff-match-aggregate"
+        />
 
         <InfoRow>
           <InfoBox testID="playoff-match-format">

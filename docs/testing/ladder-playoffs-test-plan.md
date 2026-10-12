@@ -84,7 +84,7 @@ guard fails if they drift):
 | 2.1 | Round structure (256 → top 16) | Tabs Round of 16, Quarter-Final, Semi-Final, Final; each round's first game is visible; the Final tab shows the Final (`r4-s0`) and the 3rd/4th Playoff (`r4-s1`) as TBD 🅼 |
 | 2.2 | Proximity pairing (2048) | The user's London opponent is P0008 S and the neighbouring game is P0016 S v P0024 S, all London 🅼 🅹 |
 | 2.3 | Tree / list toggle | Switching view keeps the selected round (Quarter-Final) in both directions 🅼 |
-| 2.4 | Tapping a bracket game | Opens the playoff match screen for that game: round title, aggregate card and "Best of N per match · Finish by …"; no score input or approval modal 🅼 |
+| 2.4 | Tapping a bracket game | Opens the playoff match screen for that game: title "{round} · Game N", aggregate card and "Best of N per match · Finish by …"; no score input or approval modal 🅼 |
 | 2.5 | Bracket scroll target and glow | The user's game is on screen without scrolling (see section 3); the glow itself is an animation and is covered by the scroll-target tests in Jest 🅹 |
 | 2.6 | Loading skeleton | `ladder-playoffs-loading` shows until the ties load 🅹 (the skeleton lasts milliseconds, so Maestro does not assert it) |
 
@@ -176,7 +176,7 @@ update the global profile only, never ladder standings.
 | 6.18 | Deadline passes with nothing played | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |
 | 6.19 | Day 3, 6, 9 | One reminder each ("N days left to finish your …"), never repeated 🅴 |
 | 6.20 | Posted playoff matches | Not listed in Matchmaking 🅹 |
-| 6.21 | Settled game | A gold winner card under the aggregate: "Winner", the winner's name, and "Through to the {next round}" ("on a walkover" when it was one; "Ladder champion" for the Final, "Takes 3rd place" for the 3rd-place game). A void game shows a grey card "Not played in time, so neither side goes through." The coin and caller stay visible 🅹 🅼 |
+| 6.21 | Settled game | A gold winner card above the aggregate: "Winner", the winner's name, and "Through to the {next round}" ("on a walkover" when it was one; "Ladder champion" for the Final, "Takes 3rd place" for the 3rd-place game). A void game shows a grey card "Not played in time, so neither side goes through." The coin and caller stay visible 🅹 🅼 |
 
 Emulator cases are in `functions/src/ladderPlayoffTies.emulator.test.ts` and
 `functions/src/autoApproveLadderGames.emulator.test.ts`; the screen in

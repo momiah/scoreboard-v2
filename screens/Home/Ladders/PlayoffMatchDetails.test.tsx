@@ -172,7 +172,7 @@ describe("PlayoffMatchDetails", () => {
       userId: "u1",
       tie: baseTie(),
     });
-    expect(getByText("Final")).toBeTruthy();
+    expect(getByText("Final · Game 1")).toBeTruthy();
     expect(getByTestId("playoff-match-format")).toHaveTextContent(
       /Best of 7.*per match/,
     );
@@ -321,7 +321,7 @@ describe("PlayoffMatchDetails", () => {
   });
 
   it("shows who went through once the game is settled", () => {
-    const { getByTestId, queryByTestId } = renderScreen({
+    const { getByTestId, queryByTestId, toJSON } = renderScreen({
       userId: "u1",
       tie: {
         ...tossed("team1"),
@@ -333,6 +333,12 @@ describe("PlayoffMatchDetails", () => {
     expect(getByTestId("playoff-match-outcome")).toHaveTextContent(
       /Winner.*U2.*Ladder champion/,
     );
+    const order = [
+      "playoff-coin",
+      "playoff-match-outcome",
+      "playoff-match-aggregate",
+    ].map((id) => JSON.stringify(toJSON()).indexOf(`"testID":"${id}"`));
+    expect(order).toEqual([...order].sort((x, y) => x - y));
     expect(getByTestId("playoff-coin-result")).toBeTruthy();
     expect(queryByTestId("playoff-coin-call-heads")).toBeTruthy();
     expect(getByTestId("playoff-match-deadline")).toHaveTextContent(/Finished/);

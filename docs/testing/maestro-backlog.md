@@ -194,7 +194,7 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
 **Opening a game**
 
 1. `ladder-playoffs-tap-game-opens-match`: tap a bracket game →
-   `playoff-match-details` with the round title, `playoff-coin`,
+   `playoff-match-details` titled "Round of 16 · Game N", `playoff-coin`,
    `playoff-match-aggregate` and both info boxes.
 2. `ladder-playoffs-tie-layout-spectator`: open each of the seeded spectator
    games in turn. Every screen has the same layout: the coin, then the
