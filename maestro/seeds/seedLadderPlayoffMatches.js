@@ -36,7 +36,7 @@ const coinToss = (firstHost, flippedBy, flipperSide, now) => ({
   firstHost,
   flippedBy,
   flippedAt: now,
-  call: "home",
+  call: "logo",
   face: firstHost === flipperSide ? "logo" : "trophy",
 });
 

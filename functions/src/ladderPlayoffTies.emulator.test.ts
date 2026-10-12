@@ -317,42 +317,42 @@ describe("runFlipLadderPlayoffCoin", () => {
 
     const result = await runFlipLadderPlayoffCoin({
       userId: a,
-      data: { ladderId: LADDER, tieId: tie.tieId, call: "home" },
+      data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
       now: start,
       random: () => 0.9,
     });
     expect(result).toMatchObject({
       firstHost: "team2",
       flippedBy: a,
-      call: "home",
+      call: "logo",
       face: "trophy",
       alreadyFlipped: false,
     });
     expect((await readTie(tie.tieId)).coinToss).toMatchObject({
       firstHost: "team2",
       flippedBy: a,
-      call: "home",
+      call: "logo",
       face: "trophy",
     });
     expect(await notificationIds(b)).toContain(`playoff-coin-${tie.tieId}-${LADDER}-${b}`);
 
     const again = await runFlipLadderPlayoffCoin({
       userId: b,
-      data: { ladderId: LADDER, tieId: tie.tieId, call: "away" },
+      data: { ladderId: LADDER, tieId: tie.tieId, call: "trophy" },
       random: () => 0.1,
     });
     expect(again).toMatchObject({ firstHost: "team2", flippedBy: a, alreadyFlipped: true });
   });
 
-  it("puts the flipper at home when it lands on the logo", async () => {
+  it("puts the flipper at home when it lands on their call", async () => {
     const tie = await seedUnflipped();
     const [a] = sidesOf(tie);
     const result = await runFlipLadderPlayoffCoin({
       userId: a,
-      data: { ladderId: LADDER, tieId: tie.tieId, call: "away" },
+      data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
       random: () => 0.1,
     });
-    expect(result).toMatchObject({ firstHost: "team1", face: "logo", call: "away" });
+    expect(result).toMatchObject({ firstHost: "team1", face: "logo", call: "logo" });
   });
 
   it("saves one result when both players flip at the same moment", async () => {
@@ -361,12 +361,12 @@ describe("runFlipLadderPlayoffCoin", () => {
     const results = await Promise.all([
       runFlipLadderPlayoffCoin({
         userId: a,
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "home" },
+        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
         random: () => 0.1,
       }),
       runFlipLadderPlayoffCoin({
         userId: b,
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "home" },
+        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
         random: () => 0.1,
       }),
     ]);
@@ -382,7 +382,7 @@ describe("runFlipLadderPlayoffCoin", () => {
     const [a] = sidesOf(tie);
     await expect(
       runFlipLadderPlayoffCoin({ userId: a, data: { ladderId: LADDER, tieId: tie.tieId } }),
-    ).rejects.toThrow("Call Home or Away.");
+    ).rejects.toThrow("Call heads or tails.");
   });
 
   it("refuses players outside the tie and signed-out callers", async () => {
@@ -390,13 +390,13 @@ describe("runFlipLadderPlayoffCoin", () => {
     await expect(
       runFlipLadderPlayoffCoin({
         userId: "stranger",
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "home" },
+        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
       }),
     ).rejects.toThrow("Only players in this game can flip.");
     await expect(
       runFlipLadderPlayoffCoin({
         userId: undefined,
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "home" },
+        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
       }),
     ).rejects.toThrow("Sign in to flip the coin.");
   });

@@ -15,30 +15,30 @@ const props = {
 beforeEach(() => onFlip.mockClear());
 
 describe("PlayoffCoinFlip", () => {
-  it("asks the player to call Home or Away", () => {
+  it("asks the player to call heads or tails", () => {
     const { getByText, getByTestId } = render(<PlayoffCoinFlip {...props} />);
     expect(
-      getByText("Choose where you want the first match to be played"),
+      getByText("Flip the coin to see who starts at home first"),
     ).toBeTruthy();
-    expect(getByTestId("playoff-coin-call-home")).toHaveTextContent("Home");
-    expect(getByTestId("playoff-coin-call-away")).toHaveTextContent("Away");
+    expect(getByTestId("playoff-coin-call-heads")).toHaveTextContent("Heads");
+    expect(getByTestId("playoff-coin-call-tails")).toHaveTextContent("Tails");
   });
 
   it("keeps both coins with the call glowing, then shows where the coin landed", () => {
     jest.useFakeTimers();
     const view = render(<PlayoffCoinFlip {...props} />);
-    fireEvent.press(view.getByTestId("playoff-coin-call-away"));
-    expect(onFlip).toHaveBeenCalledWith("away");
-    expect(view.getByTestId("playoff-coin-call-home")).toBeTruthy();
-    expect(view.getByTestId("playoff-coin-called-away")).toBeTruthy();
-    expect(view.queryByTestId("playoff-coin-called-home")).toBeNull();
+    fireEvent.press(view.getByTestId("playoff-coin-call-tails"));
+    expect(onFlip).toHaveBeenCalledWith("trophy");
+    expect(view.getByTestId("playoff-coin-call-heads")).toBeTruthy();
+    expect(view.getByTestId("playoff-coin-called-tails")).toBeTruthy();
+    expect(view.queryByTestId("playoff-coin-called-heads")).toBeNull();
 
     const result = "You're away first";
     view.rerender(
       <PlayoffCoinFlip
         {...props}
         face="trophy"
-        call="away"
+        call="trophy"
         resultText={result}
       />,
     );
@@ -55,11 +55,11 @@ describe("PlayoffCoinFlip", () => {
       <PlayoffCoinFlip
         {...props}
         face="logo"
-        call="home"
+        call="logo"
         resultText="You're away first"
       />,
     );
-    expect(getByTestId("playoff-coin-called-home")).toBeTruthy();
+    expect(getByTestId("playoff-coin-called-heads")).toBeTruthy();
     expect(getByText("You're away first")).toBeTruthy();
   });
 
@@ -68,7 +68,7 @@ describe("PlayoffCoinFlip", () => {
       <PlayoffCoinFlip {...props} canFlip={false} />,
     );
     expect(getByTestId("playoff-coin-waiting")).toHaveTextContent(
-      /Waiting for a player to flip the coin for home or away/,
+      /Waiting for a player to flip the coin/,
     );
   });
 });

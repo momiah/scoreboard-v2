@@ -32,13 +32,9 @@ const FACE_STYLE = {
   },
 };
 
-const CALLS: {
-  call: LadderPlayoffCoinCall;
-  face: LadderPlayoffCoinFace;
-  label: string;
-}[] = [
-  { call: "home", face: LADDER_PLAYOFF_COIN_FACE.LOGO, label: "Home" },
-  { call: "away", face: LADDER_PLAYOFF_COIN_FACE.TROPHY, label: "Away" },
+const CALLS: { call: LadderPlayoffCoinCall; label: string }[] = [
+  { call: LADDER_PLAYOFF_COIN_FACE.LOGO, label: "Heads" },
+  { call: LADDER_PLAYOFF_COIN_FACE.TROPHY, label: "Tails" },
 ];
 
 const faceTurn = (face: LadderPlayoffCoinFace): number =>
@@ -159,8 +155,8 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   const prompt =
     phase === "idle" && !face
       ? canFlip
-        ? "Choose where you want the first match to be played"
-        : "Waiting for a player to flip the coin for home or away"
+        ? "Flip the coin to see who starts at home first"
+        : "Waiting for a player to flip the coin"
       : null;
 
   return (
@@ -192,7 +188,7 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
       {prompt ? <Caption>{prompt}</Caption> : null}
 
       <Calls>
-        {CALLS.map(({ call: option, face: optionFace, label }) => {
+        {CALLS.map(({ call: option, label }) => {
           const chosen = called === option;
           return (
             <CallButton
@@ -201,13 +197,17 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
               onPress={() => handleCall(option)}
               disabled={!canFlip || phase !== "idle" || !!face}
               accessible={false}
-              testID={`playoff-coin-call-${option}`}
+              testID={`playoff-coin-call-${label.toLowerCase()}`}
             >
               <CallRing
                 chosen={chosen}
-                testID={chosen ? `playoff-coin-called-${option}` : undefined}
+                testID={
+                  chosen
+                    ? `playoff-coin-called-${label.toLowerCase()}`
+                    : undefined
+                }
               >
-                <Coin size={CALL_COIN_SIZE} face={optionFace} />
+                <Coin size={CALL_COIN_SIZE} face={option} />
               </CallRing>
               <CallLabel chosen={chosen}>{label}</CallLabel>
             </CallButton>

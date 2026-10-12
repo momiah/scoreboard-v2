@@ -190,14 +190,14 @@ describe("PlayoffMatchDetails", () => {
     expect(getByTestId("playoff-match-leg1-arrange")).toBeTruthy();
   });
 
-  it("lets a player call Home or Away and flip the coin", async () => {
+  it("lets a player call heads or tails and flip the coin", async () => {
     const { getByTestId, value } = renderScreen({
       userId: "u2",
       tie: baseTie(),
     });
-    fireEvent.press(getByTestId("playoff-coin-call-home"));
+    fireEvent.press(getByTestId("playoff-coin-call-heads"));
     await waitFor(() =>
-      expect(value.flipPlayoffCoin).toHaveBeenCalledWith("L1", "r1-s0", "home"),
+      expect(value.flipPlayoffCoin).toHaveBeenCalledWith("L1", "r1-s0", "logo"),
     );
   });
 
@@ -208,17 +208,17 @@ describe("PlayoffMatchDetails", () => {
         firstHost: "team2",
         flippedBy: "u1",
         flippedAt: new Date(),
-        call: "home",
+        call: "logo",
         face: "trophy",
       },
     };
     const flipper = renderScreen({ userId: "u1", tie });
     expect(flipper.getByText("You're away first")).toBeTruthy();
 
-    expect(flipper.getByTestId("playoff-coin-called-home")).toBeTruthy();
+    expect(flipper.getByTestId("playoff-coin-called-heads")).toBeTruthy();
 
     const opponent = renderScreen({ userId: "u2", tie });
-    expect(opponent.getByTestId("playoff-coin-called-home")).toBeTruthy();
+    expect(opponent.getByTestId("playoff-coin-called-heads")).toBeTruthy();
     expect(opponent.getByText("You're at home first")).toBeTruthy();
 
     const viewer = renderScreen({ userId: "stranger", tie });

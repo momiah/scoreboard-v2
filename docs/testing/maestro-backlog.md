@@ -170,12 +170,12 @@ match during playoffs).
 Flows (testIDs from `PlayoffMatchDetails`, `PlayoffCoinFlip` and
 `AddLadderMatchModal` in playoff mode via `PlayoffMatchScheduleModal`):
 
-1. `ladder-playoffs-coin-flip` (`coinPending`): "Choose where you want the
-   first match to be played"; tap `playoff-coin-call-home` → both
-   `playoff-coin-call-*` still visible, `playoff-coin-called-home` (the glow) → `playoff-coin-result` with
+1. `ladder-playoffs-coin-flip` (`coinPending`): "Flip the coin to see who
+   starts at home first"; tap `playoff-coin-call-heads` → both
+   `playoff-coin-call-*` still visible, `playoff-coin-called-heads` (the glow) → `playoff-coin-result` with
    "You're (at home|away) first"; the match labels read "Match 1 · Home"/"Away" accordingly.
 2. `ladder-playoffs-coin-viewer` (`viewer`): `playoff-coin-waiting` visible,
-   no `playoff-coin-call-home`.
+   no `playoff-coin-call-heads`.
 3. `ladder-playoffs-arrange-home` (`coinWon`): tap
    `playoff-match-leg1-arrange` → "Arrange match 1" with the home court in
    `add-ladder-match-court-selector`, best of 7, `add-ladder-match-court-time`

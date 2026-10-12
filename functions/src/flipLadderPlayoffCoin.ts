@@ -34,10 +34,13 @@ export interface FlipLadderPlayoffCoinResult {
   alreadyFlipped: boolean;
 }
 
-const COIN_CALLS: LadderPlayoffCoinCall[] = ["home", "away"];
+const COIN_CALLS: LadderPlayoffCoinCall[] = ["logo", "trophy"];
+
+const sideName = (face: LadderPlayoffCoinCall | undefined): string =>
+  face === "trophy" ? "tails" : "heads";
 
 /**
- * Flips the coin for a scheduled tie: any player in the tie calls Home or Away
+ * Flips the coin for a scheduled tie: any player in the tie calls heads or tails
  * and flips; the face is drawn on the server and saved once, inside a
  * transaction, so a second or simultaneous flip gets the saved result. The
  * opposing side is told who hosts the first match.
@@ -63,7 +66,7 @@ export const runFlipLadderPlayoffCoin = async ({
     throw new HttpsError("invalid-argument", "ladderId and tieId are required.");
   }
   if (!call || !COIN_CALLS.includes(call)) {
-    throw new HttpsError("invalid-argument", "Call Home or Away.");
+    throw new HttpsError("invalid-argument", "Call heads or tails.");
   }
 
   const db = admin.firestore();
@@ -108,7 +111,6 @@ export const runFlipLadderPlayoffCoin = async ({
     const flipperName = ladderPlayoffTeamName(
       flipperSide === "team1" ? tie.team1 : tie.team2,
     );
-    const faceName = toss.face === "trophy" ? "the trophy" : "the Court Champs logo";
     const ladderSnapshot = await ladderRef.get();
     const ladderName = (ladderSnapshot.data() as Ladder | undefined)?.name ?? "the ladder";
     await notifyLadderPlayers({
@@ -116,7 +118,7 @@ export const runFlipLadderPlayoffCoin = async ({
       ladder: { ladderId },
       kind: `playoff-coin-${tieId}`,
       title: "Coin flipped",
-      message: `${flipperName} called ${call === "home" ? "Home" : "Away"} in your playoff game in ${ladderName}. It landed on ${faceName}, so ${hostName} hosts the first match.`,
+      message: `${flipperName} called ${sideName(call)} in your playoff game in ${ladderName}. It landed on ${sideName(toss.face)}, so ${hostName} is at home first.`,
       tab: "Playoffs",
       data: { tieId },
     });
