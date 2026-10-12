@@ -195,7 +195,7 @@ describe("PlayoffMatchDetails", () => {
     );
   });
 
-  it("tells each side who called what and where they play first", () => {
+  it("tells each side where they play first and glows the called coin", () => {
     const tie = {
       ...baseTie(),
       coinToss: {
@@ -207,17 +207,14 @@ describe("PlayoffMatchDetails", () => {
       },
     };
     const flipper = renderScreen({ userId: "u1", tie });
-    expect(flipper.getByTestId("playoff-coin-call-line")).toHaveTextContent(
-      "You called Home.",
-    );
     expect(
       flipper.getByText("It landed on Away, so you play the first match away."),
     ).toBeTruthy();
 
+    expect(flipper.getByTestId("playoff-coin-called-home")).toBeTruthy();
+
     const opponent = renderScreen({ userId: "u2", tie });
-    expect(opponent.getByTestId("playoff-coin-call-line")).toHaveTextContent(
-      "U1 called Home.",
-    );
+    expect(opponent.getByTestId("playoff-coin-called-home")).toBeTruthy();
     expect(
       opponent.getByText(
         "It landed on Away, so U1 is away and you're at home for the first match.",

@@ -300,12 +300,6 @@ const PlayoffMatchDetails: React.FC = () => {
       ? "team1"
       : "team2"
     : null;
-  const callerName =
-    toss && flipperSide
-      ? toss.flippedBy === userId
-        ? "You"
-        : nameOf(flipperSide)
-      : null;
   const coinResultText = (() => {
     if (!toss) return null;
     const hostName = nameOf(toss.firstHost);
@@ -367,7 +361,6 @@ const PlayoffMatchDetails: React.FC = () => {
                 : null
             }
             call={toss?.call ?? null}
-            callerName={callerName}
             resultText={coinResultText}
             canFlip={!!userSide}
             onFlip={(call) => flipPlayoffCoin(ladderId, tieId, call)}

@@ -10,7 +10,6 @@ const props = {
   resultText: null,
   face: null,
   call: null,
-  callerName: null,
 };
 
 beforeEach(() => onFlip.mockClear());
@@ -30,9 +29,6 @@ describe("PlayoffCoinFlip", () => {
     const view = render(<PlayoffCoinFlip {...props} />);
     fireEvent.press(view.getByTestId("playoff-coin-call-away"));
     expect(onFlip).toHaveBeenCalledWith("away");
-    expect(view.getByTestId("playoff-coin-call-line")).toHaveTextContent(
-      "You called Away…",
-    );
     expect(view.getByTestId("playoff-coin-call-home")).toBeTruthy();
     expect(view.getByTestId("playoff-coin-called-away")).toBeTruthy();
     expect(view.queryByTestId("playoff-coin-called-home")).toBeNull();
@@ -43,7 +39,6 @@ describe("PlayoffCoinFlip", () => {
         {...props}
         face="trophy"
         call="away"
-        callerName="You"
         resultText={result}
       />,
     );
@@ -51,25 +46,18 @@ describe("PlayoffCoinFlip", () => {
     act(() => {
       jest.advanceTimersByTime(10000);
     });
-    expect(view.getByTestId("playoff-coin-call-line")).toHaveTextContent(
-      "You called Away.",
-    );
     expect(view.getByText(result)).toBeTruthy();
     jest.useRealTimers();
   });
 
-  it("shows the opponent who called what, with that coin glowing", () => {
+  it("shows the opponent which coin was called, glowing, and where they play", () => {
     const { getByTestId, getByText } = render(
       <PlayoffCoinFlip
         {...props}
         face="logo"
         call="home"
-        callerName="Sam"
         resultText="It landed on Home, so Sam is at home and you're away for the first match."
       />,
-    );
-    expect(getByTestId("playoff-coin-call-line")).toHaveTextContent(
-      "Sam called Home.",
     );
     expect(getByTestId("playoff-coin-called-home")).toBeTruthy();
     expect(

@@ -20,8 +20,8 @@ const GLOW = "#9be7ff";
 const FACE_STYLE = {
   [LADDER_PLAYOFF_COIN_FACE.LOGO]: {
     image: courtChampsLogo,
-    fill: "#1F6BFF",
-    rim: "#0040C8",
+    fill: "#032462ff",
+    rim: "#021a47",
     engraving: "#ffffff",
   },
   [LADDER_PLAYOFF_COIN_FACE.TROPHY]: {
@@ -41,16 +41,12 @@ const CALLS: {
   { call: "away", face: LADDER_PLAYOFF_COIN_FACE.TROPHY, label: "Away" },
 ];
 
-const callLabel = (call: LadderPlayoffCoinCall): string =>
-  call === "home" ? "Home" : "Away";
-
 const faceTurn = (face: LadderPlayoffCoinFace): number =>
   face === LADDER_PLAYOFF_COIN_FACE.LOGO ? 0 : 0.5;
 
 interface PlayoffCoinFlipProps {
   face: LadderPlayoffCoinFace | null;
   call: LadderPlayoffCoinCall | null;
-  callerName: string | null;
   resultText: string | null;
   canFlip: boolean;
   onFlip: (call: LadderPlayoffCoinCall) => Promise<boolean>;
@@ -59,7 +55,6 @@ interface PlayoffCoinFlipProps {
 const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   face,
   call,
-  callerName,
   resultText,
   canFlip,
   onFlip,
@@ -75,7 +70,6 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   const [ownCall, setOwnCall] = useState<LadderPlayoffCoinCall | null>(null);
   const [error, setError] = useState<string | null>(null);
   const called = ownCall ?? call;
-  const caller = ownCall ? "You" : callerName;
 
   const startSpin = () => {
     spinning.current = true;
@@ -168,10 +162,6 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
         ? "Choose where you want the first match to be played"
         : "Waiting for the coin toss"
       : null;
-  const callLine =
-    called && caller
-      ? `${caller} called ${callLabel(called)}${landed ? "." : "…"}`
-      : null;
 
   return (
     <FlipArea
@@ -224,10 +214,6 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
           );
         })}
       </Calls>
-
-      {callLine ? (
-        <Caption testID="playoff-coin-call-line">{callLine}</Caption>
-      ) : null}
       {landed && resultText ? <Result>{resultText}</Result> : null}
       {error ? (
         <ErrorText testID="playoff-coin-error">{error}</ErrorText>
