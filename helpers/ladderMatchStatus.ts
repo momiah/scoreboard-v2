@@ -1,6 +1,6 @@
 import { LADDER_MATCH_STATUS, isLadderMatchCheckedIn } from "@shared";
 import type { LadderMatch } from "@shared/types";
-import { getOpponentSideIds } from "./ladderMatchCancellation";
+import { getOpponentSideIds, getSameSideIds } from "./ladderMatchCancellation";
 
 export type LadderMatchPhase =
   | "awaiting-confirmation"
@@ -58,11 +58,16 @@ export const deriveLadderMatchStatus = (
     const confirms =
       !!currentUserId &&
       getOpponentSideIds(match, match.createdBy).includes(currentUserId);
+    const hosts =
+      !!currentUserId &&
+      getSameSideIds(match, match.createdBy).includes(currentUserId);
     return {
       phase: "awaiting-confirmation",
       label: confirms
         ? "Awaiting your confirmation"
-        : "Awaiting opponent's confirmation",
+        : hosts
+          ? "Awaiting opponent's confirmation"
+          : "Awaiting confirmation",
     };
   }
   if ((match as { noShowReported?: boolean }).noShowReported) {

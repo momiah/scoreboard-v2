@@ -166,6 +166,7 @@ update the global profile only, never ladder standings.
 | 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this playoff game (by Ddd D MMM)." 🅹 🅼 |
 | 6.10f | An onlooker opens any tie (open, waiting or finished) | Same layout as players: the coin (with its result and the glowing call once tossed; no caption on a finished tie that was never tossed), the aggregate, both info boxes ("Finished" once settled), and a placeholder or card for each match. Only players can tap anything 🅹 🅼 |
 | 6.10g | An onlooker opens a match in a tie | No match menu; the Total Score names both players and counts the approved games from the poster's side, in neutral grey 🅹 🅼 |
+| 6.10h | A spectator on a playoff match | No check-in button (the header card shows the match status instead), unreported games can't be tapped (reported ones open read-only), and a posted match reads "Awaiting confirmation" rather than "your"/"opponent's" wording. Playoff notifications (decider, void, round reached) go only to the tie's players 🅹 🅼 |
 | 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag or the "Best of" tag (shown once in the box above); the deciding game's card keeps "Best of 1" 🅹 🅼 |
 | 6.11a | The tie screen is loading | The skeleton has the page's shape: title bar with back button, the round coin, the call coins, the aggregate bar, the two info boxes and two match sections 🅹 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |

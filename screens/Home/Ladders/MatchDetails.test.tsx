@@ -24,7 +24,11 @@ jest.mock("../../../context/UserContext", () => ({
 }));
 jest.mock("../../../components/ChatRoom/ChatRoom", () => () => null);
 jest.mock("../../../components/ladder/GameLobby", () => () => null);
-jest.mock("../../../components/ladder/MatchCard", () => () => null);
+const mockMatchCard = jest.fn((_props: Record<string, unknown>) => null);
+jest.mock(
+  "../../../components/ladder/MatchCard",
+  () => (props: Record<string, unknown>) => mockMatchCard(props),
+);
 jest.mock(
   "../../../components/ladder/MatchCancellationBanner",
   () => () => null,
@@ -118,5 +122,21 @@ describe("MatchDetails for a playoff match", () => {
         "match-details-burger",
       ),
     ).toBeNull();
+  });
+
+  it("offers check-in to players only, and shows spectators the match status", () => {
+    mockMatchCard.mockClear();
+    renderWith(match({ matchStatus: "accepted" }));
+    expect(mockMatchCard.mock.calls.at(-1)?.[0]).toMatchObject({
+      showProgress: false,
+    });
+    expect(mockMatchCard.mock.calls.at(-1)?.[0].checkin).toBeTruthy();
+
+    mockMatchCard.mockClear();
+    renderWith(match({ matchStatus: "accepted" }), "stranger");
+    expect(mockMatchCard.mock.calls.at(-1)?.[0]).toMatchObject({
+      showProgress: true,
+    });
+    expect(mockMatchCard.mock.calls.at(-1)?.[0].checkin).toBeUndefined();
   });
 });

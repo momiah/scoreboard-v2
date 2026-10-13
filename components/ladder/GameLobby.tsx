@@ -256,7 +256,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     ? [teamName(teamForKey(userTeam?.teamKey))]
     : user
       ? [formatDisplayName(user)]
-      : ["You"];
+      : [isParticipant ? "You" : "Player"];
   const rightNames = hasTwoTeams
     ? [teamName(teamForKey(opponentTeam?.teamKey))]
     : opponents.length > 0
@@ -308,6 +308,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   });
 
   const handleGamePress = (game: Game) => {
+    if (!isParticipant && !game.result && !game.approvalStatus) return;
     if (!allCheckedIn && !isCompleted) {
       showBottomToast("All players must check in to start the games", "info");
       return;
@@ -529,7 +530,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
                 locked={
                   !gamesLocked &&
                   !isReported &&
-                  game.gameId !== reportableGameId
+                  (!isParticipant || game.gameId !== reportableGameId)
                 }
               />
             );

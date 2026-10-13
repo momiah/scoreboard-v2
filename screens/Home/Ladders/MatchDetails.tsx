@@ -154,7 +154,7 @@ const MatchDetails: React.FC = () => {
   };
   const handleCheckedIn = () => {};
   const checkinControl =
-    isAccepted || isCompleted
+    isParticipant && (isAccepted || isCompleted)
       ? { checkedIn: selfCheckedIn, onPress: handleCheckin }
       : undefined;
 
@@ -185,6 +185,7 @@ const MatchDetails: React.FC = () => {
           match={match}
           flat
           checkin={checkinControl}
+          showProgress={!isParticipant}
           onLocationPress={openMap}
           forfeitLabel={forfeitLabel}
           testID="match-details-card"
