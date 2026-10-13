@@ -176,6 +176,12 @@ describe("seedLadderPlayoffMatches", () => {
       bestOf: 1,
       matchStatus: "accepted",
     });
+    const decider = legsOf(levelTie).find((m) => m.playoffLeg === 3);
+    const matchTwo = legsOf(levelTie).find((m) => m.playoffLeg === 2);
+    expect(decider.createdBy).toBe(matchTwo.createdBy);
+    expect(decider.participants).toContain(decider.createdBy);
+    expect(decider.participants).toContain(decider.acceptedBy);
+    expect(decider.court).toEqual(matchTwo.court);
 
     const neighbour = tie(`r1-s${tie(my.tieId).slot ^ 1}`);
     const live = legsOf(neighbour).find((m) => m.matchStatus === "accepted");

@@ -152,10 +152,13 @@ export const resolveLadderPlayoffTie = async ({
     }
 
     const deciderRef = ladderRef.collection(LADDER_MATCHES).doc();
+    const deciderHost = getLadderPlayoffLegHost(tie.coinToss, 3);
+    const hostSide = deciderHost === "team1" ? tie.side1 : tie.side2;
+    const awaySide = deciderHost === "team1" ? tie.side2 : tie.side1;
     const decider = buildLadderPlayoffLegMatch({
       tie,
       leg: 3,
-      host: getLadderPlayoffLegHost(tie.coinToss, 3),
+      host: deciderHost,
       ladderMatchId: deciderRef.id,
       ladderType: secondMatch.ladderType ?? "Singles",
       input: {
@@ -165,12 +168,13 @@ export const resolveLadderPlayoffTie = async ({
         currencyType: secondMatch.currencyType,
         shuttleType: secondMatch.shuttleType,
       },
-      createdBy: "system",
+      createdBy: hostSide?.playerIds[0] ?? secondMatch.createdBy,
       now,
       accepted: true,
     });
     transaction.set(deciderRef, {
       ...decider,
+      ...(awaySide?.playerIds[0] ? { acceptedBy: awaySide.playerIds[0] } : {}),
       ...(secondMatch.checkIn ? { checkIn: secondMatch.checkIn } : {}),
       lastUpdated: now,
     });

@@ -142,7 +142,7 @@ const legMatch = ({
       currencyType: "GBP",
       shuttleType: SHUTTLE_TYPE.FEATHER,
     },
-    createdBy: leg === 3 ? "system" : hostSide.playerIds[0],
+    createdBy: hostSide.playerIds[0],
     now: start.clone().subtract(3, "days").toDate(),
     accepted: status !== LADDER_MATCH_STATUS.POSTED,
   });

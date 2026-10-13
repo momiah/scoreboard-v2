@@ -227,6 +227,9 @@ describe("resolveLadderPlayoffTie", () => {
       court,
       courtFee: 0,
       checkIn: { completed: true },
+      createdBy: b,
+      acceptedBy: a,
+      participants: [b, a],
     });
     expect((await readTie(tie.tieId)).deciderRequired).toBe(true);
     expect(await notificationIds(b)).toContain(`playoff-decider-${tie.tieId}-${LADDER}-${b}`);
