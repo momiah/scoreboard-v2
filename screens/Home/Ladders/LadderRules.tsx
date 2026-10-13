@@ -28,6 +28,10 @@ const RULES: RuleSection[] = [
     body: "When the season ends, the top-ranked players enter the playoff bracket to decide the champion.",
   },
   {
+    title: "Playoff matches",
+    body: "Each playoff game is two matches, one at each player's home court, and both must be played within 10 days. A coin toss decides who hosts the first match. The player who wins more games across both matches goes through. If it's level, one deciding game is played at the second match's court, straight after it, with both players already checked in. If you can't stay for it, either player can reschedule it before the deadline.",
+  },
+  {
     title: "Prizes",
     body: "The prize pot is shared among the top finishers once the ladder completes and results are finalised.",
   },

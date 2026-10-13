@@ -3,7 +3,9 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 
 import PlayoffCoinFlip from "./PlayoffCoinFlip";
 
-const onFlip = jest.fn(async () => true);
+const onFlip = jest.fn(
+  async (_call: string): Promise<"logo" | "trophy" | null> => "trophy",
+);
 const props = {
   canFlip: true,
   onFlip,
@@ -12,7 +14,10 @@ const props = {
   call: null,
 };
 
-beforeEach(() => onFlip.mockClear());
+beforeEach(() => {
+  onFlip.mockClear();
+  onFlip.mockImplementation(async () => "trophy");
+});
 
 describe("PlayoffCoinFlip", () => {
   it("asks the player to call heads or tails", () => {
@@ -65,5 +70,36 @@ describe("PlayoffCoinFlip", () => {
     expect(getByTestId("playoff-coin-waiting")).toHaveTextContent(
       /Waiting for a player to flip the coin/,
     );
+  });
+
+  it("lands on the server's answer without waiting for the game to update", async () => {
+    jest.useFakeTimers();
+    const view = render(<PlayoffCoinFlip {...props} />);
+    fireEvent.press(view.getByTestId("playoff-coin-call-heads"));
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(view.getByTestId("playoff-coin-result")).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it("stops and lets the player try again if the flip fails", async () => {
+    jest.useFakeTimers();
+    onFlip.mockImplementation(async () => null);
+    const view = render(<PlayoffCoinFlip {...props} />);
+    fireEvent.press(view.getByTestId("playoff-coin-call-heads"));
+    await act(async () => {
+      jest.advanceTimersByTime(700);
+    });
+    expect(view.getByTestId("playoff-coin-error")).toHaveTextContent(
+      "Couldn't flip the coin. Try again.",
+    );
+    expect(view.queryByTestId("playoff-coin-called-heads")).toBeNull();
+    fireEvent.press(view.getByTestId("playoff-coin-call-heads"));
+    expect(onFlip).toHaveBeenCalledTimes(2);
+    jest.useRealTimers();
   });
 });

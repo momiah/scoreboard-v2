@@ -13,8 +13,9 @@ import { courtChampsLogo, ladders } from "../../mockImages";
 const COIN_SIZE = 96;
 const CALL_COIN_SIZE = 48;
 const SPIN_MS_PER_TURN = 260;
-const LANDING_TURNS = 4;
-const LANDING_MS = 2400;
+const LANDING_TURNS = 3;
+const LANDING_MS = 1600;
+const MIN_SPIN_MS = 600;
 const GLOW = "#9be7ff";
 
 const FACE_STYLE = {
@@ -46,7 +47,9 @@ interface PlayoffCoinFlipProps {
   callerName: string | null;
   canFlip: boolean;
   idleText?: string;
-  onFlip: (call: LadderPlayoffCoinCall) => Promise<boolean>;
+  onFlip: (
+    call: LadderPlayoffCoinCall,
+  ) => Promise<LadderPlayoffCoinFace | null>;
 }
 
 const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
@@ -62,6 +65,7 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   const spinning = useRef(false);
   const spinStartedAt = useRef(0);
   const initialFace = useRef(face);
+  const landedOn = useRef<LadderPlayoffCoinFace | null>(face);
   const [phase, setPhase] = useState<"idle" | "tossing" | "landed">(
     face ? "landed" : "idle",
   );
@@ -89,6 +93,9 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
   };
 
   const land = (landed: LadderPlayoffCoinFace) => {
+    if (landedOn.current) return;
+    landedOn.current = landed;
+    initialFace.current = landed;
     const spun = (Date.now() - spinStartedAt.current) / SPIN_MS_PER_TURN;
     turns.stopAnimation();
     turns.setValue(spun);
@@ -126,8 +133,15 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
     setError(null);
     setOwnCall(choice);
     startSpin();
-    const ok = await onFlip(choice);
-    if (!ok) {
+    const [result] = await Promise.all([
+      onFlip(choice),
+      new Promise((resolve) => setTimeout(resolve, MIN_SPIN_MS)),
+    ]);
+    if (result) {
+      land(result);
+      return;
+    }
+    if (!landedOn.current) {
       turns.stopAnimation();
       lift.stopAnimation();
       turns.setValue(0);
@@ -153,7 +167,7 @@ const PlayoffCoinFlip: React.FC<PlayoffCoinFlipProps> = ({
     outputRange: [1, 0.5],
   });
 
-  const landed = phase === "landed" && !!face;
+  const landed = phase === "landed" && !!(face ?? landedOn.current);
   const prompt =
     phase === "idle" && !face
       ? (idleText ??

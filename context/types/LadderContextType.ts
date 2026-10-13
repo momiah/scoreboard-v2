@@ -3,6 +3,7 @@ import type {
   Court,
   Ladder,
   LadderPlayoffCoinCall,
+  LadderPlayoffCoinFace,
   LadderPlayoffTie,
   LadderPlayoffTieSide,
   LadderMatch,
@@ -356,7 +357,7 @@ export interface LadderContextType {
     ladderId: string,
     tieId: string,
     call: LadderPlayoffCoinCall,
-  ) => Promise<boolean>;
+  ) => Promise<LadderPlayoffCoinFace | null>;
   subscribeToLadderPlayoffTies: (
     ladderId: string,
     onUpdate: (ties: LadderPlayoffTie[]) => void,

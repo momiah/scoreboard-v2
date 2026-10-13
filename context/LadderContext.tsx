@@ -44,6 +44,7 @@ import {
   REPORT_STATUS,
   REPORT_REASONS,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_COIN_FACE,
 } from "@shared";
 import {
   createRootTeam,
@@ -62,6 +63,7 @@ import type {
   Court,
   Ladder,
   LadderPlayoffCoinCall,
+  LadderPlayoffCoinFace,
   MatchTime,
   LadderPlayoffTie,
   LadderPlayoffTieSide,
@@ -173,6 +175,7 @@ const pruneUndefined = <T,>(value: T): T => {
 };
 
 const LADDERS_COLLECTION = "ladders";
+const FLIP_TIMEOUT_MS = 10 * 1000;
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
@@ -1441,17 +1444,20 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       ladderId: string,
       tieId: string,
       call: LadderPlayoffCoinCall,
-    ): Promise<boolean> => {
+    ): Promise<LadderPlayoffCoinFace | null> => {
       try {
-        await httpsCallable(getFunctions(), "flipLadderPlayoffCoin")({
-          ladderId,
-          tieId,
-          call,
-        });
-        return true;
+        const flip = httpsCallable<
+          { ladderId: string; tieId: string; call: LadderPlayoffCoinCall },
+          { face: LadderPlayoffCoinFace | null }
+        >(getFunctions(), "flipLadderPlayoffCoin")({ ladderId, tieId, call });
+        const timeout = new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), FLIP_TIMEOUT_MS),
+        );
+        const result = await Promise.race([flip, timeout]);
+        return result ? (result.data.face ?? LADDER_PLAYOFF_COIN_FACE.LOGO) : null;
       } catch (error) {
         console.error("Error flipping the playoff coin:", error);
-        return false;
+        return null;
       }
     },
     [],
