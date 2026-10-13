@@ -266,11 +266,13 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
 **Scores, aggregates and spectators**
 
 18. `ladder-playoffs-aggregate` (`leg1Complete`): `playoff-match-aggregate`
-    reads "Aggregate" and "4 - 2" with the user on the left.
+    reads "Aggregate" and "4 - 2" in bracket order (the user is team 1 here),
+    green for the user.
 19. `ladder-playoffs-spectator-scores`: open the **settled** game → aggregate
     "7 - 5", the gold `playoff-match-outcome` card "Winner · {name} · Through
     to the Quarter-Final", the deadline box "Finished";
-    open its match 2 → Total Score names both players (the poster on the left),
+    open its match 2 → Total Score names both players (the poster always on the
+    left, for players and spectators alike),
     shows "4 - 3" from the poster's side in grey, both players checked in, and
     no `match-details-burger`.
 20. `ladder-playoffs-spectator-live`: open the **neighbour** game's match 2 →

@@ -113,8 +113,8 @@ const GameLobby: React.FC<GameLobbyProps> = ({
 
   const isParticipant =
     !!currentUserId && (match.participants ?? []).includes(currentUserId);
-  const sideOf = isParticipant ? (currentUserId as string) : match.createdBy;
-  const score = getLadderMatchScore(match, sideOf);
+  const score = getLadderMatchScore(match, match.createdBy);
+  const viewerOutcome = getLadderMatchScore(match, currentUserId ?? "").outcome;
 
   const isDoubles =
     match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
@@ -235,32 +235,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     return key ? teamName(ladderTeamByKey[key]) : "";
   };
 
-  // Group the two sides. Doubles shows the current user's team on the left
-  // (matching the viewer-relative score), the opponent team on the right.
-  const userTeamIdx = hasTwoTeams
-    ? Math.max(
-        0,
-        matchTeams.findIndex((t) => t.playerIds.includes(sideOf)),
-      )
-    : -1;
-  const userTeam = hasTwoTeams ? matchTeams[userTeamIdx] : undefined;
-  const opponentTeam = hasTwoTeams
-    ? matchTeams[userTeamIdx === 0 ? 1 : 0]
-    : undefined;
+  // The poster's side is always on the left, the accepter's on the right.
   const teamForKey = (key?: string): TeamStats | undefined =>
     key ? ladderTeamByKey[key] : undefined;
-
-  const user = players.find((p) => p.userId === sideOf);
-  const opponents = players.filter((p) => p.userId !== sideOf);
+  const poster = players.find((p) => p.userId === match.createdBy);
+  const accepters = players.filter((p) => p.userId !== match.createdBy);
   const leftNames = hasTwoTeams
-    ? [teamName(teamForKey(userTeam?.teamKey))]
-    : user
-      ? [formatDisplayName(user)]
-      : [isParticipant ? "You" : "Player"];
+    ? [teamName(teamForKey(matchTeams[0]?.teamKey))]
+    : [poster ? formatDisplayName(poster) : "Player"];
   const rightNames = hasTwoTeams
-    ? [teamName(teamForKey(opponentTeam?.teamKey))]
-    : opponents.length > 0
-      ? opponents.map((p) => formatDisplayName(p))
+    ? [teamName(teamForKey(matchTeams[1]?.teamKey))]
+    : accepters.length > 0
+      ? accepters.map((p) => formatDisplayName(p))
       : ["Opponent"];
 
   const gamesWithPlayers: LobbyGame[] = match.games.map((game) => {
@@ -270,28 +256,28 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     let team2: GameTeam = game.team2;
     if (!filled) {
       if (hasTwoTeams) {
-        const userCells = (userTeam?.playerIds ?? []).map((id) =>
+        const posterCells = (matchTeams[0]?.playerIds ?? []).map((id) =>
           toPlayerCell(profileById.get(id)),
         );
-        const oppCells = (opponentTeam?.playerIds ?? []).map((id) =>
+        const accepterCells = (matchTeams[1]?.playerIds ?? []).map((id) =>
           toPlayerCell(profileById.get(id)),
         );
         team1 = {
           ...game.team1,
-          player1: userCells[0] ?? null,
-          player2: userCells[1] ?? null,
+          player1: posterCells[0] ?? null,
+          player2: posterCells[1] ?? null,
         };
         team2 = {
           ...game.team2,
-          player1: oppCells[0] ?? null,
-          player2: oppCells[1] ?? null,
+          player1: accepterCells[0] ?? null,
+          player2: accepterCells[1] ?? null,
         };
       } else {
-        team1 = { ...game.team1, player1: toPlayerCell(user), player2: null };
+        team1 = { ...game.team1, player1: toPlayerCell(poster), player2: null };
         team2 = {
           ...game.team2,
-          player1: toPlayerCell(opponents[0]),
-          player2: isDoubles ? toPlayerCell(opponents[1]) : null,
+          player1: toPlayerCell(accepters[0]),
+          player2: isDoubles ? toPlayerCell(accepters[1]) : null,
         };
       }
     }
@@ -494,7 +480,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           rightNames={rightNames}
           leftScore={score.user}
           rightScore={score.opponent}
-          outcome={isParticipant ? score.outcome : "undecided"}
+          outcome={viewerOutcome}
           style={{ marginHorizontal: 20, marginBottom: 16 }}
         />
 

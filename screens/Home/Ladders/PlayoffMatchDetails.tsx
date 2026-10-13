@@ -17,7 +17,6 @@ import {
 } from "@shared";
 import {
   getLadderPlayoffLegHost,
-  otherLadderPlayoffSide,
   roundLabel,
   tallyLadderPlayoffTie,
 } from "@shared/helpers";
@@ -201,9 +200,6 @@ const PlayoffMatchDetails: React.FC = () => {
   const team2Name = teamName(tie.team2);
   const nameOf = (side: LadderPlayoffTieSide) =>
     side === "team1" ? team1Name : team2Name;
-  const leftSide: LadderPlayoffTieSide = userSide ?? "team1";
-  const gamesOf = (side: LadderPlayoffTieSide) =>
-    side === "team1" ? tally.team1Games : tally.team2Games;
   const deadline = tie.deadlineAt ? toMoment(tie.deadlineAt) : null;
 
   const openMatch = (match: LadderMatch) =>
@@ -442,10 +438,10 @@ const PlayoffMatchDetails: React.FC = () => {
 
         <MatchScoreBar
           label="Aggregate"
-          leftNames={[nameOf(leftSide)]}
-          rightNames={[nameOf(otherLadderPlayoffSide(leftSide))]}
-          leftScore={gamesOf(leftSide)}
-          rightScore={gamesOf(otherLadderPlayoffSide(leftSide))}
+          leftNames={[team1Name]}
+          rightNames={[team2Name]}
+          leftScore={tally.team1Games}
+          rightScore={tally.team2Games}
           outcome={
             userSide && tie.winner
               ? tie.winner === userSide
