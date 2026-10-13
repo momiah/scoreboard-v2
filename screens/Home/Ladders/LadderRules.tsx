@@ -24,6 +24,18 @@ const RULES: RuleSection[] = [
     body: "Arrange challenge games with other ladder members. Report each result — both players confirm the score before it counts.",
   },
   {
+    title: "Check-in & no-shows",
+    body: "Check in at the court for every match; the games unlock once every player has checked in. If your opponent hasn't checked in within 30 minutes of the start time, you can report a no-show from the check-in screen. Misconduct — cheating, abuse or harassment — can be reported from the match menu.",
+  },
+  {
+    title: "Rescheduling & extensions",
+    body: "Before any game is reported, either side can ask to move the match to a new time; it only moves if the opponent accepts. Once a game has been reported, either side can extend the match once, giving 7 days from the request to finish it. Playoff matches must still finish by the playoff deadline.",
+  },
+  {
+    title: "Inactive matches",
+    body: "An accepted match expires if nothing happens — no check-in, game or report — for 72 hours. The clock starts at the scheduled time and resets with any activity, so any progress keeps the match alive.",
+  },
+  {
     title: "Playoffs",
     body: "When the season ends, the top-ranked players enter the playoff bracket to decide the champion.",
   },
