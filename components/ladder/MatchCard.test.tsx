@@ -38,4 +38,15 @@ describe("MatchCard", () => {
       ).queryByText("No court fee"),
     ).toBeNull();
   });
+
+  it("can hide the best-of tag", () => {
+    expect(
+      render(<MatchCard match={match()} />).getByText("Best of 7"),
+    ).toBeTruthy();
+    expect(
+      render(<MatchCard match={match()} showBestOf={false} />).queryByText(
+        "Best of 7",
+      ),
+    ).toBeNull();
+  });
 });

@@ -200,7 +200,8 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
    games in turn. Every screen has the same layout: the coin, then the
    aggregate, then `playoff-match-format` and `playoff-match-deadline`
    ("N days and N hours" / "to complete both matches"), then match 1 and
-   match 2 headed "Match N · {name} (Home)". Nothing is tappable except match
+   match 2 headed "Match N" with `playoff-match-leg{N}-host` (house icon and
+   the host's name), and no "Best of" tag on match 1 and 2's cards. Nothing is tappable except match
    cards: no `playoff-match-leg*-arrange`, no `playoff-coin-call-*` before a toss.
 
 **Coin toss (heads or tails)**

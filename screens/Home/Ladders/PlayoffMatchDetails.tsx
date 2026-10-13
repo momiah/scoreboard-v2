@@ -36,7 +36,11 @@ import MatchScoreBar from "../../../components/ladder/MatchScoreBar";
 import PlayoffCoinFlip from "../../../components/ladder/PlayoffCoinFlip";
 import ActionPlaceholder from "../../../components/ActionPlaceholder";
 import PlayoffMatchScheduleModal from "../../../components/Modals/PlayoffMatchScheduleModal";
-import { SkeletonWrapper } from "../../../components/Skeletons/SkeletonComponents";
+import {
+  CircleSkeleton,
+  SkeletonWrapper,
+  TextSkeleton,
+} from "../../../components/Skeletons/SkeletonComponents";
 import { useLadderHomeCourt } from "../../../hooks/useLadderHomeCourt";
 import { usePlayoffMatchScheduling } from "../../../hooks/usePlayoffMatchScheduling";
 import { toMoment } from "../../../helpers/ladderPhases";
@@ -144,10 +148,40 @@ const PlayoffMatchDetails: React.FC = () => {
   if (!tie || !ladder) {
     return (
       <Screen testID="playoff-match-loading">
+        <TopBar>
+          <BackButton
+            onPress={() => navigation.goBack()}
+            testID="playoff-match-back"
+          >
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </BackButton>
+          <TextSkeleton show width={160} height={20} />
+          <View style={{ width: 24 }} />
+        </TopBar>
         <Body>
-          <SkeletonWrapper show height={120} width="100%" radius={12} />
-          <SkeletonWrapper show height={116} width="100%" radius={10} />
-          <SkeletonWrapper show height={116} width="100%" radius={10} />
+          <View style={{ alignItems: "center", gap: 10, paddingTop: 16 }}>
+            <CircleSkeleton show size={96} />
+            <TextSkeleton show width={220} height={14} />
+            <View style={{ flexDirection: "row", gap: 32 }}>
+              <CircleSkeleton show size={48} />
+              <CircleSkeleton show size={48} />
+            </View>
+          </View>
+          <SkeletonWrapper show height={84} width="100%" radius={12} />
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <SkeletonWrapper show height={88} width="100%" radius={12} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <SkeletonWrapper show height={88} width="100%" radius={12} />
+            </View>
+          </View>
+          {[1, 2].map((leg) => (
+            <View key={leg} style={{ gap: 8 }}>
+              <TextSkeleton show width={140} height={16} />
+              <SkeletonWrapper show height={110} width="100%" radius={10} />
+            </View>
+          ))}
         </Body>
       </Screen>
     );
@@ -224,17 +258,28 @@ const PlayoffMatchDetails: React.FC = () => {
     const host = tie.coinToss
       ? getLadderPlayoffLegHost(tie.coinToss, leg)
       : null;
-    const label = `Match ${leg}${host ? ` · ${nameOf(host)} (Home)` : ""}`;
+    const label = (
+      <LegHeader>
+        <LegLabel>Match {leg}</LegLabel>
+        {host ? (
+          <HostTag testID={`playoff-match-leg${leg}-host`}>
+            <Ionicons name="home" size={13} color="#9fb8c8" />
+            <HostName numberOfLines={1}>{nameOf(host)}</HostName>
+          </HostTag>
+        ) : null}
+      </LegHeader>
+    );
 
     if (match) {
       return (
         <LegSection key={leg}>
-          <LegLabel>{label}</LegLabel>
+          {label}
           <MatchCard
             match={match}
             onPress={openMatch}
             currentUserId={userId}
             showProgress
+            showBestOf={false}
             testID={`playoff-match-leg${leg}`}
           />
         </LegSection>
@@ -244,7 +289,7 @@ const PlayoffMatchDetails: React.FC = () => {
     if (!isOpen) {
       return (
         <LegSection key={leg}>
-          <LegLabel>{label}</LegLabel>
+          {label}
           <ActionPlaceholder
             message={
               isCompleted ? "Not played" : "Arranged after the coin toss"
@@ -263,7 +308,7 @@ const PlayoffMatchDetails: React.FC = () => {
     if (host && userSide === host) {
       return (
         <LegSection key={leg}>
-          <LegLabel>{label}</LegLabel>
+          {label}
           <ActionPlaceholder
             message="Arrange your home match"
             icon="calendar-outline"
@@ -282,7 +327,7 @@ const PlayoffMatchDetails: React.FC = () => {
         : `Waiting for ${nameOf(host)} to arrange their home match`;
     return (
       <LegSection key={leg}>
-        <LegLabel>{label}</LegLabel>
+        {label}
         <ActionPlaceholder
           message={waitingFor}
           icon="time-outline"
@@ -481,7 +526,7 @@ const Screen = styled.View({
 
 const Body = styled.View({
   padding: 20,
-  gap: 12,
+  gap: 16,
 });
 
 const TopBar = styled.View({
@@ -589,6 +634,25 @@ const VoidText = styled.Text({
 
 const LegSection = styled.View({
   gap: 8,
+});
+
+const LegHeader = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+});
+
+const HostTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+  flexShrink: 1,
+});
+
+const HostName = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+  flexShrink: 1,
 });
 
 const LegLabel = styled.Text({

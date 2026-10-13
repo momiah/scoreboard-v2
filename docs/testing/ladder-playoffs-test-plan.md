@@ -149,7 +149,7 @@ update the global profile only, never ladder standings.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 6.1 | A player opens a game with no coin toss | The big coin is at the top above the aggregate (logo side navy, trophy side gold), then "Flip the coin to see who starts at home first" and two coin buttons: the logo labelled Heads and the trophy labelled Tails. Tapping one keeps both buttons, gives the called one a glowing border with the caller's name under it, and tosses the big coin. If it lands on the call the caller is at home first, otherwise the opponent is; the match headings ("Match N · {name} (Home)") show the result, with no separate "at home first" line. Everyone, spectators included, sees the glow and the caller's name. Before the toss spectators see "Waiting for a player to flip the coin" 🅹 🅼 |
+| 6.1 | A player opens a game with no coin toss | The big coin is at the top above the aggregate (logo side navy, trophy side gold), then "Flip the coin to see who starts at home first" and two coin buttons: the logo labelled Heads and the trophy labelled Tails. Tapping one keeps both buttons, gives the called one a glowing border with the caller's name under it, and tosses the big coin. If it lands on the call the caller is at home first, otherwise the opponent is; the match headings ("Match N" with a house icon and the host's name) show the result, with no separate "at home first" line. Everyone, spectators included, sees the glow and the caller's name. Before the toss spectators see "Waiting for a player to flip the coin" 🅹 🅼 |
 | 6.2 | A viewer opens the same game | "Waiting for the coin toss", the coin cannot be tapped 🅹 🅼 |
 | 6.3 | Both players flip at once | One saved result inside one transaction; the other call returns it; the other side is notified once 🅴 |
 | 6.4 | Someone outside the game, or signed out, calls the flip | Refused ("Only players in this game can flip." / "Sign in to flip the coin.") 🅴 |
@@ -166,7 +166,8 @@ update the global profile only, never ladder standings.
 | 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this playoff game (by Ddd D MMM)." 🅹 🅼 |
 | 6.10f | An onlooker opens any tie (open, waiting or finished) | Same layout as players: the coin (with its result and the glowing call once tossed; no caption on a finished tie that was never tossed), the aggregate, both info boxes ("Finished" once settled), and a placeholder or card for each match. Only players can tap anything 🅹 🅼 |
 | 6.10g | An onlooker opens a match in a tie | No match menu; the Total Score names both players and counts the approved games from the poster's side, in neutral grey 🅹 🅼 |
-| 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag 🅹 🅼 |
+| 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag or the "Best of" tag (shown once in the box above); the deciding game's card keeps "Best of 1" 🅹 🅼 |
+| 6.11a | The tie screen is loading | The skeleton has the page's shape: title bar with back button, the round coin, the call coins, the aggregate bar, the two info boxes and two match sections 🅹 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
 | 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |
 | 6.14 | Same actions on a regular ladder match during playoffs | Still frozen (section 2 of the reliability plan) 🅹 🅼 |

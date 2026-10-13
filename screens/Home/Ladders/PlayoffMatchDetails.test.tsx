@@ -218,7 +218,9 @@ describe("PlayoffMatchDetails", () => {
       const view = renderScreen({ userId, tie });
       expect(view.getByTestId("playoff-coin-called-heads")).toBeTruthy();
       expect(view.getByTestId("playoff-coin-caller")).toHaveTextContent("U1");
-      expect(view.getByText("Match 1 · U2 (Home)")).toBeTruthy();
+      expect(view.getByTestId("playoff-match-leg1-host")).toHaveTextContent(
+        /U2$/,
+      );
       expect(view.queryByText(/home first|away first/)).toBeNull();
     }
   });
@@ -238,16 +240,24 @@ describe("PlayoffMatchDetails", () => {
       "Arrange match 1 | best of 7 | Home",
     );
     expect(host.getByTestId("playoff-match-leg2-waiting")).toBeTruthy();
-    expect(host.getByText("Match 1 · U1 (Home)")).toBeTruthy();
-    expect(host.getByText("Match 2 · U2 (Home)")).toBeTruthy();
+    expect(host.getByTestId("playoff-match-leg1-host")).toHaveTextContent(
+      /U1$/,
+    );
+    expect(host.getByTestId("playoff-match-leg2-host")).toHaveTextContent(
+      /U2$/,
+    );
 
     const away = renderScreen({ userId: "u2", tie: tossed("team1") });
     expect(
       away.getByText("Waiting for your opponent to arrange their home match"),
     ).toBeTruthy();
     expect(away.getByTestId("playoff-match-leg2-arrange")).toBeTruthy();
-    expect(away.getByText("Match 1 · U1 (Home)")).toBeTruthy();
-    expect(away.getByText("Match 2 · U2 (Home)")).toBeTruthy();
+    expect(away.getByTestId("playoff-match-leg1-host")).toHaveTextContent(
+      /U1$/,
+    );
+    expect(away.getByTestId("playoff-match-leg2-host")).toHaveTextContent(
+      /U2$/,
+    );
   });
 
   it("names the host for onlookers and waits for the coin before that", () => {
@@ -256,7 +266,9 @@ describe("PlayoffMatchDetails", () => {
       viewer.getByText("Waiting for U1 to arrange their home match"),
     ).toBeTruthy();
     const early = renderScreen({ userId: "u1", tie: baseTie() });
-    expect(viewer.getByText("Match 1 · U1 (Home)")).toBeTruthy();
+    expect(viewer.getByTestId("playoff-match-leg1-host")).toHaveTextContent(
+      /U1$/,
+    );
     expect(early.getAllByText("Arranged after the coin toss")).toHaveLength(2);
   });
 

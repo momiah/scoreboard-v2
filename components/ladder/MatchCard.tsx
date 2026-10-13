@@ -34,6 +34,7 @@ interface MatchCardProps {
   onLocationPress?: () => void;
   forfeitLabel?: string;
   currentUserId?: string;
+  showBestOf?: boolean;
   testID?: string;
 }
 
@@ -51,6 +52,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
   onLocationPress,
   forfeitLabel,
   currentUserId,
+  showBestOf = true,
   testID,
 }) => {
   const city = match.court?.location?.city;
@@ -145,10 +147,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
           <Tag>
             <TagText>🏸 {match.shuttleType}</TagText>
           </Tag>
-          <Tag>
-            <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
-            <TagText>Best of {match.bestOf}</TagText>
-          </Tag>
+          {showBestOf ? (
+            <Tag>
+              <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+              <TagText>Best of {match.bestOf}</TagText>
+            </Tag>
+          ) : null}
         </TagGroup>
         {tagStatus && (
           <TagStatus>
