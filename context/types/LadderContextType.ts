@@ -67,6 +67,12 @@ export interface DisbandTeamOutcome {
   openMatch?: boolean;
 }
 
+export interface LeaveLadderOutcome {
+  success: boolean;
+  reason?: "registration_closed" | "played" | "open_match" | "not_joined" | "error";
+  notifyUserIds?: string[];
+}
+
 export interface TeamLadderActivity {
   hasOpenMatch: boolean;
   hasCompletedGame: boolean;
@@ -220,6 +226,7 @@ export interface LadderContextType {
     ladderIds?: string[],
   ) => Promise<TeamLadderActivity>;
   disbandTeam: (team: TeamStats) => Promise<DisbandTeamOutcome>;
+  leaveLadder: (ladderId: string, userId: string) => Promise<LeaveLadderOutcome>;
   acceptTeamInvite: (teamId: string) => Promise<boolean>;
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;

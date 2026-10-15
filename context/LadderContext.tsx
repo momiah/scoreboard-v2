@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import {
+  arrayRemove,
   arrayUnion,
   collection,
   deleteDoc,
@@ -38,6 +39,7 @@ import {
   notificationTypes,
   LADDER_MATCH_STATUS,
   LADDER_TYPE,
+  LADDER_STATUS,
   TEAM_STATUS,
   REPORTS_COLLECTION,
   LADDER_REPORT_COUNTS_COLLECTION,
@@ -119,6 +121,7 @@ import type {
   LadderJoinFailureReason,
   JoinLadderAsTeamOutcome,
   DisbandTeamOutcome,
+  LeaveLadderOutcome,
   TeamLadderActivity,
   AcceptTeamJoinRequestOutcome,
   CreateTeamOutcome,
@@ -1283,6 +1286,95 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     [getTeamLadderActivity],
+  );
+
+  const leaveLadder = useCallback(
+    async (ladderId: string, userId: string): Promise<LeaveLadderOutcome> => {
+      if (!ladderId || !userId) return { success: false, reason: "error" };
+      try {
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
+        const ladderSnap = await getDoc(ladderRef);
+        if (!ladderSnap.exists()) return { success: false, reason: "error" };
+        const ladder = ladderSnap.data() as Ladder;
+        if (
+          normalizeLadderStatus(ladder.status) !==
+          LADDER_STATUS.REGISTRATION_OPEN
+        ) {
+          return { success: false, reason: "registration_closed" };
+        }
+
+        const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+        let team: TeamStats | null = null;
+        if (isDoubles) {
+          const memberSnap = await getDoc(
+            doc(db, LADDERS_COLLECTION, ladderId, LADDER_MEMBERS_COLLECTION, userId),
+          );
+          const teamKey = memberSnap.data()?.teamKey as string | undefined;
+          const teamSnap = teamKey
+            ? await getDoc(
+                doc(db, LADDERS_COLLECTION, ladderId, LADDER_TEAMS_COLLECTION, teamKey),
+              )
+            : null;
+          if (!teamSnap?.exists()) return { success: false, reason: "not_joined" };
+          team = teamSnap.data() as TeamStats;
+        } else {
+          const participantSnap = await getDoc(
+            doc(db, LADDERS_COLLECTION, ladderId, LADDER_PARTICIPANTS_COLLECTION, userId),
+          );
+          if (!participantSnap.exists()) return { success: false, reason: "not_joined" };
+        }
+
+        const playerIds = team ? teamMemberIds(team) : [userId];
+        const matches = await fetchLadderMatches(ladderId);
+        if (teamHasCompletedLadderGame(matches, playerIds)) {
+          return { success: false, reason: "played" };
+        }
+        if (teamHasOpenLadderMatch(matches, playerIds)) {
+          return { success: false, reason: "open_match" };
+        }
+
+        const batch = writeBatch(db);
+        if (team) {
+          batch.delete(
+            doc(db, LADDERS_COLLECTION, ladderId, LADDER_TEAMS_COLLECTION, team.teamKey),
+          );
+          playerIds.forEach((id) =>
+            batch.delete(
+              doc(db, LADDERS_COLLECTION, ladderId, LADDER_MEMBERS_COLLECTION, id),
+            ),
+          );
+          if (team.teamId) {
+            batch.update(doc(db, TEAMS_COLLECTION, team.teamId), {
+              ladderIds: arrayRemove(ladderId),
+            });
+          }
+        } else {
+          batch.delete(
+            doc(db, LADDERS_COLLECTION, ladderId, LADDER_PARTICIPANTS_COLLECTION, userId),
+          );
+        }
+        batch.update(ladderRef, { participantCount: increment(-1) });
+        await batch.commit();
+
+        setJoinedLadderIds((prev) => prev.filter((id) => id !== ladderId));
+        setLadderById((prev) =>
+          prev && prev.ladderId === ladderId
+            ? {
+                ...prev,
+                participantCount: Math.max(0, (prev.participantCount ?? 1) - 1),
+              }
+            : prev,
+        );
+        return {
+          success: true,
+          notifyUserIds: playerIds.filter((id) => id !== userId),
+        };
+      } catch (error) {
+        console.error("Error leaving ladder:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [fetchLadderMatches],
   );
 
   const subscribeToPlayoffMatches = useCallback(
@@ -2656,6 +2748,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         updateTeamDetails,
         getTeamLadderActivity,
         disbandTeam,
+        leaveLadder,
         acceptTeamInvite,
         declineTeamInvite,
         fetchTeam,

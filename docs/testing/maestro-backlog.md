@@ -29,6 +29,20 @@ request agreed by the opponent (3b), an unanswered request blocks, and a
 reported game blocks both Cancel Match and Disband (5). Singles has no leave
 option, so disbanding is doubles only.
 
+## Leaving a ladder
+
+Section 14 of [ladder-reliability-test-plan.md](ladder-reliability-test-plan.md).
+Reuse the `seedTeamDisbandFlow.js` variants (registration open, posted match,
+accepted match, approved game, registration closed) for singles and doubles.
+
+1. `leave-ladder-singles`: Ladder Menu → Leave Ladder → confirm → back on the
+   ladder, no longer in the standings; the Join button is back.
+2. `leave-ladder-doubles`: the confirm mentions the partner; after leaving the
+   partner has "{name} took your team out of {ladder}." and the team still
+   exists.
+3. `leave-ladder-blocked-*`: each block shows its message and nothing changes
+   (registration closed, played a game, open match).
+
 ## Match cancellation
 
 Helpers in `helpers/ladderMatchCancellation.ts`, UI via

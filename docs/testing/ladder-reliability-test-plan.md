@@ -213,3 +213,17 @@ match times as Europe/London. All 🅹 (`sendLadderMatchReminders.test.ts`).
 | 13.3 | Posted, completed, cancelled or expired match | No reminder (only accepted matches are read) |
 | 13.4 | Match rescheduled after a reminder | The notification id includes the date and time, so the new time gets its own reminders |
 | 13.5 | Playoff legs | Reminded like any accepted match |
+
+## 14. Leaving a ladder
+
+`leaveLadder` in `context/LadderContext.tsx`, from Ladder Menu → Leave Ladder.
+Uses the same activity checks as disbanding a team. 🅹 in
+`context/LadderContext.test.tsx`.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 14.1 | Singles, registration open, no games or open matches | Removed from the participants, the count drops by one, "You've left the ladder" |
+| 14.2 | Doubles | The team leaves this ladder only (its ladder team and both members' claims are removed, the team keeps its other ladders); the partner is told "{name} took your team out of {ladder}." |
+| 14.3 | Registration closed, playoffs, completed or cancelled | "You can't leave once registration has closed." Nothing written |
+| 14.4 | An approved game in this ladder | "You can't leave after playing a game in this ladder." |
+| 14.5 | A posted or accepted match in this ladder | "Cancel your posted or accepted matches before leaving." |
