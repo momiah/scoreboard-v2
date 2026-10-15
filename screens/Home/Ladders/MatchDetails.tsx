@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { Dimensions, Linking } from "react-native";
+import { Linking } from "react-native";
 import {
   useFocusEffect,
   useNavigation,
@@ -35,13 +35,13 @@ import MatchCancellationBanner from "../../../components/ladder/MatchCancellatio
 import MatchRescheduleBanner from "../../../components/ladder/MatchRescheduleBanner";
 import PlayoffMatchConfirmBanner from "../../../components/ladder/PlayoffMatchConfirmBanner";
 import GameLobby from "../../../components/ladder/GameLobby";
+import LobbyTabs from "../../../components/ladder/LobbyTabs";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 import { useForfeitLabel } from "../../../helpers/useForfeitLabel";
 import { isLadderMatchCalledOff } from "../../../helpers/ladderMatchCancellation";
 
-const { width: screenWidth } = Dimensions.get("window");
 
 type LobbyTab = "Chat Room" | "Game Lobby";
 
@@ -58,6 +58,7 @@ interface MatchDetailsParams {
 }
 
 const TABS: LobbyTab[] = ["Chat Room", "Game Lobby"];
+const PLAYOFF_TABS: LobbyTab[] = ["Game Lobby"];
 
 const MatchDetails: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -208,21 +209,14 @@ const MatchDetails: React.FC = () => {
         userId={userId}
       />
 
-      <Tabs>
-        {TABS.map((tab) => (
-          <TabButton
-            key={tab}
-            isSelected={selectedTab === tab}
-            activeOpacity={0.85}
-            onPress={() => setSelectedTab(tab)}
-            testID={`match-details-tab-${tab}`}
-          >
-            <TabText>{tab}</TabText>
-          </TabButton>
-        ))}
-      </Tabs>
+      <LobbyTabs
+        tabs={match.playoffTieId ? PLAYOFF_TABS : TABS}
+        selected={selectedTab}
+        onSelect={setSelectedTab}
+        testIDPrefix="match-details-tab"
+      />
 
-      {selectedTab === "Game Lobby" ? (
+      {selectedTab === "Game Lobby" || match.playoffTieId ? (
         <GameLobby
           ladderId={ladderId}
           ladderName={ladderName}
@@ -286,29 +280,6 @@ const IconButton = styled.TouchableOpacity({
 
 const MenuSpacer = styled.View({
   height: 40,
-});
-
-const Tabs = styled.View({
-  flexDirection: "row",
-  gap: 10,
-  paddingHorizontal: 16,
-  paddingTop: 16,
-  paddingBottom: 6,
-});
-
-const TabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
-  ({ isSelected }: { isSelected: boolean }) => ({
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: isSelected ? 2 : 1,
-    borderColor: isSelected ? "#00A2FF" : "white",
-  }),
-);
-
-const TabText = styled.Text({
-  color: "white",
-  fontSize: screenWidth <= 400 ? 12 : 14,
 });
 
 const NotFound = styled.View({

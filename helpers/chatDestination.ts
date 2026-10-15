@@ -6,6 +6,7 @@ export interface ChatSummary {
   competitionName?: string;
   competitionType?: string;
   ladderId?: string;
+  tieId?: string;
   leagueId?: string;
   leagueName?: string;
 }
@@ -19,6 +20,10 @@ export type ChatDestination =
   | {
       route: "MatchDetails";
       params: { ladderId: string; matchId: string; tab: "Chat Room" };
+    }
+  | {
+      route: "PlayoffMatchDetails";
+      params: { ladderId: string; tieId: string; tab: "Chat Room" };
     };
 
 export const getChatCompetitionId = (chat: ChatSummary): string =>
@@ -42,6 +47,12 @@ export const getChatDestination = (
     return {
       route: "Tournament",
       params: { tournamentId: competitionId, tab: "Chat Room" },
+    };
+  }
+  if (chat.competitionType === "ladder" && chat.ladderId && chat.tieId) {
+    return {
+      route: "PlayoffMatchDetails",
+      params: { ladderId: chat.ladderId, tieId: chat.tieId, tab: "Chat Room" },
     };
   }
   if (chat.competitionType === "ladder" && chat.ladderId) {

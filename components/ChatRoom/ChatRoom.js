@@ -129,6 +129,7 @@ const ChatRoom = ({
     const chatTarget = {
       competitionType,
       ...(chatPath?.[0] === "ladders" ? { ladderId: chatPath[1] } : {}),
+      ...(chatPath?.[2] === "playoffTies" ? { tieId: chatPath[3] } : {}),
     };
 
     const recipients = competitionParticipants.filter(

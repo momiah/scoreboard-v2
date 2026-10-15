@@ -139,4 +139,17 @@ describe("MatchDetails for a playoff match", () => {
     });
     expect(mockMatchCard.mock.calls.at(-1)?.[0].checkin).toBeUndefined();
   });
+
+  it("has no chat tab on a playoff match (its chat lives on the tie)", () => {
+    const view = renderWith(match({ matchStatus: "accepted" }));
+    expect(view.queryByTestId("match-details-tab-Chat Room")).toBeNull();
+    const regular = renderWith(
+      match({
+        matchStatus: "accepted",
+        playoffTieId: null,
+        ladderMatchId: "m9",
+      }),
+    );
+    expect(regular.getByTestId("match-details-tab-Chat Room")).toBeTruthy();
+  });
 });

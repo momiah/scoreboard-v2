@@ -45,6 +45,11 @@ jest.mock("../../../hooks/usePlayoffMatchScheduling", () => ({
     respond: jest.fn(),
   }),
 }));
+const mockChatRoom = jest.fn((_props: Record<string, unknown>) => null);
+jest.mock(
+  "../../../components/ChatRoom/ChatRoom",
+  () => (props: Record<string, unknown>) => mockChatRoom(props),
+);
 const mockHomeCourt = jest.fn();
 jest.mock("../../../hooks/useLadderHomeCourt", () => ({
   useLadderHomeCourt: () => mockHomeCourt(),
@@ -408,5 +413,19 @@ describe("PlayoffMatchDetails", () => {
     expect(getByTestId("playoff-match-outcome")).toHaveTextContent(
       /Winner.*U1.*Through to the Final on a walkover/,
     );
+  });
+
+  it("gives the tie's players one chat in the tie lobby, and spectators none", () => {
+    const player = renderScreen({ userId: "u1", tie: baseTie() });
+    expect(player.getByTestId("playoff-match-tab-Tie Lobby")).toBeTruthy();
+    fireEvent.press(player.getByTestId("playoff-match-tab-Chat Room"));
+    expect(mockChatRoom.mock.calls.at(-1)?.[0]).toMatchObject({
+      competitionId: "L1-r1-s0",
+      chatPath: ["ladders", "L1", "playoffTies", "r1-s0", "chat"],
+      competitionParticipants: [{ userId: "u1" }, { userId: "u2" }],
+    });
+
+    const spectator = renderScreen({ userId: "stranger", tie: baseTie() });
+    expect(spectator.queryByTestId("playoff-match-tab-Chat Room")).toBeNull();
   });
 });
