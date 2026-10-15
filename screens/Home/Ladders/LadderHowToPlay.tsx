@@ -39,7 +39,11 @@ import { formatCurrency } from "../../../helpers/formatCurrency";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-type HowToPlayParams = { ladderId: string; maxPlayers?: number };
+type HowToPlayParams = {
+  ladderId: string;
+  maxPlayers?: number;
+  playoffs?: boolean;
+};
 
 interface OnboardingPage {
   key: string;
@@ -49,7 +53,7 @@ interface OnboardingPage {
 const LadderHowToPlay: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route = useRoute<RouteProp<Record<string, HowToPlayParams>, string>>();
-  const { ladderId, maxPlayers: maxPlayersParam } = route.params;
+  const { ladderId, maxPlayers: maxPlayersParam, playoffs } = route.params;
   const { ladderById } = useContext(LadderContext);
 
   const maxPlayers =
@@ -64,13 +68,96 @@ const LadderHowToPlay: React.FC = () => {
   const ladder =
     ladderById && ladderById.ladderId === ladderId ? ladderById : null;
 
-  const { mode, openJoin } = useLadderJoin(ladder, () =>
-    setJoinVisible(true),
-  );
+  const { mode, openJoin } = useLadderJoin(ladder, () => setJoinVisible(true));
 
   const goToRules = () => navigation.navigate("LadderRules", { ladderId });
 
-  const pages: OnboardingPage[] = useMemo(
+  const finalsPage: OnboardingPage = {
+    key: "finals",
+    render: () => (
+      <ImageMapper
+        images={ladders}
+        imageSize={72}
+        title="Winning the Final"
+        description="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
+      >
+        <ReadRulesButton onPress={goToRules}>
+          <AntDesign name="book" size={15} color="white" />
+          <ButtonText>Read the full rules</ButtonText>
+        </ReadRulesButton>
+        <FootNote>
+          You can also open the rules anytime from the ladder page&apos;s menu.
+        </FootNote>
+      </ImageMapper>
+    ),
+  };
+
+  const playoffPages: OnboardingPage[] = [
+    {
+      key: "playoffs-intro",
+      render: () => (
+        <PageBody
+          icon="trophy-outline"
+          title="Welcome to the Playoffs"
+          body={`${ladder?.playoffBracketSize ? `The top ${ladder.playoffBracketSize} ` : "The top "}players made the cut. Every playoff game is a knockout: win and you move on, lose and your season is over.`}
+        />
+      ),
+    },
+    {
+      key: "playoffs-home-away",
+      render: () => (
+        <PageBody
+          icon="home-outline"
+          title="Home and Away"
+          body="Each playoff game is two matches, one at each player's home court. The lower-ranked player hosts match 1. The higher-ranked player hosts match 2 and any deciding game, a reward for a stronger season."
+        />
+      ),
+    },
+    {
+      key: "playoffs-arrange",
+      render: () => (
+        <PageBody
+          icon="calendar-outline"
+          title="Arrange Your Home Match"
+          body="The host picks the court and time and sends it to their opponent, who can accept or decline it once. Match 1 is always played before match 2. When match 1 finishes, either of you can offer to play match 2 there and then."
+        />
+      ),
+    },
+    {
+      key: "playoffs-aggregate",
+      render: () => (
+        <PageBody
+          icon="swap-horizontal-outline"
+          title="Win on Aggregate"
+          body="The player who wins more games across both matches goes through. If it's level, one deciding game is played straight after match 2, at the same court."
+        />
+      ),
+    },
+    {
+      key: "playoffs-deadline",
+      render: () => (
+        <PageBody
+          icon="hourglass-outline"
+          title="Ten Days to Finish"
+          body="Both matches must be played within 10 days. If time runs out, the game is decided on games won, then points, then ladder rank. If nothing was played, neither player goes through and their next opponent gets a walkover."
+        />
+      ),
+    },
+    {
+      key: "playoffs-prizes",
+      render: () => (
+        <PlayoffsPage
+          maxPlayers={maxPlayers}
+          registeredCount={ladder?.participantCount ?? 0}
+          entryFee={ladder?.entryFee ?? 0}
+          currencyType={ladder?.currencyType ?? "GBP"}
+        />
+      ),
+    },
+    finalsPage,
+  ];
+
+  const regularPages: OnboardingPage[] = useMemo(
     () => [
       {
         key: "intro",
@@ -157,26 +244,7 @@ const LadderHowToPlay: React.FC = () => {
           />
         ),
       },
-      {
-        key: "finals",
-        render: () => (
-          <ImageMapper
-            images={ladders}
-            imageSize={72}
-            title="Winning the Final"
-            description="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
-          >
-            <ReadRulesButton onPress={goToRules}>
-              <AntDesign name="book" size={15} color="white" />
-              <ButtonText>Read the full rules</ButtonText>
-            </ReadRulesButton>
-            <FootNote>
-              You can also open the rules anytime from the ladder page&apos;s
-              menu.
-            </FootNote>
-          </ImageMapper>
-        ),
-      },
+      finalsPage,
     ],
     [
       maxPlayers,
@@ -186,6 +254,7 @@ const LadderHowToPlay: React.FC = () => {
       ladder?.currencyType,
     ],
   );
+  const pages = playoffs ? playoffPages : regularPages;
 
   const lastIndex = pages.length - 1;
 
@@ -381,7 +450,7 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
       </CenteredHeader>
       <PageText>
         When the season ends, the top players advance to a single-elimination
-        knockout. Each round must be played within 1 week to progress to the
+        knockout. Each round must be played within 10 days to progress to the
         next round.
       </PageText>
 

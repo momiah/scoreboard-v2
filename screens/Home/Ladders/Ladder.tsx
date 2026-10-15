@@ -16,7 +16,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_TYPE } from "@shared/types";
 import type { ScoreboardProfile, TeamStats } from "@shared/types";
 
-import Tag from "../../../components/Tag";
+import { LADDER_STATUS } from "@shared";
+import HowToPlayButton from "../../../components/ladder/HowToPlayButton";
 import LadderSummary from "../../../components/Summary/LadderSummary";
 import LoadingOverlay from "../../../components/LoadingOverlay";
 import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
@@ -172,20 +173,16 @@ const Ladder: React.FC = () => {
               </OverlayTop>
 
               <OverlayBottom>
-                <Tag
-                  name="How to Play"
-                  color="#00A2FF"
-                  iconColor="white"
-                  iconSize={15}
-                  icon="book-outline"
-                  iconPosition="right"
+                <HowToPlayButton
+                  ladderId={ladderId}
+                  isPlayoffs={ladderById.status === LADDER_STATUS.PLAYOFFS}
                   onPress={() =>
                     navigation.navigate("LadderHowToPlay", {
                       ladderId,
                       maxPlayers: ladderById.maxPlayers,
+                      playoffs: ladderById.status === LADDER_STATUS.PLAYOFFS,
                     })
                   }
-                  bold
                 />
               </OverlayBottom>
             </LadderImage>
