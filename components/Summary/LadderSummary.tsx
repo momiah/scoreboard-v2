@@ -544,6 +544,7 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
+  marginBottom: 24,
 });
 
 const PrizePotValue = styled.Text({
