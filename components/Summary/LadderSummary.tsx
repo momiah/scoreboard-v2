@@ -319,6 +319,8 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         )}
       </PrizePotCard>
 
+      <LadderStatsRow ladder={ladder} />
+
       <PrizeDistribution
         prizePool={prizePool.xp}
         cashPool={isPaid ? prizePool.cash : undefined}
@@ -368,8 +370,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           ))
         )}
       </TableContainer>
-
-      <LadderStatsRow ladder={ladder} />
 
       {isDoubles
         ? userTeamRow && (
@@ -544,7 +544,7 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
-  marginBottom: 24,
+  marginBottom: 8,
 });
 
 const PrizePotValue = styled.Text({
