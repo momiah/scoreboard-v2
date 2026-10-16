@@ -42,7 +42,7 @@ onFlowStart:
     id: "playoff-match-format"
 - assertVisible: "Best of 7"
 - assertVisible:
-    id: "playoff-match-next"
+    id: "playoff-prize-banner"
 - assertNotVisible:
     id: "add-game-score-input"
 - assertNotVisible:

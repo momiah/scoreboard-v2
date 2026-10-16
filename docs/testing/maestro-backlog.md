@@ -37,9 +37,8 @@ accepted match, approved game, registration closed) for singles and doubles.
 
 1. `leave-ladder-singles`: Ladder Menu → Leave Ladder → confirm → back on the
    ladder, no longer in the standings; the Join button is back.
-2. `leave-ladder-doubles`: the confirm mentions the partner; after leaving the
-   partner has "{name} took your team out of {ladder}." and the team still
-   exists.
+2. `leave-ladder-doubles`: after leaving, the team still exists and is out of
+   this ladder only.
 3. `leave-ladder-blocked-*`: each block shows its message and nothing changes
    (registration closed, played a game, open match).
 
@@ -179,8 +178,10 @@ these flows cover what a player and a spectator see.
 **Seed.** `maestro/seeds/seedLadderPlayoffMatches.js` (harness buttons
 `maestro-seed-playoff-match-<stage>`). It seeds "Maestro Playoffs 256", a
 16-player bracket (best of 7) a week into round 1, with 3 days left. The test
-user (ranked #1) hosts match 2 and any decider; their lower-ranked opponent hosts
-match 1. The user's own game is set by `stage`: `pending` (nothing arranged),
+user (ranked #1) hosts match 2; their lower-ranked opponent hosts and arranges
+match 1 first. `seedLadderPlayoffMatchesFreeAndPaid` seeds the same playoffs on a
+free ladder ("Maestro Playoffs 256") and a paid one ("Maestro Playoffs 256
+(Paid)", £20 entry) to compare the prize banner. The user's own game is set by `stage`: `pending` (nothing arranged),
 `leg1Posted`, `leg1Complete`, `level` or `settled`. The other round-1 games are
 always the same, so spectator flows can rely on them:
 
@@ -209,15 +210,15 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 **Opening a game**
 
 1. `ladder-playoffs-tap-game-opens-match`: tap a bracket game →
-   `playoff-match-details` titled "Round of 16 · Game N", `playoff-match-next`,
-   `playoff-match-aggregate` (with "#rank · name") and both info boxes.
+   `playoff-match-details` titled "Round of 16 · Game N", `playoff-prize-banner`
+   above the tabs, `playoff-match-aggregate` and both info boxes.
 2. `ladder-playoffs-tie-layout-spectator`: open each of the seeded spectator
-   games in turn. Every screen has the same layout: the "What's next" card,
+   games in turn. Every screen has the same layout: the prize banner, the tabs,
    then the aggregate, then `playoff-match-format` and `playoff-match-deadline`
    ("N days and N hours" / "to complete both matches"), then match 1 and
    match 2 headed "Match N" with `playoff-match-leg{N}-host` (house icon and
    the host's name), and no "Best of" tag on match 1 and 2's cards. Nothing is tappable except match
-   cards and the What's next card: no `playoff-match-leg*-arrange`. The Chat
+   cards: no `playoff-match-leg*-arrange`. The Chat
    Room tab opens the blurred "Only the players in this game can see this
    chat" notice.
 
@@ -226,10 +227,11 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 3. `ladder-playoffs-hosting-by-rank` (`pending`): match 1's heading names the
    opponent (`playoff-match-leg1-host`) with "Waiting for your opponent to
    arrange their home match"; match 2 names the user with
-   `playoff-match-leg2-arrange`. No coin anywhere.
-4. `ladder-playoffs-whats-next`: `playoff-match-next` reads "The winner plays
-   the winner of Game N in the Quarter-Final" and opens that game; on the
-   **settled** game's neighbour it names the settled winner instead.
+   "Your opponent arranges match 1 first" on match 2 until the opponent arranges
+   match 1 (mocked), then `playoff-match-leg2-arrange` for any date. No coin.
+4. `ladder-playoffs-prize-banner` (free and paid): `playoff-prize-secured` and
+   `playoff-prize-next` show CP only on the free ladder and cash plus CP on the
+   paid one, matching the prize table for that round.
 5. `ladder-playoffs-tie-chat` (`pending`): the Chat Room tab → send a message →
    it shows in the opponent's Chats list (mocked) and opens the tie on Chat Room.
 6. `ladder-playoffs-match-has-no-chat`: a playoff match's screen has no Chat
@@ -243,14 +245,14 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
    `add-ladder-match-fee`), and the date picker note "Please select a date
    within the 10 days for this playoff game (by …)". Change the court, pick a
    date, accept the terms → "Send to opponent" → match 2's card reads
-   "Awaiting opponent's confirmation". Picking a time before match 1 (seed
-   match 1 first) shows "Match 2 must be played after match 1 (…)".
+   "Awaiting opponent's confirmation". Arranging it before match 1's date is
+   allowed once match 1 is arranged.
 8. `ladder-playoffs-arrange-without-home-court` (`noHomeCourt`): the modal opens
    on "Select Court"; any court can be chosen and sent.
 9. `ladder-playoffs-play-match-two-here` (`leg1Complete`): open match 1 →
    `play-match-two-accept` "Play match 2 here" → confirm → match 2 posted at
    match 1's court; as the opponent (mocked accept) the user sees
-   `play-match-two-ready` → "Open match 2" with both players checked in.
+   match 2 accepted with both players checked in, and the banner gone.
    Declining it leaves the one decline unused.
 10. `ladder-playoffs-confirm-match` (`leg1Posted`): the card reads "Awaiting your
     confirmation"; the arranged notification ("… Open it to accept or

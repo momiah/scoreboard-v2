@@ -108,6 +108,7 @@ const seedLeg = async (
   leg: 1 | 2 | 3,
   winners: string[],
   status: string = LADDER_MATCH_STATUS.COMPLETED,
+  extra: Record<string, unknown> = {},
 ) => {
   const [a, b] = sidesOf(tie);
   const matchId = `${tie.tieId}-leg${leg}`;
@@ -129,6 +130,7 @@ const seedLeg = async (
     games: winners.map((winner, i) =>
       approvedGame(matchId, i + 1, winner, winner === a ? b : a),
     ),
+    ...extra,
   });
 };
 
@@ -233,6 +235,27 @@ describe("resolveLadderPlayoffTie", () => {
     });
     expect((await readTie(tie.tieId)).deciderRequired).toBe(true);
     expect(await notificationIds(b)).toContain(`playoff-decider-${tie.tieId}-${LADDER}-${b}`);
+  });
+
+  it("puts the decider at the court of whichever match was played last", async () => {
+    const ties = await seedBracket(4);
+    const tie = ties[0];
+    const [a, b] = sidesOf(tie);
+    await seedUsers([a, b]);
+    const otherCourt = { ...court, courtId: "c-late", courtName: "Played last" };
+    await seedLeg(tie, 1, [a, a, a], LADDER_MATCH_STATUS.COMPLETED, {
+      court: otherCourt,
+      completedAt: new Date(start.getTime() + 2 * DAY_MS),
+    });
+    await seedLeg(tie, 2, [b, b, b], LADDER_MATCH_STATUS.COMPLETED, {
+      completedAt: new Date(start.getTime() + DAY_MS),
+    });
+
+    await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: tie.tieId, now: start });
+    const [decider] = (
+      await db.collection(`ladders/${LADDER}/ladderMatches`).where("playoffLeg", "==", 3).get()
+    ).docs.map((d) => d.data());
+    expect(decider.court).toEqual(otherCourt);
   });
 
   it("lets the decider settle a level tie", async () => {

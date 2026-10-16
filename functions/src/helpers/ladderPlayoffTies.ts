@@ -85,9 +85,10 @@ export interface LadderPlayoffTieResolution {
 /**
  * Settles a scheduled tie inside a transaction. When both matches are complete
  * the winner goes through; if the aggregate is level a one-game decider is
- * created at match 2's court (already checked in). With `atDeadline`, a tie
- * past its deadline is decided on what was played (void if nothing). Returns
- * null when there is nothing to do, so re-runs are harmless.
+ * created at the court of whichever match was played last (already checked
+ * in). With `atDeadline`, a tie past its deadline is decided on what was
+ * played (void if nothing). Returns null when there is nothing to do, so
+ * re-runs are harmless.
  */
 export const resolveLadderPlayoffTie = async ({
   db,
@@ -142,7 +143,12 @@ export const resolveLadderPlayoffTie = async ({
       return settle(decision.winner, LADDER_PLAYOFF_TIE_OUTCOME.PLAYED);
     }
 
-    const secondMatch = legs.find((leg) => leg.playoffLeg === 2);
+    const secondMatch = legs
+      .filter((leg) => leg.playoffLeg === 1 || leg.playoffLeg === 2)
+      .sort(
+        (a, b) =>
+          (toDate(b.completedAt)?.getTime() ?? 0) - (toDate(a.completedAt)?.getTime() ?? 0),
+      )[0];
     const hasDecider = legs.some((leg) => leg.playoffLeg === 3);
     if (!decision.deciderRequired || hasDecider || !secondMatch) {
       return null;

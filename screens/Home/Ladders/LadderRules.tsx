@@ -1,7 +1,14 @@
-import React from "react";
+import React, { useContext } from "react";
 import { ScrollView, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { NavigationProp, ParamListBase } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type {
+  NavigationProp,
+  ParamListBase,
+  RouteProp,
+} from "@react-navigation/native";
+
+import { LadderContext } from "../../../context/LadderContext";
+import { ladderEntrantNoun } from "../../../helpers/ladderEntrantNoun";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -10,7 +17,7 @@ interface RuleSection {
   body: string;
 }
 
-const RULES: RuleSection[] = [
+const rulesFor = (noun: "player" | "team"): RuleSection[] => [
   {
     title: "How ladders work",
     body: "Players are ranked on a ladder. Challenge others to climb, and hold your position by defending against challengers.",
@@ -37,11 +44,11 @@ const RULES: RuleSection[] = [
   },
   {
     title: "Playoffs",
-    body: "When the season ends, the top-ranked players enter the playoff bracket to decide the champion.",
+    body: `When the season ends, the top-ranked ${noun}s enter the playoff bracket to decide the champion.`,
   },
   {
     title: "Playoff matches",
-    body: "Each playoff game is two matches, one at each player's home court, and both must be played within 10 days. The lower-ranked player hosts match 1 and the higher-ranked player hosts match 2, which is always played second. The player who wins more games across both matches goes through. If it's level, one deciding game is played at the second match's court, straight after it, with both players already checked in. If you can't stay for it, either player can reschedule it before the deadline. Once match 1 is finished, either player can offer to play match 2 there and then; the other player can accept or decline.",
+    body: `Each playoff game is two matches, one at each ${noun}'s home court, and both must be played within 10 days. The lower-ranked ${noun} arranges their home match first. Once it's arranged, the higher-ranked ${noun} can arrange theirs for any date before the deadline, even an earlier one, so you can work around each other. The ${noun} that wins more games across both matches goes through. If it's level, one deciding game is played at the court of whichever match was played last, straight after it, with everyone already checked in. If you can't stay for it, either side can reschedule it before the deadline. Once match 1 is finished, either side can offer to play match 2 at the same court there and then; the other side can accept or decline.`,
   },
   {
     title: "Prizes",
@@ -51,11 +58,22 @@ const RULES: RuleSection[] = [
 
 const LadderRules: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const route =
+    useRoute<RouteProp<Record<string, { ladderId?: string }>, string>>();
+  const { ladderById } = useContext(LadderContext);
+  const ladderType =
+    ladderById && ladderById.ladderId === route.params?.ladderId
+      ? ladderById.ladderType
+      : undefined;
+  const rules = rulesFor(ladderEntrantNoun(ladderType));
 
   return (
     <Screen>
       <TopBar>
-        <BackButton onPress={() => navigation.goBack()} testID="ladder-rules-back">
+        <BackButton
+          onPress={() => navigation.goBack()}
+          testID="ladder-rules-back"
+        >
           <Ionicons name="chevron-back" size={26} color="#ffffff" />
         </BackButton>
         <TopBarTitle>Ladder Rules</TopBarTitle>
@@ -63,7 +81,7 @@ const LadderRules: React.FC = () => {
       </TopBar>
 
       <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
-        {RULES.map((rule) => (
+        {rules.map((rule) => (
           <RuleCard key={rule.title}>
             <RuleTitle>{rule.title}</RuleTitle>
             <RuleBody>{rule.body}</RuleBody>

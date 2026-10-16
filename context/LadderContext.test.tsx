@@ -1161,7 +1161,7 @@ describe("leaveLadder", () => {
     expect(batch.commit).toHaveBeenCalledTimes(1);
   });
 
-  it("takes a doubles team out of this ladder only and names the partner to tell", async () => {
+  it("takes a doubles team out of this ladder only", async () => {
     const batch = freshBatch();
     docs({
       [LADDER_PATH]: { status: "registrationOpen", ladderType: "Doubles" },
@@ -1176,7 +1176,7 @@ describe("leaveLadder", () => {
     matchesSnap([]);
 
     const outcome = await result.current.leaveLadder(LADDER, "me");
-    expect(outcome).toMatchObject({ success: true, notifyUserIds: ["pt"] });
+    expect(outcome).toEqual({ success: true });
     expect(deleted(batch)).toEqual([
       `${LADDER_PATH}/ladderMembers/me`,
       `${LADDER_PATH}/ladderMembers/pt`,
@@ -1275,25 +1275,32 @@ describe("playoff match order and play-now offers", () => {
     ...extra,
   });
 
-  it("refuses to arrange match 2 before match 1", async () => {
-    const { store } = makeStore({ [legPath(1)]: leg(1) });
-    const result = await renderLadder();
-    const outcome = await result.current.arrangePlayoffMatch({
-      ladder: { ladderId: LADDER, ladderType: "Singles" } as never,
-      tie: tie as never,
-      leg: 2,
-      host: "team1",
-      input: {
-        court: court as never,
-        matchDate: "19-10-2030",
-        matchTime: { start: "18:00" },
-        currencyType: "GBP",
-        shuttleType: "Feather",
-      },
-      userId: "hi",
+  it("arranges match 2 only once match 1 is arranged, on any date", async () => {
+    const arrangeTwo = (result: Awaited<ReturnType<typeof renderLadder>>) =>
+      result.current.arrangePlayoffMatch({
+        ladder: { ladderId: LADDER, ladderType: "Singles" } as never,
+        tie: tie as never,
+        leg: 2,
+        host: "team1",
+        input: {
+          court: court as never,
+          matchDate: "19-10-2030",
+          matchTime: { start: "18:00" },
+          currencyType: "GBP",
+          shuttleType: "Feather",
+        },
+        userId: "hi",
+      });
+
+    makeStore({});
+    expect(await arrangeTwo(await renderLadder())).toEqual({
+      success: false,
+      reason: "order",
     });
-    expect(outcome).toEqual({ success: false, reason: "order" });
-    expect(store[legPath(2)]).toBeUndefined();
+
+    const { store } = makeStore({ [legPath(1)]: leg(1) });
+    expect(await arrangeTwo(await renderLadder())).toEqual({ success: true });
+    expect(store[legPath(2)]).toMatchObject({ matchDate: "19-10-2030" });
   });
 
   it("offers match 2 at match 1's court and carries the check-in over on accept", async () => {

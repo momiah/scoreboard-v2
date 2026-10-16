@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Tag from "../Tag";
 
-const GOLD = "#C99A06";
+const GOLD = "#9C7200";
 const seenKey = (ladderId: string) => `playoff-guide-seen:${ladderId}`;
 
 interface HowToPlayButtonProps {
@@ -90,13 +90,13 @@ const HowToPlayButton: React.FC<HowToPlayButtonProps> = ({
         borderRadius: 8,
         shadowColor: "#FFD54A",
         shadowOffset: { width: 0, height: 0 },
-        shadowRadius: 10,
-        shadowOpacity: seen ? 0 : 0.9,
+        shadowRadius: 6,
+        shadowOpacity: seen ? 0 : 0.6,
         transform: [
           {
             scale: pulse.interpolate({
               inputRange: [0, 1],
-              outputRange: [1, 1.08],
+              outputRange: [1, 1.03],
             }),
           },
         ],

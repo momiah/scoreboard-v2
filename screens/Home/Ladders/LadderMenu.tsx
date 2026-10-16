@@ -9,11 +9,10 @@ import type {
   RouteProp,
 } from "@react-navigation/native";
 
-import { LADDER_TYPE, notificationSchema, notificationTypes } from "@shared";
+import { LADDER_TYPE } from "@shared";
 import { PopupContext } from "../../../context/PopupContext";
 import { LadderContext } from "../../../context/LadderContext";
 import { UserContext } from "../../../context/UserContext";
-import { formatDisplayName } from "../../../helpers/formatDisplayName";
 import type { LeaveLadderOutcome } from "../../../context/types/LadderContextType";
 
 const LEAVE_BLOCKED: Record<
@@ -69,7 +68,7 @@ const LadderMenu: React.FC = () => {
   const { ladderId } = route.params;
   const { showBottomToast } = useContext(PopupContext);
   const { ladderById, leaveLadder } = useContext(LadderContext);
-  const { currentUser, sendNotification } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
   const isDoubles = ladderById?.ladderType === LADDER_TYPE.DOUBLES;
 
   const leave = async () => {
@@ -79,21 +78,6 @@ const LadderMenu: React.FC = () => {
       showBottomToast(LEAVE_BLOCKED[outcome.reason ?? "error"], "error");
       return;
     }
-    await Promise.all(
-      (outcome.notifyUserIds ?? []).map((recipientId) =>
-        sendNotification({
-          ...notificationSchema,
-          createdAt: new Date(),
-          recipientId,
-          senderId: currentUser.userId,
-          message: `${formatDisplayName(currentUser)} took your team out of ${ladderById?.name ?? "the ladder"}.`,
-          type: notificationTypes.INFORMATION.LADDER.TYPE,
-          data: { ladderId, tab: "Summary" },
-        }).catch((error: unknown) =>
-          console.error("Error sending leave notification:", error),
-        ),
-      ),
-    );
     showBottomToast("You've left the ladder", "success");
     navigation.goBack();
   };
@@ -102,7 +86,7 @@ const LadderMenu: React.FC = () => {
     Alert.alert(
       "Leave Ladder",
       isDoubles
-        ? "Take your team out of this ladder? Your partner will be told, and you'll need to rejoin to take part again. Entry fees are refunded as set out in the Terms."
+        ? "Take your team out of this ladder? You'll need to rejoin to take part again. Entry fees are refunded as set out in the Terms."
         : "Leave this ladder? You'll be removed from the standings and need to rejoin to take part again. Entry fees are refunded as set out in the Terms.",
       [
         { text: "Cancel", style: "cancel" },

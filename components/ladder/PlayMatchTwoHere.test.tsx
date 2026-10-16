@@ -2,10 +2,6 @@ import React from "react";
 import { Alert } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 
-const mockNavigate = jest.fn();
-jest.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({ navigate: mockNavigate }),
-}));
 const mockOfferHere = jest.fn();
 const mockRespond = jest.fn();
 jest.mock("../../hooks/usePlayoffMatchScheduling", () => ({
@@ -96,7 +92,7 @@ describe("PlayMatchTwoHere", () => {
     ).toBeNull();
   });
 
-  it("lets the opponent answer the offer, then links both players to match 2", () => {
+  it("lets the opponent answer the offer, and goes once it's accepted", () => {
     const answer = render(
       <PlayMatchTwoHere
         ladderId="L1"
@@ -110,22 +106,36 @@ describe("PlayMatchTwoHere", () => {
         "Your opponent wants to play match 2 here now. Are you up for it?",
       ),
     ).toBeTruthy();
+    expect(
+      render(
+        <PlayMatchTwoHere
+          ladderId="L1"
+          firstMatch={first()}
+          secondMatch={second({ matchStatus: "accepted" })}
+          userId="lo"
+        />,
+      ).toJSON(),
+    ).toBeNull();
+  });
 
-    const ready = render(
+  it("asks before offering, in short", () => {
+    const alert = jest
+      .spyOn(Alert, "alert")
+      .mockImplementation(() => undefined);
+    const view = render(
       <PlayMatchTwoHere
         ladderId="L1"
         firstMatch={first()}
-        secondMatch={second({ matchStatus: "accepted" })}
-        userId="lo"
+        secondMatch={null}
+        userId="hi"
       />,
     );
-    fireEvent.press(ready.getByTestId("play-match-two-ready-accept"));
-    expect(mockNavigate).toHaveBeenCalledWith(
-      "MatchDetails",
-      expect.objectContaining({
-        ladderId: "L1",
-        matchId: "r1-s0-leg2",
-      }),
+    expect(view.queryByText(/opponent needs to accept/)).toBeNull();
+    fireEvent.press(view.getByTestId("play-match-two-accept"));
+    expect(alert).toHaveBeenCalledWith(
+      "Play your 2nd match in this court",
+      "Your opponent must accept to continue. You do not need to re-check in.",
+      expect.any(Array),
     );
   });
 });

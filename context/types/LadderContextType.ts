@@ -68,7 +68,6 @@ export interface DisbandTeamOutcome {
 export interface LeaveLadderOutcome {
   success: boolean;
   reason?: "registration_closed" | "played" | "open_match" | "not_joined" | "error";
-  notifyUserIds?: string[];
 }
 
 export interface TeamLadderActivity {
@@ -124,7 +123,7 @@ export interface PlayoffMatchOutcome {
 
 export interface LadderMatchChangeOutcome {
   success: boolean;
-  reason?: "not_allowed" | "invalid_time" | "order" | "error";
+  reason?: "not_allowed" | "invalid_time" | "error";
   notifyUserIds?: string[];
   expiresAt?: Date;
 }

@@ -36,6 +36,7 @@ import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
 import { useLadderJoin } from "../../../hooks/useLadderJoin";
 import { formatCurrency } from "../../../helpers/formatCurrency";
+import { ladderEntrantNoun } from "../../../helpers/ladderEntrantNoun";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -67,6 +68,7 @@ const LadderHowToPlay: React.FC = () => {
 
   const ladder =
     ladderById && ladderById.ladderId === ladderId ? ladderById : null;
+  const noun = ladderEntrantNoun(ladder?.ladderType);
 
   const { mode, openJoin } = useLadderJoin(ladder, () => setJoinVisible(true));
 
@@ -99,7 +101,7 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="trophy-outline"
           title="Welcome to the Playoffs"
-          body={`${ladder?.playoffBracketSize ? `The top ${ladder.playoffBracketSize} ` : "The top "}players made the cut. Every playoff game is a knockout: win and you move on, lose and your season is over.`}
+          body={`${ladder?.playoffBracketSize ? `The top ${ladder.playoffBracketSize} ` : "The top "}${noun}s made the cut. Every playoff game is a knockout: win and you move on, lose and your season is over.`}
         />
       ),
     },
@@ -109,7 +111,7 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="home-outline"
           title="Home and Away"
-          body="Each playoff game is two matches, one at each player's home court. The lower-ranked player hosts match 1. The higher-ranked player hosts match 2 and any deciding game, a reward for a stronger season."
+          body={`Each playoff game is two matches, one at each ${noun}'s home court. The lower-ranked ${noun} hosts match 1 and arranges it first. The higher-ranked ${noun} hosts match 2, a reward for a stronger season.`}
         />
       ),
     },
@@ -119,7 +121,7 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="calendar-outline"
           title="Arrange Your Home Match"
-          body="The host picks the court and time and sends it to their opponent, who can accept or decline it once. Match 1 is always played before match 2. When match 1 finishes, either of you can offer to play match 2 there and then."
+          body="The host picks the court and time and sends it to their opponent, who can accept or decline it once. Once match 1 is arranged, match 2 can be arranged for any date, even before match 1. When match 1 finishes, either side can offer to play match 2 there and then."
         />
       ),
     },
@@ -129,7 +131,7 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="swap-horizontal-outline"
           title="Win on Aggregate"
-          body="The player who wins more games across both matches goes through. If it's level, one deciding game is played straight after match 2, at the same court."
+          body={`The ${noun} that wins more games across both matches goes through. If it's level, one deciding game is played straight after whichever match was played last, at the same court.`}
         />
       ),
     },
@@ -139,7 +141,7 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="hourglass-outline"
           title="Ten Days to Finish"
-          body="Both matches must be played within 10 days. If time runs out, the game is decided on games won, then points, then ladder rank. If nothing was played, neither player goes through and their next opponent gets a walkover."
+          body="Both matches must be played within 10 days. If time runs out, the game is decided on games won, then points, then ladder rank. If nothing was played, neither side goes through and their next opponent gets a walkover."
         />
       ),
     },

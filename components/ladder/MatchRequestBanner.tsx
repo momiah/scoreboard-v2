@@ -5,7 +5,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 
 interface MatchRequestBannerProps {
   testID: string;
-  message: string;
+  message?: string;
   awaiting: boolean;
   destructive?: boolean;
   onDecline?: () => Promise<void>;
@@ -47,10 +47,12 @@ const MatchRequestBanner: React.FC<MatchRequestBannerProps> = ({
 
   return (
     <Banner testID={`${testID}-request`}>
-      <MessageRow>
-        <Ionicons name="alert-circle-outline" size={16} color="#9fb8c8" />
-        <BannerText>{message}</BannerText>
-      </MessageRow>
+      {message ? (
+        <MessageRow>
+          <Ionicons name="alert-circle-outline" size={16} color="#9fb8c8" />
+          <BannerText>{message}</BannerText>
+        </MessageRow>
+      ) : null}
       <Actions>
         {onDecline ? (
           <DeclineButton

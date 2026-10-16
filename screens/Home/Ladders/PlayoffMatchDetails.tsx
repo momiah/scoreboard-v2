@@ -34,6 +34,9 @@ import MatchCard from "../../../components/ladder/MatchCard";
 import LobbyTabs from "../../../components/ladder/LobbyTabs";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import MatchScoreBar from "../../../components/ladder/MatchScoreBar";
+import PlayoffPrizeBanner from "../../../components/ladder/PlayoffPrizeBanner";
+import { getLadderTiePrizes } from "../../../helpers/ladderPlayoffPrizes";
+import { ladderEntrantNoun } from "../../../helpers/ladderEntrantNoun";
 import ActionPlaceholder from "../../../components/ActionPlaceholder";
 import PlayoffMatchScheduleModal from "../../../components/Modals/PlayoffMatchScheduleModal";
 import {
@@ -44,7 +47,6 @@ import { useLadderHomeCourt } from "../../../hooks/useLadderHomeCourt";
 import { usePlayoffMatchScheduling } from "../../../hooks/usePlayoffMatchScheduling";
 import { toMoment } from "../../../helpers/ladderPhases";
 import { formatTimeLeft } from "../../../helpers/ladderMatchTime";
-import { formatMatchSlot } from "../../../hooks/useLadderMatchChanges";
 import { isLadderMatchCalledOff } from "../../../helpers/ladderMatchCancellation";
 
 type TieTab = "Chat Room" | "Tie Lobby";
@@ -165,7 +167,11 @@ const PlayoffMatchDetails: React.FC = () => {
           <View style={{ width: 24 }} />
         </TopBar>
         <Body>
-          <SkeletonWrapper show height={48} width="100%" radius={12} />
+          <SkeletonWrapper show height={92} width="100%" radius={12} />
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <SkeletonWrapper show height={40} width={110} radius={20} />
+            <SkeletonWrapper show height={40} width={110} radius={20} />
+          </View>
           <SkeletonWrapper show height={84} width="100%" radius={12} />
           <View style={{ flexDirection: "row", gap: 12 }}>
             <View style={{ flex: 1 }}>
@@ -203,11 +209,8 @@ const PlayoffMatchDetails: React.FC = () => {
   const team2Name = teamName(tie.team2);
   const nameOf = (side: LadderPlayoffTieSide) =>
     side === "team1" ? team1Name : team2Name;
-  const rankedName = (side: LadderPlayoffTieSide) => {
-    const rank = (side === "team1" ? tie.side1 : tie.side2)?.rank;
-    return rank ? `#${rank} · ${nameOf(side)}` : nameOf(side);
-  };
   const hasBothSides = !!tie.side1 && !!tie.side2;
+  const noun = ladderEntrantNoun(ladder.ladderType);
   const deadline = tie.deadlineAt ? toMoment(tie.deadlineAt) : null;
 
   const openMatch = (match: LadderMatch) =>
@@ -252,13 +255,7 @@ const PlayoffMatchDetails: React.FC = () => {
       });
       return null;
     }
-    if (outcome.reason === "order") {
-      const other = legs.get(leg === 1 ? 2 : 1);
-      const when = other ? ` (${formatMatchSlot(other)})` : "";
-      return leg === 1
-        ? `Match 1 must be played before match 2${when}.`
-        : `Match 2 must be played after match 1${when}.`;
-    }
+    if (outcome.reason === "order") return "Match 1 has to be arranged first.";
     return outcome.reason === "exists"
       ? "This match has already been arranged."
       : "Couldn't arrange this match. Try again.";
@@ -303,7 +300,7 @@ const PlayoffMatchDetails: React.FC = () => {
             message={
               isCompleted
                 ? "Not played"
-                : "Arranged once both players are known"
+                : `Arranged once both ${noun}s are known`
             }
             icon={isCompleted ? "remove-circle-outline" : "time-outline"}
             height={110}
@@ -316,7 +313,9 @@ const PlayoffMatchDetails: React.FC = () => {
       );
     }
 
-    if (host && userSide === host) {
+    const waitsForMatchOne = leg === 2 && host && !legs.get(1);
+
+    if (host && userSide === host && !waitsForMatchOne) {
       return (
         <LegSection key={leg}>
           {label}
@@ -332,10 +331,14 @@ const PlayoffMatchDetails: React.FC = () => {
     }
 
     const waitingFor = !host
-      ? "Arranged once both players are known"
-      : userSide
-        ? "Waiting for your opponent to arrange their home match"
-        : `Waiting for ${nameOf(host)} to arrange their home match`;
+      ? `Arranged once both ${noun}s are known`
+      : waitsForMatchOne
+        ? userSide === host
+          ? "Your opponent arranges match 1 first"
+          : "Arranged once match 1 is arranged"
+        : userSide
+          ? "Waiting for your opponent to arrange their home match"
+          : `Waiting for ${nameOf(host)} to arrange their home match`;
     return (
       <LegSection key={leg}>
         {label}
@@ -352,27 +355,7 @@ const PlayoffMatchDetails: React.FC = () => {
     );
   };
 
-  const sibling = (ties ?? []).find(
-    (candidate) =>
-      candidate.round === tie.round &&
-      !candidate.isThirdPlacePlayoff &&
-      candidate.slot === (tie.slot ^ 1),
-  );
-  const nextRoundName = roundLabel(2 ** (totalRounds - tie.round));
-  const whatsNext = (() => {
-    if (isCompleted) return null;
-    if (tie.isThirdPlacePlayoff) return "The winner takes 3rd place.";
-    if (tie.round >= totalRounds)
-      return "The winner is crowned ladder champion.";
-    if (!sibling) return `The winner goes through to the ${nextRoundName}.`;
-    const siblingWinner =
-      sibling.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED && sibling.winner
-        ? teamName(sibling.winner === "team1" ? sibling.team1 : sibling.team2)
-        : null;
-    return siblingWinner
-      ? `The winner plays ${siblingWinner} in the ${nextRoundName}.`
-      : `The winner plays the winner of Game ${sibling.gameNumber} in the ${nextRoundName}.`;
-  })();
+  const prizes = getLadderTiePrizes(ladder, tie, totalRounds);
 
   const decider = legs.get(3);
   const outcome = (() => {
@@ -419,6 +402,12 @@ const PlayoffMatchDetails: React.FC = () => {
         <View style={{ width: 24 }} />
       </TopBar>
 
+      <PlayoffPrizeBanner
+        prizes={prizes}
+        currencyType={ladder.currencyType}
+        isPaid={(ladder.entryFee ?? 0) > 0}
+      />
+
       <LobbyTabs
         tabs={TIE_TABS}
         selected={selectedTab}
@@ -443,24 +432,6 @@ const PlayoffMatchDetails: React.FC = () => {
         <Scroll
           contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
         >
-          {whatsNext ? (
-            <NextCard
-              activeOpacity={0.8}
-              disabled={!sibling || isCompleted}
-              onPress={() =>
-                sibling &&
-                navigation.navigate("PlayoffMatchDetails", {
-                  ladderId,
-                  tieId: sibling.tieId,
-                })
-              }
-              testID="playoff-match-next"
-            >
-              <Ionicons name="git-merge-outline" size={20} color="#00A2FF" />
-              <NextText>{whatsNext}</NextText>
-            </NextCard>
-          ) : null}
-
           {outcome ? (
             outcome.winner ? (
               <WinnerCard testID="playoff-match-outcome">
@@ -485,8 +456,8 @@ const PlayoffMatchDetails: React.FC = () => {
 
           <MatchScoreBar
             label="Aggregate"
-            leftNames={[rankedName("team1")]}
-            rightNames={[rankedName("team2")]}
+            leftNames={[team1Name]}
+            rightNames={[team2Name]}
             leftScore={tally.team1Games}
             rightScore={tally.team2Games}
             outcome={
@@ -623,21 +594,6 @@ const InfoLabel = styled.Text({
 
 const Muted = styled.Text({
   color: "#9fb8c8",
-  fontSize: 13,
-});
-
-const NextCard = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 10,
-  padding: 14,
-  borderRadius: 12,
-  backgroundColor: "rgba(0, 162, 255, 0.08)",
-});
-
-const NextText = styled.Text({
-  flex: 1,
-  color: "#cbd5e1",
   fontSize: 13,
 });
 

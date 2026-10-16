@@ -58,7 +58,6 @@ import {
   getLadderPlayoffLegHost,
   buildLadderMatchExtension,
   canDeclineLadderPlayoffMatch,
-  isLadderPlayoffLegOrderValid,
   validateLadderMatchReschedule,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
@@ -105,7 +104,6 @@ import {
 } from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
 import { toMoment } from "../helpers/ladderPhases";
-import { getMatchStart } from "../helpers/ladderMatchTime";
 import { ladderPostingDeadline } from "../helpers/ladderDayTabs";
 import { assertGameTransition } from "../helpers/assertGameTransition";
 import {
@@ -1364,10 +1362,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               }
             : prev,
         );
-        return {
-          success: true,
-          notifyUserIds: playerIds.filter((id) => id !== userId),
-        };
+        return { success: true };
       } catch (error) {
         console.error("Error leaving ladder:", error);
         return { success: false, reason: "error" };
@@ -1458,16 +1453,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           const otherLeg = otherLegSnap.exists()
             ? (otherLegSnap.data() as LadderMatch)
             : null;
-          if (
-            !isLadderPlayoffLegOrderValid({
-              leg,
-              startMs: getMatchStart(input)?.getTime() ?? 0,
-              otherLegStartMs:
-                otherLeg && !isLadderMatchCalledOff(otherLeg)
-                  ? (getMatchStart(otherLeg)?.getTime() ?? null)
-                  : null,
-            })
-          ) {
+          if (leg === 2 && (!otherLeg || isLadderMatchCalledOff(otherLeg))) {
             return { success: false, reason: "order" } as const;
           }
           transaction.set(
@@ -2458,32 +2444,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             LADDER_MATCH_CANCEL_ACTION.REQUEST
           ) {
             return { success: false, reason: "not_allowed" } as const;
-          }
-          if (match.playoffTieId && (match.playoffLeg === 1 || match.playoffLeg === 2)) {
-            const otherLegSnap = await transaction.get(
-              doc(
-                db,
-                LADDERS_COLLECTION,
-                ladderId,
-                LADDER_MATCHES_COLLECTION,
-                `${match.playoffTieId}-leg${match.playoffLeg === 1 ? 2 : 1}`,
-              ),
-            );
-            const otherLeg = otherLegSnap.exists()
-              ? (otherLegSnap.data() as LadderMatch)
-              : null;
-            if (
-              !isLadderPlayoffLegOrderValid({
-                leg: match.playoffLeg,
-                startMs: getMatchStart({ matchDate, matchTime })?.getTime() ?? 0,
-                otherLegStartMs:
-                  otherLeg && !isLadderMatchCalledOff(otherLeg)
-                    ? (getMatchStart(otherLeg)?.getTime() ?? null)
-                    : null,
-              })
-            ) {
-              return { success: false, reason: "order" } as const;
-            }
           }
           transaction.update(matchRef, {
             rescheduleRequest: {

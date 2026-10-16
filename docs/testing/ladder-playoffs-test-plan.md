@@ -141,20 +141,20 @@ doubles teams).
 Each game in the bracket is two matches, home and away, plus one deciding game
 if the aggregate is level. Rules: games won across both matches decide it; best
 of 5 up to the Round of 32, best of 7 from the Round of 16 (3rd place included);
-the decider is best of 1 at match 2's court. The lower-ranked player (by ladder
-rank) hosts match 1; the higher-ranked player hosts match 2 and any decider, and
-match 1 is always played before match 2. Each game has 10 days, with reminders on day 3, 6 and 9. At the
+the decider is best of 1 at the court of whichever match was played last. The
+lower-ranked side (by ladder rank) hosts match 1 and arranges it first; once it's
+arranged, the higher-ranked side can arrange match 2 for any date, even earlier. Each game has 10 days, with reminders on day 3, 6 and 9. At the
 deadline: games won, then point difference, then the higher rank; nothing
 played means void, and the next-round opponent gets a walkover. Playoff games
 update the global profile only, never ladder standings.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 6.1 | Anyone opens a game with both players known | No coin toss. A "What's next" card at the top ("The winner plays the winner of Game N in the {round}", or the named opponent once that game is settled; "crowned ladder champion" for the Final) that opens that game; the aggregate shows each player's rank ("#3 · name"); match 1 is headed with the lower-ranked player's name and match 2 with the higher-ranked player's 🅹 🅼 |
+| 6.1 | Anyone opens a game with both sides known | No coin toss. Under the title, a gold prize banner: "Secured" (what reaching this round guarantees: cash and CP on a paid ladder, CP on a free one, or "No prize yet") and "Next round" (what winning raises it to, or "Champion"/"3rd place"), then the Tie Lobby / Chat Room tabs. Match 1 is headed with the lower-ranked side's name, match 2 with the higher-ranked side's; the aggregate shows plain names 🅹 🅼 |
 | 6.5 | The lower-ranked player, match 1 not arranged | The "Arrange your home match" placeholder opens the Post a Match modal titled "Arrange match 1": home court preselected (any court can be chosen), best of 7 fixed, shuttle type to choose, the court-time line, "There are no court fees in the playoffs…" instead of a fee, and "Send to opponent" 🅹 🅼 |
 | 6.6 | The higher-ranked player, match 1 not arranged | "Waiting for your opponent to arrange their home match" on match 1; their own "Arrange your home match" on match 2. Onlookers see "Waiting for X to arrange their home match"; before both players are known, both read "Arranged once both players are known" 🅹 🅼 |
-| 6.6a | Arranging out of order | Match 2 earlier than match 1 (or match 1 later than match 2) is refused inline: "Match 2 must be played after match 1 ({date})" / "Match 1 must be played before match 2 ({date})". Rescheduling refuses the same with "Playoff match 1 must be played before match 2." 🅹 |
-| 6.6b | Match 1 finished | On match 1's screen both players see "Play match 2 here now? Your opponent needs to accept." → confirm → match 2 is posted at match 1's court, starting now; the opponent is notified and sees "Your opponent wants to play match 2 here now. Are you up for it?" with Accept/Decline (the offerer sees "Waiting for your opponent to accept match 2"). Accepting carries match 1's check-in over, then both see "Match 2 is on" with "Open match 2". Declining clears it without using the one decline 🅹 🅼 |
+| 6.6a | Arranging order | Match 2's host sees "Your opponent arranges match 1 first" (others "Arranged once match 1 is arranged") until match 1 is arranged; then match 2 can be arranged for any date, even before match 1. Arranging match 2 first is refused ("Match 1 has to be arranged first.") 🅹 |
+| 6.6b | Match 1 finished | On match 1's screen both players see a "Play match 2 here" button (no sub-text) → "Play your 2nd match in this court" / "Your opponent must accept to continue. You do not need to re-check in." → match 2 is posted at match 1's court, starting now; the opponent sees "Your opponent wants to play match 2 here now. Are you up for it?" with Accept/Decline. Accepting carries match 1's check-in over; declining doesn't use the one decline. Once accepted the banner goes away 🅹 🅼 |
 | 6.7 | Host without a home court | No court preselected; they pick any court in the modal 🅹 🅼 |
 | 6.8 | Arrange: past time, no date, after the tie deadline | Inline error inside the modal; nothing written 🅹 🅼 |
 | 6.9 | Arrange the same match twice | The second write is refused ("exists") 🅹 |
@@ -164,17 +164,17 @@ update the global profile only, never ladder standings.
 | 6.10c | A playoff match is cancelled or expires while its Match Details is open | The screen returns to the tie screen instead of showing a stale cancelled match 🅹 |
 | 6.10d | Notifications about a playoff match (arranged, accepted, declined, cancellation) | Open the ladder on the Playoffs tab, where the user's game is highlighted, not the Schedule tab 🅹 |
 | 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this playoff game (by Ddd D MMM)." 🅹 🅼 |
-| 6.10f | An onlooker opens any tie (open, waiting or finished) | Same layout as players: the "What's next" card (hidden once settled), the aggregate, both info boxes ("Finished" once settled), and a placeholder or card for each match. Only players can tap anything 🅹 🅼 |
+| 6.10f | An onlooker opens any tie (open, waiting or finished) | Same layout as players: the prize banner, the aggregate, both info boxes ("Finished" once settled), and a placeholder or card for each match. Only players can tap anything 🅹 🅼 |
 | 6.10g | Any viewer opens a match | Total Score always shows the poster on the left and the accepter on the right, counting approved games; a player sees it green if they're winning and red if losing, a spectator sees grey. Empty game cards list the poster first too. The tie's aggregate is always in bracket order (team 1 left). No match menu for spectators 🅹 🅼 |
 | 6.10h | A spectator on a playoff match | No check-in button (the header card shows the match status instead), unreported games can't be tapped (reported ones open read-only), and a posted match reads "Awaiting confirmation" rather than "your"/"opponent's" wording. Playoff notifications (decider, void, round reached) go only to the tie's players 🅹 🅼 |
 | 6.10i | Talking about a playoff game | The tie's players get "Chat Room" and "Tie Lobby" tabs on the tie screen: one conversation for the whole game, open before anything is arranged. Playoff match screens have no Chat Room tab. A message lands in the other player's Chats list and opens the tie on its Chat Room tab. Spectators have no chat 🅹 🅼 |
-| 6.10j | The ladder enters playoffs | The How to Play button becomes a gold "How to play playoffs" with a trophy, pulsing and glowing until opened once (remembered per ladder on the device), then gold and still. It opens the playoff guide: Welcome to the Playoffs, Home and Away, Arrange Your Home Match, Win on Aggregate, Ten Days to Finish, the playoff and prize page, and Winning the Final 🅹 🅼 |
+| 6.10j | The ladder enters playoffs | The How to Play button becomes a gold "How to play playoffs" with a trophy, with white text on a deep gold, gently pulsing until opened once (remembered per ladder on the device), then gold and still. It opens the playoff guide: Welcome to the Playoffs, Home and Away, Arrange Your Home Match, Win on Aggregate, Ten Days to Finish, the playoff and prize page, and Winning the Final 🅹 🅼 |
 | 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag or the "Best of" tag (shown once in the box above); the deciding game's card keeps "Best of 1" 🅹 🅼 |
-| 6.11a | The tie screen is loading | The skeleton has the page's shape: title bar with back button, the What's next card, the aggregate bar, the two info boxes and two match sections 🅹 |
+| 6.11a | The tie screen is loading | The skeleton has the page's shape: title bar with back button, the prize banner, the tabs, the aggregate bar, the two info boxes and two match sections 🅹 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
 | 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |
 | 6.14 | Same actions on a regular ladder match during playoffs | Still frozen (section 2 of the reliability plan) 🅹 🅼 |
-| 6.15 | Both matches complete, aggregate level | One checked-in best-of-1 decider at match 2's court; both sides notified 🅴 🅼 |
+| 6.15 | Both matches complete, aggregate level | One checked-in best-of-1 decider at the court of whichever match was played last; both sides notified 🅴 🅼 |
 | 6.16 | Both matches complete, one side ahead | Winner goes through; the next-round game fills; both semi winners open the Final; "Congratulations! You've reached the …" sent 🅴 |
 | 6.17 | Deadline passes with games played | Decided on games, then points, then rank; outcome "deadline" 🅴 |
 | 6.18 | Deadline passes with nothing played | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |

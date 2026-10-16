@@ -13,10 +13,14 @@ import {
   notificationSchema,
   notificationTypes,
 } from "@shared";
-import { MAESTRO_PO_LADDER_ID, seedLadderPlayoffs } from "./seedLadderPlayoffs";
+import {
+  MAESTRO_PO_LADDER_ID,
+  MAESTRO_PO_PAID_LADDER_ID,
+  seedLadderPlayoffs,
+} from "./seedLadderPlayoffs";
 
 const SIZE = 256;
-const LADDER_NAME = `Maestro Playoffs ${SIZE}`;
+const PAID_ENTRY_FEE = 20;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ROUND_ONE_STARTED_DAYS_AGO = 7;
 
@@ -208,16 +212,10 @@ const commit = async (writes) => {
   }
 };
 
-const tieRef = (tieId) =>
-  doc(
-    db,
-    "ladders",
-    MAESTRO_PO_LADDER_ID,
-    LADDER_PLAYOFF_TIES_COLLECTION,
-    tieId,
-  );
-const matchRef = (matchId) =>
-  doc(db, "ladders", MAESTRO_PO_LADDER_ID, "ladderMatches", matchId);
+const tieRef = (ladderId, tieId) =>
+  doc(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION, tieId);
+const matchRef = (ladderId, matchId) =>
+  doc(db, "ladders", ladderId, "ladderMatches", matchId);
 
 /**
  * A round of 16 a week into its 10 days, as production would have it: the
@@ -230,24 +228,28 @@ const matchRef = (matchId) =>
 export const seedLadderPlayoffMatches = async ({
   testUser,
   stage = PLAYOFF_MATCH_STAGE.PENDING,
+  ladderId = MAESTRO_PO_LADDER_ID,
+  entryFee = 0,
 }) => {
+  const ladderName = `Maestro Playoffs ${SIZE}${entryFee > 0 ? " (Paid)" : ""}`;
   if (!testUser?.userId) {
     throw new Error(
       "seedLadderPlayoffMatches: testUser with a userId is required",
     );
   }
-  await seedLadderPlayoffs({ testUser, generate: true, size: SIZE });
+  await seedLadderPlayoffs({
+    testUser,
+    generate: true,
+    size: SIZE,
+    ladderId,
+    entryFee,
+  });
   const now = new Date();
   const roundOneStart = new Date(
     now.getTime() - ROUND_ONE_STARTED_DAYS_AGO * DAY_MS,
   );
   const snapshot = await getDocs(
-    collection(
-      db,
-      "ladders",
-      MAESTRO_PO_LADDER_ID,
-      LADDER_PLAYOFF_TIES_COLLECTION,
-    ),
+    collection(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION),
   );
   const tieUpdates = new Map();
   const setTie = (tieId, fields) =>
@@ -544,9 +546,9 @@ export const seedLadderPlayoffMatches = async ({
           {
             id: `maestro-po-decider-${mine.tieId}`,
             title: "One deciding game to play",
-            message: `Your Round of 16 in ${LADDER_NAME} is level on aggregate. One deciding game must be played to decide who goes through.`,
+            message: `Your Round of 16 in ${ladderName} is level on aggregate. One deciding game must be played to decide who goes through.`,
             data: {
-              ladderId: MAESTRO_PO_LADDER_ID,
+              ladderId: ladderId,
               tab: "Playoffs",
               tieId: mine.tieId,
             },
@@ -557,9 +559,9 @@ export const seedLadderPlayoffMatches = async ({
             {
               id: `maestro-po-round-${mine.tieId}`,
               title: "You've reached the Quarter-Final",
-              message: `Congratulations! You've reached the Quarter-Final in ${LADDER_NAME}. You have 10 days to play both your home and away games.`,
+              message: `Congratulations! You've reached the Quarter-Final in ${ladderName}. You have 10 days to play both your home and away games.`,
               data: {
-                ladderId: MAESTRO_PO_LADDER_ID,
+                ladderId: ladderId,
                 tab: "Playoffs",
                 tieId: `r2-s${Math.floor(mine.slot / 2)}`,
               },
@@ -571,10 +573,11 @@ export const seedLadderPlayoffMatches = async ({
     ...[...tieUpdates].map(
       ([tieId, fields]) =>
         (batch) =>
-          batch.set(tieRef(tieId), fields, { merge: true }),
+          batch.set(tieRef(ladderId, tieId), fields, { merge: true }),
     ),
     ...matches.map(
-      (match) => (batch) => batch.set(matchRef(match.ladderMatchId), match),
+      (match) => (batch) =>
+        batch.set(matchRef(ladderId, match.ladderMatchId), match),
     ),
     ...notifications.map(
       ({ id, ...notification }) =>
@@ -591,10 +594,24 @@ export const seedLadderPlayoffMatches = async ({
   ]);
 
   return {
-    ladderId: MAESTRO_PO_LADDER_ID,
+    ladderId: ladderId,
     stage,
     myTie: mine.tieId,
     ties: tieUpdates.size,
     matches: matches.length,
   };
 };
+
+/** The same playoffs on a free ladder and on a paid one, to compare prizes. */
+export const seedLadderPlayoffMatchesFreeAndPaid = async ({
+  testUser,
+  stage,
+}) => [
+  await seedLadderPlayoffMatches({ testUser, stage }),
+  await seedLadderPlayoffMatches({
+    testUser,
+    stage,
+    ladderId: MAESTRO_PO_PAID_LADDER_ID,
+    entryFee: PAID_ENTRY_FEE,
+  }),
+];
