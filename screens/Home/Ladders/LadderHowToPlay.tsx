@@ -37,6 +37,10 @@ import { LadderContext } from "../../../context/LadderContext";
 import { useLadderJoin } from "../../../hooks/useLadderJoin";
 import { formatCurrency } from "../../../helpers/formatCurrency";
 import { ladderEntrantNoun } from "../../../helpers/ladderEntrantNoun";
+import {
+  getLadderPrizeTable,
+  type LadderPrizeRow,
+} from "../../../helpers/ladderPlayoffPrizes";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -106,6 +110,29 @@ const LadderHowToPlay: React.FC = () => {
       ),
     },
     {
+      key: "playoffs-structure",
+      render: () => (
+        <PlayoffsPage
+          maxPlayers={maxPlayers}
+          registeredCount={ladder?.participantCount ?? 0}
+          entryFee={ladder?.entryFee ?? 0}
+          currencyType={ladder?.currencyType ?? "GBP"}
+        />
+      ),
+    },
+    {
+      key: "playoffs-prize-table",
+      render: () =>
+        ladder ? (
+          <PrizeTablePage
+            rows={getLadderPrizeTable(ladder)}
+            currencyType={ladder.currencyType}
+            isPaid={(ladder.entryFee ?? 0) > 0}
+            noun={noun}
+          />
+        ) : null,
+    },
+    {
       key: "playoffs-home-away",
       render: () => (
         <PageBody
@@ -142,17 +169,6 @@ const LadderHowToPlay: React.FC = () => {
           icon="hourglass-outline"
           title="Ten Days to Finish"
           body="Both matches must be played within 10 days. If time runs out, the game is decided on games won, then points, then ladder rank. If nothing was played, neither side goes through and their next opponent gets a walkover."
-        />
-      ),
-    },
-    {
-      key: "playoffs-prizes",
-      render: () => (
-        <PlayoffsPage
-          maxPlayers={maxPlayers}
-          registeredCount={ladder?.participantCount ?? 0}
-          entryFee={ladder?.entryFee ?? 0}
-          currencyType={ladder?.currencyType ?? "GBP"}
         />
       ),
     },
@@ -411,6 +427,60 @@ const PageBody: React.FC<PageBodyProps> = ({
     <PageTitle>{title}</PageTitle>
     <PageText>{body}</PageText>
     {children}
+  </ScrollView>
+);
+
+interface PrizeTablePageProps {
+  rows: LadderPrizeRow[];
+  currencyType: string;
+  isPaid: boolean;
+  noun: "player" | "team";
+}
+
+const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
+  rows,
+  currencyType,
+  isPaid,
+  noun,
+}) => (
+  <ScrollView
+    contentContainerStyle={{
+      flexGrow: 1,
+      justifyContent: "center",
+      gap: 18,
+      paddingHorizontal: 24,
+      paddingVertical: 30,
+    }}
+  >
+    <CenteredHeader>
+      <IconCircle>
+        <Ionicons name="trophy-outline" size={40} color="#FFC800" />
+      </IconCircle>
+      <PageTitle>Prize Distribution</PageTitle>
+    </CenteredHeader>
+    <PageText>
+      {`What each ${noun} takes home, by where they finish. ${
+        isPaid ? "Cash and CP are" : "CP is"
+      } paid when the playoffs end.`}
+    </PageText>
+    <Table testID="how-to-play-prize-table">
+      <TableRow header>
+        <TableCell header flex={1.6}>
+          Finish
+        </TableCell>
+        {isPaid ? <TableCell header>Cash each</TableCell> : null}
+        <TableCell header>CP each</TableCell>
+      </TableRow>
+      {rows.map((row) => (
+        <TableRow key={row.fromPlace}>
+          <TableCell flex={1.6}>{row.label}</TableCell>
+          {isPaid ? (
+            <TableCell>{formatCurrency(row.cash, currencyType)}</TableCell>
+          ) : null}
+          <TableCell>{row.cp.toLocaleString()}</TableCell>
+        </TableRow>
+      ))}
+    </Table>
   </ScrollView>
 );
 

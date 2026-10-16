@@ -32,7 +32,7 @@ import { useLadderJoin } from "../../hooks/useLadderJoin";
 import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
-import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
+import { getLadderTopFourShares } from "../../helpers/ladderPlayoffPrizes";
 import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
 
 const TOP_CONTENDER_COUNT = 4;
@@ -159,6 +159,11 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         participantCount: ladder.participantCount,
       }),
     [ladder.entryFee, ladder.participantCount],
+  );
+
+  const topFourShares = useMemo(
+    () => getLadderTopFourShares(ladder),
+    [ladder],
   );
 
   const hasPrizesDistributed =
@@ -357,7 +362,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         prizePool={prizePool.xp}
         cashPool={isPaid ? prizePool.cash : undefined}
         currencyType={ladder.currencyType}
-        distribution={LADDER_DISTRIBUTION}
+        distribution={topFourShares}
         competitionType={COMPETITION_TYPES.LADDER}
         tooltipMessage={LADDER_TOOLTIP}
         onViewFullDistribution={() => {}}
@@ -391,7 +396,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
                 item={player}
                 index={index}
                 isDataLoading={isDataLoading}
-                distribution={LADDER_DISTRIBUTION}
+                distribution={topFourShares}
                 prizePool={prizePool.xp}
                 cashPool={isPaid ? prizePool.cash : undefined}
                 currencyType={ladder.currencyType}

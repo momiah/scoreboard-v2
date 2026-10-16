@@ -55,9 +55,8 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
    normal ladder matches, or fee-free?
 6. **Missed deadline / no-show:** walkover to the side that turned up; both out
    if neither plays?
-7. **Prize split (Phase 3):** the current `LADDER_DISTRIBUTION` in
-   `helpers/ladderPrizeDistribution.ts` pays only the top 4 (40/30/20/10%).
-   It needs a split across every in-the-money place (e.g. per finishing band:
-   1st, 2nd, 3rd, 4th, 5th–8th, 9th–16th, …) — decide the percentages and
-   whether a shared band splits equally. Same for prize CP.
+7. **Prize split:** done. Cash follows the shared `LADDER_PAYOUT_STRUCTURE`
+   (courtchamps-shared #53) from the net pool, bands split equally, and CP uses
+   the same bands and shares on the CP pool (`helpers/ladderPlayoffPrizes.ts`).
+   Paying it out is still Phase 3.
 '''

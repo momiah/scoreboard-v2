@@ -168,7 +168,7 @@ update the global profile only, never ladder standings.
 | 6.10g | Any viewer opens a match | Total Score always shows the poster on the left and the accepter on the right, counting approved games; a player sees it green if they're winning and red if losing, a spectator sees grey. Empty game cards list the poster first too. The tie's aggregate is always in bracket order (team 1 left). No match menu for spectators 🅹 🅼 |
 | 6.10h | A spectator on a playoff match | No check-in button (the header card shows the match status instead), unreported games can't be tapped (reported ones open read-only), and a posted match reads "Awaiting confirmation" rather than "your"/"opponent's" wording. Playoff notifications (decider, void, round reached) go only to the tie's players 🅹 🅼 |
 | 6.10i | Talking about a playoff game | The tie's players get "Chat Room" and "Tie Lobby" tabs on the tie screen: one conversation for the whole game, open before anything is arranged. Playoff match screens have no Chat Room tab. A message lands in the other player's Chats list and opens the tie on its Chat Room tab. Spectators have no chat 🅹 🅼 |
-| 6.10j | The ladder enters playoffs | The How to Play button becomes a gold "How to play playoffs" with a trophy, with white text on a deep gold, gently pulsing until opened once (remembered per ladder on the device), then gold and still. It opens the playoff guide: Welcome to the Playoffs, Home and Away, Arrange Your Home Match, Win on Aggregate, Ten Days to Finish, the playoff and prize page, and Winning the Final 🅹 🅼 |
+| 6.10j | The ladder enters playoffs | The How to Play button becomes a gold "How to play playoffs" with a trophy, with white text on a deep gold, gently pulsing until opened once (remembered per ladder on the device), then gold and still. It opens the playoff guide: Welcome to the Playoffs, the playoffs structure (page 2), the Prize Distribution table for this ladder (page 3: every paid place with cash each on paid ladders and CP each), Home and Away, Arrange Your Home Match, Win on Aggregate, Ten Days to Finish, and Winning the Final 🅹 🅼 |
 | 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag or the "Best of" tag (shown once in the box above); the deciding game's card keeps "Best of 1" 🅹 🅼 |
 | 6.11a | The tie screen is loading | The skeleton has the page's shape: title bar with back button, the prize banner, the tabs, the aggregate bar, the two info boxes and two match sections 🅹 |
 | 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
@@ -234,3 +234,10 @@ notifications.
 | `ladder-playoffs-cancellation-notification` | 4.3 |
 | `ladder-playoffs-summary-2048` | 4.4 |
 | `ladder-playoffs-standings-player-details` | 4.5 |
+
+### Prizes
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.30 | Any ladder size | Cash follows the payout bands for that size from the net pool (after the platform fee), each band split equally; CP uses the same bands and shares on the CP pool (50 CP per entrant). The Summary tab's top four use the same shares 🅹 |
+| 6.31 | The tie's prize banner | "Secured" is the prize for the worst place a loser of this round can finish; "Next round" is the prize for the round after (Champion for the Final, 3rd place for the 3rd-place game) 🅹 🅼 |
