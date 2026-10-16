@@ -172,14 +172,15 @@ manual Cloud Scheduler checks. Remaining:
 
 Rules and scenario numbers are in section 6 of
 [ladder-playoffs-test-plan.md](ladder-playoffs-test-plan.md). Backend-only
-cases (simultaneous coin flips, deadlines, voids, walkovers, the day 3/6/9
+cases (deadlines, voids, walkovers, the day 3/6/9
 reminders, settlement and the decider) are covered by the emulator suite;
 these flows cover what a player and a spectator see.
 
 **Seed.** `maestro/seeds/seedLadderPlayoffMatches.js` (harness buttons
 `maestro-seed-playoff-match-<stage>`). It seeds "Maestro Playoffs 256", a
 16-player bracket (best of 7) a week into round 1, with 3 days left. The test
-user's own game is set by `stage`: `coinPending`, `coinWon`, `coinLost`,
+user (ranked #1) hosts match 2 and any decider; their lower-ranked opponent hosts
+match 1. The user's own game is set by `stage`: `pending` (nothing arranged),
 `leg1Posted`, `leg1Complete`, `level` or `settled`. The other round-1 games are
 always the same, so spectator flows can rely on them:
 
@@ -192,7 +193,7 @@ always the same, so spectator flows can rely on them:
 - **upcoming**: both matches accepted, tomorrow and the day after, not
   checked in;
 - **halfway**: match 1 complete (4-0), match 2 posted;
-- **untossed**: no coin toss yet.
+- **unarranged**: nothing arranged yet.
 
 Every started match is checked in by both players, every completed match has a
 side on the majority, and every match is inside its tie's 10 days.
@@ -201,54 +202,56 @@ Still to add: `leg1PostedAfterDecline` (`scheduleDeclines: 1`), `noHomeCourt`
 (host with no home court) and `playoffRegular` (a regular match alongside a
 playoff match during playoffs).
 
-TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
+TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 `AddLadderMatchModal` (playoff mode, via `PlayoffMatchScheduleModal`),
 `PlayoffMatchConfirmBanner`, `MatchDetails` and `MatchDetailsMenu`.
 
 **Opening a game**
 
 1. `ladder-playoffs-tap-game-opens-match`: tap a bracket game →
-   `playoff-match-details` titled "Round of 16 · Game N", `playoff-coin`,
-   `playoff-match-aggregate` and both info boxes.
+   `playoff-match-details` titled "Round of 16 · Game N", `playoff-match-next`,
+   `playoff-match-aggregate` (with "#rank · name") and both info boxes.
 2. `ladder-playoffs-tie-layout-spectator`: open each of the seeded spectator
-   games in turn. Every screen has the same layout: the coin, then the
-   aggregate, then `playoff-match-format` and `playoff-match-deadline`
+   games in turn. Every screen has the same layout: the "What's next" card,
+   then the aggregate, then `playoff-match-format` and `playoff-match-deadline`
    ("N days and N hours" / "to complete both matches"), then match 1 and
    match 2 headed "Match N" with `playoff-match-leg{N}-host` (house icon and
    the host's name), and no "Best of" tag on match 1 and 2's cards. Nothing is tappable except match
-   cards: no `playoff-match-leg*-arrange`, no `playoff-coin-call-*` before a toss.
+   cards and the What's next card: no `playoff-match-leg*-arrange`. The Chat
+   Room tab opens the blurred "Only the players in this game can see this
+   chat" notice.
 
-**Coin toss (heads or tails)**
+**Hosting and what's next**
 
-3. `ladder-playoffs-coin-flip` (`coinPending`): "Flip the coin to see who
-   starts at home first", with `playoff-coin-call-heads` (logo) and
-   `playoff-coin-call-tails` (trophy). Tap heads → both call coins stay,
-   `playoff-coin-called-heads` (the glow) with `playoff-coin-caller` showing
-   the user's name → the coin lands (`playoff-coin-result`); there is no "at
-   home first" line, and the match headings name the home player.
-4. `ladder-playoffs-coin-spectator-before`: untossed spectator game →
-   `playoff-coin-waiting` "Waiting for a player to flip the coin", no call coins.
-5. `ladder-playoffs-coin-spectator-after`: a tossed spectator game →
-   `playoff-coin-called-heads` glowing with `playoff-coin-caller` naming who
-   called it, and the headings naming each match's home player.
-6. `ladder-playoffs-coin-opponent-view`: needs a mocked opponent flip on the
-   user's game → the user sees the toss land, the opponent's call glowing with
-   the opponent's name under it.
+3. `ladder-playoffs-hosting-by-rank` (`pending`): match 1's heading names the
+   opponent (`playoff-match-leg1-host`) with "Waiting for your opponent to
+   arrange their home match"; match 2 names the user with
+   `playoff-match-leg2-arrange`. No coin anywhere.
+4. `ladder-playoffs-whats-next`: `playoff-match-next` reads "The winner plays
+   the winner of Game N in the Quarter-Final" and opens that game; on the
+   **settled** game's neighbour it names the settled winner instead.
+5. `ladder-playoffs-tie-chat` (`pending`): the Chat Room tab → send a message →
+   it shows in the opponent's Chats list (mocked) and opens the tie on Chat Room.
+6. `ladder-playoffs-match-has-no-chat`: a playoff match's screen has no Chat
+   Room tab.
 
 **Arranging, confirming and declining**
 
-7. `ladder-playoffs-arrange-home` (`coinWon`): `playoff-match-leg1-arrange` →
-   "Arrange match 1" with the home court in `add-ladder-match-court-selector`,
+7. `ladder-playoffs-arrange-home` (`pending`): `playoff-match-leg2-arrange` →
+   "Arrange match 2" with the home court in `add-ladder-match-court-selector`,
    best of 7 only, `add-ladder-match-court-time`, `add-ladder-match-no-fee` (no
    `add-ladder-match-fee`), and the date picker note "Please select a date
    within the 10 days for this playoff game (by …)". Change the court, pick a
-   date, accept the terms → "Send to opponent" → match 1's card reads
-   "Awaiting opponent's confirmation".
+   date, accept the terms → "Send to opponent" → match 2's card reads
+   "Awaiting opponent's confirmation". Picking a time before match 1 (seed
+   match 1 first) shows "Match 2 must be played after match 1 (…)".
 8. `ladder-playoffs-arrange-without-home-court` (`noHomeCourt`): the modal opens
    on "Select Court"; any court can be chosen and sent.
-9. `ladder-playoffs-arrange-away-waiting` (`coinLost`): `playoff-match-leg1-waiting`
-   "Waiting for your opponent to arrange their home match";
-   `playoff-match-leg2-arrange` visible straight away.
+9. `ladder-playoffs-play-match-two-here` (`leg1Complete`): open match 1 →
+   `play-match-two-accept` "Play match 2 here" → confirm → match 2 posted at
+   match 1's court; as the opponent (mocked accept) the user sees
+   `play-match-two-ready` → "Open match 2" with both players checked in.
+   Declining it leaves the one decline unused.
 10. `ladder-playoffs-confirm-match` (`leg1Posted`): the card reads "Awaiting your
     confirmation"; the arranged notification ("… Open it to accept or
     decline.") opens the Playoffs tab; open the match →
@@ -264,10 +267,10 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
 
 **Cancelling, rescheduling and extending a playoff match**
 
-14. `ladder-playoffs-cancel-posted` (`coinWon` after flow 7): Match Options →
+14. `ladder-playoffs-cancel-posted` (`pending` after flow 7): Match Options →
     Cancel Match → "Cancel this playoff match? You can arrange it again before
     the playoff deadline." → straight back to the tie screen with
-    `playoff-match-leg1-arrange`.
+    `playoff-match-leg2-arrange`.
 15. `ladder-playoffs-cancel-accepted`: an accepted playoff match → Cancel Match
     asks the opponent ("…cancel this playoff match…"); once accepted (mocked),
     the open match screen returns to the tie screen by itself.
@@ -297,8 +300,7 @@ TestIDs come from `PlayoffMatchDetails`, `PlayoffCoinFlip`, `MatchScoreBar`,
     to play.", `playoff-match-decider` checked in; the decider notification
     opens the Playoffs tab.
 22. `ladder-playoffs-settled` (`settled`): the gold `playoff-match-outcome`
-    card names the user and "Through to the Quarter-Final"; the coin and caller
-    are still shown, and the round-reached
+    card names the user and "Through to the Quarter-Final", and the round-reached
     notification opens the Playoffs tab with the Quarter-Final open.
 
 **Elsewhere**

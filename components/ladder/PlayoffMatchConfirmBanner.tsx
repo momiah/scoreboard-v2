@@ -32,7 +32,11 @@ const PlayoffMatchConfirmBanner: React.FC<PlayoffMatchConfirmBannerProps> = ({
     return (
       <MatchRequestBanner
         testID="playoff-match-confirm"
-        message="Waiting for your opponent to confirm this time"
+        message={
+          match.playNow
+            ? "Waiting for your opponent to accept match 2"
+            : "Waiting for your opponent to confirm this time"
+        }
         awaiting
       />
     );
@@ -43,9 +47,11 @@ const PlayoffMatchConfirmBanner: React.FC<PlayoffMatchConfirmBannerProps> = ({
     <MatchRequestBanner
       testID="playoff-match-confirm"
       message={
-        canDecline
-          ? "Your opponent arranged this match. Can you make it?"
-          : "Your opponent arranged this match. You've used your one decline, so please accept."
+        match.playNow
+          ? "Your opponent wants to play match 2 here now. Are you up for it?"
+          : canDecline
+            ? "Your opponent arranged this match. Can you make it?"
+            : "Your opponent arranged this match. You've used your one decline, so please accept."
       }
       awaiting={false}
       onDecline={

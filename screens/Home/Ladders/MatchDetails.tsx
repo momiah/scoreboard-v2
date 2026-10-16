@@ -34,6 +34,7 @@ import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import MatchCancellationBanner from "../../../components/ladder/MatchCancellationBanner";
 import MatchRescheduleBanner from "../../../components/ladder/MatchRescheduleBanner";
 import PlayoffMatchConfirmBanner from "../../../components/ladder/PlayoffMatchConfirmBanner";
+import PlayMatchTwoHere from "../../../components/ladder/PlayMatchTwoHere";
 import GameLobby from "../../../components/ladder/GameLobby";
 import LobbyTabs from "../../../components/ladder/LobbyTabs";
 import MatchCard from "../../../components/ladder/MatchCard";
@@ -80,6 +81,7 @@ const MatchDetails: React.FC = () => {
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
+  const [secondMatch, setSecondMatch] = useState<LadderMatch | null>(null);
   const [selectedTab, setSelectedTab] = useState<LobbyTab>(
     initialTab ?? "Game Lobby",
   );
@@ -94,6 +96,13 @@ const MatchDetails: React.FC = () => {
         (matches) => {
           const resolved =
             matches.find((m) => m.ladderMatchId === matchId) ?? null;
+          setSecondMatch(
+            resolved?.playoffTieId && resolved.playoffLeg === 1
+              ? (matches.find(
+                  (m) => m.ladderMatchId === `${resolved.playoffTieId}-leg2`,
+                ) ?? null)
+              : null,
+          );
           if (resolved) {
             setMatch(resolved);
             setNotFound(false);
@@ -208,6 +217,12 @@ const MatchDetails: React.FC = () => {
         match={match}
         userId={userId}
       />
+      <PlayMatchTwoHere
+        ladderId={ladderId}
+        firstMatch={match}
+        secondMatch={secondMatch}
+        userId={userId}
+      />
 
       <LobbyTabs
         tabs={match.playoffTieId ? PLAYOFF_TABS : TABS}
@@ -231,7 +246,7 @@ const MatchDetails: React.FC = () => {
           competitionId={matchId}
           chatPath={chatPath}
           competitionType={COMPETITION_TYPES.LADDER}
-          userRole="participant"
+          userRole={isParticipant ? "participant" : "user"}
           endDate={undefined}
           competitionName={`Ladder match at ${match.court?.courtName ?? "court"}`}
           competitionParticipants={match.participants.map((id) => ({

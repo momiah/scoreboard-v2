@@ -59,6 +59,9 @@ export const useLadderMatchChanges = () => {
         matchTime: args.matchTime,
       });
       if (!outcome.success) {
+        if (outcome.reason === "order") {
+          return "Playoff match 1 must be played before match 2.";
+        }
         if (outcome.reason === "invalid_time")
           return "Pick a time in the future, before the deadline.";
         if (outcome.reason === "not_allowed")

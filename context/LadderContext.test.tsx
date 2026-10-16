@@ -1231,3 +1231,142 @@ describe("leaveLadder", () => {
     expect(batch.commit).not.toHaveBeenCalled();
   });
 });
+
+describe("playoff match order and play-now offers", () => {
+  const TIE = "r1-s0";
+  const tiePath = `${LADDER_PATH}/playoffTies/${TIE}`;
+  const legPath = (leg: number) =>
+    `${LADDER_PATH}/ladderMatches/${TIE}-leg${leg}`;
+  const tie = {
+    tieId: TIE,
+    bestOf: 7,
+    side1: {
+      entrantKey: "hi",
+      teamId: null,
+      playerIds: ["hi"],
+      rank: 1,
+      homeCourt: null,
+    },
+    side2: {
+      entrantKey: "lo",
+      teamId: null,
+      playerIds: ["lo"],
+      rank: 9,
+      homeCourt: null,
+    },
+    team1: { player1: { userId: "hi" }, player2: null },
+    team2: { player1: { userId: "lo" }, player2: null },
+  };
+  const court = { courtId: "c1", courtName: "Court" };
+  const leg = (n: number, extra: Record<string, unknown> = {}) => ({
+    ladderMatchId: `${TIE}-leg${n}`,
+    playoffTieId: TIE,
+    playoffLeg: n,
+    participants: n === 1 ? ["lo", "hi"] : ["hi", "lo"],
+    createdBy: n === 1 ? "lo" : "hi",
+    matchStatus: "accepted",
+    matchDate: "20-10-2030",
+    matchTime: { start: "18:00" },
+    court,
+    currencyType: "GBP",
+    shuttleType: "Feather",
+    ladderType: "Singles",
+    games: [],
+    ...extra,
+  });
+
+  it("refuses to arrange match 2 before match 1", async () => {
+    const { store } = makeStore({ [legPath(1)]: leg(1) });
+    const result = await renderLadder();
+    const outcome = await result.current.arrangePlayoffMatch({
+      ladder: { ladderId: LADDER, ladderType: "Singles" } as never,
+      tie: tie as never,
+      leg: 2,
+      host: "team1",
+      input: {
+        court: court as never,
+        matchDate: "19-10-2030",
+        matchTime: { start: "18:00" },
+        currencyType: "GBP",
+        shuttleType: "Feather",
+      },
+      userId: "hi",
+    });
+    expect(outcome).toEqual({ success: false, reason: "order" });
+    expect(store[legPath(2)]).toBeUndefined();
+  });
+
+  it("offers match 2 at match 1's court and carries the check-in over on accept", async () => {
+    const checkIn = {
+      checkedInBy: ["lo", "hi"],
+      checkedInAt: {},
+      completed: true,
+    };
+    const { store } = makeStore({
+      [tiePath]: tie,
+      [legPath(1)]: leg(1, { matchStatus: "completed", checkIn }),
+    });
+    const result = await renderLadder();
+
+    const offer = await result.current.offerPlayoffMatchHere({
+      ladderId: LADDER,
+      firstMatch: leg(1, { matchStatus: "completed" }) as never,
+      userId: "lo",
+    });
+    expect(offer).toMatchObject({ success: true, notifyUserIds: ["hi"] });
+    expect(store[legPath(2)]).toMatchObject({
+      matchStatus: "posted",
+      playNow: true,
+      court,
+      createdBy: "lo",
+      participants: ["hi", "lo"],
+    });
+
+    expect(
+      await result.current.respondToPlayoffMatch({
+        ladderId: LADDER,
+        matchId: `${TIE}-leg2`,
+        userId: "hi",
+        accept: true,
+      }),
+    ).toMatchObject({ success: true });
+    expect(store[legPath(2)]).toMatchObject({
+      matchStatus: "accepted",
+      checkIn,
+    });
+  });
+
+  it("doesn't count declining a play-now offer as the one decline", async () => {
+    const { store } = makeStore({
+      [legPath(2)]: leg(2, {
+        matchStatus: "posted",
+        playNow: true,
+        createdBy: "lo",
+        scheduleDeclines: 0,
+      }),
+    });
+    const result = await renderLadder();
+    await result.current.respondToPlayoffMatch({
+      ladderId: LADDER,
+      matchId: `${TIE}-leg2`,
+      userId: "hi",
+      accept: false,
+    });
+    expect(store[legPath(2)]).toMatchObject({
+      matchStatus: "cancelled",
+      scheduleDeclines: 0,
+    });
+  });
+
+  it("won't offer match 2 here before match 1 is complete or once match 2 is arranged", async () => {
+    makeStore({ [tiePath]: tie, [legPath(1)]: leg(1), [legPath(2)]: leg(2) });
+    const result = await renderLadder();
+    expect(
+      await result.current.offerPlayoffMatchHere({
+        ladderId: LADDER,
+        firstMatch: leg(1) as never,
+        userId: "lo",
+      }),
+    ).toEqual({ success: false, reason: "not_allowed" });
+  });
+});

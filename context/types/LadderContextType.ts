@@ -2,8 +2,6 @@ import type { LadderHomeCourtState } from "../../helpers/ladderHomeCourt";
 import type {
   Court,
   Ladder,
-  LadderPlayoffCoinCall,
-  LadderPlayoffCoinFace,
   LadderPlayoffTie,
   LadderPlayoffTieSide,
   LadderMatch,
@@ -120,13 +118,13 @@ export type CancelLadderMatchFailureReason =
 
 export interface PlayoffMatchOutcome {
   success: boolean;
-  reason?: "exists" | "not_allowed" | "error";
+  reason?: "exists" | "not_allowed" | "order" | "error";
   notifyUserIds?: string[];
 }
 
 export interface LadderMatchChangeOutcome {
   success: boolean;
-  reason?: "not_allowed" | "invalid_time" | "error";
+  reason?: "not_allowed" | "invalid_time" | "order" | "error";
   notifyUserIds?: string[];
   expiresAt?: Date;
 }
@@ -354,17 +352,17 @@ export interface LadderContextType {
     >;
     userId: string;
   }) => Promise<PlayoffMatchOutcome>;
+  offerPlayoffMatchHere: (args: {
+    ladderId: string;
+    firstMatch: LadderMatch;
+    userId: string;
+  }) => Promise<PlayoffMatchOutcome>;
   respondToPlayoffMatch: (args: {
     ladderId: string;
     matchId: string;
     userId: string;
     accept: boolean;
   }) => Promise<PlayoffMatchOutcome>;
-  flipPlayoffCoin: (
-    ladderId: string,
-    tieId: string,
-    call: LadderPlayoffCoinCall,
-  ) => Promise<LadderPlayoffCoinFace | null>;
   subscribeToLadderPlayoffTies: (
     ladderId: string,
     onUpdate: (ties: LadderPlayoffTie[]) => void,

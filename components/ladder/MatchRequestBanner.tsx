@@ -10,6 +10,7 @@ interface MatchRequestBannerProps {
   destructive?: boolean;
   onDecline?: () => Promise<void>;
   onAccept?: () => void | Promise<void>;
+  acceptLabel?: string;
 }
 
 const MatchRequestBanner: React.FC<MatchRequestBannerProps> = ({
@@ -19,6 +20,7 @@ const MatchRequestBanner: React.FC<MatchRequestBannerProps> = ({
   destructive = false,
   onDecline,
   onAccept,
+  acceptLabel = "Accept",
 }) => {
   const [responding, setResponding] = useState(false);
 
@@ -66,7 +68,7 @@ const MatchRequestBanner: React.FC<MatchRequestBannerProps> = ({
           style={destructive ? styles.destructive : styles.positive}
         >
           <AcceptText style={{ color: destructive ? "#ff8aa0" : "#7fd0ff" }}>
-            Accept
+            {acceptLabel}
           </AcceptText>
         </AcceptButton>
       </Actions>

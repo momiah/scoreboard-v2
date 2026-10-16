@@ -17,7 +17,8 @@ const matchLabel = (
   `playoff match ${match.playoffLeg ?? ""} at ${match.court?.courtName ?? "your court"}, ${formatMatchSlot(match)}`;
 
 export const usePlayoffMatchScheduling = () => {
-  const { respondToPlayoffMatch } = useContext(LadderContext);
+  const { respondToPlayoffMatch, offerPlayoffMatchHere } =
+    useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
   const notify = useNotifyMatchPlayers();
@@ -85,5 +86,37 @@ export const usePlayoffMatchScheduling = () => {
     [name, notify, respondToPlayoffMatch, showBottomToast, userId],
   );
 
-  return { notifyArranged, respond };
+  const offerHere = useCallback(
+    async ({
+      ladderId,
+      firstMatch,
+    }: {
+      ladderId: string;
+      firstMatch: LadderMatch;
+    }) => {
+      if (!userId) return;
+      const outcome = await offerPlayoffMatchHere({
+        ladderId,
+        firstMatch,
+        userId,
+      });
+      if (!outcome.success) {
+        showBottomToast(
+          outcome.reason === "not_allowed"
+            ? "Match 2 has already been arranged"
+            : ERROR_MESSAGE,
+          "error",
+        );
+        return;
+      }
+      await notify(
+        outcome.notifyUserIds,
+        `${name} wants to play match 2 now at ${firstMatch.court?.courtName ?? "your court"}. Open the game to accept or decline.`,
+        { ladderId, match: firstMatch },
+      );
+    },
+    [name, notify, offerPlayoffMatchHere, showBottomToast, userId],
+  );
+
+  return { notifyArranged, respond, offerHere };
 };

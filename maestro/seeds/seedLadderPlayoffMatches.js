@@ -8,6 +8,7 @@ import {
   LADDER_TYPE,
   SHUTTLE_TYPE,
   advanceLadderPlayoffBracket,
+  getLadderPlayoffLegHost,
   buildLadderPlayoffLegMatch,
   notificationSchema,
   notificationTypes,
@@ -20,9 +21,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const ROUND_ONE_STARTED_DAYS_AGO = 7;
 
 export const PLAYOFF_MATCH_STAGE = {
-  COIN_PENDING: "coinPending",
-  COIN_WON: "coinWon",
-  COIN_LOST: "coinLost",
+  PENDING: "pending",
   LEG1_POSTED: "leg1Posted",
   LEG1_COMPLETE: "leg1Complete",
   LEVEL: "level",
@@ -42,14 +41,6 @@ const at = (dayOffset, time) => {
     .add(dayOffset, "days")
     .set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
 };
-
-const coinToss = (tie, flipperSide, landsOnCall, flippedAt) => ({
-  firstHost: landsOnCall ? flipperSide : other(flipperSide),
-  flippedBy: tie[sideKey(flipperSide)].playerIds[0],
-  flippedAt,
-  call: "logo",
-  face: landsOnCall ? "logo" : "trophy",
-});
 
 const playedGame = ({ tie, shell, winner, index, start, approved }) => {
   const loserScore = LOSER_SCORES[index % LOSER_SCORES.length];
@@ -233,12 +224,12 @@ const matchRef = (matchId) =>
  * test user's own game at `stage`, and the other games spread across every
  * state a spectator can open (in progress today with a game awaiting
  * approval, settled, level with a decider, awaiting confirmation, upcoming,
- * half played and not yet tossed). Every score adds up and every started
+ * half played and not yet arranged). Every score adds up and every started
  * match is checked in.
  */
 export const seedLadderPlayoffMatches = async ({
   testUser,
-  stage = PLAYOFF_MATCH_STAGE.COIN_PENDING,
+  stage = PLAYOFF_MATCH_STAGE.PENDING,
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -302,35 +293,18 @@ export const seedLadderPlayoffMatches = async ({
     ties = ties.map((tie) => changed.find((c) => c.tieId === tie.tieId) ?? tie);
     changed.forEach((tie) => setTie(tie.tieId, tie));
   };
-  const toss = (tie, flipperSide, landsOnCall) => {
-    const flippedAt = new Date(
-      roundOneStart.getTime() + (tie.slot + 1) * 3600 * 1000,
-    );
-    const result = coinToss(tie, flipperSide, landsOnCall, flippedAt);
-    setTie(tie.tieId, { coinToss: result });
-    ties = ties.map((t) =>
-      t.tieId === tie.tieId ? { ...t, coinToss: result } : t,
-    );
-    return result.firstHost;
-  };
+  const hostOf = (tie, leg) => getLadderPlayoffLegHost(tie, leg);
   const C = LADDER_MATCH_STATUS.COMPLETED;
   const A = LADDER_MATCH_STATUS.ACCEPTED;
   const P = LADDER_MATCH_STATUS.POSTED;
 
   switch (stage) {
-    case PLAYOFF_MATCH_STAGE.COIN_WON:
-      toss(mine, them, false);
-      break;
-    case PLAYOFF_MATCH_STAGE.COIN_LOST:
-      toss(mine, them, true);
-      break;
     case PLAYOFF_MATCH_STAGE.LEG1_POSTED:
-      toss(mine, them, true);
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
-          host: them,
+          host: hostOf(mine, 1),
           status: P,
           day: 2,
           time: "19:30",
@@ -339,12 +313,11 @@ export const seedLadderPlayoffMatches = async ({
       );
       break;
     case PLAYOFF_MATCH_STAGE.LEG1_COMPLETE:
-      toss(mine, them, true);
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
-          host: them,
+          host: hostOf(mine, 1),
           status: C,
           day: -3,
           wins: wins(me, 4, 2),
@@ -353,13 +326,12 @@ export const seedLadderPlayoffMatches = async ({
       );
       break;
     case PLAYOFF_MATCH_STAGE.LEVEL:
-      toss(mine, me, true);
       setTie(mine.tieId, { deciderRequired: true });
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
-          host: me,
+          host: hostOf(mine, 1),
           status: C,
           day: -5,
           wins: wins(me, 4, 2),
@@ -368,7 +340,7 @@ export const seedLadderPlayoffMatches = async ({
         legMatch({
           tie: mine,
           leg: 2,
-          host: them,
+          host: hostOf(mine, 2),
           status: C,
           day: -1,
           wins: wins(them, 4, 2),
@@ -377,7 +349,7 @@ export const seedLadderPlayoffMatches = async ({
         legMatch({
           tie: mine,
           leg: 3,
-          host: them,
+          host: hostOf(mine, 3),
           status: A,
           day: -1,
           time: "20:30",
@@ -386,12 +358,11 @@ export const seedLadderPlayoffMatches = async ({
       );
       break;
     case PLAYOFF_MATCH_STAGE.SETTLED:
-      toss(mine, me, true);
       matches.push(
         legMatch({
           tie: mine,
           leg: 1,
-          host: me,
+          host: hostOf(mine, 1),
           status: C,
           day: -5,
           wins: wins(me, 4, 1),
@@ -400,7 +371,7 @@ export const seedLadderPlayoffMatches = async ({
         legMatch({
           tie: mine,
           leg: 2,
-          host: them,
+          host: hostOf(mine, 2),
           status: C,
           day: -2,
           wins: wins(me, 4, 2),
@@ -414,7 +385,7 @@ export const seedLadderPlayoffMatches = async ({
   }
 
   const liveStart = moment().subtract(70, "minutes");
-  const n1 = toss(neighbour, "team1", true);
+  const n1 = hostOf(neighbour, 1);
   if (stage === PLAYOFF_MATCH_STAGE.SETTLED) {
     matches.push(
       legMatch({
@@ -463,7 +434,7 @@ export const seedLadderPlayoffMatches = async ({
     );
   }
 
-  const s1 = toss(settled, "team2", false);
+  const s1 = hostOf(settled, 1);
   matches.push(
     legMatch({
       tie: settled,
@@ -486,7 +457,7 @@ export const seedLadderPlayoffMatches = async ({
   );
   settle(settled.tieId, "team1");
 
-  const l1 = toss(level, "team2", true);
+  const l1 = hostOf(level, 1);
   setTie(level.tieId, { deciderRequired: true });
   matches.push(
     legMatch({
@@ -518,7 +489,7 @@ export const seedLadderPlayoffMatches = async ({
     }),
   );
 
-  const a1 = toss(awaiting, "team1", false);
+  const a1 = hostOf(awaiting, 1);
   matches.push(
     legMatch({
       tie: awaiting,
@@ -531,7 +502,7 @@ export const seedLadderPlayoffMatches = async ({
     }),
   );
 
-  const u1 = toss(upcoming, "team2", true);
+  const u1 = hostOf(upcoming, 1);
   matches.push(
     legMatch({
       tie: upcoming,
@@ -553,7 +524,7 @@ export const seedLadderPlayoffMatches = async ({
     }),
   );
 
-  const h1 = toss(halfway, "team1", true);
+  const h1 = hostOf(halfway, 1);
   matches.push(
     legMatch({
       tie: halfway,

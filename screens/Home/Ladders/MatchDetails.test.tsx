@@ -38,6 +38,7 @@ jest.mock(
   "../../../components/ladder/PlayoffMatchConfirmBanner",
   () => () => null,
 );
+jest.mock("../../../components/ladder/PlayMatchTwoHere", () => () => null);
 jest.mock("../../../components/Modals/MatchCheckinModal", () => ({
   LocationVerifierModal: () => null,
 }));

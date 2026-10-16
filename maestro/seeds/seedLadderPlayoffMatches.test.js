@@ -32,7 +32,11 @@ jest.mock("firebase/firestore", () => ({
   }),
 }));
 
-import { decideLadderPlayoffTie, tallyLadderPlayoffTie } from "@shared";
+import {
+  decideLadderPlayoffTie,
+  getLadderPlayoffLegHost,
+  tallyLadderPlayoffTie,
+} from "@shared";
 import { MAESTRO_PO_LADDER_ID } from "./seedLadderPlayoffs";
 import {
   PLAYOFF_MATCH_STAGE,
@@ -78,22 +82,17 @@ const seed = async (stage) => {
 const games = (side) => (side === "team1" ? "team1Games" : "team2Games");
 
 describe("seedLadderPlayoffMatches", () => {
-  it("leaves the coin for the user to flip", async () => {
-    await seed(PLAYOFF_MATCH_STAGE.COIN_PENDING);
+  it("leaves the user's game with nothing arranged", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.PENDING);
     expect(tie(my.tieId).round).toBe(1);
-    expect(tie(my.tieId).coinToss).toBeNull();
     expect(tie(my.tieId).bestOf).toBe(7);
     expect(legs(my.tieId)).toHaveLength(0);
   });
 
-  it("gives the coin to the user", async () => {
-    await seed(PLAYOFF_MATCH_STAGE.COIN_WON);
-    expect(tie(my.tieId).coinToss.firstHost).toBe(my.side);
-  });
-
-  it("gives the coin to the opponent", async () => {
-    await seed(PLAYOFF_MATCH_STAGE.COIN_LOST);
-    expect(tie(my.tieId).coinToss.firstHost).toBe(my.other);
+  it("has the lower-ranked opponent host match 1 and the user host match 2", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.PENDING);
+    expect(getLadderPlayoffLegHost(tie(my.tieId), 1)).toBe(my.other);
+    expect(getLadderPlayoffLegHost(tie(my.tieId), 2)).toBe(my.side);
   });
 
   it("posts match 1 from the opponent for the user to accept", async () => {
@@ -110,7 +109,7 @@ describe("seedLadderPlayoffMatches", () => {
   it("completes match 1 with the user 4-2 up and hosting match 2", async () => {
     await seed(PLAYOFF_MATCH_STAGE.LEG1_COMPLETE);
     const t = tie(my.tieId);
-    expect(t.coinToss.firstHost).toBe(my.other);
+    expect(legs(my.tieId)[0].createdBy).not.toBe("test-user");
     const tally = tallyLadderPlayoffTie(t, legs(my.tieId));
     expect([tally[games(my.side)], tally[games(my.other)]]).toEqual([4, 2]);
   });
@@ -136,7 +135,6 @@ describe("seedLadderPlayoffMatches", () => {
 
   it("settles the user's game and opens the quarter-final", async () => {
     await seed(PLAYOFF_MATCH_STAGE.SETTLED);
-    expect(tie(my.tieId).coinToss).toBeTruthy();
     expect(tie(my.tieId)).toMatchObject({
       status: "completed",
       winner: my.side,
@@ -151,7 +149,7 @@ describe("seedLadderPlayoffMatches", () => {
   });
 
   it("dresses every other game as production would, with scores that add up", async () => {
-    await seed(PLAYOFF_MATCH_STAGE.COIN_PENDING);
+    await seed(PLAYOFF_MATCH_STAGE.PENDING);
     const roundOne = Array.from({ length: 8 }, (_, slot) => tie(`r1-s${slot}`));
     const others = roundOne.filter((t) => t.tieId !== my.tieId);
     const legsOf = (t) => legs(t.tieId);
@@ -159,7 +157,6 @@ describe("seedLadderPlayoffMatches", () => {
     const settledTies = others.filter((t) => t.status === "completed");
     expect(settledTies.map((t) => t.outcome)).toEqual(["played"]);
     settledTies.forEach((t) => {
-      expect(t.coinToss).toMatchObject({ call: "logo" });
       const tally = tallyLadderPlayoffTie(t, legsOf(t));
       expect(tally[games(t.winner)]).toBeGreaterThan(
         tally[games(t.winner === "team1" ? "team2" : "team1")],
@@ -188,8 +185,7 @@ describe("seedLadderPlayoffMatches", () => {
     expect(
       live.games.filter((g) => g.approvalStatus === "pending"),
     ).toHaveLength(1);
-    expect(others.filter((t) => !t.coinToss)).toHaveLength(1);
-    expect(legsOf(others.find((t) => !t.coinToss))).toHaveLength(0);
+    expect(others.filter((t) => legsOf(t).length === 0)).toHaveLength(1);
     expect(
       others.some((t) => legsOf(t).some((m) => m.matchStatus === "posted")),
     ).toBe(true);

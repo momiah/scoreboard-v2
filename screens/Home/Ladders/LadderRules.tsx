@@ -41,7 +41,7 @@ const RULES: RuleSection[] = [
   },
   {
     title: "Playoff matches",
-    body: "Each playoff game is two matches, one at each player's home court, and both must be played within 10 days. A coin toss decides who hosts the first match. The player who wins more games across both matches goes through. If it's level, one deciding game is played at the second match's court, straight after it, with both players already checked in. If you can't stay for it, either player can reschedule it before the deadline.",
+    body: "Each playoff game is two matches, one at each player's home court, and both must be played within 10 days. The lower-ranked player hosts match 1 and the higher-ranked player hosts match 2, which is always played second. The player who wins more games across both matches goes through. If it's level, one deciding game is played at the second match's court, straight after it, with both players already checked in. If you can't stay for it, either player can reschedule it before the deadline. Once match 1 is finished, either player can offer to play match 2 there and then; the other player can accept or decline.",
   },
   {
     title: "Prizes",

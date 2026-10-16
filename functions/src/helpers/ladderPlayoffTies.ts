@@ -50,9 +50,6 @@ export const toLadderPlayoffTie = (
   scheduledAt: toDate(data.scheduledAt),
   deadlineAt: toDate(data.deadlineAt),
   completedAt: toDate(data.completedAt),
-  coinToss: data.coinToss
-    ? { ...data.coinToss, flippedAt: toDate(data.coinToss.flippedAt) ?? new Date(0) }
-    : null,
 });
 
 const tiePlayerIds = (tie: Pick<LadderPlayoffTie, "side1" | "side2">): string[] => [
@@ -147,12 +144,12 @@ export const resolveLadderPlayoffTie = async ({
 
     const secondMatch = legs.find((leg) => leg.playoffLeg === 2);
     const hasDecider = legs.some((leg) => leg.playoffLeg === 3);
-    if (!decision.deciderRequired || hasDecider || !secondMatch || !tie.coinToss) {
+    if (!decision.deciderRequired || hasDecider || !secondMatch) {
       return null;
     }
 
     const deciderRef = ladderRef.collection(LADDER_MATCHES).doc();
-    const deciderHost = getLadderPlayoffLegHost(tie.coinToss, 3);
+    const deciderHost = getLadderPlayoffLegHost(tie, 3);
     const hostSide = deciderHost === "team1" ? tie.side1 : tie.side2;
     const awaySide = deciderHost === "team1" ? tie.side2 : tie.side1;
     const decider = buildLadderPlayoffLegMatch({

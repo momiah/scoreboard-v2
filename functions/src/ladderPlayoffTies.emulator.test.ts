@@ -7,7 +7,7 @@ import {
   LADDER_TYPE,
 } from "courtchamps-shared/types";
 import type { LadderPlayoffTie } from "courtchamps-shared/types";
-import { buildLadderPlayoffTies } from "courtchamps-shared/helpers";
+import { buildLadderPlayoffTies, getLadderPlayoffLegHost } from "courtchamps-shared/helpers";
 import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
 
 const PROJECT_ID = "demo-courtchamps";
@@ -27,7 +27,6 @@ import {
   sendDueLadderPlayoffReminders,
   toLadderPlayoffTie,
 } from "./helpers/ladderPlayoffTies";
-import { runFlipLadderPlayoffCoin } from "./flipLadderPlayoffCoin";
 
 const db = admin.firestore();
 const realFetch = global.fetch;
@@ -93,7 +92,6 @@ const seedBracket = async (size = 4) => {
   ties.forEach((tie) => {
     void writer.set(db.doc(tiePath(tie.tieId)), {
       ...tie,
-      coinToss: tie.round === 1 ? { firstHost: "team1", flippedBy: "p0", flippedAt: start } : null,
     });
   });
   await writer.close();
@@ -216,6 +214,8 @@ describe("resolveLadderPlayoffTie", () => {
     if (resolution) await notifyLadderPlayoffResolution({ ladder, resolution });
     expect(await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: tie.tieId, now: start })).toBeNull();
 
+    const [hostId, awayId] =
+      getLadderPlayoffLegHost(tie, 3) === "team1" ? [a, b] : [b, a];
     const deciders = (
       await db.collection(`ladders/${LADDER}/ladderMatches`).where("playoffLeg", "==", 3).get()
     ).docs.map((d) => d.data());
@@ -227,9 +227,9 @@ describe("resolveLadderPlayoffTie", () => {
       court,
       courtFee: 0,
       checkIn: { completed: true },
-      createdBy: b,
-      acceptedBy: a,
-      participants: [b, a],
+      createdBy: hostId,
+      acceptedBy: awayId,
+      participants: [hostId, awayId],
     });
     expect((await readTie(tie.tieId)).deciderRequired).toBe(true);
     expect(await notificationIds(b)).toContain(`playoff-decider-${tie.tieId}-${LADDER}-${b}`);
@@ -302,105 +302,5 @@ describe("sendDueLadderPlayoffReminders", () => {
       (t) => t.status === LADDER_PLAYOFF_TIE_STATUS.SCHEDULED,
     );
     expect(await sendDueLadderPlayoffReminders({ db, ladder, ties: again, now: dayThree })).toBe(0);
-  });
-});
-
-describe("runFlipLadderPlayoffCoin", () => {
-  const seedUnflipped = async () => {
-    const ties = await seedBracket(4);
-    const tie = ties[0];
-    await db.doc(tiePath(tie.tieId)).update({ coinToss: null });
-    await seedUsers(sidesOf(tie));
-    return tie;
-  };
-
-  it("saves one server-drawn result and tells the other side", async () => {
-    const tie = await seedUnflipped();
-    const [a, b] = sidesOf(tie);
-
-    const result = await runFlipLadderPlayoffCoin({
-      userId: a,
-      data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
-      now: start,
-      random: () => 0.9,
-    });
-    expect(result).toMatchObject({
-      firstHost: "team2",
-      flippedBy: a,
-      call: "logo",
-      face: "trophy",
-      alreadyFlipped: false,
-    });
-    expect((await readTie(tie.tieId)).coinToss).toMatchObject({
-      firstHost: "team2",
-      flippedBy: a,
-      call: "logo",
-      face: "trophy",
-    });
-    expect(await notificationIds(b)).toContain(`playoff-coin-${tie.tieId}-${LADDER}-${b}`);
-
-    const again = await runFlipLadderPlayoffCoin({
-      userId: b,
-      data: { ladderId: LADDER, tieId: tie.tieId, call: "trophy" },
-      random: () => 0.1,
-    });
-    expect(again).toMatchObject({ firstHost: "team2", flippedBy: a, alreadyFlipped: true });
-  });
-
-  it("puts the flipper at home when it lands on their call", async () => {
-    const tie = await seedUnflipped();
-    const [a] = sidesOf(tie);
-    const result = await runFlipLadderPlayoffCoin({
-      userId: a,
-      data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
-      random: () => 0.1,
-    });
-    expect(result).toMatchObject({ firstHost: "team1", face: "logo", call: "logo" });
-  });
-
-  it("saves one result when both players flip at the same moment", async () => {
-    const tie = await seedUnflipped();
-    const [a, b] = sidesOf(tie);
-    const results = await Promise.all([
-      runFlipLadderPlayoffCoin({
-        userId: a,
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
-        random: () => 0.1,
-      }),
-      runFlipLadderPlayoffCoin({
-        userId: b,
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
-        random: () => 0.1,
-      }),
-    ]);
-    const saved = (await readTie(tie.tieId)).coinToss;
-    expect(results.map((r) => r.alreadyFlipped).sort()).toEqual([false, true]);
-    results.forEach((r) =>
-      expect(r).toMatchObject({ firstHost: saved?.firstHost, flippedBy: saved?.flippedBy }),
-    );
-  });
-
-  it("needs a Home or Away call", async () => {
-    const tie = await seedUnflipped();
-    const [a] = sidesOf(tie);
-    await expect(
-      runFlipLadderPlayoffCoin({ userId: a, data: { ladderId: LADDER, tieId: tie.tieId } }),
-    ).rejects.toThrow("Call heads or tails.");
-  });
-
-  it("refuses players outside the tie and signed-out callers", async () => {
-    const tie = await seedUnflipped();
-    await expect(
-      runFlipLadderPlayoffCoin({
-        userId: "stranger",
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
-      }),
-    ).rejects.toThrow("Only players in this game can flip.");
-    await expect(
-      runFlipLadderPlayoffCoin({
-        userId: undefined,
-        data: { ladderId: LADDER, tieId: tie.tieId, call: "logo" },
-      }),
-    ).rejects.toThrow("Sign in to flip the coin.");
   });
 });

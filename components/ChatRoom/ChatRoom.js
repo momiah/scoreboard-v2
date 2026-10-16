@@ -211,7 +211,9 @@ const ChatRoom = ({
             fontStyle: "italic",
           }}
         >
-          Only participants of the league can view this chat 📝
+          {competitionType === COMPETITION_TYPES.LADDER
+            ? "Only the players in this game can see this chat 📝"
+            : "Only participants of the league can view this chat 📝"}
         </Text>
       </BlurView>
     );
