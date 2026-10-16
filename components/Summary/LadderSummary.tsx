@@ -38,11 +38,14 @@ import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
 const TOP_CONTENDER_COUNT = 4;
 const CAROUSEL_PARTICIPANT_LIMIT = 20;
 
-const PLACEHOLDER_CONTENDERS = Array.from({ length: TOP_CONTENDER_COUNT }, (_, index) => ({
-  userId: `placeholder-${index}`,
-  username: "",
-  numberOfWins: 0,
-})) as unknown as ScoreboardProfile[];
+const PLACEHOLDER_CONTENDERS = Array.from(
+  { length: TOP_CONTENDER_COUNT },
+  (_, index) => ({
+    userId: `placeholder-${index}`,
+    username: "",
+    numberOfWins: 0,
+  }),
+) as unknown as ScoreboardProfile[];
 
 const LADDER_TOOLTIP =
   "Court Points (CP) — and cash on paid ladders — are shared across the top finishers.";
@@ -161,10 +164,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     [ladder.entryFee, ladder.participantCount],
   );
 
-  const topFourShares = useMemo(
-    () => getLadderTopFourShares(ladder),
-    [ladder],
-  );
+  const topFourShares = useMemo(() => getLadderTopFourShares(ladder), [ladder]);
 
   const hasPrizesDistributed =
     ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
@@ -231,9 +231,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     const load = async () => {
       try {
         const teams = await fetchLadderTeams(ladderId);
-        const valid = teams.filter(
-          (t) => t.teamKey && Array.isArray(t.team),
-        );
+        const valid = teams.filter((t) => t.teamKey && Array.isArray(t.team));
         const ranked = sortLadderTeamsByPlacement(valid);
         const idx = ranked.findIndex((t) => teamMemberIds(t).includes(uid));
         const userTeam =
@@ -303,19 +301,23 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     membershipChecking;
 
   if (summaryLoading) {
-    return <LadderSummarySkeleton isPaid={isPaid} />;
+    return <LadderSummarySkeleton />;
   }
 
   return (
     <Container testID="ladder-summary">
-      {isPaid && (
-        <PrizePotCard>
-          <SectionTitle>Total Prize Pool</SectionTitle>
+      <PrizePotCard>
+        <SectionTitle>Total Prize Pool</SectionTitle>
+        {isPaid ? (
           <PrizePotValue testID="ladder-cash-pot">
             {formatCurrency(prizePool.cash, ladder.currencyType)}
           </PrizePotValue>
-        </PrizePotCard>
-      )}
+        ) : (
+          <PrizePotValue testID="ladder-cp-pot">
+            {prizePool.xp.toLocaleString()} CP
+          </PrizePotValue>
+        )}
+      </PrizePotCard>
       <LadderStatsRow ladder={ladder} />
 
       {isDoubles
@@ -611,7 +613,6 @@ const PositionSection = styled.View({
   gap: 10,
   marginBottom: 20,
 });
-
 
 const PositionCard = styled.View({
   marginHorizontal: -20,
