@@ -7,28 +7,39 @@ const prizes = {
   roundName: "Round of 16",
   nextName: "Quarter-Final",
   secured: { cash: 0, cp: 0 },
-  next: { cash: 288, cp: 0 },
+  next: { cash: 288, cp: 800 },
 };
 
 describe("PlayoffPrizeBanner", () => {
-  it("shows what is secured and what winning adds, with cash on a paid ladder", () => {
+  it("shows the game, the current payout and the next round's, with cash on a paid ladder", () => {
     const { getByTestId } = render(
-      <PlayoffPrizeBanner prizes={prizes} currencyType="GBP" isPaid />,
+      <PlayoffPrizeBanner
+        title="Round of 16 · Game 3"
+        prizes={prizes}
+        currencyType="GBP"
+        isPaid
+      />,
+    );
+    const banner = getByTestId("playoff-prize-banner");
+    expect(banner).toHaveTextContent(
+      /Round of 16 · Game 3.*Current payout.*Quarter-Final payout/,
     );
     expect(getByTestId("playoff-prize-secured")).toHaveTextContent(
-      "No prize yet",
+      /£0.*\/ 0 CP/,
     );
-    expect(getByTestId("playoff-prize-next")).toHaveTextContent(/£288/);
-    expect(getByTestId("playoff-prize-banner")).toHaveTextContent(
-      /For reaching the Round of 16.*Quarter-Final/,
+    expect(getByTestId("playoff-prize-next")).toHaveTextContent(
+      /£288.*\/ 800 CP/,
     );
+    expect(banner).not.toHaveTextContent(/No prize yet|For reaching/);
   });
 
   it("shows only CP on a free ladder", () => {
     const { getByTestId } = render(
       <PlayoffPrizeBanner
+        title="Final"
         prizes={{
           ...prizes,
+          nextName: "Champion",
           secured: { cash: 0, cp: 3840 },
           next: { cash: 0, cp: 5120 },
         }}
@@ -37,6 +48,7 @@ describe("PlayoffPrizeBanner", () => {
       />,
     );
     expect(getByTestId("playoff-prize-secured")).toHaveTextContent("3840 CP");
+    expect(getByTestId("playoff-prize-next")).toHaveTextContent("5120 CP");
     expect(getByTestId("playoff-prize-next")).not.toHaveTextContent(/£/);
   });
 });

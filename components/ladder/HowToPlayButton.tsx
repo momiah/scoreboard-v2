@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 
 import Tag from "../Tag";
 
-const GOLD = "#9C7200";
+const DARK_GOLD: [string, string] = ["#A87A00", "#7A5600"];
+const BRIGHT_GOLD = "#FFD84D";
 const seenKey = (ladderId: string) => `playoff-guide-seen:${ladderId}`;
 
 interface HowToPlayButtonProps {
@@ -87,11 +89,11 @@ const HowToPlayButton: React.FC<HowToPlayButtonProps> = ({
     <Animated.View
       testID={seen ? "ladder-playoff-guide-seen" : "ladder-playoff-guide-new"}
       style={{
-        borderRadius: 8,
-        shadowColor: "#FFD54A",
+        borderRadius: 7,
+        shadowColor: BRIGHT_GOLD,
         shadowOffset: { width: 0, height: 0 },
-        shadowRadius: 6,
-        shadowOpacity: seen ? 0 : 0.6,
+        shadowRadius: seen ? 6 : 10,
+        shadowOpacity: seen ? 0.5 : 0.9,
         transform: [
           {
             scale: pulse.interpolate({
@@ -102,17 +104,24 @@ const HowToPlayButton: React.FC<HowToPlayButtonProps> = ({
         ],
       }}
     >
-      <Tag
-        name="How to play playoffs"
-        color={GOLD}
-        iconColor="white"
-        iconSize={15}
-        icon="trophy"
-        iconPosition="right"
-        onPress={handlePress}
-        bold
-        testID="ladder-how-to-play"
-      />
+      <LinearGradient
+        colors={DARK_GOLD}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: 7, borderWidth: 1, borderColor: BRIGHT_GOLD }}
+      >
+        <Tag
+          name="How to play playoffs"
+          color="transparent"
+          iconColor={BRIGHT_GOLD}
+          iconSize={15}
+          icon="trophy"
+          iconPosition="right"
+          onPress={handlePress}
+          bold
+          testID="ladder-how-to-play"
+        />
+      </LinearGradient>
     </Animated.View>
   );
 };

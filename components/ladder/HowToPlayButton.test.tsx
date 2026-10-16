@@ -24,7 +24,7 @@ describe("HowToPlayButton", () => {
     expect(queryByTestId("ladder-playoff-guide-new")).toBeNull();
   });
 
-  it("pulses until the playoff guide is opened once, then stays gold and still", async () => {
+  it("pulses until the playoff guide is opened once, then glows still", async () => {
     const onPress = jest.fn();
     const first = render(
       <HowToPlayButton ladderId="L1" isPlayoffs onPress={onPress} />,

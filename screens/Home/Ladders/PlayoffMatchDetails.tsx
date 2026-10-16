@@ -403,6 +403,7 @@ const PlayoffMatchDetails: React.FC = () => {
       </TopBar>
 
       <PlayoffPrizeBanner
+        title={title}
         prizes={prizes}
         currencyType={ladder.currencyType}
         isPaid={(ladder.entryFee ?? 0) > 0}

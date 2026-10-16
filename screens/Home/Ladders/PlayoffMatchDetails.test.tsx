@@ -181,7 +181,9 @@ describe("PlayoffMatchDetails", () => {
       userId: "u1",
       tie: baseTie(),
     });
-    expect(getByText("Final · Game 1")).toBeTruthy();
+    expect(getByTestId("playoff-prize-banner")).toHaveTextContent(
+      /Final · Game 1/,
+    );
     expect(getByTestId("playoff-match-format")).toHaveTextContent(
       /Best of 7.*per match/,
     );

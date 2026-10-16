@@ -1,6 +1,5 @@
 import React from "react";
 import styled from "styled-components/native";
-import Ionicons from "@expo/vector-icons/Ionicons";
 
 import type {
   LadderPlacePrize,
@@ -9,116 +8,84 @@ import type {
 import { formatCurrency } from "../../helpers/formatCurrency";
 
 interface PlayoffPrizeBannerProps {
+  title: string;
   prizes: LadderTiePrizes;
   currencyType: string;
   isPaid: boolean;
 }
 
-const PrizeAmount: React.FC<{
-  prize: LadderPlacePrize;
-  currencyType: string;
-  isPaid: boolean;
-  testID: string;
-}> = ({ prize, currencyType, isPaid, testID }) => {
-  if (prize.cash <= 0 && prize.cp <= 0) {
-    return <Muted testID={testID}>No prize yet</Muted>;
-  }
-  return (
-    <Amounts testID={testID}>
-      {isPaid && prize.cash > 0 ? (
-        <Cash>{formatCurrency(prize.cash, currencyType)}</Cash>
-      ) : null}
-      {prize.cp > 0 ? <Points>{prize.cp} CP</Points> : null}
-    </Amounts>
-  );
-};
+const payoutText = (
+  prize: LadderPlacePrize,
+  currencyType: string,
+  isPaid: boolean,
+): string =>
+  isPaid
+    ? `${formatCurrency(prize.cash, currencyType)} / ${prize.cp} CP`
+    : `${prize.cp} CP`;
 
 const PlayoffPrizeBanner: React.FC<PlayoffPrizeBannerProps> = ({
+  title,
   prizes,
   currencyType,
   isPaid,
 }) => (
-  <Banner testID="playoff-prize-banner">
-    <Half>
-      <Label>Secured</Label>
-      <PrizeAmount
-        prize={prizes.secured}
-        currencyType={currencyType}
-        isPaid={isPaid}
-        testID="playoff-prize-secured"
-      />
-      <Caption numberOfLines={1}>For reaching the {prizes.roundName}</Caption>
-    </Half>
-    <Divider>
-      <Ionicons name="chevron-forward" size={18} color="#FFC800" />
-    </Divider>
-    <Half>
-      <Label>Next round</Label>
-      <PrizeAmount
-        prize={prizes.next}
-        currencyType={currencyType}
-        isPaid={isPaid}
-        testID="playoff-prize-next"
-      />
-      <Caption numberOfLines={1}>{prizes.nextName}</Caption>
-    </Half>
-  </Banner>
+  <Card testID="playoff-prize-banner">
+    <Title numberOfLines={1}>{title}</Title>
+    <PayoutRow>
+      <Payout>
+        <Label>Current payout</Label>
+        <Amount testID="playoff-prize-secured">
+          {payoutText(prizes.secured, currencyType, isPaid)}
+        </Amount>
+      </Payout>
+      <Payout style={{ alignItems: "flex-end" }}>
+        <Label style={{ textAlign: "right" }}>{prizes.nextName} payout</Label>
+        <Amount testID="playoff-prize-next" style={{ textAlign: "right" }}>
+          {payoutText(prizes.next, currencyType, isPaid)}
+        </Amount>
+      </Payout>
+    </PayoutRow>
+  </Card>
 );
 
 export default PlayoffPrizeBanner;
 
-const Banner = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
+const Card = styled.View({
   marginHorizontal: 16,
   marginTop: 4,
-  padding: 14,
-  borderRadius: 12,
+  padding: 15,
+  borderRadius: 8,
   borderWidth: 1,
-  borderColor: "rgba(255, 200, 0, 0.45)",
-  backgroundColor: "rgba(255, 200, 0, 0.08)",
+  borderColor: "rgb(26, 28, 54)",
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
 });
 
-const Half = styled.View({
-  flex: 1,
-  alignItems: "center",
-  gap: 3,
-});
-
-const Divider = styled.View({
-  paddingHorizontal: 6,
-});
-
-const Label = styled.Text({
-  color: "#FFC800",
-  fontSize: 11,
-  fontWeight: "700",
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-});
-
-const Amounts = styled.View({
-  alignItems: "center",
-});
-
-const Cash = styled.Text({
+const Title = styled.Text({
   color: "#ffffff",
-  fontSize: 20,
+  fontSize: 15,
   fontWeight: "bold",
 });
 
-const Points = styled.Text({
-  color: "#e6d28a",
-  fontSize: 14,
-  fontWeight: "600",
+const PayoutRow = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  gap: 12,
+  marginTop: 12,
 });
 
-const Muted = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 14,
+const Payout = styled.View({
+  flex: 1,
+  alignItems: "flex-start",
+  gap: 3,
 });
 
-const Caption = styled.Text({
+const Label = styled.Text({
   color: "#9fb8c8",
   fontSize: 12,
+});
+
+const Amount = styled.Text({
+  color: "#FFC800",
+  fontSize: 16,
+  fontWeight: "bold",
 });
