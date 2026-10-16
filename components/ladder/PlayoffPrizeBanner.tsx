@@ -56,14 +56,14 @@ const Card = styled.View({
   paddingVertical: 20,
   paddingHorizontal: 18,
   borderRadius: 8,
-  borderWidth: 1,
-  borderColor: "rgb(26, 28, 54)",
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderBottomWidth: 1,
+  borderColor: "rgba(48, 52, 96, 1)",
+  // backgroundColor: "rgba(0, 0, 0, 0.3)",
 });
 
 const Title = styled.Text({
   color: "#ffffff",
-  fontSize: 16,
+  fontSize: 18,
   fontWeight: "bold",
 });
 

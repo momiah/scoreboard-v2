@@ -569,7 +569,7 @@ const InfoBox = styled.View({
   paddingVertical: 12,
   paddingHorizontal: 8,
   borderRadius: 12,
-  backgroundColor: "rgba(255, 255, 255, 0.05)",
+  backgroundColor: "rgba(0, 162, 255, 0.08)",
 });
 
 const InfoValue = styled.Text({
