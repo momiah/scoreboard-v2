@@ -195,7 +195,7 @@ one is, or a greyed **Already extended**.
 | 12.6 | Accepting after the proposed time has passed | Refused and the request cleared 🅹 |
 | 12.7 | A game is reported | Reschedule disappears; "Request Extension" appears 🅹 |
 | 12.8 | Extension taken | Applies at once: `extension.expiresAt` 7 days after the request; the other players are notified "… Your extension has 7 days left to complete your match."; the menu shows "Already extended" 🅹 |
-| 12.9 | Extension on a playoff match | The modal says "This playoff game must be finished by Ddd D MMM."; `expiresAt` is capped at the tie deadline 🅹 |
+| 12.9 | Extension on a playoff match | The modal says "This tie must be finished by Ddd D MMM."; `expiresAt` is capped at the tie deadline 🅹 |
 | 12.10 | Expiry during an extension | Never before `expiresAt`; after it, the 72-hour inactivity rule applies 🅹 (shared) |
 | 12.11 | Last day of an extension | Every player gets "Your extension has 1 day left to complete your match at X." once 🅹 (functions) |
 | 12.12 | Requests and playoff accepts | Do not touch `lastUpdated`, so they never restart the 72-hour clock 🅹 |

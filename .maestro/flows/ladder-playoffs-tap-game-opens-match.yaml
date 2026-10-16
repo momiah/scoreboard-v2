@@ -35,7 +35,7 @@ onFlowStart:
     visible:
       id: "playoff-match-details"
     timeout: 20000
-- assertVisible: "Round of 16 · Game .*"
+- assertVisible: "Round of 16 · Tie .*"
 - assertVisible:
     id: "playoff-match-aggregate"
 - assertVisible:

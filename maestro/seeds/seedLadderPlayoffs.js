@@ -299,7 +299,7 @@ const writePlayoffNotifications = async ({
         ...base,
         senderId: "system",
         title: "You made the playoffs!",
-        message: `Congratulations! You've made the playoffs in ${ladderName}. You have 10 days to play both your home and away games.`,
+        message: `Congratulations! You've made the playoffs in ${ladderName}. You have 10 days to play both your home and away matches.`,
         data: { ladderId, tab: "Playoffs" },
       },
     });

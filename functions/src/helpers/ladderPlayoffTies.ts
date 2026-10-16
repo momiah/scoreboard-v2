@@ -57,6 +57,9 @@ const tiePlayerIds = (tie: Pick<LadderPlayoffTie, "side1" | "side2">): string[] 
   ...(tie.side2?.playerIds ?? []),
 ];
 
+const TIE_SIDES = ["side1", "side2"] as const;
+type TieSideKey = (typeof TIE_SIDES)[number];
+
 export const ladderPlayoffTeamName = (team: GameTeam): string =>
   [team.player1, team.player2]
     .filter(Boolean)
@@ -72,7 +75,7 @@ export const ladderPlayoffRoundName = (
   totalRounds: number,
 ): string =>
   tie.isThirdPlacePlayoff
-    ? "3rd-place game"
+    ? "3rd-place tie"
     : roundLabel(2 ** (totalRounds - tie.round + 1));
 
 export interface LadderPlayoffTieResolution {
@@ -197,6 +200,7 @@ export const notifyLadderPlayoffResolution = async ({
   const totalRounds = totalRoundsOf(resolution.ties);
   const { tie } = resolution;
   const roundName = ladderPlayoffRoundName(tie, totalRounds);
+  const before = new Map(resolution.ties.map((original) => [original.tieId, original]));
 
   if (resolution.deciderCreated) {
     await notifyLadderPlayers({
@@ -222,22 +226,55 @@ export const notifyLadderPlayoffResolution = async ({
         userIds: tiePlayerIds(tie),
         ladder,
         kind: `playoff-void-${changedTie.tieId}`,
-        title: "Playoff game not played",
+        title: "Playoff tie not played",
         message: `Your ${changedName} in ${ladder.name} wasn't played before the deadline, so neither side goes through.`,
+        tab: PLAYOFFS_TAB,
+        data: { tieId: changedTie.tieId },
+      });
+    }
+    const previous = before.get(changedTie.tieId);
+    const arrived = TIE_SIDES.filter((key) => changedTie[key] && !previous?.[key]);
+    const waiting = TIE_SIDES.filter((key) => changedTie[key] && previous?.[key]);
+    const playersOf = (keys: TieSideKey[]) =>
+      keys.flatMap((key) => changedTie[key]?.playerIds ?? []);
+
+    if (
+      changedTie.status === LADDER_PLAYOFF_TIE_STATUS.AWAITING_ENTRANTS &&
+      !changedTie.isThirdPlacePlayoff &&
+      arrived.length > 0
+    ) {
+      await notifyLadderPlayers({
+        userIds: playersOf(arrived),
+        ladder,
+        kind: `playoff-through-${changedTie.tieId}`,
+        title: `You're through to the ${changedName}`,
+        message: `Congratulations! You're through to the ${changedName} in ${ladder.name}. We'll let you know as soon as your opponent is decided.`,
         tab: PLAYOFFS_TAB,
         data: { tieId: changedTie.tieId },
       });
     }
     if (changedTie.status === LADDER_PLAYOFF_TIE_STATUS.SCHEDULED) {
       await notifyLadderPlayers({
-        userIds: tiePlayerIds(changedTie),
+        userIds: playersOf(arrived),
         ladder,
         kind: `playoff-round-${changedTie.tieId}`,
         title: `You've reached the ${changedName}`,
-        message: `Congratulations! You've reached the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away games.`,
+        message: `Congratulations! You've reached the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
         tab: PLAYOFFS_TAB,
         data: { tieId: changedTie.tieId },
       });
+      for (const key of waiting) {
+        const opponent = key === "side1" ? changedTie.team2 : changedTie.team1;
+        await notifyLadderPlayers({
+          userIds: changedTie[key]?.playerIds ?? [],
+          ladder,
+          kind: `playoff-opponent-${changedTie.tieId}`,
+          title: `Your ${changedName} is ready`,
+          message: `Your opponent in the ${changedName} of ${ladder.name} is ${ladderPlayoffTeamName(opponent)}. Your tie is ready: you have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
+          tab: PLAYOFFS_TAB,
+          data: { tieId: changedTie.tieId },
+        });
+      }
     }
   }
 };

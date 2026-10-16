@@ -111,7 +111,7 @@ Flows (testIDs: `match-menu-RescheduleMatch`, `match-menu-Extension`,
    Reschedule → info modal → Extend match → "Already extended" on reopening the
    menu.
 7. `extension-playoff-deadline`: playoff leg → the info modal shows "This
-   playoff game must be finished by .*".
+   tie must be finished by .*".
 8. `extension-already-used`: "Already extended" is greyed and opens nothing.
 9. `reschedule-hidden-when-posted`: a posted match's menu has neither option.
 
@@ -211,7 +211,7 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 
 1. `ladder-playoffs-tap-game-opens-match`: tap a bracket game →
    `playoff-match-details` with only the back button in the header (no title),
-   then `playoff-prize-banner` above the tabs reading "Round of 16 · Game N",
+   then `playoff-prize-banner` above the tabs reading "Round of 16 · Tie N",
    `playoff-match-aggregate` and both info boxes.
 2. `ladder-playoffs-tie-layout-spectator`: open each of the seeded spectator
    games in turn. Every screen has the same layout: the prize banner, the tabs,
@@ -220,7 +220,7 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
    match 2 headed "Match N" with `playoff-match-leg{N}-host` (house icon and
    the host's name), and no "Best of" tag on match 1 and 2's cards. Nothing is tappable except match
    cards: no `playoff-match-leg*-arrange`. The Chat
-   Room tab opens the blurred "Only the players in this game can see this
+   Room tab opens the blurred "Only the players in this tie can see this
    chat" notice.
 
 **Hosting and what's next**
@@ -231,7 +231,7 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
    "Your opponent arranges match 1 first" on match 2 until the opponent arranges
    match 1 (mocked), then `playoff-match-leg2-arrange` for any date. No coin.
 4. `ladder-playoffs-prize-banner` (free and paid, `pending`): the card reads
-   "Round of 16 · Game N", "Current payout" on the left and "Quarter-Final
+   "Round of 16 · Tie N", "Current payout" on the left and "Quarter-Final
    payout" on the right, in whole amounts with a "·" between cash and CP and no
    "/", "Secured" or "No prize yet". Paid (£20): `playoff-prize-secured`
    "£0 · 0 CP", `playoff-prize-next` "£320 · 800 CP". Free:
@@ -247,7 +247,7 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
    "Arrange match 2" with the home court in `add-ladder-match-court-selector`,
    best of 7 only, `add-ladder-match-court-time`, `add-ladder-match-no-fee` (no
    `add-ladder-match-fee`), and the date picker note "Please select a date
-   within the 10 days for this playoff game (by …)". Change the court, pick a
+   within the 10 days for this tie (by …)". Change the court, pick a
    date, accept the terms → "Send to opponent" → match 2's card reads
    "Awaiting opponent's confirmation". Arranging it before match 1's date is
    allowed once match 1 is arranged.
@@ -286,7 +286,7 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
     Reschedule Match → the picker says "Please select a date by …" (the tie
     deadline); a later date is refused.
 17. `ladder-playoffs-extension`: a playoff match with one game → Request
-    Extension → "This playoff game must be finished by …".
+    Extension → "This tie must be finished by …".
 
 **Scores, aggregates and spectators**
 
@@ -355,6 +355,16 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
     name, `match-details-card-address` reads "{address}, {city}, {postcode}"
     (seeded playoffs court: "1 Test Street, {city}, TE1 1ST"); match cards in
     lists (Schedule, playoff legs) still show only the city.
+
+33. `ladder-playoffs-through-and-ready`: the "You're through to the
+    Quarter-Final" notification (seeded) opens the Playoffs tab on the
+    Quarter-Final, which reads "Arranged once both players are known"; the
+    "Your Quarter-Final is ready" notification names the opponent and opens the
+    tie with match 1 to arrange.
+34. `ladder-playoffs-tie-wording`: the tie card reads "Round of 16 · Tie N",
+    the Chat Room notice "Only the players in this tie can see this chat", the
+    guide and Rules say "Each playoff tie is two matches", and Match Options →
+    Request Extension says "This tie must be finished by …".
 
 Backend-only and covered by the emulator suite, no flow needed: the deciding
 game is placed at the court and time of whichever match was played last, and

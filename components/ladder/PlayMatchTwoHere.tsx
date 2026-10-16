@@ -16,7 +16,7 @@ interface PlayMatchTwoHereProps {
 }
 
 /**
- * On match 1 of a playoff game, once it's complete: offer to play match 2 at
+ * On match 1 of a playoff tie, once it's complete: offer to play match 2 at
  * the same court straight away, and let the opponent answer it.
  */
 const PlayMatchTwoHere: React.FC<PlayMatchTwoHereProps> = ({

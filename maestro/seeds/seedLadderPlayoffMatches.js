@@ -559,7 +559,7 @@ export const seedLadderPlayoffMatches = async ({
             {
               id: `maestro-po-round-${mine.tieId}`,
               title: "You've reached the Quarter-Final",
-              message: `Congratulations! You've reached the Quarter-Final in ${ladderName}. You have 10 days to play both your home and away games.`,
+              message: `Congratulations! You've reached the Quarter-Final in ${ladderName}. You have 10 days to play both your home and away matches.`,
               data: {
                 ladderId: ladderId,
                 tab: "Playoffs",

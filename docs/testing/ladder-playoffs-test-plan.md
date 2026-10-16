@@ -31,7 +31,7 @@ section 6. Phase 3 (payout) is not covered.
     paid an entry fee, it will be refunded to you in full."
   - Playoffs generated → every qualifier, `tab: "Playoffs"`: "Congratulations!
     You've made the playoffs in {ladder}. You have 10 days to play both your
-    home and away games."
+    home and away matches."
   - Playoffs generated → every entrant who did not qualify (both players of an
     eliminated doubles team), `tab: "Playoffs"`: "The playoffs in {ladder}
     have started, and unfortunately you didn't make the cut this time. The
@@ -84,7 +84,7 @@ guard fails if they drift):
 | 2.1 | Round structure (256 → top 16) | Tabs Round of 16, Quarter-Final, Semi-Final, Final; each round's first game is visible; the Final tab shows the Final (`r4-s0`) and the 3rd/4th Playoff (`r4-s1`) as TBD 🅼 |
 | 2.2 | Proximity pairing (2048) | The user's London opponent is P0008 S and the neighbouring game is P0016 S v P0024 S, all London 🅼 🅹 |
 | 2.3 | Tree / list toggle | Switching view keeps the selected round (Quarter-Final) in both directions 🅼 |
-| 2.4 | Tapping a bracket game | Opens the playoff match screen for that game: title "{round} · Game N", aggregate card and "Best of N per match · Finish by …"; no score input or approval modal 🅼 |
+| 2.4 | Tapping a bracket game | Opens the playoff match screen for that game: title "{round} · Tie N", aggregate card and "Best of N per match · Finish by …"; no score input or approval modal 🅼 |
 | 2.5 | Bracket scroll target and glow | The user's game is on screen without scrolling (see section 3); the glow itself is an animation and is covered by the scroll-target tests in Jest 🅹 |
 | 2.6 | Loading skeleton | `ladder-playoffs-loading` shows until the ties load 🅹 (the skeleton lasts milliseconds, so Maestro does not assert it) |
 
@@ -150,7 +150,7 @@ update the global profile only, never ladder standings.
 
 | # | Scenario | Expected |
 |---|----------|----------|
-| 6.1 | Anyone opens a game with both sides known | No coin toss. No title in the header (just the back button). At the top, a prize card styled like a match card: "Round of N · Game N", then "Current payout" on the left (left-aligned) and "<next round> payout" on the right (right-aligned, "Champion payout" in the Final, "3rd place payout" in the 3rd-place game), each as "£X · X CP" on a paid ladder or "X CP" on a free one, in whole amounts (£0 · 0 CP when nothing is paid yet), then the Tie Lobby / Chat Room tabs. Match 1 is headed with the lower-ranked side's name, match 2 with the higher-ranked side's; the aggregate shows plain names 🅹 🅼 |
+| 6.1 | Anyone opens a game with both sides known | No coin toss. No title in the header (just the back button). At the top, a prize card styled like a match card: "Round of N · Game N", then "Current payout" on the left (left-aligned) and "<next round> payout" on the right (right-aligned, "Champion payout" in the Final, "3rd place payout" in the 3rd-place tie), each as "£X · X CP" on a paid ladder or "X CP" on a free one, in whole amounts (£0 · 0 CP when nothing is paid yet), then the Tie Lobby / Chat Room tabs. Match 1 is headed with the lower-ranked side's name, match 2 with the higher-ranked side's; the aggregate shows plain names 🅹 🅼 |
 | 6.5 | The lower-ranked player, match 1 not arranged | The "Arrange your home match" placeholder opens the Post a Match modal titled "Arrange match 1": home court preselected (any court can be chosen), best of 7 fixed, shuttle type to choose, the court-time line, "There are no court fees in the playoffs…" instead of a fee, and "Send to opponent" 🅹 🅼 |
 | 6.6 | The higher-ranked player, match 1 not arranged | "Waiting for your opponent to arrange their home match" on match 1; their own "Arrange your home match" on match 2. Onlookers see "Waiting for X to arrange their home match"; before both players are known, both read "Arranged once both players are known" 🅹 🅼 |
 | 6.6a | Arranging order | Match 2's host sees "Your opponent arranges match 1 first" (others "Arranged once match 1 is arranged") until match 1 is arranged; then match 2 can be arranged for any date, even before match 1. Arranging match 2 first is refused ("Match 1 has to be arranged first.") 🅹 |
@@ -163,7 +163,7 @@ update the global profile only, never ladder standings.
 | 6.10b | The host cancels a posted playoff match from Match Options | "Cancel this playoff match? You can arrange it again before the playoff deadline." → straight back to the tie screen with "Arrange your home match" 🅹 🅼 |
 | 6.10c | A playoff match is cancelled or expires while its Match Details is open | The screen returns to the tie screen instead of showing a stale cancelled match 🅹 |
 | 6.10d | Notifications about a playoff match (arranged, accepted, declined, cancellation) | Open the ladder on the Playoffs tab, where the user's game is highlighted, not the Schedule tab 🅹 |
-| 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this playoff game (by Ddd D MMM)." 🅹 🅼 |
+| 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this tie (by Ddd D MMM)." 🅹 🅼 |
 | 6.10f | An onlooker opens any tie (open, waiting or finished) | Same layout as players: the prize banner, the aggregate, both info boxes ("Finished" once settled), and a placeholder or card for each match. Only players can tap anything 🅹 🅼 |
 | 6.10g | Any viewer opens a match | Total Score always shows the poster on the left and the accepter on the right, counting approved games; a player sees it green if they're winning and red if losing, a spectator sees grey. Empty game cards list the poster first too. The tie's aggregate is always in bracket order (team 1 left). No match menu for spectators 🅹 🅼 |
 | 6.10h | A spectator on a playoff match | No check-in button (the header card shows the match status instead), unreported games can't be tapped (reported ones open read-only), and a posted match reads "Awaiting confirmation" rather than "your"/"opponent's" wording. Playoff notifications (decider, void, round reached) go only to the tie's players 🅹 🅼 |
@@ -180,7 +180,7 @@ update the global profile only, never ladder standings.
 | 6.18 | Deadline passes with nothing played | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |
 | 6.19 | Day 3, 6, 9 | One reminder each ("N days left to finish your …"), never repeated 🅴 |
 | 6.20 | Posted playoff matches | Not listed in Matchmaking 🅹 |
-| 6.21 | Settled game | A gold winner card above the aggregate: "Winner", the winner's name, and "Through to the {next round}" ("on a walkover" when it was one; "Ladder champion" for the Final, "Takes 3rd place" for the 3rd-place game). A void game shows a grey card "Not played in time, so neither side goes through." 🅹 🅼 |
+| 6.21 | Settled game | A gold winner card above the aggregate: "Winner", the winner's name, and "Through to the {next round}" ("on a walkover" when it was one; "Ladder champion" for the Final, "Takes 3rd place" for the 3rd-place tie). A void game shows a grey card "Not played in time, so neither side goes through." 🅹 🅼 |
 
 Emulator cases are in `functions/src/ladderPlayoffTies.emulator.test.ts` and
 `functions/src/autoApproveLadderGames.emulator.test.ts`; the screen in
@@ -240,4 +240,12 @@ notifications.
 | # | Scenario | Expected |
 |---|----------|----------|
 | 6.30 | Any ladder size | Cash follows the payout bands for that size from the full pool (every entry fee; the 10% platform fee is paid on top, not taken from it), each band split equally; CP uses the same bands and shares on the CP pool (50 CP per entrant). The Summary tab's top four use the same shares 🅹 |
-| 6.31 | The tie's prize card | "Current payout" is the prize for the worst place a loser of this round can finish; the right-hand payout is the prize for the round after (Champion for the Final, 3rd place for the 3rd-place game) 🅹 🅼 |
+| 6.31 | The tie's prize card | "Current payout" is the prize for the worst place a loser of this round can finish; the right-hand payout is the prize for the round after (Champion for the Final, 3rd place for the 3rd-place tie) 🅹 🅼 |
+
+### Moving on
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.32 | A tie is won while the neighbouring tie is still being played | Straight away (on the match that completes it, not the scheduled job) the winner is placed in the next tie and gets "You're through to the {round}": "Congratulations! You're through to the {round} in {ladder}. We'll let you know as soon as your opponent is decided." Semi-final losers going to the 3rd-place tie don't get it 🅴 |
+| 6.33 | The neighbouring tie then finishes | The next tie starts (10 days). The side that was waiting gets "Your {round} is ready": "Your opponent in the {round} of {ladder} is {name}. Your tie is ready: you have 10 days to play both your home and away matches." The side that just arrived gets "You've reached the {round}" 🅴 |
+| 6.34 | Wording | A playoff pairing is a "tie" everywhere ("Round of 16 · Tie 3", "3rd-place tie", "Each playoff tie is two matches", "This tie must be finished by …", "Playoff tie not played", "Only the players in this tie can see this chat"); "game" means a single game, and notifications say "home and away matches" 🅹 🅼 |

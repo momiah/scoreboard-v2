@@ -334,7 +334,7 @@ const sendPlayoffNotifications = async ({
     ladder,
     kind: "playoffs-promotion",
     title: "You made the playoffs!",
-    message: `Congratulations! You've made the playoffs in ${ladder.name}. You have ${PLAYOFF_ROUND_DAYS} days to play both your home and away games.`,
+    message: `Congratulations! You've made the playoffs in ${ladder.name}. You have ${PLAYOFF_ROUND_DAYS} days to play both your home and away matches.`,
     tab: "Playoffs",
   });
   await notifyLadderPlayers({

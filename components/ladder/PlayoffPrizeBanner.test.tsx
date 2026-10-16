@@ -14,7 +14,7 @@ describe("PlayoffPrizeBanner", () => {
   it("shows the game, the current payout and the next round's, with cash on a paid ladder", () => {
     const { getByTestId } = render(
       <PlayoffPrizeBanner
-        title="Round of 16 · Game 3"
+        title="Round of 16 · Tie 3"
         prizes={prizes}
         currencyType="GBP"
         isPaid
@@ -22,7 +22,7 @@ describe("PlayoffPrizeBanner", () => {
     );
     const banner = getByTestId("playoff-prize-banner");
     expect(banner).toHaveTextContent(
-      /Round of 16 · Game 3.*Current payout.*Quarter-Final payout/,
+      /Round of 16 · Tie 3.*Current payout.*Quarter-Final payout/,
     );
     expect(getByTestId("playoff-prize-secured")).toHaveTextContent(/£0 · 0 CP/);
     expect(getByTestId("playoff-prize-next")).toHaveTextContent(

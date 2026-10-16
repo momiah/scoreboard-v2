@@ -105,7 +105,7 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="trophy-outline"
           title="Welcome to the Playoffs"
-          body={`${ladder?.playoffBracketSize ? `The top ${ladder.playoffBracketSize} ` : "The top "}${noun}s made the cut. Every playoff game is a knockout: win and you move on, lose and your season is over.`}
+          body={`${ladder?.playoffBracketSize ? `The top ${ladder.playoffBracketSize} ` : "The top "}${noun}s made the cut. Every playoff tie is a knockout: win and you move on, lose and your season is over.`}
         />
       ),
     },
@@ -138,7 +138,7 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="home-outline"
           title="Home and Away"
-          body={`Each playoff game is two matches, one at each ${noun}'s home court. The lower-ranked ${noun} hosts match 1 and arranges it first. The higher-ranked ${noun} hosts match 2, a reward for a stronger season.`}
+          body={`Each playoff tie is two matches, one at each ${noun}'s home court. The lower-ranked ${noun} hosts match 1 and arranges it first. The higher-ranked ${noun} hosts match 2, a reward for a stronger season.`}
         />
       ),
     },

@@ -721,7 +721,7 @@ describe("notifications", () => {
     );
     expect(promoted[0]).toMatchObject({
       message:
-        "Congratulations! You've made the playoffs in North London Ladder. You have 10 days to play both your home and away games.",
+        "Congratulations! You've made the playoffs in North London Ladder. You have 10 days to play both your home and away matches.",
       data: { ladderId: "L1", tab: "Playoffs" },
     });
   });

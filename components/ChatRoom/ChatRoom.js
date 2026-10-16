@@ -40,6 +40,7 @@ const ChatRoom = ({
   endDate,
   competitionType,
   chatPath,
+  privateNotice = /** @type {string | null} */ (null),
 }) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
@@ -211,9 +212,10 @@ const ChatRoom = ({
             fontStyle: "italic",
           }}
         >
-          {competitionType === COMPETITION_TYPES.LADDER
-            ? "Only the players in this game can see this chat 📝"
-            : "Only participants of the league can view this chat 📝"}
+          {privateNotice ??
+            (competitionType === COMPETITION_TYPES.LADDER
+              ? "Only the players in this game can see this chat 📝"
+              : "Only participants of the league can view this chat 📝")}
         </Text>
       </BlurView>
     );

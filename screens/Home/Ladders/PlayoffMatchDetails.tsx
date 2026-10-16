@@ -194,10 +194,10 @@ const PlayoffMatchDetails: React.FC = () => {
 
   const userSide = sideOfUser(tie, userId);
   const roundName = tie.isThirdPlacePlayoff
-    ? "3rd-place game"
+    ? "3rd-place tie"
     : roundLabel(2 ** (totalRounds - tie.round + 1));
   const title = tie.gameNumber
-    ? `${roundName} · Game ${tie.gameNumber}`
+    ? `${roundName} · Tie ${tie.gameNumber}`
     : roundName;
   const tally = tallyLadderPlayoffTie(tie, [...legs.values()]);
   const isOpen = tie.status === LADDER_PLAYOFF_TIE_STATUS.SCHEDULED;
@@ -419,6 +419,7 @@ const PlayoffMatchDetails: React.FC = () => {
           competitionId={`${ladderId}-${tieId}`}
           chatPath={["ladders", ladderId, "playoffTies", tieId, "chat"]}
           competitionType={COMPETITION_TYPES.LADDER}
+          privateNotice="Only the players in this tie can see this chat 📝"
           userRole={userSide ? "participant" : "user"}
           endDate={undefined}
           competitionName={`${title} · ${ladder.name}`}
@@ -488,7 +489,7 @@ const PlayoffMatchDetails: React.FC = () => {
                 {isCompleted
                   ? completedOn
                     ? `on ${completedOn}`
-                    : "playoff game over"
+                    : "tie over"
                   : isOpen
                     ? "to complete both matches"
                     : "to play both matches once it starts"}

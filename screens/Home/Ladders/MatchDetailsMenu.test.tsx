@@ -168,7 +168,7 @@ describe("MatchDetailsMenu changes", () => {
     await waitFor(() =>
       expect(
         utils.getByTestId("extension-info-modal-description").props.children,
-      ).toMatch(/This playoff game must be finished by Tue 20 Oct\.$/),
+      ).toMatch(/This tie must be finished by Tue 20 Oct\.$/),
     );
   });
 

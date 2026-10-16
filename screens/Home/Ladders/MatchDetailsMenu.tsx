@@ -270,7 +270,7 @@ const MatchDetailsMenu: React.FC = () => {
 
   const playoffDeadlineText =
     match?.playoffTieId && deadline
-      ? ` This playoff game must be finished by ${moment(deadline).format("ddd D MMM")}.`
+      ? ` This tie must be finished by ${moment(deadline).format("ddd D MMM")}.`
       : "";
 
   return (

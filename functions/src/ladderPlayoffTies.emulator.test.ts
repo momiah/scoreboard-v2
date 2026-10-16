@@ -167,7 +167,11 @@ describe("resolveLadderPlayoffTie", () => {
     await seedLeg(semiOne, 1, [a, a, b]);
     await seedLeg(semiOne, 2, [b, a, a]);
     const first = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: semiOne.tieId, now: start });
-    expect(first?.tie.tieId).toBe(semiOne.tieId);
+    if (!first) throw new Error("expected a resolution");
+    expect(first.tie.tieId).toBe(semiOne.tieId);
+    await notifyLadderPlayoffResolution({ ladder, resolution: first });
+    expect(await notificationIds(a)).toEqual([`playoff-through-r2-s0-${LADDER}-${a}`]);
+    expect(await notificationIds(b)).toEqual([]);
     expect(await readTie(semiOne.tieId)).toMatchObject({
       status: LADDER_PLAYOFF_TIE_STATUS.COMPLETED,
       winner: "team1",
@@ -190,8 +194,16 @@ describe("resolveLadderPlayoffTie", () => {
     const thirdPlace = await readTie("r2-s1");
     expect(sidesOf(thirdPlace)).toEqual([b, c]);
     expect(thirdPlace.status).toBe(LADDER_PLAYOFF_TIE_STATUS.SCHEDULED);
-    expect(await notificationIds(a)).toContain(`playoff-round-r2-s0-${LADDER}-${a}`);
+    expect(await notificationIds(a)).toContain(`playoff-opponent-r2-s0-${LADDER}-${a}`);
+    expect(await notificationIds(a)).not.toContain(`playoff-round-r2-s0-${LADDER}-${a}`);
+    expect(await notificationIds(d)).toContain(`playoff-round-r2-s0-${LADDER}-${d}`);
+    expect(await notificationIds(b)).toContain(`playoff-opponent-r2-s1-${LADDER}-${b}`);
     expect(await notificationIds(c)).toContain(`playoff-round-r2-s1-${LADDER}-${c}`);
+    const ready = await db.doc(`users/${a}/notifications/playoff-opponent-r2-s0-${LADDER}-${a}`).get();
+    expect(ready.data()).toMatchObject({
+      title: "Your Final is ready",
+      message: `Your opponent in the Final of ${ladder.name} is ${d}. Your tie is ready: you have 10 days to play both your home and away matches.`,
+    });
   });
 
   it("does nothing until both matches are complete", async () => {

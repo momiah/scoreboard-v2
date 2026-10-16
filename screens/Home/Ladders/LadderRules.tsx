@@ -48,7 +48,7 @@ const rulesFor = (noun: "player" | "team"): RuleSection[] => [
   },
   {
     title: "Playoff matches",
-    body: `Each playoff game is two matches, one at each ${noun}'s home court, and both must be played within 10 days. The lower-ranked ${noun} arranges their home match first. Once it's arranged, the higher-ranked ${noun} can arrange theirs for any date before the deadline, even an earlier one, so you can work around each other. The ${noun} that wins more games across both matches goes through. If it's level, one deciding game is played at the court of whichever match was played last, straight after it, with everyone already checked in. If you can't stay for it, either side can reschedule it before the deadline. Once match 1 is finished, either side can offer to play match 2 at the same court there and then; the other side can accept or decline.`,
+    body: `Each playoff tie is two matches, one at each ${noun}'s home court, and both must be played within 10 days. The lower-ranked ${noun} arranges their home match first. Once it's arranged, the higher-ranked ${noun} can arrange theirs for any date before the deadline, even an earlier one, so you can work around each other. The ${noun} that wins more games across both matches goes through. If it's level, one deciding game is played at the court of whichever match was played last, straight after it, with everyone already checked in. If you can't stay for it, either side can reschedule it before the deadline. Once match 1 is finished, either side can offer to play match 2 at the same court there and then; the other side can accept or decline.`,
   },
   {
     title: "Prizes",

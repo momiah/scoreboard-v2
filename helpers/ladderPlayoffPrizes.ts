@@ -102,7 +102,7 @@ export const getLadderTiePrizes = (
     return {
       secured: getLadderPlacePrize(ladder, 4),
       next: getLadderPlacePrize(ladder, 3),
-      roundName: "3rd-place game",
+      roundName: "3rd-place tie",
       nextName: "3rd place",
     };
   }

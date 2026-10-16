@@ -223,7 +223,7 @@ describe("playoffs generated for a 2048-player ladder", () => {
       senderId: "system",
       type: "ladder",
       message:
-        "Congratulations! You've made the playoffs in Emulator 2048. You have 10 days to play both your home and away games.",
+        "Congratulations! You've made the playoffs in Emulator 2048. You have 10 days to play both your home and away matches.",
       data: { ladderId: "L2048", tab: "Playoffs" },
     });
     expect(eliminated[0]).toMatchObject({

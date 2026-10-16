@@ -206,7 +206,7 @@ describe("seedLadderPlayoffs tiers", () => {
       senderId: "system",
       type: "ladder",
       message:
-        "Congratulations! You've made the playoffs in Maestro Playoffs 256. You have 10 days to play both your home and away games.",
+        "Congratulations! You've made the playoffs in Maestro Playoffs 256. You have 10 days to play both your home and away matches.",
       data: { ladderId: MAESTRO_PO_LADDER_ID, tab: "Playoffs" },
     });
     expect(notifications.map((n) => n.message)).toEqual(
@@ -365,7 +365,7 @@ describe("seedLadderPlayoffsDoubles tiers", () => {
         (n) => n.title === "You made the playoffs!",
       ).message,
     ).toBe(
-      "Congratulations! You've made the playoffs in Maestro Playoffs Doubles 128. You have 10 days to play both your home and away games.",
+      "Congratulations! You've made the playoffs in Maestro Playoffs Doubles 128. You have 10 days to play both your home and away matches.",
     );
   });
 });

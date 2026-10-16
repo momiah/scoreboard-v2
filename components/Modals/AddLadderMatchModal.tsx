@@ -388,7 +388,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   maxDate={postingDeadline}
                   rangeMessage={
                     playoff && postingDeadline
-                      ? `Please select a date within the 10 days for this playoff game (by ${toMoment(postingDeadline)?.format("ddd D MMM")}).`
+                      ? `Please select a date within the 10 days for this tie (by ${toMoment(postingDeadline)?.format("ddd D MMM")}).`
                       : undefined
                   }
                   testIDPrefix="add-ladder-match"

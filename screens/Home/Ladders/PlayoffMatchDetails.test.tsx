@@ -182,7 +182,7 @@ describe("PlayoffMatchDetails", () => {
       tie: baseTie(),
     });
     expect(getByTestId("playoff-prize-banner")).toHaveTextContent(
-      /Final · Game 1/,
+      /Final · Tie 1/,
     );
     expect(getByTestId("playoff-match-format")).toHaveTextContent(
       /Best of 7.*per match/,
