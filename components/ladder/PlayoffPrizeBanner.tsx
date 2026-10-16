@@ -20,8 +20,8 @@ const payoutText = (
   isPaid: boolean,
 ): string =>
   isPaid
-    ? `${formatCurrency(prize.cash, currencyType)} / ${prize.cp} CP`
-    : `${prize.cp} CP`;
+    ? `${formatCurrency(prize.cash, currencyType)} · ${prize.cp.toLocaleString()} CP`
+    : `${prize.cp.toLocaleString()} CP`;
 
 const PlayoffPrizeBanner: React.FC<PlayoffPrizeBannerProps> = ({
   title,
@@ -52,8 +52,9 @@ export default PlayoffPrizeBanner;
 
 const Card = styled.View({
   marginHorizontal: 16,
-  marginTop: 4,
-  padding: 15,
+  marginTop: 8,
+  paddingVertical: 20,
+  paddingHorizontal: 18,
   borderRadius: 8,
   borderWidth: 1,
   borderColor: "rgb(26, 28, 54)",
@@ -62,21 +63,21 @@ const Card = styled.View({
 
 const Title = styled.Text({
   color: "#ffffff",
-  fontSize: 15,
+  fontSize: 16,
   fontWeight: "bold",
 });
 
 const PayoutRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
-  gap: 12,
-  marginTop: 12,
+  gap: 16,
+  marginTop: 18,
 });
 
 const Payout = styled.View({
   flex: 1,
   alignItems: "flex-start",
-  gap: 3,
+  gap: 6,
 });
 
 const Label = styled.Text({

@@ -398,8 +398,6 @@ const PlayoffMatchDetails: React.FC = () => {
         >
           <Ionicons name="arrow-back" size={24} color="white" />
         </BackButton>
-        <TopTitle numberOfLines={1}>{title}</TopTitle>
-        <View style={{ width: 24 }} />
       </TopBar>
 
       <PlayoffPrizeBanner
@@ -554,12 +552,6 @@ const TopBar = styled.View({
 });
 
 const BackButton = styled.TouchableOpacity({});
-
-const TopTitle = styled.Text({
-  color: "#ffffff",
-  fontSize: 18,
-  fontWeight: "bold",
-});
 
 const Scroll = styled.ScrollView({
   flex: 1,

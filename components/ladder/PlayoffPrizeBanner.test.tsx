@@ -24,13 +24,11 @@ describe("PlayoffPrizeBanner", () => {
     expect(banner).toHaveTextContent(
       /Round of 16 · Game 3.*Current payout.*Quarter-Final payout/,
     );
-    expect(getByTestId("playoff-prize-secured")).toHaveTextContent(
-      /£0.*\/ 0 CP/,
-    );
+    expect(getByTestId("playoff-prize-secured")).toHaveTextContent(/£0 · 0 CP/);
     expect(getByTestId("playoff-prize-next")).toHaveTextContent(
-      /£288.*\/ 800 CP/,
+      /£288 · 800 CP/,
     );
-    expect(banner).not.toHaveTextContent(/No prize yet|For reaching/);
+    expect(banner).not.toHaveTextContent(/No prize yet|For reaching|\//);
   });
 
   it("shows only CP on a free ladder", () => {
@@ -47,8 +45,8 @@ describe("PlayoffPrizeBanner", () => {
         isPaid={false}
       />,
     );
-    expect(getByTestId("playoff-prize-secured")).toHaveTextContent("3840 CP");
-    expect(getByTestId("playoff-prize-next")).toHaveTextContent("5120 CP");
+    expect(getByTestId("playoff-prize-secured")).toHaveTextContent("3,840 CP");
+    expect(getByTestId("playoff-prize-next")).toHaveTextContent("5,120 CP");
     expect(getByTestId("playoff-prize-next")).not.toHaveTextContent(/£/);
   });
 });
