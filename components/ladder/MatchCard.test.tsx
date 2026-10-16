@@ -28,6 +28,28 @@ describe("MatchCard", () => {
     expect(getByText("18 Oct")).toBeTruthy();
   });
 
+  it("shows the full address in the lobby and only the city in lists", () => {
+    const court = {
+      courtId: "c1",
+      courtName: "Bethnal Green",
+      location: {
+        address: "1 Test Street",
+        city: "London",
+        postCode: "E2 0AA",
+      },
+    };
+    expect(
+      render(
+        <MatchCard match={match({ court })} flat testID="card" />,
+      ).getByTestId("card-address"),
+    ).toHaveTextContent("1 Test Street, London, E2 0AA");
+    expect(
+      render(<MatchCard match={match({ court })} testID="card" />).getByTestId(
+        "card-address",
+      ),
+    ).toHaveTextContent(/^London$/);
+  });
+
   it("shows the court fee on ladder matches but not on playoff matches", () => {
     expect(
       render(<MatchCard match={match()} />).getByText("No court fee"),

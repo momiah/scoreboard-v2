@@ -50,13 +50,18 @@ export const isWithinCheckInRadius = (
   return distanceInMeters(device, courtCoords) <= CHECKIN_RADIUS_METERS;
 };
 
-export const formatCourtAddress = (court?: Court | null): string =>
-  [
-    court?.courtName,
-    court?.location?.address,
-    court?.location?.city,
-    court?.location?.postCode,
-  ]
+const joinAddress = (parts: (string | undefined)[]): string =>
+  parts
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(", ");
+
+export const formatCourtLocation = (court?: Court | null): string =>
+  joinAddress([
+    court?.location?.address,
+    court?.location?.city,
+    court?.location?.postCode,
+  ]);
+
+export const formatCourtAddress = (court?: Court | null): string =>
+  joinAddress([court?.courtName, formatCourtLocation(court)]);

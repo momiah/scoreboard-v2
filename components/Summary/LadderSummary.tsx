@@ -318,47 +318,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           </PrizePotValue>
         )}
       </PrizePotCard>
-      <LadderStatsRow ladder={ladder} />
-
-      {isDoubles
-        ? userTeamRow && (
-            <PositionSection testID="ladder-team-summary">
-              <SectionTitle>Current Position</SectionTitle>
-              <PositionCard>
-                <PerformanceRow
-                  team={userTeamRow.team}
-                  rank={userTeamRow.rank}
-                  ladder={ladder}
-                  onPress={(team: TeamStats) =>
-                    navigation.navigate("TeamDetails", { team })
-                  }
-                />
-              </PositionCard>
-            </PositionSection>
-          )
-        : userSummaryRow && (
-            <PositionSection testID="ladder-position-summary">
-              <SectionTitle>Current Position</SectionTitle>
-              <PositionCard>
-                <PerformanceRow
-                  player={userSummaryRow.player}
-                  rank={userSummaryRow.rank}
-                  ladder={ladder}
-                  onPress={(selectedPlayer: ScoreboardProfile) =>
-                    navigation.navigate("PlayerDetails", { selectedPlayer })
-                  }
-                />
-              </PositionCard>
-            </PositionSection>
-          )}
-
-      <LadderHomeCourtSection
-        ladder={ladder}
-        homeCourt={homeCourt}
-        canChange={canChangeHomeCourt}
-        isEntrant={isEntrant}
-        confirmHomeCourt={confirmHomeCourt}
-      />
 
       <PrizeDistribution
         prizePool={prizePool.xp}
@@ -409,6 +368,48 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           ))
         )}
       </TableContainer>
+
+      <LadderStatsRow ladder={ladder} />
+
+      {isDoubles
+        ? userTeamRow && (
+            <PositionSection testID="ladder-team-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <PositionCard>
+                <PerformanceRow
+                  team={userTeamRow.team}
+                  rank={userTeamRow.rank}
+                  ladder={ladder}
+                  onPress={(team: TeamStats) =>
+                    navigation.navigate("TeamDetails", { team })
+                  }
+                />
+              </PositionCard>
+            </PositionSection>
+          )
+        : userSummaryRow && (
+            <PositionSection testID="ladder-position-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <PositionCard>
+                <PerformanceRow
+                  player={userSummaryRow.player}
+                  rank={userSummaryRow.rank}
+                  ladder={ladder}
+                  onPress={(selectedPlayer: ScoreboardProfile) =>
+                    navigation.navigate("PlayerDetails", { selectedPlayer })
+                  }
+                />
+              </PositionCard>
+            </PositionSection>
+          )}
+
+      <LadderHomeCourtSection
+        ladder={ladder}
+        homeCourt={homeCourt}
+        canChange={canChangeHomeCourt}
+        isEntrant={isEntrant}
+        confirmHomeCourt={confirmHomeCourt}
+      />
 
       {!!ladder.description && (
         <DescriptionSection testID="ladder-description">
