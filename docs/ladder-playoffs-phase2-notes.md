@@ -43,20 +43,32 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
   winner 3rd, loser 4th; then by the round a player went out in (Quarter-Final
   losers 5th–8th, Round of 16 losers 9th–16th, …).
 
-## Open decisions (needed before building)
+## Decided (Phase 2, built)
 
-1. **Aggregate rule:** games won across both matches, or total points? Tiebreak
-   if level: point difference, a decider, or the higher seed?
-2. **Match format:** best of how many games per match — fixed or chosen?
-3. **Scheduling:** who sets each match's date/time (home side proposes, away
-   accepts?), and how the 10-day window is enforced.
-4. **Order:** which match is played first (e.g. higher seed at home first)?
-5. **Court fees:** home side pays the venue and the away side its share, as in
-   normal ladder matches, or fee-free?
-6. **Missed deadline / no-show:** walkover to the side that turned up; both out
-   if neither plays?
-7. **Prize split:** done. Cash follows the shared `LADDER_PAYOUT_STRUCTURE`
-   (courtchamps-shared #53) from the net pool, bands split equally, and CP uses
-   the same bands and shares on the CP pool (`helpers/ladderPlayoffPrizes.ts`).
-   Paying it out is still Phase 3.
-'''
+1. **Aggregate:** games won across both matches. Level → one deciding game,
+   created at the court, time and check-in of whichever match was played last.
+2. **Format:** best of 7 per match.
+3. **Scheduling:** the host picks court and time; the away side accepts or
+   declines, once. Either side can offer to play match 2 straight after match
+   1 at the same court ("Play match 2 here"); that decline doesn't count.
+4. **Order and hosting:** the lower-ranked side hosts and arranges match 1
+   first; once it's arranged, match 2 (higher-ranked host) can be arranged for
+   any date, even earlier. No coin toss.
+5. **Court fees:** none on playoff matches.
+6. **Deadline:** 10 days per round. When time runs out the game is decided on
+   games won, then points, then ladder rank; if nothing was played neither side
+   goes through and the next opponent gets a walkover.
+7. **Prizes:** the whole entry fee goes into the cash pot and the 10% platform
+   fee is paid on top (£20 + £2). Cash and CP both follow the shared
+   `LADDER_PAYOUT_STRUCTURE` (courtchamps-shared #53, #61): whole amounts per
+   place, bands split equally, leftovers to the champion
+   (`helpers/ladderPlayoffPrizes.ts`). The tie card shows the current payout
+   and the next round's; the guide's page 3 shows the full table.
+
+## Phase 3 (not started)
+
+- Pay out cash and CP when the Final and 3rd-place game finish, mark the ladder
+  `prizesDistributed`, and send the "You finished {place} … and won …"
+  notification above.
+- Real payments: charge the £22 at join, refunds (`refundLadderEntryFees` is a
+  stub), and payouts through the payment provider.

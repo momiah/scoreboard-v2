@@ -210,8 +210,9 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 **Opening a game**
 
 1. `ladder-playoffs-tap-game-opens-match`: tap a bracket game →
-   `playoff-match-details` titled "Round of 16 · Game N", `playoff-prize-banner`
-   above the tabs, `playoff-match-aggregate` and both info boxes.
+   `playoff-match-details` with only the back button in the header (no title),
+   then `playoff-prize-banner` above the tabs reading "Round of 16 · Game N",
+   `playoff-match-aggregate` and both info boxes.
 2. `ladder-playoffs-tie-layout-spectator`: open each of the seeded spectator
    games in turn. Every screen has the same layout: the prize banner, the tabs,
    then the aggregate, then `playoff-match-format` and `playoff-match-deadline`
@@ -229,9 +230,12 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
    arrange their home match"; match 2 names the user with
    "Your opponent arranges match 1 first" on match 2 until the opponent arranges
    match 1 (mocked), then `playoff-match-leg2-arrange` for any date. No coin.
-4. `ladder-playoffs-prize-banner` (free and paid): `playoff-prize-secured` and
-   `playoff-prize-next` show CP only on the free ladder and cash plus CP on the
-   paid one, matching the prize table for that round.
+4. `ladder-playoffs-prize-banner` (free and paid, `pending`): the card reads
+   "Round of 16 · Game N", "Current payout" on the left and "Quarter-Final
+   payout" on the right, in whole amounts with a "·" between cash and CP and no
+   "/", "Secured" or "No prize yet". Paid (£20): `playoff-prize-secured`
+   "£0 · 0 CP", `playoff-prize-next` "£320 · 800 CP". Free:
+   "0 CP" and "800 CP", no "£".
 5. `ladder-playoffs-tie-chat` (`pending`): the Chat Room tab → send a message →
    it shows in the opponent's Chats list (mocked) and opens the tie on Chat Room.
 6. `ladder-playoffs-match-has-no-chat`: a playoff match's screen has no Chat
@@ -250,7 +254,9 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 8. `ladder-playoffs-arrange-without-home-court` (`noHomeCourt`): the modal opens
    on "Select Court"; any court can be chosen and sent.
 9. `ladder-playoffs-play-match-two-here` (`leg1Complete`): open match 1 →
-   `play-match-two-accept` "Play match 2 here" → confirm → match 2 posted at
+   `play-match-two-accept` "Play match 2 here" (no sub-text) → the alert
+   "Play your 2nd match in this court" / "Your opponent must accept to
+   continue. You do not need to re-check in" → confirm → match 2 posted at
    match 1's court; as the opponent (mocked accept) the user sees
    match 2 accepted with both players checked in, and the banner gone.
    Declining it leaves the one decline unused.
@@ -318,6 +324,41 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 26. `ladder-playoffs-notifications-open-playoffs`: arranged, accepted,
     declined, cancellation, reschedule, extension and match-reminder
     notifications for a playoff match open the Playoffs tab, not Schedule.
+
+**Guide, prizes and paying** (both seeded ladders, free and paid)
+
+27. `ladder-playoffs-guide-button`: the ladder header's `ladder-how-to-play`
+    reads "How to play playoffs" with a trophy, on a dark gold gradient with a
+    bright gold border and glow; `ladder-playoff-guide-new` until it's opened
+    once, then `ladder-playoff-guide-seen` (relaunch keeps it seen).
+28. `ladder-playoffs-guide-pages`: swipe through the guide: 1 "Welcome to the
+    Playoffs", 2 the playoffs structure (this ladder's size highlighted, the
+    footnote with the cash pool on paid ladders and the CP pool), 3 "Prize
+    Distribution" (`how-to-play-prize-table`), then Home and Away, Arrange Your
+    Home Match, Win on Aggregate, Ten Days to Finish, Winning the Final. On a
+    doubles ladder every page says "team", not "player".
+29. `ladder-playoffs-guide-prize-table` (paid 256): Finish / Cash each / CP
+    each, whole amounts: Champion £1793 · 4,480; Runner-up £1024 · 2,560;
+    3rd place £614 · 1,536; 4th place £409 · 1,024; Quarter-Final £320 · 800.
+    Free 256: no Cash column, same CP.
+30. `ladder-summary-prize-pool`: the Summary tab starts with Total Prize Pool:
+    `ladder-cash-pot` "£5120" on the paid ladder, `ladder-cp-pot` "12,800 CP"
+    on the free one. Under it, in order: `ladder-stats-row`, Prize
+    Distribution (top four as in flow 29), Top Contenders, then the user's
+    position and home court. The loading skeleton has the same order.
+31. `ladder-join-fee-on-top`: on an open paid ladder (£20), Join shows
+    `join-ladder-price` "£22" with "£20 entry + £2 platform fee"; Pay → the
+    payment stub says "Paying £22 (entry fee plus platform fee)". Terms section
+    3 says the fee is added on top and the full entry fee goes into the pot. A
+    free ladder shows no price.
+32. `ladder-match-lobby-address`: open any match with a court → under the court
+    name, `match-details-card-address` reads "{address}, {city}, {postcode}"
+    (seeded playoffs court: "1 Test Street, {city}, TE1 1ST"); match cards in
+    lists (Schedule, playoff legs) still show only the city.
+
+Backend-only and covered by the emulator suite, no flow needed: the deciding
+game is placed at the court and time of whichever match was played last, and
+the platform-cancelled refund is the entry fee plus the platform fee.
 
 Cleanup: `cleanupLadderTestData` deletes the whole playoffs ladder (ties and
 every match, including `-leg1`, `-leg2`, `-leg3`), the fixture users and courts,
