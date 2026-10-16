@@ -17,7 +17,7 @@ export const LADDER_TERMS: TermsSection[] = [
   },
   {
     title: "3. Entry fees & service charge",
-    body: "Paid ladders require the stated entry fee. A platform service charge is included in the amount shown at checkout. Entry fees are collected to form the prize pool and to cover platform costs.",
+    body: "Paid ladders require the stated entry fee plus a 10% platform fee, which is added on top and shown at checkout. The full entry fee goes into the prize pool; the platform fee covers platform costs.",
   },
   {
     title: "4. Prizes & payouts",

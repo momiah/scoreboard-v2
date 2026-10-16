@@ -69,23 +69,31 @@ TrophyItem.displayName = "TrophyItem";
 
 const PrizeDistribution = ({
   prizePool,
-  distribution,
+  distribution = [],
   competitionType,
   cashPool,
   currencyType,
   tooltipMessage,
   onViewFullDistribution,
+  placePrizes = /** @type {{ cash: number; cp: number }[]} */ ([]),
 }) => {
   const isLadder = competitionType === COMPETITION_TYPES.LADDER;
 
   const prizes = useMemo(() => {
     const prizesType = resolvePrizeImages(competitionType);
+    if (placePrizes.length) {
+      return placePrizes.map((prize, index) => ({
+        xp: prize.cp,
+        cash: cashPool != null ? prize.cash : null,
+        trophy: prizesType[index],
+      }));
+    }
     return distribution.map((percentage, index) => ({
       xp: Math.floor(prizePool * percentage),
       cash: cashPool != null ? Math.floor(cashPool * percentage) : null,
       trophy: prizesType[index],
     }));
-  }, [prizePool, cashPool, distribution, competitionType]);
+  }, [prizePool, cashPool, distribution, competitionType, placePrizes]);
 
   return (
     <PrizeDistributionContainer>

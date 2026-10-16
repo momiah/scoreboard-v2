@@ -28,10 +28,6 @@ const prizeSetup = (ladder: PrizeLadder) => {
   };
 };
 
-/**
- * Cash (paid ladders) and CP a finishing place is worth. CP is split exactly
- * like cash: the same payout bands and shares, applied to the CP pool.
- */
 export const getLadderPlacePrize = (
   ladder: PrizeLadder,
   place: number,
@@ -39,15 +35,14 @@ export const getLadderPlacePrize = (
   const { pool, size } = prizeSetup(ladder);
   return {
     cash: pool.cash > 0 ? getLadderPayoutForPlace(pool.cash, size, place) : 0,
-    cp: Math.round(getLadderPayoutForPlace(pool.xp, size, place)),
+    cp: getLadderPayoutForPlace(pool.xp, size, place),
   };
 };
 
-/** The share of each pool that 1st to 4th place take, for the ladder's size. */
-export const getLadderTopFourShares = (ladder: PrizeLadder): number[] =>
-  getLadderPayouts(1, prizeSetup(ladder).size)
-    .slice(0, 4)
-    .map((payout) => payout.share);
+export const getLadderTopFourPrizes = (
+  ladder: PrizeLadder,
+): LadderPlacePrize[] =>
+  [1, 2, 3, 4].map((place) => getLadderPlacePrize(ladder, place));
 
 const placeName = (place: number): string =>
   ["Champion", "Runner-up", "3rd place", "4th place"][place - 1] ??
@@ -83,7 +78,7 @@ export const getLadderPrizeTable = (ladder: PrizeLadder): LadderPrizeRow[] => {
     toPlace: cpBand.toPlace,
     label: knockedOutIn(cpBand.fromPlace, cpBand.toPlace),
     cash: pool.cash > 0 ? (cash[index]?.each ?? 0) : 0,
-    cp: Math.round(cpBand.each),
+    cp: cpBand.each,
   }));
 };
 

@@ -138,8 +138,8 @@ requested or agreed to), because Stripe still charges the platform.
 
 | Cancellation | Who caused it | Refund |
 |---|---|---|
-| Ladder under 128 at registration close (`processLadderPhases`) | Platform | Full entry fee, platform fee included (`refundLadderEntryFees`) |
-| Ladder cancelled by the admin (no admin action yet) | Platform | Full entry fee, platform fee included |
+| Ladder under 128 at registration close (`processLadderPhases`) | Platform | Everything paid: the entry fee and the platform fee on top (`refundLadderEntryFees`) |
+| Ladder cancelled by the admin (no admin action yet) | Platform | Everything paid: the entry fee and the platform fee on top |
 | Posted match cancelled before anyone accepted | User | Nothing to refund — the accepter is only charged on accept |
 | Accepted match cancelled by agreement | User | Accepter's court-fee share refunded; platform fee kept (`reconcileLadderCourtFee` via `onLadderMatchStatusChange`) |
 | Accepted match expired | Both sides inactive | Nothing refunded — the court-fee share is released to the poster, who paid for the court |

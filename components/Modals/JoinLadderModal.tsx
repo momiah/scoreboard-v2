@@ -7,32 +7,18 @@ import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
+import { getLadderEntryPrice } from "@shared/helpers";
 import type { Ladder } from "@shared/types";
 import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
+import { formatCurrency } from "../../helpers/formatCurrency";
 
 const screenWidth = Dimensions.get("window").width;
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  GBP: "£",
-  USD: "$",
-  EUR: "€",
-};
-
-const SERVICE_CHARGE_RATE = 0.1;
 
 const JOIN_FAILURE_MESSAGES: Record<string, string> = {
   closed: "Registration for this ladder has closed.",
   not_open: "Registration for this ladder hasn't opened yet.",
   full: "This ladder is full.",
-};
-
-const currencySymbol = (currencyType: string): string =>
-  CURRENCY_SYMBOLS[currencyType] ?? "";
-
-const formatCurrency = (amount: number, currencyType: string): string => {
-  const symbol = currencySymbol(currencyType);
-  return symbol ? `${symbol}${amount}` : `${amount} ${currencyType}`;
 };
 
 interface JoinLadderModalProps {
@@ -51,7 +37,7 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
   const { currentUser } = useContext(UserContext);
 
   const isPaid = ladder.entryFee > 0;
-  const serviceCharge = ladder.entryFee * SERVICE_CHARGE_RATE;
+  const price = getLadderEntryPrice(ladder.entryFee);
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -156,12 +142,13 @@ const JoinLadderModal: React.FC<JoinLadderModalProps> = ({
             <PriceColumn>
               {isPaid && (
                 <>
-                  <Price>
-                    {formatCurrency(ladder.entryFee, ladder.currencyType)}
+                  <Price testID="join-ladder-price">
+                    {formatCurrency(price.total, ladder.currencyType)}
                   </Price>
                   <ServiceNote>
-                    {currencySymbol(ladder.currencyType)}
-                    {serviceCharge.toFixed(2)} platform fee included
+                    {formatCurrency(price.entryFee, ladder.currencyType)} entry
+                    + {formatCurrency(price.platformFee, ladder.currencyType)}{" "}
+                    platform fee
                   </ServiceNote>
                 </>
               )}
@@ -252,12 +239,15 @@ const PaymentStubModal: React.FC<PaymentStubModalProps> = ({
           <StubBadgeText>Coming soon</StubBadgeText>
         </StubBadge>
         <CentredBody>
-          Paying the{" "}
+          Paying{" "}
           <Highlight>
-            {formatCurrency(ladder.entryFee, ladder.currencyType)}
+            {formatCurrency(
+              getLadderEntryPrice(ladder.entryFee).total,
+              ladder.currencyType,
+            )}
           </Highlight>{" "}
-          entry fee will go through our payment provider. This step isn&apos;t
-          wired up yet.
+          (entry fee plus platform fee) will go through our payment provider.
+          This step isn&apos;t wired up yet.
         </CentredBody>
         <ActionButton isDisabled={false} activeOpacity={0.85} onPress={onClose}>
           <ActionButtonText>Close</ActionButtonText>
