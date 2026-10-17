@@ -85,7 +85,9 @@ const LadderHowToPlay: React.FC = () => {
         images={ladders}
         imageSize={72}
         title="Winning the Final"
-        description="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
+        description={
+          "Win the Final to be crowned champion and take the biggest prize.\n\nPrizes and CP are paid once the playoffs finish."
+        }
       >
         <ReadRulesButton onPress={goToRules}>
           <AntDesign name="book" size={15} color="white" />
@@ -105,7 +107,10 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="trophy-outline"
           title="Welcome to the Playoffs"
-          body={`${ladder?.playoffBracketSize ? `The top ${ladder.playoffBracketSize} ` : "The top "}${noun}s made the cut. Every playoff tie is a knockout: win and you move on, lose and your season is over.`}
+          paragraphs={[
+            `The top ${ladder?.playoffBracketSize ? `${ladder.playoffBracketSize} ` : ""}${noun}s made the cut.`,
+            "Every tie is a knockout. Win and you move on, lose and you're out.",
+          ]}
         />
       ),
     },
@@ -138,7 +143,10 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="home-outline"
           title="Home and Away"
-          body={`Each playoff tie is two matches, one at each ${noun}'s home court. The lower-ranked ${noun} hosts match 1 and arranges it first. The higher-ranked ${noun} hosts match 2, a reward for a stronger season.`}
+          paragraphs={[
+            `Each tie is two matches, one at each ${noun}'s home court.`,
+            `Match 1: the lower-ranked ${noun} hosts.\nMatch 2: the higher-ranked ${noun} hosts.`,
+          ]}
         />
       ),
     },
@@ -148,7 +156,11 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="calendar-outline"
           title="Arrange Your Home Match"
-          body="The host picks the court and time and sends it to their opponent, who can accept or decline it once. Once match 1 is arranged, match 2 can be arranged for any date, even before match 1. When match 1 finishes, either side can offer to play match 2 there and then."
+          paragraphs={[
+            "The host picks the court and time. Their opponent accepts, or can decline once.",
+            "Match 1 is arranged first. Match 2 can then be any date, even before match 1.",
+            "After match 1, either side can offer to play match 2 straight away.",
+          ]}
         />
       ),
     },
@@ -158,7 +170,10 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="swap-horizontal-outline"
           title="Win on Aggregate"
-          body={`The ${noun} that wins more games across both matches goes through. If it's level, one deciding game is played straight after whichever match was played last, at the same court.`}
+          paragraphs={[
+            `The ${noun} that wins more games across both matches goes through.`,
+            "Level? One deciding game is played straight after the last match, at the same court.",
+          ]}
         />
       ),
     },
@@ -168,7 +183,11 @@ const LadderHowToPlay: React.FC = () => {
         <PageBody
           icon="hourglass-outline"
           title="Ten Days to Finish"
-          body="Both matches must be played within 10 days. If time runs out, the game is decided on games won, then points, then ladder rank. If nothing was played, neither side goes through and their next opponent gets a walkover."
+          paragraphs={[
+            "Both matches must be played within 10 days.",
+            "If time runs out, the tie goes to whoever won more games, then points, then the higher rank.",
+            "If nothing was played, neither side goes through.",
+          ]}
         />
       ),
     },
@@ -183,7 +202,10 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             image={{ uri: ccImageEndpoint }}
             title={"Welcome to the official \n Court Champs Ladder"}
-            body="Climb the ranks by playing other members. This quick guide shows you how games work, how you earn Court Points (CP), and how the season ends in the playoffs."
+            paragraphs={[
+              "Climb the ranks by playing other members.",
+              "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
+            ]}
           />
         ),
       },
@@ -193,17 +215,14 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="add-circle-outline"
             title="Post a Game"
-            body={
+            paragraphs={[
               <>
-                {"Post games you want to play from the "}
-                <PageText style={{ fontWeight: "bold", color: "#cccccc" }}>
-                  {`Match Making`}
-                </PageText>
-                {
-                  " tab. Set it up and wait for another ladder member to accept. We operate a blind matchmaking system, so you won't know who your opponent is until they accept your game."
-                }
-              </>
-            }
+                {"Post a game from the "}
+                <Bold>Match Making</Bold>
+                {" tab and wait for a member to accept."}
+              </>,
+              "Matchmaking is blind, so you only see your opponent once they accept.",
+            ]}
           />
         ),
       },
@@ -213,7 +232,10 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="checkmark-circle-outline"
             title="Challenge Accepted"
-            body="When someone accepts your game you must check in at your chosen court, play your opponent and publish your results"
+            paragraphs={[
+              "Once your game is accepted:",
+              "1. Check in at the court\n2. Play your opponent\n3. Report your scores",
+            ]}
           />
         ),
       },
@@ -223,17 +245,14 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="hand-left-outline"
             title="Accept a Game"
-            body={
+            paragraphs={[
               <>
-                {
-                  "If you rather find games you can browse games other players have posted and accept one from the "
-                }
-                <PageText style={{ fontWeight: "bold", color: "#cccccc" }}>
-                  {`Match Making`}
-                </PageText>
-                {" tab to lock in your next match."}
-              </>
-            }
+                {"Prefer to find a game? Browse the "}
+                <Bold>Match Making</Bold>
+                {" tab."}
+              </>,
+              "Accept one to lock in your next match.",
+            ]}
           />
         ),
       },
@@ -243,7 +262,10 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="stats-chart-outline"
             title="The Objective"
-            body="Rack up wins and accumulate CP (Court Points). The more you win, the more CP you earn — and the higher you climb the ladder."
+            paragraphs={[
+              "Win games to earn CP (Court Points).",
+              "The more CP you have, the higher you climb.",
+            ]}
           />
         ),
       },
@@ -393,7 +415,7 @@ export default LadderHowToPlay;
 interface PageBodyProps {
   icon?: keyof typeof Ionicons.glyphMap;
   title: string;
-  body: React.ReactNode;
+  paragraphs: React.ReactNode[];
   children?: React.ReactNode;
   image?: ImageSourcePropType;
 }
@@ -401,7 +423,7 @@ interface PageBodyProps {
 const PageBody: React.FC<PageBodyProps> = ({
   icon,
   title,
-  body,
+  paragraphs,
   children,
   image,
 }) => (
@@ -425,7 +447,11 @@ const PageBody: React.FC<PageBodyProps> = ({
       </ImageContainer>
     )}
     <PageTitle>{title}</PageTitle>
-    <PageText>{body}</PageText>
+    <Paragraphs>
+      {paragraphs.map((paragraph, index) => (
+        <PageText key={index}>{paragraph}</PageText>
+      ))}
+    </Paragraphs>
     {children}
   </ScrollView>
 );
@@ -458,11 +484,12 @@ const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
       </IconCircle>
       <PageTitle>Prize Distribution</PageTitle>
     </CenteredHeader>
-    <PageText>
-      {`What each ${noun} takes home, by where they finish. ${
-        isPaid ? "Cash and CP are" : "CP is"
-      } paid when the playoffs end.`}
-    </PageText>
+    <Paragraphs>
+      <PageText>{`What each ${noun} takes home, by where they finish.`}</PageText>
+      <PageText>
+        {`${isPaid ? "Cash and CP are" : "CP is"} paid when the playoffs end.`}
+      </PageText>
+    </Paragraphs>
     <Table testID="how-to-play-prize-table">
       <TableRow header>
         <TableCell header flex={1.6}>
@@ -520,16 +547,17 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
         </IconCircle>
         <PageTitle>The Playoffs</PageTitle>
       </CenteredHeader>
-      <PageText>
-        When the season ends, the top players advance to a single-elimination
-        knockout. Each round must be played within 10 days to progress to the
-        next round.
-      </PageText>
+      <Paragraphs>
+        <PageText>
+          When the season ends, the top players go into a knockout.
+        </PageText>
+        <PageText>Each round has 10 days to be played.</PageText>
+      </Paragraphs>
 
       <Highlight testID="how-to-play-playoff-highlight">
         <HighlightText>
-          The final playoff structure is determined by the number of players
-          registered when registration closes.
+          The bracket size depends on how many players have registered when
+          registration closes.
         </HighlightText>
       </Highlight>
 
@@ -575,7 +603,9 @@ const AchievementMedalsPage: React.FC = () => (
     images={gameMedals}
     imageSize={72}
     title="Achievement Medals"
-    description="Achievement Medals are awarded when you are performing your best - you are awarded CP bonuses for win streaks, decisive victories and long distant wins."
+    description={
+      "Earn bonus CP with medals for win streaks, big wins and long-distance wins."
+    }
   />
 );
 
@@ -629,6 +659,15 @@ const PageText = styled.Text({
   fontSize: 15,
   lineHeight: 22,
   textAlign: "center",
+});
+
+const Paragraphs = styled.View({
+  gap: 12,
+});
+
+const Bold = styled.Text({
+  fontWeight: "bold",
+  color: "#ffffff",
 });
 
 const FootNote = styled.Text({
