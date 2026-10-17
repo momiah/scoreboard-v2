@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg2Posted"
+- runFlow:
+    file: ../utilities/playoffs/open-leg.yaml
+    env:
+      CARD: "playoff-match-leg2"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-confirm-awaiting"
+    timeout: 15000
+- assertVisible: "Waiting for your opponent to confirm this time"
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-CancelMatch"
+- extendedWaitUntil:
+    visible: "Cancel this playoff match? You can arrange it again before the playoff deadline."
+    timeout: 5000
+- tapOn:
+    text: "Cancel Match"
+    index: 1
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 20000
+- assertVisible:
+    id: "playoff-match-leg2-arrange"
+- assertNotVisible:
+    id: "playoff-match-leg2"

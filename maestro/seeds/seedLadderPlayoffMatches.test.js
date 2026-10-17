@@ -298,4 +298,29 @@ describe("seedLadderPlayoffMatches", () => {
       regular.games.filter((g) => g.approvalStatus === "pending"),
     ).toHaveLength(1);
   });
+
+  it("posts match 2 from the user after a completed match 1", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_POSTED);
+    const [leg1, leg2] = legs(my.tieId);
+    expect(leg1.matchStatus).toBe("completed");
+    expect(leg2).toMatchObject({ matchStatus: "posted", playoffLeg: 2 });
+    expect(leg2.createdBy).toBe("test-user");
+  });
+
+  it("accepts match 2 with no games played", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_ACCEPTED);
+    const [, leg2] = legs(my.tieId);
+    expect(leg2.matchStatus).toBe("accepted");
+    expect(leg2.games.some((g) => g.result)).toBe(false);
+    expect(leg2.checkIn).toBeUndefined();
+  });
+
+  it("plays one approved game of match 2", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_ONE_GAME);
+    const [, leg2] = legs(my.tieId);
+    expect(leg2.matchStatus).toBe("accepted");
+    expect(leg2.games.filter((g) => g.result)).toHaveLength(1);
+    expect(leg2.games[0].approvalStatus).toBe("approved");
+    expect(leg2.checkIn).toMatchObject({ completed: true });
+  });
 });

@@ -1,0 +1,20 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg1PostedAfterDecline"
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- tapOn:
+    id: "playoff-match-leg1"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-confirm-request"
+    timeout: 15000
+- assertVisible: "Your opponent arranged this match. You've used your one decline, so please accept."
+- assertVisible:
+    id: "playoff-match-confirm-accept"
+- assertNotVisible:
+    id: "playoff-match-confirm-decline"

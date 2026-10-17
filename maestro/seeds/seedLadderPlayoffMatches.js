@@ -41,6 +41,9 @@ export const PLAYOFF_MATCH_STAGE = {
   NO_HOME_COURT: "noHomeCourt",
   LEG1_IN_PROGRESS: "leg1InProgress",
   PLAYOFF_REGULAR: "playoffRegular",
+  LEG2_POSTED: "leg2Posted",
+  LEG2_ACCEPTED: "leg2Accepted",
+  LEG2_ONE_GAME: "leg2OneGame",
 };
 
 export const MAESTRO_PO_REGULAR_MATCH_ID = "maestro-po-regular-match";
@@ -392,6 +395,39 @@ export const seedLadderPlayoffMatches = async ({
         }),
       );
       break;
+    case PLAYOFF_MATCH_STAGE.LEG2_POSTED:
+    case PLAYOFF_MATCH_STAGE.LEG2_ACCEPTED:
+    case PLAYOFF_MATCH_STAGE.LEG2_ONE_GAME: {
+      const live = stage === PLAYOFF_MATCH_STAGE.LEG2_ONE_GAME;
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 1,
+          host: hostOf(mine, 1),
+          status: C,
+          day: -3,
+          wins: wins(me, 4, 2),
+          now,
+        }),
+        legMatch({
+          tie: mine,
+          leg: 2,
+          host: hostOf(mine, 2),
+          status: stage === PLAYOFF_MATCH_STAGE.LEG2_POSTED ? P : A,
+          day: live
+            ? moment().subtract(70, "minutes").isSame(moment(), "day")
+              ? 0
+              : -1
+            : 2,
+          time: live
+            ? moment().subtract(70, "minutes").format("HH:mm")
+            : "19:30",
+          wins: live ? [me] : [],
+          now,
+        }),
+      );
+      break;
+    }
     case PLAYOFF_MATCH_STAGE.LEG1_COMPLETE:
       matches.push(
         legMatch({
@@ -650,10 +686,9 @@ export const seedLadderPlayoffMatches = async ({
   const extraWrites = [];
   if (stage === PLAYOFF_MATCH_STAGE.NO_HOME_COURT) {
     extraWrites.push((batch) =>
-      batch.update(
-        doc(db, "ladders", ladderId, "ladderParticipants", myId),
-        { homeCourt: deleteField() },
-      ),
+      batch.update(doc(db, "ladders", ladderId, "ladderParticipants", myId), {
+        homeCourt: deleteField(),
+      }),
     );
   }
   if (stage === PLAYOFF_MATCH_STAGE.PLAYOFF_REGULAR) {

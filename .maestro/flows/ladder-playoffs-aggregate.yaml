@@ -14,6 +14,7 @@ onFlowStart:
     file: ../utilities/playoffs/open-bracket-tie.yaml
     env:
       TIE: "r1-s1"
+      SCROLL: "no"
 - assertVisible:
     id: "playoff-match-aggregate"
 - assertVisible: "4 - 2"

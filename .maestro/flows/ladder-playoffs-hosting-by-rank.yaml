@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "pending"
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- assertVisible:
+    id: "playoff-match-leg1-host"
+- assertVisible: "P0008 S"
+- assertVisible:
+    id: "playoff-match-leg2-host"
+- assertVisible: ".*Waiting for your opponent to arrange their home match"
+- assertVisible: ".*Your opponent arranges match 1 first"
+- assertNotVisible:
+    id: "playoff-match-leg1-arrange"
+- assertNotVisible:
+    id: "playoff-match-leg2-arrange"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-opponent-arranges-leg1"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*arranged playoff match 1 at.*Open it to accept or decline.*"
+- runFlow:
+    file: ../utilities/playoffs/open-bracket-tie.yaml
+    env:
+      TIE: "r1-s1"
+      SCROLL: "no"
+- assertVisible:
+    id: "playoff-match-leg2-arrange"

@@ -1,0 +1,29 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg2Accepted"
+- runFlow:
+    file: ../utilities/playoffs/open-leg.yaml
+    env:
+      CARD: "playoff-match-leg2"
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-RescheduleMatch"
+- extendedWaitUntil:
+    visible:
+      id: "reschedule-info-modal"
+    timeout: 10000
+- tapOn: "Choose a time"
+- extendedWaitUntil:
+    visible:
+      id: "reschedule-match"
+    timeout: 10000
+- tapOn: "Select Date"
+- extendedWaitUntil:
+    visible: "Please select a date by .*"
+    timeout: 10000

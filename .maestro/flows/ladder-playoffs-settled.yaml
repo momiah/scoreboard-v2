@@ -12,10 +12,12 @@ onFlowStart:
       NOTIFICATION: ".*You've reached the Quarter-Final in Maestro Playoffs 256.*"
 - assertVisible:
     id: "ladder-playoffs-bracket"
+- tapOn: "Round of 16"
 - runFlow:
     file: ../utilities/playoffs/open-bracket-tie.yaml
     env:
       TIE: "r1-s1"
+      SCROLL: "no"
 - assertVisible:
     id: "playoff-match-outcome"
 - assertVisible: "Winner"

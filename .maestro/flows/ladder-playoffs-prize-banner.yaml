@@ -1,0 +1,47 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "pending"
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- assertVisible: "Round of 16 · Tie 2"
+- assertVisible: "Current payout"
+- assertVisible: "Quarter-Final payout"
+- assertVisible:
+    id: "playoff-prize-secured"
+    text: "0 CP"
+- assertVisible:
+    id: "playoff-prize-next"
+    text: "800 CP"
+- assertNotVisible: ".*£.*"
+- assertNotVisible: ".*Secured.*"
+- assertNotVisible: ".*No prize yet.*"
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "pending"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-playoff-match-paid-pending"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 \\(Paid\\) on Playoffs.*"
+- runFlow:
+    file: ../utilities/playoffs/open-bracket-tie.yaml
+    env:
+      TIE: "r1-s1"
+      SCROLL: "no"
+- assertVisible: "Round of 16 · Tie 2"
+- assertVisible:
+    id: "playoff-prize-secured"
+    text: "£0 · 0 CP"
+- assertVisible:
+    id: "playoff-prize-next"
+    text: "£320 · 800 CP"
+- assertNotVisible: ".*Secured.*"
+- assertNotVisible: ".*No prize yet.*"

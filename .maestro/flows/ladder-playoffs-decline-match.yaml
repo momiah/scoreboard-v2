@@ -1,0 +1,27 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg1Posted"
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- tapOn:
+    id: "playoff-match-leg1"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-confirm-request"
+    timeout: 15000
+- tapOn:
+    id: "playoff-match-confirm-decline"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 20000
+- assertVisible:
+    id: "playoff-match-leg1-waiting"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-opponent-declined-leg1"

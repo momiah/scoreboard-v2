@@ -1,0 +1,27 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "noHomeCourt"
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- tapOn:
+    id: "playoff-match-leg2-arrange"
+- extendedWaitUntil:
+    visible: "Arrange match 2"
+    timeout: 15000
+- assertVisible:
+    id: "add-ladder-match-court-selector"
+    text: ".*Select Court.*"
+- tapOn:
+    id: "add-ladder-match-court-selector"
+- tapOn:
+    id: "search-court-option-maestro-po-court-croydon"
+- runFlow: ../utilities/playoffs/send-arranged-match.yaml
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-leg2"
+    timeout: 20000
+- assertVisible: ".*Maestro Playoffs Croydon.*"

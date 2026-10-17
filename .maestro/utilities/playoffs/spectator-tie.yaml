@@ -4,6 +4,7 @@ appId: com.courtchamp
     file: open-bracket-tie.yaml
     env:
       TIE: ${TIE}
+      SCROLL: ${SCROLL}
 - assertVisible:
     id: "playoff-prize-banner"
 - assertVisible:

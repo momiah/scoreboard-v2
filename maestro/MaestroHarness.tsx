@@ -240,6 +240,16 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             ...expected,
           }),
       })),
+      ...(["accept", "decline"] as const).map((reply) => ({
+        id: `maestro-mock-po${suffix}-cancel-${reply}`,
+        label: `Mock Opp Cancel ${reply}${suffix}`,
+        run: () =>
+          mockOpponentCancellationResponse({
+            ladderId,
+            matchId: "r1-s1-leg2",
+            accept: reply === "accept",
+          }),
+      })),
       {
         id: `maestro-assert-po${suffix}-ladder-completed`,
         label: `Assert Ladder Completed${suffix}`,
