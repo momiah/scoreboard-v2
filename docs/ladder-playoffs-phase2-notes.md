@@ -33,6 +33,9 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
 | A side wins its game | the winners | "Congratulations! You've reached the {Round of 64 / 32 / 16 / Quarter-Finals / Semi-Finals / Final} in {ladder}. You have 10 days to play both your home and away matches." | Playoffs |
 | A side wins and its next opponent isn't known yet (done) | the winners | "Congratulations! You're through to the {round} in {ladder}. We'll let you know as soon as your opponent is decided." | Playoffs |
 | The waiting side's opponent is decided (done) | the side that was waiting | "Your opponent in the {round} of {ladder} is {name}. Your tie is ready: you have 10 days to play both your home and away matches." | Playoffs |
+| A tie is lost before the Semi-Finals (done) | the losers | "You've been knocked out in the {round} of {ladder}." + "You've been awarded {prize}, paid when the playoffs finish." when they won something | Playoffs |
+| A Semi-Final is lost (done) | the losers | "You'll play for 3rd place…" | Playoffs |
+| The Final / 3rd-place tie finishes (done) | its four players | "Congratulations, you have placed {place} in {ladder} and been awarded {prize}." (prize part only when won); the ladder is marked Completed once both finish | Summary |
 | Ladder complete | every finisher | "Congratulations! You finished {1st / 2nd / 3rd / 4th / 5th–8th …} in {ladder} and won {prize money} and {prize CP}." (omit prizes they didn't win) | Summary |
 
 ### Who wins a prize
@@ -82,8 +85,8 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
 
 ## Phase 3 (not started)
 
-- Pay out cash and CP when the Final and 3rd-place tie finish, mark the ladder
-  `prizesDistributed`, and send the "You finished {place} … and won …"
-  notification above.
+- Pay out cash and CP to every paid place once the ladder is Completed (the
+  Final and 3rd-place tie finishing already marks it and sends the placement
+  notifications; the payout is only logged), then mark it `prizesDistributed`.
 - Real payments: charge the £22 at join, refunds (`refundLadderEntryFees` is a
   stub), and payouts through the payment provider.

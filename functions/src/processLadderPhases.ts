@@ -35,6 +35,7 @@ import { refundLadderEntryFees } from "./helpers/refundLadderEntryFees";
 import { finaliseLadderStandings } from "./helpers/finaliseLadderStandings";
 import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
 import {
+  completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
   sendDueLadderPlayoffReminders,
@@ -89,6 +90,12 @@ const runPlayoffDeadlinesAndReminders = async (
         if (!resolution) continue;
         summary.playoffTiesSettled.push(`${ladder.ladderId}/${tie.tieId}`);
         await notifyLadderPlayoffResolution({ ladder, resolution });
+        await completeLadderPlayoffsIfFinished({
+          db,
+          ladderId: ladder.ladderId,
+          resolution,
+          now,
+        });
       }
       summary.playoffRemindersSent += await sendDueLadderPlayoffReminders({
         db,

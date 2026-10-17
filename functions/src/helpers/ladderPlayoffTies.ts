@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 
 import {
+  LADDER_STATUS,
   LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_PLAYOFF_TIE_STATUS,
@@ -20,9 +21,14 @@ import {
   decideLadderPlayoffTie,
   decideLadderPlayoffTieAtDeadline,
   getDueLadderPlayoffReminderDays,
+  formatLadderPrizeWon,
+  getLadderPlacePrize,
   getLadderPlayoffLegHost,
+  getLadderTieFinishPlaces,
+  ordinalPlace,
   roundLabel,
 } from "courtchamps-shared/helpers";
+import type { PrizeLadder } from "courtchamps-shared/helpers";
 
 import { notifyLadderPlayers } from "./notifyLadderPlayers";
 
@@ -31,6 +37,7 @@ type Db = admin.firestore.Firestore;
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
 const PLAYOFFS_TAB = "Playoffs";
+const SUMMARY_TAB = "Summary";
 
 const toDate = (value: unknown): Date | null => {
   if (value instanceof Date) return value;
@@ -190,11 +197,111 @@ export const resolveLadderPlayoffTie = async ({
 };
 
 /** Tells players what a resolution means for them: decider, void, or next round. */
+export type PlayoffLadder = Pick<Ladder, "ladderId" | "name"> &
+  Partial<PrizeLadder & Pick<Ladder, "currencyType">>;
+
+const prizeWon = (ladder: PlayoffLadder, place: number): string | null =>
+  formatLadderPrizeWon(
+    getLadderPlacePrize(ladder as PrizeLadder, place),
+    ladder.currencyType ?? "GBP",
+  );
+
+const notifyTieFinish = async ({
+  ladder,
+  tie,
+  totalRounds,
+  ties,
+}: {
+  ladder: PlayoffLadder;
+  tie: LadderPlayoffTie;
+  totalRounds: number;
+  ties: LadderPlayoffTie[];
+}): Promise<void> => {
+  const winnerKey: TieSideKey = tie.winner === "team1" ? "side1" : "side2";
+  const loserKey: TieSideKey = winnerKey === "side1" ? "side2" : "side1";
+  const places = getLadderTieFinishPlaces(tie, totalRounds);
+  const placed = async (key: TieSideKey, place: number) => {
+    const won = prizeWon(ladder, place);
+    await notifyLadderPlayers({
+      userIds: tie[key]?.playerIds ?? [],
+      ladder,
+      kind: `playoff-finish-${tie.tieId}`,
+      title: `You placed ${ordinalPlace(place)}`,
+      message: `Congratulations, you have placed ${ordinalPlace(place)} in ${ladder.name}${won ? ` and been awarded ${won}` : ""}.`,
+      tab: SUMMARY_TAB,
+      data: { tieId: tie.tieId },
+    });
+  };
+
+  if (places.winner !== null) {
+    await placed(winnerKey, places.winner);
+    await placed(loserKey, places.loser);
+    return;
+  }
+  const loserPlaysForThird =
+    tie.round === totalRounds - 1 && ties.some((other) => other.isThirdPlacePlayoff);
+  if (loserPlaysForThird || !tie[loserKey]) return;
+  const roundName = ladderPlayoffRoundName(tie, totalRounds);
+  const won = prizeWon(ladder, places.loser);
+  await notifyLadderPlayers({
+    userIds: tie[loserKey]?.playerIds ?? [],
+    ladder,
+    kind: `playoff-out-${tie.tieId}`,
+    title: `Knocked out in the ${roundName}`,
+    message: `You've been knocked out in the ${roundName} of ${ladder.name}.${won ? ` You've been awarded ${won}, paid when the playoffs finish.` : ""}`,
+    tab: PLAYOFFS_TAB,
+    data: { tieId: tie.tieId },
+  });
+};
+
+/**
+ * Marks the ladder complete once the Final and the 3rd-place tie are both
+ * finished. Paying the prizes is Phase 3; until then it's only logged.
+ */
+export const completeLadderPlayoffsIfFinished = async ({
+  db,
+  ladderId,
+  resolution,
+  now,
+}: {
+  db: Db;
+  ladderId: string;
+  resolution: LadderPlayoffTieResolution;
+  now: Date;
+}): Promise<boolean> => {
+  const latest = new Map(resolution.ties.map((tie) => [tie.tieId, tie]));
+  resolution.changed.forEach((tie) => latest.set(tie.tieId, tie));
+  const ties = [...latest.values()];
+  const totalRounds = totalRoundsOf(ties);
+  const deciding = ties.filter(
+    (tie) => tie.isThirdPlacePlayoff || tie.round >= totalRounds,
+  );
+  if (!deciding.every((tie) => tie.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED)) {
+    return false;
+  }
+  const ladderRef = db.collection(LADDERS).doc(ladderId);
+  const completed = await db.runTransaction(async (transaction) => {
+    const fresh = await transaction.get(ladderRef);
+    if (fresh.data()?.status !== LADDER_STATUS.PLAYOFFS) return false;
+    transaction.update(ladderRef, {
+      status: LADDER_STATUS.COMPLETED,
+      playoffsCompletedAt: now,
+    });
+    return true;
+  });
+  if (completed) {
+    console.log(
+      `🏆 [playoffs] ${ladderId} complete — prize payouts are Phase 3 and haven't been made.`,
+    );
+  }
+  return completed;
+};
+
 export const notifyLadderPlayoffResolution = async ({
   ladder,
   resolution,
 }: {
-  ladder: Pick<Ladder, "ladderId" | "name">;
+  ladder: PlayoffLadder;
   resolution: LadderPlayoffTieResolution;
 }): Promise<void> => {
   const totalRounds = totalRoundsOf(resolution.ties);
@@ -232,6 +339,13 @@ export const notifyLadderPlayoffResolution = async ({
         data: { tieId: changedTie.tieId },
       });
     }
+    if (
+      changedTie.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED &&
+      changedTie.winner &&
+      before.get(changedTie.tieId)?.status !== LADDER_PLAYOFF_TIE_STATUS.COMPLETED
+    ) {
+      await notifyTieFinish({ ladder, tie: changedTie, totalRounds, ties: resolution.ties });
+    }
     const previous = before.get(changedTie.tieId);
     const arrived = TIE_SIDES.filter((key) => changedTie[key] && !previous?.[key]);
     const waiting = TIE_SIDES.filter((key) => changedTie[key] && previous?.[key]);
@@ -240,15 +354,21 @@ export const notifyLadderPlayoffResolution = async ({
 
     if (
       changedTie.status === LADDER_PLAYOFF_TIE_STATUS.AWAITING_ENTRANTS &&
-      !changedTie.isThirdPlacePlayoff &&
       arrived.length > 0
     ) {
       await notifyLadderPlayers({
         userIds: playersOf(arrived),
         ladder,
         kind: `playoff-through-${changedTie.tieId}`,
-        title: `You're through to the ${changedName}`,
-        message: `Congratulations! You're through to the ${changedName} in ${ladder.name}. We'll let you know as soon as your opponent is decided.`,
+        ...(changedTie.isThirdPlacePlayoff
+          ? {
+              title: "You'll play for 3rd place",
+              message: `Your Semi-Final in ${ladder.name} is over, and you'll play for 3rd place. We'll let you know as soon as your opponent is decided.`,
+            }
+          : {
+              title: `You're through to the ${changedName}`,
+              message: `Congratulations! You're through to the ${changedName} in ${ladder.name}. We'll let you know as soon as your opponent is decided.`,
+            }),
         tab: PLAYOFFS_TAB,
         data: { tieId: changedTie.tieId },
       });
@@ -258,8 +378,15 @@ export const notifyLadderPlayoffResolution = async ({
         userIds: playersOf(arrived),
         ladder,
         kind: `playoff-round-${changedTie.tieId}`,
-        title: `You've reached the ${changedName}`,
-        message: `Congratulations! You've reached the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
+        ...(changedTie.isThirdPlacePlayoff
+          ? {
+              title: "You'll play for 3rd place",
+              message: `You'll play for 3rd place in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
+            }
+          : {
+              title: `You've reached the ${changedName}`,
+              message: `Congratulations! You've reached the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
+            }),
         tab: PLAYOFFS_TAB,
         data: { tieId: changedTie.tieId },
       });

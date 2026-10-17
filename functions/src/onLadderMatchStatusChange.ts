@@ -5,6 +5,7 @@ import type { Ladder, LadderMatch } from "courtchamps-shared/types";
 import * as admin from "firebase-admin";
 
 import {
+  completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
 } from "./helpers/ladderPlayoffTies";
@@ -28,10 +29,12 @@ const settleLadderPlayoffTie = async (
     });
     if (!resolution) return;
     const ladderSnapshot = await db.collection("ladders").doc(ladderId).get();
+    const ladder = ladderSnapshot.data() as Ladder | undefined;
     await notifyLadderPlayoffResolution({
-      ladder: { ladderId, name: (ladderSnapshot.data() as Ladder)?.name ?? "the ladder" },
+      ladder: { ...ladder, ladderId, name: ladder?.name ?? "the ladder" },
       resolution,
     });
+    await completeLadderPlayoffsIfFinished({ db, ladderId, resolution, now: new Date() });
   } catch (error) {
     console.error(
       `[playoffs] could not settle tie ${ladderId}/${tieId}:`,

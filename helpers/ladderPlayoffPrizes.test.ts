@@ -1,5 +1,5 @@
+import { getLadderPlacePrize } from "@shared/helpers";
 import {
-  getLadderPlacePrize,
   getLadderPrizeTable,
   getLadderTiePrizes,
   getLadderTopFourPrizes,

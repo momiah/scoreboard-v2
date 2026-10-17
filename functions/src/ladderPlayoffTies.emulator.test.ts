@@ -22,6 +22,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
 if (admin.apps.length === 0) admin.initializeApp({ projectId: PROJECT_ID });
 
 import {
+  completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
   sendDueLadderPlayoffReminders,
@@ -40,7 +41,14 @@ const clearEmulator = async () => {
 
 const start = new Date("2026-10-01T09:00:00Z");
 const LADDER = "L1";
-const ladder = { ladderId: LADDER, name: "Test Ladder" };
+const ladder = {
+  ladderId: LADDER,
+  name: "Test Ladder",
+  entryFee: 20,
+  participantCount: 128,
+  maxPlayers: 256,
+  currencyType: "GBP",
+};
 
 const entrant = (key: string): LadderPlayoffEntrant => ({
   entrantKey: key,
@@ -79,7 +87,7 @@ const readTie = async (tieId: string) =>
 
 const seedBracket = async (size = 4) => {
   await db.doc(`ladders/${LADDER}`).set({
-    name: ladder.name,
+    ...ladder,
     status: LADDER_STATUS.PLAYOFFS,
     ladderType: LADDER_TYPE.SINGLES,
   });
@@ -171,7 +179,7 @@ describe("resolveLadderPlayoffTie", () => {
     expect(first.tie.tieId).toBe(semiOne.tieId);
     await notifyLadderPlayoffResolution({ ladder, resolution: first });
     expect(await notificationIds(a)).toEqual([`playoff-through-r2-s0-${LADDER}-${a}`]);
-    expect(await notificationIds(b)).toEqual([]);
+    expect(await notificationIds(b)).toEqual([`playoff-through-r2-s1-${LADDER}-${b}`]);
     expect(await readTie(semiOne.tieId)).toMatchObject({
       status: LADDER_PLAYOFF_TIE_STATUS.COMPLETED,
       winner: "team1",
@@ -204,6 +212,96 @@ describe("resolveLadderPlayoffTie", () => {
       title: "Your Final is ready",
       message: `Your opponent in the Final of ${ladder.name} is ${d}. Your tie is ready: you have 10 days to play both your home and away matches.`,
     });
+  });
+
+  it("tells a knocked-out player what they won", async () => {
+    const ties = await seedBracket(8);
+    const [quarter] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(quarter);
+    await seedUsers([a, b]);
+    await seedLeg(quarter, 1, [a, a, a]);
+    await seedLeg(quarter, 2, [a, b, a]);
+
+    const resolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: quarter.tieId, now: start });
+    if (!resolution) throw new Error("expected a resolution");
+    await notifyLadderPlayoffResolution({ ladder, resolution });
+
+    const out = await db.doc(`users/${b}/notifications/playoff-out-${quarter.tieId}-${LADDER}-${b}`).get();
+    expect(out.data()).toMatchObject({
+      title: "Knocked out in the Quarter-Final",
+      message: "You've been knocked out in the Quarter-Final of Test Ladder. You've been awarded £160 and 400 CP, paid when the playoffs finish.",
+    });
+
+  });
+
+  it("doesn't mention prizes to a player knocked out before the paid places", async () => {
+    const ties = await seedBracket(16);
+    const [first] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await seedUsers([a, b]);
+    await seedLeg(first, 1, [a, a, a]);
+    await seedLeg(first, 2, [a, a, a]);
+
+    const resolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: first.tieId, now: start });
+    if (!resolution) throw new Error("expected a resolution");
+    await notifyLadderPlayoffResolution({ ladder: { ...ladder, participantCount: 256 }, resolution });
+
+    const out = await db.doc(`users/${b}/notifications/playoff-out-${first.tieId}-${LADDER}-${b}`).get();
+    expect(out.data()?.message).toBe("You've been knocked out in the Round of 16 of Test Ladder.");
+  });
+
+  it("places the last four, tells them what they won and completes the ladder", async () => {
+    const ties = await seedBracket(4);
+    const [semiOne, semiTwo] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(semiOne);
+    const [c, d] = sidesOf(semiTwo);
+    await seedUsers([a, b, c, d]);
+    for (const semi of [semiOne, semiTwo]) {
+      const [winner, loser] = sidesOf(semi);
+      await seedLeg(semi, 1, [winner, winner, loser]);
+      await seedLeg(semi, 2, [winner, winner, winner]);
+      const resolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: semi.tieId, now: start });
+      if (!resolution) throw new Error("expected a resolution");
+      await notifyLadderPlayoffResolution({ ladder, resolution });
+    }
+
+    const final = await readTie("r2-s0");
+    const thirdPlace = await readTie("r2-s1");
+    const [f1, f2] = sidesOf(final);
+    const [t1, t2] = sidesOf(thirdPlace);
+    expect(await notificationIds(b)).toContain(`playoff-through-r2-s1-${LADDER}-${b}`);
+    const thirdNotice = await db.doc(`users/${t2}/notifications/playoff-round-r2-s1-${LADDER}-${t2}`).get();
+    expect(thirdNotice.data()?.title).toBe("You'll play for 3rd place");
+
+    await seedLeg(final, 1, [f1, f1, f2]);
+    await seedLeg(final, 2, [f1, f1, f1]);
+    const finalResolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: "r2-s0", now: start });
+    if (!finalResolution) throw new Error("expected a resolution");
+    await notifyLadderPlayoffResolution({ ladder, resolution: finalResolution });
+    expect(await completeLadderPlayoffsIfFinished({ db, ladderId: LADDER, resolution: finalResolution, now: start })).toBe(false);
+
+    const champion = await db.doc(`users/${f1}/notifications/playoff-finish-r2-s0-${LADDER}-${f1}`).get();
+    expect(champion.data()).toMatchObject({
+      title: "You placed 1st",
+      message: "Congratulations, you have placed 1st in Test Ladder and been awarded £897 and 2,240 CP.",
+    });
+    const runnerUp = await db.doc(`users/${f2}/notifications/playoff-finish-r2-s0-${LADDER}-${f2}`).get();
+    expect(runnerUp.data()?.message).toBe("Congratulations, you have placed 2nd in Test Ladder and been awarded £512 and 1,280 CP.");
+
+    await seedLeg(thirdPlace, 1, [t2, t2, t1]);
+    await seedLeg(thirdPlace, 2, [t2, t2, t2]);
+    const thirdResolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: "r2-s1", now: start });
+    if (!thirdResolution) throw new Error("expected a resolution");
+    await notifyLadderPlayoffResolution({ ladder, resolution: thirdResolution });
+    const fourth = await db.doc(`users/${t1}/notifications/playoff-finish-r2-s1-${LADDER}-${t1}`).get();
+    expect(fourth.data()?.message).toBe("Congratulations, you have placed 4th in Test Ladder and been awarded £204 and 512 CP.");
+
+    expect(await completeLadderPlayoffsIfFinished({ db, ladderId: LADDER, resolution: thirdResolution, now: start })).toBe(true);
+    expect((await db.doc(`ladders/${LADDER}`).get()).data()).toMatchObject({
+      status: LADDER_STATUS.COMPLETED,
+      playoffsCompletedAt: admin.firestore.Timestamp.fromDate(start),
+    });
+    expect(await completeLadderPlayoffsIfFinished({ db, ladderId: LADDER, resolution: thirdResolution, now: start })).toBe(false);
   });
 
   it("does nothing until both matches are complete", async () => {

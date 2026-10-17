@@ -1,43 +1,11 @@
 import {
-  calculateLadderPrizePool,
-  getEffectiveLadderSize,
-  getLadderPayoutForPlace,
   getLadderPayouts,
+  getLadderPlacePrize,
+  getLadderPrizeSetup,
   roundLabel,
 } from "@shared/helpers";
-import type { Ladder, LadderPlayoffTie } from "@shared/types";
-
-export interface LadderPlacePrize {
-  cash: number;
-  cp: number;
-}
-
-type PrizeLadder = Pick<
-  Ladder,
-  "entryFee" | "participantCount" | "maxPlayers" | "playoffEntrantCount"
->;
-
-const prizeSetup = (ladder: PrizeLadder) => {
-  const registered = ladder.playoffEntrantCount ?? ladder.participantCount ?? 0;
-  return {
-    pool: calculateLadderPrizePool({
-      entryFee: ladder.entryFee ?? 0,
-      participantCount: registered,
-    }),
-    size: getEffectiveLadderSize(registered, ladder.maxPlayers),
-  };
-};
-
-export const getLadderPlacePrize = (
-  ladder: PrizeLadder,
-  place: number,
-): LadderPlacePrize => {
-  const { pool, size } = prizeSetup(ladder);
-  return {
-    cash: pool.cash > 0 ? getLadderPayoutForPlace(pool.cash, size, place) : 0,
-    cp: getLadderPayoutForPlace(pool.xp, size, place),
-  };
-};
+import type { LadderPlacePrize, PrizeLadder } from "@shared/helpers";
+import type { LadderPlayoffTie } from "@shared/types";
 
 export const getLadderTopFourPrizes = (
   ladder: PrizeLadder,
@@ -71,7 +39,7 @@ export interface LadderPrizeRow {
 
 /** Every paid place of the ladder, with what each player or team takes. */
 export const getLadderPrizeTable = (ladder: PrizeLadder): LadderPrizeRow[] => {
-  const { pool, size } = prizeSetup(ladder);
+  const { pool, size } = getLadderPrizeSetup(ladder);
   const cash = getLadderPayouts(pool.cash, size);
   return getLadderPayouts(pool.xp, size).map((cpBand, index) => ({
     fromPlace: cpBand.fromPlace,

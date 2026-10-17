@@ -1,10 +1,8 @@
 import React from "react";
 import styled from "styled-components/native";
 
-import type {
-  LadderPlacePrize,
-  LadderTiePrizes,
-} from "../../helpers/ladderPlayoffPrizes";
+import type { LadderPlacePrize } from "@shared/helpers";
+import type { LadderTiePrizes } from "../../helpers/ladderPlayoffPrizes";
 import { formatCurrency } from "../../helpers/formatCurrency";
 
 interface PlayoffPrizeBannerProps {
