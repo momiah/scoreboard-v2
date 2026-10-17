@@ -22,6 +22,7 @@ const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
 
 export const MATCH_CARD_TITLE_FONT_SIZE = isSmallScreen ? 14 : 15;
+export const MATCH_HEADER_TITLE_FONT_SIZE = isSmallScreen ? 20 : 22;
 
 interface CheckinControl {
   checkedIn: boolean;
@@ -226,7 +227,7 @@ const Title = styled.Text<{ flat?: boolean }>(
   ({ flat }: { flat?: boolean }) => ({
     color: "#ffffff",
     fontWeight: "bold",
-    fontSize: flat ? (isSmallScreen ? 20 : 22) : MATCH_CARD_TITLE_FONT_SIZE,
+    fontSize: flat ? MATCH_HEADER_TITLE_FONT_SIZE : MATCH_CARD_TITLE_FONT_SIZE,
     flexShrink: 1,
   }),
 );

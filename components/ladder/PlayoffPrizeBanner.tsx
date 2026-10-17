@@ -4,7 +4,7 @@ import styled from "styled-components/native";
 import type { LadderPlacePrize } from "@shared/helpers";
 import type { LadderTiePrizes } from "../../helpers/ladderPlayoffPrizes";
 import { formatCurrency } from "../../helpers/formatCurrency";
-import { MATCH_CARD_TITLE_FONT_SIZE } from "./MatchCard";
+import { MATCH_HEADER_TITLE_FONT_SIZE } from "./MatchCard";
 
 interface PlayoffPrizeBannerProps {
   title: string;
@@ -62,7 +62,7 @@ const Card = styled.View({
 
 const Title = styled.Text({
   color: "#ffffff",
-  fontSize: MATCH_CARD_TITLE_FONT_SIZE,
+  fontSize: MATCH_HEADER_TITLE_FONT_SIZE,
   fontWeight: "bold",
 });
 
