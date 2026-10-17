@@ -158,8 +158,8 @@ const LadderHowToPlay: React.FC = () => {
           title="Arrange Your Home Match"
           paragraphs={[
             "The host picks the court and time. Their opponent accepts, or can decline once.",
-            "Match 1 is arranged first. Match 2 can then be any date, even before match 1.",
-            "After match 1, either side can offer to play match 2 straight away.",
+            "Match 1 is arranged first, then Match 2 can be arranged.",
+            "After match 1 is complete, you have the option to complete match 2 in the same venue.",
           ]}
         />
       ),
@@ -172,7 +172,7 @@ const LadderHowToPlay: React.FC = () => {
           title="Win on Aggregate"
           paragraphs={[
             `The ${noun} that wins more games across both matches goes through.`,
-            "Level? One deciding game is played straight after the last match, at the same court.",
+            "If both matches result in a draw, a deciding game is played on the same court. You can request the game to be played on a later date if you've run out of time.",
           ]}
         />
       ),
