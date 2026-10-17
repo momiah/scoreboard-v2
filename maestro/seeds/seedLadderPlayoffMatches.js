@@ -23,6 +23,7 @@ import {
 import {
   MAESTRO_PO_LADDER_ID,
   MAESTRO_PO_PAID_LADDER_ID,
+  deleteTiePlayerNotifications,
   seedLadderPlayoffs,
 } from "./seedLadderPlayoffs";
 
@@ -269,6 +270,7 @@ export const seedLadderPlayoffMatches = async ({
       "seedLadderPlayoffMatches: testUser with a userId is required",
     );
   }
+  await deleteTiePlayerNotifications(ladderId);
   await seedLadderPlayoffs({
     testUser,
     generate: true,

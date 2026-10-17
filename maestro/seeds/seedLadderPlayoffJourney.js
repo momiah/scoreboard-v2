@@ -17,7 +17,11 @@ import {
   advanceLadderPlayoffBracket,
   getLadderPlayoffLegHost,
 } from "@shared";
-import { MAESTRO_PO_LADDER_ID, seedLadderPlayoffs } from "./seedLadderPlayoffs";
+import {
+  MAESTRO_PO_LADDER_ID,
+  deleteTiePlayerNotifications,
+  seedLadderPlayoffs,
+} from "./seedLadderPlayoffs";
 import {
   commit,
   legMatch,
@@ -88,6 +92,7 @@ export const seedLadderPlayoffJourney = async ({
       "seedLadderPlayoffJourney: testUser with a userId is required",
     );
   }
+  await deleteTiePlayerNotifications(ladderId);
   await seedLadderPlayoffs({
     testUser,
     generate: true,

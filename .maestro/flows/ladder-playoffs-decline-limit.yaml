@@ -6,6 +6,7 @@ onFlowStart:
     file: ../utilities/playoffs/seed-stage.yaml
     env:
       STAGE: "leg1PostedAfterDecline"
+      SUFFIX: ""
 - runFlow: ../utilities/playoffs/open-tie.yaml
 - tapOn:
     id: "playoff-match-leg1"

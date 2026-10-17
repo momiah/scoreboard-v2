@@ -6,6 +6,7 @@ onFlowStart:
     file: ../utilities/playoffs/seed-stage.yaml
     env:
       STAGE: "noHomeCourt"
+      SUFFIX: ""
 - runFlow: ../utilities/playoffs/open-tie.yaml
 - tapOn:
     id: "playoff-match-leg2-arrange"

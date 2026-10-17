@@ -170,6 +170,13 @@ export const cleanupLadderTestData = async ({
       ),
     );
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    const chats = await getDocs(
+      query(
+        collection(db, "users", testUser.userId, "chats"),
+        where("ladderId", "in", notificationLadderIds),
+      ),
+    );
+    await Promise.all(chats.docs.map((d) => deleteDoc(d.ref)));
   }
 
   return {

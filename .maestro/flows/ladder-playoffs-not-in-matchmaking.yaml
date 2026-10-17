@@ -6,6 +6,7 @@ onFlowStart:
     file: ../utilities/playoffs/seed-stage.yaml
     env:
       STAGE: "leg1Posted"
+      SUFFIX: ""
 - runFlow:
     file: ../utilities/playoffs/open-playoffs-tab.yaml
     env:

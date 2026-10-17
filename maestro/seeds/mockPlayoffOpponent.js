@@ -1,4 +1,6 @@
 import {
+  Timestamp,
+  addDoc,
   collection,
   doc,
   getDoc,
@@ -67,7 +69,14 @@ const opponentName = (tie, opponent) => {
   });
 };
 
-const notifyUser = async ({ ladderId, tie, testUser, opponent, id, message }) => {
+const notifyUser = async ({
+  ladderId,
+  tie,
+  testUser,
+  opponent,
+  id,
+  message,
+}) => {
   await setDoc(
     doc(db, "users", testUser.userId, "notifications", `maestro-po-${id}`),
     {
@@ -149,7 +158,10 @@ export const mockOpponentRespondsToLeg = async ({
   });
   const id = legId(tie, leg);
   const snap = await getDoc(matchRef(ladderId, id));
-  if (!snap.exists() || snap.data().matchStatus !== LADDER_MATCH_STATUS.POSTED) {
+  if (
+    !snap.exists() ||
+    snap.data().matchStatus !== LADDER_MATCH_STATUS.POSTED
+  ) {
     throw new Error(
       `mockOpponentRespondsToLeg: match ${leg} is not awaiting a reply`,
     );
@@ -231,4 +243,147 @@ export const mockOpponentOffersPlayHere = async ({
     message: `${opponentName(tie, opponent)} wants to play match 2 now at ${first.court?.courtName ?? "your court"}. Open the game to accept or decline.`,
   });
   return { tieId: tie.tieId };
+};
+
+const tieChatId = (ladderId, tie) => `${ladderId}-${tie.tieId}`;
+
+export const mockOpponentTieChat = async ({
+  testUser,
+  ladderId = MAESTRO_PO_LADDER_ID,
+  text,
+}) => {
+  const { tie, opponent } = await findUserTie({
+    ladderId,
+    userId: testUser.userId,
+  });
+  const player = tie[opponent].player1;
+  const opponentId = tie[sideKey(opponent)].playerIds[0];
+  await addDoc(
+    collection(
+      db,
+      "ladders",
+      ladderId,
+      LADDER_PLAYOFF_TIES_COLLECTION,
+      tie.tieId,
+      "chat",
+    ),
+    {
+      text,
+      createdAt: Timestamp.now(),
+      user: { _id: opponentId, name: player?.username ?? "", avatar: "" },
+    },
+  );
+  await setDoc(
+    doc(db, "users", testUser.userId, "chats", tieChatId(ladderId, tie)),
+    {
+      type: "chat",
+      isRead: false,
+      messageCount: 1,
+      competitionId: tieChatId(ladderId, tie),
+      lastMessage: `${player?.username ?? ""}: ${text}`,
+      createdAt: new Date(),
+      competitionName: "Round of 16 · Tie 2 · Maestro Playoffs 256",
+      competitionType: "ladder",
+      ladderId,
+      tieId: tie.tieId,
+    },
+  );
+  return { tieId: tie.tieId };
+};
+
+export const assertTieChatDelivered = async ({
+  testUser,
+  ladderId = MAESTRO_PO_LADDER_ID,
+  text,
+}) => {
+  const { tie, opponent } = await findUserTie({
+    ladderId,
+    userId: testUser.userId,
+  });
+  const opponentId = tie[sideKey(opponent)].playerIds[0];
+  const messages = await getDocs(
+    collection(
+      db,
+      "ladders",
+      ladderId,
+      LADDER_PLAYOFF_TIES_COLLECTION,
+      tie.tieId,
+      "chat",
+    ),
+  );
+  const sent = messages.docs
+    .map((d) => d.data())
+    .find((data) => data.text === text && data.user?._id !== opponentId);
+  if (!sent) throw new Error(`Tie chat message "${text}" was not stored`);
+  const chat = await getDoc(
+    doc(db, "users", opponentId, "chats", tieChatId(ladderId, tie)),
+  );
+  if (!chat.exists()) throw new Error("The opponent has no chat entry");
+  const data = chat.data();
+  if (
+    data.competitionType !== "ladder" ||
+    data.ladderId !== ladderId ||
+    data.tieId !== tie.tieId ||
+    data.isRead !== false ||
+    !String(data.lastMessage ?? "").includes(text)
+  ) {
+    throw new Error(
+      `The opponent's chat entry is wrong: ${JSON.stringify(data)}`,
+    );
+  }
+  return { delivered: true, tieId: tie.tieId };
+};
+
+const NOTIFICATION_KINDS = {
+  "cancellation-request": ({ name, court }) => ({
+    message: `${name} asked to cancel your ladder match at ${court}`,
+  }),
+  "reschedule-request": ({ name, court }) => ({
+    message: `${name} asked to move your ladder match at ${court} to Mon 19 Oct, 19:00`,
+  }),
+  extension: ({ name, court }) => ({
+    message: `${name} extended your ladder match at ${court}. Your extension has 7 days left to complete your match.`,
+  }),
+  reminder: ({ ladderName }) => ({
+    title: "Playoff reminder",
+    message: `3 days left to finish your Round of 16 in ${ladderName}.`,
+  }),
+};
+
+export const PLAYOFF_NOTIFICATION_KINDS = Object.keys(NOTIFICATION_KINDS);
+
+export const mockPlayoffNotification = async ({
+  testUser,
+  ladderId = MAESTRO_PO_LADDER_ID,
+  kind,
+}) => {
+  const { tie, opponent } = await findUserTie({
+    ladderId,
+    userId: testUser.userId,
+  });
+  const ladder = (await getDoc(doc(db, "ladders", ladderId))).data();
+  const content = NOTIFICATION_KINDS[kind]({
+    name: opponentName(tie, opponent),
+    court: tie[sideKey(opponent)].homeCourt?.courtName ?? "your court",
+    ladderName: ladder.name,
+  });
+  await setDoc(
+    doc(
+      db,
+      "users",
+      testUser.userId,
+      "notifications",
+      `maestro-po-notify-${kind}`,
+    ),
+    {
+      ...notificationSchema,
+      createdAt: new Date(),
+      recipientId: testUser.userId,
+      senderId: tie[sideKey(opponent)].playerIds[0],
+      type: notificationTypes.INFORMATION.LADDER.TYPE,
+      data: { ladderId, tieId: tie.tieId, tab: "Playoffs" },
+      ...content,
+    },
+  );
+  return { kind, tieId: tie.tieId };
 };

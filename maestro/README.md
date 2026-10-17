@@ -39,6 +39,18 @@ bundled into a release build.
   viewer: the user's neighbour in progress, one played, one void (its
   neighbour gets a walkover) and one level with a decider. Same cleanup.
 
+- `seeds/seedLadderPlayoffJourney.js` — carries the playoff bracket forward to
+  any round (Round of 16 to the Final, or the 3rd-place tie) with the test user's
+  last reported game awaiting their approval, so the real
+  `onLadderMatchStatusChange` settles the tie. Also `mockFinishCompanionTie`
+  (plays out the neighbouring tie through the same trigger) and the assertions
+  `assertPlayoffNotification` and `assertLadderCompleted`. Buttons exist for the
+  free and the paid ladder (`-paid`).
+- `seeds/mockPlayoffOpponent.js` — the playoff opponent: arranges, accepts,
+  declines, offers "play match 2 here" and chats; plus mock notifications and the
+  tie-chat assertion. Notification ids start `maestro-po-` and the backend's
+  start with the ladder id, so cleanup removes them.
+
 ## Re-attaching the harness
 
 The harness is not mounted in the app while testing is finished, so Maestro

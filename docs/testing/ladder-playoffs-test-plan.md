@@ -192,8 +192,10 @@ Emulator cases are in `functions/src/ladderPlayoffTies.emulator.test.ts` and
 - The bracket glow animation and the loading skeleton in Maestro (they last
   milliseconds); both are covered in Jest.
 - Phase 3 (payout).
-- Phase 2 flows beyond 2.4 until their seeds exist (see the playoff section of
-  [maestro-backlog.md](maestro-backlog.md)).
+- In Maestro: the location check itself (the opponent's arrival is seeded
+  instead), the "new" state of the gold guide button on a device that has
+  already opened it (Jest covers it), and the 10-day deadline expiring (the
+  emulator suite covers it).
 - A push actually arriving on a physical phone, and the deployed Cloud
   Scheduler job firing in production. The tests assert the exact Expo request
   the function sends and the schedule it declares; delivery by Expo and
@@ -234,6 +236,47 @@ notifications.
 | `ladder-playoffs-cancellation-notification` | 4.3 |
 | `ladder-playoffs-summary-2048` | 4.4 |
 | `ladder-playoffs-standings-player-details` | 4.5 |
+
+### Phase 2 flows
+
+Every flow runs on both seeded ladders where the wording differs (free
+`maestro-po-ladder` and paid `maestro-po-paid-ladder`, £20 entry); journey
+flows run the same steps on each in turn. The opponent is a harness mock
+(`maestro/seeds/mockPlayoffOpponent.js`); ties are settled by the real
+`onLadderMatchStatusChange` trigger when the test user approves the last reported
+game, and the other tie in the round is finished by `mockFinishCompanionTie`.
+
+| Flow | Scenarios |
+|------|-----------|
+| `ladder-playoffs-journey-arrange` | 6.1, 6.5, 6.6, 6.6a, 6.10, 6.31: "You made the playoffs!" opens the Playoffs tab on the user's tie, the tie lobby and prize card, the opponent arranges match 1 (arranged notification), the user accepts, arranges match 2, the opponent accepts |
+| `ladder-playoffs-journey-play-here`, `-play-here-offered` | 6.6b: the user offers "Play match 2 here" at the opponent's court and the opponent accepts; the opponent offers and the user accepts |
+| `ladder-playoffs-journey-decider` | 6.15: level on aggregate creates the checked-in decider, then Reschedule |
+| `ladder-playoffs-journey-extension` | 6.15: Request Extension on the decider |
+| `ladder-playoffs-journey-r16-win`, `-qf-win`, `-sf-win`, `-decider-win` | 6.32, 6.33: "You're through to the {round}", then "Your {round} is ready" |
+| `ladder-playoffs-journey-r16-loss`, `-decider-loss` | 6.33b: "Knocked out in the Round of 16", no prize sentence |
+| `ladder-playoffs-journey-qf-loss` | 6.33b: "Knocked out in the Quarter-Final" with "You've been awarded £320 and 800 CP, paid when the playoffs finish." (paid) or "800 CP" (free) |
+| `ladder-playoffs-journey-sf-loss` | 6.33a: "You'll play for 3rd place", then "Your 3rd-place tie is ready" |
+| `ladder-playoffs-journey-final-win`, `-final-loss`, `-third-win`, `-third-loss` | 6.33c: each of the four players gets "Congratulations, you have placed {1st–4th} in {ladder} and been awarded …", the notification opens Summary, and the ladder shows Completed |
+| `ladder-playoffs-tie-layout-spectator` | 6.10f, 6.10i |
+| `ladder-playoffs-hosting-by-rank` | 6.6, 6.6a |
+| `ladder-playoffs-prize-banner` | 6.1, 6.31 |
+| `ladder-playoffs-tie-chat` | 6.10i |
+| `ladder-playoffs-match-has-no-chat` | 6.10i |
+| `ladder-playoffs-arrange-home` | 6.5, 6.10e |
+| `ladder-playoffs-arrange-without-home-court` | 6.7 |
+| `ladder-playoffs-confirm-match`, `-decline-match`, `-decline-limit` | 6.10, 6.10a |
+| `ladder-playoffs-cancel-posted`, `-cancel-accepted` | 6.10b, 6.10c |
+| `ladder-playoffs-reschedule`, `-extension` | 6.10 (Match Options), 6.15 |
+| `ladder-playoffs-aggregate`, `-settled`, `-spectator-scores`, `-spectator-live` | 6.10g, 6.12, 6.21 |
+| `ladder-playoffs-not-in-matchmaking` | 6.20 |
+| `ladder-playoffs-report-during-playoffs`, `-approve-during-playoffs`, `-report-score` | 6.13, 6.14 |
+| `ladder-playoffs-notifications-open-playoffs` | 6.10d |
+| `ladder-playoffs-guide-button`, `-guide-pages` | 6.10j |
+| `ladder-playoffs-through-and-ready` | 6.32, 6.33 |
+| `ladder-playoffs-tie-wording` | 6.34 |
+| `ladder-summary-prize-pool`, `ladder-join-fee-on-top`, `ladder-join-payment-stub`, `ladder-match-lobby-address`, `ladder-post-match-court-time` | Prize pool, entry fee on top, address, court-time hint |
+| `ladder-posting-closes-7-days`, `ladder-results-closing-banner`, `ladder-results-closed` | 7.1, 7.2, 7.2a |
+| `ladder-no-show-opponent-arrived` | 8.4 |
 
 ### Prizes
 

@@ -5,6 +5,7 @@ appId: com.courtchamp
       id: "ladder-game-${MATCH}-${GAME}"
     direction: DOWN
     timeout: 20000
+    centerElement: true
 - tapOn:
     id: "ladder-game-${MATCH}-${GAME}"
 - extendedWaitUntil:

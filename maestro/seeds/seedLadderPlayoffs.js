@@ -136,7 +136,7 @@ const deleteCollection = async (path) => {
   );
 };
 
-const deleteTiePlayerNotifications = async (ladderId) => {
+export const deleteTiePlayerNotifications = async (ladderId) => {
   const ties = await getDocs(
     collection(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION),
   );
@@ -161,7 +161,6 @@ const deleteTiePlayerNotifications = async (ladderId) => {
 };
 
 const deleteLadder = async (ladderId) => {
-  await deleteTiePlayerNotifications(ladderId);
   await Promise.all(
     [
       LADDER_PLAYOFF_TIES_COLLECTION,
@@ -625,6 +624,7 @@ export const seedLadderPlayoffsDoubles = async ({
 };
 
 export const cleanupLadderPlayoffsTestData = async () => {
+  await Promise.all(MAESTRO_PO_LADDER_IDS.map(deleteTiePlayerNotifications));
   await Promise.all(MAESTRO_PO_LADDER_IDS.map(deleteLadder));
   await commitInBatches([
     ...maestroPlayoffFixtureUserIds().map(

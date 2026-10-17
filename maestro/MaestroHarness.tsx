@@ -88,7 +88,11 @@ import {
   seedLadderPlayoffJourney,
 } from "./seeds/seedLadderPlayoffJourney";
 import {
+  assertTieChatDelivered,
   mockOpponentArrangesLeg,
+  mockOpponentTieChat,
+  mockPlayoffNotification,
+  PLAYOFF_NOTIFICATION_KINDS,
   mockOpponentOffersPlayHere,
   mockOpponentRespondsToLeg,
 } from "./seeds/mockPlayoffOpponent";
@@ -240,6 +244,32 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             ...expected,
           }),
       })),
+      ...PLAYOFF_NOTIFICATION_KINDS.map((kind) => ({
+        id: `maestro-mock-po${suffix}-notify-${kind}`,
+        label: `Mock PO Notify ${kind}${suffix}`,
+        run: () =>
+          mockPlayoffNotification({ testUser: currentUser, ladderId, kind }),
+      })),
+      {
+        id: `maestro-mock-po${suffix}-opponent-chat`,
+        label: `Mock Opp Tie Chat${suffix}`,
+        run: () =>
+          mockOpponentTieChat({
+            testUser: currentUser,
+            ladderId,
+            text: "See you at the court",
+          }),
+      },
+      {
+        id: `maestro-assert-po${suffix}-tie-chat-delivered`,
+        label: `Assert Tie Chat Delivered${suffix}`,
+        run: () =>
+          assertTieChatDelivered({
+            testUser: currentUser,
+            ladderId,
+            text: "On my way, bringing the shuttles",
+          }),
+      },
       ...(["accept", "decline"] as const).map((reply) => ({
         id: `maestro-mock-po${suffix}-cancel-${reply}`,
         label: `Mock Opp Cancel ${reply}${suffix}`,
@@ -595,6 +625,16 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
     </HarnessButton>
 
     {[
+      ...[6, 4].map((days) => ({
+        id: `maestro-seed-add-game-flow-playoffs-in-${days}-days`,
+        label: `Seed Add-Game Flow (Playoffs in ${days} days)`,
+        run: () =>
+          seedAddApproveGameFlow({
+            testUser: currentUser,
+            withReportedGame: true,
+            playoffStartsInDays: days,
+          }),
+      })),
       {
         id: "maestro-seed-add-game-flow-decider",
         label: "Seed Add-Game Flow (Decider Pending)",
@@ -620,6 +660,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["full", JOIN_VARIANT.FULL],
         ["window-closed", JOIN_VARIANT.WINDOW_CLOSED],
         ["status-closed", JOIN_VARIANT.STATUS_CLOSED],
+        ["paid", JOIN_VARIANT.PAID],
       ].map(([key, variant]) => ({
         id: `maestro-seed-join-singles-${key}`,
         label: `Seed Join Singles (${key})`,
@@ -675,6 +716,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["accepted-opponent-posted", CANCEL_VARIANT.ACCEPTED_OPPONENT_POSTED],
         ["overdue-opponent-posted", CANCEL_VARIANT.OVERDUE_OPPONENT_POSTED],
         ["overdue-user-posted", CANCEL_VARIANT.OVERDUE_USER_POSTED],
+        ["overdue-opponent-arrived", CANCEL_VARIANT.OVERDUE_OPPONENT_ARRIVED],
         [
           "started-recently-opponent-posted",
           CANCEL_VARIANT.STARTED_RECENTLY_OPPONENT_POSTED,

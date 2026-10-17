@@ -3,4 +3,4 @@ appId: com.courtchamp
 - runFlow:
     file: harness.yaml
     env:
-      BUTTON: "maestro-seed-playoff-match-${STAGE}"
+      BUTTON: "maestro-seed-playoff-match${SUFFIX}-${STAGE}"

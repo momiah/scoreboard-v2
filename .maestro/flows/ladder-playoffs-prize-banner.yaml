@@ -6,6 +6,7 @@ onFlowStart:
     file: ../utilities/playoffs/seed-stage.yaml
     env:
       STAGE: "pending"
+      SUFFIX: ""
 - runFlow: ../utilities/playoffs/open-tie.yaml
 - assertVisible: "Round of 16 · Tie 2"
 - assertVisible: "Current payout"
@@ -23,6 +24,7 @@ onFlowStart:
     file: ../utilities/playoffs/seed-stage.yaml
     env:
       STAGE: "pending"
+      SUFFIX: ""
 - runFlow:
     file: ../utilities/playoffs/harness.yaml
     env:
