@@ -11,6 +11,7 @@ import { db } from "../../services/firebase.config";
 import {
   LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_STATUS,
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_PLAYOFF_TIE_STATUS,
@@ -108,13 +109,21 @@ export const seedLadderPlayoffJourney = async ({
   const updates = new Map();
   const setTie = (tieId, fields) =>
     updates.set(tieId, { ...(updates.get(tieId) ?? {}), ...fields });
+  const matches = [];
   const settle = (tieId, winner) => {
+    const finishedAt = new Date(
+      Math.max(
+        ...matches
+          .filter((match) => match.playoffTieId === tieId && match.completedAt)
+          .map((match) => match.completedAt.getTime()),
+      ),
+    );
     const changed = advanceLadderPlayoffBracket({
       ties,
       tieId,
       winner,
       outcome: LADDER_PLAYOFF_TIE_OUTCOME.PLAYED,
-      now,
+      now: finishedAt,
     });
     ties = ties.map((tie) => changed.find((c) => c.tieId === tie.tieId) ?? tie);
     changed.forEach((tie) => setTie(tie.tieId, tie));
@@ -129,6 +138,11 @@ export const seedLadderPlayoffJourney = async ({
   const settleThrough =
     round === JOURNEY_ROUND.THIRD_PLACE ? targetRound : round - 1;
 
+  const stageDaysIn = stage === JOURNEY_STAGE.DECIDER_FINISHING ? 8 : 4;
+  const roundGap = LADDER_PLAYOFF_TIE_DAYS - 1;
+  const roundEndDay = (r) => -stageDaysIn - (settleThrough - r) * roundGap;
+  const roundOneStart = new Date(now.getTime() + (roundEndDay(1) - 6) * DAY_MS);
+
   for (let r = 1; r <= settleThrough; r += 1) {
     ties
       .filter((tie) => tie.round === r && !tie.isThirdPlacePlayoff)
@@ -139,11 +153,34 @@ export const seedLadderPlayoffJourney = async ({
         const user = userSideOf(current, userId);
         const userLosesHere =
           round === JOURNEY_ROUND.THIRD_PLACE && r === targetRound;
-        settle(
-          current.tieId,
-          user ? (userLosesHere ? other(user) : user) : "team1",
+        const winner = user ? (userLosesHere ? other(user) : user) : "team1";
+        [1, 2].forEach((leg) =>
+          matches.push(
+            legMatch({
+              tie: current,
+              leg,
+              host: getLadderPlayoffLegHost(current, leg),
+              status: C,
+              day: roundEndDay(r) - (leg === 1 ? 5 : 1),
+              wins: wins(winner, 4, leg === 1 ? 1 : 2),
+              now,
+            }),
+          ),
         );
+        settle(current.tieId, winner);
       });
+  }
+  if (settleThrough >= 1) {
+    ties
+      .filter((tie) => tie.round === 1 && !tie.isThirdPlacePlayoff)
+      .forEach((tie) =>
+        setTie(tie.tieId, {
+          scheduledAt: roundOneStart,
+          deadlineAt: new Date(
+            roundOneStart.getTime() + LADDER_PLAYOFF_TIE_DAYS * DAY_MS,
+          ),
+        }),
+      );
   }
 
   const mine = ties.find(
@@ -163,16 +200,18 @@ export const seedLadderPlayoffJourney = async ({
   const opponent = other(user);
   const hostOf = (leg) => getLadderPlayoffLegHost(mine, leg);
 
-  if (stage !== JOURNEY_STAGE.STARTED) {
+  if (stage !== JOURNEY_STAGE.STARTED && round === JOURNEY_ROUND.R16) {
+    const scheduledAt = new Date(now.getTime() - stageDaysIn * DAY_MS);
     setTie(mine.tieId, {
-      scheduledAt: new Date(now.getTime() - 4 * DAY_MS),
-      deadlineAt: new Date(now.getTime() + 6 * DAY_MS),
-      remindersSentDays: [3],
+      scheduledAt,
+      deadlineAt: new Date(
+        scheduledAt.getTime() + LADDER_PLAYOFF_TIE_DAYS * DAY_MS,
+      ),
+      remindersSentDays: stageDaysIn >= 6 ? [3, 6] : [3],
     });
   }
 
   const live = startedSeventyMinutesAgo();
-  const matches = [];
   const finishing = (leg, winner, extra = {}) =>
     legMatch({
       tie: mine,
@@ -219,6 +258,16 @@ export const seedLadderPlayoffJourney = async ({
   }
 
   const writes = [
+    ...(settleThrough >= 1
+      ? [
+          (batch) =>
+            batch.update(doc(db, "ladders", ladderId), {
+              playoffsGeneratedAt: roundOneStart,
+              playoffStartsAt: roundOneStart,
+              seasonEndsAt: roundOneStart,
+            }),
+        ]
+      : []),
     ...[...updates.entries()].map(
       ([tieId, fields]) =>
         (batch) =>

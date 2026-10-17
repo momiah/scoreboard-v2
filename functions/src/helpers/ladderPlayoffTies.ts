@@ -24,7 +24,9 @@ import {
   getDueLadderPlayoffReminderDays,
   formatLadderPrizeWon,
   getLadderPlacePrize,
+  LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
   getLadderOpponentIds,
+  isLadderPlayoffMatchAutoAcceptDue,
   getLadderPlayoffLegHost,
   getLadderTieFinishPlaces,
   ordinalPlace,
@@ -390,7 +392,7 @@ export const notifyLadderPlayoffResolution = async ({
               }
             : {
                 title: `Congratulations, you're through to the ${changedName}!`,
-                message: `Your ${changedName} against ${opponentOf(key)} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+                message: `Congratulations! You've made it to the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your matches.`,
               }),
           tab: PLAYOFFS_TAB,
           data: { tieId: changedTie.tieId },
@@ -465,26 +467,12 @@ export const sendDueLadderPlayoffReminders = async ({
   return sent;
 };
 
-/** A posted playoff match the away side hasn't answered in this long is accepted for them. */
-export const LADDER_PLAYOFF_AUTO_ACCEPT_MS = 24 * 60 * 60 * 1000;
-
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const matchSlot = (match: Pick<LadderMatch, "matchDate" | "matchTime">): string => {
   const [day, month] = String(match.matchDate).split("-").map(Number);
   const date = Number.isFinite(day) && MONTHS[month - 1] ? `${day} ${MONTHS[month - 1]}` : match.matchDate;
   return match.matchTime?.start ? `${date}, ${match.matchTime.start}` : date;
-};
-
-const isAutoAcceptDue = (match: LadderMatch, now: Date): boolean => {
-  const createdAt = toDate(match.createdAt);
-  return (
-    !!match.playoffTieId &&
-    !match.playNow &&
-    match.matchStatus === LADDER_MATCH_STATUS.POSTED &&
-    !!createdAt &&
-    now.getTime() - createdAt.getTime() >= LADDER_PLAYOFF_AUTO_ACCEPT_MS
-  );
 };
 
 /**
@@ -509,11 +497,11 @@ export const autoAcceptDueLadderPlayoffMatches = async ({
   const accepted: string[] = [];
 
   for (const matchDoc of posted.docs) {
-    if (!isAutoAcceptDue(matchDoc.data() as LadderMatch, now)) continue;
+    if (!isLadderPlayoffMatchAutoAcceptDue(matchDoc.data() as LadderMatch, now)) continue;
     const result = await db.runTransaction(async (transaction) => {
       const fresh = await transaction.get(matchDoc.ref);
       const match = fresh.data() as LadderMatch | undefined;
-      if (!match || !isAutoAcceptDue(match, now)) return null;
+      if (!match || !isLadderPlayoffMatchAutoAcceptDue(match, now)) return null;
       const tie = await transaction.get(
         ladderRef.collection(LADDER_PLAYOFF_TIES_COLLECTION).doc(match.playoffTieId as string),
       );
@@ -537,7 +525,7 @@ export const autoAcceptDueLadderPlayoffMatches = async ({
       ladder,
       kind: `playoff-auto-accepted-${matchDoc.id}`,
       title: "Playoff match accepted",
-      message: `You didn't reply within 24 hours, so ${where} has been accepted for you.`,
+      message: `You didn't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours, so ${where} has been accepted for you.`,
       tab: PLAYOFFS_TAB,
       data: { tieId: match.playoffTieId },
     });
@@ -546,7 +534,7 @@ export const autoAcceptDueLadderPlayoffMatches = async ({
       ladder,
       kind: `playoff-auto-accept-host-${matchDoc.id}`,
       title: "Playoff match accepted",
-      message: `Your opponent didn't reply within 24 hours, so ${where} has been accepted for them.`,
+      message: `Your opponent didn't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours, so ${where} has been accepted for them.`,
       tab: PLAYOFFS_TAB,
       data: { tieId: match.playoffTieId },
     });

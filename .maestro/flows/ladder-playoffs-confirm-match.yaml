@@ -15,7 +15,7 @@ onFlowStart:
     visible:
       id: "playoff-match-confirm-request"
     timeout: 15000
-- assertVisible: "Your opponent arranged this match. Can you make it?"
+- assertVisible: "Your opponent arranged this match. Can you make it? It's accepted automatically after ${MAESTRO_LADDER_AUTO_ACCEPT_HOURS} hours if you don't reply."
 - tapOn:
     id: "playoff-match-confirm-accept"
 - assertNotVisible:

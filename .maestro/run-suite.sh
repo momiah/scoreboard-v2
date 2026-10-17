@@ -6,6 +6,8 @@
 #   .maestro/run-suite.sh team-      # flows whose name contains "team-"
 cd "$(dirname "$0")/.."
 set -a; source .maestro/.env; set +a
+export MAESTRO_PLAYOFF_TIE_DAYS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_TIE_DAYS")"
+export MAESTRO_LADDER_AUTO_ACCEPT_HOURS="$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")"
 pattern="${1:-}"
 pass=0; flaky=(); failed=()
 for flow in .maestro/flows/*${pattern}*.yaml; do

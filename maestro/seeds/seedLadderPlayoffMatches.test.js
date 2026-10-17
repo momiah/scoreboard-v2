@@ -39,6 +39,7 @@ import {
   tallyLadderPlayoffTie,
 } from "@shared";
 import { MAESTRO_PO_LADDER_ID } from "./seedLadderPlayoffs";
+import { realWorldProblems } from "./realWorldChecks.helper";
 import {
   PLAYOFF_MATCH_STAGE,
   seedLadderPlayoffMatches,
@@ -346,4 +347,23 @@ describe("seedLadderPlayoffMatches", () => {
       24 * 60 * 60 * 1000,
     );
   });
+
+  it.each(Object.values(PLAYOFF_MATCH_STAGE))(
+    "matches what production would have at stage %s",
+    async (stage) => {
+      await seed(stage);
+      const ties = [...mockDocs]
+        .filter(([path]) =>
+          path.startsWith(`ladders/${MAESTRO_PO_LADDER_ID}/playoffTies/`),
+        )
+        .map(([, data]) => data);
+      const matches = [...mockDocs]
+        .filter(([path]) =>
+          path.startsWith(`ladders/${MAESTRO_PO_LADDER_ID}/ladderMatches/`),
+        )
+        .map(([, data]) => data)
+        .filter((match) => match.playoffTieId);
+      expect(realWorldProblems({ ties, matches })).toEqual([]);
+    },
+  );
 });

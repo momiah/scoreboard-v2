@@ -12,6 +12,7 @@ import type {
 import {
   COMPETITION_TYPES,
   LADDER_MATCH_STATUS,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_PLAYOFF_TIE_STATUS,
 } from "@shared";
@@ -488,7 +489,7 @@ const PlayoffMatchDetails: React.FC = () => {
                   ? "Finished"
                   : isOpen && deadline?.isValid()
                     ? formatTimeLeft(deadline.valueOf() - now)
-                    : "10 days"}
+                    : `${LADDER_PLAYOFF_TIE_DAYS} days`}
               </InfoValue>
               <InfoLabel>
                 {isCompleted

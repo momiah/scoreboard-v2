@@ -22,7 +22,7 @@ onFlowStart:
 - extendedWaitUntil:
     visible: ".*The playoffs in Maestro Playoffs 256 have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!.*"
     timeout: 20000
-- assertNotVisible: ".*You've made the playoffs in Maestro Playoffs 256\\. You have.*"
+- assertNotVisible: ".*You've made the playoffs for Maestro Playoffs 256\\. You have.*"
 - tapOn: ".*The playoffs in Maestro Playoffs 256 have started.*"
 - extendedWaitUntil:
     visible:

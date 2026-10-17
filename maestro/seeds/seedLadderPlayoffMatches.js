@@ -10,6 +10,7 @@ import { db } from "../../services/firebase.config";
 import {
   LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_TYPE,
   SHUTTLE_TYPE,
@@ -256,7 +257,7 @@ export const matchRef = (ladderId, matchId) =>
   doc(db, "ladders", ladderId, "ladderMatches", matchId);
 
 /**
- * A round of 16 a week into its 10 days, as production would have it: the
+ * A round of 16 a week into its window, as production would have it: the
  * test user's own game at `stage`, and the other games spread across every
  * state a spectator can open (in progress today with a game awaiting
  * approval, settled, level with a decider, awaiting confirmation, upcoming,
@@ -299,7 +300,9 @@ export const seedLadderPlayoffMatches = async ({
     if (tie.round !== 1 || tie.isThirdPlacePlayoff) return tie;
     const window = {
       scheduledAt: roundOneStart,
-      deadlineAt: new Date(roundOneStart.getTime() + 10 * DAY_MS),
+      deadlineAt: new Date(
+        roundOneStart.getTime() + LADDER_PLAYOFF_TIE_DAYS * DAY_MS,
+      ),
       remindersSentDays: [3, 6],
     };
     setTie(tie.tieId, window);
@@ -324,12 +327,19 @@ export const seedLadderPlayoffMatches = async ({
 
   const matches = [];
   const settle = (tieId, winner) => {
+    const finishedAt = new Date(
+      Math.max(
+        ...matches
+          .filter((match) => match.playoffTieId === tieId && match.completedAt)
+          .map((match) => match.completedAt.getTime()),
+      ),
+    );
     const changed = advanceLadderPlayoffBracket({
       ties,
       tieId,
       winner,
       outcome: LADDER_PLAYOFF_TIE_OUTCOME.PLAYED,
-      now,
+      now: finishedAt,
     });
     ties = ties.map((tie) => changed.find((c) => c.tieId === tie.tieId) ?? tie);
     changed.forEach((tie) => setTie(tie.tieId, tie));
@@ -360,7 +370,7 @@ export const seedLadderPlayoffMatches = async ({
           leg: 1,
           host: hostOf(mine, 1),
           status: P,
-          day: 3,
+          day: 2,
           time: "20:00",
           scheduleDeclines: 1,
           postedHoursAgo: 25,
@@ -375,7 +385,7 @@ export const seedLadderPlayoffMatches = async ({
           leg: 1,
           host: hostOf(mine, 1),
           status: P,
-          day: 3,
+          day: 2,
           time: "20:00",
           scheduleDeclines: 1,
           now,
@@ -697,7 +707,7 @@ export const seedLadderPlayoffMatches = async ({
             {
               id: `maestro-po-round-${mine.tieId}`,
               title: "Your Quarter-Final is ready",
-              message: `Your Quarter-Final against ${nameOf(neighbour.team2.player1)} is ready! You have 10 days to complete both matches`,
+              message: `Your Quarter-Final against ${nameOf(neighbour.team2.player1)} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
               data: {
                 ladderId: ladderId,
                 tab: "Playoffs",

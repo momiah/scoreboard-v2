@@ -17,7 +17,7 @@ onFlowStart:
     file: ../utilities/playoffs/journey-companion.yaml
     env:
       SUFFIX: ""
-      NOTIFICATION: ".*Your Final against .* is ready! You have 10 days to complete both matches.*"
+      NOTIFICATION: ".*Your Final against .* is ready! You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to complete both matches.*"
 - runFlow:
     file: ../utilities/playoffs/harness.yaml
     env:
@@ -37,7 +37,7 @@ onFlowStart:
     file: ../utilities/playoffs/journey-companion.yaml
     env:
       SUFFIX: "-paid"
-      NOTIFICATION: ".*Your Final against .* is ready! You have 10 days to complete both matches.*"
+      NOTIFICATION: ".*Your Final against .* is ready! You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to complete both matches.*"
 - runFlow:
     file: ../utilities/playoffs/harness.yaml
     env:

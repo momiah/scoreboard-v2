@@ -10,6 +10,7 @@ import { db } from "../../services/firebase.config";
 import {
   LADDER_CANCELLED_REASON,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_STATUS,
   LADDER_TYPE,
   TEAM_STATUS,
@@ -323,7 +324,7 @@ const writePlayoffNotifications = async ({
         ...base,
         senderId: "system",
         title: "You made the playoffs!",
-        message: `Congratulations! You've made the playoffs in ${ladderName}. You have 10 days to play both your home and away matches.`,
+        message: `Congratulations! You've made the playoffs for ${ladderName}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
         data: { ladderId, tab: "Playoffs" },
       },
     });
@@ -437,13 +438,7 @@ export const seedLadderPlayoffs = async ({
     }
     writes.push((batch) =>
       batch.set(
-        doc(
-          db,
-          "ladders",
-          ladderId,
-          "ladderParticipants",
-          user.userId,
-        ),
+        doc(db, "ladders", ladderId, "ladderParticipants", user.userId),
         {
           ...buildLadderParticipant(user),
           ...stats,

@@ -59,7 +59,7 @@ appId: com.courtchamp
 - tapOn:
     id: "how-to-play-next"
 - extendedWaitUntil:
-    visible: "Ten Days to Finish"
+    visible: "${MAESTRO_PLAYOFF_TIE_DAYS} Days to Finish"
     timeout: 10000
 - tapOn:
     id: "how-to-play-next"

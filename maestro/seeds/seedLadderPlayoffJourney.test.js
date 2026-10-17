@@ -42,6 +42,7 @@ jest.mock("firebase/firestore", () => ({
 
 import { decideLadderPlayoffTie, tallyLadderPlayoffTie } from "@shared";
 import { MAESTRO_PO_LADDER_ID } from "./seedLadderPlayoffs";
+import { realWorldProblems } from "./realWorldChecks.helper";
 import {
   JOURNEY_OUTCOME,
   JOURNEY_ROUND,
@@ -190,9 +191,9 @@ describe("seedLadderPlayoffJourney", () => {
     expect(outcome.tieId).toBe("r4-s0");
     const third = ties().find((candidate) => candidate.isThirdPlacePlayoff);
     expect(third.status).toBe("scheduled");
-    expect(
-      third.side1.playerIds.concat(third.side2.playerIds),
-    ).not.toContain("test-user");
+    expect(third.side1.playerIds.concat(third.side2.playerIds)).not.toContain(
+      "test-user",
+    );
   });
 
   it("keeps the seed under the playoffs ladder id", async () => {
@@ -205,5 +206,39 @@ describe("seedLadderPlayoffJourney", () => {
       .forEach((path) =>
         expect(path.startsWith(`ladders/${MAESTRO_PO_LADDER_ID}`)).toBe(true),
       );
+  });
+
+  describe("matches what production would have", () => {
+    const allMatches = () =>
+      [...mockDocs]
+        .filter(([path]) =>
+          path.startsWith(`ladders/${MAESTRO_PO_LADDER_ID}/ladderMatches/`),
+        )
+        .map(([, data]) => data);
+
+    [
+      [JOURNEY_ROUND.R16, JOURNEY_STAGE.LEG1_FINISHING, JOURNEY_OUTCOME.WIN],
+      [JOURNEY_ROUND.R16, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LEVEL],
+      [JOURNEY_ROUND.R16, JOURNEY_STAGE.DECIDER_FINISHING, JOURNEY_OUTCOME.WIN],
+      [
+        JOURNEY_ROUND.QUARTER,
+        JOURNEY_STAGE.LEG2_FINISHING,
+        JOURNEY_OUTCOME.WIN,
+      ],
+      [JOURNEY_ROUND.SEMI, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LOSS],
+      [JOURNEY_ROUND.FINAL, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.WIN],
+      [
+        JOURNEY_ROUND.THIRD_PLACE,
+        JOURNEY_STAGE.LEG2_FINISHING,
+        JOURNEY_OUTCOME.LOSS,
+      ],
+    ].forEach(([round, stage, outcome]) => {
+      it(`${round} ${stage} ${outcome}`, async () => {
+        await seed({ round, stage, outcome });
+        expect(
+          realWorldProblems({ ties: ties(), matches: allMatches() }),
+        ).toEqual([]);
+      });
+    });
   });
 });

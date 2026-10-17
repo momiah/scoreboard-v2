@@ -90,10 +90,15 @@ describe("usePlayoffMatchScheduling", () => {
       [
         "away",
         expect.stringMatching(
-          /arranged playoff match 1 at Bethnal Green, Tue 20 Oct, 18:00\. Open it to accept or decline\.$/,
+          /arranged playoff match 1 at Bethnal Green, Tue 20 Oct, 18:00\. Open it to accept or decline\. It's accepted automatically if you don't reply within \d+ hours\.$/,
         ),
       ],
-      ["away", expect.stringMatching(/Open it to accept\.$/)],
+      [
+        "away",
+        expect.stringMatching(
+          /Open it to accept\. It's accepted automatically if you don't reply within \d+ hours\.$/,
+        ),
+      ],
     ]);
   });
 

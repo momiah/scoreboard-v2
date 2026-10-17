@@ -20,9 +20,9 @@ onFlowStart:
 - tapOn:
     id: "competitions-notifications-button"
 - extendedWaitUntil:
-    visible: ".*Congratulations! You've made the playoffs in Maestro Playoffs 2048. You have 10 days to play both your home and away matches..*"
+    visible: ".*Congratulations! You've made the playoffs for Maestro Playoffs 2048. You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to play your next round..*"
     timeout: 20000
-- tapOn: ".*Congratulations! You've made the playoffs in Maestro Playoffs 2048. You have 10 days to play both your home and away matches..*"
+- tapOn: ".*Congratulations! You've made the playoffs for Maestro Playoffs 2048. You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to play your next round..*"
 - extendedWaitUntil:
     visible:
       id: "ladder-playoffs-bracket"

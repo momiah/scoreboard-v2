@@ -7,7 +7,7 @@ appId: com.courtchamp
 - runFlow:
     file: open-tie-from-notification.yaml
     env:
-      NOTIFICATION: ".*made the playoffs in ${LADDER}.*"
+      NOTIFICATION: ".*made the playoffs for ${LADDER}.*"
       TIE: "r1-s1"
 - assertVisible:
     id: "playoff-match-decider"

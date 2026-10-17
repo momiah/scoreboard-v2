@@ -1,3 +1,4 @@
+import { LADDER_PLAYOFF_TIE_DAYS } from "courtchamps-shared/types";
 import * as admin from "firebase-admin";
 import {
   LADDER_MATCH_STATUS,
@@ -7,7 +8,11 @@ import {
   LADDER_TYPE,
 } from "courtchamps-shared/types";
 import type { LadderPlayoffTie } from "courtchamps-shared/types";
-import { buildLadderPlayoffTies, getLadderPlayoffLegHost } from "courtchamps-shared/helpers";
+import {
+  LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
+  buildLadderPlayoffTies,
+  getLadderPlayoffLegHost,
+} from "courtchamps-shared/helpers";
 import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
 
 const PROJECT_ID = "demo-courtchamps";
@@ -216,12 +221,12 @@ describe("resolveLadderPlayoffTie", () => {
     const ready = await db.doc(`users/${a}/notifications/playoff-opponent-r2-s0-${LADDER}-${a}`).get();
     expect(ready.data()).toMatchObject({
       title: "Your Final opponent is decided",
-      message: `Your Final against ${d} is ready! You have 10 days to complete both matches`,
+      message: `Your Final against ${d} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
     });
     const arrived = await db.doc(`users/${d}/notifications/playoff-round-r2-s0-${LADDER}-${d}`).get();
     expect(arrived.data()).toMatchObject({
       title: "Congratulations, you're through to the Final!",
-      message: `Your Final against ${a} is ready! You have 10 days to complete both matches`,
+      message: `Congratulations! You've made it to the Final in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your matches.`,
     });
   });
 
@@ -284,12 +289,12 @@ describe("resolveLadderPlayoffTie", () => {
     const thirdNotice = await db.doc(`users/${t2}/notifications/playoff-round-r2-s1-${LADDER}-${t2}`).get();
     expect(thirdNotice.data()).toMatchObject({
       title: "You'll play for 3rd place",
-      message: `Your Semi-Final in ${ladder.name} is over, and you'll play for 3rd place against ${t1}. You have 10 days to complete both matches`,
+      message: `Your Semi-Final in ${ladder.name} is over, and you'll play for 3rd place against ${t1}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
     });
     const thirdReady = await db.doc(`users/${t1}/notifications/playoff-opponent-r2-s1-${LADDER}-${t1}`).get();
     expect(thirdReady.data()).toMatchObject({
       title: "Your 3rd-place tie opponent is decided",
-      message: `Your Semi-Final in ${ladder.name} is over, and your 3rd-place tie against ${t2} is ready! You have 10 days to complete both matches`,
+      message: `Your Semi-Final in ${ladder.name} is over, and your 3rd-place tie against ${t2} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
     });
 
     await seedLeg(final, 1, [f1, f1, f2]);
@@ -499,7 +504,7 @@ describe("autoAcceptDueLadderPlayoffMatches", () => {
     const tie = ties[0];
     const [a, b] = sidesOf(tie);
     await seedUsers([a, b]);
-    const matchId = await postedLeg(tie, 1, new Date(now.getTime() - 25 * 60 * 60 * 1000));
+    const matchId = await postedLeg(tie, 1, new Date(now.getTime() - (LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS + 1) * 60 * 60 * 1000));
 
     expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([matchId]);
     expect(await readMatch(matchId)).toMatchObject({
@@ -511,18 +516,18 @@ describe("autoAcceptDueLadderPlayoffMatches", () => {
     const away = await db.doc(`users/${b}/notifications/playoff-auto-accepted-${matchId}-${LADDER}-${b}`).get();
     expect(away.data()).toMatchObject({
       title: "Playoff match accepted",
-      message: "You didn't reply within 24 hours, so playoff match 1 at Court One, 5 Oct, 18:30 has been accepted for you.",
+      message: `You didn't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours, so playoff match 1 at Court One, 5 Oct, 18:30 has been accepted for you.`,
     });
     const host = await db.doc(`users/${a}/notifications/playoff-auto-accept-host-${matchId}-${LADDER}-${a}`).get();
     expect(host.data()?.message).toBe(
-      "Your opponent didn't reply within 24 hours, so playoff match 1 at Court One, 5 Oct, 18:30 has been accepted for them.",
+      `Your opponent didn't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours, so playoff match 1 at Court One, 5 Oct, 18:30 has been accepted for them.`,
     );
     expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([]);
   });
 
   it("leaves a match alone until 24 hours have passed", async () => {
     const ties = await seedBracket(4);
-    const matchId = await postedLeg(ties[0], 1, new Date(now.getTime() - 23 * 60 * 60 * 1000));
+    const matchId = await postedLeg(ties[0], 1, new Date(now.getTime() - (LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS - 1) * 60 * 60 * 1000));
     expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([]);
     expect((await readMatch(matchId))?.matchStatus).toBe(LADDER_MATCH_STATUS.POSTED);
   });

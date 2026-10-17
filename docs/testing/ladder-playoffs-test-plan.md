@@ -30,8 +30,8 @@ section 6. Phase 3 (payout) is not covered.
     because not enough players signed up before registration closed. If you
     paid an entry fee, it will be refunded to you in full."
   - Playoffs generated → every qualifier, `tab: "Playoffs"`: "Congratulations!
-    You've made the playoffs in {ladder}. You have 10 days to play both your
-    home and away matches."
+    You've made the playoffs for {ladder}. You have N days to play your next
+    round." (N is `LADDER_PLAYOFF_TIE_DAYS`, 10 today)
   - Playoffs generated → every entrant who did not qualify (both players of an
     eliminated doubles team), `tab: "Playoffs"`: "The playoffs in {ladder}
     have started, and unfortunately you didn't make the cut this time. The
@@ -291,33 +291,12 @@ game, and the other tie in the round is finished by `mockFinishCompanionTie`.
 | # | Scenario | Expected |
 |---|----------|----------|
 | 6.32 | A tie is won while the neighbouring tie is still being played | Straight away (on the match that completes it, not the scheduled job) the winner is placed in the next tie and gets "Congratulations, you're through to the {round}!": "You're through to the {round} in {ladder}! We'll let you know as soon as your opponent is decided." Semi-final losers going to the 3rd-place tie get "You'll play for 3rd place" instead 🅴 |
-| 6.33 | The neighbouring tie then finishes | The next tie starts (10 days). The side that was waiting gets "Your {round} opponent is decided": "Your {round} against {opponent} is ready! You have 10 days to complete both matches". The side that just finished (and so never got the "through" notice) gets "Congratulations, you're through to the {round}!" with the same message 🅴 |
-| 6.33a | A Semi-Final is lost | The loser goes to the 3rd-place tie: "You'll play for 3rd place" ("Your Semi-Final in {ladder} is over, and you'll play for 3rd place. We'll let you know as soon as your opponent is decided."). Once both are known the side that just arrived gets "You'll play for 3rd place": "Your Semi-Final in {ladder} is over, and you'll play for 3rd place against {opponent}. You have 10 days to complete both matches", and the side that was waiting gets "Your 3rd-place tie opponent is decided": "Your Semi-Final in {ladder} is over, and your 3rd-place tie against {opponent} is ready! You have 10 days to complete both matches". No knock-out notification 🅴 |
+| 6.33 | The neighbouring tie then finishes | The next tie starts (`LADDER_PLAYOFF_TIE_DAYS` days, 10 today). The side that was waiting gets "Your {round} opponent is decided": "Your {round} against {opponent} is ready! You have N days to complete both matches". The side that just finished (and so never got the "through" notice) gets "Congratulations, you're through to the {round}!": "Congratulations! You've made it to the {round} in {ladder}. You have N days to play your matches." 🅴 |
+| 6.33a | A Semi-Final is lost | The loser goes to the 3rd-place tie: "You'll play for 3rd place" ("Your Semi-Final in {ladder} is over, and you'll play for 3rd place. We'll let you know as soon as your opponent is decided."). Once both are known the side that just arrived gets "You'll play for 3rd place": "Your Semi-Final in {ladder} is over, and you'll play for 3rd place against {opponent}. You have N days to complete both matches", and the side that was waiting gets "Your 3rd-place tie opponent is decided": "Your Semi-Final in {ladder} is over, and your 3rd-place tie against {opponent} is ready! You have N days to complete both matches". No knock-out notification 🅴 |
 | 6.33b | A tie is lost before the Semi-Finals | "Knocked out in the {round}": "You've been knocked out in the {round} of {ladder}." plus " You've been awarded £X and X CP, paid when the playoffs finish." only when that finish pays something (CP only on a free ladder) 🅴 |
 | 6.33c | The Final and the 3rd-place tie finish | Each player gets "You placed {1st/2nd/3rd/4th}": "Congratulations, you have placed {place} in {ladder} and been awarded £X and X CP." (the prize part only when something was won); it opens Summary. Once both are finished the ladder becomes Completed (`playoffsCompletedAt`) and the payout is logged for Phase 3 🅴 |
 | 6.33d | Both matches complete, aggregate level | "You have a deciding game left to play": "You have a deciding game left to play as your matches in the {round} of {ladder} resulted in a draw!" 🅴 |
-| 6.33e | The away side hasn't answered a posted playoff match 24 hours after it was arranged (checked every 15 minutes by `processLadderPhases`) | The match is accepted for them (`autoAccepted: true`, the decline count unchanged). The away side gets "You didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for you." and the host "Your opponent didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for them." A "play now" offer is never accepted for anyone, and nothing happens once the tie is over. Arranging again (after a decline) starts a new 24 hours 🅴 🅼 |
-| 6.34 |
-| `ladder-summary-prize-pool`, `ladder-join-fee-on-top`, `ladder-join-payment-stub`, `ladder-match-lobby-address`, `ladder-post-match-court-time` | Prize pool, entry fee on top, address, court-time hint |
-| `ladder-posting-closes-7-days`, `ladder-results-closing-banner`, `ladder-results-closed` | 7.1, 7.2, 7.2a |
-| `ladder-no-show-opponent-arrived` | 8.4 |
-
-### Prizes
-
-| # | Scenario | Expected |
-|---|----------|----------|
-| 6.30 | Any ladder size | Cash follows the payout bands for that size from the full pool (every entry fee; the 10% platform fee is paid on top, not taken from it), each band split equally; CP uses the same bands and shares on the CP pool (50 CP per entrant). The Summary tab's top four use the same shares 🅹 |
-| 6.31 | The tie's prize card | "Current payout" is the prize for the worst place a loser of this round can finish; the right-hand payout is the prize for the round after (Champion for the Final, 3rd place for the 3rd-place tie) 🅹 🅼 |
-
-### Moving on
-
-| # | Scenario | Expected |
-|---|----------|----------|
-| 6.32 | A tie is won while the neighbouring tie is still being played | Straight away (on the match that completes it, not the scheduled job) the winner is placed in the next tie and gets "You're through to the {round}": "Congratulations! You're through to the {round} in {ladder}. We'll let you know as soon as your opponent is decided." Semi-final losers going to the 3rd-place tie don't get it 🅴 |
-| 6.33 | The neighbouring tie then finishes | The next tie starts (10 days). The side that was waiting gets "Your {round} is ready": "Your opponent in the {round} of {ladder} is {name}. Your tie is ready: you have 10 days to play both your home and away matches." The side that just arrived gets "You've reached the {round}" 🅴 |
-| 6.33a | A Semi-Final is lost | The loser goes to the 3rd-place tie: "You'll play for 3rd place" ("Your Semi-Final in {ladder} is over, and you'll play for 3rd place. We'll let you know as soon as your opponent is decided."), then "You'll play for 3rd place" with the 10 days once both are known. No knock-out notification 🅴 |
-| 6.33b | A tie is lost before the Semi-Finals | "Knocked out in the {round}": "You've been knocked out in the {round} of {ladder}." plus " You've been awarded £X and X CP, paid when the playoffs finish." only when that finish pays something (CP only on a free ladder) 🅴 |
-| 6.33c | The Final and the 3rd-place tie finish | Each player gets "You placed {1st/2nd/3rd/4th}": "Congratulations, you have placed {place} in {ladder} and been awarded £X and X CP." (the prize part only when something was won); it opens Summary. Once both are finished the ladder becomes Completed (`playoffsCompletedAt`) and the payout is logged for Phase 3 🅴 |
+| 6.33e | The away side hasn't answered a posted playoff match `LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS` (24 today) after it was arranged (checked every 15 minutes by `processLadderPhases`) | The match is accepted for them (`autoAccepted: true`, the decline count unchanged). The away side gets "You didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for you." and the host "Your opponent didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for them." A "play now" offer is never accepted for anyone, and nothing happens once the tie is over. Arranging again (after a decline) starts a new 24 hours 🅴 🅼 |
 | 6.34 | Wording | A playoff pairing is a "tie" everywhere ("Round of 16 · Tie 3", "3rd-place tie", "Each playoff tie is two matches", "This tie must be finished by …", "Playoff tie not played", "Only the players in this tie can see this chat"); "game" means a single game, and notifications say "home and away matches" 🅹 🅼 |
 
 ## 7. Before the playoffs: season close

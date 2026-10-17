@@ -1,3 +1,4 @@
+import { LADDER_PLAYOFF_TIE_DAYS } from "courtchamps-shared/types";
 import * as admin from "firebase-admin";
 import {
   DISPUTE_STAGE,
@@ -225,7 +226,7 @@ describe("playoffs generated for a 2048-player ladder", () => {
       senderId: "system",
       type: "ladder",
       message:
-        "Congratulations! You've made the playoffs in Emulator 2048. You have 10 days to play both your home and away matches.",
+        `Congratulations! You've made the playoffs for Emulator 2048. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
       data: { ladderId: "L2048", tab: "Playoffs" },
     });
     expect(eliminated[0]).toMatchObject({

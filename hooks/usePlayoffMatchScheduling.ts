@@ -1,6 +1,9 @@
 import { useCallback, useContext } from "react";
 
-import { canDeclineLadderPlayoffMatch } from "@shared/helpers";
+import {
+  LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
+  canDeclineLadderPlayoffMatch,
+} from "@shared/helpers";
 import type { LadderMatch } from "@shared/types";
 import { LadderContext } from "../context/LadderContext";
 import { UserContext } from "../context/UserContext";
@@ -10,6 +13,7 @@ import { formatMatchSlot } from "./useLadderMatchChanges";
 import { useNotifyMatchPlayers } from "./useNotifyMatchPlayers";
 
 const ERROR_MESSAGE = "Something went wrong. Please try again.";
+const AUTO_ACCEPT_NOTICE = `It's accepted automatically if you don't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours.`;
 
 const matchLabel = (
   match: Pick<LadderMatch, "playoffLeg" | "court" | "matchDate" | "matchTime">,
@@ -41,7 +45,7 @@ export const usePlayoffMatchScheduling = () => {
         : "Open it to accept.";
       await notify(
         opponentIds,
-        `${name} arranged ${matchLabel(match)}. ${next}`,
+        `${name} arranged ${matchLabel(match)}. ${next} ${AUTO_ACCEPT_NOTICE}`,
         { ladderId, match },
       );
     },

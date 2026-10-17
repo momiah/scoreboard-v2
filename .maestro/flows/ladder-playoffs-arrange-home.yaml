@@ -25,7 +25,7 @@ onFlowStart:
     id: "add-ladder-match-fee"
 - tapOn: "Select Date"
 - extendedWaitUntil:
-    visible: ".*Please select a date within the 10 days for this tie \\(by .*"
+    visible: ".*Please select a date within the ${MAESTRO_PLAYOFF_TIE_DAYS} days for this tie \\(by .*"
     timeout: 10000
 - tapOn: "Cancel"
 - tapOn:

@@ -7,7 +7,7 @@ appId: com.courtchamp
 - runFlow:
     file: open-tie-from-notification.yaml
     env:
-      NOTIFICATION: ".*made the playoffs in ${LADDER}.*"
+      NOTIFICATION: ".*made the playoffs for ${LADDER}.*"
       TIE: "r1-s1"
 - assertVisible: "Round of 16 · Tie 2"
 - assertVisible:
@@ -20,7 +20,7 @@ appId: com.courtchamp
 - assertVisible:
     id: "playoff-match-aggregate"
 - assertVisible: "Best of 7"
-- assertVisible: "9 days and .*"
+- assertVisible: "${Number(MAESTRO_PLAYOFF_TIE_DAYS) - 1} days and .*"
 - assertVisible: "to complete both matches"
 - assertVisible:
     id: "playoff-match-leg1-host"
@@ -51,7 +51,7 @@ appId: com.courtchamp
     visible:
       id: "playoff-match-confirm-request"
     timeout: 15000
-- assertVisible: "Your opponent arranged this match. Can you make it?"
+- assertVisible: "Your opponent arranged this match. Can you make it? It's accepted automatically after ${MAESTRO_LADDER_AUTO_ACCEPT_HOURS} hours if you don't reply."
 - tapOn:
     id: "playoff-match-confirm-accept"
 - assertNotVisible:

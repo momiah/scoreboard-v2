@@ -28,9 +28,9 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
 | When | Recipients | Message | Opens |
 |---|---|---|---|
 | Ladder cancelled (done) | every entrant | "{ladder} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full." | Summary (Status reads Cancelled) |
-| Bracket generated (done) | qualifiers | "Congratulations! You've made the playoffs in {ladder}. You have 10 days to play both your home and away matches." | Playoffs (scrolls to their game) |
+| Bracket generated (done) | qualifiers | "Congratulations! You've made the playoffs for {ladder}. You have N days to play your next round." (N is `LADDER_PLAYOFF_TIE_DAYS`) | Playoffs (scrolls to their game) |
 | Bracket generated, did not qualify (done) | every other entrant | "The playoffs in {ladder} have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!" | Playoffs (the bracket) |
-| A side wins and the next tie starts straight away (done) | the winners who just finished | "Congratulations, you're through to the {round}!": "Your {round} against {opponent} is ready! You have 10 days to complete both matches" | Playoffs |
+| A side wins and the next tie starts straight away (done) | the winners who just finished | "Congratulations, you're through to the {round}!": "Congratulations! You've made it to the {round} in {ladder}. You have N days to play your matches." | Playoffs |
 | A side wins and its next opponent isn't known yet (done) | the winners | "Congratulations, you're through to the {round}!": "You're through to the {round} in {ladder}! We'll let you know as soon as your opponent is decided." | Playoffs |
 | Both matches level (done) | both players | "You have a deciding game left to play": "You have a deciding game left to play as your matches in the {round} of {ladder} resulted in a draw!" | Playoffs |
 | A posted playoff match goes 24 hours unanswered (done) | both players | Away side: "You didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for you." Host: "Your opponent didn't reply within 24 hours, so … has been accepted for them." | Playoffs |

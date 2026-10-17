@@ -41,6 +41,8 @@ booted simulator with the dev client installed:
 
 ```bash
 set -a && source .maestro/.env && set +a
+export MAESTRO_PLAYOFF_TIE_DAYS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_TIE_DAYS")
+export MAESTRO_LADDER_AUTO_ACCEPT_HOURS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")
 maestro test .maestro/flows/reject-decline-opens-dispute.yaml   # one flow
 maestro test .maestro/flows                                     # whole suite
 .maestro/run-suite.sh                                           # whole suite, retrying a failed flow once
