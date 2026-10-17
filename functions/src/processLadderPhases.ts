@@ -38,6 +38,7 @@ import {
   completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
+  autoAcceptDueLadderPlayoffMatches,
   sendDueLadderPlayoffReminders,
   toLadderPlayoffTie,
 } from "./helpers/ladderPlayoffTies";
@@ -97,6 +98,11 @@ const runPlayoffDeadlinesAndReminders = async (
           now,
         });
       }
+      summary.playoffMatchesAutoAccepted.push(
+        ...(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).map(
+          (matchId) => `${ladder.ladderId}/${matchId}`,
+        ),
+      );
       summary.playoffRemindersSent += await sendDueLadderPlayoffReminders({
         db,
         ladder,
@@ -121,6 +127,7 @@ export interface ProcessLadderPhasesSummary {
   standingsFinalised: string[];
   playoffTiesSettled: string[];
   playoffRemindersSent: number;
+  playoffMatchesAutoAccepted: string[];
 }
 
 const toDate = (value: unknown): Date | null => {
@@ -613,6 +620,7 @@ export const runProcessLadderPhases = async (
     standingsFinalised: [],
     playoffTiesSettled: [],
     playoffRemindersSent: 0,
+    playoffMatchesAutoAccepted: [],
   };
 
   await resumePendingNotifications(db, now);

@@ -199,9 +199,77 @@ always the same, so spectator flows can rely on them:
 Every started match is checked in by both players, every completed match has a
 side on the majority, and every match is inside its tie's 10 days.
 
-Still to add: `leg1PostedAfterDecline` (`scheduleDeclines: 1`), `noHomeCourt`
-(host with no home court) and `playoffRegular` (a regular match alongside a
-playoff match during playoffs).
+More stages: `leg1PostedAfterDecline` (`scheduleDeclines: 1`), `noHomeCourt`
+(the user has no home court), `leg1InProgress` and `playoffRegular` (match 1 with
+its last game awaiting approval; `playoffRegular` adds a regular match,
+`maestro-po-regular-match`, beside it), `leg2Posted`, `leg2Accepted` and
+`leg2OneGame`. Every stage has a button for each ladder:
+`maestro-seed-playoff-match-<stage>` (free) and
+`maestro-seed-playoff-match-paid-<stage>`.
+
+**Journey seed.** `maestro/seeds/seedLadderPlayoffJourney.js` carries the bracket
+forward (buttons `maestro-seed-journey[-paid]-<round>-<stage>`): the test user
+wins every earlier round (and loses the Semi-Final when the target is the
+3rd-place tie), the other games are settled, and the user's own tie is scheduled
+with match 1 or 2, or the decider, awaiting the user's approval of its last game.
+Approving it fires the real `onLadderMatchStatusChange`, so settlement,
+notifications and ladder completion are the backend's. Seeds: `r16-started`,
+`r16-leg1-finishing`, `r16-leg2-{win,loss,level}`, `r16-decider-{win,loss}`,
+`{qf,sf,final,third}-leg2-{win,loss}`.
+
+**Opponent mocks.** `maestro/seeds/mockPlayoffOpponent.js`:
+arrange, accept, decline, offer "play here" and tie chat (as the opponent), a
+mock for each notification kind, and `mockFinishCompanionTie`, which plays out
+the neighbouring tie (or the 3rd-place tie beside the Final, or the Final beside
+the 3rd-place tie) through the same trigger. Assertion buttons
+(`maestro-assert-po[-paid]-<key>`) check what the opponent, or the other tie's
+winner and loser, received, and that the ladder is Completed.
+
+**Other seeds.** `maestro-seed-join-singles-paid` (open £20 ladder),
+`maestro-seed-add-game-flow-playoffs-in-{6,4}-days` (regular ladder with
+playoffs 6 or 4 days away) and `maestro-seed-cancel-overdue-opponent-arrived`
+(the opponent has an arrival at the court). `cleanupLadderTestData` also deletes
+the notifications the backend sent to the bracket's players and the test user's
+chats for these ladders.
+
+Flows are covered as follows (all pass; see the playoff section of
+[ladder-playoffs-test-plan.md](ladder-playoffs-test-plan.md) for scenario
+numbers). Corrections found while building them: the poster-side Total Score on
+the neighbour's match 2 reads "1 - 0" (not "0 - 1"), and the Matchmaking and
+results-closed messages are as shown below.
+
+| # | Flow |
+|---|------|
+| 1 | `ladder-playoffs-tap-game-opens-match` |
+| 2 | `ladder-playoffs-tie-layout-spectator` |
+| 3 | `ladder-playoffs-hosting-by-rank` |
+| 4 | `ladder-playoffs-prize-banner` |
+| 5 | `ladder-playoffs-tie-chat` |
+| 6 | `ladder-playoffs-match-has-no-chat` |
+| 7 | `ladder-playoffs-arrange-home` |
+| 8 | `ladder-playoffs-arrange-without-home-court` |
+| 9 | `ladder-playoffs-journey-play-here`, `-play-here-offered` |
+| 10-12 | `ladder-playoffs-confirm-match`, `-decline-match`, `-decline-limit` |
+| 13 | `ladder-playoffs-cancel-posted` (host sees `playoff-match-confirm-awaiting`) |
+| 14-15 | `ladder-playoffs-cancel-posted`, `-cancel-accepted` |
+| 16-17 | `ladder-playoffs-reschedule`, `-extension` |
+| 18-20 | `ladder-playoffs-aggregate`, `-spectator-scores`, `-spectator-live` |
+| 21 | `ladder-playoffs-journey-decider` (also `ladder-playoffs-auto-accept`: a 25-hour-old posted match is accepted by the scheduled job; it waits up to 25 minutes) |
+| 22 | `ladder-playoffs-settled` |
+| 23 | `ladder-playoffs-not-in-matchmaking` |
+| 24 | `ladder-post-match-court-time` |
+| 25 | `ladder-playoffs-report-during-playoffs`, `-approve-during-playoffs`, `-report-score` |
+| 26 | `ladder-playoffs-notifications-open-playoffs` |
+| 27-29 | `ladder-playoffs-guide-button`, `-guide-pages` |
+| 30 | `ladder-summary-prize-pool` |
+| 31 | `ladder-join-fee-on-top`, `ladder-join-payment-stub` |
+| 32 | `ladder-match-lobby-address` |
+| 33-34 | `ladder-playoffs-through-and-ready`, `-tie-wording` |
+| 35-36 | `ladder-posting-closes-7-days`, `ladder-results-closing-banner`, `ladder-results-closed` |
+| 37 | `ladder-no-show-opponent-arrived` |
+
+The end-to-end journey (steps 1-10 of the brief) is `ladder-playoffs-journey-*`.
+The shared steps live in `.maestro/utilities/playoffs/`.
 
 TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
 `AddLadderMatchModal` (playoff mode, via `PlayoffMatchScheduleModal`),

@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 
 import {
+  LADDER_MATCH_STATUS,
   LADDER_STATUS,
   LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_TIE_OUTCOME,
@@ -23,6 +24,7 @@ import {
   getDueLadderPlayoffReminderDays,
   formatLadderPrizeWon,
   getLadderPlacePrize,
+  getLadderOpponentIds,
   getLadderPlayoffLegHost,
   getLadderTieFinishPlaces,
   ordinalPlace,
@@ -314,8 +316,8 @@ export const notifyLadderPlayoffResolution = async ({
       userIds: tiePlayerIds(tie),
       ladder,
       kind: `playoff-decider-${tie.tieId}`,
-      title: "One deciding game to play",
-      message: `Your ${roundName} in ${ladder.name} is level on aggregate. One deciding game must be played to decide who goes through.`,
+      title: "You have a deciding game left to play",
+      message: `You have a deciding game left to play as your matches in the ${roundName} of ${ladder.name} resulted in a draw!`,
       tab: PLAYOFFS_TAB,
       data: { tieId: tie.tieId },
     });
@@ -366,38 +368,41 @@ export const notifyLadderPlayoffResolution = async ({
               message: `Your Semi-Final in ${ladder.name} is over, and you'll play for 3rd place. We'll let you know as soon as your opponent is decided.`,
             }
           : {
-              title: `You're through to the ${changedName}`,
-              message: `Congratulations! You're through to the ${changedName} in ${ladder.name}. We'll let you know as soon as your opponent is decided.`,
+              title: `Congratulations, you're through to the ${changedName}!`,
+              message: `You're through to the ${changedName} in ${ladder.name}! We'll let you know as soon as your opponent is decided.`,
             }),
         tab: PLAYOFFS_TAB,
         data: { tieId: changedTie.tieId },
       });
     }
     if (changedTie.status === LADDER_PLAYOFF_TIE_STATUS.SCHEDULED) {
-      await notifyLadderPlayers({
-        userIds: playersOf(arrived),
-        ladder,
-        kind: `playoff-round-${changedTie.tieId}`,
-        ...(changedTie.isThirdPlacePlayoff
-          ? {
-              title: "You'll play for 3rd place",
-              message: `You'll play for 3rd place in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
-            }
-          : {
-              title: `You've reached the ${changedName}`,
-              message: `Congratulations! You've reached the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
-            }),
-        tab: PLAYOFFS_TAB,
-        data: { tieId: changedTie.tieId },
-      });
+      const opponentOf = (key: TieSideKey) =>
+        ladderPlayoffTeamName(key === "side1" ? changedTie.team2 : changedTie.team1);
+      for (const key of arrived) {
+        await notifyLadderPlayers({
+          userIds: changedTie[key]?.playerIds ?? [],
+          ladder,
+          kind: `playoff-round-${changedTie.tieId}`,
+          ...(changedTie.isThirdPlacePlayoff
+            ? {
+                title: "You'll play for 3rd place",
+                message: `You'll play for 3rd place - You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+              }
+            : {
+                title: `Congratulations, you're through to the ${changedName}!`,
+                message: `Your ${changedName} against ${opponentOf(key)} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+              }),
+          tab: PLAYOFFS_TAB,
+          data: { tieId: changedTie.tieId },
+        });
+      }
       for (const key of waiting) {
-        const opponent = key === "side1" ? changedTie.team2 : changedTie.team1;
         await notifyLadderPlayers({
           userIds: changedTie[key]?.playerIds ?? [],
           ladder,
           kind: `playoff-opponent-${changedTie.tieId}`,
           title: `Your ${changedName} is ready`,
-          message: `Your opponent in the ${changedName} of ${ladder.name} is ${ladderPlayoffTeamName(opponent)}. Your tie is ready: you have ${LADDER_PLAYOFF_TIE_DAYS} days to play both your home and away matches.`,
+          message: `Your ${changedName} against ${opponentOf(key)} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
           tab: PLAYOFFS_TAB,
           data: { tieId: changedTie.tieId },
         });
@@ -456,4 +461,94 @@ export const sendDueLadderPlayoffReminders = async ({
     sent += 1;
   }
   return sent;
+};
+
+/** A posted playoff match the away side hasn't answered in this long is accepted for them. */
+export const LADDER_PLAYOFF_AUTO_ACCEPT_MS = 24 * 60 * 60 * 1000;
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const matchSlot = (match: Pick<LadderMatch, "matchDate" | "matchTime">): string => {
+  const [day, month] = String(match.matchDate).split("-").map(Number);
+  const date = Number.isFinite(day) && MONTHS[month - 1] ? `${day} ${MONTHS[month - 1]}` : match.matchDate;
+  return match.matchTime?.start ? `${date}, ${match.matchTime.start}` : date;
+};
+
+const isAutoAcceptDue = (match: LadderMatch, now: Date): boolean => {
+  const createdAt = toDate(match.createdAt);
+  return (
+    !!match.playoffTieId &&
+    !match.playNow &&
+    match.matchStatus === LADDER_MATCH_STATUS.POSTED &&
+    !!createdAt &&
+    now.getTime() - createdAt.getTime() >= LADDER_PLAYOFF_AUTO_ACCEPT_MS
+  );
+};
+
+/**
+ * Accepts every playoff match the away side hasn't answered within 24 hours of
+ * it being arranged, and tells both sides. A "play now" offer is never
+ * accepted for anyone. Returns the ids of the matches it accepted.
+ */
+export const autoAcceptDueLadderPlayoffMatches = async ({
+  db,
+  ladder,
+  now,
+}: {
+  db: Db;
+  ladder: Pick<Ladder, "ladderId" | "name">;
+  now: Date;
+}): Promise<string[]> => {
+  const ladderRef = db.collection(LADDERS).doc(ladder.ladderId);
+  const posted = await ladderRef
+    .collection(LADDER_MATCHES)
+    .where("matchStatus", "==", LADDER_MATCH_STATUS.POSTED)
+    .get();
+  const accepted: string[] = [];
+
+  for (const matchDoc of posted.docs) {
+    if (!isAutoAcceptDue(matchDoc.data() as LadderMatch, now)) continue;
+    const result = await db.runTransaction(async (transaction) => {
+      const fresh = await transaction.get(matchDoc.ref);
+      const match = fresh.data() as LadderMatch | undefined;
+      if (!match || !isAutoAcceptDue(match, now)) return null;
+      const tie = await transaction.get(
+        ladderRef.collection(LADDER_PLAYOFF_TIES_COLLECTION).doc(match.playoffTieId as string),
+      );
+      if (tie.data()?.status !== LADDER_PLAYOFF_TIE_STATUS.SCHEDULED) return null;
+      const awayIds = getLadderOpponentIds(match, match.createdBy);
+      transaction.update(matchDoc.ref, {
+        matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+        acceptedBy: awayIds[0],
+        acceptedAt: now,
+        autoAccepted: true,
+        lastUpdated: now,
+      });
+      return { match, awayIds };
+    });
+    if (!result) continue;
+    const { match, awayIds } = result;
+    const hostIds = match.participants.filter((id) => !awayIds.includes(id));
+    const where = `playoff match ${match.playoffLeg} at ${match.court?.courtName ?? "the court"}, ${matchSlot(match)}`;
+    await notifyLadderPlayers({
+      userIds: awayIds,
+      ladder,
+      kind: `playoff-auto-accepted-${matchDoc.id}`,
+      title: "Playoff match accepted",
+      message: `You didn't reply within 24 hours, so ${where} has been accepted for you.`,
+      tab: PLAYOFFS_TAB,
+      data: { tieId: match.playoffTieId },
+    });
+    await notifyLadderPlayers({
+      userIds: hostIds,
+      ladder,
+      kind: `playoff-auto-accept-host-${matchDoc.id}`,
+      title: "Playoff match accepted",
+      message: `Your opponent didn't reply within 24 hours, so ${where} has been accepted for them.`,
+      tab: PLAYOFFS_TAB,
+      data: { tieId: match.playoffTieId },
+    });
+    accepted.push(matchDoc.id);
+  }
+  return accepted;
 };

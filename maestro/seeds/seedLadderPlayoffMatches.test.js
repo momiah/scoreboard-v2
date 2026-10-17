@@ -12,6 +12,7 @@ jest.mock("firebase/firestore", () => ({
       .filter(([path]) => path.startsWith(`${ref.path}/`))
       .map(([, data]) => ({ data: () => data })),
   }),
+  deleteField: () => "__deleted__",
   query: (ref) => ref,
   where: () => ({}),
   writeBatch: () => ({
@@ -130,7 +131,7 @@ describe("seedLadderPlayoffMatches", () => {
       mockDocs.get(
         `users/test-user/notifications/maestro-po-decider-${my.tieId}`,
       ).title,
-    ).toBe("One deciding game to play");
+    ).toBe("You have a deciding game left to play");
   });
 
   it("settles the user's game and opens the quarter-final", async () => {
@@ -248,5 +249,101 @@ describe("seedLadderPlayoffMatches", () => {
       expect(startMs).toBeGreaterThanOrEqual(t.scheduledAt.getTime());
       expect(startMs).toBeLessThanOrEqual(t.deadlineAt.getTime());
     });
+  });
+
+  it("posts match 1 again after one decline", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG1_POSTED_AFTER_DECLINE);
+    const [leg1] = legs(my.tieId);
+    expect(leg1).toMatchObject({
+      matchStatus: "posted",
+      playoffLeg: 1,
+      scheduleDeclines: 1,
+    });
+  });
+
+  it("leaves the user without a home court", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.NO_HOME_COURT);
+    const side = my.side === "team1" ? "side1" : "side2";
+    expect(tie(my.tieId)[side].homeCourt).toBeNull();
+    expect(
+      mockWrites.find(
+        (write) =>
+          write.op === "update" &&
+          write.path.endsWith("ladderParticipants/test-user"),
+      ).data,
+    ).toEqual({ homeCourt: "__deleted__" });
+    expect(legs(my.tieId)[0].matchStatus).toBe("accepted");
+  });
+
+  it("leaves the last game of match 1 awaiting the user's approval", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG1_IN_PROGRESS);
+    const [leg1] = legs(my.tieId);
+    const pending = leg1.games.filter((g) => g.approvalStatus === "pending");
+    expect(leg1.matchStatus).toBe("accepted");
+    expect(pending).toHaveLength(1);
+    expect(pending[0].reporter).not.toBe("test-user");
+  });
+
+  it("seeds a regular match beside the playoff match", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.PLAYOFF_REGULAR);
+    const regular = mockDocs.get(
+      `ladders/${MAESTRO_PO_LADDER_ID}/ladderMatches/maestro-po-regular-match`,
+    );
+    expect(regular).toMatchObject({
+      matchStatus: "accepted",
+      participants: expect.arrayContaining(["test-user"]),
+    });
+    expect(regular.playoffTieId).toBeUndefined();
+    expect(
+      regular.games.filter((g) => g.approvalStatus === "pending"),
+    ).toHaveLength(1);
+  });
+
+  it("posts match 2 from the user after a completed match 1", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_POSTED);
+    const [leg1, leg2] = legs(my.tieId);
+    expect(leg1.matchStatus).toBe("completed");
+    expect(leg2).toMatchObject({ matchStatus: "posted", playoffLeg: 2 });
+    expect(leg2.createdBy).toBe("test-user");
+  });
+
+  it("accepts match 2 with no games played", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_ACCEPTED);
+    const [, leg2] = legs(my.tieId);
+    expect(leg2.matchStatus).toBe("accepted");
+    expect(leg2.games.some((g) => g.result)).toBe(false);
+    expect(leg2.checkIn).toBeUndefined();
+  });
+
+  it("plays one approved game of match 2", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_ONE_GAME);
+    const [, leg2] = legs(my.tieId);
+    expect(leg2.matchStatus).toBe("accepted");
+    expect(leg2.games.filter((g) => g.result)).toHaveLength(1);
+    expect(leg2.games[0].approvalStatus).toBe("approved");
+    expect(leg2.checkIn).toMatchObject({ completed: true });
+  });
+
+  it("keeps every posted match recent so the 24-hour auto-accept leaves it alone", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_POSTED);
+    const posted = [...mockDocs]
+      .filter(([path]) =>
+        path.startsWith(`ladders/${MAESTRO_PO_LADDER_ID}/ladderMatches/`),
+      )
+      .map(([, data]) => data)
+      .filter((m) => m.matchStatus === "posted");
+    expect(posted.length).toBeGreaterThan(1);
+    posted.forEach((m) =>
+      expect(Date.now() - m.createdAt.getTime()).toBeLessThan(60 * 60 * 1000),
+    );
+  });
+
+  it("posts a match that has waited 25 hours for the away side", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG1_POSTED_STALE);
+    const [leg1] = legs(my.tieId);
+    expect(leg1.matchStatus).toBe("posted");
+    expect(Date.now() - leg1.createdAt.getTime()).toBeGreaterThan(
+      24 * 60 * 60 * 1000,
+    );
   });
 });

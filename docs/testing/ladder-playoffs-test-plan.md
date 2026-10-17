@@ -192,8 +192,10 @@ Emulator cases are in `functions/src/ladderPlayoffTies.emulator.test.ts` and
 - The bracket glow animation and the loading skeleton in Maestro (they last
   milliseconds); both are covered in Jest.
 - Phase 3 (payout).
-- Phase 2 flows beyond 2.4 until their seeds exist (see the playoff section of
-  [maestro-backlog.md](maestro-backlog.md)).
+- In Maestro: the location check itself (the opponent's arrival is seeded
+  instead), the "new" state of the gold guide button on a device that has
+  already opened it (Jest covers it), and the 10-day deadline expiring (the
+  emulator suite covers it).
 - A push actually arriving on a physical phone, and the deployed Cloud
   Scheduler job firing in production. The tests assert the exact Expo request
   the function sends and the schedule it declares; delivery by Expo and
@@ -234,6 +236,71 @@ notifications.
 | `ladder-playoffs-cancellation-notification` | 4.3 |
 | `ladder-playoffs-summary-2048` | 4.4 |
 | `ladder-playoffs-standings-player-details` | 4.5 |
+
+### Phase 2 flows
+
+Every flow runs on both seeded ladders where the wording differs (free
+`maestro-po-ladder` and paid `maestro-po-paid-ladder`, £20 entry); journey
+flows run the same steps on each in turn. The opponent is a harness mock
+(`maestro/seeds/mockPlayoffOpponent.js`); ties are settled by the real
+`onLadderMatchStatusChange` trigger when the test user approves the last reported
+game, and the other tie in the round is finished by `mockFinishCompanionTie`.
+
+| Flow | Scenarios |
+|------|-----------|
+| `ladder-playoffs-journey-arrange` | 6.1, 6.5, 6.6, 6.6a, 6.10, 6.31: "You made the playoffs!" opens the Playoffs tab on the user's tie, the tie lobby and prize card, the opponent arranges match 1 (arranged notification), the user accepts, arranges match 2, the opponent accepts |
+| `ladder-playoffs-journey-play-here`, `-play-here-offered` | 6.6b: the user offers "Play match 2 here" at the opponent's court and the opponent accepts; the opponent offers and the user accepts |
+| `ladder-playoffs-journey-decider` | 6.15, 6.33d: level on aggregate creates the checked-in decider, then Reschedule |
+| `ladder-playoffs-auto-accept` | 6.33e: a posted match 25 hours old is accepted by the scheduled job (waits up to 25 minutes for it) |
+| `ladder-playoffs-journey-extension` | 6.15: Request Extension on the decider |
+| `ladder-playoffs-journey-r16-win`, `-qf-win`, `-sf-win`, `-decider-win` | 6.32, 6.33: "You're through to the {round}", then "Your {round} is ready" |
+| `ladder-playoffs-journey-r16-loss`, `-decider-loss` | 6.33b: "Knocked out in the Round of 16", no prize sentence |
+| `ladder-playoffs-journey-qf-loss` | 6.33b: "Knocked out in the Quarter-Final" with "You've been awarded £320 and 800 CP, paid when the playoffs finish." (paid) or "800 CP" (free) |
+| `ladder-playoffs-journey-sf-loss` | 6.33a: "You'll play for 3rd place", then "Your 3rd-place tie is ready" |
+| `ladder-playoffs-journey-final-win`, `-final-loss`, `-third-win`, `-third-loss` | 6.33c: each of the four players gets "Congratulations, you have placed {1st–4th} in {ladder} and been awarded …", the notification opens Summary, and the ladder shows Completed |
+| `ladder-playoffs-tie-layout-spectator` | 6.10f, 6.10i |
+| `ladder-playoffs-hosting-by-rank` | 6.6, 6.6a |
+| `ladder-playoffs-prize-banner` | 6.1, 6.31 |
+| `ladder-playoffs-tie-chat` | 6.10i |
+| `ladder-playoffs-match-has-no-chat` | 6.10i |
+| `ladder-playoffs-arrange-home` | 6.5, 6.10e |
+| `ladder-playoffs-arrange-without-home-court` | 6.7 |
+| `ladder-playoffs-confirm-match`, `-decline-match`, `-decline-limit` | 6.10, 6.10a |
+| `ladder-playoffs-cancel-posted`, `-cancel-accepted` | 6.10b, 6.10c |
+| `ladder-playoffs-reschedule`, `-extension` | 6.10 (Match Options), 6.15 |
+| `ladder-playoffs-aggregate`, `-settled`, `-spectator-scores`, `-spectator-live` | 6.10g, 6.12, 6.21 |
+| `ladder-playoffs-not-in-matchmaking` | 6.20 |
+| `ladder-playoffs-report-during-playoffs`, `-approve-during-playoffs`, `-report-score` | 6.13, 6.14 |
+| `ladder-playoffs-notifications-open-playoffs` | 6.10d |
+| `ladder-playoffs-guide-button`, `-guide-pages` | 6.10j |
+| `ladder-playoffs-through-and-ready` | 6.32, 6.33 |
+| `ladder-playoffs-tie-wording` | 6.34 |
+| `ladder-summary-prize-pool`, `ladder-join-fee-on-top`, `ladder-join-payment-stub`, `ladder-match-lobby-address`, `ladder-post-match-court-time` | Prize pool, entry fee on top, address, court-time hint |
+| `ladder-posting-closes-7-days`, `ladder-results-closing-banner`, `ladder-results-closed` | 7.1, 7.2, 7.2a |
+| `ladder-no-show-opponent-arrived` | 8.4 |
+
+### Prizes
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.30 | Any ladder size | Cash follows the payout bands for that size from the full pool (every entry fee; the 10% platform fee is paid on top, not taken from it), each band split equally; CP uses the same bands and shares on the CP pool (50 CP per entrant). The Summary tab's top four use the same shares 🅹 |
+| 6.31 | The tie's prize card | "Current payout" is the prize for the worst place a loser of this round can finish; the right-hand payout is the prize for the round after (Champion for the Final, 3rd place for the 3rd-place tie) 🅹 🅼 |
+
+### Moving on
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.32 | A tie is won while the neighbouring tie is still being played | Straight away (on the match that completes it, not the scheduled job) the winner is placed in the next tie and gets "Congratulations, you're through to the {round}!": "You're through to the {round} in {ladder}! We'll let you know as soon as your opponent is decided." Semi-final losers going to the 3rd-place tie get "You'll play for 3rd place" instead 🅴 |
+| 6.33 | The neighbouring tie then finishes | The next tie starts (10 days). The side that was waiting gets "Your {round} is ready": "Your {round} against {opponent} is ready! You have 10 days to complete both matches". The side that just finished (and so never got the "through" notice) gets "Congratulations, you're through to the {round}!" with the same message 🅴 |
+| 6.33a | A Semi-Final is lost | The loser goes to the 3rd-place tie: "You'll play for 3rd place" ("Your Semi-Final in {ladder} is over, and you'll play for 3rd place. We'll let you know as soon as your opponent is decided."). Once both are known the side that just arrived gets "You'll play for 3rd place - You have 10 days to complete both matches" and the side that was waiting gets "Your 3rd-place tie is ready": "Your 3rd-place tie against {opponent} is ready! You have 10 days to complete both matches". No knock-out notification 🅴 |
+| 6.33b | A tie is lost before the Semi-Finals | "Knocked out in the {round}": "You've been knocked out in the {round} of {ladder}." plus " You've been awarded £X and X CP, paid when the playoffs finish." only when that finish pays something (CP only on a free ladder) 🅴 |
+| 6.33c | The Final and the 3rd-place tie finish | Each player gets "You placed {1st/2nd/3rd/4th}": "Congratulations, you have placed {place} in {ladder} and been awarded £X and X CP." (the prize part only when something was won); it opens Summary. Once both are finished the ladder becomes Completed (`playoffsCompletedAt`) and the payout is logged for Phase 3 🅴 |
+| 6.33d | Both matches complete, aggregate level | "You have a deciding game left to play": "You have a deciding game left to play as your matches in the {round} of {ladder} resulted in a draw!" 🅴 |
+| 6.33e | The away side hasn't answered a posted playoff match 24 hours after it was arranged (checked every 15 minutes by `processLadderPhases`) | The match is accepted for them (`autoAccepted: true`, the decline count unchanged). The away side gets "You didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for you." and the host "Your opponent didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for them." A "play now" offer is never accepted for anyone, and nothing happens once the tie is over. Arranging again (after a decline) starts a new 24 hours 🅴 🅼 |
+| 6.34 |
+| `ladder-summary-prize-pool`, `ladder-join-fee-on-top`, `ladder-join-payment-stub`, `ladder-match-lobby-address`, `ladder-post-match-court-time` | Prize pool, entry fee on top, address, court-time hint |
+| `ladder-posting-closes-7-days`, `ladder-results-closing-banner`, `ladder-results-closed` | 7.1, 7.2, 7.2a |
+| `ladder-no-show-opponent-arrived` | 8.4 |
 
 ### Prizes
 

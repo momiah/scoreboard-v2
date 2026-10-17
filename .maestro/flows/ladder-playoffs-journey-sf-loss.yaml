@@ -1,0 +1,44 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      SEED: "sf-leg2-loss"
+      TIE: "r3-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r3-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*Your Semi-Final in Maestro Playoffs 256 is over, and you'll play for 3rd place.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: ""
+      NOTIFICATION: ".*Your 3rd-place tie against .* is ready! You have 10 days to complete both matches.*"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-companion-loser-third-place"
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      SEED: "sf-leg2-loss"
+      TIE: "r3-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r3-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*Your Semi-Final in Maestro Playoffs 256 \\(Paid\\) is over, and you'll play for 3rd place.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: "-paid"
+      NOTIFICATION: ".*Your 3rd-place tie against .* is ready! You have 10 days to complete both matches.*"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-paid-companion-loser-third-place"

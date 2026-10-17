@@ -1,0 +1,44 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg1Posted"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- tapOn:
+    id: "playoff-match-leg2-arrange"
+- extendedWaitUntil:
+    visible: "Arrange match 2"
+    timeout: 15000
+- assertVisible:
+    id: "add-ladder-match-court-selector"
+    text: ".*Maestro Playoffs London.*"
+- assertVisible:
+    id: "add-ladder-match-court-time"
+    text: ".*Book enough court time.*best of 7.*"
+- assertVisible:
+    id: "add-ladder-match-no-fee"
+- assertNotVisible:
+    id: "add-ladder-match-fee"
+- tapOn: "Select Date"
+- extendedWaitUntil:
+    visible: ".*Please select a date within the 10 days for this tie \\(by .*"
+    timeout: 10000
+- tapOn: "Cancel"
+- tapOn:
+    id: "add-ladder-match-court-selector"
+- tapOn:
+    id: "search-court-option-maestro-po-court-croydon"
+- assertVisible:
+    id: "add-ladder-match-court-selector"
+    text: ".*Maestro Playoffs Croydon.*"
+- runFlow: ../utilities/playoffs/send-arranged-match.yaml
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-leg2"
+    timeout: 20000
+- assertVisible: ".*Awaiting opponent.*"
+- assertVisible: ".*Maestro Playoffs Croydon.*"

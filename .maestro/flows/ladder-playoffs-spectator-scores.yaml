@@ -1,0 +1,32 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-playoff-match-pending"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- runFlow:
+    file: ../utilities/playoffs/open-bracket-tie.yaml
+    env:
+      TIE: "r1-s2"
+      SCROLL: "no"
+- assertVisible: "7 - 5"
+- assertVisible:
+    id: "playoff-match-outcome"
+- assertVisible: "Through to the Quarter-Final"
+- assertVisible: "Finished"
+- tapOn:
+    id: "playoff-match-leg2"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- assertNotVisible:
+    id: "match-details-burger"
+- assertNotVisible:
+    id: "lobby-games-locked"

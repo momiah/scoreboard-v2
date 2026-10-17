@@ -1,0 +1,10 @@
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: ${BUTTON}
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 90000
+- tapOn: "OK"

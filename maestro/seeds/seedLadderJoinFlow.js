@@ -52,6 +52,7 @@ export const JOIN_VARIANT = {
   STATUS_CLOSED: "statusClosed",
   PARTNER_IN_LADDER: "partnerInLadder",
   CLAIM_RACE: "claimRace",
+  PAID: "paid",
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -118,7 +119,7 @@ const ladderDocument = ({ testUser, ladderId, name, ladderType, variant }) => {
     seasonEndsAt: daysFromNow(60),
     playoffStartsAt: daysFromNow(50),
     playoffEndsAt: daysFromNow(60),
-    entryFee: 0,
+    entryFee: variant === JOIN_VARIANT.PAID ? 20 : 0,
     currencyType: "GBP",
     minRank: 0,
     maxPlayers,

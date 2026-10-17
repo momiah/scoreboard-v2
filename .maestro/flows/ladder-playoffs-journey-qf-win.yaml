@@ -1,0 +1,44 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      SEED: "qf-leg2-win"
+      TIE: "r2-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r2-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*You're through to the Semi-Final in Maestro Playoffs 256.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: ""
+      NOTIFICATION: ".*Your Semi-Final against .* is ready! You have 10 days to complete both matches.*"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-companion-winner-through"
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      SEED: "qf-leg2-win"
+      TIE: "r2-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r2-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*You're through to the Semi-Final in Maestro Playoffs 256 \\(Paid\\).*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: "-paid"
+      NOTIFICATION: ".*Your Semi-Final against .* is ready! You have 10 days to complete both matches.*"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-paid-companion-winner-through"

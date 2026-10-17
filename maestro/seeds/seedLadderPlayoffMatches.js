@@ -1,4 +1,10 @@
-import { collection, doc, getDocs, writeBatch } from "firebase/firestore";
+import {
+  collection,
+  deleteField,
+  doc,
+  getDocs,
+  writeBatch,
+} from "firebase/firestore";
 import moment from "moment";
 import { db } from "../../services/firebase.config";
 import {
@@ -10,12 +16,14 @@ import {
   advanceLadderPlayoffBracket,
   getLadderPlayoffLegHost,
   buildLadderPlayoffLegMatch,
+  createLadderMatchGames,
   notificationSchema,
   notificationTypes,
 } from "@shared";
 import {
   MAESTRO_PO_LADDER_ID,
   MAESTRO_PO_PAID_LADDER_ID,
+  deleteTiePlayerNotifications,
   seedLadderPlayoffs,
 } from "./seedLadderPlayoffs";
 
@@ -30,23 +38,41 @@ export const PLAYOFF_MATCH_STAGE = {
   LEG1_COMPLETE: "leg1Complete",
   LEVEL: "level",
   SETTLED: "settled",
+  LEG1_POSTED_AFTER_DECLINE: "leg1PostedAfterDecline",
+  NO_HOME_COURT: "noHomeCourt",
+  LEG1_IN_PROGRESS: "leg1InProgress",
+  PLAYOFF_REGULAR: "playoffRegular",
+  LEG2_POSTED: "leg2Posted",
+  LEG2_ACCEPTED: "leg2Accepted",
+  LEG2_ONE_GAME: "leg2OneGame",
+  LEG1_POSTED_STALE: "leg1PostedStale",
 };
+
+export const MAESTRO_PO_REGULAR_MATCH_ID = "maestro-po-regular-match";
 
 const APPROVED = notificationTypes.RESPONSE.APPROVED_GAME;
 const LOSER_SCORES = [17, 14, 19, 12, 21, 16, 18];
 
-const other = (side) => (side === "team1" ? "team2" : "team1");
-const sideKey = (side) => (side === "team1" ? "side1" : "side2");
-const legId = (tie, leg) => `${tie.tieId}-leg${leg}`;
+export const other = (side) => (side === "team1" ? "team2" : "team1");
+export const sideKey = (side) => (side === "team1" ? "side1" : "side2");
+export const legId = (tie, leg) => `${tie.tieId}-leg${leg}`;
 
-const at = (dayOffset, time) => {
+export const at = (dayOffset, time) => {
   const [hours, minutes] = time.split(":").map(Number);
   return moment()
     .add(dayOffset, "days")
     .set({ hour: hours, minute: minutes, second: 0, millisecond: 0 });
 };
 
-const playedGame = ({ tie, shell, winner, index, start, approved }) => {
+export const playedGame = ({
+  tie,
+  shell,
+  winner,
+  index,
+  start,
+  approved,
+  reporterSide,
+}) => {
   const loserScore = LOSER_SCORES[index % LOSER_SCORES.length];
   const winnerScore = loserScore >= 20 ? loserScore + 2 : 21;
   const team1Wins = winner === "team1";
@@ -58,7 +84,8 @@ const playedGame = ({ tie, shell, winner, index, start, approved }) => {
     .clone()
     .add(25 * (index + 1), "minutes")
     .toDate();
-  const approver = tie[other(winner)].player1;
+  const reporting = reporterSide ?? winner;
+  const approver = tie[other(reporting)].player1;
   return {
     ...shell,
     team1: { ...tie.team1, score: team1Score },
@@ -81,7 +108,7 @@ const playedGame = ({ tie, shell, winner, index, start, approved }) => {
       },
     },
     approvalStatus: approved ? APPROVED : "pending",
-    reporter: tie[winner].player1.userId,
+    reporter: tie[reporting].player1.userId,
     numberOfApprovals: approved ? 1 : 0,
     numberOfDeclines: 0,
     approvers: approved
@@ -111,7 +138,7 @@ const checkInFor = (participants, start) => ({
  * reported game awaiting approval. A completed leg must have a side on the
  * best-of majority, and an open one must not.
  */
-const legMatch = ({
+export const legMatch = ({
   tie,
   leg,
   host,
@@ -120,6 +147,9 @@ const legMatch = ({
   time = "18:00",
   wins = [],
   pendingLast = false,
+  pendingReporter,
+  scheduleDeclines,
+  postedHoursAgo = 0,
   now,
 }) => {
   const hostSide = tie[sideKey(host)];
@@ -138,7 +168,10 @@ const legMatch = ({
       shuttleType: SHUTTLE_TYPE.FEATHER,
     },
     createdBy: hostSide.playerIds[0],
-    now: start.clone().subtract(3, "days").toDate(),
+    now:
+      status === LADDER_MATCH_STATUS.POSTED
+        ? new Date(now.getTime() - postedHoursAgo * 60 * 60 * 1000)
+        : start.clone().subtract(3, "days").toDate(),
     accepted: status !== LADDER_MATCH_STATUS.POSTED,
   });
   const majority = Math.floor(match.bestOf / 2) + 1;
@@ -161,6 +194,10 @@ const legMatch = ({
           index,
           start,
           approved: !(pendingLast && index === wins.length - 1),
+          reporterSide:
+            pendingLast && index === wins.length - 1
+              ? pendingReporter
+              : undefined,
         })
       : shell,
   );
@@ -172,6 +209,7 @@ const legMatch = ({
     wins.length > 0 || (leg === 3 && status === LADDER_MATCH_STATUS.ACCEPTED);
   return {
     ...match,
+    ...(scheduleDeclines ? { scheduleDeclines } : {}),
     matchStatus: status,
     games,
     ...(status !== LADDER_MATCH_STATUS.POSTED
@@ -195,7 +233,7 @@ const legMatch = ({
 };
 
 /** Wins in play order: the loser takes alternate early games, the winner closes it out. */
-const wins = (side, count, otherCount) => {
+export const wins = (side, count, otherCount) => {
   const result = [];
   for (let i = 0; i < Math.max(count, otherCount); i += 1) {
     if (i < otherCount) result.push(other(side));
@@ -204,7 +242,7 @@ const wins = (side, count, otherCount) => {
   return result;
 };
 
-const commit = async (writes) => {
+export const commit = async (writes) => {
   for (let i = 0; i < writes.length; i += 400) {
     const batch = writeBatch(db);
     writes.slice(i, i + 400).forEach((write) => write(batch));
@@ -212,9 +250,9 @@ const commit = async (writes) => {
   }
 };
 
-const tieRef = (ladderId, tieId) =>
+export const tieRef = (ladderId, tieId) =>
   doc(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION, tieId);
-const matchRef = (ladderId, matchId) =>
+export const matchRef = (ladderId, matchId) =>
   doc(db, "ladders", ladderId, "ladderMatches", matchId);
 
 /**
@@ -237,6 +275,7 @@ export const seedLadderPlayoffMatches = async ({
       "seedLadderPlayoffMatches: testUser with a userId is required",
     );
   }
+  await deleteTiePlayerNotifications(ladderId);
   await seedLadderPlayoffs({
     testUser,
     generate: true,
@@ -314,6 +353,103 @@ export const seedLadderPlayoffMatches = async ({
         }),
       );
       break;
+    case PLAYOFF_MATCH_STAGE.LEG1_POSTED_STALE:
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 1,
+          host: hostOf(mine, 1),
+          status: P,
+          day: 3,
+          time: "20:00",
+          scheduleDeclines: 1,
+          postedHoursAgo: 25,
+          now,
+        }),
+      );
+      break;
+    case PLAYOFF_MATCH_STAGE.LEG1_POSTED_AFTER_DECLINE:
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 1,
+          host: hostOf(mine, 1),
+          status: P,
+          day: 3,
+          time: "20:00",
+          scheduleDeclines: 1,
+          now,
+        }),
+      );
+      break;
+    case PLAYOFF_MATCH_STAGE.NO_HOME_COURT:
+      setTie(mine.tieId, {
+        [sideKey(me)]: { ...mine[sideKey(me)], homeCourt: null },
+      });
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 1,
+          host: hostOf(mine, 1),
+          status: A,
+          day: 1,
+          time: "18:30",
+          now,
+        }),
+      );
+      break;
+    case PLAYOFF_MATCH_STAGE.LEG1_IN_PROGRESS:
+    case PLAYOFF_MATCH_STAGE.PLAYOFF_REGULAR:
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 1,
+          host: hostOf(mine, 1),
+          status: A,
+          day: moment().subtract(70, "minutes").isSame(moment(), "day")
+            ? 0
+            : -1,
+          time: moment().subtract(70, "minutes").format("HH:mm"),
+          wins: [me, them, me],
+          pendingLast: true,
+          pendingReporter: them,
+          now,
+        }),
+      );
+      break;
+    case PLAYOFF_MATCH_STAGE.LEG2_POSTED:
+    case PLAYOFF_MATCH_STAGE.LEG2_ACCEPTED:
+    case PLAYOFF_MATCH_STAGE.LEG2_ONE_GAME: {
+      const live = stage === PLAYOFF_MATCH_STAGE.LEG2_ONE_GAME;
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 1,
+          host: hostOf(mine, 1),
+          status: C,
+          day: -3,
+          wins: wins(me, 4, 2),
+          now,
+        }),
+        legMatch({
+          tie: mine,
+          leg: 2,
+          host: hostOf(mine, 2),
+          status: stage === PLAYOFF_MATCH_STAGE.LEG2_POSTED ? P : A,
+          day: live
+            ? moment().subtract(70, "minutes").isSame(moment(), "day")
+              ? 0
+              : -1
+            : 2,
+          time: live
+            ? moment().subtract(70, "minutes").format("HH:mm")
+            : "19:30",
+          wins: live ? [me] : [],
+          now,
+        }),
+      );
+      break;
+    }
     case PLAYOFF_MATCH_STAGE.LEG1_COMPLETE:
       matches.push(
         legMatch({
@@ -540,13 +676,15 @@ export const seedLadderPlayoffMatches = async ({
     legMatch({ tie: halfway, leg: 2, host: other(h1), status: P, day: 2, now }),
   );
 
+  const nameOf = (player) =>
+    player?.displayName || player?.firstName || player?.username || "TBD";
   const notifications =
     stage === PLAYOFF_MATCH_STAGE.LEVEL
       ? [
           {
             id: `maestro-po-decider-${mine.tieId}`,
-            title: "One deciding game to play",
-            message: `Your Round of 16 in ${ladderName} is level on aggregate. One deciding game must be played to decide who goes through.`,
+            title: "You have a deciding game left to play",
+            message: `You have a deciding game left to play as your matches in the Round of 16 of ${ladderName} resulted in a draw!`,
             data: {
               ladderId: ladderId,
               tab: "Playoffs",
@@ -558,8 +696,8 @@ export const seedLadderPlayoffMatches = async ({
         ? [
             {
               id: `maestro-po-round-${mine.tieId}`,
-              title: "You've reached the Quarter-Final",
-              message: `Congratulations! You've reached the Quarter-Final in ${ladderName}. You have 10 days to play both your home and away matches.`,
+              title: "Your Quarter-Final is ready",
+              message: `Your Quarter-Final against ${nameOf(neighbour.team2.player1)} is ready! You have 10 days to complete both matches`,
               data: {
                 ladderId: ladderId,
                 tab: "Playoffs",
@@ -569,7 +707,75 @@ export const seedLadderPlayoffMatches = async ({
           ]
         : [];
 
+  const extraWrites = [];
+  if (stage === PLAYOFF_MATCH_STAGE.NO_HOME_COURT) {
+    extraWrites.push((batch) =>
+      batch.update(doc(db, "ladders", ladderId, "ladderParticipants", myId), {
+        homeCourt: deleteField(),
+      }),
+    );
+  }
+  if (stage === PLAYOFF_MATCH_STAGE.PLAYOFF_REGULAR) {
+    const rival = settled.side1.playerIds[0];
+    const rivalTeam = settled.team1;
+    const shells = createLadderMatchGames(5, MAESTRO_PO_REGULAR_MATCH_ID);
+    const today = moment().format("DD-MM-YYYY");
+    const reportedAt = new Date();
+    const regular = {
+      ladderMatchId: MAESTRO_PO_REGULAR_MATCH_ID,
+      court: mine[sideKey(me)].homeCourt,
+      bestOf: 5,
+      matchDate: today,
+      matchTime: { start: moment().subtract(70, "minutes").format("HH:mm") },
+      courtFee: 0,
+      currencyType: "GBP",
+      shuttleType: SHUTTLE_TYPE.FEATHER,
+      participants: [rival, myId],
+      games: shells.map((shell, index) =>
+        index === 0
+          ? {
+              ...shell,
+              team1: { ...rivalTeam, score: 21 },
+              team2: { ...mine[`team${me === "team1" ? 1 : 2}`], score: 15 },
+              gamescore: "21-15",
+              date: today,
+              createdAt: reportedAt,
+              reportedAt,
+              reportedTime: moment(reportedAt).format("HH:mm"),
+              result: {
+                winner: { team: "Team 1", players: [rival], score: 21 },
+                loser: { team: "Team 2", players: [myId], score: 15 },
+              },
+              approvalStatus: "pending",
+              reporter: rival,
+              numberOfApprovals: 0,
+              numberOfDeclines: 0,
+              approvers: [],
+            }
+          : shell,
+      ),
+      matchStatus: A,
+      createdBy: rival,
+      createdAt: now,
+      acceptedBy: myId,
+      acceptedAt: now,
+      checkIn: {
+        checkedInBy: [rival, myId],
+        checkedInAt: { [rival]: now, [myId]: now },
+        completed: true,
+        completedAt: now,
+      },
+      ladderType: LADDER_TYPE.SINGLES,
+      lastUpdated: reportedAt,
+      gameReportedAt: { [shells[0].gameId]: reportedAt },
+    };
+    extraWrites.push((batch) =>
+      batch.set(matchRef(ladderId, MAESTRO_PO_REGULAR_MATCH_ID), regular),
+    );
+  }
+
   await commit([
+    ...extraWrites,
     ...[...tieUpdates].map(
       ([tieId, fields]) =>
         (batch) =>
