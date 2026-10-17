@@ -131,7 +131,7 @@ describe("seedLadderPlayoffMatches", () => {
       mockDocs.get(
         `users/test-user/notifications/maestro-po-decider-${my.tieId}`,
       ).title,
-    ).toBe("One deciding game to play");
+    ).toBe("You have a deciding game left to play");
   });
 
   it("settles the user's game and opens the quarter-final", async () => {
@@ -322,5 +322,28 @@ describe("seedLadderPlayoffMatches", () => {
     expect(leg2.games.filter((g) => g.result)).toHaveLength(1);
     expect(leg2.games[0].approvalStatus).toBe("approved");
     expect(leg2.checkIn).toMatchObject({ completed: true });
+  });
+
+  it("keeps every posted match recent so the 24-hour auto-accept leaves it alone", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG2_POSTED);
+    const posted = [...mockDocs]
+      .filter(([path]) =>
+        path.startsWith(`ladders/${MAESTRO_PO_LADDER_ID}/ladderMatches/`),
+      )
+      .map(([, data]) => data)
+      .filter((m) => m.matchStatus === "posted");
+    expect(posted.length).toBeGreaterThan(1);
+    posted.forEach((m) =>
+      expect(Date.now() - m.createdAt.getTime()).toBeLessThan(60 * 60 * 1000),
+    );
+  });
+
+  it("posts a match that has waited 25 hours for the away side", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG1_POSTED_STALE);
+    const [leg1] = legs(my.tieId);
+    expect(leg1.matchStatus).toBe("posted");
+    expect(Date.now() - leg1.createdAt.getTime()).toBeGreaterThan(
+      24 * 60 * 60 * 1000,
+    );
   });
 });

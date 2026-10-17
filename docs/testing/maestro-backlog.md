@@ -254,7 +254,7 @@ results-closed messages are as shown below.
 | 14-15 | `ladder-playoffs-cancel-posted`, `-cancel-accepted` |
 | 16-17 | `ladder-playoffs-reschedule`, `-extension` |
 | 18-20 | `ladder-playoffs-aggregate`, `-spectator-scores`, `-spectator-live` |
-| 21 | `ladder-playoffs-journey-decider` |
+| 21 | `ladder-playoffs-journey-decider` (also `ladder-playoffs-auto-accept`: a 25-hour-old posted match is accepted by the scheduled job; it waits up to 25 minutes) |
 | 22 | `ladder-playoffs-settled` |
 | 23 | `ladder-playoffs-not-in-matchmaking` |
 | 24 | `ladder-post-match-court-time` |

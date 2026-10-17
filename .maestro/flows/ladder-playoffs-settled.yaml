@@ -9,7 +9,7 @@ onFlowStart:
 - runFlow:
     file: ../utilities/playoffs/open-playoffs-tab.yaml
     env:
-      NOTIFICATION: ".*You've reached the Quarter-Final in Maestro Playoffs 256.*"
+      NOTIFICATION: ".*Your Quarter-Final against .* is ready! You have 10 days to complete both matches.*"
 - assertVisible:
     id: "ladder-playoffs-bracket"
 - tapOn: "Round of 16"

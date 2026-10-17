@@ -45,6 +45,7 @@ export const PLAYOFF_MATCH_STAGE = {
   LEG2_POSTED: "leg2Posted",
   LEG2_ACCEPTED: "leg2Accepted",
   LEG2_ONE_GAME: "leg2OneGame",
+  LEG1_POSTED_STALE: "leg1PostedStale",
 };
 
 export const MAESTRO_PO_REGULAR_MATCH_ID = "maestro-po-regular-match";
@@ -148,6 +149,7 @@ export const legMatch = ({
   pendingLast = false,
   pendingReporter,
   scheduleDeclines,
+  postedHoursAgo = 0,
   now,
 }) => {
   const hostSide = tie[sideKey(host)];
@@ -166,7 +168,10 @@ export const legMatch = ({
       shuttleType: SHUTTLE_TYPE.FEATHER,
     },
     createdBy: hostSide.playerIds[0],
-    now: start.clone().subtract(3, "days").toDate(),
+    now:
+      status === LADDER_MATCH_STATUS.POSTED
+        ? new Date(now.getTime() - postedHoursAgo * 60 * 60 * 1000)
+        : start.clone().subtract(3, "days").toDate(),
     accepted: status !== LADDER_MATCH_STATUS.POSTED,
   });
   const majority = Math.floor(match.bestOf / 2) + 1;
@@ -344,6 +349,21 @@ export const seedLadderPlayoffMatches = async ({
           status: P,
           day: 2,
           time: "19:30",
+          now,
+        }),
+      );
+      break;
+    case PLAYOFF_MATCH_STAGE.LEG1_POSTED_STALE:
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 1,
+          host: hostOf(mine, 1),
+          status: P,
+          day: 3,
+          time: "20:00",
+          scheduleDeclines: 1,
+          postedHoursAgo: 25,
           now,
         }),
       );
@@ -656,13 +676,15 @@ export const seedLadderPlayoffMatches = async ({
     legMatch({ tie: halfway, leg: 2, host: other(h1), status: P, day: 2, now }),
   );
 
+  const nameOf = (player) =>
+    player?.displayName || player?.firstName || player?.username || "TBD";
   const notifications =
     stage === PLAYOFF_MATCH_STAGE.LEVEL
       ? [
           {
             id: `maestro-po-decider-${mine.tieId}`,
-            title: "One deciding game to play",
-            message: `Your Round of 16 in ${ladderName} is level on aggregate. One deciding game must be played to decide who goes through.`,
+            title: "You have a deciding game left to play",
+            message: `You have a deciding game left to play as your matches in the Round of 16 of ${ladderName} resulted in a draw!`,
             data: {
               ladderId: ladderId,
               tab: "Playoffs",
@@ -674,8 +696,8 @@ export const seedLadderPlayoffMatches = async ({
         ? [
             {
               id: `maestro-po-round-${mine.tieId}`,
-              title: "You've reached the Quarter-Final",
-              message: `Congratulations! You've reached the Quarter-Final in ${ladderName}. You have 10 days to play both your home and away matches.`,
+              title: "Your Quarter-Final is ready",
+              message: `Your Quarter-Final against ${nameOf(neighbour.team2.player1)} is ready! You have 10 days to complete both matches`,
               data: {
                 ladderId: ladderId,
                 tab: "Playoffs",

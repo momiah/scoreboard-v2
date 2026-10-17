@@ -25,7 +25,7 @@ appId: com.courtchamp
 - runFlow:
     file: open-tie-from-notification.yaml
     env:
-      NOTIFICATION: ".*Your Round of 16 in ${LADDER} is level on aggregate. One deciding game must be played.*"
+      NOTIFICATION: ".*You have a deciding game left to play as your matches in the Round of 16 of ${LADDER} resulted in a draw!.*"
       TIE: "r1-s1"
 - extendedWaitUntil:
     visible:

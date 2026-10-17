@@ -7,7 +7,19 @@ onFlowStart:
     env:
       STAGE: "leg1PostedAfterDecline"
       SUFFIX: ""
-- runFlow: ../utilities/playoffs/open-tie.yaml
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-opponent-arranges-leg1"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*arranged playoff match 1 at.*Open it to accept\\..*"
+- runFlow:
+    file: ../utilities/playoffs/open-bracket-tie.yaml
+    env:
+      TIE: "r1-s1"
+      SCROLL: "no"
 - tapOn:
     id: "playoff-match-leg1"
 - extendedWaitUntil:
