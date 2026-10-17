@@ -24,6 +24,7 @@ import PlayerDetails from "../components/Modals/PlayerDetailsModal";
 import TeamSettings from "../screens/Home/Ladders/TeamSettings";
 import LadderMenu from "../screens/Home/Ladders/LadderMenu";
 import LadderPostedMatches from "../screens/Home/Ladders/LadderPostedMatches";
+import PlayoffMatchDetails from "../screens/Home/Ladders/PlayoffMatchDetails";
 import MatchDetailsMenu from "../screens/Home/Ladders/MatchDetailsMenu";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
@@ -91,6 +92,7 @@ const renderLadderScreens = () => (
     <Stack.Screen name="TeamSettings" component={TeamSettings} />
     <Stack.Screen name="LadderMenu" component={LadderMenu} />
     <Stack.Screen name="LadderPostedMatches" component={LadderPostedMatches} />
+    <Stack.Screen name="PlayoffMatchDetails" component={PlayoffMatchDetails} />
     <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
   </>
 );

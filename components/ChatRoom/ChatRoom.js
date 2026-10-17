@@ -40,6 +40,7 @@ const ChatRoom = ({
   endDate,
   competitionType,
   chatPath,
+  privateNotice = /** @type {string | null} */ (null),
 }) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
@@ -129,6 +130,7 @@ const ChatRoom = ({
     const chatTarget = {
       competitionType,
       ...(chatPath?.[0] === "ladders" ? { ladderId: chatPath[1] } : {}),
+      ...(chatPath?.[2] === "playoffTies" ? { tieId: chatPath[3] } : {}),
     };
 
     const recipients = competitionParticipants.filter(
@@ -210,7 +212,10 @@ const ChatRoom = ({
             fontStyle: "italic",
           }}
         >
-          Only participants of the league can view this chat 📝
+          {privateNotice ??
+            (competitionType === COMPETITION_TYPES.LADDER
+              ? "Only the players in this game can see this chat 📝"
+              : "Only participants of the league can view this chat 📝")}
         </Text>
       </BlurView>
     );

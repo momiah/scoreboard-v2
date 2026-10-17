@@ -4,6 +4,8 @@ import {
   getLadderMatchCancelAction,
   getLadderMatchSideIds,
   getOpponentSideIds,
+  getLadderMatchRescheduleAction,
+  canExtendLadderMatch,
 } from "./ladderMatchCancellation";
 
 const shell = () => ({ result: null, approvalStatus: "" });
@@ -100,5 +102,39 @@ describe("getLadderMatchCancelAction", () => {
     expect(getLadderMatchCancelAction(singles(), "stranger")).toBe(ACTION.NONE);
     expect(getLadderMatchCancelAction(singles(), undefined)).toBe(ACTION.NONE);
     expect(getLadderMatchCancelAction(null, "poster")).toBe(ACTION.NONE);
+  });
+});
+
+describe("getLadderMatchRescheduleAction", () => {
+  const reported = () => ({ result: { winner: { team: "Team 1" } }, approvalStatus: "pending" });
+
+  it("lets either side request before any game is reported", () => {
+    expect(getLadderMatchRescheduleAction(singles(), "poster")).toBe(ACTION.REQUEST);
+    expect(getLadderMatchRescheduleAction(singles(), "accepter")).toBe(ACTION.REQUEST);
+  });
+
+  it("waits on the requester's side and asks the other side to respond", () => {
+    const match = doubles({ rescheduleRequest: { requestedBy: "p1" } });
+    expect(getLadderMatchRescheduleAction(match, "p2")).toBe(ACTION.AWAITING_RESPONSE);
+    expect(getLadderMatchRescheduleAction(match, "a1")).toBe(ACTION.RESPOND);
+  });
+
+  it("is closed once a game is reported, before acceptance and to outsiders", () => {
+    expect(getLadderMatchRescheduleAction(singles({ games: [reported(), shell()] }), "poster")).toBe(ACTION.NONE);
+    expect(getLadderMatchRescheduleAction(singles({ matchStatus: LADDER_MATCH_STATUS.POSTED }), "poster")).toBe(ACTION.NONE);
+    expect(getLadderMatchRescheduleAction(singles(), "stranger")).toBe(ACTION.NONE);
+  });
+});
+
+describe("canExtendLadderMatch", () => {
+  const reported = () => ({ result: { winner: { team: "Team 1" } }, approvalStatus: "approved" });
+
+  it("needs a reported game and no earlier extension", () => {
+    expect(canExtendLadderMatch(singles(), "poster")).toBe(false);
+    expect(canExtendLadderMatch(singles({ games: [reported(), shell()] }), "accepter")).toBe(true);
+    expect(
+      canExtendLadderMatch(singles({ games: [reported()], extension: { expiresAt: new Date() } }), "poster"),
+    ).toBe(false);
+    expect(canExtendLadderMatch(singles({ games: [reported()] }), "stranger")).toBe(false);
   });
 });

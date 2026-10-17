@@ -28,9 +28,14 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
 | When | Recipients | Message | Opens |
 |---|---|---|---|
 | Ladder cancelled (done) | every entrant | "{ladder} has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full." | Summary (Status reads Cancelled) |
-| Bracket generated (done) | qualifiers | "Congratulations! You've made the playoffs in {ladder}. You have 10 days to play both your home and away games." | Playoffs (scrolls to their game) |
+| Bracket generated (done) | qualifiers | "Congratulations! You've made the playoffs in {ladder}. You have 10 days to play both your home and away matches." | Playoffs (scrolls to their game) |
 | Bracket generated, did not qualify (done) | every other entrant | "The playoffs in {ladder} have started, and unfortunately you didn't make the cut this time. The ladder is now closed, so you can no longer post matches. Thank you for playing, and come back next season for another chance to win!" | Playoffs (the bracket) |
-| A side wins its game | the winners | "Congratulations! You've reached the {Round of 64 / 32 / 16 / Quarter-Finals / Semi-Finals / Final} in {ladder}. You have 10 days to play both your home and away games." | Playoffs |
+| A side wins its game | the winners | "Congratulations! You've reached the {Round of 64 / 32 / 16 / Quarter-Finals / Semi-Finals / Final} in {ladder}. You have 10 days to play both your home and away matches." | Playoffs |
+| A side wins and its next opponent isn't known yet (done) | the winners | "Congratulations! You're through to the {round} in {ladder}. We'll let you know as soon as your opponent is decided." | Playoffs |
+| The waiting side's opponent is decided (done) | the side that was waiting | "Your opponent in the {round} of {ladder} is {name}. Your tie is ready: you have 10 days to play both your home and away matches." | Playoffs |
+| A tie is lost before the Semi-Finals (done) | the losers | "You've been knocked out in the {round} of {ladder}." + "You've been awarded {prize}, paid when the playoffs finish." when they won something | Playoffs |
+| A Semi-Final is lost (done) | the losers | "You'll play for 3rd place…" | Playoffs |
+| The Final / 3rd-place tie finishes (done) | its four players | "Congratulations, you have placed {place} in {ladder} and been awarded {prize}." (prize part only when won); the ladder is marked Completed once both finish | Summary |
 | Ladder complete | every finisher | "Congratulations! You finished {1st / 2nd / 3rd / 4th / 5th–8th …} in {ladder} and won {prize money} and {prize CP}." (omit prizes they didn't win) | Summary |
 
 ### Who wins a prize
@@ -43,21 +48,45 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
   winner 3rd, loser 4th; then by the round a player went out in (Quarter-Final
   losers 5th–8th, Round of 16 losers 9th–16th, …).
 
-## Open decisions (needed before building)
+## Decided (Phase 2, built)
 
-1. **Aggregate rule:** games won across both matches, or total points? Tiebreak
-   if level: point difference, a decider, or the higher seed?
-2. **Match format:** best of how many games per match — fixed or chosen?
-3. **Scheduling:** who sets each match's date/time (home side proposes, away
-   accepts?), and how the 10-day window is enforced.
-4. **Order:** which match is played first (e.g. higher seed at home first)?
-5. **Court fees:** home side pays the venue and the away side its share, as in
-   normal ladder matches, or fee-free?
-6. **Missed deadline / no-show:** walkover to the side that turned up; both out
-   if neither plays?
-7. **Prize split (Phase 3):** the current `LADDER_DISTRIBUTION` in
-   `helpers/ladderPrizeDistribution.ts` pays only the top 4 (40/30/20/10%).
-   It needs a split across every in-the-money place (e.g. per finishing band:
-   1st, 2nd, 3rd, 4th, 5th–8th, 9th–16th, …) — decide the percentages and
-   whether a shared band splits equally. Same for prize CP.
-'''
+1. **Aggregate:** games won across both matches. Level → one deciding game,
+   created at the court, time and check-in of whichever match was played last.
+2. **Format:** best of 7 per match.
+3. **Scheduling:** the host picks court and time; the away side accepts or
+   declines, once. Either side can offer to play match 2 straight after match
+   1 at the same court ("Play match 2 here"); that decline doesn't count.
+4. **Order and hosting:** the lower-ranked side hosts and arranges match 1
+   first; once it's arranged, match 2 (higher-ranked host) can be arranged for
+   any date, even earlier. No coin toss.
+5. **Court fees:** none on playoff matches.
+6. **Deadline:** 10 days per round. When time runs out the game is decided on
+   games won, then points, then ladder rank; if nothing was played neither side
+   goes through and the next opponent gets a walkover.
+7. **Prizes:** the whole entry fee goes into the cash pot and the 10% platform
+   fee is paid on top (£20 + £2). Cash and CP both follow the shared
+   `LADDER_PAYOUT_STRUCTURE` (courtchamps-shared #53, #61): whole amounts per
+   place, bands split equally, leftovers to the champion
+   (`helpers/ladderPlayoffPrizes.ts`). The tie card shows the current payout
+   and the next round's; the guide's page 3 shows the full table.
+
+8. **Season close:** posting closes 7 days before playoffs, results 5 days
+   before (no game or no-show reports on regular matches; extensions end there
+   too), and the standings are final 1 day before: open disputes are discarded,
+   no-show claims are awarded only when the recorded arrivals show the claimant
+   at the court and the opponent not (and the claimant isn't flagged), and
+   unfinished matches expire keeping their approved games. Admins decide until
+   then; the admin site locks afterwards. Playoffs generate on the day with no
+   hold.
+9. **Arrivals:** `recordLadderArrival` records a player at the court from a
+   fresh reading (mocked, stale, inaccurate or distant readings refused) when
+   check-in's location check passes and when a no-show is reported. A no-show
+   can't be reported once the opponent has arrived.
+
+## Phase 3 (not started)
+
+- Pay out cash and CP to every paid place once the ladder is Completed (the
+  Final and 3rd-place tie finishing already marks it and sends the placement
+  notifications; the payout is only logged), then mark it `prizesDistributed`.
+- Real payments: charge the £22 at join, refunds (`refundLadderEntryFees` is a
+  stub), and payouts through the payment provider.

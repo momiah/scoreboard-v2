@@ -17,34 +17,38 @@ export const LADDER_TERMS: TermsSection[] = [
   },
   {
     title: "3. Entry fees & service charge",
-    body: "Paid ladders require the stated entry fee. A platform service charge is included in the amount shown at checkout. Entry fees are collected to form the prize pool and to cover platform costs.",
+    body: "Paid ladders require the stated entry fee plus a 10% platform fee, which is added on top and shown at checkout. The full entry fee goes into the prize pool; the platform fee covers platform costs.",
   },
   {
     title: "4. Prizes & payouts",
     body: "The playoff and payout structure is tiered and scales with the ladder's actual size at registration close, not its maximum capacity. Prizes are distributed to qualifying finishers once the ladder completes and results are finalised.",
   },
   {
-    title: "5. Fair play",
+    title: "5. The Rules",
+    body: "Every ladder is played under the ladder Rules, which form part of these terms. By joining you agree to play your matches as the Rules describe, including checking in, reporting results, rescheduling, playoff matches and when inactive matches expire.",
+  },
+  {
+    title: "6. Fair play",
     body: "Results must be reported honestly and confirmed by both players. Any manipulation of scores, collusion, or abusive conduct may result in removal from the ladder without refund and further account action.",
   },
   {
-    title: "6. Attendance, reports & disqualification",
-    body: "You must check in at the court for each scheduled match. If your opponent hasn't checked in within the 30-minute grace period after the scheduled start, you can report a no-show from the check-in screen; you can also report misconduct — cheating, abuse or harassment — from the match menu. All reports are reviewed by an admin. An upheld no-show awards you the match as a walkover: you gain up to 50 CP, transferred from the no-show and never taking them below zero, with no games, points or medals. Upheld reports add a strike against the reported player. Strikes are counted per ladder, and reaching the limit for any reason — 5 no-shows, or 3 for a conduct reason — disqualifies that player from the ladder, blocking them from posting or accepting further matches, with no refund of their entry fee.",
+    title: "7. Reports, strikes & disqualification",
+    body: "All no-show and misconduct reports are reviewed by an admin. Reporting a no-show records your location at the court, and arrivals at the court are recorded during check-in. Reports still undecided 1 day before the playoffs start are closed as set out in the Rules. An upheld no-show awards the match to the player who showed up as a walkover: they gain up to 50 CP, transferred from the no-show and never taking them below zero, with no games, points or medals. Upheld reports add a strike against the reported player. Strikes are counted per ladder, and reaching the limit for any reason — 5 no-shows, or 3 for a conduct reason — disqualifies that player from the ladder, blocking them from posting or accepting further matches, with no refund of their entry fee.",
   },
   {
-    title: "7. Inactive matches",
-    body: "If an accepted match sees no activity — no check-in, game or report — for 72 hours, it automatically expires. The clock starts at the scheduled start and resets whenever something happens, so any progress keeps the match alive. An expired match carries no result and no penalty for either side.",
+    title: "8. Expired matches",
+    body: "A match that expires under the Rules carries no result and no penalty for either side.",
   },
   {
-    title: "8. Refunds & cancellations",
+    title: "9. Refunds & cancellations",
     body: "If a ladder is cancelled before it begins, paid entry fees are refunded. Once a ladder has started, you have the right for refund before you play your first match. After that, entry fees are generally non-refundable except where required by law.",
   },
   {
-    title: "9. Court fees",
-    body: "Where a match sets a court fee, the accepting player pays their share, plus a 10% platform fee, when they accept the match — this secures the match so the poster is never left with an unpaid opponent. The court-fee share is released to the poster once the match completes. If the match is cancelled or expires before it is played, the court-fee share is refunded to the accepting player; the 10% platform fee is non-refundable in all cases and is retained by Court Champs to cover payment processing.",
+    title: "10. Court fees",
+    body: "Where a match sets a court fee, the accepting player pays their share, plus a 10% platform fee, when they accept the match — this secures the match so the poster is never left with an unpaid opponent. The court-fee share is released to the poster once the match completes or expires, since the poster has already paid for the court. If the match is cancelled, the court-fee share is refunded to the accepting player. The 10% platform fee is non-refundable in all cases and is retained by Court Champs to cover payment processing.",
   },
   {
-    title: "10. Changes",
+    title: "11. Changes",
     body: "Court Champs may update these terms or a ladder's details where reasonably necessary. Material changes affecting an active ladder will be communicated to participants.",
   },
 ];

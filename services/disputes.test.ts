@@ -280,7 +280,12 @@ describe("cancelDispute", () => {
   });
 
   it("withdraws via the CANCELLED resolution plan and writes it", async () => {
-    const tx = makeTx([snapOf(true, dispute), openLadder(), snapOf(true, makeMatch())]);
+    const tx = makeTx([
+      snapOf(true, dispute),
+      openLadder(),
+      snapOf(true, makeMatch()),
+      snapOf(true, makeMatch()),
+    ]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
     mockPlanDisputeResolution.mockResolvedValueOnce({
       participants: [],
@@ -371,7 +376,12 @@ describe("approveDisputedScore", () => {
   it.each(["reporter", "mate"])(
     "upholds the corrected score for reporter-side player %s without an admin",
     async (userId) => {
-      const tx = makeTx([snapOf(true, dispute), openLadder(), snapOf(true, makeMatch())]);
+      const tx = makeTx([
+      snapOf(true, dispute),
+      openLadder(),
+      snapOf(true, makeMatch()),
+      snapOf(true, makeMatch()),
+    ]);
       mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
       mockPlanDisputeResolution.mockResolvedValueOnce(plan);
 
@@ -436,6 +446,7 @@ describe("playoff freeze", () => {
         originalGame: baseGame,
       }),
       playoffsLadder(),
+      snapOf(true, makeMatch()),
     ]);
     mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
 
@@ -444,3 +455,46 @@ describe("playoff freeze", () => {
     expect(tx.update).not.toHaveBeenCalled();
   });
 });
+
+describe("playoff matches during playoffs", () => {
+  const playoffMatch = () => ({ ...makeMatch(), playoffTieId: "r1-s0", playoffLeg: 1 });
+
+  it("lets a dispute be opened on a playoff match", async () => {
+    const tx = makeTx([snapOf(true, playoffMatch()), playoffsLadder()]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+    mockGetDocs.mockResolvedValueOnce(docsSnap([]));
+
+    const result = await createDispute(validCreateInput());
+
+    expect(result.success).toBe(true);
+    expect(tx.set).toHaveBeenCalled();
+  });
+
+  it("lets the reporter side approve the disputed score on a playoff match", async () => {
+    const tx = makeTx([
+      snapOf(true, {
+        disputeId: "d1",
+        ladderId: "L1",
+        ladderMatchId: "m1",
+        openedBy: "opener",
+        stage: DISPUTE_STAGE.UNDER_REVIEW,
+        participantIds: ["opener", "reporter"],
+        originalGame: baseGame,
+      }),
+      playoffsLadder(),
+      snapOf(true, playoffMatch()),
+      snapOf(true, playoffMatch()),
+    ]);
+    mockRunTransaction.mockImplementation(async (_db, fn) => fn(tx));
+    mockPlanDisputeResolution.mockResolvedValueOnce({
+      participants: [],
+      users: [],
+      teams: [],
+      matchUpdate: { games: [] },
+      disputeUpdate: { stage: DISPUTE_STAGE.RESOLVED },
+    });
+
+    expect(await approveDisputedScore("d1", "reporter")).toEqual({ success: true });
+  });
+});
+

@@ -420,7 +420,10 @@ const GameDisputeScreen = () => {
   const userId = currentUser?.userId;
 
   const effectiveLadderId = dispute?.ladderId ?? ladderId;
-  const frozen = useLadderPlayFrozen(effectiveLadderId);
+  const frozen = useLadderPlayFrozen(
+    effectiveLadderId,
+    dispute?.ladderMatchId ?? matchId,
+  );
   const effectiveMatchId = dispute?.ladderMatchId ?? matchId;
   const effectiveLadderName = dispute?.ladderName ?? ladderName;
 

@@ -5,7 +5,6 @@ import {
   Platform,
   ActivityIndicator,
   KeyboardAvoidingView,
-  TouchableOpacity,
 } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
@@ -20,6 +19,10 @@ import {
   LADDER_TYPE,
   TEAM_STATUS,
 } from "@shared";
+import {
+  LADDER_POSTING_CLOSE_DAYS,
+  getLadderPostingDeadline,
+} from "@shared/helpers";
 import type {
   Court,
   Ladder,
@@ -29,7 +32,7 @@ import type {
   TeamStats,
 } from "@shared/types";
 
-import DatePicker from "../DatePicker";
+import MatchDateTimeFields from "../ladder/MatchDateTimeFields";
 import OptionSelector from "../OptionSelector";
 import SearchCourt from "./SearchLocationModal";
 import LadderTermsModal from "./LadderTermsModal";
@@ -37,10 +40,6 @@ import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { toMoment } from "../../helpers/ladderPhases";
-import {
-  LADDER_POSTING_BUFFER_DAYS,
-  ladderPostingDeadline,
-} from "../../helpers/ladderDayTabs";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
@@ -48,22 +47,11 @@ import {
   COURT_SUBMITTED_MESSAGE,
   useLadderCourts,
 } from "../../hooks/useLadderCourts";
+import { courtTimeHint } from "../../helpers/ladderCourtTime";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE * 100);
-const TIME_STEP_MINUTES = 15;
-const MINUTES_IN_DAY = 24 * 60;
-
-const pad = (n: number): string => n.toString().padStart(2, "0");
-
-const shiftTime = (time: string, deltaMinutes: number): string => {
-  const [hours, minutes] = time.split(":").map(Number);
-  let total = hours * 60 + minutes + deltaMinutes;
-  total = ((total % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
-  return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
-};
-
 // A paid court fee is capped so users cannot abuse it; 0 means a free match.
 const MIN_COURT_FEE = 5;
 const MAX_COURT_FEE = 20;
@@ -76,16 +64,31 @@ interface AddLadderMatchFormValues {
   courtFee: string;
 }
 
+export interface PlayoffMatchSchedule {
+  title: string;
+  bestOf: number;
+  deadline: Date | null;
+  defaultCourt: Court | null;
+  onSubmit: (
+    input: Pick<
+      LadderMatchInput,
+      "court" | "matchDate" | "matchTime" | "currencyType" | "shuttleType"
+    >,
+  ) => Promise<string | null>;
+}
+
 interface AddLadderMatchModalProps {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
   ladder: Ladder;
+  playoff?: PlayoffMatchSchedule;
 }
 
 const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   modalVisible,
   setModalVisible,
   ladder,
+  playoff,
 }) => {
   const { createLadderMatch, fetchUserTeams } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
@@ -108,15 +111,20 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   const [posterTeam, setPosterTeam] = useState<TeamStats | null>(null);
 
   const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+  const needsPosterTeam = isDoubles && !playoff;
 
-  const playoffStartDate = toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
+  const playoffStartDate = playoff
+    ? null
+    : (toMoment(ladder.playoffStartsAt)?.toDate() ?? null);
   // Latest a match may be posted: the buffer before playoffs begin.
-  const postingDeadline = ladderPostingDeadline(ladder);
+  const postingDeadline = playoff
+    ? playoff.deadline
+    : getLadderPostingDeadline(ladder);
 
   // Doubles posts on behalf of the user's active team in this ladder. Resolve it
   // when the modal opens so the fixture can record both sides.
   useEffect(() => {
-    if (!modalVisible || !isDoubles || !currentUser?.userId) {
+    if (!modalVisible || !needsPosterTeam || !currentUser?.userId) {
       setPosterTeam(null);
       return;
     }
@@ -138,7 +146,13 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     return () => {
       active = false;
     };
-  }, [modalVisible, isDoubles, currentUser?.userId, ladder.ladderId, fetchUserTeams]);
+  }, [
+    modalVisible,
+    needsPosterTeam,
+    currentUser?.userId,
+    ladder.ladderId,
+    fetchUserTeams,
+  ]);
 
   const {
     control,
@@ -158,7 +172,12 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   });
 
   const startDate = watch("startDate");
-  const startTime = watch("startTime");
+
+  useEffect(() => {
+    if (!modalVisible || !playoff) return;
+    setValue("bestOf", playoff.bestOf);
+    if (playoff.defaultCourt) setSelectedCourt(playoff.defaultCourt);
+  }, [modalVisible]);
 
   const handleCourtSelect = (value: string) => {
     const court = findSelectableCourt(value);
@@ -215,10 +234,39 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       setErrorMessage("Please choose a date and time in the future.");
       return;
     }
-    if (start && postingDeadline && start.getTime() > postingDeadline.getTime()) {
+    if (
+      start &&
+      postingDeadline &&
+      start.getTime() > postingDeadline.getTime()
+    ) {
       setErrorMessage(
-        `Matches must be scheduled at least ${LADDER_POSTING_BUFFER_DAYS} days before playoffs begin.`,
+        playoff
+          ? `This match must be played by ${toMoment(postingDeadline)?.format("ddd D MMM, HH:mm")}.`
+          : `Matches must be scheduled at least ${LADDER_POSTING_CLOSE_DAYS} days before playoffs begin.`,
       );
+      return;
+    }
+
+    if (playoff) {
+      setErrorMessage(null);
+      setSubmitting(true);
+      try {
+        const failure = await playoff.onSubmit({
+          court: selectedCourt,
+          matchDate: data.startDate,
+          matchTime: { start: data.startTime },
+          currencyType: ladder.currencyType,
+          shuttleType: data.shuttleType,
+        });
+        if (failure) {
+          setErrorMessage(failure);
+          return;
+        }
+        showBottomToast("Match sent to your opponent", "success");
+        resetAndClose();
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
@@ -268,7 +316,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     }
   };
 
-  const gateUserIds = isDoubles
+  const gateUserIds = needsPosterTeam
     ? posterTeam
       ? teamMemberIds(posterTeam)
       : []
@@ -286,7 +334,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
     !startDate ||
     !acceptedTerms ||
     disqualified ||
-    (isDoubles && !posterTeam);
+    (needsPosterTeam && !posterTeam);
 
   return (
     <Modal
@@ -307,7 +355,9 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
             showsVerticalScrollIndicator={false}
             renderItem={() => (
               <>
-                <ModalTitle>Post a Match</ModalTitle>
+                <ModalTitle>
+                  {playoff ? playoff.title : "Post a Match"}
+                </ModalTitle>
                 <Subtitle>{ladder.name}</Subtitle>
 
                 <Label style={{ marginLeft: 5 }}>Court</Label>
@@ -330,52 +380,34 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   </WarningTag>
                 )}
 
-                <DatePicker
+                <MatchDateTimeFields
                   setValue={setValue}
                   watch={watch}
-                  errorText={errors.startDate?.message}
-                  hasEndDate={false}
-                  labelStyle={{ marginLeft: -5, fontWeight: "bold" }}
+                  dateError={errors.startDate?.message}
                   playoffStartDate={playoffStartDate}
                   maxDate={postingDeadline}
+                  rangeMessage={
+                    playoff && postingDeadline
+                      ? `Please select a date within the 10 days for this tie (by ${toMoment(postingDeadline)?.format("ddd D MMM")}).`
+                      : undefined
+                  }
+                  testIDPrefix="add-ladder-match"
                 />
-
-                <Label style={{ marginTop: 15, marginLeft: 5 }}>
-                  Start Time
-                </Label>
-                <TimeStepper>
-                  <TouchableOpacity
-                    testID="add-ladder-match-start-minus"
-                    onPress={() =>
-                      setValue(
-                        "startTime",
-                        shiftTime(startTime, -TIME_STEP_MINUTES),
-                      )
-                    }
-                  >
-                    <AntDesign name="minus" size={20} color="#ffffff" />
-                  </TouchableOpacity>
-                  <TimeText>{startTime}</TimeText>
-                  <TouchableOpacity
-                    testID="add-ladder-match-start-plus"
-                    onPress={() =>
-                      setValue(
-                        "startTime",
-                        shiftTime(startTime, TIME_STEP_MINUTES),
-                      )
-                    }
-                  >
-                    <AntDesign name="plus" size={20} color="#ffffff" />
-                  </TouchableOpacity>
-                </TimeStepper>
 
                 <OptionSelector
                   setValue={setValue}
                   watch={watch}
                   name="bestOf"
                   label="Best of"
-                  options={[...LADDER_MATCH_BEST_OF_OPTIONS]}
+                  options={
+                    playoff
+                      ? [playoff.bestOf]
+                      : [...LADDER_MATCH_BEST_OF_OPTIONS]
+                  }
                 />
+                <CourtTimeHint testID="add-ladder-match-court-time">
+                  {courtTimeHint(watch("bestOf"))}
+                </CourtTimeHint>
 
                 <OptionSelector
                   setValue={setValue}
@@ -385,39 +417,48 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   options={[SHUTTLE_TYPE.FEATHER, SHUTTLE_TYPE.PLASTIC]}
                 />
 
-                <Label style={{ marginTop: 15, marginLeft: 5 }}>
-                  Court Fee ({ladder.currencyType})
-                </Label>
-                <Controller
-                  control={control}
-                  name="courtFee"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <Input
-                      testID="add-ladder-match-fee"
-                      placeholder="0.00"
-                      placeholderTextColor="#ccc"
-                      keyboardType="numeric"
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      style={{
-                        marginBottom: 16,
-                        marginHorizontal: 10,
-                        backgroundColor: "rgba(255, 255, 255, 0.1)",
-                      }}
-                    />
-                  )}
-                />
-                <DisclaimerText>
-                  Matches posted with no court fee tend to get accepted faster.
-                  If you&apos;d prefer to split the venue cost, set a court fee
-                  for this match.
-                </DisclaimerText>
-                {Number(watch("courtFee") || "0") > 0 && (
-                  <DisclaimerText>
-                    A {PLATFORM_FEE_PERCENT}% non refundable platform fee is
-                    deducted from this fee.
+                {playoff ? (
+                  <DisclaimerText testID="add-ladder-match-no-fee">
+                    There are no court fees in the playoffs. Each player pays
+                    for their own home venue.
                   </DisclaimerText>
+                ) : (
+                  <>
+                    <Label style={{ marginTop: 15, marginLeft: 5 }}>
+                      Court Fee ({ladder.currencyType})
+                    </Label>
+                    <Controller
+                      control={control}
+                      name="courtFee"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <Input
+                          testID="add-ladder-match-fee"
+                          placeholder="0.00"
+                          placeholderTextColor="#ccc"
+                          keyboardType="numeric"
+                          value={value}
+                          onChangeText={onChange}
+                          onBlur={onBlur}
+                          style={{
+                            marginBottom: 16,
+                            marginHorizontal: 10,
+                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          }}
+                        />
+                      )}
+                    />
+                    <DisclaimerText>
+                      Matches posted with no court fee tend to get accepted
+                      faster. If you&apos;d prefer to split the venue cost, set
+                      a court fee for this match.
+                    </DisclaimerText>
+                    {Number(watch("courtFee") || "0") > 0 && (
+                      <DisclaimerText>
+                        A {PLATFORM_FEE_PERCENT}% non refundable platform fee is
+                        deducted from this fee.
+                      </DisclaimerText>
+                    )}
+                  </>
                 )}
 
                 <TermsRow>
@@ -461,7 +502,9 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                     {submitting ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <CreateText>Post Match</CreateText>
+                      <CreateText>
+                        {playoff ? "Send to opponent" : "Post Match"}
+                      </CreateText>
                     )}
                   </CreateButton>
                 </ButtonContainer>
@@ -574,24 +617,6 @@ const CourtSelectorText = styled.Text<{ selected: boolean }>(
   }),
 );
 
-const TimeStepper = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
-  height: 40,
-  borderRadius: 6,
-  paddingHorizontal: 16,
-  marginBottom: 10,
-  marginHorizontal: 10,
-  backgroundColor: "rgba(255, 255, 255, 0.1)",
-});
-
-const TimeText = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
-});
-
 const WarningTag = styled.View({
   flexDirection: "row",
   alignItems: "center",
@@ -601,6 +626,14 @@ const WarningTag = styled.View({
   borderRadius: 8,
   marginBottom: 16,
   backgroundColor: "rgba(245, 166, 35, 0.12)",
+});
+
+const CourtTimeHint = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 12,
+  marginTop: -4,
+  marginBottom: 10,
+  marginHorizontal: 10,
 });
 
 const WarningText = styled.Text({

@@ -40,6 +40,7 @@ export const getOpenMatchmakingMatches = (
   ).getTime();
   return matches.filter((match) => {
     if (match.matchStatus !== LADDER_MATCH_STATUS.POSTED) return false;
+    if (match.playoffTieId) return false;
     // Drop an open post once its start time is reached — a match nobody
     // accepted in time leaves matchmaking. Fall back to the day when the time
     // can't be parsed.

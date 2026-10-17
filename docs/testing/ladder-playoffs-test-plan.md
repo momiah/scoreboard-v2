@@ -10,8 +10,8 @@ notifications**, with the expected outcome for each. Layers:
 - **Emulator** — the real `processLadderPhases` function against a Firestore
   emulator (`npm --prefix functions run test:emulator`). Marked 🅴.
 
-Phase 2 (the playoff match screen, aggregate scoring, scheduling) and Phase 3
-(payout) are not covered; see `docs/ladder-playoffs-phase2-notes.md`.
+Phase 2 (the playoff match screen, aggregate scoring, scheduling) is in
+section 6. Phase 3 (payout) is not covered.
 
 ## Rules under test (not changed here)
 
@@ -31,7 +31,7 @@ Phase 2 (the playoff match screen, aggregate scoring, scheduling) and Phase 3
     paid an entry fee, it will be refunded to you in full."
   - Playoffs generated → every qualifier, `tab: "Playoffs"`: "Congratulations!
     You've made the playoffs in {ladder}. You have 10 days to play both your
-    home and away games."
+    home and away matches."
   - Playoffs generated → every entrant who did not qualify (both players of an
     eliminated doubles team), `tab: "Playoffs"`: "The playoffs in {ladder}
     have started, and unfortunately you didn't make the cut this time. The
@@ -84,7 +84,7 @@ guard fails if they drift):
 | 2.1 | Round structure (256 → top 16) | Tabs Round of 16, Quarter-Final, Semi-Final, Final; each round's first game is visible; the Final tab shows the Final (`r4-s0`) and the 3rd/4th Playoff (`r4-s1`) as TBD 🅼 |
 | 2.2 | Proximity pairing (2048) | The user's London opponent is P0008 S and the neighbouring game is P0016 S v P0024 S, all London 🅼 🅹 |
 | 2.3 | Tree / list toggle | Switching view keeps the selected round (Quarter-Final) in both directions 🅼 |
-| 2.4 | Tapping a bracket game | Nothing happens (no navigation, no modal). Update when Phase 2 adds the playoff match screen 🅼 |
+| 2.4 | Tapping a bracket game | Opens the playoff match screen for that game: title "{round} · Tie N", aggregate card and "Best of N per match · Finish by …"; no score input or approval modal 🅼 |
 | 2.5 | Bracket scroll target and glow | The user's game is on screen without scrolling (see section 3); the glow itself is an animation and is covered by the scroll-target tests in Jest 🅹 |
 | 2.6 | Loading skeleton | `ladder-playoffs-loading` shows until the ties load 🅹 (the skeleton lasts milliseconds, so Maestro does not assert it) |
 
@@ -136,12 +136,64 @@ The unit tests in `functions/src/processLadderPhases.test.ts` cover the same
 rules with a faked Firestore (including qualifier ranking, tie-breaks and
 doubles teams).
 
+## 6. Phase 2: playoff matches
+
+Each game in the bracket is two matches, home and away, plus one deciding game
+if the aggregate is level. Rules: games won across both matches decide it; best
+of 5 up to the Round of 32, best of 7 from the Round of 16 (3rd place included);
+the decider is best of 1 at the court of whichever match was played last. The
+lower-ranked side (by ladder rank) hosts match 1 and arranges it first; once it's
+arranged, the higher-ranked side can arrange match 2 for any date, even earlier. Each game has 10 days, with reminders on day 3, 6 and 9. At the
+deadline: games won, then point difference, then the higher rank; nothing
+played means void, and the next-round opponent gets a walkover. Playoff games
+update the global profile only, never ladder standings.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.1 | Anyone opens a game with both sides known | No coin toss. No title in the header (just the back button). At the top, a prize card styled like a match card: "Round of N · Game N", then "Current payout" on the left (left-aligned) and "<next round> payout" on the right (right-aligned, "Champion payout" in the Final, "3rd place payout" in the 3rd-place tie), each as "£X · X CP" on a paid ladder or "X CP" on a free one, in whole amounts (£0 · 0 CP when nothing is paid yet), then the Tie Lobby / Chat Room tabs. Match 1 is headed with the lower-ranked side's name, match 2 with the higher-ranked side's; the aggregate shows plain names 🅹 🅼 |
+| 6.5 | The lower-ranked player, match 1 not arranged | The "Arrange your home match" placeholder opens the Post a Match modal titled "Arrange match 1": home court preselected (any court can be chosen), best of 7 fixed, shuttle type to choose, the court-time line, "There are no court fees in the playoffs…" instead of a fee, and "Send to opponent" 🅹 🅼 |
+| 6.6 | The higher-ranked player, match 1 not arranged | "Waiting for your opponent to arrange their home match" on match 1; their own "Arrange your home match" on match 2. Onlookers see "Waiting for X to arrange their home match"; before both players are known, both read "Arranged once both players are known" 🅹 🅼 |
+| 6.6a | Arranging order | Match 2's host sees "Your opponent arranges match 1 first" (others "Arranged once match 1 is arranged") until match 1 is arranged; then match 2 can be arranged for any date, even before match 1. Arranging match 2 first is refused ("Match 1 has to be arranged first.") 🅹 |
+| 6.6b | Match 1 finished | On match 1's screen both players see a "Play match 2 here" button (no sub-text) → "Play your 2nd match in this court" / "Your opponent must accept to continue. You do not need to re-check in." → match 2 is posted at match 1's court, starting now; the opponent sees "Your opponent wants to play match 2 here now. Are you up for it?" with Accept/Decline. Accepting carries match 1's check-in over; declining doesn't use the one decline. Once accepted the banner goes away 🅹 🅼 |
+| 6.7 | Host without a home court | No court preselected; they pick any court in the modal 🅹 🅼 |
+| 6.8 | Arrange: past time, no date, after the tie deadline | Inline error inside the modal; nothing written 🅹 🅼 |
+| 6.9 | Arrange the same match twice | The second write is refused ("exists") 🅹 |
+| 6.10 | A posted match | The away side's card reads "Awaiting your confirmation", the host's "Awaiting opponent's confirmation". The away side gets "{host} arranged playoff match N at {court}, {date}. Open it to accept or decline." On the match screen they Accept or Decline; the host sees "Waiting for your opponent to confirm this time". Accepting notifies the host "{name} accepted…". Declining cancels the posted match, notifies the host "{name} can't make… Arrange another time." and the host's "Arrange your home match" returns 🅹 🅼 |
+| 6.10a | A second arrangement after one decline | The decline count carries over; the away side can only Accept ("You've used your one decline, so please accept."), and the notification says "Open it to accept." 🅹 🅼 |
+| 6.10b | The host cancels a posted playoff match from Match Options | "Cancel this playoff match? You can arrange it again before the playoff deadline." → straight back to the tie screen with "Arrange your home match" 🅹 🅼 |
+| 6.10c | A playoff match is cancelled or expires while its Match Details is open | The screen returns to the tie screen instead of showing a stale cancelled match 🅹 |
+| 6.10d | Notifications about a playoff match (arranged, accepted, declined, cancellation) | Open the ladder on the Playoffs tab, where the user's game is highlighted, not the Schedule tab 🅹 |
+| 6.10e | Arrange modal date picker | Says "Please select a date within the 10 days for this tie (by Ddd D MMM)." 🅹 🅼 |
+| 6.10f | An onlooker opens any tie (open, waiting or finished) | Same layout as players: the prize banner, the aggregate, both info boxes ("Finished" once settled), and a placeholder or card for each match. Only players can tap anything 🅹 🅼 |
+| 6.10g | Any viewer opens a match | Total Score always shows the poster on the left and the accepter on the right, counting approved games; a player sees it green if they're winning and red if losing, a spectator sees grey. Empty game cards list the poster first too. The tie's aggregate is always in bracket order (team 1 left). No match menu for spectators 🅹 🅼 |
+| 6.10h | A spectator on a playoff match | No check-in button (the header card shows the match status instead), unreported games can't be tapped (reported ones open read-only), and a posted match reads "Awaiting confirmation" rather than "your"/"opponent's" wording. Playoff notifications (decider, void, round reached) go only to the tie's players 🅹 🅼 |
+| 6.10i | Talking about a playoff game | The tie's players get "Chat Room" and "Tie Lobby" tabs on the tie screen: one conversation for the whole game, open before anything is arranged. Playoff match screens have no Chat Room tab. A message lands in the other player's Chats list and opens the tie on its Chat Room tab. Spectators have no chat 🅹 🅼 |
+| 6.10j | The ladder enters playoffs | The How to Play button becomes a gold "How to play playoffs" with a trophy, with white text on a dark gold gradient, a bright gold border, trophy and glow, gently pulsing until opened once (remembered per ladder on the device), then still with a softer glow. It opens the playoff guide: Welcome to the Playoffs, the playoffs structure (page 2), the Prize Distribution table for this ladder (page 3: every paid place with cash each on paid ladders and CP each), Home and Away, Arrange Your Home Match, Win on Aggregate, Ten Days to Finish, and Winning the Final 🅹 🅼 |
+| 6.11 | A match is arranged | Its placeholder becomes the normal match card, without the court-fee tag or the "Best of" tag (shown once in the box above); the deciding game's card keeps "Best of 1" 🅹 🅼 |
+| 6.11a | The tie screen is loading | The skeleton has the page's shape: title bar with back button, the prize banner, the tabs, the aggregate bar, the two info boxes and two match sections 🅹 |
+| 6.12 | Games reported in both matches | Aggregate card totals games won across both (for example 2 – 1) 🅹 🅼 |
+| 6.13 | Report, approve and dispute a playoff game while the ladder is in playoffs | Allowed; the game scores the global profile only; ladder standings unchanged 🅹 🅴 🅼 |
+| 6.14 | Same actions on a regular ladder match during playoffs | Still frozen (section 2 of the reliability plan) 🅹 🅼 |
+| 6.15 | Both matches complete, aggregate level | One checked-in best-of-1 decider at the court of whichever match was played last; both sides notified 🅴 🅼 |
+| 6.16 | Both matches complete, one side ahead | Winner goes through; the next-round game fills; both semi winners open the Final; "Congratulations! You've reached the …" sent 🅴 |
+| 6.17 | Deadline passes with games played | Decided on games, then points, then rank; outcome "deadline" 🅴 |
+| 6.18 | Deadline passes with nothing played | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |
+| 6.19 | Day 3, 6, 9 | One reminder each ("N days left to finish your …"), never repeated 🅴 |
+| 6.20 | Posted playoff matches | Not listed in Matchmaking 🅹 |
+| 6.21 | Settled game | A gold winner card above the aggregate: "Winner", the winner's name, and "Through to the {next round}" ("on a walkover" when it was one; "Ladder champion" for the Final, "Takes 3rd place" for the 3rd-place tie). A void game shows a grey card "Not played in time, so neither side goes through." 🅹 🅼 |
+
+Emulator cases are in `functions/src/ladderPlayoffTies.emulator.test.ts` and
+`functions/src/autoApproveLadderGames.emulator.test.ts`; the screen in
+`screens/Home/Ladders/PlayoffMatchDetails.test.tsx`; the rules in the shared
+`ladderPlayoffMatches.test.js`.
+
 ## Not covered
 
 - The bracket glow animation and the loading skeleton in Maestro (they last
   milliseconds); both are covered in Jest.
-- Phase 2 (playoff match screen, aggregate scoring, scheduling, result
-  notifications) and Phase 3 (payout).
+- Phase 3 (payout).
+- Phase 2 flows beyond 2.4 until their seeds exist (see the playoff section of
+  [maestro-backlog.md](maestro-backlog.md)).
 - A push actually arriving on a physical phone, and the deployed Cloud
   Scheduler job firing in production. The tests assert the exact Expo request
   the function sends and the schedule it declares; delivery by Expo and
@@ -172,7 +224,7 @@ notifications.
 | `ladder-playoffs-round-structure` | 2.1 |
 | `ladder-playoffs-proximity-opponent` | 2.2 |
 | `ladder-playoffs-bracket-view-toggle` | 2.3 |
-| `ladder-playoffs-tap-game-does-nothing` | 2.4 |
+| `ladder-playoffs-tap-game-opens-match` | 2.4 |
 | `ladder-playoffs-promotion-notification` | 3.1 |
 | `ladder-playoffs-open-from-playoffs-tab` | 3.2 |
 | `ladder-playoffs-open-from-schedule-placeholder` | 3.3 |
@@ -182,3 +234,47 @@ notifications.
 | `ladder-playoffs-cancellation-notification` | 4.3 |
 | `ladder-playoffs-summary-2048` | 4.4 |
 | `ladder-playoffs-standings-player-details` | 4.5 |
+
+### Prizes
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.30 | Any ladder size | Cash follows the payout bands for that size from the full pool (every entry fee; the 10% platform fee is paid on top, not taken from it), each band split equally; CP uses the same bands and shares on the CP pool (50 CP per entrant). The Summary tab's top four use the same shares 🅹 |
+| 6.31 | The tie's prize card | "Current payout" is the prize for the worst place a loser of this round can finish; the right-hand payout is the prize for the round after (Champion for the Final, 3rd place for the 3rd-place tie) 🅹 🅼 |
+
+### Moving on
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 6.32 | A tie is won while the neighbouring tie is still being played | Straight away (on the match that completes it, not the scheduled job) the winner is placed in the next tie and gets "You're through to the {round}": "Congratulations! You're through to the {round} in {ladder}. We'll let you know as soon as your opponent is decided." Semi-final losers going to the 3rd-place tie don't get it 🅴 |
+| 6.33 | The neighbouring tie then finishes | The next tie starts (10 days). The side that was waiting gets "Your {round} is ready": "Your opponent in the {round} of {ladder} is {name}. Your tie is ready: you have 10 days to play both your home and away matches." The side that just arrived gets "You've reached the {round}" 🅴 |
+| 6.33a | A Semi-Final is lost | The loser goes to the 3rd-place tie: "You'll play for 3rd place" ("Your Semi-Final in {ladder} is over, and you'll play for 3rd place. We'll let you know as soon as your opponent is decided."), then "You'll play for 3rd place" with the 10 days once both are known. No knock-out notification 🅴 |
+| 6.33b | A tie is lost before the Semi-Finals | "Knocked out in the {round}": "You've been knocked out in the {round} of {ladder}." plus " You've been awarded £X and X CP, paid when the playoffs finish." only when that finish pays something (CP only on a free ladder) 🅴 |
+| 6.33c | The Final and the 3rd-place tie finish | Each player gets "You placed {1st/2nd/3rd/4th}": "Congratulations, you have placed {place} in {ladder} and been awarded £X and X CP." (the prize part only when something was won); it opens Summary. Once both are finished the ladder becomes Completed (`playoffsCompletedAt`) and the payout is logged for Phase 3 🅴 |
+| 6.34 | Wording | A playoff pairing is a "tie" everywhere ("Round of 16 · Tie 3", "3rd-place tie", "Each playoff tie is two matches", "This tie must be finished by …", "Playoff tie not played", "Only the players in this tie can see this chat"); "game" means a single game, and notifications say "home and away matches" 🅹 🅼 |
+
+## 7. Before the playoffs: season close
+
+P is the playoff start (`playoffStartsAt`). Deadlines come from `courtchamps-shared/src/helpers/ladderSeasonClose.ts`.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 7.1 | Posting | Matchmaking closes and Post a Match's date picker stops at P − 7 days ("Matches must be scheduled at least 7 days before playoffs begin.") 🅹 🅼 |
+| 7.2 | Reporting a game on a regular match after P − 5 days | Tapping the next game opens "Ladder results have closed" (the dates results closed and playoffs start) instead of the score form; the server also refuses with "Ladder results have closed ahead of the playoffs." Approving, disputing and playoff matches still work 🅹 🅼 |
+| 7.2a | A player's accepted regular match between P − 7 and P − 5 days | The lobby shows "Ladder results close in {Nd Nh}. Finish and report your games before then.", ticking each minute; after P − 5 "Ladder results have closed for the playoffs. Games already reported can still be approved." Spectators don't see it 🅹 🅼 |
+| 7.3 | Reporting a no-show on a regular match after P − 5 days | Refused with the same message 🅹 |
+| 7.4 | Extension on a regular match | Once per match, ending at P − 5 days at the latest; the modal says "It ends early if ladder results close for the playoffs before then." 🅹 |
+| 7.5 | P − 5 days, accepted regular match with nothing left to settle | Expires (approved games keep their CP); one with a game awaiting approval, an open dispute or a no-show claim waits for the close-out 🅢 🅴 |
+| 7.6 | P − 1 day: close-out (`finaliseLadderStandings`) | Open disputes are discarded (the game becomes `discarded`, nobody scores it) and players are told; each match's no-show claims are settled: walkover only if one side claimed, the claimant has an arrival at the court for the match, nobody on the other side does, and the claimant isn't flagged (an admin-rejected claim before, or 3+ claims in the ladder); otherwise every claim is closed by the system with no walkover. Remaining accepted regular matches expire. `standingsFinalisedAt` is set once 🅴 |
+| 7.7 | P | Playoffs generate on the day with no hold. If the close-out was missed it runs first 🅴 |
+| 7.8 | Admin site after P − 1 | Report approve, reject and revert and every dispute action refuse with "This ladder's standings are final for the playoffs, so this can no longer be decided."; the queue shows "Decide by …" before that, and "Standings final — closed automatically" after (website tests) |
+
+## 8. Arrivals and no-shows
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 8.1 | Location check passes at check-in | The app sends the reading to `recordLadderArrival`, which records `arrivals.{userId}` (server time, distance, accuracy) 🅴 |
+| 8.2 | Mocked (Android), stale (> 1 min), inaccurate (> 100 m) or distant (> 500 m) reading | Refused and nothing recorded; at check-in the verifier shows the reason (e.g. "Your location is coming from a mock-location app…") 🅴 🅹 |
+| 8.3 | Pressing "Report no-show" | A fresh location check first ("Confirming you're at the court…"); away from the court: "You need to be at {court} to report a no-show." 🅹 🅼 |
+| 8.4 | The opponent has an arrival for this match (from 30 minutes before the start) | The button reads "Your opponent has arrived" and is disabled, with "You can't report a no-show because your opponent has arrived at {court}…" 🅹 🅼 |
+| 8.5 | Admin queue, no-show report | Shows "Arrivals: reporter at the court HH:MM (Nm) · reported player arrived / not recorded" |

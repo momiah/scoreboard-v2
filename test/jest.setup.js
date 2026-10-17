@@ -5,3 +5,8 @@
 jest.mock("react-native/Libraries/Animated/NativeAnimatedHelper", () => ({}), {
   virtual: true,
 });
+
+jest.mock("firebase/functions", () => ({
+  getFunctions: jest.fn(() => ({})),
+  httpsCallable: jest.fn(() => jest.fn(async () => ({ data: {} }))),
+}));

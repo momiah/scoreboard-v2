@@ -32,8 +32,9 @@ export const medals = [
   medalOutline,
 ]; // Change to an array
 import ccDefaultImage from "./cc-default-bg-image.jpg";
+import courtChampsLogo from "../assets/court-champ-logo-icon.png";
 
 export const trophies = [trophy1, trophy2, trophy3, trophy4, trophyOutline];
 export const ladders = [ladderGold, ladderRuby, ladderSilver, ladderBronze];
 
-export { court1, court2, court3, court4, ccDefaultImage };
+export { court1, court2, court3, court4, ccDefaultImage, courtChampsLogo };

@@ -1,4 +1,5 @@
-import { getCourtCoords, isWithinCheckInRadius } from "./locationCheckIn";
+import { getCourtCoords } from "@shared/helpers";
+import { isWithinCheckInRadius } from "./locationCheckIn";
 
 const court = (latitude, longitude) => ({ location: { latitude, longitude } });
 

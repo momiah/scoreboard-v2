@@ -3,6 +3,7 @@ import {
   isMatchStarted,
   isMatchDayPassed,
   formatMatchDateShort,
+  formatTimeLeft,
 } from "./ladderMatchTime";
 
 const match = (matchDate, start) => ({
@@ -73,5 +74,24 @@ describe("formatMatchDateShort", () => {
 
   it("returns the input unchanged when malformed", () => {
     expect(formatMatchDateShort("nonsense")).toBe("nonsense");
+  });
+});
+
+describe("formatTimeLeft", () => {
+  const MIN = 60 * 1000;
+  const HOUR = 60 * MIN;
+  const DAY = 24 * HOUR;
+
+  it("shows days and hours, then hours and minutes, then minutes", () => {
+    expect(formatTimeLeft(9 * DAY + 5 * HOUR + 30 * MIN)).toBe("9 days and 5 hours");
+    expect(formatTimeLeft(DAY + HOUR)).toBe("1 day and 1 hour");
+    expect(formatTimeLeft(3 * HOUR + 12 * MIN)).toBe("3 hours and 12 minutes");
+    expect(formatTimeLeft(40 * MIN)).toBe("40 minutes");
+    expect(formatTimeLeft(10 * 1000)).toBe("1 minute");
+  });
+
+  it("says time's up once the deadline passes", () => {
+    expect(formatTimeLeft(0)).toBe("Time's up");
+    expect(formatTimeLeft(-HOUR)).toBe("Time's up");
   });
 });

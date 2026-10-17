@@ -33,13 +33,17 @@ const processLadder = async (
   db: admin.firestore.Firestore,
   ladderDoc: admin.firestore.QueryDocumentSnapshot,
 ): Promise<number> => {
-  if (isLadderMatchPlayFrozen(ladderDoc.data().status)) return 0;
+  const ladderStatus = ladderDoc.data().status;
+  if (isLadderMatchPlayFrozen(ladderStatus, { playoffTieId: "any" })) return 0;
   let approved = 0;
   const matchesSnapshot = await ladderDoc.ref
     .collection(LADDER_MATCHES)
     .where("matchStatus", "==", LADDER_MATCH_STATUS.ACCEPTED)
     .get();
   for (const matchDoc of matchesSnapshot.docs) {
+    if (isLadderMatchPlayFrozen(ladderStatus, matchDoc.data() as LadderMatch)) {
+      continue;
+    }
     try {
       approved += await processMatch(db, ladderDoc.id, matchDoc);
     } catch (error) {

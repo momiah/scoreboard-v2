@@ -1,11 +1,14 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import styled from "styled-components/native";
+import { useNavigation } from "@react-navigation/native";
+import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 
 import { LADDER_STATUS, LADDER_TYPE } from "@shared";
 import {
   LADDER_MIN_PLAYOFF_SIZE,
   getLadderPlayoffStructureForRegistrations,
   ladderPlayoffTiesToFixtures,
+  isShellGame,
 } from "@shared/helpers";
 import type { Ladder, LadderPlayoffTie } from "@shared/types";
 import BracketTree from "../Tournaments/Brackets/BracketTree";
@@ -24,6 +27,7 @@ interface LadderPlayoffsProps {
 const LadderPlayoffs: React.FC<LadderPlayoffsProps> = ({ ladder }) => {
   const { subscribeToLadderPlayoffTies } = useContext(LadderContext);
   const { currentUser } = useContext(UserContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [ties, setTies] = useState<LadderPlayoffTie[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +68,13 @@ const LadderPlayoffs: React.FC<LadderPlayoffsProps> = ({ ladder }) => {
         <BracketTree
           fixtures={fixtures}
           tournamentType={ladder.ladderType}
-          onGamePress={() => {}}
+          onGamePress={(game) => {
+            if (isShellGame(game)) return;
+            navigation.navigate("PlayoffMatchDetails", {
+              ladderId: ladder.ladderId,
+              tieId: game.gameId,
+            });
+          }}
           scrollToGameId={userTieId}
         />
       </BracketContainer>

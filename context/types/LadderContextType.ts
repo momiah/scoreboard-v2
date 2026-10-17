@@ -3,9 +3,11 @@ import type {
   Court,
   Ladder,
   LadderPlayoffTie,
+  LadderPlayoffTieSide,
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
+  MatchTime,
   Game,
   ScoreboardProfile,
   TeamStats,
@@ -63,6 +65,11 @@ export interface DisbandTeamOutcome {
   openMatch?: boolean;
 }
 
+export interface LeaveLadderOutcome {
+  success: boolean;
+  reason?: "registration_closed" | "played" | "open_match" | "not_joined" | "error";
+}
+
 export interface TeamLadderActivity {
   hasOpenMatch: boolean;
   hasCompletedGame: boolean;
@@ -96,6 +103,7 @@ export type UpdateLadderGameFailureReason =
   | "unavailable"
   | "error"
   | "frozen"
+  | "results_closed"
   | "match_decided";
 
 export interface UpdateLadderGameOutcome {
@@ -107,6 +115,19 @@ export type CancelLadderMatchFailureReason =
   | "not_participant"
   | "not_cancellable"
   | "error";
+
+export interface PlayoffMatchOutcome {
+  success: boolean;
+  reason?: "exists" | "not_allowed" | "order" | "error";
+  notifyUserIds?: string[];
+}
+
+export interface LadderMatchChangeOutcome {
+  success: boolean;
+  reason?: "not_allowed" | "invalid_time" | "error";
+  notifyUserIds?: string[];
+  expiresAt?: Date;
+}
 
 export interface LadderMatchCancellationOutcome {
   success: boolean;
@@ -203,6 +224,7 @@ export interface LadderContextType {
     ladderIds?: string[],
   ) => Promise<TeamLadderActivity>;
   disbandTeam: (team: TeamStats) => Promise<DisbandTeamOutcome>;
+  leaveLadder: (ladderId: string, userId: string) => Promise<LeaveLadderOutcome>;
   acceptTeamInvite: (teamId: string) => Promise<boolean>;
   declineTeamInvite: (teamId: string, partnerId: string) => Promise<boolean>;
   fetchTeam: (teamKey: string) => Promise<TeamStats | null>;
@@ -284,6 +306,28 @@ export interface LadderContextType {
     userId: string;
     accept: boolean;
   }) => Promise<LadderMatchCancellationOutcome>;
+  fetchLadderMatchDeadline: (
+    ladderId: string,
+    match: Pick<LadderMatch, "playoffTieId">,
+  ) => Promise<Date | null>;
+  requestLadderMatchReschedule: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+    matchDate: string;
+    matchTime: MatchTime;
+  }) => Promise<LadderMatchChangeOutcome>;
+  respondToLadderMatchReschedule: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+    accept: boolean;
+  }) => Promise<LadderMatchChangeOutcome>;
+  extendLadderMatch: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+  }) => Promise<LadderMatchChangeOutcome>;
   approveLadderGame: (args: {
     ladderId: string;
     matchId: string;
@@ -291,6 +335,34 @@ export interface LadderContextType {
     userId: string;
     approver: { userId: string; username: string };
   }) => Promise<ApproveLadderGameOutcome>;
+  subscribeToPlayoffMatches: (
+    ladderId: string,
+    tieId: string,
+    onUpdate: (matches: LadderMatch[]) => void,
+    onError?: (error: Error) => void,
+  ) => () => void;
+  arrangePlayoffMatch: (args: {
+    ladder: Pick<Ladder, "ladderId" | "ladderType">;
+    tie: LadderPlayoffTie;
+    leg: 1 | 2;
+    host: LadderPlayoffTieSide;
+    input: Pick<
+      LadderMatchInput,
+      "court" | "matchDate" | "matchTime" | "currencyType" | "shuttleType"
+    >;
+    userId: string;
+  }) => Promise<PlayoffMatchOutcome>;
+  offerPlayoffMatchHere: (args: {
+    ladderId: string;
+    firstMatch: LadderMatch;
+    userId: string;
+  }) => Promise<PlayoffMatchOutcome>;
+  respondToPlayoffMatch: (args: {
+    ladderId: string;
+    matchId: string;
+    userId: string;
+    accept: boolean;
+  }) => Promise<PlayoffMatchOutcome>;
   subscribeToLadderPlayoffTies: (
     ladderId: string,
     onUpdate: (ties: LadderPlayoffTie[]) => void,

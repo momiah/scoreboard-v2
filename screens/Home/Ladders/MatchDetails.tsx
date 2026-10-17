@@ -1,9 +1,16 @@
-import React, { useCallback, useContext, useMemo, useState } from "react";
-import { Dimensions, Linking } from "react-native";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { Linking } from "react-native";
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
+  StackActions,
 } from "@react-navigation/native";
 import type {
   NavigationProp,
@@ -25,13 +32,18 @@ import { UserContext } from "../../../context/UserContext";
 import { LadderContext } from "../../../context/LadderContext";
 import ChatRoom from "../../../components/ChatRoom/ChatRoom";
 import MatchCancellationBanner from "../../../components/ladder/MatchCancellationBanner";
+import MatchRescheduleBanner from "../../../components/ladder/MatchRescheduleBanner";
+import PlayoffMatchConfirmBanner from "../../../components/ladder/PlayoffMatchConfirmBanner";
+import PlayMatchTwoHere from "../../../components/ladder/PlayMatchTwoHere";
+import ResultsCloseBanner from "../../../components/ladder/ResultsCloseBanner";
+import { useLadderSeasonClose } from "../../../hooks/useLadderSeasonClose";
 import GameLobby from "../../../components/ladder/GameLobby";
+import LobbyTabs from "../../../components/ladder/LobbyTabs";
 import MatchCard from "../../../components/ladder/MatchCard";
 import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinModal";
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 import { useForfeitLabel } from "../../../helpers/useForfeitLabel";
-
-const { width: screenWidth } = Dimensions.get("window");
+import { isLadderMatchCalledOff } from "../../../helpers/ladderMatchCancellation";
 
 type LobbyTab = "Chat Room" | "Game Lobby";
 
@@ -48,6 +60,7 @@ interface MatchDetailsParams {
 }
 
 const TABS: LobbyTab[] = ["Chat Room", "Game Lobby"];
+const PLAYOFF_TABS: LobbyTab[] = ["Game Lobby"];
 
 const MatchDetails: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -69,7 +82,10 @@ const MatchDetails: React.FC = () => {
 
   const [match, setMatch] = useState<LadderMatch | null>(matchParam ?? null);
   const [notFound, setNotFound] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<LobbyTab>(initialTab ?? "Game Lobby");
+  const [secondMatch, setSecondMatch] = useState<LadderMatch | null>(null);
+  const [selectedTab, setSelectedTab] = useState<LobbyTab>(
+    initialTab ?? "Game Lobby",
+  );
   const [checkinModalVisible, setCheckinModalVisible] = useState(false);
 
   const userId = currentUser?.userId;
@@ -81,6 +97,13 @@ const MatchDetails: React.FC = () => {
         (matches) => {
           const resolved =
             matches.find((m) => m.ladderMatchId === matchId) ?? null;
+          setSecondMatch(
+            resolved?.playoffTieId && resolved.playoffLeg === 1
+              ? (matches.find(
+                  (m) => m.ladderMatchId === `${resolved.playoffTieId}-leg2`,
+                ) ?? null)
+              : null,
+          );
           if (resolved) {
             setMatch(resolved);
             setNotFound(false);
@@ -94,12 +117,27 @@ const MatchDetails: React.FC = () => {
     }, [ladderId, matchId, matchParam, subscribeToLadderMatches]),
   );
 
+  const calledOffTieId =
+    match?.playoffTieId && isLadderMatchCalledOff(match)
+      ? match.playoffTieId
+      : null;
+  useEffect(() => {
+    if (!calledOffTieId) return;
+    navigation.dispatch(
+      StackActions.popTo("PlayoffMatchDetails", {
+        ladderId,
+        tieId: calledOffTieId,
+      }),
+    );
+  }, [calledOffTieId, ladderId, navigation]);
+
   const chatPath = useMemo(
     () => ["ladders", ladderId, "ladderMatches", matchId, "chat"],
     [ladderId, matchId],
   );
 
   const forfeitLabel = useForfeitLabel(match, ladderId);
+  const seasonClose = useLadderSeasonClose(ladderId);
 
   if (notFound || !match) {
     return (
@@ -110,6 +148,8 @@ const MatchDetails: React.FC = () => {
       </Screen>
     );
   }
+
+  const isParticipant = !!userId && (match.participants ?? []).includes(userId);
 
   const openMap = () =>
     Linking.openURL(buildCourtMapsUrl(match.court)).catch((err) =>
@@ -126,7 +166,7 @@ const MatchDetails: React.FC = () => {
   };
   const handleCheckedIn = () => {};
   const checkinControl =
-    isAccepted || isCompleted
+    isParticipant && (isAccepted || isCompleted)
       ? { checkedIn: selfCheckedIn, onPress: handleCheckin }
       : undefined;
 
@@ -134,51 +174,73 @@ const MatchDetails: React.FC = () => {
     <Screen testID="match-details">
       <Header>
         <TopBar>
-          <IconButton
-            activeOpacity={0.8}
-            onPress={() =>
-              navigation.navigate("MatchDetailsMenu", {
-                ladderId,
-                matchId,
-                match,
-                ladderType,
-              })
-            }
-            testID="match-details-burger"
-          >
-            <Ionicons name="menu" size={24} color="#ffffff" />
-          </IconButton>
+          {isParticipant ? (
+            <IconButton
+              activeOpacity={0.8}
+              onPress={() =>
+                navigation.navigate("MatchDetailsMenu", {
+                  ladderId,
+                  matchId,
+                  match,
+                  ladderType,
+                })
+              }
+              testID="match-details-burger"
+            >
+              <Ionicons name="menu" size={24} color="#ffffff" />
+            </IconButton>
+          ) : (
+            <MenuSpacer />
+          )}
         </TopBar>
         <MatchCard
           match={match}
           flat
           checkin={checkinControl}
+          showProgress={!isParticipant}
           onLocationPress={openMap}
           forfeitLabel={forfeitLabel}
           testID="match-details-card"
         />
       </Header>
 
-      <MatchCancellationBanner ladderId={ladderId} match={match} userId={userId} />
+      {isParticipant ? (
+        <ResultsCloseBanner match={match} seasonClose={seasonClose} />
+      ) : null}
+      <MatchCancellationBanner
+        ladderId={ladderId}
+        match={match}
+        userId={userId}
+      />
+      <MatchRescheduleBanner
+        ladderId={ladderId}
+        match={match}
+        userId={userId}
+      />
+      <PlayoffMatchConfirmBanner
+        ladderId={ladderId}
+        match={match}
+        userId={userId}
+      />
+      <PlayMatchTwoHere
+        ladderId={ladderId}
+        firstMatch={match}
+        secondMatch={secondMatch}
+        userId={userId}
+      />
 
-      <Tabs>
-        {TABS.map((tab) => (
-          <TabButton
-            key={tab}
-            isSelected={selectedTab === tab}
-            activeOpacity={0.85}
-            onPress={() => setSelectedTab(tab)}
-            testID={`match-details-tab-${tab}`}
-          >
-            <TabText>{tab}</TabText>
-          </TabButton>
-        ))}
-      </Tabs>
+      <LobbyTabs
+        tabs={match.playoffTieId ? PLAYOFF_TABS : TABS}
+        selected={selectedTab}
+        onSelect={setSelectedTab}
+        testIDPrefix="match-details-tab"
+      />
 
-      {selectedTab === "Game Lobby" ? (
+      {selectedTab === "Game Lobby" || match.playoffTieId ? (
         <GameLobby
           ladderId={ladderId}
           ladderName={ladderName}
+          seasonClose={seasonClose}
           match={match}
           currentUserId={userId}
           checkedIn={checkedIn}
@@ -190,7 +252,7 @@ const MatchDetails: React.FC = () => {
           competitionId={matchId}
           chatPath={chatPath}
           competitionType={COMPETITION_TYPES.LADDER}
-          userRole="participant"
+          userRole={isParticipant ? "participant" : "user"}
           endDate={undefined}
           competitionName={`Ladder match at ${match.court?.courtName ?? "court"}`}
           competitionParticipants={match.participants.map((id) => ({
@@ -237,27 +299,8 @@ const IconButton = styled.TouchableOpacity({
   justifyContent: "center",
 });
 
-const Tabs = styled.View({
-  flexDirection: "row",
-  gap: 10,
-  paddingHorizontal: 16,
-  paddingTop: 16,
-  paddingBottom: 6,
-});
-
-const TabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
-  ({ isSelected }: { isSelected: boolean }) => ({
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: isSelected ? 2 : 1,
-    borderColor: isSelected ? "#00A2FF" : "white",
-  }),
-);
-
-const TabText = styled.Text({
-  color: "white",
-  fontSize: screenWidth <= 400 ? 12 : 14,
+const MenuSpacer = styled.View({
+  height: 40,
 });
 
 const NotFound = styled.View({
