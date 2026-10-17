@@ -12,6 +12,7 @@ jest.mock("firebase/firestore", () => ({
       .filter(([path]) => path.startsWith(`${ref.path}/`))
       .map(([, data]) => ({ data: () => data })),
   }),
+  deleteField: () => "__deleted__",
   query: (ref) => ref,
   where: () => ({}),
   writeBatch: () => ({
@@ -248,5 +249,53 @@ describe("seedLadderPlayoffMatches", () => {
       expect(startMs).toBeGreaterThanOrEqual(t.scheduledAt.getTime());
       expect(startMs).toBeLessThanOrEqual(t.deadlineAt.getTime());
     });
+  });
+
+  it("posts match 1 again after one decline", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG1_POSTED_AFTER_DECLINE);
+    const [leg1] = legs(my.tieId);
+    expect(leg1).toMatchObject({
+      matchStatus: "posted",
+      playoffLeg: 1,
+      scheduleDeclines: 1,
+    });
+  });
+
+  it("leaves the user without a home court", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.NO_HOME_COURT);
+    const side = my.side === "team1" ? "side1" : "side2";
+    expect(tie(my.tieId)[side].homeCourt).toBeNull();
+    expect(
+      mockWrites.find(
+        (write) =>
+          write.op === "update" &&
+          write.path.endsWith("ladderParticipants/test-user"),
+      ).data,
+    ).toEqual({ homeCourt: "__deleted__" });
+    expect(legs(my.tieId)[0].matchStatus).toBe("accepted");
+  });
+
+  it("leaves the last game of match 1 awaiting the user's approval", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.LEG1_IN_PROGRESS);
+    const [leg1] = legs(my.tieId);
+    const pending = leg1.games.filter((g) => g.approvalStatus === "pending");
+    expect(leg1.matchStatus).toBe("accepted");
+    expect(pending).toHaveLength(1);
+    expect(pending[0].reporter).not.toBe("test-user");
+  });
+
+  it("seeds a regular match beside the playoff match", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.PLAYOFF_REGULAR);
+    const regular = mockDocs.get(
+      `ladders/${MAESTRO_PO_LADDER_ID}/ladderMatches/maestro-po-regular-match`,
+    );
+    expect(regular).toMatchObject({
+      matchStatus: "accepted",
+      participants: expect.arrayContaining(["test-user"]),
+    });
+    expect(regular.playoffTieId).toBeUndefined();
+    expect(
+      regular.games.filter((g) => g.approvalStatus === "pending"),
+    ).toHaveLength(1);
   });
 });

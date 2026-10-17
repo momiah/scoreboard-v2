@@ -1,0 +1,15 @@
+appId: com.courtchamp
+---
+- scrollUntilVisible:
+    element:
+      id: "bracket-game-${TIE}"
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "bracket-game-${TIE}"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 20000

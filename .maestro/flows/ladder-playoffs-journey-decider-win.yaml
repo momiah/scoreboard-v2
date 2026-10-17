@@ -1,0 +1,36 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      SEED: "r16-decider-win"
+      TIE: "r1-s1"
+      CARD: "playoff-match-decider"
+      MATCH: "r1-s1-leg3"
+      GAME: "g1"
+      NOTIFICATION: ".*You're through to the Quarter-Final in Maestro Playoffs 256.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: ""
+      NOTIFICATION: ".*Your opponent in the Quarter-Final of Maestro Playoffs 256 is.*Your tie is ready.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      SEED: "r16-decider-win"
+      TIE: "r1-s1"
+      CARD: "playoff-match-decider"
+      MATCH: "r1-s1-leg3"
+      GAME: "g1"
+      NOTIFICATION: ".*You're through to the Quarter-Final in Maestro Playoffs 256 \\(Paid\\).*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: "-paid"
+      NOTIFICATION: ".*Your opponent in the Quarter-Final of Maestro Playoffs 256 \\(Paid\\) is.*Your tie is ready.*"

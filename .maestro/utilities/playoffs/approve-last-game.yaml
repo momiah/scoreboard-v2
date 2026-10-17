@@ -1,0 +1,19 @@
+appId: com.courtchamp
+---
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-${MATCH}-${GAME}"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: "ladder-game-${MATCH}-${GAME}"
+- extendedWaitUntil:
+    visible:
+      id: "game-screen-approval"
+    timeout: 15000
+- assertVisible: ".*Approve this game.*"
+- tapOn:
+    id: "game-screen-approve"
+- extendedWaitUntil:
+    visible: ".*Game approved.*"
+    timeout: 15000

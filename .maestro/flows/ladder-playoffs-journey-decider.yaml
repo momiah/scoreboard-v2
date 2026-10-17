@@ -1,0 +1,14 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-decider.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+- runFlow:
+    file: ../utilities/playoffs/journey-decider.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"

@@ -1,0 +1,80 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-seed-journey${SUFFIX}-r16-leg2-level"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*made the playoffs in ${LADDER}.*"
+      TIE: "r1-s1"
+- assertNotVisible:
+    id: "playoff-match-decider"
+- tapOn:
+    id: "playoff-match-leg2"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- runFlow:
+    file: approve-last-game.yaml
+    env:
+      MATCH: "r1-s1-leg2"
+      GAME: "g6"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*Your Round of 16 in ${LADDER} is level on aggregate. One deciding game must be played.*"
+      TIE: "r1-s1"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-decider"
+    timeout: 60000
+- assertVisible: "6 - 6"
+- assertVisible: "Deciding game"
+- assertVisible: "Level on aggregate. One deciding game to play."
+- scrollUntilVisible:
+    element:
+      id: "playoff-match-decider"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "playoff-match-decider"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- assertNotVisible:
+    id: "lobby-games-locked"
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-RescheduleMatch"
+- extendedWaitUntil:
+    visible:
+      id: "reschedule-info-modal"
+    timeout: 10000
+- tapOn: "Choose a time"
+- extendedWaitUntil:
+    visible:
+      id: "reschedule-match"
+    timeout: 10000
+- tapOn: "Select Date"
+- tapOn:
+    point: 23%, 52%
+- tapOn: "Confirm Date"
+- tapOn:
+    id: "reschedule-match-send"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 20000
+- tapOn:
+    id: "match-details-burger"
+- assertVisible: ".*Reschedule requested.*"
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-assert-po${SUFFIX}-opponent-asked-reschedule"

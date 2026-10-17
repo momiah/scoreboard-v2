@@ -1,0 +1,12 @@
+appId: com.courtchamp
+---
+- runFlow: open-notifications.yaml
+- extendedWaitUntil:
+    visible: ${NOTIFICATION}
+    timeout: 30000
+- tapOn: ${NOTIFICATION}
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoffs-bracket"
+    timeout: 40000
+- waitForAnimationToEnd

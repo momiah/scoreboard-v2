@@ -136,7 +136,32 @@ const deleteCollection = async (path) => {
   );
 };
 
+const deleteTiePlayerNotifications = async (ladderId) => {
+  const ties = await getDocs(
+    collection(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION),
+  );
+  const playerIds = new Set(
+    ties.docs.flatMap((tie) =>
+      ["side1", "side2"].flatMap((side) => tie.data()[side]?.playerIds ?? []),
+    ),
+  );
+  await Promise.all(
+    [...playerIds].map(async (userId) => {
+      const stale = await getDocs(
+        query(
+          collection(db, "users", userId, "notifications"),
+          where("data.ladderId", "==", ladderId),
+        ),
+      );
+      await commitInBatches(
+        stale.docs.map((docSnap) => (batch) => batch.delete(docSnap.ref)),
+      );
+    }),
+  );
+};
+
 const deleteLadder = async (ladderId) => {
+  await deleteTiePlayerNotifications(ladderId);
   await Promise.all(
     [
       LADDER_PLAYOFF_TIES_COLLECTION,

@@ -1,0 +1,36 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      SEED: "sf-leg2-loss"
+      TIE: "r3-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r3-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*Your Semi-Final in Maestro Playoffs 256 is over, and you'll play for 3rd place.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: ""
+      NOTIFICATION: ".*Your opponent in the 3rd-place tie of Maestro Playoffs 256 is.*Your tie is ready.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      SEED: "sf-leg2-loss"
+      TIE: "r3-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r3-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*Your Semi-Final in Maestro Playoffs 256 \\(Paid\\) is over, and you'll play for 3rd place.*"
+- runFlow:
+    file: ../utilities/playoffs/journey-companion.yaml
+    env:
+      SUFFIX: "-paid"
+      NOTIFICATION: ".*Your opponent in the 3rd-place tie of Maestro Playoffs 256 \\(Paid\\) is.*Your tie is ready.*"
