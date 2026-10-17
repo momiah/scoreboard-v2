@@ -9,6 +9,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
+import moment from "moment";
 import { Ionicons } from "@expo/vector-icons";
 
 import {
@@ -35,6 +36,8 @@ import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
 import { useFixturesScrollToGame } from "../Tournaments/Fixtures/useFixturesScrollToGame";
 import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
+import InfoModal from "../Modals/InfoModal";
+import type { LadderSeasonClose } from "../../hooks/useLadderSeasonClose";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { getLadderMatchScore } from "../../helpers/ladderMatchProgress";
 import MatchScoreBar from "./MatchScoreBar";
@@ -59,6 +62,7 @@ interface GameLobbyProps {
   highlightGameId?: string;
   /** Glow colour for the highlighted game; defaults to the ladder blue. */
   highlightColor?: string;
+  seasonClose?: LadderSeasonClose;
 }
 
 type LobbyGameTeam = GameTeam & { teamName?: string };
@@ -75,6 +79,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   checkedIn,
   highlightGameId,
   highlightColor = "#00A2FF",
+  seasonClose,
 }) => {
   const { getUserById, currentUser } = useContext(UserContext);
   const { fetchLadderTeams, fetchLadderParticipants } =
@@ -91,6 +96,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     Record<string, ScoreboardProfile>
   >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [resultsClosedVisible, setResultsClosedVisible] = useState(false);
   const [gameModalVisible, setGameModalVisible] = useState(false);
   const [checkinCollapsed, setCheckinCollapsed] = useState(
     match.matchStatus === LADDER_MATCH_STATUS.COMPLETED,
@@ -103,7 +109,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   // lock once a side reaches the decider. null once the match is decided.
   const reportableGameId = getReportableLadderGameId(
     match.games ?? [],
-    match.bestOf ?? (match.games?.length ?? 0),
+    match.bestOf ?? match.games?.length ?? 0,
   );
 
   // Scroll to and glow a game when linked here (e.g. from a dispute).
@@ -335,9 +341,22 @@ const GameLobby: React.FC<GameLobbyProps> = ({
       return;
     }
 
+    const resultsDeadline = seasonClose?.resultsDeadline;
+    if (
+      !match.playoffTieId &&
+      resultsDeadline &&
+      Date.now() >= resultsDeadline.getTime()
+    ) {
+      setResultsClosedVisible(true);
+      return;
+    }
+
     setSelectedGame(game);
     setGameModalVisible(true);
   };
+
+  const shortDate = (date: Date | null | undefined) =>
+    date ? moment(date).format("ddd D MMM") : "";
 
   // A check-in row opens a player's profile: doubles → global profile (the
   // ladder ranks the team), singles → their ladder profile.
@@ -524,6 +543,16 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         </GamesList>
       </ScrollView>
 
+      <InfoModal
+        visible={resultsClosedVisible}
+        onClose={() => setResultsClosedVisible(false)}
+        title="Ladder results have closed"
+        description={`Results closed on ${shortDate(seasonClose?.resultsDeadline)} to make the standings final for the playoffs, so no more games can be reported. Playoffs start on ${shortDate(seasonClose?.playoffStartsAt)}.`}
+        ctaLabel="OK"
+        onCtaPress={() => setResultsClosedVisible(false)}
+        icon="lock-closed-outline"
+        testID="results-closed-modal"
+      />
       <AddTournamentGameModal
         visible={gameModalVisible}
         game={selectedGame}

@@ -33,7 +33,7 @@ export const LADDER_TERMS: TermsSection[] = [
   },
   {
     title: "7. Reports, strikes & disqualification",
-    body: "All no-show and misconduct reports are reviewed by an admin. An upheld no-show awards the match to the player who showed up as a walkover: they gain up to 50 CP, transferred from the no-show and never taking them below zero, with no games, points or medals. Upheld reports add a strike against the reported player. Strikes are counted per ladder, and reaching the limit for any reason — 5 no-shows, or 3 for a conduct reason — disqualifies that player from the ladder, blocking them from posting or accepting further matches, with no refund of their entry fee.",
+    body: "All no-show and misconduct reports are reviewed by an admin. Reporting a no-show records your location at the court, and arrivals at the court are recorded during check-in. Reports still undecided 1 day before the playoffs start are closed as set out in the Rules. An upheld no-show awards the match to the player who showed up as a walkover: they gain up to 50 CP, transferred from the no-show and never taking them below zero, with no games, points or medals. Upheld reports add a strike against the reported player. Strikes are counted per ladder, and reaching the limit for any reason — 5 no-shows, or 3 for a conduct reason — disqualifies that player from the ladder, blocking them from posting or accepting further matches, with no refund of their entry fee.",
   },
   {
     title: "8. Expired matches",

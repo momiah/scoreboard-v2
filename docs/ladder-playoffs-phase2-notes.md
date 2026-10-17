@@ -67,6 +67,19 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
    (`helpers/ladderPlayoffPrizes.ts`). The tie card shows the current payout
    and the next round's; the guide's page 3 shows the full table.
 
+8. **Season close:** posting closes 7 days before playoffs, results 5 days
+   before (no game or no-show reports on regular matches; extensions end there
+   too), and the standings are final 1 day before: open disputes are discarded,
+   no-show claims are awarded only when the recorded arrivals show the claimant
+   at the court and the opponent not (and the claimant isn't flagged), and
+   unfinished matches expire keeping their approved games. Admins decide until
+   then; the admin site locks afterwards. Playoffs generate on the day with no
+   hold.
+9. **Arrivals:** `recordLadderArrival` records a player at the court from a
+   fresh reading (mocked, stale, inaccurate or distant readings refused) when
+   check-in's location check passes and when a no-show is reported. A no-show
+   can't be reported once the opponent has arrived.
+
 ## Phase 3 (not started)
 
 - Pay out cash and CP when the Final and 3rd-place tie finish, mark the ladder

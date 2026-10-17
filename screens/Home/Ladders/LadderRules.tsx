@@ -32,15 +32,19 @@ const rulesFor = (noun: "player" | "team"): RuleSection[] => [
   },
   {
     title: "Check-in & no-shows",
-    body: "Check in at the court for every match; the games unlock once every player has checked in. If your opponent hasn't checked in within 30 minutes of the start time, you can report a no-show from the check-in screen. Misconduct — cheating, abuse or harassment — can be reported from the match menu.",
+    body: "Check in at the court for every match; the games unlock once every player has checked in. If your opponent hasn't checked in within 30 minutes of the start time, you can report a no-show from the check-in screen. We confirm you're at the court when you report it, and you can't report one if your opponent has already arrived. Misconduct — cheating, abuse or harassment — can be reported from the match menu.",
   },
   {
     title: "Rescheduling & extensions",
-    body: "Before any game is reported, either side can ask to move the match to a new time; it only moves if the opponent accepts. Once a game has been reported, either side can extend the match once, giving 7 days from the request to finish it. Playoff matches must still finish by the playoff deadline.",
+    body: "Before any game is reported, either side can ask to move the match to a new time; it only moves if the opponent accepts. Once a game has been reported, either side can extend the match once, giving 7 days from the request to finish it. An extension never runs past the day ladder results close, and playoff matches must still finish by the playoff deadline.",
   },
   {
     title: "Inactive matches",
     body: "An accepted match expires if nothing happens — no check-in, game or report — for 72 hours. The clock starts at the scheduled time and resets with any activity, so any progress keeps the match alive.",
+  },
+  {
+    title: "Before the playoffs",
+    body: "Matches can be posted and accepted until 7 days before the playoffs start. Results close 5 days before: after that no more games or no-shows can be reported, and any unfinished match ends, keeping the games already approved. Disputes and no-show claims are decided by our admins until 1 day before. Anything still undecided then is closed so the standings are final: a disputed game is discarded and neither side gets its CP, and a no-show is only awarded if our records show the reporter at the court and their opponent not there.",
   },
   {
     title: "Playoffs",

@@ -2,9 +2,10 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
 import { LADDER_MATCH_STATUS } from "courtchamps-shared/types";
-import type { LadderMatch } from "courtchamps-shared/types";
+import type { Ladder, LadderMatch } from "courtchamps-shared/types";
 import {
   getLadderMatchExtensionDaysLeft,
+  isLadderMatchClosedByResults,
   isLadderMatchExpired,
 } from "courtchamps-shared/helpers";
 
@@ -84,10 +85,15 @@ export const autoExpireLadderMatches = onSchedule(
             now,
           );
 
+          const ladder = ladderDoc.data() as Ladder;
           const expiredRefs = matchesSnapshot.docs
-            .filter((matchDoc) =>
-              isLadderMatchExpired(matchDoc.data() as LadderMatch, now),
-            )
+            .filter((matchDoc) => {
+              const match = matchDoc.data() as LadderMatch;
+              return (
+                isLadderMatchExpired(match, now) ||
+                isLadderMatchClosedByResults(ladder, match, new Date(now))
+              );
+            })
             .map((matchDoc) => matchDoc.ref);
           for (let i = 0; i < expiredRefs.length; i += BATCH_LIMIT) {
             const batch = db.batch();

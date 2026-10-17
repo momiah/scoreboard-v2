@@ -366,9 +366,26 @@ TestIDs come from `PlayoffMatchDetails`, `PlayMatchTwoHere`, `MatchScoreBar`,
     guide and Rules say "Each playoff tie is two matches", and Match Options →
     Request Extension says "This tie must be finished by …".
 
+**Before the playoffs** (needs a seed with `playoffStartsAt` 6 and 4 days away)
+
+35. `ladder-posting-closes-7-days`: with P 6 days away, Matchmaking shows the
+    posting-closed state and Post a Match is unavailable.
+36. `ladder-results-closed`: with P 6 days away, a player's accepted regular
+    match shows `results-close-awaiting` "Ladder results close in 1d …. Finish
+    and report your games before then."; with P 4 days away it reads "Ladder
+    results have closed for the playoffs…", tapping the next game opens
+    `results-closed-modal` ("Ladder results have closed", with both dates)
+    instead of the score form, and approving a pending game still works.
+37. `ladder-no-show-opponent-arrived`: seeded match with the opponent's
+    arrival → `match-checkin-report-no-show` reads "Your opponent has arrived"
+    and `match-checkin-opponent-arrived` explains why. (The location check
+    itself can't run in Maestro; cover it with a mocked arrival.)
+
 Backend-only and covered by the emulator suite, no flow needed: the deciding
-game is placed at the court and time of whichever match was played last, and
-the platform-cancelled refund is the entry fee plus the platform fee.
+game is placed at the court and time of whichever match was played last, the
+platform-cancelled refund is the entry fee plus the platform fee, the P − 1
+close-out (discarded disputes, settled or closed no-shows, expired matches),
+and `recordLadderArrival`'s checks.
 
 Cleanup: `cleanupLadderTestData` deletes the whole playoffs ladder (ties and
 every match, including `-leg1`, `-leg2`, `-leg3`), the fixture users and courts,

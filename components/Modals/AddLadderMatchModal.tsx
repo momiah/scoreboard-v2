@@ -19,6 +19,10 @@ import {
   LADDER_TYPE,
   TEAM_STATUS,
 } from "@shared";
+import {
+  LADDER_POSTING_CLOSE_DAYS,
+  getLadderPostingDeadline,
+} from "@shared/helpers";
 import type {
   Court,
   Ladder,
@@ -36,10 +40,6 @@ import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { toMoment } from "../../helpers/ladderPhases";
-import {
-  LADDER_POSTING_BUFFER_DAYS,
-  ladderPostingDeadline,
-} from "../../helpers/ladderDayTabs";
 import { teamMemberIds } from "../../helpers/ladderTeamMembership";
 import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
@@ -119,7 +119,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
   // Latest a match may be posted: the buffer before playoffs begin.
   const postingDeadline = playoff
     ? playoff.deadline
-    : ladderPostingDeadline(ladder);
+    : getLadderPostingDeadline(ladder);
 
   // Doubles posts on behalf of the user's active team in this ladder. Resolve it
   // when the modal opens so the fixture can record both sides.
@@ -242,7 +242,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
       setErrorMessage(
         playoff
           ? `This match must be played by ${toMoment(postingDeadline)?.format("ddd D MMM, HH:mm")}.`
-          : `Matches must be scheduled at least ${LADDER_POSTING_BUFFER_DAYS} days before playoffs begin.`,
+          : `Matches must be scheduled at least ${LADDER_POSTING_CLOSE_DAYS} days before playoffs begin.`,
       );
       return;
     }

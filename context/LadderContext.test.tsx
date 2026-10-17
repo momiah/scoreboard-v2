@@ -7,7 +7,7 @@ import {
   normalizeTeamKey,
   notificationTypes,
 } from "@shared";
-import type { Game } from "@shared/types";
+import type { Game, LadderMatch } from "@shared/types";
 
 jest.mock("../services/firebase.config", () => ({ db: {} }));
 
@@ -235,6 +235,43 @@ describe("updateLadderGame (reporting a score)", () => {
     expect(games[0].createdAt).toBeInstanceOf(Date);
     expect("court" in games[0]).toBe(false);
     expect(games[1].approvalStatus).toBe("");
+  });
+
+  it("refuses a report on a regular match once ladder results have closed", async () => {
+    const soon = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+    const { tx } = makeStore({
+      [MATCH_PATH]: makeMatch([shell(1), shell(2), shell(3)]),
+      [`ladders/${LADDER}`]: { playoffStartsAt: soon },
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.updateLadderGame({
+      ladderId: LADDER,
+      matchId: MATCH,
+      updatedGame: reportPayload(1),
+    });
+
+    expect(outcome).toEqual({ success: false, reason: "results_closed" });
+    expect(tx.update).not.toHaveBeenCalled();
+  });
+
+  it("still takes playoff reports after results close", async () => {
+    const soon = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+    makeStore({
+      [MATCH_PATH]: makeMatch([shell(1), shell(2), shell(3)], {
+        playoffTieId: "r1-s0",
+      }),
+      [`ladders/${LADDER}`]: { playoffStartsAt: soon },
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.updateLadderGame({
+      ladderId: LADDER,
+      matchId: MATCH,
+      updatedGame: reportPayload(1),
+    });
+
+    expect(outcome).toEqual({ success: true });
   });
 
   it("blocks an out-of-turn report while an earlier game is still unreported", async () => {
@@ -1375,5 +1412,48 @@ describe("playoff match order and play-now offers", () => {
         userId: "lo",
       }),
     ).toEqual({ success: false, reason: "not_allowed" });
+  });
+});
+
+describe("before the playoffs", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it("refuses a no-show claim on a regular match once results have closed", async () => {
+    mockGetDoc.mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ playoffStartsAt: new Date(Date.now() + 4 * DAY) }),
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.createNoShowClaim(
+      LADDER,
+      makeMatch([shell(1)]) as unknown as LadderMatch,
+      "me",
+    );
+
+    expect(outcome).toEqual({ success: false, reason: "results_closed" });
+  });
+
+  it("ends a regular match's extension when ladder results close", async () => {
+    const playoffStartsAt = new Date(Date.now() + 7 * DAY);
+    const { store } = makeStore({
+      [MATCH_PATH]: makeMatch([approvedGame(1), shell(2), shell(3)]),
+      [LADDER_PATH]: { playoffStartsAt },
+    });
+    const result = await renderLadder();
+
+    const outcome = await result.current.extendLadderMatch({
+      ladderId: LADDER,
+      matchId: MATCH,
+      userId: "me",
+    });
+
+    expect(outcome.success).toBe(true);
+    const { extension } = store[MATCH_PATH] as {
+      extension: { expiresAt: Date };
+    };
+    expect(extension.expiresAt).toEqual(
+      new Date(playoffStartsAt.getTime() - 5 * DAY),
+    );
   });
 });

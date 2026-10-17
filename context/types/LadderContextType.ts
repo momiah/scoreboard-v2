@@ -103,6 +103,7 @@ export type UpdateLadderGameFailureReason =
   | "unavailable"
   | "error"
   | "frozen"
+  | "results_closed"
   | "match_decided";
 
 export interface UpdateLadderGameOutcome {

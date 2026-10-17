@@ -249,3 +249,29 @@ notifications.
 | 6.32 | A tie is won while the neighbouring tie is still being played | Straight away (on the match that completes it, not the scheduled job) the winner is placed in the next tie and gets "You're through to the {round}": "Congratulations! You're through to the {round} in {ladder}. We'll let you know as soon as your opponent is decided." Semi-final losers going to the 3rd-place tie don't get it 🅴 |
 | 6.33 | The neighbouring tie then finishes | The next tie starts (10 days). The side that was waiting gets "Your {round} is ready": "Your opponent in the {round} of {ladder} is {name}. Your tie is ready: you have 10 days to play both your home and away matches." The side that just arrived gets "You've reached the {round}" 🅴 |
 | 6.34 | Wording | A playoff pairing is a "tie" everywhere ("Round of 16 · Tie 3", "3rd-place tie", "Each playoff tie is two matches", "This tie must be finished by …", "Playoff tie not played", "Only the players in this tie can see this chat"); "game" means a single game, and notifications say "home and away matches" 🅹 🅼 |
+
+## 7. Before the playoffs: season close
+
+P is the playoff start (`playoffStartsAt`). Deadlines come from `courtchamps-shared/src/helpers/ladderSeasonClose.ts`.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 7.1 | Posting | Matchmaking closes and Post a Match's date picker stops at P − 7 days ("Matches must be scheduled at least 7 days before playoffs begin.") 🅹 🅼 |
+| 7.2 | Reporting a game on a regular match after P − 5 days | Tapping the next game opens "Ladder results have closed" (the dates results closed and playoffs start) instead of the score form; the server also refuses with "Ladder results have closed ahead of the playoffs." Approving, disputing and playoff matches still work 🅹 🅼 |
+| 7.2a | A player's accepted regular match between P − 7 and P − 5 days | The lobby shows "Ladder results close in {Nd Nh}. Finish and report your games before then.", ticking each minute; after P − 5 "Ladder results have closed for the playoffs. Games already reported can still be approved." Spectators don't see it 🅹 🅼 |
+| 7.3 | Reporting a no-show on a regular match after P − 5 days | Refused with the same message 🅹 |
+| 7.4 | Extension on a regular match | Once per match, ending at P − 5 days at the latest; the modal says "It ends early if ladder results close for the playoffs before then." 🅹 |
+| 7.5 | P − 5 days, accepted regular match with nothing left to settle | Expires (approved games keep their CP); one with a game awaiting approval, an open dispute or a no-show claim waits for the close-out 🅢 🅴 |
+| 7.6 | P − 1 day: close-out (`finaliseLadderStandings`) | Open disputes are discarded (the game becomes `discarded`, nobody scores it) and players are told; each match's no-show claims are settled: walkover only if one side claimed, the claimant has an arrival at the court for the match, nobody on the other side does, and the claimant isn't flagged (an admin-rejected claim before, or 3+ claims in the ladder); otherwise every claim is closed by the system with no walkover. Remaining accepted regular matches expire. `standingsFinalisedAt` is set once 🅴 |
+| 7.7 | P | Playoffs generate on the day with no hold. If the close-out was missed it runs first 🅴 |
+| 7.8 | Admin site after P − 1 | Report approve, reject and revert and every dispute action refuse with "This ladder's standings are final for the playoffs, so this can no longer be decided."; the queue shows "Decide by …" before that, and "Standings final — closed automatically" after (website tests) |
+
+## 8. Arrivals and no-shows
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 8.1 | Location check passes at check-in | The app sends the reading to `recordLadderArrival`, which records `arrivals.{userId}` (server time, distance, accuracy) 🅴 |
+| 8.2 | Mocked (Android), stale (> 1 min), inaccurate (> 100 m) or distant (> 500 m) reading | Refused and nothing recorded; at check-in the verifier shows the reason (e.g. "Your location is coming from a mock-location app…") 🅴 🅹 |
+| 8.3 | Pressing "Report no-show" | A fresh location check first ("Confirming you're at the court…"); away from the court: "You need to be at {court} to report a no-show." 🅹 🅼 |
+| 8.4 | The opponent has an arrival for this match (from 30 minutes before the start) | The button reads "Your opponent has arrived" and is disabled, with "You can't report a no-show because your opponent has arrived at {court}…" 🅹 🅼 |
+| 8.5 | Admin queue, no-show report | Shows "Arrivals: reporter at the court HH:MM (Nm) · reported player arrived / not recorded" |

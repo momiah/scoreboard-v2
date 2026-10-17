@@ -24,6 +24,13 @@ jest.mock("../../../context/UserContext", () => ({
 }));
 jest.mock("../../../components/ChatRoom/ChatRoom", () => () => null);
 jest.mock("../../../components/ladder/GameLobby", () => () => null);
+jest.mock("../../../hooks/useLadderSeasonClose", () => ({
+  useLadderSeasonClose: () => ({
+    postingDeadline: null,
+    resultsDeadline: null,
+    playoffStartsAt: null,
+  }),
+}));
 const mockMatchCard = jest.fn((_props: Record<string, unknown>) => null);
 jest.mock(
   "../../../components/ladder/MatchCard",

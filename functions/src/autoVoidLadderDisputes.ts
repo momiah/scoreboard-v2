@@ -12,6 +12,7 @@ import {
 } from "courtchamps-shared/types";
 import type {
   Dispute,
+  DisputeResolution,
   LadderMatch,
   ScoreboardProfile,
   TeamStats,
@@ -32,21 +33,29 @@ const LADDER_PARTICIPANTS = "ladderParticipants";
 const USERS = "users";
 
 /**
- * Void a dispute whose evidence request went unanswered: the original game is
- * approved and scored through the same shared path as the website's "Keep
- * original", the match completes if decided, and the dispute resolves as
- * `void`.
+ * Resolve a dispute as the system through the same shared path as the
+ * website's admin actions: `void` when an evidence request went unanswered
+ * (the original game is approved and scored), `discarded` when it's still open
+ * as the ladder's standings become final (the game is kept unscored).
  */
-const voidDispute = async (
-  db: admin.firestore.Firestore,
-  disputeRef: admin.firestore.DocumentReference,
-  nowMs: number,
-): Promise<Dispute | null> =>
+export const resolveDisputeAsSystem = async ({
+  db,
+  disputeRef,
+  nowMs,
+  resolution,
+  isDue,
+}: {
+  db: admin.firestore.Firestore;
+  disputeRef: admin.firestore.DocumentReference;
+  nowMs: number;
+  resolution: DisputeResolution;
+  isDue: (dispute: Dispute) => boolean;
+}): Promise<Dispute | null> =>
   db.runTransaction(async (tx) => {
     const disputeSnap = await tx.get(disputeRef);
     if (!disputeSnap.exists) return null;
     const dispute = disputeSnap.data() as Dispute;
-    if (!isDisputeEvidenceOverdue(dispute, nowMs)) return null;
+    if (!isDue(dispute)) return null;
 
     const ladderRef = db.collection(LADDERS).doc(dispute.ladderId);
     const matchRef = ladderRef
@@ -86,7 +95,7 @@ const voidDispute = async (
       ladderTeams: teamSnaps
         .filter((snap) => snap.exists)
         .map((snap) => snap.data() as TeamStats),
-      resolution: DISPUTE_RESOLUTION.VOID,
+      resolution,
       actorId: DISPUTE_SYSTEM_ACTOR,
       now,
     });
@@ -120,7 +129,13 @@ export const runAutoVoidLadderDisputes = async (): Promise<void> => {
     let voided = 0;
     for (const disputeDoc of overdue) {
       try {
-        const dispute = await voidDispute(db, disputeDoc.ref, nowMs);
+        const dispute = await resolveDisputeAsSystem({
+          db,
+          disputeRef: disputeDoc.ref,
+          nowMs,
+          resolution: DISPUTE_RESOLUTION.VOID,
+          isDue: (current) => isDisputeEvidenceOverdue(current, nowMs),
+        });
         if (!dispute) continue;
         voided += 1;
         await Promise.all(

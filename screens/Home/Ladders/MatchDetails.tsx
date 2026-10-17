@@ -35,6 +35,8 @@ import MatchCancellationBanner from "../../../components/ladder/MatchCancellatio
 import MatchRescheduleBanner from "../../../components/ladder/MatchRescheduleBanner";
 import PlayoffMatchConfirmBanner from "../../../components/ladder/PlayoffMatchConfirmBanner";
 import PlayMatchTwoHere from "../../../components/ladder/PlayMatchTwoHere";
+import ResultsCloseBanner from "../../../components/ladder/ResultsCloseBanner";
+import { useLadderSeasonClose } from "../../../hooks/useLadderSeasonClose";
 import GameLobby from "../../../components/ladder/GameLobby";
 import LobbyTabs from "../../../components/ladder/LobbyTabs";
 import MatchCard from "../../../components/ladder/MatchCard";
@@ -42,7 +44,6 @@ import { LocationVerifierModal } from "../../../components/Modals/MatchCheckinMo
 import { buildCourtMapsUrl } from "../../../helpers/courtMapsUrl";
 import { useForfeitLabel } from "../../../helpers/useForfeitLabel";
 import { isLadderMatchCalledOff } from "../../../helpers/ladderMatchCancellation";
-
 
 type LobbyTab = "Chat Room" | "Game Lobby";
 
@@ -136,6 +137,7 @@ const MatchDetails: React.FC = () => {
   );
 
   const forfeitLabel = useForfeitLabel(match, ladderId);
+  const seasonClose = useLadderSeasonClose(ladderId);
 
   if (notFound || !match) {
     return (
@@ -202,6 +204,9 @@ const MatchDetails: React.FC = () => {
         />
       </Header>
 
+      {isParticipant ? (
+        <ResultsCloseBanner match={match} seasonClose={seasonClose} />
+      ) : null}
       <MatchCancellationBanner
         ladderId={ladderId}
         match={match}
@@ -235,6 +240,7 @@ const MatchDetails: React.FC = () => {
         <GameLobby
           ladderId={ladderId}
           ladderName={ladderName}
+          seasonClose={seasonClose}
           match={match}
           currentUserId={userId}
           checkedIn={checkedIn}

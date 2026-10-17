@@ -116,6 +116,18 @@ jest.mock("./helpers/sendNotification", () => ({
   sendNotification: (...args: unknown[]) => mockSendNotification(...args),
 }));
 
+const mockFinalise = jest.fn();
+jest.mock("./helpers/finaliseLadderStandings", () => ({
+  finaliseLadderStandings: async (args: { ladder: { ladderId: string }; now: Date }) => {
+    mockFinalise(args);
+    store.set(`ladders/${args.ladder.ladderId}`, {
+      ...(store.get(`ladders/${args.ladder.ladderId}`) ?? {}),
+      standingsFinalisedAt: args.now,
+    });
+    return { disputesDiscarded: 0, walkoversAwarded: 0, claimsClosed: 0, matchesExpired: 0 };
+  },
+}));
+
 const mockRefund = jest.fn();
 jest.mock("./helpers/refundLadderEntryFees", () => ({
   refundLadderEntryFees: (...args: unknown[]) => mockRefund(...args),
@@ -218,6 +230,7 @@ beforeEach(() => {
   store.clear();
   writeLog.length = 0;
   mockRefund.mockReset();
+  mockFinalise.mockReset();
   mockSendNotification.mockReset();
   mockSendNotification.mockResolvedValue(undefined);
   jest.spyOn(console, "log").mockImplementation(() => undefined);
@@ -296,7 +309,7 @@ describe("registration close", () => {
       registrationClosed: [],
       cancelled: [],
       playoffsGenerated: [],
-      playoffsHeld: [],
+      standingsFinalised: [],
       playoffTiesSettled: [],
       playoffRemindersSent: 0,
     });
@@ -811,96 +824,50 @@ describe("notifications", () => {
   });
 });
 
-describe("playoff hold for unsettled games", () => {
-  const seedDueLadder = () => {
-    seedLadder("L1", { name: "North London Ladder", maxPlayers: 256 });
+describe("standings before playoffs", () => {
+  const seedDueLadder = (overrides: Data = {}) => {
+    seedLadder("L1", { name: "North London Ladder", maxPlayers: 256, ...overrides });
     seedParticipants("L1", 140, (index) => ({ competitionXP: 1000 - index }));
   };
 
-  it("waits while a dispute is still open and records why", async () => {
-    seedDueLadder();
-    store.set("disputes/d1", {
-      ladderId: "L1",
-      stage: DISPUTE_STAGE.UNDER_REVIEW,
-    });
+  it("makes the standings final a day before playoffs, without generating", async () => {
+    seedDueLadder({ playoffStartsAt: new Date(now.getTime() + 23 * 60 * 60 * 1000) });
 
     const summary = await runProcessLadderPhases(now);
 
-    expect(summary.playoffsHeld).toEqual(["L1"]);
+    expect(summary.standingsFinalised).toEqual(["L1"]);
     expect(summary.playoffsGenerated).toEqual([]);
+    expect(mockFinalise).toHaveBeenCalledTimes(1);
     expect(ladder("L1").status).toBe(LADDER_STATUS.REGISTRATION_CLOSED);
-    expect(ladder("L1").playoffHold).toMatchObject({
-      openDisputes: 1,
-      pendingGames: 0,
-    });
-    expect(ties("L1")).toHaveLength(0);
-    expect(mockSendNotification).not.toHaveBeenCalled();
   });
 
-  it("waits while a reported game is still pending approval", async () => {
-    seedDueLadder();
-    store.set("ladders/L1/ladderMatches/m1", {
-      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
-      games: [{ approvalStatus: "Pending" }, { approvalStatus: "approved" }],
-    });
+  it("does nothing earlier than that", async () => {
+    seedDueLadder({ playoffStartsAt: daysFromNow(2) });
 
     const summary = await runProcessLadderPhases(now);
 
-    expect(summary.playoffsHeld).toEqual(["L1"]);
-    expect(ladder("L1").playoffHold).toMatchObject({
-      openDisputes: 0,
-      pendingGames: 1,
-    });
+    expect(summary.standingsFinalised).toEqual([]);
+    expect(mockFinalise).not.toHaveBeenCalled();
   });
 
-  it("ignores resolved disputes and approved games", async () => {
-    seedDueLadder();
-    store.set("disputes/d1", {
-      ladderId: "L1",
-      stage: DISPUTE_STAGE.RESOLVED,
-    });
-    store.set("disputes/d2", {
-      ladderId: "OTHER",
-      stage: DISPUTE_STAGE.UNDER_REVIEW,
-    });
-    store.set("ladders/L1/ladderMatches/m1", {
-      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
-      games: [{ approvalStatus: "approved" }, { approvalStatus: "" }],
-    });
+  it("generates on the day with no hold, even with a dispute still open", async () => {
+    seedDueLadder({ standingsFinalisedAt: daysFromNow(-2) });
+    store.set("disputes/d1", { ladderId: "L1", stage: DISPUTE_STAGE.UNDER_REVIEW });
 
     const summary = await runProcessLadderPhases(now);
 
     expect(summary.playoffsGenerated).toEqual(["L1"]);
-  });
-
-  it("generates once the dispute is resolved and clears the hold", async () => {
-    seedDueLadder();
-    store.set("disputes/d1", {
-      ladderId: "L1",
-      stage: DISPUTE_STAGE.UNDER_REVIEW,
-    });
-    await runProcessLadderPhases(now);
-
-    store.set("disputes/d1", { ladderId: "L1", stage: DISPUTE_STAGE.RESOLVED });
-    const summary = await runProcessLadderPhases(now);
-
-    expect(summary.playoffsGenerated).toEqual(["L1"]);
+    expect(mockFinalise).not.toHaveBeenCalled();
     expect(ladder("L1").status).toBe(LADDER_STATUS.PLAYOFFS);
-    expect(ladder("L1").playoffHold).toBeNull();
   });
 
-  it("stops waiting 48 hours after the playoff start", async () => {
+  it("makes the standings final first if that step was missed", async () => {
     seedDueLadder();
-    store.set("disputes/d1", {
-      ladderId: "L1",
-      stage: DISPUTE_STAGE.UNDER_REVIEW,
-    });
-    const afterHold = new Date(
-      (ladder("L1").playoffStartsAt as Date).getTime() + 49 * 60 * 60 * 1000,
-    );
 
-    const summary = await runProcessLadderPhases(afterHold);
+    const summary = await runProcessLadderPhases(now);
 
+    expect(mockFinalise).toHaveBeenCalledTimes(1);
+    expect(summary.standingsFinalised).toEqual(["L1"]);
     expect(summary.playoffsGenerated).toEqual(["L1"]);
   });
 });

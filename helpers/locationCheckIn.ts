@@ -1,45 +1,10 @@
+import {
+  CHECKIN_RADIUS_METERS,
+  distanceInMeters,
+  getCourtCoords,
+} from "@shared/helpers";
+import type { LatLng } from "@shared/helpers";
 import type { Court } from "@shared/types";
-
-export const CHECKIN_RADIUS_METERS = 500;
-
-export interface LatLng {
-  latitude: number;
-  longitude: number;
-}
-
-const EARTH_RADIUS_METERS = 6371000;
-const toRadians = (deg: number): number => (deg * Math.PI) / 180;
-
-export const distanceInMeters = (a: LatLng, b: LatLng): number => {
-  const dLat = toRadians(b.latitude - a.latitude);
-  const dLon = toRadians(b.longitude - a.longitude);
-  const lat1 = toRadians(a.latitude);
-  const lat2 = toRadians(b.latitude);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
-};
-
-// Coordinates may arrive as numbers or numeric strings (some court sources
-// store them as strings). Coerce; return null only when genuinely absent.
-const toFiniteNumber = (value: unknown): number | null => {
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-};
-
-export const getCourtCoords = (court?: Court | null): LatLng | null => {
-  const latitude = toFiniteNumber(court?.location?.latitude);
-  const longitude = toFiniteNumber(court?.location?.longitude);
-  if (latitude === null || longitude === null) {
-    return null;
-  }
-  return { latitude, longitude };
-};
 
 export const isWithinCheckInRadius = (
   device: LatLng,

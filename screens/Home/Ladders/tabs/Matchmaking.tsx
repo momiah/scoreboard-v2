@@ -9,6 +9,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
 
+import { isLadderPostingClosed } from "@shared/helpers";
 import type { Ladder, LadderMatch } from "@shared/types";
 
 import { useLadderJoin } from "../../../../hooks/useLadderJoin";
@@ -20,7 +21,6 @@ import {
   ALL_DAYS_KEY,
   buildMatchmakingDayTabs,
   filterMatchesByDay,
-  ladderPostingClosed,
   ladderRegistrationOpen,
   todayDayKey,
 } from "../../../../helpers/ladderDayTabs";
@@ -120,8 +120,14 @@ const Matchmaking: React.FC<MatchmakingProps> = ({ ladder }) => {
     }, [subscribeToLadderMatches, ladder.ladderId]),
   );
 
-  const registrationOpen = useMemo(() => ladderRegistrationOpen(ladder), [ladder]);
-  const postingClosed = useMemo(() => ladderPostingClosed(ladder), [ladder]);
+  const registrationOpen = useMemo(
+    () => ladderRegistrationOpen(ladder),
+    [ladder],
+  );
+  const postingClosed = useMemo(
+    () => isLadderPostingClosed(ladder, new Date()),
+    [ladder],
+  );
   const nonParticipant = isSignedIn && !isParticipant;
   const cannotPost = nonParticipant || !registrationOpen || postingClosed;
   const buttonLabel = !registrationOpen

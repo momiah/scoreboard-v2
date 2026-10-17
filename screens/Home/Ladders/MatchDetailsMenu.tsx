@@ -268,10 +268,11 @@ const MatchDetailsMenu: React.FC = () => {
     }
   };
 
-  const playoffDeadlineText =
-    match?.playoffTieId && deadline
+  const extensionLimitText = match?.playoffTieId
+    ? deadline
       ? ` This tie must be finished by ${moment(deadline).format("ddd D MMM")}.`
-      : "";
+      : ""
+    : " It ends early if ladder results close for the playoffs before then.";
 
   return (
     <Container>
@@ -337,7 +338,7 @@ const MatchDetailsMenu: React.FC = () => {
         visible={infoModal === "extension"}
         onClose={() => setInfoModal(null)}
         title="Request extension"
-        description={`Get 7 more days to finish this match. It applies straight away, and each match can be extended once.${playoffDeadlineText}`}
+        description={`Get 7 more days to finish this match. It applies straight away, and each match can be extended once.${extensionLimitText}`}
         ctaLabel="Extend match"
         onCtaPress={handleExtend}
         icon="hourglass-outline"
