@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { Image, View } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -28,6 +28,7 @@ import type {
   LadderPlayoffTie,
   LadderPlayoffTieSide,
 } from "@shared/types";
+import { ladders } from "@/mockImages";
 import { LadderContext } from "../../../context/LadderContext";
 import { UserContext } from "../../../context/UserContext";
 import MatchCard from "../../../components/ladder/MatchCard";
@@ -435,7 +436,11 @@ const PlayoffMatchDetails: React.FC = () => {
           {outcome ? (
             outcome.winner ? (
               <WinnerCard testID="playoff-match-outcome">
-                <Ionicons name="trophy" size={28} color="#FFC800" />
+                <Image
+                  source={ladders[0]}
+                  style={{ width: 52, height: 52 }}
+                  resizeMode="contain"
+                />
                 <WinnerText>
                   <WinnerLabel>Winner</WinnerLabel>
                   <WinnerName numberOfLines={1}>{outcome.winner}</WinnerName>

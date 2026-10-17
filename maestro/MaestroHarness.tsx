@@ -224,7 +224,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
           ["opponent-declined-leg1", { tie: "user", who: "opponent", includes: "can't make playoff match 1" }],
           ["opponent-arranged-leg1", { tie: "user", who: "opponent", includes: "arranged playoff match 1" }],
           ["companion-winner-through", { tie: "companion", who: "winner", includes: "is ready! You have 10 days to complete both matches" }],
-          ["companion-loser-third-place", { tie: "companion", who: "loser", includes: "You'll play for 3rd place - You have 10 days to complete both matches" }],
+          ["companion-loser-third-place", { tie: "companion", who: "loser", includes: "you'll play for 3rd place against" }],
           ["opponent-auto-accept-host", { tie: "user", who: "opponent", includes: "didn't reply within 24 hours" }],
           ["opponent-placed-1st", { tie: "user", who: "opponent", includes: "you have placed 1st" }],
           ["opponent-placed-2nd", { tie: "user", who: "opponent", includes: "you have placed 2nd" }],

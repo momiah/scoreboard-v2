@@ -386,7 +386,7 @@ export const notifyLadderPlayoffResolution = async ({
           ...(changedTie.isThirdPlacePlayoff
             ? {
                 title: "You'll play for 3rd place",
-                message: `You'll play for 3rd place - You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+                message: `Your Semi-Final in ${ladder.name} is over, and you'll play for 3rd place against ${opponentOf(key)}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
               }
             : {
                 title: `Congratulations, you're through to the ${changedName}!`,
@@ -401,8 +401,10 @@ export const notifyLadderPlayoffResolution = async ({
           userIds: changedTie[key]?.playerIds ?? [],
           ladder,
           kind: `playoff-opponent-${changedTie.tieId}`,
-          title: `Your ${changedName} is ready`,
-          message: `Your ${changedName} against ${opponentOf(key)} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+          title: `Your ${changedName} opponent is decided`,
+          message: changedTie.isThirdPlacePlayoff
+            ? `Your Semi-Final in ${ladder.name} is over, and your 3rd-place tie against ${opponentOf(key)} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`
+            : `Your ${changedName} against ${opponentOf(key)} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
           tab: PLAYOFFS_TAB,
           data: { tieId: changedTie.tieId },
         });

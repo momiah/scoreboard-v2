@@ -215,7 +215,7 @@ describe("resolveLadderPlayoffTie", () => {
     expect(await notificationIds(c)).toContain(`playoff-round-r2-s1-${LADDER}-${c}`);
     const ready = await db.doc(`users/${a}/notifications/playoff-opponent-r2-s0-${LADDER}-${a}`).get();
     expect(ready.data()).toMatchObject({
-      title: "Your Final is ready",
+      title: "Your Final opponent is decided",
       message: `Your Final against ${d} is ready! You have 10 days to complete both matches`,
     });
     const arrived = await db.doc(`users/${d}/notifications/playoff-round-r2-s0-${LADDER}-${d}`).get();
@@ -284,12 +284,12 @@ describe("resolveLadderPlayoffTie", () => {
     const thirdNotice = await db.doc(`users/${t2}/notifications/playoff-round-r2-s1-${LADDER}-${t2}`).get();
     expect(thirdNotice.data()).toMatchObject({
       title: "You'll play for 3rd place",
-      message: "You'll play for 3rd place - You have 10 days to complete both matches",
+      message: `Your Semi-Final in ${ladder.name} is over, and you'll play for 3rd place against ${t1}. You have 10 days to complete both matches`,
     });
     const thirdReady = await db.doc(`users/${t1}/notifications/playoff-opponent-r2-s1-${LADDER}-${t1}`).get();
     expect(thirdReady.data()).toMatchObject({
-      title: "Your 3rd-place tie is ready",
-      message: `Your 3rd-place tie against ${t2} is ready! You have 10 days to complete both matches`,
+      title: "Your 3rd-place tie opponent is decided",
+      message: `Your Semi-Final in ${ladder.name} is over, and your 3rd-place tie against ${t2} is ready! You have 10 days to complete both matches`,
     });
 
     await seedLeg(final, 1, [f1, f1, f2]);
