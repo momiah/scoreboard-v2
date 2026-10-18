@@ -1,0 +1,15 @@
+appId: com.courtchamp
+---
+- tapOn: "Select Date"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 23%, 52%
+      - tapOn: "Confirm Date"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: "OK"
