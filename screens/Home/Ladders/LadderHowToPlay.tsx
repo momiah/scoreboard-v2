@@ -23,6 +23,7 @@ import { AntDesign } from "@expo/vector-icons";
 
 import {
   LADDER_PLAYOFF_SIZES,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_STRUCTURE,
   getEffectiveLadderSize,
   calculateLadderPrizePool,
@@ -182,9 +183,9 @@ const LadderHowToPlay: React.FC = () => {
       render: () => (
         <PageBody
           icon="hourglass-outline"
-          title="Ten Days to Finish"
+          title={`${LADDER_PLAYOFF_TIE_DAYS} Days to Finish`}
           paragraphs={[
-            "Both matches must be played within 10 days.",
+            `Both matches must be played within ${LADDER_PLAYOFF_TIE_DAYS} days.`,
             "If time runs out, the tie goes to whoever won more games, then points, then the higher rank.",
             "If nothing was played, neither side goes through.",
           ]}
@@ -551,7 +552,7 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
         <PageText>
           When the season ends, the top players go into a knockout.
         </PageText>
-        <PageText>Each round has 10 days to be played.</PageText>
+        <PageText>{`Each round has ${LADDER_PLAYOFF_TIE_DAYS} days to be played.`}</PageText>
       </Paragraphs>
 
       <Highlight testID="how-to-play-playoff-highlight">

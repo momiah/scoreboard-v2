@@ -1,0 +1,10 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-mock-po${SUFFIX}-finish-companion-tie"
+- runFlow: open-notifications.yaml
+- extendedWaitUntil:
+    visible: ${NOTIFICATION}
+    timeout: 60000

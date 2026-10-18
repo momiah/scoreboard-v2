@@ -1,0 +1,27 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-playoff-match-settled"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*Your Quarter-Final against .* is ready! You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to complete both matches.*"
+- assertVisible:
+    id: "ladder-playoffs-bracket"
+- tapOn: "Round of 16"
+- runFlow:
+    file: ../utilities/playoffs/open-bracket-tie.yaml
+    env:
+      TIE: "r1-s1"
+      SCROLL: "no"
+- assertVisible:
+    id: "playoff-match-outcome"
+- assertVisible: "Winner"
+- assertVisible: "Through to the Quarter-Final"
+- assertVisible: "Finished"
+- assertVisible:
+    id: "playoff-match-aggregate"

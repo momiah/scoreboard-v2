@@ -10,6 +10,7 @@ import { db } from "../../services/firebase.config";
 import {
   LADDER_CANCELLED_REASON,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_STATUS,
   LADDER_TYPE,
   TEAM_STATUS,
@@ -133,6 +134,30 @@ const deleteCollection = async (path) => {
   const snapshot = await getDocs(collection(db, ...path));
   await commitInBatches(
     snapshot.docs.map((docSnap) => (batch) => batch.delete(docSnap.ref)),
+  );
+};
+
+export const deleteTiePlayerNotifications = async (ladderId) => {
+  const ties = await getDocs(
+    collection(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION),
+  );
+  const playerIds = new Set(
+    ties.docs.flatMap((tie) =>
+      ["side1", "side2"].flatMap((side) => tie.data()[side]?.playerIds ?? []),
+    ),
+  );
+  await Promise.all(
+    [...playerIds].map(async (userId) => {
+      const stale = await getDocs(
+        query(
+          collection(db, "users", userId, "notifications"),
+          where("data.ladderId", "==", ladderId),
+        ),
+      );
+      await commitInBatches(
+        stale.docs.map((docSnap) => (batch) => batch.delete(docSnap.ref)),
+      );
+    }),
   );
 };
 
@@ -299,7 +324,7 @@ const writePlayoffNotifications = async ({
         ...base,
         senderId: "system",
         title: "You made the playoffs!",
-        message: `Congratulations! You've made the playoffs in ${ladderName}. You have 10 days to play both your home and away matches.`,
+        message: `Congratulations! You've made the playoffs for ${ladderName}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
         data: { ladderId, tab: "Playoffs" },
       },
     });
@@ -413,13 +438,7 @@ export const seedLadderPlayoffs = async ({
     }
     writes.push((batch) =>
       batch.set(
-        doc(
-          db,
-          "ladders",
-          ladderId,
-          "ladderParticipants",
-          user.userId,
-        ),
+        doc(db, "ladders", ladderId, "ladderParticipants", user.userId),
         {
           ...buildLadderParticipant(user),
           ...stats,
@@ -600,6 +619,7 @@ export const seedLadderPlayoffsDoubles = async ({
 };
 
 export const cleanupLadderPlayoffsTestData = async () => {
+  await Promise.all(MAESTRO_PO_LADDER_IDS.map(deleteTiePlayerNotifications));
   await Promise.all(MAESTRO_PO_LADDER_IDS.map(deleteLadder));
   await commitInBatches([
     ...maestroPlayoffFixtureUserIds().map(

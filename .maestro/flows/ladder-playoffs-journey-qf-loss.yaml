@@ -1,0 +1,26 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      SEED: "qf-leg2-loss"
+      TIE: "r2-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r2-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*knocked out in the Quarter-Final of Maestro Playoffs 256\\. You've been awarded 800 CP, paid when the playoffs finish\\..*"
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      SEED: "qf-leg2-loss"
+      TIE: "r2-s0"
+      CARD: "playoff-match-leg2"
+      MATCH: "r2-s0-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*knocked out in the Quarter-Final of Maestro Playoffs 256 \\(Paid\\)\\. You've been awarded £320 and 800 CP, paid when the playoffs finish\\..*"

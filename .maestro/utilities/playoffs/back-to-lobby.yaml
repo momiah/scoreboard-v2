@@ -1,0 +1,9 @@
+appId: com.courtchamp
+---
+- swipe:
+    start: 1%, 50%
+    end: 90%, 50%
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 15000

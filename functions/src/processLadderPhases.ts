@@ -5,6 +5,7 @@ import {
   LADDER_CANCELLED_REASON,
   LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_TIE_STATUS,
   LADDER_REPORT_COUNTS_COLLECTION,
   LADDER_STATUS,
@@ -38,6 +39,7 @@ import {
   completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
+  autoAcceptDueLadderPlayoffMatches,
   sendDueLadderPlayoffReminders,
   toLadderPlayoffTie,
 } from "./helpers/ladderPlayoffTies";
@@ -47,7 +49,6 @@ const LADDER_PARTICIPANTS = "ladderParticipants";
 const LADDER_TEAMS = "ladderTeams";
 const USERS = "users";
 const USERS_PER_READ = 300;
-const PLAYOFF_ROUND_DAYS = 10;
 const HOUR_MS = 60 * 60 * 1000;
 const NOTIFICATION_RESUME_DAYS = 3;
 
@@ -97,6 +98,11 @@ const runPlayoffDeadlinesAndReminders = async (
           now,
         });
       }
+      summary.playoffMatchesAutoAccepted.push(
+        ...(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).map(
+          (matchId) => `${ladder.ladderId}/${matchId}`,
+        ),
+      );
       summary.playoffRemindersSent += await sendDueLadderPlayoffReminders({
         db,
         ladder,
@@ -121,6 +127,7 @@ export interface ProcessLadderPhasesSummary {
   standingsFinalised: string[];
   playoffTiesSettled: string[];
   playoffRemindersSent: number;
+  playoffMatchesAutoAccepted: string[];
 }
 
 const toDate = (value: unknown): Date | null => {
@@ -339,7 +346,7 @@ const sendPlayoffNotifications = async ({
     ladder,
     kind: "playoffs-promotion",
     title: "You made the playoffs!",
-    message: `Congratulations! You've made the playoffs in ${ladder.name}. You have ${PLAYOFF_ROUND_DAYS} days to play both your home and away matches.`,
+    message: `Congratulations! You've made the playoffs for ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
     tab: "Playoffs",
   });
   await notifyLadderPlayers({
@@ -613,6 +620,7 @@ export const runProcessLadderPhases = async (
     standingsFinalised: [],
     playoffTiesSettled: [],
     playoffRemindersSent: 0,
+    playoffMatchesAutoAccepted: [],
   };
 
   await resumePendingNotifications(db, now);

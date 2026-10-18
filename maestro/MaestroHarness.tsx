@@ -68,6 +68,8 @@ import {
 import { mockPartnerSetHomeCourt } from "./seeds/mockPartnerSetHomeCourt";
 import {
   MAESTRO_PO_CANCELLED_SIZE,
+  MAESTRO_PO_LADDER_ID,
+  MAESTRO_PO_PAID_LADDER_ID,
   PLAYOFF_VARIANT,
   seedLadderPlayoffs,
   seedLadderPlayoffsDoubles,
@@ -76,6 +78,24 @@ import {
   PLAYOFF_MATCH_STAGE,
   seedLadderPlayoffMatches,
 } from "./seeds/seedLadderPlayoffMatches";
+import {
+  JOURNEY_OUTCOME,
+  JOURNEY_ROUND,
+  JOURNEY_STAGE,
+  assertLadderCompleted,
+  assertPlayoffNotification,
+  mockFinishCompanionTie,
+  seedLadderPlayoffJourney,
+} from "./seeds/seedLadderPlayoffJourney";
+import {
+  assertTieChatDelivered,
+  mockOpponentArrangesLeg,
+  mockOpponentTieChat,
+  mockPlayoffNotification,
+  PLAYOFF_NOTIFICATION_KINDS,
+  mockOpponentOffersPlayHere,
+  mockOpponentRespondsToLeg,
+} from "./seeds/mockPlayoffOpponent";
 import {
   HOME_COURT_VARIANT,
   MAESTRO_HC_COURT_A_SINGLES_ID,
@@ -88,6 +108,7 @@ import {
 } from "./seeds/homeCourtFixtures";
 
 const UNLOCK_TAPS = 5;
+const PLAYOFF_PAID_ENTRY_FEE = 20;
 
 const HarnessButton = (
   props: React.ComponentProps<typeof TouchableOpacity>,
@@ -101,6 +122,15 @@ const HarnessButton = (
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText numberOfLines={1} {...props} style={[{ fontSize: 7 }, props.style]} />
 );
+const PLAYOFF_LADDER_VARIANTS = [
+  { suffix: "", ladderId: MAESTRO_PO_LADDER_ID, entryFee: 0 },
+  {
+    suffix: "-paid",
+    ladderId: MAESTRO_PO_PAID_LADDER_ID,
+    entryFee: PLAYOFF_PAID_ENTRY_FEE,
+  },
+];
+
 const PLAYOFF_SIZES = [2048, 1024, 512, 256, 128, 255, 511, 1023];
 
 const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
@@ -120,6 +150,165 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
     >
       <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
     </HarnessButton>
+
+    {PLAYOFF_LADDER_VARIANTS.flatMap(({ suffix, ladderId, entryFee }) => [
+      ...[
+        ["r16-started", JOURNEY_ROUND.R16, JOURNEY_STAGE.STARTED],
+        ["r16-leg1-finishing", JOURNEY_ROUND.R16, JOURNEY_STAGE.LEG1_FINISHING],
+        ["r16-leg2-win", JOURNEY_ROUND.R16, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.WIN],
+        ["r16-leg2-loss", JOURNEY_ROUND.R16, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LOSS],
+        ["r16-leg2-level", JOURNEY_ROUND.R16, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LEVEL],
+        ["r16-decider-win", JOURNEY_ROUND.R16, JOURNEY_STAGE.DECIDER_FINISHING, JOURNEY_OUTCOME.WIN],
+        ["r16-decider-loss", JOURNEY_ROUND.R16, JOURNEY_STAGE.DECIDER_FINISHING, JOURNEY_OUTCOME.LOSS],
+        ["qf-leg2-win", JOURNEY_ROUND.QUARTER, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.WIN],
+        ["qf-leg2-loss", JOURNEY_ROUND.QUARTER, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LOSS],
+        ["sf-leg2-win", JOURNEY_ROUND.SEMI, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.WIN],
+        ["sf-leg2-loss", JOURNEY_ROUND.SEMI, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LOSS],
+        ["final-leg2-win", JOURNEY_ROUND.FINAL, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.WIN],
+        ["final-leg2-loss", JOURNEY_ROUND.FINAL, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LOSS],
+        ["third-leg2-win", JOURNEY_ROUND.THIRD_PLACE, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.WIN],
+        ["third-leg2-loss", JOURNEY_ROUND.THIRD_PLACE, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LOSS],
+      ].map(([key, round, stage, outcome]) => ({
+        id: `maestro-seed-journey${suffix}-${key}`,
+        label: `Seed Journey${suffix} ${key}`,
+        run: () =>
+          seedLadderPlayoffJourney({
+            testUser: currentUser,
+            round: round as never,
+            stage: stage as never,
+            outcome: outcome as never,
+            ladderId,
+            entryFee,
+          }),
+      })),
+      ...Object.values(PLAYOFF_MATCH_STAGE).map((stage) => ({
+        id: `maestro-seed-playoff-match${suffix}-${stage}`,
+        label: `Seed Playoff Match${suffix} (${stage})`,
+        run: () =>
+          seedLadderPlayoffMatches({
+            testUser: currentUser,
+            stage,
+            ladderId,
+            entryFee,
+          }),
+      })),
+      ...[1, 2].map((leg) => ({
+        id: `maestro-mock-po${suffix}-opponent-arranges-leg${leg}`,
+        label: `Mock Opp Arranges Match ${leg}${suffix}`,
+        run: () =>
+          mockOpponentArrangesLeg({ testUser: currentUser, ladderId, leg }),
+      })),
+      ...[1, 2].flatMap((leg) =>
+        (["accept", "decline"] as const).map((reply) => ({
+          id: `maestro-mock-po${suffix}-opponent-${reply}-leg${leg}`,
+          label: `Mock Opp ${reply} Match ${leg}${suffix}`,
+          run: () =>
+            mockOpponentRespondsToLeg({
+              testUser: currentUser,
+              ladderId,
+              leg,
+              accept: reply === "accept",
+            }),
+        })),
+      ),
+      {
+        id: `maestro-mock-po${suffix}-opponent-offers-play-here`,
+        label: `Mock Opp Offers Play Here${suffix}`,
+        run: () => mockOpponentOffersPlayHere({ testUser: currentUser, ladderId }),
+      },
+      ...(
+        [
+          ["opponent-arranged-leg2", { tie: "user", who: "opponent", includes: "arranged playoff match 2" }],
+          ["opponent-accepted-leg1", { tie: "user", who: "opponent", includes: "accepted playoff match 1" }],
+          ["opponent-accepted-leg2", { tie: "user", who: "opponent", includes: "accepted playoff match 2" }],
+          ["opponent-declined-leg1", { tie: "user", who: "opponent", includes: "can't make playoff match 1" }],
+          ["opponent-arranged-leg1", { tie: "user", who: "opponent", includes: "arranged playoff match 1" }],
+          ["companion-winner-through", { tie: "companion", who: "winner", includes: "You've made it to the" }],
+          ["companion-loser-third-place", { tie: "companion", who: "loser", includes: "you'll play for 3rd place against" }],
+          ["opponent-auto-accept-host", { tie: "user", who: "opponent", includes: "didn't reply within 24 hours" }],
+          ["opponent-placed-1st", { tie: "user", who: "opponent", includes: "you have placed 1st" }],
+          ["opponent-placed-2nd", { tie: "user", who: "opponent", includes: "you have placed 2nd" }],
+          ["opponent-placed-3rd", { tie: "user", who: "opponent", includes: "you have placed 3rd" }],
+          ["opponent-placed-4th", { tie: "user", who: "opponent", includes: "you have placed 4th" }],
+          ["opponent-asked-reschedule", { tie: "user", who: "opponent", includes: "asked to move your ladder match" }],
+          ["companion-winner-placed-1st", { tie: "companion", who: "winner", includes: "you have placed 1st" }],
+          ["companion-loser-placed-2nd", { tie: "companion", who: "loser", includes: "you have placed 2nd" }],
+          ["companion-winner-placed-3rd", { tie: "companion", who: "winner", includes: "you have placed 3rd" }],
+          ["companion-loser-placed-4th", { tie: "companion", who: "loser", includes: "you have placed 4th" }],
+          ["opponent-offered-play-here", { tie: "user", who: "opponent", includes: "wants to play match 2 now" }],
+        ] as const
+      ).map(([key, expected]) => ({
+        id: `maestro-assert-po${suffix}-${key}`,
+        label: `Assert PO${suffix} ${key}`,
+        run: () =>
+          assertPlayoffNotification({
+            testUser: currentUser,
+            ladderId,
+            ...expected,
+          }),
+      })),
+      ...PLAYOFF_NOTIFICATION_KINDS.map((kind) => ({
+        id: `maestro-mock-po${suffix}-notify-${kind}`,
+        label: `Mock PO Notify ${kind}${suffix}`,
+        run: () =>
+          mockPlayoffNotification({ testUser: currentUser, ladderId, kind }),
+      })),
+      {
+        id: `maestro-mock-po${suffix}-opponent-chat`,
+        label: `Mock Opp Tie Chat${suffix}`,
+        run: () =>
+          mockOpponentTieChat({
+            testUser: currentUser,
+            ladderId,
+            text: "See you at the court",
+          }),
+      },
+      {
+        id: `maestro-assert-po${suffix}-tie-chat-delivered`,
+        label: `Assert Tie Chat Delivered${suffix}`,
+        run: () =>
+          assertTieChatDelivered({
+            testUser: currentUser,
+            ladderId,
+            text: "On my way, bringing the shuttles",
+          }),
+      },
+      ...(["accept", "decline"] as const).map((reply) => ({
+        id: `maestro-mock-po${suffix}-cancel-${reply}`,
+        label: `Mock Opp Cancel ${reply}${suffix}`,
+        run: () =>
+          mockOpponentCancellationResponse({
+            ladderId,
+            matchId: "r1-s1-leg2",
+            accept: reply === "accept",
+          }),
+      })),
+      {
+        id: `maestro-assert-po${suffix}-ladder-completed`,
+        label: `Assert Ladder Completed${suffix}`,
+        run: () => assertLadderCompleted({ ladderId }),
+      },
+      {
+        id: `maestro-mock-po${suffix}-finish-companion-tie`,
+        label: `Mock Finish Companion Tie${suffix}`,
+        run: () => mockFinishCompanionTie({ testUser: currentUser, ladderId }),
+      },
+    ]).map(({ id, label, run }) => (
+      <HarnessButton
+        key={id}
+        testID={id}
+        onPress={async () => {
+          try {
+            const outcome = await run();
+            Alert.alert("Seeded", JSON.stringify(outcome));
+          } catch (error) {
+            Alert.alert("Seed failed", String(error));
+          }
+        }}
+      >
+        <Text style={{ color: "white" }}>{label}</Text>
+      </HarnessButton>
+    ))}
 
     {[
       {
@@ -439,6 +628,16 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
     </HarnessButton>
 
     {[
+      ...[6, 4].map((days) => ({
+        id: `maestro-seed-add-game-flow-playoffs-in-${days}-days`,
+        label: `Seed Add-Game Flow (Playoffs in ${days} days)`,
+        run: () =>
+          seedAddApproveGameFlow({
+            testUser: currentUser,
+            withReportedGame: true,
+            playoffStartsInDays: days,
+          }),
+      })),
       {
         id: "maestro-seed-add-game-flow-decider",
         label: "Seed Add-Game Flow (Decider Pending)",
@@ -464,6 +663,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["full", JOIN_VARIANT.FULL],
         ["window-closed", JOIN_VARIANT.WINDOW_CLOSED],
         ["status-closed", JOIN_VARIANT.STATUS_CLOSED],
+        ["paid", JOIN_VARIANT.PAID],
       ].map(([key, variant]) => ({
         id: `maestro-seed-join-singles-${key}`,
         label: `Seed Join Singles (${key})`,
@@ -519,6 +719,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
         ["accepted-opponent-posted", CANCEL_VARIANT.ACCEPTED_OPPONENT_POSTED],
         ["overdue-opponent-posted", CANCEL_VARIANT.OVERDUE_OPPONENT_POSTED],
         ["overdue-user-posted", CANCEL_VARIANT.OVERDUE_USER_POSTED],
+        ["overdue-opponent-arrived", CANCEL_VARIANT.OVERDUE_OPPONENT_ARRIVED],
         [
           "started-recently-opponent-posted",
           CANCEL_VARIANT.STARTED_RECENTLY_OPPONENT_POSTED,

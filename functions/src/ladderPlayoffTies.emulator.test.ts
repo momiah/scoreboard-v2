@@ -1,3 +1,4 @@
+import { LADDER_PLAYOFF_TIE_DAYS } from "courtchamps-shared/types";
 import * as admin from "firebase-admin";
 import {
   LADDER_MATCH_STATUS,
@@ -7,7 +8,11 @@ import {
   LADDER_TYPE,
 } from "courtchamps-shared/types";
 import type { LadderPlayoffTie } from "courtchamps-shared/types";
-import { buildLadderPlayoffTies, getLadderPlayoffLegHost } from "courtchamps-shared/helpers";
+import {
+  LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
+  buildLadderPlayoffTies,
+  getLadderPlayoffLegHost,
+} from "courtchamps-shared/helpers";
 import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
 
 const PROJECT_ID = "demo-courtchamps";
@@ -25,6 +30,7 @@ import {
   completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
+  autoAcceptDueLadderPlayoffMatches,
   sendDueLadderPlayoffReminders,
   toLadderPlayoffTie,
 } from "./helpers/ladderPlayoffTies";
@@ -180,6 +186,11 @@ describe("resolveLadderPlayoffTie", () => {
     await notifyLadderPlayoffResolution({ ladder, resolution: first });
     expect(await notificationIds(a)).toEqual([`playoff-through-r2-s0-${LADDER}-${a}`]);
     expect(await notificationIds(b)).toEqual([`playoff-through-r2-s1-${LADDER}-${b}`]);
+    const through = await db.doc(`users/${a}/notifications/playoff-through-r2-s0-${LADDER}-${a}`).get();
+    expect(through.data()).toMatchObject({
+      title: "Congratulations, you're through to the Final!",
+      message: `You're through to the Final in ${ladder.name}! We'll let you know as soon as your opponent is decided.`,
+    });
     expect(await readTie(semiOne.tieId)).toMatchObject({
       status: LADDER_PLAYOFF_TIE_STATUS.COMPLETED,
       winner: "team1",
@@ -209,8 +220,13 @@ describe("resolveLadderPlayoffTie", () => {
     expect(await notificationIds(c)).toContain(`playoff-round-r2-s1-${LADDER}-${c}`);
     const ready = await db.doc(`users/${a}/notifications/playoff-opponent-r2-s0-${LADDER}-${a}`).get();
     expect(ready.data()).toMatchObject({
-      title: "Your Final is ready",
-      message: `Your opponent in the Final of ${ladder.name} is ${d}. Your tie is ready: you have 10 days to play both your home and away matches.`,
+      title: "Your Final opponent is decided",
+      message: `Your Final against ${d} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+    });
+    const arrived = await db.doc(`users/${d}/notifications/playoff-round-r2-s0-${LADDER}-${d}`).get();
+    expect(arrived.data()).toMatchObject({
+      title: "Congratulations, you're through to the Final!",
+      message: `Congratulations! You've made it to the Final in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your matches.`,
     });
   });
 
@@ -271,7 +287,15 @@ describe("resolveLadderPlayoffTie", () => {
     const [t1, t2] = sidesOf(thirdPlace);
     expect(await notificationIds(b)).toContain(`playoff-through-r2-s1-${LADDER}-${b}`);
     const thirdNotice = await db.doc(`users/${t2}/notifications/playoff-round-r2-s1-${LADDER}-${t2}`).get();
-    expect(thirdNotice.data()?.title).toBe("You'll play for 3rd place");
+    expect(thirdNotice.data()).toMatchObject({
+      title: "You'll play for 3rd place",
+      message: `Your Semi-Final in ${ladder.name} is over, and you'll play for 3rd place against ${t1}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+    });
+    const thirdReady = await db.doc(`users/${t1}/notifications/playoff-opponent-r2-s1-${LADDER}-${t1}`).get();
+    expect(thirdReady.data()).toMatchObject({
+      title: "Your 3rd-place tie opponent is decided",
+      message: `Your Semi-Final in ${ladder.name} is over, and your 3rd-place tie against ${t2} is ready! You have ${LADDER_PLAYOFF_TIE_DAYS} days to complete both matches`,
+    });
 
     await seedLeg(final, 1, [f1, f1, f2]);
     await seedLeg(final, 2, [f1, f1, f1]);
@@ -345,6 +369,11 @@ describe("resolveLadderPlayoffTie", () => {
     });
     expect((await readTie(tie.tieId)).deciderRequired).toBe(true);
     expect(await notificationIds(b)).toContain(`playoff-decider-${tie.tieId}-${LADDER}-${b}`);
+    const notice = await db.doc(`users/${b}/notifications/playoff-decider-${tie.tieId}-${LADDER}-${b}`).get();
+    expect(notice.data()).toMatchObject({
+      title: "You have a deciding game left to play",
+      message: `You have a deciding game left to play as your matches in the Semi-Final of ${ladder.name} resulted in a draw!`,
+    });
   });
 
   it("puts the decider at the court of whichever match was played last", async () => {
@@ -435,5 +464,98 @@ describe("sendDueLadderPlayoffReminders", () => {
       (t) => t.status === LADDER_PLAYOFF_TIE_STATUS.SCHEDULED,
     );
     expect(await sendDueLadderPlayoffReminders({ db, ladder, ties: again, now: dayThree })).toBe(0);
+  });
+});
+
+describe("autoAcceptDueLadderPlayoffMatches", () => {
+  const postedLeg = async (
+    tie: LadderPlayoffTie,
+    leg: 1 | 2,
+    createdAt: Date,
+    extra: Record<string, unknown> = {},
+  ) => {
+    const [a, b] = sidesOf(tie);
+    const matchId = `${tie.tieId}-leg${leg}`;
+    await db.doc(`ladders/${LADDER}/ladderMatches/${matchId}`).set({
+      ladderMatchId: matchId,
+      playoffTieId: tie.tieId,
+      playoffLeg: leg,
+      ladderType: LADDER_TYPE.SINGLES,
+      matchStatus: LADDER_MATCH_STATUS.POSTED,
+      participants: [a, b],
+      createdBy: a,
+      createdAt,
+      bestOf: 7,
+      court,
+      matchDate: "05-10-2026",
+      matchTime: { start: "18:30" },
+      games: [],
+      scheduleDeclines: 1,
+      ...extra,
+    });
+    return matchId;
+  };
+  const readMatch = async (matchId: string) =>
+    (await db.doc(`ladders/${LADDER}/ladderMatches/${matchId}`).get()).data();
+  const now = new Date(start.getTime() + 2 * DAY_MS);
+
+  it("accepts a match the away side hasn't answered in 24 hours and tells both sides", async () => {
+    const ties = await seedBracket(4);
+    const tie = ties[0];
+    const [a, b] = sidesOf(tie);
+    await seedUsers([a, b]);
+    const matchId = await postedLeg(tie, 1, new Date(now.getTime() - (LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS + 1) * 60 * 60 * 1000));
+
+    expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([matchId]);
+    expect(await readMatch(matchId)).toMatchObject({
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      acceptedBy: b,
+      autoAccepted: true,
+      scheduleDeclines: 1,
+    });
+    const away = await db.doc(`users/${b}/notifications/playoff-auto-accepted-${matchId}-${LADDER}-${b}`).get();
+    expect(away.data()).toMatchObject({
+      title: "Playoff match accepted",
+      message: `You didn't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours, so playoff match 1 at Court One, 5 Oct, 18:30 has been accepted for you.`,
+    });
+    const host = await db.doc(`users/${a}/notifications/playoff-auto-accept-host-${matchId}-${LADDER}-${a}`).get();
+    expect(host.data()?.message).toBe(
+      `Your opponent didn't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours, so playoff match 1 at Court One, 5 Oct, 18:30 has been accepted for them.`,
+    );
+    expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([]);
+  });
+
+  it("leaves a match alone until 24 hours have passed", async () => {
+    const ties = await seedBracket(4);
+    const matchId = await postedLeg(ties[0], 1, new Date(now.getTime() - (LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS - 1) * 60 * 60 * 1000));
+    expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([]);
+    expect((await readMatch(matchId))?.matchStatus).toBe(LADDER_MATCH_STATUS.POSTED);
+  });
+
+  it("never accepts a play-now offer for anyone", async () => {
+    const ties = await seedBracket(4);
+    const matchId = await postedLeg(ties[0], 2, new Date(now.getTime() - 48 * 60 * 60 * 1000), {
+      playNow: true,
+    });
+    expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([]);
+    expect((await readMatch(matchId))?.matchStatus).toBe(LADDER_MATCH_STATUS.POSTED);
+  });
+
+  it("ignores posted matches that aren't playoff matches and ties that are over", async () => {
+    const ties = await seedBracket(4);
+    const [a, b] = sidesOf(ties[0]);
+    const old = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    await db.doc(`ladders/${LADDER}/ladderMatches/regular`).set({
+      ladderMatchId: "regular",
+      matchStatus: LADDER_MATCH_STATUS.POSTED,
+      participants: [a, b],
+      createdBy: a,
+      createdAt: old,
+    });
+    const matchId = await postedLeg(ties[0], 1, old);
+    await db.doc(tiePath(ties[0].tieId)).update({ status: LADDER_PLAYOFF_TIE_STATUS.COMPLETED });
+    expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([]);
+    expect((await readMatch("regular"))?.matchStatus).toBe(LADDER_MATCH_STATUS.POSTED);
+    expect((await readMatch(matchId))?.matchStatus).toBe(LADDER_MATCH_STATUS.POSTED);
   });
 });

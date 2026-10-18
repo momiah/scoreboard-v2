@@ -28,7 +28,9 @@ describe("PlayoffMatchConfirmBanner", () => {
       <PlayoffMatchConfirmBanner ladderId="L1" match={match()} userId="away" />,
     );
     expect(
-      getByText("Your opponent arranged this match. Can you make it?"),
+      getByText(
+        /^Your opponent arranged this match\. Can you make it\? It's accepted automatically after \d+ hours if you don't reply\.$/,
+      ),
     ).toBeTruthy();
     fireEvent.press(getByTestId("playoff-match-confirm-decline"));
     expect(mockRespond).toHaveBeenCalledWith(
@@ -56,7 +58,7 @@ describe("PlayoffMatchConfirmBanner", () => {
     );
     expect(
       getByText(
-        "Your opponent arranged this match. You've used your one decline, so please accept.",
+        /^Your opponent arranged this match\. You've used your one decline, so please accept\. It's accepted automatically after \d+ hours if you don't reply\.$/,
       ),
     ).toBeTruthy();
     expect(queryByTestId("playoff-match-confirm-decline")).toBeNull();

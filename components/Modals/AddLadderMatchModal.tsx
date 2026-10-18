@@ -14,6 +14,7 @@ import { useForm, Controller } from "react-hook-form";
 
 import {
   LADDER_MATCH_BEST_OF_OPTIONS,
+  LADDER_PLAYOFF_TIE_DAYS,
   SHUTTLE_TYPE,
   PLATFORM_FEE,
   LADDER_TYPE,
@@ -388,7 +389,7 @@ const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
                   maxDate={postingDeadline}
                   rangeMessage={
                     playoff && postingDeadline
-                      ? `Please select a date within the 10 days for this tie (by ${toMoment(postingDeadline)?.format("ddd D MMM")}).`
+                      ? `Please select a date within the ${LADDER_PLAYOFF_TIE_DAYS} days for this tie (by ${toMoment(postingDeadline)?.format("ddd D MMM")}).`
                       : undefined
                   }
                   testIDPrefix="add-ladder-match"

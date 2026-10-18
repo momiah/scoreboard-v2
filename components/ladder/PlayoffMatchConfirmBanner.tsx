@@ -1,7 +1,10 @@
 import React from "react";
 
 import { LADDER_MATCH_STATUS } from "@shared";
-import { canDeclineLadderPlayoffMatch } from "@shared/helpers";
+import {
+  LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
+  canDeclineLadderPlayoffMatch,
+} from "@shared/helpers";
 import type { LadderMatch } from "@shared/types";
 import { getOpponentSideIds } from "../../helpers/ladderMatchCancellation";
 import { usePlayoffMatchScheduling } from "../../hooks/usePlayoffMatchScheduling";
@@ -43,6 +46,7 @@ const PlayoffMatchConfirmBanner: React.FC<PlayoffMatchConfirmBannerProps> = ({
   }
 
   const canDecline = canDeclineLadderPlayoffMatch(match);
+  const autoAccept = `It's accepted automatically after ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours if you don't reply.`;
   return (
     <MatchRequestBanner
       testID="playoff-match-confirm"
@@ -50,8 +54,8 @@ const PlayoffMatchConfirmBanner: React.FC<PlayoffMatchConfirmBannerProps> = ({
         match.playNow
           ? "Your opponent wants to play match 2 here now. Are you up for it?"
           : canDecline
-            ? "Your opponent arranged this match. Can you make it?"
-            : "Your opponent arranged this match. You've used your one decline, so please accept."
+            ? `Your opponent arranged this match. Can you make it? ${autoAccept}`
+            : `Your opponent arranged this match. You've used your one decline, so please accept. ${autoAccept}`
       }
       awaiting={false}
       onDecline={

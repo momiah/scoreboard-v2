@@ -1,0 +1,18 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "playoffRegular"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/open-leg.yaml
+    env:
+      CARD: "playoff-match-leg1"
+- runFlow:
+    file: ../utilities/playoffs/approve-last-game.yaml
+    env:
+      MATCH: "r1-s1-leg1"
+      GAME: "g3"

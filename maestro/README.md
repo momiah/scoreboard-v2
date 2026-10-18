@@ -39,6 +39,37 @@ bundled into a release build.
   viewer: the user's neighbour in progress, one played, one void (its
   neighbour gets a walkover) and one level with a decider. Same cleanup.
 
+- `seeds/seedLadderPlayoffJourney.js` — carries the playoff bracket forward to
+  any round (Round of 16 to the Final, or the 3rd-place tie) with the test user's
+  last reported game awaiting their approval, so the real
+  `onLadderMatchStatusChange` settles the tie. Also `mockFinishCompanionTie`
+  (plays out the neighbouring tie through the same trigger) and the assertions
+  `assertPlayoffNotification` and `assertLadderCompleted`. Buttons exist for the
+  free and the paid ladder (`-paid`).
+- `seeds/mockPlayoffOpponent.js` — the playoff opponent: arranges, accepts,
+  declines, offers "play match 2 here" and chats; plus mock notifications and the
+  tie-chat assertion. Notification ids start `maestro-po-` and the backend's
+  start with the ladder id, so cleanup removes them.
+
+## Seeds model production
+
+A seed must look like data production would have written, or the flow proves
+nothing. Before adding or changing one, check that:
+
+- matches are played inside their tie's window (start to deadline), and a tie
+  that has started has the matches that got it there;
+- a settled tie was decided by its matches, finished when its last match did,
+  and the next round started at that moment;
+- posted matches are recent (an unanswered playoff match is accepted for the
+  away side after `LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS`);
+- every number that is a rule (the tie window `LADDER_PLAYOFF_TIE_DAYS`, the
+  auto-accept hours) comes from `courtchamps-shared`, never a literal. Flows read
+  them from `MAESTRO_PLAYOFF_TIE_DAYS` and `MAESTRO_LADDER_AUTO_ACCEPT_HOURS`,
+  which `run-suite.sh` exports.
+
+`seeds/realWorldChecks.helper.js` asserts the first three and runs against every
+playoff stage in the seed tests. Add a stage to those tests when you add one.
+
 ## Re-attaching the harness
 
 The harness is not mounted in the app while testing is finished, so Maestro

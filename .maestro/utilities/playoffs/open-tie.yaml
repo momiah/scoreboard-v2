@@ -1,0 +1,11 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- runFlow:
+    file: open-bracket-tie.yaml
+    env:
+      TIE: "r1-s1"
+      SCROLL: "no"

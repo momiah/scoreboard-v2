@@ -1,3 +1,4 @@
+import { LADDER_PLAYOFF_TIE_DAYS } from "courtchamps-shared/types";
 import {
   DISPUTE_STAGE,
   LADDER_CANCELLED_REASON,
@@ -312,6 +313,7 @@ describe("registration close", () => {
       standingsFinalised: [],
       playoffTiesSettled: [],
       playoffRemindersSent: 0,
+      playoffMatchesAutoAccepted: [],
     });
     expect(writeLog).toHaveLength(0);
   });
@@ -734,7 +736,7 @@ describe("notifications", () => {
     );
     expect(promoted[0]).toMatchObject({
       message:
-        "Congratulations! You've made the playoffs in North London Ladder. You have 10 days to play both your home and away matches.",
+        `Congratulations! You've made the playoffs for North London Ladder. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
       data: { ladderId: "L1", tab: "Playoffs" },
     });
   });

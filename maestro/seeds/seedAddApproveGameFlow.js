@@ -42,6 +42,7 @@ export const seedAddApproveGameFlow = async ({
   courtCoords = /** @type {{ latitude: number; longitude: number } | null} */ (
     null
   ),
+  playoffStartsInDays = /** @type {number | null} */ (null),
 }) => {
   if (!testUser?.userId) {
     throw new Error(
@@ -170,8 +171,16 @@ export const seedAddApproveGameFlow = async ({
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
     seasonEndsAt: new Date(),
-    playoffStartsAt: new Date(),
-    playoffEndsAt: new Date(),
+    playoffStartsAt:
+      playoffStartsInDays === null
+        ? new Date()
+        : new Date(Date.now() + playoffStartsInDays * 24 * 60 * 60 * 1000),
+    playoffEndsAt:
+      playoffStartsInDays === null
+        ? new Date()
+        : new Date(
+            Date.now() + (playoffStartsInDays + 10) * 24 * 60 * 60 * 1000,
+          ),
     entryFee: 0,
     currencyType: "GBP",
     minRank: 0,
