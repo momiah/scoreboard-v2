@@ -24,20 +24,9 @@ onFlowStart:
 - assertNotVisible:
     id: "add-ladder-match-fee"
 - tapOn: "Select Date"
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - extendedWaitUntil:
-          visible: ".*Please select a date within the ${MAESTRO_PLAYOFF_TIE_DAYS} days for this tie \\(by .*"
-          timeout: 10000
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - extendedWaitUntil:
-          visible: "OK"
-          timeout: 10000
+- extendedWaitUntil:
+    visible: ".*Please select a date within the ${MAESTRO_PLAYOFF_TIE_DAYS} days for this tie \\(by .*"
+    timeout: 10000
 - tapOn: "Cancel"
 - tapOn:
     id: "add-ladder-match-court-selector"

@@ -7,9 +7,13 @@ appId: com.courtchamp
     commands:
       - tapOn:
           point: 23%, 52%
-      - tapOn: "Confirm Date"
 - runFlow:
     when:
       platform: Android
     commands:
-      - tapOn: "OK"
+      - tapOn:
+          id: "date-wheel-item-1"
+- extendedWaitUntil:
+    visible: "Confirm Date"
+    timeout: 10000
+- tapOn: "Confirm Date"
