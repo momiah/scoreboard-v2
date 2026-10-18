@@ -21,6 +21,18 @@ appId: com.courtchamp
           speed: 60
           centerElement: true
       - waitForAnimationToEnd
+- runFlow:
+    when:
+      platform: iOS
+      true: ${BUTTON.indexOf('doubles') !== -1}
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: ${BUTTON}
+          direction: DOWN
+          timeout: 60000
+          speed: 60
+      - waitForAnimationToEnd
 - tapOn:
     id: ${BUTTON}
 - extendedWaitUntil:
