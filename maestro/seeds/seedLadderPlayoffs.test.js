@@ -207,7 +207,11 @@ describe("seedLadderPlayoffs tiers", () => {
       senderId: "system",
       type: "ladder",
       message: `Congratulations! You've made the playoffs for Maestro Playoffs 256. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
-      data: { ladderId: MAESTRO_PO_LADDER_ID, tab: "Playoffs" },
+      data: {
+        ladderId: MAESTRO_PO_LADDER_ID,
+        tab: "Playoffs",
+        tieId: expect.stringMatching(/^r1-s\d+$/),
+      },
     });
     expect(notifications.map((n) => n.message)).toEqual(
       expect.arrayContaining([

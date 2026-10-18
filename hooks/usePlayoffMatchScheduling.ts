@@ -1,24 +1,15 @@
 import { useCallback, useContext } from "react";
 
-import {
-  LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
-  canDeclineLadderPlayoffMatch,
-} from "@shared/helpers";
 import type { LadderMatch } from "@shared/types";
 import { LadderContext } from "../context/LadderContext";
 import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
 import { formatDisplayName } from "../helpers/formatDisplayName";
-import { formatMatchSlot } from "./useLadderMatchChanges";
+import { getSameSideIds } from "../helpers/ladderMatchCancellation";
+import { playoffMatchMessages } from "../helpers/playoffMatchMessages";
 import { useNotifyMatchPlayers } from "./useNotifyMatchPlayers";
 
 const ERROR_MESSAGE = "Something went wrong. Please try again.";
-const AUTO_ACCEPT_NOTICE = `It's accepted automatically if you don't reply within ${LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS} hours.`;
-
-const matchLabel = (
-  match: Pick<LadderMatch, "playoffLeg" | "court" | "matchDate" | "matchTime">,
-) =>
-  `playoff match ${match.playoffLeg ?? ""} at ${match.court?.courtName ?? "your court"}, ${formatMatchSlot(match)}`;
 
 export const usePlayoffMatchScheduling = () => {
   const { respondToPlayoffMatch, offerPlayoffMatchHere } =
@@ -35,19 +26,24 @@ export const usePlayoffMatchScheduling = () => {
       ladderId,
       match,
       opponentIds,
+      teammateIds = [],
     }: {
       ladderId: string;
       match: LadderMatch;
       opponentIds: string[];
+      teammateIds?: string[];
     }) => {
-      const next = canDeclineLadderPlayoffMatch(match)
-        ? "Open it to accept or decline."
-        : "Open it to accept.";
-      await notify(
-        opponentIds,
-        `${name} arranged ${matchLabel(match)}. ${next} ${AUTO_ACCEPT_NOTICE}`,
-        { ladderId, match },
-      );
+      await Promise.all([
+        notify(opponentIds, playoffMatchMessages.arranged(name, match), {
+          ladderId,
+          match,
+        }),
+        notify(
+          teammateIds,
+          playoffMatchMessages.arrangedByPartner(name, match),
+          { ladderId, match },
+        ),
+      ]);
     },
     [name, notify],
   );
@@ -78,13 +74,20 @@ export const usePlayoffMatchScheduling = () => {
         );
         return;
       }
-      await notify(
-        outcome.notifyUserIds,
-        accept
-          ? `${name} accepted ${matchLabel(match)}.`
-          : `${name} can't make ${matchLabel(match)}. Arrange another time.`,
-        { ladderId, match },
-      );
+      await Promise.all([
+        notify(
+          outcome.notifyUserIds,
+          accept
+            ? playoffMatchMessages.accepted(name, match)
+            : playoffMatchMessages.declined(name, match),
+          { ladderId, match },
+        ),
+        notify(
+          getSameSideIds(match, userId),
+          playoffMatchMessages.answeredByPartner(name, match, accept),
+          { ladderId, match },
+        ),
+      ]);
       showBottomToast(accept ? "Match accepted" : "Time declined", "success");
     },
     [name, notify, respondToPlayoffMatch, showBottomToast, userId],
@@ -113,11 +116,21 @@ export const usePlayoffMatchScheduling = () => {
         );
         return;
       }
-      await notify(
-        outcome.notifyUserIds,
-        `${name} wants to play match 2 now at ${firstMatch.court?.courtName ?? "your court"}. Open the game to accept or decline.`,
-        { ladderId, match: firstMatch },
-      );
+      await Promise.all([
+        notify(
+          outcome.notifyUserIds,
+          playoffMatchMessages.playNowOffer(name, firstMatch.court?.courtName),
+          { ladderId, match: firstMatch },
+        ),
+        notify(
+          getSameSideIds(firstMatch, userId),
+          playoffMatchMessages.playNowOfferByPartner(
+            name,
+            firstMatch.court?.courtName,
+          ),
+          { ladderId, match: firstMatch },
+        ),
+      ]);
     },
     [name, notify, offerPlayoffMatchHere, showBottomToast, userId],
   );

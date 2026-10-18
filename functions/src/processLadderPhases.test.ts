@@ -313,6 +313,7 @@ describe("registration close", () => {
       standingsFinalised: [],
       playoffTiesSettled: [],
       playoffRemindersSent: 0,
+      playoffHostNoticesSent: 0,
       playoffMatchesAutoAccepted: [],
     });
     expect(writeLog).toHaveLength(0);

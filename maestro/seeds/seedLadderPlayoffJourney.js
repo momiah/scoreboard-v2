@@ -15,13 +15,17 @@ import {
   LADDER_STATUS,
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_PLAYOFF_TIE_STATUS,
+  LADDER_TYPE,
   advanceLadderPlayoffBracket,
   getLadderPlayoffLegHost,
 } from "@shared";
 import {
+  MAESTRO_PO_DOUBLES_LADDER_ID,
+  MAESTRO_PO_DOUBLES_TEAMS,
   MAESTRO_PO_LADDER_ID,
   deleteTiePlayerNotifications,
   seedLadderPlayoffs,
+  seedLadderPlayoffsDoubles,
 } from "./seedLadderPlayoffs";
 import {
   commit,
@@ -49,6 +53,7 @@ export const JOURNEY_STAGE = {
   LEG1_FINISHING: "leg1Finishing",
   LEG2_FINISHING: "leg2Finishing",
   DECIDER_FINISHING: "deciderFinishing",
+  PARTNER_REPORTED: "partnerReported",
 };
 
 export const JOURNEY_OUTCOME = { WIN: "win", LOSS: "loss", LEVEL: "level" };
@@ -70,8 +75,14 @@ const startedSeventyMinutesAgo = () => {
   };
 };
 
-const ladderNameOf = (entryFee) =>
-  `Maestro Playoffs ${SIZE}${entryFee > 0 ? " (Paid)" : ""}`;
+const ladderNameOf = (entryFee, doubles) =>
+  doubles
+    ? `Maestro Playoffs Doubles ${MAESTRO_PO_DOUBLES_TEAMS}`
+    : `Maestro Playoffs ${SIZE}${entryFee > 0 ? " (Paid)" : ""}`;
+
+const ladderTypeOf = async (ladderId) =>
+  (await getDoc(doc(db, "ladders", ladderId))).data()?.ladderType ??
+  LADDER_TYPE.SINGLES;
 
 /**
  * The bracket carried forward to `round`: the test user wins every earlier
@@ -85,7 +96,8 @@ export const seedLadderPlayoffJourney = async ({
   round = JOURNEY_ROUND.R16,
   stage = JOURNEY_STAGE.STARTED,
   outcome = JOURNEY_OUTCOME.WIN,
-  ladderId = MAESTRO_PO_LADDER_ID,
+  doubles = false,
+  ladderId = doubles ? MAESTRO_PO_DOUBLES_LADDER_ID : MAESTRO_PO_LADDER_ID,
   entryFee = 0,
 }) => {
   if (!testUser?.userId) {
@@ -94,13 +106,18 @@ export const seedLadderPlayoffJourney = async ({
     );
   }
   await deleteTiePlayerNotifications(ladderId);
-  await seedLadderPlayoffs({
-    testUser,
-    generate: true,
-    size: SIZE,
-    ladderId,
-    entryFee,
-  });
+  if (doubles) {
+    await seedLadderPlayoffsDoubles({ testUser, generate: true });
+  } else {
+    await seedLadderPlayoffs({
+      testUser,
+      generate: true,
+      size: SIZE,
+      ladderId,
+      entryFee,
+    });
+  }
+  const ladderType = doubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES;
   const now = new Date();
   const snapshot = await getDocs(
     collection(db, "ladders", ladderId, LADDER_PLAYOFF_TIES_COLLECTION),
@@ -161,6 +178,7 @@ export const seedLadderPlayoffJourney = async ({
               leg,
               host: getLadderPlayoffLegHost(current, leg),
               status: C,
+              ladderType,
               day: roundEndDay(r) - (leg === 1 ? 5 : 1),
               wins: wins(winner, 4, leg === 1 ? 1 : 2),
               now,
@@ -218,6 +236,7 @@ export const seedLadderPlayoffJourney = async ({
       leg,
       host: hostOf(leg),
       status: A,
+      ladderType,
       ...live,
       wins: leg === 3 ? [winner] : wins(winner, 4, 2),
       pendingLast: true,
@@ -231,11 +250,17 @@ export const seedLadderPlayoffJourney = async ({
       leg,
       host: hostOf(leg),
       status: C,
+      ladderType,
       day,
       wins: wins(winner, 4, count),
       now,
     });
 
+  if (stage === JOURNEY_STAGE.PARTNER_REPORTED) {
+    matches.push(
+      finishing(1, user, { pendingReporter: user, reporterIndex: 1 }),
+    );
+  }
   if (stage === JOURNEY_STAGE.LEG1_FINISHING) {
     matches.push(finishing(1, user));
   }
@@ -279,10 +304,11 @@ export const seedLadderPlayoffJourney = async ({
     ),
   ];
   await commit(writes);
+  await pointPromotionAtTie({ testUser, ladderId, tieId: mine.tieId });
 
   return {
     ladderId,
-    ladderName: ladderNameOf(entryFee),
+    ladderName: ladderNameOf(entryFee, doubles),
     tieId: mine.tieId,
     round,
     stage,
@@ -359,12 +385,14 @@ export const mockFinishCompanionTie = async ({
     throw new Error("mockFinishCompanionTie: no open companion tie");
   }
   const now = new Date();
+  const ladderType = await ladderTypeOf(ladderId);
   const build = (leg, day, count) =>
     legMatch({
       tie,
       leg,
       host: getLadderPlayoffLegHost(tie, leg),
       status: C,
+      ladderType,
       day,
       wins: wins(winner, 4, count),
       now,
@@ -384,6 +412,19 @@ export const mockFinishCompanionTie = async ({
   return { tieId: tie.tieId, winner };
 };
 
+const pointPromotionAtTie = async ({ testUser, ladderId, tieId }) => {
+  const promotion = doc(
+    db,
+    "users",
+    testUser.userId,
+    "notifications",
+    `maestro-po-promotion-${ladderId}`,
+  );
+  if ((await getDoc(promotion)).exists()) {
+    await updateDoc(promotion, { "data.tieId": tieId });
+  }
+};
+
 const POLL_ATTEMPTS = 20;
 const POLL_INTERVAL_MS = 1500;
 
@@ -401,10 +442,11 @@ const poll = async (check) => {
 };
 
 const tieSidePlayerIds = (tie, who, userId) => {
-  if (who === "user" || who === "opponent") {
+  if (who === "user" || who === "opponent" || who === "partner") {
     const userSide = userSideOf(tie, userId);
-    const side = who === "user" ? userSide : other(userSide);
-    return tie[sideKey(side)]?.playerIds ?? [];
+    const side = who === "opponent" ? other(userSide) : userSide;
+    const ids = tie[sideKey(side)]?.playerIds ?? [];
+    return who === "partner" ? ids.filter((id) => id !== userId) : ids;
   }
   const winnerSide = tie.winner;
   const side = {

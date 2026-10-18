@@ -171,7 +171,7 @@ manual Cloud Scheduler checks. Remaining:
 
 Rules and scenario numbers are in section 6 of
 [ladder-playoffs-test-plan.md](ladder-playoffs-test-plan.md). Backend-only
-cases (deadlines, voids, walkovers, the day 3/6/9
+cases (deadlines, voids, walkovers, the 48-hour host rule, the day 3/6/9
 reminders, settlement and the decider) are covered by the emulator suite;
 these flows cover what a player and a spectator see.
 

@@ -23,6 +23,7 @@ import UploadToast from "./components/Toasts/UploadToast";
 import Tabs from "./navigation/tabs";
 import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
+import { getPlayoffTieRoute } from "./helpers/playoffTieRoute";
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
@@ -134,15 +135,21 @@ export default function App() {
       (response) => {
         if (!navigationRef.current) return;
 
+        const tieRoute = getPlayoffTieRoute(
+          response?.notification?.request?.content?.data,
+        );
         navigationRef.current.dispatch(
           CommonActions.navigate({
             name: "Competitions",
             params: {
               state: {
-                index: 1,
+                index: tieRoute ? 2 : 1,
                 routes: [
                   { name: "CompetitionsList" },
                   { name: "Notifications" },
+                  ...(tieRoute
+                    ? [{ name: tieRoute.name, params: tieRoute.params }]
+                    : []),
                 ],
               },
             },

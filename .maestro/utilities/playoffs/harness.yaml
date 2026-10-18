@@ -2,6 +2,24 @@ appId: com.courtchamp
 ---
 - tapOn:
     id: "tab-home"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - repeat:
+          times: 8
+          commands:
+            - swipe:
+                start: 50%, 25%
+                end: 50%, 85%
+                duration: 150
+      - scrollUntilVisible:
+          element:
+            id: ${BUTTON}
+          direction: DOWN
+          timeout: 60000
+          speed: 60
+          centerElement: true
 - tapOn:
     id: ${BUTTON}
 - extendedWaitUntil:

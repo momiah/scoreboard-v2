@@ -17,7 +17,9 @@ import {
   LADDER_PLAYOFF_TIE_STATUS,
 } from "@shared";
 import {
+  LADDER_PLAYOFF_HOST_ARRANGE_HOURS,
   getLadderPlayoffLegHost,
+  isLadderPlayoffHostArrangeOverdue,
   roundLabel,
   tallyLadderPlayoffTie,
 } from "@shared/helpers";
@@ -254,6 +256,7 @@ const PlayoffMatchDetails: React.FC = () => {
           scheduleDeclines: previous?.scheduleDeclines ?? 0,
         } as LadderMatch,
         opponentIds: tie[host === "team1" ? "side2" : "side1"]?.playerIds ?? [],
+        teammateIds: tie[host === "team1" ? "side1" : "side2"]?.playerIds ?? [],
       });
       return null;
     }
@@ -315,7 +318,11 @@ const PlayoffMatchDetails: React.FC = () => {
       );
     }
 
-    const waitsForMatchOne = leg === 2 && host && !legs.get(1);
+    const waitsForMatchOne =
+      leg === 2 &&
+      host &&
+      !legs.get(1) &&
+      !isLadderPlayoffHostArrangeOverdue(tie, new Date(now));
 
     if (host && userSide === host && !waitsForMatchOne) {
       return (
@@ -336,7 +343,7 @@ const PlayoffMatchDetails: React.FC = () => {
       ? `Arranged once both ${noun}s are known`
       : waitsForMatchOne
         ? userSide === host
-          ? "Your opponent arranges match 1 first"
+          ? `Your opponent arranges match 1 first. If they haven't within ${LADDER_PLAYOFF_HOST_ARRANGE_HOURS} hours, you can arrange yours.`
           : "Arranged once match 1 is arranged"
         : userSide
           ? "Waiting for your opponent to arrange their home match"

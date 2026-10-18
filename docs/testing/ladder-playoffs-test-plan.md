@@ -143,9 +143,13 @@ if the aggregate is level. Rules: games won across both matches decide it; best
 of 5 up to the Round of 32, best of 7 from the Round of 16 (3rd place included);
 the decider is best of 1 at the court of whichever match was played last. The
 lower-ranked side (by ladder rank) hosts match 1 and arranges it first; once it's
-arranged, the higher-ranked side can arrange match 2 for any date, even earlier. Each game has 10 days, with reminders on day 3, 6 and 9. At the
+arranged, the higher-ranked side can arrange match 2 for any date, even earlier. If the host hasn't arranged match 1 within `LADDER_PLAYOFF_HOST_ARRANGE_HOURS` (48) of the tie starting, the other side may arrange it (at the host's court), and the host is told. Each game has `LADDER_PLAYOFF_TIE_DAYS` (10) days, with reminders on day 3, 6 and 9. At the
 deadline: games won, then point difference, then the higher rank; nothing
-played means void, and the next-round opponent gets a walkover. Playoff games
+played: the one side with activity (it arranged a match, accepted one itself,
+or declined one) goes through on a walkover; if both or neither were active the
+tie is void and the next-round opponent gets a walkover. A disqualified player
+or team forfeits their tie (walkover to the opponent) and can't take part in the
+ladder any more; an ordinary forfeit does not disqualify anyone. Playoff games
 update the global profile only, never ladder standings.
 
 | # | Scenario | Expected |
@@ -177,7 +181,7 @@ update the global profile only, never ladder standings.
 | 6.15 | Both matches complete, aggregate level | One checked-in best-of-1 decider at the court of whichever match was played last; both sides notified 🅴 🅼 |
 | 6.16 | Both matches complete, one side ahead | Winner goes through; the next-round game fills; both semi winners open the Final; "Congratulations! You've reached the …" sent 🅴 |
 | 6.17 | Deadline passes with games played | Decided on games, then points, then rank; outcome "deadline" 🅴 |
-| 6.18 | Deadline passes with nothing played | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |
+| 6.18 | Deadline passes with nothing played and neither or both sides active | Void; the next-round opponent goes through on a walkover; voids chain up the bracket 🅴 |
 | 6.19 | Day 3, 6, 9 | One reminder each ("N days left to finish your …"), never repeated 🅴 |
 | 6.20 | Posted playoff matches | Not listed in Matchmaking 🅹 |
 | 6.21 | Settled game | A gold winner card above the aggregate: "Winner", the winner's name, and "Through to the {next round}" ("on a walkover" when it was one; "Ladder champion" for the Final, "Takes 3rd place" for the 3rd-place tie). A void game shows a grey card "Not played in time, so neither side goes through." 🅹 🅼 |
@@ -272,6 +276,13 @@ game, and the other tie in the round is finished by `mockFinishCompanionTie`.
 | `ladder-playoffs-not-in-matchmaking` | 6.20 |
 | `ladder-playoffs-report-during-playoffs`, `-approve-during-playoffs`, `-report-score` | 6.13, 6.14 |
 | `ladder-playoffs-notifications-open-playoffs` | 6.10d |
+| `ladder-playoffs-doubles-partner-accepts` | 6.38: the opponent arranges match 1, the user's partner accepts and then arranges match 2; the user is told of each and the tie screen updates |
+| `ladder-playoffs-doubles-partner-declines` | 6.38: the user's partner declines the opponent's match; the user is told and the tie returns to waiting for the opponent |
+| `ladder-playoffs-doubles-user-arranges` | 6.38: the user accepts and arranges, and the partner is notified of both |
+| `ladder-playoffs-doubles-partner-reported` | 6.38: the partner of the player who reported a game cannot approve it |
+| `ladder-playoffs-match-one-overdue`, `-not-overdue` | 6.35 |
+| `ladder-playoffs-job-host-overdue-notice` | 6.35: needs the deployed `processLadderPhases` and a wait |
+| `ladder-playoffs-job-inactive-walkover`, `-job-disqualified-walkover` | 6.36, 6.37: need the deployed `processLadderPhases` and a wait |
 | `ladder-playoffs-guide-button`, `-guide-pages` | 6.10j |
 | `ladder-playoffs-through-and-ready` | 6.32, 6.33 |
 | `ladder-playoffs-tie-wording` | 6.34 |
@@ -298,6 +309,11 @@ game, and the other tie in the round is finished by `mockFinishCompanionTie`.
 | 6.33d | Both matches complete, aggregate level | "You have a deciding game left to play": "You have a deciding game left to play as your matches in the {round} of {ladder} resulted in a draw!" 🅴 |
 | 6.33e | The away side hasn't answered a posted playoff match `LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS` (24 today) after it was arranged (checked every 15 minutes by `processLadderPhases`) | The match is accepted for them (`autoAccepted: true`, the decline count unchanged). The away side gets "You didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for you." and the host "Your opponent didn't reply within 24 hours, so playoff match N at {court}, {date} has been accepted for them." A "play now" offer is never accepted for anyone, and nothing happens once the tie is over. Arranging again (after a decline) starts a new 24 hours 🅴 🅼 |
 | 6.34 | Wording | A playoff pairing is a "tie" everywhere ("Round of 16 · Tie 3", "3rd-place tie", "Each playoff tie is two matches", "This tie must be finished by …", "Playoff tie not played", "Only the players in this tie can see this chat"); "game" means a single game, and notifications say "home and away matches" 🅹 🅼 |
+| 6.35 | The host hasn't arranged match 1 `LADDER_PLAYOFF_HOST_ARRANGE_HOURS` (48) hours after the tie started | The other side gets an Arrange button for match 1 (at the host's court); the host gets "You haven't arranged match 1 in {ladder} yet. {opponent} can now arrange their home match without waiting for you." once (`hostOverdueNoticeSentAt`). Before 48 hours the waiting side only sees "Waiting for your opponent to arrange their home match" 🅴 🅹 🅼 |
+| 6.36 | Deadline passes, only one side was active | That side goes through by walkover (outcome walkover, `walkoverReason: inactiveOpponent`); the other is told "You've been knocked out in the {round} of {ladder} because you didn't arrange or play a match before the deadline." and the winner "Your opponent didn't arrange or play a match, so you go through on a walkover." The decider is ignored when judging activity. The job settles this every 15 minutes 🅴 🅼 |
+| 6.37 | A player (or either member of a doubles team) is disqualified before or during the tie | The tie is settled by walkover to the opponent (`disqualifiedOpponent`) by the next job run, with "…because you've been disqualified from the ladder."; a tie already played is untouched 🅴 🅼 |
+| 6.38 | Doubles ties | Either partner can arrange, accept, decline and offer play-now; the other partner is told ("Your partner {name} arranged / accepted / declined playoff match N…", "Your partner {name} offered to play match 2 now…"); the opponent's two players are both notified; the reporter's partner cannot approve a reported game but the opponents can; all four players receive through, knocked-out and placing notifications 🅴 🅹 🅼 |
+| 6.39 | Rules and Terms screens | No block of text longer than a short paragraph: headings, short paragraphs and lists, with the day and hour numbers taken from the shared constants 🅹 |
 
 ## 7. Before the playoffs: season close
 

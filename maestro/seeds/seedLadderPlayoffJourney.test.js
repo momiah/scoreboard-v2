@@ -1,5 +1,6 @@
 const mockWrites = [];
 const mockDocs = new Map();
+const mockUpdates = [];
 
 jest.mock("../../services/firebase.config", () => ({ db: {} }));
 jest.mock("firebase/firestore", () => ({
@@ -19,7 +20,9 @@ jest.mock("firebase/firestore", () => ({
   query: (ref) => ref,
   where: () => ({}),
   setDoc: async () => {},
-  updateDoc: async () => {},
+  updateDoc: async (ref, data) => {
+    mockUpdates.push({ path: ref.path, data });
+  },
   writeBatch: () => ({
     set: (ref, data, options) =>
       mockWrites.push({ op: "set", path: ref.path, data, options }),
@@ -41,7 +44,10 @@ jest.mock("firebase/firestore", () => ({
 }));
 
 import { decideLadderPlayoffTie, tallyLadderPlayoffTie } from "@shared";
-import { MAESTRO_PO_LADDER_ID } from "./seedLadderPlayoffs";
+import {
+  MAESTRO_PO_DOUBLES_LADDER_ID,
+  MAESTRO_PO_LADDER_ID,
+} from "./seedLadderPlayoffs";
 import { realWorldProblems } from "./realWorldChecks.helper";
 import {
   JOURNEY_OUTCOME,
@@ -84,6 +90,7 @@ const pendingGames = (match) =>
 beforeEach(() => {
   mockWrites.length = 0;
   mockDocs.clear();
+  mockUpdates.length = 0;
 });
 
 describe("seedLadderPlayoffJourney", () => {
@@ -97,6 +104,19 @@ describe("seedLadderPlayoffJourney", () => {
       status: "scheduled",
     });
     expect(legs(outcome.tieId)).toHaveLength(0);
+  });
+
+  it("points the promotion notification at the tie the user is in", async () => {
+    const outcome = await seed({
+      round: JOURNEY_ROUND.FINAL,
+      stage: JOURNEY_STAGE.LEG2_FINISHING,
+      outcome: JOURNEY_OUTCOME.WIN,
+    });
+    expect(outcome.tieId).toBe("r4-s0");
+    expect(mockUpdates).toContainEqual({
+      path: `users/test-user/notifications/maestro-po-promotion-${MAESTRO_PO_LADDER_ID}`,
+      data: { "data.tieId": "r4-s0" },
+    });
   });
 
   it("carries the bracket to the quarter-final with the user through", async () => {
@@ -240,5 +260,102 @@ describe("seedLadderPlayoffJourney", () => {
         ).toEqual([]);
       });
     });
+  });
+
+  describe("doubles", () => {
+    const doublesMatches = () =>
+      [...mockDocs]
+        .filter(([path]) =>
+          path.startsWith(
+            `ladders/${MAESTRO_PO_DOUBLES_LADDER_ID}/ladderMatches/`,
+          ),
+        )
+        .map(([, data]) => data);
+    const doublesTies = () =>
+      [...mockDocs]
+        .filter(([path]) =>
+          path.startsWith(
+            `ladders/${MAESTRO_PO_DOUBLES_LADDER_ID}/playoffTies/`,
+          ),
+        )
+        .map(([, data]) => data);
+
+    it("seeds pairs: four participants, both teams, everyone checked in", async () => {
+      const outcome = await seed({
+        doubles: true,
+        round: JOURNEY_ROUND.R16,
+        stage: JOURNEY_STAGE.LEG2_FINISHING,
+        outcome: JOURNEY_OUTCOME.WIN,
+      });
+      expect(outcome.ladderId).toBe(MAESTRO_PO_DOUBLES_LADDER_ID);
+      const live = doublesMatches().find(
+        (match) => match.ladderMatchId === `${outcome.tieId}-leg2`,
+      );
+      expect(live.ladderType).toBe("Doubles");
+      expect(live.participants).toHaveLength(4);
+      expect(live.teams.map((team) => team.playerIds.length)).toEqual([2, 2]);
+      expect([...live.checkIn.checkedInBy].sort()).toEqual(
+        [...live.participants].sort(),
+      );
+      expect(
+        realWorldProblems({ ties: doublesTies(), matches: doublesMatches() }),
+      ).toEqual([]);
+    });
+
+    it("has the opponent's player report the last game for the user to approve", async () => {
+      const outcome = await seed({
+        doubles: true,
+        stage: JOURNEY_STAGE.LEG1_FINISHING,
+      });
+      const [leg1] = doublesMatches().filter(
+        (match) => match.playoffTieId === outcome.tieId,
+      );
+      const [pending] = leg1.games.filter(
+        (game) => game.approvalStatus === "pending",
+      );
+      expect(leg1.participants).toContain(pending.reporter);
+      expect(pending.reporter).not.toBe("test-user");
+      expect(
+        leg1.teams.find((team) => team.playerIds.includes("test-user"))
+          .playerIds,
+      ).not.toContain(pending.reporter);
+    });
+
+    it("has the user's partner report a game the user cannot approve", async () => {
+      const outcome = await seed({
+        doubles: true,
+        stage: JOURNEY_STAGE.PARTNER_REPORTED,
+      });
+      const [leg1] = doublesMatches().filter(
+        (match) => match.playoffTieId === outcome.tieId,
+      );
+      const [pending] = leg1.games.filter(
+        (game) => game.approvalStatus === "pending",
+      );
+      const userTeam = leg1.teams.find((team) =>
+        team.playerIds.includes("test-user"),
+      );
+      expect(userTeam.playerIds).toContain(pending.reporter);
+      expect(pending.reporter).not.toBe("test-user");
+    });
+
+    it.each([
+      [JOURNEY_ROUND.R16, JOURNEY_STAGE.DECIDER_FINISHING, JOURNEY_OUTCOME.WIN],
+      [JOURNEY_ROUND.SEMI, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.LOSS],
+      [JOURNEY_ROUND.FINAL, JOURNEY_STAGE.LEG2_FINISHING, JOURNEY_OUTCOME.WIN],
+      [
+        JOURNEY_ROUND.THIRD_PLACE,
+        JOURNEY_STAGE.LEG2_FINISHING,
+        JOURNEY_OUTCOME.LOSS,
+      ],
+    ])(
+      "matches what production would have (%s %s %s)",
+      async (round, stage, outcome) => {
+        await seed({ doubles: true, round, stage, outcome });
+        expect(
+          realWorldProblems({ ties: doublesTies(), matches: doublesMatches() }),
+        ).toEqual([]);
+      },
+    );
   });
 });

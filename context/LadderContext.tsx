@@ -61,6 +61,7 @@ import {
   getLadderPlayoffLegHost,
   buildLadderMatchExtension,
   canDeclineLadderPlayoffMatch,
+  isLadderPlayoffHostArrangeOverdue,
   validateLadderMatchReschedule,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
@@ -1529,7 +1530,11 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           const otherLeg = otherLegSnap.exists()
             ? (otherLegSnap.data() as LadderMatch)
             : null;
-          if (leg === 2 && (!otherLeg || isLadderMatchCalledOff(otherLeg))) {
+          if (
+            leg === 2 &&
+            (!otherLeg || isLadderMatchCalledOff(otherLeg)) &&
+            !isLadderPlayoffHostArrangeOverdue(tie, new Date())
+          ) {
             return { success: false, reason: "order" } as const;
           }
           transaction.set(

@@ -42,6 +42,7 @@ booted simulator with the dev client installed:
 ```bash
 set -a && source .maestro/.env && set +a
 export MAESTRO_PLAYOFF_TIE_DAYS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_TIE_DAYS")
+export MAESTRO_LADDER_HOST_ARRANGE_HOURS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_HOST_ARRANGE_HOURS")
 export MAESTRO_LADDER_AUTO_ACCEPT_HOURS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")
 maestro test .maestro/flows/reject-decline-opens-dispute.yaml   # one flow
 maestro test .maestro/flows                                     # whole suite
@@ -85,3 +86,20 @@ this ruled out (covered by a Jest test on the guard function instead).
 ## CI
 
 Not wired up yet — see `docs/testing/maestro.md`.
+
+## Android
+
+The flows run on an Android emulator with `MAESTRO_DEVICE=emulator-5554 .maestro/run-suite.sh <pattern>`
+(`run-suite.sh` re-applies `adb reverse tcp:8090 tcp:8090` before each flow, and `login.yaml` taps the
+`http://localhost:8090` dev-client entry). `utilities/playoffs/harness.yaml` scrolls the harness list on
+Android, because off-screen buttons aren't in Android's accessibility tree.
+
+Setup notes (June 2026): the repo's native Android build fails as it stands (reanimated 3.17.5 on RN 0.81,
+`react-native-compressor` 1.19.2 references a missing function, `react-native-background-upload` uses the
+removed `kotlin-android-extensions` plugin). A local debug build needs those patched in `node_modules`
+(not committed) and `react-native-reanimated@3.19.5` installed with `--no-save` for both the native build
+and Metro; restore 3.17.5 for iOS afterwards.
+
+Known blocker: on Android 15+ (edge-to-edge) the Competitions header sits under the status bar, so the
+notifications bell and the "+" button can't be tapped. Every playoff flow opens the tie through the
+notifications screen, so none can run on Android until that is fixed.

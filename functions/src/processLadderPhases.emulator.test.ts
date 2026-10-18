@@ -203,6 +203,7 @@ describe("playoffs generated for a 2048-player ladder", () => {
       standingsFinalised: ["L2048"],
       playoffTiesSettled: [],
       playoffRemindersSent: 0,
+      playoffHostNoticesSent: 0,
       playoffMatchesAutoAccepted: [],
     });
     expect(await ladderData("L2048")).toMatchObject({
@@ -227,7 +228,7 @@ describe("playoffs generated for a 2048-player ladder", () => {
       type: "ladder",
       message:
         `Congratulations! You've made the playoffs for Emulator 2048. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
-      data: { ladderId: "L2048", tab: "Playoffs" },
+      data: { ladderId: "L2048", tab: "Playoffs", tieId: expect.stringMatching(/^r1-s\d+$/) },
     });
     expect(eliminated[0]).toMatchObject({
       senderId: "system",

@@ -1,0 +1,53 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-journey-doubles-r16-started"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-doubles-opponent-arranges-leg1"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*arranged playoff match 1 at.*Open it to accept or decline.*"
+      TIE: "r1-s1"
+- tapOn:
+    id: "playoff-match-leg1"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-confirm-request"
+    timeout: 15000
+- tapOn:
+    id: "playoff-match-confirm-accept"
+- assertNotVisible:
+    id: "playoff-match-confirm-accept"
+- runFlow: ../utilities/playoffs/back-to-lobby.yaml
+- tapOn:
+    id: "playoff-match-leg2-arrange"
+- extendedWaitUntil:
+    visible: "Arrange match 2"
+    timeout: 15000
+- tapOn: "Select Date"
+- tapOn:
+    point: 23%, 52%
+- tapOn: "Confirm Date"
+- tapOn:
+    id: "add-ladder-match-terms"
+- tapOn:
+    id: "add-ladder-match-submit"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-leg2"
+    timeout: 20000
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-doubles-partner-accepted-leg1"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-doubles-partner-arranged-leg2"

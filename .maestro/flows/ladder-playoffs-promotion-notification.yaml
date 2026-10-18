@@ -25,9 +25,7 @@ onFlowStart:
 - tapOn: ".*Congratulations! You've made the playoffs for Maestro Playoffs 2048. You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to play your next round..*"
 - extendedWaitUntil:
     visible:
-      id: "ladder-playoffs-bracket"
+      id: "playoff-match-details"
     timeout: 40000
-- assertVisible:
-    id: "bracket-game-r1-s8"
+- assertVisible: "Round of 128 · Tie 9"
 - assertVisible: ".*P0008 S.*"
-- assertVisible: ".*Round of 128.*"

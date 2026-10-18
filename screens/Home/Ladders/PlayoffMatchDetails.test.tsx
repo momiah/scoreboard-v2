@@ -74,7 +74,7 @@ const entrant = (key: string) => ({
   homeCourt: null,
 });
 
-const ladder = {
+let ladder: Record<string, unknown> = {
   ladderId: "L1",
   name: "Test Ladder",
   ladderType: "Singles",
@@ -164,7 +164,12 @@ const ranked = (firstHost: "team1" | "team2") => {
   };
 };
 
+const SCHEDULED_AT = new Date("2026-10-01T09:00:00Z");
+
 beforeEach(() => {
+  jest.useFakeTimers({ advanceTimers: true });
+  jest.setSystemTime(new Date(SCHEDULED_AT.getTime() + 60 * 60 * 1000));
+  ladder = { ...ladder, ladderType: "Singles" };
   mockNavigate.mockClear();
   mockHomeCourt.mockReturnValue({
     homeCourt,
@@ -173,6 +178,10 @@ beforeEach(() => {
     loading: false,
     confirmHomeCourt: jest.fn(),
   });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe("PlayoffMatchDetails", () => {
@@ -222,7 +231,11 @@ describe("PlayoffMatchDetails", () => {
       away.getByText("Waiting for your opponent to arrange their home match"),
     ).toBeTruthy();
     expect(away.queryByTestId("playoff-match-leg2-arrange")).toBeNull();
-    expect(away.getByText("Your opponent arranges match 1 first")).toBeTruthy();
+    expect(
+      away.getByText(
+        "Your opponent arranges match 1 first. If they haven't within 48 hours, you can arrange yours.",
+      ),
+    ).toBeTruthy();
     expect(host.getByText("Arranged once match 1 is arranged")).toBeTruthy();
 
     const afterMatchOne = renderScreen({
@@ -239,6 +252,15 @@ describe("PlayoffMatchDetails", () => {
     expect(away.getByTestId("playoff-match-leg2-host")).toHaveTextContent(
       /U2$/,
     );
+  });
+
+  it("lets the other side arrange match 2 once match 1 is 48 hours overdue", () => {
+    jest.setSystemTime(new Date(SCHEDULED_AT.getTime() + 48 * 60 * 60 * 1000));
+    const away = renderScreen({ userId: "u2", tie: ranked("team1") });
+    expect(away.getByTestId("playoff-match-leg2-arrange")).toBeTruthy();
+    expect(away.queryByTestId("playoff-match-leg2-waiting")).toBeNull();
+    const host = renderScreen({ userId: "u1", tie: ranked("team1") });
+    expect(host.getByTestId("playoff-match-leg1-arrange")).toBeTruthy();
   });
 
   it("names the host for onlookers, and waits for both players before that", () => {
@@ -411,5 +433,85 @@ describe("PlayoffMatchDetails", () => {
       );
       expect(view.queryByText(/coin/i)).toBeNull();
     }
+  });
+
+  describe("doubles", () => {
+    const pair = (key: string) => ({
+      ...entrant(key),
+      entrantKey: `team-${key}`,
+      teamId: `t-${key}`,
+      players: [key, `${key}b`].map((userId) => ({
+        userId,
+        firstName: userId.toUpperCase(),
+        lastName: "",
+        username: userId,
+      })),
+    });
+    const doublesTie = () => {
+      const tie = buildLadderPlayoffTies({
+        ladderId: "L1",
+        qualifiers: [pair("u1"), pair("u2")],
+        createdAt: new Date("2026-10-01T09:00:00Z"),
+      })[0];
+      return {
+        ...tie,
+        side1: { ...tie.side1, rank: 9 },
+        side2: { ...tie.side2, rank: 2 },
+      };
+    };
+
+    beforeEach(() => {
+      ladder = { ...ladder, ladderType: "Doubles" };
+    });
+
+    it("lets either partner of the lower-ranked pair arrange match 1, and makes the other pair wait", () => {
+      const partner = renderScreen({ userId: "u1b", tie: doublesTie() });
+      expect(partner.getByTestId("playoff-match-leg1-arrange")).toBeTruthy();
+      const opponentPartner = renderScreen({
+        userId: "u2b",
+        tie: doublesTie(),
+      });
+      expect(
+        opponentPartner.getByText(
+          "Waiting for your opponent to arrange their home match",
+        ),
+      ).toBeTruthy();
+      expect(
+        opponentPartner.queryByTestId("playoff-match-leg1-arrange"),
+      ).toBeNull();
+    });
+
+    it("names both players on each side", () => {
+      const view = renderScreen({ userId: "u1b", tie: doublesTie() });
+      expect(view.getByTestId("playoff-match-aggregate")).toHaveTextContent(
+        /U1.*U1B.*U2.*U2B/,
+      );
+    });
+
+    it("shows the awaiting banner to the partner of the pair that arranged", () => {
+      const matches = [
+        leg(1, {
+          matchStatus: "posted",
+          participants: ["u1", "u1b", "u2", "u2b"],
+          createdBy: "u1",
+          teams: [
+            { teamId: "t-u1", teamKey: "team-u1", playerIds: ["u1", "u1b"] },
+            { teamId: "t-u2", teamKey: "team-u2", playerIds: ["u2", "u2b"] },
+          ],
+        }),
+      ];
+      const partner = renderScreen({
+        userId: "u1b",
+        tie: doublesTie(),
+        matches,
+      });
+      expect(partner.getByTestId("playoff-match-leg1")).toBeTruthy();
+      const opponent = renderScreen({
+        userId: "u2b",
+        tie: doublesTie(),
+        matches,
+      });
+      expect(opponent.getByTestId("playoff-match-leg1")).toBeTruthy();
+    });
   });
 });

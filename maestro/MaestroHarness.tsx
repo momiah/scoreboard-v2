@@ -68,6 +68,7 @@ import {
 import { mockPartnerSetHomeCourt } from "./seeds/mockPartnerSetHomeCourt";
 import {
   MAESTRO_PO_CANCELLED_SIZE,
+  MAESTRO_PO_DOUBLES_LADDER_ID,
   MAESTRO_PO_LADDER_ID,
   MAESTRO_PO_PAID_LADDER_ID,
   PLAYOFF_VARIANT,
@@ -90,6 +91,8 @@ import {
 import {
   assertTieChatDelivered,
   mockOpponentArrangesLeg,
+  mockPartnerArrangesLeg,
+  mockPartnerRespondsToLeg,
   mockOpponentTieChat,
   mockPlayoffNotification,
   PLAYOFF_NOTIFICATION_KINDS,
@@ -123,11 +126,18 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText numberOfLines={1} {...props} style={[{ fontSize: 7 }, props.style]} />
 );
 const PLAYOFF_LADDER_VARIANTS = [
-  { suffix: "", ladderId: MAESTRO_PO_LADDER_ID, entryFee: 0 },
+  { suffix: "", ladderId: MAESTRO_PO_LADDER_ID, entryFee: 0, doubles: false },
   {
     suffix: "-paid",
     ladderId: MAESTRO_PO_PAID_LADDER_ID,
     entryFee: PLAYOFF_PAID_ENTRY_FEE,
+    doubles: false,
+  },
+  {
+    suffix: "-doubles",
+    ladderId: MAESTRO_PO_DOUBLES_LADDER_ID,
+    entryFee: 0,
+    doubles: true,
   },
 ];
 
@@ -151,7 +161,7 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
     </HarnessButton>
 
-    {PLAYOFF_LADDER_VARIANTS.flatMap(({ suffix, ladderId, entryFee }) => [
+    {PLAYOFF_LADDER_VARIANTS.flatMap(({ suffix, ladderId, entryFee, doubles }) => [
       ...[
         ["r16-started", JOURNEY_ROUND.R16, JOURNEY_STAGE.STARTED],
         ["r16-leg1-finishing", JOURNEY_ROUND.R16, JOURNEY_STAGE.LEG1_FINISHING],
@@ -177,11 +187,46 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
             round: round as never,
             stage: stage as never,
             outcome: outcome as never,
+            doubles,
             ladderId,
             entryFee,
           }),
       })),
-      ...Object.values(PLAYOFF_MATCH_STAGE).map((stage) => ({
+      ...(doubles
+        ? [
+            {
+              id: `maestro-seed-journey${suffix}-r16-leg1-partner-reported`,
+              label: `Seed Journey${suffix} partner reported`,
+              run: () =>
+                seedLadderPlayoffJourney({
+                  testUser: currentUser,
+                  stage: JOURNEY_STAGE.PARTNER_REPORTED as never,
+                  doubles,
+                  ladderId,
+                }),
+            },
+            ...[1, 2].map((leg) => ({
+              id: `maestro-mock-po${suffix}-partner-arranges-leg${leg}`,
+              label: `Mock Partner Arranges Match ${leg}`,
+              run: () =>
+                mockPartnerArrangesLeg({ testUser: currentUser, ladderId, leg }),
+            })),
+            ...[1, 2].flatMap((leg) =>
+              (["accept", "decline"] as const).map((reply) => ({
+                id: `maestro-mock-po${suffix}-partner-${reply}-leg${leg}`,
+                label: `Mock Partner ${reply} Match ${leg}`,
+                run: () =>
+                  mockPartnerRespondsToLeg({
+                    testUser: currentUser,
+                    ladderId,
+                    leg,
+                    accept: reply === "accept",
+                  }),
+              })),
+            ),
+          ]
+        : []),
+      ...(doubles ? [] : Object.values(PLAYOFF_MATCH_STAGE)).map((stage) => ({
         id: `maestro-seed-playoff-match${suffix}-${stage}`,
         label: `Seed Playoff Match${suffix} (${stage})`,
         run: () =>
@@ -226,6 +271,19 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
           ["companion-winner-through", { tie: "companion", who: "winner", includes: "You've made it to the" }],
           ["companion-loser-third-place", { tie: "companion", who: "loser", includes: "you'll play for 3rd place against" }],
           ["opponent-auto-accept-host", { tie: "user", who: "opponent", includes: "didn't reply within 24 hours" }],
+          ["opponent-host-overdue", { tie: "user", who: "opponent", includes: "You haven't arranged match 1" }],
+          ["opponent-out-inactive", { tie: "user", who: "opponent", includes: "because you didn't arrange or play a match before the deadline" }],
+          ["opponent-out-disqualified", { tie: "user", who: "opponent", includes: "because you've been disqualified from the ladder" }],
+          ["partner-arranged-leg1", { tie: "user", who: "partner", includes: "Your partner" }],
+          ["partner-arranged-leg2", { tie: "user", who: "partner", includes: "arranged playoff match 2" }],
+          ["partner-accepted-leg1", { tie: "user", who: "partner", includes: "accepted playoff match 1" }],
+          ["partner-accepted-leg2", { tie: "user", who: "partner", includes: "accepted playoff match 2" }],
+          ["partner-declined-leg1", { tie: "user", who: "partner", includes: "declined playoff match 1" }],
+          ["partner-offered-play-here", { tie: "user", who: "partner", includes: "offered to play match 2 now" }],
+          ["partner-placed-1st", { tie: "user", who: "partner", includes: "you have placed 1st" }],
+          ["partner-through-to-the-quarter-final", { tie: "user", who: "partner", includes: "through to the Quarter-Final" }],
+          ["partner-knocked-out-r16", { tie: "user", who: "partner", includes: "knocked out in the Round of 16" }],
+          ["partner-decider", { tie: "user", who: "partner", includes: "deciding game left to play" }],
           ["opponent-placed-1st", { tie: "user", who: "opponent", includes: "you have placed 1st" }],
           ["opponent-placed-2nd", { tie: "user", who: "opponent", includes: "you have placed 2nd" }],
           ["opponent-placed-3rd", { tie: "user", who: "opponent", includes: "you have placed 3rd" }],

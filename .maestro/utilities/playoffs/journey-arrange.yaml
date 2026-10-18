@@ -29,7 +29,7 @@ appId: com.courtchamp
 - assertVisible:
     id: "playoff-match-leg1-waiting"
 - assertVisible: ".*Waiting for your opponent to arrange their home match"
-- assertVisible: ".*Your opponent arranges match 1 first"
+- assertVisible: ".*Your opponent arranges match 1 first.*"
 - assertNotVisible:
     id: "playoff-match-leg2-arrange"
 

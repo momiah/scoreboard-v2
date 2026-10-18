@@ -129,4 +129,71 @@ describe("usePlayoffMatchScheduling", () => {
       ],
     ]);
   });
+
+  describe("doubles", () => {
+    const doubles = (createdBy: string) =>
+      match({
+        createdBy,
+        participants: ["host", "hostPartner", "away", "awayPartner"],
+        teams: [
+          { teamId: "t1", teamKey: "k1", playerIds: ["host", "hostPartner"] },
+          { teamId: "t2", teamKey: "k2", playerIds: ["away", "awayPartner"] },
+        ],
+      });
+
+    it("tells both opponents and the arranger's partner when a match is arranged", async () => {
+      const { result } = renderHook(() => usePlayoffMatchScheduling(), {
+        wrapper,
+      });
+      await act(() =>
+        result.current.notifyArranged({
+          ladderId: "L1",
+          match: doubles("host"),
+          opponentIds: ["away", "awayPartner"],
+          teammateIds: ["host", "hostPartner"],
+        }),
+      );
+      expect(messages()).toEqual([
+        [
+          "away",
+          expect.stringMatching(/arranged playoff match 1 at Bethnal Green/),
+        ],
+        [
+          "awayPartner",
+          expect.stringMatching(/arranged playoff match 1 at Bethnal Green/),
+        ],
+        [
+          "hostPartner",
+          expect.stringMatching(
+            /^Your partner .* arranged playoff match 1 at Bethnal Green/,
+          ),
+        ],
+      ]);
+    });
+
+    it("tells the arranging pair and the answerer's partner when one answers", async () => {
+      mockRespondToPlayoffMatch.mockResolvedValue({
+        success: true,
+        notifyUserIds: ["away", "awayPartner"],
+      });
+      const { result } = renderHook(() => usePlayoffMatchScheduling(), {
+        wrapper,
+      });
+      await act(() =>
+        result.current.respond({
+          ladderId: "L1",
+          match: doubles("away"),
+          accept: true,
+        }),
+      );
+      expect(messages()).toEqual([
+        ["away", expect.stringMatching(/accepted playoff match 1/)],
+        ["awayPartner", expect.stringMatching(/accepted playoff match 1/)],
+        [
+          "hostPartner",
+          expect.stringMatching(/^Your partner .* accepted playoff match 1/),
+        ],
+      ]);
+    });
+  });
 });

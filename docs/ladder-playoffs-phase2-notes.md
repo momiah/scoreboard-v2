@@ -65,6 +65,14 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
 6. **Deadline:** 10 days per round. When time runs out the game is decided on
    games won, then points, then ladder rank; if nothing was played neither side
    goes through and the next opponent gets a walkover.
+   **Inactive host:** if the host hasn't arranged match 1 within
+   `LADDER_PLAYOFF_HOST_ARRANGE_HOURS` (48) of the tie starting, the other side
+   may arrange it and the host is told. At the deadline with nothing played,
+   the only side with activity (arranged, accepted or declined; auto-accepts and
+   the decider don't count) goes through on a walkover; both or neither
+   active is void. A forfeit is not a disqualification: a disqualified player
+   or team (any member, in doubles) forfeits their tie and can't take part in
+   the ladder at all, and the job settles those ties by walkover.
 7. **Prizes:** the whole entry fee goes into the cash pot and the 10% platform
    fee is paid on top (£20 + £2). Cash and CP both follow the shared
    `LADDER_PAYOUT_STRUCTURE` (courtchamps-shared #53, #61): whole amounts per
@@ -84,6 +92,13 @@ Sent by the backend (reuse `functions/src/helpers/sendNotification.ts`,
    fresh reading (mocked, stale, inaccurate or distant readings refused) when
    check-in's location check passes and when a no-show is reported. A no-show
    can't be reported once the opponent has arrived.
+
+### Notifications and doubles
+
+- Every playoff notification about a tie carries `tieId` and opens the tie
+  screen (a placing notification still opens Summary).
+- In doubles either partner can arrange, accept, decline or offer play-now, and
+  the other partner is told; the reporter's partner can't approve a game.
 
 ## Phase 3 (not started)
 

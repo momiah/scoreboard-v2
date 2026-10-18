@@ -7,11 +7,17 @@ onFlowStart:
     env:
       BUTTON: "maestro-seed-playoff-match-settled"
 - runFlow:
-    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
     env:
       NOTIFICATION: ".*Your Quarter-Final against .* is ready! You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to complete both matches.*"
-- assertVisible:
-    id: "ladder-playoffs-bracket"
+      TIE: "r2-s0"
+- assertVisible: ".*Quarter-Final · Tie.*"
+- tapOn:
+    id: "playoff-match-back"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
 - tapOn: "Round of 16"
 - runFlow:
     file: ../utilities/playoffs/open-bracket-tie.yaml

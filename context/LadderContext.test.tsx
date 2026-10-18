@@ -1340,6 +1340,33 @@ describe("playoff match order and play-now offers", () => {
     expect(store[legPath(2)]).toMatchObject({ matchDate: "19-10-2030" });
   });
 
+  it("lets match 2 be arranged without match 1 once the host is 48 hours late", async () => {
+    const late = {
+      ...tie,
+      status: "scheduled",
+      scheduledAt: new Date(Date.now() - 49 * 60 * 60 * 1000),
+    };
+    const { store } = makeStore({});
+    const result = await renderLadder();
+    expect(
+      await result.current.arrangePlayoffMatch({
+        ladder: { ladderId: LADDER, ladderType: "Singles" } as never,
+        tie: late as never,
+        leg: 2,
+        host: "team1",
+        input: {
+          court: court as never,
+          matchDate: "19-10-2030",
+          matchTime: { start: "18:00" },
+          currencyType: "GBP",
+          shuttleType: "Feather",
+        },
+        userId: "hi",
+      }),
+    ).toEqual({ success: true });
+    expect(store[legPath(2)]).toMatchObject({ playoffLeg: 2, createdBy: "hi" });
+  });
+
   it("offers match 2 at match 1's court and carries the check-in over on accept", async () => {
     const checkIn = {
       checkedInBy: ["lo", "hi"],
