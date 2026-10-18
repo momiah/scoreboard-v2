@@ -1,0 +1,43 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-seed-journey${SUFFIX}-r16-decider-win"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*made the playoffs for ${LADDER}.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-decider"
+- scrollUntilVisible:
+    element:
+      id: "playoff-match-decider"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: "playoff-match-decider"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-Extension"
+- extendedWaitUntil:
+    visible:
+      id: "extension-info-modal"
+    timeout: 10000
+- assertVisible: "Request extension"
+- tapOn: "Extend match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 20000
+- assertVisible: ".*day.* left to complete your match.*"
+- tapOn:
+    id: "match-details-burger"
+- assertVisible: ".*Already extended.*"

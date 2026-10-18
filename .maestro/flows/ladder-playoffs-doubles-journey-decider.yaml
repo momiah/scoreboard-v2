@@ -1,0 +1,38 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-journey-doubles-r16-leg2-level"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*made the playoffs for Maestro Playoffs Doubles 256.*"
+      TIE: "r1-s1"
+- tapOn:
+    id: "playoff-match-leg2"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- runFlow:
+    file: ../utilities/playoffs/approve-last-game.yaml
+    env:
+      MATCH: "r1-s1-leg2"
+      GAME: "g6"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*You have a deciding game left to play as your matches in the Round of 16 of Maestro Playoffs Doubles 256 resulted in a draw!.*"
+      TIE: "r1-s1"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-decider"
+    timeout: 60000
+- assertVisible: "Deciding game"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-doubles-partner-decider"

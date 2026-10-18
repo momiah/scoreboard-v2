@@ -34,6 +34,10 @@ import { db } from "../services/firebase.config";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
+import {
+  canApproveReportedGame,
+  getEffectiveApprovalLimit,
+} from "@shared/helpers";
 import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
@@ -76,6 +80,7 @@ import {
 
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { assertGameTransition } from "@/helpers/assertGameTransition";
 
 const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
@@ -626,13 +631,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const getCourts = async () => {
+  const getCourts = useCallback(async () => {
     const snapshot = await getDocs(collection(db, "courts"));
     return snapshot.docs.map((doc) => ({
-      courtId: doc.id,
       ...doc.data(),
+      courtId: doc.id,
     })) as unknown as Court[];
-  };
+  }, []);
 
   const addCourt = async (courtData: Court) => {
     try {
@@ -1526,11 +1531,26 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const approvalLimit = competitionData.approvalLimit || 1;
+      // STUB: a doubles approval limit above 1 is not race-safe. This function
+      // reads the game, then writes it back, so two opponents approving at the
+      // same time can overwrite each other and leave the game pending. Before
+      // the limit can be raised to 2, approveGame must become a single atomic
+      // transaction (read, add approver, decide approval, write). Singles is
+      // capped at 1 by getEffectiveApprovalLimit. Cloud functions ignore the
+      // approval limit; it only gates user approvals.
+      const approvalLimit = getEffectiveApprovalLimit(
+        game,
+        competitionData.approvalLimit,
+      );
       const existingApprovers = game.approvers || [];
 
       if (existingApprovers.some((a) => a.userId === userId)) {
         console.error("User has already approved this game");
+        return;
+      }
+
+      if (!canApproveReportedGame(game, userId)) {
+        console.error("Only a player on the opposing side can approve a game");
         return;
       }
 
@@ -1738,6 +1758,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             gameId,
             updatedGame,
             removeGame: false,
+            partialApproval: true,
           });
         }
       } else {
@@ -1824,6 +1845,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
       const currentUserData = await getUserById(userId);
       if (!currentUserData) {
         console.error("User not found");
+        return;
+      }
+
+      if (!canApproveReportedGame(game, userId)) {
+        console.error("Only a player on the opposing side can decline a game");
         return;
       }
 
@@ -1966,6 +1992,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     message,
     competitionId,
     competitionType = COMPETITION_TYPES.LEAGUE,
+    chatPath,
   }: {
     message: {
       text: string;
@@ -1974,15 +2001,18 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     };
     competitionId: string;
     competitionType?: string;
+    chatPath?: string[];
   }) => {
     const collectionRef =
       competitionType === COMPETITION_TYPES.TOURNAMENT
         ? "tournaments"
         : "leagues";
     try {
-      const messageRef = doc(
-        collection(db, collectionRef, competitionId, "chat"),
-      );
+      const chatCollection =
+        chatPath && chatPath.length > 0
+          ? collection(db, chatPath[0], ...chatPath.slice(1))
+          : collection(db, collectionRef, competitionId, "chat");
+      const messageRef = doc(chatCollection);
       const messageToSend = {
         _id: messageRef.id,
         text: message.text,
@@ -2504,11 +2534,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     gameId,
     updatedGame,
     removeGame = false,
+    partialApproval = false,
   }: {
     tournamentId: string;
     gameId: string;
     updatedGame: Game;
     removeGame?: boolean;
+    partialApproval?: boolean;
   }) => {
     try {
       const tournamentRef = doc(db, "tournaments", tournamentId);
@@ -2548,25 +2580,12 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             games: round.games.filter((game: Game) => game.gameId !== gameId),
           }));
         } else {
-          const newStatus = updatedGame.approvalStatus;
-
-          if (
-            (newStatus === "Pending" || newStatus === "pending") &&
-            currentGame.approvalStatus !== "Scheduled"
-          ) {
-            throw new Error(
-              "This game has already been reported. Please refresh to see the latest status.",
-            );
-          }
-
-          if (
-            (newStatus === "approved" || newStatus === "declined") &&
-            currentGame.approvalStatus !== "Pending" &&
-            currentGame.approvalStatus !== "pending" &&
-            currentGame.approvalStatus !== "Scheduled"
-          ) {
-            throw new Error("This game has already been processed.");
-          }
+          assertGameTransition(
+            currentGame.approvalStatus,
+            partialApproval
+              ? notificationTypes.RESPONSE.APPROVED_GAME
+              : updatedGame.approvalStatus,
+          );
 
           updatedFixtures = fixtures.map((round: Fixtures) => ({
             ...round,

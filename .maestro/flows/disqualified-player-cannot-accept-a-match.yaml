@@ -1,0 +1,38 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-cancel-user-disqualified"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Matchmaking.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Matchmaking.*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-card-maestro-cancel-match"
+    timeout: 20000
+- tapOn:
+    id: "matchmaking-card-maestro-cancel-match"
+- extendedWaitUntil:
+    visible:
+      id: "accept-ladder-match-disqualified"
+    timeout: 15000
+- assertVisible: ".*disqualified from this ladder due to multiple cheating offences.*"
+- assertVisible:
+    id: "accept-ladder-match-modal"

@@ -3,6 +3,11 @@ import { Modal, View, TouchableOpacity, Image, Alert } from "react-native";
 import { UserProfile } from "@shared/types";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
 import AddClubModal from "./AddClubModal";
 import AddLeagueModal from "./AddLeagueModal";
 import AddTournamentModal from "./AddTournamentModal";
@@ -21,13 +26,14 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
   setModalVisible,
   currentUser,
 }) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const [addClubModalVisible, setAddClubModalVisible] = useState(false);
   const [addLeagueModalVisible, setAddLeagueModalVisible] = useState(false);
   const [addTournamentModalVisible, setAddTournamentModalVisible] =
     useState(false);
 
   const handleOptionPress = (
-    option: "club" | "league" | "tournament" | "game",
+    option: "club" | "league" | "tournament" | "game" | "team",
   ) => {
     if (!currentUser) {
       Alert.alert(
@@ -42,6 +48,9 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
       setAddLeagueModalVisible(true);
     } else if (option === "tournament") {
       setAddTournamentModalVisible(true);
+    } else if (option === "team") {
+      setModalVisible(false);
+      navigation.navigate("CreateTeam");
     }
   };
 
@@ -156,6 +165,32 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
               </OptionContent>
               <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleOptionPress("team")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#0a1929",
+                borderRadius: 12,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: "#1a2b3d",
+                marginBottom: 15,
+              }}
+            >
+              <IconContainer>
+                <Ionicons name="people" size={30} color="#00A2FF" />
+              </IconContainer>
+              <OptionContent>
+                <OptionTitle>Create a Team</OptionTitle>
+                <OptionSubtitle>
+                  Pair up with a partner to form a doubles team you can enter
+                  into ladders
+                </OptionSubtitle>
+              </OptionContent>
+              <Ionicons name="chevron-forward" size={24} color="#A9A9A9" />
+            </TouchableOpacity>
           </OptionsContainer>
         </ModalContent>
       </ModalOverlay>
@@ -181,6 +216,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
           onSuccess={handleSuccess}
         />
       )}
+
     </Modal>
   );
 };

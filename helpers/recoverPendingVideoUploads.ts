@@ -10,11 +10,13 @@ import {
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { COLLECTION_NAMES } from "@shared";
-import { GameVideoUploadPayload } from "@shared/types";
+import { GameVideoType, GameVideoUploadPayload } from "@shared/types";
 
 type CheckR2VideoParams = {
   gameId: string;
   competitionId: string;
+  videoType?: GameVideoType;
+  videoId?: string;
 };
 
 type CheckR2VideoResponse = {
@@ -60,10 +62,21 @@ export const recoverPendingVideoUploads = async (userId: string) => {
       progress,
       platform,
       startedAt,
+      matchId,
+      videoType,
+      videoId,
     } = docSnap.data();
+    const videoRouting = {
+      ...(videoType ? { videoType } : {}),
+      ...(videoId ? { videoId } : {}),
+    };
 
     try {
-      const { data } = await checkR2VideoExists({ gameId, competitionId });
+      const { data } = await checkR2VideoExists({
+        gameId,
+        competitionId,
+        ...videoRouting,
+      });
 
       if (data.videoUrl) {
         await updateGameVideoUrl({
@@ -76,6 +89,8 @@ export const recoverPendingVideoUploads = async (userId: string) => {
           date,
           postedBy,
           teams,
+          ...(matchId ? { matchId } : {}),
+          ...videoRouting,
         });
         await deleteDoc(docSnap.ref);
         continue;

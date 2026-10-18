@@ -9,7 +9,16 @@ import { formatDateForStorage } from "../helpers/formatDateForStorage";
 import { Ionicons } from "@expo/vector-icons";
 import OptionSelector from "./OptionSelector";
 
-const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
+const DatePicker = ({
+  setValue,
+  watch,
+  errorText,
+  hasEndDate = true,
+  labelStyle,
+  playoffStartDate,
+  maxDate,
+  rangeMessage,
+}) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -81,14 +90,23 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
     }
   }, [hasEndDate, leagueLengthInMonths, startDate, setValue]);
 
-  const minimumDate = new Date();
-  const maximumDate = new Date(new Date().setMonth(new Date().getMonth() + 3));
+  const playoffMax = playoffStartDate
+    ? new Date(
+        playoffStartDate.getFullYear(),
+        playoffStartDate.getMonth(),
+        playoffStartDate.getDate() - 1,
+      )
+    : new Date(new Date().setMonth(new Date().getMonth() + 3));
+  // A caller can cap the selectable range earlier (e.g. ladder posting closes a
+  // week before playoffs); take whichever bound is earlier.
+  const maxSelectableDate =
+    maxDate && maxDate.getTime() < playoffMax.getTime() ? maxDate : playoffMax;
 
   return (
     <DatePickerContainer>
       <DatePickerContent>
         <LabelContainer>
-          <Label>Start Date</Label>
+          <Label style={labelStyle}>Start Date</Label>
           {errorText && <ErrorText>{errorText}</ErrorText>}
         </LabelContainer>
 
@@ -127,8 +145,8 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
             mode="date"
             display="default"
             onChange={handleTempDateChange}
-            minimumDate={minimumDate}
-            maximumDate={maximumDate}
+            minimumDate={new Date()}
+            maximumDate={maxSelectableDate}
           />
         )
       ) : (
@@ -142,8 +160,8 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
                 display="spinner"
                 themeVariant="dark"
                 onChange={handleTempDateChange}
-                minimumDate={minimumDate}
-                maximumDate={maximumDate}
+                minimumDate={new Date()}
+                maximumDate={maxSelectableDate}
               />
 
               <View
@@ -159,7 +177,12 @@ const DatePicker = ({ setValue, watch, errorText, hasEndDate = true }) => {
                   color={"#00A2FF"}
                 />
                 <DisclaimerText>
-                  Please select a date within the next 3 months.
+                  {rangeMessage ??
+                    (playoffStartDate
+                      ? `Please select a date before ${formatDateForDatePicker(
+                          playoffStartDate,
+                        )}.`
+                      : "Please select a date within the next 3 months.")}
                 </DisclaimerText>
               </View>
 
@@ -205,7 +228,7 @@ const DatePickerModalContent = styled.View({
 const DatePickerButton = styled.TouchableOpacity(({ isVisible }) => ({
   width: "100%",
   padding: 10,
-  backgroundColor: isVisible ? "#003366" : "#243237",
+  backgroundColor: isVisible ? "#003366" : "rgba(255, 255, 255, 0.1)",
   borderRadius: 5,
   alignItems: "center",
 }));

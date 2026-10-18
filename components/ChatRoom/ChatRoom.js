@@ -39,6 +39,8 @@ const ChatRoom = ({
   competitionName,
   endDate,
   competitionType,
+  chatPath,
+  privateNotice = /** @type {string | null} */ (null),
 }) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
@@ -62,10 +64,12 @@ const ChatRoom = ({
         ? "tournaments"
         : "leagues";
 
-    const q = query(
-      collection(db, collectionRef, competitionId, "chat"),
-      orderBy("createdAt", "asc"),
-    );
+    const chatCollection =
+      chatPath && chatPath.length > 0
+        ? collection(db, ...chatPath)
+        : collection(db, collectionRef, competitionId, "chat");
+
+    const q = query(chatCollection, orderBy("createdAt", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -115,12 +119,19 @@ const ChatRoom = ({
       message: newMessage,
       competitionId,
       competitionType,
+      chatPath,
     });
     setInputText("");
     Keyboard.dismiss();
 
     // Scroll to end after sending message
     scrollToEnd(true);
+
+    const chatTarget = {
+      competitionType,
+      ...(chatPath?.[0] === "ladders" ? { ladderId: chatPath[1] } : {}),
+      ...(chatPath?.[2] === "playoffTies" ? { tieId: chatPath[3] } : {}),
+    };
 
     const recipients = competitionParticipants.filter(
       (u) => u.userId !== currentUser?.userId,
@@ -145,6 +156,7 @@ const ChatRoom = ({
             lastMessage: `${currentUser?.username}: ${newMessage.text}`,
             createdAt: new Date(),
             competitionName,
+            ...chatTarget,
           },
           { merge: true },
         );
@@ -157,6 +169,7 @@ const ChatRoom = ({
           lastMessage: `${currentUser?.username}: ${newMessage.text}`,
           createdAt: new Date(),
           competitionName,
+          ...chatTarget,
         });
       }
     }
@@ -199,7 +212,10 @@ const ChatRoom = ({
             fontStyle: "italic",
           }}
         >
-          Only participants of the league can view this chat 📝
+          {privateNotice ??
+            (competitionType === COMPETITION_TYPES.LADDER
+              ? "Only the players in this game can see this chat 📝"
+              : "Only participants of the league can view this chat 📝")}
         </Text>
       </BlurView>
     );
@@ -276,8 +292,10 @@ const ChatRoom = ({
               : "Type a message..."
           }
           placeholderTextColor="#aaa"
+          testID="chat-room-input"
         />
         <SendButton
+          testID="chat-room-send"
           onPress={handleSend}
           disabled={!inputText.trim() || leagueHasEnded}
         >

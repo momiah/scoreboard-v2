@@ -4,17 +4,35 @@ import styled from "styled-components/native";
 import CourtChampsLogo from "../../assets/court-champ-logo-icon.png";
 import { useNavigation } from "@react-navigation/native";
 
-const ParticipantCarousel = ({ participants, admins, owner }) => {
+const ParticipantCarousel = ({
+  participants,
+  admins = [],
+  owner = null,
+  viewAllText,
+  onViewAll,
+}) => {
   const navigation = useNavigation();
 
   return (
     <ParticipantContainer>
-      <SectionTitle>Participants</SectionTitle>
+      <HeaderRow>
+        <SectionTitle>Participants</SectionTitle>
+        {viewAllText ? (
+          <ViewAllButton activeOpacity={0.7} onPress={onViewAll}>
+            <ViewAllText>{viewAllText}</ViewAllText>
+          </ViewAllButton>
+        ) : null}
+      </HeaderRow>
       {participants?.length > 0 ? (
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+        <ScrollView
+          testID="participant-carousel"
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+        >
           {participants.map((participant, index) => (
             <ParticipantView
               key={index}
+              testID={`participant-carousel-item-${index}`}
               onPress={() => {
                 navigation.navigate("UserProfile", {
                   userId: participant.userId,
@@ -55,11 +73,24 @@ const ParticipantContainer = styled.View({
   marginBottom: 20,
 });
 
+const HeaderRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: 10,
+});
+
 const SectionTitle = styled.Text({
   fontSize: 16,
   fontWeight: "bold",
   color: "#ffffff",
-  marginBottom: 10,
+});
+
+const ViewAllButton = styled.TouchableOpacity({});
+
+const ViewAllText = styled.Text({
+  color: "white",
+  fontSize: 11,
 });
 
 const ParticipantView = styled.TouchableOpacity({

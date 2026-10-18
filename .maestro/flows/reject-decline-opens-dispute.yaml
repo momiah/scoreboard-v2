@@ -1,0 +1,39 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-reject-game-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+
+- assertVisible:
+    id: "game-approval-modal"
+- assertVisible:
+    id: "game-approval-decline"
+- tapOn:
+    id: "game-approval-decline"
+
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible:
+    id: "dispute-original-result"
+- assertVisible:
+    id: "dispute-compose-note-input"
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- assertVisible:
+    id: "dispute-compose-submit"

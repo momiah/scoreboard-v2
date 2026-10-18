@@ -1,0 +1,40 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg2Accepted"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/open-leg.yaml
+    env:
+      CARD: "playoff-match-leg2"
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-CancelMatch"
+- extendedWaitUntil:
+    visible: ".*cancel this playoff match.*"
+    timeout: 5000
+- tapOn: "Send Request"
+- extendedWaitUntil:
+    visible: "Cancellation request sent"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "match-cancellation-awaiting"
+    timeout: 15000
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-cancel-accept"
+- tapOn:
+    id: "tab-competitions"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 30000
+- assertVisible:
+    id: "playoff-match-leg2-arrange"

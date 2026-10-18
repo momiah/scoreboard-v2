@@ -167,6 +167,7 @@ const AddGameDetails: React.FC<AddGameDetailsProps> = ({
         <ResultsContainer>
           <ScoreContainer>
             <ScoreInput
+              testID="add-game-score-input"
               keyboardType="number-pad"
               placeholder="00-00"
               placeholderSize={20}

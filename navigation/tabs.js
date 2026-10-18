@@ -11,6 +11,21 @@ import Clubs from "../screens/Home/Clubs/Clubs";
 import League from "../screens/Home/Leagues/League";
 import Club from "../screens/Home/Clubs/Club";
 import Tournament from "../screens/Home/Tournaments/Tournament";
+import Ladder from "../screens/Home/Ladders/Ladder";
+import LadderRules from "../screens/Home/Ladders/LadderRules";
+import LadderHowToPlay from "../screens/Home/Ladders/LadderHowToPlay";
+import LadderTerms from "../screens/Home/Ladders/LadderTerms";
+import MatchDetails from "../screens/Home/Ladders/MatchDetails";
+import LadderStandings from "../screens/Home/Ladders/LadderStandings";
+import SelectDoublesTeam from "../screens/Home/Ladders/SelectDoublesTeam";
+import CreateTeam from "../screens/Home/Ladders/CreateTeam";
+import TeamDetails from "../components/Modals/TeamDetailsModal";
+import PlayerDetails from "../components/Modals/PlayerDetailsModal";
+import TeamSettings from "../screens/Home/Ladders/TeamSettings";
+import LadderMenu from "../screens/Home/Ladders/LadderMenu";
+import LadderPostedMatches from "../screens/Home/Ladders/LadderPostedMatches";
+import PlayoffMatchDetails from "../screens/Home/Ladders/PlayoffMatchDetails";
+import MatchDetailsMenu from "../screens/Home/Ladders/MatchDetailsMenu";
 import UserProfile from "../screens/Profile/UserProfile";
 import ProfileMenu from "../screens/Profile/ProfileMenu";
 import EditProfile from "../screens/Profile/EditProfile";
@@ -50,6 +65,7 @@ import { LeagueContext } from "../context/LeagueContext";
 import { View } from "react-native";
 import InvitePlayer from "../screens/InvitePlayer";
 import GameScreen from "../screens/GameScreen";
+import GameDisputeScreen from "../screens/GameDisputeScreen";
 // import { getUnitId } from "../utils/getAdMobUnitId";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
@@ -57,6 +73,29 @@ import { useNavigation } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+
+// Ladder screens are reachable from notifications/chats/profile, so they must be
+// registered in every stack (like League/Tournament). Centralised here to avoid
+// per-stack drift.
+const renderLadderScreens = () => (
+  <>
+    <Stack.Screen name="Ladder" component={Ladder} />
+    <Stack.Screen name="LadderRules" component={LadderRules} />
+    <Stack.Screen name="LadderHowToPlay" component={LadderHowToPlay} />
+    <Stack.Screen name="LadderTerms" component={LadderTerms} />
+    <Stack.Screen name="MatchDetails" component={MatchDetails} />
+    <Stack.Screen name="LadderStandings" component={LadderStandings} />
+    <Stack.Screen name="SelectDoublesTeam" component={SelectDoublesTeam} />
+    <Stack.Screen name="CreateTeam" component={CreateTeam} />
+    <Stack.Screen name="TeamDetails" component={TeamDetails} />
+    <Stack.Screen name="PlayerDetails" component={PlayerDetails} />
+    <Stack.Screen name="TeamSettings" component={TeamSettings} />
+    <Stack.Screen name="LadderMenu" component={LadderMenu} />
+    <Stack.Screen name="LadderPostedMatches" component={LadderPostedMatches} />
+    <Stack.Screen name="PlayoffMatchDetails" component={PlayoffMatchDetails} />
+    <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
+  </>
+);
 
 const HomeStack = () => {
   return (
@@ -73,6 +112,7 @@ const HomeStack = () => {
       <Stack.Screen name="AssignAdmin" component={AssignAdmin} />
       <Stack.Screen name="RemovePlayers" component={RemovePlayers} />
       <Stack.Screen name="League" component={League} />
+      {renderLadderScreens()}
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
       <Stack.Screen
@@ -101,6 +141,7 @@ const HomeStack = () => {
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -146,6 +187,7 @@ const ProfileStack = () => {
         component={CompetitionPendingRequests}
       />
       <Stack.Screen name="EditProfile" component={EditProfile} />
+      {renderLadderScreens()}
       <Stack.Screen name="UserFeedback" component={UserFeedback} />
       <Stack.Screen name="AccountSupport" component={AccountSupport} />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
@@ -156,6 +198,7 @@ const ProfileStack = () => {
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -173,6 +216,7 @@ const ChatsStack = () => {
       initialRouteName="Chats"
     >
       <Stack.Screen name="Chats" component={Chats} />
+      {renderLadderScreens()}
       <Stack.Screen name="League" component={League} />
       <Stack.Screen name="Club" component={Club} />
       <Stack.Screen name="ClubSettings" component={ClubSettings} />
@@ -208,6 +252,7 @@ const ChatsStack = () => {
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -260,6 +305,7 @@ const CompetitionsStack = () => {
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
+      <Stack.Screen name="GameDisputeScreen" component={GameDisputeScreen} />
       <Stack.Screen
         name="BulkFixturesPublisher"
         component={BulkFixturesPublisher}
@@ -267,6 +313,7 @@ const CompetitionsStack = () => {
       <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
       <Stack.Screen name="EditTournament" component={EditTournament} />
       <Stack.Screen name="Notifications" component={Notifications} />
+      {renderLadderScreens()}
     </Stack.Navigator>
   );
 };
@@ -356,11 +403,16 @@ const Tabs = () => {
           headerShown: false,
         })}
       >
-        <Tab.Screen name="Home" component={HomeStack} />
+        <Tab.Screen
+          name="Home"
+          component={HomeStack}
+          options={{ tabBarButtonTestID: "tab-home" }}
+        />
         <Tab.Screen
           name="Competitions"
           component={CompetitionsStack}
           options={{
+            tabBarButtonTestID: "tab-competitions",
             tabBarBadge: hasUnreadNotifications ? "" : null,
             tabBarBadgeStyle: {
               backgroundColor: "red",
@@ -378,6 +430,7 @@ const Tabs = () => {
           name="ChatsTab"
           component={ChatsStack}
           options={{
+            tabBarButtonTestID: "tab-chats",
             tabBarBadge: unreadChats > 0 ? unreadChats : null,
             tabBarBadgeStyle: {
               backgroundColor: "red",
@@ -385,7 +438,11 @@ const Tabs = () => {
             },
           }}
         />
-        <Tab.Screen name="Profile" component={ProfileStack} />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileStack}
+          options={{ tabBarButtonTestID: "tab-profile" }}
+        />
       </Tab.Navigator>
 
       {/* {showAd && (

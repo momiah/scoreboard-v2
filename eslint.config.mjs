@@ -10,6 +10,7 @@ const ignorePatterns = [
   ".expo/**",
   "dist/**",
   "build/**",
+  "functions/lib/**",
   "_d_/**",
   "__drafts__/**",
   "coverage/**",
@@ -105,6 +106,14 @@ export default [
       globals: {
         ...globals.jest,
       },
+    },
+  },
+  {
+    // Jest mock factories are hoisted, so test files legitimately reach for
+    // require() to sidestep the temporal dead zone; allow it in tests only.
+    files: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
   pluginJs.configs.recommended,

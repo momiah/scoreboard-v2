@@ -15,10 +15,13 @@ import { courtSchema } from "@shared";
 import { Court } from "@shared/types";
 import Icon from "react-native-ico-flags";
 import AddCourtModal from "./AddCourtModal";
+import { SkeletonWrapper } from "../Skeletons/SkeletonComponents";
+import BottomToast from "../Toasts/BottomToast";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 const ADD_COURT_KEY = "__add_court__";
+const SKELETON_ROWS = [0, 1, 2, 3];
 
 export interface CourtListItem {
   key: string;
@@ -29,6 +32,9 @@ export interface CourtListItem {
   country?: string;
   address?: string;
   postCode?: string;
+  verified?: boolean;
+  awaitingVerification?: boolean;
+  pinned?: boolean;
 }
 
 export type CourtDetails = Pick<Court, "courtName" | "location">;
@@ -42,6 +48,11 @@ interface SearchCourtProps {
   getCourts: () => Promise<Court[]>;
   addCourt: (courtDetails: CourtDetails) => Promise<string | null>;
   onCourtsRefreshed: (rawCourtData: Court[]) => void;
+  showCountryIcon?: boolean;
+  selectAddedCourt?: boolean;
+  emptyListMessage?: string;
+  addCourtSuccessMessage?: string;
+  loading?: boolean;
 }
 
 const SearchCourt = ({
@@ -53,9 +64,15 @@ const SearchCourt = ({
   getCourts,
   addCourt,
   onCourtsRefreshed,
+  showCountryIcon = true,
+  selectAddedCourt = true,
+  emptyListMessage,
+  addCourtSuccessMessage,
+  loading = false,
 }: SearchCourtProps) => {
   const [search, setSearch] = useState("");
   const [showAddCourtModal, setShowAddCourtModal] = useState(false);
+  const [successToastVisible, setSuccessToastVisible] = useState(false);
   const [courtDetails, setCourtDetails] = useState<CourtDetails>(courtSchema);
 
   useEffect(() => {
@@ -81,7 +98,10 @@ const SearchCourt = ({
     };
 
     const sorted = [...matched].sort(
-      (a, b) => rank(a) - rank(b) || a.value.localeCompare(b.value),
+      (a, b) =>
+        Number(!!b.pinned) - Number(!!a.pinned) ||
+        rank(a) - rank(b) ||
+        a.value.localeCompare(b.value),
     );
 
     if (!selectedCourtKey) return sorted;
@@ -109,7 +129,10 @@ const SearchCourt = ({
     ({ item }) => {
       if (item.key === ADD_COURT_KEY) {
         return (
-          <AddCourtItem onPress={() => setShowAddCourtModal(true)}>
+          <AddCourtItem
+            testID="search-court-add"
+            onPress={() => setShowAddCourtModal(true)}
+          >
             <AntDesign name="plus-circle" size={18} color="#00A2FF" />
             <AddCourtText>Add Court</AddCourtText>
           </AddCourtItem>
@@ -117,20 +140,34 @@ const SearchCourt = ({
       }
 
       const isSelected = item.key === selectedCourtKey;
+      const isAwaiting = !!item.awaitingVerification;
       return (
         <CourtItem
           isSelected={isSelected}
+          disabled={isAwaiting}
+          style={isAwaiting ? { opacity: 0.5 } : undefined}
           onPress={() => handleSelect(item.value)}
+          testID={
+            isAwaiting
+              ? `search-court-awaiting-${item.key}`
+              : `search-court-option-${item.key}`
+          }
         >
           <CourtTextWrap>
             <CourtName isSelected={isSelected}>{item.value}</CourtName>
             <CourtLocation isSelected={isSelected}>
               {item?.address}, {item?.city}, {item?.country}
             </CourtLocation>
+            {isAwaiting ? (
+              <AwaitingTag>
+                <AntDesign name="clock-circle" size={11} color="#f5a623" />
+                <AwaitingText>Awaiting Verification</AwaitingText>
+              </AwaitingTag>
+            ) : null}
           </CourtTextWrap>
           <ItemRight>
             {isSelected && <AntDesign name="check" size={18} color="#00A2FF" />}
-            {item.countryCode ? (
+            {showCountryIcon && item.countryCode ? (
               <FlagCircle>
                 <Icon name={item.countryCode} height="40" width="40" />
               </FlagCircle>
@@ -139,7 +176,7 @@ const SearchCourt = ({
         </CourtItem>
       );
     },
-    [selectedCourtKey, handleSelect],
+    [selectedCourtKey, handleSelect, showCountryIcon],
   );
 
   return (
@@ -154,6 +191,7 @@ const SearchCourt = ({
           <Header>
             <ModalTitle>Select Court</ModalTitle>
             <TouchableOpacity
+              testID="search-court-close"
               onPress={onClose}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -172,15 +210,37 @@ const SearchCourt = ({
             spellCheck={false}
           />
 
-          <FlatList
-            data={listData}
-            keyExtractor={(item) => item.key}
-            renderItem={renderItem}
-            keyboardShouldPersistTaps="handled"
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: 12 }}
-            showsVerticalScrollIndicator={false}
-          />
+          {loading ? (
+            <SkeletonList testID="search-court-loading">
+              {SKELETON_ROWS.map((row) => (
+                <SkeletonWrapper
+                  key={row}
+                  show
+                  height={64}
+                  width="100%"
+                  radius={8}
+                />
+              ))}
+            </SkeletonList>
+          ) : (
+            <>
+              {emptyListMessage && filteredCourts.length === 0 ? (
+                <EmptyListText testID="search-court-empty">
+                  {emptyListMessage}
+                </EmptyListText>
+              ) : null}
+
+              <FlatList
+                data={listData}
+                keyExtractor={(item) => item.key}
+                renderItem={renderItem}
+                keyboardShouldPersistTaps="handled"
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingBottom: 12 }}
+                showsVerticalScrollIndicator={false}
+              />
+            </>
+          )}
         </Wrapper>
 
         {showAddCourtModal && (
@@ -191,12 +251,21 @@ const SearchCourt = ({
             onClose={() => setShowAddCourtModal(false)}
             addCourt={addCourt}
             onCourtAdded={async (newCourt: CourtDetails) => {
+              if (addCourtSuccessMessage) setSuccessToastVisible(true);
               const courtData = await getCourts();
               onCourtsRefreshed(courtData);
-              handleSelect(newCourt.courtName);
+              if (selectAddedCourt) handleSelect(newCourt.courtName);
             }}
           />
         )}
+
+        {addCourtSuccessMessage ? (
+          <BottomToast
+            visible={successToastVisible}
+            message={addCourtSuccessMessage}
+            onHide={() => setSuccessToastVisible(false)}
+          />
+        ) : null}
       </ModalContainer>
     </Modal>
   );
@@ -278,6 +347,24 @@ const CourtLocation = styled.Text<{ isSelected: boolean }>(
   }),
 );
 
+const AwaitingTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+  marginTop: 6,
+  alignSelf: "flex-start",
+  paddingHorizontal: 8,
+  paddingVertical: 3,
+  borderRadius: 6,
+  backgroundColor: "rgba(245, 166, 35, 0.12)",
+});
+
+const AwaitingText = styled.Text({
+  color: "#f5a623",
+  fontSize: 11,
+  fontWeight: "600",
+});
+
 const AddCourtItem = styled.TouchableOpacity({
   flexDirection: "row",
   alignItems: "center",
@@ -296,6 +383,17 @@ const AddCourtText = styled.Text({
   color: "#00A2FF",
   fontWeight: "600",
   fontSize: 15,
+});
+
+const SkeletonList = styled.View({
+  gap: 8,
+});
+
+const EmptyListText = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+  textAlign: "center",
+  marginBottom: 12,
 });
 
 const ItemRight = styled.View({

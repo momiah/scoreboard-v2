@@ -1,0 +1,107 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-doubles-reject-game-flow"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Doubles Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Doubles Ladder.*"
+- tapOn:
+    id: "game-approval-decline"
+- assertVisible:
+    id: "game-dispute-screen"
+
+- tapOn:
+    id: "dispute-corrected-result"
+- tapOn:
+    id: "add-game-score-input"
+- inputText: "2119"
+- tapOn:
+    id: "add-game-submit"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-note-input"
+    direction: DOWN
+- tapOn:
+    id: "dispute-compose-note-input"
+- waitForAnimationToEnd:
+    timeout: 1000
+- inputText: "Maestro E2E test note: score should be 21-19."
+- assertVisible: ".*Maestro E2E test note.*"
+- hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: "video-upload-modal-close"
+    commands:
+      - tapOn:
+          id: "video-upload-modal-close"
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-submit"
+    direction: DOWN
+- tapOn:
+    id: "dispute-compose-submit"
+- extendedWaitUntil:
+    visible: "Dispute submitted for review"
+    timeout: 10000
+
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-mock-resolve-doubles-upheld"
+- extendedWaitUntil:
+    visible: "Resolved"
+    timeout: 15000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible: ".*Resolved.*"
+
+- assertNotVisible:
+    id: "dispute-evidence-note-input"
+- assertNotVisible:
+    id: "dispute-evidence-submit"
+- assertNotVisible:
+    id: "dispute-cancel"
+
+- tapOn:
+    id: "dispute-view-ladder"
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Reject Bravos.*Wins.*1.*PD.*2.*CP.*20.*"
+    timeout: 15000
+- assertVisible: ".*Reject Aces.*Wins.*0.*PD.*-2.*CP.*0.*"
+
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-2 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

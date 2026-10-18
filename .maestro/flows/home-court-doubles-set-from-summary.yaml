@@ -1,0 +1,67 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow-doubles"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Doubles Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Doubles Ladder on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-home-court"
+    timeout: 20000
+- assertVisible:
+    id: "ladder-home-court-add"
+- tapOn:
+    id: "ladder-home-court-add"
+- extendedWaitUntil:
+    visible: ".*Maestro Court B Verified.*"
+    timeout: 15000
+- assertVisible: ".*Maestro Court B Verified.*"
+- assertVisible: ".*Maestro Court D Verified.*"
+- assertVisible:
+    id: "search-court-awaiting-maestro-hc-court-a-doubles"
+- assertVisible:
+    id: "search-court-awaiting-maestro-hc-court-c-doubles"
+- assertVisible: ".*Awaiting Verification.*"
+- assertNotVisible: ".*Maestro Court H Verified Elsewhere.*"
+- assertNotVisible: ".*Maestro Court G Unverified.*"
+- assertNotVisible: ".*Maestro Court F Other Ladder Pending.*"
+- tapOn:
+    id: "search-court-awaiting-maestro-hc-court-c-doubles"
+- assertNotVisible: "Set home court?"
+- assertVisible:
+    id: "search-court-add"
+- tapOn: ".*Maestro Court B Verified.*"
+- assertVisible: "Set home court?"
+- assertVisible: ".*Set Maestro Court B Verified as your home court. You can change it once for this ladder..*"
+- tapOn: "Confirm"
+- extendedWaitUntil:
+    visible: "Home court saved"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "ladder-home-court-card"
+    timeout: 15000
+- assertVisible:
+    id: "ladder-home-court-name"
+    text: "Maestro Court B Verified"
+- assertVisible:
+    id: "ladder-home-court-change"

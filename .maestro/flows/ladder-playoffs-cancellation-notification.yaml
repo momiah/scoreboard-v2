@@ -1,0 +1,56 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-ladder-playoffs-cancelled"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full..*"
+    timeout: 20000
+- tapOn: ".*Maestro Playoffs 127 has been cancelled because not enough players signed up before registration closed. If you paid an entry fee, it will be refunded to you in full..*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-summary"
+    timeout: 40000
+- extendedWaitUntil:
+    visible:
+      id: "ladder-status"
+    timeout: 30000
+- assertVisible:
+    id: "ladder-status"
+    text: "Cancelled"
+- assertVisible: "Status"
+- assertNotVisible:
+    id: "ladder-playoff-countdown"
+- assertNotVisible: "To Playoffs"
+- tapOn:
+    id: "ladder-tab-Schedule"
+- assertNotVisible:
+    id: "schedule-playoff-placeholder"
+- swipe:
+    from:
+      id: "ladder-tab-Schedule"
+    direction: LEFT
+- tapOn:
+    id: "ladder-tab-Playoffs"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoffs-empty"
+    timeout: 30000
+- assertVisible: "This ladder was cancelled"
+- assertVisible: "Too few registrations"

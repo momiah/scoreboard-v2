@@ -1,0 +1,50 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-ladder-playoffs-generated-256"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Playoffs 256 on Playoffs.*"
+    timeout: 20000
+- tapOn: ".*open Maestro Playoffs 256 on Playoffs.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoffs-bracket"
+    timeout: 40000
+- assertVisible: ".*Round of 16.*"
+- assertVisible: ".*Quarter-Final.*"
+- assertVisible: ".*Semi-Final.*"
+- tapOn:
+    id: "bracket-round-tab-1"
+- assertVisible:
+    id: "bracket-game-r2-s0"
+- tapOn:
+    id: "bracket-round-tab-2"
+- assertVisible:
+    id: "bracket-round-tab-3"
+- assertVisible:
+    id: "bracket-game-r3-s0"
+- tapOn:
+    id: "bracket-round-tab-3"
+- assertVisible:
+    id: "bracket-game-r4-s0"
+- assertVisible:
+    id: "bracket-game-r4-s1"
+- assertVisible: ".*3rd/4th Playoff.*"
+- assertVisible: ".*TBD.*"

@@ -1,0 +1,47 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-team-request-out"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Team Ladder on Performance.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Team Ladder on Performance.*"
+- extendedWaitUntil:
+    visible: ".*Maestro Open Team.*"
+    timeout: 20000
+- tapOn: ".*Maestro Open Team.*"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-request"
+    timeout: 15000
+- tapOn:
+    id: "team-details-request"
+- extendedWaitUntil:
+    visible: "Request sent"
+    timeout: 15000
+- tapOn:
+    id: "team-details-request"
+- extendedWaitUntil:
+    visible: "Withdraw request"
+    timeout: 5000
+- tapOn: "Withdraw"
+- extendedWaitUntil:
+    visible: "Request withdrawn"
+    timeout: 15000

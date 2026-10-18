@@ -25,13 +25,18 @@ const ProfilePerformance = ({ profile }) => {
       {
         statTitle: "Wins",
         stat: (
-          <AnimateNumber number={wins} fontSize={screenAdjustedStatFontSize} />
+          <AnimateNumber
+            testID="profile-stat-wins"
+            number={wins}
+            fontSize={screenAdjustedStatFontSize}
+          />
         ),
       },
       {
         statTitle: "Losses",
         stat: (
           <AnimateNumber
+            testID="profile-stat-losses"
             number={losses}
             fontSize={screenAdjustedStatFontSize}
           />
@@ -53,13 +58,12 @@ const ProfilePerformance = ({ profile }) => {
     ];
   }, [profileDetail]);
 
+  const roundedXP = Math.round(profileDetail?.XP ?? 0);
+
   const renderPerformanceContent = useCallback(
     () => (
       <>
-        <MedalProgress
-          xp={profileDetail?.XP}
-          prevGameXp={profileDetail?.prevGameXP}
-        />
+        <MedalProgress xp={roundedXP} prevGameXp={profileDetail?.prevGameXP} />
         <Divider />
 
         <Heading>Match Medals</Heading>

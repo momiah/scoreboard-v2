@@ -1,0 +1,80 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-cancel-overdue-opponent-posted"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- setLocation:
+    latitude: 51.5
+    longitude: -0.12
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Schedule.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Schedule.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-cancel-match"
+    timeout: 20000
+- tapOn:
+    id: "schedule-card-maestro-cancel-match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Press here to checkin.*"
+    timeout: 15000
+- tapOn:
+    point: "78%,23%"
+- extendedWaitUntil:
+    visible:
+      id: "location-verifier-verified"
+    timeout: 30000
+- tapOn:
+    id: "location-verifier-checkin"
+- extendedWaitUntil:
+    visible:
+      id: "match-checkin-modal"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "match-checkin-report-no-show"
+    timeout: 15000
+- assertVisible: ".*Report a no-show.*"
+- tapOn:
+    id: "match-checkin-report-no-show"
+- extendedWaitUntil:
+    visible: "Report a no-show"
+    timeout: 5000
+- tapOn: "Report no-show"
+- extendedWaitUntil:
+    visible:
+      id: "match-checkin-no-show-reported"
+    timeout: 15000
+- assertNotVisible:
+    id: "match-checkin-report-no-show"
+- tapOn:
+    id: "match-checkin-close"
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-assert-no-show-filed"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"

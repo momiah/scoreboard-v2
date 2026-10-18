@@ -1,0 +1,24 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-chats-typed"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible: ".*Chats.*"
+    timeout: 15000
+- tapOn:
+    id: "chats-row-maestro-cancel-match"
+- extendedWaitUntil:
+    visible:
+      id: "chat-room-input"
+    timeout: 20000
+- assertVisible: "See you at the court at 6"
+- assertVisible:
+    id: "match-details"

@@ -1,0 +1,22 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "opponentDisqualified"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*Your opponent was disqualified from the ladder, so you go through on a walkover.*"
+    timeout: 1500000
+- tapOn: ".*Your opponent was disqualified from the ladder, so you go through on a walkover.*"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 30000
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-opponent-out-disqualified"

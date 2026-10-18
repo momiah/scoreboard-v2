@@ -1,0 +1,13 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/open-add-game-match.yaml
+    env:
+      BUTTON: "maestro-seed-add-game-flow-playoffs-in-6-days"
+- tapOn:
+    id: "ladder-tab-Matchmaking"
+- extendedWaitUntil:
+    visible: ".*Posting closed for playoffs.*"
+    timeout: 20000

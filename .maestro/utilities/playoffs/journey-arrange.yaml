@@ -1,0 +1,104 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-seed-journey${SUFFIX}-r16-started"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*made the playoffs for ${LADDER}.*"
+      TIE: "r1-s1"
+- assertVisible: "Round of 16 · Tie 2"
+- assertVisible:
+    id: "playoff-prize-secured"
+    text: ${CURRENT_PAYOUT}
+- assertVisible:
+    id: "playoff-prize-next"
+    text: ${NEXT_PAYOUT}
+- assertVisible: "Quarter-Final payout"
+- assertVisible:
+    id: "playoff-match-aggregate"
+- assertVisible: "Best of 7"
+- assertVisible: "${Number(MAESTRO_PLAYOFF_TIE_DAYS) - 1} days and .*"
+- assertVisible: "to complete both matches"
+- assertVisible:
+    id: "playoff-match-leg1-host"
+- assertVisible:
+    id: "playoff-match-leg2-host"
+- assertVisible:
+    id: "playoff-match-leg1-waiting"
+- assertVisible: ".*Waiting for your opponent to arrange their home match"
+- assertVisible: ".*Your opponent arranges match 1 first.*"
+- assertNotVisible:
+    id: "playoff-match-leg2-arrange"
+
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-mock-po${SUFFIX}-opponent-arranges-leg1"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*arranged playoff match 1 at.*Open it to accept or decline.*"
+      TIE: "r1-s1"
+- assertVisible: ".*Awaiting your confirmation.*"
+- assertVisible:
+    id: "playoff-match-leg2-arrange"
+- tapOn:
+    id: "playoff-match-leg1"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-confirm-request"
+    timeout: 15000
+- assertVisible: "Your opponent arranged this match. Can you make it? It's accepted automatically after ${MAESTRO_LADDER_AUTO_ACCEPT_HOURS} hours if you don't reply."
+- tapOn:
+    id: "playoff-match-confirm-accept"
+- assertNotVisible:
+    id: "playoff-match-confirm-accept"
+- runFlow: back-to-lobby.yaml
+- assertNotVisible: ".*Awaiting your confirmation.*"
+- assertVisible:
+    id: "playoff-match-leg2-arrange"
+- tapOn:
+    id: "playoff-match-leg2-arrange"
+- extendedWaitUntil:
+    visible: "Arrange match 2"
+    timeout: 15000
+- assertVisible:
+    id: "add-ladder-match-no-fee"
+- tapOn: "Select Date"
+- tapOn:
+    point: 23%, 52%
+- tapOn: "Confirm Date"
+- tapOn:
+    id: "add-ladder-match-terms"
+- tapOn:
+    id: "add-ladder-match-submit"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-leg2"
+    timeout: 20000
+- assertVisible: ".*Awaiting.*"
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-assert-po${SUFFIX}-opponent-accepted-leg1"
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-assert-po${SUFFIX}-opponent-arranged-leg2"
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-mock-po${SUFFIX}-opponent-accept-leg2"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*accepted playoff match 2 at.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-leg1"
+- assertVisible:
+    id: "playoff-match-leg2"
+- assertNotVisible: ".*Awaiting.*"

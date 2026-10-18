@@ -1,0 +1,18 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/summary-pool.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      POT_ID: "ladder-cp-pot"
+      POT_TEXT: "12,800 CP"
+- runFlow:
+    file: ../utilities/playoffs/summary-pool.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      POT_ID: "ladder-cash-pot"
+      POT_TEXT: "£5120"
