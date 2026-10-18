@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - runFlow:
-    file: ../utilities/playoffs/harness.yaml
+    file: ../utilities/playoffs/harness-scrolled.yaml
     env:
       BUTTON: "maestro-seed-home-court-flow-set"
 - runFlow:
@@ -26,6 +26,17 @@ onFlowStart:
     id: "add-ladder-match-court-time"
     text: ".*Book enough court time to finish: about .* for best of .*"
 - tapOn: "Select Date"
-- extendedWaitUntil:
-    visible: ".*Please select a date.*"
-    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: ".*Please select a date.*"
+          timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "OK"
+          timeout: 10000

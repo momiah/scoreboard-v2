@@ -20,6 +20,7 @@ appId: com.courtchamp
           timeout: 60000
           speed: 60
           centerElement: true
+      - waitForAnimationToEnd
 - tapOn:
     id: ${BUTTON}
 - extendedWaitUntil:

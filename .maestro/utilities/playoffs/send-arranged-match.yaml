@@ -1,9 +1,6 @@
 appId: com.courtchamp
 ---
-- tapOn: "Select Date"
-- tapOn:
-    point: 23%, 52%
-- tapOn: "Confirm Date"
+- runFlow: ../pick-date.yaml
 - tapOn:
     id: "add-ladder-match-terms"
 - tapOn:

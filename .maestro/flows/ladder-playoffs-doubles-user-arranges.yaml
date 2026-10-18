@@ -31,10 +31,7 @@ onFlowStart:
 - extendedWaitUntil:
     visible: "Arrange match 2"
     timeout: 15000
-- tapOn: "Select Date"
-- tapOn:
-    point: 23%, 52%
-- tapOn: "Confirm Date"
+- runFlow: ../utilities/pick-date.yaml
 - tapOn:
     id: "add-ladder-match-terms"
 - tapOn:

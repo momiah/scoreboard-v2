@@ -25,6 +25,17 @@ onFlowStart:
       id: "reschedule-match"
     timeout: 10000
 - tapOn: "Select Date"
-- extendedWaitUntil:
-    visible: "Please select a date by .*"
-    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - extendedWaitUntil:
+          visible: "Please select a date by .*"
+          timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - extendedWaitUntil:
+          visible: "OK"
+          timeout: 10000

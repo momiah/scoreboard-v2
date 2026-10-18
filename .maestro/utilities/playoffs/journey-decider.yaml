@@ -61,10 +61,7 @@ appId: com.courtchamp
     visible:
       id: "reschedule-match"
     timeout: 10000
-- tapOn: "Select Date"
-- tapOn:
-    point: 23%, 52%
-- tapOn: "Confirm Date"
+- runFlow: ../pick-date.yaml
 - tapOn:
     id: "reschedule-match-send"
 - extendedWaitUntil:

@@ -67,10 +67,7 @@ appId: com.courtchamp
     timeout: 15000
 - assertVisible:
     id: "add-ladder-match-no-fee"
-- tapOn: "Select Date"
-- tapOn:
-    point: 23%, 52%
-- tapOn: "Confirm Date"
+- runFlow: ../pick-date.yaml
 - tapOn:
     id: "add-ladder-match-terms"
 - tapOn:
