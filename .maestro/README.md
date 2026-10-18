@@ -89,17 +89,21 @@ Not wired up yet — see `docs/testing/maestro.md`.
 
 ## Android
 
-The flows run on an Android emulator with `MAESTRO_DEVICE=emulator-5554 .maestro/run-suite.sh <pattern>`
-(`run-suite.sh` re-applies `adb reverse tcp:8090 tcp:8090` before each flow, and `login.yaml` taps the
-`http://localhost:8090` dev-client entry). `utilities/playoffs/harness.yaml` scrolls the harness list on
-Android, because off-screen buttons aren't in Android's accessibility tree.
+Android is built from `android-build` (reanimated 3.19.5, pinned compressor and background-upload fork,
+`patch-package`, native date picker), so run these flows from a branch cut from it
+(`claude/ladder-playoffs-android`), never from a main-based checkout: that one doesn't compile natively.
 
-Setup notes (June 2026): the repo's native Android build fails as it stands (reanimated 3.17.5 on RN 0.81,
-`react-native-compressor` 1.19.2 references a missing function, `react-native-background-upload` uses the
-removed `kotlin-android-extensions` plugin). A local debug build needs those patched in `node_modules`
-(not committed) and `react-native-reanimated@3.19.5` installed with `--no-save` for both the native build
-and Metro; restore 3.17.5 for iOS afterwards.
+```
+cd android-worktree && npm ci && npx expo prebuild --platform android --no-install
+cd android && ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
+adb install -r app/build/outputs/apk/debug/app-debug.apk   # an emulator wiped with -wipe-data has the space
+MAESTRO_DEVICE=emulator-5554 .maestro/run-suite.sh <pattern>
+```
 
-Known blocker: on Android 15+ (edge-to-edge) the Competitions header sits under the status bar, so the
-notifications bell and the "+" button can't be tapped. Every playoff flow opens the tie through the
-notifications screen, so none can run on Android until that is fixed.
+- `run-suite.sh` re-applies `adb reverse tcp:8090 tcp:8090` before each flow and `login.yaml` taps the
+  `http://localhost:8090` dev-client entry. Grant notification, location and camera permissions with `adb shell pm grant`.
+- `utilities/playoffs/harness.yaml` scrolls the harness list on Android (off-screen buttons aren't in the
+  accessibility tree); flows whose button sits far down on iOS use `harness-scrolled.yaml`.
+- `utilities/pick-date.yaml` picks a date: iOS spinner plus "Confirm Date", Android native dialog and "OK".
+  The native Android dialog has no range message, so flows that assert it do so on iOS only.
+- Copy `.env` into a new worktree, or Firebase fails with `auth/invalid-api-key`.
