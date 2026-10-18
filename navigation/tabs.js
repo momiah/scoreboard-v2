@@ -70,6 +70,7 @@ import GameDisputeScreen from "../screens/GameDisputeScreen";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
 import { useNavigation } from "@react-navigation/native";
+import { withStatusBarInset } from "../components/ladder/withStatusBarInset";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -77,23 +78,29 @@ const Stack = createStackNavigator();
 // Ladder screens are reachable from notifications/chats/profile, so they must be
 // registered in every stack (like League/Tournament). Centralised here to avoid
 // per-stack drift.
+const LADDER_SCREENS = {
+  Ladder: withStatusBarInset(Ladder),
+  LadderRules: withStatusBarInset(LadderRules),
+  LadderHowToPlay: withStatusBarInset(LadderHowToPlay),
+  LadderTerms: withStatusBarInset(LadderTerms),
+  MatchDetails: withStatusBarInset(MatchDetails),
+  LadderStandings: withStatusBarInset(LadderStandings),
+  SelectDoublesTeam: withStatusBarInset(SelectDoublesTeam),
+  CreateTeam: withStatusBarInset(CreateTeam),
+  TeamDetails,
+  PlayerDetails,
+  TeamSettings: withStatusBarInset(TeamSettings),
+  LadderMenu: withStatusBarInset(LadderMenu),
+  LadderPostedMatches: withStatusBarInset(LadderPostedMatches),
+  PlayoffMatchDetails: withStatusBarInset(PlayoffMatchDetails),
+  MatchDetailsMenu: withStatusBarInset(MatchDetailsMenu),
+};
+
 const renderLadderScreens = () => (
   <>
-    <Stack.Screen name="Ladder" component={Ladder} />
-    <Stack.Screen name="LadderRules" component={LadderRules} />
-    <Stack.Screen name="LadderHowToPlay" component={LadderHowToPlay} />
-    <Stack.Screen name="LadderTerms" component={LadderTerms} />
-    <Stack.Screen name="MatchDetails" component={MatchDetails} />
-    <Stack.Screen name="LadderStandings" component={LadderStandings} />
-    <Stack.Screen name="SelectDoublesTeam" component={SelectDoublesTeam} />
-    <Stack.Screen name="CreateTeam" component={CreateTeam} />
-    <Stack.Screen name="TeamDetails" component={TeamDetails} />
-    <Stack.Screen name="PlayerDetails" component={PlayerDetails} />
-    <Stack.Screen name="TeamSettings" component={TeamSettings} />
-    <Stack.Screen name="LadderMenu" component={LadderMenu} />
-    <Stack.Screen name="LadderPostedMatches" component={LadderPostedMatches} />
-    <Stack.Screen name="PlayoffMatchDetails" component={PlayoffMatchDetails} />
-    <Stack.Screen name="MatchDetailsMenu" component={MatchDetailsMenu} />
+    {Object.entries(LADDER_SCREENS).map(([name, component]) => (
+      <Stack.Screen key={name} name={name} component={component} />
+    ))}
   </>
 );
 

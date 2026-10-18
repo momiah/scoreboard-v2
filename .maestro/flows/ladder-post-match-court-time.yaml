@@ -26,17 +26,6 @@ onFlowStart:
     id: "add-ladder-match-court-time"
     text: ".*Book enough court time to finish: about .* for best of .*"
 - tapOn: "Select Date"
-- runFlow:
-    when:
-      platform: iOS
-    commands:
-      - extendedWaitUntil:
-          visible: ".*Please select a date.*"
-          timeout: 10000
-- runFlow:
-    when:
-      platform: Android
-    commands:
-      - extendedWaitUntil:
-          visible: "OK"
-          timeout: 10000
+- extendedWaitUntil:
+    visible: ".*Please select a date.*"
+    timeout: 10000
