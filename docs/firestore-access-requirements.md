@@ -68,17 +68,24 @@ Court-fee refunds on cancellation are settled server-side by
 
 ## Playoff matches
 
+The lower-ranked side (by ladder rank) hosts match 1 and arranges it first; the
+higher-ranked side hosts match 2 and the decider and can arrange match 2 once
+match 1 exists. There is no coin toss.
+
 | Path | Writer | Operation | Fields / conditions |
 |---|---|---|---|
-| `ladders/{ladderId}/ladderMatches/{tieId}-leg{1\|2}` | A player on the side hosting that match (per the tie's `coinToss`), or either side for "play the second match here now" | create | Built by `buildLadderPlayoffLegMatch`: `playoffTieId`, `playoffLeg`, both sides as `participants`, `courtFee: 0`, `matchStatus: "posted"`, the tie's `bestOf`. Only once per id (transaction); only while the tie is `scheduled`; the start must be before the tie's `deadlineAt`. |
-| same | A player on the side opposite `createdBy` | update | Accept: `matchStatus: "accepted"`, `acceptedBy`, `acceptedAt`, `lastUpdated`. Posted playoff matches never appear in Matchmaking. |
-| same | Players in the match | update | Reporting, approving and disputing exactly as regular matches (`isLadderMatchPlayFrozen` lets matches with a `playoffTieId` through while the ladder is in `playoffs`). |
+| `ladders/{ladderId}/ladderMatches/{tieId}-leg{1\|2}` | A player on the side hosting that match, or either side for "play the second match here now" (only once match 1 is `completed`, as match 2) | create, or replace a match that was cancelled | Built by `buildLadderPlayoffLegMatch`: `playoffTieId`, `playoffLeg`, both sides as `participants`, `courtFee: 0`, `matchStatus: "posted"`, the tie's `bestOf`, `createdBy` = the writer, `scheduleDeclines` carried over from the cancelled match it replaces, `playNow: true` for a play-now offer. Only while the tie is `scheduled`; only when no live match exists for that id (transaction); the start must be before the tie's `deadlineAt`; match 2 only once match 1 exists. |
+| same | A player on the side opposite `createdBy` | update | Accept: `matchStatus: "accepted"`, `acceptedBy`, `acceptedAt`, `lastUpdated`, and for an accepted play-now offer match 1's `checkIn` copied over. |
+| same | A player on the side opposite `createdBy` | update | Decline (only while `canDeclineLadderPlayoffMatch`: once per match for a timed match, always for a play-now offer): `matchStatus: "cancelled"`, `cancelledAt`, `cancelledReason`, `scheduleDeclines` + 1 (not for a play-now offer). |
+| same | Players in the match | update | Reporting, approving and disputing exactly as regular matches (`isLadderMatchPlayFrozen` lets matches with a `playoffTieId` through while the ladder is in `playoffs`); cancel, reschedule and extension as regular accepted matches. |
+| `ladders/{ladderId}/playoffTies/{tieId}/chat/{messageId}` | A player on either side of the tie | create | A message: `text`, `createdAt`, `user` = own uid. Spectators must not read or write it. |
+| `users/{userId}/chats/{ladderId}-{tieId}` | A player on the tie writing to the other player's entry | create / update | `type: "chat"`, `isRead: false`, `messageCount`, `lastMessage`, `competitionName`, `competitionType: "ladder"`, `ladderId`, `tieId`. |
 
-The decider (`playoffLeg: 3`), tie results, bracket advancement, reminders
-and the coin toss are written only by Cloud Functions
-(`onLadderMatchStatusChange`, `processLadderPhases`, the callable
-`flipLadderPlayoffCoin`). Clients must not write `playoffTies`, including
-`coinToss`.
+The decider (`playoffLeg: 3`), tie results, bracket advancement, reminders, the
+24-hour auto-accept of an unanswered posted match (`autoAccepted: true`) and the
+ladder's Completed status are written only by Cloud Functions
+(`onLadderMatchStatusChange`, `processLadderPhases`). Clients must not write
+`playoffTies`.
 
 ## Ladder phases and playoffs
 
