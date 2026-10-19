@@ -9,14 +9,13 @@ appId: com.courtchamp
     env:
       NOTIFICATION: ".*made the playoffs for ${LADDER}.*"
       TIE: "r1-s1"
-- assertVisible:
-    id: "playoff-match-decider"
 - scrollUntilVisible:
     element:
       id: "playoff-match-decider"
     direction: DOWN
     timeout: 20000
     centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     id: "playoff-match-decider"
 - extendedWaitUntil:

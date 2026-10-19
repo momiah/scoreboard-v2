@@ -23,6 +23,7 @@ onFlowStart:
     direction: DOWN
     timeout: 20000
     centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     id: "ladder-game-r1-s1-leg1-g6"
 - extendedWaitUntil:

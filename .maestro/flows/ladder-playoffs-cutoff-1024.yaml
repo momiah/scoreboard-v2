@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-ladder-playoffs-generated-1024"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-ladder-playoffs-generated-1024"
 - tapOn:
     id: "tab-competitions"
 - runFlow:
@@ -33,10 +31,24 @@ onFlowStart:
 - assertVisible: ".*P0008 S.*"
 - tapOn:
     id: "bracket-view-list"
-- scrollUntilVisible:
-    element:
-      id: "bracket-game-r1-s27"
-    direction: DOWN
-    timeout: 60000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "bracket-game-r1-s27"
+          direction: DOWN
+          timeout: 60000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: ".*P0063 S.*"
+          direction: DOWN
+          speed: 60
+          timeout: 300000
 - assertVisible: ".*P0063 S.*"
 - assertNotVisible: ".*P0064 S.*"

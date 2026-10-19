@@ -15,6 +15,7 @@ appId: com.courtchamp
     direction: DOWN
     timeout: 20000
     centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     id: ${CARD}
 - extendedWaitUntil:

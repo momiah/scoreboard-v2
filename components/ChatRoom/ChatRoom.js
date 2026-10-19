@@ -13,6 +13,7 @@ import {
   View,
   Text,
 } from "react-native";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
@@ -47,6 +48,22 @@ const ChatRoom = ({
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef(null);
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return undefined;
+    const show = Keyboard.addListener("keyboardDidShow", (event) =>
+      setKeyboardHeight(event.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboardHeight(0),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Scroll to end function with delay to ensure rendering is complete
@@ -242,15 +259,13 @@ const ChatRoom = ({
           {/* Avatar and username container */}
           {!isCurrentUser && showAvatar && (
             <UserInfoContainer>
-              <AvatarImage source={{ uri: item.user.avatar }} />
+              <Avatar uri={item.user.avatar} />
               <UserName>{item.user.name}</UserName>
             </UserInfoContainer>
           )}
 
           {/* Current user avatar (no username) */}
-          {isCurrentUser && showAvatar && (
-            <AvatarImage source={{ uri: item.user.avatar }} />
-          )}
+          {isCurrentUser && showAvatar && <Avatar uri={item.user.avatar} />}
 
           <BubbleContainer isCurrentUser={isCurrentUser}>
             <MessageText>{item.text}</MessageText>
@@ -267,42 +282,50 @@ const ChatRoom = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
+    <View
+      style={{
+        flex: 1,
+        paddingBottom: Math.max(keyboardHeight - tabBarHeight, 0),
+      }}
     >
-      <FlatList
-        ref={flatListRef}
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        onScrollToIndexFailed={() => {
-          scrollToEnd(false);
-        }}
-      />
-      <InputBar>
-        <MessageInput
-          value={inputText}
-          onChangeText={leagueHasEnded ? null : setInputText}
-          placeholder={
-            leagueHasEnded
-              ? "Chat room closed as the league has ended"
-              : "Type a message..."
-          }
-          placeholderTextColor="#aaa"
-          testID="chat-room-input"
+        behavior="padding"
+        enabled={Platform.OS === "ios"}
+        keyboardVerticalOffset={50}
+      >
+        <FlatList
+          ref={flatListRef}
+          style={{ flex: 1 }}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          onScrollToIndexFailed={() => {
+            scrollToEnd(false);
+          }}
         />
-        <SendButton
-          testID="chat-room-send"
-          onPress={handleSend}
-          disabled={!inputText.trim() || leagueHasEnded}
-        >
-          <Ionicons name="send" size={24} color="#00A2FF" />
-        </SendButton>
-      </InputBar>
-    </KeyboardAvoidingView>
+        <InputBar>
+          <MessageInput
+            value={inputText}
+            onChangeText={leagueHasEnded ? null : setInputText}
+            placeholder={
+              leagueHasEnded
+                ? "Chat room closed as the league has ended"
+                : "Type a message..."
+            }
+            placeholderTextColor="#aaa"
+            testID="chat-room-input"
+          />
+          <SendButton
+            testID="chat-room-send"
+            onPress={handleSend}
+            disabled={!inputText.trim() || leagueHasEnded}
+          >
+            <Ionicons name="send" size={24} color="#00A2FF" />
+          </SendButton>
+        </InputBar>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -312,6 +335,17 @@ const MessageContainer = styled.View(({ isCurrentUser }) => ({
   marginBottom: 10,
   marginHorizontal: 10,
 }));
+
+const Avatar = ({ uri }) =>
+  uri ? <AvatarImage source={{ uri }} /> : <AvatarPlaceholder />;
+
+const AvatarPlaceholder = styled.View({
+  width: 28,
+  height: 28,
+  borderRadius: 14,
+  marginBottom: 5,
+  backgroundColor: "rgba(255, 255, 255, 0.08)",
+});
 
 const AvatarImage = styled.Image({
   width: 28,

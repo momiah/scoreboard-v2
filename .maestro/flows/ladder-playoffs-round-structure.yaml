@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-ladder-playoffs-generated-256"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-ladder-playoffs-generated-256"
 - tapOn:
     id: "tab-competitions"
 - runFlow:
@@ -32,19 +30,27 @@ onFlowStart:
 - assertVisible: ".*Semi-Final.*"
 - tapOn:
     id: "bracket-round-tab-1"
-- assertVisible:
-    id: "bracket-game-r2-s0"
+- runFlow:
+    file: ../utilities/playoffs/assert-bracket-game.yaml
+    env:
+      GAME_ID: "bracket-game-r2-s0"
 - tapOn:
     id: "bracket-round-tab-2"
 - assertVisible:
     id: "bracket-round-tab-3"
-- assertVisible:
-    id: "bracket-game-r3-s0"
+- runFlow:
+    file: ../utilities/playoffs/assert-bracket-game.yaml
+    env:
+      GAME_ID: "bracket-game-r3-s0"
 - tapOn:
     id: "bracket-round-tab-3"
-- assertVisible:
-    id: "bracket-game-r4-s0"
-- assertVisible:
-    id: "bracket-game-r4-s1"
+- runFlow:
+    file: ../utilities/playoffs/assert-bracket-game.yaml
+    env:
+      GAME_ID: "bracket-game-r4-s0"
+- runFlow:
+    file: ../utilities/playoffs/assert-bracket-game.yaml
+    env:
+      GAME_ID: "bracket-game-r4-s1"
 - assertVisible: ".*3rd/4th Playoff.*"
 - assertVisible: ".*TBD.*"
