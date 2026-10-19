@@ -31,6 +31,8 @@ const BEST_OF = 5;
 export const MAESTRO_AG_GAME_ID = `${MAESTRO_AG_MATCH_ID}-g1`;
 export const MAESTRO_AG_DISPUTE_ID = "maestro-add-game-flow-dispute";
 
+const DAYS_UNTIL_PLAYOFFS = 50;
+
 export const seedAddApproveGameFlow = async ({
   testUser,
   withReportedGame = false,
@@ -42,7 +44,7 @@ export const seedAddApproveGameFlow = async ({
   courtCoords = /** @type {{ latitude: number; longitude: number } | null} */ (
     null
   ),
-  playoffStartsInDays = /** @type {number | null} */ (null),
+  playoffStartsInDays = /** @type {number | null} */ (DAYS_UNTIL_PLAYOFFS),
 }) => {
   if (!testUser?.userId) {
     throw new Error(
