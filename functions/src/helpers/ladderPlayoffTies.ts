@@ -7,6 +7,8 @@ import {
   LADDER_PLAYOFF_TIE_OUTCOME,
   LADDER_PLAYOFF_TIE_STATUS,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_WALKOVER_REASON,
+  LADDER_REPORT_COUNTS_COLLECTION,
 } from "courtchamps-shared/types";
 import type {
   GameTeam,
@@ -15,6 +17,8 @@ import type {
   LadderPlayoffTie,
   LadderPlayoffTieOutcome,
   LadderPlayoffTieSide,
+  LadderPlayoffWalkoverReason,
+  StrikeCounts,
 } from "courtchamps-shared/types";
 import {
   advanceLadderPlayoffBracket,
@@ -26,6 +30,8 @@ import {
   getLadderPlacePrize,
   LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
   getLadderOpponentIds,
+  isDisqualified,
+  isLadderPlayoffHostArrangeOverdue,
   isLadderPlayoffMatchAutoAcceptDue,
   getLadderPlayoffLegHost,
   getLadderTieFinishPlaces,
@@ -110,12 +116,19 @@ export const resolveLadderPlayoffTie = async ({
   tieId,
   now,
   atDeadline = false,
+  forced,
 }: {
   db: Db;
   ladderId: string;
   tieId: string;
   now: Date;
   atDeadline?: boolean;
+  /** A result decided outside the matches, e.g. an opponent's disqualification. */
+  forced?: {
+    winner: LadderPlayoffTieSide | null;
+    outcome: LadderPlayoffTieOutcome;
+    reason?: LadderPlayoffWalkoverReason;
+  };
 }): Promise<LadderPlayoffTieResolution | null> => {
   const ladderRef = db.collection(LADDERS).doc(ladderId);
   const tiesRef = ladderRef.collection(LADDER_PLAYOFF_TIES_COLLECTION);
@@ -138,18 +151,37 @@ export const resolveLadderPlayoffTie = async ({
     const settle = (
       winner: LadderPlayoffTieSide | null,
       outcome: LadderPlayoffTieOutcome,
+      reason?: LadderPlayoffWalkoverReason,
     ): LadderPlayoffTieResolution => {
-      const changed = advanceLadderPlayoffBracket({ ties, tieId, winner, outcome, now });
+      const changed = advanceLadderPlayoffBracket({
+        ties,
+        tieId,
+        winner,
+        outcome,
+        now,
+      }).map((changedTie) =>
+        changedTie.tieId === tieId && reason
+          ? { ...changedTie, walkoverReason: reason }
+          : changedTie,
+      );
       changed.forEach((changedTie) =>
         transaction.set(tiesRef.doc(changedTie.tieId), changedTie, { merge: true }),
       );
       return { tie, ties, changed, deciderCreated: false };
     };
 
+    if (forced) return settle(forced.winner, forced.outcome, forced.reason);
+
     if (atDeadline) {
       if (!tie.deadlineAt || now.getTime() < tie.deadlineAt.getTime()) return null;
       const { winner, outcome } = decideLadderPlayoffTieAtDeadline(tie, legs);
-      return settle(winner, outcome);
+      return settle(
+        winner,
+        outcome,
+        outcome === LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER
+          ? LADDER_PLAYOFF_WALKOVER_REASON.INACTIVE_OPPONENT
+          : undefined,
+      );
     }
 
     const decision = decideLadderPlayoffTie(tie, legs);
@@ -210,6 +242,20 @@ const prizeWon = (ladder: PlayoffLadder, place: number): string | null =>
     ladder.currencyType ?? "GBP",
   );
 
+const KNOCKED_OUT_BECAUSE: Record<string, string> = {
+  [LADDER_PLAYOFF_WALKOVER_REASON.INACTIVE_OPPONENT]:
+    "you didn't arrange or play a match before the deadline",
+  [LADDER_PLAYOFF_WALKOVER_REASON.DISQUALIFIED_OPPONENT]:
+    "you've been disqualified from the ladder",
+};
+
+const WALKOVER_NOTE: Record<string, string> = {
+  [LADDER_PLAYOFF_WALKOVER_REASON.INACTIVE_OPPONENT]:
+    "Your opponent didn't arrange or play a match, so you go through on a walkover.",
+  [LADDER_PLAYOFF_WALKOVER_REASON.DISQUALIFIED_OPPONENT]:
+    "Your opponent was disqualified from the ladder, so you go through on a walkover.",
+};
+
 const notifyTieFinish = async ({
   ladder,
   tie,
@@ -247,12 +293,13 @@ const notifyTieFinish = async ({
   if (loserPlaysForThird || !tie[loserKey]) return;
   const roundName = ladderPlayoffRoundName(tie, totalRounds);
   const won = prizeWon(ladder, places.loser);
+  const because = KNOCKED_OUT_BECAUSE[tie.walkoverReason ?? ""];
   await notifyLadderPlayers({
     userIds: tie[loserKey]?.playerIds ?? [],
     ladder,
     kind: `playoff-out-${tie.tieId}`,
     title: `Knocked out in the ${roundName}`,
-    message: `You've been knocked out in the ${roundName} of ${ladder.name}.${won ? ` You've been awarded ${won}, paid when the playoffs finish.` : ""}`,
+    message: `You've been knocked out in the ${roundName} of ${ladder.name}${because ? ` because ${because}` : ""}.${won ? ` You've been awarded ${won}, paid when the playoffs finish.` : ""}`,
     tab: PLAYOFFS_TAB,
     data: { tieId: tie.tieId },
   });
@@ -312,6 +359,9 @@ export const notifyLadderPlayoffResolution = async ({
   const { tie } = resolution;
   const roundName = ladderPlayoffRoundName(tie, totalRounds);
   const before = new Map(resolution.ties.map((original) => [original.tieId, original]));
+  const resolved = resolution.changed.find((changedTie) => changedTie.tieId === tie.tieId);
+  const walkoverNote = WALKOVER_NOTE[resolved?.walkoverReason ?? ""];
+  const withNote = (message: string) => (walkoverNote ? `${message} ${walkoverNote}` : message);
 
   if (resolution.deciderCreated) {
     await notifyLadderPlayers({
@@ -371,7 +421,9 @@ export const notifyLadderPlayoffResolution = async ({
             }
           : {
               title: `Congratulations, you're through to the ${changedName}!`,
-              message: `You're through to the ${changedName} in ${ladder.name}! We'll let you know as soon as your opponent is decided.`,
+              message: withNote(
+                `You're through to the ${changedName} in ${ladder.name}! We'll let you know as soon as your opponent is decided.`,
+              ),
             }),
         tab: PLAYOFFS_TAB,
         data: { tieId: changedTie.tieId },
@@ -392,7 +444,9 @@ export const notifyLadderPlayoffResolution = async ({
               }
             : {
                 title: `Congratulations, you're through to the ${changedName}!`,
-                message: `Congratulations! You've made it to the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your matches.`,
+                message: withNote(
+                  `Congratulations! You've made it to the ${changedName} in ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your matches.`,
+                ),
               }),
           tab: PLAYOFFS_TAB,
           data: { tieId: changedTie.tieId },
@@ -541,4 +595,128 @@ export const autoAcceptDueLadderPlayoffMatches = async ({
     accepted.push(matchDoc.id);
   }
   return accepted;
+};
+
+const sideDisqualified = async (
+  ladderRef: admin.firestore.DocumentReference,
+  playerIds: string[],
+): Promise<boolean> => {
+  const counts = await Promise.all(
+    playerIds.map((userId) =>
+      ladderRef.collection(LADDER_REPORT_COUNTS_COLLECTION).doc(userId).get(),
+    ),
+  );
+  return counts.some((snap) =>
+    isDisqualified(snap.data()?.strikes as StrikeCounts | undefined),
+  );
+};
+
+/**
+ * A side with a disqualified player can no longer play: the other side goes
+ * through on a walkover at once, or nobody does if both are out. Returns the
+ * ids of the ties it settled.
+ */
+export const settleDisqualifiedLadderPlayoffTies = async ({
+  db,
+  ladder,
+  ties,
+  now,
+}: {
+  db: Db;
+  ladder: PlayoffLadder;
+  ties: LadderPlayoffTie[];
+  now: Date;
+}): Promise<string[]> => {
+  const ladderRef = db.collection(LADDERS).doc(ladder.ladderId);
+  const settled: string[] = [];
+  for (const tie of ties) {
+    if (tie.status !== LADDER_PLAYOFF_TIE_STATUS.SCHEDULED || !tie.side1 || !tie.side2) continue;
+    const [out1, out2] = await Promise.all([
+      sideDisqualified(ladderRef, tie.side1.playerIds),
+      sideDisqualified(ladderRef, tie.side2.playerIds),
+    ]);
+    if (!out1 && !out2) continue;
+    const resolution = await resolveLadderPlayoffTie({
+      db,
+      ladderId: ladder.ladderId,
+      tieId: tie.tieId,
+      now,
+      forced:
+        out1 && out2
+          ? { winner: null, outcome: LADDER_PLAYOFF_TIE_OUTCOME.VOID }
+          : {
+              winner: out1 ? "team2" : "team1",
+              outcome: LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER,
+              reason: LADDER_PLAYOFF_WALKOVER_REASON.DISQUALIFIED_OPPONENT,
+            },
+    });
+    if (!resolution) continue;
+    await notifyLadderPlayoffResolution({ ladder, resolution });
+    await completeLadderPlayoffsIfFinished({ db, ladderId: ladder.ladderId, resolution, now });
+    settled.push(tie.tieId);
+  }
+  return settled;
+};
+
+/**
+ * Once a tie has gone 48 hours without match 1 being arranged, tells both
+ * sides that the other may now arrange without waiting. One notice per tie.
+ */
+export const sendLadderPlayoffHostOverdueNotices = async ({
+  db,
+  ladder,
+  ties,
+  now,
+}: {
+  db: Db;
+  ladder: PlayoffLadder;
+  ties: LadderPlayoffTie[];
+  now: Date;
+}): Promise<number> => {
+  const ladderRef = db.collection(LADDERS).doc(ladder.ladderId);
+  let sent = 0;
+  for (const tie of ties) {
+    if (tie.hostOverdueNoticeSentAt || !tie.side1 || !tie.side2) continue;
+    if (!isLadderPlayoffHostArrangeOverdue(tie, now)) continue;
+    const legs = await ladderRef
+      .collection(LADDER_MATCHES)
+      .where("playoffTieId", "==", tie.tieId)
+      .get();
+    const arranged = legs.docs.some((leg) => {
+      const match = leg.data() as LadderMatch;
+      return match.playoffLeg === 1 && match.matchStatus !== LADDER_MATCH_STATUS.CANCELLED;
+    });
+    if (arranged) continue;
+    const marked = await db.runTransaction(async (transaction) => {
+      const fresh = await transaction.get(ladderRef.collection(LADDER_PLAYOFF_TIES_COLLECTION).doc(tie.tieId));
+      if (!fresh.exists || fresh.data()?.hostOverdueNoticeSentAt) return false;
+      transaction.update(fresh.ref, { hostOverdueNoticeSentAt: now });
+      return true;
+    });
+    if (!marked) continue;
+    const hostKey: TieSideKey = getLadderPlayoffLegHost(tie, 1) === "team1" ? "side1" : "side2";
+    const waitingKey: TieSideKey = hostKey === "side1" ? "side2" : "side1";
+    const nameOf = (key: TieSideKey) =>
+      ladderPlayoffTeamName(key === "side1" ? tie.team1 : tie.team2);
+    await notifyLadderPlayers({
+      userIds: tie[waitingKey]?.playerIds ?? [],
+      ladder,
+      kind: `playoff-host-overdue-waiting-${tie.tieId}`,
+      title: "You can arrange your match now",
+      message: `${nameOf(hostKey)} hasn't arranged match 1, so you can now arrange your home match without waiting.`,
+      tab: PLAYOFFS_TAB,
+      data: { tieId: tie.tieId },
+    });
+    await notifyLadderPlayers({
+      userIds: tie[hostKey]?.playerIds ?? [],
+      ladder,
+      kind: `playoff-host-overdue-host-${tie.tieId}`,
+      title: "Arrange match 1",
+      message: `You haven't arranged match 1 in ${ladder.name} yet. ${nameOf(waitingKey)} can now arrange their home match without waiting for you.`,
+      tab: PLAYOFFS_TAB,
+      data: { tieId: tie.tieId },
+    });
+    sent += 1;
+  }
+  return sent;
 };

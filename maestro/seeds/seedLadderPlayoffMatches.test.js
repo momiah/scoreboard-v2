@@ -35,7 +35,10 @@ jest.mock("firebase/firestore", () => ({
 
 import {
   decideLadderPlayoffTie,
+  getLadderPlayoffActiveSides,
   getLadderPlayoffLegHost,
+  isDisqualified,
+  isLadderPlayoffHostArrangeOverdue,
   tallyLadderPlayoffTie,
 } from "@shared";
 import { MAESTRO_PO_LADDER_ID } from "./seedLadderPlayoffs";
@@ -366,4 +369,43 @@ describe("seedLadderPlayoffMatches", () => {
       expect(realWorldProblems({ ties, matches })).toEqual([]);
     },
   );
+
+  it("leaves match 1 unarranged inside its first 48 hours for pending", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.PENDING);
+    expect(isLadderPlayoffHostArrangeOverdue(tie(my.tieId), new Date())).toBe(
+      false,
+    );
+    expect(legs(my.tieId)).toHaveLength(0);
+  });
+
+  it("leaves match 1 unarranged past its first 48 hours for matchOneOverdue", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.MATCH_ONE_OVERDUE);
+    expect(isLadderPlayoffHostArrangeOverdue(tie(my.tieId), new Date())).toBe(
+      true,
+    );
+    expect(legs(my.tieId)).toHaveLength(0);
+  });
+
+  it("has only the user arrange anything before a deadline that has passed", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.INACTIVE_OPPONENT_PAST_DEADLINE);
+    expect(tie(my.tieId).deadlineAt.getTime()).toBeLessThan(Date.now());
+    const [leg2] = legs(my.tieId);
+    expect(leg2).toMatchObject({
+      matchStatus: "posted",
+      createdBy: "test-user",
+    });
+    expect(getLadderPlayoffActiveSides(tie(my.tieId), legs(my.tieId))).toEqual([
+      my.side,
+    ]);
+  });
+
+  it("strikes the opponent out of the ladder", async () => {
+    await seed(PLAYOFF_MATCH_STAGE.OPPONENT_DISQUALIFIED);
+    const opponentId = tie(my.tieId)[my.other === "team1" ? "side1" : "side2"]
+      .playerIds[0];
+    const counts = mockDocs.get(
+      `ladders/${MAESTRO_PO_LADDER_ID}/reportCounts/${opponentId}`,
+    );
+    expect(isDisqualified(counts.strikes)).toBe(true);
+  });
 });

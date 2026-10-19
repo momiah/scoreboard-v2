@@ -3,7 +3,7 @@ onFlowStart:
   - runFlow: ../login.yaml
 ---
 - runFlow:
-    file: ../utilities/playoffs/harness.yaml
+    file: ../utilities/playoffs/harness-scrolled.yaml
     env:
       BUTTON: "maestro-seed-home-court-flow-set"
 - runFlow:

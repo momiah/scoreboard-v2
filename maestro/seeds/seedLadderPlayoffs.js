@@ -11,6 +11,7 @@ import {
   LADDER_CANCELLED_REASON,
   LADDER_PLAYOFF_TIES_COLLECTION,
   LADDER_PLAYOFF_TIE_DAYS,
+  LADDER_REPORT_COUNTS_COLLECTION,
   LADDER_STATUS,
   LADDER_TYPE,
   TEAM_STATUS,
@@ -168,6 +169,7 @@ const deleteLadder = async (ladderId) => {
       "ladderParticipants",
       "ladderTeams",
       "ladderMatches",
+      LADDER_REPORT_COUNTS_COLLECTION,
     ].map((sub) => deleteCollection(["ladders", ladderId, sub])),
   );
   await commitInBatches([
@@ -275,8 +277,13 @@ const generateBracket = async ({ ladderId, entrants, maxPlayers, now }) => {
         playoffEntrantCount: entrants.length,
       }),
   ]);
-  return { bracketSize, tieCount: ties.length };
+  return { bracketSize, tieCount: ties.length, ties };
 };
+
+const tieIdOf = (bracket, userId) =>
+  bracket?.ties.find((tie) =>
+    [tie.side1, tie.side2].some((side) => side?.playerIds.includes(userId)),
+  )?.tieId;
 
 const NOTIFICATION_TABS = ["Summary", "Playoffs"];
 
@@ -285,6 +292,7 @@ const writePlayoffNotifications = async ({
   ladderId,
   ladderName,
   promoted = false,
+  tieId = undefined,
   eliminated = false,
   cancelled = false,
 }) => {
@@ -325,7 +333,7 @@ const writePlayoffNotifications = async ({
         senderId: "system",
         title: "You made the playoffs!",
         message: `Congratulations! You've made the playoffs for ${ladderName}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
-        data: { ladderId, tab: "Playoffs" },
+        data: { ladderId, tab: "Playoffs", ...(tieId ? { tieId } : {}) },
       },
     });
   }
@@ -478,6 +486,7 @@ export const seedLadderPlayoffs = async ({
     promoted: shouldGenerate && testUserRank < bracketSize,
     eliminated: shouldGenerate && testUserRank >= bracketSize,
     cancelled,
+    tieId: tieIdOf(bracket, testUser.userId),
   });
 
   return {
@@ -485,7 +494,10 @@ export const seedLadderPlayoffs = async ({
     ladderName,
     entrants: size,
     expectedBracketSize: cancelled ? 0 : bracketSize,
-    generated: bracket,
+    generated: bracket && {
+      bracketSize: bracket.bracketSize,
+      tieCount: bracket.tieCount,
+    },
   };
 };
 
@@ -607,6 +619,7 @@ export const seedLadderPlayoffsDoubles = async ({
     ladderId: MAESTRO_PO_DOUBLES_LADDER_ID,
     ladderName,
     promoted: generate,
+    tieId: tieIdOf(bracket, testUser.userId),
   });
 
   return {
@@ -614,7 +627,10 @@ export const seedLadderPlayoffsDoubles = async ({
     ladderName,
     entrants: teamCount,
     expectedBracketSize: bracketSize,
-    generated: bracket,
+    generated: bracket && {
+      bracketSize: bracket.bracketSize,
+      tieCount: bracket.tieCount,
+    },
   };
 };
 

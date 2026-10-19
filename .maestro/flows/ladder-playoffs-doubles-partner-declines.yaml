@@ -1,0 +1,29 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-journey-doubles-r16-started"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-doubles-opponent-arranges-leg1"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*arranged playoff match 1 at.*Open it to accept or decline.*"
+      TIE: "r1-s1"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-doubles-partner-decline-leg1"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*Your partner .* declined playoff match 1 at.*"
+      TIE: "r1-s1"
+- assertNotVisible: ".*Awaiting your confirmation.*"
+- assertVisible:
+    id: "playoff-match-leg1-waiting"

@@ -47,6 +47,9 @@ export const PLAYOFF_MATCH_STAGE = {
   LEG2_ACCEPTED: "leg2Accepted",
   LEG2_ONE_GAME: "leg2OneGame",
   LEG1_POSTED_STALE: "leg1PostedStale",
+  MATCH_ONE_OVERDUE: "matchOneOverdue",
+  INACTIVE_OPPONENT_PAST_DEADLINE: "inactiveOpponentPastDeadline",
+  OPPONENT_DISQUALIFIED: "opponentDisqualified",
 };
 
 export const MAESTRO_PO_REGULAR_MATCH_ID = "maestro-po-regular-match";
@@ -73,6 +76,7 @@ export const playedGame = ({
   start,
   approved,
   reporterSide,
+  reporterIndex = 0,
 }) => {
   const loserScore = LOSER_SCORES[index % LOSER_SCORES.length];
   const winnerScore = loserScore >= 20 ? loserScore + 2 : 21;
@@ -109,7 +113,9 @@ export const playedGame = ({
       },
     },
     approvalStatus: approved ? APPROVED : "pending",
-    reporter: tie[reporting].player1.userId,
+    reporter: [tie[reporting].player1, tie[reporting].player2].filter(Boolean)[
+      reporterIndex
+    ].userId,
     numberOfApprovals: approved ? 1 : 0,
     numberOfDeclines: 0,
     approvers: approved
@@ -151,6 +157,8 @@ export const legMatch = ({
   pendingReporter,
   scheduleDeclines,
   postedHoursAgo = 0,
+  ladderType = LADDER_TYPE.SINGLES,
+  reporterIndex = 0,
   now,
 }) => {
   const hostSide = tie[sideKey(host)];
@@ -160,7 +168,7 @@ export const legMatch = ({
     leg,
     host,
     ladderMatchId: legId(tie, leg),
-    ladderType: LADDER_TYPE.SINGLES,
+    ladderType,
     input: {
       court: hostSide.homeCourt,
       matchDate: start.format("DD-MM-YYYY"),
@@ -199,6 +207,8 @@ export const legMatch = ({
             pendingLast && index === wins.length - 1
               ? pendingReporter
               : undefined,
+          reporterIndex:
+            pendingLast && index === wins.length - 1 ? reporterIndex : 0,
         })
       : shell,
   );
@@ -349,7 +359,42 @@ export const seedLadderPlayoffMatches = async ({
   const A = LADDER_MATCH_STATUS.ACCEPTED;
   const P = LADDER_MATCH_STATUS.POSTED;
 
+  const tieStartedDaysAgo = (tieId, days) => {
+    const scheduledAt = new Date(now.getTime() - days * DAY_MS);
+    setTie(tieId, {
+      scheduledAt,
+      deadlineAt: new Date(
+        scheduledAt.getTime() + LADDER_PLAYOFF_TIE_DAYS * DAY_MS,
+      ),
+      remindersSentDays: [3, 6].filter((day) => day <= days),
+    });
+  };
+
   switch (stage) {
+    case PLAYOFF_MATCH_STAGE.PENDING:
+      tieStartedDaysAgo(mine.tieId, 1);
+      break;
+    case PLAYOFF_MATCH_STAGE.MATCH_ONE_OVERDUE:
+      tieStartedDaysAgo(mine.tieId, 3);
+      break;
+    case PLAYOFF_MATCH_STAGE.INACTIVE_OPPONENT_PAST_DEADLINE:
+      tieStartedDaysAgo(mine.tieId, LADDER_PLAYOFF_TIE_DAYS + 1);
+      matches.push(
+        legMatch({
+          tie: mine,
+          leg: 2,
+          host: hostOf(mine, 2),
+          status: P,
+          day: -2,
+          time: "19:00",
+          postedHoursAgo: 5 * 24,
+          now,
+        }),
+      );
+      break;
+    case PLAYOFF_MATCH_STAGE.OPPONENT_DISQUALIFIED:
+      tieStartedDaysAgo(mine.tieId, 2);
+      break;
     case PLAYOFF_MATCH_STAGE.LEG1_POSTED:
       matches.push(
         legMatch({
@@ -718,6 +763,18 @@ export const seedLadderPlayoffMatches = async ({
         : [];
 
   const extraWrites = [];
+  if (stage === PLAYOFF_MATCH_STAGE.OPPONENT_DISQUALIFIED) {
+    const opponentId = mine[sideKey(them)].playerIds[0];
+    extraWrites.push((batch) =>
+      batch.set(doc(db, "ladders", ladderId, "reportCounts", opponentId), {
+        userId: opponentId,
+        ladderId,
+        teamKey: null,
+        strikes: { cheating: 3 },
+        updatedAt: now,
+      }),
+    );
+  }
   if (stage === PLAYOFF_MATCH_STAGE.NO_HOME_COURT) {
     extraWrites.push((batch) =>
       batch.update(doc(db, "ladders", ladderId, "ladderParticipants", myId), {

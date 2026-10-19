@@ -467,18 +467,24 @@ const BracketTree = ({
           >
             <TreeCanvas style={{ width: canvasWidth, height: canvasHeight }}>
               <ConnectorLayer pointerEvents="none">
-                <Svg width={canvasWidth} height={canvasHeight}>
-                  {treeRounds.slice(0, -1).map((round, roundIndex) => {
-                    const pageOffsetX = roundIndex * PAGE_STRIDE;
-                    const fromX =
-                      pageOffsetX +
-                      COLUMN_GUTTER / 2 +
-                      (COLUMN_WIDTH - COLUMN_GUTTER);
-                    const toX =
-                      (roundIndex + 1) * PAGE_STRIDE + COLUMN_GUTTER / 2;
-                    return round.games.map((_, gameIndex) => {
-                      const targetIndex = Math.floor(gameIndex / 2);
-                      return (
+                {treeRounds.slice(0, -1).map((round, roundIndex) => {
+                  const fromX =
+                    roundIndex * PAGE_STRIDE +
+                    COLUMN_GUTTER / 2 +
+                    (COLUMN_WIDTH - COLUMN_GUTTER);
+                  const toX =
+                    (roundIndex + 1) * PAGE_STRIDE + COLUMN_GUTTER / 2;
+                  const svgLeft = fromX - CONNECTOR_STROKE_WIDTH;
+                  const svgWidth = toX - fromX + CONNECTOR_STROKE_WIDTH * 2;
+                  return (
+                    <Svg
+                      key={roundIndex}
+                      style={{ position: "absolute", top: 0, left: svgLeft }}
+                      width={svgWidth}
+                      height={canvasHeight}
+                      viewBox={`${svgLeft} 0 ${svgWidth} ${canvasHeight}`}
+                    >
+                      {round.games.map((_, gameIndex) => (
                         <AnimatedConnector
                           key={`${roundIndex}-${gameIndex}`}
                           fromXValue={fromX}
@@ -486,14 +492,14 @@ const BracketTree = ({
                           fromRound={roundIndex}
                           fromGame={gameIndex}
                           toRound={roundIndex + 1}
-                          toGame={targetIndex}
+                          toGame={Math.floor(gameIndex / 2)}
                           layoutsByActive={layoutsByActive}
                           scrollX={scrollX}
                         />
-                      );
-                    });
-                  })}
-                </Svg>
+                      ))}
+                    </Svg>
+                  );
+                })}
               </ConnectorLayer>
 
               {treeRounds.map((round, roundIndex) => {

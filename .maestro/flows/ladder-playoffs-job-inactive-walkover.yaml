@@ -1,0 +1,37 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "inactiveOpponentPastDeadline"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*Your opponent didn't arrange or play a match, so you go through on a walkover.*"
+    timeout: 1500000
+- tapOn: ".*Your opponent didn't arrange or play a match, so you go through on a walkover.*"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 30000
+- tapOn:
+    id: "playoff-match-back"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- tapOn: "Round of 16"
+- runFlow:
+    file: ../utilities/playoffs/open-bracket-tie.yaml
+    env:
+      TIE: "r1-s1"
+      SCROLL: "no"
+- assertVisible:
+    id: "playoff-match-outcome"
+- assertVisible: "Through to the Quarter-Final on a walkover"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-opponent-out-inactive"

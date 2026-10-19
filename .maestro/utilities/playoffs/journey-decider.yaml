@@ -28,18 +28,16 @@ appId: com.courtchamp
       NOTIFICATION: ".*You have a deciding game left to play as your matches in the Round of 16 of ${LADDER} resulted in a draw!.*"
       TIE: "r1-s1"
 - extendedWaitUntil:
-    visible:
-      id: "playoff-match-decider"
+    visible: "6 - 6"
     timeout: 60000
-- assertVisible: "6 - 6"
-- assertVisible: "Deciding game"
 - assertVisible: "Level on aggregate. One deciding game to play."
 - scrollUntilVisible:
     element:
       id: "playoff-match-decider"
     direction: DOWN
-    timeout: 20000
+    timeout: 60000
     centerElement: true
+- assertVisible: "Deciding game"
 - tapOn:
     id: "playoff-match-decider"
 - extendedWaitUntil:
@@ -61,10 +59,7 @@ appId: com.courtchamp
     visible:
       id: "reschedule-match"
     timeout: 10000
-- tapOn: "Select Date"
-- tapOn:
-    point: 23%, 52%
-- tapOn: "Confirm Date"
+- runFlow: ../pick-date.yaml
 - tapOn:
     id: "reschedule-match-send"
 - extendedWaitUntil:

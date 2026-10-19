@@ -17,26 +17,21 @@ import {
   LADDER_TYPE,
   SHUTTLE_TYPE,
   buildLadderPlayoffLegMatch,
-  canDeclineLadderPlayoffMatch,
   getLadderPlayoffLegHost,
   notificationSchema,
   notificationTypes,
 } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { playoffMatchMessages } from "../../helpers/playoffMatchMessages";
 import { MAESTRO_PO_LADDER_ID } from "./seedLadderPlayoffs";
 import { legId, other, sideKey } from "./seedLadderPlayoffMatches";
 
 const matchRef = (ladderId, matchId) =>
   doc(db, "ladders", ladderId, "ladderMatches", matchId);
 
-const slotLabel = (match) =>
-  moment(
-    `${match.matchDate} ${match.matchTime?.start ?? "00:00"}`,
-    "DD-MM-YYYY HH:mm",
-  ).format("ddd D MMM, HH:mm");
-
-const matchLabel = (match) =>
-  `playoff match ${match.playoffLeg} at ${match.court?.courtName ?? "your court"}, ${slotLabel(match)}`;
+const ladderTypeOf = async (ladderId) =>
+  (await getDoc(doc(db, "ladders", ladderId))).data()?.ladderType ??
+  LADDER_TYPE.SINGLES;
 
 export const findUserTie = async ({
   ladderId = MAESTRO_PO_LADDER_ID,
@@ -57,7 +52,8 @@ export const findUserTie = async ({
     .sort((a, b) => b.round - a.round)[0];
   if (!tie) throw new Error("mockPlayoffOpponent: the user has no open tie");
   const user = tie.side1.playerIds.includes(userId) ? "team1" : "team2";
-  return { tie, user, opponent: other(user) };
+  const partnerIds = tie[sideKey(user)].playerIds.filter((id) => id !== userId);
+  return { tie, user, opponent: other(user), partnerIds };
 };
 
 const opponentName = (tie, opponent) => {
@@ -74,6 +70,7 @@ const notifyUser = async ({
   tie,
   testUser,
   opponent,
+  senderId = undefined,
   id,
   message,
 }) => {
@@ -83,7 +80,7 @@ const notifyUser = async ({
       ...notificationSchema,
       createdAt: new Date(),
       recipientId: testUser.userId,
-      senderId: tie[sideKey(opponent)].playerIds[0],
+      senderId: senderId ?? tie[sideKey(opponent)].playerIds[0],
       message,
       type: notificationTypes.INFORMATION.LADDER.TYPE,
       data: { ladderId, tieId: tie.tieId, tab: "Playoffs" },
@@ -117,7 +114,7 @@ export const mockOpponentArrangesLeg = async ({
       leg,
       host,
       ladderMatchId: id,
-      ladderType: LADDER_TYPE.SINGLES,
+      ladderType: await ladderTypeOf(ladderId),
       input: {
         court: hostSide.homeCourt,
         matchDate: moment().add(dayOffset, "days").format("DD-MM-YYYY"),
@@ -137,11 +134,7 @@ export const mockOpponentArrangesLeg = async ({
     testUser,
     opponent,
     id: `arranged-${id}`,
-    message: `${opponentName(tie, opponent)} arranged ${matchLabel(match)}. ${
-      canDeclineLadderPlayoffMatch(match)
-        ? "Open it to accept or decline."
-        : "Open it to accept."
-    }`,
+    message: playoffMatchMessages.arranged(opponentName(tie, opponent), match),
   });
   return { tieId: tie.tieId, leg };
 };
@@ -194,10 +187,129 @@ export const mockOpponentRespondsToLeg = async ({
     opponent,
     id: `${accept ? "accepted" : "declined"}-${id}`,
     message: accept
-      ? `${opponentName(tie, opponent)} accepted ${matchLabel(match)}.`
-      : `${opponentName(tie, opponent)} can't make ${matchLabel(match)}. Arrange another time.`,
+      ? playoffMatchMessages.accepted(opponentName(tie, opponent), match)
+      : playoffMatchMessages.declined(opponentName(tie, opponent), match),
   });
   return { tieId: tie.tieId, leg, accept };
+};
+
+const partnerOf = (tie, user, userId) =>
+  [tie[user].player1, tie[user].player2]
+    .filter(Boolean)
+    .find((player) => player.userId !== userId);
+
+const playerName = (player) =>
+  formatDisplayName({
+    firstName: player?.firstName,
+    lastName: player?.lastName,
+    username: player?.username,
+  });
+
+export const mockPartnerArrangesLeg = async ({
+  testUser,
+  ladderId = MAESTRO_PO_LADDER_ID,
+  leg,
+  dayOffset = 2,
+  time = "20:00",
+}) => {
+  const { tie, user } = await findUserTie({
+    ladderId,
+    userId: testUser.userId,
+  });
+  const partner = partnerOf(tie, user, testUser.userId);
+  if (!partner)
+    throw new Error("mockPartnerArrangesLeg: the user has no partner");
+  if (getLadderPlayoffLegHost(tie, leg) !== user) {
+    throw new Error(
+      `mockPartnerArrangesLeg: the user's pair doesn't host match ${leg}`,
+    );
+  }
+  const id = legId(tie, leg);
+  const previous = await getDoc(matchRef(ladderId, id));
+  const match = {
+    ...buildLadderPlayoffLegMatch({
+      tie,
+      leg,
+      host: user,
+      ladderMatchId: id,
+      ladderType: await ladderTypeOf(ladderId),
+      input: {
+        court: tie[sideKey(user)].homeCourt,
+        matchDate: moment().add(dayOffset, "days").format("DD-MM-YYYY"),
+        matchTime: { start: time },
+        currencyType: "GBP",
+        shuttleType: SHUTTLE_TYPE.FEATHER,
+      },
+      createdBy: partner.userId,
+      now: new Date(),
+    }),
+    scheduleDeclines: previous.data()?.scheduleDeclines ?? 0,
+  };
+  await setDoc(matchRef(ladderId, id), match);
+  await notifyUser({
+    ladderId,
+    tie,
+    testUser,
+    opponent: user,
+    senderId: partner.userId,
+    id: `partner-arranged-${id}`,
+    message: playoffMatchMessages.arrangedByPartner(playerName(partner), match),
+  });
+  return { tieId: tie.tieId, leg, by: partner.userId };
+};
+
+export const mockPartnerRespondsToLeg = async ({
+  testUser,
+  ladderId = MAESTRO_PO_LADDER_ID,
+  leg,
+  accept,
+}) => {
+  const { tie, user } = await findUserTie({
+    ladderId,
+    userId: testUser.userId,
+  });
+  const partner = partnerOf(tie, user, testUser.userId);
+  if (!partner)
+    throw new Error("mockPartnerRespondsToLeg: the user has no partner");
+  const id = legId(tie, leg);
+  const snap = await getDoc(matchRef(ladderId, id));
+  if (
+    !snap.exists() ||
+    snap.data().matchStatus !== LADDER_MATCH_STATUS.POSTED
+  ) {
+    throw new Error(
+      `mockPartnerRespondsToLeg: match ${leg} is not awaiting a reply`,
+    );
+  }
+  const match = snap.data();
+  if (accept) {
+    await updateDoc(matchRef(ladderId, id), {
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      acceptedBy: partner.userId,
+      acceptedAt: new Date(),
+    });
+  } else {
+    await updateDoc(matchRef(ladderId, id), {
+      matchStatus: LADDER_MATCH_STATUS.CANCELLED,
+      cancelledAt: new Date(),
+      cancelledReason: "Time declined",
+      scheduleDeclines: (match.scheduleDeclines ?? 0) + 1,
+    });
+  }
+  await notifyUser({
+    ladderId,
+    tie,
+    testUser,
+    opponent: user,
+    senderId: partner.userId,
+    id: `partner-${accept ? "accepted" : "declined"}-${id}`,
+    message: playoffMatchMessages.answeredByPartner(
+      playerName(partner),
+      match,
+      accept,
+    ),
+  });
+  return { tieId: tie.tieId, leg, accept, by: partner.userId };
 };
 
 export const mockOpponentOffersPlayHere = async ({
@@ -240,7 +352,10 @@ export const mockOpponentOffersPlayHere = async ({
     testUser,
     opponent,
     id: `play-here-${id}`,
-    message: `${opponentName(tie, opponent)} wants to play match 2 now at ${first.court?.courtName ?? "your court"}. Open the game to accept or decline.`,
+    message: playoffMatchMessages.playNowOffer(
+      opponentName(tie, opponent),
+      first.court?.courtName,
+    ),
   });
   return { tieId: tie.tieId };
 };

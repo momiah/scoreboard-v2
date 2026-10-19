@@ -16,14 +16,8 @@ onFlowStart:
 - tapOn: ".*You didn't reply within 24 hours, so playoff match 1 at .* has been accepted for you.*"
 - extendedWaitUntil:
     visible:
-      id: "ladder-playoffs-bracket"
+      id: "playoff-match-details"
     timeout: 40000
-- waitForAnimationToEnd
-- runFlow:
-    file: ../utilities/playoffs/open-bracket-tie.yaml
-    env:
-      TIE: "r1-s1"
-      SCROLL: "no"
 - assertNotVisible: ".*Awaiting your confirmation.*"
 - tapOn:
     id: "playoff-match-leg1"

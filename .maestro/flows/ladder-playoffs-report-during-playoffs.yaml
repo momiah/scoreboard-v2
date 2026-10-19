@@ -24,6 +24,7 @@ onFlowStart:
     element:
       id: "ladder-game-maestro-po-regular-match-g2"
     direction: DOWN
+- waitForAnimationToEnd
 - tapOn:
     id: "ladder-game-maestro-po-regular-match-g2"
 - assertNotVisible:

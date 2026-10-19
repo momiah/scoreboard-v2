@@ -1,0 +1,19 @@
+appId: com.courtchamp
+---
+- tapOn: "Select Date"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: 23%, 52%
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          id: "date-wheel-item-1"
+- extendedWaitUntil:
+    visible: "Confirm Date"
+    timeout: 10000
+- tapOn: "Confirm Date"

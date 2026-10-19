@@ -12,14 +12,10 @@ onFlowStart:
     env:
       BUTTON: "maestro-mock-po-opponent-arranges-leg1"
 - runFlow:
-    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
     env:
       NOTIFICATION: ".*arranged playoff match 1 at.*Open it to accept\\..*"
-- runFlow:
-    file: ../utilities/playoffs/open-bracket-tie.yaml
-    env:
       TIE: "r1-s1"
-      SCROLL: "no"
 - tapOn:
     id: "playoff-match-leg1"
 - extendedWaitUntil:

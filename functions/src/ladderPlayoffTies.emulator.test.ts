@@ -26,12 +26,15 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
 
 if (admin.apps.length === 0) admin.initializeApp({ projectId: PROJECT_ID });
 
+import { runProcessLadderPhases } from "./processLadderPhases";
 import {
   completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
   autoAcceptDueLadderPlayoffMatches,
   sendDueLadderPlayoffReminders,
+  sendLadderPlayoffHostOverdueNotices,
+  settleDisqualifiedLadderPlayoffTies,
   toLadderPlayoffTie,
 } from "./helpers/ladderPlayoffTies";
 
@@ -445,6 +448,212 @@ describe("deadlines", () => {
   });
 });
 
+describe("an inactive side", () => {
+  const afterDeadline = new Date(start.getTime() + 10 * DAY_MS + 1000);
+
+  const postedLeg = async (tie: LadderPlayoffTie, leg: 1 | 2, createdBy: string, extra: Record<string, unknown> = {}) => {
+    const [a, b] = sidesOf(tie);
+    const id = `${tie.tieId}-leg${leg}`;
+    await db.doc(`ladders/${LADDER}/ladderMatches/${id}`).set({
+      ladderMatchId: id,
+      playoffTieId: tie.tieId,
+      playoffLeg: leg,
+      ladderType: LADDER_TYPE.SINGLES,
+      matchStatus: LADDER_MATCH_STATUS.POSTED,
+      participants: [a, b],
+      createdBy,
+      createdAt: start,
+      games: [],
+      ...extra,
+    });
+  };
+
+  it("hands the tie to the only side that arranged a match, and tells both", async () => {
+    const ties = await seedBracket(8);
+    const [first] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await seedUsers([a, b]);
+    await postedLeg(first, 2, a);
+
+    const resolution = await resolveLadderPlayoffTie({
+      db, ladderId: LADDER, tieId: first.tieId, now: afterDeadline, atDeadline: true,
+    });
+    if (!resolution) throw new Error("expected a resolution");
+    await notifyLadderPlayoffResolution({ ladder, resolution });
+    expect(await readTie(first.tieId)).toMatchObject({
+      winner: "team1",
+      outcome: LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER,
+      walkoverReason: "inactiveOpponent",
+    });
+    const out = await db.doc(`users/${b}/notifications/playoff-out-${first.tieId}-${LADDER}-${b}`).get();
+    expect(out.data()?.message).toBe(
+      `You've been knocked out in the Quarter-Final of ${ladder.name} because you didn't arrange or play a match before the deadline. You've been awarded £160 and 400 CP, paid when the playoffs finish.`,
+    );
+    const through = await db.doc(`users/${a}/notifications/playoff-through-r2-s0-${LADDER}-${a}`).get();
+    expect(through.data()?.message).toContain("Your opponent didn't arrange or play a match, so you go through on a walkover.");
+  });
+
+  it("voids the tie when both sides did something or neither did", async () => {
+    const ties = await seedBracket(8);
+    const [first, second] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await postedLeg(first, 1, a);
+    await postedLeg(first, 2, b);
+    await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: first.tieId, now: afterDeadline, atDeadline: true });
+    expect((await readTie(first.tieId)).outcome).toBe(LADDER_PLAYOFF_TIE_OUTCOME.VOID);
+    await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: second.tieId, now: afterDeadline, atDeadline: true });
+    expect((await readTie(second.tieId)).outcome).toBe(LADDER_PLAYOFF_TIE_OUTCOME.VOID);
+  });
+
+  it("doesn't count an auto-accepted match as activity from the side it was accepted for", async () => {
+    const ties = await seedBracket(8);
+    const [first] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await postedLeg(first, 1, a, {
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      acceptedBy: b,
+      autoAccepted: true,
+    });
+    await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: first.tieId, now: afterDeadline, atDeadline: true });
+    expect(await readTie(first.tieId)).toMatchObject({ winner: "team1", outcome: LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER });
+  });
+
+  it("tells both sides once, after 48 hours, that match 1 isn't arranged", async () => {
+    const ties = await seedBracket(4);
+    const [first] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await seedUsers([a, b]);
+    const scheduled = async () => [await readTie(first.tieId)];
+    const fortyEight = new Date(start.getTime() + 48 * 60 * 60 * 1000);
+
+    expect(
+      await sendLadderPlayoffHostOverdueNotices({ db, ladder, ties: await scheduled(), now: new Date(fortyEight.getTime() - 1000) }),
+    ).toBe(0);
+    expect(await sendLadderPlayoffHostOverdueNotices({ db, ladder, ties: await scheduled(), now: fortyEight })).toBe(1);
+    expect((await db.doc(tiePath(first.tieId)).get()).data()?.hostOverdueNoticeSentAt).toEqual(
+      admin.firestore.Timestamp.fromDate(fortyEight),
+    );
+    expect(await sendLadderPlayoffHostOverdueNotices({ db, ladder, ties: await scheduled(), now: fortyEight })).toBe(0);
+
+    const host = getLadderPlayoffLegHost(first, 1) === "team1" ? a : b;
+    const waiting = host === a ? b : a;
+    const waitingNotice = await db.doc(`users/${waiting}/notifications/playoff-host-overdue-waiting-${first.tieId}-${LADDER}-${waiting}`).get();
+    expect(waitingNotice.data()).toMatchObject({
+      title: "You can arrange your match now",
+      message: `${host} hasn't arranged match 1, so you can now arrange your home match without waiting.`,
+    });
+    const hostNotice = await db.doc(`users/${host}/notifications/playoff-host-overdue-host-${first.tieId}-${LADDER}-${host}`).get();
+    expect(hostNotice.data()?.title).toBe("Arrange match 1");
+  });
+
+  it("says nothing when match 1 is already arranged", async () => {
+    const ties = await seedBracket(4);
+    const [first] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await seedUsers([a, b]);
+    const host = getLadderPlayoffLegHost(first, 1) === "team1" ? a : b;
+    await postedLeg(first, 1, host);
+    const later = new Date(start.getTime() + 5 * DAY_MS);
+    expect(
+      await sendLadderPlayoffHostOverdueNotices({ db, ladder, ties: [await readTie(first.tieId)], now: later }),
+    ).toBe(0);
+  });
+});
+
+describe("a disqualified player", () => {
+  const strikes = async (userId: string) =>
+    db.doc(`ladders/${LADDER}/reportCounts/${userId}`).set({ userId, strikes: { cheating: 3 } });
+
+  it("hands the tie to their opponent on a walkover", async () => {
+    const ties = await seedBracket(8);
+    const [first] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await seedUsers([a, b]);
+    await strikes(b);
+
+    const settled = await settleDisqualifiedLadderPlayoffTies({
+      db, ladder, ties: [await readTie(first.tieId)], now: start,
+    });
+    expect(settled).toEqual([first.tieId]);
+    expect(await readTie(first.tieId)).toMatchObject({
+      winner: "team1",
+      outcome: LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER,
+      walkoverReason: "disqualifiedOpponent",
+    });
+    const out = await db.doc(`users/${b}/notifications/playoff-out-${first.tieId}-${LADDER}-${b}`).get();
+    expect(out.data()?.message).toContain("because you've been disqualified from the ladder.");
+    expect((await db.doc(`users/${a}/notifications/playoff-through-r2-s0-${LADDER}-${a}`).get()).data()?.message).toContain(
+      "Your opponent was disqualified from the ladder, so you go through on a walkover.",
+    );
+  });
+
+  it("voids the tie when both sides are out, and leaves a clean tie alone", async () => {
+    const ties = await seedBracket(8);
+    const [first, second] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await seedUsers([a, b]);
+    await strikes(a);
+    await strikes(b);
+    const settled = await settleDisqualifiedLadderPlayoffTies({
+      db, ladder, ties: [await readTie(first.tieId), await readTie(second.tieId)], now: start,
+    });
+    expect(settled).toEqual([first.tieId]);
+    expect((await readTie(first.tieId)).outcome).toBe(LADDER_PLAYOFF_TIE_OUTCOME.VOID);
+    expect((await readTie(second.tieId)).status).toBe(LADDER_PLAYOFF_TIE_STATUS.SCHEDULED);
+  });
+
+  it("treats a doubles side with one disqualified partner as out", async () => {
+    const ties = await seedBracket(4);
+    const [first] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    await seedUsers([a, b, "p2"]);
+    await db.doc(tiePath(first.tieId)).update({
+      "side2.playerIds": [b, "p2"],
+    });
+    await strikes("p2");
+    const settled = await settleDisqualifiedLadderPlayoffTies({
+      db, ladder, ties: [await readTie(first.tieId)], now: start,
+    });
+    expect(settled).toEqual([first.tieId]);
+    expect((await readTie(first.tieId)).winner).toBe("team1");
+  });
+});
+
+describe("the scheduled job", () => {
+  it("settles a disqualified side, sends the 48-hour notice and hands over an inactive tie at the deadline", async () => {
+    const ties = await seedBracket(8);
+    const [first, second, third] = ties.filter((t) => t.round === 1);
+    const [a, b] = sidesOf(first);
+    const [c] = sidesOf(second);
+    const [d] = sidesOf(third);
+    await seedUsers([...ties.filter((t) => t.round === 1).flatMap(sidesOf)]);
+    await db.doc(`ladders/${LADDER}/reportCounts/${b}`).set({ userId: b, strikes: { cheating: 3 } });
+    await db.doc(`ladders/${LADDER}/ladderMatches/third-leg2`).set({
+      ladderMatchId: "third-leg2",
+      playoffTieId: third.tieId,
+      playoffLeg: 2,
+      ladderType: LADDER_TYPE.SINGLES,
+      matchStatus: LADDER_MATCH_STATUS.POSTED,
+      participants: sidesOf(third),
+      createdBy: d,
+      createdAt: new Date(start.getTime() + 11 * DAY_MS),
+      games: [],
+    });
+
+    const early = await runProcessLadderPhases(new Date(start.getTime() + 3 * DAY_MS));
+    expect(early.playoffTiesSettled).toEqual([`${LADDER}/${first.tieId}`]);
+    expect(await readTie(first.tieId)).toMatchObject({ winner: "team1", outcome: LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER });
+    expect(early.playoffHostNoticesSent).toBe(3);
+    expect(await notificationIds(c)).toContain(`playoff-host-overdue-waiting-${second.tieId}-${LADDER}-${c}`);
+
+    const late = await runProcessLadderPhases(new Date(start.getTime() + 10 * DAY_MS + 1000));
+    expect(late.playoffTiesSettled).toContain(`${LADDER}/${third.tieId}`);
+    expect(await readTie(third.tieId)).toMatchObject({ winner: "team1", outcome: LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER });
+    expect((await readTie(second.tieId)).outcome).toBe(LADDER_PLAYOFF_TIE_OUTCOME.VOID);
+    expect(a).toBeTruthy();
+  });
+});
+
 describe("sendDueLadderPlayoffReminders", () => {
   it("sends the day-3 reminder once", async () => {
     const ties = await seedBracket(4);
@@ -557,5 +766,224 @@ describe("autoAcceptDueLadderPlayoffMatches", () => {
     expect(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).toEqual([]);
     expect((await readMatch("regular"))?.matchStatus).toBe(LADDER_MATCH_STATUS.POSTED);
     expect((await readMatch(matchId))?.matchStatus).toBe(LADDER_MATCH_STATUS.POSTED);
+  });
+});
+
+describe("doubles ties", () => {
+  const doublesEntrant = (key: string): LadderPlayoffEntrant => ({
+    entrantKey: `team-${key}`,
+    teamId: `t-${key}`,
+    players: [key, `${key}2`].map((userId) => ({
+      userId,
+      firstName: userId,
+      lastName: "",
+      username: userId,
+    })),
+    competitionXP: 0,
+    numberOfWins: 0,
+    totalPointDifference: 0,
+    globalXp: 0,
+    joinedAt: null,
+    homeCourt: null,
+  });
+
+  const seedDoublesBracket = async (size = 4) => {
+    await db.doc(`ladders/${LADDER}`).set({
+      ...ladder,
+      status: LADDER_STATUS.PLAYOFFS,
+      ladderType: LADDER_TYPE.DOUBLES,
+    });
+    const ties = buildLadderPlayoffTies({
+      ladderId: LADDER,
+      qualifiers: Array.from({ length: size }, (_, i) => doublesEntrant(`p${i}`)),
+      createdAt: start,
+    });
+    const writer = db.bulkWriter();
+    ties.forEach((tie) => {
+      void writer.set(db.doc(tiePath(tie.tieId)), { ...tie });
+    });
+    await writer.close();
+    return ties;
+  };
+
+  const pairs = (tie: LadderPlayoffTie) => [
+    tie.side1?.playerIds as string[],
+    tie.side2?.playerIds as string[],
+  ];
+
+  const doublesGame = (matchId: string, n: number, winner: string[], loser: string[]) => ({
+    ...approvedGame(matchId, n, winner[0], loser[0]),
+    team1: { player1: { userId: winner[0] }, player2: { userId: winner[1] }, score: 21 },
+    team2: { player1: { userId: loser[0] }, player2: { userId: loser[1] }, score: 15 },
+    result: {
+      winner: { team: "Team 1", players: winner, score: 21 },
+      loser: { team: "Team 2", players: loser, score: 15 },
+    },
+  });
+
+  const seedDoublesLeg = async (
+    tie: LadderPlayoffTie,
+    leg: 1 | 2 | 3,
+    winners: (0 | 1)[],
+    status: string = LADDER_MATCH_STATUS.COMPLETED,
+    extra: Record<string, unknown> = {},
+  ) => {
+    const [first, second] = pairs(tie);
+    const matchId = `${tie.tieId}-leg${leg}`;
+    const everyone = [...first, ...second];
+    await db.doc(`ladders/${LADDER}/ladderMatches/${matchId}`).set({
+      ladderMatchId: matchId,
+      playoffTieId: tie.tieId,
+      playoffLeg: leg,
+      ladderType: LADDER_TYPE.DOUBLES,
+      matchStatus: status,
+      participants: everyone,
+      teams: [
+        { teamId: tie.side1?.teamId, teamKey: tie.side1?.entrantKey, playerIds: first },
+        { teamId: tie.side2?.teamId, teamKey: tie.side2?.entrantKey, playerIds: second },
+      ],
+      bestOf: winners.length,
+      court,
+      matchDate: "05-10-2026",
+      matchTime: { start: "18:00" },
+      currencyType: "GBP",
+      shuttleType: "Feather",
+      courtFee: 0,
+      checkIn: { checkedInBy: everyone, checkedInAt: {}, completed: true, completedAt: start },
+      games: winners.map((winner, i) =>
+        doublesGame(matchId, i + 1, winner === 0 ? first : second, winner === 0 ? second : first),
+      ),
+      ...extra,
+    });
+  };
+
+  it("settles on games across both matches and tells all four players", async () => {
+    const ties = await seedDoublesBracket(4);
+    const [semiOne] = ties.filter((t) => t.round === 1);
+    const [first, second] = pairs(semiOne);
+    await seedUsers([...first, ...second]);
+    await seedDoublesLeg(semiOne, 1, [0, 0, 1]);
+    await seedDoublesLeg(semiOne, 2, [1, 0, 0]);
+
+    const resolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: semiOne.tieId, now: start });
+    if (!resolution) throw new Error("expected a resolution");
+    await notifyLadderPlayoffResolution({ ladder, resolution });
+
+    expect(await readTie(semiOne.tieId)).toMatchObject({ winner: "team1", outcome: LADDER_PLAYOFF_TIE_OUTCOME.PLAYED });
+    for (const id of first) {
+      expect(await notificationIds(id)).toContain(`playoff-through-r2-s0-${LADDER}-${id}`);
+    }
+    for (const id of second) {
+      expect(await notificationIds(id)).toContain(`playoff-through-r2-s1-${LADDER}-${id}`);
+    }
+  });
+
+  it("creates a decider for all four players with both teams and the carried check-in", async () => {
+    const ties = await seedDoublesBracket(4);
+    const tie = ties[0];
+    const [first, second] = pairs(tie);
+    await seedUsers([...first, ...second]);
+    await seedDoublesLeg(tie, 1, [0, 0, 0]);
+    await seedDoublesLeg(tie, 2, [1, 1, 1]);
+
+    const resolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: tie.tieId, now: start });
+    expect(resolution?.deciderCreated).toBe(true);
+    if (resolution) await notifyLadderPlayoffResolution({ ladder, resolution });
+
+    const [decider] = (
+      await db.collection(`ladders/${LADDER}/ladderMatches`).where("playoffLeg", "==", 3).get()
+    ).docs.map((d) => d.data());
+    const hostIsFirst = getLadderPlayoffLegHost(tie, 3) === "team1";
+    const [hostIds, awayIds] = hostIsFirst ? [first, second] : [second, first];
+    expect(decider).toMatchObject({
+      ladderType: LADDER_TYPE.DOUBLES,
+      bestOf: 1,
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      participants: [...hostIds, ...awayIds],
+      createdBy: hostIds[0],
+      acceptedBy: awayIds[0],
+      checkIn: { completed: true },
+    });
+    expect(decider.teams.map((team: { playerIds: string[] }) => team.playerIds)).toEqual([hostIds, awayIds]);
+    for (const id of [...first, ...second]) {
+      expect(await notificationIds(id)).toContain(`playoff-decider-${tie.tieId}-${LADDER}-${id}`);
+    }
+  });
+
+  it("places both players of each finalist and completes the ladder", async () => {
+    const ties = await seedDoublesBracket(4);
+    const [semiOne, semiTwo] = ties.filter((t) => t.round === 1);
+    const everyone = ties.filter((t) => t.round === 1).flatMap(pairs).flat();
+    await seedUsers(everyone);
+    for (const semi of [semiOne, semiTwo]) {
+      const [winner] = pairs(semi);
+      void winner;
+      await seedDoublesLeg(semi, 1, [0, 0, 1]);
+      await seedDoublesLeg(semi, 2, [0, 0, 0]);
+      const resolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: semi.tieId, now: start });
+      if (!resolution) throw new Error("expected a resolution");
+      await notifyLadderPlayoffResolution({ ladder, resolution });
+    }
+    const final = await readTie("r2-s0");
+    const third = await readTie("r2-s1");
+    await seedDoublesLeg(final, 1, [0, 0, 1]);
+    await seedDoublesLeg(final, 2, [0, 0, 0]);
+    await seedDoublesLeg(third, 1, [0, 0, 1]);
+    await seedDoublesLeg(third, 2, [0, 0, 0]);
+    for (const tie of [final, third]) {
+      const resolution = await resolveLadderPlayoffTie({ db, ladderId: LADDER, tieId: tie.tieId, now: start });
+      if (!resolution) throw new Error("expected a resolution");
+      await notifyLadderPlayoffResolution({ ladder, resolution });
+      await completeLadderPlayoffsIfFinished({ db, ladderId: LADDER, resolution, now: start });
+    }
+    for (const tie of [final, third]) {
+      for (const id of pairs(tie).flat()) {
+        expect(await notificationIds(id)).toContain(`playoff-finish-${tie.tieId}-${LADDER}-${id}`);
+      }
+    }
+    expect((await db.doc(`ladders/${LADDER}`).get()).data()?.status).toBe(LADDER_STATUS.COMPLETED);
+  });
+
+  it("auto-accepts for the away team and tells both pairs", async () => {
+    const ties = await seedDoublesBracket(4);
+    const tie = ties[0];
+    const [first, second] = pairs(tie);
+    await seedUsers([...first, ...second]);
+    await seedDoublesLeg(tie, 1, [], LADDER_MATCH_STATUS.POSTED, {
+      createdBy: first[1],
+      createdAt: new Date(start.getTime() - 30 * 60 * 60 * 1000),
+      games: [],
+    });
+    const accepted = await autoAcceptDueLadderPlayoffMatches({ db, ladder, now: start });
+    expect(accepted).toEqual([`${tie.tieId}-leg1`]);
+    expect(
+      (await db.doc(`ladders/${LADDER}/ladderMatches/${tie.tieId}-leg1`).get()).data(),
+    ).toMatchObject({ matchStatus: LADDER_MATCH_STATUS.ACCEPTED, acceptedBy: second[0], autoAccepted: true });
+    for (const id of second) {
+      expect(await notificationIds(id)).toContain(`playoff-auto-accepted-${tie.tieId}-leg1-${LADDER}-${id}`);
+    }
+    for (const id of first) {
+      expect(await notificationIds(id)).toContain(`playoff-auto-accept-host-${tie.tieId}-leg1-${LADDER}-${id}`);
+    }
+  });
+
+  it("gives the tie to the pair whose partner was the only one who arranged anything", async () => {
+    const ties = await seedDoublesBracket(8);
+    const [tie] = ties.filter((t) => t.round === 1);
+    const [first, second] = pairs(tie);
+    await seedUsers([...first, ...second]);
+    await seedDoublesLeg(tie, 2, [], LADDER_MATCH_STATUS.POSTED, { createdBy: first[1], games: [] });
+    const resolution = await resolveLadderPlayoffTie({
+      db, ladderId: LADDER, tieId: tie.tieId, now: new Date(start.getTime() + 10 * DAY_MS + 1000), atDeadline: true,
+    });
+    if (!resolution) throw new Error("expected a resolution");
+    await notifyLadderPlayoffResolution({ ladder, resolution });
+    expect(await readTie(tie.tieId)).toMatchObject({ winner: "team1", outcome: LADDER_PLAYOFF_TIE_OUTCOME.WALKOVER });
+    for (const id of second) {
+      expect(await notificationIds(id)).toContain(`playoff-out-${tie.tieId}-${LADDER}-${id}`);
+    }
+    for (const id of first) {
+      expect(await notificationIds(id)).toContain(`playoff-through-r2-s0-${LADDER}-${id}`);
+    }
   });
 });
