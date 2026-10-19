@@ -65,3 +65,17 @@ export const formatMatchDateShort = (matchDate: string): string => {
   if (!day || !month) return matchDate ?? "";
   return `${day} ${SHORT_MONTHS[month - 1] ?? ""}`.trim();
 };
+
+const plural = (n: number, unit: string): string =>
+  `${n} ${unit}${n === 1 ? "" : "s"}`;
+
+export const formatTimeLeft = (ms: number): string => {
+  if (ms <= 0) return "Time's up";
+  const totalMinutes = Math.floor(ms / 60000);
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${plural(days, "day")} and ${plural(hours, "hour")}`;
+  if (hours > 0) return `${plural(hours, "hour")} and ${plural(minutes, "minute")}`;
+  return plural(Math.max(minutes, 1), "minute");
+};

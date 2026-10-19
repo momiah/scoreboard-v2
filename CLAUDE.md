@@ -44,5 +44,26 @@ merged (the pinned commit must exist on `main` first).
 - No pull requests unless explicitly asked (the shared PR above is the exception,
   since landing shared changes requires one).
 - No explanatory code comments unless they are load-bearing or marking a stub.
+- DRY: logic that the app and `functions/` both need lives once in
+  `courtchamps-shared`; never write a second implementation of it (e.g. ladder
+  approve-and-score is `planLadderGameApproval`, called by both the app and the
+  auto-approval job). Before adding a function, search the repo and shared for
+  an existing one and reuse or extend it. Add a new version only when it is
+  absolutely necessary, and say why in the change.
+- Seeds model production: Maestro, emulator and Jest seeds must look like data
+  production would have written (matches inside their tie's window, settled ties
+  decided by their matches and finished when the last one did, recent posted
+  matches). Rule numbers such as the tie window or the auto-accept hours come
+  from `courtchamps-shared` (`LADDER_PLAYOFF_TIE_DAYS`,
+  `LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS`), never literals; Maestro flows read
+  them from the `MAESTRO_*` env vars `run-suite.sh` exports. See
+  `maestro/README.md`.
 - Naming: use `user` for the current user and `opponent` for the other
   player/team. Do not use `me`/`mine` or `them`/`theirs`.
+
+## Firestore security rules
+
+Before any security-rules work, read `docs/firestore-access-requirements.md`:
+it lists every client write (app and website) the rules must keep allowing,
+with who may write which fields. When a feature adds a new client write to
+Firestore, add a row there in the same change.

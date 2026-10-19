@@ -6,6 +6,7 @@ import Tag from "../Tag";
 import { useContext } from "react";
 import { UserContext } from "../../context/UserContext";
 import { timeAgo } from "../../helpers/dateTimeUtils";
+import { getPlayoffTieRoute } from "../../helpers/playoffTieRoute";
 
 const NotificationRow = ({
   item,
@@ -67,6 +68,12 @@ const NotificationRow = ({
 
     if (!infoEntry) return;
 
+    const tieRoute = getPlayoffTieRoute(item.data);
+    if (infoEntry.ROUTE === "Ladder" && tieRoute) {
+      navigation.navigate(tieRoute.name, tieRoute.params);
+      return;
+    }
+
     const routeParams = {
       League: {
         leagueId: item.data?.leagueId || item.data?.competitionId,
@@ -77,7 +84,7 @@ const NotificationRow = ({
       },
       Ladder: {
         ladderId: item.data?.ladderId,
-        tab: "Schedule",
+        tab: item.data?.tab || "Schedule",
         highlightMatchId: item.data?.matchId,
       },
       UserProfile: { userId: item.data?.userId, tab: item.data?.tab },

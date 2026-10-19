@@ -47,10 +47,6 @@ import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
-const MaestroHarness = __DEV__
-  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require("../../maestro/MaestroHarness").default
-  : null;
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
 const VIEWABILITY_CONFIG: ViewabilityConfig = {
@@ -227,10 +223,6 @@ const Home = () => {
         >
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
-
-        {MaestroHarness && currentUser ? (
-          <MaestroHarness currentUser={currentUser} />
-        ) : null}
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>

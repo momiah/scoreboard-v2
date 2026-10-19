@@ -3,8 +3,10 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Linking,
   Modal,
+  Platform,
 } from "react-native";
 import styled from "styled-components/native";
 import { BlurView } from "expo-blur";
@@ -28,18 +30,28 @@ import {
   parseLadderCheckInPayload,
   NO_SHOW_GRACE_MINUTES,
 } from "@shared";
+import {
+  CHECKIN_RADIUS_METERS,
+  distanceInMeters,
+  getCourtCoords,
+  LADDER_RESULTS_CLOSED_MESSAGE,
+  getLadderOpponentIds,
+  hasArrivedForLadderMatch,
+} from "@shared/helpers";
+import type { LadderArrivalRejection } from "@shared/helpers";
 import type { LadderMatch } from "@shared/types";
 
 import { LadderContext } from "../../context/LadderContext";
 import { PopupContext } from "../../context/PopupContext";
 import { buildCourtMapsUrl } from "../../helpers/courtMapsUrl";
+import { formatCourtAddress } from "../../helpers/locationCheckIn";
 import {
-  CHECKIN_RADIUS_METERS,
-  distanceInMeters,
-  formatCourtAddress,
-  getCourtCoords,
-} from "../../helpers/locationCheckIn";
+  confirmLadderArrival,
+  ladderArrivalMessage,
+  sendLadderArrival,
+} from "../../helpers/ladderArrival";
 import { getMatchStart } from "../../helpers/ladderMatchTime";
+import { getDevicePosition } from "../../helpers/devicePosition";
 import type { Court } from "@shared/types";
 
 const screenWidth = Dimensions.get("window").width;
@@ -82,6 +94,9 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
   const [court, setCourt] = useState<Court>(match.court);
   const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [rejection, setRejection] = useState<LadderArrivalRejection | null>(
+    null,
+  );
   const runIdRef = useRef(0);
 
   const address = formatCourtAddress(court);
@@ -94,6 +109,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
     let result: VerifyStatus = "failed";
     let measured: number | null = null;
     let denied = false;
+    let refused: LadderArrivalRejection | null = null;
     try {
       let targetCourt = match.court;
       try {
@@ -119,9 +135,8 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
         if (!granted) {
           denied = true;
         } else {
-          const position = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
+          const position = await getDevicePosition();
+          if (!position) throw new Error("Location unavailable");
           const device = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
@@ -137,6 +152,17 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
             });
           }
           result = distance <= CHECKIN_RADIUS_METERS ? "verified" : "failed";
+          if (result === "verified") {
+            const arrival = await sendLadderArrival({
+              ladderId,
+              matchId: match.ladderMatchId,
+              position,
+            });
+            if (arrival && "reason" in arrival) {
+              refused = arrival.reason;
+              result = "failed";
+            }
+          }
         }
       }
     } catch (error) {
@@ -154,6 +180,7 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
     if (runIdRef.current === runId) {
       setDistanceMeters(measured);
       setPermissionDenied(denied);
+      setRejection(refused);
       setStatus(result);
     }
   };
@@ -231,11 +258,13 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                 <ErrorText>
                   {permissionDenied
                     ? "Allow location access for this app, then check again — we use it to confirm you've arrived at the court."
-                    : `You are not in the right location to check in, please ensure you have arrived at the correct address${
-                        distanceMeters !== null
-                          ? ` — you're about ${distanceMeters}m away (need to be within ${CHECKIN_RADIUS_METERS}m).`
-                          : "."
-                      }`}
+                    : rejection && rejection !== "too_far"
+                      ? ladderArrivalMessage(rejection)
+                      : `You are not in the right location to check in, please ensure you have arrived at the correct address${
+                          distanceMeters !== null
+                            ? ` — you're about ${distanceMeters}m away (need to be within ${CHECKIN_RADIUS_METERS}m).`
+                            : "."
+                        }`}
                 </ErrorText>
                 {!!address && (
                   <AddressLink
@@ -292,9 +321,10 @@ export const LocationVerifierModal: React.FC<LocationVerifierModalProps> = ({
                   ))}
                 </TipsCard>
                 <ErrorText style={{ color: "#71b5ffff" }}>
-                  If you are sure you are in the right location and still cannot
-                  check in, please play your games and send your scores to
-                  support (Video evidence of your games are recommended).
+                  If you&apos;re sure you&apos;re at the right court and still
+                  can&apos;t check in, play your games and email your scores to
+                  support with a video of each game, before ladder results close
+                  for the playoffs.
                 </ErrorText>
               </>
             )}
@@ -359,6 +389,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const { showBottomToast } = useContext(PopupContext);
   const [permission, requestPermission] = useCameraPermissions();
   const [noShowReported, setNoShowReported] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [codeFocused, setCodeFocused] = useState(false);
 
   const isPoster = !!currentUserId && currentUserId === match.createdBy;
   const reference = getLadderMatchReference(match.ladderMatchId);
@@ -410,6 +442,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     return () => clearInterval(id);
   }, [visible, noShowUnlockMs]);
 
+  const matchStarted = matchStart != null && nowMs >= matchStart.getTime();
   const graceElapsed = noShowUnlockMs != null && nowMs >= noShowUnlockMs;
   const noShowCountdownMs =
     noShowUnlockMs != null ? Math.max(0, noShowUnlockMs - nowMs) : 0;
@@ -419,20 +452,46 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     match.participants.includes(currentUserId) &&
     !checkinComplete &&
     !noShowReported &&
-    noShowUnlockMs != null;
-  const canReportNoShow = showNoShowSection && graceElapsed;
+    matchStarted;
+  const opponentArrived =
+    !!currentUserId &&
+    hasArrivedForLadderMatch(
+      liveMatch,
+      getLadderOpponentIds(liveMatch, currentUserId),
+    );
+  const opponentArrivedNotice = `You can't report a no-show because your opponent has arrived at ${match.court?.courtName ?? "the court"}. Message them in the match chat to find each other.`;
+  const canReportNoShow = showNoShowSection && graceElapsed && !opponentArrived;
+  const [confirmingArrival, setConfirmingArrival] = useState(false);
 
   const handleReportNoShow = () => {
     if (!currentUserId) return;
     Alert.alert(
       "Report a no-show",
-      "Only do this if an opponent hasn't arrived and you can't check in. A ladder admin reviews it before the forfeit is awarded.",
+      "Only do this if an opponent hasn't arrived and you can't check in. We'll confirm you're at the court first, and a ladder admin reviews it before the forfeit is awarded.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Report no-show",
           style: "destructive",
           onPress: async () => {
+            setConfirmingArrival(true);
+            const arrival = await confirmLadderArrival({
+              ladderId,
+              matchId: match.ladderMatchId,
+            });
+            setConfirmingArrival(false);
+            if ("reason" in arrival) {
+              setNotice(
+                arrival.reason === "too_far"
+                  ? `You need to be at ${match.court?.courtName ?? "the court"} to report a no-show.`
+                  : ladderArrivalMessage(arrival.reason),
+              );
+              return;
+            }
+            if (arrival.opponentArrived) {
+              setNotice(opponentArrivedNotice);
+              return;
+            }
             const { success, reason } = await createNoShowClaim(
               ladderId,
               match,
@@ -445,9 +504,10 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
                 "success",
               );
             } else {
-              showBottomToast(
-                "Couldn't report the no-show. Please try again.",
-                "error",
+              setNotice(
+                reason === "results_closed"
+                  ? `${LADDER_RESULTS_CLOSED_MESSAGE}.`
+                  : "Couldn't report the no-show. Please try again.",
               );
             }
           },
@@ -463,6 +523,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       setCode("");
       setLiveMatch(match);
       setNoShowReported(false);
+      setNotice(null);
     }
   }, [visible, match]);
 
@@ -487,11 +548,11 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
 
   const guardParticipant = (): boolean => {
     if (!currentUserId) {
-      showBottomToast("You need to be signed in to check in", "error");
+      setNotice("You need to be signed in to check in");
       return false;
     }
     if (!match.participants.includes(currentUserId)) {
-      showBottomToast("This code isn't for a match you're in", "error");
+      setNotice("This code isn't for a match you're in");
       return false;
     }
     return true;
@@ -512,7 +573,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     );
     setProcessing(false);
     if (!success) {
-      showBottomToast("Couldn't complete check-in. Please try again.", "error");
+      setNotice("Couldn't complete check-in. Please try again.");
       handledRef.current = false;
     }
   };
@@ -532,7 +593,7 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     );
     setProcessing(false);
     if (!success) {
-      showBottomToast("Couldn't complete check-in. Please try again.", "error");
+      setNotice("Couldn't complete check-in. Please try again.");
       handledRef.current = false;
     }
   };
@@ -541,21 +602,20 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
     if (handledRef.current || processing) return;
     const payload = parseLadderCheckInPayload(result.data);
     if (!payload || !isValidLadderCheckInScan(match, result.data)) {
-      showBottomToast("That QR code is for a different match", "error");
+      setNotice("That QR code is for a different match");
       return;
     }
     if (payload.userId === currentUserId) {
-      showBottomToast("That's your own code — scan another player's", "info");
+      setNotice("That's your own code — scan another player's");
       return;
     }
     if (!match.participants.includes(payload.userId)) {
-      showBottomToast("That code isn't for a player in this match", "error");
+      setNotice("That code isn't for a player in this match");
       return;
     }
     if (hasUserCheckedIn(liveMatch, payload.userId)) {
-      showBottomToast(
+      setNotice(
         "That player is already checked in — scan the other player's QR",
-        "info",
       );
       return;
     }
@@ -565,12 +625,10 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
   const handleSubmitCode = () => {
     if (processing) return;
     if (code.trim().toUpperCase() !== reference) {
-      showBottomToast(
-        "That code doesn't match. Check it with your opponent.",
-        "error",
-      );
+      setNotice("That code doesn't match. Check it with your opponent.");
       return;
     }
+    setNotice(null);
     recordSelfCheckIn();
   };
 
@@ -620,20 +678,22 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       <>
         <SectionTitle>Scan another player&apos;s code</SectionTitle>
         <Helper>Point your camera at the QR code on their screen.</Helper>
-        <ScannerFrame>
-          <CameraView
-            style={{ flex: 1 }}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onBarcodeScanned={processing ? undefined : handleScan}
-            testID="match-checkin-camera"
-          />
-          {processing && (
-            <ScannerOverlay>
-              <WaitingText>Checking in…</WaitingText>
-            </ScannerOverlay>
-          )}
-        </ScannerFrame>
+        {!codeFocused && (
+          <ScannerFrame>
+            <CameraView
+              style={{ flex: 1 }}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+              onBarcodeScanned={processing ? undefined : handleScan}
+              testID="match-checkin-camera"
+            />
+            {processing && (
+              <ScannerOverlay>
+                <WaitingText>Checking in…</WaitingText>
+              </ScannerOverlay>
+            )}
+          </ScannerFrame>
+        )}
         <EmergencyRow testID="match-checkin-reference">
           <EmergencyLabel>
             Can&apos;t scan? Enter the match code to check in
@@ -650,6 +710,8 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
               editable={!processing}
               returnKeyType="done"
               onSubmitEditing={handleSubmitCode}
+              onFocus={() => setCodeFocused(true)}
+              onBlur={() => setCodeFocused(false)}
               testID="match-checkin-code-input"
             />
             <CodeSubmit
@@ -675,90 +737,105 @@ const MatchCheckinModal: React.FC<MatchCheckinModalProps> = ({
       onRequestClose={onClose}
     >
       <ModalContainer>
-        <ModalContent testID="match-checkin-modal">
-          <CloseButton onPress={onClose} testID="match-checkin-close">
-            <AntDesign name="close-circle" size={30} color="red" />
-          </CloseButton>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <ModalContent testID="match-checkin-modal">
+            <CloseButton onPress={onClose} testID="match-checkin-close">
+              <AntDesign name="close-circle" size={30} color="red" />
+            </CloseButton>
 
-          {checkinComplete ? (
-            <SuccessBlock testID="match-checkin-success">
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={56}
-                color="#00C853"
-              />
-              <SectionTitle>Checked in!</SectionTitle>
-              <Helper>
-                Everyone&apos;s checked in. The games are now unlocked.
-              </Helper>
-              <ActionButton
-                testID="match-checkin-done"
-                activeOpacity={0.85}
-                isDisabled={false}
-                onPress={finishAndClose}
-              >
-                <ActionButtonText>Done</ActionButtonText>
-              </ActionButton>
-            </SuccessBlock>
-          ) : selfCheckedIn ? (
-            <SuccessBlock testID="match-checkin-waiting-self">
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={56}
-                color="#00C853"
-              />
-              <SectionTitle>You&apos;re checked in</SectionTitle>
-              <Helper>
-                Waiting for the others… ({progress.checkedIn} of{" "}
-                {progress.total} checked in). The games unlock once everyone is
-                in.
-              </Helper>
-              <ActionButton
-                testID="match-checkin-waiting-done"
-                activeOpacity={0.85}
-                isDisabled={false}
-                onPress={finishAndClose}
-              >
-                <ActionButtonText>Done</ActionButtonText>
-              </ActionButton>
-            </SuccessBlock>
-          ) : mode === "show" ? (
-            renderShow()
-          ) : (
-            renderScan()
-          )}
+            {checkinComplete ? (
+              <SuccessBlock testID="match-checkin-success">
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={56}
+                  color="#00C853"
+                />
+                <SectionTitle>Checked in!</SectionTitle>
+                <Helper>
+                  Everyone&apos;s checked in. The games are now unlocked.
+                </Helper>
+                <ActionButton
+                  testID="match-checkin-done"
+                  activeOpacity={0.85}
+                  isDisabled={false}
+                  onPress={finishAndClose}
+                >
+                  <ActionButtonText>Done</ActionButtonText>
+                </ActionButton>
+              </SuccessBlock>
+            ) : selfCheckedIn ? (
+              <SuccessBlock testID="match-checkin-waiting-self">
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={56}
+                  color="#00C853"
+                />
+                <SectionTitle>You&apos;re checked in</SectionTitle>
+                <Helper>
+                  Waiting for the others… ({progress.checkedIn} of{" "}
+                  {progress.total} checked in). The games unlock once everyone
+                  is in.
+                </Helper>
+                <ActionButton
+                  testID="match-checkin-waiting-done"
+                  activeOpacity={0.85}
+                  isDisabled={false}
+                  onPress={finishAndClose}
+                >
+                  <ActionButtonText>Done</ActionButtonText>
+                </ActionButton>
+              </SuccessBlock>
+            ) : mode === "show" ? (
+              renderShow()
+            ) : (
+              renderScan()
+            )}
 
-          {showNoShowSection && (
-            <NoShowButton
-              onPress={canReportNoShow ? handleReportNoShow : undefined}
-              disabled={!canReportNoShow}
-              isDisabled={!canReportNoShow}
-              activeOpacity={0.85}
-              testID="match-checkin-report-no-show"
-            >
-              <Ionicons
-                name={
-                  canReportNoShow ? "alert-circle-outline" : "time-outline"
-                }
-                size={16}
-                color="#FFA500"
-              />
-              <NoShowButtonText>
-                {canReportNoShow
-                  ? "Can't check in? Report a no-show"
-                  : `Report no-show in ${formatNoShowCountdown(noShowCountdownMs)}`}
-              </NoShowButtonText>
-            </NoShowButton>
-          )}
-          {noShowReported && (
-            <NoShowNote testID="match-checkin-no-show-reported">
-              <Ionicons name="time-outline" size={16} color="#9fb8c8" />
-              <NoShowNoteText>
-                No-show reported — an admin will review it.
-              </NoShowNoteText>
-            </NoShowNote>
-          )}
-        </ModalContent>
+            {showNoShowSection && (
+              <NoShowButton
+                onPress={canReportNoShow ? handleReportNoShow : undefined}
+                disabled={!canReportNoShow || confirmingArrival}
+                isDisabled={!canReportNoShow || confirmingArrival}
+                activeOpacity={0.85}
+                testID="match-checkin-report-no-show"
+              >
+                <Ionicons
+                  name={
+                    canReportNoShow ? "alert-circle-outline" : "time-outline"
+                  }
+                  size={16}
+                  color="#FFA500"
+                />
+                <NoShowButtonText>
+                  {confirmingArrival
+                    ? "Confirming you're at the court…"
+                    : opponentArrived
+                      ? "Your opponent has arrived"
+                      : canReportNoShow
+                        ? "Can't check in? Report a no-show"
+                        : `Report no-show in ${formatNoShowCountdown(noShowCountdownMs)}`}
+                </NoShowButtonText>
+              </NoShowButton>
+            )}
+            {showNoShowSection && opponentArrived && !notice && (
+              <Notice testID="match-checkin-opponent-arrived">
+                {opponentArrivedNotice}
+              </Notice>
+            )}
+            {notice && <Notice testID="match-checkin-notice">{notice}</Notice>}
+            {noShowReported && (
+              <NoShowNote testID="match-checkin-no-show-reported">
+                <Ionicons name="time-outline" size={16} color="#9fb8c8" />
+                <NoShowNoteText>
+                  No-show reported — an admin will review it.
+                </NoShowNoteText>
+              </NoShowNote>
+            )}
+          </ModalContent>
+        </KeyboardAvoidingView>
       </ModalContainer>
     </Modal>
   );
@@ -773,6 +850,13 @@ const ModalContainer = styled(BlurView).attrs({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+});
+
+const Notice = styled.Text({
+  marginTop: 14,
+  color: "#f5c451",
+  fontSize: 13,
+  textAlign: "center",
 });
 
 const ModalContent = styled.View({

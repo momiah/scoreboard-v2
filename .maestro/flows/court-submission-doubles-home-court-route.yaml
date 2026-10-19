@@ -1,0 +1,134 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-home-court-flow-doubles"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Home Court Doubles Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Home Court Doubles Ladder on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-home-court"
+    timeout: 20000
+- tapOn:
+    id: "ladder-home-court-add"
+- extendedWaitUntil:
+    visible: ".*Maestro Court B Verified.*"
+    timeout: 15000
+- tapOn:
+    id: "search-court-add"
+- extendedWaitUntil:
+    visible:
+      id: "add-court-name-input"
+    timeout: 10000
+- tapOn:
+    id: "add-court-name-input"
+- inputText: "Maestro Court New Submission"
+- pressKey: Enter
+- tapOn:
+    id: "add-court-country-city-button"
+- tapOn:
+    id: "country-search-input"
+- inputText: "United Kingdom"
+- pressKey: Enter
+- tapOn:
+    id: "country-option-GB"
+- tapOn:
+    id: "city-search-input"
+- inputText: "London"
+- pressKey: Enter
+- tapOn:
+    id: "city-option-London"
+- tapOn:
+    id: "add-court-postcode-input"
+- inputText: "E1 1AA"
+- pressKey: Enter
+- tapOn:
+    id: "add-court-address-input"
+- inputText: "2 Maestro Street"
+- pressKey: Enter
+- tapOn:
+    id: "add-court-submit"
+- extendedWaitUntil:
+    visible: "Court sent for approval. You'll be notified once it's verified."
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Maestro Court New Submission.*Awaiting Verification.*"
+    timeout: 15000
+- tapOn: ".*Maestro Court New Submission.*Awaiting Verification.*"
+- assertNotVisible: "Set home court?"
+- assertVisible:
+    id: "search-court-add"
+- tapOn:
+    id: "search-court-close"
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-mock-approve-new-submission-doubles"
+- extendedWaitUntil:
+    visible: "Mocked"
+    timeout: 30000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Court New Submission has been approved. You can now select it in Maestro Home Court Doubles Ladder..*"
+    timeout: 15000
+- tapOn: ".*Maestro Court New Submission has been approved. You can now select it in Maestro Home Court Doubles Ladder..*"
+- extendedWaitUntil:
+    visible:
+      id: "matchmaking-post-match"
+    timeout: 20000
+- assertVisible:
+    id: "ladder-matchmaking"
+- tapOn:
+    id: "matchmaking-post-match"
+- extendedWaitUntil:
+    visible:
+      id: "home-court-required-modal"
+    timeout: 10000
+- assertVisible: "Select a home court"
+- tapOn:
+    id: "home-court-required-modal-cta"
+- extendedWaitUntil:
+    visible: ".*Maestro Court New Submission.*"
+    timeout: 15000
+- assertNotVisible: ".*Maestro Court New Submission.*Awaiting Verification.*"
+- tapOn: ".*Maestro Court New Submission.*"
+- assertVisible: "Set home court?"
+- assertVisible: ".*Set Maestro Court New Submission as your home court. You can change it once for this ladder..*"
+- tapOn: "Confirm"
+- extendedWaitUntil:
+    visible: "Home court saved"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "add-ladder-match-court-selector"
+    timeout: 15000
+- assertVisible: "Post a Match"

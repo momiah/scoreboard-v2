@@ -1,0 +1,55 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-disband-registration-closed"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-team-summary"
+    direction: DOWN
+- tapOn:
+    id: "ladder-team-summary"
+- extendedWaitUntil:
+    visible:
+      id: "team-details-screen"
+    timeout: 15000
+- tapOn:
+    id: "team-details-menu"
+- scrollUntilVisible:
+    element:
+      id: "team-settings-disband"
+    direction: DOWN
+- tapOn:
+    id: "team-settings-disband"
+- extendedWaitUntil:
+    visible: "Disband team"
+    timeout: 5000
+- tapOn: "Disband"
+- extendedWaitUntil:
+    visible: "Can't disband"
+    timeout: 20000
+- assertVisible: ".*Registration has closed.*"
+- tapOn: "OK"
+- assertVisible:
+    id: "team-settings-disband"
+- assertNotVisible: "Team disbanded"

@@ -1,0 +1,29 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-ladder-playoffs-generated"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Congratulations! You've made the playoffs for Maestro Playoffs 2048. You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to play your next round..*"
+    timeout: 20000
+- tapOn: ".*Congratulations! You've made the playoffs for Maestro Playoffs 2048. You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to play your next round..*"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 40000
+- assertVisible: "Round of 128 · Tie 9"
+- assertVisible: ".*P0008 S.*"

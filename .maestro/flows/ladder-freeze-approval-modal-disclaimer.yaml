@@ -1,0 +1,33 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-add-game-flow-playoffs-started"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*has just reported a score.*"
+    timeout: 15000
+- tapOn: ".*has just reported a score.*"
+- assertVisible:
+    id: "game-approval-modal"
+- extendedWaitUntil:
+    visible: "This game can no longer be actioned as playoffs has started"
+    timeout: 15000
+- tapOn:
+    id: "game-approval-accept"
+- tapOn:
+    id: "game-approval-decline"
+- assertVisible:
+    id: "game-approval-modal"
+- assertVisible: "This game can no longer be actioned as playoffs has started"
+- assertNotVisible:
+    id: "game-dispute-screen"

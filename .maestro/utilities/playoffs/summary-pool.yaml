@@ -1,0 +1,28 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: seed-stage.yaml
+    env:
+      STAGE: "pending"
+      SUFFIX: ${SUFFIX}
+- runFlow:
+    file: open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*open ${LADDER} on Summary.*"
+    timeout: 30000
+- tapOn: ".*open ${LADDER} on Summary.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-summary"
+    timeout: 40000
+- assertVisible: "Total Prize Pool"
+- assertVisible:
+    id: ${POT_ID}
+    text: ${POT_TEXT}
+- assertVisible:
+    id: "ladder-stats-row"
+- assertVisible: "Prize Distribution"
+- scrollUntilVisible:
+    element: "Top Contenders"
+    direction: DOWN
+    timeout: 20000

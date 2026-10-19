@@ -1,12 +1,47 @@
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 
 import { LADDER_MATCH_STATUS } from "courtchamps-shared/types";
-import type { LadderMatch } from "courtchamps-shared/types";
+import type { Ladder, LadderMatch } from "courtchamps-shared/types";
+import * as admin from "firebase-admin";
+
+import {
+  completeLadderPlayoffsIfFinished,
+  notifyLadderPlayoffResolution,
+  resolveLadderPlayoffTie,
+} from "./helpers/ladderPlayoffTies";
 
 import {
   reconcileLadderCourtFee,
   type LadderMatchOutcomeKind,
 } from "./helpers/courtFee";
+
+const settleLadderPlayoffTie = async (
+  ladderId: string,
+  tieId: string,
+): Promise<void> => {
+  try {
+    const db = admin.firestore();
+    const resolution = await resolveLadderPlayoffTie({
+      db,
+      ladderId,
+      tieId,
+      now: new Date(),
+    });
+    if (!resolution) return;
+    const ladderSnapshot = await db.collection("ladders").doc(ladderId).get();
+    const ladder = ladderSnapshot.data() as Ladder | undefined;
+    await notifyLadderPlayoffResolution({
+      ladder: { ...ladder, ladderId, name: ladder?.name ?? "the ladder" },
+      resolution,
+    });
+    await completeLadderPlayoffsIfFinished({ db, ladderId, resolution, now: new Date() });
+  } catch (error) {
+    console.error(
+      `[playoffs] could not settle tie ${ladderId}/${tieId}:`,
+      error,
+    );
+  }
+};
 
 const TERMINAL_STATUSES: string[] = [
   LADDER_MATCH_STATUS.COMPLETED,
@@ -44,6 +79,14 @@ export const onLadderMatchStatusChange = onDocumentUpdated(
     const after = event.data?.after.data() as LadderMatch | undefined;
     if (!before || !after) return;
 
+    if (
+      after.playoffTieId &&
+      after.matchStatus === LADDER_MATCH_STATUS.COMPLETED &&
+      before.matchStatus !== LADDER_MATCH_STATUS.COMPLETED
+    ) {
+      await settleLadderPlayoffTie(event.params.ladderId, after.playoffTieId);
+    }
+
     // Only act when the status actually transitions into a terminal state.
     if (before.matchStatus === after.matchStatus) return;
     if (!TERMINAL_STATUSES.includes(after.matchStatus)) return;
@@ -56,7 +99,7 @@ export const onLadderMatchStatusChange = onDocumentUpdated(
       //   - completed → release the held fee to the poster.
       //   - walkover  → charge the no-show, reimburse the player who showed.
       //   - cancelled → refund the accepter's share (a player called it off).
-      //   - expired   → refund the accepter's share (no one played it out).
+      //   - expired   → release the share to the poster (they paid for the court).
       await reconcileLadderCourtFee(after, outcome);
     } catch (err) {
       console.error(

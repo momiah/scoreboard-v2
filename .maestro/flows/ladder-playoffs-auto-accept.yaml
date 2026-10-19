@@ -1,0 +1,33 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg1PostedStale"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- assertVisible: ".*Awaiting your confirmation.*"
+- runFlow: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*You didn't reply within 24 hours, so playoff match 1 at .* has been accepted for you.*"
+    timeout: 1500000
+- tapOn: ".*You didn't reply within 24 hours, so playoff match 1 at .* has been accepted for you.*"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 40000
+- assertNotVisible: ".*Awaiting your confirmation.*"
+- tapOn:
+    id: "playoff-match-leg1"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- assertNotVisible:
+    id: "playoff-match-confirm-request"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-opponent-auto-accept-host"

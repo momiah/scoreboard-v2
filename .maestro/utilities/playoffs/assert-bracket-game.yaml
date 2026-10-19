@@ -1,0 +1,13 @@
+appId: com.courtchamp
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: ${GAME_ID}
+          direction: UP
+          timeout: 30000
+- assertVisible:
+    id: ${GAME_ID}

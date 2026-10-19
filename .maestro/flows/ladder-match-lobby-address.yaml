@@ -1,0 +1,20 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg1Complete"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- assertNotVisible: ".*1 Test Street.*"
+- tapOn:
+    id: "playoff-match-leg1"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- assertVisible:
+    id: "match-details-card"
+    text: ".*1 Test Street, .*, TE1 1ST.*"

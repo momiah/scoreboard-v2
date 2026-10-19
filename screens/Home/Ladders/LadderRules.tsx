@@ -1,45 +1,37 @@
-import React from "react";
+import React, { useContext } from "react";
 import { ScrollView, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import type { NavigationProp, ParamListBase } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type {
+  NavigationProp,
+  ParamListBase,
+  RouteProp,
+} from "@react-navigation/native";
+
+import FormattedBlocks from "../../../components/ladder/FormattedBlocks";
+import { rulesFor } from "../../../components/ladder/ladderRulesContent";
+import { LadderContext } from "../../../context/LadderContext";
+import { ladderEntrantNoun } from "../../../helpers/ladderEntrantNoun";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-interface RuleSection {
-  title: string;
-  body: string;
-}
-
-const RULES: RuleSection[] = [
-  {
-    title: "How ladders work",
-    body: "Players are ranked on a ladder. Challenge others to climb, and hold your position by defending against challengers.",
-  },
-  {
-    title: "Registration",
-    body: "Join while registration is open. Paid ladders require the entry fee before you are added to the standings.",
-  },
-  {
-    title: "Playing games",
-    body: "Arrange challenge games with other ladder members. Report each result — both players confirm the score before it counts.",
-  },
-  {
-    title: "Playoffs",
-    body: "When the season ends, the top-ranked players enter the playoff bracket to decide the champion.",
-  },
-  {
-    title: "Prizes",
-    body: "The prize pot is shared among the top finishers once the ladder completes and results are finalised.",
-  },
-];
-
 const LadderRules: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const route =
+    useRoute<RouteProp<Record<string, { ladderId?: string }>, string>>();
+  const { ladderById } = useContext(LadderContext);
+  const ladderType =
+    ladderById && ladderById.ladderId === route.params?.ladderId
+      ? ladderById.ladderType
+      : undefined;
+  const rules = rulesFor(ladderEntrantNoun(ladderType));
 
   return (
     <Screen>
       <TopBar>
-        <BackButton onPress={() => navigation.goBack()} testID="ladder-rules-back">
+        <BackButton
+          onPress={() => navigation.goBack()}
+          testID="ladder-rules-back"
+        >
           <Ionicons name="chevron-back" size={26} color="#ffffff" />
         </BackButton>
         <TopBarTitle>Ladder Rules</TopBarTitle>
@@ -47,10 +39,10 @@ const LadderRules: React.FC = () => {
       </TopBar>
 
       <ScrollView contentContainerStyle={{ padding: 20, gap: 20 }}>
-        {RULES.map((rule) => (
+        {rules.map((rule) => (
           <RuleCard key={rule.title}>
             <RuleTitle>{rule.title}</RuleTitle>
-            <RuleBody>{rule.body}</RuleBody>
+            <FormattedBlocks blocks={rule.body} />
           </RuleCard>
         ))}
       </ScrollView>
@@ -96,10 +88,4 @@ const RuleTitle = styled.Text({
   color: "#00A2FF",
   fontSize: 15,
   fontWeight: "bold",
-});
-
-const RuleBody = styled.Text({
-  color: "#cccccc",
-  fontSize: 14,
-  lineHeight: 20,
 });

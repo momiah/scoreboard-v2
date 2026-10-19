@@ -28,8 +28,8 @@ export type LadderMatchOutcomeKind =
  *      held funds). If the charge fails, the accept is rejected and the match
  *      stays open for someone else — nothing is committed on a failed card.
  *   2. On terminal → this function either RELEASES the court-fee share to the
- *      poster (completed / accepter no-show walkover) or REFUNDS it to the
- *      accepter (cancelled / expired / poster no-show walkover). The 10%
+ *      poster (completed / expired / accepter no-show walkover) or REFUNDS it
+ *      to the accepter (cancelled / poster no-show walkover). The 10%
  *      platform fee is NON-REFUNDABLE in every case and is retained by the
  *      platform — see the notes below.
  *
@@ -39,8 +39,8 @@ export type LadderMatchOutcomeKind =
  * on a refund only the court-fee share is returned; the 10% stays. Across the
  * £5–£20 court-fee range that non-refundable 10% (£0.50–£2.00) comfortably
  * covers Stripe's per-refund/processing cost (~£0.20 fixed + the small
- * percentage that Stripe does not return on a refund), so a cancelled or
- * expired match is never a loss — it retains a margin. Because refunds do cost
+ * percentage that Stripe does not return on a refund), so a cancelled
+ * match is never a loss — it retains a margin. Because refunds do cost
  * the platform something, the non-refundable-fee terms must be stated clearly:
  * in the ladder T&Cs (LadderTermsContent) and in the AddLadderMatchModal
  * disclaimer ("A 10% non refundable platform fee is deducted from this fee").
@@ -67,9 +67,9 @@ export type LadderMatchOutcomeKind =
  * • cancelled  → REFUND the court-fee share to the accepter (called off before
  *                any game); platform fee kept. Revisit if a cancellation
  *                window/penalty is added.
- * • expired    → REFUND the court-fee share to the accepter (the court went
- *                unused); the poster reclaims their venue booking from the
- *                venue. Platform fee kept.
+ * • expired    → RELEASE the court-fee share to the poster: they paid for the
+ *                court, and the match lapsed with both sides inactive. Platform
+ *                fee kept.
  *
  * ── Notes for the real implementation ──
  * • Idempotency: this trigger can re-fire on retries, so persist a settlement

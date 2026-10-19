@@ -15,6 +15,10 @@ import {
   Player,
 } from "@shared/types";
 import { calculateWin } from "../../helpers/calculateWin";
+import {
+  LADDER_FROZEN_MESSAGE,
+  LADDER_RESULTS_CLOSED_MESSAGE,
+} from "@shared/helpers";
 import { UserContext } from "@/context/UserContext";
 import { PopupContext } from "@/context/PopupContext";
 import {
@@ -224,7 +228,11 @@ const AddTournamentGameModal = ({
           ? notificationTypes.ACTION.ADD_GAME.LADDER
           : notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
         data: ladder
-          ? { ladderId: ladder.ladderId, matchId: ladder.matchId, gameId: game.gameId }
+          ? {
+              ladderId: ladder.ladderId,
+              matchId: ladder.matchId,
+              gameId: game.gameId,
+            }
           : { tournamentId, gameId: game.gameId },
       };
       await sendNotification(payload);
@@ -243,7 +251,11 @@ const AddTournamentGameModal = ({
               ? "already been reported"
               : outcome.reason === "match_decided"
                 ? "match already decided"
-                : "Failed to submit ladder game result.",
+                : outcome.reason === "frozen"
+                  ? LADDER_FROZEN_MESSAGE
+                  : outcome.reason === "results_closed"
+                    ? LADDER_RESULTS_CLOSED_MESSAGE
+                    : "Failed to submit ladder game result.",
           );
         }
       } else {
@@ -260,6 +272,10 @@ const AddTournamentGameModal = ({
         errorMessage.includes("already been reported") ||
         errorMessage.includes("already been processed");
       const matchDecided = errorMessage.includes("match already decided");
+      const frozen = errorMessage.includes(LADDER_FROZEN_MESSAGE);
+      const resultsClosed = errorMessage.includes(
+        LADDER_RESULTS_CLOSED_MESSAGE,
+      );
 
       setLoading(false);
       setErrorText(
@@ -267,7 +283,11 @@ const AddTournamentGameModal = ({
           ? "This game has already been reported. Please refresh to see the latest status."
           : matchDecided
             ? "This match is already decided — no further games can be reported."
-            : "Failed to submit game result. Please try again.",
+            : frozen
+              ? `${LADDER_FROZEN_MESSAGE}.`
+              : resultsClosed
+                ? `${LADDER_RESULTS_CLOSED_MESSAGE}.`
+                : "Failed to submit game result. Please try again.",
       );
       return;
     }

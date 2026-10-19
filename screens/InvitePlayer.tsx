@@ -830,6 +830,7 @@ const InvitePlayer = () => {
           placeholderTextColor="#999"
           value={searchUser}
           onChangeText={handleSearch}
+          testID="invite-player-search"
           autoCorrect={false}
           autoCapitalize="none"
           autoComplete="off"
@@ -900,6 +901,7 @@ const InvitePlayer = () => {
                           !isAlreadySelected && handleSelectUser(item)
                         }
                         disabled={isAlreadySelected}
+                        testID={`invite-player-suggestion-${item.userId}`}
                         style={{
                           backgroundColor: isAlreadySelected
                             ? "#444"
@@ -962,6 +964,7 @@ const InvitePlayer = () => {
         <InviteButton
           onPress={handleSendInvite}
           disabled={isInviteDisabled}
+          testID="invite-player-submit"
           style={{ opacity: isInviteDisabled ? 0.6 : 1 }}
         >
           {sendingInvite ? (

@@ -21,14 +21,8 @@ import { LadderContext } from "../../context/LadderContext";
 import { ccDefaultImage } from "../../mockImages/index";
 import type { Ladder } from "@shared/types";
 import { LADDER_TYPE } from "@shared";
+import { LADDER_STATUS_TAGS } from "../../helpers/ladderPhases";
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  registrationOpen: { label: "Registration Open", color: "#FAB234" },
-  registrationClosed: { label: "Registration Closed", color: "#FF9800" },
-  playoffs: { label: "Playoffs", color: "#286EFA" },
-  completed: { label: "Completed", color: "#1A6B1A" },
-  cancelled: { label: "Cancelled", color: "#FF4757" },
-};
 
 interface HomeLadderSectionProps {
   loading: boolean;
@@ -46,7 +40,7 @@ const HomeLadderSection: React.FC<HomeLadderSectionProps> = ({ loading }) => {
       ) : upcomingLadders.length > 0 ? (
         <HorizontalCardCarousel
           cards={upcomingLadders.map((ladder: Ladder, index) => {
-            const status = STATUS_LABELS[ladder.status];
+            const status = LADDER_STATUS_TAGS[ladder.status];
             const numberOfPlayers = `${ladder.participantCount} / ${ladder.maxPlayers}`;
 
             return {

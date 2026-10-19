@@ -37,7 +37,7 @@ import { generateCourtId } from "../helpers/generateCourtId";
 import {
   canApproveReportedGame,
   getEffectiveApprovalLimit,
-} from "../helpers/reportedGameApproval";
+} from "@shared/helpers";
 import { clubFeed } from "../helpers/clubFeed";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
@@ -631,13 +631,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const getCourts = async () => {
+  const getCourts = useCallback(async () => {
     const snapshot = await getDocs(collection(db, "courts"));
     return snapshot.docs.map((doc) => ({
-      courtId: doc.id,
       ...doc.data(),
+      courtId: doc.id,
     })) as unknown as Court[];
-  };
+  }, []);
 
   const addCourt = async (courtData: Court) => {
     try {

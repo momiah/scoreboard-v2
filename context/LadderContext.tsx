@@ -6,9 +6,11 @@ import React, {
   ReactNode,
 } from "react";
 import {
+  arrayRemove,
   arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -18,6 +20,7 @@ import {
   orderBy,
   query,
   runTransaction,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
@@ -25,6 +28,7 @@ import {
   DocumentReference,
   QueryConstraint,
 } from "firebase/firestore";
+import moment from "moment";
 import { db } from "../services/firebase.config";
 import {
   normalizeLadderStatus,
@@ -35,24 +39,38 @@ import {
   notificationTypes,
   LADDER_MATCH_STATUS,
   LADDER_TYPE,
+  LADDER_STATUS,
   TEAM_STATUS,
   REPORTS_COLLECTION,
   LADDER_REPORT_COUNTS_COLLECTION,
   REPORT_STATUS,
   REPORT_REASONS,
+  LADDER_PLAYOFF_TIES_COLLECTION,
 } from "@shared";
 import {
   createRootTeam,
-  scoreDoublesLadderGame,
-  scoreSinglesLadderGame,
   buildLadderParticipant,
-  resolveLadderMatchOutcome,
   getReportableLadderGameId,
-  hasOpenLadderDispute,
+  isSelectableLadderCourt,
+  planLadderGameApproval,
+  isLadderMatchPlayFrozen,
+  isLadderResultsClosed,
+  getLadderPostingDeadline,
+  getLadderResultsDeadline,
+  buildLadderPlayoffLegMatch,
+  getLadderPlayoffLegHost,
+  buildLadderMatchExtension,
+  canDeclineLadderPlayoffMatch,
+  isLadderPlayoffHostArrangeOverdue,
+  validateLadderMatchReschedule,
 } from "@shared/helpers";
 import type { LadderJoinUser } from "@shared/helpers";
 import type {
+  Court,
   Ladder,
+  MatchTime,
+  LadderPlayoffTie,
+  LadderPlayoffTieSide,
   LadderMatch,
   LadderMatchInput,
   MatchTeam,
@@ -73,16 +91,39 @@ import {
   findLadderMemberConflicts,
 } from "../helpers/ladderTeamMembership";
 import { addMember, removeMember } from "../helpers/teamRoster";
-import { teamHasLadderMatch } from "../helpers/teamLadderActivity";
+import {
+  LADDER_MATCH_CANCEL_ACTION,
+  getLadderMatchCancelAction,
+  getLadderMatchRescheduleAction,
+  canExtendLadderMatch,
+  getOpponentSideIds,
+  getSameSideIds,
+  isLadderMatchCalledOff,
+} from "../helpers/ladderMatchCancellation";
+import {
+  isLadderFinished,
+  isTeamLockedInLadder,
+  teamHasCompletedLadderGame,
+  teamHasOpenLadderMatch,
+} from "../helpers/teamLadderActivity";
 import { buildLadderMatchDocument } from "../helpers/ladderMatchDocument";
+import { toMoment } from "../helpers/ladderPhases";
 import { assertGameTransition } from "../helpers/assertGameTransition";
-import { canApproveReportedGame } from "../helpers/reportedGameApproval";
+import {
+  getLadderRegistrationBlock,
+  getTeamRegistrationBlock,
+} from "../helpers/ladderRegistration";
 import type {
   LadderContextType,
   FetchLaddersOptions,
   LadderJoinOutcome,
+  AddLadderTeamFailureReason,
+  AddLadderTeamOutcome,
+  LadderJoinFailureReason,
   JoinLadderAsTeamOutcome,
   DisbandTeamOutcome,
+  LeaveLadderOutcome,
+  TeamLadderActivity,
   AcceptTeamJoinRequestOutcome,
   CreateTeamOutcome,
   CreateLadderMatchOutcome,
@@ -90,14 +131,41 @@ import type {
   CheckInLadderMatchOutcome,
   UpdateLadderGameOutcome,
   CancelLadderMatchOutcome,
+  LadderMatchCancellationOutcome,
+  LadderMatchChangeOutcome,
+  PlayoffMatchOutcome,
   ApproveLadderGameOutcome,
+  SetLadderHomeCourtOutcome,
+  SetLadderHomeCourtFailureReason,
 } from "./types/LadderContextType";
+import {
+  canChangeLadderHomeCourt,
+  nextLadderHomeCourtChanges,
+  toLadderHomeCourt,
+} from "../helpers/ladderHomeCourt";
+import type { LadderHomeCourtState } from "../helpers/ladderHomeCourt";
 
 class AcceptLadderMatchError extends Error {}
 class CheckInLadderMatchError extends Error {}
+class LadderRegistrationError extends Error {
+  constructor(
+    public reason: AddLadderTeamFailureReason,
+    public conflictUserIds: string[] = [],
+  ) {
+    super(reason);
+  }
+}
 class ApproveLadderGameError extends Error {}
 class ApproveLadderGameNotOpponentError extends Error {}
+class ApproveLadderGameFrozenError extends Error {}
 class LadderReportBlockedError extends Error {}
+class SetLadderHomeCourtError extends Error {
+  constructor(
+    public reason: Exclude<SetLadderHomeCourtFailureReason, "error">,
+  ) {
+    super(reason);
+  }
+}
 
 // Firestore rejects `undefined` field values, so drop them before a write.
 const pruneUndefined = <T,>(value: T): T => {
@@ -112,16 +180,13 @@ const pruneUndefined = <T,>(value: T): T => {
   return value;
 };
 
-const APPROVED_GAME = notificationTypes.RESPONSE.APPROVED_GAME;
-// Ladder singles need a single opponent approval. Doubles will raise this to 2
-// once doubles matchmaking exists (see the doubles block in approveLadderGame).
-const LADDER_SINGLES_APPROVAL_LIMIT = 1;
-
 const LADDERS_COLLECTION = "ladders";
 const LADDER_MATCHES_COLLECTION = "ladderMatches";
 const LADDER_PARTICIPANTS_COLLECTION = "ladderParticipants";
 const LADDER_TEAMS_COLLECTION = "ladderTeams";
+const LADDER_MEMBERS_COLLECTION = "ladderMembers";
 const TEAMS_COLLECTION = "teams";
+const COURTS_COLLECTION = "courts";
 const TEAM_REQUESTS_SUBCOLLECTION = "requests";
 
 export const LadderContext = createContext<LadderContextType>(
@@ -221,18 +286,33 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           user.userId,
         );
 
-        const existing = await getDoc(participantRef);
-        if (existing.exists()) {
+        const alreadyJoined = await runTransaction(db, async (transaction) => {
+          const [ladderSnap, existing] = await Promise.all([
+            transaction.get(ladderRef),
+            transaction.get(participantRef),
+          ]);
+          if (!ladderSnap.exists()) throw new LadderRegistrationError("closed");
+          if (existing.exists()) return true;
+          const block = getLadderRegistrationBlock(
+            ladderSnap.data(),
+            Date.now(),
+          );
+          if (block) throw new LadderRegistrationError(block);
+
+          transaction.set(participantRef, {
+            ...buildLadderParticipant(user),
+            joinedAt: serverTimestamp(),
+          });
+          transaction.update(ladderRef, { participantCount: increment(1) });
+          return false;
+        });
+
+        if (alreadyJoined) {
           setJoinedLadderIds((prev) =>
             prev.includes(ladderId) ? prev : [...prev, ladderId],
           );
           return { success: true, alreadyJoined: true };
         }
-
-        const batch = writeBatch(db);
-        batch.set(participantRef, buildLadderParticipant(user));
-        batch.update(ladderRef, { participantCount: increment(1) });
-        await batch.commit();
 
         setJoinedLadderIds((prev) =>
           prev.includes(ladderId) ? prev : [...prev, ladderId],
@@ -245,6 +325,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
         return { success: true, alreadyJoined: false };
       } catch (error) {
+        if (error instanceof LadderRegistrationError) {
+          return {
+            success: false,
+            alreadyJoined: false,
+            reason: error.reason as LadderJoinFailureReason,
+          };
+        }
         console.error("Error joining ladder:", error);
         return { success: false, alreadyJoined: false };
       }
@@ -300,7 +387,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             LADDER_PARTICIPANTS_COLLECTION,
           ),
         );
-        return snapshot.docs.map((docSnap) => docSnap.data() as ScoreboardProfile);
+        return snapshot.docs.map(
+          (docSnap) => docSnap.data() as ScoreboardProfile,
+        );
       } catch (error) {
         console.error("Error fetching ladder participants:", error);
         return [];
@@ -310,9 +399,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const addLadderTeam = useCallback(
-    async (ladderId: string, team: TeamStats): Promise<boolean> => {
-      if (!ladderId || !team?.teamKey) return false;
+    async (
+      ladderId: string,
+      team: TeamStats,
+    ): Promise<AddLadderTeamOutcome> => {
+      if (!ladderId || !team?.teamKey) return { success: false };
       try {
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
         const teamRef = doc(
           db,
           LADDERS_COLLECTION,
@@ -320,19 +413,67 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           LADDER_TEAMS_COLLECTION,
           team.teamKey,
         );
-        const existing = await getDoc(teamRef);
-        const batch = writeBatch(db);
-        batch.set(teamRef, team);
-        if (!existing.exists()) {
-          batch.update(doc(db, LADDERS_COLLECTION, ladderId), {
-            participantCount: increment(1),
+        const memberIds = teamMemberIds(team);
+        const claimRefs = memberIds.map((userId) =>
+          doc(
+            db,
+            LADDERS_COLLECTION,
+            ladderId,
+            LADDER_MEMBERS_COLLECTION,
+            userId,
+          ),
+        );
+        await runTransaction(db, async (transaction) => {
+          const [ladderSnap, existing, ...claimSnaps] = await Promise.all([
+            transaction.get(ladderRef),
+            transaction.get(teamRef),
+            ...claimRefs.map((ref) => transaction.get(ref)),
+          ]);
+          if (!ladderSnap.exists()) throw new LadderRegistrationError("closed");
+          if (!existing.exists()) {
+            const block = getLadderRegistrationBlock(
+              ladderSnap.data(),
+              Date.now(),
+            );
+            if (block) throw new LadderRegistrationError(block);
+            const conflicts = memberIds.filter(
+              (_, index) =>
+                claimSnaps[index].exists() &&
+                claimSnaps[index].data()?.teamKey !== team.teamKey,
+            );
+            if (conflicts.length > 0) {
+              throw new LadderRegistrationError("member_conflict", conflicts);
+            }
+            claimRefs.forEach((ref, index) =>
+              transaction.set(ref, {
+                userId: memberIds[index],
+                teamKey: team.teamKey,
+                joinedAt: serverTimestamp(),
+              }),
+            );
+          }
+          transaction.set(teamRef, {
+            ...team,
+            joinedAt:
+              (existing.exists()
+                ? (existing.data() as TeamStats).joinedAt
+                : undefined) ?? serverTimestamp(),
           });
-        }
-        await batch.commit();
-        return true;
+          if (!existing.exists()) {
+            transaction.update(ladderRef, { participantCount: increment(1) });
+          }
+        });
+        return { success: true };
       } catch (error) {
+        if (error instanceof LadderRegistrationError) {
+          return {
+            success: false,
+            reason: error.reason,
+            conflictUserIds: error.conflictUserIds,
+          };
+        }
         console.error("Error adding ladder team:", error);
-        return false;
+        return { success: false };
       }
     },
     [],
@@ -459,7 +600,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       if (!teamId || !userId) return false;
       try {
         await deleteDoc(
-          doc(db, TEAMS_COLLECTION, teamId, TEAM_REQUESTS_SUBCOLLECTION, userId),
+          doc(
+            db,
+            TEAMS_COLLECTION,
+            teamId,
+            TEAM_REQUESTS_SUBCOLLECTION,
+            userId,
+          ),
         );
         return true;
       } catch (error) {
@@ -570,7 +717,13 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       if (!teamId || !userId) return false;
       try {
         await deleteDoc(
-          doc(db, TEAMS_COLLECTION, teamId, TEAM_REQUESTS_SUBCOLLECTION, userId),
+          doc(
+            db,
+            TEAMS_COLLECTION,
+            teamId,
+            TEAM_REQUESTS_SUBCOLLECTION,
+            userId,
+          ),
         );
         return true;
       } catch (error) {
@@ -622,6 +775,34 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const fetchLadderTeamMemberIds = useCallback(
+    async (ladderId: string, userId: string): Promise<string[]> => {
+      if (!ladderId || !userId) return [];
+      try {
+        const teamSnap = await getDocs(
+          query(
+            collection(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+            ),
+            where("playerIds", "array-contains", userId),
+            limit(1),
+          ),
+        );
+        if (teamSnap.empty) return [userId];
+        const playerIds = teamSnap.docs[0].data().playerIds as
+          string[] | undefined;
+        return playerIds?.length ? playerIds : [userId];
+      } catch (error) {
+        console.error("Error fetching ladder team members:", error);
+        return [userId];
+      }
+    },
+    [],
+  );
+
   const fetchLadderMemberIds = useCallback(
     async (ladderId: string): Promise<string[]> => {
       if (!ladderId) return [];
@@ -657,24 +838,81 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
+  const fetchLadderMemberConflicts = useCallback(
+    async (ladderId: string, userIds: string[]): Promise<string[]> => {
+      if (!ladderId || userIds.length === 0) return [];
+      const [teamSnap, participantSnaps] = await Promise.all([
+        getDocs(
+          query(
+            collection(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+            ),
+            where("playerIds", "array-contains-any", userIds),
+          ),
+        ),
+        Promise.all(
+          userIds.map((userId) =>
+            getDoc(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_PARTICIPANTS_COLLECTION,
+                userId,
+              ),
+            ),
+          ),
+        ),
+      ]);
+      const memberIds = new Set<string>();
+      teamSnap.docs.forEach((d) =>
+        teamMemberIds(d.data() as TeamStats).forEach((id) => memberIds.add(id)),
+      );
+      participantSnaps.forEach((snap) => {
+        if (snap.exists()) memberIds.add(snap.id);
+      });
+      return findLadderMemberConflicts(userIds, memberIds);
+    },
+    [],
+  );
+
   const joinLadderAsTeam = useCallback(
     async (
       ladderId: string,
       rootTeam: TeamStats,
     ): Promise<JoinLadderAsTeamOutcome> => {
-      if (!ladderId || !rootTeam?.teamKey) {
-        return {
-          success: false,
-          alreadyJoined: false,
-          conflict: false,
-          conflictUserIds: [],
-        };
+      const failure = (
+        reason?: JoinLadderAsTeamOutcome["reason"],
+      ): JoinLadderAsTeamOutcome => ({
+        success: false,
+        alreadyJoined: false,
+        conflict: false,
+        conflictUserIds: [],
+        reason,
+      });
+      if (!ladderId || !rootTeam?.teamKey || !rootTeam.teamId) {
+        return failure();
       }
       try {
-        const memberIds = await fetchLadderMemberIds(ladderId);
-        const conflictUserIds = findLadderMemberConflicts(
-          teamMemberIds(rootTeam),
-          memberIds,
+        const teamSnap = await getDoc(
+          doc(db, TEAMS_COLLECTION, rootTeam.teamId),
+        );
+        const serverTeam = teamSnap.exists()
+          ? ({
+              ...(teamSnap.data() as TeamStats),
+              teamId: teamSnap.id,
+            } as TeamStats)
+          : null;
+        const teamBlock = getTeamRegistrationBlock(serverTeam);
+        if (teamBlock || !serverTeam)
+          return failure(teamBlock ?? "team_not_found");
+
+        const conflictUserIds = await fetchLadderMemberConflicts(
+          ladderId,
+          teamMemberIds(serverTeam),
         );
         if (conflictUserIds.length > 0) {
           return {
@@ -685,40 +923,40 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           };
         }
         const ladderTeam = createRootTeam({
-          players: rootTeam.players ?? [],
-          createdBy: rootTeam.createdBy ?? "",
-          teamId: rootTeam.teamId,
-          teamName: rootTeam.teamName,
-          teamProfilePic: rootTeam.teamProfilePic,
+          players: serverTeam.players ?? [],
+          createdBy: serverTeam.createdBy ?? "",
+          teamId: serverTeam.teamId,
+          teamName: serverTeam.teamName,
+          teamProfilePic: serverTeam.teamProfilePic,
         });
         const added = await addLadderTeam(ladderId, ladderTeam);
-        if (added) {
-          if (rootTeam.teamId) {
-            await updateDoc(doc(db, TEAMS_COLLECTION, rootTeam.teamId), {
-              ladderIds: arrayUnion(ladderId),
-            });
-          }
-          setJoinedLadderIds((prev) =>
-            prev.includes(ladderId) ? prev : [...prev, ladderId],
-          );
+        if (added.reason === "member_conflict") {
+          return {
+            success: false,
+            alreadyJoined: false,
+            conflict: true,
+            conflictUserIds: added.conflictUserIds ?? [],
+          };
         }
+        if (!added.success) return failure(added.reason);
+        await updateDoc(doc(db, TEAMS_COLLECTION, rootTeam.teamId), {
+          ladderIds: arrayUnion(ladderId),
+        });
+        setJoinedLadderIds((prev) =>
+          prev.includes(ladderId) ? prev : [...prev, ladderId],
+        );
         return {
-          success: added,
+          success: true,
           alreadyJoined: false,
           conflict: false,
           conflictUserIds: [],
         };
       } catch (error) {
         console.error("Error joining ladder as team:", error);
-        return {
-          success: false,
-          alreadyJoined: false,
-          conflict: false,
-          conflictUserIds: [],
-        };
+        return failure();
       }
     },
-    [addLadderTeam, fetchLadderMemberIds],
+    [addLadderTeam, fetchLadderMemberConflicts],
   );
 
   const createLadderMatch = useCallback(
@@ -762,32 +1000,174 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const addCourtToLadder = useCallback(
-    async (ladderId: string, courtId: string): Promise<boolean> => {
-      if (!ladderId || !courtId) return false;
-
-      try {
-        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
-        await updateDoc(ladderRef, { courtIds: arrayUnion(courtId) });
-
-        setLadderById((prev) =>
-          prev && prev.ladderId === ladderId
-            ? {
-                ...prev,
-                courtIds: prev.courtIds?.includes(courtId)
-                  ? prev.courtIds
-                  : [...(prev.courtIds ?? []), courtId],
-              }
-            : prev,
+  const resolveLadderHomeCourtRef = useCallback(
+    async (
+      ladder: Pick<Ladder, "ladderId" | "ladderType">,
+      userId: string,
+    ): Promise<DocumentReference | null> => {
+      if (ladder.ladderType !== LADDER_TYPE.DOUBLES) {
+        return doc(
+          db,
+          LADDERS_COLLECTION,
+          ladder.ladderId,
+          LADDER_PARTICIPANTS_COLLECTION,
+          userId,
         );
-
-        return true;
-      } catch (error) {
-        console.error("Error adding court to ladder:", error);
-        return false;
       }
+      const teamSnap = await getDocs(
+        query(
+          collection(
+            db,
+            LADDERS_COLLECTION,
+            ladder.ladderId,
+            LADDER_TEAMS_COLLECTION,
+          ),
+          where("playerIds", "array-contains", userId),
+          limit(1),
+        ),
+      );
+      return teamSnap.empty ? null : teamSnap.docs[0].ref;
     },
     [],
+  );
+
+  const subscribeToLadderHomeCourt = useCallback(
+    (
+      ladder: Pick<Ladder, "ladderId" | "ladderType">,
+      userId: string,
+      onUpdate: (state: LadderHomeCourtState | null) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!ladder?.ladderId || !userId) {
+        onUpdate(null);
+        return () => {};
+      }
+
+      const toState = (
+        data: LadderHomeCourtState | undefined,
+      ): LadderHomeCourtState | null =>
+        data
+          ? {
+              homeCourt: data.homeCourt ?? null,
+              homeCourtChanges: data.homeCourtChanges ?? 0,
+            }
+          : null;
+
+      const handleError = (error: Error) => {
+        console.error("Error subscribing to ladder home court:", error);
+        onError?.(error);
+      };
+
+      if (ladder.ladderType !== LADDER_TYPE.DOUBLES) {
+        return onSnapshot(
+          doc(
+            db,
+            LADDERS_COLLECTION,
+            ladder.ladderId,
+            LADDER_PARTICIPANTS_COLLECTION,
+            userId,
+          ),
+          (snap) =>
+            onUpdate(
+              snap.exists()
+                ? toState(snap.data() as LadderHomeCourtState)
+                : null,
+            ),
+          handleError,
+        );
+      }
+
+      return onSnapshot(
+        query(
+          collection(
+            db,
+            LADDERS_COLLECTION,
+            ladder.ladderId,
+            LADDER_TEAMS_COLLECTION,
+          ),
+          where("playerIds", "array-contains", userId),
+          limit(1),
+        ),
+        (snap) =>
+          onUpdate(
+            snap.empty
+              ? null
+              : toState(snap.docs[0].data() as LadderHomeCourtState),
+          ),
+        handleError,
+      );
+    },
+    [],
+  );
+
+  const setLadderHomeCourt = useCallback(
+    async ({
+      ladder,
+      userId,
+      court,
+    }: {
+      ladder: Pick<Ladder, "ladderId" | "ladderType">;
+      userId: string;
+      court: Court;
+    }): Promise<SetLadderHomeCourtOutcome> => {
+      if (!ladder?.ladderId || !userId || !court?.courtId) {
+        return { success: false, reason: "error" };
+      }
+
+      try {
+        const entrantRef = await resolveLadderHomeCourtRef(ladder, userId);
+        if (!entrantRef) return { success: false, reason: "not_participant" };
+
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladder.ladderId);
+        const courtRef = doc(db, COURTS_COLLECTION, court.courtId);
+
+        await runTransaction(db, async (transaction) => {
+          const [ladderSnap, entrantSnap, courtSnap] = await Promise.all([
+            transaction.get(ladderRef),
+            transaction.get(entrantRef),
+            transaction.get(courtRef),
+          ]);
+
+          if (!entrantSnap.exists()) {
+            throw new SetLadderHomeCourtError("not_participant");
+          }
+
+          const freshCourt = courtSnap.exists()
+            ? ({ ...courtSnap.data(), courtId: courtSnap.id } as Court)
+            : null;
+          const ladderCourtIds = ladderSnap.exists()
+            ? ((ladderSnap.data() as Ladder).courtIds ?? [])
+            : [];
+          if (
+            !freshCourt ||
+            !isSelectableLadderCourt(freshCourt, ladderCourtIds)
+          ) {
+            throw new SetLadderHomeCourtError("invalid_court");
+          }
+
+          const current = entrantSnap.data() as LadderHomeCourtState;
+          if (!canChangeLadderHomeCourt(current)) {
+            throw new SetLadderHomeCourtError("change_limit");
+          }
+
+          transaction.update(entrantRef, {
+            homeCourt: toLadderHomeCourt(freshCourt),
+            homeCourtChanges: nextLadderHomeCourtChanges(current),
+            homeCourtUpdatedAt: new Date(),
+            homeCourtUpdatedBy: userId,
+          });
+        });
+
+        return { success: true };
+      } catch (error) {
+        if (error instanceof SetLadderHomeCourtError) {
+          return { success: false, reason: error.reason };
+        }
+        console.error("Error setting ladder home court:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [resolveLadderHomeCourtRef],
   );
 
   const fetchLadderMatches = useCallback(
@@ -842,17 +1222,27 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     [],
   );
 
-  const isTeamActivelyPlaying = useCallback(
-    async (team: TeamStats): Promise<boolean> => {
-      const ladderIds = team.ladderIds ?? [];
+  const getTeamLadderActivity = useCallback(
+    async (
+      team: TeamStats,
+      ladderIds?: string[],
+    ): Promise<TeamLadderActivity> => {
+      const ids = ladderIds ?? team.ladderIds ?? [];
       const playerIds = teamMemberIds(team);
-      if (ladderIds.length === 0 || playerIds.length === 0) return false;
+      if (ids.length === 0 || playerIds.length === 0) {
+        return { hasOpenMatch: false, hasCompletedGame: false };
+      }
       const matchLists = await Promise.all(
-        ladderIds.map((ladderId) => fetchLadderMatches(ladderId)),
+        ids.map((ladderId) => fetchLadderMatches(ladderId)),
       );
-      return matchLists.some((matches) =>
-        teamHasLadderMatch(matches, playerIds),
-      );
+      return {
+        hasOpenMatch: matchLists.some((matches) =>
+          teamHasOpenLadderMatch(matches, playerIds),
+        ),
+        hasCompletedGame: matchLists.some((matches) =>
+          teamHasCompletedLadderGame(matches, playerIds),
+        ),
+      };
     },
     [fetchLadderMatches],
   );
@@ -861,8 +1251,33 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
     async (team: TeamStats): Promise<DisbandTeamOutcome> => {
       if (!team?.teamId) return { success: false, activelyPlaying: false };
       try {
-        if (await isTeamActivelyPlaying(team)) {
+        const ladderSnaps = await Promise.all(
+          (team.ladderIds ?? []).map((ladderId) =>
+            getDoc(doc(db, LADDERS_COLLECTION, ladderId)),
+          ),
+        );
+        const ladders = ladderSnaps
+          .filter((snap) => snap.exists())
+          .map((snap) => ({
+            ladderId: snap.id,
+            status: normalizeLadderStatus(snap.data()?.status),
+          }));
+        if (isTeamLockedInLadder(ladders)) {
+          return {
+            success: false,
+            activelyPlaying: false,
+            registrationClosed: true,
+          };
+        }
+        const activeLadderIds = ladders
+          .filter((ladder) => !isLadderFinished(ladder))
+          .map((ladder) => ladder.ladderId);
+        const activity = await getTeamLadderActivity(team, activeLadderIds);
+        if (activity.hasCompletedGame) {
           return { success: false, activelyPlaying: true };
+        }
+        if (activity.hasOpenMatch) {
+          return { success: false, activelyPlaying: false, openMatch: true };
         }
         const batch = writeBatch(db);
         (team.ladderIds ?? []).forEach((ladderId) => {
@@ -873,6 +1288,17 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               ladderId,
               LADDER_TEAMS_COLLECTION,
               team.teamKey,
+            ),
+          );
+          teamMemberIds(team).forEach((userId) =>
+            batch.delete(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_MEMBERS_COLLECTION,
+                userId,
+              ),
             ),
           );
           batch.update(doc(db, LADDERS_COLLECTION, ladderId), {
@@ -887,7 +1313,452 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: false, activelyPlaying: false };
       }
     },
-    [isTeamActivelyPlaying],
+    [getTeamLadderActivity],
+  );
+
+  const leaveLadder = useCallback(
+    async (ladderId: string, userId: string): Promise<LeaveLadderOutcome> => {
+      if (!ladderId || !userId) return { success: false, reason: "error" };
+      try {
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
+        const ladderSnap = await getDoc(ladderRef);
+        if (!ladderSnap.exists()) return { success: false, reason: "error" };
+        const ladder = ladderSnap.data() as Ladder;
+        if (
+          normalizeLadderStatus(ladder.status) !==
+          LADDER_STATUS.REGISTRATION_OPEN
+        ) {
+          return { success: false, reason: "registration_closed" };
+        }
+
+        const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+        let team: TeamStats | null = null;
+        if (isDoubles) {
+          const memberSnap = await getDoc(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_MEMBERS_COLLECTION,
+              userId,
+            ),
+          );
+          const teamKey = memberSnap.data()?.teamKey as string | undefined;
+          const teamSnap = teamKey
+            ? await getDoc(
+                doc(
+                  db,
+                  LADDERS_COLLECTION,
+                  ladderId,
+                  LADDER_TEAMS_COLLECTION,
+                  teamKey,
+                ),
+              )
+            : null;
+          if (!teamSnap?.exists())
+            return { success: false, reason: "not_joined" };
+          team = teamSnap.data() as TeamStats;
+        } else {
+          const participantSnap = await getDoc(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_PARTICIPANTS_COLLECTION,
+              userId,
+            ),
+          );
+          if (!participantSnap.exists())
+            return { success: false, reason: "not_joined" };
+        }
+
+        const playerIds = team ? teamMemberIds(team) : [userId];
+        const matches = await fetchLadderMatches(ladderId);
+        if (teamHasCompletedLadderGame(matches, playerIds)) {
+          return { success: false, reason: "played" };
+        }
+        if (teamHasOpenLadderMatch(matches, playerIds)) {
+          return { success: false, reason: "open_match" };
+        }
+
+        const batch = writeBatch(db);
+        if (team) {
+          batch.delete(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_TEAMS_COLLECTION,
+              team.teamKey,
+            ),
+          );
+          playerIds.forEach((id) =>
+            batch.delete(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_MEMBERS_COLLECTION,
+                id,
+              ),
+            ),
+          );
+          if (team.teamId) {
+            batch.update(doc(db, TEAMS_COLLECTION, team.teamId), {
+              ladderIds: arrayRemove(ladderId),
+            });
+          }
+        } else {
+          batch.delete(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_PARTICIPANTS_COLLECTION,
+              userId,
+            ),
+          );
+        }
+        batch.update(ladderRef, { participantCount: increment(-1) });
+        await batch.commit();
+
+        setJoinedLadderIds((prev) => prev.filter((id) => id !== ladderId));
+        setLadderById((prev) =>
+          prev && prev.ladderId === ladderId
+            ? {
+                ...prev,
+                participantCount: Math.max(0, (prev.participantCount ?? 1) - 1),
+              }
+            : prev,
+        );
+        return { success: true };
+      } catch (error) {
+        console.error("Error leaving ladder:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [fetchLadderMatches],
+  );
+
+  const subscribeToPlayoffMatches = useCallback(
+    (
+      ladderId: string,
+      tieId: string,
+      onUpdate: (matches: LadderMatch[]) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!ladderId || !tieId) {
+        onUpdate([]);
+        return () => {};
+      }
+      return onSnapshot(
+        query(
+          collection(
+            db,
+            LADDERS_COLLECTION,
+            ladderId,
+            LADDER_MATCHES_COLLECTION,
+          ),
+          where("playoffTieId", "==", tieId),
+        ),
+        (snapshot) =>
+          onUpdate(
+            snapshot.docs.map(
+              (docSnap) =>
+                ({
+                  ...docSnap.data(),
+                  ladderMatchId: docSnap.id,
+                }) as LadderMatch,
+            ),
+          ),
+        (error) => {
+          console.error("Error subscribing to playoff matches:", error);
+          onError?.(error);
+        },
+      );
+    },
+    [],
+  );
+
+  const arrangePlayoffMatch = useCallback(
+    async ({
+      ladder,
+      tie,
+      leg,
+      host,
+      input,
+      userId,
+    }: {
+      ladder: Pick<Ladder, "ladderId" | "ladderType">;
+      tie: LadderPlayoffTie;
+      leg: 1 | 2;
+      host: LadderPlayoffTieSide;
+      input: Pick<
+        LadderMatchInput,
+        "court" | "matchDate" | "matchTime" | "currencyType" | "shuttleType"
+      >;
+      userId: string;
+    }): Promise<PlayoffMatchOutcome> => {
+      const matchId = `${tie.tieId}-leg${leg}`;
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladder.ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const [existing, otherLegSnap] = await Promise.all([
+            transaction.get(matchRef),
+            transaction.get(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladder.ladderId,
+                LADDER_MATCHES_COLLECTION,
+                `${tie.tieId}-leg${leg === 1 ? 2 : 1}`,
+              ),
+            ),
+          ]);
+          const previous = existing.exists()
+            ? (existing.data() as LadderMatch)
+            : null;
+          if (previous && !isLadderMatchCalledOff(previous)) {
+            return { success: false, reason: "exists" } as const;
+          }
+          const otherLeg = otherLegSnap.exists()
+            ? (otherLegSnap.data() as LadderMatch)
+            : null;
+          if (
+            leg === 2 &&
+            (!otherLeg || isLadderMatchCalledOff(otherLeg)) &&
+            !isLadderPlayoffHostArrangeOverdue(tie, new Date())
+          ) {
+            return { success: false, reason: "order" } as const;
+          }
+          transaction.set(
+            matchRef,
+            pruneUndefined({
+              ...buildLadderPlayoffLegMatch({
+                tie,
+                leg,
+                host,
+                ladderMatchId: matchId,
+                ladderType: ladder.ladderType,
+                input,
+                createdBy: userId,
+                now: new Date(),
+              }),
+              scheduleDeclines: previous?.scheduleDeclines ?? 0,
+            }),
+          );
+          return { success: true } as const;
+        });
+      } catch (error) {
+        console.error("Error arranging playoff match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const offerPlayoffMatchHere = useCallback(
+    async ({
+      ladderId,
+      firstMatch,
+      userId,
+    }: {
+      ladderId: string;
+      firstMatch: LadderMatch;
+      userId: string;
+    }): Promise<PlayoffMatchOutcome> => {
+      const tieId = firstMatch.playoffTieId;
+      if (!ladderId || !userId || !tieId || firstMatch.playoffLeg !== 1) {
+        return { success: false, reason: "not_allowed" };
+      }
+      const matchRef = (id: string) =>
+        doc(db, LADDERS_COLLECTION, ladderId, LADDER_MATCHES_COLLECTION, id);
+      const firstRef = matchRef(firstMatch.ladderMatchId);
+      const secondId = `${tieId}-leg2`;
+      const secondRef = matchRef(secondId);
+      const tieRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_PLAYOFF_TIES_COLLECTION,
+        tieId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const [firstSnap, secondSnap, tieSnap] = await Promise.all([
+            transaction.get(firstRef),
+            transaction.get(secondRef),
+            transaction.get(tieRef),
+          ]);
+          const first = firstSnap.data() as LadderMatch | undefined;
+          const second = secondSnap.exists()
+            ? (secondSnap.data() as LadderMatch)
+            : null;
+          if (
+            !first ||
+            !tieSnap.exists() ||
+            first.matchStatus !== LADDER_MATCH_STATUS.COMPLETED ||
+            !(first.participants ?? []).includes(userId) ||
+            (second && !isLadderMatchCalledOff(second))
+          ) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          const tie = tieSnap.data() as LadderPlayoffTie;
+          const now = new Date();
+          transaction.set(
+            secondRef,
+            pruneUndefined({
+              ...buildLadderPlayoffLegMatch({
+                tie,
+                leg: 2,
+                host: getLadderPlayoffLegHost(tie, 2),
+                ladderMatchId: secondId,
+                ladderType: first.ladderType ?? LADDER_TYPE.SINGLES,
+                input: {
+                  court: first.court,
+                  matchDate: moment(now).format("DD-MM-YYYY"),
+                  matchTime: { start: moment(now).format("HH:mm") },
+                  currencyType: first.currencyType,
+                  shuttleType: first.shuttleType,
+                },
+                createdBy: userId,
+                now,
+              }),
+              playNow: true,
+              scheduleDeclines: second?.scheduleDeclines ?? 0,
+            }),
+          );
+          return {
+            success: true,
+            notifyUserIds: getOpponentSideIds(first, userId),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error offering to play match 2 here:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const respondToPlayoffMatch = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+      accept,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+      accept: boolean;
+    }): Promise<PlayoffMatchOutcome> => {
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists())
+            return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (
+            !match.playoffTieId ||
+            match.matchStatus !== LADDER_MATCH_STATUS.POSTED ||
+            !getOpponentSideIds(match, match.createdBy).includes(userId) ||
+            (!accept && !canDeclineLadderPlayoffMatch(match))
+          ) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          const firstMatch =
+            accept && match.playNow
+              ? await transaction.get(
+                  doc(
+                    db,
+                    LADDERS_COLLECTION,
+                    ladderId,
+                    LADDER_MATCHES_COLLECTION,
+                    `${match.playoffTieId}-leg1`,
+                  ),
+                )
+              : null;
+          const carriedCheckIn = (firstMatch?.data() as LadderMatch | undefined)
+            ?.checkIn;
+          transaction.update(
+            matchRef,
+            accept
+              ? {
+                  matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+                  acceptedBy: userId,
+                  acceptedAt: new Date(),
+                  ...(carriedCheckIn
+                    ? { checkIn: carriedCheckIn, lastUpdated: new Date() }
+                    : {}),
+                }
+              : {
+                  matchStatus: LADDER_MATCH_STATUS.CANCELLED,
+                  cancelledAt: new Date(),
+                  cancelledReason: match.playNow
+                    ? "Play now declined"
+                    : "Time declined",
+                  scheduleDeclines:
+                    (match.scheduleDeclines ?? 0) + (match.playNow ? 0 : 1),
+                },
+          );
+          return {
+            success: true,
+            notifyUserIds: getSameSideIds(match, match.createdBy),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error responding to playoff match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const subscribeToLadderPlayoffTies = useCallback(
+    (
+      ladderId: string,
+      onUpdate: (ties: LadderPlayoffTie[]) => void,
+      onError?: (error: Error) => void,
+    ): (() => void) => {
+      if (!ladderId) {
+        onUpdate([]);
+        return () => {};
+      }
+      return onSnapshot(
+        collection(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_PLAYOFF_TIES_COLLECTION,
+        ),
+        (snapshot) =>
+          onUpdate(
+            snapshot.docs.map(
+              (docSnap) =>
+                ({ ...docSnap.data(), tieId: docSnap.id }) as LadderPlayoffTie,
+            ),
+          ),
+        (error) => {
+          console.error("Error subscribing to ladder playoff ties:", error);
+          onError?.(error);
+        },
+      );
+    },
+    [],
   );
 
   const subscribeToLadderMatches = useCallback(
@@ -950,9 +1821,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         await runTransaction(db, async (transaction) => {
-          const snap = await transaction.get(matchRef);
+          const [snap, ladderSnap] = await Promise.all([
+            transaction.get(matchRef),
+            transaction.get(doc(db, LADDERS_COLLECTION, ladderId)),
+          ]);
           if (!snap.exists()) {
             throw new AcceptLadderMatchError("MATCH_NOT_FOUND");
+          }
+          if (isLadderMatchPlayFrozen(ladderSnap.data()?.status, snap.data())) {
+            throw new AcceptLadderMatchError("FROZEN");
           }
 
           const match: LadderMatch = {
@@ -973,7 +1850,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         return { success: true };
       } catch (error) {
         if (error instanceof AcceptLadderMatchError) {
-          return { success: false, reason: "unavailable" };
+          return {
+            success: false,
+            reason: error.message === "FROZEN" ? "frozen" : "unavailable",
+          };
         }
         console.error("Error accepting ladder match:", error);
         return { success: false, reason: "error" };
@@ -990,7 +1870,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       >,
       dedupe: { reportedBy?: string; targetUserIds?: string[] },
     ): Promise<CreateReportOutcome> => {
-      const targetKey = (ids?: string[]): string => [...(ids ?? [])].sort().join("_");
+      const targetKey = (ids?: string[]): string =>
+        [...(ids ?? [])].sort().join("_");
       try {
         const constraints: QueryConstraint[] = [
           where("ladderMatchId", "==", report.ladderMatchId),
@@ -1006,7 +1887,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           const data = d.data() as Report;
           if (data.status === REPORT_STATUS.REJECTED) return false;
           if (!dedupe.targetUserIds) return true;
-          return targetKey(data.target?.userIds) === targetKey(dedupe.targetUserIds);
+          return (
+            targetKey(data.target?.userIds) === targetKey(dedupe.targetUserIds)
+          );
         });
         if (duplicate) return { success: false, reason: "exists" };
 
@@ -1040,6 +1923,12 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       if (!ladderId || !match?.ladderMatchId || !claimantUserId) {
         return { success: false, reason: "error" };
       }
+      const ladderSnap = await getDoc(doc(db, LADDERS_COLLECTION, ladderId));
+      if (
+        isLadderResultsClosed(ladderSnap.data() as Ladder, match, new Date())
+      ) {
+        return { success: false, reason: "results_closed" };
+      }
       const teams = match.teams ?? [];
       const isDoubles = teams.length === 2;
       let target: ReportTarget;
@@ -1061,15 +1950,20 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           winnerTeamId: winner.teamId,
         };
       } else {
-        const opponents = match.participants.filter((id) => id !== claimantUserId);
-        if (opponents.length === 0) return { success: false, reason: "invalid" };
+        const opponents = match.participants.filter(
+          (id) => id !== claimantUserId,
+        );
+        if (opponents.length === 0)
+          return { success: false, reason: "invalid" };
         target = { type: "player", userIds: opponents };
         walkover = { winnerType: "player", winnerUserIds: [claimantUserId] };
       }
       const outcome = await writeReport(
         {
           ladderId,
-          ladderType: match.ladderType ?? (isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES),
+          ladderType:
+            match.ladderType ??
+            (isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES),
           ladderMatchId: match.ladderMatchId,
           reason: REPORT_REASONS.NO_SHOW,
           reportedBy: claimantUserId,
@@ -1112,8 +2006,15 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       target: ReportTarget;
       description?: string;
     }): Promise<CreateReportOutcome> => {
-      const { ladderId, ladderName, match, reportedBy, reason, target, description } =
-        input;
+      const {
+        ladderId,
+        ladderName,
+        match,
+        reportedBy,
+        reason,
+        target,
+        description,
+      } = input;
       if (
         !ladderId ||
         !match?.ladderMatchId ||
@@ -1131,7 +2032,8 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           ladderId,
           ladderName,
           ladderType:
-            match.ladderType ?? (isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES),
+            match.ladderType ??
+            (isDoubles ? LADDER_TYPE.DOUBLES : LADDER_TYPE.SINGLES),
           ladderMatchId: match.ladderMatchId,
           reason,
           description: description?.trim() || undefined,
@@ -1166,7 +2068,7 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               ),
             );
             const strikes = snap.exists()
-              ? (snap.data() as LadderReportCounts).strikes ?? {}
+              ? ((snap.data() as LadderReportCounts).strikes ?? {})
               : {};
             return [userId, strikes] as const;
           }),
@@ -1330,9 +2232,29 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
 
       try {
         await runTransaction(db, async (transaction) => {
-          const snap = await transaction.get(matchRef);
+          const [snap, ladderSnap] = await Promise.all([
+            transaction.get(matchRef),
+            transaction.get(doc(db, LADDERS_COLLECTION, ladderId)),
+          ]);
           if (!snap.exists()) {
             throw new Error("Ladder match not found");
+          }
+          if (
+            isLadderMatchPlayFrozen(
+              ladderSnap.data()?.status,
+              snap.data() as LadderMatch,
+            )
+          ) {
+            throw new LadderReportBlockedError("frozen");
+          }
+          if (
+            isLadderResultsClosed(
+              ladderSnap.data() as Ladder,
+              snap.data() as LadderMatch,
+              new Date(),
+            )
+          ) {
+            throw new LadderReportBlockedError("results_closed");
           }
 
           const match = snap.data() as LadderMatch;
@@ -1367,8 +2289,6 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
               ([, value]) => value !== undefined,
             ),
           ) as Game;
-          // Stamp the report time so the auto-approve job can age this game
-          // (ladder shells otherwise carry no createdAt).
           sanitizedGame.createdAt = new Date();
 
           const nextGames = [...games];
@@ -1377,13 +2297,20 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           transaction.update(matchRef, {
             games: nextGames,
             lastUpdated: new Date(),
+            [`gameReportedAt.${updatedGame.gameId}`]: serverTimestamp(),
           });
         });
 
         return { success: true };
       } catch (error) {
         if (error instanceof LadderReportBlockedError) {
-          return { success: false, reason: "match_decided" };
+          return {
+            success: false,
+            reason:
+              error.message === "frozen" || error.message === "results_closed"
+                ? error.message
+                : "match_decided",
+          };
         }
         const message = error instanceof Error ? error.message : "";
         const alreadyReported =
@@ -1432,15 +2359,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
           if (!(match.participants ?? []).includes(userId)) {
             return { success: false, reason: "not_participant" } as const;
           }
-          // Only a match that has not been played can be cancelled — a match
-          // with a reported game runs to completion, expiry or a dispute.
-          const cancellable =
-            (match.matchStatus === LADDER_MATCH_STATUS.POSTED ||
-              match.matchStatus === LADDER_MATCH_STATUS.ACCEPTED) &&
-            !(match.games ?? []).some(
-              (game) => !!game.result || (game.approvalStatus ?? "") !== "",
-            );
-          if (!cancellable) {
+          if (
+            getLadderMatchCancelAction(match, userId) !==
+            LADDER_MATCH_CANCEL_ACTION.CANCEL
+          ) {
             return { success: false, reason: "not_cancellable" } as const;
           }
 
@@ -1454,6 +2376,361 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         });
       } catch (error) {
         console.error("Error cancelling ladder match:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const requestLadderMatchCancellation = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+    }): Promise<LadderMatchCancellationOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists())
+            return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (
+            getLadderMatchCancelAction(match, userId) !==
+            LADDER_MATCH_CANCEL_ACTION.REQUEST
+          ) {
+            return { success: false, reason: "not_cancellable" } as const;
+          }
+          transaction.update(matchRef, {
+            cancellationRequest: {
+              requestedBy: userId,
+              requestedAt: new Date(),
+            },
+          });
+          return {
+            success: true,
+            notifyUserIds: getOpponentSideIds(match, userId),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error requesting ladder match cancellation:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const respondToLadderMatchCancellation = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+      accept,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+      accept: boolean;
+    }): Promise<LadderMatchCancellationOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists())
+            return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (
+            getLadderMatchCancelAction(match, userId) !==
+            LADDER_MATCH_CANCEL_ACTION.RESPOND
+          ) {
+            return { success: false, reason: "not_cancellable" } as const;
+          }
+          const requestedBy = match.cancellationRequest?.requestedBy ?? "";
+          transaction.update(matchRef, {
+            cancellationRequest: null,
+            ...(accept
+              ? {
+                  matchStatus: LADDER_MATCH_STATUS.CANCELLED,
+                  cancelledAt: new Date(),
+                  cancelledReason: "Cancelled by agreement",
+                }
+              : {}),
+          });
+          return {
+            success: true,
+            notifyUserIds: requestedBy
+              ? getSameSideIds(match, requestedBy)
+              : [],
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error responding to ladder match cancellation:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const fetchLadderMatchDeadline = useCallback(
+    async (
+      ladderId: string,
+      match: Pick<LadderMatch, "playoffTieId">,
+    ): Promise<Date | null> => {
+      try {
+        if (match.playoffTieId) {
+          const tieSnap = await getDoc(
+            doc(
+              db,
+              LADDERS_COLLECTION,
+              ladderId,
+              LADDER_PLAYOFF_TIES_COLLECTION,
+              match.playoffTieId,
+            ),
+          );
+          return toMoment(tieSnap.data()?.deadlineAt)?.toDate() ?? null;
+        }
+        const ladderSnap = await getDoc(doc(db, LADDERS_COLLECTION, ladderId));
+        return ladderSnap.exists()
+          ? getLadderPostingDeadline(ladderSnap.data() as Ladder)
+          : null;
+      } catch (error) {
+        console.error("Error fetching ladder match deadline:", error);
+        return null;
+      }
+    },
+    [],
+  );
+
+  const requestLadderMatchReschedule = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+      matchDate,
+      matchTime,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+      matchDate: string;
+      matchTime: MatchTime;
+    }): Promise<LadderMatchChangeOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchSnap = await getDoc(
+        doc(
+          db,
+          LADDERS_COLLECTION,
+          ladderId,
+          LADDER_MATCHES_COLLECTION,
+          matchId,
+        ),
+      ).catch(() => null);
+      const deadline = matchSnap?.exists()
+        ? await fetchLadderMatchDeadline(
+            ladderId,
+            matchSnap.data() as LadderMatch,
+          )
+        : null;
+      const invalid = validateLadderMatchReschedule({
+        matchDate,
+        matchTime,
+        nowMs: Date.now(),
+        deadlineMs: deadline?.getTime() ?? null,
+      });
+      if (invalid) return { success: false, reason: "invalid_time" };
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists())
+            return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (
+            getLadderMatchRescheduleAction(match, userId) !==
+            LADDER_MATCH_CANCEL_ACTION.REQUEST
+          ) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          transaction.update(matchRef, {
+            rescheduleRequest: {
+              requestedBy: userId,
+              requestedAt: new Date(),
+              matchDate,
+              matchTime,
+            },
+          });
+          return {
+            success: true,
+            notifyUserIds: getOpponentSideIds(match, userId),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error requesting ladder match reschedule:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [fetchLadderMatchDeadline],
+  );
+
+  const respondToLadderMatchReschedule = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+      accept,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+      accept: boolean;
+    }): Promise<LadderMatchChangeOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists())
+            return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          const request = match.rescheduleRequest;
+          if (
+            !request ||
+            getLadderMatchRescheduleAction(match, userId) !==
+              LADDER_MATCH_CANCEL_ACTION.RESPOND
+          ) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          if (
+            accept &&
+            validateLadderMatchReschedule({
+              matchDate: request.matchDate,
+              matchTime: request.matchTime,
+              nowMs: Date.now(),
+            })
+          ) {
+            transaction.update(matchRef, { rescheduleRequest: null });
+            return { success: false, reason: "invalid_time" } as const;
+          }
+          transaction.update(matchRef, {
+            rescheduleRequest: null,
+            ...(accept
+              ? {
+                  matchDate: request.matchDate,
+                  matchTime: request.matchTime,
+                  checkIn: deleteField(),
+                }
+              : {}),
+          });
+          return {
+            success: true,
+            notifyUserIds: getSameSideIds(match, request.requestedBy),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error responding to ladder match reschedule:", error);
+        return { success: false, reason: "error" };
+      }
+    },
+    [],
+  );
+
+  const extendLadderMatch = useCallback(
+    async ({
+      ladderId,
+      matchId,
+      userId,
+    }: {
+      ladderId: string;
+      matchId: string;
+      userId: string;
+    }): Promise<LadderMatchChangeOutcome> => {
+      if (!ladderId || !matchId || !userId) {
+        return { success: false, reason: "error" };
+      }
+      const matchRef = doc(
+        db,
+        LADDERS_COLLECTION,
+        ladderId,
+        LADDER_MATCHES_COLLECTION,
+        matchId,
+      );
+      try {
+        return await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(matchRef);
+          if (!snap.exists())
+            return { success: false, reason: "error" } as const;
+          const match = snap.data() as LadderMatch;
+          if (!canExtendLadderMatch(match, userId)) {
+            return { success: false, reason: "not_allowed" } as const;
+          }
+          const deadlineSnap = match.playoffTieId
+            ? await transaction.get(
+                doc(
+                  db,
+                  LADDERS_COLLECTION,
+                  ladderId,
+                  LADDER_PLAYOFF_TIES_COLLECTION,
+                  match.playoffTieId,
+                ),
+              )
+            : await transaction.get(doc(db, LADDERS_COLLECTION, ladderId));
+          const capAt = match.playoffTieId
+            ? (toMoment(deadlineSnap?.data()?.deadlineAt)?.toDate() ?? null)
+            : getLadderResultsDeadline(deadlineSnap?.data() as Ladder);
+          const extension = buildLadderMatchExtension({
+            userId,
+            now: new Date(),
+            capAt,
+          });
+          transaction.update(matchRef, { extension });
+          return {
+            success: true,
+            expiresAt: extension.expiresAt,
+            notifyUserIds: (match.participants ?? []).filter(
+              (id) => id !== userId,
+            ),
+          } as const;
+        });
+      } catch (error) {
+        console.error("Error extending ladder match:", error);
         return { success: false, reason: "error" };
       }
     },
@@ -1489,43 +2766,22 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
       try {
         let fullyApproved = false;
         let matchCompleted = false;
+        const ladderRef = doc(db, LADDERS_COLLECTION, ladderId);
 
         await runTransaction(db, async (transaction) => {
-          // ── Reads (Firestore requires every read before any write) ──
-          const matchSnap = await transaction.get(matchRef);
+          const [matchSnap, ladderSnap] = await Promise.all([
+            transaction.get(matchRef),
+            transaction.get(ladderRef),
+          ]);
           if (!matchSnap.exists()) {
             throw new Error("Ladder match not found");
           }
 
           const match = matchSnap.data() as LadderMatch;
-          const games = match.games ?? [];
-          const index = games.findIndex((g) => g.gameId === gameId);
-          if (index === -1) {
+          const game = (match.games ?? []).find((g) => g.gameId === gameId);
+          if (!game) {
             throw new Error("Game not found in ladder match");
           }
-
-          const game = games[index];
-
-          // Already scored, or this user already approved → nothing to do.
-          if (game.approvalStatus === APPROVED_GAME) {
-            throw new ApproveLadderGameError("already been processed");
-          }
-          if ((game.approvers ?? []).some((a) => a.userId === userId)) {
-            throw new ApproveLadderGameError("already been processed");
-          }
-          if (!canApproveReportedGame(game, userId)) {
-            throw new ApproveLadderGameNotOpponentError(
-              "only the opposing side can approve a reported game",
-            );
-          }
-
-          const updatedGame: Game = {
-            ...game,
-            numberOfApprovals: (game.numberOfApprovals ?? 0) + 1,
-            approvers: [...(game.approvers ?? []), approver],
-          };
-          fullyApproved =
-            updatedGame.numberOfApprovals >= LADDER_SINGLES_APPROVAL_LIMIT;
 
           const playerUserIds = [
             game.team1.player1?.userId,
@@ -1533,16 +2789,10 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
             game.team2.player1?.userId,
             game.team2.player2?.userId,
           ].filter((id): id is string => Boolean(id));
-
           const matchTeams = match.teams ?? [];
-          const isDoubles = matchTeams.length >= 2;
 
-          // Only read participant/global-user docs when we're about to score.
-          let participants: ScoreboardProfile[] = [];
-          let users: UserProfile[] = [];
-          let ladderTeams: TeamStats[] = [];
-          if (fullyApproved) {
-            const participantSnaps = await Promise.all(
+          const [participantSnaps, userSnaps, teamSnaps] = await Promise.all([
+            Promise.all(
               playerUserIds.map((uid) =>
                 transaction.get(
                   doc(
@@ -1554,153 +2804,95 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
                   ),
                 ),
               ),
-            );
-            participants = participantSnaps
-              .filter((snap) => snap.exists())
-              .map((snap) => snap.data() as ScoreboardProfile);
-
-            const userSnaps = await Promise.all(
+            ),
+            Promise.all(
               playerUserIds.map((uid) =>
                 transaction.get(doc(db, "users", uid)),
               ),
-            );
-            users = userSnaps
-              .filter((snap) => snap.exists())
-              .map((snap) => snap.data() as UserProfile);
-
-            if (isDoubles) {
-              const teamSnaps = await Promise.all(
-                matchTeams.map((t) =>
-                  transaction.get(
-                    doc(
-                      db,
-                      LADDERS_COLLECTION,
-                      ladderId,
-                      LADDER_TEAMS_COLLECTION,
-                      t.teamKey,
-                    ),
-                  ),
-                ),
-              );
-              ladderTeams = teamSnaps
-                .filter((snap) => snap.exists())
-                .map((snap) => snap.data() as TeamStats);
-            }
-          }
-
-          // ── Writes ──
-          if (fullyApproved) {
-            updatedGame.approvalStatus = APPROVED_GAME;
-          }
-
-          const nextGames = [...games];
-          nextGames[index] = updatedGame;
-
-          const matchUpdate: Record<string, unknown> = {
-            games: nextGames,
-            lastUpdated: new Date(),
-          };
-
-          if (fullyApproved) {
-            // Recent form is pushed once, when the match is first decided.
-            const alreadyCompleted =
-              match.matchStatus === LADDER_MATCH_STATUS.COMPLETED;
-            const outcome = resolveLadderMatchOutcome(
-              nextGames,
-              match.bestOf ?? nextGames.length,
-            );
-            // Hold completion while any game is disputed — a contested match is
-            // not settled until every dispute resolves.
-            const matchDecided =
-              !alreadyCompleted &&
-              outcome.decided &&
-              !!outcome.winnerTeam &&
-              !hasOpenLadderDispute(nextGames);
-
-            const persistUsers = () =>
-              users.forEach((u) => {
-                if (!u.userId) return;
-                transaction.update(doc(db, "users", u.userId), {
-                  profileDetail: u.profileDetail,
-                });
-              });
-
-            if (isDoubles) {
-              // Doubles scoring is a pure helper (team CP + player global XP and
-              // medals); the transaction just persists what it returns.
-              const { scoringParticipants, teams, matchCompleted: done } =
-                await scoreDoublesLadderGame({
-                  game: updatedGame,
-                  participants,
-                  users,
-                  ladderTeams,
-                  matchDecided,
-                  matchWinnerSide: outcome.winnerTeam,
-                });
-              if (done) {
-                matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
-                matchCompleted = true;
-              }
-
-              scoringParticipants.forEach((p) => {
-                if (!p.userId) return;
-                transaction.set(
-                  doc(
-                    db,
-                    LADDERS_COLLECTION,
-                    ladderId,
-                    LADDER_PARTICIPANTS_COLLECTION,
-                    p.userId,
-                  ),
-                  p,
-                );
-              });
-              persistUsers();
-              teams.forEach((team) => {
-                transaction.set(
+            ),
+            Promise.all(
+              (matchTeams.length >= 2 ? matchTeams : []).map((t) =>
+                transaction.get(
                   doc(
                     db,
                     LADDERS_COLLECTION,
                     ladderId,
                     LADDER_TEAMS_COLLECTION,
-                    team.teamKey,
+                    t.teamKey,
                   ),
-                  team,
-                );
-              });
-            } else {
-              // Singles scoring is a pure helper (per-player ladder CP + global
-              // XP); the transaction just persists what it mutates.
-              const { matchCompleted: done } = scoreSinglesLadderGame({
-                game: updatedGame,
-                participants,
-                users,
-                matchDecided,
-                matchWinnerSide: outcome.winnerTeam,
-              });
-              if (done) {
-                matchUpdate.matchStatus = LADDER_MATCH_STATUS.COMPLETED;
-                matchCompleted = true;
-              }
+                ),
+              ),
+            ),
+          ]);
 
-              participants.forEach((p) => {
-                if (!p.userId) return;
-                transaction.set(
-                  doc(
-                    db,
-                    LADDERS_COLLECTION,
-                    ladderId,
-                    LADDER_PARTICIPANTS_COLLECTION,
-                    p.userId,
-                  ),
-                  p,
-                );
-              });
-              persistUsers();
+          const plan = await planLadderGameApproval({
+            match,
+            gameId,
+            actor: { kind: "user", userId, username: approver.username },
+            ladderStatus: ladderSnap.data()?.status,
+            participants: participantSnaps
+              .filter((snap) => snap.exists())
+              .map((snap) => snap.data() as ScoreboardProfile),
+            users: userSnaps
+              .filter((snap) => snap.exists())
+              .map((snap) => snap.data() as UserProfile),
+            ladderTeams: teamSnaps
+              .filter((snap) => snap.exists())
+              .map((snap) => snap.data() as TeamStats),
+            now: new Date(),
+          });
+
+          if (!plan.ok) {
+            if (plan.reason === "not_opponent") {
+              throw new ApproveLadderGameNotOpponentError(plan.reason);
             }
+            if (plan.reason === "ladder_frozen") {
+              throw new ApproveLadderGameFrozenError(plan.reason);
+            }
+            if (plan.reason === "game_not_found") {
+              throw new Error("Game not found in ladder match");
+            }
+            throw new ApproveLadderGameError(plan.reason);
           }
 
-          transaction.update(matchRef, matchUpdate);
+          fullyApproved = plan.fullyApproved;
+          matchCompleted = plan.matchCompleted;
+
+          plan.participants.forEach((p) => {
+            if (!p.userId) return;
+            transaction.set(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_PARTICIPANTS_COLLECTION,
+                p.userId,
+              ),
+              p,
+            );
+          });
+          plan.users.forEach((u) => {
+            if (!u.userId || !plan.fullyApproved) return;
+            transaction.update(doc(db, "users", u.userId), {
+              profileDetail: u.profileDetail,
+            });
+          });
+          plan.teams.forEach((team) => {
+            transaction.set(
+              doc(
+                db,
+                LADDERS_COLLECTION,
+                ladderId,
+                LADDER_TEAMS_COLLECTION,
+                team.teamKey,
+              ),
+              team,
+            );
+          });
+          transaction.update(
+            matchRef,
+            plan.matchUpdate as Record<string, unknown>,
+          );
         });
 
         return { success: true, fullyApproved, matchCompleted };
@@ -1710,6 +2902,9 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         }
         if (error instanceof ApproveLadderGameNotOpponentError) {
           return { success: false, reason: "not_opponent" };
+        }
+        if (error instanceof ApproveLadderGameFrozenError) {
+          return { success: false, reason: "frozen" };
         }
         console.error("Error approving ladder game:", error);
         return { success: false, reason: "error" };
@@ -1783,12 +2978,14 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         subscribeToTeam,
         updateTeamProfilePic,
         updateTeamDetails,
-        isTeamActivelyPlaying,
+        getTeamLadderActivity,
         disbandTeam,
+        leaveLadder,
         acceptTeamInvite,
         declineTeamInvite,
         fetchTeam,
         fetchUserTeams,
+        fetchLadderTeamMemberIds,
         fetchLadderMemberIds,
         joinLadderAsTeam,
         createLadderMatch,
@@ -1802,8 +2999,20 @@ const LadderProvider = ({ children }: { children: ReactNode }) => {
         checkInLadderMatchHandshake,
         updateLadderGame,
         cancelLadderMatch,
+        requestLadderMatchCancellation,
+        respondToLadderMatchCancellation,
+        fetchLadderMatchDeadline,
+        requestLadderMatchReschedule,
+        respondToLadderMatchReschedule,
+        extendLadderMatch,
         approveLadderGame,
-        addCourtToLadder,
+        subscribeToLadderHomeCourt,
+        subscribeToLadderPlayoffTies,
+        subscribeToPlayoffMatches,
+        arrangePlayoffMatch,
+        respondToPlayoffMatch,
+        offerPlayoffMatchHere,
+        setLadderHomeCourt,
       }}
     >
       {children}

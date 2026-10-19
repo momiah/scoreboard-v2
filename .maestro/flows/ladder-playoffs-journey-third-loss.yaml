@@ -1,0 +1,28 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-finish-ladder.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      SEED: "third-leg2-loss"
+      TIE: "r4-s1"
+      MATCH: "r4-s1-leg2"
+      PLACED: ".*you have placed 4th in Maestro Playoffs 256 and been awarded 1,024 CP\\..*"
+      OPPONENT: "opponent-placed-3rd"
+      COMPANION_WINNER: "companion-winner-placed-1st"
+      COMPANION_LOSER: "companion-loser-placed-2nd"
+- runFlow:
+    file: ../utilities/playoffs/journey-finish-ladder.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      SEED: "third-leg2-loss"
+      TIE: "r4-s1"
+      MATCH: "r4-s1-leg2"
+      PLACED: ".*you have placed 4th in Maestro Playoffs 256 \\(Paid\\) and been awarded £409 and 1,024 CP\\..*"
+      OPPONENT: "opponent-placed-3rd"
+      COMPANION_WINNER: "companion-winner-placed-1st"
+      COMPANION_LOSER: "companion-loser-placed-2nd"

@@ -17,6 +17,7 @@ const DatePicker = ({
   labelStyle,
   playoffStartDate,
   maxDate,
+  rangeMessage,
 }) => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -150,11 +151,12 @@ const DatePicker = ({
                 color={"#00A2FF"}
               />
               <DisclaimerText>
-                {playoffStartDate
-                  ? `Please select a date before ${formatDateForDatePicker(
-                      playoffStartDate,
-                    )}.`
-                  : "Please select a date within the next 3 months."}
+                {rangeMessage ??
+                  (playoffStartDate
+                    ? `Please select a date before ${formatDateForDatePicker(
+                        playoffStartDate,
+                      )}.`
+                    : "Please select a date within the next 3 months.")}
               </DisclaimerText>
             </View>
 

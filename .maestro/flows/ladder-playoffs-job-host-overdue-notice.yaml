@@ -1,0 +1,24 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "matchOneOverdue"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*hasn't arranged match 1, so you can now arrange your home match without waiting.*"
+    timeout: 1500000
+- tapOn: ".*hasn't arranged match 1, so you can now arrange your home match without waiting.*"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 30000
+- assertVisible:
+    id: "playoff-match-leg2-arrange"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-opponent-host-overdue"

@@ -30,7 +30,9 @@ export const useLadderJoin = (
   const userId = currentUser?.userId;
 
   const [remoteParticipant, setRemoteParticipant] = useState(false);
-  const [membershipChecking, setMembershipChecking] = useState(false);
+  const [membershipChecking, setMembershipChecking] = useState(
+    !!ladderId && !!userId,
+  );
 
   useEffect(() => {
     let active = true;

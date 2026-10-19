@@ -1,0 +1,46 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-seed-chats-legacy"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 60000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible: ".*Chats.*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Maestro Chat League.*"
+    timeout: 15000
+- assertNotVisible: ".*Unknown League.*"
+- tapOn:
+    id: "chats-row-maestro-chat-tournament"
+- extendedWaitUntil:
+    visible:
+      id: "chat-room-input"
+    timeout: 20000
+- assertVisible: ".*Maestro Chat Tournament.*"
+- tapOn:
+    id: "tab-chats"
+- runFlow:
+    when:
+      notVisible:
+        id: "chats-row-maestro-chat-league"
+    commands:
+      - tapOn:
+          id: "tab-chats"
+- extendedWaitUntil:
+    visible:
+      id: "chats-row-maestro-chat-league"
+    timeout: 15000
+- tapOn:
+    id: "chats-row-maestro-chat-league"
+- extendedWaitUntil:
+    visible:
+      id: "chat-room-input"
+    timeout: 20000
+- assertVisible: ".*Maestro Chat League.*"
