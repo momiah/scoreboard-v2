@@ -24,6 +24,10 @@ import {
 } from "@shared";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DAYS_UNTIL_PLAYOFFS = 50;
+const daysFromNow = (days) => new Date(Date.now() + days * DAY_MS);
+
 export const MAESTRO_LADDER_ID = "maestro-reject-flow-ladder";
 export const MAESTRO_MATCH_ID = "maestro-reject-flow-match";
 export const MAESTRO_OPPONENT_ID = "maestro-reject-flow-opponent";
@@ -145,8 +149,8 @@ export const seedRejectGameFlow = async ({
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
     seasonEndsAt: new Date(),
-    playoffStartsAt: new Date(),
-    playoffEndsAt: new Date(),
+    playoffStartsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS),
+    playoffEndsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS + 10),
     entryFee: 0,
     currencyType: "GBP",
     minRank: 0,
@@ -160,44 +164,63 @@ export const seedRejectGameFlow = async ({
   });
 
   await setDoc(
-    doc(db, "ladders", MAESTRO_LADDER_ID, "ladderParticipants", testUser.userId),
+    doc(
+      db,
+      "ladders",
+      MAESTRO_LADDER_ID,
+      "ladderParticipants",
+      testUser.userId,
+    ),
     buildLadderParticipant(testUser),
   );
   await setDoc(
-    doc(db, "ladders", MAESTRO_LADDER_ID, "ladderParticipants", opponent.userId),
+    doc(
+      db,
+      "ladders",
+      MAESTRO_LADDER_ID,
+      "ladderParticipants",
+      opponent.userId,
+    ),
     buildLadderParticipant(opponent),
   );
 
   const now = new Date();
-  await setDoc(doc(db, "ladders", MAESTRO_LADDER_ID, "ladderMatches", MAESTRO_MATCH_ID), {
-    ladderMatchId: MAESTRO_MATCH_ID,
-    court: {
-      courtId: "maestro-test-court",
-      courtName: "Maestro Test Court",
-      location: { city: "Test", country: "United Kingdom", countryCode: "GB" },
+  await setDoc(
+    doc(db, "ladders", MAESTRO_LADDER_ID, "ladderMatches", MAESTRO_MATCH_ID),
+    {
+      ladderMatchId: MAESTRO_MATCH_ID,
+      court: {
+        courtId: "maestro-test-court",
+        courtName: "Maestro Test Court",
+        location: {
+          city: "Test",
+          country: "United Kingdom",
+          countryCode: "GB",
+        },
+      },
+      bestOf: BEST_OF,
+      matchDate: today,
+      matchTime: { start: "18:00" },
+      courtFee: 0,
+      currencyType: "GBP",
+      participants: [testUser.userId, opponent.userId],
+      games: [reportedGame, ...shells.slice(1)],
+      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+      shuttleType: "Feather",
+      createdBy: opponent.userId,
+      createdAt: now,
+      acceptedBy: testUser.userId,
+      acceptedAt: now,
+      checkIn: {
+        checkedInBy: [testUser.userId, opponent.userId],
+        checkedInAt: { [testUser.userId]: now, [opponent.userId]: now },
+        completed: true,
+        completedAt: now,
+      },
+      ladderType: LADDER_TYPE.SINGLES,
+      lastUpdated: now,
     },
-    bestOf: BEST_OF,
-    matchDate: today,
-    matchTime: { start: "18:00" },
-    courtFee: 0,
-    currencyType: "GBP",
-    participants: [testUser.userId, opponent.userId],
-    games: [reportedGame, ...shells.slice(1)],
-    matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
-    shuttleType: "Feather",
-    createdBy: opponent.userId,
-    createdAt: now,
-    acceptedBy: testUser.userId,
-    acceptedAt: now,
-    checkIn: {
-      checkedInBy: [testUser.userId, opponent.userId],
-      checkedInAt: { [testUser.userId]: now, [opponent.userId]: now },
-      completed: true,
-      completedAt: now,
-    },
-    ladderType: LADDER_TYPE.SINGLES,
-    lastUpdated: now,
-  });
+  );
 
   const staleDisputes = await getDocs(
     query(collection(db, DISPUTES_COLLECTION), where("gameId", "==", gameId)),

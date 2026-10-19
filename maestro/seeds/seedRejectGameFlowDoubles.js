@@ -27,6 +27,10 @@ import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DAYS_UNTIL_PLAYOFFS = 50;
+const daysFromNow = (days) => new Date(Date.now() + days * DAY_MS);
+
 export const MAESTRO_D_LADDER_ID = "maestro-reject-flow-doubles-ladder";
 export const MAESTRO_D_MATCH_ID = "maestro-reject-flow-doubles-match";
 export const MAESTRO_D_PARTNER_ID = "maestrodpartner";
@@ -158,8 +162,8 @@ export const seedDoublesRejectGameFlow = async ({
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
     seasonEndsAt: new Date(),
-    playoffStartsAt: new Date(),
-    playoffEndsAt: new Date(),
+    playoffStartsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS),
+    playoffEndsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS + 10),
     entryFee: 0,
     currencyType: "GBP",
     minRank: 0,
