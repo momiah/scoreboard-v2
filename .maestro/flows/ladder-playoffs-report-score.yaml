@@ -15,6 +15,7 @@ onFlowStart:
     element:
       id: "ladder-game-r1-s1-leg2-g2"
     direction: DOWN
+- waitForAnimationToEnd
 - tapOn:
     id: "ladder-game-r1-s1-leg2-g2"
 - tapOn:

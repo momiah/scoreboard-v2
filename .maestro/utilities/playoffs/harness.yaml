@@ -13,13 +13,20 @@ appId: com.courtchamp
                 start: 50%, 25%
                 end: 50%, 85%
                 duration: 150
-      - scrollUntilVisible:
-          element:
-            id: ${BUTTON}
-          direction: DOWN
-          timeout: 60000
-          speed: 60
-          centerElement: true
+      - repeat:
+          while:
+            notVisible:
+              id: ${BUTTON}
+          times: 40
+          commands:
+            - swipe:
+                start: 50%, 70%
+                end: 50%, 30%
+                duration: 400
+      - swipe:
+          start: 50%, 60%
+          end: 50%, 50%
+          duration: 300
       - waitForAnimationToEnd
 - runFlow:
     when:
@@ -33,6 +40,7 @@ appId: com.courtchamp
           timeout: 60000
           speed: 60
       - waitForAnimationToEnd
+- waitForAnimationToEnd
 - tapOn:
     id: ${BUTTON}
 - extendedWaitUntil:

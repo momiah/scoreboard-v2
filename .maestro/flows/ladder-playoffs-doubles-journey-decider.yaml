@@ -28,8 +28,12 @@ onFlowStart:
       NOTIFICATION: ".*You have a deciding game left to play as your matches in the Round of 16 of Maestro Playoffs Doubles 256 resulted in a draw!.*"
       TIE: "r1-s1"
 - extendedWaitUntil:
-    visible:
+    visible: "Level on aggregate. One deciding game to play."
+    timeout: 60000
+- scrollUntilVisible:
+    element:
       id: "playoff-match-decider"
+    direction: DOWN
     timeout: 60000
 - assertVisible: "Deciding game"
 - runFlow:
