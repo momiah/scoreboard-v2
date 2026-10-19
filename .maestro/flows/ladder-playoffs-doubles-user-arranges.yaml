@@ -26,6 +26,13 @@ onFlowStart:
 - assertNotVisible:
     id: "playoff-match-confirm-accept"
 - runFlow: ../utilities/playoffs/back-to-lobby.yaml
+- scrollUntilVisible:
+    element:
+      id: "playoff-match-leg2-arrange"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     id: "playoff-match-leg2-arrange"
 - extendedWaitUntil:
