@@ -357,6 +357,33 @@ const findUserOpenTie = (ties, userId) =>
     )
     .sort((a, b) => b.round - a.round)[0];
 
+const findUserWonTie = (ties, userId) =>
+  ties
+    .filter(
+      (tie) =>
+        tie.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED &&
+        tie[sideKey(userSideOf(tie, userId))]?.playerIds.includes(userId) &&
+        tie.winner === userSideOf(tie, userId),
+    )
+    .sort((a, b) => b.round - a.round)[0];
+
+const findUserFinishedTie = (ties, userId) =>
+  ties
+    .filter(
+      (tie) =>
+        tie.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED &&
+        userSideOf(tie, userId),
+    )
+    .sort((a, b) => b.round - a.round)[0];
+
+const findCompanionReferenceTie = (ties, userId) => {
+  const open = findUserOpenTie(ties, userId);
+  const finished = findUserFinishedTie(ties, userId);
+  return finished && open && open.round === finished.round + 1
+    ? finished
+    : (open ?? finished);
+};
+
 const findUserTie = (ties, userId) =>
   findUserOpenTie(ties, userId) ??
   ties
@@ -379,8 +406,10 @@ export const mockFinishCompanionTie = async ({
   winner = "team1",
 }) => {
   const ties = await loadTies(ladderId);
-  const userTie = findUserTie(ties, testUser.userId);
-  const tie = companionTie(ties, userTie);
+  const tie = companionTie(
+    ties,
+    findCompanionReferenceTie(ties, testUser.userId),
+  );
   if (!tie || tie.status !== LADDER_PLAYOFF_TIE_STATUS.SCHEDULED) {
     throw new Error("mockFinishCompanionTie: no open companion tie");
   }
@@ -468,10 +497,17 @@ export const assertPlayoffNotification = async ({
   poll(async () => {
     const ties = await loadTies(ladderId);
     const userTie = findUserTie(ties, testUser.userId);
-    const tie = which === "companion" ? companionTie(ties, userTie) : userTie;
+    const tie =
+      which === "companion"
+        ? companionTie(ties, findCompanionReferenceTie(ties, testUser.userId))
+        : which === "won"
+          ? findUserWonTie(ties, testUser.userId)
+          : userTie;
     const recipients = tieSidePlayerIds(tie, who, testUser.userId);
     if (!recipients.length)
-      throw new Error("assertPlayoffNotification: no recipients");
+      throw new Error(
+        `assertPlayoffNotification: no recipients (${tie?.tieId}, ${who})`,
+      );
     const found = await Promise.all(
       recipients.map(async (recipientId) => {
         const snap = await getDocs(

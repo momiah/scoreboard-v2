@@ -29,6 +29,10 @@ onFlowStart:
     file: ../utilities/playoffs/harness.yaml
     env:
       BUTTON: "maestro-assert-po-companion-winner-through"
+- runFlow: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*Your Quarter-Final against .* is ready! You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to complete both matches.*"
+    timeout: 30000
 - tapOn: ".*Your Quarter-Final against .* is ready! You have ${MAESTRO_PLAYOFF_TIE_DAYS} days to complete both matches.*"
 - extendedWaitUntil:
     visible:
