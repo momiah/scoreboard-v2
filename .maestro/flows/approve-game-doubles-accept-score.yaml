@@ -39,7 +39,7 @@ onFlowStart:
     timeout: 15000
 - assertVisible: ".*Maestro Aces.*Wins.*0.*PD.*-6.*CP.*0.*"
 - assertNotVisible: ".*Maestro H & Maestro I.*"
-- assertNotVisible: ".*Maestro G & Mohsin M.*"
+- assertNotVisible: ".*Maestro G & (Mohsin M|Testforapple T).*"
 
 - tapOn: ".*Maestro Aces.*"
 - extendedWaitUntil:

@@ -24,7 +24,7 @@ onFlowStart:
 - assertVisible: ".*Maestro Bravos.*"
 - assertVisible: ".*Maestro Aces.*"
 - assertNotVisible: ".*Maestro H & Maestro I.*"
-- assertNotVisible: ".*Maestro G & Mohsin M.*"
+- assertNotVisible: ".*Maestro G & (Mohsin M|Testforapple T).*"
 - assertVisible:
     id: "checkin-team-maestroagdopp1-maestroagdopp2"
 - assertVisible:

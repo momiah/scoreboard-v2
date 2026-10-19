@@ -37,9 +37,9 @@ onFlowStart:
 - extendedWaitUntil:
     visible: ".*Maestro R.*Wins.*1.*PD.*6.*CP.*20.*"
     timeout: 15000
-- assertVisible: ".*Mohsin M.*Wins.*0.*PD.*-6.*CP.*0.*"
+- assertVisible: ".*(Mohsin M|Testforapple T).*Wins.*0.*PD.*-6.*CP.*0.*"
 
-- tapOn: ".*Mohsin M.*"
+- tapOn: ".*(Mohsin M|Testforapple T).*"
 - extendedWaitUntil:
     visible:
       id: "player-details-screen"
