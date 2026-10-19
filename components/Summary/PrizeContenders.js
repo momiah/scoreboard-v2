@@ -13,12 +13,13 @@ const PrizeContenders = ({
   item: player,
   index,
   isDataLoading = false,
-  distribution,
+  distribution = [],
   prizePool,
   hasPrizesDistributed,
   competitionType,
   cashPool,
   currencyType,
+  placePrizes = /** @type {{ cash: number; cp: number }[]} */ ([]),
 }) => {
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -33,12 +34,20 @@ const PrizeContenders = ({
         : medals;
   const prizeSource = prizesType[index] || prizesType[0];
 
-  const prizeXP =
-    distribution && prizePool ? Math.floor(prizePool * distribution[index]) : 0;
+  const placePrize = placePrizes[index];
+  const prizeXP = placePrize
+    ? placePrize.cp
+    : distribution[index] != null && prizePool
+      ? Math.floor(prizePool * distribution[index])
+      : 0;
   const prizeCash =
-    distribution && cashPool != null
-      ? Math.floor(cashPool * distribution[index])
-      : null;
+    cashPool == null
+      ? null
+      : placePrize
+        ? placePrize.cash
+        : distribution[index] != null
+          ? Math.floor(cashPool * distribution[index])
+          : null;
 
   useEffect(() => {
     if (!isDataLoading && imageLoaded) {

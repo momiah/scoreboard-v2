@@ -32,17 +32,20 @@ import { useLadderJoin } from "../../hooks/useLadderJoin";
 import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
-import { LADDER_DISTRIBUTION } from "../../helpers/ladderPrizeDistribution";
+import { getLadderTopFourPrizes } from "../../helpers/ladderPlayoffPrizes";
 import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
 
 const TOP_CONTENDER_COUNT = 4;
 const CAROUSEL_PARTICIPANT_LIMIT = 20;
 
-const PLACEHOLDER_CONTENDERS = Array.from({ length: TOP_CONTENDER_COUNT }, (_, index) => ({
-  userId: `placeholder-${index}`,
-  username: "",
-  numberOfWins: 0,
-})) as unknown as ScoreboardProfile[];
+const PLACEHOLDER_CONTENDERS = Array.from(
+  { length: TOP_CONTENDER_COUNT },
+  (_, index) => ({
+    userId: `placeholder-${index}`,
+    username: "",
+    numberOfWins: 0,
+  }),
+) as unknown as ScoreboardProfile[];
 
 const LADDER_TOOLTIP =
   "Court Points (CP) — and cash on paid ladders — are shared across the top finishers.";
@@ -161,6 +164,8 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     [ladder.entryFee, ladder.participantCount],
   );
 
+  const topFourPrizes = useMemo(() => getLadderTopFourPrizes(ladder), [ladder]);
+
   const hasPrizesDistributed =
     ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
 
@@ -226,9 +231,7 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     const load = async () => {
       try {
         const teams = await fetchLadderTeams(ladderId);
-        const valid = teams.filter(
-          (t) => t.teamKey && Array.isArray(t.team),
-        );
+        const valid = teams.filter((t) => t.teamKey && Array.isArray(t.team));
         const ranked = sortLadderTeamsByPlacement(valid);
         const idx = ranked.findIndex((t) => teamMemberIds(t).includes(uid));
         const userTeam =
@@ -298,20 +301,75 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
     membershipChecking;
 
   if (summaryLoading) {
-    return <LadderSummarySkeleton isPaid={isPaid} />;
+    return <LadderSummarySkeleton />;
   }
 
   return (
     <Container testID="ladder-summary">
-      {isPaid && (
-        <PrizePotCard>
-          <SectionTitle>Total Prize Pool</SectionTitle>
+      <PrizePotCard>
+        <SectionTitle>Total Prize Pool</SectionTitle>
+        {isPaid ? (
           <PrizePotValue testID="ladder-cash-pot">
             {formatCurrency(prizePool.cash, ladder.currencyType)}
           </PrizePotValue>
-        </PrizePotCard>
-      )}
+        ) : (
+          <PrizePotValue testID="ladder-cp-pot">
+            {prizePool.xp.toLocaleString()} CP
+          </PrizePotValue>
+        )}
+      </PrizePotCard>
+
       <LadderStatsRow ladder={ladder} />
+
+      <PrizeDistribution
+        prizePool={prizePool.xp}
+        cashPool={isPaid ? prizePool.cash : undefined}
+        currencyType={ladder.currencyType}
+        placePrizes={topFourPrizes}
+        competitionType={COMPETITION_TYPES.LADDER}
+        tooltipMessage={LADDER_TOOLTIP}
+        onViewFullDistribution={() => {}}
+      />
+
+      <SectionTitleRow>
+        {hasPrizesDistributed ? (
+          <>
+            <SectionTitle>Prize Winners</SectionTitle>
+            <Ionicons name="checkmark-circle" size={20} color="green" />
+          </>
+        ) : (
+          <>
+            <SectionTitle>Top Contenders</SectionTitle>
+            <Ionicons name="hourglass-outline" size={20} color="#FF9800" />
+          </>
+        )}
+      </SectionTitleRow>
+
+      <TableContainer>
+        {!isDataLoading && renderContenders.length === 0 ? (
+          <EmptyState>
+            <EmptyStateText>
+              Top contenders will appear here once players start winning games.
+            </EmptyStateText>
+          </EmptyState>
+        ) : (
+          renderContenders.map((player, index) => (
+            <View key={player.userId} testID={`ladder-top-contender-${index}`}>
+              <PrizeContenders
+                item={player}
+                index={index}
+                isDataLoading={isDataLoading}
+                placePrizes={topFourPrizes}
+                prizePool={prizePool.xp}
+                cashPool={isPaid ? prizePool.cash : undefined}
+                currencyType={ladder.currencyType}
+                hasPrizesDistributed={hasPrizesDistributed}
+                competitionType={COMPETITION_TYPES.LADDER}
+              />
+            </View>
+          ))
+        )}
+      </TableContainer>
 
       {isDoubles
         ? userTeamRow && (
@@ -352,56 +410,6 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
         isEntrant={isEntrant}
         confirmHomeCourt={confirmHomeCourt}
       />
-
-      <PrizeDistribution
-        prizePool={prizePool.xp}
-        cashPool={isPaid ? prizePool.cash : undefined}
-        currencyType={ladder.currencyType}
-        distribution={LADDER_DISTRIBUTION}
-        competitionType={COMPETITION_TYPES.LADDER}
-        tooltipMessage={LADDER_TOOLTIP}
-        onViewFullDistribution={() => {}}
-      />
-
-      <SectionTitleRow>
-        {hasPrizesDistributed ? (
-          <>
-            <SectionTitle>Prize Winners</SectionTitle>
-            <Ionicons name="checkmark-circle" size={20} color="green" />
-          </>
-        ) : (
-          <>
-            <SectionTitle>Top Contenders</SectionTitle>
-            <Ionicons name="hourglass-outline" size={20} color="#FF9800" />
-          </>
-        )}
-      </SectionTitleRow>
-
-      <TableContainer>
-        {!isDataLoading && renderContenders.length === 0 ? (
-          <EmptyState>
-            <EmptyStateText>
-              Top contenders will appear here once players start winning games.
-            </EmptyStateText>
-          </EmptyState>
-        ) : (
-          renderContenders.map((player, index) => (
-            <View key={player.userId} testID={`ladder-top-contender-${index}`}>
-              <PrizeContenders
-                item={player}
-                index={index}
-                isDataLoading={isDataLoading}
-                distribution={LADDER_DISTRIBUTION}
-                prizePool={prizePool.xp}
-                cashPool={isPaid ? prizePool.cash : undefined}
-                currencyType={ladder.currencyType}
-                hasPrizesDistributed={hasPrizesDistributed}
-                competitionType={COMPETITION_TYPES.LADDER}
-              />
-            </View>
-          ))
-        )}
-      </TableContainer>
 
       {!!ladder.description && (
         <DescriptionSection testID="ladder-description">
@@ -536,6 +544,7 @@ const PrizePotCard = styled.View({
   borderColor: "rgba(0, 162, 255, 0.35)",
   alignItems: "center",
   gap: 6,
+  marginBottom: 8,
 });
 
 const PrizePotValue = styled.Text({
@@ -606,7 +615,6 @@ const PositionSection = styled.View({
   gap: 10,
   marginBottom: 20,
 });
-
 
 const PositionCard = styled.View({
   marginHorizontal: -20,

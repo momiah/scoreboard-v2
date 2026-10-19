@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-ladder-playoffs-generated-256"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-ladder-playoffs-generated-256"
 - tapOn:
     id: "tab-competitions"
 - runFlow:
@@ -33,6 +31,7 @@ onFlowStart:
     element: "View all players"
     direction: DOWN
     timeout: 60000
+- waitForAnimationToEnd
 - tapOn: "View all players"
 - extendedWaitUntil:
     visible:

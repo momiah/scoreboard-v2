@@ -1,0 +1,15 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: ${BUTTON}
+- runFlow: open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 30000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-add-game-flow-match"
+    timeout: 20000

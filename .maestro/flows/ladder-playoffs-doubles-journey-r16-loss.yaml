@@ -1,0 +1,19 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-advance.yaml
+    env:
+      SUFFIX: "-doubles"
+      LADDER: "Maestro Playoffs Doubles 256"
+      SEED: "r16-leg2-loss"
+      TIE: "r1-s1"
+      CARD: "playoff-match-leg2"
+      MATCH: "r1-s1-leg2"
+      GAME: "g6"
+      NOTIFICATION: ".*knocked out in the Round of 16 of Maestro Playoffs Doubles 256\\..*"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-doubles-partner-knocked-out-r16"

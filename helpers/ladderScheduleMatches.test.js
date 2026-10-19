@@ -77,6 +77,22 @@ describe("getMyScheduleMatches", () => {
 describe("getOpenMatchmakingMatches", () => {
   const NOW = new Date(2025, 4, 10, 12, 0, 0); // 10-05-2025 midday
 
+  it("never lists playoff matches", () => {
+    const matches = [
+      makeMatch({ ladderMatchId: "p1", matchStatus: "posted", matchDate: "10-05-2025" }),
+      makeMatch({
+        ladderMatchId: "leg",
+        matchStatus: "posted",
+        matchDate: "10-05-2025",
+        playoffTieId: "r1-s0",
+        playoffLeg: 1,
+      }),
+    ];
+    expect(
+      getOpenMatchmakingMatches(matches, NOW).map((m) => m.ladderMatchId),
+    ).toEqual(["p1"]);
+  });
+
   it("keeps only posted matches, preserving order", () => {
     const matches = [
       makeMatch({ ladderMatchId: "p1", matchStatus: "posted", matchDate: "10-05-2025" }),

@@ -57,11 +57,36 @@ pairing, so a player must not be able to set an arbitrary location.
 | Path | Writer | Operation | Fields / conditions |
 |---|---|---|---|
 | `ladders/{ladderId}/ladderMatches/{matchId}` | A player in the match (poster or partner) | update | **Posted** match only (nobody accepted): `matchStatus: "cancelled"`, `cancelledAt`, `cancelledReason`, `lastUpdated`. |
-| same | A player in the match | update | **Accepted** match with no reported game: set `cancellationRequest` (`requestedBy` = own uid, `requestedAt`) and `lastUpdated`, only when no request is pending. |
-| same | A player on the **opposing side** to `cancellationRequest.requestedBy` (not the requester or their partner) | update | Accept: `matchStatus: "cancelled"`, `cancelledAt`, `cancelledReason: "Cancelled by agreement"`, `cancellationRequest: null`. Decline: `cancellationRequest: null`. Both set `lastUpdated`. |
+| same | A player in the match | update | **Accepted** match with no reported game: set `cancellationRequest` (`requestedBy` = own uid, `requestedAt`), only when no request is pending. Must not touch `lastUpdated` (it restarts the expiry clock). |
+| same | A player on the **opposing side** to `cancellationRequest.requestedBy` (not the requester or their partner) | update | Accept: `matchStatus: "cancelled"`, `cancelledAt`, `cancelledReason: "Cancelled by agreement"`, `cancellationRequest: null`. Decline: `cancellationRequest: null`. |
+| same | A player in the match | update | **Accepted** match with no reported game: set `rescheduleRequest` (`requestedBy` = own uid, `requestedAt`, `matchDate`, `matchTime`), only when none is pending. The new start must be in the future and before the posting deadline (regular) or the playoff tie's `deadlineAt`. |
+| same | A player on the **opposing side** to `rescheduleRequest.requestedBy` | update | Accept: `matchDate` and `matchTime` from the request, delete `checkIn`, `rescheduleRequest: null`. Decline: `rescheduleRequest: null`. |
+| same | A player in the match | update | **Accepted** match with at least one reported game and no `extension`: set `extension` (`requestedBy` = own uid, `requestedAt`, `expiresAt` = 7 days later, or the playoff tie's `deadlineAt` if sooner). Once only. |
 
 Court-fee refunds on cancellation are settled server-side by
 `onLadderMatchStatusChange` → `reconcileLadderCourtFee`, never by the client.
+
+## Playoff matches
+
+The lower-ranked side (by ladder rank) hosts match 1 and arranges it first; the
+higher-ranked side hosts match 2 and the decider and can arrange match 2 once
+match 1 exists. There is no coin toss.
+
+| Path | Writer | Operation | Fields / conditions |
+|---|---|---|---|
+| `ladders/{ladderId}/ladderMatches/{tieId}-leg{1\|2}` | A player on the side hosting that match; the opposing side for match 1 once the host is `LADDER_PLAYOFF_HOST_ARRANGE_HOURS` (48) hours overdue (`isLadderPlayoffHostArrangeOverdue`); or either side for "play the second match here now" (only once match 1 is `completed`, as match 2). On a doubles side either partner may write, and the other partner is notified | create, or replace a match that was cancelled | Built by `buildLadderPlayoffLegMatch`: `playoffTieId`, `playoffLeg`, both sides as `participants`, `courtFee: 0`, `matchStatus: "posted"`, the tie's `bestOf`, `createdBy` = the writer, `scheduleDeclines` carried over from the cancelled match it replaces, `playNow: true` for a play-now offer. Only while the tie is `scheduled`; only when no live match exists for that id (transaction); the start must be before the tie's `deadlineAt`; match 2 only once match 1 exists. |
+| same | Either partner on the side opposite `createdBy` | update | Accept: `matchStatus: "accepted"`, `acceptedBy`, `acceptedAt`, `lastUpdated`, and for an accepted play-now offer match 1's `checkIn` copied over. |
+| same | Either partner on the side opposite `createdBy` | update | Decline (only while `canDeclineLadderPlayoffMatch`: once per match for a timed match, always for a play-now offer): `matchStatus: "cancelled"`, `cancelledAt`, `cancelledReason`, `scheduleDeclines` + 1 (not for a play-now offer). |
+| same | Players in the match | update | Reporting, approving and disputing exactly as regular matches (`isLadderMatchPlayFrozen` lets matches with a `playoffTieId` through while the ladder is in `playoffs`); cancel, reschedule and extension as regular accepted matches. |
+| `ladders/{ladderId}/playoffTies/{tieId}/chat/{messageId}` | A player on either side of the tie | create | A message: `text`, `createdAt`, `user` = own uid. Spectators must not read or write it. |
+| `users/{userId}/chats/{ladderId}-{tieId}` | A player on the tie writing to the other player's entry | create / update | `type: "chat"`, `isRead: false`, `messageCount`, `lastMessage`, `competitionName`, `competitionType: "ladder"`, `ladderId`, `tieId`. |
+
+The decider (`playoffLeg: 3`), tie results, bracket advancement, reminders, the
+24-hour auto-accept of an unanswered posted match (`autoAccepted: true`), the
+walkover or void of a tie at its deadline (the only side with activity advances; `walkoverReason`), the settlement of a tie once a player is disqualified, the host-overdue notice (`hostOverdueNoticeSentAt`) and the
+ladder's Completed status are written only by Cloud Functions
+(`onLadderMatchStatusChange`, `processLadderPhases`). Clients must not write
+`playoffTies`.
 
 ## Ladder phases and playoffs
 

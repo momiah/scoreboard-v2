@@ -1,13 +1,12 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
-import { notificationSchema, notificationTypes } from "courtchamps-shared";
 import {
-  DISPUTES_COLLECTION,
-  DISPUTE_ACTIVE_STAGES,
   LADDER_CANCELLED_REASON,
   LADDER_MATCH_STATUS,
   LADDER_PLAYOFF_TIES_COLLECTION,
+  LADDER_PLAYOFF_TIE_DAYS,
+  LADDER_PLAYOFF_TIE_STATUS,
   LADDER_REPORT_COUNTS_COLLECTION,
   LADDER_STATUS,
   LADDER_TYPE,
@@ -29,23 +28,31 @@ import {
   buildLadderPlayoffTies,
   getDisqualification,
   getLadderPlayoffQualifiers,
+  isLadderStandingsFinal,
 } from "courtchamps-shared/helpers";
 import type { LadderPlayoffEntrant } from "courtchamps-shared/helpers";
 
 import { refundLadderEntryFees } from "./helpers/refundLadderEntryFees";
-import { sendNotification } from "./helpers/sendNotification";
+import { finaliseLadderStandings } from "./helpers/finaliseLadderStandings";
+import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
+import {
+  completeLadderPlayoffsIfFinished,
+  notifyLadderPlayoffResolution,
+  resolveLadderPlayoffTie,
+  autoAcceptDueLadderPlayoffMatches,
+  sendDueLadderPlayoffReminders,
+  sendLadderPlayoffHostOverdueNotices,
+  settleDisqualifiedLadderPlayoffTies,
+  toLadderPlayoffTie,
+} from "./helpers/ladderPlayoffTies";
 
 const LADDERS = "ladders";
 const LADDER_PARTICIPANTS = "ladderParticipants";
 const LADDER_TEAMS = "ladderTeams";
 const USERS = "users";
 const USERS_PER_READ = 300;
-const NOTIFICATIONS_PER_WAVE = 50;
-const PLAYOFF_ROUND_DAYS = 10;
-const PLAYOFF_HOLD_HOURS = 48;
 const HOUR_MS = 60 * 60 * 1000;
 const NOTIFICATION_RESUME_DAYS = 3;
-const LADDER_MATCHES = "ladderMatches";
 
 const PRE_PLAYOFF_STATUSES: LadderStatus[] = [
   LADDER_STATUS.REGISTRATION_OPEN,
@@ -55,11 +62,95 @@ const PRE_PLAYOFF_STATUSES: LadderStatus[] = [
 type Db = admin.firestore.Firestore;
 type DocRef = admin.firestore.DocumentReference;
 
+const openLadderPlayoffTies = async (ladderRef: DocRef) => {
+  const snapshot = await ladderRef
+    .collection(LADDER_PLAYOFF_TIES_COLLECTION)
+    .where("status", "==", LADDER_PLAYOFF_TIE_STATUS.SCHEDULED)
+    .get();
+  return snapshot.docs.map((tieDoc) => toLadderPlayoffTie(tieDoc.id, tieDoc.data()));
+};
+
+const runPlayoffDeadlinesAndReminders = async (
+  db: Db,
+  now: Date,
+  summary: ProcessLadderPhasesSummary,
+): Promise<void> => {
+  const snapshot = await db
+    .collection(LADDERS)
+    .where("status", "==", LADDER_STATUS.PLAYOFFS)
+    .get();
+  for (const ladderDoc of snapshot.docs) {
+    const ladder = { ...(ladderDoc.data() as Ladder), ladderId: ladderDoc.id };
+    try {
+      const tiesSnapshot = await ladderDoc.ref
+        .collection(LADDER_PLAYOFF_TIES_COLLECTION)
+        .where("status", "==", LADDER_PLAYOFF_TIE_STATUS.SCHEDULED)
+        .get();
+      const ties = tiesSnapshot.docs.map((tieDoc) =>
+        toLadderPlayoffTie(tieDoc.id, tieDoc.data()),
+      );
+      summary.playoffTiesSettled.push(
+        ...(await settleDisqualifiedLadderPlayoffTies({ db, ladder, ties, now })).map(
+          (tieId) => `${ladder.ladderId}/${tieId}`,
+        ),
+      );
+      const openTies = await openLadderPlayoffTies(ladderDoc.ref);
+      for (const tie of openTies) {
+        if (!tie.deadlineAt || now.getTime() < tie.deadlineAt.getTime()) continue;
+        const resolution = await resolveLadderPlayoffTie({
+          db,
+          ladderId: ladder.ladderId,
+          tieId: tie.tieId,
+          now,
+          atDeadline: true,
+        });
+        if (!resolution) continue;
+        summary.playoffTiesSettled.push(`${ladder.ladderId}/${tie.tieId}`);
+        await notifyLadderPlayoffResolution({ ladder, resolution });
+        await completeLadderPlayoffsIfFinished({
+          db,
+          ladderId: ladder.ladderId,
+          resolution,
+          now,
+        });
+      }
+      summary.playoffMatchesAutoAccepted.push(
+        ...(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).map(
+          (matchId) => `${ladder.ladderId}/${matchId}`,
+        ),
+      );
+      summary.playoffHostNoticesSent += await sendLadderPlayoffHostOverdueNotices({
+        db,
+        ladder,
+        ties: openTies,
+        now,
+      });
+      summary.playoffRemindersSent += await sendDueLadderPlayoffReminders({
+        db,
+        ladder,
+        ties: openTies.filter(
+          (tie) => !tie.deadlineAt || now.getTime() < tie.deadlineAt.getTime(),
+        ),
+        now,
+      });
+    } catch (error) {
+      console.log(
+        `❌ processLadderPhases playoff deadlines failed for ${ladder.ladderId}:`,
+        error,
+      );
+    }
+  }
+};
+
 export interface ProcessLadderPhasesSummary {
   registrationClosed: string[];
   cancelled: string[];
   playoffsGenerated: string[];
-  playoffsHeld: string[];
+  standingsFinalised: string[];
+  playoffTiesSettled: string[];
+  playoffRemindersSent: number;
+  playoffHostNoticesSent: number;
+  playoffMatchesAutoAccepted: string[];
 }
 
 const toDate = (value: unknown): Date | null => {
@@ -119,43 +210,6 @@ const toHomeCourt = (value: unknown): LadderHomeCourt | null =>
   value && typeof value === "object" && (value as LadderHomeCourt).courtId
     ? (value as LadderHomeCourt)
     : null;
-
-const notifyPlayers = async ({
-  userIds,
-  ladder,
-  kind,
-  title,
-  message,
-  tab,
-}: {
-  userIds: string[];
-  ladder: Ladder;
-  kind: string;
-  title: string;
-  message: string;
-  tab: string;
-}): Promise<void> => {
-  const recipients = [...new Set(userIds.filter(Boolean))];
-  for (let start = 0; start < recipients.length; start += NOTIFICATIONS_PER_WAVE) {
-    await Promise.all(
-      recipients.slice(start, start + NOTIFICATIONS_PER_WAVE).map((recipientId) =>
-        sendNotification(
-          {
-            ...notificationSchema,
-            createdAt: new Date(),
-            recipientId,
-            senderId: "system",
-            title,
-            message,
-            type: notificationTypes.INFORMATION.LADDER.TYPE,
-            data: { ladderId: ladder.ladderId, tab },
-          },
-          { id: `${kind}-${ladder.ladderId}-${recipientId}` },
-        ),
-      ),
-    );
-  }
-};
 
 const loadEntrantPlayerIds = async (
   ladderRef: DocRef,
@@ -288,7 +342,7 @@ const sendCancellationNotifications = async ({
   ladderRef: DocRef;
   ladder: Ladder;
 }): Promise<void> => {
-  await notifyPlayers({
+  await notifyLadderPlayers({
     userIds: await loadEntrantPlayerIds(ladderRef, ladder),
     ladder,
     kind: "ladder-cancelled",
@@ -299,26 +353,44 @@ const sendCancellationNotifications = async ({
   await ladderRef.update({ cancellationNotificationsSentAt: new Date() });
 };
 
+const firstRoundTies = (
+  ties: Pick<LadderPlayoffTie, "tieId" | "round" | "side1" | "side2">[],
+): QualifierTie[] =>
+  ties
+    .filter((tie) => tie.round === 1)
+    .map((tie) => ({
+      tieId: tie.tieId,
+      playerIds: [...(tie.side1?.playerIds ?? []), ...(tie.side2?.playerIds ?? [])],
+    }));
+
+interface QualifierTie {
+  tieId: string;
+  playerIds: string[];
+}
+
 const sendPlayoffNotifications = async ({
   ladderRef,
   ladder,
-  qualifierPlayerIds,
+  qualifierTies,
   eliminatedPlayerIds,
 }: {
   ladderRef: DocRef;
   ladder: Ladder;
-  qualifierPlayerIds: string[];
+  qualifierTies: QualifierTie[];
   eliminatedPlayerIds: string[];
 }): Promise<void> => {
-  await notifyPlayers({
-    userIds: qualifierPlayerIds,
-    ladder,
-    kind: "playoffs-promotion",
-    title: "You made the playoffs!",
-    message: `Congratulations! You've made the playoffs in ${ladder.name}. You have ${PLAYOFF_ROUND_DAYS} days to play both your home and away games.`,
-    tab: "Playoffs",
-  });
-  await notifyPlayers({
+  for (const { tieId, playerIds } of qualifierTies) {
+    await notifyLadderPlayers({
+      userIds: playerIds,
+      ladder,
+      kind: "playoffs-promotion",
+      title: "You made the playoffs!",
+      message: `Congratulations! You've made the playoffs for ${ladder.name}. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
+      tab: "Playoffs",
+      data: { tieId },
+    });
+  }
+  await notifyLadderPlayers({
     userIds: eliminatedPlayerIds,
     ladder,
     kind: "playoffs-elimination",
@@ -413,39 +485,6 @@ const closeRegistration = async ({
   return closed ? "closed" : null;
 };
 
-interface PlayoffHold {
-  openDisputes: number;
-  pendingGames: number;
-}
-
-const getPlayoffHold = async (
-  db: Db,
-  ladderRef: DocRef,
-  ladder: Ladder,
-): Promise<PlayoffHold> => {
-  const disputes = await db
-    .collection(DISPUTES_COLLECTION)
-    .where("ladderId", "in", [ladder.ladderId])
-    .get();
-  const openDisputes = disputes.docs.filter((disputeDoc) =>
-    DISPUTE_ACTIVE_STAGES.includes(disputeDoc.data().stage),
-  ).length;
-
-  const matches = await ladderRef
-    .collection(LADDER_MATCHES)
-    .where("matchStatus", "in", [LADDER_MATCH_STATUS.ACCEPTED])
-    .get();
-  const pendingGames = matches.docs.reduce(
-    (total, matchDoc) =>
-      total +
-      ((matchDoc.data().games ?? []) as { approvalStatus?: string }[]).filter(
-        (game) => game.approvalStatus?.toLowerCase() === "pending",
-      ).length,
-    0,
-  );
-  return { openDisputes, pendingGames };
-};
-
 const generatePlayoffs = async ({
   db,
   ladderRef,
@@ -456,24 +495,7 @@ const generatePlayoffs = async ({
   ladderRef: DocRef;
   ladder: Ladder;
   now: Date;
-}): Promise<"generated" | "cancelled" | "held" | null> => {
-  const hold = await getPlayoffHold(db, ladderRef, ladder);
-  if (hold.openDisputes + hold.pendingGames > 0) {
-    const holdUntil = new Date(
-      (toDate(ladder.playoffStartsAt)?.getTime() ?? now.getTime()) +
-        PLAYOFF_HOLD_HOURS * HOUR_MS,
-    );
-    if (now.getTime() < holdUntil.getTime()) {
-      await ladderRef.update({
-        playoffHold: { ...hold, checkedAt: now, holdUntil },
-      });
-      return "held";
-    }
-    console.log(
-      `⚠️ ${ladder.ladderId}: generating playoffs after the ${PLAYOFF_HOLD_HOURS}h hold with ${hold.openDisputes} open dispute(s) and ${hold.pendingGames} pending game(s).`,
-    );
-  }
-
+}): Promise<"generated" | "cancelled" | null> => {
   const { entrants, disqualifiedPlayerIds } = await loadEntrants(
     db,
     ladderRef,
@@ -519,7 +541,6 @@ const generatePlayoffs = async ({
       playoffsGeneratedAt: now,
       playoffBracketSize: bracketSize,
       playoffEntrantCount: entrants.length,
-      playoffHold: null,
     });
     return "generated" as const;
   });
@@ -531,9 +552,7 @@ const generatePlayoffs = async ({
     await sendPlayoffNotifications({
       ladderRef,
       ladder,
-      qualifierPlayerIds: qualifiers.flatMap((qualifier) =>
-        qualifier.players.map((player) => player.userId),
-      ),
+      qualifierTies: firstRoundTies(ties),
       eliminatedPlayerIds: [
         ...entrants
           .filter((entrant) => !qualifierKeys.has(entrant.entrantKey))
@@ -565,11 +584,12 @@ const resumePlayoffNotifications = async ({
   const tiesSnapshot = await ladderRef
     .collection(LADDER_PLAYOFF_TIES_COLLECTION)
     .get();
+  const resumedTies = tiesSnapshot.docs.map(
+    (tieDoc) => ({ ...(tieDoc.data() as LadderPlayoffTie), tieId: tieDoc.id }),
+  );
+  const qualifierTies = firstRoundTies(resumedTies);
   const qualifierPlayerIds = new Set(
-    tiesSnapshot.docs.flatMap((tieDoc) => {
-      const tie = tieDoc.data() as LadderPlayoffTie;
-      return [...(tie.side1?.playerIds ?? []), ...(tie.side2?.playerIds ?? [])];
-    }),
+    qualifierTies.flatMap((tie) => tie.playerIds),
   );
   const { entrants, disqualifiedPlayerIds } = await loadEntrants(
     db,
@@ -579,7 +599,7 @@ const resumePlayoffNotifications = async ({
   await sendPlayoffNotifications({
     ladderRef,
     ladder,
-    qualifierPlayerIds: [...qualifierPlayerIds],
+    qualifierTies,
     eliminatedPlayerIds: [
       ...entrants
         .flatMap((entrant) => entrant.players.map((player) => player.userId))
@@ -637,7 +657,11 @@ export const runProcessLadderPhases = async (
     registrationClosed: [],
     cancelled: [],
     playoffsGenerated: [],
-    playoffsHeld: [],
+    standingsFinalised: [],
+    playoffTiesSettled: [],
+    playoffRemindersSent: 0,
+    playoffHostNoticesSent: 0,
+    playoffMatchesAutoAccepted: [],
   };
 
   await resumePendingNotifications(db, now);
@@ -672,6 +696,18 @@ export const runProcessLadderPhases = async (
         }
       }
 
+      if (
+        isPrePlayoff(status) &&
+        !ladder.standingsFinalisedAt &&
+        isLadderStandingsFinal(ladder, now)
+      ) {
+        const standings = await finaliseLadderStandings({ db, ladder, now });
+        summary.standingsFinalised.push(ladder.ladderId);
+        console.log(
+          `📋 ${ladder.ladderId}: standings final — ${standings.disputesDiscarded} dispute(s) discarded, ${standings.walkoversAwarded} walkover(s) awarded, ${standings.claimsClosed} claim(s) closed, ${standings.matchesExpired} match(es) expired.`,
+        );
+      }
+
       if (isPrePlayoff(status) && isDue(ladder.playoffStartsAt, now)) {
         const outcome = await generatePlayoffs({
           db,
@@ -683,8 +719,6 @@ export const runProcessLadderPhases = async (
           summary.playoffsGenerated.push(ladder.ladderId);
         } else if (outcome === "cancelled") {
           summary.cancelled.push(ladder.ladderId);
-        } else if (outcome === "held") {
-          summary.playoffsHeld.push(ladder.ladderId);
         }
       }
     } catch (error) {
@@ -692,8 +726,10 @@ export const runProcessLadderPhases = async (
     }
   }
 
+  await runPlayoffDeadlinesAndReminders(db, now, summary);
+
   console.log(
-    `✅ processLadderPhases: closed ${summary.registrationClosed.length}, cancelled ${summary.cancelled.length}, playoffs ${summary.playoffsGenerated.length}, held ${summary.playoffsHeld.length}.`,
+    `✅ processLadderPhases: closed ${summary.registrationClosed.length}, cancelled ${summary.cancelled.length}, playoffs ${summary.playoffsGenerated.length}, standings final ${summary.standingsFinalised.length}.`,
   );
   return summary;
 };

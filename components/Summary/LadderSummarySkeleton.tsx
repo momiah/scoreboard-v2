@@ -10,33 +10,15 @@ import {
 const CONTENDER_ROWS = [0, 1, 2, 3];
 const CAROUSEL_AVATARS = [0, 1, 2, 3, 4];
 
-interface LadderSummarySkeletonProps {
-  isPaid: boolean;
-}
-
-const LadderSummarySkeleton: React.FC<LadderSummarySkeletonProps> = ({
-  isPaid,
-}) => (
+const LadderSummarySkeleton: React.FC = () => (
   <Container testID="ladder-summary-loading" scrollEnabled={false}>
-    {isPaid && (
-      <Block>
-        <SkeletonWrapper show height={96} width="100%" radius={14} />
-      </Block>
-    )}
+    <PotBlock>
+      <SkeletonWrapper show height={96} width="100%" radius={14} />
+    </PotBlock>
 
     <Block>
       <SkeletonWrapper show height={72} width="100%" radius={12} />
     </Block>
-
-    <Section>
-      <TextSkeleton show height={18} width={140} />
-      <SkeletonWrapper show height={64} width="100%" radius={10} />
-    </Section>
-
-    <Section>
-      <TextSkeleton show height={18} width={110} />
-      <SkeletonWrapper show height={56} width="100%" radius={12} />
-    </Section>
 
     <Section>
       <TextSkeleton show height={18} width={150} />
@@ -48,6 +30,16 @@ const LadderSummarySkeleton: React.FC<LadderSummarySkeletonProps> = ({
       {CONTENDER_ROWS.map((row) => (
         <SkeletonWrapper key={row} show height={56} width="100%" radius={8} />
       ))}
+    </Section>
+
+    <Section>
+      <TextSkeleton show height={18} width={140} />
+      <SkeletonWrapper show height={64} width="100%" radius={10} />
+    </Section>
+
+    <Section>
+      <TextSkeleton show height={18} width={110} />
+      <SkeletonWrapper show height={56} width="100%" radius={12} />
     </Section>
 
     <Section>
@@ -71,6 +63,10 @@ const Container = styled.ScrollView({
 
 const Block = styled.View({
   marginBottom: 20,
+});
+
+const PotBlock = styled.View({
+  marginBottom: 8,
 });
 
 const Section = styled.View({

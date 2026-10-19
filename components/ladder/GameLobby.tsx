@@ -9,6 +9,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NavigationProp, ParamListBase } from "@react-navigation/native";
 import styled from "styled-components/native";
+import moment from "moment";
 import { Ionicons } from "@expo/vector-icons";
 
 import {
@@ -35,11 +36,11 @@ import MedalDisplay from "../performance/MedalDisplay";
 import { FixtureGameItem } from "../Tournaments/Fixtures/FixturesAtoms";
 import { useFixturesScrollToGame } from "../Tournaments/Fixtures/useFixturesScrollToGame";
 import AddTournamentGameModal from "../Modals/AddTournamentGameModal";
+import InfoModal from "../Modals/InfoModal";
+import type { LadderSeasonClose } from "../../hooks/useLadderSeasonClose";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
-import {
-  getLadderMatchScore,
-  type LadderMatchOutcome,
-} from "../../helpers/ladderMatchProgress";
+import { getLadderMatchScore } from "../../helpers/ladderMatchProgress";
+import MatchScoreBar from "./MatchScoreBar";
 import { ccDefaultImage } from "../../mockImages/index";
 
 interface ParticipantProfile {
@@ -61,13 +62,8 @@ interface GameLobbyProps {
   highlightGameId?: string;
   /** Glow colour for the highlighted game; defaults to the ladder blue. */
   highlightColor?: string;
+  seasonClose?: LadderSeasonClose;
 }
-
-const SCORE_COLORS: Record<LadderMatchOutcome, string> = {
-  win: "#19a800ff",
-  loss: "#FF4B6E",
-  undecided: "#64748b",
-};
 
 type LobbyGameTeam = GameTeam & { teamName?: string };
 type LobbyGame = Omit<Game, "team1" | "team2"> & {
@@ -83,6 +79,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   checkedIn,
   highlightGameId,
   highlightColor = "#00A2FF",
+  seasonClose,
 }) => {
   const { getUserById, currentUser } = useContext(UserContext);
   const { fetchLadderTeams, fetchLadderParticipants } =
@@ -99,6 +96,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     Record<string, ScoreboardProfile>
   >({});
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [resultsClosedVisible, setResultsClosedVisible] = useState(false);
   const [gameModalVisible, setGameModalVisible] = useState(false);
   const [checkinCollapsed, setCheckinCollapsed] = useState(
     match.matchStatus === LADDER_MATCH_STATUS.COMPLETED,
@@ -111,7 +109,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   // lock once a side reaches the decider. null once the match is decided.
   const reportableGameId = getReportableLadderGameId(
     match.games ?? [],
-    match.bestOf ?? (match.games?.length ?? 0),
+    match.bestOf ?? match.games?.length ?? 0,
   );
 
   // Scroll to and glow a game when linked here (e.g. from a dispute).
@@ -119,7 +117,10 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     useFixturesScrollToGame(highlightGameId);
   const gamesLocked = isCompleted || !allCheckedIn;
 
-  const score = getLadderMatchScore(match, currentUserId ?? "");
+  const isParticipant =
+    !!currentUserId && (match.participants ?? []).includes(currentUserId);
+  const score = getLadderMatchScore(match, match.createdBy);
+  const viewerOutcome = getLadderMatchScore(match, currentUserId ?? "").outcome;
 
   const isDoubles =
     match.ladderType === LADDER_TYPE.DOUBLES || match.participants.length > 2;
@@ -240,32 +241,18 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     return key ? teamName(ladderTeamByKey[key]) : "";
   };
 
-  // Group the two sides. Doubles shows the current user's team on the left
-  // (matching the viewer-relative score), the opponent team on the right.
-  const userTeamIdx = hasTwoTeams
-    ? Math.max(
-        0,
-        matchTeams.findIndex((t) => t.playerIds.includes(currentUserId ?? "")),
-      )
-    : -1;
-  const userTeam = hasTwoTeams ? matchTeams[userTeamIdx] : undefined;
-  const opponentTeam = hasTwoTeams
-    ? matchTeams[userTeamIdx === 0 ? 1 : 0]
-    : undefined;
+  // The poster's side is always on the left, the accepter's on the right.
   const teamForKey = (key?: string): TeamStats | undefined =>
     key ? ladderTeamByKey[key] : undefined;
-
-  const user = players.find((p) => p.userId === currentUserId);
-  const opponents = players.filter((p) => p.userId !== currentUserId);
+  const poster = players.find((p) => p.userId === match.createdBy);
+  const accepters = players.filter((p) => p.userId !== match.createdBy);
   const leftNames = hasTwoTeams
-    ? [teamName(teamForKey(userTeam?.teamKey))]
-    : user
-      ? [formatDisplayName(user)]
-      : ["You"];
+    ? [teamName(teamForKey(matchTeams[0]?.teamKey))]
+    : [poster ? formatDisplayName(poster) : "Player"];
   const rightNames = hasTwoTeams
-    ? [teamName(teamForKey(opponentTeam?.teamKey))]
-    : opponents.length > 0
-      ? opponents.map((p) => formatDisplayName(p))
+    ? [teamName(teamForKey(matchTeams[1]?.teamKey))]
+    : accepters.length > 0
+      ? accepters.map((p) => formatDisplayName(p))
       : ["Opponent"];
 
   const gamesWithPlayers: LobbyGame[] = match.games.map((game) => {
@@ -275,28 +262,28 @@ const GameLobby: React.FC<GameLobbyProps> = ({
     let team2: GameTeam = game.team2;
     if (!filled) {
       if (hasTwoTeams) {
-        const userCells = (userTeam?.playerIds ?? []).map((id) =>
+        const posterCells = (matchTeams[0]?.playerIds ?? []).map((id) =>
           toPlayerCell(profileById.get(id)),
         );
-        const oppCells = (opponentTeam?.playerIds ?? []).map((id) =>
+        const accepterCells = (matchTeams[1]?.playerIds ?? []).map((id) =>
           toPlayerCell(profileById.get(id)),
         );
         team1 = {
           ...game.team1,
-          player1: userCells[0] ?? null,
-          player2: userCells[1] ?? null,
+          player1: posterCells[0] ?? null,
+          player2: posterCells[1] ?? null,
         };
         team2 = {
           ...game.team2,
-          player1: oppCells[0] ?? null,
-          player2: oppCells[1] ?? null,
+          player1: accepterCells[0] ?? null,
+          player2: accepterCells[1] ?? null,
         };
       } else {
-        team1 = { ...game.team1, player1: toPlayerCell(user), player2: null };
+        team1 = { ...game.team1, player1: toPlayerCell(poster), player2: null };
         team2 = {
           ...game.team2,
-          player1: toPlayerCell(opponents[0]),
-          player2: isDoubles ? toPlayerCell(opponents[1]) : null,
+          player1: toPlayerCell(accepters[0]),
+          player2: isDoubles ? toPlayerCell(accepters[1]) : null,
         };
       }
     }
@@ -313,6 +300,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
   });
 
   const handleGamePress = (game: Game) => {
+    if (!isParticipant && !game.result && !game.approvalStatus) return;
     if (!allCheckedIn && !isCompleted) {
       showBottomToast("All players must check in to start the games", "info");
       return;
@@ -353,9 +341,22 @@ const GameLobby: React.FC<GameLobbyProps> = ({
       return;
     }
 
+    const resultsDeadline = seasonClose?.resultsDeadline;
+    if (
+      !match.playoffTieId &&
+      resultsDeadline &&
+      Date.now() >= resultsDeadline.getTime()
+    ) {
+      setResultsClosedVisible(true);
+      return;
+    }
+
     setSelectedGame(game);
     setGameModalVisible(true);
   };
+
+  const shortDate = (date: Date | null | undefined) =>
+    date ? moment(date).format("ddd D MMM") : "";
 
   // A check-in row opens a player's profile: doubles → global profile (the
   // ladder ranks the team), singles → their ladder profile.
@@ -492,28 +493,15 @@ const GameLobby: React.FC<GameLobbyProps> = ({
           )}
         </PaddedBlock>
 
-        <ScoreBar>
-          <ScoreLabel>Total score</ScoreLabel>
-          <ScoreRow>
-            <SideCol>
-              {leftNames.map((name, i) => (
-                <SideName key={`${i}-${name}`} numberOfLines={1}>
-                  {name}
-                </SideName>
-              ))}
-            </SideCol>
-            <ScoreValue outcome={score.outcome}>
-              {score.user} - {score.opponent}
-            </ScoreValue>
-            <SideCol align="right">
-              {rightNames.map((name, i) => (
-                <SideName key={`${i}-${name}`} numberOfLines={1} align="right">
-                  {name}
-                </SideName>
-              ))}
-            </SideCol>
-          </ScoreRow>
-        </ScoreBar>
+        <MatchScoreBar
+          label="Total score"
+          leftNames={leftNames}
+          rightNames={rightNames}
+          leftScore={score.user}
+          rightScore={score.opponent}
+          outcome={viewerOutcome}
+          style={{ marginHorizontal: 20, marginBottom: 16 }}
+        />
 
         <GamesHeader>
           <BlockTitle>Games</BlockTitle>
@@ -547,7 +535,7 @@ const GameLobby: React.FC<GameLobbyProps> = ({
                 locked={
                   !gamesLocked &&
                   !isReported &&
-                  game.gameId !== reportableGameId
+                  (!isParticipant || game.gameId !== reportableGameId)
                 }
               />
             );
@@ -555,6 +543,16 @@ const GameLobby: React.FC<GameLobbyProps> = ({
         </GamesList>
       </ScrollView>
 
+      <InfoModal
+        visible={resultsClosedVisible}
+        onClose={() => setResultsClosedVisible(false)}
+        title="Ladder results have closed"
+        description={`Results closed on ${shortDate(seasonClose?.resultsDeadline)} to make the standings final for the playoffs, so no more games can be reported. Playoffs start on ${shortDate(seasonClose?.playoffStartsAt)}.`}
+        ctaLabel="OK"
+        onCtaPress={() => setResultsClosedVisible(false)}
+        icon="lock-closed-outline"
+        testID="results-closed-modal"
+      />
       <AddTournamentGameModal
         visible={gameModalVisible}
         game={selectedGame}
@@ -734,61 +732,6 @@ const Dot = styled.View<{ isCheckedIn: boolean }>(
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 0 },
     elevation: 4,
-  }),
-);
-
-const ScoreBar = styled.View({
-  marginHorizontal: 20,
-  marginBottom: 16,
-  backgroundColor: "rgba(0, 162, 255, 0.08)",
-  borderWidth: 1,
-  borderColor: "rgb(26, 28, 54)",
-  borderRadius: 12,
-  paddingVertical: 12,
-  alignItems: "center",
-});
-
-const ScoreLabel = styled.Text({
-  color: "#9fb8c8",
-  fontSize: 11,
-  fontWeight: "600",
-  letterSpacing: 0.6,
-  textTransform: "uppercase",
-});
-
-const ScoreRow = styled.View({
-  flexDirection: "row",
-  alignItems: "center",
-  alignSelf: "stretch",
-  paddingHorizontal: 14,
-  marginTop: 6,
-});
-
-const SideCol = styled.View<{ align?: "left" | "right" }>(
-  ({ align }: { align?: "left" | "right" }) => ({
-    flex: 1,
-    gap: 2,
-    alignItems: align === "right" ? "flex-end" : "flex-start",
-  }),
-);
-
-const SideName = styled.Text<{ align?: "left" | "right" }>(
-  ({ align }: { align?: "left" | "right" }) => ({
-    maxWidth: "100%",
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: align === "right" ? "right" : "left",
-  }),
-);
-
-const ScoreValue = styled.Text<{ outcome: LadderMatchOutcome }>(
-  ({ outcome }: { outcome: LadderMatchOutcome }) => ({
-    color: SCORE_COLORS[outcome],
-    fontSize: 32,
-    fontWeight: "bold",
-    marginHorizontal: 12,
-    fontVariant: ["tabular-nums"],
   }),
 );
 

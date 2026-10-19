@@ -79,7 +79,11 @@ describe("deriveLadderMatchStatus", () => {
 
   it("Forfeit wins over everything, with the losing side named", () => {
     const s = deriveLadderMatchStatus(
-      doubles({ matchStatus: "completed", walkover: true, walkoverReason: "No show" }),
+      doubles({
+        matchStatus: "completed",
+        walkover: true,
+        walkoverReason: "No show",
+      }),
       { selfCheckedIn: false, forfeitLabel: "The Aces" },
     );
     expect(s.phase).toBe("forfeit");
@@ -92,5 +96,48 @@ describe("deriveLadderMatchStatus", () => {
       { selfCheckedIn: false },
     );
     expect(s.label).toBe("Forfeit (No show)");
+  });
+});
+
+describe("playoff matches awaiting confirmation", () => {
+  const posted = {
+    matchStatus: "posted",
+    playoffTieId: "r1-s0",
+    participants: ["host", "away"],
+    createdBy: "host",
+    games: [],
+  };
+
+  it("asks the away side to confirm and tells the host it's waiting", () => {
+    expect(
+      deriveLadderMatchStatus(posted, {
+        selfCheckedIn: false,
+        currentUserId: "away",
+      }),
+    ).toEqual({
+      phase: "awaiting-confirmation",
+      label: "Awaiting your confirmation",
+    });
+    expect(
+      deriveLadderMatchStatus(posted, {
+        selfCheckedIn: false,
+        currentUserId: "host",
+      }).label,
+    ).toBe("Awaiting opponent's confirmation");
+    expect(
+      deriveLadderMatchStatus(posted, {
+        selfCheckedIn: false,
+        currentUserId: "watcher",
+      }).label,
+    ).toBe("Awaiting confirmation");
+  });
+
+  it("leaves regular posted matches alone", () => {
+    expect(
+      deriveLadderMatchStatus(
+        { ...posted, playoffTieId: null },
+        { selfCheckedIn: false },
+      ).phase,
+    ).toBe("awaiting-checkin");
   });
 });

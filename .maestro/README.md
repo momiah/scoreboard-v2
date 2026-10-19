@@ -41,6 +41,9 @@ booted simulator with the dev client installed:
 
 ```bash
 set -a && source .maestro/.env && set +a
+export MAESTRO_PLAYOFF_TIE_DAYS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_TIE_DAYS")
+export MAESTRO_LADDER_HOST_ARRANGE_HOURS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_HOST_ARRANGE_HOURS")
+export MAESTRO_LADDER_AUTO_ACCEPT_HOURS=$(node -p "require('courtchamps-shared').LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS")
 maestro test .maestro/flows/reject-decline-opens-dispute.yaml   # one flow
 maestro test .maestro/flows                                     # whole suite
 .maestro/run-suite.sh                                           # whole suite, retrying a failed flow once
@@ -83,3 +86,24 @@ this ruled out (covered by a Jest test on the guard function instead).
 ## CI
 
 Not wired up yet — see `docs/testing/maestro.md`.
+
+## Android
+
+Android is built from `android-build` (reanimated 3.19.5, pinned compressor and background-upload fork,
+`patch-package`, native date picker), so run these flows from a branch cut from it
+(`claude/ladder-playoffs-android`), never from a main-based checkout: that one doesn't compile natively.
+
+```
+cd android-worktree && npm ci && npx expo prebuild --platform android --no-install
+cd android && ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
+adb install -r app/build/outputs/apk/debug/app-debug.apk   # an emulator wiped with -wipe-data has the space
+MAESTRO_DEVICE=emulator-5554 .maestro/run-suite.sh <pattern>
+```
+
+- `run-suite.sh` re-applies `adb reverse tcp:8090 tcp:8090` before each flow and `login.yaml` taps the
+  `http://localhost:8090` dev-client entry. Grant notification, location and camera permissions with `adb shell pm grant`.
+- `utilities/playoffs/harness.yaml` scrolls the harness list on Android (off-screen buttons aren't in the
+  accessibility tree); flows whose button sits far down on iOS use `harness-scrolled.yaml`.
+- `utilities/pick-date.yaml` picks a date: iOS spinner plus "Confirm Date", Android native dialog and "OK".
+  The native Android dialog has no range message, so flows that assert it do so on iOS only.
+- Copy `.env` into a new worktree, or Firebase fails with `auth/invalid-api-key`.

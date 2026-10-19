@@ -1,0 +1,18 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/guide-pages.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      FOOTNOTE: ".*Current ladder size: 256 / 256 with a CP prize pool of 12.?800 CP.*"
+      CHAMPION_ROW: "4,480"
+- runFlow:
+    file: ../utilities/playoffs/guide-pages.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      FOOTNOTE: ".*Current ladder size: 256 / 256 with a total cash prize pool of £5120 and a CP prize pool of 12.?800 CP.*"
+      CHAMPION_ROW: "£1793"

@@ -1,12 +1,12 @@
 import { useCallback, useContext } from "react";
 import { Alert } from "react-native";
 
-import { notificationSchema, notificationTypes } from "@shared";
 import type { LadderMatch } from "@shared/types";
 import { LadderContext } from "../context/LadderContext";
 import { UserContext } from "../context/UserContext";
 import { PopupContext } from "../context/PopupContext";
 import { formatDisplayName } from "../helpers/formatDisplayName";
+import { useNotifyMatchPlayers } from "./useNotifyMatchPlayers";
 import {
   LADDER_MATCH_CANCEL_ACTION,
   getLadderMatchCancelAction,
@@ -27,41 +27,12 @@ export const useLadderMatchCancellation = () => {
     requestLadderMatchCancellation,
     respondToLadderMatchCancellation,
   } = useContext(LadderContext);
-  const { currentUser, sendNotification } = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
 
   const userId: string | undefined = currentUser?.userId;
 
-  const notify = useCallback(
-    async (
-      recipientIds: string[] | undefined,
-      message: string,
-      { ladderId, match }: CancellationArgs,
-    ) => {
-      await Promise.all(
-        (recipientIds ?? [])
-          .filter((recipientId) => recipientId && recipientId !== userId)
-          .map((recipientId) =>
-            sendNotification({
-              ...notificationSchema,
-              createdAt: new Date(),
-              recipientId,
-              senderId: userId,
-              message,
-              type: notificationTypes.INFORMATION.LADDER.TYPE,
-              data: {
-                ladderId,
-                matchId: match.ladderMatchId,
-                tab: "Schedule",
-              },
-            }).catch((error: unknown) =>
-              console.error("Error sending cancellation notification:", error),
-            ),
-          ),
-      );
-    },
-    [sendNotification, userId],
-  );
+  const notify = useNotifyMatchPlayers();
 
   const courtName = (match: LadderMatch) =>
     match.court?.courtName ?? "your court";
@@ -71,7 +42,9 @@ export const useLadderMatchCancellation = () => {
       if (!userId) return;
       Alert.alert(
         "Cancel Match",
-        "Cancel this posted match? It will be removed from matchmaking.",
+        args.match.playoffTieId
+          ? "Cancel this playoff match? You can arrange it again before the playoff deadline."
+          : "Cancel this posted match? It will be removed from matchmaking.",
         [
           { text: "Keep Match", style: "cancel" },
           {
@@ -107,7 +80,7 @@ export const useLadderMatchCancellation = () => {
       if (!userId) return;
       Alert.alert(
         "Request cancellation",
-        "Your opponent will be asked to agree to cancel this match. If they decline, the match goes ahead and must be played.",
+        `Your opponent will be asked to agree to cancel this ${args.match.playoffTieId ? "playoff " : ""}match. If they decline, the match goes ahead and must be played.`,
         [
           { text: "Keep Match", style: "cancel" },
           {
@@ -181,7 +154,9 @@ export const useLadderMatchCancellation = () => {
     (args: CancellationArgs) => {
       Alert.alert(
         "Accept cancellation",
-        "Cancel this match? Any court fee paid is refunded to the player who accepted the match.",
+        args.match.playoffTieId
+          ? "Cancel this playoff match? It can be arranged again before the playoff deadline."
+          : "Cancel this match? Any court fee paid is refunded to the player who accepted the match.",
         [
           { text: "Keep Match", style: "cancel" },
           {

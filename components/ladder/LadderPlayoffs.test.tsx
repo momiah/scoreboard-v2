@@ -3,6 +3,11 @@ import { render } from "@testing-library/react-native";
 import { LADDER_STATUS, LADDER_TYPE } from "@shared";
 import { buildLadderPlayoffTies } from "@shared/helpers";
 
+const mockNavigate = jest.fn();
+jest.mock("@react-navigation/native", () => ({
+  useNavigation: () => ({ navigate: mockNavigate }),
+}));
+
 jest.mock("../../context/LadderContext", () => ({
   LadderContext: require("react").createContext({}),
 }));
@@ -66,7 +71,10 @@ const entrant = (key: string) => ({
   homeCourt: null,
 });
 
-beforeEach(() => mockBracketTree.mockClear());
+beforeEach(() => {
+  mockBracketTree.mockClear();
+  mockNavigate.mockClear();
+});
 
 describe("LadderPlayoffs", () => {
   it("shows a skeleton until the ties load", () => {
@@ -142,4 +150,23 @@ describe("LadderPlayoffs", () => {
       ["r2-s0", "r2-s1"],
     ]);
   });
+
+  it("opens a played or scheduled game, and ignores empty shells", () => {
+    const ties = buildLadderPlayoffTies({
+      ladderId: "L1",
+      qualifiers: ["a", "b", "c", "d"].map(entrant),
+    });
+    renderWithTies({ status: LADDER_STATUS.PLAYOFFS }, ties);
+    const { fixtures, onGamePress } = mockBracketTree.mock.calls[0][0];
+
+    onGamePress(fixtures[1].games[0]);
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    onGamePress(fixtures[0].games[0]);
+    expect(mockNavigate).toHaveBeenCalledWith("PlayoffMatchDetails", {
+      ladderId: "L1",
+      tieId: "r1-s0",
+    });
+  });
 });
+

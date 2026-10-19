@@ -13,6 +13,8 @@ import { autoExpireLadderMatches } from "./autoExpireLadderMatches";
 import { onLadderMatchStatusChange } from "./onLadderMatchStatusChange";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { processLadderPhases } from "./processLadderPhases";
+import { recordLadderArrival } from "./recordLadderArrival";
+import { sendLadderMatchReminders } from "./sendLadderMatchReminders";
 import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
@@ -38,6 +40,8 @@ export {
   onLadderMatchStatusChange,
   autoVoidLadderDisputes,
   processLadderPhases,
+  recordLadderArrival,
+  sendLadderMatchReminders,
   notifyOwnersToInvitePlayers,
   generateR2UploadUrl,
   updateGameVideoUrl,

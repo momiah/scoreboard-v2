@@ -23,6 +23,7 @@ import { AntDesign } from "@expo/vector-icons";
 
 import {
   LADDER_PLAYOFF_SIZES,
+  LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_STRUCTURE,
   getEffectiveLadderSize,
   calculateLadderPrizePool,
@@ -36,10 +37,19 @@ import JoinLadderModal from "../../../components/Modals/JoinLadderModal";
 import { LadderContext } from "../../../context/LadderContext";
 import { useLadderJoin } from "../../../hooks/useLadderJoin";
 import { formatCurrency } from "../../../helpers/formatCurrency";
+import { ladderEntrantNoun } from "../../../helpers/ladderEntrantNoun";
+import {
+  getLadderPrizeTable,
+  type LadderPrizeRow,
+} from "../../../helpers/ladderPlayoffPrizes";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-type HowToPlayParams = { ladderId: string; maxPlayers?: number };
+type HowToPlayParams = {
+  ladderId: string;
+  maxPlayers?: number;
+  playoffs?: boolean;
+};
 
 interface OnboardingPage {
   key: string;
@@ -49,7 +59,7 @@ interface OnboardingPage {
 const LadderHowToPlay: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const route = useRoute<RouteProp<Record<string, HowToPlayParams>, string>>();
-  const { ladderId, maxPlayers: maxPlayersParam } = route.params;
+  const { ladderId, maxPlayers: maxPlayersParam, playoffs } = route.params;
   const { ladderById } = useContext(LadderContext);
 
   const maxPlayers =
@@ -63,14 +73,129 @@ const LadderHowToPlay: React.FC = () => {
 
   const ladder =
     ladderById && ladderById.ladderId === ladderId ? ladderById : null;
+  const noun = ladderEntrantNoun(ladder?.ladderType);
 
-  const { mode, openJoin } = useLadderJoin(ladder, () =>
-    setJoinVisible(true),
-  );
+  const { mode, openJoin } = useLadderJoin(ladder, () => setJoinVisible(true));
 
   const goToRules = () => navigation.navigate("LadderRules", { ladderId });
 
-  const pages: OnboardingPage[] = useMemo(
+  const finalsPage: OnboardingPage = {
+    key: "finals",
+    render: () => (
+      <ImageMapper
+        images={ladders}
+        imageSize={72}
+        title="Winning the Final"
+        description={
+          "Win the Final to be crowned champion and take the biggest prize.\n\nPrizes and CP are paid once the playoffs finish."
+        }
+      >
+        <ReadRulesButton onPress={goToRules}>
+          <AntDesign name="book" size={15} color="white" />
+          <ButtonText>Read the full rules</ButtonText>
+        </ReadRulesButton>
+        <FootNote>
+          You can also open the rules anytime from the ladder page&apos;s menu.
+        </FootNote>
+      </ImageMapper>
+    ),
+  };
+
+  const playoffPages: OnboardingPage[] = [
+    {
+      key: "playoffs-intro",
+      render: () => (
+        <PageBody
+          icon="trophy-outline"
+          title="Welcome to the Playoffs"
+          paragraphs={[
+            `The top ${ladder?.playoffBracketSize ? `${ladder.playoffBracketSize} ` : ""}${noun}s made the cut.`,
+            "Every tie is a knockout. Win and you move on, lose and you're out.",
+          ]}
+        />
+      ),
+    },
+    {
+      key: "playoffs-structure",
+      render: () => (
+        <PlayoffsPage
+          maxPlayers={maxPlayers}
+          registeredCount={ladder?.participantCount ?? 0}
+          entryFee={ladder?.entryFee ?? 0}
+          currencyType={ladder?.currencyType ?? "GBP"}
+        />
+      ),
+    },
+    {
+      key: "playoffs-prize-table",
+      render: () =>
+        ladder ? (
+          <PrizeTablePage
+            rows={getLadderPrizeTable(ladder)}
+            currencyType={ladder.currencyType}
+            isPaid={(ladder.entryFee ?? 0) > 0}
+            noun={noun}
+          />
+        ) : null,
+    },
+    {
+      key: "playoffs-home-away",
+      render: () => (
+        <PageBody
+          icon="home-outline"
+          title="Home and Away"
+          paragraphs={[
+            `Each tie is two matches, one at each ${noun}'s home court.`,
+            `Match 1: the lower-ranked ${noun} hosts.\nMatch 2: the higher-ranked ${noun} hosts.`,
+          ]}
+        />
+      ),
+    },
+    {
+      key: "playoffs-arrange",
+      render: () => (
+        <PageBody
+          icon="calendar-outline"
+          title="Arrange Your Home Match"
+          paragraphs={[
+            "The host picks the court and time. Their opponent accepts, or can decline once.",
+            "Match 1 is arranged first, then Match 2 can be arranged.",
+            "After match 1 is complete, you have the option to complete match 2 in the same venue.",
+          ]}
+        />
+      ),
+    },
+    {
+      key: "playoffs-aggregate",
+      render: () => (
+        <PageBody
+          icon="swap-horizontal-outline"
+          title="Win on Aggregate"
+          paragraphs={[
+            `The ${noun} that wins more games across both matches goes through.`,
+            "If both matches result in a draw, a deciding game is played on the same court. You can request the game to be played on a later date if you've run out of time.",
+          ]}
+        />
+      ),
+    },
+    {
+      key: "playoffs-deadline",
+      render: () => (
+        <PageBody
+          icon="hourglass-outline"
+          title={`${LADDER_PLAYOFF_TIE_DAYS} Days to Finish`}
+          paragraphs={[
+            `Both matches must be played within ${LADDER_PLAYOFF_TIE_DAYS} days.`,
+            "If time runs out, the tie goes to whoever won more games, then points, then the higher rank.",
+            "If nothing was played, neither side goes through.",
+          ]}
+        />
+      ),
+    },
+    finalsPage,
+  ];
+
+  const regularPages: OnboardingPage[] = useMemo(
     () => [
       {
         key: "intro",
@@ -78,7 +203,10 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             image={{ uri: ccImageEndpoint }}
             title={"Welcome to the official \n Court Champs Ladder"}
-            body="Climb the ranks by playing other members. This quick guide shows you how games work, how you earn Court Points (CP), and how the season ends in the playoffs."
+            paragraphs={[
+              "Climb the ranks by playing other members.",
+              "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
+            ]}
           />
         ),
       },
@@ -88,17 +216,14 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="add-circle-outline"
             title="Post a Game"
-            body={
+            paragraphs={[
               <>
-                {"Post games you want to play from the "}
-                <PageText style={{ fontWeight: "bold", color: "#cccccc" }}>
-                  {`Match Making`}
-                </PageText>
-                {
-                  " tab. Set it up and wait for another ladder member to accept. We operate a blind matchmaking system, so you won't know who your opponent is until they accept your game."
-                }
-              </>
-            }
+                {"Post a game from the "}
+                <Bold>Match Making</Bold>
+                {" tab and wait for a member to accept."}
+              </>,
+              "Matchmaking is blind, so you only see your opponent once they accept.",
+            ]}
           />
         ),
       },
@@ -108,7 +233,10 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="checkmark-circle-outline"
             title="Challenge Accepted"
-            body="When someone accepts your game you must check in at your chosen court, play your opponent and publish your results"
+            paragraphs={[
+              "Once your game is accepted:",
+              "1. Check in at the court\n2. Play your opponent\n3. Report your scores",
+            ]}
           />
         ),
       },
@@ -118,17 +246,14 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="hand-left-outline"
             title="Accept a Game"
-            body={
+            paragraphs={[
               <>
-                {
-                  "If you rather find games you can browse games other players have posted and accept one from the "
-                }
-                <PageText style={{ fontWeight: "bold", color: "#cccccc" }}>
-                  {`Match Making`}
-                </PageText>
-                {" tab to lock in your next match."}
-              </>
-            }
+                {"Prefer to find a game? Browse the "}
+                <Bold>Match Making</Bold>
+                {" tab."}
+              </>,
+              "Accept one to lock in your next match.",
+            ]}
           />
         ),
       },
@@ -138,7 +263,10 @@ const LadderHowToPlay: React.FC = () => {
           <PageBody
             icon="stats-chart-outline"
             title="The Objective"
-            body="Rack up wins and accumulate CP (Court Points). The more you win, the more CP you earn — and the higher you climb the ladder."
+            paragraphs={[
+              "Win games to earn CP (Court Points).",
+              "The more CP you have, the higher you climb.",
+            ]}
           />
         ),
       },
@@ -157,26 +285,7 @@ const LadderHowToPlay: React.FC = () => {
           />
         ),
       },
-      {
-        key: "finals",
-        render: () => (
-          <ImageMapper
-            images={ladders}
-            imageSize={72}
-            title="Winning the Final"
-            description="Win the ladder to be crowned champion and take the top share of the prize pool. Prizes and Court Points are awarded when all the games are completed."
-          >
-            <ReadRulesButton onPress={goToRules}>
-              <AntDesign name="book" size={15} color="white" />
-              <ButtonText>Read the full rules</ButtonText>
-            </ReadRulesButton>
-            <FootNote>
-              You can also open the rules anytime from the ladder page&apos;s
-              menu.
-            </FootNote>
-          </ImageMapper>
-        ),
-      },
+      finalsPage,
     ],
     [
       maxPlayers,
@@ -186,6 +295,7 @@ const LadderHowToPlay: React.FC = () => {
       ladder?.currencyType,
     ],
   );
+  const pages = playoffs ? playoffPages : regularPages;
 
   const lastIndex = pages.length - 1;
 
@@ -306,7 +416,7 @@ export default LadderHowToPlay;
 interface PageBodyProps {
   icon?: keyof typeof Ionicons.glyphMap;
   title: string;
-  body: React.ReactNode;
+  paragraphs: React.ReactNode[];
   children?: React.ReactNode;
   image?: ImageSourcePropType;
 }
@@ -314,7 +424,7 @@ interface PageBodyProps {
 const PageBody: React.FC<PageBodyProps> = ({
   icon,
   title,
-  body,
+  paragraphs,
   children,
   image,
 }) => (
@@ -338,8 +448,67 @@ const PageBody: React.FC<PageBodyProps> = ({
       </ImageContainer>
     )}
     <PageTitle>{title}</PageTitle>
-    <PageText>{body}</PageText>
+    <Paragraphs>
+      {paragraphs.map((paragraph, index) => (
+        <PageText key={index}>{paragraph}</PageText>
+      ))}
+    </Paragraphs>
     {children}
+  </ScrollView>
+);
+
+interface PrizeTablePageProps {
+  rows: LadderPrizeRow[];
+  currencyType: string;
+  isPaid: boolean;
+  noun: "player" | "team";
+}
+
+const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
+  rows,
+  currencyType,
+  isPaid,
+  noun,
+}) => (
+  <ScrollView
+    contentContainerStyle={{
+      flexGrow: 1,
+      justifyContent: "center",
+      gap: 18,
+      paddingHorizontal: 24,
+      paddingVertical: 30,
+    }}
+  >
+    <CenteredHeader>
+      <IconCircle>
+        <Ionicons name="trophy-outline" size={40} color="#FFC800" />
+      </IconCircle>
+      <PageTitle>Prize Distribution</PageTitle>
+    </CenteredHeader>
+    <Paragraphs>
+      <PageText>{`What each ${noun} takes home, by where they finish.`}</PageText>
+      <PageText>
+        {`${isPaid ? "Cash and CP are" : "CP is"} paid when the playoffs end.`}
+      </PageText>
+    </Paragraphs>
+    <Table testID="how-to-play-prize-table">
+      <TableRow header>
+        <TableCell header flex={1.6}>
+          Finish
+        </TableCell>
+        {isPaid ? <TableCell header>Cash each</TableCell> : null}
+        <TableCell header>CP each</TableCell>
+      </TableRow>
+      {rows.map((row) => (
+        <TableRow key={row.fromPlace}>
+          <TableCell flex={1.6}>{row.label}</TableCell>
+          {isPaid ? (
+            <TableCell>{formatCurrency(row.cash, currencyType)}</TableCell>
+          ) : null}
+          <TableCell>{row.cp.toLocaleString()}</TableCell>
+        </TableRow>
+      ))}
+    </Table>
   </ScrollView>
 );
 
@@ -379,16 +548,17 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
         </IconCircle>
         <PageTitle>The Playoffs</PageTitle>
       </CenteredHeader>
-      <PageText>
-        When the season ends, the top players advance to a single-elimination
-        knockout. Each round must be played within 1 week to progress to the
-        next round.
-      </PageText>
+      <Paragraphs>
+        <PageText>
+          When the season ends, the top players go into a knockout.
+        </PageText>
+        <PageText>{`Each round has ${LADDER_PLAYOFF_TIE_DAYS} days to be played.`}</PageText>
+      </Paragraphs>
 
       <Highlight testID="how-to-play-playoff-highlight">
         <HighlightText>
-          The final playoff structure is determined by the number of players
-          registered when registration closes.
+          The bracket size depends on how many players have registered when
+          registration closes.
         </HighlightText>
       </Highlight>
 
@@ -434,7 +604,9 @@ const AchievementMedalsPage: React.FC = () => (
     images={gameMedals}
     imageSize={72}
     title="Achievement Medals"
-    description="Achievement Medals are awarded when you are performing your best - you are awarded CP bonuses for win streaks, decisive victories and long distant wins."
+    description={
+      "Earn bonus CP with medals for win streaks, big wins and long-distance wins."
+    }
   />
 );
 
@@ -488,6 +660,15 @@ const PageText = styled.Text({
   fontSize: 15,
   lineHeight: 22,
   textAlign: "center",
+});
+
+const Paragraphs = styled.View({
+  gap: 12,
+});
+
+const Bold = styled.Text({
+  fontWeight: "bold",
+  color: "#ffffff",
 });
 
 const FootNote = styled.Text({

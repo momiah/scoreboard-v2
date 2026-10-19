@@ -9,15 +9,27 @@ import type {
   RouteProp,
 } from "@react-navigation/native";
 
+import { LADDER_TYPE } from "@shared";
 import { PopupContext } from "../../../context/PopupContext";
+import { LadderContext } from "../../../context/LadderContext";
+import { UserContext } from "../../../context/UserContext";
+import type { LeaveLadderOutcome } from "../../../context/types/LadderContextType";
+
+const LEAVE_BLOCKED: Record<
+  NonNullable<LeaveLadderOutcome["reason"]>,
+  string
+> = {
+  registration_closed: "You can't leave once registration has closed.",
+  played: "You can't leave after playing a game in this ladder.",
+  open_match: "Cancel your posted or accepted matches before leaving.",
+  not_joined: "You're not in this ladder.",
+  error: "Something went wrong. Please try again.",
+};
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 type LadderMenuAction =
-  | "LadderPostedMatches"
-  | "LadderRules"
-  | "LadderTerms"
-  | "LeaveLadder";
+  "LadderPostedMatches" | "LadderRules" | "LadderTerms" | "LeaveLadder";
 
 interface LadderMenuParams {
   ladderId: string;
@@ -52,23 +64,33 @@ const MENU_OPTIONS: MenuOption[] = [
 
 const LadderMenu: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const route =
-    useRoute<RouteProp<Record<string, LadderMenuParams>, string>>();
+  const route = useRoute<RouteProp<Record<string, LadderMenuParams>, string>>();
   const { ladderId } = route.params;
   const { showBottomToast } = useContext(PopupContext);
+  const { ladderById, leaveLadder } = useContext(LadderContext);
+  const { currentUser } = useContext(UserContext);
+  const isDoubles = ladderById?.ladderType === LADDER_TYPE.DOUBLES;
+
+  const leave = async () => {
+    if (!currentUser?.userId) return;
+    const outcome = await leaveLadder(ladderId, currentUser.userId);
+    if (!outcome.success) {
+      showBottomToast(LEAVE_BLOCKED[outcome.reason ?? "error"], "error");
+      return;
+    }
+    showBottomToast("You've left the ladder", "success");
+    navigation.goBack();
+  };
 
   const handleLeaveLadder = () => {
     Alert.alert(
       "Leave Ladder",
-      "Are you sure you want to leave this ladder? You'll need to rejoin to take part again.",
+      isDoubles
+        ? "Take your team out of this ladder? You'll need to rejoin to take part again. Entry fees are refunded as set out in the Terms."
+        : "Leave this ladder? You'll be removed from the standings and need to rejoin to take part again. Entry fees are refunded as set out in the Terms.",
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Leave",
-          style: "destructive",
-          onPress: () =>
-            showBottomToast("Leaving a ladder is coming soon", "info"),
-        },
+        { text: "Leave", style: "destructive", onPress: leave },
       ],
     );
   };

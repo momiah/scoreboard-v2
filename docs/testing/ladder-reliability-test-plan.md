@@ -38,6 +38,8 @@ both read the docs inside a transaction, call it, and persist what it returns.
 | 2.4 | Auto-approval on a frozen ladder | Skipped 🅹 |
 | 2.5 | Approval notification modal | Shows the disclaimer, Accept and Decline do nothing 🅼 (`ladder-freeze-approval-modal-disclaimer`) 🅹 |
 | 2.6 | Accept-match modal, Game screen, dispute screen | Disclaimer shown and actions locked 🅼 (`ladder-freeze-accept-match-modal-disclaimer`, `ladder-freeze-game-screen-disclaimer`, `ladder-freeze-dispute-screen-disclaimer`) |
+| 2.7 | Any of 2.1, 2.3, 2.4 on a playoff match (`playoffTieId` set) during playoffs | Allowed; the user is scored, ladder participants and teams are not 🅹 🅴 |
+| 2.8 | A playoff match once the ladder is completed or cancelled | `frozen` 🅹 |
 
 ## 3. Joining
 
@@ -174,3 +176,54 @@ All 🅼 (`chats-tab-*`), seeded by `maestro/seeds/seedChatsTab.js`, plus 🅹
 
 Not covered: the empty state, because the test account has real chats the seed
 cannot clear.
+
+## 12. Reschedule and extension
+
+Rules in the shared `ladderMatchChanges.ts`; app eligibility in
+`helpers/ladderMatchCancellation.ts`; writes in `LadderContext`; menu in
+`MatchDetailsMenu`. An accepted match offers exactly one of these in Match
+Options: **Reschedule** before any game is reported, **Request Extension** once
+one is, or a greyed **Already extended**.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 12.1 | Accepted match, no game reported | "Reschedule Match" shown, no extension; tapping opens the info modal, then the date and time picker 🅹 |
+| 12.2 | Reschedule to a past time, or after the posting deadline (regular) or the tie deadline (playoff) | Refused inline in the picker; nothing written 🅹 |
+| 12.3 | Reschedule sent | `rescheduleRequest` stored; the opponent is notified "… asked to move your ladder match at X to Ddd D MMM, HH:mm"; the requester's side sees "Reschedule requested" (greyed) and the waiting banner 🅹 |
+| 12.4 | Opponent accepts | `matchDate` and `matchTime` change, `checkIn` cleared, the request cleared, the requester notified 🅹 |
+| 12.5 | Opponent declines | Request cleared, the time stands, the requester notified 🅹 |
+| 12.6 | Accepting after the proposed time has passed | Refused and the request cleared 🅹 |
+| 12.7 | A game is reported | Reschedule disappears; "Request Extension" appears 🅹 |
+| 12.8 | Extension taken | Applies at once: `extension.expiresAt` 7 days after the request; the other players are notified "… Your extension has 7 days left to complete your match."; the menu shows "Already extended" 🅹 |
+| 12.9 | Extension on a playoff match | The modal says "This tie must be finished by Ddd D MMM."; `expiresAt` is capped at the tie deadline 🅹 |
+| 12.10 | Expiry during an extension | Never before `expiresAt`; after it, the 72-hour inactivity rule applies 🅹 (shared) |
+| 12.11 | Last day of an extension | Every player gets "Your extension has 1 day left to complete your match at X." once 🅹 (functions) |
+| 12.12 | Requests and playoff accepts | Do not touch `lastUpdated`, so they never restart the 72-hour clock 🅹 |
+| 12.13 | Posted match, completed match, or a viewer | Neither option shown 🅹 |
+
+## 13. Match reminders
+
+`functions/src/sendLadderMatchReminders.ts` runs every 15 minutes and reads
+match times as Europe/London. All 🅹 (`sendLadderMatchReminders.test.ts`).
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 13.1 | Accepted match starting within 24 hours | Every player gets "Reminder: your ladder match at X is today/tomorrow at HH:mm." once |
+| 13.2 | Accepted match starting within the hour | Every player gets "Your ladder match at X starts at HH:mm. Remember to check in at the court." once |
+| 13.3 | Posted, completed, cancelled or expired match | No reminder (only accepted matches are read) |
+| 13.4 | Match rescheduled after a reminder | The notification id includes the date and time, so the new time gets its own reminders |
+| 13.5 | Playoff legs | Reminded like any accepted match |
+
+## 14. Leaving a ladder
+
+`leaveLadder` in `context/LadderContext.tsx`, from Ladder Menu → Leave Ladder.
+Uses the same activity checks as disbanding a team. 🅹 in
+`context/LadderContext.test.tsx`.
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 14.1 | Singles, registration open, no games or open matches | Removed from the participants, the count drops by one, "You've left the ladder" |
+| 14.2 | Doubles | The team leaves this ladder only (its ladder team and both members' claims are removed, the team keeps its other ladders) |
+| 14.3 | Registration closed, playoffs, completed or cancelled | "You can't leave once registration has closed." Nothing written |
+| 14.4 | An approved game in this ladder | "You can't leave after playing a game in this ladder." |
+| 14.5 | A posted or accepted match in this ladder | "Cancel your posted or accepted matches before leaving." |

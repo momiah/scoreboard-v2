@@ -1,3 +1,4 @@
+import { LADDER_PLAYOFF_TIE_DAYS } from "courtchamps-shared/types";
 import * as admin from "firebase-admin";
 import {
   DISPUTE_STAGE,
@@ -20,6 +21,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
 
 if (admin.apps.length === 0) admin.initializeApp({ projectId: PROJECT_ID });
 
+import { getLadderMatchStartMs } from "courtchamps-shared/helpers";
 import {
   processLadderPhases,
   runProcessLadderPhases,
@@ -198,7 +200,11 @@ describe("playoffs generated for a 2048-player ladder", () => {
       registrationClosed: [],
       cancelled: [],
       playoffsGenerated: ["L2048"],
-      playoffsHeld: [],
+      standingsFinalised: ["L2048"],
+      playoffTiesSettled: [],
+      playoffRemindersSent: 0,
+      playoffHostNoticesSent: 0,
+      playoffMatchesAutoAccepted: [],
     });
     expect(await ladderData("L2048")).toMatchObject({
       status: LADDER_STATUS.PLAYOFFS,
@@ -221,8 +227,8 @@ describe("playoffs generated for a 2048-player ladder", () => {
       senderId: "system",
       type: "ladder",
       message:
-        "Congratulations! You've made the playoffs in Emulator 2048. You have 10 days to play both your home and away games.",
-      data: { ladderId: "L2048", tab: "Playoffs" },
+        `Congratulations! You've made the playoffs for Emulator 2048. You have ${LADDER_PLAYOFF_TIE_DAYS} days to play your next round.`,
+      data: { ladderId: "L2048", tab: "Playoffs", tieId: expect.stringMatching(/^r1-s\d+$/) },
     });
     expect(eliminated[0]).toMatchObject({
       senderId: "system",
@@ -444,38 +450,136 @@ describe("a run that stopped part-way", () => {
   });
 });
 
-describe("games and disputes still open at the playoff start", () => {
-  it("holds the bracket until the dispute is resolved, then generates", async () => {
-    await seedLadder("LHOLD", { name: "Emulator Hold", maxPlayers: 512 });
-    await seedSingles("LHOLD", 300);
-    await db.doc("disputes/d1").set({
-      ladderId: "LHOLD",
-      stage: DISPUTE_STAGE.UNDER_REVIEW,
+describe("standings made final before playoffs", () => {
+  const londonDate = (date: Date) =>
+    date
+      .toLocaleDateString("en-GB", { timeZone: "Europe/London" })
+      .replace(/\//g, "-");
+  const matchDate = londonDate(daysFromNow(-3));
+  const startMs = getLadderMatchStartMs(matchDate, "18:00") ?? 0;
+  const game = (gameId: string, winner: string, loser: string, approvalStatus: string) => ({
+    gameId,
+    gameNumber: 1,
+    approvalStatus,
+    team1: { player1: { userId: winner }, player2: null, score: 21 },
+    team2: { player1: { userId: loser }, player2: null, score: 15 },
+    result: {
+      winner: { team: "Team 1", players: [winner], score: 21 },
+      loser: { team: "Team 2", players: [loser], score: 15 },
+    },
+  });
+  const regularMatch = (participants: string[], extra: Record<string, unknown> = {}) => ({
+    matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
+    ladderType: LADDER_TYPE.SINGLES,
+    participants,
+    bestOf: 3,
+    matchDate,
+    matchTime: { start: "18:00" },
+    court: homeCourt,
+    games: [],
+    ...extra,
+  });
+  const noShow = (reportId: string, ladderMatchId: string, claimant: string, absent: string) => ({
+    reportId,
+    ladderId: "LFINAL",
+    ladderType: LADDER_TYPE.SINGLES,
+    ladderMatchId,
+    reason: "no_show",
+    reportedBy: claimant,
+    target: { type: "player", userIds: [absent] },
+    walkover: { winnerType: "player", winnerUserIds: [claimant] },
+    status: "pending",
+    createdAt: daysFromNow(-3),
+  });
+
+  it("discards open disputes, settles no-shows, expires unfinished matches, then generates on time", async () => {
+    await seedLadder("LFINAL", { name: "Emulator Final", maxPlayers: 256 });
+    await seedSingles("LFINAL", 140);
+    const match = (id: string) => db.doc(`ladders/LFINAL/ladderMatches/${id}`);
+    await writeAll([
+      [
+        "ladders/LFINAL/ladderMatches/mDispute",
+        regularMatch(["u0001", "u0002"], { games: [game("g1", "u0001", "u0002", "disputed")] }),
+      ],
+      [
+        "disputes/d1",
+        {
+          disputeId: "d1",
+          ladderId: "LFINAL",
+          ladderName: "Emulator Final",
+          ladderMatchId: "mDispute",
+          ladderType: LADDER_TYPE.SINGLES,
+          gameId: "g1",
+          stage: DISPUTE_STAGE.UNDER_REVIEW,
+          originalGame: game("g1", "u0001", "u0002", "pending"),
+          disputedGame: game("g1", "u0002", "u0001", "pending"),
+          participantIds: ["u0001", "u0002"],
+          events: [],
+        },
+      ],
+      [
+        "ladders/LFINAL/ladderMatches/mClear",
+        regularMatch(["u0003", "u0004"], {
+          noShowReported: true,
+          arrivals: {
+            u0003: { verifiedAt: new Date(startMs + 10 * 60 * 1000), distanceMeters: 20, accuracyMeters: 10 },
+          },
+        }),
+      ],
+      ["reports/r1", noShow("r1", "mClear", "u0003", "u0004")],
+      ["ladders/LFINAL/ladderMatches/mUnclear", regularMatch(["u0005", "u0006"], { noShowReported: true })],
+      ["reports/r2", noShow("r2", "mUnclear", "u0005", "u0006")],
+      [
+        "ladders/LFINAL/ladderMatches/mOpen",
+        regularMatch(["u0007", "u0008"], {
+          games: [game("g1", "u0007", "u0008", "approved"), { gameId: "g2", approvalStatus: "" }],
+        }),
+      ],
+      [
+        "ladders/LFINAL/ladderMatches/mPlayoff",
+        regularMatch(["u0009", "u0010"], { playoffTieId: "r9-s0" }),
+      ],
+    ]);
+
+    const summary = await runProcessLadderPhases(now);
+
+    expect(summary.standingsFinalised).toEqual(["LFINAL"]);
+    expect(summary.playoffsGenerated).toEqual(["LFINAL"]);
+    expect((await ladderData("LFINAL")).standingsFinalisedAt).toBeDefined();
+
+    expect((await db.doc("disputes/d1").get()).data()).toMatchObject({
+      stage: DISPUTE_STAGE.RESOLVED,
+      resolution: "discarded",
+      resolvedBy: "system",
     });
-    await db.doc("ladders/LHOLD/ladderMatches/m1").set({
-      matchStatus: LADDER_MATCH_STATUS.ACCEPTED,
-      games: [{ approvalStatus: "Pending" }],
+    const disputed = (await match("mDispute").get()).data();
+    expect(disputed?.games[0].approvalStatus).toBe("discarded");
+    expect(disputed?.matchStatus).toBe(LADDER_MATCH_STATUS.EXPIRED);
+
+    expect((await match("mClear").get()).data()).toMatchObject({
+      matchStatus: LADDER_MATCH_STATUS.COMPLETED,
+      walkover: true,
+      walkoverWinner: "u0003",
+      walkoverCp: 50,
+    });
+    expect((await db.doc("reports/r1").get()).data()).toMatchObject({ status: "approved", resolvedBy: "system" });
+    expect((await db.doc("ladders/LFINAL/reportCounts/u0004").get()).data()?.strikes).toEqual({ no_show: 1 });
+    const claimant = (await db.doc("ladders/LFINAL/ladderParticipants/u0003").get()).data();
+    expect(claimant?.competitionXP).toBe(10000 - 3 * 3 + 50);
+
+    expect((await db.doc("reports/r2").get()).data()).toMatchObject({ status: "rejected", resolvedBy: "system" });
+    expect((await match("mUnclear").get()).data()).toMatchObject({
+      matchStatus: LADDER_MATCH_STATUS.EXPIRED,
+      noShowReported: false,
     });
 
-    const held = await runProcessLadderPhases(now);
+    const open = (await match("mOpen").get()).data();
+    expect(open?.matchStatus).toBe(LADDER_MATCH_STATUS.EXPIRED);
+    expect(open?.games[0].approvalStatus).toBe("approved");
+    expect((await match("mPlayoff").get()).data()?.matchStatus).toBe(LADDER_MATCH_STATUS.ACCEPTED);
 
-    expect(held.playoffsHeld).toEqual(["LHOLD"]);
-    expect(await ladderData("LHOLD")).toMatchObject({
-      status: LADDER_STATUS.REGISTRATION_CLOSED,
-      playoffHold: { openDisputes: 1, pendingGames: 1 },
-    });
-    expect(await tieCount("LHOLD")).toBe(0);
-    expect(await notifications()).toHaveLength(0);
-
-    await db.doc("disputes/d1").update({ stage: DISPUTE_STAGE.RESOLVED });
-    await db
-      .doc("ladders/LHOLD/ladderMatches/m1")
-      .update({ games: [{ approvalStatus: "approved" }] });
-    const released = await runProcessLadderPhases(now);
-
-    expect(released.playoffsGenerated).toEqual(["LHOLD"]);
-    expect((await ladderData("LHOLD")).playoffHold).toBeNull();
-    expect(await tieCount("LHOLD")).toBe(16);
+    const again = await runProcessLadderPhases(now);
+    expect(again.standingsFinalised).toEqual([]);
   });
 });
 

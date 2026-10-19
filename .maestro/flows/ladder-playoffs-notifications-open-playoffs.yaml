@@ -1,0 +1,64 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg2Posted"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-opponent-decline-leg2"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*can't make playoff match 2 at.*Arrange another time.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-details"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-notify-cancellation-request"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*asked to cancel your ladder match at.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-details"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-notify-reschedule-request"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*asked to move your ladder match at.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-details"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-notify-extension"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*extended your ladder match at.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-details"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-notify-reminder"
+- runFlow:
+    file: ../utilities/playoffs/open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*3 days left to finish your Round of 16 in Maestro Playoffs 256.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-details"

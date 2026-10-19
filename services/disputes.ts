@@ -139,9 +139,16 @@ export type CreateDisputeResult = Omit<CreateDisputeOutcome, "reason"> & {
 const readLadderFrozen = async (
   tx: Transaction,
   ladderId: string,
+  match: LadderMatch | string | undefined,
 ): Promise<boolean> => {
   const ladderSnap = await tx.get(doc(db, LADDERS, ladderId));
-  return isLadderMatchPlayFrozen(ladderSnap.data()?.status);
+  const matchData =
+    typeof match === "string"
+      ? ((
+          await tx.get(doc(db, LADDERS, ladderId, LADDER_MATCHES, match))
+        ).data() as LadderMatch | undefined)
+      : match;
+  return isLadderMatchPlayFrozen(ladderSnap.data()?.status, matchData);
 };
 
 export const createDispute = async (
@@ -221,7 +228,15 @@ export const createDispute = async (
     // through the shared resolution path (getDisputeFinalGame).
     const frozen = await runTransaction(db, async (tx) => {
       const matchSnap = await tx.get(matchRef);
-      if (await readLadderFrozen(tx, input.ladderId)) return true;
+      if (
+        await readLadderFrozen(
+          tx,
+          input.ladderId,
+          matchSnap.data() as LadderMatch | undefined,
+        )
+      ) {
+        return true;
+      }
       tx.set(disputeRef, pruneUndefined(dispute));
       if (!matchSnap.exists()) return false;
       const match = matchSnap.data() as LadderMatch;
@@ -314,7 +329,9 @@ export const addDisputeEvidence = async (
       if (!(dispute.participantIds ?? []).includes(userId)) {
         return { success: false, reason: "invalid" } as const;
       }
-      if (await readLadderFrozen(tx, dispute.ladderId)) {
+      if (
+        await readLadderFrozen(tx, dispute.ladderId, dispute.ladderMatchId)
+      ) {
         return { success: false, reason: "frozen" } as const;
       }
       if (
@@ -384,7 +401,9 @@ const resolveActiveDispute = async <Role extends keyof typeof DENIED_REASON>({
         return { success: false, reason: "resolved" } as const;
       }
 
-      if (await readLadderFrozen(tx, dispute.ladderId)) {
+      if (
+        await readLadderFrozen(tx, dispute.ladderId, dispute.ladderMatchId)
+      ) {
         return { success: false, reason: "frozen" } as const;
       }
 

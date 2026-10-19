@@ -1,0 +1,31 @@
+appId: com.courtchamp
+---
+- swipe:
+    start: 50%, 45%
+    end: 50%, 85%
+- swipe:
+    start: 50%, 45%
+    end: 50%, 85%
+- runFlow:
+    when:
+      true: ${SCROLL == 'short'}
+    commands:
+      - swipe:
+          start: 50%, 80%
+          end: 50%, 40%
+          duration: 2500
+- runFlow:
+    when:
+      true: ${SCROLL == 'long'}
+    commands:
+      - swipe:
+          start: 50%, 80%
+          end: 50%, 25%
+          duration: 2500
+- waitForAnimationToEnd
+- tapOn:
+    id: "bracket-game-${TIE}"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-details"
+    timeout: 20000

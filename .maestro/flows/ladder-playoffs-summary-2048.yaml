@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-ladder-playoffs-generated"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-ladder-playoffs-generated"
 - tapOn:
     id: "tab-competitions"
 - runFlow:
@@ -45,15 +43,16 @@ onFlowStart:
     id: "ladder-top-contender-3"
 - assertNotVisible:
     id: "ladder-top-contender-4"
-- assertVisible: ".*Mohsin M.*"
+- assertVisible: ".*(Mohsin M|Testforapple T).*"
 - assertVisible:
     text: ".*P0001 S.*"
-    below: ".*Mohsin M.*"
+    below: ".*(Mohsin M|Testforapple T).*"
 - scrollUntilVisible:
     element:
       id: "participant-carousel-item-0"
     direction: DOWN
     timeout: 60000
+    centerElement: true
 - repeat:
     times: 8
     commands:

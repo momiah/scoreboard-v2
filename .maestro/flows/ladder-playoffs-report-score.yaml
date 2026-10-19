@@ -1,0 +1,33 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg2OneGame"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/open-leg.yaml
+    env:
+      CARD: "playoff-match-leg2"
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-r1-s1-leg2-g2"
+    direction: DOWN
+- waitForAnimationToEnd
+- tapOn:
+    id: "ladder-game-r1-s1-leg2-g2"
+- tapOn:
+    id: "add-game-score-input"
+- inputText: "2119"
+- tapOn:
+    id: "add-game-submit"
+- extendedWaitUntil:
+    visible: "Game Submitted!"
+    timeout: 15000
+- tapOn:
+    id: "video-upload-modal-close"
+- extendedWaitUntil:
+    visible: ".*Pending.*"
+    timeout: 15000

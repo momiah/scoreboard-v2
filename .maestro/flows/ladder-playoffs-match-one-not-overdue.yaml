@@ -1,0 +1,13 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "pending"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- assertVisible: ".*Your opponent arranges match 1 first. If they haven't within ${MAESTRO_LADDER_HOST_ARRANGE_HOURS} hours, you can arrange yours..*"
+- assertNotVisible:
+    id: "playoff-match-leg2-arrange"

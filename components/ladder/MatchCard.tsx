@@ -16,9 +16,13 @@ import {
   type LadderMatchPhase,
 } from "../../helpers/ladderMatchStatus";
 import { formatCurrency } from "../../helpers/formatCurrency";
+import { formatCourtLocation } from "../../helpers/locationCheckIn";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isSmallScreen = screenWidth < 400;
+
+export const MATCH_CARD_TITLE_FONT_SIZE = isSmallScreen ? 14 : 15;
+export const MATCH_HEADER_TITLE_FONT_SIZE = isSmallScreen ? 20 : 22;
 
 interface CheckinControl {
   checkedIn: boolean;
@@ -34,6 +38,7 @@ interface MatchCardProps {
   onLocationPress?: () => void;
   forfeitLabel?: string;
   currentUserId?: string;
+  showBestOf?: boolean;
   testID?: string;
 }
 
@@ -51,9 +56,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
   onLocationPress,
   forfeitLabel,
   currentUserId,
+  showBestOf = true,
   testID,
 }) => {
-  const city = match.court?.location?.city;
+  const place = flat
+    ? formatCourtLocation(match.court)
+    : match.court?.location?.city;
   const courtName = match.court?.courtName ?? "";
   const progress = getLadderMatchProgress(match);
   const hasCourtFee = match.courtFee > 0;
@@ -70,6 +78,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
     selfCheckedIn: !!checkin?.checkedIn,
     pendingApproval: progress.pendingApproval,
     forfeitLabel,
+    currentUserId,
   });
   const showStatus = showProgress || !!checkin;
   const outcome =
@@ -83,7 +92,9 @@ const MatchCard: React.FC<MatchCardProps> = ({
     const { Tag, Text, icon } = spec;
     tagStatus = (
       <Tag testID={tag}>
-        {icon && <Ionicons name={icon.name} size={icon.size} color={icon.color} />}
+        {icon && (
+          <Ionicons name={icon.name} size={icon.size} color={icon.color} />
+        )}
         <Text numberOfLines={1}>{status.label}</Text>
       </Tag>
     );
@@ -124,8 +135,13 @@ const MatchCard: React.FC<MatchCardProps> = ({
               )}
             </Title>
           </TitleRow>
-          {!!city && (
-            <Subtitle numberOfLines={flat ? undefined : 1}>{city}</Subtitle>
+          {!!place && (
+            <Subtitle
+              numberOfLines={flat ? undefined : 1}
+              testID={testID ? `${testID}-address` : undefined}
+            >
+              {place}
+            </Subtitle>
           )}
         </Info>
 
@@ -144,10 +160,12 @@ const MatchCard: React.FC<MatchCardProps> = ({
           <Tag>
             <TagText>🏸 {match.shuttleType}</TagText>
           </Tag>
-          <Tag>
-            <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
-            <TagText>Best of {match.bestOf}</TagText>
-          </Tag>
+          {showBestOf ? (
+            <Tag>
+              <Ionicons name="trophy-outline" size={13} color="#9fb8c8" />
+              <TagText>Best of {match.bestOf}</TagText>
+            </Tag>
+          ) : null}
         </TagGroup>
         {tagStatus && (
           <TagStatus>
@@ -162,7 +180,7 @@ const MatchCard: React.FC<MatchCardProps> = ({
             )}
           </TagStatus>
         )}
-        {!showStatus && (
+        {!showStatus && !match.playoffTieId && (
           <FeeTag hasCourtFee={hasCourtFee}>
             <FeeText hasCourtFee={hasCourtFee}>{feeLabel(match)}</FeeText>
           </FeeTag>
@@ -209,7 +227,7 @@ const Title = styled.Text<{ flat?: boolean }>(
   ({ flat }: { flat?: boolean }) => ({
     color: "#ffffff",
     fontWeight: "bold",
-    fontSize: flat ? (isSmallScreen ? 20 : 22) : isSmallScreen ? 14 : 15,
+    fontSize: flat ? MATCH_HEADER_TITLE_FONT_SIZE : MATCH_CARD_TITLE_FONT_SIZE,
     flexShrink: 1,
   }),
 );
@@ -466,5 +484,6 @@ const PHASE_TAGS: Partial<Record<LadderMatchPhase, PhaseTagSpec>> = {
   },
   started: { Tag: StartedTag, Text: StartedTagText },
   "awaiting-approval": { Tag: AwaitingTag, Text: AwaitingTagText },
+  "awaiting-confirmation": { Tag: AwaitingTag, Text: AwaitingTagText },
   "waiting-players": { Tag: WaitingTag, Text: WaitingTagText },
 };

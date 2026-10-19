@@ -1,0 +1,19 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg1Posted"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- tapOn:
+    id: "ladder-tab-Matchmaking"
+- extendedWaitUntil:
+    visible: "No open matches right now"
+    timeout: 20000
+- assertNotVisible: ".*Awaiting your confirmation.*"

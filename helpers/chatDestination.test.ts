@@ -38,6 +38,17 @@ describe("getChatDestination", () => {
     expect(
       getChatDestination({ competitionId: "M1", competitionType: "ladder" }),
     ).toBeNull();
+    expect(
+      getChatDestination({
+        competitionId: "L1-r1-s0",
+        competitionType: "ladder",
+        ladderId: "L1",
+        tieId: "r1-s0",
+      }),
+    ).toEqual({
+      route: "PlayoffMatchDetails",
+      params: { ladderId: "L1", tieId: "r1-s0", tab: "Chat Room" },
+    });
     expect(getChatDestination({ competitionId: "X" })).toBeNull();
     expect(getChatDestination({})).toBeNull();
   });

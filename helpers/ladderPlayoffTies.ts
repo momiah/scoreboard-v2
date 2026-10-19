@@ -12,7 +12,7 @@ export const isUserInPlayoffTie = (
 ): boolean =>
   !!userId && (sideIncludes(tie.side1, userId) || sideIncludes(tie.side2, userId));
 
-/** The user's current playoff game: the latest round they're in that isn't finished. */
+/** The user's current playoff tie: the latest round they're in that isn't finished. */
 export const findUserPlayoffTie = (
   ties: LadderPlayoffTie[],
   userId: string | undefined,

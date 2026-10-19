@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-ladder-playoffs-generated-256"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-ladder-playoffs-generated-256"
 - tapOn:
     id: "tab-competitions"
 - runFlow:
@@ -29,16 +27,24 @@ onFlowStart:
     timeout: 40000
 - tapOn:
     id: "bracket-round-tab-1"
-- assertVisible:
-    id: "bracket-game-r2-s0"
+- waitForAnimationToEnd
+- runFlow:
+    file: ../utilities/playoffs/assert-bracket-game.yaml
+    env:
+      GAME_ID: "bracket-game-r2-s0"
 - tapOn:
     id: "bracket-view-list"
-- assertVisible:
-    id: "bracket-game-r2-s0"
+- runFlow:
+    file: ../utilities/playoffs/assert-bracket-game.yaml
+    env:
+      GAME_ID: "bracket-game-r2-s0"
 - assertNotVisible:
     id: "bracket-game-r1-s0"
 - assertVisible: ".*Quarter-Final.*"
 - tapOn:
     id: "bracket-view-tree"
-- assertVisible:
-    id: "bracket-game-r2-s0"
+- waitForAnimationToEnd
+- runFlow:
+    file: ../utilities/playoffs/assert-bracket-game.yaml
+    env:
+      GAME_ID: "bracket-game-r2-s0"

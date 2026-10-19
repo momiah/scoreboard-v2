@@ -1,0 +1,31 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "playoffRegular"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- tapOn:
+    id: "ladder-tab-Schedule"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-po-regular-match"
+    timeout: 30000
+- tapOn:
+    id: "schedule-card-maestro-po-regular-match"
+- assertVisible: ".*Ladder results have closed for the playoffs. Games already reported can still be approved.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-maestro-po-regular-match-g2"
+    direction: DOWN
+- waitForAnimationToEnd
+- tapOn:
+    id: "ladder-game-maestro-po-regular-match-g2"
+- assertNotVisible:
+    id: "add-game-score-input"
