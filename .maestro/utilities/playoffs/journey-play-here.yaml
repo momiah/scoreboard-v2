@@ -5,10 +5,14 @@ appId: com.courtchamp
     env:
       BUTTON: "maestro-seed-playoff-match${SUFFIX}-leg1Complete"
 - runFlow:
-    file: open-tie-from-notification.yaml
+    file: open-playoffs-tab.yaml
     env:
       NOTIFICATION: ".*open ${LADDER} on Playoffs.*"
+- runFlow:
+    file: open-bracket-tie.yaml
+    env:
       TIE: "r1-s1"
+      SCROLL: "no"
 - assertVisible: "4 - 2"
 - assertVisible:
     id: "playoff-match-leg2-arrange"
