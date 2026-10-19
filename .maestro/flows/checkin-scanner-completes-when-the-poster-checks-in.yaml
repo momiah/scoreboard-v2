@@ -2,18 +2,14 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-cancel-accepted-opponent-posted"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
-- tapOn:
-    id: "maestro-mock-checkin-poster-checks-in-delayed"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-cancel-accepted-opponent-posted"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-checkin-poster-checks-in-delayed"
 - setLocation:
     latitude: 51.5
     longitude: -0.12
