@@ -1,16 +1,10 @@
-# Firestore access requirements
+# Firestore access: ladder pre-registration
 
-Client writes that Firestore security rules must keep allowing. Read this before
-any security-rules work, and add a row whenever a feature adds a new client
-write. Cloud Functions use the Admin SDK and bypass rules, so only app and
-website (client SDK) writes belong here.
-
-The repo rule files do not reflect what is deployed: `scoreboard-v2/firestore.rules`
-denies everything and `courtchamps-website/firestore.rules` only covers
-`userRoles`, yet the writes below work in production. Check the deployed rules
-in the Firebase console before changing anything.
-
-## Ladder pre-registration
+Client reads and writes the Firestore security rules must allow for ladder
+pre-registration. Cloud Functions use the Admin SDK and bypass rules. The repo
+`firestore.rules` denies everything; the deployed rules live in the Firebase
+console. When `docs/firestore-access-requirements.md` reaches main with the
+ladder branches, move this table into it and delete this file.
 
 | Path | Writer | Operation | Fields / conditions |
 |---|---|---|---|

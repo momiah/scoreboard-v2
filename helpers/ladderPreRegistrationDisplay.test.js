@@ -1,4 +1,4 @@
-import { getLadderPreRegistrationOption } from "@shared";
+import { formatCurrency, getLadderPreRegistrationOption } from "@shared";
 import {
   formatEntryFee,
   formatPrizePool,
@@ -7,7 +7,6 @@ import {
   getLadderSummary,
   getPlatformFeeFootnote,
 } from "./ladderPreRegistrationDisplay";
-import { formatCurrency } from "./formatCurrency";
 
 const gbp = (amount) => formatCurrency(amount, "GBP");
 const cashSingles = getLadderPreRegistrationOption("cash-mens-singles");
@@ -22,8 +21,11 @@ describe("ladder pre-registration display", () => {
     );
   });
 
-  it("shows the community CP pool", () => {
+  it("shows the community CP pool and CP per finish", () => {
     expect(formatPrizePool(communitySingles)).toBe("102,400 CP");
+    const [champion] = getFullLadderPrizeTable(communitySingles);
+    expect(champion.cash).toBe(0);
+    expect(champion.cp).toBeGreaterThan(0);
     expect(formatEntryFee(communitySingles)).toBe("Free entry");
   });
 
@@ -38,7 +40,7 @@ describe("ladder pre-registration display", () => {
     );
   });
 
-  it("shows the full-ladder prize table the ladder screens use", () => {
+  it("shows the full-ladder prize table from the shared payout split", () => {
     const rows = getFullLadderPrizeTable(cashSingles);
     expect(rows.map((row) => [row.fromPlace, row.toPlace, row.cash])).toEqual([
       [1, 1, 14352],
@@ -54,7 +56,14 @@ describe("ladder pre-registration display", () => {
         0,
       ),
     ).toBe(40960);
-    expect(rows[0].label).toBe("Champion");
+    expect(rows.map((row) => row.label)).toEqual([
+      "1st",
+      "2nd",
+      "3rd",
+      "4th",
+      "5th–32nd",
+      "33rd–64th",
+    ]);
   });
 
   it("shows how the pool and places scale with ladder size", () => {

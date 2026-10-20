@@ -2,17 +2,18 @@ import {
   LADDER_PLAYOFF_SIZES,
   LADDER_PRE_REGISTRATION_KEY,
   LADDER_TIER,
+  LADDER_TYPE,
   calculateLadderPrizePool,
+  formatCurrency,
   getLadderEntryPrice,
+  getLadderPayouts,
   getLadderPlayoffStructure,
+  ordinalPlace,
 } from "@shared";
 import type {
   LadderPreRegistrationKey,
   LadderPreRegistrationOption,
 } from "@shared/types";
-import { formatCurrency } from "./formatCurrency";
-import { ladderEntrantNoun } from "./ladderEntrantNoun";
-import { getLadderPrizeTable } from "./ladderPlayoffPrizes";
 
 export const LADDER_PRE_REGISTRATION_COLORS = {
   gold: "#FFD700",
@@ -42,7 +43,7 @@ export const isCashLadder = (option: LadderPreRegistrationOption) =>
   option.tier === LADDER_TIER.CASH;
 
 export const getEntrantNoun = (option: LadderPreRegistrationOption) =>
-  ladderEntrantNoun(option.ladderType);
+  option.ladderType === LADDER_TYPE.DOUBLES ? "team" : "player";
 
 const atFullSize = (
   option: LadderPreRegistrationOption,
@@ -89,8 +90,30 @@ export const getLadderSummary = (option: LadderPreRegistrationOption) => {
   return `Up to ${option.maxPlayers.toLocaleString("en-GB")} ${noun}s · Top ${inTheMoney} ${noun === "team" ? "teams " : ""}win cash`;
 };
 
-export const getFullLadderPrizeTable = (option: LadderPreRegistrationOption) =>
-  getLadderPrizeTable(atFullSize(option));
+export interface PrizeTableRow {
+  fromPlace: number;
+  toPlace: number;
+  label: string;
+  cash: number;
+  cp: number;
+}
+
+export const getFullLadderPrizeTable = (
+  option: LadderPreRegistrationOption,
+): PrizeTableRow[] => {
+  const { cash, xp } = getPrizePool(option);
+  const cashPayouts = getLadderPayouts(cash, option.maxPlayers);
+  return getLadderPayouts(xp, option.maxPlayers).map((cpPayout, index) => ({
+    fromPlace: cpPayout.fromPlace,
+    toPlace: cpPayout.toPlace,
+    label:
+      cpPayout.places === 1
+        ? ordinalPlace(cpPayout.fromPlace)
+        : `${ordinalPlace(cpPayout.fromPlace)}–${ordinalPlace(cpPayout.toPlace)}`,
+    cash: cashPayouts[index]?.each ?? 0,
+    cp: cpPayout.each,
+  }));
+};
 
 export const getLadderSizeRows = (option: LadderPreRegistrationOption) =>
   LADDER_PLAYOFF_SIZES.filter((size) => size <= option.maxPlayers).map(

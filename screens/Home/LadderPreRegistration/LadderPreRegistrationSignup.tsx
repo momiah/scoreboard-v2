@@ -15,11 +15,10 @@ import {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { getLadderPreRegistrationOption } from "@shared";
+import { formatCurrency, getLadderPreRegistrationOption } from "@shared";
 import type { LadderPreRegistrationOption } from "@shared/types";
 import PreRegistrationHeader from "../../../components/LadderPreRegistration/PreRegistrationHeader";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
-import { formatCurrency } from "../../../helpers/formatCurrency";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
   formatPrizePool,
