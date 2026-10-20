@@ -8,15 +8,15 @@ import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_PRE_REGISTRATION_OPTIONS } from "@shared";
 import { CourtChampLogoIcon } from "../../assets";
-import { formatCurrency } from "../../helpers/formatCurrency";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
+  formatPrizePool,
   getPrizePool,
   isCashLadder,
 } from "../../helpers/ladderPreRegistrationDisplay";
 
 const topCashOption = LADDER_PRE_REGISTRATION_OPTIONS.filter(isCashLadder).sort(
-  (a, b) => getPrizePool(b).grossCash - getPrizePool(a).grossCash,
+  (a, b) => getPrizePool(b).cash - getPrizePool(a).cash,
 )[0];
 
 const LadderPreRegistrationBanner: React.FC = () => {
@@ -35,12 +35,7 @@ const LadderPreRegistrationBanner: React.FC = () => {
         <PillText>Ladders · coming soon</PillText>
       </Pill>
       <UpTo>Up to</UpTo>
-      <Amount>
-        {formatCurrency(
-          getPrizePool(topCashOption).grossCash,
-          topCashOption.currencyType,
-        )}
-      </Amount>
+      <Amount>{formatPrizePool(topCashOption)}</Amount>
       <Headline>to be won in Cash Ladders</Headline>
       <Subtitle>
         Plus free Community Ladders. Be first in when they open.

@@ -1,24 +1,24 @@
 import { getLadderPreRegistrationOption } from "@shared";
 import {
-  PRIZE_POOL_FOOTNOTE,
   formatEntryFee,
-  formatPayoutPlaces,
   formatPrizePool,
-  getFullLadderPayouts,
+  getFullLadderPrizeTable,
   getLadderSizeRows,
   getLadderSummary,
+  getPlatformFeeFootnote,
 } from "./ladderPreRegistrationDisplay";
 import { formatCurrency } from "./formatCurrency";
 
+const gbp = (amount) => formatCurrency(amount, "GBP");
 const cashSingles = getLadderPreRegistrationOption("cash-mens-singles");
 const cashDoubles = getLadderPreRegistrationOption("cash-mens-doubles");
 const communitySingles = getLadderPreRegistrationOption("community-singles");
 
 describe("ladder pre-registration display", () => {
-  it("advertises the cash pot before the platform fee and states the fee", () => {
-    expect(formatPrizePool(cashSingles)).toBe("£40,960");
-    expect(PRIZE_POOL_FOOTNOTE).toBe(
-      "*Prize pool and payouts are shown before the 10% platform fee.",
+  it("advertises the whole entry-fee pot and discloses the fee charged on top", () => {
+    expect(formatPrizePool(cashSingles)).toBe(gbp(40960));
+    expect(getPlatformFeeFootnote(cashSingles)).toBe(
+      "*A £2 platform fee is added on top of the £20 entry, so it's £22 to join. The full entry fee goes into the prize pool.",
     );
   });
 
@@ -27,9 +27,9 @@ describe("ladder pre-registration display", () => {
     expect(formatEntryFee(communitySingles)).toBe("Free entry");
   });
 
-  it("describes cash entry and paid places for singles and doubles", () => {
-    expect(formatEntryFee(cashSingles)).toBe("£20 entry");
-    expect(formatEntryFee(cashDoubles)).toBe("£20 entry per team");
+  it("flags the cash entry fee for the footnote and says players or teams", () => {
+    expect(formatEntryFee(cashSingles)).toBe("£20* entry");
+    expect(formatEntryFee(cashDoubles)).toBe("£20* entry per team");
     expect(getLadderSummary(cashSingles)).toBe(
       "Up to 2,048 players · Top 64 win cash",
     );
@@ -38,29 +38,32 @@ describe("ladder pre-registration display", () => {
     );
   });
 
-  it("lists the full-ladder prize breakdown", () => {
-    expect(
-      getFullLadderPayouts(cashSingles).map((payout) => [
-        formatPayoutPlaces(payout),
-        formatCurrency(payout.each, "GBP"),
-      ]),
-    ).toEqual([
-      ["1st", "£14,336"],
-      ["2nd", "£8,192"],
-      ["3rd", "£4,096"],
-      ["4th", "£2,048"],
-      ["5th–32nd", "£292.57"],
-      ["33rd–64th", "£128"],
+  it("shows the full-ladder prize table the ladder screens use", () => {
+    const rows = getFullLadderPrizeTable(cashSingles);
+    expect(rows.map((row) => [row.fromPlace, row.toPlace, row.cash])).toEqual([
+      [1, 1, 14352],
+      [2, 2, 8192],
+      [3, 3, 4096],
+      [4, 4, 2048],
+      [5, 32, 292],
+      [33, 64, 128],
     ]);
+    expect(
+      rows.reduce(
+        (sum, row) => sum + row.cash * (row.toPlace - row.fromPlace + 1),
+        0,
+      ),
+    ).toBe(40960);
+    expect(rows[0].label).toBe("Champion");
   });
 
   it("shows how the pool and places scale with ladder size", () => {
     expect(getLadderSizeRows(cashSingles)).toEqual([
-      { size: 2048, prizePool: "£40,960", playoffSpots: 128, inTheMoney: 64 },
-      { size: 1024, prizePool: "£20,480", playoffSpots: 64, inTheMoney: 32 },
-      { size: 512, prizePool: "£10,240", playoffSpots: 32, inTheMoney: 16 },
-      { size: 256, prizePool: "£5,120", playoffSpots: 16, inTheMoney: 8 },
-      { size: 128, prizePool: "£2,560", playoffSpots: 8, inTheMoney: 8 },
+      { size: 2048, prizePool: gbp(40960), playoffSpots: 128, inTheMoney: 64 },
+      { size: 1024, prizePool: gbp(20480), playoffSpots: 64, inTheMoney: 32 },
+      { size: 512, prizePool: gbp(10240), playoffSpots: 32, inTheMoney: 16 },
+      { size: 256, prizePool: gbp(5120), playoffSpots: 16, inTheMoney: 8 },
+      { size: 128, prizePool: gbp(2560), playoffSpots: 8, inTheMoney: 8 },
     ]);
   });
 });

@@ -2,19 +2,17 @@ import {
   LADDER_PLAYOFF_SIZES,
   LADDER_PRE_REGISTRATION_KEY,
   LADDER_TIER,
-  LADDER_TYPE,
-  PLATFORM_FEE,
   calculateLadderPrizePool,
-  getLadderPayouts,
+  getLadderEntryPrice,
   getLadderPlayoffStructure,
 } from "@shared";
-import type { LadderPayout } from "@shared";
 import type {
   LadderPreRegistrationKey,
   LadderPreRegistrationOption,
 } from "@shared/types";
 import { formatCurrency } from "./formatCurrency";
-import { getOrdinalSuffix } from "./getOrdinalSuffix";
+import { ladderEntrantNoun } from "./ladderEntrantNoun";
+import { getLadderPrizeTable } from "./ladderPlayoffPrizes";
 
 export const LADDER_PRE_REGISTRATION_COLORS = {
   gold: "#FFD700",
@@ -33,10 +31,6 @@ export const LADDER_PRE_REGISTRATION_COLORS = {
   successTint: "#0d3b1f",
 };
 
-export const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE * 100);
-
-export const PRIZE_POOL_FOOTNOTE = `*Prize pool and payouts are shown before the ${PLATFORM_FEE_PERCENT}% platform fee.`;
-
 const COMMUNITY_TAGLINES: Partial<Record<LadderPreRegistrationKey, string>> = {
   [LADDER_PRE_REGISTRATION_KEY.COMMUNITY_SINGLES]:
     "Earn your rank. Your finish stays on your profile for good.",
@@ -48,52 +42,55 @@ export const isCashLadder = (option: LadderPreRegistrationOption) =>
   option.tier === LADDER_TIER.CASH;
 
 export const getEntrantNoun = (option: LadderPreRegistrationOption) =>
-  option.ladderType === LADDER_TYPE.DOUBLES ? "teams" : "players";
+  ladderEntrantNoun(option.ladderType);
+
+const atFullSize = (
+  option: LadderPreRegistrationOption,
+  ladderSize = option.maxPlayers,
+) => ({
+  entryFee: option.entryFee,
+  participantCount: ladderSize,
+  maxPlayers: option.maxPlayers,
+});
 
 export const getPrizePool = (
   option: LadderPreRegistrationOption,
   ladderSize = option.maxPlayers,
-) =>
-  calculateLadderPrizePool({
-    entryFee: option.entryFee,
-    participantCount: ladderSize,
-  });
+) => calculateLadderPrizePool(atFullSize(option, ladderSize));
 
 export const formatPrizePool = (
   option: LadderPreRegistrationOption,
   ladderSize = option.maxPlayers,
 ) => {
-  const { grossCash, xp } = getPrizePool(option, ladderSize);
+  const { cash, xp } = getPrizePool(option, ladderSize);
   return isCashLadder(option)
-    ? formatCurrency(grossCash, option.currencyType)
+    ? formatCurrency(cash, option.currencyType)
     : `${xp.toLocaleString("en-GB")} CP`;
 };
 
 export const formatEntryFee = (option: LadderPreRegistrationOption) => {
   if (!isCashLadder(option)) return "Free entry";
-  const fee = formatCurrency(option.entryFee, option.currencyType);
-  return option.ladderType === LADDER_TYPE.DOUBLES
-    ? `${fee} entry per team`
-    : `${fee} entry`;
+  const fee = `${formatCurrency(option.entryFee, option.currencyType)}* entry`;
+  return getEntrantNoun(option) === "team" ? `${fee} per team` : fee;
+};
+
+/** The platform fee disclosure for the asterisk on a cash ladder's entry fee. */
+export const getPlatformFeeFootnote = (option: LadderPreRegistrationOption) => {
+  const { entryFee, platformFee, total } = getLadderEntryPrice(option.entryFee);
+  const format = (amount: number) =>
+    formatCurrency(amount, option.currencyType);
+  return `*A ${format(platformFee)} platform fee is added on top of the ${format(entryFee)} entry, so it's ${format(total)} to join. The full entry fee goes into the prize pool.`;
 };
 
 export const getLadderSummary = (option: LadderPreRegistrationOption) => {
   if (!isCashLadder(option)) return COMMUNITY_TAGLINES[option.key] ?? "";
   const noun = getEntrantNoun(option);
   const { inTheMoney } = getLadderPlayoffStructure(option.maxPlayers);
-  return `Up to ${option.maxPlayers.toLocaleString("en-GB")} ${noun} · Top ${inTheMoney} ${noun === "teams" ? "teams " : ""}win cash`;
+  return `Up to ${option.maxPlayers.toLocaleString("en-GB")} ${noun}s · Top ${inTheMoney} ${noun === "team" ? "teams " : ""}win cash`;
 };
 
-export const formatPlace = (place: number) =>
-  `${place}${getOrdinalSuffix(place)}`;
-
-export const formatPayoutPlaces = (payout: LadderPayout) =>
-  payout.places === 1
-    ? formatPlace(payout.fromPlace)
-    : `${formatPlace(payout.fromPlace)}–${formatPlace(payout.toPlace)}`;
-
-export const getFullLadderPayouts = (option: LadderPreRegistrationOption) =>
-  getLadderPayouts(getPrizePool(option).grossCash, option.maxPlayers);
+export const getFullLadderPrizeTable = (option: LadderPreRegistrationOption) =>
+  getLadderPrizeTable(atFullSize(option));
 
 export const getLadderSizeRows = (option: LadderPreRegistrationOption) =>
   LADDER_PLAYOFF_SIZES.filter((size) => size <= option.maxPlayers).map(

@@ -13,10 +13,10 @@ import PreRegistrationHeader from "../../../components/LadderPreRegistration/Pre
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
-  PRIZE_POOL_FOOTNOTE,
   formatEntryFee,
   formatPrizePool,
   getLadderSummary,
+  getPlatformFeeFootnote,
   isCashLadder,
 } from "../../../helpers/ladderPreRegistrationDisplay";
 
@@ -49,7 +49,7 @@ const LadderPreRegistrations: React.FC = () => {
           <Pill cash={cash}>
             <PillText cash={cash}>
               {cash
-                ? `${formatPrizePool(option)}* prize pool`
+                ? `${formatPrizePool(option)} prize pool`
                 : `${formatPrizePool(option)} to be won`}
             </PillText>
           </Pill>
@@ -106,7 +106,9 @@ const LadderPreRegistrations: React.FC = () => {
         </SectionTitle>
         {communityOptions.map(renderOption)}
 
-        <Footnote>{PRIZE_POOL_FOOTNOTE}</Footnote>
+        {cashOptions[0] ? (
+          <Footnote>{getPlatformFeeFootnote(cashOptions[0])}</Footnote>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

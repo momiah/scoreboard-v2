@@ -22,12 +22,11 @@ import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrati
 import { formatCurrency } from "../../../helpers/formatCurrency";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
-  PRIZE_POOL_FOOTNOTE,
-  formatPayoutPlaces,
   formatPrizePool,
   getEntrantNoun,
-  getFullLadderPayouts,
+  getFullLadderPrizeTable,
   getLadderSizeRows,
+  getPlatformFeeFootnote,
   isCashLadder,
 } from "../../../helpers/ladderPreRegistrationDisplay";
 
@@ -169,7 +168,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
             <>
               <CenteredMuted>
                 {cash
-                  ? `${formatCurrency(option.entryFee, option.currencyType)} entry when it opens. Nothing to pay today.`
+                  ? `${formatCurrency(option.entryFee, option.currencyType)}* entry when it opens. Nothing to pay today.`
                   : "Free to enter. We'll let you know the moment it opens."}
               </CenteredMuted>
               <PrimaryButton
@@ -189,7 +188,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
             </>
           )}
 
-          {cash ? <Footnote>{PRIZE_POOL_FOOTNOTE}</Footnote> : null}
+          {cash ? <Footnote>{getPlatformFeeFootnote(option)}</Footnote> : null}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -207,43 +206,53 @@ const LadderDetails: React.FC<{ option: LadderPreRegistrationOption }> = ({
     <>
       <Hero cash={cash}>
         <Ionicons name={cash ? "trophy" : "ribbon"} size={32} color={accent} />
-        <HeroAmount color={accent}>
-          {formatPrizePool(option)}
-          {cash ? "*" : ""}
-        </HeroAmount>
+        <HeroAmount color={accent}>{formatPrizePool(option)}</HeroAmount>
         <Muted style={{ textAlign: "center" }}>
           {cash ? "Prize pool" : "Court Points to be won"} with a full ladder of{" "}
-          {option.maxPlayers.toLocaleString("en-GB")} {noun}
+          {option.maxPlayers.toLocaleString("en-GB")} {noun}s
         </Muted>
       </Hero>
 
-      {cash ? (
-        <>
-          <SectionTitle>Prize breakdown</SectionTitle>
-          <Panel>
-            {getFullLadderPayouts(option).map((payout) => (
-              <TableRow key={payout.fromPlace}>
-                <Cell flex={1.4} highlight={payout.fromPlace === 1}>
-                  {formatPayoutPlaces(payout)}
+      <SectionTitle>Prize breakdown</SectionTitle>
+      <Panel testID="ladder-pre-registration-prize-table">
+        <TableRow>
+          <HeaderCell flex={1.6}>Finish</HeaderCell>
+          {cash ? (
+            <HeaderCell flex={1} align="right">
+              Cash each
+            </HeaderCell>
+          ) : null}
+          <HeaderCell flex={1} align="right">
+            CP each
+          </HeaderCell>
+        </TableRow>
+        {getFullLadderPrizeTable(option).map((row) => {
+          const highlight = row.fromPlace === 1;
+          return (
+            <TableRow key={row.fromPlace}>
+              <Cell flex={1.6} highlight={highlight}>
+                {row.label}
+              </Cell>
+              {cash ? (
+                <Cell flex={1} align="right" highlight={highlight}>
+                  {formatCurrency(row.cash, option.currencyType)}
                 </Cell>
-                <Cell flex={1} align="right" highlight={payout.fromPlace === 1}>
-                  {formatCurrency(payout.each, option.currencyType)}
-                  {payout.places > 1 ? " each" : ""}
-                </Cell>
-              </TableRow>
-            ))}
-          </Panel>
-        </>
-      ) : null}
+              ) : null}
+              <Cell flex={1} align="right" highlight={highlight}>
+                {row.cp.toLocaleString("en-GB")}
+              </Cell>
+            </TableRow>
+          );
+        })}
+      </Panel>
 
       <SectionTitle>
-        The {cash ? "pool" : "CP pool"} grows with every{" "}
-        {noun === "teams" ? "team" : "player"}
+        The {cash ? "pool" : "CP pool"} grows with every {noun}
       </SectionTitle>
       <Panel>
         <TableRow>
           <HeaderCell flex={1}>
-            {noun === "teams" ? "Teams" : "Players"}
+            {noun === "team" ? "Teams" : "Players"}
           </HeaderCell>
           <HeaderCell flex={1.2} align="right">
             {cash ? "Prize pool" : "CP pool"}
