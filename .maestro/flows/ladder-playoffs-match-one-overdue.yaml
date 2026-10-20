@@ -13,6 +13,13 @@ onFlowStart:
 - assertNotVisible: ".*Your opponent arranges match 1 first.*"
 - assertVisible:
     id: "playoff-match-leg2-arrange"
+- scrollUntilVisible:
+    element:
+      id: "playoff-match-leg2-arrange"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- waitForAnimationToEnd
 - tapOn:
     id: "playoff-match-leg2-arrange"
 - extendedWaitUntil:
