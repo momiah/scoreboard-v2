@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-cancel-overdue-opponent-posted"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-cancel-overdue-opponent-posted"
 - setLocation:
     latitude: 51.5
     longitude: -0.12
@@ -72,9 +70,7 @@ onFlowStart:
     id: "match-checkin-close"
 - tapOn:
     id: "tab-home"
-- tapOn:
-    id: "maestro-assert-no-show-filed"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-no-show-filed"
