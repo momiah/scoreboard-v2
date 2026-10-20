@@ -6,9 +6,13 @@ onFlowStart:
     file: ../utilities/playoffs/harness.yaml
     env:
       BUTTON: "maestro-seed-add-game-flow-checkin-court-coords"
-- setLocation:
-    latitude: 53.4808
-    longitude: -2.2426
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - setLocation:
+          latitude: 53.4808
+          longitude: -2.2426
 - tapOn:
     id: "tab-competitions"
 - tapOn:
@@ -26,8 +30,17 @@ onFlowStart:
 - extendedWaitUntil:
     visible: ".*Press here to checkin.*"
     timeout: 15000
-- tapOn:
-    point: "78%,23%"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: "78%,23%"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: ".*Press here to checkin.*"
 - extendedWaitUntil:
     visible:
       id: "location-verifier-failed"
@@ -35,9 +48,13 @@ onFlowStart:
 - assertVisible: ".*you're about.*m away.*need to be within 500m.*"
 - assertNotVisible:
     id: "location-verifier-verified"
-- setLocation:
-    latitude: 51.5074
-    longitude: -0.1278
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - setLocation:
+          latitude: 51.5074
+          longitude: -0.1278
 - tapOn:
     id: "location-verifier-retry"
 - extendedWaitUntil:
