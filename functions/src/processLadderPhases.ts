@@ -36,6 +36,7 @@ import { refundLadderEntryFees } from "./helpers/refundLadderEntryFees";
 import { finaliseLadderStandings } from "./helpers/finaliseLadderStandings";
 import { notifyLadderPlayers } from "./helpers/notifyLadderPlayers";
 import {
+  completeAndPayLadder,
   completeLadderPlayoffsIfFinished,
   notifyLadderPlayoffResolution,
   resolveLadderPlayoffTie,
@@ -107,12 +108,20 @@ const runPlayoffDeadlinesAndReminders = async (
         if (!resolution) continue;
         summary.playoffTiesSettled.push(`${ladder.ladderId}/${tie.tieId}`);
         await notifyLadderPlayoffResolution({ ladder, resolution });
-        await completeLadderPlayoffsIfFinished({
-          db,
-          ladderId: ladder.ladderId,
-          resolution,
-          now,
-        });
+        if (
+          await completeLadderPlayoffsIfFinished({
+            db,
+            ladderId: ladder.ladderId,
+            resolution,
+            now,
+          })
+        ) {
+          summary.laddersPaid.push(ladder.ladderId);
+        }
+      }
+      if ((await completeAndPayLadder({ db, ladderId: ladder.ladderId, now })).paid) {
+        summary.laddersPaid.push(ladder.ladderId);
+        continue;
       }
       summary.playoffMatchesAutoAccepted.push(
         ...(await autoAcceptDueLadderPlayoffMatches({ db, ladder, now })).map(
@@ -151,6 +160,7 @@ export interface ProcessLadderPhasesSummary {
   playoffRemindersSent: number;
   playoffHostNoticesSent: number;
   playoffMatchesAutoAccepted: string[];
+  laddersPaid: string[];
 }
 
 const toDate = (value: unknown): Date | null => {
@@ -641,6 +651,27 @@ const resumePendingNotifications = async (db: Db, now: Date): Promise<void> => {
   }
 };
 
+const payUnpaidCompletedLadders = async (
+  db: Db,
+  now: Date,
+  summary: ProcessLadderPhasesSummary,
+): Promise<void> => {
+  const snapshot = await db
+    .collection(LADDERS)
+    .where("status", "==", LADDER_STATUS.COMPLETED)
+    .where("prizesDistributed", "==", false)
+    .get();
+  for (const ladderDoc of snapshot.docs) {
+    try {
+      if ((await completeAndPayLadder({ db, ladderId: ladderDoc.id, now })).paid) {
+        summary.laddersPaid.push(ladderDoc.id);
+      }
+    } catch (error) {
+      console.log(`❌ processLadderPhases payout failed for ${ladderDoc.id}:`, error);
+    }
+  }
+};
+
 /**
  * Moves ladders through their scheduled phases. At registration close a ladder
  * with fewer than LADDER_MIN_PLAYOFF_SIZE entrants is cancelled (and refunded),
@@ -662,6 +693,7 @@ export const runProcessLadderPhases = async (
     playoffRemindersSent: 0,
     playoffHostNoticesSent: 0,
     playoffMatchesAutoAccepted: [],
+    laddersPaid: [],
   };
 
   await resumePendingNotifications(db, now);
@@ -727,6 +759,7 @@ export const runProcessLadderPhases = async (
   }
 
   await runPlayoffDeadlinesAndReminders(db, now, summary);
+  await payUnpaidCompletedLadders(db, now, summary);
 
   console.log(
     `✅ processLadderPhases: closed ${summary.registrationClosed.length}, cancelled ${summary.cancelled.length}, playoffs ${summary.playoffsGenerated.length}, standings final ${summary.standingsFinalised.length}.`,

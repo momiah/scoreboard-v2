@@ -1,6 +1,7 @@
 const admin = require("firebase-admin");
 const { notificationTypes } = require("courtchamps-shared");
 const { sendNotification } = require("./sendNotification");
+const { buildPrizeAwardUpdate } = require("./prizeAwards");
 
 const calculatePrizeAllocation = async ({
   leagueParticipants,
@@ -34,11 +35,13 @@ const calculatePrizeAllocation = async ({
       const prizeXP = Math.floor(prizePool * (prizeDistribution[index] || 0));
 
       const userRef = db.collection("users").doc(player.userId);
-      await userRef.update({
-        "profileDetail.XP": admin.firestore.FieldValue.increment(prizeXP),
-        [`profileDetail.leagueStats.${placementKey}`]:
-          admin.firestore.FieldValue.increment(1),
-      });
+      await userRef.update(
+        buildPrizeAwardUpdate({
+          cp: prizeXP,
+          statsField: "leagueStats",
+          place: index + 1,
+        }),
+      );
 
       console.log(
         `+${prizeXP} XP -> user ${player.userId} (${player.displayName}) (${placementKey})`,

@@ -34,18 +34,23 @@ import {
   isLadderPlayoffHostArrangeOverdue,
   isLadderPlayoffMatchAutoAcceptDue,
   getLadderPlayoffLegHost,
-  getLadderTieFinishPlaces,
+  getLadderPlayoffPayouts,
+  getLadderPlayoffTotalRounds,
+  getLadderTiePlacings,
   ordinalPlace,
   roundLabel,
 } from "courtchamps-shared/helpers";
-import type { PrizeLadder } from "courtchamps-shared/helpers";
+import type { LadderPlayoffPayout, PrizeLadder } from "courtchamps-shared/helpers";
 
 import { notifyLadderPlayers } from "./notifyLadderPlayers";
+import { buildPrizeAwardUpdate } from "./prizeAwards";
+import { distributeLadderCash } from "./distributeLadderCash";
 
 type Db = admin.firestore.Firestore;
 
 const LADDERS = "ladders";
 const LADDER_MATCHES = "ladderMatches";
+const USERS = "users";
 const PLAYOFFS_TAB = "Playoffs";
 const SUMMARY_TAB = "Summary";
 
@@ -84,8 +89,21 @@ export const ladderPlayoffTeamName = (team: GameTeam): string =>
     .filter(Boolean)
     .join(" & ") || "TBD";
 
-const totalRoundsOf = (ties: LadderPlayoffTie[]): number =>
-  Math.max(...ties.filter((tie) => !tie.isThirdPlacePlayoff).map((tie) => tie.round));
+const totalRoundsOf = getLadderPlayoffTotalRounds;
+
+const isLadderPlayoffFinished = (ties: LadderPlayoffTie[]): boolean => {
+  if (ties.length === 0) return false;
+  const totalRounds = totalRoundsOf(ties);
+  return ties
+    .filter((tie) => tie.isThirdPlacePlayoff || tie.round >= totalRounds)
+    .every((tie) => tie.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED);
+};
+
+const latestTiesOf = (resolution: LadderPlayoffTieResolution): LadderPlayoffTie[] => {
+  const latest = new Map(resolution.ties.map((tie) => [tie.tieId, tie]));
+  resolution.changed.forEach((tie) => latest.set(tie.tieId, tie));
+  return [...latest.values()];
+};
 
 export const ladderPlayoffRoundName = (
   tie: Pick<LadderPlayoffTie, "round" | "isThirdPlacePlayoff">,
@@ -261,54 +279,143 @@ const notifyTieFinish = async ({
   tie,
   totalRounds,
   ties,
+  playoffsFinished,
 }: {
   ladder: PlayoffLadder;
   tie: LadderPlayoffTie;
   totalRounds: number;
   ties: LadderPlayoffTie[];
+  playoffsFinished: boolean;
 }): Promise<void> => {
-  const winnerKey: TieSideKey = tie.winner === "team1" ? "side1" : "side2";
-  const loserKey: TieSideKey = winnerKey === "side1" ? "side2" : "side1";
-  const places = getLadderTieFinishPlaces(tie, totalRounds);
-  const placed = async (key: TieSideKey, place: number) => {
-    const won = prizeWon(ladder, place);
+  const roundName = ladderPlayoffRoundName(tie, totalRounds);
+  const paidWhen = playoffsFinished ? "" : ", paid when the playoffs finish";
+  for (const placing of getLadderTiePlacings(tie, ties)) {
+    const won = placing.disqualified ? null : prizeWon(ladder, placing.place);
+    if (placing.decidesMedal && !placing.disqualified) {
+      await notifyLadderPlayers({
+        userIds: placing.playerIds,
+        ladder,
+        kind: `playoff-finish-${tie.tieId}`,
+        title: `You placed ${ordinalPlace(placing.place)}`,
+        message: `Congratulations, you have placed ${ordinalPlace(placing.place)} in ${ladder.name}${won ? ` and been awarded ${won}${paidWhen}` : ""}.`,
+        tab: SUMMARY_TAB,
+        data: { tieId: tie.tieId },
+      });
+      continue;
+    }
+    const because = KNOCKED_OUT_BECAUSE[tie.walkoverReason ?? ""];
     await notifyLadderPlayers({
-      userIds: tie[key]?.playerIds ?? [],
+      userIds: placing.playerIds,
       ladder,
-      kind: `playoff-finish-${tie.tieId}`,
-      title: `You placed ${ordinalPlace(place)}`,
-      message: `Congratulations, you have placed ${ordinalPlace(place)} in ${ladder.name}${won ? ` and been awarded ${won}` : ""}.`,
-      tab: SUMMARY_TAB,
+      kind: `playoff-out-${tie.tieId}`,
+      title: `Knocked out in the ${roundName}`,
+      message: `You've been knocked out in the ${roundName} of ${ladder.name}${because ? ` because ${because}` : ""}.${won ? ` You've been awarded ${won}${paidWhen}.` : ""}`,
+      tab: PLAYOFFS_TAB,
       data: { tieId: tie.tieId },
     });
-  };
-
-  if (places.winner !== null) {
-    await placed(winnerKey, places.winner);
-    await placed(loserKey, places.loser);
-    return;
   }
-  const loserPlaysForThird =
-    tie.round === totalRounds - 1 && ties.some((other) => other.isThirdPlacePlayoff);
-  if (loserPlaysForThird || !tie[loserKey]) return;
-  const roundName = ladderPlayoffRoundName(tie, totalRounds);
-  const won = prizeWon(ladder, places.loser);
-  const because = KNOCKED_OUT_BECAUSE[tie.walkoverReason ?? ""];
-  await notifyLadderPlayers({
-    userIds: tie[loserKey]?.playerIds ?? [],
-    ladder,
-    kind: `playoff-out-${tie.tieId}`,
-    title: `Knocked out in the ${roundName}`,
-    message: `You've been knocked out in the ${roundName} of ${ladder.name}${because ? ` because ${because}` : ""}.${won ? ` You've been awarded ${won}, paid when the playoffs finish.` : ""}`,
-    tab: PLAYOFFS_TAB,
-    data: { tieId: tie.tieId },
-  });
 };
 
+export interface LadderCompletion {
+  completed: boolean;
+  paid: boolean;
+  payouts: LadderPlayoffPayout[];
+}
+
 /**
- * Marks the ladder complete once the Final and the 3rd-place tie are both
- * finished. Paying the prizes is Phase 3; until then it's only logged.
+ * In one transaction: marks the ladder Completed once the Final and the
+ * 3rd-place tie are both finished, and pays every placed side its CP, the
+ * award and the `prizesDistributed` claim committing together. A retried or
+ * concurrent run finds the claim and pays nothing. A side with a disqualified
+ * player, or a player whose profile no longer exists, is left unpaid.
  */
+export const completeAndPayLadder = async ({
+  db,
+  ladderId,
+  now,
+}: {
+  db: Db;
+  ladderId: string;
+  now: Date;
+}): Promise<LadderCompletion> => {
+  const ladderRef = db.collection(LADDERS).doc(ladderId);
+  const nothing: LadderCompletion = { completed: false, paid: false, payouts: [] };
+  const result = await db.runTransaction(async (transaction) => {
+    const [ladderSnapshot, tiesSnapshot] = await Promise.all([
+      transaction.get(ladderRef),
+      transaction.get(ladderRef.collection(LADDER_PLAYOFF_TIES_COLLECTION)),
+    ]);
+    const ladder = ladderSnapshot.data() as Ladder | undefined;
+    if (!ladder) return nothing;
+    const completing = ladder.status === LADDER_STATUS.PLAYOFFS;
+    const paying = !ladder.prizesDistributed;
+    if (!completing && !(paying && ladder.status === LADDER_STATUS.COMPLETED)) return nothing;
+    const ties = tiesSnapshot.docs.map((tieDoc) => toLadderPlayoffTie(tieDoc.id, tieDoc.data()));
+    if (!isLadderPlayoffFinished(ties)) return nothing;
+
+    const owed = paying ? getLadderPlayoffPayouts(ladder, ties) : [];
+    const userIds = [...new Set(owed.flatMap((payout) => payout.playerIds))];
+    const [profiles, counts] = userIds.length
+      ? await Promise.all([
+          transaction.getAll(...userIds.map((userId) => db.collection(USERS).doc(userId))),
+          transaction.getAll(
+            ...userIds.map((userId) =>
+              ladderRef.collection(LADDER_REPORT_COUNTS_COLLECTION).doc(userId),
+            ),
+          ),
+        ])
+      : [[], []];
+    const existing = new Set(profiles.filter((profile) => profile.exists).map((profile) => profile.id));
+    const disqualified = new Set(
+      counts
+        .filter((count) => isDisqualified(count.data()?.strikes as StrikeCounts | undefined))
+        .map((count) => count.id),
+    );
+    const payouts = owed.filter(
+      (payout) => !payout.playerIds.some((userId) => disqualified.has(userId)),
+    );
+
+    payouts.forEach((payout) =>
+      payout.playerIds
+        .filter((userId) => existing.has(userId))
+        .forEach((userId) =>
+          transaction.update(
+            db.collection(USERS).doc(userId),
+            buildPrizeAwardUpdate({
+              cp: payout.prize.cp,
+              statsField: "ladderStats",
+              place: payout.place,
+            }),
+          ),
+        ),
+    );
+    transaction.update(ladderRef, {
+      ...(completing
+        ? { status: LADDER_STATUS.COMPLETED, playoffsCompletedAt: now }
+        : {}),
+      ...(paying
+        ? {
+            prizesDistributed: true,
+            prizeDistributionDate: admin.firestore.FieldValue.serverTimestamp(),
+          }
+        : {}),
+    });
+    return { completed: completing, paid: paying, payouts, ladder };
+  });
+  if (!("ladder" in result)) return result;
+  const { ladder, ...completion } = result;
+  if (completion.payouts.length) {
+    await distributeLadderCash({ ladder: { ...ladder, ladderId }, payouts: completion.payouts });
+    console.log(
+      `🏆 [playoffs] ${ladderId} paid ${completion.payouts
+        .map((payout) => `${ordinalPlace(payout.place)} ${payout.prize.cp} CP -> ${payout.playerIds.join(" & ")}`)
+        .join(", ")}`,
+    );
+  }
+  return completion;
+};
+
+/** Completes and pays the ladder once a resolution finishes its playoffs. */
 export const completeLadderPlayoffsIfFinished = async ({
   db,
   ladderId,
@@ -320,31 +427,8 @@ export const completeLadderPlayoffsIfFinished = async ({
   resolution: LadderPlayoffTieResolution;
   now: Date;
 }): Promise<boolean> => {
-  const latest = new Map(resolution.ties.map((tie) => [tie.tieId, tie]));
-  resolution.changed.forEach((tie) => latest.set(tie.tieId, tie));
-  const ties = [...latest.values()];
-  const totalRounds = totalRoundsOf(ties);
-  const deciding = ties.filter(
-    (tie) => tie.isThirdPlacePlayoff || tie.round >= totalRounds,
-  );
-  if (!deciding.every((tie) => tie.status === LADDER_PLAYOFF_TIE_STATUS.COMPLETED)) {
-    return false;
-  }
-  const ladderRef = db.collection(LADDERS).doc(ladderId);
-  const completed = await db.runTransaction(async (transaction) => {
-    const fresh = await transaction.get(ladderRef);
-    if (fresh.data()?.status !== LADDER_STATUS.PLAYOFFS) return false;
-    transaction.update(ladderRef, {
-      status: LADDER_STATUS.COMPLETED,
-      playoffsCompletedAt: now,
-    });
-    return true;
-  });
-  if (completed) {
-    console.log(
-      `🏆 [playoffs] ${ladderId} complete — prize payouts are Phase 3 and haven't been made.`,
-    );
-  }
+  if (!isLadderPlayoffFinished(latestTiesOf(resolution))) return false;
+  const { completed } = await completeAndPayLadder({ db, ladderId, now });
   return completed;
 };
 
@@ -361,6 +445,7 @@ export const notifyLadderPlayoffResolution = async ({
   const before = new Map(resolution.ties.map((original) => [original.tieId, original]));
   const resolved = resolution.changed.find((changedTie) => changedTie.tieId === tie.tieId);
   const walkoverNote = WALKOVER_NOTE[resolved?.walkoverReason ?? ""];
+  const playoffsFinished = isLadderPlayoffFinished(latestTiesOf(resolution));
   const withNote = (message: string) => (walkoverNote ? `${message} ${walkoverNote}` : message);
 
   if (resolution.deciderCreated) {
@@ -398,7 +483,13 @@ export const notifyLadderPlayoffResolution = async ({
       changedTie.winner &&
       before.get(changedTie.tieId)?.status !== LADDER_PLAYOFF_TIE_STATUS.COMPLETED
     ) {
-      await notifyTieFinish({ ladder, tie: changedTie, totalRounds, ties: resolution.ties });
+      await notifyTieFinish({
+        ladder,
+        tie: changedTie,
+        totalRounds,
+        ties: resolution.ties,
+        playoffsFinished,
+      });
     }
     const previous = before.get(changedTie.tieId);
     const arrived = TIE_SIDES.filter((key) => changedTie[key] && !previous?.[key]);

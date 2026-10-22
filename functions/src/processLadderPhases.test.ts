@@ -54,16 +54,20 @@ function collectionRef(path: string): any {
     count: () => ({
       get: async () => ({ data: () => ({ count: docs().length }) }),
     }),
-    where: (field: string, op: string, value: unknown) => {
-      if (op !== "in" && op !== "==") throw new Error(`unsupported op ${op}`);
-      const matches = (fieldValue: unknown) =>
-        op === "in" ? (value as unknown[]).includes(fieldValue) : fieldValue === value;
-      return {
-        get: async () => ({
-          docs: docs().filter((doc) => matches((doc.data() as Data)[field])),
-        }),
-      };
-    },
+    where: (field: string, op: string, value: unknown) => queryRef(docs, field, op, value),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function queryRef(source: () => any[], field: string, op: string, value: unknown): any {
+  if (op !== "in" && op !== "==") throw new Error(`unsupported op ${op}`);
+  const matches = (fieldValue: unknown) =>
+    op === "in" ? (value as unknown[]).includes(fieldValue) : fieldValue === value;
+  const docs = () => source().filter((doc) => matches((doc.data() as Data)[field]));
+  return {
+    get: async () => ({ docs: docs() }),
+    where: (nextField: string, nextOp: string, nextValue: unknown) =>
+      queryRef(docs, nextField, nextOp, nextValue),
   };
 }
 
@@ -79,6 +83,8 @@ const db = {
     const writes: (() => void)[] = [];
     const transaction = {
       get: async (ref: { path: string }) => snapshot(ref.path),
+      getAll: async (...refs: { path: string }[]) =>
+        refs.map((ref) => snapshot(ref.path)),
       create: (ref: { path: string }, data: Data) => {
         writes.push(() => {
           if (store.has(ref.path)) {
@@ -315,6 +321,7 @@ describe("registration close", () => {
       playoffRemindersSent: 0,
       playoffHostNoticesSent: 0,
       playoffMatchesAutoAccepted: [],
+      laddersPaid: [],
     });
     expect(writeLog).toHaveLength(0);
   });

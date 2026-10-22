@@ -105,3 +105,23 @@ must not be able to:
 to every entrant, promotion to every qualifier) via the Admin SDK.
 
 Payout must never depend on client-written data.
+
+## Prize payouts and PROLevel
+
+No new client writes. Ladder prize payouts are written only by Cloud Functions
+(`onLadderMatchStatusChange` when the last deciding tie settles, and
+`processLadderPhases` as the retry), in one transaction with the ladder's
+Completed status. Clients must not be able to:
+
+- set a ladder's `prizesDistributed`, `prizeDistributionDate` or
+  `playoffsCompletedAt`;
+- write a user's `profileDetail.XP` outside the existing game-scoring flows;
+- write a user's `profileDetail.ladderStats`, `profileDetail.leagueStats`,
+  `profileDetail.tournamentStats` or `profileDetail.cashWon` at all. `cashWon`
+  (lifetime cash won, which drives PROLevel) is function-only: the app and the
+  website only read it.
+
+The one client write that touches these fields is sign-up
+(`screens/Authentication/Signup.js`), which creates `users/{uid}` from
+`profileDetailSchema` with `ladderStats` all 0 and `cashWon: 0`. Rules must
+allow those starting values on create and nothing else.
