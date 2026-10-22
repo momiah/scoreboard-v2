@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-add-game-flow-doubles"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-add-game-flow-doubles"
 
 - tapOn:
     id: "tab-competitions"
@@ -26,7 +24,7 @@ onFlowStart:
 - assertVisible: ".*Maestro Bravos.*"
 - assertVisible: ".*Maestro Aces.*"
 - assertNotVisible: ".*Maestro H & Maestro I.*"
-- assertNotVisible: ".*Maestro G & Mohsin M.*"
+- assertNotVisible: ".*Maestro G & (Mohsin M|Testforapple T).*"
 - assertVisible:
     id: "checkin-team-maestroagdopp1-maestroagdopp2"
 - assertVisible:

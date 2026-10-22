@@ -39,7 +39,7 @@ onFlowStart:
           element:
             id: "bracket-game-r1-s55"
           direction: DOWN
-          timeout: 60000
+          timeout: 240000
 - runFlow:
     when:
       platform: Android

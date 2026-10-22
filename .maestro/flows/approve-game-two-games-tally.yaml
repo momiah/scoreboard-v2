@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-add-game-flow-two-reported"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-add-game-flow-two-reported"
 
 - tapOn:
     id: "tab-competitions"
@@ -52,9 +50,9 @@ onFlowStart:
 - extendedWaitUntil:
     visible: ".*Maestro R.*Wins.*2.*PD.*12.*CP.*60.*"
     timeout: 15000
-- assertVisible: ".*Mohsin M.*Wins.*0.*PD.*-12.*CP.*0.*"
+- assertVisible: ".*(Mohsin M|Testforapple T).*Wins.*0.*PD.*-12.*CP.*0.*"
 
-- tapOn: ".*Mohsin M.*"
+- tapOn: ".*(Mohsin M|Testforapple T).*"
 - extendedWaitUntil:
     visible:
       id: "player-details-screen"

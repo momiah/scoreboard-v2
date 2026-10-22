@@ -2,15 +2,17 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-add-game-flow-checkin-court-coords"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
-- setLocation:
-    latitude: 51.5074
-    longitude: -0.1278
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-add-game-flow-checkin-court-coords"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - setLocation:
+          latitude: 51.5074
+          longitude: -0.1278
 - tapOn:
     id: "tab-competitions"
 - tapOn:
@@ -28,8 +30,17 @@ onFlowStart:
 - extendedWaitUntil:
     visible: ".*Press here to checkin.*"
     timeout: 15000
-- tapOn:
-    point: "78%,23%"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          point: "78%,23%"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn: ".*Press here to checkin.*"
 - extendedWaitUntil:
     visible:
       id: "location-verifier-verified"

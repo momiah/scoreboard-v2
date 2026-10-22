@@ -2,12 +2,10 @@ appId: com.courtchamp
 onFlowStart:
   - runFlow: ../login.yaml
 ---
-- tapOn:
-    id: "maestro-seed-cancel-requested-by-user"
-- extendedWaitUntil:
-    visible: "Seeded"
-    timeout: 60000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-cancel-requested-by-user"
 - tapOn:
     id: "tab-competitions"
 - runFlow:
