@@ -21,6 +21,7 @@ import { LadderContext } from "../../context/LadderContext";
 import { UserContext } from "../../context/UserContext";
 import { PopupContext } from "../../context/PopupContext";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
+import { useAndroidKeyboardHeight } from "../../hooks/useAndroidKeyboardHeight";
 
 interface TargetOption {
   key: string;
@@ -48,6 +49,7 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
   const { submitReport, fetchLadderTeams } = useContext(LadderContext);
   const { getUserById } = useContext(UserContext);
   const { showBottomToast } = useContext(PopupContext);
+  const androidKeyboardHeight = useAndroidKeyboardHeight();
 
   const [options, setOptions] = useState<TargetOption[]>([]);
   const [resolving, setResolving] = useState(false);
@@ -80,7 +82,9 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
           );
           if (opponentTeam) {
             const teams = await fetchLadderTeams(ladderId);
-            const teamDoc = teams.find((t) => t.teamKey === opponentTeam.teamKey);
+            const teamDoc = teams.find(
+              (t) => t.teamKey === opponentTeam.teamKey,
+            );
             const teamName =
               teamDoc?.teamName?.trim() || (teamDoc?.team ?? []).join(" & ");
             built.push({
@@ -201,89 +205,97 @@ const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
       <Backdrop accessible={false} activeOpacity={1} onPress={onClose}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ paddingBottom: androidKeyboardHeight }}
         >
-        <Sheet
-          accessible={false}
-          activeOpacity={1}
-          onPress={() => {}}
-          testID="report-player-modal"
-        >
-          <Handle />
-          <TitleRow>
-            <Title>Report a player</Title>
-            <CloseButton onPress={onClose} testID="report-close">
-              <Ionicons name="close" size={22} color="#9fb8c8" />
-            </CloseButton>
-          </TitleRow>
+          <Sheet
+            accessible={false}
+            activeOpacity={1}
+            onPress={() => {}}
+            testID="report-player-modal"
+          >
+            <Handle />
+            <TitleRow>
+              <Title>Report a player</Title>
+              <CloseButton onPress={onClose} testID="report-close">
+                <Ionicons name="close" size={22} color="#9fb8c8" />
+              </CloseButton>
+            </TitleRow>
 
-          {resolving ? (
-            <ActivityIndicator color="#00A2FF" style={{ marginVertical: 24 }} />
-          ) : options.length === 0 ? (
-            <Muted>No opponent to report on this match.</Muted>
-          ) : (
-            <>
-              <SectionLabel>Who are you reporting?</SectionLabel>
-              {options.map((option) => (
-                <Choice
-                  key={option.key}
-                  selected={targetKey === option.key}
-                  activeOpacity={0.85}
-                  onPress={() => setTargetKey(option.key)}
-                  testID={`report-target-${option.key}`}
-                >
-                  <ChoiceText selected={targetKey === option.key}>
-                    {option.label}
-                  </ChoiceText>
-                  {targetKey === option.key && (
-                    <Ionicons name="checkmark-circle" size={18} color="#00A2FF" />
-                  )}
-                </Choice>
-              ))}
-
-              <SectionLabel>Reason</SectionLabel>
-              <ReasonRow>
-                {CONDUCT_REPORT_REASONS.map((value) => (
-                  <ReasonChip
-                    key={value}
-                    selected={reason === value}
+            {resolving ? (
+              <ActivityIndicator
+                color="#00A2FF"
+                style={{ marginVertical: 24 }}
+              />
+            ) : options.length === 0 ? (
+              <Muted>No opponent to report on this match.</Muted>
+            ) : (
+              <>
+                <SectionLabel>Who are you reporting?</SectionLabel>
+                {options.map((option) => (
+                  <Choice
+                    key={option.key}
+                    selected={targetKey === option.key}
                     activeOpacity={0.85}
-                    onPress={() => setReason(value)}
-                    testID={`report-reason-${value}`}
+                    onPress={() => setTargetKey(option.key)}
+                    testID={`report-target-${option.key}`}
                   >
-                    <ReasonChipText selected={reason === value}>
-                      {REPORT_REASON_LABELS[value]}
-                    </ReasonChipText>
-                  </ReasonChip>
+                    <ChoiceText selected={targetKey === option.key}>
+                      {option.label}
+                    </ChoiceText>
+                    {targetKey === option.key && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={18}
+                        color="#00A2FF"
+                      />
+                    )}
+                  </Choice>
                 ))}
-              </ReasonRow>
 
-              {needsDescription && (
-                <DescriptionInput
-                  placeholder="Add a description (required)"
-                  placeholderTextColor="#5b7186"
-                  multiline
-                  value={description}
-                  onChangeText={setDescription}
-                  testID="report-description"
-                />
-              )}
+                <SectionLabel>Reason</SectionLabel>
+                <ReasonRow>
+                  {CONDUCT_REPORT_REASONS.map((value) => (
+                    <ReasonChip
+                      key={value}
+                      selected={reason === value}
+                      activeOpacity={0.85}
+                      onPress={() => setReason(value)}
+                      testID={`report-reason-${value}`}
+                    >
+                      <ReasonChipText selected={reason === value}>
+                        {REPORT_REASON_LABELS[value]}
+                      </ReasonChipText>
+                    </ReasonChip>
+                  ))}
+                </ReasonRow>
 
-              {notice && <Notice testID="report-notice">{notice}</Notice>}
+                {needsDescription && (
+                  <DescriptionInput
+                    placeholder="Add a description (required)"
+                    placeholderTextColor="#5b7186"
+                    multiline
+                    value={description}
+                    onChangeText={setDescription}
+                    testID="report-description"
+                  />
+                )}
 
-              <SubmitButton
-                disabled={!canSubmit}
-                isDisabled={!canSubmit}
-                activeOpacity={0.85}
-                onPress={handleSubmit}
-                testID="report-submit"
-              >
-                <SubmitText>
-                  {submitting ? "Submitting…" : "Submit report"}
-                </SubmitText>
-              </SubmitButton>
-            </>
-          )}
-        </Sheet>
+                {notice && <Notice testID="report-notice">{notice}</Notice>}
+
+                <SubmitButton
+                  disabled={!canSubmit}
+                  isDisabled={!canSubmit}
+                  activeOpacity={0.85}
+                  onPress={handleSubmit}
+                  testID="report-submit"
+                >
+                  <SubmitText>
+                    {submitting ? "Submitting…" : "Submit report"}
+                  </SubmitText>
+                </SubmitButton>
+              </>
+            )}
+          </Sheet>
         </KeyboardAvoidingView>
       </Backdrop>
     </Modal>

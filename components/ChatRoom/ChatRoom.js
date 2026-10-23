@@ -13,6 +13,7 @@ import {
   View,
   Text,
 } from "react-native";
+import { useAndroidKeyboardHeight } from "../../hooks/useAndroidKeyboardHeight";
 import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -49,21 +50,7 @@ const ChatRoom = ({
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef(null);
   const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    if (Platform.OS !== "android") return undefined;
-    const show = Keyboard.addListener("keyboardDidShow", (event) =>
-      setKeyboardHeight(event.endCoordinates.height),
-    );
-    const hide = Keyboard.addListener("keyboardDidHide", () =>
-      setKeyboardHeight(0),
-    );
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
+  const keyboardHeight = useAndroidKeyboardHeight();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Scroll to end function with delay to ensure rendering is complete
