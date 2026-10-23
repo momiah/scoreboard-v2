@@ -48,6 +48,13 @@ onFlowStart:
 - pressKey: Enter
 - tapOn:
     id: "country-option-GB"
+- extendedWaitUntil:
+    visible:
+      id: "city-search-input"
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible: "Loading cities"
+    timeout: 90000
 - tapOn:
     id: "city-search-input"
 - inputText: "London"

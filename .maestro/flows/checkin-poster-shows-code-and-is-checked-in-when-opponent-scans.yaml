@@ -56,6 +56,9 @@ onFlowStart:
       platform: Android
     commands:
       - tapOn: ".*Press here to checkin.*"
+      - tapOn:
+          text: "Turn on"
+          optional: true
 - extendedWaitUntil:
     visible:
       id: "location-verifier-verified"
