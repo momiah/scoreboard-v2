@@ -172,17 +172,10 @@ export const seedAddApproveGameFlow = async ({
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
-    seasonEndsAt: new Date(),
     playoffStartsAt:
       playoffStartsInDays === null
         ? new Date()
         : new Date(Date.now() + playoffStartsInDays * 24 * 60 * 60 * 1000),
-    playoffEndsAt:
-      playoffStartsInDays === null
-        ? new Date()
-        : new Date(
-            Date.now() + (playoffStartsInDays + 10) * 24 * 60 * 60 * 1000,
-          ),
     entryFee: 0,
     currencyType: "GBP",
     minRank: 0,

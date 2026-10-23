@@ -289,7 +289,6 @@ export const seedLadderPlayoffJourney = async ({
             batch.update(doc(db, "ladders", ladderId), {
               playoffsGeneratedAt: roundOneStart,
               playoffStartsAt: roundOneStart,
-              seasonEndsAt: roundOneStart,
             }),
         ]
       : []),

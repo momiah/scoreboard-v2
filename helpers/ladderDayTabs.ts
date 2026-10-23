@@ -74,9 +74,7 @@ const dayTabsBetween = (
 };
 
 const ladderEnd = (ladder: Ladder): Date | null =>
-  toMoment(ladder.playoffStartsAt)?.toDate() ??
-  toMoment(ladder.seasonEndsAt)?.toDate() ??
-  null;
+  toMoment(ladder.playoffStartsAt)?.toDate() ?? null;
 
 const ladderRegistrationOpens = (ladder: Ladder): Date | null =>
   toMoment(ladder.registrationOpensAt)?.toDate() ?? null;
