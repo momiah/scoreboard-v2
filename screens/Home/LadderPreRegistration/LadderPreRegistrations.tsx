@@ -1,5 +1,5 @@
 import React from "react";
-import { SafeAreaView, ScrollView } from "react-native";
+import { ActivityIndicator, SafeAreaView, ScrollView } from "react-native";
 import {
   useNavigation,
   NavigationProp,
@@ -7,12 +7,12 @@ import {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { LADDER_PRE_REGISTRATION_OPTIONS } from "@shared";
-import type { LadderPreRegistrationOption } from "@shared/types";
+import type { LadderPreRegistration } from "@shared/types";
 import PreRegistrationHeader from "../../../components/LadderPreRegistration/PreRegistrationHeader";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
+  LADDER_SEASON_EXPLAINER,
   formatEntryFee,
   formatPrizePool,
   getLadderSummary,
@@ -20,28 +20,28 @@ import {
   isCashLadder,
 } from "../../../helpers/ladderPreRegistrationDisplay";
 
-const cashOptions = LADDER_PRE_REGISTRATION_OPTIONS.filter(isCashLadder);
-const communityOptions = LADDER_PRE_REGISTRATION_OPTIONS.filter(
-  (option) => !isCashLadder(option),
-);
-
 const LadderPreRegistrations: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { registeredKeys } = useLadderPreRegistrations();
+  const { loading, preRegistrations, registeredIds } =
+    useLadderPreRegistrations();
+  const cashOptions = preRegistrations.filter(isCashLadder);
+  const communityOptions = preRegistrations.filter(
+    (option) => !isCashLadder(option),
+  );
 
-  const renderOption = (option: LadderPreRegistrationOption) => {
+  const renderOption = (option: LadderPreRegistration) => {
     const cash = isCashLadder(option);
-    const registered = registeredKeys.has(option.key);
+    const registered = registeredIds.has(option.preRegistrationId);
 
     return (
       <OptionCard
-        key={option.key}
-        testID={`ladder-pre-registration-option-${option.key}`}
+        key={option.preRegistrationId}
+        testID={`ladder-pre-registration-option-${option.preRegistrationId}`}
         cash={cash}
         activeOpacity={0.85}
         onPress={() =>
           navigation.navigate("LadderPreRegistrationSignup", {
-            ladderKey: option.key,
+            preRegistrationId: option.preRegistrationId,
           })
         }
       >
@@ -56,7 +56,12 @@ const LadderPreRegistrations: React.FC = () => {
           <Muted>{formatEntryFee(option)}</Muted>
         </OptionTopRow>
         <OptionName>{option.name}</OptionName>
-        <Muted>{getLadderSummary(option)}</Muted>
+        <Muted>
+          {option.region} · {getLadderSummary(option)}
+        </Muted>
+        {option.description ? (
+          <Description>{option.description}</Description>
+        ) : null}
         <OptionBottomRow>
           {registered ? (
             <Registered>
@@ -86,25 +91,36 @@ const LadderPreRegistrations: React.FC = () => {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <Explainer>
           <ExplainerTitle>What&apos;s a ladder?</ExplainerTitle>
-          <ExplainerText>
-            A 3–4 month season. Post or accept games at courts near you,
-            whenever suits you. Every win earns Court Points (CP) and moves you
-            up the rankings. At the end, the top players go into a knockout
-            playoff for the title.
-          </ExplainerText>
+          <ExplainerText>{LADDER_SEASON_EXPLAINER}</ExplainerText>
         </Explainer>
 
-        <SectionTitle color={COLORS.gold}>
-          <Ionicons name="cash-outline" size={14} color={COLORS.gold} /> Cash
-          Ladders
-        </SectionTitle>
-        {cashOptions.map(renderOption)}
+        {loading ? (
+          <ActivityIndicator color={COLORS.blue} style={{ marginTop: 24 }} />
+        ) : preRegistrations.length === 0 ? (
+          <EmptyText>
+            No ladders are open for pre-registration right now. Check back soon.
+          </EmptyText>
+        ) : null}
 
-        <SectionTitle color={COLORS.blue}>
-          <Ionicons name="trophy-outline" size={14} color={COLORS.blue} />{" "}
-          Community Ladders
-        </SectionTitle>
-        {communityOptions.map(renderOption)}
+        {cashOptions.length > 0 ? (
+          <>
+            <SectionTitle color={COLORS.gold}>
+              <Ionicons name="cash-outline" size={14} color={COLORS.gold} />{" "}
+              Cash Ladders
+            </SectionTitle>
+            {cashOptions.map(renderOption)}
+          </>
+        ) : null}
+
+        {communityOptions.length > 0 ? (
+          <>
+            <SectionTitle color={COLORS.blue}>
+              <Ionicons name="trophy-outline" size={14} color={COLORS.blue} />{" "}
+              Community Ladders
+            </SectionTitle>
+            {communityOptions.map(renderOption)}
+          </>
+        ) : null}
 
         {cashOptions[0] ? (
           <Footnote>{getPlatformFeeFootnote(cashOptions[0])}</Footnote>
@@ -113,6 +129,20 @@ const LadderPreRegistrations: React.FC = () => {
     </SafeAreaView>
   );
 };
+
+const Description = styled.Text({
+  color: COLORS.body,
+  fontSize: 12,
+  lineHeight: 17,
+  marginTop: 6,
+});
+
+const EmptyText = styled.Text({
+  color: COLORS.muted,
+  fontSize: 13,
+  textAlign: "center",
+  marginTop: 24,
+});
 
 const Explainer = styled.View({
   backgroundColor: COLORS.panel,

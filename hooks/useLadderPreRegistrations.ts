@@ -10,20 +10,31 @@ import {
   where,
 } from "firebase/firestore";
 import {
-  LADDER_PRE_REGISTRATION_COLLECTION,
-  getLadderPreRegistrationId,
+  LADDER_PRE_REGISTRANTS_SUBCOLLECTION,
+  LADDER_PRE_REGISTRATIONS_COLLECTION,
+  LADDER_PRE_REGISTRATION_STATUS,
 } from "@shared";
-import type { LadderPreRegistrationKey, UserProfile } from "@shared/types";
+import type { LadderPreRegistration, UserProfile } from "@shared/types";
 import { db } from "../services/firebase.config";
 import { UserContext } from "../context/UserContext";
 
 interface UseLadderPreRegistrationsReturn {
   isSignedIn: boolean;
   loading: boolean;
-  registeredKeys: Set<LadderPreRegistrationKey>;
-  preRegister: (key: LadderPreRegistrationKey) => Promise<void>;
-  leave: (key: LadderPreRegistrationKey) => Promise<void>;
+  preRegistrations: LadderPreRegistration[];
+  registeredIds: Set<string>;
+  preRegister: (preRegistrationId: string) => Promise<void>;
+  leave: (preRegistrationId: string) => Promise<void>;
 }
+
+const registrantRef = (preRegistrationId: string, userId: string) =>
+  doc(
+    db,
+    LADDER_PRE_REGISTRATIONS_COLLECTION,
+    preRegistrationId,
+    LADDER_PRE_REGISTRANTS_SUBCOLLECTION,
+    userId,
+  );
 
 export const useLadderPreRegistrations =
   (): UseLadderPreRegistrationsReturn => {
@@ -31,75 +42,82 @@ export const useLadderPreRegistrations =
       currentUser: UserProfile | null;
     };
     const userId = currentUser?.userId;
-    const [registeredKeys, setRegisteredKeys] = useState<
-      Set<LadderPreRegistrationKey>
-    >(new Set());
+    const email = currentUser?.email ?? "";
+    const [preRegistrations, setPreRegistrations] = useState<
+      LadderPreRegistration[]
+    >([]);
+    const [registeredIds, setRegisteredIds] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-      if (!userId) {
-        setRegisteredKeys(new Set());
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      const registrations = query(
-        collection(db, LADDER_PRE_REGISTRATION_COLLECTION),
-        where("userId", "==", userId),
-      );
-
-      return onSnapshot(
-        registrations,
-        (snapshot) => {
-          setRegisteredKeys(
-            new Set(
+    useEffect(
+      () =>
+        onSnapshot(
+          query(
+            collection(db, LADDER_PRE_REGISTRATIONS_COLLECTION),
+            where("status", "==", LADDER_PRE_REGISTRATION_STATUS.OPEN),
+          ),
+          (snapshot) => {
+            setPreRegistrations(
               snapshot.docs.map(
-                (registration) =>
-                  registration.data().ladderKey as LadderPreRegistrationKey,
+                (preRegistration) =>
+                  ({
+                    ...preRegistration.data(),
+                    preRegistrationId: preRegistration.id,
+                  }) as LadderPreRegistration,
               ),
-            ),
-          );
-          setLoading(false);
-        },
-        (error) => {
-          console.error("Failed to load ladder pre-registrations:", error);
-          setLoading(false);
-        },
+            );
+            setLoading(false);
+          },
+          (error) => {
+            console.error("Failed to load ladder pre-registrations:", error);
+            setLoading(false);
+          },
+        ),
+      [],
+    );
+
+    const preRegistrationIds = preRegistrations
+      .map((preRegistration) => preRegistration.preRegistrationId)
+      .join(",");
+
+    useEffect(() => {
+      setRegisteredIds(new Set());
+      if (!userId || !preRegistrationIds) return;
+
+      const unsubscribes = preRegistrationIds.split(",").map((id) =>
+        onSnapshot(
+          registrantRef(id, userId),
+          (registrant) =>
+            setRegisteredIds((current) => {
+              const next = new Set(current);
+              if (registrant.exists()) next.add(id);
+              else next.delete(id);
+              return next;
+            }),
+          (error) =>
+            console.error("Failed to load ladder pre-registrant:", error),
+        ),
       );
-    }, [userId]);
+      return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+    }, [userId, preRegistrationIds]);
 
     const preRegister = useCallback(
-      async (key: LadderPreRegistrationKey) => {
+      async (preRegistrationId: string) => {
         if (!userId) return;
-        await setDoc(
-          doc(
-            db,
-            LADDER_PRE_REGISTRATION_COLLECTION,
-            getLadderPreRegistrationId(userId, key),
-          ),
-          {
-            userId,
-            ladderKey: key,
-            createdAt: serverTimestamp(),
-            notifiedAt: null,
-            ladderId: null,
-          },
-        );
+        await setDoc(registrantRef(preRegistrationId, userId), {
+          userId,
+          email,
+          createdAt: serverTimestamp(),
+          notifiedAt: null,
+        });
       },
-      [userId],
+      [userId, email],
     );
 
     const leave = useCallback(
-      async (key: LadderPreRegistrationKey) => {
+      async (preRegistrationId: string) => {
         if (!userId) return;
-        await deleteDoc(
-          doc(
-            db,
-            LADDER_PRE_REGISTRATION_COLLECTION,
-            getLadderPreRegistrationId(userId, key),
-          ),
-        );
+        await deleteDoc(registrantRef(preRegistrationId, userId));
       },
       [userId],
     );
@@ -107,7 +125,8 @@ export const useLadderPreRegistrations =
     return {
       isSignedIn: !!userId,
       loading,
-      registeredKeys,
+      preRegistrations,
+      registeredIds,
       preRegister,
       leave,
     };

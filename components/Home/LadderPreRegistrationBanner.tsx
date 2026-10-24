@@ -6,8 +6,8 @@ import {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { LADDER_PRE_REGISTRATION_OPTIONS } from "@shared";
 import { CourtChampLogoIcon } from "../../assets";
+import { useLadderPreRegistrations } from "../../hooks/useLadderPreRegistrations";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
   formatPrizePool,
@@ -15,14 +15,21 @@ import {
   isCashLadder,
 } from "../../helpers/ladderPreRegistrationDisplay";
 
-const topCashOption = LADDER_PRE_REGISTRATION_OPTIONS.filter(isCashLadder).sort(
-  (a, b) => getPrizePool(b).cash - getPrizePool(a).cash,
-)[0];
-
 const LadderPreRegistrationBanner: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { preRegistrations } = useLadderPreRegistrations();
+  const cashOptions = preRegistrations.filter(isCashLadder);
+  const hasCash = cashOptions.length > 0;
+  const hasCommunity = cashOptions.length < preRegistrations.length;
+  const [headline] = (hasCash ? cashOptions : preRegistrations)
+    .slice()
+    .sort((a, b) =>
+      hasCash
+        ? getPrizePool(b).cash - getPrizePool(a).cash
+        : getPrizePool(b).xp - getPrizePool(a).xp,
+    );
 
-  if (!topCashOption) return null;
+  if (!headline) return null;
 
   return (
     <Banner
@@ -35,10 +42,13 @@ const LadderPreRegistrationBanner: React.FC = () => {
         <PillText>Ladders · coming soon</PillText>
       </Pill>
       <UpTo>Up to</UpTo>
-      <Amount>{formatPrizePool(topCashOption)}</Amount>
-      <Headline>to be won in Cash Ladders</Headline>
+      <Amount>{formatPrizePool(headline)}</Amount>
+      <Headline>
+        to be won in {hasCash ? "Cash Ladders" : "Community Ladders"}
+      </Headline>
       <Subtitle>
-        Plus free Community Ladders. Be first in when they open.
+        {hasCash && hasCommunity ? "Plus free Community Ladders. " : ""}Be first
+        in when they open.
       </Subtitle>
       <Cta>
         <CtaText>Pre-register now</CtaText>

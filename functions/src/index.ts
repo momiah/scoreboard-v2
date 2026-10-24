@@ -12,7 +12,7 @@ import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
 import { onVideoReported } from "./onVideoReported";
-import { notifyLadderPreRegistrations } from "./notifyLadderPreRegistrations";
+import { processLadderPreRegistrationLaunches } from "./processLadderPreRegistrationLaunches";
 import {
   generateR2UploadUrl,
   updateGameVideoUrl,
@@ -36,5 +36,5 @@ export {
   transcodeVideo,
   deleteVideo,
   onVideoReported,
-  notifyLadderPreRegistrations,
+  processLadderPreRegistrationLaunches,
 };

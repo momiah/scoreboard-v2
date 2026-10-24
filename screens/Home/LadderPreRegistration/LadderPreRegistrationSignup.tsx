@@ -15,12 +15,13 @@ import {
 } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { formatCurrency, getLadderPreRegistrationOption } from "@shared";
-import type { LadderPreRegistrationOption } from "@shared/types";
+import { formatCurrency } from "@shared";
+import type { LadderPreRegistration } from "@shared/types";
 import PreRegistrationHeader from "../../../components/LadderPreRegistration/PreRegistrationHeader";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
+  LADDER_SEASON_STAGES,
   formatPrizePool,
   getEntrantNoun,
   getFullLadderPrizeTable,
@@ -30,18 +31,22 @@ import {
 } from "../../../helpers/ladderPreRegistrationDisplay";
 
 type SignupRoute = RouteProp<
-  { LadderPreRegistrationSignup: { ladderKey: string } },
+  { LadderPreRegistrationSignup: { preRegistrationId: string } },
   "LadderPreRegistrationSignup"
 >;
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-const SEASON_STAGES: { icon: IoniconName; label: string; detail?: string }[] = [
-  { icon: "person-add-outline", label: "Join" },
-  { icon: "trending-up-outline", label: "Climb", detail: "3–4 months" },
-  { icon: "git-network-outline", label: "Playoffs", detail: "knockout" },
-  { icon: "trophy-outline", label: "Champion" },
-];
+const STAGE_ICONS: Record<
+  (typeof LADDER_SEASON_STAGES)[number]["key"],
+  { icon: IoniconName; color: string }
+> = {
+  join: { icon: "person-add-outline", color: COLORS.blue },
+  season: { icon: "trending-up-outline", color: COLORS.blue },
+  "registration-closes": { icon: "lock-closed-outline", color: COLORS.blue },
+  playoffs: { icon: "git-network-outline", color: COLORS.orange },
+  champion: { icon: "trophy-outline", color: COLORS.gold },
+};
 
 const CLIMB_STEPS: { icon: IoniconName; text: string }[] = [
   {
@@ -65,9 +70,18 @@ const CLIMB_STEPS: { icon: IoniconName; text: string }[] = [
 const LadderPreRegistrationSignup: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { params } = useRoute<SignupRoute>();
-  const option = getLadderPreRegistrationOption(params?.ladderKey);
-  const { isSignedIn, loading, registeredKeys, preRegister, leave } =
-    useLadderPreRegistrations();
+  const {
+    isSignedIn,
+    loading,
+    preRegistrations,
+    registeredIds,
+    preRegister,
+    leave,
+  } = useLadderPreRegistrations();
+  const option = preRegistrations.find(
+    (preRegistration) =>
+      preRegistration.preRegistrationId === params?.preRegistrationId,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -75,15 +89,19 @@ const LadderPreRegistrationSignup: React.FC = () => {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
         <PreRegistrationHeader title="Ladders" />
-        <Muted style={{ textAlign: "center", marginTop: 40 }}>
-          This ladder isn&apos;t available.
-        </Muted>
+        {loading ? (
+          <ActivityIndicator color={COLORS.blue} style={{ marginTop: 40 }} />
+        ) : (
+          <Muted style={{ textAlign: "center", marginTop: 40 }}>
+            This ladder isn&apos;t open for pre-registration.
+          </Muted>
+        )}
       </SafeAreaView>
     );
   }
 
   const cash = isCashLadder(option);
-  const registered = registeredKeys.has(option.key);
+  const registered = registeredIds.has(option.preRegistrationId);
 
   const handlePreRegister = async () => {
     if (!isSignedIn) {
@@ -92,7 +110,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
     }
     setSubmitting(true);
     try {
-      await preRegister(option.key);
+      await preRegister(option.preRegistrationId);
       setShowDetails(false);
     } catch (error) {
       console.error("Failed to pre-register:", error);
@@ -116,7 +134,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              await leave(option.key);
+              await leave(option.preRegistrationId);
             } catch (error) {
               console.error("Failed to leave pre-registration:", error);
               Alert.alert(
@@ -135,11 +153,9 @@ const LadderPreRegistrationSignup: React.FC = () => {
       message: `I've pre-registered for the ${option.name} ${cash ? "Cash" : "Community"} Ladder on Court Champs. Join me: https://courtchamps.com`,
     });
 
-  const title = cash ? option.name : `Community ${option.name.toLowerCase()}`;
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
-      <PreRegistrationHeader title={title} />
+      <PreRegistrationHeader title={option.name} />
       {loading ? (
         <ActivityIndicator color={COLORS.blue} style={{ marginTop: 40 }} />
       ) : registered && !showDetails ? (
@@ -194,7 +210,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
   );
 };
 
-const LadderDetails: React.FC<{ option: LadderPreRegistrationOption }> = ({
+const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
   option,
 }) => {
   const cash = isCashLadder(option);
@@ -211,6 +227,10 @@ const LadderDetails: React.FC<{ option: LadderPreRegistrationOption }> = ({
           {option.maxPlayers.toLocaleString("en-GB")} {noun}s
         </Muted>
       </Hero>
+
+      {option.description ? (
+        <Description>{option.description}</Description>
+      ) : null}
 
       <SectionTitle>Prize breakdown</SectionTitle>
       <Panel testID="ladder-pre-registration-prize-table">
@@ -293,18 +313,12 @@ const LadderDetails: React.FC<{ option: LadderPreRegistrationOption }> = ({
       <SectionTitle>How a season works</SectionTitle>
       <Panel>
         <Timeline>
-          {SEASON_STAGES.map((stage, index) => (
-            <Stage key={stage.label}>
+          {LADDER_SEASON_STAGES.map((stage) => (
+            <Stage key={stage.key}>
               <Ionicons
-                name={stage.icon}
+                name={STAGE_ICONS[stage.key].icon}
                 size={20}
-                color={
-                  index === SEASON_STAGES.length - 1
-                    ? COLORS.gold
-                    : index === 2
-                      ? COLORS.orange
-                      : COLORS.blue
-                }
+                color={STAGE_ICONS[stage.key].color}
               />
               <StageLabel>{stage.label}</StageLabel>
               {stage.detail ? <StageDetail>{stage.detail}</StageDetail> : null}
@@ -324,7 +338,7 @@ const LadderDetails: React.FC<{ option: LadderPreRegistrationOption }> = ({
 };
 
 const Confirmation: React.FC<{
-  option: LadderPreRegistrationOption;
+  option: LadderPreRegistration;
   onInvite: () => void;
   onShowDetails: () => void;
   onSeeOtherLadders: () => void;
@@ -376,6 +390,13 @@ const Confirmation: React.FC<{
     </ScrollView>
   );
 };
+
+const Description = styled.Text({
+  color: COLORS.body,
+  fontSize: 13,
+  lineHeight: 19,
+  marginTop: 12,
+});
 
 const Hero = styled.View<{ cash: boolean }>(({ cash }: { cash: boolean }) => ({
   backgroundColor: COLORS.hero,
