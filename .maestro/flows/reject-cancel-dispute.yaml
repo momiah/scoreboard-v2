@@ -36,9 +36,9 @@ onFlowStart:
     visible: "Cancel dispute?"
     timeout: 5000
 - tapOn:
-    text: "Cancel dispute"
+    text: "(?i)cancel dispute"
     below: ".*undone.*"
-    above: "Keep dispute"
+    above: "(?i)keep dispute"
 - extendedWaitUntil:
     visible: "Dispute cancelled"
     timeout: 15000
