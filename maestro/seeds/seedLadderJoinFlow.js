@@ -116,9 +116,7 @@ const ladderDocument = ({ testUser, ladderId, name, ladderType, variant }) => {
         ? new Date(Date.now() - 60 * 1000)
         : daysFromNow(7),
     seasonStartsAt: daysFromNow(-5),
-    seasonEndsAt: daysFromNow(60),
     playoffStartsAt: daysFromNow(50),
-    playoffEndsAt: daysFromNow(60),
     entryFee: variant === JOIN_VARIANT.PAID ? 20 : 0,
     currencyType: "GBP",
     minRank: 0,

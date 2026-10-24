@@ -212,13 +212,9 @@ const buildLadderDoc = ({
     registrationOpensAt: new Date(now.getTime() - 120 * DAY_MS),
     registrationClosesAt: new Date(now.getTime() - 60 * DAY_MS),
     seasonStartsAt: new Date(now.getTime() - 90 * DAY_MS),
-    seasonEndsAt: upcoming
-      ? new Date(now.getTime() + 3 * DAY_MS)
-      : new Date(now.getTime() - 60 * 1000),
     playoffStartsAt: upcoming
       ? new Date(now.getTime() + 3 * DAY_MS)
       : new Date(now.getTime() - 60 * 1000),
-    playoffEndsAt: new Date(now.getTime() + 30 * DAY_MS),
     entryFee,
     currencyType: "GBP",
     minRank: 0,
