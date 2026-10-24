@@ -225,14 +225,16 @@ const Home = () => {
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
 
-        <TouchableOpacity
-          onPress={async () => {
-            const summary = await backfillCompetitionPrizeType();
-            console.log("Prize type backfill:", summary);
-          }}
-        >
-          <Text style={{ color: "white" }}>Backfill prize types</Text>
-        </TouchableOpacity>
+        {__DEV__ ? (
+          <TouchableOpacity
+            onPress={async () => {
+              const summary = await backfillCompetitionPrizeType();
+              console.log("Prize type backfill:", summary);
+            }}
+          >
+            <Text style={{ color: "white" }}>Backfill prize types</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
