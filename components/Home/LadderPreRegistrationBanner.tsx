@@ -29,8 +29,6 @@ const LadderPreRegistrationBanner: React.FC = () => {
         : getPrizePool(b).xp - getPrizePool(a).xp,
     );
 
-  if (!headline) return null;
-
   return (
     <Banner
       testID="ladder-pre-registration-banner"
@@ -41,17 +39,28 @@ const LadderPreRegistrationBanner: React.FC = () => {
       <Pill>
         <PillText>Ladders · coming soon</PillText>
       </Pill>
-      <UpTo>Up to</UpTo>
-      <Amount>{formatPrizePool(headline)}</Amount>
-      <Headline>
-        to be won in {hasCash ? "Cash Ladders" : "Community Ladders"}
-      </Headline>
-      <Subtitle>
-        {hasCash && hasCommunity ? "Plus free Community Ladders. " : ""}Be first
-        in when they open.
-      </Subtitle>
+      {headline ? (
+        <>
+          <UpTo>Up to</UpTo>
+          <Amount>{formatPrizePool(headline)}</Amount>
+          <Headline>
+            to be won in {hasCash ? "Cash Ladders" : "Community Ladders"}
+          </Headline>
+          <Subtitle>
+            {hasCash && hasCommunity ? "Plus free Community Ladders. " : ""}Be
+            first in when they open.
+          </Subtitle>
+        </>
+      ) : (
+        <>
+          <Headline>Climb the ladder</Headline>
+          <Subtitle>
+            Play anyone near you, win Court Points and fight for the title.
+          </Subtitle>
+        </>
+      )}
       <Cta>
-        <CtaText>Pre-register now</CtaText>
+        <CtaText>{headline ? "Pre-register now" : "See the ladders"}</CtaText>
         <Ionicons name="arrow-forward" size={14} color={COLORS.blue} />
       </Cta>
     </Banner>
