@@ -42,7 +42,8 @@ export const LADDER_TERMS: TermsSection[] = [
       [
         "Both sides are treated as losing that round and are paid the lowest prize that round guarantees.",
         "Nobody moves up a place.",
-        "Prize money nobody won is shared among everyone paid, in proportion to what they won. Court Champs keeps none of it.",
+        "Prize money nobody won goes into the Unclaimed Prize Pot and is split equally between every other player or team in the money.",
+        "If there is nobody else in the money to share it with, Court Champs keeps it.",
       ],
       "Prizes are paid in whole pounds and whole CP, except that a doubles share may include 50p. Any amount left over from rounding goes to the highest finishers.",
       "If your account is deleted before prizes are paid, your prize is forfeited and kept by Court Champs.",
@@ -87,7 +88,7 @@ export const LADDER_TERMS: TermsSection[] = [
       "If a player is disqualified once they are in the money, their prize is held for review:",
       [
         "An admin decides whether to pay it in full, in part or not at all, and the player is told the outcome.",
-        "Any part not paid is shared among the other players paid, as set out in section 4.",
+        "Any part not paid is kept by Court Champs.",
       ],
     ],
   },
