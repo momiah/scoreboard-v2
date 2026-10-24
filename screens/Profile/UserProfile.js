@@ -288,6 +288,7 @@ const UserProfile = () => {
               }}
             >
               <TouchableOpacity
+                testID="profile-refresh"
                 style={{ alignSelf: "flex-start", paddingHorizontal: 20 }}
                 onPress={() => loadProfile()}
                 disabled={refreshing}
@@ -370,7 +371,7 @@ const UserProfile = () => {
                 </View>
                 <DetailColumn>
                   <PlayerName>{profile?.username}</PlayerName>
-                  <DetailText>{profileXp ?? 0} CP</DetailText>
+                  <DetailText testID="profile-cp">{profileXp ?? 0} CP</DetailText>
                   <DetailText
                     style={{
                       fontWeight: "bold",
