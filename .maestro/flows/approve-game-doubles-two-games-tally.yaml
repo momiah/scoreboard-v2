@@ -57,9 +57,16 @@ onFlowStart:
     visible:
       id: "team-details-screen"
     timeout: 15000
-- assertVisible:
-    id: "team-details-losses"
-    text: "2"
+- scrollUntilVisible:
+    element:
+      id: "team-details-losses"
+    direction: DOWN
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "team-details-losses"
+      text: "2"
+    timeout: 5000
 - extendedWaitUntil:
     visible: ".*-23 CP.*"
     timeout: 15000
@@ -71,9 +78,16 @@ onFlowStart:
     visible:
       id: "team-details-screen"
     timeout: 15000
-- assertVisible:
-    id: "team-details-wins"
-    text: "2"
+- scrollUntilVisible:
+    element:
+      id: "team-details-wins"
+    direction: DOWN
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "team-details-wins"
+      text: "2"
+    timeout: 5000
 - extendedWaitUntil:
     visible: ".*40 CP.*"
     timeout: 15000

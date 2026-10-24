@@ -11,6 +11,7 @@ appId: com.courtchamp
           duration: 300
 - tapOn:
     id: "maestro-harness-filter"
+    point: 98%,50%
 - eraseText: 120
 - inputText: ${BUTTON}
 - extendedWaitUntil:

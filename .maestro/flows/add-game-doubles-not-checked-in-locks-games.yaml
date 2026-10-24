@@ -21,8 +21,10 @@ onFlowStart:
     timeout: 15000
 - tapOn:
     id: "schedule-card-maestro-add-game-flow-doubles-match"
-- assertVisible:
-    id: "lobby-games-locked"
+- scrollUntilVisible:
+    element:
+      id: "lobby-games-locked"
+    direction: DOWN
 - scrollUntilVisible:
     element:
       id: "ladder-game-maestro-add-game-flow-doubles-match-g1"
