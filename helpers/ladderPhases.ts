@@ -62,15 +62,15 @@ export const getLadderPhases = (ladder: Ladder): LadderPhase[] => {
         end: toMoment(ladder.registrationClosesAt),
       },
       [LADDER_STATUS.REGISTRATION_CLOSED]: {
-        start: toMoment(ladder.seasonStartsAt),
-        end: toMoment(ladder.seasonEndsAt),
+        start: toMoment(ladder.registrationClosesAt),
+        end: toMoment(ladder.playoffStartsAt),
       },
       [LADDER_STATUS.PLAYOFFS]: {
         start: toMoment(ladder.playoffStartsAt),
-        end: toMoment(ladder.playoffEndsAt),
+        end: toMoment(ladder.playoffsCompletedAt),
       },
       [LADDER_STATUS.COMPLETED]: {
-        start: toMoment(ladder.playoffEndsAt),
+        start: toMoment(ladder.playoffsCompletedAt),
         end: null,
       },
     };
