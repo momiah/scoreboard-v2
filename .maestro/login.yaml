@@ -2,6 +2,9 @@ appId: com.courtchamp
 ---
 - launchApp:
     clearState: false
+- tapOn:
+    text: "Not Now"
+    optional: true
 - runFlow:
     when:
       visible: "http://localhost:8090"
