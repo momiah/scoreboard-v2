@@ -78,6 +78,7 @@ import {
   MAESTRO_PO_DOUBLES_LADDER_ID,
   MAESTRO_PO_LADDER_ID,
   MAESTRO_PO_PAID_LADDER_ID,
+  MAESTRO_PO_MANUAL_128_LADDER_ID,
   PLAYOFF_VARIANT,
   seedLadderPlayoffs,
   seedLadderPlayoffsDoubles,
@@ -682,6 +683,19 @@ const HarnessButtons = memo(({ currentUser }: { currentUser: UserProfile }) => (
         run: () =>
           seedLadderPlayoffs({ testUser: currentUser, generate: true, size }),
       })),
+      {
+        id: "maestro-seed-manual-128-final",
+        label: "Seed 128 Ladder To The Final (Manual)",
+        run: () =>
+          seedLadderPlayoffJourney({
+            testUser: currentUser,
+            size: 128,
+            round: JOURNEY_ROUND.LAST as never,
+            stage: JOURNEY_STAGE.STARTED as never,
+            daysIntoRound: 1,
+            ladderId: MAESTRO_PO_MANUAL_128_LADDER_ID,
+          }),
+      },
       {
         id: "maestro-seed-ladder-playoffs-not-qualified",
         label: "Seed Ladder Playoffs 256 (Not Qualified)",
