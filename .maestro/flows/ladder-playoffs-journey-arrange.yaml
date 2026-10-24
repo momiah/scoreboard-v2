@@ -1,0 +1,18 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-arrange.yaml
+    env:
+      SUFFIX: ""
+      LADDER: "Maestro Playoffs 256"
+      CURRENT_PAYOUT: "0 CP"
+      NEXT_PAYOUT: "800 CP"
+- runFlow:
+    file: ../utilities/playoffs/journey-arrange.yaml
+    env:
+      SUFFIX: "-paid"
+      LADDER: "Maestro Playoffs 256 \\(Paid\\)"
+      CURRENT_PAYOUT: "£0 · 0 CP"
+      NEXT_PAYOUT: "£320 · 800 CP"

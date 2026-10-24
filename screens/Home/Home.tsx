@@ -41,11 +41,12 @@ import AddClubModal from "../../components/Modals/AddClubModal";
 import HomeLeagueSection from "../../components/Home/HomeLeagueSection";
 import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
 import HomeClubsSection from "../../components/Home/HomeClubsSection";
+import HomeLadderSection from "../../components/Home/HomeLadderSection";
+import { LadderContext } from "../../context/LadderContext";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
-// import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
 
 const VIEWABILITY_CONFIG: ViewabilityConfig = {
@@ -57,12 +58,10 @@ const VIEWABILITY_CONFIG: ViewabilityConfig = {
 const Home = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
-  const {
-    fetchUpcomingLeagues,
-    fetchUpcomingTournaments,
-    fetchUpcomingClubs,
-  } = useContext(LeagueContext);
+  const { fetchUpcomingLeagues, fetchUpcomingTournaments, fetchUpcomingClubs } =
+    useContext(LeagueContext);
   const { getTopUsers, currentUser } = useContext(UserContext);
+  const { fetchUpcomingLadders } = useContext(LadderContext);
 
   // ─── Home State ─────────────────────────────────────────────────────────────
   const [sortedUsers, setSortedUsers] = useState([]);
@@ -180,6 +179,7 @@ const Home = () => {
     fetchUpcomingLeagues();
     fetchUpcomingTournaments();
     fetchUpcomingClubs();
+    fetchUpcomingLadders();
     fetchVideos();
   };
 
@@ -229,7 +229,10 @@ const Home = () => {
             Hello, {currentUser?.firstName}
           </Text>
         ) : (
-          <TouchableOpacity onPress={() => navigateTo("Login")}>
+          <TouchableOpacity
+            testID="home-sign-in-link"
+            onPress={() => navigateTo("Login")}
+          >
             <Text style={{ color: "white" }}>Sign In</Text>
           </TouchableOpacity>
         )}
@@ -238,6 +241,8 @@ const Home = () => {
           loading={loading}
           onCreatePress={() => setAddLeagueModalVisible(true)}
         />
+
+        <HomeLadderSection loading={loading} />
 
         <SubHeader
           title="Top Players"
@@ -255,9 +260,7 @@ const Home = () => {
           onCreatePress={() => setAddTournamentModalVisible(true)}
         />
 
-        <HomeClubsSection
-          onCreatePress={() => setAddClubModalVisible(true)}
-        />
+        <HomeClubsSection onCreatePress={() => setAddClubModalVisible(true)} />
 
         <SubHeader title="Game Videos" />
       </HeaderContainer>

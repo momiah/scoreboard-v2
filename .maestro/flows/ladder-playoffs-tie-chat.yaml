@@ -1,0 +1,45 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "pending"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- tapOn:
+    id: "playoff-match-tab-Chat Room"
+- extendedWaitUntil:
+    visible:
+      id: "chat-room-input"
+    timeout: 15000
+- tapOn:
+    id: "chat-room-input"
+- inputText: "On my way, bringing the shuttles"
+- tapOn:
+    id: "chat-room-send"
+- extendedWaitUntil:
+    visible: "On my way, bringing the shuttles"
+    timeout: 15000
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-tie-chat-delivered"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-po-opponent-chat"
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible:
+      id: "chats-row-maestro-po-ladder-r1-s1"
+    timeout: 20000
+- tapOn:
+    id: "chats-row-maestro-po-ladder-r1-s1"
+- extendedWaitUntil:
+    visible:
+      id: "chat-room-input"
+    timeout: 20000
+- assertVisible: "See you at the court"

@@ -1,0 +1,32 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-join-singles-status-closed"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Join Singles on Summary.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Join Singles on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+- assertVisible: "Registration Closed"
+- tapOn:
+    id: "ladder-summary-join"
+- assertNotVisible:
+    id: "join-ladder-modal"

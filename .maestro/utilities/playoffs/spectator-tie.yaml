@@ -1,0 +1,36 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-bracket-tie.yaml
+    env:
+      TIE: ${TIE}
+      SCROLL: ${SCROLL}
+- assertVisible:
+    id: "playoff-prize-banner"
+- assertVisible:
+    id: "playoff-match-tab-Tie Lobby"
+- assertVisible:
+    id: "playoff-match-aggregate"
+- assertVisible:
+    id: "playoff-match-format"
+- assertVisible:
+    id: "playoff-match-deadline"
+- assertVisible:
+    id: "playoff-match-leg1-host"
+- assertVisible:
+    id: "playoff-match-leg2-host"
+- assertNotVisible:
+    id: "playoff-match-leg1-arrange"
+- assertNotVisible:
+    id: "playoff-match-leg2-arrange"
+- assertNotVisible:
+    id: "playoff-match-confirm-request"
+- tapOn:
+    id: "playoff-match-tab-Chat Room"
+- assertVisible: ".*Only the players in this tie can see this chat.*"
+- tapOn:
+    id: "playoff-match-back"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoffs-bracket"
+    timeout: 20000

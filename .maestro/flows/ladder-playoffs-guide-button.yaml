@@ -1,0 +1,41 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "pending"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- assertVisible:
+    id: "ladder-how-to-play"
+- assertVisible: ".*How to play playoffs.*"
+- tapOn:
+    id: "ladder-how-to-play"
+- extendedWaitUntil:
+    visible:
+      id: "how-to-play-dots"
+    timeout: 15000
+- tapOn:
+    point: 94%, 9%
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoff-guide-seen"
+    timeout: 20000
+- stopApp
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible:
+      id: "maestro-harness-unlock"
+    timeout: 60000
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- assertVisible:
+    id: "ladder-playoff-guide-seen"

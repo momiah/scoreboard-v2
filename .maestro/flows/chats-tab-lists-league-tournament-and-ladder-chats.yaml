@@ -1,0 +1,21 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-chats-typed"
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible: ".*Chats.*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Maestro Chat League.*"
+    timeout: 15000
+- assertVisible: ".*Maestro Chat Tournament.*"
+- assertVisible: ".*Ladder match at Maestro Court B Verified.*"
+- assertVisible: ".*hello from Maestro Chat League.*"
+- assertNotVisible: ".*Unknown League.*"
+- assertNotVisible: ".*unique .key. prop.*"

@@ -1,0 +1,47 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-playoff-match-pending"
+- runFlow:
+    file: ../utilities/playoffs/open-playoffs-tab.yaml
+    env:
+      NOTIFICATION: ".*open Maestro Playoffs 256 on Playoffs.*"
+- runFlow:
+    file: ../utilities/playoffs/spectator-tie.yaml
+    env:
+      TIE: "r1-s0"
+      SCROLL: "no"
+- runFlow:
+    file: ../utilities/playoffs/spectator-tie.yaml
+    env:
+      TIE: "r1-s2"
+      SCROLL: "no"
+- runFlow:
+    file: ../utilities/playoffs/spectator-tie.yaml
+    env:
+      TIE: "r1-s3"
+      SCROLL: "no"
+- runFlow:
+    file: ../utilities/playoffs/spectator-tie.yaml
+    env:
+      TIE: "r1-s4"
+      SCROLL: "short"
+- runFlow:
+    file: ../utilities/playoffs/spectator-tie.yaml
+    env:
+      TIE: "r1-s5"
+      SCROLL: "short"
+- runFlow:
+    file: ../utilities/playoffs/spectator-tie.yaml
+    env:
+      TIE: "r1-s6"
+      SCROLL: "long"
+- runFlow:
+    file: ../utilities/playoffs/spectator-tie.yaml
+    env:
+      TIE: "r1-s7"
+      SCROLL: "long"

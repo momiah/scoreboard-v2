@@ -1,0 +1,54 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-ladder-playoffs-generated"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Playoffs 2048 on Playoffs.*"
+    timeout: 20000
+- tapOn: ".*open Maestro Playoffs 2048 on Playoffs.*"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-playoffs-bracket"
+    timeout: 40000
+- assertVisible: ".*Round of 128.*"
+- assertVisible:
+    id: "bracket-game-r1-s8"
+- assertVisible: ".*P0008 S.*"
+- tapOn:
+    id: "bracket-view-list"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "bracket-game-r1-s55"
+          direction: DOWN
+          timeout: 240000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: ".*P0127 S.*"
+          direction: DOWN
+          speed: 60
+          timeout: 300000
+- assertVisible: ".*P0127 S.*"
+- assertNotVisible: ".*P0128 S.*"

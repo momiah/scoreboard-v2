@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components/native";
-import { trophies, medals } from "../../mockImages";
+import { trophies, medals, ladders } from "../../mockImages";
 import { formatDisplayName } from "../../helpers/formatDisplayName";
 import { useImageLoader } from "../../utils/imageLoader";
 import { useNavigation } from "@react-navigation/native";
 
 import { CircleSkeleton, TextSkeleton } from "../Skeletons/SkeletonComponents";
 import { COMPETITION_TYPES } from "@shared";
+import { formatCurrency } from "../../helpers/formatCurrency";
 
 const PrizeContenders = ({
   item: player,
   index,
   isDataLoading = false,
-  distribution,
+  distribution = [],
   prizePool,
   hasPrizesDistributed,
   competitionType,
+  cashPool,
+  currencyType,
+  placePrizes = /** @type {{ cash: number; cp: number }[]} */ ([]),
 }) => {
   const { imageLoaded, handleImageLoad, handleImageError } = useImageLoader();
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -23,11 +27,27 @@ const PrizeContenders = ({
 
   const displayName = formatDisplayName(player);
   const prizesType =
-    competitionType === COMPETITION_TYPES.LEAGUE ? trophies : medals;
+    competitionType === COMPETITION_TYPES.LEAGUE
+      ? trophies
+      : competitionType === COMPETITION_TYPES.LADDER
+        ? ladders
+        : medals;
   const prizeSource = prizesType[index] || prizesType[0];
 
-  const prizeXP =
-    distribution && prizePool ? Math.floor(prizePool * distribution[index]) : 0;
+  const placePrize = placePrizes[index];
+  const prizeXP = placePrize
+    ? placePrize.cp
+    : distribution[index] != null && prizePool
+      ? Math.floor(prizePool * distribution[index])
+      : 0;
+  const prizeCash =
+    cashPool == null
+      ? null
+      : placePrize
+        ? placePrize.cash
+        : distribution[index] != null
+          ? Math.floor(cashPool * distribution[index])
+          : null;
 
   useEffect(() => {
     if (!isDataLoading && imageLoaded) {
@@ -96,12 +116,24 @@ const PrizeContenders = ({
             width={30}
             style={{ marginBottom: 5 }}
           >
-            {imageLoaded && !showSkeleton ? <StatTitle>CP</StatTitle> : null}
+            {imageLoaded && !showSkeleton ? (
+              <StatTitle>{prizeCash != null ? "Prize" : "CP"}</StatTitle>
+            ) : null}
           </TextSkeleton>
+
+          {prizeCash != null && (
+            <TextSkeleton show={showSkeleton} height={16} width={30}>
+              {imageLoaded && !showSkeleton ? (
+                <CashText>{formatCurrency(prizeCash, currencyType)}</CashText>
+              ) : null}
+            </TextSkeleton>
+          )}
 
           <TextSkeleton show={showSkeleton} height={16} width={20}>
             {imageLoaded && !showSkeleton ? (
-              <PrizeText>+{prizeXP}</PrizeText>
+              <PrizeText>
+                {prizeCash != null ? `+${prizeXP} CP` : `+${prizeXP}`}
+              </PrizeText>
             ) : null}
           </TextSkeleton>
         </TableCell>
@@ -181,8 +213,16 @@ const PrizeImage = styled.Image({
 const PrizeText = styled.Text({
   fontSize: 12,
   fontWeight: "bold",
-  color: "#2E7D32", // Darker green
+  color: "#2E7D32",
   textAlign: "center",
+});
+
+const CashText = styled.Text({
+  fontSize: 12,
+  fontWeight: "bold",
+  color: "#00A2FF",
+  textAlign: "center",
+  marginBottom: 2,
 });
 
 export default PrizeContenders;

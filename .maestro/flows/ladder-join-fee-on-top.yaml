@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-join-singles-paid"
+- runFlow:
+    file: ../utilities/playoffs/open-notifications.yaml
+- extendedWaitUntil:
+    visible: ".*open Maestro Join Singles on Summary.*"
+    timeout: 30000
+- tapOn: ".*open Maestro Join Singles on Summary.*"
+- scrollUntilVisible:
+    element:
+      id: "ladder-summary-join"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "ladder-summary-join"
+- extendedWaitUntil:
+    visible:
+      id: "join-ladder-modal"
+    timeout: 10000
+- assertVisible:
+    id: "join-ladder-price"
+    text: "£22"
+- assertVisible: ".*£20 entry.*£2 platform fee.*"
+- tapOn:
+    id: "join-ladder-terms-link"
+- extendedWaitUntil:
+    visible: ".*which is added on top and shown at checkout.*"
+    timeout: 10000
+- assertVisible: ".*The full entry fee goes into the prize pool.*"

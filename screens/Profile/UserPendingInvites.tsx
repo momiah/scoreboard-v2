@@ -43,7 +43,9 @@ const UserPendingInvites = () => {
     const rawCompetitionId =
       item.data?.leagueId ??
       item.data?.tournamentId ??
-      item.data?.competitionId;
+      item.data?.competitionId ??
+      item.data?.clubId ??
+      item.data?.teamId;
 
     const notificationCompetitionId =
       typeof rawCompetitionId === "string" ||
@@ -106,7 +108,11 @@ const UserPendingInvites = () => {
           onClose={() => setInviteVisible(false)}
           inviteId={modalState.selectedCompetitionId || ""}
           inviteType={
-            modalState.notificationType as "invite-league" | "invite-tournament"
+            modalState.notificationType as
+              | "invite-league"
+              | "invite-tournament"
+              | "invite-club"
+              | "invite-team"
           }
           notificationId={modalState.notificationId || ""}
           isRead={modalState.isRead}

@@ -1,0 +1,45 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/open-add-game-match.yaml
+    env:
+      BUTTON: "maestro-seed-add-game-flow-playoffs-in-4-days"
+- tapOn:
+    id: "schedule-card-maestro-add-game-flow-match"
+- extendedWaitUntil:
+    visible: ".*Ladder results have closed for the playoffs.*"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-maestro-add-game-flow-match-g2"
+    direction: DOWN
+- tapOn:
+    id: "ladder-game-maestro-add-game-flow-match-g2"
+- extendedWaitUntil:
+    visible:
+      id: "results-closed-modal"
+    timeout: 10000
+- assertVisible: "Ladder results have closed"
+- assertVisible: ".*Playoffs start on.*"
+- assertNotVisible:
+    id: "add-game-score-input"
+- tapOn: "OK"
+- swipe:
+    start: 50%, 45%
+    end: 50%, 85%
+- swipe:
+    start: 50%, 45%
+    end: 50%, 85%
+- tapOn:
+    id: "ladder-game-maestro-add-game-flow-match-g1"
+- extendedWaitUntil:
+    visible:
+      id: "game-screen-approval"
+    timeout: 15000
+- tapOn:
+    id: "game-screen-approve"
+- extendedWaitUntil:
+    visible: ".*Game approved.*"
+    timeout: 15000

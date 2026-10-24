@@ -1,0 +1,714 @@
+import React, { useContext, useEffect, useState } from "react";
+import {
+  Dimensions,
+  Modal,
+  Platform,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+} from "react-native";
+import styled from "styled-components/native";
+import { BlurView } from "expo-blur";
+import { AntDesign } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useForm, Controller } from "react-hook-form";
+
+import {
+  LADDER_MATCH_BEST_OF_OPTIONS,
+  LADDER_PLAYOFF_TIE_DAYS,
+  SHUTTLE_TYPE,
+  PLATFORM_FEE,
+  LADDER_TYPE,
+  TEAM_STATUS,
+} from "@shared";
+import {
+  LADDER_POSTING_CLOSE_DAYS,
+  getLadderPostingDeadline,
+} from "@shared/helpers";
+import type {
+  Court,
+  Ladder,
+  LadderMatchInput,
+  MatchTeam,
+  ShuttleType,
+  TeamStats,
+} from "@shared/types";
+
+import MatchDateTimeFields from "../ladder/MatchDateTimeFields";
+import OptionSelector from "../OptionSelector";
+import SearchCourt from "./SearchLocationModal";
+import LadderTermsModal from "./LadderTermsModal";
+import { LadderContext } from "../../context/LadderContext";
+import { UserContext } from "../../context/UserContext";
+import { PopupContext } from "../../context/PopupContext";
+import { toMoment } from "../../helpers/ladderPhases";
+import { teamMemberIds } from "../../helpers/ladderTeamMembership";
+import { useLadderDisqualification } from "../../helpers/useLadderDisqualification";
+import { getMatchStart } from "../../helpers/ladderMatchTime";
+import {
+  COURT_SUBMITTED_MESSAGE,
+  useLadderCourts,
+} from "../../hooks/useLadderCourts";
+import { courtTimeHint } from "../../helpers/ladderCourtTime";
+
+const { width: screenWidth } = Dimensions.get("window");
+
+const PLATFORM_FEE_PERCENT = Math.round(PLATFORM_FEE * 100);
+// A paid court fee is capped so users cannot abuse it; 0 means a free match.
+const MIN_COURT_FEE = 5;
+const MAX_COURT_FEE = 20;
+
+interface AddLadderMatchFormValues {
+  startDate: string;
+  startTime: string;
+  bestOf: number;
+  shuttleType: ShuttleType;
+  courtFee: string;
+}
+
+export interface PlayoffMatchSchedule {
+  title: string;
+  bestOf: number;
+  deadline: Date | null;
+  defaultCourt: Court | null;
+  onSubmit: (
+    input: Pick<
+      LadderMatchInput,
+      "court" | "matchDate" | "matchTime" | "currencyType" | "shuttleType"
+    >,
+  ) => Promise<string | null>;
+}
+
+interface AddLadderMatchModalProps {
+  modalVisible: boolean;
+  setModalVisible: (visible: boolean) => void;
+  ladder: Ladder;
+  playoff?: PlayoffMatchSchedule;
+}
+
+const AddLadderMatchModal: React.FC<AddLadderMatchModalProps> = ({
+  modalVisible,
+  setModalVisible,
+  ladder,
+  playoff,
+}) => {
+  const { createLadderMatch, fetchUserTeams } = useContext(LadderContext);
+  const { currentUser } = useContext(UserContext);
+  const { showBottomToast } = useContext(PopupContext);
+  const {
+    courtsList,
+    courtsLoading,
+    findSelectableCourt,
+    submitCourt,
+    applyCourts,
+    getCourts,
+  } = useLadderCourts(ladder, modalVisible);
+
+  const [selectedCourt, setSelectedCourt] = useState<Court | null>(null);
+  const [showSearchCourtModal, setShowSearchCourtModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [termsVisible, setTermsVisible] = useState(false);
+  const [posterTeam, setPosterTeam] = useState<TeamStats | null>(null);
+
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+  const needsPosterTeam = isDoubles && !playoff;
+
+  const playoffStartDate = playoff
+    ? null
+    : (toMoment(ladder.playoffStartsAt)?.toDate() ?? null);
+  // Latest a match may be posted: the buffer before playoffs begin.
+  const postingDeadline = playoff
+    ? playoff.deadline
+    : getLadderPostingDeadline(ladder);
+
+  // Doubles posts on behalf of the user's active team in this ladder. Resolve it
+  // when the modal opens so the fixture can record both sides.
+  useEffect(() => {
+    if (!modalVisible || !needsPosterTeam || !currentUser?.userId) {
+      setPosterTeam(null);
+      return;
+    }
+    let active = true;
+    (async () => {
+      try {
+        const teams = await fetchUserTeams(currentUser.userId);
+        const team = teams.find(
+          (t) =>
+            t.status === TEAM_STATUS.ACTIVE &&
+            (t.ladderIds ?? []).includes(ladder.ladderId),
+        );
+        if (active) setPosterTeam(team ?? null);
+      } catch (error) {
+        console.error("Error resolving poster team:", error);
+        if (active) setPosterTeam(null);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [
+    modalVisible,
+    needsPosterTeam,
+    currentUser?.userId,
+    ladder.ladderId,
+    fetchUserTeams,
+  ]);
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<AddLadderMatchFormValues>({
+    defaultValues: {
+      startDate: "",
+      startTime: "18:00",
+      bestOf: 5,
+      shuttleType: SHUTTLE_TYPE.FEATHER,
+      courtFee: "",
+    },
+  });
+
+  const startDate = watch("startDate");
+
+  useEffect(() => {
+    if (!modalVisible || !playoff) return;
+    setValue("bestOf", playoff.bestOf);
+    if (playoff.defaultCourt) setSelectedCourt(playoff.defaultCourt);
+  }, [modalVisible]);
+
+  const handleCourtSelect = (value: string) => {
+    const court = findSelectableCourt(value);
+    setSelectedCourt(court);
+    if (court) setErrorMessage(null);
+  };
+
+  const resetAndClose = () => {
+    reset();
+    setSelectedCourt(null);
+    setShowSearchCourtModal(false);
+    setAcceptedTerms(false);
+    setErrorMessage(null);
+    setSubmitting(false);
+    setModalVisible(false);
+  };
+
+  const onSubmit = async (data: AddLadderMatchFormValues) => {
+    if (submitting) return;
+
+    if (!currentUser?.userId) {
+      setErrorMessage("You need to be signed in to post a match.");
+      return;
+    }
+    if (!selectedCourt) {
+      setErrorMessage("Please select a court.");
+      return;
+    }
+    if (!data.startDate) {
+      setErrorMessage("Please pick a match date.");
+      return;
+    }
+
+    const parsedFee = Number(data.courtFee || "0");
+    if (!Number.isFinite(parsedFee) || parsedFee < 0) {
+      setErrorMessage("Please enter a valid court fee.");
+      return;
+    }
+    if (
+      parsedFee > 0 &&
+      (parsedFee < MIN_COURT_FEE || parsedFee > MAX_COURT_FEE)
+    ) {
+      setErrorMessage(
+        `A court fee must be between ${MIN_COURT_FEE} and ${MAX_COURT_FEE} ${ladder.currencyType}, or 0 for a free match.`,
+      );
+      return;
+    }
+
+    const start = getMatchStart({
+      matchDate: data.startDate,
+      matchTime: { start: data.startTime },
+    });
+    if (start && start.getTime() <= Date.now()) {
+      setErrorMessage("Please choose a date and time in the future.");
+      return;
+    }
+    if (
+      start &&
+      postingDeadline &&
+      start.getTime() > postingDeadline.getTime()
+    ) {
+      setErrorMessage(
+        playoff
+          ? `This match must be played by ${toMoment(postingDeadline)?.format("ddd D MMM, HH:mm")}.`
+          : `Matches must be scheduled at least ${LADDER_POSTING_CLOSE_DAYS} days before playoffs begin.`,
+      );
+      return;
+    }
+
+    if (playoff) {
+      setErrorMessage(null);
+      setSubmitting(true);
+      try {
+        const failure = await playoff.onSubmit({
+          court: selectedCourt,
+          matchDate: data.startDate,
+          matchTime: { start: data.startTime },
+          currencyType: ladder.currencyType,
+          shuttleType: data.shuttleType,
+        });
+        if (failure) {
+          setErrorMessage(failure);
+          return;
+        }
+        showBottomToast("Match sent to your opponent", "success");
+        resetAndClose();
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    let matchTeam: MatchTeam | undefined;
+    if (isDoubles) {
+      const playerIds = posterTeam ? teamMemberIds(posterTeam) : [];
+      if (!posterTeam?.teamId || playerIds.length < 2) {
+        setErrorMessage(
+          "You need an active team in this ladder to post a doubles match.",
+        );
+        return;
+      }
+      matchTeam = {
+        teamId: posterTeam.teamId,
+        teamKey: posterTeam.teamKey,
+        playerIds,
+      };
+    }
+
+    const input: LadderMatchInput = {
+      court: selectedCourt,
+      bestOf: data.bestOf,
+      matchDate: data.startDate,
+      matchTime: { start: data.startTime },
+      courtFee: parsedFee,
+      currencyType: ladder.currencyType,
+      shuttleType: data.shuttleType,
+    };
+
+    setErrorMessage(null);
+    setSubmitting(true);
+    try {
+      const { success } = await createLadderMatch(
+        ladder.ladderId,
+        input,
+        currentUser.userId,
+        matchTeam,
+      );
+      if (success) {
+        showBottomToast("Match posted", "success");
+        resetAndClose();
+      } else {
+        setErrorMessage("Something went wrong posting the match.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const gateUserIds = needsPosterTeam
+    ? posterTeam
+      ? teamMemberIds(posterTeam)
+      : []
+    : currentUser?.userId
+      ? [currentUser.userId]
+      : [];
+  const { disqualified, disclaimer } = useLadderDisqualification(
+    modalVisible ? ladder.ladderId : undefined,
+    gateUserIds,
+  );
+
+  const confirmDisabled =
+    submitting ||
+    !selectedCourt ||
+    !startDate ||
+    !acceptedTerms ||
+    disqualified ||
+    (needsPosterTeam && !posterTeam);
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent
+      visible={modalVisible}
+      onRequestClose={resetAndClose}
+    >
+      <ModalContainer>
+        <SafeAreaWrapper
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollContainer
+            data={[1]}
+            keyExtractor={() => "main"}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            renderItem={() => (
+              <>
+                <ModalTitle>
+                  {playoff ? playoff.title : "Post a Match"}
+                </ModalTitle>
+                <Subtitle>{ladder.name}</Subtitle>
+
+                <Label style={{ marginLeft: 5 }}>Court</Label>
+                <CourtSelector
+                  testID="add-ladder-match-court-selector"
+                  onPress={() => setShowSearchCourtModal(true)}
+                >
+                  <CourtSelectorText selected={!!selectedCourt}>
+                    {selectedCourt?.courtName || "Select Court"}
+                  </CourtSelectorText>
+                  <AntDesign name="right" size={16} color="#888" />
+                </CourtSelector>
+                {!!selectedCourt && !selectedCourt.verified && (
+                  <WarningTag testID="add-ladder-match-court-pending">
+                    <AntDesign name="clock-circle" size={12} color="#f5a623" />
+                    <WarningText>
+                      Pending verification — usable once an admin verifies this
+                      court.
+                    </WarningText>
+                  </WarningTag>
+                )}
+
+                <MatchDateTimeFields
+                  setValue={setValue}
+                  watch={watch}
+                  dateError={errors.startDate?.message}
+                  playoffStartDate={playoffStartDate}
+                  maxDate={postingDeadline}
+                  rangeMessage={
+                    playoff && postingDeadline
+                      ? `Please select a date within the ${LADDER_PLAYOFF_TIE_DAYS} days for this tie (by ${toMoment(postingDeadline)?.format("ddd D MMM")}).`
+                      : undefined
+                  }
+                  testIDPrefix="add-ladder-match"
+                />
+
+                <OptionSelector
+                  setValue={setValue}
+                  watch={watch}
+                  name="bestOf"
+                  label="Best of"
+                  options={
+                    playoff
+                      ? [playoff.bestOf]
+                      : [...LADDER_MATCH_BEST_OF_OPTIONS]
+                  }
+                />
+                <CourtTimeHint testID="add-ladder-match-court-time">
+                  {courtTimeHint(watch("bestOf"))}
+                </CourtTimeHint>
+
+                <OptionSelector
+                  setValue={setValue}
+                  watch={watch}
+                  name="shuttleType"
+                  label="Shuttle Type"
+                  options={[SHUTTLE_TYPE.FEATHER, SHUTTLE_TYPE.PLASTIC]}
+                />
+
+                {playoff ? (
+                  <DisclaimerText testID="add-ladder-match-no-fee">
+                    There are no court fees in the playoffs. Each player pays
+                    for their own home venue.
+                  </DisclaimerText>
+                ) : (
+                  <>
+                    <Label style={{ marginTop: 15, marginLeft: 5 }}>
+                      Court Fee ({ladder.currencyType})
+                    </Label>
+                    <Controller
+                      control={control}
+                      name="courtFee"
+                      render={({ field: { onChange, onBlur, value } }) => (
+                        <Input
+                          testID="add-ladder-match-fee"
+                          placeholder="0.00"
+                          placeholderTextColor="#ccc"
+                          keyboardType="numeric"
+                          value={value}
+                          onChangeText={onChange}
+                          onBlur={onBlur}
+                          style={{
+                            marginBottom: 16,
+                            marginHorizontal: 10,
+                            backgroundColor: "rgba(255, 255, 255, 0.1)",
+                          }}
+                        />
+                      )}
+                    />
+                    <DisclaimerText>
+                      Matches posted with no court fee tend to get accepted
+                      faster. If you&apos;d prefer to split the venue cost, set
+                      a court fee for this match.
+                    </DisclaimerText>
+                    {Number(watch("courtFee") || "0") > 0 && (
+                      <DisclaimerText>
+                        A {PLATFORM_FEE_PERCENT}% non refundable platform fee is
+                        deducted from this fee.
+                      </DisclaimerText>
+                    )}
+                  </>
+                )}
+
+                <TermsRow>
+                  <CheckboxToggle
+                    testID="add-ladder-match-terms"
+                    activeOpacity={0.7}
+                    onPress={() => setAcceptedTerms((prev) => !prev)}
+                  >
+                    <Ionicons
+                      name={acceptedTerms ? "checkbox" : "square-outline"}
+                      size={22}
+                      color={acceptedTerms ? "#00A2FF" : "#64748b"}
+                    />
+                    <CheckboxLabel>I accept the</CheckboxLabel>
+                  </CheckboxToggle>
+                  <TermsLink
+                    testID="add-ladder-match-terms-link"
+                    activeOpacity={0.7}
+                    onPress={() => setTermsVisible(true)}
+                  >
+                    <CheckboxLink>Terms &amp; Conditions</CheckboxLink>
+                  </TermsLink>
+                </TermsRow>
+
+                {disqualified && !!disclaimer && (
+                  <ErrorText testID="add-ladder-match-disqualified">
+                    {disclaimer}
+                  </ErrorText>
+                )}
+                {!!errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+
+                <ButtonContainer>
+                  <CancelButton onPress={resetAndClose}>
+                    <CancelText>Cancel</CancelText>
+                  </CancelButton>
+                  <CreateButton
+                    testID="add-ladder-match-submit"
+                    disabled={confirmDisabled}
+                    onPress={handleSubmit(onSubmit)}
+                  >
+                    {submitting ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <CreateText>
+                        {playoff ? "Send to opponent" : "Post Match"}
+                      </CreateText>
+                    )}
+                  </CreateButton>
+                </ButtonContainer>
+              </>
+            )}
+          />
+        </SafeAreaWrapper>
+      </ModalContainer>
+
+      {showSearchCourtModal && (
+        <SearchCourt
+          visible={showSearchCourtModal}
+          onClose={() => setShowSearchCourtModal(false)}
+          courts={courtsList}
+          selectedCourtKey={selectedCourt?.courtId}
+          onSelectCourt={handleCourtSelect}
+          getCourts={getCourts}
+          addCourt={submitCourt}
+          onCourtsRefreshed={applyCourts}
+          showCountryIcon={false}
+          selectAddedCourt={false}
+          addCourtSuccessMessage={COURT_SUBMITTED_MESSAGE}
+          loading={courtsLoading}
+        />
+      )}
+
+      <LadderTermsModal
+        visible={termsVisible}
+        onClose={() => setTermsVisible(false)}
+      />
+    </Modal>
+  );
+};
+
+export default AddLadderMatchModal;
+
+const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+});
+
+const SafeAreaWrapper = styled(KeyboardAvoidingView)({
+  width: screenWidth - 40,
+  maxHeight: "90%",
+  margin: 20,
+  borderRadius: 20,
+  overflow: "hidden",
+  backgroundColor: "rgba(2, 13, 24, 0.7)",
+});
+
+const ScrollContainer = styled.FlatList({
+  padding: "40px 20px",
+});
+
+const ModalTitle = styled.Text({
+  fontSize: 20,
+  color: "#fff",
+  fontWeight: "bold",
+  textAlign: "center",
+});
+
+const Subtitle = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+  textAlign: "center",
+  marginTop: 4,
+  marginBottom: 20,
+});
+
+const Label = styled.Text({
+  color: "#ccc",
+  alignSelf: "flex-start",
+  fontSize: 14,
+  fontWeight: "bold",
+  marginBottom: 6,
+});
+
+const ErrorText = styled.Text({
+  color: "red",
+  fontSize: 12,
+  marginTop: 4,
+});
+
+const Input = styled.TextInput({
+  height: 40,
+  borderRadius: 6,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+  color: "white",
+  paddingLeft: 12,
+  marginBottom: 16,
+});
+
+const CourtSelector = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  height: 40,
+  borderRadius: 5,
+  paddingHorizontal: 12,
+  marginHorizontal: 9,
+  marginBottom: 16,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
+});
+
+const CourtSelectorText = styled.Text<{ selected: boolean }>(
+  ({ selected }: { selected: boolean }) => ({
+    color: selected ? "#fff" : "#999",
+    fontSize: 14,
+  }),
+);
+
+const WarningTag = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 6,
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 8,
+  marginBottom: 16,
+  backgroundColor: "rgba(245, 166, 35, 0.12)",
+});
+
+const CourtTimeHint = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 12,
+  marginTop: -4,
+  marginBottom: 10,
+  marginHorizontal: 10,
+});
+
+const WarningText = styled.Text({
+  color: "#f5a623",
+  fontSize: 12,
+  flexShrink: 1,
+});
+
+const DisclaimerText = styled.Text({
+  color: "white",
+  fontStyle: "italic",
+  fontSize: 12,
+  marginBottom: 6,
+});
+
+const TermsRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: 6,
+  marginTop: 20,
+});
+
+const CheckboxToggle = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 10,
+});
+
+const CheckboxLabel = styled.Text({
+  color: "#cccccc",
+  fontSize: 14,
+  flexShrink: 1,
+});
+
+const TermsLink = styled.TouchableOpacity({});
+
+const CheckboxLink = styled.Text({
+  color: "#00A2FF",
+  fontWeight: "bold",
+});
+
+const ButtonContainer = styled.View({
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginTop: 20,
+});
+
+const CancelButton = styled.TouchableOpacity({
+  width: "48%",
+  padding: 12,
+  backgroundColor: "#9e9e9e",
+  borderRadius: 6,
+});
+
+const CancelText = styled.Text({
+  textAlign: "center",
+  color: "white",
+  fontSize: 16,
+});
+
+const CreateButton = styled.TouchableOpacity<{ disabled: boolean }>(
+  ({ disabled }: { disabled: boolean }) => ({
+    width: "48%",
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: disabled ? "#9e9e9e" : "#00A2FF",
+    opacity: disabled ? 0.6 : 1,
+  }),
+);
+
+const CreateText = styled.Text({
+  textAlign: "center",
+  color: "white",
+  fontWeight: "bold",
+  fontSize: 16,
+});

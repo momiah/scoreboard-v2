@@ -15,6 +15,10 @@ import {
   Player,
 } from "@shared/types";
 import { calculateWin } from "../../helpers/calculateWin";
+import {
+  LADDER_FROZEN_MESSAGE,
+  LADDER_RESULTS_CLOSED_MESSAGE,
+} from "@shared/helpers";
 import { UserContext } from "@/context/UserContext";
 import { PopupContext } from "@/context/PopupContext";
 import {
@@ -24,9 +28,21 @@ import {
 } from "@shared";
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { LeagueContext } from "@/context/LeagueContext";
+import { LadderContext } from "@/context/LadderContext";
 import VideoUploadModal from "./VideoUploadModal";
 
 const { width: screenWidth } = Dimensions.get("window");
+
+/**
+ * When supplied, the modal publishes into a ladder match's shell game (via
+ * `updateLadderGame`) instead of a tournament fixture. `tournamentId`/
+ * `tournamentName` are ignored in that case.
+ */
+export type LadderGameContext = {
+  ladderId: string;
+  matchId: string;
+  name: string;
+};
 
 type AddTournamentGameModalProps = {
   visible: boolean;
@@ -37,6 +53,18 @@ type AddTournamentGameModalProps = {
   currentUser: UserProfile | null;
   tournamentName: string;
   tournamentId: string;
+  ladder?: LadderGameContext | null;
+  /**
+   * Capture-only mode: when supplied, the entered scores are returned via this
+   * callback and nothing is persisted or notified. Used by the dispute flow to
+   * collect corrected scores without touching the live match.
+   */
+  onCapture?: (capturedGame: Game) => void;
+  /**
+   * Extra validation run after the badminton-score check; return an error string
+   * to block submission (e.g. the dispute flow rejects the original score).
+   */
+  validateScores?: (team1Score: number, team2Score: number) => string | null;
 };
 
 const AddTournamentGameModal = ({
@@ -48,9 +76,13 @@ const AddTournamentGameModal = ({
   currentUser,
   tournamentName,
   tournamentId,
+  ladder = null,
+  onCapture,
+  validateScores,
 }: AddTournamentGameModalProps) => {
   const { getUserById, sendNotification } = useContext(UserContext);
   const { updateTournamentGame } = useContext(LeagueContext);
+  const { updateLadderGame } = useContext(LadderContext);
   const { showBottomToast } = useContext(PopupContext);
   const [team1Score, setTeam1Score] = useState("");
   const [team2Score, setTeam2Score] = useState("");
@@ -115,6 +147,12 @@ const AddTournamentGameModal = ({
       return;
     }
 
+    const extraError = validateScores?.(score1, score2);
+    if (extraError) {
+      setErrorText(extraError);
+      return;
+    }
+
     setLoading(true);
 
     const team1: GameTeam = {
@@ -153,6 +191,16 @@ const AddTournamentGameModal = ({
       approvers: game?.approvers || [],
     };
 
+    // Capture-only: hand the corrected game back and stop — no notifications,
+    // no writes to the live match (the dispute owns persistence on resolution).
+    if (onCapture) {
+      onCapture(gameResult);
+      setLoading(false);
+      resetForm();
+      onClose();
+      return;
+    }
+
     const isCurrentUserTeam1 = [
       team1.player1?.userId,
       team1.player2?.userId,
@@ -166,37 +214,80 @@ const AddTournamentGameModal = ({
       opponentUserIds.map(getUserById),
     )) as Array<{ userId: string; [key: string]: unknown }>;
 
+    const competitionLabel = ladder ? "ladder" : "tournament";
     for (const user of requestForOpponentApprovals) {
       const payload = {
         ...notificationSchema,
         createdAt: new Date(),
         recipientId: user.userId,
         senderId: currentUser?.userId,
-        message: `${formatDisplayName(currentUser)} has just reported a score in ${tournamentName} tournament`,
-        type: notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
-        data: { tournamentId, gameId: game.gameId },
+        message: `${formatDisplayName(currentUser)} has just reported a score in ${
+          ladder ? ladder.name : tournamentName
+        } ${competitionLabel}`,
+        type: ladder
+          ? notificationTypes.ACTION.ADD_GAME.LADDER
+          : notificationTypes.ACTION.ADD_GAME.TOURNAMENT,
+        data: ladder
+          ? {
+              ladderId: ladder.ladderId,
+              matchId: ladder.matchId,
+              gameId: game.gameId,
+            }
+          : { tournamentId, gameId: game.gameId },
       };
       await sendNotification(payload);
     }
 
     try {
-      await updateTournamentGame({
-        tournamentId,
-        gameId: game.gameId,
-        updatedGame: gameResult,
-      });
+      if (ladder) {
+        const outcome = await updateLadderGame({
+          ladderId: ladder.ladderId,
+          matchId: ladder.matchId,
+          updatedGame: gameResult,
+        });
+        if (!outcome.success) {
+          throw new Error(
+            outcome.reason === "unavailable"
+              ? "already been reported"
+              : outcome.reason === "match_decided"
+                ? "match already decided"
+                : outcome.reason === "frozen"
+                  ? LADDER_FROZEN_MESSAGE
+                  : outcome.reason === "results_closed"
+                    ? LADDER_RESULTS_CLOSED_MESSAGE
+                    : "Failed to submit ladder game result.",
+          );
+        }
+      } else {
+        await updateTournamentGame({
+          tournamentId,
+          gameId: game.gameId,
+          updatedGame: gameResult,
+        });
+      }
     } catch (updateError: unknown) {
       const errorMessage =
         updateError instanceof Error ? updateError.message : "";
       const alreadyReported =
         errorMessage.includes("already been reported") ||
         errorMessage.includes("already been processed");
+      const matchDecided = errorMessage.includes("match already decided");
+      const frozen = errorMessage.includes(LADDER_FROZEN_MESSAGE);
+      const resultsClosed = errorMessage.includes(
+        LADDER_RESULTS_CLOSED_MESSAGE,
+      );
 
       setLoading(false);
       setErrorText(
         alreadyReported
           ? "This game has already been reported. Please refresh to see the latest status."
-          : "Failed to submit game result. Please try again.",
+          : matchDecided
+            ? "This match is already decided — no further games can be reported."
+            : frozen
+              ? `${LADDER_FROZEN_MESSAGE}.`
+              : resultsClosed
+                ? `${LADDER_RESULTS_CLOSED_MESSAGE}.`
+                : "Failed to submit game result. Please try again.",
       );
       return;
     }
@@ -207,6 +298,9 @@ const AddTournamentGameModal = ({
 
     setLoading(false);
     resetForm();
+
+    // Both flows follow submit with an optional video upload; the modal is
+    // pointed at the ladder match subcollection or the tournament below.
     setSubmittedGame({
       gameId: game.gameId,
       gamescore,
@@ -271,6 +365,7 @@ const AddTournamentGameModal = ({
           )}
 
           <SubmitButton
+            testID="add-game-submit"
             onPress={handleSubmit}
             disabled={loading || !areScoresEntered() || !canCurrentUserReport}
             style={{
@@ -299,12 +394,20 @@ const AddTournamentGameModal = ({
           onClose={() => {
             setSubmittedGame(null);
             onClose();
-            showBottomToast("Game published!", "success");
+            showBottomToast(
+              ladder
+                ? "Score sent to your opponent for approval"
+                : "Game published!",
+              "success",
+            );
           }}
           gameId={submittedGame.gameId}
-          competitionId={tournamentId}
-          competitionName={tournamentName}
-          competitionType={COMPETITION_TYPES.TOURNAMENT}
+          competitionId={ladder ? ladder.ladderId : tournamentId}
+          competitionName={ladder ? ladder.name : tournamentName}
+          competitionType={
+            ladder ? COMPETITION_TYPES.LADDER : COMPETITION_TYPES.TOURNAMENT
+          }
+          matchId={ladder ? ladder.matchId : undefined}
           gamescore={submittedGame.gamescore}
           date={submittedGame.date}
           teams={submittedGame.teams}

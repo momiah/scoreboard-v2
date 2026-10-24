@@ -21,14 +21,25 @@ export const FixturePlayerCell = ({ position, player }) => (
 
 export const FixtureTeamColumn = ({ team, position, tournamentType }) => (
   <FixtureTeamContainer>
-    <FixturePlayerCell position={position} player={team?.player1} />
-    {tournamentType === "Doubles" && team?.player2 && (
-      <FixturePlayerCell position={position} player={team?.player2} />
+    {team?.teamName ? (
+      // Doubles ladders name their teams, so a single team-name cell replaces
+      // the two player cells. Leagues/tournaments never set teamName.
+      <FixturePlayerCell
+        position={position}
+        player={{ displayName: team.teamName }}
+      />
+    ) : (
+      <>
+        <FixturePlayerCell position={position} player={team?.player1} />
+        {tournamentType === "Doubles" && (
+          <FixturePlayerCell position={position} player={team?.player2} />
+        )}
+      </>
     )}
   </FixtureTeamContainer>
 );
 
-export const FixtureScoreDisplay = ({ game }) => {
+export const FixtureScoreDisplay = ({ game, testID }) => {
   const hasResult = game?.result;
   const approvalStatus = game?.approvalStatus;
   const videoCount = game?.videoCount ?? 0;
@@ -36,9 +47,11 @@ export const FixtureScoreDisplay = ({ game }) => {
   const statusLabel =
     approvalStatus === "Scheduled"
       ? "Scheduled"
-      : approvalStatus === "pending" || approvalStatus === "Pending"
-        ? "Pending Approval"
-        : null;
+      : approvalStatus === "disputed"
+        ? "Disputed"
+        : approvalStatus === "pending" || approvalStatus === "Pending"
+          ? "Pending Approval"
+          : null;
 
   return (
     <FixtureResultsContainer>
@@ -48,11 +61,18 @@ export const FixtureScoreDisplay = ({ game }) => {
             {game.team1.score} - {game.team2.score}
           </FixtureScore>
         ) : (
-          <FixtureScore>-</FixtureScore>
+          <FixtureScore>00-00</FixtureScore>
         )}
       </FixtureScoreContainer>
       {statusLabel && (
-        <FixtureStatusLabel status={approvalStatus}>
+        <FixtureStatusLabel
+          status={approvalStatus}
+          testID={
+            approvalStatus === "disputed" && testID
+              ? `${testID}-disputed-pill`
+              : undefined
+          }
+        >
           {statusLabel}
         </FixtureStatusLabel>
       )}
@@ -75,7 +95,9 @@ export const FixtureScoreDisplay = ({ game }) => {
 export const FixtureGameHeader = ({ game }) => (
   <FixtureGameHeaderContainer>
     <Tag name={`Game ${game.gameNumber}`} bold color="#00A2FF" />
-    <Tag name={`Court ${game.court}`} bold color="#005322ff" />
+    {(game.court ?? "") !== "" && (
+      <Tag name={`Court ${game.court}`} bold color="#005322ff" />
+    )}
   </FixtureGameHeaderContainer>
 );
 
@@ -87,18 +109,19 @@ export const FixtureGameItem = ({
   glowAnim,
   isHighlighted,
   glowColor,
+  locked = false,
+  testID,
 }) => {
+  const dimmed =
+    game.approvalStatus === "pending" ||
+    game.approvalStatus === "Pending" ||
+    game.approvalStatus === "disputed";
   return (
     <FixtureGameOuter ref={innerRef}>
       <FixtureGameContainer
+        testID={testID}
         onPress={() => onPress(game)}
-        style={{
-          opacity:
-            game.approvalStatus === "pending" ||
-            game.approvalStatus === "Pending"
-              ? 0.6
-              : 1,
-        }}
+        style={{ opacity: locked ? 0.4 : dimmed ? 0.6 : 1 }}
       >
         <FixtureGameHeader game={game} />
         <FixtureTeamVsContainer>
@@ -107,7 +130,7 @@ export const FixtureGameItem = ({
             position="left"
             tournamentType={tournamentType}
           />
-          <FixtureScoreDisplay game={game} />
+          <FixtureScoreDisplay game={game} testID={testID} />
           <FixtureTeamColumn
             team={game?.team2}
             position="right"
@@ -115,6 +138,11 @@ export const FixtureGameItem = ({
           />
         </FixtureTeamVsContainer>
       </FixtureGameContainer>
+      {locked && (
+        <LockedBadge>
+          <Ionicons name="lock-closed" size={12} color="#9fb8c8" />
+        </LockedBadge>
+      )}
       {isHighlighted && <GameGlow glowAnim={glowAnim} color={glowColor} />}
     </FixtureGameOuter>
   );
@@ -320,6 +348,12 @@ const FixtureGameContainer = styled.TouchableOpacity({
   backgroundColor: "rgb(3, 16, 31)",
 });
 
+const LockedBadge = styled.View({
+  position: "absolute",
+  top: 8,
+  right: 8,
+});
+
 export const FixtureStatusLabel = styled.Text(({ status }) => ({
   paddingHorizontal: 6,
   paddingVertical: 2,
@@ -331,7 +365,9 @@ export const FixtureStatusLabel = styled.Text(({ status }) => ({
       ? "rgba(0, 162, 255, 0.6)"
       : status === "Approved" || status === "approved"
         ? "rgba(0, 255, 0, 0.6)"
-        : "rgba(255, 165, 0, 0.6)",
+        : status === "disputed"
+          ? "rgba(255, 59, 48, 0.7)"
+          : "rgba(255, 165, 0, 0.6)",
   borderRadius: 4,
   overflow: "hidden",
 }));

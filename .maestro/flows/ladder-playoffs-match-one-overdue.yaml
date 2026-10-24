@@ -1,0 +1,35 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "matchOneOverdue"
+      SUFFIX: ""
+- runFlow: ../utilities/playoffs/open-tie.yaml
+- assertVisible:
+    id: "playoff-match-leg1-waiting"
+- assertNotVisible: ".*Your opponent arranges match 1 first.*"
+- assertVisible:
+    id: "playoff-match-leg2-arrange"
+- scrollUntilVisible:
+    element:
+      id: "playoff-match-leg2-arrange"
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn:
+    id: "playoff-match-leg2-arrange"
+- extendedWaitUntil:
+    visible: "Arrange match 2"
+    timeout: 15000
+- runFlow: ../utilities/playoffs/send-arranged-match.yaml
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-leg2"
+    timeout: 20000
+- assertVisible: ".*Awaiting.*"
+- assertVisible:
+    id: "playoff-match-leg1-waiting"

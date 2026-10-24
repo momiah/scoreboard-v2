@@ -1,0 +1,90 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-doubles-active-dispute"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Doubles Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Doubles Ladder.*"
+- assertVisible:
+    id: "game-approval-disputed-link"
+- tapOn:
+    id: "game-approval-disputed-link"
+- assertVisible:
+    id: "game-dispute-screen"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-cancel"
+    direction: DOWN
+- assertVisible:
+    id: "dispute-cancel"
+- assertNotVisible:
+    id: "dispute-approve-score"
+- tapOn:
+    id: "dispute-cancel"
+- extendedWaitUntil:
+    visible: "Cancel dispute?"
+    timeout: 5000
+- tapOn:
+    text: "(?i)cancel dispute"
+    below: ".*undone.*"
+    above: "(?i)keep dispute"
+- extendedWaitUntil:
+    visible: "Dispute cancelled"
+    timeout: 15000
+
+- assertNotVisible:
+    id: "dispute-cancel"
+- assertVisible: ".*Dispute cancelled.*"
+
+- assertNotVisible:
+    id: "dispute-evidence-note-input"
+- assertNotVisible:
+    id: "dispute-evidence-submit"
+
+- scrollUntilVisible:
+    element:
+      id: "dispute-view-ladder"
+    direction: UP
+    centerElement: true
+- waitForAnimationToEnd:
+    timeout: 1000
+- tapOn:
+    id: "dispute-view-ladder"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-tab-Performance"
+    timeout: 10000
+- tapOn:
+    id: "ladder-tab-Performance"
+- extendedWaitUntil:
+    visible: ".*Reject Bravos.*Wins.*1.*PD.*6.*CP.*20.*"
+    timeout: 15000
+- assertVisible: ".*Reject Aces.*Wins.*0.*PD.*-6.*CP.*0.*"
+
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible: "85 CP"
+    timeout: 15000
+- assertVisible: "-6 PD"
+- scrollUntilVisible:
+    element:
+      id: "profile-stat-wins"
+    direction: DOWN
+- assertVisible:
+    id: "profile-stat-wins"
+    text: "0"
+- assertVisible:
+    id: "profile-stat-losses"
+    text: "1"

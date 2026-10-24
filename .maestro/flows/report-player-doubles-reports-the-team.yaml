@@ -1,0 +1,56 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-disband-accepted-match"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Disband Ladder on Schedule.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Disband Ladder on Schedule.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-disband-match"
+    timeout: 20000
+- tapOn:
+    id: "schedule-card-maestro-disband-match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- tapOn:
+    id: "match-details-burger"
+- tapOn:
+    id: "match-menu-Report"
+- extendedWaitUntil:
+    visible:
+      id: "report-submit"
+    timeout: 15000
+- tapOn:
+    id: "report-target-team"
+- tapOn:
+    id: "report-reason-abuse"
+- tapOn:
+    id: "report-submit"
+- extendedWaitUntil:
+    visible: "Report submitted for review"
+    timeout: 15000
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-disband-report-filed-team"

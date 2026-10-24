@@ -13,6 +13,8 @@ import {
   View,
   Text,
 } from "react-native";
+import { useAndroidKeyboardHeight } from "../../hooks/useAndroidKeyboardHeight";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import { BlurView } from "expo-blur";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
@@ -39,12 +41,16 @@ const ChatRoom = ({
   competitionName,
   endDate,
   competitionType,
+  chatPath,
+  privateNotice = /** @type {string | null} */ (null),
 }) => {
   const { currentUser } = useContext(UserContext);
   const { sendChatMessage } = useContext(LeagueContext);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const flatListRef = useRef(null);
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0;
+  const keyboardHeight = useAndroidKeyboardHeight();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Scroll to end function with delay to ensure rendering is complete
@@ -62,10 +68,12 @@ const ChatRoom = ({
         ? "tournaments"
         : "leagues";
 
-    const q = query(
-      collection(db, collectionRef, competitionId, "chat"),
-      orderBy("createdAt", "asc"),
-    );
+    const chatCollection =
+      chatPath && chatPath.length > 0
+        ? collection(db, ...chatPath)
+        : collection(db, collectionRef, competitionId, "chat");
+
+    const q = query(chatCollection, orderBy("createdAt", "asc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -115,12 +123,19 @@ const ChatRoom = ({
       message: newMessage,
       competitionId,
       competitionType,
+      chatPath,
     });
     setInputText("");
     Keyboard.dismiss();
 
     // Scroll to end after sending message
     scrollToEnd(true);
+
+    const chatTarget = {
+      competitionType,
+      ...(chatPath?.[0] === "ladders" ? { ladderId: chatPath[1] } : {}),
+      ...(chatPath?.[2] === "playoffTies" ? { tieId: chatPath[3] } : {}),
+    };
 
     const recipients = competitionParticipants.filter(
       (u) => u.userId !== currentUser?.userId,
@@ -145,6 +160,7 @@ const ChatRoom = ({
             lastMessage: `${currentUser?.username}: ${newMessage.text}`,
             createdAt: new Date(),
             competitionName,
+            ...chatTarget,
           },
           { merge: true },
         );
@@ -157,6 +173,7 @@ const ChatRoom = ({
           lastMessage: `${currentUser?.username}: ${newMessage.text}`,
           createdAt: new Date(),
           competitionName,
+          ...chatTarget,
         });
       }
     }
@@ -199,7 +216,10 @@ const ChatRoom = ({
             fontStyle: "italic",
           }}
         >
-          Only participants of the league can view this chat 📝
+          {privateNotice ??
+            (competitionType === COMPETITION_TYPES.LADDER
+              ? "Only the players in this game can see this chat 📝"
+              : "Only participants of the league can view this chat 📝")}
         </Text>
       </BlurView>
     );
@@ -226,15 +246,13 @@ const ChatRoom = ({
           {/* Avatar and username container */}
           {!isCurrentUser && showAvatar && (
             <UserInfoContainer>
-              <AvatarImage source={{ uri: item.user.avatar }} />
+              <Avatar uri={item.user.avatar} />
               <UserName>{item.user.name}</UserName>
             </UserInfoContainer>
           )}
 
           {/* Current user avatar (no username) */}
-          {isCurrentUser && showAvatar && (
-            <AvatarImage source={{ uri: item.user.avatar }} />
-          )}
+          {isCurrentUser && showAvatar && <Avatar uri={item.user.avatar} />}
 
           <BubbleContainer isCurrentUser={isCurrentUser}>
             <MessageText>{item.text}</MessageText>
@@ -251,40 +269,50 @@ const ChatRoom = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 50 : 0}
+    <View
+      style={{
+        flex: 1,
+        paddingBottom: Math.max(keyboardHeight - tabBarHeight, 0),
+      }}
     >
-      <FlatList
-        ref={flatListRef}
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        onScrollToIndexFailed={() => {
-          scrollToEnd(false);
-        }}
-      />
-      <InputBar>
-        <MessageInput
-          value={inputText}
-          onChangeText={leagueHasEnded ? null : setInputText}
-          placeholder={
-            leagueHasEnded
-              ? "Chat room closed as the league has ended"
-              : "Type a message..."
-          }
-          placeholderTextColor="#aaa"
+        behavior="padding"
+        enabled={Platform.OS === "ios"}
+        keyboardVerticalOffset={50}
+      >
+        <FlatList
+          ref={flatListRef}
+          style={{ flex: 1 }}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          onScrollToIndexFailed={() => {
+            scrollToEnd(false);
+          }}
         />
-        <SendButton
-          onPress={handleSend}
-          disabled={!inputText.trim() || leagueHasEnded}
-        >
-          <Ionicons name="send" size={24} color="#00A2FF" />
-        </SendButton>
-      </InputBar>
-    </KeyboardAvoidingView>
+        <InputBar>
+          <MessageInput
+            value={inputText}
+            onChangeText={leagueHasEnded ? null : setInputText}
+            placeholder={
+              leagueHasEnded
+                ? "Chat room closed as the league has ended"
+                : "Type a message..."
+            }
+            placeholderTextColor="#aaa"
+            testID="chat-room-input"
+          />
+          <SendButton
+            testID="chat-room-send"
+            onPress={handleSend}
+            disabled={!inputText.trim() || leagueHasEnded}
+          >
+            <Ionicons name="send" size={24} color="#00A2FF" />
+          </SendButton>
+        </InputBar>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -294,6 +322,17 @@ const MessageContainer = styled.View(({ isCurrentUser }) => ({
   marginBottom: 10,
   marginHorizontal: 10,
 }));
+
+const Avatar = ({ uri }) =>
+  uri ? <AvatarImage source={{ uri }} /> : <AvatarPlaceholder />;
+
+const AvatarPlaceholder = styled.View({
+  width: 28,
+  height: 28,
+  borderRadius: 14,
+  marginBottom: 5,
+  backgroundColor: "rgba(255, 255, 255, 0.08)",
+});
 
 const AvatarImage = styled.Image({
   width: 28,

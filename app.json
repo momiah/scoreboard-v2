@@ -29,6 +29,7 @@
           "NSAllowsLocalNetworking": true
         },
         "NSCameraUsageDescription": "This app needs access to your camera to take photos.",
+        "NSLocationWhenInUseUsageDescription": "This app needs your location to verify you have arrived at the court when checking in to a match.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select profile images.",
         "NSPhotoLibraryAddUsageDescription": "This app needs access to save images to your library.",
         "NSUserNotificationUsageDescription": "This app needs permission to send you notifications.",
@@ -60,7 +61,12 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 28
+      "versionCode": 28,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/court-champ-logo-adaptive-icon-small.png"
@@ -106,6 +112,18 @@
             "targetSdkVersion": 36,
             "buildToolsVersion": "36.0.0"
           }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "This app needs access to your camera to scan match check-in QR codes."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "This app needs your location to verify you have arrived at the court when checking in to a match."
         }
       ],
       "expo-video",
