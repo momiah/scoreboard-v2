@@ -165,7 +165,7 @@ const AddLeagueModal = ({ modalVisible, setModalVisible, onSuccess, clubId = nul
         leagueAdmins: [adminData.leagueAdmin],
         leagueParticipants: [adminData.leagueParticipant],
         leagueImage: imageDownloadUrl || null,
-        prizeType: prizeTypes.TROPHY,
+        prizeType: prizeTypes.COMMUNITY,
         location,
         countryCode: location.countryCode || "",
         leagueOwner: adminData.leagueOwner,

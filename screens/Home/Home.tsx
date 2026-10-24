@@ -44,6 +44,7 @@ import HomeClubsSection from "../../components/Home/HomeClubsSection";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
+import { backfillCompetitionPrizeType } from "@/devFunctions/backfillCompetitionPrizeType";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
@@ -223,6 +224,17 @@ const Home = () => {
         >
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
+
+        {__DEV__ ? (
+          <TouchableOpacity
+            onPress={async () => {
+              const summary = await backfillCompetitionPrizeType();
+              console.log("Prize type backfill:", summary);
+            }}
+          >
+            <Text style={{ color: "white" }}>Backfill prize types</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
