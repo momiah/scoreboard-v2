@@ -170,7 +170,7 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId =
         tournamentAdmins: [adminData.tournamentAdmin],
         tournamentParticipants: [adminData.tournamentParticipant],
         tournamentImage: imageDownloadUrl || null,
-        prizeType: prizeTypes.MEDAL,
+        prizeType: prizeTypes.COMMUNITY,
         location,
         countryCode: location.countryCode || "",
         tournamentOwner: adminData.tournamentOwner,
