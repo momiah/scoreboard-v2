@@ -64,6 +64,7 @@ const EditProfile = ({ navigation }) => {
     profileImage: "",
     headline: "",
     showEmail: false,
+    showInSearchEngines: true,
   });
 
   useEffect(() => {
@@ -80,6 +81,8 @@ const EditProfile = ({ navigation }) => {
         profileImage: currentUser?.profileImage || "",
         headline: currentUser?.headline || "",
         showEmail: currentUser?.showEmail || false,
+        // Listed unless the player has turned it off
+        showInSearchEngines: currentUser?.showInSearchEngines !== false,
       });
 
       // Initialize selected country code
@@ -221,7 +224,9 @@ const EditProfile = ({ navigation }) => {
       formData.email !== (currentUser?.email || "") ||
       formData.profileImage !== (currentUser?.profileImage || "") ||
       formData.headline !== (currentUser?.headline || "") ||
-      formData.showEmail !== (currentUser?.showEmail || false)
+      formData.showEmail !== (currentUser?.showEmail || false) ||
+      formData.showInSearchEngines !==
+        (currentUser?.showInSearchEngines !== false)
     );
   }, [currentUser, formData]);
 
@@ -443,6 +448,37 @@ const EditProfile = ({ navigation }) => {
               <Text style={{ color: "#aaa", fontSize: 12, marginTop: 10 }}>
                 This email is used for account recovery and notifications. To
                 change your email, please contact support.
+              </Text>
+            </Section>
+
+            <Section>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <SectionTitle style={{ flexShrink: 1, marginRight: 12 }}>
+                  Show my profile in search engines
+                </SectionTitle>
+                <Switch
+                  style={{ marginBottom: 10 }}
+                  value={formData.showInSearchEngines}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, showInSearchEngines: value })
+                  }
+                  trackColor={{ false: "#767577", true: "#00a2ff" }}
+                  thumbColor={
+                    formData.showInSearchEngines ? "#ffffff" : "#f4f3f4"
+                  }
+                  accessibilityLabel="Show my profile in search engines"
+                />
+              </View>
+              <Text style={{ color: "#aaa", fontSize: 12 }}>
+                Lets Google and other search engines list your public profile
+                on courtchamps.com. Turning this off does not hide your profile
+                from other players.
               </Text>
             </Section>
 
