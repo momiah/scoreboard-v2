@@ -23,6 +23,7 @@ import {
 import { mockResolveDispute } from "./seeds/mockResolveDispute";
 import { mockRequestMoreEvidence } from "./seeds/mockRequestMoreEvidence";
 import { cleanupLadderTestData } from "./seeds/cleanupLadderTestData";
+import { PRO_LEVEL_SEED_LEVELS, seedProLevel } from "./seeds/seedProLevel";
 import { seedAddApproveGameFlow } from "./seeds/seedAddApproveGameFlow";
 import { seedAddApproveGameFlowDoubles } from "./seeds/seedAddApproveGameFlowDoubles";
 import { seedHomeCourtFlow } from "./seeds/seedHomeCourtFlow";
@@ -648,6 +649,23 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
     >
       <Text style={{ color: "white" }}>Delete Ladder Test Data</Text>
     </HarnessButton>
+
+    {PRO_LEVEL_SEED_LEVELS.map((level) => (
+      <HarnessButton
+        key={`prolevel-${level}`}
+        testID={`maestro-seed-prolevel-${level}`}
+        onPress={async () => {
+          try {
+            const outcome = await seedProLevel({ testUser: currentUser, level });
+            Alert.alert("Seeded", JSON.stringify(outcome));
+          } catch (error) {
+            Alert.alert("Seed failed", String(error));
+          }
+        }}
+      >
+        <Text style={{ color: "white" }}>Seed PROLevel {level}</Text>
+      </HarnessButton>
+    ))}
 
     <PlayoffVariantButtons
       currentUser={currentUser}

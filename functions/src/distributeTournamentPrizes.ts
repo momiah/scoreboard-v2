@@ -3,6 +3,7 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 
 import {
+  PLACEMENT_STAT_KEYS,
   calculateTournamentPrizePool,
   getKnockoutTopFour,
   isKnockoutComplete,
@@ -15,15 +16,15 @@ import { ScoreboardProfile, Tournament } from "courtchamps-shared/types";
 import { sendNotification } from "./helpers/sendNotification";
 import { writeClubCompetitionWon } from "./helpers/clubFeed";
 import { notificationTypes } from "courtchamps-shared";
+import { buildPrizeAwardUpdate } from "./helpers/prizeAwards";
 
 const DISTRIBUTION = [0.4, 0.3, 0.2, 0.1];
-const PLACEMENT_KEYS = ["first", "second", "third", "fourth"] as const;
 const PLACEMENT_SUFFIX = ["st", "nd", "rd", "th"] as const;
 
 interface PrizeAllocation {
   userId: string;
   prizeXP: number;
-  placementKey: (typeof PLACEMENT_KEYS)[number];
+  placementKey: (typeof PLACEMENT_STAT_KEYS)[number];
   placementIndex: number;
 }
 
@@ -93,7 +94,7 @@ const buildPrizeAllocations = (
       allocations.push({
         userId,
         prizeXP,
-        placementKey: PLACEMENT_KEYS[placementIndex],
+        placementKey: PLACEMENT_STAT_KEYS[placementIndex],
         placementIndex,
       });
     });
@@ -178,11 +179,14 @@ const distributeForTournament = async (
         continue;
       }
 
-      tx.update(db.collection("users").doc(userId), {
-        "profileDetail.XP": admin.firestore.FieldValue.increment(prizeXP),
-        [`profileDetail.tournamentStats.${placementKey}`]:
-          admin.firestore.FieldValue.increment(1),
-      });
+      tx.update(
+        db.collection("users").doc(userId),
+        buildPrizeAwardUpdate({
+          cp: prizeXP,
+          statsField: "tournamentStats",
+          place: placementIndex + 1,
+        }),
+      );
 
       notifications.push(
         buildNotification({

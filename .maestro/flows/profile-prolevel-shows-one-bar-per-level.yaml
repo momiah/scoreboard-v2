@@ -1,0 +1,36 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/profile/check-prolevel.yaml
+    env:
+      LEVEL: 0
+- runFlow:
+    file: ../utilities/profile/check-prolevel.yaml
+    env:
+      LEVEL: 1
+- runFlow:
+    file: ../utilities/profile/check-prolevel.yaml
+    env:
+      LEVEL: 2
+- runFlow:
+    file: ../utilities/profile/check-prolevel.yaml
+    env:
+      LEVEL: 3
+- runFlow:
+    file: ../utilities/profile/check-prolevel.yaml
+    env:
+      LEVEL: 4
+- runFlow:
+    file: ../utilities/profile/check-prolevel.yaml
+    env:
+      LEVEL: 5
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "maestro-cleanup-ladder-test-data"
+- extendedWaitUntil:
+    visible: "Cleaned up"
+    timeout: 60000
+- tapOn: "OK"
