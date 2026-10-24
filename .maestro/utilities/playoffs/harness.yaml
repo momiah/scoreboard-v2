@@ -3,7 +3,7 @@ appId: com.courtchamp
 - tapOn:
     id: "tab-home"
 - repeat:
-    times: 2
+    times: 6
     commands:
       - swipe:
           start: 50%, 25%
