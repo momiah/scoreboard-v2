@@ -9,6 +9,10 @@ import {
   LADDER_PLAYOFF_TIES_COLLECTION,
   LADDER_PLAYOFF_WALKOVER_REASON,
   LADDER_REPORT_COUNTS_COLLECTION,
+  DISQUALIFICATION_REASON_LABELS,
+  LADDER_PRIZE_PAYOUTS_COLLECTION,
+  LADDER_PRIZE_PAYOUT_STATUS,
+  LADDER_PRIZE_POT_NAME,
 } from "courtchamps-shared/types";
 import type {
   GameTeam,
@@ -18,6 +22,8 @@ import type {
   LadderPlayoffTieOutcome,
   LadderPlayoffTieSide,
   LadderPlayoffWalkoverReason,
+  LadderPrizeAmount,
+  LadderPrizePayout,
   StrikeCounts,
 } from "courtchamps-shared/types";
 import {
@@ -27,6 +33,8 @@ import {
   decideLadderPlayoffTieAtDeadline,
   getDueLadderPlayoffReminderDays,
   formatLadderPrizeWon,
+  formatLadderSidePrize,
+  getDisqualification,
   getLadderPlacePrize,
   LADDER_PLAYOFF_MATCH_AUTO_ACCEPT_HOURS,
   getLadderOpponentIds,
@@ -34,13 +42,13 @@ import {
   isLadderPlayoffHostArrangeOverdue,
   isLadderPlayoffMatchAutoAcceptDue,
   getLadderPlayoffLegHost,
-  getLadderPlayoffPayouts,
+  planLadderPlayoffPrizes,
   getLadderPlayoffTotalRounds,
   getLadderTiePlacings,
   ordinalPlace,
   roundLabel,
 } from "courtchamps-shared/helpers";
-import type { LadderPlayoffPayout, PrizeLadder } from "courtchamps-shared/helpers";
+import type { PrizeLadder } from "courtchamps-shared/helpers";
 
 import { notifyLadderPlayers } from "./notifyLadderPlayers";
 import { buildPrizeAwardUpdate } from "./prizeAwards";
@@ -254,9 +262,10 @@ export const resolveLadderPlayoffTie = async ({
 export type PlayoffLadder = Pick<Ladder, "ladderId" | "name"> &
   Partial<PrizeLadder & Pick<Ladder, "currencyType">>;
 
-const prizeWon = (ladder: PlayoffLadder, place: number): string | null =>
-  formatLadderPrizeWon(
+const sidePrizeWon = (ladder: PlayoffLadder, place: number, players: number): string | null =>
+  formatLadderSidePrize(
     getLadderPlacePrize(ladder as PrizeLadder, place),
+    players,
     ladder.currencyType ?? "GBP",
   );
 
@@ -290,7 +299,10 @@ const notifyTieFinish = async ({
   const roundName = ladderPlayoffRoundName(tie, totalRounds);
   const paidWhen = playoffsFinished ? "" : ", paid when the playoffs finish";
   for (const placing of getLadderTiePlacings(tie, ties)) {
-    const won = placing.disqualified ? null : prizeWon(ladder, placing.place);
+    if (placing.voided) continue;
+    const won = placing.disqualified
+      ? null
+      : sidePrizeWon(ladder, placing.place, placing.playerIds.length);
     if (placing.decidesMedal && !placing.disqualified) {
       await notifyLadderPlayers({
         userIds: placing.playerIds,
@@ -319,15 +331,69 @@ const notifyTieFinish = async ({
 export interface LadderCompletion {
   completed: boolean;
   paid: boolean;
-  payouts: LadderPlayoffPayout[];
+  payouts: LadderPrizePayout[];
 }
+
+const disqualifiedReason = (strikes: StrikeCounts | undefined): string => {
+  const { primaryReason } = getDisqualification(strikes);
+  return primaryReason
+    ? `Disqualified: ${strikes?.[primaryReason] ?? 0} ${DISQUALIFICATION_REASON_LABELS[primaryReason]}`
+    : "Disqualified from the ladder";
+};
+
+const formatPrize = (prize: LadderPrizeAmount, currencyType: string): string =>
+  formatLadderPrizeWon(prize, currencyType) ?? "nothing";
+
+const notifyLadderPrizes = async ({
+  ladder,
+  payouts,
+  ties,
+}: {
+  ladder: PlayoffLadder;
+  payouts: LadderPrizePayout[];
+  ties: LadderPlayoffTie[];
+}): Promise<void> => {
+  const totalRounds = totalRoundsOf(ties);
+  const tiesById = new Map(ties.map((tie) => [tie.tieId, tie]));
+  for (const payout of payouts) {
+    const currency = payout.currencyType;
+    const place = `${payout.voided ? "joint " : ""}${ordinalPlace(payout.place)}`;
+    const base = { userIds: [payout.userId], ladder, kind: "playoff-prize", tab: SUMMARY_TAB, data: { payoutId: payout.payoutId } };
+    if (payout.status === LADDER_PRIZE_PAYOUT_STATUS.HELD) {
+      await notifyLadderPlayers({
+        ...base,
+        title: "Your prize is under review",
+        message: `Your prize for ${place} place in ${ladder.name} (${formatPrize(payout.prize, currency)}) is under review because you were disqualified from the ladder. We'll let you know the outcome.`,
+      });
+      continue;
+    }
+    if (payout.status !== LADDER_PRIZE_PAYOUT_STATUS.PAID) continue;
+    const tie = tiesById.get(payout.tieId);
+    if (payout.voided && tie) {
+      await notifyLadderPlayers({
+        ...base,
+        title: "Your playoff prize",
+        message: `Your ${ladderPlayoffRoundName(tie, totalRounds)} in ${ladder.name} wasn't played, so you finish ${place} and have been awarded ${formatPrize(payout.prize, currency)}.`,
+      });
+      continue;
+    }
+    if (payout.potShare.cash > 0 || payout.potShare.cp > 0) {
+      await notifyLadderPlayers({
+        ...base,
+        title: "Extra prize money",
+        message: `You've been awarded ${formatPrize(payout.potShare, currency)} from ${ladder.name}'s ${LADDER_PRIZE_POT_NAME}: prize money from playoff ties that weren't played.`,
+      });
+    }
+  }
+};
 
 /**
  * In one transaction: marks the ladder Completed once the Final and the
- * 3rd-place tie are both finished, and pays every placed side its CP, the
- * award and the `prizesDistributed` claim committing together. A retried or
- * concurrent run finds the claim and pays nothing. A side with a disqualified
- * player, or a player whose profile no longer exists, is left unpaid.
+ * 3rd-place tie are both finished, pays every placed player their prize and
+ * writes a prize payout record for each, the `prizesDistributed` claim
+ * committing with them. A retried or concurrent run finds the claim and pays
+ * nothing. A disqualified player's prize is held for review; a deleted
+ * account's is retained by Court Champs.
  */
 export const completeAndPayLadder = async ({
   db,
@@ -339,6 +405,7 @@ export const completeAndPayLadder = async ({
   now: Date;
 }): Promise<LadderCompletion> => {
   const ladderRef = db.collection(LADDERS).doc(ladderId);
+  const payoutsRef = ladderRef.collection(LADDER_PRIZE_PAYOUTS_COLLECTION);
   const nothing: LadderCompletion = { completed: false, paid: false, payouts: [] };
   const result = await db.runTransaction(async (transaction) => {
     const [ladderSnapshot, tiesSnapshot] = await Promise.all([
@@ -353,8 +420,9 @@ export const completeAndPayLadder = async ({
     const ties = tiesSnapshot.docs.map((tieDoc) => toLadderPlayoffTie(tieDoc.id, tieDoc.data()));
     if (!isLadderPlayoffFinished(ties)) return nothing;
 
-    const owed = paying ? getLadderPlayoffPayouts(ladder, ties) : [];
-    const userIds = [...new Set(owed.flatMap((payout) => payout.playerIds))];
+    const userIds = paying
+      ? [...new Set(ties.flatMap((tie) => getLadderTiePlacings(tie, ties)).flatMap((placing) => placing.playerIds))]
+      : [];
     const [profiles, counts] = userIds.length
       ? await Promise.all([
           transaction.getAll(...userIds.map((userId) => db.collection(USERS).doc(userId))),
@@ -366,49 +434,89 @@ export const completeAndPayLadder = async ({
         ])
       : [[], []];
     const existing = new Set(profiles.filter((profile) => profile.exists).map((profile) => profile.id));
-    const disqualified = new Set(
-      counts
-        .filter((count) => isDisqualified(count.data()?.strikes as StrikeCounts | undefined))
-        .map((count) => count.id),
+    const strikesOf = new Map(
+      counts.map((count) => [count.id, count.data()?.strikes as StrikeCounts | undefined]),
     );
-    const payouts = owed.filter(
-      (payout) => !payout.playerIds.some((userId) => disqualified.has(userId)),
+    const plan = paying
+      ? planLadderPlayoffPrizes(
+          ladder,
+          ties,
+          userIds.filter((userId) => isDisqualified(strikesOf.get(userId))),
+        )
+      : null;
+    const currencyType = ladder.currencyType ?? "GBP";
+
+    const payouts = (plan?.payouts ?? []).flatMap((side) =>
+      side.playerIds.map((userId): LadderPrizePayout => {
+        const status = !existing.has(userId)
+          ? LADDER_PRIZE_PAYOUT_STATUS.KEPT
+          : side.disqualified
+            ? LADDER_PRIZE_PAYOUT_STATUS.HELD
+            : LADDER_PRIZE_PAYOUT_STATUS.PAID;
+        const { placePrize, potShare, prize } = side.perPlayer;
+        return {
+          payoutId: `${side.tieId}-${userId}`,
+          ladderId,
+          userId,
+          sidePlayerIds: side.playerIds,
+          tieId: side.tieId,
+          place: side.place,
+          voided: side.voided,
+          currencyType,
+          placePrize,
+          potShare,
+          prize,
+          paid: status === LADDER_PRIZE_PAYOUT_STATUS.PAID ? prize : { cash: 0, cp: 0 },
+          status,
+          reason:
+            status === LADDER_PRIZE_PAYOUT_STATUS.KEPT
+              ? "Account deleted before payout"
+              : status === LADDER_PRIZE_PAYOUT_STATUS.HELD
+                ? disqualifiedReason(strikesOf.get(userId))
+                : null,
+          review: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+      }),
     );
 
-    payouts.forEach((payout) =>
-      payout.playerIds
-        .filter((userId) => existing.has(userId))
-        .forEach((userId) =>
-          transaction.update(
-            db.collection(USERS).doc(userId),
-            buildPrizeAwardUpdate({
-              cp: payout.prize.cp,
-              statsField: "ladderStats",
-              place: payout.place,
-            }),
-          ),
-        ),
-    );
+    payouts.forEach((payout) => {
+      transaction.set(payoutsRef.doc(payout.payoutId), payout);
+      if (payout.status !== LADDER_PRIZE_PAYOUT_STATUS.PAID) return;
+      transaction.update(
+        db.collection(USERS).doc(payout.userId),
+        buildPrizeAwardUpdate({ cp: payout.paid.cp, statsField: "ladderStats", place: payout.place }),
+      );
+    });
     transaction.update(ladderRef, {
       ...(completing
         ? { status: LADDER_STATUS.COMPLETED, playoffsCompletedAt: now }
         : {}),
-      ...(paying
+      ...(plan
         ? {
             prizesDistributed: true,
             prizeDistributionDate: admin.firestore.FieldValue.serverTimestamp(),
+            unclaimedPrizePot: plan.unclaimed,
+            retainedPrizeMoney: plan.kept,
           }
         : {}),
     });
-    return { completed: completing, paid: paying, payouts, ladder };
+    return { completed: completing, paid: paying, payouts, ladder, ties };
   });
   if (!("ladder" in result)) return result;
-  const { ladder, ...completion } = result;
+  const { ladder, ties, ...completion } = result;
   if (completion.payouts.length) {
-    await distributeLadderCash({ ladder: { ...ladder, ladderId }, payouts: completion.payouts });
+    await distributeLadderCash({
+      ladder: { ...ladder, ladderId },
+      payments: completion.payouts
+        .filter((payout) => payout.status === LADDER_PRIZE_PAYOUT_STATUS.PAID && payout.paid.cash > 0)
+        .map((payout) => ({ payoutId: payout.payoutId, userId: payout.userId, cash: payout.paid.cash })),
+    });
+    await notifyLadderPrizes({ ladder: { ...ladder, ladderId }, payouts: completion.payouts, ties });
     console.log(
-      `🏆 [playoffs] ${ladderId} paid ${completion.payouts
-        .map((payout) => `${ordinalPlace(payout.place)} ${payout.prize.cp} CP -> ${payout.playerIds.join(" & ")}`)
+      `🏆 [playoffs] ${ladderId} prizes: ${completion.payouts
+        .map((payout) => `${payout.userId} ${ordinalPlace(payout.place)} ${payout.prize.cp} CP ${payout.status}`)
         .join(", ")}`,
     );
   }
