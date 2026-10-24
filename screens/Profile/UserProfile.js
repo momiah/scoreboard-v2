@@ -35,6 +35,7 @@ import Icon from "react-native-ico-flags";
 import { RankInformation } from "../../components/Modals/RankInformation";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import ProfileVideos from "../../components/Profiles/ProfileVideos";
+import ProLevel from "../../components/Profiles/ProLevel";
 import { transformDate } from "@shared/helpers/dateTransform";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -314,15 +315,21 @@ const UserProfile = () => {
             {profile?.headline ? (
               <View style={{ flex: 1 }}>
                 <PlayerDetail>
-                  <Pressable onLongPress={() => setPreviewVisible(true)}>
-                    <Avatar
-                      source={
-                        profile?.profileImage
-                          ? { uri: profile.profileImage }
-                          : CourtChampsLogo
-                      }
+                  <View>
+                    <Pressable onLongPress={() => setPreviewVisible(true)}>
+                      <Avatar
+                        source={
+                          profile?.profileImage
+                            ? { uri: profile.profileImage }
+                            : CourtChampsLogo
+                        }
+                      />
+                    </Pressable>
+                    <ProLevel
+                      cashWon={profileDetail?.cashWon}
+                      width={AVATAR_SIZE}
                     />
-                  </Pressable>
+                  </View>
                   <DetailColumn>
                     <PlayerName>{profile?.username}</PlayerName>
                     <DetailText testID="profile-cp">{profileXp ?? 0} CP</DetailText>
@@ -346,15 +353,21 @@ const UserProfile = () => {
               </View>
             ) : (
               <PlayerDetail>
-                <Pressable onLongPress={() => setPreviewVisible(true)}>
-                  <Avatar
-                    source={
-                      profile?.profileImage
-                        ? { uri: profile.profileImage }
-                        : CourtChampsLogo
-                    }
+                <View>
+                  <Pressable onLongPress={() => setPreviewVisible(true)}>
+                    <Avatar
+                      source={
+                        profile?.profileImage
+                          ? { uri: profile.profileImage }
+                          : CourtChampsLogo
+                      }
+                    />
+                  </Pressable>
+                  <ProLevel
+                    cashWon={profileDetail?.cashWon}
+                    width={AVATAR_SIZE}
                   />
-                </Pressable>
+                </View>
                 <DetailColumn>
                   <PlayerName>{profile?.username}</PlayerName>
                   <DetailText>{profileXp ?? 0} CP</DetailText>
