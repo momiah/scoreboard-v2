@@ -31,7 +31,8 @@ onFlowStart:
     end: 50%, 90%
 - swipe:
     start: 50%, 70%
-    end: 50%, 40%
+    end: 50%, 60%
+    duration: 1500
 - waitForAnimationToEnd
 - tapOn:
     id: "ladder-game-maestro-add-game-flow-match-g1"
