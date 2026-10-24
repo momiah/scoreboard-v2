@@ -24,6 +24,7 @@ describe("ProLevel", () => {
     }
     expect(view.getByTestId(`profile-prolevel-level-${level}`)).toBeTruthy();
     expect(view.getByText("PROLevel")).toBeTruthy();
+    expect(view.getByLabelText(`PROLevel ${level} of 5`)).toBeTruthy();
     expect(barsOf(view)).toEqual([1, 2, 3, 4, 5].map((bar) => (bar <= level ? "on" : "off")));
   });
 });

@@ -18,10 +18,8 @@ const ProLevel: React.FC<{ cashWon?: number | null; width: number }> = ({
     <Container
       style={{ width }}
       testID={`profile-prolevel-level-${level}`}
-      accessible
-      accessibilityLabel={`PROLevel ${level} of ${PRO_LEVEL_MAX}`}
     >
-      <Pill>
+      <Pill accessible accessibilityLabel={`PROLevel ${level} of ${PRO_LEVEL_MAX}`}>
         <LinearGradient
           colors={GOLD_PILL}
           start={{ x: 0, y: 0 }}

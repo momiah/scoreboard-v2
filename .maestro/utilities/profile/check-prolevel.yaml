@@ -17,7 +17,7 @@ appId: com.courtchamp
     when:
       true: ${LEVEL == 0}
     commands:
-      - assertNotVisible: "PROLevel"
+      - assertNotVisible: "PROLevel.*"
       - assertNotVisible:
           id: "profile-prolevel-bar-1-on"
 - runFlow:
@@ -26,7 +26,7 @@ appId: com.courtchamp
     commands:
       - assertVisible:
           id: "profile-prolevel-level-${LEVEL}"
-      - assertVisible: "PROLevel"
+      - assertVisible: "PROLevel ${LEVEL} of 5"
       - assertVisible:
           id: "profile-prolevel-bar-${LEVEL}-on"
 - runFlow:
