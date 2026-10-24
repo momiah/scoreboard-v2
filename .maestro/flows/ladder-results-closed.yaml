@@ -27,11 +27,12 @@ onFlowStart:
     id: "add-game-score-input"
 - tapOn: "OK"
 - swipe:
-    start: 50%, 45%
-    end: 50%, 85%
+    start: 50%, 55%
+    end: 50%, 90%
 - swipe:
-    start: 50%, 45%
-    end: 50%, 85%
+    start: 50%, 70%
+    end: 50%, 40%
+- waitForAnimationToEnd
 - tapOn:
     id: "ladder-game-maestro-add-game-flow-match-g1"
 - extendedWaitUntil:

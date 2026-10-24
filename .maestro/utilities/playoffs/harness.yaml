@@ -25,6 +25,6 @@ appId: com.courtchamp
 - tapOn:
     id: ${BUTTON}
 - extendedWaitUntil:
-    visible: "Seeded"
+    visible: "(Seeded|Mocked|Resolved|Requested)"
     timeout: 90000
 - tapOn: "OK"

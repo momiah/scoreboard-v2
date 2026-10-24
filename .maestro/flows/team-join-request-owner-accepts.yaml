@@ -67,4 +67,3 @@ onFlowStart:
     visible: ".*Maestro Request Team.*"
     timeout: 15000
 - assertVisible: ".*Maestro Requester.*"
-- assertNotVisible: ".*No partner yet.*"

@@ -43,6 +43,7 @@ onFlowStart:
     text: "Maestro Disband Aces"
 - tapOn:
     id: "team-settings-name"
+    point: 98%,50%
 - eraseText: 40
 - runFlow:
     when:

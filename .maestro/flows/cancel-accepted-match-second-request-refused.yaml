@@ -46,7 +46,8 @@ onFlowStart:
     text: ".*Cancel Match.*"
 - tapOn:
     id: "match-menu-CancelMatch"
-- extendedWaitUntil:
-    visible: "Cancellation already requested"
-    timeout: 10000
+- assertVisible:
+    id: "match-menu-CancelMatch"
+    text: ".*Cancellation requested.*"
 - assertNotVisible: "Send Request"
+- assertNotVisible: "Respond"

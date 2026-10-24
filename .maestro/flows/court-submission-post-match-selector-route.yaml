@@ -93,15 +93,12 @@ onFlowStart:
 - assertVisible: ".*Select Court.*"
 - assertNotVisible:
     id: "add-ladder-match-court-pending"
-- tapOn: "Cancel"
 - tapOn:
-    id: "tab-home"
-- tapOn:
-    id: "maestro-mock-approve-new-submission"
-- extendedWaitUntil:
-    visible: "Mocked"
-    timeout: 30000
-- tapOn: "OK"
+    point: 29%,94%
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-approve-new-submission"
 - tapOn:
     id: "tab-competitions"
 - runFlow:
