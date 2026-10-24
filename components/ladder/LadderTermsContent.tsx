@@ -36,6 +36,16 @@ export const LADDER_TERMS: TermsSection[] = [
     body: [
       "The playoff and payout structure is tiered and scales with the ladder's actual size at registration close, not its maximum capacity.",
       "Prizes are distributed to qualifying finishers once the ladder completes and results are finalised.",
+      "Everyone in the money is paid for the round they reached, including a player or team who loses on a walkover.",
+      "In doubles, a team's prize is split equally between both players.",
+      "If a playoff tie is void because neither side played:",
+      [
+        "Both sides are treated as losing that round and are paid the lowest prize that round guarantees.",
+        "Nobody moves up a place.",
+        "Prize money nobody won is shared among everyone paid, in proportion to what they won. Court Champs keeps none of it.",
+      ],
+      "Prizes are paid in whole pounds and whole CP, except that a doubles share may include 50p. Any amount left over from rounding goes to the highest finishers.",
+      "If your account is deleted before prizes are paid, your prize is forfeited and kept by Court Champs.",
     ],
   },
   {
@@ -73,6 +83,11 @@ export const LADDER_TERMS: TermsSection[] = [
         "A disqualified player can no longer post or accept matches.",
         "In the playoffs, their opponent goes through on a walkover.",
         "There is no refund of their entry fee.",
+      ],
+      "If a player is disqualified once they are in the money, their prize is held for review:",
+      [
+        "An admin decides whether to pay it in full, in part or not at all, and the player is told the outcome.",
+        "Any part not paid is shared among the other players paid, as set out in section 4.",
       ],
     ],
   },
