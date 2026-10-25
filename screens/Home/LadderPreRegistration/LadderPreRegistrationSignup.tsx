@@ -206,11 +206,11 @@ const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
           </PlaceCell>
           {cash ? (
             <ValueCell>
-              <HeaderText>Cash Payout</HeaderText>
+              <PayoutHeaderText>Cash Payout</PayoutHeaderText>
             </ValueCell>
           ) : null}
           <ValueCell last>
-            <HeaderText>CP Payout</HeaderText>
+            <PayoutHeaderText>CP Payout</PayoutHeaderText>
           </ValueCell>
         </HeaderRow>
         {getFullLadderPrizeTable(option).map((row) => (
@@ -309,6 +309,10 @@ const HeaderText = styled.Text({
   fontSize: 12,
   fontWeight: "bold",
   color: COLORS.muted,
+});
+
+const PayoutHeaderText = styled(HeaderText)({
+  marginLeft: -8,
 });
 
 const Place = styled.Text({

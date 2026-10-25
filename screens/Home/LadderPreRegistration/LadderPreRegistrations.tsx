@@ -111,7 +111,9 @@ const LadderPreRegistrations: React.FC = () => {
         </TabContent>
 
         {activeTab === "cash" && visible[0] ? (
-          <Footnote>{getPlatformFeeFootnote(visible[0])}</Footnote>
+          <Footnote>
+            {`18+ only. ${getPlatformFeeFootnote(visible[0])}`}
+          </Footnote>
         ) : null}
       </ScrollView>
     </SafeAreaView>
@@ -157,14 +159,14 @@ const PrizePoolValue = styled.Text({
 const Pill = styled.View<{ cash: boolean }>(({ cash }: { cash: boolean }) => ({
   backgroundColor: cash ? COLORS.goldTint : COLORS.blueTint,
   borderRadius: 20,
-  paddingHorizontal: 9,
-  paddingVertical: 3,
+  paddingHorizontal: 12,
+  paddingVertical: 5,
 }));
 
 const PillText = styled.Text<{ cash: boolean }>(
   ({ cash }: { cash: boolean }) => ({
     color: cash ? COLORS.prizeGold : COLORS.blue,
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: "bold",
   }),
 );
