@@ -21,11 +21,9 @@ import PreRegistrationHeader from "../../../components/LadderPreRegistration/Pre
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
-  LADDER_SEASON_STAGES,
   formatPrizePool,
   getEntrantNoun,
   getFullLadderPrizeTable,
-  getLadderSizeRows,
   getPlatformFeeFootnote,
   isCashLadder,
 } from "../../../helpers/ladderPreRegistrationDisplay";
@@ -34,38 +32,6 @@ type SignupRoute = RouteProp<
   { LadderPreRegistrationSignup: { preRegistrationId: string } },
   "LadderPreRegistrationSignup"
 >;
-
-type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
-
-const STAGE_ICONS: Record<
-  (typeof LADDER_SEASON_STAGES)[number]["key"],
-  { icon: IoniconName; color: string }
-> = {
-  join: { icon: "person-add-outline", color: COLORS.blue },
-  season: { icon: "trending-up-outline", color: COLORS.blue },
-  "registration-closes": { icon: "lock-closed-outline", color: COLORS.blue },
-  playoffs: { icon: "git-network-outline", color: COLORS.prizeGold },
-  champion: { icon: "trophy-outline", color: COLORS.prizeGold },
-};
-
-const CLIMB_STEPS: { icon: IoniconName; text: string }[] = [
-  {
-    icon: "location-outline",
-    text: "Post a game at your court, or accept one someone else has posted.",
-  },
-  {
-    icon: "checkmark-circle-outline",
-    text: "Check in at the court, play, and publish the result.",
-  },
-  {
-    icon: "stats-chart-outline",
-    text: "Win to earn CP and climb. Win streaks and big wins earn bonus CP through Achievement Medals.",
-  },
-  {
-    icon: "git-network-outline",
-    text: "The top of the ladder enters a home-and-away knockout. The champion takes the biggest share.",
-  },
-];
 
 const LadderPreRegistrationSignup: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -168,7 +134,14 @@ const LadderPreRegistrationSignup: React.FC = () => {
         />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-          <LadderDetails option={option} />
+          <LadderDetails
+            option={option}
+            onHowToPlay={() =>
+              navigation.navigate("LadderPreRegistrationHowToPlay", {
+                preRegistrationId: option.preRegistrationId,
+              })
+            }
+          />
 
           {registered ? (
             <RegisteredNotice>
@@ -230,9 +203,10 @@ const LadderPreRegistrationSignup: React.FC = () => {
   );
 };
 
-const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
-  option,
-}) => {
+const LadderDetails: React.FC<{
+  option: LadderPreRegistration;
+  onHowToPlay: () => void;
+}> = ({ option, onHowToPlay }) => {
   const cash = isCashLadder(option);
   const noun = getEntrantNoun(option);
 
@@ -251,88 +225,53 @@ const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
         </Muted>
       </PrizePotCard>
 
-      {option.description ? (
-        <Description>{option.description}</Description>
-      ) : null}
-
       <SectionTitle>Prize breakdown</SectionTitle>
-      <Rows testID="ladder-pre-registration-prize-table">
+      <Table testID="ladder-pre-registration-prize-table">
+        <HeaderRow>
+          <PlaceCell>
+            <HeaderText>Finish</HeaderText>
+          </PlaceCell>
+          {cash ? (
+            <ValueCell>
+              <HeaderText>Cash Payout</HeaderText>
+            </ValueCell>
+          ) : null}
+          <ValueCell>
+            <HeaderText>CP Payout</HeaderText>
+          </ValueCell>
+        </HeaderRow>
         {getFullLadderPrizeTable(option).map((row) => (
           <Row key={row.fromPlace}>
             <PlaceCell>
               <Place>{row.label}</Place>
             </PlaceCell>
             {cash ? (
-              <StatCell>
-                <StatTitle>Cash each</StatTitle>
-                <Stat highlight>
+              <ValueCell>
+                <Value highlight>
                   {formatCurrency(row.cash, option.currencyType)}
-                </Stat>
-              </StatCell>
+                </Value>
+              </ValueCell>
             ) : null}
-            <StatCell>
-              <StatTitle>CP each</StatTitle>
-              <Stat>{row.cp.toLocaleString("en-GB")}</Stat>
-            </StatCell>
+            <ValueCell>
+              <Value>{row.cp.toLocaleString("en-GB")}</Value>
+            </ValueCell>
           </Row>
         ))}
-      </Rows>
+      </Table>
+      <TableNote>
+        The prize pool depends on how many {noun}s sign up. Payouts shown are
+        for a full ladder of {option.maxPlayers.toLocaleString("en-GB")} {noun}
+        s.
+      </TableNote>
 
-      <SectionTitle>
-        The {cash ? "pool" : "CP pool"} grows with every {noun}
-      </SectionTitle>
-      <Rows>
-        {getLadderSizeRows(option).map((row) => (
-          <Row key={row.size}>
-            <PlaceCell>
-              <Place>{row.size.toLocaleString("en-GB")}</Place>
-              <StatTitle>{noun === "team" ? "teams" : "players"}</StatTitle>
-            </PlaceCell>
-            <StatCell>
-              <StatTitle>{cash ? "Prize pool" : "CP pool"}</StatTitle>
-              <Stat highlight={cash}>{row.prizePool}</Stat>
-            </StatCell>
-            <StatCell>
-              <StatTitle>Playoffs</StatTitle>
-              <Stat>Top {row.playoffSpots}</Stat>
-            </StatCell>
-            {cash ? (
-              <StatCell>
-                <StatTitle>Paid</StatTitle>
-                <Stat>
-                  {row.inTheMoney === row.playoffSpots
-                    ? `All ${row.inTheMoney}`
-                    : `Top ${row.inTheMoney}`}
-                </Stat>
-              </StatCell>
-            ) : null}
-          </Row>
-        ))}
-      </Rows>
-
-      <SectionTitle>How a season works</SectionTitle>
-      <Panel>
-        <Timeline>
-          {LADDER_SEASON_STAGES.map((stage) => (
-            <Stage key={stage.key}>
-              <Ionicons
-                name={STAGE_ICONS[stage.key].icon}
-                size={20}
-                color={STAGE_ICONS[stage.key].color}
-              />
-              <StageLabel>{stage.label}</StageLabel>
-              {stage.detail ? <StageDetail>{stage.detail}</StageDetail> : null}
-            </Stage>
-          ))}
-        </Timeline>
-      </Panel>
-
-      {CLIMB_STEPS.map((step) => (
-        <Step key={step.text}>
-          <Ionicons name={step.icon} size={18} color={COLORS.blue} />
-          <StepText>{step.text}</StepText>
-        </Step>
-      ))}
+      <HowToPlayButton
+        testID="ladder-pre-registration-signup-how-to-play"
+        activeOpacity={0.85}
+        onPress={onHowToPlay}
+      >
+        <Ionicons name="book-outline" size={16} color="white" />
+        <HowToPlayText>How to play</HowToPlayText>
+      </HowToPlayButton>
     </>
   );
 };
@@ -391,13 +330,6 @@ const Confirmation: React.FC<{
   );
 };
 
-const Description = styled.Text({
-  color: COLORS.body,
-  fontSize: 13,
-  lineHeight: 19,
-  marginTop: 12,
-});
-
 const PrizePotCard = styled.View({
   padding: 20,
   borderRadius: 14,
@@ -436,21 +368,42 @@ const Panel = styled.View({
   marginBottom: 10,
 });
 
-const Rows = styled.View({
-  marginBottom: 10,
+const Table = styled.View({
+  borderRadius: 12,
+  overflow: "hidden",
+  borderWidth: 1,
+  borderColor: COLORS.rowBorder,
+});
+
+const HeaderRow = styled.View({
+  flexDirection: "row",
+  backgroundColor: COLORS.tableHeader,
 });
 
 const Row = styled.View({
   flexDirection: "row",
+  borderTopWidth: 1,
+  borderColor: COLORS.rowBorder,
 });
 
 const PlaceCell = styled.View({
   width: 110,
   justifyContent: "center",
-  paddingVertical: 15,
-  paddingLeft: 4,
-  borderTopWidth: 1,
-  borderColor: COLORS.rowBorder,
+  paddingVertical: 14,
+  paddingLeft: 12,
+});
+
+const ValueCell = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  paddingVertical: 14,
+});
+
+const HeaderText = styled.Text({
+  fontSize: 12,
+  fontWeight: "bold",
+  color: COLORS.muted,
 });
 
 const Place = styled.Text({
@@ -459,27 +412,37 @@ const Place = styled.Text({
   color: COLORS.blue,
 });
 
-const StatCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  paddingVertical: 15,
-  borderTopWidth: 1,
-  borderColor: COLORS.rowBorder,
-});
-
-const StatTitle = styled.Text({
-  fontSize: 12,
-  color: COLORS.muted,
-});
-
-const Stat = styled.Text<{ highlight?: boolean }>(
+const Value = styled.Text<{ highlight?: boolean }>(
   ({ highlight }: { highlight?: boolean }) => ({
     fontSize: 14,
     fontWeight: "bold",
     color: highlight ? COLORS.prizeGold : "white",
   }),
 );
+
+const TableNote = styled.Text({
+  color: COLORS.muted,
+  fontSize: 11,
+  marginTop: 8,
+  lineHeight: 16,
+});
+
+const HowToPlayButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  backgroundColor: COLORS.blue,
+  borderRadius: 12,
+  paddingVertical: 15,
+  marginTop: 20,
+});
+
+const HowToPlayText = styled.Text({
+  color: "white",
+  fontSize: 15,
+  fontWeight: "bold",
+});
 
 const LinksRow = styled.View({
   flexDirection: "row",
@@ -496,42 +459,6 @@ const TextLink = styled.TouchableOpacity({
 const TextLinkLabel = styled.Text({
   color: COLORS.blue,
   fontSize: 13,
-});
-
-const Timeline = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  paddingVertical: 4,
-});
-
-const Stage = styled.View({
-  flex: 1,
-  alignItems: "center",
-});
-
-const StageLabel = styled.Text({
-  color: COLORS.body,
-  fontSize: 11,
-  marginTop: 3,
-});
-
-const StageDetail = styled.Text({
-  color: COLORS.muted,
-  fontSize: 10,
-});
-
-const Step = styled.View({
-  flexDirection: "row",
-  gap: 10,
-  marginBottom: 8,
-  paddingRight: 10,
-});
-
-const StepText = styled.Text({
-  color: COLORS.body,
-  fontSize: 13,
-  lineHeight: 19,
-  flex: 1,
 });
 
 const Muted = styled.Text({

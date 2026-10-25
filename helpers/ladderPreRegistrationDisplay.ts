@@ -1,8 +1,4 @@
 import {
-  LADDER_PLAYOFF_SIZES,
-  LADDER_PLAYOFF_START_DAYS,
-  LADDER_REGISTRATION_CLOSE_DAYS,
-  LADDER_SEASON_START_DAYS,
   LADDER_TYPE,
   calculateLadderPrizePool,
   formatCurrency,
@@ -20,6 +16,7 @@ export const LADDER_PRE_REGISTRATION_COLORS = {
   hero: "#0a2a4a",
   card: "rgba(0, 0, 0, 0.3)",
   rowBorder: "rgb(9, 33, 62)",
+  tableHeader: "rgba(0, 162, 255, 0.08)",
   prizeGold: "#ffc800",
   prizeGoldBorder: "rgba(255, 200, 0, 0.35)",
   goldText: "#412402",
@@ -69,12 +66,10 @@ export const formatEntryFee = (details: Details) => {
 
 /** The platform fee disclosure for the asterisk on a cash ladder's entry fee. */
 export const getPlatformFeeFootnote = (details: Details) => {
-  const { entryFee, platformFee, total } = getLadderEntryPrice(
-    details.entryFee,
-  );
+  const { entryFee, platformFee } = getLadderEntryPrice(details.entryFee);
   const format = (amount: number) =>
     formatCurrency(amount, details.currencyType);
-  return `*A ${format(platformFee)} platform fee is added on top of the ${format(entryFee)} entry, so it's ${format(total)} to join. The full entry fee goes into the prize pool.`;
+  return `*A ${format(platformFee)} platform fee is added on top of the ${format(entryFee)} entry. The full entry fee goes into the prize pool.`;
 };
 
 export const getLadderSummary = (details: Details) => {
@@ -84,24 +79,6 @@ export const getLadderSummary = (details: Details) => {
   const { inTheMoney } = getLadderPlayoffStructure(details.maxPlayers);
   return `${size} · Top ${inTheMoney} ${noun === "team" ? "teams " : ""}win cash`;
 };
-
-export const LADDER_SEASON_EXPLAINER = `Registration opens, the season starts ${LADDER_SEASON_START_DAYS} days later and the playoffs begin on day ${LADDER_PLAYOFF_START_DAYS}. Post or accept games at courts near you, whenever suits you. Every win earns Court Points (CP) and moves you up the rankings. At the end, the top players go into a knockout playoff for the title.`;
-
-export const LADDER_SEASON_STAGES = [
-  { key: "join", label: "Join", detail: "Day 0" },
-  { key: "season", label: "Season", detail: `Day ${LADDER_SEASON_START_DAYS}` },
-  {
-    key: "registration-closes",
-    label: "Entries close",
-    detail: `Day ${LADDER_REGISTRATION_CLOSE_DAYS}`,
-  },
-  {
-    key: "playoffs",
-    label: "Playoffs",
-    detail: `Day ${LADDER_PLAYOFF_START_DAYS}`,
-  },
-  { key: "champion", label: "Champion", detail: undefined },
-] as const;
 
 export interface PrizeTableRow {
   fromPlace: number;
@@ -125,16 +102,3 @@ export const getFullLadderPrizeTable = (details: Details): PrizeTableRow[] => {
     cp: cpPayout.each,
   }));
 };
-
-export const getLadderSizeRows = (details: Details) =>
-  LADDER_PLAYOFF_SIZES.filter((size) => size <= details.maxPlayers).map(
-    (size) => {
-      const { playoffSpots, inTheMoney } = getLadderPlayoffStructure(size);
-      return {
-        size,
-        prizePool: formatPrizePool(details, size),
-        playoffSpots,
-        inTheMoney,
-      };
-    },
-  );

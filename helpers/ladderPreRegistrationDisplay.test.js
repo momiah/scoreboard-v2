@@ -1,11 +1,7 @@
-import { formatCurrency } from "@shared";
 import {
-  LADDER_SEASON_EXPLAINER,
-  LADDER_SEASON_STAGES,
   formatEntryFee,
   formatPrizePool,
   getFullLadderPrizeTable,
-  getLadderSizeRows,
   getLadderSummary,
   getPlatformFeeFootnote,
   isCashLadder,
@@ -21,7 +17,6 @@ const details = (overrides) => ({
   genderType: "Mens",
   ...overrides,
 });
-const gbp = (amount) => formatCurrency(amount, "GBP");
 const cashSingles = details({ ladderType: "Singles", entryFee: 20 });
 const cashDoubles = details({ ladderType: "Doubles", entryFee: 20 });
 const communitySingles = details({
@@ -39,7 +34,7 @@ describe("ladder pre-registration display", () => {
   it("advertises the whole entry-fee pot and discloses the fee charged on top", () => {
     expect(formatPrizePool(cashSingles)).toBe("£40,960");
     expect(getPlatformFeeFootnote(cashSingles)).toBe(
-      "*A £2 platform fee is added on top of the £20 entry, so it's £22 to join. The full entry fee goes into the prize pool.",
+      "*A £2 platform fee is added on top of the £20 entry. The full entry fee goes into the prize pool.",
     );
   });
 
@@ -72,29 +67,6 @@ describe("ladder pre-registration display", () => {
       ["4th", 2048],
       ["5th–32nd", 292],
       ["33rd–64th", 128],
-    ]);
-  });
-
-  it("shows how the pool and places scale with ladder size", () => {
-    expect(getLadderSizeRows(cashSingles)).toEqual([
-      { size: 2048, prizePool: gbp(40960), playoffSpots: 128, inTheMoney: 64 },
-      { size: 1024, prizePool: gbp(20480), playoffSpots: 64, inTheMoney: 32 },
-      { size: 512, prizePool: gbp(10240), playoffSpots: 32, inTheMoney: 16 },
-      { size: 256, prizePool: gbp(5120), playoffSpots: 16, inTheMoney: 8 },
-      { size: 128, prizePool: gbp(2560), playoffSpots: 8, inTheMoney: 8 },
-    ]);
-  });
-
-  it("words the season from the shared registration-derived dates", () => {
-    expect(LADDER_SEASON_EXPLAINER).toContain(
-      "the season starts 30 days later and the playoffs begin on day 90",
-    );
-    expect(LADDER_SEASON_STAGES.map((stage) => stage.detail)).toEqual([
-      "Day 0",
-      "Day 30",
-      "Day 60",
-      "Day 90",
-      undefined,
     ]);
   });
 });
