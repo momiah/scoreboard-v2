@@ -29,10 +29,12 @@ import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
 export const MAESTRO_PO_LADDER_ID = "maestro-po-ladder";
 export const MAESTRO_PO_PAID_LADDER_ID = "maestro-po-paid-ladder";
 export const MAESTRO_PO_DOUBLES_LADDER_ID = "maestro-po-doubles-ladder";
+export const MAESTRO_PO_MANUAL_128_LADDER_ID = "maestro-po-manual-128-ladder";
 export const MAESTRO_PO_LADDER_IDS = [
   MAESTRO_PO_LADDER_ID,
   MAESTRO_PO_PAID_LADDER_ID,
   MAESTRO_PO_DOUBLES_LADDER_ID,
+  MAESTRO_PO_MANUAL_128_LADDER_ID,
 ];
 export const MAESTRO_PO_SINGLES_SIZE = 2048;
 export const MAESTRO_PO_DOUBLES_TEAMS = 256;

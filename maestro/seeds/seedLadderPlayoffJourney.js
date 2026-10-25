@@ -45,6 +45,7 @@ export const JOURNEY_ROUND = {
   QUARTER: 2,
   SEMI: 3,
   FINAL: 4,
+  LAST: "last",
   THIRD_PLACE: "thirdPlace",
 };
 
@@ -75,10 +76,10 @@ const startedSeventyMinutesAgo = () => {
   };
 };
 
-const ladderNameOf = (entryFee, doubles) =>
+const ladderNameOf = (entryFee, doubles, size) =>
   doubles
     ? `Maestro Playoffs Doubles ${MAESTRO_PO_DOUBLES_TEAMS}`
-    : `Maestro Playoffs ${SIZE}${entryFee > 0 ? " (Paid)" : ""}`;
+    : `Maestro Playoffs ${size}${entryFee > 0 ? " (Paid)" : ""}`;
 
 const ladderTypeOf = async (ladderId) =>
   (await getDoc(doc(db, "ladders", ladderId))).data()?.ladderType ??
@@ -93,7 +94,9 @@ const ladderTypeOf = async (ladderId) =>
  */
 export const seedLadderPlayoffJourney = async ({
   testUser,
-  round = JOURNEY_ROUND.R16,
+  size = SIZE,
+  daysIntoRound = /** @type {number | undefined} */ (undefined),
+  round: requestedRound = JOURNEY_ROUND.R16,
   stage = JOURNEY_STAGE.STARTED,
   outcome = JOURNEY_OUTCOME.WIN,
   doubles = false,
@@ -112,7 +115,7 @@ export const seedLadderPlayoffJourney = async ({
     await seedLadderPlayoffs({
       testUser,
       generate: true,
-      size: SIZE,
+      size,
       ladderId,
       entryFee,
     });
@@ -150,12 +153,15 @@ export const seedLadderPlayoffJourney = async ({
   const lastKnockoutRound = Math.max(
     ...ties.filter((tie) => !tie.isThirdPlacePlayoff).map((tie) => tie.round),
   );
+  const round =
+    requestedRound === JOURNEY_ROUND.LAST ? lastKnockoutRound : requestedRound;
   const targetRound =
     round === JOURNEY_ROUND.THIRD_PLACE ? lastKnockoutRound - 1 : round;
   const settleThrough =
     round === JOURNEY_ROUND.THIRD_PLACE ? targetRound : round - 1;
 
-  const stageDaysIn = stage === JOURNEY_STAGE.DECIDER_FINISHING ? 8 : 4;
+  const stageDaysIn =
+    daysIntoRound ?? (stage === JOURNEY_STAGE.DECIDER_FINISHING ? 8 : 4);
   const roundGap = LADDER_PLAYOFF_TIE_DAYS - 1;
   const roundEndDay = (r) => -stageDaysIn - (settleThrough - r) * roundGap;
   const roundOneStart = new Date(now.getTime() + (roundEndDay(1) - 6) * DAY_MS);
@@ -307,7 +313,7 @@ export const seedLadderPlayoffJourney = async ({
 
   return {
     ladderId,
-    ladderName: ladderNameOf(entryFee, doubles),
+    ladderName: ladderNameOf(entryFee, doubles, size),
     tieId: mine.tieId,
     round,
     stage,

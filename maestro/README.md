@@ -46,6 +46,10 @@ bundled into a release build.
   (plays out the neighbouring tie through the same trigger) and the assertions
   `assertPlayoffNotification` and `assertLadderCompleted`. Buttons exist for the
   free and the paid ladder (`-paid`).
+- Manual testing: `maestro-seed-manual-128-final` seeds a 128-player ladder
+  (`maestro-po-manual-128-ladder`) with the 8-player bracket generated, every
+  quarter-final and semi-final played and decided with the test user through, and
+  the Final and 3rd-place ties open one day in. Cleaned up with the rest.
 - `seeds/mockPlayoffOpponent.js` — the playoff opponent: arranges, accepts,
   declines, offers "play match 2 here" and chats; plus mock notifications and the
   tie-chat assertion. Notification ids start `maestro-po-` and the backend's

@@ -47,6 +47,7 @@ import { decideLadderPlayoffTie, tallyLadderPlayoffTie } from "@shared";
 import {
   MAESTRO_PO_DOUBLES_LADDER_ID,
   MAESTRO_PO_LADDER_ID,
+  MAESTRO_PO_MANUAL_128_LADDER_ID,
 } from "./seedLadderPlayoffs";
 import { realWorldProblems } from "./realWorldChecks.helper";
 import {
@@ -116,6 +117,60 @@ describe("seedLadderPlayoffJourney", () => {
     expect(mockUpdates).toContainEqual({
       path: `users/test-user/notifications/maestro-po-promotion-${MAESTRO_PO_LADDER_ID}`,
       data: { "data.tieId": "r4-s0" },
+    });
+  });
+
+  describe("a 128-player ladder carried to the Final", () => {
+    const docsUnder = (prefix) =>
+      [...mockDocs]
+        .filter(([path]) => path.startsWith(prefix))
+        .map(([, data]) => data);
+    const manualTies = () =>
+      docsUnder(`ladders/${MAESTRO_PO_MANUAL_128_LADDER_ID}/playoffTies/`);
+    const manualMatches = () =>
+      docsUnder(`ladders/${MAESTRO_PO_MANUAL_128_LADDER_ID}/ladderMatches/`);
+
+    const seedManual = () =>
+      seed({
+        size: 128,
+        round: JOURNEY_ROUND.LAST,
+        stage: JOURNEY_STAGE.STARTED,
+        daysIntoRound: 1,
+        ladderId: MAESTRO_PO_MANUAL_128_LADDER_ID,
+      });
+
+    it("registers 128 players and an 8-player bracket with the Final open", async () => {
+      const outcome = await seedManual();
+      expect(outcome.tieId).toBe("r3-s0");
+      expect(
+        docsUnder(
+          `ladders/${MAESTRO_PO_MANUAL_128_LADDER_ID}/ladderParticipants/`,
+        ),
+      ).toHaveLength(128);
+      expect(manualTies().filter((t) => !t.isThirdPlacePlayoff)).toHaveLength(
+        7,
+      );
+      const final = manualTies().find((t) => t.tieId === "r3-s0");
+      expect(final).toMatchObject({ round: 3, status: "scheduled" });
+      expect(
+        final.side1.playerIds.concat(final.side2.playerIds),
+      ).toContain("test-user");
+    });
+
+    it("has every quarter-final and semi-final played and decided", async () => {
+      await seedManual();
+      manualTies()
+        .filter((t) => !t.isThirdPlacePlayoff && t.round < 3)
+        .forEach((t) => expect(t.status).toBe("completed"));
+      const thirdPlace = manualTies().find((t) => t.isThirdPlacePlayoff);
+      expect(thirdPlace.status).toBe("scheduled");
+    });
+
+    it("matches what production would have", async () => {
+      await seedManual();
+      expect(
+        realWorldProblems({ ties: manualTies(), matches: manualMatches() }),
+      ).toEqual([]);
     });
   });
 
