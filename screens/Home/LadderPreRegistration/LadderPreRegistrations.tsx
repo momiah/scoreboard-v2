@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, SafeAreaView, ScrollView } from "react-native";
 import {
   useNavigation,
@@ -8,11 +8,11 @@ import {
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { LadderPreRegistration } from "@shared/types";
+import LineTabs from "../../../components/LineTabs";
 import PreRegistrationHeader from "../../../components/LadderPreRegistration/PreRegistrationHeader";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
-  LADDER_SEASON_EXPLAINER,
   formatEntryFee,
   formatPrizePool,
   getLadderSummary,
@@ -20,49 +20,56 @@ import {
   isCashLadder,
 } from "../../../helpers/ladderPreRegistrationDisplay";
 
+type LadderTab = "cash" | "community";
+
+const TABS: { key: LadderTab; label: string }[] = [
+  { key: "cash", label: "Cash" },
+  { key: "community", label: "Community" },
+];
+
 const LadderPreRegistrations: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { loading, preRegistrations, registeredIds } =
     useLadderPreRegistrations();
-  const cashOptions = preRegistrations.filter(isCashLadder);
-  const communityOptions = preRegistrations.filter(
-    (option) => !isCashLadder(option),
+  const [activeTab, setActiveTab] = useState<LadderTab>("cash");
+
+  const visible = preRegistrations.filter((preRegistration) =>
+    activeTab === "cash"
+      ? isCashLadder(preRegistration)
+      : !isCashLadder(preRegistration),
   );
 
-  const renderOption = (option: LadderPreRegistration) => {
-    const cash = isCashLadder(option);
-    const registered = registeredIds.has(option.preRegistrationId);
+  const renderLadder = (preRegistration: LadderPreRegistration) => {
+    const cash = isCashLadder(preRegistration);
+    const registered = registeredIds.has(preRegistration.preRegistrationId);
 
     return (
-      <OptionCard
-        key={option.preRegistrationId}
-        testID={`ladder-pre-registration-option-${option.preRegistrationId}`}
+      <LadderCard
+        key={preRegistration.preRegistrationId}
+        testID={`ladder-pre-registration-option-${preRegistration.preRegistrationId}`}
         cash={cash}
         activeOpacity={0.85}
         onPress={() =>
           navigation.navigate("LadderPreRegistrationSignup", {
-            preRegistrationId: option.preRegistrationId,
+            preRegistrationId: preRegistration.preRegistrationId,
           })
         }
       >
-        <OptionTopRow>
+        <CardTopRow>
           <Pill cash={cash}>
             <PillText cash={cash}>
               {cash
-                ? `${formatPrizePool(option)} prize pool`
-                : `${formatPrizePool(option)} to be won`}
+                ? `${formatPrizePool(preRegistration)} prize pool`
+                : `${formatPrizePool(preRegistration)} to be won`}
             </PillText>
           </Pill>
-          <Muted>{formatEntryFee(option)}</Muted>
-        </OptionTopRow>
-        <OptionName>{option.name}</OptionName>
+          <Muted>{formatEntryFee(preRegistration)}</Muted>
+        </CardTopRow>
+        <LadderName>{preRegistration.name}</LadderName>
         <Muted>
-          {option.region} · {getLadderSummary(option)}
+          {preRegistration.region} · {getLadderSummary(preRegistration)}
         </Muted>
-        {option.description ? (
-          <Description>{option.description}</Description>
-        ) : null}
-        <OptionBottomRow>
+        <CardBottomRow>
           {registered ? (
             <Registered>
               <Ionicons
@@ -78,113 +85,86 @@ const LadderPreRegistrations: React.FC = () => {
           <Ionicons
             name="chevron-forward"
             size={18}
-            color={cash ? COLORS.orange : COLORS.blue}
+            color={cash ? COLORS.prizeGold : COLORS.blue}
           />
-        </OptionBottomRow>
-      </OptionCard>
+        </CardBottomRow>
+      </LadderCard>
     );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.screen }}>
       <PreRegistrationHeader title="Ladders" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        <Explainer>
-          <ExplainerTitle>What&apos;s a ladder?</ExplainerTitle>
-          <ExplainerText>{LADDER_SEASON_EXPLAINER}</ExplainerText>
-        </Explainer>
+        <HowToPlayButton
+          testID="ladder-pre-registration-how-to-play"
+          activeOpacity={0.85}
+          onPress={() =>
+            navigation.navigate("LadderPreRegistrationHowToPlay", {
+              preRegistrationId: visible[0]?.preRegistrationId,
+            })
+          }
+        >
+          <Ionicons name="book-outline" size={16} color="white" />
+          <HowToPlayText>How to play</HowToPlayText>
+        </HowToPlayButton>
 
-        {loading ? (
-          <ActivityIndicator color={COLORS.blue} style={{ marginTop: 24 }} />
-        ) : preRegistrations.length === 0 ? (
-          <EmptyText>
-            No ladders are open for pre-registration right now. Check back soon.
-          </EmptyText>
-        ) : null}
+        <LineTabs tabs={TABS} activeTab={activeTab} onTabPress={setActiveTab} />
 
-        {cashOptions.length > 0 ? (
-          <>
-            <SectionTitle color={COLORS.gold}>
-              <Ionicons name="cash-outline" size={14} color={COLORS.gold} />{" "}
-              Cash Ladders
-            </SectionTitle>
-            {cashOptions.map(renderOption)}
-          </>
-        ) : null}
+        <TabContent>
+          {loading ? (
+            <ActivityIndicator color={COLORS.blue} style={{ marginTop: 24 }} />
+          ) : visible.length === 0 ? (
+            <EmptyText>
+              No {activeTab === "cash" ? "Cash" : "Community"} Ladders are open
+              for pre-registration right now. Check back soon.
+            </EmptyText>
+          ) : (
+            visible.map(renderLadder)
+          )}
+        </TabContent>
 
-        {communityOptions.length > 0 ? (
-          <>
-            <SectionTitle color={COLORS.blue}>
-              <Ionicons name="trophy-outline" size={14} color={COLORS.blue} />{" "}
-              Community Ladders
-            </SectionTitle>
-            {communityOptions.map(renderOption)}
-          </>
-        ) : null}
-
-        {cashOptions[0] ? (
-          <Footnote>{getPlatformFeeFootnote(cashOptions[0])}</Footnote>
+        {activeTab === "cash" && visible[0] ? (
+          <Footnote>{getPlatformFeeFootnote(visible[0])}</Footnote>
         ) : null}
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const Description = styled.Text({
-  color: COLORS.body,
-  fontSize: 12,
-  lineHeight: 17,
-  marginTop: 6,
+const HowToPlayButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  backgroundColor: COLORS.blue,
+  borderRadius: 12,
+  paddingVertical: 15,
+  marginBottom: 12,
 });
 
-const EmptyText = styled.Text({
-  color: COLORS.muted,
-  fontSize: 13,
-  textAlign: "center",
-  marginTop: 24,
-});
-
-const Explainer = styled.View({
-  backgroundColor: COLORS.panel,
-  borderRadius: 14,
-  padding: 12,
-});
-
-const ExplainerTitle = styled.Text({
+const HowToPlayText = styled.Text({
   color: "white",
-  fontSize: 13,
+  fontSize: 15,
   fontWeight: "bold",
-  marginBottom: 4,
 });
 
-const ExplainerText = styled.Text({
-  color: COLORS.body,
-  fontSize: 12,
-  lineHeight: 18,
+const TabContent = styled.View({
+  marginTop: 12,
 });
 
-const SectionTitle = styled.Text<{ color: string }>(
-  ({ color }: { color: string }) => ({
-    color,
-    fontSize: 13,
-    fontWeight: "bold",
-    marginTop: 18,
-    marginBottom: 8,
-  }),
-);
-
-const OptionCard = styled.TouchableOpacity<{ cash: boolean }>(
+const LadderCard = styled.TouchableOpacity<{ cash: boolean }>(
   ({ cash }: { cash: boolean }) => ({
     backgroundColor: COLORS.card,
-    borderWidth: 1.5,
-    borderColor: cash ? COLORS.orange : COLORS.blueBorder,
+    borderWidth: 1,
+    borderColor: cash ? COLORS.prizeGoldBorder : COLORS.blueBorder,
     borderRadius: 14,
-    padding: 12,
+    padding: 14,
     marginBottom: 10,
   }),
 );
 
-const OptionTopRow = styled.View({
+const CardTopRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
@@ -199,13 +179,13 @@ const Pill = styled.View<{ cash: boolean }>(({ cash }: { cash: boolean }) => ({
 
 const PillText = styled.Text<{ cash: boolean }>(
   ({ cash }: { cash: boolean }) => ({
-    color: cash ? COLORS.gold : COLORS.blue,
+    color: cash ? COLORS.prizeGold : COLORS.blue,
     fontSize: 11,
     fontWeight: "bold",
   }),
 );
 
-const OptionName = styled.Text({
+const LadderName = styled.Text({
   color: "white",
   fontSize: 16,
   fontWeight: "bold",
@@ -218,7 +198,7 @@ const Muted = styled.Text({
   fontSize: 12,
 });
 
-const OptionBottomRow = styled.View({
+const CardBottomRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
@@ -235,6 +215,13 @@ const RegisteredText = styled.Text({
   color: COLORS.success,
   fontSize: 12,
   fontWeight: "bold",
+});
+
+const EmptyText = styled.Text({
+  color: COLORS.muted,
+  fontSize: 13,
+  textAlign: "center",
+  marginTop: 24,
 });
 
 const Footnote = styled.Text({

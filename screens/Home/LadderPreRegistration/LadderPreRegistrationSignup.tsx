@@ -44,8 +44,8 @@ const STAGE_ICONS: Record<
   join: { icon: "person-add-outline", color: COLORS.blue },
   season: { icon: "trending-up-outline", color: COLORS.blue },
   "registration-closes": { icon: "lock-closed-outline", color: COLORS.blue },
-  playoffs: { icon: "git-network-outline", color: COLORS.orange },
-  champion: { icon: "trophy-outline", color: COLORS.gold },
+  playoffs: { icon: "git-network-outline", color: COLORS.prizeGold },
+  champion: { icon: "trophy-outline", color: COLORS.prizeGold },
 };
 
 const CLIMB_STEPS: { icon: IoniconName; text: string }[] = [
@@ -87,7 +87,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
 
   if (!option) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.screen }}>
         <PreRegistrationHeader title="Ladders" />
         {loading ? (
           <ActivityIndicator color={COLORS.blue} style={{ marginTop: 40 }} />
@@ -154,7 +154,7 @@ const LadderPreRegistrationSignup: React.FC = () => {
     });
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#00152B" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.screen }}>
       <PreRegistrationHeader title={option.name} />
       {loading ? (
         <ActivityIndicator color={COLORS.blue} style={{ marginTop: 40 }} />
@@ -203,6 +203,26 @@ const LadderPreRegistrationSignup: React.FC = () => {
             </>
           )}
 
+          <LinksRow>
+            <TextLink
+              testID="ladder-pre-registration-rules"
+              onPress={() =>
+                navigation.navigate("LadderPreRegistrationRules", {
+                  ladderType: option.ladderType,
+                })
+              }
+            >
+              <TextLinkLabel>Ladder rules</TextLinkLabel>
+            </TextLink>
+            <Muted>·</Muted>
+            <TextLink
+              testID="ladder-pre-registration-terms"
+              onPress={() => navigation.navigate("LadderPreRegistrationTerms")}
+            >
+              <TextLinkLabel>Terms &amp; Conditions</TextLinkLabel>
+            </TextLink>
+          </LinksRow>
+
           {cash ? <Footnote>{getPlatformFeeFootnote(option)}</Footnote> : null}
         </ScrollView>
       )}
@@ -215,100 +235,80 @@ const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
 }) => {
   const cash = isCashLadder(option);
   const noun = getEntrantNoun(option);
-  const accent = cash ? COLORS.gold : COLORS.blue;
 
   return (
     <>
-      <Hero cash={cash}>
-        <Ionicons name={cash ? "trophy" : "ribbon"} size={32} color={accent} />
-        <HeroAmount color={accent}>{formatPrizePool(option)}</HeroAmount>
-        <Muted style={{ textAlign: "center" }}>
-          {cash ? "Prize pool" : "Court Points to be won"} with a full ladder of{" "}
-          {option.maxPlayers.toLocaleString("en-GB")} {noun}s
+      <PrizePotCard>
+        <PrizePotTitle>
+          {cash ? "Total Prize Pool" : "Court Points to be won"}
+        </PrizePotTitle>
+        <PrizePotValue testID="ladder-pre-registration-pot">
+          {formatPrizePool(option)}
+        </PrizePotValue>
+        <Muted>
+          With a full ladder of {option.maxPlayers.toLocaleString("en-GB")}{" "}
+          {noun}s
         </Muted>
-      </Hero>
+      </PrizePotCard>
 
       {option.description ? (
         <Description>{option.description}</Description>
       ) : null}
 
       <SectionTitle>Prize breakdown</SectionTitle>
-      <Panel testID="ladder-pre-registration-prize-table">
-        <TableRow>
-          <HeaderCell flex={1.6}>Finish</HeaderCell>
-          {cash ? (
-            <HeaderCell flex={1} align="right">
-              Cash each
-            </HeaderCell>
-          ) : null}
-          <HeaderCell flex={1} align="right">
-            CP each
-          </HeaderCell>
-        </TableRow>
-        {getFullLadderPrizeTable(option).map((row) => {
-          const highlight = row.fromPlace === 1;
-          return (
-            <TableRow key={row.fromPlace}>
-              <Cell flex={1.6} highlight={highlight}>
-                {row.label}
-              </Cell>
-              {cash ? (
-                <Cell flex={1} align="right" highlight={highlight}>
+      <Rows testID="ladder-pre-registration-prize-table">
+        {getFullLadderPrizeTable(option).map((row) => (
+          <Row key={row.fromPlace}>
+            <PlaceCell>
+              <Place>{row.label}</Place>
+            </PlaceCell>
+            {cash ? (
+              <StatCell>
+                <StatTitle>Cash each</StatTitle>
+                <Stat highlight>
                   {formatCurrency(row.cash, option.currencyType)}
-                </Cell>
-              ) : null}
-              <Cell flex={1} align="right" highlight={highlight}>
-                {row.cp.toLocaleString("en-GB")}
-              </Cell>
-            </TableRow>
-          );
-        })}
-      </Panel>
+                </Stat>
+              </StatCell>
+            ) : null}
+            <StatCell>
+              <StatTitle>CP each</StatTitle>
+              <Stat>{row.cp.toLocaleString("en-GB")}</Stat>
+            </StatCell>
+          </Row>
+        ))}
+      </Rows>
 
       <SectionTitle>
         The {cash ? "pool" : "CP pool"} grows with every {noun}
       </SectionTitle>
-      <Panel>
-        <TableRow>
-          <HeaderCell flex={1}>
-            {noun === "team" ? "Teams" : "Players"}
-          </HeaderCell>
-          <HeaderCell flex={1.2} align="right">
-            {cash ? "Prize pool" : "CP pool"}
-          </HeaderCell>
-          <HeaderCell flex={1} align="right">
-            Playoffs
-          </HeaderCell>
-          {cash ? (
-            <HeaderCell flex={0.8} align="right">
-              Paid
-            </HeaderCell>
-          ) : null}
-        </TableRow>
-        {getLadderSizeRows(option).map((row) => {
-          const highlight = row.size === option.maxPlayers;
-          return (
-            <TableRow key={row.size}>
-              <Cell flex={1} highlight={highlight}>
-                {row.size.toLocaleString("en-GB")}
-              </Cell>
-              <Cell flex={1.2} align="right" highlight={highlight}>
-                {row.prizePool}
-              </Cell>
-              <Cell flex={1} align="right" highlight={highlight}>
-                Top {row.playoffSpots}
-              </Cell>
-              {cash ? (
-                <Cell flex={0.8} align="right" highlight={highlight}>
+      <Rows>
+        {getLadderSizeRows(option).map((row) => (
+          <Row key={row.size}>
+            <PlaceCell>
+              <Place>{row.size.toLocaleString("en-GB")}</Place>
+              <StatTitle>{noun === "team" ? "teams" : "players"}</StatTitle>
+            </PlaceCell>
+            <StatCell>
+              <StatTitle>{cash ? "Prize pool" : "CP pool"}</StatTitle>
+              <Stat highlight={cash}>{row.prizePool}</Stat>
+            </StatCell>
+            <StatCell>
+              <StatTitle>Playoffs</StatTitle>
+              <Stat>Top {row.playoffSpots}</Stat>
+            </StatCell>
+            {cash ? (
+              <StatCell>
+                <StatTitle>Paid</StatTitle>
+                <Stat>
                   {row.inTheMoney === row.playoffSpots
                     ? `All ${row.inTheMoney}`
                     : `Top ${row.inTheMoney}`}
-                </Cell>
-              ) : null}
-            </TableRow>
-          );
-        })}
-      </Panel>
+                </Stat>
+              </StatCell>
+            ) : null}
+          </Row>
+        ))}
+      </Rows>
 
       <SectionTitle>How a season works</SectionTitle>
       <Panel>
@@ -398,24 +398,27 @@ const Description = styled.Text({
   marginTop: 12,
 });
 
-const Hero = styled.View<{ cash: boolean }>(({ cash }: { cash: boolean }) => ({
-  backgroundColor: COLORS.hero,
-  borderWidth: 1.5,
-  borderColor: cash ? COLORS.gold : COLORS.blue,
+const PrizePotCard = styled.View({
+  padding: 20,
   borderRadius: 14,
+  backgroundColor: COLORS.card,
+  borderWidth: 1,
+  borderColor: COLORS.blueBorder,
   alignItems: "center",
-  paddingVertical: 16,
-  paddingHorizontal: 12,
-}));
+  gap: 6,
+});
 
-const HeroAmount = styled.Text<{ color: string }>(
-  ({ color }: { color: string }) => ({
-    color,
-    fontSize: 30,
-    fontWeight: "bold",
-    marginTop: 2,
-  }),
-);
+const PrizePotTitle = styled.Text({
+  fontSize: 16,
+  fontWeight: "bold",
+  color: "#ffffff",
+});
+
+const PrizePotValue = styled.Text({
+  fontSize: 34,
+  fontWeight: "bold",
+  color: COLORS.prizeGold,
+});
 
 const SectionTitle = styled.Text({
   color: "white",
@@ -426,48 +429,74 @@ const SectionTitle = styled.Text({
 });
 
 const Panel = styled.View({
-  backgroundColor: COLORS.panel,
+  backgroundColor: COLORS.card,
   borderRadius: 14,
   paddingVertical: 8,
   paddingHorizontal: 10,
   marginBottom: 10,
 });
 
-const TableRow = styled.View({
+const Rows = styled.View({
+  marginBottom: 10,
+});
+
+const Row = styled.View({
   flexDirection: "row",
+});
+
+const PlaceCell = styled.View({
+  width: 110,
+  justifyContent: "center",
+  paddingVertical: 15,
+  paddingLeft: 4,
+  borderTopWidth: 1,
+  borderColor: COLORS.rowBorder,
+});
+
+const Place = styled.Text({
+  fontSize: 14,
+  fontWeight: "bold",
+  color: COLORS.blue,
+});
+
+const StatCell = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  paddingVertical: 15,
+  borderTopWidth: 1,
+  borderColor: COLORS.rowBorder,
+});
+
+const StatTitle = styled.Text({
+  fontSize: 12,
+  color: COLORS.muted,
+});
+
+const Stat = styled.Text<{ highlight?: boolean }>(
+  ({ highlight }: { highlight?: boolean }) => ({
+    fontSize: 14,
+    fontWeight: "bold",
+    color: highlight ? COLORS.prizeGold : "white",
+  }),
+);
+
+const LinksRow = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: 8,
+  marginTop: 14,
+});
+
+const TextLink = styled.TouchableOpacity({
   paddingVertical: 4,
 });
 
-const HeaderCell = styled.Text<{ flex: number; align?: "right" }>(
-  ({ flex, align }: { flex: number; align?: "right" }) => ({
-    flex,
-    textAlign: align ?? "left",
-    color: COLORS.muted,
-    fontSize: 12,
-  }),
-);
-
-const Cell = styled.Text<{
-  flex: number;
-  align?: "right";
-  highlight?: boolean;
-}>(
-  ({
-    flex,
-    align,
-    highlight,
-  }: {
-    flex: number;
-    align?: "right";
-    highlight?: boolean;
-  }) => ({
-    flex,
-    textAlign: align ?? "left",
-    color: highlight ? COLORS.gold : "white",
-    fontWeight: highlight ? "bold" : "normal",
-    fontSize: 12,
-  }),
-);
+const TextLinkLabel = styled.Text({
+  color: COLORS.blue,
+  fontSize: 13,
+});
 
 const Timeline = styled.View({
   flexDirection: "row",
@@ -521,7 +550,7 @@ const CenteredMuted = styled.Text({
 
 const PrimaryButton = styled.TouchableOpacity<{ cash?: boolean }>(
   ({ cash }: { cash?: boolean }) => ({
-    backgroundColor: cash ? COLORS.orange : COLORS.blue,
+    backgroundColor: cash ? COLORS.prizeGold : COLORS.blue,
     borderRadius: 10,
     paddingVertical: 13,
     alignItems: "center",

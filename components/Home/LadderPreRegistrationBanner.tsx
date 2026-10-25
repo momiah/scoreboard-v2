@@ -70,7 +70,7 @@ const LadderPreRegistrationBanner: React.FC = () => {
 const Banner = styled.TouchableOpacity({
   backgroundColor: COLORS.hero,
   borderWidth: 1.5,
-  borderColor: COLORS.gold,
+  borderColor: COLORS.prizeGold,
   borderRadius: 14,
   padding: 16,
   marginTop: 10,
@@ -89,7 +89,7 @@ const Watermark = styled.Image({
 
 const Pill = styled.View({
   alignSelf: "flex-start",
-  backgroundColor: COLORS.gold,
+  backgroundColor: COLORS.prizeGold,
   borderRadius: 20,
   paddingHorizontal: 10,
   paddingVertical: 3,
@@ -108,7 +108,7 @@ const UpTo = styled.Text({
 });
 
 const Amount = styled.Text({
-  color: COLORS.gold,
+  color: COLORS.prizeGold,
   fontSize: 34,
   fontWeight: "bold",
 });

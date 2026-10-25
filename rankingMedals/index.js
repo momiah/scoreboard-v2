@@ -8,6 +8,8 @@ import { canHandleHighQualityImages } from "../utils/canRenderHighQualityImages"
 //   // demon_win: require("./Demon_Win.png"),
 // };
 
+export const cpBoosters = require("./booster_medals.png");
+
 const highQualityMedals = {
   win_streak_3: require("./winStreak3.png"),
   win_streak_5: require("./winStreak5.png"),
