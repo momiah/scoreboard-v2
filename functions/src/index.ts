@@ -11,6 +11,7 @@ import { autoApproveTournamentGames } from "./autoApproveTournamentGames";
 import { autoApproveLadderGames } from "./autoApproveLadderGames";
 import { autoExpireLadderMatches } from "./autoExpireLadderMatches";
 import { onLadderMatchStatusChange } from "./onLadderMatchStatusChange";
+import { onLadderPrizePayoutReviewed } from "./onLadderPrizePayoutReviewed";
 import { autoVoidLadderDisputes } from "./autoVoidLadderDisputes";
 import { processLadderPhases } from "./processLadderPhases";
 import { recordLadderArrival } from "./recordLadderArrival";
@@ -38,6 +39,7 @@ export {
   autoApproveLadderGames,
   autoExpireLadderMatches,
   onLadderMatchStatusChange,
+  onLadderPrizePayoutReviewed,
   autoVoidLadderDisputes,
   processLadderPhases,
   recordLadderArrival,

@@ -114,3 +114,63 @@ The non-refundable platform fee must be disclosed. It currently appears in:
   non-refundable and retained to cover processing.
 
 Keep both in sync with any change to this model.
+
+# Ladder entry fees and prizes
+
+How a paid ladder's entry fee is taken and its prize money paid. Free ladders
+pay CP only through the same code. Nothing here moves money yet: the cash
+steps are documented stubs, ready for the paid-ladder work.
+
+## Entry fee
+
+- A player (or a doubles team, once) pays the **entry fee plus a 10% platform
+  fee** on top (`getLadderEntryPrice`). The whole entry fee goes into the prize
+  pool; the platform fee is retained by Court Champs.
+- Stub: `functions/src/helpers/chargeLadderEntryFee.ts`. Not wired: today the
+  app writes the join itself. The paid work moves joining to a callable
+  function that charges first and creates the participant (or team) only once
+  the charge succeeds, so there is never a joined-but-unpaid player.
+- A ladder cancelled by the platform refunds everything:
+  `refundLadderEntryFees` (stub).
+
+## Prize payout
+
+Runs once, when the last deciding playoff tie settles
+(`onLadderMatchStatusChange`), with `processLadderPhases` as the retry.
+`completeAndPayLadder` does it in one transaction with the ladder's Completed
+status and the `prizesDistributed` claim, so a retry never pays twice.
+
+1. `planLadderPlayoffPrizes` (courtchamps-shared) works out every side's prize
+   from `LADDER_PAYOUT_STRUCTURE`: the place prize, plus an equal share of the
+   **Unclaimed Prize Pot** (money from void ties and empty places), split
+   between both players of a doubles side.
+2. One `ladders/{ladderId}/prizePayouts/{tieId}-{userId}` record per player:
+   - `paid`: CP added to `profileDetail.XP` and `ladderStats` now; cash sent
+     through `distributeLadderCash` (stub);
+   - `held`: the player is disqualified; nothing is paid until an admin
+     reviews it;
+   - `kept`: the account was deleted; the prize is retained by Court Champs.
+3. Unclaimed money with nobody left in the money to share it is retained by
+   Court Champs (`retainedPrizeMoney` on the ladder).
+
+## Review of a held prize
+
+An admin sets `review` on the record from the website's Prize Payouts page:
+pay in full, pay part, or withhold, with a reason. `onLadderPrizePayoutReviewed`
+carries it out once (CP now, cash through `payHeldLadderPrize`, a stub) and
+tells the player the outcome and reason. Whatever is not paid is retained by
+Court Champs.
+
+## What the paid work must add
+
+- Wire `chargeLadderEntryFee`, `distributeLadderCash`, `payHeldLadderPrize`
+  and `refundLadderEntryFees` to the payment provider, idempotent on the
+  payout or ladder id.
+- Increment `profileDetail.cashWon` with every cash prize paid. PROLevel reads
+  it against thresholds set in one currency, so cash won in other currencies
+  needs converting to that currency when it is recorded.
+
+## Where users are told
+
+`LadderTermsContent` sections 3 (entry fees), 4 (prizes and payouts) and 7
+(disqualification). Keep them in sync with any change here.
