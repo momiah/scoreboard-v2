@@ -576,7 +576,7 @@ const AchievementMedalsPage: React.FC = () => (
 
 const Screen = styled.View({
   flex: 1,
-  backgroundColor: "#00152B",
+  backgroundColor: "rgb(3, 16, 31)",
 });
 
 const TopBar = styled.View({
