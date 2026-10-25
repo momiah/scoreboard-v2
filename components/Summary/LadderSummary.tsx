@@ -24,12 +24,14 @@ import ParticipantCarousel from "./ParticipantCarousel";
 import PhaseTimeline from "./PhaseTimeline";
 import LadderHomeCourtSection from "./LadderHomeCourtSection";
 import LadderSummarySkeleton from "./LadderSummarySkeleton";
+import HeldPrizeNotice from "./HeldPrizeNotice";
 import JoinLadderModal from "../Modals/JoinLadderModal";
 import PerformanceRow from "../performance/Player/PerformanceRow";
 import { UserContext } from "../../context/UserContext";
 import { LadderContext } from "../../context/LadderContext";
 import { useLadderJoin } from "../../hooks/useLadderJoin";
 import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
+import { useLadderHeldPrize } from "../../hooks/useLadderHeldPrize";
 import { enrichPlayers } from "../../helpers/enrichPlayers";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { getLadderTopFourPrizes } from "../../helpers/ladderPlayoffPrizes";
@@ -168,6 +170,11 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
 
   const hasPrizesDistributed =
     ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
+  const heldPrize = useLadderHeldPrize(
+    ladder.ladderId,
+    currentUser?.userId,
+    !!ladder.prizesDistributed,
+  );
 
   const [userSummaryRow, setUserSummaryRow] = useState<{
     player: EnrichedPlayer;
@@ -318,6 +325,8 @@ const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
           </PrizePotValue>
         )}
       </PrizePotCard>
+
+      {heldPrize ? <HeldPrizeNotice payout={heldPrize} /> : null}
 
       <LadderStatsRow ladder={ladder} />
 
