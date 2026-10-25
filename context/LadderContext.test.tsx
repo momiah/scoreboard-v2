@@ -192,6 +192,7 @@ const approve = (
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetDocs.mockResolvedValue({ docs: [] });
+  mockGetDoc.mockResolvedValue({ exists: () => false, id: "x", data: () => undefined });
   jest.spyOn(console, "error").mockImplementation(() => undefined);
 });
 
@@ -831,6 +832,19 @@ describe("playoff freeze", () => {
   });
 });
 
+const upheldStrikes = (userId: string, count: number) => ({
+  docs: Array.from({ length: count }, (_, index) => ({
+    id: `report-${index}`,
+    data: () => ({
+      ladderId: `ladder-${index}`,
+      reason: "no_show",
+      status: "approved",
+      target: { userIds: [userId] },
+      resolvedAt: new Date(Date.now() - (index + 1) * 7 * 86400000),
+    }),
+  })),
+});
+
 describe("joinLadder", () => {
   const user1 = {
     userId: "me",
@@ -848,6 +862,43 @@ describe("joinLadder", () => {
     participantCount: 3,
     maxPlayers: 2048,
   };
+
+  it("refuses a player with five strikes upheld across ladders in the last twelve months", async () => {
+    mockGetDocs.mockResolvedValue(upheldStrikes("me", 5));
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadder(LADDER, user1)).toEqual({
+      success: false,
+      alreadyJoined: false,
+      reason: "account_blocked",
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("lets a player with four strikes join", async () => {
+    mockGetDocs.mockResolvedValue(upheldStrikes("me", 4));
+    makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadder(LADDER, user1)).toEqual({
+      success: true,
+      alreadyJoined: false,
+    });
+  });
+
+  it("lets a player join again once an admin lifted their block", async () => {
+    mockGetDocs.mockResolvedValue(upheldStrikes("me", 5));
+    mockGetDoc.mockImplementation(async (ref: { path: string }) =>
+      ref.path === "users/me"
+        ? { exists: () => true, id: "me", data: () => ({ ladderBlockLiftedAt: new Date() }) }
+        : { exists: () => false, id: "x", data: () => undefined },
+    );
+    makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect((await result.current.joinLadder(LADDER, user1)).success).toBe(true);
+  });
 
   it("writes the participant with a server joinedAt and bumps the count", async () => {
     const { tx } = makeStore(withLadder("registrationOpen", openWindow));
@@ -1047,11 +1098,31 @@ describe("joinLadderAsTeam", () => {
     expect(tx.set).not.toHaveBeenCalled();
   });
 
-  it("refuses a team when one of its players is already a ladder participant", async () => {
+  it("refuses a team when either player has five strikes upheld", async () => {
     mockGetDoc
       .mockResolvedValueOnce(serverTeam({}))
-      .mockResolvedValueOnce({ exists: () => true, id: "me", data: () => ({}) })
       .mockResolvedValue(noParticipantDoc);
+    mockGetDocs.mockImplementation(async (q: { __query: unknown[] }) =>
+      JSON.stringify(q).includes("reports") ? upheldStrikes("pt", 5) : { docs: [] },
+    );
+    const { tx } = makeStore(withLadder("registrationOpen", openWindow));
+    const result = await renderLadder();
+
+    expect(await result.current.joinLadderAsTeam(LADDER, rootTeam)).toMatchObject({
+      success: false,
+      reason: "account_blocked",
+    });
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+
+  it("refuses a team when one of its players is already a ladder participant", async () => {
+    mockGetDoc.mockImplementation(async (ref: { path: string }) => {
+      if (ref.path.endsWith("/T1")) return serverTeam({});
+      if (ref.path.startsWith("users/")) return noParticipantDoc;
+      return ref.path.endsWith("/me")
+        ? { exists: () => true, id: "me", data: () => ({}) }
+        : noParticipantDoc;
+    });
     mockGetDocs.mockResolvedValue({ docs: [] });
     makeStore(withLadder("registrationOpen", openWindow));
     const result = await renderLadder();
