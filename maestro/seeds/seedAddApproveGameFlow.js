@@ -23,6 +23,7 @@ import {
   notificationSchema,
 } from "@shared";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
+import { deleteFixtureLadderRoster } from "./fixtureUserCleanup";
 
 export const MAESTRO_AG_LADDER_ID = "maestro-add-game-flow-ladder";
 export const MAESTRO_AG_MATCH_ID = "maestro-add-game-flow-match";
@@ -157,6 +158,7 @@ export const seedAddApproveGameFlow = async ({
     }
     return shell;
   });
+  await deleteFixtureLadderRoster(MAESTRO_AG_LADDER_ID);
   await setDoc(doc(db, "ladders", MAESTRO_AG_LADDER_ID), {
     ladderId: MAESTRO_AG_LADDER_ID,
     name: "Maestro Add-Game Flow Ladder",

@@ -57,9 +57,11 @@ onFlowStart:
     visible:
       id: "player-details-screen"
     timeout: 15000
-- assertVisible:
-    id: "player-details-losses"
-    text: "2"
+- extendedWaitUntil:
+    visible:
+      id: "player-details-losses"
+      text: "2"
+    timeout: 5000
 - extendedWaitUntil:
     visible: ".*-23 CP.*"
     timeout: 15000
@@ -72,9 +74,11 @@ onFlowStart:
     visible:
       id: "player-details-screen"
     timeout: 15000
-- assertVisible:
-    id: "player-details-wins"
-    text: "2"
+- extendedWaitUntil:
+    visible:
+      id: "player-details-wins"
+      text: "2"
+    timeout: 5000
 - extendedWaitUntil:
     visible:
       id: "player-details-cp"

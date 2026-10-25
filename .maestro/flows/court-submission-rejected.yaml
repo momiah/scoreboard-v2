@@ -6,12 +6,10 @@ onFlowStart:
     file: ../utilities/playoffs/harness.yaml
     env:
       BUTTON: "maestro-seed-home-court-flow"
-- tapOn:
-    id: "maestro-mock-reject-court-submission"
-- extendedWaitUntil:
-    visible: "Mocked"
-    timeout: 30000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-reject-court-submission"
 - tapOn:
     id: "tab-competitions"
 - runFlow:

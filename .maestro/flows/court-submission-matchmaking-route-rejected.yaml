@@ -86,14 +86,10 @@ onFlowStart:
     timeout: 15000
 - tapOn:
     id: "search-court-close"
-- tapOn:
-    id: "tab-home"
-- tapOn:
-    id: "maestro-mock-reject-new-submission"
-- extendedWaitUntil:
-    visible: "Mocked"
-    timeout: 30000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-reject-new-submission"
 - tapOn:
     id: "tab-competitions"
 - runFlow:

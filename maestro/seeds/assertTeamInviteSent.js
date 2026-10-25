@@ -9,16 +9,18 @@ export const assertTeamInviteSent = async ({ recipientId, teamName }) => {
       where("type", "==", notificationTypes.ACTION.INVITE.TEAM),
     ),
   );
-  const invite = notifications.docs
-    .map((d) => d.data())
-    .find((data) => data.data?.teamId);
-  if (!invite) throw new Error(`No team invite notification for ${recipientId}`);
+  const inviteTeamIds = notifications.docs
+    .map((d) => d.data().data?.teamId)
+    .filter(Boolean);
+  if (inviteTeamIds.length === 0) {
+    throw new Error(`No team invite notification for ${recipientId}`);
+  }
   const teams = await getDocs(
     query(collection(db, "teams"), where("teamName", "==", teamName)),
   );
   const team = teams.docs
     .map((d) => d.data())
-    .find((data) => data.teamId === invite.data.teamId);
+    .find((data) => inviteTeamIds.includes(data.teamId));
   if (!team) throw new Error(`Invite points at a team that is not "${teamName}"`);
   if (team.status !== "pending") {
     throw new Error(`Invited team should be pending, was ${team.status}`);

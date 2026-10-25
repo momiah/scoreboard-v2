@@ -27,8 +27,11 @@ onFlowStart:
     id: "game-dispute-screen"
 - assertVisible:
     id: "dispute-original-result"
-- assertVisible:
-    id: "dispute-compose-note-input"
+- scrollUntilVisible:
+    element:
+      id: "dispute-compose-note-input"
+    direction: DOWN
+    timeout: 20000
 - scrollUntilVisible:
     element:
       id: "dispute-compose-submit"

@@ -1,8 +1,15 @@
-import React, { useState } from "react";
+import React, {
+  createContext,
+  memo,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import {
   Alert,
   Pressable,
   Text as RNText,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -114,14 +121,20 @@ import {
 const UNLOCK_TAPS = 5;
 const PLAYOFF_PAID_ENTRY_FEE = 20;
 
+const HarnessFilterContext = createContext("");
+
 const HarnessButton = (
   props: React.ComponentProps<typeof TouchableOpacity>,
-) => (
-  <TouchableOpacity
-    {...props}
-    style={[{ width: "25%", paddingVertical: 1 }, props.style]}
-  />
-);
+) => {
+  const filter = useContext(HarnessFilterContext);
+  if (filter && !String(props.testID ?? "").includes(filter)) return null;
+  return (
+    <TouchableOpacity
+      {...props}
+      style={[{ width: "25%", paddingVertical: 1 }, props.style]}
+    />
+  );
+};
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText numberOfLines={1} {...props} style={[{ fontSize: 7 }, props.style]} />
@@ -632,7 +645,7 @@ const PlayoffVariantButtons = ({
   </>
 );
 
-const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
+const HarnessButtons = memo(({ currentUser }: { currentUser: UserProfile }) => (
   <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
     <HarnessButton
       testID="maestro-cleanup-ladder-test-data"
@@ -1575,10 +1588,20 @@ const HarnessButtons = ({ currentUser }: { currentUser: UserProfile }) => (
       variants={PLAYOFF_LADDER_VARIANTS.filter(({ doubles }) => doubles)}
     />
   </View>
-);
+));
+HarnessButtons.displayName = "HarnessButtons";
 
 const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => {
   const [taps, setTaps] = useState(0);
+  const [draft, setDraft] = useState("");
+  const [filter, setFilter] = useState("");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onChangeFilter = (text: string) => {
+    setDraft(text);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setFilter(text), 500);
+  };
 
   return (
     <>
@@ -1589,7 +1612,27 @@ const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => {
         onPress={() => setTaps((count) => count + 1)}
       />
       {taps >= UNLOCK_TAPS ? (
-        <HarnessButtons currentUser={currentUser} />
+        <HarnessFilterContext.Provider value={filter}>
+          <TextInput
+            testID="maestro-harness-filter"
+            accessibilityLabel="maestro-harness-filter"
+            value={draft}
+            onChangeText={onChangeFilter}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="filter"
+            placeholderTextColor="#888"
+            style={{ color: "white", fontSize: 12, height: 28, padding: 2 }}
+          />
+          <RNText
+            testID="maestro-harness-filter-applied"
+            accessibilityLabel={filter}
+            style={{ color: "#888", fontSize: 8 }}
+          >
+            {filter}
+          </RNText>
+          <HarnessButtons currentUser={currentUser} />
+        </HarnessFilterContext.Provider>
       ) : null}
     </>
   );
