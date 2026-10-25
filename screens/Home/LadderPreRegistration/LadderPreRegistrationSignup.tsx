@@ -305,7 +305,7 @@ const ValueCell = styled.View({
 const HeaderValueCell = styled.View({
   flex: 1,
   justifyContent: "center",
-  alignItems: "center",
+  alignItems: "flex-start",
   paddingVertical: 14,
 });
 

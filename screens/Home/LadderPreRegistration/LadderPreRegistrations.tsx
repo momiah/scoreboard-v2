@@ -57,13 +57,12 @@ const LadderPreRegistrations: React.FC = () => {
       >
         <CardTopRow>
           <Pill cash={cash}>
-            <PillText cash={cash}>
-              {cash
-                ? `${formatPrizePool(preRegistration)} prize pool`
-                : `${formatPrizePool(preRegistration)} to be won`}
-            </PillText>
+            <PillText cash={cash}>{formatEntryFee(preRegistration)}</PillText>
           </Pill>
-          <Muted>{formatEntryFee(preRegistration)}</Muted>
+          <PrizePool>
+            <PrizePoolLabel>Prize pool</PrizePoolLabel>
+            <PrizePoolValue>{formatPrizePool(preRegistration)}</PrizePoolValue>
+          </PrizePool>
         </CardTopRow>
         <LadderName>{preRegistration.name}</LadderName>
         <Muted>
@@ -138,6 +137,21 @@ const CardTopRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
+});
+
+const PrizePool = styled.View({
+  alignItems: "flex-end",
+});
+
+const PrizePoolLabel = styled.Text({
+  color: COLORS.muted,
+  fontSize: 11,
+});
+
+const PrizePoolValue = styled.Text({
+  color: "white",
+  fontSize: 22,
+  fontWeight: "bold",
 });
 
 const Pill = styled.View<{ cash: boolean }>(({ cash }: { cash: boolean }) => ({
