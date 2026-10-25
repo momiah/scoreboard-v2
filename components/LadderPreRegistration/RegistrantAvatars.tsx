@@ -49,7 +49,6 @@ const Container = styled.View({
   flexDirection: "row",
   alignItems: "center",
   gap: 10,
-  marginTop: 14,
 });
 
 const Stack = styled.View({
