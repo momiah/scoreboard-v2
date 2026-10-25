@@ -1,9 +1,20 @@
 appId: com.courtchamp
 ---
-- runFlow:
-    file: ../playoffs/harness.yaml
-    env:
-      BUTTON: "maestro-seed-prolevel-${LEVEL}"
+- tapOn:
+    id: "tab-home"
+- scrollUntilVisible:
+    element:
+      id: "maestro-seed-prolevel-${LEVEL}"
+    direction: UP
+    timeout: 90000
+    speed: 80
+- waitForAnimationToEnd
+- tapOn:
+    id: "maestro-seed-prolevel-${LEVEL}"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 90000
+- tapOn: "OK"
 - tapOn:
     id: "tab-profile"
 - tapOn:
