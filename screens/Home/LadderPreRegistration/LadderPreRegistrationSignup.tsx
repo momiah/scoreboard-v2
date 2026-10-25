@@ -205,13 +205,13 @@ const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
             <HeaderText>Finish</HeaderText>
           </PlaceCell>
           {cash ? (
-            <HeaderValueCell>
+            <ValueCell>
               <HeaderText>Cash Payout</HeaderText>
-            </HeaderValueCell>
+            </ValueCell>
           ) : null}
-          <HeaderValueCell>
+          <ValueCell last>
             <HeaderText>CP Payout</HeaderText>
-          </HeaderValueCell>
+          </ValueCell>
         </HeaderRow>
         {getFullLadderPrizeTable(option).map((row) => (
           <Row key={row.fromPlace}>
@@ -225,16 +225,14 @@ const LadderDetails: React.FC<{ option: LadderPreRegistration }> = ({
                 </Value>
               </ValueCell>
             ) : null}
-            <ValueCell>
+            <ValueCell last>
               <Value>{row.cp.toLocaleString("en-GB")}</Value>
             </ValueCell>
           </Row>
         ))}
       </Table>
       <TableNote>
-        The prize pool depends on how many {noun}s sign up. Payouts shown are
-        for a full ladder of {option.maxPlayers.toLocaleString("en-GB")} {noun}
-        s.
+        {`The prize pool depends on how many ${noun}s sign up. Payouts shown are for a full ladder of ${option.maxPlayers.toLocaleString("en-GB")} ${noun}s.`}
       </TableNote>
     </>
   );
@@ -279,11 +277,13 @@ const Table = styled.View({
 
 const HeaderRow = styled.View({
   flexDirection: "row",
+  justifyContent: "space-between",
   backgroundColor: COLORS.tableHeader,
 });
 
 const Row = styled.View({
   flexDirection: "row",
+  justifyContent: "space-between",
   borderTopWidth: 1,
   borderColor: COLORS.rowBorder,
 });
@@ -295,19 +295,15 @@ const PlaceCell = styled.View({
   paddingLeft: 12,
 });
 
-const ValueCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "flex-start",
-  paddingVertical: 14,
-});
-
-const HeaderValueCell = styled.View({
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "flex-start",
-  paddingVertical: 14,
-});
+const ValueCell = styled.View<{ last?: boolean }>(
+  ({ last }: { last?: boolean }) => ({
+    width: last ? 84 : 96,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingVertical: 14,
+    paddingRight: last ? 12 : 0,
+  }),
+);
 
 const HeaderText = styled.Text({
   fontSize: 12,
