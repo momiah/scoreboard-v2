@@ -1,3 +1,4 @@
+import { cleanupProLevel } from "./seedProLevel";
 import {
   collection,
   deleteDoc,
@@ -146,6 +147,7 @@ export const cleanupLadderTestData = async ({
   const cancellation = await cleanupMatchCancellationTestData();
   const teams = await cleanupTeamFlowTestData();
   const chats = await cleanupChatsTabTestData(testUser);
+  const proLevel = await cleanupProLevel(testUser);
 
   const notificationLadderIds = [
     ...ladderIds,
@@ -189,5 +191,6 @@ export const cleanupLadderTestData = async ({
     cancellation,
     teams,
     chats,
+    proLevel,
   };
 };

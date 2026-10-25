@@ -85,6 +85,12 @@ const ProfilePerformance = ({ profile }) => {
           stats={profileDetail.tournamentStats}
           competitionType={COMPETITION_TYPES.TOURNAMENT}
         />
+        <Divider />
+        <Heading>Ladder Victories</Heading>
+        <CompetitionStatsDisplay
+          stats={profileDetail.ladderStats}
+          competitionType={COMPETITION_TYPES.LADDER}
+        />
         <PerformanceStats statData={statData} selectedPlayer={profileDetail} />
       </>
     ),
