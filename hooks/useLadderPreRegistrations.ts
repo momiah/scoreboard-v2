@@ -3,7 +3,10 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
+  limit,
   onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -14,7 +17,11 @@ import {
   LADDER_PRE_REGISTRATIONS_COLLECTION,
   LADDER_PRE_REGISTRATION_STATUS,
 } from "@shared";
-import type { LadderPreRegistration, UserProfile } from "@shared/types";
+import type {
+  LadderPreRegistrant,
+  LadderPreRegistration,
+  UserProfile,
+} from "@shared/types";
 import { db } from "../services/firebase.config";
 import { UserContext } from "../context/UserContext";
 
@@ -27,14 +34,16 @@ interface UseLadderPreRegistrationsReturn {
   leave: (preRegistrationId: string) => Promise<void>;
 }
 
-const registrantRef = (preRegistrationId: string, userId: string) =>
-  doc(
+const registrantsRef = (preRegistrationId: string) =>
+  collection(
     db,
     LADDER_PRE_REGISTRATIONS_COLLECTION,
     preRegistrationId,
     LADDER_PRE_REGISTRANTS_SUBCOLLECTION,
-    userId,
   );
+
+const registrantRef = (preRegistrationId: string, userId: string) =>
+  doc(registrantsRef(preRegistrationId), userId);
 
 export const useLadderPreRegistrations =
   (): UseLadderPreRegistrationsReturn => {
@@ -42,7 +51,8 @@ export const useLadderPreRegistrations =
       currentUser: UserProfile | null;
     };
     const userId = currentUser?.userId;
-    const email = currentUser?.email ?? "";
+    const username = currentUser?.username ?? "";
+    const profileImage = currentUser?.profileImage ?? "";
     const [preRegistrations, setPreRegistrations] = useState<
       LadderPreRegistration[]
     >([]);
@@ -106,12 +116,13 @@ export const useLadderPreRegistrations =
         if (!userId) return;
         await setDoc(registrantRef(preRegistrationId, userId), {
           userId,
-          email,
+          username,
+          profileImage,
           createdAt: serverTimestamp(),
           notifiedAt: null,
         });
       },
-      [userId, email],
+      [userId, username, profileImage],
     );
 
     const leave = useCallback(
@@ -131,3 +142,38 @@ export const useLadderPreRegistrations =
       leave,
     };
   };
+
+/** The most recent registrants (for avatars) and how many there are in total. */
+export const useLadderPreRegistrants = (
+  preRegistrationId: string | undefined,
+  previewSize: number,
+): { registrants: LadderPreRegistrant[]; total: number } => {
+  const [registrants, setRegistrants] = useState<LadderPreRegistrant[]>([]);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    setRegistrants([]);
+    setTotal(0);
+    if (!preRegistrationId) return;
+
+    const registrantsQuery = registrantsRef(preRegistrationId);
+    return onSnapshot(
+      query(registrantsQuery, orderBy("createdAt", "desc"), limit(previewSize)),
+      (snapshot) => {
+        setRegistrants(
+          snapshot.docs.map(
+            (registrant) => registrant.data() as LadderPreRegistrant,
+          ),
+        );
+        getCountFromServer(registrantsQuery)
+          .then((count) => setTotal(count.data().count))
+          .catch((error) =>
+            console.error("Failed to count ladder pre-registrants:", error),
+          );
+      },
+      (error) => console.error("Failed to load ladder pre-registrants:", error),
+    );
+  }, [preRegistrationId, previewSize]);
+
+  return { registrants, total };
+};

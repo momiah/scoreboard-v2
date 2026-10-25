@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
-  Share,
 } from "react-native";
 import {
   useNavigation,
@@ -16,9 +15,13 @@ import {
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { formatCurrency } from "@shared";
-import type { LadderPreRegistration } from "@shared/types";
+import type { LadderPreRegistrant, LadderPreRegistration } from "@shared/types";
 import PreRegistrationHeader from "../../../components/LadderPreRegistration/PreRegistrationHeader";
-import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
+import RegistrantAvatars from "../../../components/LadderPreRegistration/RegistrantAvatars";
+import {
+  useLadderPreRegistrants,
+  useLadderPreRegistrations,
+} from "../../../hooks/useLadderPreRegistrations";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
   formatPrizePool,
@@ -33,23 +36,21 @@ type SignupRoute = RouteProp<
   "LadderPreRegistrationSignup"
 >;
 
+const AVATAR_PREVIEW_SIZE = 10;
+
 const LadderPreRegistrationSignup: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
   const { params } = useRoute<SignupRoute>();
-  const {
-    isSignedIn,
-    loading,
-    preRegistrations,
-    registeredIds,
-    preRegister,
-    leave,
-  } = useLadderPreRegistrations();
+  const { loading, preRegistrations, registeredIds, leave } =
+    useLadderPreRegistrations();
+  const { registrants, total } = useLadderPreRegistrants(
+    params?.preRegistrationId,
+    AVATAR_PREVIEW_SIZE,
+  );
   const option = preRegistrations.find(
     (preRegistration) =>
       preRegistration.preRegistrationId === params?.preRegistrationId,
   );
-  const [submitting, setSubmitting] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   if (!option) {
     return (
@@ -68,26 +69,6 @@ const LadderPreRegistrationSignup: React.FC = () => {
 
   const cash = isCashLadder(option);
   const registered = registeredIds.has(option.preRegistrationId);
-
-  const handlePreRegister = async () => {
-    if (!isSignedIn) {
-      navigation.navigate("Login");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await preRegister(option.preRegistrationId);
-      setShowDetails(false);
-    } catch (error) {
-      console.error("Failed to pre-register:", error);
-      Alert.alert(
-        "Couldn't pre-register",
-        "Check your connection and try again.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleLeave = () => {
     Alert.alert(
@@ -114,99 +95,95 @@ const LadderPreRegistrationSignup: React.FC = () => {
     );
   };
 
-  const handleInvite = () =>
-    Share.share({
-      message: `I've pre-registered for the ${option.name} ${cash ? "Cash" : "Community"} Ladder on Court Champs. Join me: https://courtchamps.com`,
-    });
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.screen }}>
       <PreRegistrationHeader title={option.name} />
-      {loading ? (
-        <ActivityIndicator color={COLORS.blue} style={{ marginTop: 40 }} />
-      ) : registered && !showDetails ? (
-        <Confirmation
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        <LadderDetails
           option={option}
-          onInvite={handleInvite}
-          onShowDetails={() => setShowDetails(true)}
-          onSeeOtherLadders={() => navigation.goBack()}
-          onLeave={handleLeave}
+          registrants={registrants}
+          total={total}
         />
-      ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-          <LadderDetails
-            option={option}
-            onHowToPlay={() =>
-              navigation.navigate("LadderPreRegistrationHowToPlay", {
-                preRegistrationId: option.preRegistrationId,
+
+        {registered ? (
+          <RegisteredNotice testID="ladder-pre-registration-registered">
+            <Ionicons
+              name="checkmark-circle"
+              size={16}
+              color={COLORS.success}
+            />
+            <RegisteredText>You&apos;re on the list</RegisteredText>
+          </RegisteredNotice>
+        ) : null}
+
+        <HowToPlayButton
+          testID="ladder-pre-registration-how-to-play"
+          cash={cash}
+          activeOpacity={0.85}
+          onPress={() =>
+            navigation.navigate("LadderPreRegistrationHowToPlay", {
+              preRegistrationId: option.preRegistrationId,
+            })
+          }
+        >
+          <Ionicons
+            name="book-outline"
+            size={16}
+            color={cash ? COLORS.goldText : "white"}
+          />
+          <HowToPlayText cash={cash}>How to play</HowToPlayText>
+        </HowToPlayButton>
+
+        {registered ? null : (
+          <CenteredMuted>
+            {cash
+              ? `${formatCurrency(option.entryFee, option.currencyType)}* entry when it opens. Pre-register at the end of the guide; nothing to pay today.`
+              : "Free to enter. Pre-register at the end of the guide."}
+          </CenteredMuted>
+        )}
+
+        <LinksRow>
+          <TextLink
+            testID="ladder-pre-registration-rules"
+            onPress={() =>
+              navigation.navigate("LadderPreRegistrationRules", {
+                ladderType: option.ladderType,
               })
             }
-          />
-
+          >
+            <TextLinkLabel>Ladder rules</TextLinkLabel>
+          </TextLink>
+          <Muted>·</Muted>
+          <TextLink
+            testID="ladder-pre-registration-terms"
+            onPress={() => navigation.navigate("LadderPreRegistrationTerms")}
+          >
+            <TextLinkLabel>Terms &amp; Conditions</TextLinkLabel>
+          </TextLink>
           {registered ? (
-            <RegisteredNotice>
-              <Ionicons
-                name="checkmark-circle"
-                size={16}
-                color={COLORS.success}
-              />
-              <RegisteredText>You&apos;re on the list</RegisteredText>
-            </RegisteredNotice>
-          ) : (
             <>
-              <CenteredMuted>
-                {cash
-                  ? `${formatCurrency(option.entryFee, option.currencyType)}* entry when it opens. Nothing to pay today.`
-                  : "Free to enter. We'll let you know the moment it opens."}
-              </CenteredMuted>
-              <PrimaryButton
-                testID="ladder-pre-registration-submit"
-                cash={cash}
-                disabled={submitting}
-                onPress={handlePreRegister}
+              <Muted>·</Muted>
+              <TextLink
+                testID="ladder-pre-registration-leave"
+                onPress={handleLeave}
               >
-                {submitting ? (
-                  <ActivityIndicator color={cash ? COLORS.goldText : "white"} />
-                ) : (
-                  <PrimaryButtonText cash={cash}>
-                    {isSignedIn ? "Pre-register" : "Sign in to pre-register"}
-                  </PrimaryButtonText>
-                )}
-              </PrimaryButton>
+                <TextLinkLabel danger>Leave the list</TextLinkLabel>
+              </TextLink>
             </>
-          )}
+          ) : null}
+        </LinksRow>
 
-          <LinksRow>
-            <TextLink
-              testID="ladder-pre-registration-rules"
-              onPress={() =>
-                navigation.navigate("LadderPreRegistrationRules", {
-                  ladderType: option.ladderType,
-                })
-              }
-            >
-              <TextLinkLabel>Ladder rules</TextLinkLabel>
-            </TextLink>
-            <Muted>·</Muted>
-            <TextLink
-              testID="ladder-pre-registration-terms"
-              onPress={() => navigation.navigate("LadderPreRegistrationTerms")}
-            >
-              <TextLinkLabel>Terms &amp; Conditions</TextLinkLabel>
-            </TextLink>
-          </LinksRow>
-
-          {cash ? <Footnote>{getPlatformFeeFootnote(option)}</Footnote> : null}
-        </ScrollView>
-      )}
+        {cash ? <Footnote>{getPlatformFeeFootnote(option)}</Footnote> : null}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const LadderDetails: React.FC<{
   option: LadderPreRegistration;
-  onHowToPlay: () => void;
-}> = ({ option, onHowToPlay }) => {
+  registrants: LadderPreRegistrant[];
+  total: number;
+}> = ({ option, registrants, total }) => {
   const cash = isCashLadder(option);
   const noun = getEntrantNoun(option);
 
@@ -224,6 +201,8 @@ const LadderDetails: React.FC<{
           {noun}s
         </Muted>
       </PrizePotCard>
+
+      <RegistrantAvatars registrants={registrants} total={total} noun={noun} />
 
       <SectionTitle>Prize breakdown</SectionTitle>
       <Table testID="ladder-pre-registration-prize-table">
@@ -263,70 +242,7 @@ const LadderDetails: React.FC<{
         for a full ladder of {option.maxPlayers.toLocaleString("en-GB")} {noun}
         s.
       </TableNote>
-
-      <HowToPlayButton
-        testID="ladder-pre-registration-signup-how-to-play"
-        activeOpacity={0.85}
-        onPress={onHowToPlay}
-      >
-        <Ionicons name="book-outline" size={16} color="white" />
-        <HowToPlayText>How to play</HowToPlayText>
-      </HowToPlayButton>
     </>
-  );
-};
-
-const Confirmation: React.FC<{
-  option: LadderPreRegistration;
-  onInvite: () => void;
-  onShowDetails: () => void;
-  onSeeOtherLadders: () => void;
-  onLeave: () => void;
-}> = ({ option, onInvite, onShowDetails, onSeeOtherLadders, onLeave }) => {
-  const cash = isCashLadder(option);
-
-  return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-      <ConfirmationTop>
-        <SuccessCircle>
-          <Ionicons name="checkmark" size={36} color={COLORS.success} />
-        </SuccessCircle>
-        <ConfirmationTitle>You&apos;re on the list</ConfirmationTitle>
-        <CenteredMuted>
-          We&apos;ll notify you in the app and email you the moment{" "}
-          {option.name} opens, so you can grab your place early.
-        </CenteredMuted>
-      </ConfirmationTop>
-
-      <Panel style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <Ionicons name="people-outline" size={22} color={COLORS.blue} />
-        <ConfirmationTextBlock>
-          <InviteTitle>
-            {cash
-              ? "Bigger ladder, bigger prize"
-              : "Bigger ladder, bigger rank"}
-          </InviteTitle>
-          <Muted>
-            {cash
-              ? "Every player who joins adds to the pool."
-              : "Every player who joins adds CP to the pool."}
-          </Muted>
-        </ConfirmationTextBlock>
-      </Panel>
-
-      <PrimaryButton testID="ladder-pre-registration-invite" onPress={onInvite}>
-        <PrimaryButtonText>Invite friends</PrimaryButtonText>
-      </PrimaryButton>
-      <OutlineButton onPress={onSeeOtherLadders}>
-        <OutlineButtonText>See other ladders</OutlineButtonText>
-      </OutlineButton>
-      <TextButton onPress={onShowDetails}>
-        <TextButtonLabel>View ladder details</TextButtonLabel>
-      </TextButton>
-      <TextButton testID="ladder-pre-registration-leave" onPress={onLeave}>
-        <TextButtonLabel>Leave the list</TextButtonLabel>
-      </TextButton>
-    </ScrollView>
   );
 };
 
@@ -360,14 +276,6 @@ const SectionTitle = styled.Text({
   marginBottom: 6,
 });
 
-const Panel = styled.View({
-  backgroundColor: COLORS.card,
-  borderRadius: 14,
-  paddingVertical: 8,
-  paddingHorizontal: 10,
-  marginBottom: 10,
-});
-
 const Table = styled.View({
   borderRadius: 12,
   overflow: "hidden",
@@ -396,7 +304,7 @@ const PlaceCell = styled.View({
 const ValueCell = styled.View({
   flex: 1,
   justifyContent: "center",
-  alignItems: "center",
+  alignItems: "flex-start",
   paddingVertical: 14,
 });
 
@@ -427,22 +335,26 @@ const TableNote = styled.Text({
   lineHeight: 16,
 });
 
-const HowToPlayButton = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  backgroundColor: COLORS.blue,
-  borderRadius: 12,
-  paddingVertical: 15,
-  marginTop: 20,
-});
+const HowToPlayButton = styled.TouchableOpacity<{ cash: boolean }>(
+  ({ cash }: { cash: boolean }) => ({
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: cash ? COLORS.prizeGold : COLORS.blue,
+    borderRadius: 12,
+    paddingVertical: 15,
+    marginTop: 16,
+  }),
+);
 
-const HowToPlayText = styled.Text({
-  color: "white",
-  fontSize: 15,
-  fontWeight: "bold",
-});
+const HowToPlayText = styled.Text<{ cash: boolean }>(
+  ({ cash }: { cash: boolean }) => ({
+    color: cash ? COLORS.goldText : "white",
+    fontSize: 15,
+    fontWeight: "bold",
+  }),
+);
 
 const LinksRow = styled.View({
   flexDirection: "row",
@@ -456,10 +368,12 @@ const TextLink = styled.TouchableOpacity({
   paddingVertical: 4,
 });
 
-const TextLinkLabel = styled.Text({
-  color: COLORS.blue,
-  fontSize: 13,
-});
+const TextLinkLabel = styled.Text<{ danger?: boolean }>(
+  ({ danger }: { danger?: boolean }) => ({
+    color: danger ? COLORS.danger : COLORS.blue,
+    fontSize: 13,
+  }),
+);
 
 const Muted = styled.Text({
   color: COLORS.muted,
@@ -475,50 +389,6 @@ const CenteredMuted = styled.Text({
   lineHeight: 18,
 });
 
-const PrimaryButton = styled.TouchableOpacity<{ cash?: boolean }>(
-  ({ cash }: { cash?: boolean }) => ({
-    backgroundColor: cash ? COLORS.prizeGold : COLORS.blue,
-    borderRadius: 10,
-    paddingVertical: 13,
-    alignItems: "center",
-    marginTop: 6,
-  }),
-);
-
-const PrimaryButtonText = styled.Text<{ cash?: boolean }>(
-  ({ cash }: { cash?: boolean }) => ({
-    color: cash ? COLORS.goldText : "white",
-    fontSize: 15,
-    fontWeight: "bold",
-  }),
-);
-
-const OutlineButton = styled.TouchableOpacity({
-  borderWidth: 1,
-  borderColor: COLORS.blue,
-  borderRadius: 10,
-  paddingVertical: 13,
-  alignItems: "center",
-  marginTop: 10,
-});
-
-const OutlineButtonText = styled.Text({
-  color: COLORS.blue,
-  fontSize: 15,
-  fontWeight: "bold",
-});
-
-const TextButton = styled.TouchableOpacity({
-  alignItems: "center",
-  paddingVertical: 10,
-  marginTop: 4,
-});
-
-const TextButtonLabel = styled.Text({
-  color: COLORS.muted,
-  fontSize: 13,
-});
-
 const RegisteredNotice = styled.View({
   flexDirection: "row",
   alignItems: "center",
@@ -530,38 +400,6 @@ const RegisteredNotice = styled.View({
 const RegisteredText = styled.Text({
   color: COLORS.success,
   fontSize: 14,
-  fontWeight: "bold",
-});
-
-const ConfirmationTop = styled.View({
-  alignItems: "center",
-  paddingTop: 32,
-  paddingBottom: 12,
-});
-
-const SuccessCircle = styled.View({
-  width: 72,
-  height: 72,
-  borderRadius: 36,
-  backgroundColor: COLORS.successTint,
-  alignItems: "center",
-  justifyContent: "center",
-});
-
-const ConfirmationTitle = styled.Text({
-  color: "white",
-  fontSize: 20,
-  fontWeight: "bold",
-  marginTop: 14,
-});
-
-const ConfirmationTextBlock = styled.View({
-  flex: 1,
-});
-
-const InviteTitle = styled.Text({
-  color: "white",
-  fontSize: 13,
   fontWeight: "bold",
 });
 

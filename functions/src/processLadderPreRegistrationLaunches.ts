@@ -61,7 +61,7 @@ const notifyRegistrant = async (
   });
   if (!claimed) return;
 
-  const { userId, email: storedEmail } = registrant.data();
+  const { userId } = registrant.data();
 
   await sendNotification({
     createdAt: new Date(),
@@ -77,7 +77,7 @@ const notifyRegistrant = async (
 
   const userDoc = await db.collection("users").doc(userId).get();
   const email =
-    storedEmail ||
+    userDoc.data()?.email ||
     (await getAuth()
       .getUser(userId)
       .then((user) => user.email)

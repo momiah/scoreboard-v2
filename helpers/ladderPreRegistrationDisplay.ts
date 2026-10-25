@@ -27,6 +27,7 @@ export const LADDER_PRE_REGISTRATION_COLORS = {
   muted: "#aaa",
   body: "#c9d6e3",
   success: "#00C853",
+  danger: "#FF6B6B",
   successTint: "#0d3b1f",
 };
 

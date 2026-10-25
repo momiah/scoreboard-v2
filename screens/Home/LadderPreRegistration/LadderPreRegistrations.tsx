@@ -96,19 +96,6 @@ const LadderPreRegistrations: React.FC = () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.screen }}>
       <PreRegistrationHeader title="Ladders" />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-        <HowToPlayButton
-          testID="ladder-pre-registration-how-to-play"
-          activeOpacity={0.85}
-          onPress={() =>
-            navigation.navigate("LadderPreRegistrationHowToPlay", {
-              preRegistrationId: visible[0]?.preRegistrationId,
-            })
-          }
-        >
-          <Ionicons name="book-outline" size={16} color="white" />
-          <HowToPlayText>How to play</HowToPlayText>
-        </HowToPlayButton>
-
         <LineTabs tabs={TABS} activeTab={activeTab} onTabPress={setActiveTab} />
 
         <TabContent>
@@ -131,23 +118,6 @@ const LadderPreRegistrations: React.FC = () => {
     </SafeAreaView>
   );
 };
-
-const HowToPlayButton = styled.TouchableOpacity({
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  backgroundColor: COLORS.blue,
-  borderRadius: 12,
-  paddingVertical: 15,
-  marginBottom: 12,
-});
-
-const HowToPlayText = styled.Text({
-  color: "white",
-  fontSize: 15,
-  fontWeight: "bold",
-});
 
 const TabContent = styled.View({
   marginTop: 12,
