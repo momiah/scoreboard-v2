@@ -56,14 +56,10 @@ onFlowStart:
     visible: "Dispute submitted for review"
     timeout: 10000
 
-- tapOn:
-    id: "tab-home"
-- tapOn:
-    id: "maestro-mock-resolve-doubles-void"
-- extendedWaitUntil:
-    visible: "Resolved"
-    timeout: 15000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-resolve-doubles-void"
 
 - tapOn:
     id: "tab-competitions"

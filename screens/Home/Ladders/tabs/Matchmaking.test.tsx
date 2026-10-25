@@ -128,9 +128,7 @@ const ladder = {
   courtIds: ["courtB"],
   registrationOpensAt: moment().subtract(1, "days").toDate(),
   seasonStartsAt: moment().subtract(1, "days").toDate(),
-  seasonEndsAt: moment().add(40, "days").toDate(),
   playoffStartsAt: moment().add(30, "days").toDate(),
-  playoffEndsAt: moment().add(40, "days").toDate(),
 } as unknown as Ladder;
 
 const postedMatch = {

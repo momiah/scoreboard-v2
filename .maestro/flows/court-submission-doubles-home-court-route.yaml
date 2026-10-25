@@ -21,10 +21,12 @@ onFlowStart:
     visible: ".*open Maestro Home Court Doubles Ladder on Summary.*"
     timeout: 15000
 - tapOn: ".*open Maestro Home Court Doubles Ladder on Summary.*"
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       id: "ladder-home-court"
-    timeout: 20000
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
 - tapOn:
     id: "ladder-home-court-add"
 - extendedWaitUntil:
@@ -83,14 +85,10 @@ onFlowStart:
     id: "search-court-add"
 - tapOn:
     id: "search-court-close"
-- tapOn:
-    id: "tab-home"
-- tapOn:
-    id: "maestro-mock-approve-new-submission-doubles"
-- extendedWaitUntil:
-    visible: "Mocked"
-    timeout: 30000
-- tapOn: "OK"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-mock-approve-new-submission-doubles"
 - tapOn:
     id: "tab-competitions"
 - runFlow:

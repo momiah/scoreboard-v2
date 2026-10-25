@@ -25,6 +25,7 @@ import {
 } from "@shared";
 import { buildSeedLadderTeam } from "./buildSeedLadderTeam";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
+import { deleteFixtureLadderRoster } from "./fixtureUserCleanup";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DAYS_UNTIL_PLAYOFFS = 50;
@@ -219,6 +220,7 @@ export const seedAddApproveGameFlowDoubles = async ({
     }
     return shell;
   });
+  await deleteFixtureLadderRoster(MAESTRO_AGD_LADDER_ID);
   await setDoc(doc(db, "ladders", MAESTRO_AGD_LADDER_ID), {
     ladderId: MAESTRO_AGD_LADDER_ID,
     name: "Maestro Add-Game Flow Doubles Ladder",
@@ -234,9 +236,7 @@ export const seedAddApproveGameFlowDoubles = async ({
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
-    seasonEndsAt: new Date(),
     playoffStartsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS),
-    playoffEndsAt: daysFromNow(DAYS_UNTIL_PLAYOFFS + 10),
     entryFee: 0,
     currencyType: "GBP",
     minRank: 0,

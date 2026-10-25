@@ -2,48 +2,29 @@ appId: com.courtchamp
 ---
 - tapOn:
     id: "tab-home"
-- runFlow:
-    when:
-      platform: Android
+- repeat:
+    times: 6
     commands:
-      - repeat:
-          times: 8
-          commands:
-            - swipe:
-                start: 50%, 25%
-                end: 50%, 85%
-                duration: 150
-      - repeat:
-          while:
-            notVisible:
-              id: ${BUTTON}
-          times: 40
-          commands:
-            - swipe:
-                start: 50%, 70%
-                end: 50%, 30%
-                duration: 400
       - swipe:
-          start: 50%, 60%
-          end: 50%, 50%
+          start: 50%, 25%
+          end: 50%, 85%
           duration: 300
-      - waitForAnimationToEnd
-- runFlow:
-    when:
-      platform: iOS
-      true: ${BUTTON.indexOf('doubles') !== -1}
-    commands:
-      - scrollUntilVisible:
-          element:
-            id: ${BUTTON}
-          direction: DOWN
-          timeout: 60000
-          speed: 60
-      - waitForAnimationToEnd
+- tapOn:
+    id: "maestro-harness-filter"
+    point: 98%,50%
+- eraseText: 120
+- inputText: ${BUTTON}
+- extendedWaitUntil:
+    visible:
+      id: "maestro-harness-filter-applied"
+      text: ${BUTTON}
+    timeout: 20000
+- tapOn:
+    id: "maestro-harness-filter-applied"
 - waitForAnimationToEnd
 - tapOn:
     id: ${BUTTON}
 - extendedWaitUntil:
-    visible: "Seeded"
+    visible: "(Seeded|Mocked|Resolved|Requested)"
     timeout: 90000
 - tapOn: "OK"

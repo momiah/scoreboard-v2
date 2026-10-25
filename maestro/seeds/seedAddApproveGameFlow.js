@@ -23,6 +23,7 @@ import {
   notificationSchema,
 } from "@shared";
 import { baselineProfileDetail, toPlayer } from "./seedRejectGameFlow";
+import { deleteFixtureLadderRoster } from "./fixtureUserCleanup";
 
 export const MAESTRO_AG_LADDER_ID = "maestro-add-game-flow-ladder";
 export const MAESTRO_AG_MATCH_ID = "maestro-add-game-flow-match";
@@ -157,6 +158,7 @@ export const seedAddApproveGameFlow = async ({
     }
     return shell;
   });
+  await deleteFixtureLadderRoster(MAESTRO_AG_LADDER_ID);
   await setDoc(doc(db, "ladders", MAESTRO_AG_LADDER_ID), {
     ladderId: MAESTRO_AG_LADDER_ID,
     name: "Maestro Add-Game Flow Ladder",
@@ -172,17 +174,10 @@ export const seedAddApproveGameFlow = async ({
     registrationOpensAt: new Date(),
     registrationClosesAt: new Date(),
     seasonStartsAt: new Date(),
-    seasonEndsAt: new Date(),
     playoffStartsAt:
       playoffStartsInDays === null
         ? new Date()
         : new Date(Date.now() + playoffStartsInDays * 24 * 60 * 60 * 1000),
-    playoffEndsAt:
-      playoffStartsInDays === null
-        ? new Date()
-        : new Date(
-            Date.now() + (playoffStartsInDays + 10) * 24 * 60 * 60 * 1000,
-          ),
     entryFee: 0,
     currencyType: "GBP",
     minRank: 0,

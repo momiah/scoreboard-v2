@@ -22,10 +22,12 @@ onFlowStart:
     visible: ".*open Maestro Home Court Doubles Ladder on Summary.*"
     timeout: 15000
 - tapOn: ".*open Maestro Home Court Doubles Ladder on Summary.*"
-- extendedWaitUntil:
-    visible:
+- scrollUntilVisible:
+    element:
       id: "ladder-home-court"
-    timeout: 20000
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
 - tapOn:
     id: "ladder-home-court-add"
 

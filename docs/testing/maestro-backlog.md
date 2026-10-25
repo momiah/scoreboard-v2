@@ -458,3 +458,72 @@ and `recordLadderArrival`'s checks.
 Cleanup: `cleanupLadderTestData` deletes the whole playoffs ladder (ties and
 every match, including `-leg1`, `-leg2`, `-leg3`), the fixture users and courts,
 and the test user's notifications for the ladder.
+
+## Ladder dates (from the registration opening date)
+
+The admin picks only `registrationOpensAt`; `deriveLadderDates` in
+courtchamps-shared sets `seasonStartsAt` (+30 days), `registrationClosesAt`
+(+60) and `playoffStartsAt` (+90) from `LADDER_SEASON_START_DAYS`,
+`LADDER_REGISTRATION_CLOSE_DAYS` and `LADDER_PLAYOFF_START_DAYS`.
+`seasonEndsAt` and `playoffEndsAt` no longer exist; playoffs end when the Final
+is decided (`playoffsCompletedAt`). New seeds should build a ladder's dates with
+`deriveLadderDates` rather than hand-picked offsets.
+
+1. `ladder-summary-phase-timeline`: Summary's phase timeline shows Registration
+   Open from opening to registration close, Registration Closed from
+   registration close to playoffs start, Playoffs from playoffs start with no end
+   date, and Completed from `playoffsCompletedAt` once the Final is decided.
+2. The Schedule and Matchmaking day strips end at playoffs start.
+3. Joining before `registrationOpensAt` shows "Registration for this ladder
+   hasn't opened yet"; joining works until `registrationClosesAt`; play continues
+   until the posting, results and standings deadlines before playoffs start.
+4. Not Maestro (website): the ladder form has one "Registration opens" picker
+   with a preview of the three derived dates, and the ladder page's Ladder
+   activity panel lists the four dates with "In N days" / "N days ago".
+
+## Competition prize type (Cash / Community)
+
+Branch `claude/prize-type-cash-community` (from `main`) and courtchamps-shared
+`prizeTypes.CASH` / `COMMUNITY`, `getPrizeType`, `normalizePrizeType`. A
+competition's prize type follows its entry fee: free is Community, paid is
+Cash. Older app builds still write Trophy or Medal, which must read as
+Community.
+
+1. `league-invite-prize-tag` / `tournament-invite-prize-tag`: the invite screens
+   (Invite Action modal, Invite Player modal, Invite Player screen) show the
+   Community tag.
+2. `tournament-prize-tag`: the Tournament screen shows Community where it showed
+   Medal.
+3. `competition-legacy-prize-type`: seed a league and a tournament stored as
+   Trophy / Medal; both show Community.
+4. Creating a league or tournament saves `prizeType: "Community"`.
+5. `backfillCompetitionPrizeType` (temporary Home button) rewrites every league
+   and tournament; run it once, then remove the button.
+6. `maestro/seeds/seedChatsTab.js` still writes `"Trophy"`; switch it to
+   `prizeTypes.COMMUNITY`.
+7. Not Maestro (website): the join page shows a league's end date for every
+   league (it used to depend on the Trophy prize type).
+
+## Ladder pre-registration
+
+Branch `claude/ladder-pre-registration` (from `main`). Pair the seed with a
+delete helper keyed on the same fixture IDs. The data model is due to move to a
+`ladderPreRegistrations` collection with per-ladder registrants; write these
+flows against that version.
+
+1. `pre-registration-banner`: the Home banner shows the top cash prize pool and
+   opens the Ladders list.
+2. `pre-registration-list`: two Cash Ladders and two Community Ladders, each
+   cash card showing "£20* entry" and the footnote with the £2 platform fee and
+   £22 to join; a pre-registered ladder shows "Pre-registered".
+3. `pre-registration-signup`: the prize breakdown matches the shared payout split
+   for a full ladder (cash and CP each), the size table scales with players, and
+   the season wording matches the registration-derived dates.
+4. `pre-registration-join-and-leave`: Pre-register → "You're on the list";
+   Leave the list → confirm → the list no longer shows Pre-registered.
+5. `pre-registration-signed-out`: the button reads "Sign in to pre-register"
+   and opens Login.
+6. Invite friends opens the share sheet.
+7. Not Maestro (functions, emulator): when a matching ladder opens, each
+   pre-registered player gets one in-app notification and one queued `mail`
+   document, and `notifiedAt` / `ladderId` are set so nobody is notified twice.
