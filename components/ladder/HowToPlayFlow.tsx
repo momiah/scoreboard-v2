@@ -335,13 +335,13 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
                   gold: true,
                   text: (
                     <>
-                      {"Beat an opponent with "}
-                      <Accent>at least double your CP</Accent>
-                      {" and earn "}
+                      {"Beat a "}
+                      <Accent>higher-ranked opponent</Accent>
+                      {" and win "}
                       <Accent
                         gold
-                      >{`${UPSET_MULTIPLIER_RANGE} extra CP`}</Accent>
-                      {" on top of your win."}
+                      >{`up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
+                      {"."}
                     </>
                   ),
                 },
@@ -350,12 +350,12 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
                   red: true,
                   text: (
                     <>
-                      {"Lose to an opponent with "}
-                      <Accent>half your CP or less</Accent>
-                      {" and you "}
+                      {"Lose against a "}
+                      <Accent>lower-ranked opponent</Accent>
+                      {" and "}
                       <Accent
                         red
-                      >{`lose ${UPSET_MULTIPLIER_RANGE} extra CP`}</Accent>
+                      >{`lose up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
                       {"."}
                     </>
                   ),
@@ -1031,8 +1031,8 @@ const FinalsPage: React.FC<{
   );
 };
 
-/** The extra CP for an upset: from double the opponent's CP, capped at 3×. */
-const UPSET_MULTIPLIER_RANGE = "2× to 3×";
+/** The cap on the extra CP for an upset. */
+const UPSET_MAX_MULTIPLIER = "3×";
 
 /** An Assassin's winning margin, worded for the sport. */
 const DECISIVE_WIN_LEAD = "10\u2011point lead";
