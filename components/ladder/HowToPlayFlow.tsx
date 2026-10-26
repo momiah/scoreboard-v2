@@ -108,11 +108,17 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
   const noun = ladderEntrantNoun(ladder?.ladderType);
-  const { playoffSpots } = getLadderPlayoffStructure(maxPlayers);
+  const { playoffSpots, inTheMoney } = getLadderPlayoffStructure(maxPlayers);
 
   const finalsPage: OnboardingPage = {
     key: "finals",
-    render: () => <FinalsPage onReadRules={onReadRules} />,
+    render: () => (
+      <FinalsPage
+        onReadRules={onReadRules}
+        inTheMoney={inTheMoney}
+        isPaid={(ladder?.entryFee ?? 0) > 0}
+      />
+    ),
   };
 
   const playoffPages: OnboardingPage[] = [
@@ -892,7 +898,11 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   );
 };
 
-const FinalsPage: React.FC<{ onReadRules: () => void }> = ({ onReadRules }) => {
+const FinalsPage: React.FC<{
+  onReadRules: () => void;
+  inTheMoney: number;
+  isPaid: boolean;
+}> = ({ onReadRules, inTheMoney, isPaid }) => {
   const compact = useCompactScreen();
   const [champion, ...placed] = ladders;
   const heroSize = compact ? 104 : 128;
@@ -937,9 +947,7 @@ const FinalsPage: React.FC<{ onReadRules: () => void }> = ({ onReadRules }) => {
               <>
                 {"Win the Final to be crowned "}
                 <Accent gold>champion</Accent>
-                {" and take the "}
-                <Accent gold>biggest prize</Accent>
-                {"."}
+                {`! Top\u00A0${inTheMoney} ${isPaid ? "paid" : "awarded CP"} in a full ladder.`}
               </>
             ),
           },
