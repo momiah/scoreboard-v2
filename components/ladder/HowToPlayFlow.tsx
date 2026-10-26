@@ -579,7 +579,8 @@ const ObjectiveTiles: React.FC<{ playoffSpots: number }> = ({
     </Tiles>
     <Reveal order={5}>
       <PageText>
-        Lose a game and you lose CP. The more CP you have, the higher you rank.
+        The more CP you earn, the higher you rank. But bear in mind that you are
+        penalised CP if you lose games.
       </PageText>
     </Reveal>
   </>
