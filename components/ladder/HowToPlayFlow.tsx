@@ -518,7 +518,6 @@ interface Card {
   icon: keyof typeof Ionicons.glyphMap;
   text: React.ReactNode;
   gold?: boolean;
-  testID?: string;
 }
 
 const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
@@ -528,7 +527,7 @@ const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
   <BeatList>
     {cards.map((card, index) => (
       <Reveal key={index} order={firstOrder + index} from="right">
-        <Beat testID={card.testID}>
+        <Beat>
           <BeatIcon gold={card.gold}>
             <Ionicons
               name={card.icon}
@@ -746,19 +745,14 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
               </>
             ),
           },
-          {
-            icon: "people-outline",
-            testID: "how-to-play-playoff-highlight",
-            text: (
-              <>
-                {"The bracket size depends on "}
-                <Accent blue>how many players have registered</Accent>
-                {" when registration closes."}
-              </>
-            ),
-          },
         ]}
       />
+      <Reveal order={4}>
+        <FootNote testID="how-to-play-playoff-highlight">
+          The bracket size depends on how many players have registered when
+          registration closes.
+        </FootNote>
+      </Reveal>
 
       <Table>
         <TableRow header>
