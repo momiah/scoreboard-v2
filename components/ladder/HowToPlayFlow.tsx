@@ -781,6 +781,76 @@ interface PlayoffsPageProps {
   currencyType: string;
 }
 
+const BRACKET = {
+  slotWidth: 40,
+  slotHeight: 10,
+  slotGap: 24,
+  connector: 12,
+  trophy: 26,
+};
+
+/** A four-into-one knockout bracket that fills in round by round. */
+const BracketGraphic: React.FC = () => {
+  const { slotWidth, slotHeight, slotGap, connector, trophy } = BRACKET;
+  const mid = (slot: number) => slot * slotGap + slotHeight / 2;
+  const semiX = slotWidth + connector;
+  const finalX = semiX + slotWidth + connector;
+  const semiMids = [(mid(0) + mid(1)) / 2, (mid(2) + mid(3)) / 2];
+  const finalMid = (semiMids[0] + semiMids[1]) / 2;
+  const fill = {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  };
+  return (
+    <BracketBox
+      style={{ width: finalX + trophy + 4, height: mid(3) + slotHeight / 2 }}
+    >
+      <Reveal style={fill} from="right">
+        {[0, 1, 2, 3].map((slot) => (
+          <BracketSlot key={slot} style={{ left: 0, top: slot * slotGap }} />
+        ))}
+        {[0, 2].map((slot) => (
+          <BracketJoin
+            key={slot}
+            style={{ left: slotWidth, top: mid(slot), height: slotGap }}
+          />
+        ))}
+      </Reveal>
+      <Reveal order={1} style={fill} from="right">
+        {semiMids.map((semiMid) => (
+          <BracketSlot
+            key={semiMid}
+            semi
+            style={{ left: semiX, top: semiMid - slotHeight / 2 }}
+          />
+        ))}
+        <BracketJoin
+          style={{
+            left: semiX + slotWidth,
+            top: semiMids[0],
+            height: semiMids[1] - semiMids[0],
+          }}
+        />
+      </Reveal>
+      <Reveal order={2} style={fill} from="pop">
+        <Ionicons
+          name="trophy"
+          size={trophy}
+          color="#FFC800"
+          style={{
+            position: "absolute",
+            left: finalX + 2,
+            top: finalMid - trophy / 2,
+          }}
+        />
+      </Reveal>
+    </BracketBox>
+  );
+};
+
 const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   maxPlayers,
   registeredCount,
@@ -805,8 +875,8 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
       }}
     >
       <SideHeader>
-        <PageIcon icon="git-network-outline" small />
-        <Reveal order={1}>
+        <BracketGraphic />
+        <Reveal order={3}>
           <PageTitle compact>The Playoffs</PageTitle>
         </Reveal>
       </SideHeader>
@@ -864,22 +934,25 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
                 <TableCell highlighted={isCurrent}>
                   {row.playoffSpots}
                 </TableCell>
-                <TableCell highlighted={isCurrent}>{row.inTheMoney}</TableCell>
+                <TableCell highlighted={isCurrent} gold={!isCurrent}>
+                  {row.inTheMoney}
+                </TableCell>
               </TableRow>
             </Reveal>
           );
         })}
       </Table>
       <FootNote>
-        Current ladder size: {registeredCount} / {maxPlayers}
+        {"Current ladder size: "}
+        <Accent>{`${registeredCount.toLocaleString("en-GB")} / ${maxPlayers.toLocaleString("en-GB")}`}</Accent>
         {isPaid && (
           <>
-            {" "}
-            with a total cash prize pool of{" "}
-            {formatCurrency(prizePool.cash, currencyType)}
+            {" with a total cash prize pool of "}
+            <Accent gold>{formatCurrency(prizePool.cash, currencyType)}</Accent>
           </>
-        )}{" "}
-        {isPaid ? "and a" : "with a"} CP prize pool of {prizePool.xp} CP.
+        )}
+        {isPaid ? " and a" : " with a"} CP prize pool of{" "}
+        <Accent blue>{`${prizePool.xp.toLocaleString("en-GB")} CP`}</Accent>.
       </FootNote>
     </ScrollView>
   );
@@ -1100,6 +1173,29 @@ const BoostUnit = styled.Text({
   fontSize: 11,
   fontWeight: "bold",
   letterSpacing: 1,
+});
+
+const BracketBox = styled.View({});
+
+const BracketSlot = styled.View<{ semi?: boolean }>(
+  ({ semi }: { semi?: boolean }) => ({
+    position: "absolute",
+    width: BRACKET.slotWidth,
+    height: BRACKET.slotHeight,
+    borderRadius: BRACKET.slotHeight / 2,
+    backgroundColor: semi ? "#00A2FF" : "#33445a",
+  }),
+);
+
+const BracketJoin = styled.View({
+  position: "absolute",
+  width: BRACKET.connector,
+  borderTopWidth: 2,
+  borderRightWidth: 2,
+  borderBottomWidth: 2,
+  borderColor: "rgba(0, 162, 255, 0.5)",
+  borderTopRightRadius: 4,
+  borderBottomRightRadius: 4,
 });
 
 const Matchup = styled.View({
