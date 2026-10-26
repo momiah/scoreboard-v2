@@ -29,6 +29,7 @@ import { ladders } from "@/mockImages";
 
 import type { Ladder } from "@shared/types";
 import ImageMapper from "../ImageMapper";
+import { PulseRing, Reveal, RevealContext } from "./HowToPlayReveal";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
 import {
@@ -261,13 +262,15 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             paragraphs={[]}
           >
             <StepList>
-              {MATCH_STEPS.map((step) => (
-                <StepRow key={step.text}>
-                  <StepIcon>
-                    <Ionicons name={step.icon} size={20} color="#00A2FF" />
-                  </StepIcon>
-                  <StepText>{step.text}</StepText>
-                </StepRow>
+              {MATCH_STEPS.map((step, stepIndex) => (
+                <Reveal key={step.text} order={2 + stepIndex} from="right">
+                  <StepRow>
+                    <StepIcon>
+                      <Ionicons name={step.icon} size={20} color="#00A2FF" />
+                    </StepIcon>
+                    <StepText>{step.text}</StepText>
+                  </StepRow>
+                </Reveal>
               ))}
             </StepList>
           </PageBody>
@@ -350,8 +353,13 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     if (page !== index) setIndex(page);
   };
 
-  const renderItem = ({ item }: ListRenderItemInfo<OnboardingPage>) => (
-    <PageContainer>{item.render()}</PageContainer>
+  const renderItem = ({
+    item,
+    index: pageIndex,
+  }: ListRenderItemInfo<OnboardingPage>) => (
+    <RevealContext.Provider value={pageIndex === index}>
+      <PageContainer>{item.render()}</PageContainer>
+    </RevealContext.Provider>
   );
 
   return (
@@ -377,6 +385,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         data={pages}
         keyExtractor={(item) => item.key}
         renderItem={renderItem}
+        extraData={index}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -446,25 +455,44 @@ const PageBody: React.FC<PageBodyProps> = ({
       paddingHorizontal: 30,
     }}
   >
-    {icon && (
-      <IconCircle>
-        <Ionicons name={icon} size={44} color="#00A2FF" />
-      </IconCircle>
-    )}
+    {icon && <PageIcon icon={icon} />}
     {image && (
-      <ImageContainer>
-        <Image source={image} resizeMode="contain" />
-      </ImageContainer>
+      <Reveal from="pop" style={{ width: "100%" }}>
+        <ImageContainer>
+          <Image source={image} resizeMode="contain" />
+        </ImageContainer>
+      </Reveal>
     )}
-    <PageTitle>{title}</PageTitle>
-    <Paragraphs>
-      {paragraphs.map((paragraph, index) => (
-        <PageText key={index}>{paragraph}</PageText>
-      ))}
-    </Paragraphs>
+    <Reveal order={1}>
+      <PageTitle>{title}</PageTitle>
+    </Reveal>
+    {paragraphs.length > 0 ? (
+      <Paragraphs>
+        {paragraphs.map((paragraph, index) => (
+          <Reveal key={index} order={2 + index}>
+            <PageText>{paragraph}</PageText>
+          </Reveal>
+        ))}
+      </Paragraphs>
+    ) : null}
     {children}
   </ScrollView>
 );
+
+const PageIcon: React.FC<{
+  icon: keyof typeof Ionicons.glyphMap;
+  gold?: boolean;
+}> = ({ icon, gold }) => {
+  const color = gold ? "#FFC800" : "#00A2FF";
+  return (
+    <Reveal from="pop">
+      <IconCircle gold={gold}>
+        <PulseRing size={ICON_CIRCLE_SIZE} color={color} />
+        <Ionicons name={icon} size={46} color={color} />
+      </IconCircle>
+    </Reveal>
+  );
+};
 
 interface PrizeTablePageProps {
   rows: LadderPrizeRow[];
@@ -489,18 +517,22 @@ const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
     }}
   >
     <CenteredHeader>
-      <IconCircle>
-        <Ionicons name="trophy-outline" size={40} color="#FFC800" />
-      </IconCircle>
-      <PageTitle>Prize Distribution</PageTitle>
+      <PageIcon icon="trophy-outline" gold />
+      <Reveal order={1}>
+        <PageTitle>Prize Distribution</PageTitle>
+      </Reveal>
     </CenteredHeader>
     <Paragraphs>
-      <PageText>{`What each ${noun} takes home, by where they finish.`}</PageText>
-      <PageText>
-        {isPaid
-          ? "Cash is paid and CP is awarded when the playoffs end."
-          : "CP is awarded when the playoffs end."}
-      </PageText>
+      <Reveal order={2}>
+        <PageText>{`What each ${noun} takes home, by where they finish.`}</PageText>
+      </Reveal>
+      <Reveal order={3}>
+        <PageText>
+          {isPaid
+            ? "Cash is paid and CP is awarded when the playoffs end."
+            : "CP is awarded when the playoffs end."}
+        </PageText>
+      </Reveal>
     </Paragraphs>
     <Table testID="how-to-play-prize-table">
       <TableRow header>
@@ -510,14 +542,20 @@ const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
         {isPaid ? <TableCell header>Cash each</TableCell> : null}
         <TableCell header>CP each</TableCell>
       </TableRow>
-      {rows.map((row) => (
-        <TableRow key={row.fromPlace}>
-          <TableCell flex={1.6}>{row.label}</TableCell>
-          {isPaid ? (
-            <TableCell>{formatCurrency(row.cash, currencyType)}</TableCell>
-          ) : null}
-          <TableCell>{row.cp.toLocaleString()}</TableCell>
-        </TableRow>
+      {rows.map((row, index) => (
+        <Reveal key={row.fromPlace} order={4 + index} from="right">
+          <TableRow>
+            <TableCell flex={1.6} place>
+              {row.label}
+            </TableCell>
+            {isPaid ? (
+              <TableCell gold>
+                {formatCurrency(row.cash, currencyType)}
+              </TableCell>
+            ) : null}
+            <TableCell>{row.cp.toLocaleString()}</TableCell>
+          </TableRow>
+        </Reveal>
       ))}
     </Table>
   </ScrollView>
@@ -554,24 +592,30 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
       }}
     >
       <CenteredHeader>
-        <IconCircle>
-          <Ionicons name="git-network-outline" size={40} color="#00A2FF" />
-        </IconCircle>
-        <PageTitle>The Playoffs</PageTitle>
+        <PageIcon icon="git-network-outline" />
+        <Reveal order={1}>
+          <PageTitle>The Playoffs</PageTitle>
+        </Reveal>
       </CenteredHeader>
       <Paragraphs>
-        <PageText>
-          When the season ends, the top players go into a knockout.
-        </PageText>
-        <PageText>{`Each round has ${LADDER_PLAYOFF_TIE_DAYS} days to be played.`}</PageText>
+        <Reveal order={2}>
+          <PageText>
+            When the season ends, the top players go into a knockout.
+          </PageText>
+        </Reveal>
+        <Reveal order={3}>
+          <PageText>{`Each round has ${LADDER_PLAYOFF_TIE_DAYS} days to be played.`}</PageText>
+        </Reveal>
       </Paragraphs>
 
-      <Highlight testID="how-to-play-playoff-highlight">
-        <HighlightText>
-          The bracket size depends on how many players have registered when
-          registration closes.
-        </HighlightText>
-      </Highlight>
+      <Reveal order={4}>
+        <Highlight testID="how-to-play-playoff-highlight">
+          <HighlightText>
+            The bracket size depends on how many players have registered when
+            registration closes.
+          </HighlightText>
+        </Highlight>
+      </Reveal>
 
       <Table>
         <TableRow header>
@@ -581,17 +625,21 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
           <TableCell header>Playoff spots</TableCell>
           <TableCell header>In the money</TableCell>
         </TableRow>
-        {LADDER_PLAYOFF_SIZES.map((size) => {
+        {LADDER_PLAYOFF_SIZES.map((size, index) => {
           const row = LADDER_PLAYOFF_STRUCTURE[size];
           const isCurrent = size === effectiveSize;
           return (
-            <TableRow key={size} highlighted={isCurrent}>
-              <TableCell flex={1.2} highlighted={isCurrent}>
-                {size}
-              </TableCell>
-              <TableCell highlighted={isCurrent}>{row.playoffSpots}</TableCell>
-              <TableCell highlighted={isCurrent}>{row.inTheMoney}</TableCell>
-            </TableRow>
+            <Reveal key={size} order={5 + index} from="right">
+              <TableRow highlighted={isCurrent}>
+                <TableCell flex={1.2} highlighted={isCurrent}>
+                  {size}
+                </TableCell>
+                <TableCell highlighted={isCurrent}>
+                  {row.playoffSpots}
+                </TableCell>
+                <TableCell highlighted={isCurrent}>{row.inTheMoney}</TableCell>
+              </TableRow>
+            </Reveal>
           );
         })}
       </Table>
@@ -675,14 +723,22 @@ const PageContainer = styled.View({
   flex: 1,
 });
 
-const IconCircle = styled.View({
-  width: 88,
-  height: 88,
-  borderRadius: 44,
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: "rgba(0, 162, 255, 0.12)",
-});
+const ICON_CIRCLE_SIZE = 96;
+
+const IconCircle = styled.View<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    width: ICON_CIRCLE_SIZE,
+    height: ICON_CIRCLE_SIZE,
+    borderRadius: ICON_CIRCLE_SIZE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: gold
+      ? "rgba(255, 200, 0, 0.12)"
+      : "rgba(0, 162, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: gold ? "rgba(255, 200, 0, 0.35)" : "rgba(0, 162, 255, 0.35)",
+  }),
+);
 
 const CenteredHeader = styled.View({
   alignItems: "center",
@@ -691,7 +747,7 @@ const CenteredHeader = styled.View({
 
 const PageTitle = styled.Text({
   color: "#ffffff",
-  fontSize: 24,
+  fontSize: 27,
   fontWeight: "bold",
   textAlign: "center",
 });
@@ -772,29 +828,38 @@ const ButtonText = styled.Text({
   fontWeight: "bold",
 });
 
-const TableCell = styled.Text<{
+interface TableCellStyle {
   header?: boolean;
   highlighted?: boolean;
+  gold?: boolean;
+  place?: boolean;
   flex?: number;
-}>(
-  ({
-    header,
-    highlighted,
-    flex,
-  }: {
-    header?: boolean;
-    highlighted?: boolean;
-    flex?: number;
-  }) => ({
-    flex: flex ?? 1,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    fontSize: 13,
-    textAlign: "center",
-    fontWeight: header || highlighted ? "bold" : "normal",
-    color: header ? "#9fb8c8" : highlighted ? "#00A2FF" : "#e2e8f0",
-  }),
-);
+}
+
+const tableCellColor = ({
+  header,
+  highlighted,
+  gold,
+  place,
+}: TableCellStyle) => {
+  if (header) return "#9fb8c8";
+  if (gold) return "#FFC800";
+  if (highlighted || place) return "#00A2FF";
+  return "#e2e8f0";
+};
+
+const TableCell = styled.Text<TableCellStyle>((cell: TableCellStyle) => ({
+  flex: cell.flex ?? 1,
+  paddingVertical: 12,
+  paddingHorizontal: 10,
+  fontSize: 13,
+  textAlign: "center",
+  fontWeight:
+    cell.header || cell.highlighted || cell.gold || cell.place
+      ? "bold"
+      : "normal",
+  color: tableCellColor(cell),
+}));
 
 const Dots = styled.View({
   flexDirection: "row",

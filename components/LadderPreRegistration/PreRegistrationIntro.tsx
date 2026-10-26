@@ -4,6 +4,7 @@ import styled from "styled-components/native";
 import { formatCurrency } from "@shared";
 import type { LadderPreRegistration } from "@shared/types";
 import { ladders } from "@/mockImages";
+import { Reveal } from "../ladder/HowToPlayReveal";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
   getEntrantNoun,
@@ -41,14 +42,26 @@ const PreRegistrationIntro: React.FC<{ option: LadderPreRegistration }> = ({
 
   return (
     <Container testID="pre-registration-intro">
-      <Eyebrow>SEASON ONE</Eyebrow>
-      <Headline>Climb.</Headline>
-      <Headline>Compete.</Headline>
-      <Headline gold>Conquer.</Headline>
-      <Tagline>
-        {`${option.maxPlayers.toLocaleString("en-GB")} ${getEntrantNoun(option)}s. One champion.`}
-      </Tagline>
-      <Trophy source={ladders[0]} resizeMode="contain" />
+      <Reveal>
+        <Eyebrow>SEASON ONE</Eyebrow>
+      </Reveal>
+      <Reveal order={1} from="right">
+        <Headline>Climb.</Headline>
+      </Reveal>
+      <Reveal order={3} from="right">
+        <Headline>Compete.</Headline>
+      </Reveal>
+      <Reveal order={5} from="pop">
+        <Headline gold>Conquer.</Headline>
+      </Reveal>
+      <Reveal order={7}>
+        <Tagline>
+          {`${option.maxPlayers.toLocaleString("en-GB")} ${getEntrantNoun(option)}s. One champion.`}
+        </Tagline>
+      </Reveal>
+      <Reveal order={8} from="pop">
+        <Trophy source={ladders[0]} resizeMode="contain" />
+      </Reveal>
       <PoolLabel>{cash ? "Prize pool" : "CP to be won"}</PoolLabel>
       <PoolValue testID="pre-registration-intro-pool">
         {format(shown)}
