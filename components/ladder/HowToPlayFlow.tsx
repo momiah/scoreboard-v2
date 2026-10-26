@@ -56,6 +56,12 @@ export type HowToPlayPageText = Partial<
   Record<HowToPlayTextPage, { paragraphs: React.ReactNode[] }>
 >;
 
+const MATCH_STEPS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
+  { icon: "qr-code-outline", text: "Check in at the court" },
+  { icon: "people-outline", text: "Play your opponent" },
+  { icon: "create-outline", text: "Report your scores" },
+];
+
 const MATCH_LENGTHS = `${LADDER_MATCH_BEST_OF_OPTIONS.slice(0, -1).join(", ")} or ${
   LADDER_MATCH_BEST_OF_OPTIONS[LADDER_MATCH_BEST_OF_OPTIONS.length - 1]
 }`;
@@ -98,7 +104,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         imageSize={72}
         title="Winning the Final"
         description={
-          "Win the Final to be crowned champion and take the biggest prize.\n\nPrizes and CP are paid once the playoffs finish."
+          "Win the Final to be crowned champion and take the biggest prize.\n\nCash prizes are paid and CP is awarded once the playoffs finish."
         }
       >
         <ReadRulesButton onPress={onReadRules}>
@@ -248,11 +254,19 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             icon="checkmark-circle-outline"
             title="Challenge Accepted"
-            paragraphs={[
-              "Once your game is accepted:",
-              "1. Check in at the court\n2. Play your opponent\n3. Report your scores",
-            ]}
-          />
+            paragraphs={["Once your match is accepted:"]}
+          >
+            <StepList>
+              {MATCH_STEPS.map((step) => (
+                <StepRow key={step.text}>
+                  <StepIcon>
+                    <Ionicons name={step.icon} size={20} color="#00A2FF" />
+                  </StepIcon>
+                  <StepText>{step.text}</StepText>
+                </StepRow>
+              ))}
+            </StepList>
+          </PageBody>
         ),
       },
       {
@@ -476,7 +490,9 @@ const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
     <Paragraphs>
       <PageText>{`What each ${noun} takes home, by where they finish.`}</PageText>
       <PageText>
-        {`${isPaid ? "Cash and CP are" : "CP is"} paid when the playoffs end.`}
+        {isPaid
+          ? "Cash is paid and CP is awarded when the playoffs end."
+          : "CP is awarded when the playoffs end."}
       </PageText>
     </Paragraphs>
     <Table testID="how-to-play-prize-table">
@@ -597,6 +613,36 @@ const AchievementMedalsPage: React.FC = () => (
     }
   />
 );
+
+const StepList = styled.View({
+  alignSelf: "stretch",
+  gap: 12,
+});
+
+const StepRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  paddingVertical: 12,
+  paddingHorizontal: 14,
+  borderRadius: 12,
+  backgroundColor: "rgba(0, 162, 255, 0.08)",
+});
+
+const StepIcon = styled.View({
+  width: 36,
+  height: 36,
+  borderRadius: 18,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(0, 162, 255, 0.15)",
+});
+
+const StepText = styled.Text({
+  color: "#ffffff",
+  fontSize: 15,
+  fontWeight: "600",
+});
 
 const Screen = styled.View({
   flex: 1,
