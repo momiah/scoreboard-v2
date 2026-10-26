@@ -327,7 +327,11 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       {
         key: "upsets",
         render: () => (
-          <PageBody icon="flash-outline" title="Rank Matters" paragraphs={[]}>
+          <PageBody
+            hero={<RankMattersHero />}
+            title="Rank Matters"
+            paragraphs={[]}
+          >
             <CardList
               cards={[
                 {
@@ -736,6 +740,86 @@ const RevealingOpponent: React.FC = () => {
         </MatchupAvatar>
       </Animated.View>
     </Animated.View>
+  );
+};
+
+/** The user, ranked lower, takes on a top-ranked opponent while a CP bonus floats up. */
+const RankMattersHero: React.FC = () => {
+  const active = useContext(RevealContext);
+  const rise = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!active) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(900),
+        Animated.timing(rise, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: false,
+        }),
+        Animated.timing(rise, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: false,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [active, rise]);
+
+  return (
+    <Matchup>
+      <Reveal from="pop">
+        <RankedAvatar>
+          <MatchupAvatar user>
+            <PulseRing size={MATCHUP_AVATAR_SIZE} color="#00A2FF" />
+            <Ionicons name="person" size={32} color="white" />
+          </MatchupAvatar>
+          <RankChip>
+            <RankChipText>#40</RankChipText>
+          </RankChip>
+        </RankedAvatar>
+      </Reveal>
+      <Reveal order={1} from="pop">
+        <VersusColumn>
+          <Animated.View
+            style={{
+              opacity: rise.interpolate({
+                inputRange: [0, 0.15, 0.7, 1],
+                outputRange: [0, 1, 1, 0],
+              }),
+              transform: [
+                {
+                  translateY: rise.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [10, -14],
+                  }),
+                },
+              ],
+            }}
+          >
+            <RankGain>{`+${UPSET_MAX_MULTIPLIER} CP`}</RankGain>
+          </Animated.View>
+          <Versus>VS</Versus>
+        </VersusColumn>
+      </Reveal>
+      <Reveal order={2} from="pop">
+        <RankedAvatar>
+          <MatchupAvatar revealed>
+            <Ionicons name="person" size={32} color="white" />
+            <Crown>
+              <Ionicons name="ribbon" size={16} color="#FFC800" />
+            </Crown>
+          </MatchupAvatar>
+          <RankChip gold>
+            <RankChipText gold>#3</RankChipText>
+          </RankChip>
+        </RankedAvatar>
+      </Reveal>
+    </Matchup>
   );
 };
 
@@ -1209,6 +1293,54 @@ const MatchupAvatar = styled.View<MatchupAvatarStyle>(
     };
   },
 );
+
+const RankedAvatar = styled.View({
+  alignItems: "center",
+});
+
+const RankChip = styled.View<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    marginTop: -10,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: "rgb(3, 16, 31)",
+    borderWidth: 1,
+    borderColor: gold ? "#FFC800" : "#00A2FF",
+  }),
+);
+
+const RankChipText = styled.Text<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    color: gold ? "#FFC800" : "#00A2FF",
+    fontSize: 12,
+    fontWeight: "bold",
+  }),
+);
+
+const Crown = styled.View({
+  position: "absolute",
+  top: -10,
+  right: -2,
+  width: 26,
+  height: 26,
+  borderRadius: 13,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgb(3, 16, 31)",
+  borderWidth: 1,
+  borderColor: "#FFC800",
+});
+
+const VersusColumn = styled.View({
+  alignItems: "center",
+});
+
+const RankGain = styled.Text({
+  color: "#FFC800",
+  fontSize: 13,
+  fontWeight: "bold",
+});
 
 const Versus = styled.Text({
   color: "#FFC800",
