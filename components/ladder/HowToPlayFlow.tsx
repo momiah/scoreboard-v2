@@ -259,10 +259,14 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
                 <Reveal key={step.text} order={2 + stepIndex} from="right">
                   <StepRow>
                     <StepIcon>
-                      <Ionicons name={step.icon} size={20} color="#00A2FF" />
+                      <Ionicons name={step.icon} size={22} color="#00A2FF" />
+                      <StepNumber>
+                        <StepNumberText>{stepIndex + 1}</StepNumberText>
+                      </StepNumber>
                     </StepIcon>
                     <StepText>{step.text}</StepText>
                   </StepRow>
+                  {stepIndex < MATCH_STEPS.length - 1 ? <StepLine /> : null}
                 </Reveal>
               ))}
             </StepList>
@@ -1013,27 +1017,53 @@ const BoostUnit = styled.Text({
 });
 
 const StepList = styled.View({
-  alignSelf: "stretch",
-  gap: 12,
+  alignSelf: "center",
 });
 
 const StepRow = styled.View({
   flexDirection: "row",
   alignItems: "center",
-  gap: 12,
-  paddingVertical: 12,
-  paddingHorizontal: 14,
-  borderRadius: 12,
-  backgroundColor: "rgba(0, 162, 255, 0.08)",
+  gap: 16,
 });
 
+const STEP_ICON_SIZE = 50;
+
 const StepIcon = styled.View({
-  width: 36,
-  height: 36,
-  borderRadius: 18,
+  width: STEP_ICON_SIZE,
+  height: STEP_ICON_SIZE,
+  borderRadius: STEP_ICON_SIZE / 2,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "rgba(0, 162, 255, 0.15)",
+  backgroundColor: "rgba(0, 162, 255, 0.12)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.45)",
+});
+
+const StepNumber = styled.View({
+  position: "absolute",
+  top: -4,
+  right: -4,
+  width: 20,
+  height: 20,
+  borderRadius: 10,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "#FFC800",
+});
+
+const StepNumberText = styled.Text({
+  color: "#412402",
+  fontSize: 11,
+  fontWeight: "bold",
+});
+
+const StepLine = styled.View({
+  width: 2,
+  height: 26,
+  marginVertical: 4,
+  marginLeft: STEP_ICON_SIZE / 2 - 1,
+  borderRadius: 1,
+  backgroundColor: "rgba(0, 162, 255, 0.35)",
 });
 
 const BeatList = styled.View({
@@ -1128,8 +1158,8 @@ const TileLabel = styled.Text({
 
 const StepText = styled.Text({
   color: "#ffffff",
-  fontSize: 15,
-  fontWeight: "600",
+  fontSize: 17,
+  fontWeight: "bold",
 });
 
 const Screen = styled.View({
