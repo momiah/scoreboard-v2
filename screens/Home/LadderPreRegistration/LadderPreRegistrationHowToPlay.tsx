@@ -11,6 +11,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_PLAYOFF_SIZES } from "@shared";
 import HowToPlayFlow, {
   HowToPlayButton,
+  HowToPlayAccent as Accent,
   HowToPlayButtonText,
   type HowToPlayPageText,
 } from "../../../components/ladder/HowToPlayFlow";
@@ -27,14 +28,30 @@ const LARGEST_LADDER = Math.max(...LADDER_PLAYOFF_SIZES);
 const PRE_REGISTRATION_PAGE_TEXT: HowToPlayPageText = {
   "post-game": {
     paragraphs: [
-      "Choose your court and post a match. Pick a day and time that suits you, then wait for another member to accept.",
-      "You'll never know your opponent until they accept your match.",
+      <>
+        {"Choose your court and post a match. Pick a "}
+        <Accent>day and time</Accent>
+        {" that suits you, then wait for another member to accept."}
+      </>,
+      <>
+        {"You'll "}
+        <Accent>never know your opponent</Accent>
+        {" until they accept your match."}
+      </>,
     ],
   },
   "accept-game": {
     paragraphs: [
-      "Rather explore? Browse live matches at courts across the ladder and accept one that suits you.",
-      "Your opponent is hidden until you accept the match.",
+      <>
+        {"Rather explore? Browse "}
+        <Accent>live matches</Accent>
+        {" at courts across the ladder and accept one that suits you."}
+      </>,
+      <>
+        {"Your opponent is "}
+        <Accent>hidden</Accent>
+        {" until you accept the match."}
+      </>,
     ],
   },
 };
