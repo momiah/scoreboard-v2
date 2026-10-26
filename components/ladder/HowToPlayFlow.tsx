@@ -71,10 +71,6 @@ const MATCH_STEPS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: "create-outline", text: "Report your scores" },
 ];
 
-const MATCH_LENGTHS = `${LADDER_MATCH_BEST_OF_OPTIONS.slice(0, -1).join(", ")} or ${
-  LADDER_MATCH_BEST_OF_OPTIONS[LADDER_MATCH_BEST_OF_OPTIONS.length - 1]
-}`;
-
 interface HowToPlayFlowProps {
   ladder: HowToPlayLadder | null;
   maxPlayers: number;
@@ -246,16 +242,21 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             icon="add-circle-outline"
             title="Matchmaking, Made Simple"
+            cardIcons={["calendar-outline", "eye-off-outline"]}
             paragraphs={
               pageText?.["post-game"]?.paragraphs ?? [
                 <>
                   {"Open the "}
-                  <Bold>Match Making</Bold>
-                  {
-                    " tab, choose your court and post a match. Pick a day and time that suits you, then wait for another member to accept."
-                  }
+                  <Accent blue>Match Making</Accent>
+                  {" tab, choose your court and post a match. Pick a "}
+                  <Accent>day and time</Accent>
+                  {" that suits you, then wait for another member to accept."}
                 </>,
-                "You'll never know your opponent until they accept your match.",
+                <>
+                  {"You'll "}
+                  <Accent>never know your opponent</Accent>
+                  {" until they accept your match."}
+                </>,
               ]
             }
           />
@@ -290,16 +291,21 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             icon="hand-left-outline"
             title="Accept a Match"
+            cardIcons={["map-outline", "eye-off-outline"]}
             paragraphs={
               pageText?.["accept-game"]?.paragraphs ?? [
                 <>
-                  {
-                    "Rather explore? Browse live matches at courts across the ladder in the "
-                  }
-                  <Bold>Match Making</Bold>
+                  {"Rather explore? Browse "}
+                  <Accent>live matches</Accent>
+                  {" at courts across the ladder in the "}
+                  <Accent blue>Match Making</Accent>
                   {" tab and accept one that suits you."}
                 </>,
-                "Your opponent is hidden until you accept the match.",
+                <>
+                  {"Your opponent is "}
+                  <Accent>hidden</Accent>
+                  {" until you accept the match."}
+                </>,
               ]
             }
           />
@@ -313,60 +319,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             title="The Objective"
             paragraphs={[]}
           >
-            <BeatList>
-              {[
-                {
-                  icon: "flash-outline" as const,
-                  text: (
-                    <>
-                      {"A match is "}
-                      <Accent>{`${MATCH_LENGTHS} games`}</Accent>
-                      {". Each win awards you "}
-                      <Accent blue>CP (Court Points)</Accent>
-                      {"."}
-                    </>
-                  ),
-                },
-                {
-                  icon: "trending-up-outline" as const,
-                  text: (
-                    <>
-                      {"The more "}
-                      <Accent blue>CP</Accent>
-                      {" you have, the "}
-                      <Accent>higher you rank</Accent>
-                      {" in the ladder."}
-                    </>
-                  ),
-                },
-                {
-                  icon: "trophy-outline" as const,
-                  gold: true,
-                  text: (
-                    <>
-                      {"When the season ends, the "}
-                      <Accent gold>top-ranked players</Accent>
-                      {" go through to the "}
-                      <Accent gold>knockout playoffs</Accent>
-                      {"."}
-                    </>
-                  ),
-                },
-              ].map((beat, beatIndex) => (
-                <Reveal key={beat.icon} order={2 + beatIndex} from="right">
-                  <Beat>
-                    <BeatIcon gold={beat.gold}>
-                      <Ionicons
-                        name={beat.icon}
-                        size={18}
-                        color={beat.gold ? "#FFC800" : "#00A2FF"}
-                      />
-                    </BeatIcon>
-                    <BeatText>{beat.text}</BeatText>
-                  </Beat>
-                </Reveal>
-              ))}
-            </BeatList>
+            <ObjectiveTiles />
           </PageBody>
         ),
       },
@@ -502,6 +455,8 @@ interface PageBodyProps {
   hero?: React.ReactNode;
   title: string;
   paragraphs: React.ReactNode[];
+  /** Shows each paragraph as a card with this icon. */
+  cardIcons?: (keyof typeof Ionicons.glyphMap)[];
   children?: React.ReactNode;
   image?: ImageSourcePropType;
 }
@@ -511,6 +466,7 @@ const PageBody: React.FC<PageBodyProps> = ({
   hero,
   title,
   paragraphs,
+  cardIcons,
   children,
   image,
 }) => {
@@ -537,7 +493,14 @@ const PageBody: React.FC<PageBodyProps> = ({
       <Reveal order={1}>
         <PageTitle compact={compact}>{title}</PageTitle>
       </Reveal>
-      {paragraphs.length > 0 ? (
+      {cardIcons ? (
+        <CardList
+          cards={paragraphs.map((text, index) => ({
+            icon: cardIcons[index] ?? cardIcons[cardIcons.length - 1],
+            text,
+          }))}
+        />
+      ) : paragraphs.length > 0 ? (
         <Paragraphs>
           {paragraphs.map((paragraph, index) => (
             <Reveal key={index} order={2 + index}>
@@ -550,6 +513,82 @@ const PageBody: React.FC<PageBodyProps> = ({
     </ScrollView>
   );
 };
+
+interface Card {
+  icon: keyof typeof Ionicons.glyphMap;
+  text: React.ReactNode;
+  gold?: boolean;
+  testID?: string;
+}
+
+const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
+  cards,
+  firstOrder = 2,
+}) => (
+  <BeatList>
+    {cards.map((card, index) => (
+      <Reveal key={index} order={firstOrder + index} from="right">
+        <Beat testID={card.testID}>
+          <BeatIcon gold={card.gold}>
+            <Ionicons
+              name={card.icon}
+              size={18}
+              color={card.gold ? "#FFC800" : "#00A2FF"}
+            />
+          </BeatIcon>
+          <BeatText>{card.text}</BeatText>
+        </Beat>
+      </Reveal>
+    ))}
+  </BeatList>
+);
+
+const OBJECTIVE_TILES: {
+  icon: keyof typeof Ionicons.glyphMap;
+  value: string;
+  label: string;
+  gold?: boolean;
+}[] = [
+  {
+    icon: "flash-outline",
+    value: `${LADDER_MATCH_BEST_OF_OPTIONS[0]}–${
+      LADDER_MATCH_BEST_OF_OPTIONS[LADDER_MATCH_BEST_OF_OPTIONS.length - 1]
+    }`,
+    label: "games a match",
+  },
+  { icon: "trending-up-outline", value: "Earn CP", label: "every win" },
+  { icon: "trophy-outline", value: "Top", label: "go to playoffs", gold: true },
+];
+
+const ObjectiveTiles: React.FC = () => (
+  <>
+    <Tiles>
+      {OBJECTIVE_TILES.map((tile, index) => (
+        <Reveal
+          key={tile.label}
+          order={2 + index}
+          from="pop"
+          style={{ flex: 1 }}
+        >
+          <Tile gold={tile.gold}>
+            <Ionicons
+              name={tile.icon}
+              size={22}
+              color={tile.gold ? "#FFC800" : "#00A2FF"}
+            />
+            <TileValue gold={tile.gold} numberOfLines={1} adjustsFontSizeToFit>
+              {tile.value}
+            </TileValue>
+            <TileLabel>{tile.label}</TileLabel>
+          </Tile>
+        </Reveal>
+      ))}
+    </Tiles>
+    <Reveal order={5}>
+      <PageText>The more CP you have, the higher you rank.</PageText>
+    </Reveal>
+  </>
+);
 
 const ObjectiveHero: React.FC = () => {
   const compact = useCompactScreen();
@@ -682,25 +721,44 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
           <PageTitle compact>The Playoffs</PageTitle>
         </Reveal>
       </SideHeader>
-      <Paragraphs>
-        <Reveal order={2}>
-          <PageText>
-            When the season ends, the top players go into a knockout.
-          </PageText>
-        </Reveal>
-        <Reveal order={3}>
-          <PageText>{`Each round has ${LADDER_PLAYOFF_TIE_DAYS} days to be played.`}</PageText>
-        </Reveal>
-      </Paragraphs>
-
-      <Reveal order={4}>
-        <Highlight testID="how-to-play-playoff-highlight">
-          <HighlightText>
-            The bracket size depends on how many players have registered when
-            registration closes.
-          </HighlightText>
-        </Highlight>
-      </Reveal>
+      <CardList
+        cards={[
+          {
+            icon: "flag-outline",
+            gold: true,
+            text: (
+              <>
+                {"When the season ends, the "}
+                <Accent gold>top players</Accent>
+                {" go into a "}
+                <Accent gold>knockout</Accent>
+                {"."}
+              </>
+            ),
+          },
+          {
+            icon: "hourglass-outline",
+            text: (
+              <>
+                {"Each round has "}
+                <Accent>{`${LADDER_PLAYOFF_TIE_DAYS} days`}</Accent>
+                {" to be played."}
+              </>
+            ),
+          },
+          {
+            icon: "people-outline",
+            testID: "how-to-play-playoff-highlight",
+            text: (
+              <>
+                {"The bracket size depends on "}
+                <Accent blue>how many players have registered</Accent>
+                {" when registration closes."}
+              </>
+            ),
+          },
+        ]}
+      />
 
       <Table>
         <TableRow header>
@@ -822,6 +880,41 @@ const Accent = styled.Text<{ blue?: boolean; gold?: boolean }>(
   }),
 );
 
+const Tiles = styled.View({
+  flexDirection: "row",
+  alignSelf: "stretch",
+  gap: 10,
+});
+
+const Tile = styled.View<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: gold ? "rgba(255, 200, 0, 0.3)" : "rgba(0, 162, 255, 0.3)",
+    backgroundColor: gold
+      ? "rgba(255, 200, 0, 0.08)"
+      : "rgba(0, 162, 255, 0.08)",
+  }),
+);
+
+const TileValue = styled.Text<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    color: gold ? "#FFC800" : "#ffffff",
+    fontSize: 20,
+    fontWeight: "bold",
+  }),
+);
+
+const TileLabel = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 12,
+  textAlign: "center",
+});
+
 const StepText = styled.Text({
   color: "#ffffff",
   fontSize: 15,
@@ -894,30 +987,10 @@ const Paragraphs = styled.View({
   gap: 12,
 });
 
-const Bold = styled.Text({
-  fontWeight: "bold",
-  color: "#ffffff",
-});
-
 const FootNote = styled.Text({
   color: "#7f97a8",
   fontSize: 12,
   lineHeight: 18,
-  textAlign: "center",
-});
-
-const Highlight = styled.View({
-  padding: 14,
-  borderRadius: 12,
-  backgroundColor: "rgba(0, 162, 255, 0.1)",
-  borderWidth: 1,
-  borderColor: "rgba(0, 162, 255, 0.4)",
-});
-
-const HighlightText = styled.Text({
-  color: "#e2e8f0",
-  fontSize: 14,
-  lineHeight: 20,
   textAlign: "center",
 });
 
@@ -1065,4 +1138,8 @@ const Image = styled.Image({
   height: "90%",
 });
 
-export { NavButton as HowToPlayButton, NavButtonText as HowToPlayButtonText };
+export {
+  NavButton as HowToPlayButton,
+  NavButtonText as HowToPlayButtonText,
+  Accent as HowToPlayAccent,
+};
