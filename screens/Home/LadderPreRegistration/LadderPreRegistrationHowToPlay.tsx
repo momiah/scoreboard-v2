@@ -152,6 +152,7 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
       }
       finalAction={finalAction}
       pageText={PRE_REGISTRATION_PAGE_TEXT}
+      showLadderSize={false}
       intro={
         preRegistration ? (
           <PreRegistrationIntro option={preRegistration} />
