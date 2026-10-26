@@ -106,24 +106,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
 
   const finalsPage: OnboardingPage = {
     key: "finals",
-    render: () => (
-      <ImageMapper
-        images={ladders}
-        imageSize={72}
-        title="Winning the Final"
-        description={
-          "Win the Final to be crowned champion and take the biggest prize.\n\nCash prizes are paid and CP is awarded once the playoffs finish."
-        }
-      >
-        <ReadRulesButton onPress={onReadRules}>
-          <AntDesign name="book" size={15} color="white" />
-          <ButtonText>Read the full rules</ButtonText>
-        </ReadRulesButton>
-        <FootNote>
-          You can also open the rules anytime from the ladder page&apos;s menu.
-        </FootNote>
-      </ImageMapper>
-    ),
+    render: () => <FinalsPage onReadRules={onReadRules} />,
   };
 
   const playoffPages: OnboardingPage[] = [
@@ -795,6 +778,85 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   );
 };
 
+const FinalsPage: React.FC<{ onReadRules: () => void }> = ({ onReadRules }) => {
+  const compact = useCompactScreen();
+  const [champion, ...placed] = ladders;
+  const heroSize = compact ? 104 : 128;
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: compact ? 12 : 16,
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+      }}
+    >
+      <Reveal from="pop">
+        <IconCircle gold size={heroSize}>
+          <PulseRing size={heroSize} color="#FFC800" />
+          <TrophyImage
+            source={champion}
+            resizeMode="contain"
+            size={heroSize * 0.66}
+          />
+        </IconCircle>
+      </Reveal>
+      <TrophyRow>
+        {placed.map((trophy, index) => (
+          <Reveal key={index} order={1 + index} from="pop">
+            <TrophyImage source={trophy} resizeMode="contain" size={40} />
+          </Reveal>
+        ))}
+      </TrophyRow>
+      <Reveal order={4}>
+        <PageTitle compact={compact}>Winning the Final</PageTitle>
+      </Reveal>
+      <CardList
+        firstOrder={5}
+        cards={[
+          {
+            icon: "trophy-outline",
+            gold: true,
+            text: (
+              <>
+                {"Win the Final to be crowned "}
+                <Accent gold>champion</Accent>
+                {" and take the "}
+                <Accent gold>biggest prize</Accent>
+                {"."}
+              </>
+            ),
+          },
+          {
+            icon: "cash-outline",
+            text: (
+              <>
+                <Accent gold>Cash prizes</Accent>
+                {" are paid and "}
+                <Accent blue>CP</Accent>
+                {" is awarded once the playoffs finish."}
+              </>
+            ),
+          },
+        ]}
+      />
+      <Reveal order={7} style={{ alignSelf: "stretch" }}>
+        <ReadRulesButton onPress={onReadRules}>
+          <AntDesign name="book" size={15} color="#00A2FF" />
+          <ButtonText>Read the full rules</ButtonText>
+        </ReadRulesButton>
+      </Reveal>
+      <Reveal order={8}>
+        <FootNote>
+          You can also open the rules anytime from the ladder page&apos;s menu.
+        </FootNote>
+      </Reveal>
+    </ScrollView>
+  );
+};
+
 const AchievementMedalsPage: React.FC = () => (
   <ImageMapper
     images={gameMedals}
@@ -1009,16 +1071,29 @@ const TableRow = styled.View<{ header?: boolean; highlighted?: boolean }>(
 );
 
 const ReadRulesButton = styled.TouchableOpacity({
-  padding: 20,
-  borderRadius: 14,
-  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  paddingVertical: 14,
+  borderRadius: 12,
+  backgroundColor: "rgba(0, 162, 255, 0.08)",
   borderWidth: 1,
-  borderColor: "rgba(0, 162, 255, 0.35)",
+  borderColor: "rgba(0, 162, 255, 0.45)",
   alignItems: "center",
+  justifyContent: "center",
   flexDirection: "row",
-  gap: 6,
-  marginBottom: 40,
+  gap: 8,
 });
+
+const TrophyRow = styled.View({
+  flexDirection: "row",
+  justifyContent: "center",
+  gap: 18,
+});
+
+const TrophyImage = styled.Image<{ size: number }>(
+  ({ size }: { size: number }) => ({
+    width: size,
+    height: size,
+  }),
+);
 
 const ButtonText = styled.Text({
   color: "white",
