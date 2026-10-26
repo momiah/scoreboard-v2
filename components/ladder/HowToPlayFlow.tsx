@@ -49,6 +49,12 @@ export type HowToPlayLadder = Pick<
   | "playoffEntrantCount"
 >;
 
+export type HowToPlayTextPage = "post-game" | "accept-game";
+
+export type HowToPlayPageText = Partial<
+  Record<HowToPlayTextPage, { title: string; paragraphs: React.ReactNode[] }>
+>;
+
 interface HowToPlayFlowProps {
   ladder: HowToPlayLadder | null;
   maxPlayers: number;
@@ -57,6 +63,8 @@ interface HowToPlayFlowProps {
   onReadRules: () => void;
   /** Shown in place of Next on the last page. */
   finalAction: React.ReactNode;
+  /** Replaces a page's title and text, e.g. before the Match Making tab exists. */
+  pageText?: HowToPlayPageText;
 }
 
 interface OnboardingPage {
@@ -71,6 +79,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   onClose,
   onReadRules,
   finalAction,
+  pageText,
 }) => {
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
@@ -212,15 +221,17 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         render: () => (
           <PageBody
             icon="add-circle-outline"
-            title="Post a Game"
-            paragraphs={[
-              <>
-                {"Post a game from the "}
-                <Bold>Match Making</Bold>
-                {" tab and wait for a member to accept."}
-              </>,
-              "Matchmaking is blind, so you only see your opponent once they accept.",
-            ]}
+            title={pageText?.["post-game"]?.title ?? "Post a Game"}
+            paragraphs={
+              pageText?.["post-game"]?.paragraphs ?? [
+                <>
+                  {"Post a game from the "}
+                  <Bold>Match Making</Bold>
+                  {" tab and wait for a member to accept."}
+                </>,
+                "Matchmaking is blind, so you only see your opponent once they accept.",
+              ]
+            }
           />
         ),
       },
@@ -242,15 +253,17 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         render: () => (
           <PageBody
             icon="hand-left-outline"
-            title="Accept a Game"
-            paragraphs={[
-              <>
-                {"Prefer to find a game? Browse the "}
-                <Bold>Match Making</Bold>
-                {" tab."}
-              </>,
-              "Accept one to lock in your next match.",
-            ]}
+            title={pageText?.["accept-game"]?.title ?? "Accept a Game"}
+            paragraphs={
+              pageText?.["accept-game"]?.paragraphs ?? [
+                <>
+                  {"Prefer to find a game? Browse the "}
+                  <Bold>Match Making</Bold>
+                  {" tab."}
+                </>,
+                "Accept one to lock in your next match.",
+              ]
+            }
           />
         ),
       },
@@ -287,6 +300,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     [
       maxPlayers,
       onReadRules,
+      pageText,
       ladder?.participantCount,
       ladder?.entryFee,
       ladder?.currencyType,
