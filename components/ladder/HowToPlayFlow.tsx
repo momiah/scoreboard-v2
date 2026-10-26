@@ -325,6 +325,53 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         render: () => <AchievementMedalsPage />,
       },
       {
+        key: "upsets",
+        render: () => (
+          <PageBody icon="flash-outline" title="Upset Bonus" paragraphs={[]}>
+            <CardList
+              cards={[
+                {
+                  icon: "trending-up-outline",
+                  gold: true,
+                  text: (
+                    <>
+                      {"Beat an opponent with "}
+                      <Accent>at least double your CP</Accent>
+                      {" and earn "}
+                      <Accent
+                        gold
+                      >{`${UPSET_MULTIPLIER_RANGE} extra CP`}</Accent>
+                      {" on top of your win."}
+                    </>
+                  ),
+                },
+                {
+                  icon: "trending-down-outline",
+                  red: true,
+                  text: (
+                    <>
+                      {"Lose to an opponent with "}
+                      <Accent>half your CP or less</Accent>
+                      {" and you "}
+                      <Accent
+                        red
+                      >{`lose ${UPSET_MULTIPLIER_RANGE} extra CP`}</Accent>
+                      {"."}
+                    </>
+                  ),
+                },
+              ]}
+            />
+            <Reveal order={4}>
+              <FootNote>
+                The bigger the CP gap, the bigger the swing. In doubles, it
+                compares each team&apos;s combined CP.
+              </FootNote>
+            </Reveal>
+          </PageBody>
+        ),
+      },
+      {
         key: "playoffs",
         render: () => (
           <PlayoffsPage
@@ -518,6 +565,7 @@ interface Card {
   icon: keyof typeof Ionicons.glyphMap;
   text: React.ReactNode;
   gold?: boolean;
+  red?: boolean;
 }
 
 const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
@@ -528,11 +576,15 @@ const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
     {cards.map((card, index) => (
       <Reveal key={index} order={firstOrder + index} from="right">
         <Beat>
-          <BeatIcon gold={card.gold}>
+          <BeatIcon gold={card.gold} red={card.red}>
             <Ionicons
               name={card.icon}
               size={18}
-              color={card.gold ? "#FFC800" : "#00A2FF"}
+              color={accentColour({
+                gold: card.gold,
+                red: card.red,
+                blue: true,
+              })}
             />
           </BeatIcon>
           <BeatText>{card.text}</BeatText>
@@ -979,6 +1031,9 @@ const FinalsPage: React.FC<{
   );
 };
 
+/** The extra CP for an upset: from double the opponent's CP, capped at 3×. */
+const UPSET_MULTIPLIER_RANGE = "2× to 3×";
+
 /** An Assassin's winning margin, worded for the sport. */
 const DECISIVE_WIN_LEAD = "10\u2011point lead";
 
@@ -1211,18 +1266,20 @@ const Beat = styled.View({
   borderColor: "rgba(255, 255, 255, 0.06)",
 });
 
-const BeatIcon = styled.View<{ gold?: boolean }>(
-  ({ gold }: { gold?: boolean }) => ({
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: gold
-      ? "rgba(255, 200, 0, 0.12)"
-      : "rgba(0, 162, 255, 0.15)",
-  }),
-);
+const beatIconTint = ({ gold, red }: AccentColour) => {
+  if (red) return "rgba(255, 107, 107, 0.14)";
+  if (gold) return "rgba(255, 200, 0, 0.12)";
+  return "rgba(0, 162, 255, 0.15)";
+};
+
+const BeatIcon = styled.View<AccentColour>((icon: AccentColour) => ({
+  width: 34,
+  height: 34,
+  borderRadius: 17,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: beatIconTint(icon),
+}));
 
 const BeatText = styled.Text({
   flex: 1,
