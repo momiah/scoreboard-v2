@@ -3,7 +3,9 @@ import {
   Dimensions,
   FlatList,
   ScrollView,
+  StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
 } from "react-native";
 import type {
   ListRenderItemInfo,
@@ -14,6 +16,7 @@ import type {
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import {
   LADDER_MATCH_BEST_OF_OPTIONS,
@@ -30,6 +33,7 @@ import { ladders } from "@/mockImages";
 import type { Ladder } from "@shared/types";
 import ImageMapper from "../ImageMapper";
 import { PulseRing, Reveal, RevealContext } from "./HowToPlayReveal";
+import HowToPlayLadderClimb from "./HowToPlayLadderClimb";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
 import {
@@ -38,6 +42,10 @@ import {
 } from "../../helpers/ladderPlayoffPrizes";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const COMPACT_SCREEN_HEIGHT = 760;
+
+const useCompactScreen = () =>
+  useWindowDimensions().height < COMPACT_SCREEN_HEIGHT;
 
 /** The ladder details the guide describes: a live ladder, or one still being advertised. */
 export type HowToPlayLadder = Pick<
@@ -301,7 +309,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         key: "objective",
         render: () => (
           <PageBody
-            icon="stats-chart-outline"
+            hero={<ObjectiveHero />}
             title="The Objective"
             paragraphs={[
               `A match is ${MATCH_LENGTHS} games. Each win awards you CP (Court Points).`,
@@ -364,6 +372,12 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
 
   return (
     <Screen>
+      <LinearGradient
+        pointerEvents="none"
+        colors={["rgb(3, 16, 31)", "#0a2f55", "#06213d", "rgb(3, 16, 31)"]}
+        locations={[0, 0.3, 0.6, 1]}
+        style={StyleSheet.absoluteFill}
+      />
       <TopBar>
         <TopBarTitle>How to Play</TopBarTitle>
       </TopBar>
@@ -433,6 +447,8 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
 export default HowToPlayFlow;
 interface PageBodyProps {
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Shown in place of the icon. */
+  hero?: React.ReactNode;
   title: string;
   paragraphs: React.ReactNode[];
   children?: React.ReactNode;
@@ -441,54 +457,72 @@ interface PageBodyProps {
 
 const PageBody: React.FC<PageBodyProps> = ({
   icon,
+  hero,
   title,
   paragraphs,
   children,
   image,
-}) => (
-  <ScrollView
-    contentContainerStyle={{
-      flexGrow: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 20,
-      paddingHorizontal: 30,
-    }}
-  >
-    {icon && <PageIcon icon={icon} />}
-    {image && (
-      <Reveal from="pop" style={{ width: "100%" }}>
-        <ImageContainer>
-          <Image source={image} resizeMode="contain" />
-        </ImageContainer>
+}) => {
+  const compact = useCompactScreen();
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: compact ? 14 : 20,
+        paddingHorizontal: 30,
+        paddingVertical: 16,
+      }}
+    >
+      {hero ?? (icon && <PageIcon icon={icon} />)}
+      {image && (
+        <Reveal from="pop" style={{ width: "100%" }}>
+          <ImageContainer>
+            <Image source={image} resizeMode="contain" />
+          </ImageContainer>
+        </Reveal>
+      )}
+      <Reveal order={1}>
+        <PageTitle compact={compact}>{title}</PageTitle>
       </Reveal>
-    )}
-    <Reveal order={1}>
-      <PageTitle>{title}</PageTitle>
+      {paragraphs.length > 0 ? (
+        <Paragraphs>
+          {paragraphs.map((paragraph, index) => (
+            <Reveal key={index} order={2 + index}>
+              <PageText>{paragraph}</PageText>
+            </Reveal>
+          ))}
+        </Paragraphs>
+      ) : null}
+      {children}
+    </ScrollView>
+  );
+};
+
+const ObjectiveHero: React.FC = () => {
+  const compact = useCompactScreen();
+  return (
+    <Reveal from="pop">
+      <HowToPlayLadderClimb rowHeight={compact ? 34 : 42} />
     </Reveal>
-    {paragraphs.length > 0 ? (
-      <Paragraphs>
-        {paragraphs.map((paragraph, index) => (
-          <Reveal key={index} order={2 + index}>
-            <PageText>{paragraph}</PageText>
-          </Reveal>
-        ))}
-      </Paragraphs>
-    ) : null}
-    {children}
-  </ScrollView>
-);
+  );
+};
 
 const PageIcon: React.FC<{
   icon: keyof typeof Ionicons.glyphMap;
   gold?: boolean;
-}> = ({ icon, gold }) => {
+  /** For pages with a table, where the icon sits beside the title. */
+  small?: boolean;
+}> = ({ icon, gold, small }) => {
+  const compact = useCompactScreen();
+  const size = small ? 56 : compact ? 72 : 96;
   const color = gold ? "#FFC800" : "#00A2FF";
   return (
     <Reveal from="pop">
-      <IconCircle gold={gold}>
-        <PulseRing size={ICON_CIRCLE_SIZE} color={color} />
-        <Ionicons name={icon} size={46} color={color} />
+      <IconCircle gold={gold} size={size}>
+        <PulseRing size={size} color={color} />
+        <Ionicons name={icon} size={Math.round(size * 0.48)} color={color} />
       </IconCircle>
     </Reveal>
   );
@@ -511,17 +545,17 @@ const PrizeTablePage: React.FC<PrizeTablePageProps> = ({
     contentContainerStyle={{
       flexGrow: 1,
       justifyContent: "center",
-      gap: 18,
+      gap: 14,
       paddingHorizontal: 24,
-      paddingVertical: 30,
+      paddingVertical: 16,
     }}
   >
-    <CenteredHeader>
-      <PageIcon icon="trophy-outline" gold />
+    <SideHeader>
+      <PageIcon icon="trophy-outline" gold small />
       <Reveal order={1}>
-        <PageTitle>Prize Distribution</PageTitle>
+        <PageTitle compact>Prize Distribution</PageTitle>
       </Reveal>
-    </CenteredHeader>
+    </SideHeader>
     <Paragraphs>
       <Reveal order={2}>
         <PageText>{`What each ${noun} takes home, by where they finish.`}</PageText>
@@ -586,17 +620,17 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
       contentContainerStyle={{
         flexGrow: 1,
         justifyContent: "center",
-        gap: 18,
+        gap: 14,
         paddingHorizontal: 24,
-        paddingVertical: 30,
+        paddingVertical: 16,
       }}
     >
-      <CenteredHeader>
-        <PageIcon icon="git-network-outline" />
+      <SideHeader>
+        <PageIcon icon="git-network-outline" small />
         <Reveal order={1}>
-          <PageTitle>The Playoffs</PageTitle>
+          <PageTitle compact>The Playoffs</PageTitle>
         </Reveal>
-      </CenteredHeader>
+      </SideHeader>
       <Paragraphs>
         <Reveal order={2}>
           <PageText>
@@ -723,13 +757,11 @@ const PageContainer = styled.View({
   flex: 1,
 });
 
-const ICON_CIRCLE_SIZE = 96;
-
-const IconCircle = styled.View<{ gold?: boolean }>(
-  ({ gold }: { gold?: boolean }) => ({
-    width: ICON_CIRCLE_SIZE,
-    height: ICON_CIRCLE_SIZE,
-    borderRadius: ICON_CIRCLE_SIZE / 2,
+const IconCircle = styled.View<{ gold?: boolean; size: number }>(
+  ({ gold, size }: { gold?: boolean; size: number }) => ({
+    width: size,
+    height: size,
+    borderRadius: size / 2,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: gold
@@ -740,17 +772,21 @@ const IconCircle = styled.View<{ gold?: boolean }>(
   }),
 );
 
-const CenteredHeader = styled.View({
+const SideHeader = styled.View({
+  flexDirection: "row",
   alignItems: "center",
-  gap: 14,
+  justifyContent: "center",
+  gap: 16,
 });
 
-const PageTitle = styled.Text({
-  color: "#ffffff",
-  fontSize: 27,
-  fontWeight: "bold",
-  textAlign: "center",
-});
+const PageTitle = styled.Text<{ compact?: boolean }>(
+  ({ compact }: { compact?: boolean }) => ({
+    color: "#ffffff",
+    fontSize: compact ? 23 : 27,
+    fontWeight: "bold",
+    textAlign: "center",
+  }),
+);
 
 const PageText = styled.Text({
   color: "#cccccc",
@@ -850,7 +886,7 @@ const tableCellColor = ({
 
 const TableCell = styled.Text<TableCellStyle>((cell: TableCellStyle) => ({
   flex: cell.flex ?? 1,
-  paddingVertical: 12,
+  paddingVertical: 9,
   paddingHorizontal: 10,
   fontSize: 13,
   textAlign: "center",
