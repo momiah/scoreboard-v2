@@ -76,6 +76,8 @@ interface HowToPlayFlowProps {
   finalAction: React.ReactNode;
   /** Replaces a page's text, e.g. before the Match Making tab exists. */
   pageText?: HowToPlayPageText;
+  /** Replaces the welcome page, with Next reading "Show me how". */
+  intro?: React.ReactNode;
 }
 
 interface OnboardingPage {
@@ -91,6 +93,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   onReadRules,
   finalAction,
   pageText,
+  intro,
 }) => {
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
@@ -216,16 +219,17 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     () => [
       {
         key: "intro",
-        render: () => (
-          <PageBody
-            image={{ uri: ccImageEndpoint }}
-            title={"Welcome to the official \n Court Champs Ladder"}
-            paragraphs={[
-              "Climb the ranks by playing other members.",
-              "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
-            ]}
-          />
-        ),
+        render: () =>
+          intro ?? (
+            <PageBody
+              image={{ uri: ccImageEndpoint }}
+              title={"Welcome to the official \n Court Champs Ladder"}
+              paragraphs={[
+                "Climb the ranks by playing other members.",
+                "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
+              ]}
+            />
+          ),
       },
       {
         key: "post-game",
@@ -253,8 +257,8 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         render: () => (
           <PageBody
             icon="checkmark-circle-outline"
-            title="Challenge Accepted"
-            paragraphs={["Once your match is accepted:"]}
+            title="Match Accepted"
+            paragraphs={[]}
           >
             <StepList>
               {MATCH_STEPS.map((step) => (
@@ -325,6 +329,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       maxPlayers,
       onReadRules,
       pageText,
+      intro,
       ladder?.participantCount,
       ladder?.entryFee,
       ladder?.currencyType,
@@ -404,7 +409,9 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             onPress={() => goTo(index + 1)}
             testID="how-to-play-next"
           >
-            <NavButtonText>Next</NavButtonText>
+            <NavButtonText>
+              {intro && index === 0 ? "Show me how" : "Next"}
+            </NavButtonText>
           </NavButton>
         ) : (
           finalAction

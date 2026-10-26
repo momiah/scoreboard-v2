@@ -14,6 +14,7 @@ import HowToPlayFlow, {
   HowToPlayButtonText,
   type HowToPlayPageText,
 } from "../../../components/ladder/HowToPlayFlow";
+import PreRegistrationIntro from "../../../components/LadderPreRegistration/PreRegistrationIntro";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
 
 type HowToPlayRoute = RouteProp<
@@ -134,6 +135,11 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
       }
       finalAction={finalAction}
       pageText={PRE_REGISTRATION_PAGE_TEXT}
+      intro={
+        preRegistration ? (
+          <PreRegistrationIntro option={preRegistration} />
+        ) : undefined
+      }
     />
   );
 };
