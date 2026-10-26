@@ -314,11 +314,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       {
         key: "objective",
         render: () => (
-          <PageBody
-            hero={<ObjectiveHero />}
-            title="The Objective"
-            paragraphs={[]}
-          >
+          <PageBody title="The Objective" paragraphs={[]}>
             <ObjectiveTiles />
           </PageBody>
         ),
@@ -451,8 +447,6 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
 export default HowToPlayFlow;
 interface PageBodyProps {
   icon?: keyof typeof Ionicons.glyphMap;
-  /** Shown in place of the icon. */
-  hero?: React.ReactNode;
   title: string;
   paragraphs: React.ReactNode[];
   /** Shows each paragraph as a card with this icon. */
@@ -463,7 +457,6 @@ interface PageBodyProps {
 
 const PageBody: React.FC<PageBodyProps> = ({
   icon,
-  hero,
   title,
   paragraphs,
   cardIcons,
@@ -482,7 +475,7 @@ const PageBody: React.FC<PageBodyProps> = ({
         paddingVertical: 16,
       }}
     >
-      {hero ?? (icon && <PageIcon icon={icon} />)}
+      {icon && <PageIcon icon={icon} />}
       {image && (
         <Reveal from="pop" style={{ width: "100%" }}>
           <ImageContainer>
@@ -586,13 +579,14 @@ const ObjectiveTiles: React.FC = () => (
     <Reveal order={5}>
       <PageText>The more CP you have, the higher you rank.</PageText>
     </Reveal>
+    <ObjectiveHero />
   </>
 );
 
 const ObjectiveHero: React.FC = () => {
   const compact = useCompactScreen();
   return (
-    <Reveal from="pop">
+    <Reveal order={6} from="pop">
       <HowToPlayLadderClimb rowHeight={compact ? 34 : 42} />
     </Reveal>
   );
