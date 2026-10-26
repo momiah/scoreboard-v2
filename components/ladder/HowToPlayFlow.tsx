@@ -311,12 +311,63 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             hero={<ObjectiveHero />}
             title="The Objective"
-            paragraphs={[
-              `A match is ${MATCH_LENGTHS} games. Each win awards you CP (Court Points).`,
-              "The more CP you have, the higher you rank in the ladder.",
-              "When the season ends, the top-ranked players go through to the knockout playoffs.",
-            ]}
-          />
+            paragraphs={[]}
+          >
+            <BeatList>
+              {[
+                {
+                  icon: "flash-outline" as const,
+                  text: (
+                    <>
+                      {"A match is "}
+                      <Accent>{`${MATCH_LENGTHS} games`}</Accent>
+                      {". Each win awards you "}
+                      <Accent blue>CP (Court Points)</Accent>
+                      {"."}
+                    </>
+                  ),
+                },
+                {
+                  icon: "trending-up-outline" as const,
+                  text: (
+                    <>
+                      {"The more "}
+                      <Accent blue>CP</Accent>
+                      {" you have, the "}
+                      <Accent>higher you rank</Accent>
+                      {" in the ladder."}
+                    </>
+                  ),
+                },
+                {
+                  icon: "trophy-outline" as const,
+                  gold: true,
+                  text: (
+                    <>
+                      {"When the season ends, the "}
+                      <Accent gold>top-ranked players</Accent>
+                      {" go through to the "}
+                      <Accent gold>knockout playoffs</Accent>
+                      {"."}
+                    </>
+                  ),
+                },
+              ].map((beat, beatIndex) => (
+                <Reveal key={beat.icon} order={2 + beatIndex} from="right">
+                  <Beat>
+                    <BeatIcon gold={beat.gold}>
+                      <Ionicons
+                        name={beat.icon}
+                        size={18}
+                        color={beat.gold ? "#FFC800" : "#00A2FF"}
+                      />
+                    </BeatIcon>
+                    <BeatText>{beat.text}</BeatText>
+                  </Beat>
+                </Reveal>
+              ))}
+            </BeatList>
+          </PageBody>
         ),
       },
       {
@@ -374,8 +425,8 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     <Screen>
       <LinearGradient
         pointerEvents="none"
-        colors={["rgb(3, 16, 31)", "#0a2f55", "#06213d", "rgb(3, 16, 31)"]}
-        locations={[0, 0.3, 0.6, 1]}
+        colors={["rgb(3, 16, 31)", "#020b17", "#01060d"]}
+        locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
       <TopBar>
@@ -726,6 +777,50 @@ const StepIcon = styled.View({
   justifyContent: "center",
   backgroundColor: "rgba(0, 162, 255, 0.15)",
 });
+
+const BeatList = styled.View({
+  alignSelf: "stretch",
+  gap: 10,
+});
+
+const Beat = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  paddingVertical: 12,
+  paddingHorizontal: 14,
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.04)",
+  borderWidth: 1,
+  borderColor: "rgba(255, 255, 255, 0.06)",
+});
+
+const BeatIcon = styled.View<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: gold
+      ? "rgba(255, 200, 0, 0.12)"
+      : "rgba(0, 162, 255, 0.15)",
+  }),
+);
+
+const BeatText = styled.Text({
+  flex: 1,
+  color: "#c9d6e3",
+  fontSize: 15,
+  lineHeight: 21,
+});
+
+const Accent = styled.Text<{ blue?: boolean; gold?: boolean }>(
+  ({ blue, gold }: { blue?: boolean; gold?: boolean }) => ({
+    fontWeight: "bold",
+    color: gold ? "#FFC800" : blue ? "#00A2FF" : "#ffffff",
+  }),
+);
 
 const StepText = styled.Text({
   color: "#ffffff",
