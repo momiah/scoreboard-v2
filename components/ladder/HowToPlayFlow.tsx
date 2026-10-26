@@ -579,8 +579,11 @@ const ObjectiveTiles: React.FC<{ playoffSpots: number }> = ({
     </Tiles>
     <Reveal order={5}>
       <PageText>
-        The more CP you earn, the higher you rank. But bear in mind that you are
-        penalised CP if you lose games.
+        {
+          "The more CP you earn, the higher you rank. But bear in mind that you are penalised CP if you "
+        }
+        <Accent red>lose</Accent>
+        {" games."}
       </PageText>
     </Reveal>
   </>
@@ -1070,12 +1073,23 @@ const BeatText = styled.Text({
   lineHeight: 21,
 });
 
-const Accent = styled.Text<{ blue?: boolean; gold?: boolean }>(
-  ({ blue, gold }: { blue?: boolean; gold?: boolean }) => ({
-    fontWeight: "bold",
-    color: gold ? "#FFC800" : blue ? "#00A2FF" : "#ffffff",
-  }),
-);
+interface AccentColour {
+  blue?: boolean;
+  gold?: boolean;
+  red?: boolean;
+}
+
+const accentColour = ({ blue, gold, red }: AccentColour) => {
+  if (red) return "#FF6B6B";
+  if (gold) return "#FFC800";
+  if (blue) return "#00A2FF";
+  return "#ffffff";
+};
+
+const Accent = styled.Text<AccentColour>((accent: AccentColour) => ({
+  fontWeight: "bold",
+  color: accentColour(accent),
+}));
 
 const Tiles = styled.View({
   flexDirection: "row",
