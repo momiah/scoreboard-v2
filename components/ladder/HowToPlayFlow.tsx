@@ -1,6 +1,8 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
+  Easing,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -274,7 +276,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         key: "accept-game",
         render: () => (
           <PageBody
-            icon="hand-left-outline"
+            hero={<AcceptHero />}
             title="Accept a Match"
             cardIcons={["map-outline", "eye-off-outline"]}
             paragraphs={
@@ -592,7 +594,13 @@ const ObjectiveTiles: React.FC<{ playoffSpots: number }> = ({
 
 const MATCHUP_AVATAR_SIZE = 72;
 
-const MatchmakingHero: React.FC = () => (
+const HiddenOpponent: React.FC = () => (
+  <MatchupAvatar>
+    <Ionicons name="help" size={34} color="#7f97a8" />
+  </MatchupAvatar>
+);
+
+const MatchupHero: React.FC<{ opponent: React.ReactNode }> = ({ opponent }) => (
   <Matchup>
     <Reveal from="pop">
       <MatchupAvatar user>
@@ -604,11 +612,71 @@ const MatchmakingHero: React.FC = () => (
       <Versus>VS</Versus>
     </Reveal>
     <Reveal order={2} from="pop">
-      <MatchupAvatar>
-        <Ionicons name="help" size={34} color="#7f97a8" />
-      </MatchupAvatar>
+      {opponent}
     </Reveal>
   </Matchup>
+);
+
+const MatchmakingHero: React.FC = () => (
+  <MatchupHero opponent={<HiddenOpponent />} />
+);
+
+const FLIP_MS = 450;
+
+/** The hidden opponent flips over to reveal them, as if the match was just accepted. */
+const RevealingOpponent: React.FC = () => {
+  const active = useContext(RevealContext);
+  const flip = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!active) return;
+    const turn = (toValue: number) =>
+      Animated.timing(flip, {
+        toValue,
+        duration: FLIP_MS,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: false,
+      });
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(1200),
+        turn(1),
+        Animated.delay(1800),
+        turn(0),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [active, flip]);
+
+  const scaleX = flip.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 0, 1],
+  });
+  const face = (shown: 0 | 1) =>
+    flip.interpolate({
+      inputRange: [0, 0.5, 0.5001, 1],
+      outputRange: shown ? [0, 0, 1, 1] : [1, 1, 0, 0],
+    });
+
+  return (
+    <Animated.View style={{ transform: [{ scaleX }] }}>
+      <Animated.View style={{ opacity: face(0) }}>
+        <HiddenOpponent />
+      </Animated.View>
+      <Animated.View
+        style={{ position: "absolute", top: 0, left: 0, opacity: face(1) }}
+      >
+        <MatchupAvatar revealed>
+          <Ionicons name="person" size={32} color="white" />
+        </MatchupAvatar>
+      </Animated.View>
+    </Animated.View>
+  );
+};
+
+const AcceptHero: React.FC = () => (
+  <MatchupHero opponent={<RevealingOpponent />} />
 );
 
 const ObjectiveHero: React.FC = () => {
@@ -1040,22 +1108,36 @@ const Matchup = styled.View({
   gap: 22,
 });
 
-const MatchupAvatar = styled.View<{ user?: boolean }>(
-  ({ user }: { user?: boolean }) => ({
-    width: MATCHUP_AVATAR_SIZE,
-    height: MATCHUP_AVATAR_SIZE,
-    borderRadius: MATCHUP_AVATAR_SIZE / 2,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: user ? "transparent" : "rgba(255, 255, 255, 0.04)",
-    borderWidth: 2,
-    borderStyle: user ? "solid" : "dashed",
-    borderColor: user ? "#00A2FF" : "#33445a",
-    shadowColor: "#00A2FF",
-    shadowOpacity: user ? 0.9 : 0,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
-  }),
+interface MatchupAvatarStyle {
+  user?: boolean;
+  revealed?: boolean;
+}
+
+const matchupGlow = ({ user, revealed }: MatchupAvatarStyle) => {
+  if (user) return "#00A2FF";
+  if (revealed) return "#FFC800";
+  return undefined;
+};
+
+const MatchupAvatar = styled.View<MatchupAvatarStyle>(
+  (avatar: MatchupAvatarStyle) => {
+    const glow = matchupGlow(avatar);
+    return {
+      width: MATCHUP_AVATAR_SIZE,
+      height: MATCHUP_AVATAR_SIZE,
+      borderRadius: MATCHUP_AVATAR_SIZE / 2,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: glow ? "transparent" : "rgba(255, 255, 255, 0.04)",
+      borderWidth: 2,
+      borderStyle: glow ? "solid" : "dashed",
+      borderColor: glow ?? "#33445a",
+      shadowColor: glow ?? "transparent",
+      shadowOpacity: glow ? 0.9 : 0,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 0 },
+    };
+  },
 );
 
 const Versus = styled.Text({
