@@ -16,6 +16,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
 import {
+  LADDER_MATCH_BEST_OF_OPTIONS,
   LADDER_PLAYOFF_SIZES,
   LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_STRUCTURE,
@@ -52,8 +53,12 @@ export type HowToPlayLadder = Pick<
 export type HowToPlayTextPage = "post-game" | "accept-game";
 
 export type HowToPlayPageText = Partial<
-  Record<HowToPlayTextPage, { title: string; paragraphs: React.ReactNode[] }>
+  Record<HowToPlayTextPage, { paragraphs: React.ReactNode[] }>
 >;
+
+const MATCH_LENGTHS = `${LADDER_MATCH_BEST_OF_OPTIONS.slice(0, -1).join(", ")} or ${
+  LADDER_MATCH_BEST_OF_OPTIONS[LADDER_MATCH_BEST_OF_OPTIONS.length - 1]
+}`;
 
 interface HowToPlayFlowProps {
   ladder: HowToPlayLadder | null;
@@ -63,7 +68,7 @@ interface HowToPlayFlowProps {
   onReadRules: () => void;
   /** Shown in place of Next on the last page. */
   finalAction: React.ReactNode;
-  /** Replaces a page's title and text, e.g. before the Match Making tab exists. */
+  /** Replaces a page's text, e.g. before the Match Making tab exists. */
   pageText?: HowToPlayPageText;
 }
 
@@ -221,15 +226,17 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         render: () => (
           <PageBody
             icon="add-circle-outline"
-            title={pageText?.["post-game"]?.title ?? "Post a Game"}
+            title="Matchmaking, Made Simple"
             paragraphs={
               pageText?.["post-game"]?.paragraphs ?? [
                 <>
-                  {"Post a game from the "}
+                  {"Open the "}
                   <Bold>Match Making</Bold>
-                  {" tab and wait for a member to accept."}
+                  {
+                    " tab, choose your court and post a match. Pick a day and time that suits you, then wait for another member to accept."
+                  }
                 </>,
-                "Matchmaking is blind, so you only see your opponent once they accept.",
+                "You'll never know your opponent until they accept your match.",
               ]
             }
           />
@@ -253,15 +260,17 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         render: () => (
           <PageBody
             icon="hand-left-outline"
-            title={pageText?.["accept-game"]?.title ?? "Accept a Game"}
+            title="Accept a Match"
             paragraphs={
               pageText?.["accept-game"]?.paragraphs ?? [
                 <>
-                  {"Prefer to find a game? Browse the "}
+                  {
+                    "Rather explore? Browse live matches at courts across the ladder in the "
+                  }
                   <Bold>Match Making</Bold>
-                  {" tab."}
+                  {" tab and accept one that suits you."}
                 </>,
-                "Accept one to lock in your next match.",
+                "Your opponent is hidden until you accept the match.",
               ]
             }
           />
@@ -274,8 +283,9 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             icon="stats-chart-outline"
             title="The Objective"
             paragraphs={[
-              "Win games to earn CP (Court Points).",
-              "The more CP you have, the higher you climb.",
+              `A match is ${MATCH_LENGTHS} games. Each win awards you CP (Court Points).`,
+              "The more CP you have, the higher you rank in the ladder.",
+              "When the season ends, the top-ranked players go through to the knockout playoffs.",
             ]}
           />
         ),
