@@ -981,7 +981,7 @@ const MedalHow = styled.Text({
 
 const Boost = styled.View({
   width: 70,
-  paddingLeft: 18,
+  marginRight: -12,
   alignItems: "center",
   paddingVertical: 6,
   borderLeftWidth: 1,
