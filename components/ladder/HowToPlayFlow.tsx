@@ -578,7 +578,9 @@ const ObjectiveTiles: React.FC<{ playoffSpots: number }> = ({
       ))}
     </Tiles>
     <Reveal order={5}>
-      <PageText>The more CP you have, the higher you rank.</PageText>
+      <PageText>
+        Lose a game and you lose CP. The more CP you have, the higher you rank.
+      </PageText>
     </Reveal>
   </>
 );
@@ -869,7 +871,7 @@ const FinalsPage: React.FC<{ onReadRules: () => void }> = ({ onReadRules }) => {
 };
 
 /** An Assassin's winning margin, worded for the sport. */
-const DECISIVE_WIN_LEAD = "10-point lead";
+const DECISIVE_WIN_LEAD = "10\u2011point lead";
 
 const MEDAL_GUIDE: {
   medal: ImageSourcePropType;
@@ -942,6 +944,11 @@ const AchievementMedalsPage: React.FC = () => {
           </Reveal>
         ))}
       </BeatList>
+      <Reveal order={2 + MEDAL_GUIDE.length}>
+        <FootNote>
+          {`Losses work the same way: a losing streak, or an opponent's ${DECISIVE_WIN_LEAD}, multiplies the CP you lose.`}
+        </FootNote>
+      </Reveal>
     </ScrollView>
   );
 };
