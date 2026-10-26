@@ -1047,10 +1047,14 @@ const MatchupAvatar = styled.View<{ user?: boolean }>(
     borderRadius: MATCHUP_AVATAR_SIZE / 2,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: user ? "#00A2FF" : "rgba(255, 255, 255, 0.04)",
+    backgroundColor: user ? "transparent" : "rgba(255, 255, 255, 0.04)",
     borderWidth: 2,
     borderStyle: user ? "solid" : "dashed",
-    borderColor: user ? "rgba(0, 162, 255, 0.6)" : "#33445a",
+    borderColor: user ? "#00A2FF" : "#33445a",
+    shadowColor: "#00A2FF",
+    shadowOpacity: user ? 0.9 : 0,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
   }),
 );
 
