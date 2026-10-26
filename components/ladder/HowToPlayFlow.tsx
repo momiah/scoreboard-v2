@@ -36,6 +36,7 @@ import { ladders } from "@/mockImages";
 import type { Ladder } from "@shared/types";
 import { PulseRing, Reveal, RevealContext } from "./HowToPlayReveal";
 import HowToPlayLadderClimb from "./HowToPlayLadderClimb";
+import HowToPlayBackdrop from "./HowToPlayBackdrop";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
 import {
@@ -433,6 +434,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />
+      <HowToPlayBackdrop />
       <TopBar>
         <TopBarTitle>How to Play</TopBarTitle>
       </TopBar>
