@@ -224,7 +224,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         key: "post-game",
         render: () => (
           <PageBody
-            icon="add-circle-outline"
+            hero={<MatchmakingHero />}
             title="Matchmaking, Made Simple"
             cardIcons={["calendar-outline", "eye-off-outline"]}
             paragraphs={
@@ -588,6 +588,27 @@ const ObjectiveTiles: React.FC<{ playoffSpots: number }> = ({
       </PageText>
     </Reveal>
   </>
+);
+
+const MATCHUP_AVATAR_SIZE = 72;
+
+const MatchmakingHero: React.FC = () => (
+  <Matchup>
+    <Reveal from="pop">
+      <MatchupAvatar user>
+        <PulseRing size={MATCHUP_AVATAR_SIZE} color="#00A2FF" />
+        <Ionicons name="person" size={32} color="white" />
+      </MatchupAvatar>
+    </Reveal>
+    <Reveal order={1} from="pop">
+      <Versus>VS</Versus>
+    </Reveal>
+    <Reveal order={2} from="pop">
+      <MatchupAvatar>
+        <Ionicons name="help" size={34} color="#7f97a8" />
+      </MatchupAvatar>
+    </Reveal>
+  </Matchup>
 );
 
 const ObjectiveHero: React.FC = () => {
@@ -1011,6 +1032,33 @@ const BoostUnit = styled.Text({
   fontSize: 11,
   fontWeight: "bold",
   letterSpacing: 1,
+});
+
+const Matchup = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 22,
+});
+
+const MatchupAvatar = styled.View<{ user?: boolean }>(
+  ({ user }: { user?: boolean }) => ({
+    width: MATCHUP_AVATAR_SIZE,
+    height: MATCHUP_AVATAR_SIZE,
+    borderRadius: MATCHUP_AVATAR_SIZE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: user ? "#00A2FF" : "rgba(255, 255, 255, 0.04)",
+    borderWidth: 2,
+    borderStyle: user ? "solid" : "dashed",
+    borderColor: user ? "rgba(0, 162, 255, 0.6)" : "#33445a",
+  }),
+);
+
+const Versus = styled.Text({
+  color: "#FFC800",
+  fontSize: 22,
+  fontWeight: "bold",
+  fontStyle: "italic",
 });
 
 const StepList = styled.View({
