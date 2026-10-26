@@ -260,9 +260,6 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
                   <StepRow>
                     <StepIcon>
                       <Ionicons name={step.icon} size={22} color="#00A2FF" />
-                      <StepNumber>
-                        <StepNumberText>{stepIndex + 1}</StepNumberText>
-                      </StepNumber>
                     </StepIcon>
                     <StepText>{step.text}</StepText>
                   </StepRow>
@@ -1037,24 +1034,6 @@ const StepIcon = styled.View({
   backgroundColor: "rgba(0, 162, 255, 0.12)",
   borderWidth: 1,
   borderColor: "rgba(0, 162, 255, 0.45)",
-});
-
-const StepNumber = styled.View({
-  position: "absolute",
-  top: -4,
-  right: -4,
-  width: 20,
-  height: 20,
-  borderRadius: 10,
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: "#FFC800",
-});
-
-const StepNumberText = styled.Text({
-  color: "#412402",
-  fontSize: 11,
-  fontWeight: "bold",
 });
 
 const StepLine = styled.View({
