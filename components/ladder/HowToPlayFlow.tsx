@@ -24,6 +24,7 @@ import {
   LADDER_PLAYOFF_TIE_DAYS,
   LADDER_PLAYOFF_STRUCTURE,
   getEffectiveLadderSize,
+  getLadderPlayoffStructure,
   calculateLadderPrizePool,
   ccImageEndpoint,
 } from "@shared";
@@ -31,7 +32,6 @@ import gameMedals from "@/rankingMedals";
 import { ladders } from "@/mockImages";
 
 import type { Ladder } from "@shared/types";
-import ImageMapper from "../ImageMapper";
 import { PulseRing, Reveal, RevealContext } from "./HowToPlayReveal";
 import HowToPlayLadderClimb from "./HowToPlayLadderClimb";
 import { formatCurrency } from "../../helpers/formatCurrency";
@@ -103,6 +103,9 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
   const noun = ladderEntrantNoun(ladder?.ladderType);
+  const { playoffSpots } = getLadderPlayoffStructure(
+    getEffectiveLadderSize(ladder?.participantCount ?? maxPlayers, maxPlayers),
+  );
 
   const finalsPage: OnboardingPage = {
     key: "finals",
@@ -302,7 +305,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             title="The Objective"
             paragraphs={[]}
           >
-            <ObjectiveTiles />
+            <ObjectiveTiles playoffSpots={playoffSpots} />
           </PageBody>
         ),
       },
@@ -328,6 +331,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       onReadRules,
       pageText,
       intro,
+      playoffSpots,
       ladder?.participantCount,
       ladder?.entryFee,
       ladder?.currencyType,
@@ -525,12 +529,14 @@ const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
   </BeatList>
 );
 
-const OBJECTIVE_TILES: {
+interface ObjectiveTile {
   icon: keyof typeof Ionicons.glyphMap;
   value: string;
   label: string;
   gold?: boolean;
-}[] = [
+}
+
+const objectiveTiles = (playoffSpots: number): ObjectiveTile[] => [
   {
     icon: "flash-outline",
     value: `${LADDER_MATCH_BEST_OF_OPTIONS[0]}–${
@@ -539,13 +545,20 @@ const OBJECTIVE_TILES: {
     label: "games a match",
   },
   { icon: "trending-up-outline", value: "Earn CP", label: "every win" },
-  { icon: "trophy-outline", value: "Top", label: "go to playoffs", gold: true },
+  {
+    icon: "trophy-outline",
+    value: `Top ${playoffSpots}`,
+    label: "go to playoffs",
+    gold: true,
+  },
 ];
 
-const ObjectiveTiles: React.FC = () => (
+const ObjectiveTiles: React.FC<{ playoffSpots: number }> = ({
+  playoffSpots,
+}) => (
   <>
     <Tiles>
-      {OBJECTIVE_TILES.map((tile, index) => (
+      {objectiveTiles(playoffSpots).map((tile, index) => (
         <Reveal
           key={tile.label}
           order={2 + index}
@@ -857,16 +870,130 @@ const FinalsPage: React.FC<{ onReadRules: () => void }> = ({ onReadRules }) => {
   );
 };
 
-const AchievementMedalsPage: React.FC = () => (
-  <ImageMapper
-    images={gameMedals}
-    imageSize={72}
-    title="Achievement Medals"
-    description={
-      "Earn bonus CP with medals for win streaks, big wins and long-distance wins."
-    }
-  />
-);
+/** An Assassin's winning margin, worded for the sport. */
+const DECISIVE_WIN_LEAD = "10-point lead";
+
+const MEDAL_GUIDE: {
+  medal: ImageSourcePropType;
+  name: string;
+  how: string;
+  boost: string;
+}[] = [
+  {
+    medal: gameMedals.win_streak_3,
+    name: "3 Win Streak",
+    how: "Win 3 games in a row",
+    boost: "3×",
+  },
+  {
+    medal: gameMedals.win_streak_5,
+    name: "5 Win Streak",
+    how: "Win 5 games in a row",
+    boost: "4×",
+  },
+  {
+    medal: gameMedals.win_streak_7,
+    name: "7 Win Streak",
+    how: "Win 7 games in a row",
+    boost: "5×",
+  },
+  {
+    medal: gameMedals.demon_win,
+    name: "Assassin",
+    how: `Win a game with a ${DECISIVE_WIN_LEAD}`,
+    boost: "2×",
+  },
+];
+
+const AchievementMedalsPage: React.FC = () => {
+  const compact = useCompactScreen();
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: compact ? 12 : 16,
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+      }}
+    >
+      <Reveal>
+        <PageTitle compact={compact}>Achievement Medals</PageTitle>
+      </Reveal>
+      <Reveal order={1}>
+        <PageText>
+          Earn bonus CP with medals for win streaks, big wins and long-distance
+          wins.
+        </PageText>
+      </Reveal>
+      <BeatList>
+        {MEDAL_GUIDE.map((entry, index) => (
+          <Reveal key={entry.name} order={2 + index} from="right">
+            <MedalRow>
+              <MedalImage source={entry.medal} resizeMode="contain" />
+              <MedalInfo>
+                <MedalName>{entry.name}</MedalName>
+                <MedalHow>{entry.how}</MedalHow>
+              </MedalInfo>
+              <BoostChip>
+                <BoostText>{entry.boost} CP</BoostText>
+              </BoostChip>
+            </MedalRow>
+          </Reveal>
+        ))}
+      </BeatList>
+    </ScrollView>
+  );
+};
+
+const MedalRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 12,
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+  borderRadius: 12,
+  backgroundColor: "rgba(255, 255, 255, 0.04)",
+  borderWidth: 1,
+  borderColor: "rgba(255, 255, 255, 0.06)",
+});
+
+const MedalImage = styled.Image({
+  width: 48,
+  height: 48,
+});
+
+const MedalInfo = styled.View({
+  flex: 1,
+  gap: 2,
+});
+
+const MedalName = styled.Text({
+  color: "#ffffff",
+  fontSize: 15,
+  fontWeight: "bold",
+});
+
+const MedalHow = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 13,
+});
+
+const BoostChip = styled.View({
+  paddingVertical: 5,
+  paddingHorizontal: 10,
+  borderRadius: 999,
+  backgroundColor: "rgba(255, 200, 0, 0.12)",
+  borderWidth: 1,
+  borderColor: "rgba(255, 200, 0, 0.35)",
+});
+
+const BoostText = styled.Text({
+  color: "#FFC800",
+  fontSize: 13,
+  fontWeight: "bold",
+});
 
 const StepList = styled.View({
   alignSelf: "stretch",
