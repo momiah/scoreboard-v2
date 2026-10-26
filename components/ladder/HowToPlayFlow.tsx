@@ -103,9 +103,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
   const noun = ladderEntrantNoun(ladder?.ladderType);
-  const { playoffSpots } = getLadderPlayoffStructure(
-    getEffectiveLadderSize(ladder?.participantCount ?? maxPlayers, maxPlayers),
-  );
+  const { playoffSpots } = getLadderPlayoffStructure(maxPlayers);
 
   const finalsPage: OnboardingPage = {
     key: "finals",
@@ -936,9 +934,10 @@ const AchievementMedalsPage: React.FC = () => {
                 <MedalName>{entry.name}</MedalName>
                 <MedalHow>{entry.how}</MedalHow>
               </MedalInfo>
-              <BoostChip>
-                <BoostText>{entry.boost} CP</BoostText>
-              </BoostChip>
+              <Boost>
+                <BoostValue>{entry.boost}</BoostValue>
+                <BoostUnit>CP</BoostUnit>
+              </Boost>
             </MedalRow>
           </Reveal>
         ))}
@@ -980,19 +979,25 @@ const MedalHow = styled.Text({
   fontSize: 13,
 });
 
-const BoostChip = styled.View({
-  paddingVertical: 5,
-  paddingHorizontal: 10,
-  borderRadius: 999,
-  backgroundColor: "rgba(255, 200, 0, 0.12)",
-  borderWidth: 1,
-  borderColor: "rgba(255, 200, 0, 0.35)",
+const Boost = styled.View({
+  width: 52,
+  alignItems: "center",
+  paddingVertical: 6,
+  borderLeftWidth: 1,
+  borderLeftColor: "rgba(255, 255, 255, 0.08)",
 });
 
-const BoostText = styled.Text({
+const BoostValue = styled.Text({
   color: "#FFC800",
-  fontSize: 13,
+  fontSize: 22,
   fontWeight: "bold",
+});
+
+const BoostUnit = styled.Text({
+  color: "#9fb8c8",
+  fontSize: 11,
+  fontWeight: "bold",
+  letterSpacing: 1,
 });
 
 const StepList = styled.View({
