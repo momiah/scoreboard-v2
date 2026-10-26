@@ -25,14 +25,12 @@ const LARGEST_LADDER = Math.max(...LADDER_PLAYOFF_SIZES);
 
 const PRE_REGISTRATION_PAGE_TEXT: HowToPlayPageText = {
   "post-game": {
-    title: "Matchmaking, Made Simple",
     paragraphs: [
       "Choose your court and post a match. Pick a day and time that suits you, then wait for another member to accept.",
       "You'll never know your opponent until they accept your match.",
     ],
   },
   "accept-game": {
-    title: "Accept a Match",
     paragraphs: [
       "Rather explore? Browse live matches at courts across the ladder and accept one that suits you.",
       "Your opponent is hidden until you accept the match.",
