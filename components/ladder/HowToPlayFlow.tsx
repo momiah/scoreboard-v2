@@ -950,7 +950,7 @@ const MedalRow = styled.View({
   flexDirection: "row",
   alignItems: "center",
   gap: 12,
-  paddingVertical: 10,
+  paddingVertical: 7,
   paddingHorizontal: 12,
   borderRadius: 12,
   backgroundColor: "rgba(255, 255, 255, 0.04)",
@@ -959,8 +959,8 @@ const MedalRow = styled.View({
 });
 
 const MedalImage = styled.Image({
-  width: 48,
-  height: 48,
+  width: 42,
+  height: 42,
 });
 
 const MedalInfo = styled.View({
@@ -980,9 +980,9 @@ const MedalHow = styled.Text({
 });
 
 const Boost = styled.View({
-  width: 52,
+  width: 70,
   alignItems: "center",
-  paddingVertical: 6,
+  paddingVertical: 4,
   borderLeftWidth: 1,
   borderLeftColor: "rgba(255, 255, 255, 0.08)",
 });
