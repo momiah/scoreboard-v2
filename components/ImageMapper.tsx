@@ -2,6 +2,7 @@ import React from "react";
 import { ScrollView } from "react-native";
 import type { ImageSourcePropType } from "react-native";
 import styled from "styled-components/native";
+import { Reveal } from "./ladder/HowToPlayReveal";
 
 type ImageEntry = ImageSourcePropType | { source: ImageSourcePropType };
 
@@ -43,18 +44,23 @@ const ImageMapper: React.FC<ImageMapperProps> = ({
       }}
     >
       <Grid>
-        {entries.map(([key, img]) => (
-          <GridImage
-            key={key}
-            source={toSource(img)}
-            resizeMode="contain"
-            size={imageSize}
-          />
+        {entries.map(([key, img], index) => (
+          <Reveal key={key} order={index} from="pop">
+            <GridImage
+              source={toSource(img)}
+              resizeMode="contain"
+              size={imageSize}
+            />
+          </Reveal>
         ))}
       </Grid>
-      <Title>{title}</Title>
-      <Description>{description}</Description>
-      {children}
+      <Reveal order={entries.length}>
+        <Title>{title}</Title>
+      </Reveal>
+      <Reveal order={entries.length + 1}>
+        <Description>{description}</Description>
+      </Reveal>
+      {children ? <Reveal order={entries.length + 2}>{children}</Reveal> : null}
     </ScrollView>
   );
 };
@@ -71,14 +77,12 @@ const Grid = styled.View({
 
 const GridImage = styled.Image<{ size?: number }>(
   ({ size }: { size?: number }) =>
-    size
-      ? { width: size, height: size }
-      : { flex: 1, aspectRatio: 1 },
+    size ? { width: size, height: size } : { flex: 1, aspectRatio: 1 },
 );
 
 const Title = styled.Text({
   color: "#ffffff",
-  fontSize: 24,
+  fontSize: 27,
   fontWeight: "bold",
   textAlign: "center",
 });
