@@ -580,9 +580,9 @@ const ObjectiveTiles: React.FC<{ playoffSpots: number }> = ({
     <Reveal order={5}>
       <PageText>
         {
-          "The more CP you earn, the higher you rank. But bear in mind that you are penalised CP if you "
+          "The more CP you earn, the higher you rank. But bear in mind that you are "
         }
-        <Accent red>lose</Accent>
+        <Accent red>penalised CP if you lose</Accent>
         {" games."}
       </PageText>
     </Reveal>
