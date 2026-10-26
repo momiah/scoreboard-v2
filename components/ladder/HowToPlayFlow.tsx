@@ -981,8 +981,9 @@ const MedalHow = styled.Text({
 
 const Boost = styled.View({
   width: 70,
+  paddingLeft: 18,
   alignItems: "center",
-  paddingVertical: 4,
+  paddingVertical: 6,
   borderLeftWidth: 1,
   borderLeftColor: "rgba(255, 255, 255, 0.08)",
 });
