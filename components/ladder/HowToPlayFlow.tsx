@@ -85,6 +85,8 @@ interface HowToPlayFlowProps {
   pageText?: HowToPlayPageText;
   /** Replaces the welcome page, with Next reading "Show me how". */
   intro?: React.ReactNode;
+  /** Shows the ladder's current size and prize pool under the playoff table. */
+  showLadderSize?: boolean;
 }
 
 interface OnboardingPage {
@@ -101,6 +103,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   finalAction,
   pageText,
   intro,
+  showLadderSize = true,
 }) => {
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
@@ -134,6 +137,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           registeredCount={ladder?.participantCount ?? 0}
           entryFee={ladder?.entryFee ?? 0}
           currencyType={ladder?.currencyType ?? "GBP"}
+          showLadderSize={showLadderSize}
         />
       ),
     },
@@ -322,6 +326,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             registeredCount={ladder?.participantCount ?? 0}
             entryFee={ladder?.entryFee ?? 0}
             currencyType={ladder?.currencyType ?? "GBP"}
+            showLadderSize={showLadderSize}
           />
         ),
       },
@@ -333,6 +338,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       pageText,
       intro,
       playoffSpots,
+      showLadderSize,
       ladder?.participantCount,
       ladder?.entryFee,
       ladder?.currencyType,
@@ -779,6 +785,7 @@ interface PlayoffsPageProps {
   registeredCount: number;
   entryFee: number;
   currencyType: string;
+  showLadderSize: boolean;
 }
 
 const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
@@ -786,6 +793,7 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   registeredCount,
   entryFee,
   currencyType,
+  showLadderSize,
 }) => {
   const effectiveSize = getEffectiveLadderSize(registeredCount, maxPlayers);
   const isPaid = entryFee > 0;
@@ -837,13 +845,6 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
           },
         ]}
       />
-      <Reveal order={4}>
-        <FootNote testID="how-to-play-playoff-highlight">
-          The bracket size depends on how many players have registered when
-          registration closes.
-        </FootNote>
-      </Reveal>
-
       <Table>
         <TableRow header>
           <TableCell header flex={1.2}>
@@ -870,17 +871,23 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
           );
         })}
       </Table>
-      <FootNote>
-        Current ladder size: {registeredCount} / {maxPlayers}
-        {isPaid && (
-          <>
-            {" "}
-            with a total cash prize pool of{" "}
-            {formatCurrency(prizePool.cash, currencyType)}
-          </>
-        )}{" "}
-        {isPaid ? "and a" : "with a"} CP prize pool of {prizePool.xp} CP.
+      <FootNote testID="how-to-play-playoff-highlight">
+        The bracket size depends on how many players have registered when
+        registration closes.
       </FootNote>
+      {showLadderSize ? (
+        <FootNote>
+          Current ladder size: {registeredCount} / {maxPlayers}
+          {isPaid && (
+            <>
+              {" "}
+              with a total cash prize pool of{" "}
+              {formatCurrency(prizePool.cash, currencyType)}
+            </>
+          )}{" "}
+          {isPaid ? "and a" : "with a"} CP prize pool of {prizePool.xp} CP.
+        </FootNote>
+      ) : null}
     </ScrollView>
   );
 };
