@@ -327,7 +327,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       {
         key: "upsets",
         render: () => (
-          <PageBody icon="flash-outline" title="Upset Bonus" paragraphs={[]}>
+          <PageBody icon="flash-outline" title="Rank Matters" paragraphs={[]}>
             <CardList
               cards={[
                 {
@@ -1031,7 +1031,7 @@ const FinalsPage: React.FC<{
   );
 };
 
-/** The cap on the extra CP for an upset. */
+/** The cap on the extra CP when ranks are far apart. */
 const UPSET_MAX_MULTIPLIER = "3×";
 
 /** An Assassin's winning margin, worded for the sport. */
