@@ -14,7 +14,6 @@ import Svg, {
 
 const DOT_SPACING = 10;
 const BLUE = "#00A2FF";
-const LINE_BLEED = 60;
 
 /** A faint dot grid and two sweeping lines rising from the bottom of the screen and fading out. */
 const HowToPlayBackdrop: React.FC = () => {
@@ -63,23 +62,23 @@ const HowToPlayBackdrop: React.FC = () => {
       ) : null}
       {width > 0 ? (
         <>
-          <FloatingLine
-            width={width}
+          <DriftingWave
             height={height}
-            d={`M ${-width * 0.1} ${height * 0.7} C ${width * 0.3} ${height * 0.56}, ${width * 0.65} ${height * 0.86}, ${width * 1.1} ${height * 0.62}`}
+            period={width}
+            baseline={height * 0.66}
+            amplitude={height * 0.06}
             opacity={0.12}
             strokeWidth={1.5}
-            drift={{ x: 18, y: 14 }}
-            duration={9000}
+            duration={24000}
           />
-          <FloatingLine
-            width={width}
+          <DriftingWave
             height={height}
-            d={`M ${-width * 0.1} ${height * 0.82} C ${width * 0.35} ${height * 0.7}, ${width * 0.7} ${height * 0.94}, ${width * 1.1} ${height * 0.76}`}
+            period={width * 1.3}
+            baseline={height * 0.8}
+            amplitude={height * 0.045}
             opacity={0.08}
             strokeWidth={1}
-            drift={{ x: -22, y: 10 }}
-            duration={12000}
+            duration={34000}
           />
         </>
       ) : null}
@@ -87,71 +86,69 @@ const HowToPlayBackdrop: React.FC = () => {
   );
 };
 
-interface FloatingLineProps {
-  width: number;
+interface DriftingWaveProps {
   height: number;
-  d: string;
+  period: number;
+  baseline: number;
+  amplitude: number;
   opacity: number;
   strokeWidth: number;
-  drift: { x: number; y: number };
   duration: number;
 }
 
-/** One faint line that drifts slowly back and forth. */
-const FloatingLine: React.FC<FloatingLineProps> = ({
-  width,
+const WAVE_PERIODS = 3;
+
+/** A wave drawn three periods wide that slides right by one period on repeat, so it moves forever without a seam. */
+const DriftingWave: React.FC<DriftingWaveProps> = ({
   height,
-  d,
+  period,
+  baseline,
+  amplitude,
   opacity,
   strokeWidth,
-  drift,
   duration,
 }) => {
-  const float = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const swing = (toValue: number) =>
-      Animated.timing(float, {
-        toValue,
-        duration: duration / 2,
-        easing: Easing.inOut(Easing.sin),
+    const loop = Animated.loop(
+      Animated.timing(slide, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
         useNativeDriver: true,
-      });
-    const loop = Animated.loop(Animated.sequence([swing(1), swing(0)]));
+      }),
+    );
     loop.start();
     return () => loop.stop();
-  }, [float, duration]);
+  }, [slide, duration]);
+
+  const half = period / 2;
+  const steps = Array.from(
+    { length: WAVE_PERIODS * 2 - 1 },
+    (_, step) => `T ${half * (step + 2)} ${baseline}`,
+  ).join(" ");
+  const d = `M 0 ${baseline} Q ${period / 4} ${baseline - amplitude} ${half} ${baseline} ${steps}`;
 
   return (
     <Animated.View
-      style={[
-        StyleSheet.absoluteFill,
-        {
-          transform: [
-            {
-              translateX: float.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-drift.x, drift.x],
-              }),
-            },
-            {
-              translateY: float.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-drift.y, drift.y],
-              }),
-            },
-          ],
-        },
-      ]}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: -period,
+        transform: [
+          {
+            translateX: slide.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, period],
+            }),
+          },
+        ],
+      }}
     >
-      <Svg
-        width={width + LINE_BLEED * 2}
-        height={height}
-        style={{ marginLeft: -LINE_BLEED }}
-      >
+      <Svg width={period * WAVE_PERIODS} height={height}>
         <Path
           d={d}
-          translateX={LINE_BLEED}
           stroke={BLUE}
           strokeOpacity={opacity}
           strokeWidth={strokeWidth}
