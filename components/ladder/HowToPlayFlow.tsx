@@ -21,6 +21,10 @@ import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import {
+  DECISIVE_WIN_MARGIN,
+  DECISIVE_WIN_XP_MULTIPLIER,
+  getWinStreakXpMultiplier,
+  RANK_GAP_XP,
   LADDER_MATCH_BEST_OF_OPTIONS,
   LADDER_PLAYOFF_SIZES,
   LADDER_PLAYOFF_TIE_DAYS,
@@ -1120,41 +1124,37 @@ const FinalsPage: React.FC<{
   );
 };
 
-/** The cap on the extra CP when ranks are far apart. */
-const UPSET_MAX_MULTIPLIER = "3×";
+const UPSET_MAX_MULTIPLIER = `${RANK_GAP_XP.MAX_MULTIPLIER}×`;
 
 /** An Assassin's winning margin, worded for the sport. */
-const DECISIVE_WIN_LEAD = "10\u2011point lead";
+const DECISIVE_WIN_LEAD = `${DECISIVE_WIN_MARGIN}\u2011point lead`;
 
-const MEDAL_GUIDE: {
+interface MedalGuideEntry {
   medal: ImageSourcePropType;
   name: string;
   how: string;
   boost: string;
-}[] = [
-  {
-    medal: gameMedals.win_streak_3,
-    name: "3 Win Streak",
-    how: "Win 3 games in a row",
-    boost: "3×",
-  },
-  {
-    medal: gameMedals.win_streak_5,
-    name: "5 Win Streak",
-    how: "Win 5 games in a row",
-    boost: "4×",
-  },
-  {
-    medal: gameMedals.win_streak_7,
-    name: "7 Win Streak",
-    how: "Win 7 games in a row",
-    boost: "5×",
-  },
+}
+
+const winStreakMedal = (
+  streak: number,
+  medal: ImageSourcePropType,
+): MedalGuideEntry => ({
+  medal,
+  name: `${streak} Win Streak`,
+  how: `Win ${streak} games in a row`,
+  boost: `${getWinStreakXpMultiplier(streak)}×`,
+});
+
+const MEDAL_GUIDE: MedalGuideEntry[] = [
+  winStreakMedal(3, gameMedals.win_streak_3),
+  winStreakMedal(5, gameMedals.win_streak_5),
+  winStreakMedal(7, gameMedals.win_streak_7),
   {
     medal: gameMedals.demon_win,
     name: "Assassin",
     how: `Win a game with a ${DECISIVE_WIN_LEAD}`,
-    boost: "2×",
+    boost: `${DECISIVE_WIN_XP_MULTIPLIER}×`,
   },
 ];
 
@@ -1199,7 +1199,7 @@ const AchievementMedalsPage: React.FC = () => {
       </BeatList>
       <Reveal order={2 + MEDAL_GUIDE.length}>
         <FootNote>
-          {`Losses work the same way: a losing streak, or an opponent's ${DECISIVE_WIN_LEAD}, multiplies the CP you lose.`}
+          {`Losses work a similar way: a losing streak, or an opponent's ${DECISIVE_WIN_LEAD}, multiplies the CP you lose.`}
         </FootNote>
       </Reveal>
     </ScrollView>
