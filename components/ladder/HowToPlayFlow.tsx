@@ -21,6 +21,11 @@ import { AntDesign } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import {
+  LADDER_POSTING_CLOSE_DAYS,
+  LADDER_PLAYOFF_START_DAYS,
+  LADDER_REGISTRATION_CLOSE_DAYS,
+  LADDER_STATUS,
+  LADDER_STATUS_LABELS,
   DECISIVE_WIN_MARGIN,
   DECISIVE_WIN_XP_MULTIPLIER,
   getWinStreakXpMultiplier,
@@ -356,6 +361,16 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
               </FootNote>
             </Reveal>
           </PageBody>
+        ),
+      },
+      {
+        key: "season",
+        render: () => (
+          <SeasonPage
+            noun={noun}
+            playoffSpots={playoffSpots}
+            isPaid={(ladder?.entryFee ?? 0) > 0}
+          />
         ),
       },
       {
@@ -939,6 +954,111 @@ interface PlayoffsPageProps {
   showLadderSize: boolean;
 }
 
+interface SeasonPhase {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  length?: string;
+  text: string;
+  gold?: boolean;
+}
+
+const daysLabel = (days: number) => `${days} day${days === 1 ? "" : "s"}`;
+
+/** A ladder season's phases, timed from the day registration opens. */
+const seasonPhases = (
+  noun: "player" | "team",
+  playoffSpots: number,
+  isPaid: boolean,
+): SeasonPhase[] => {
+  const playoffRounds = Math.log2(playoffSpots);
+  return [
+    {
+      icon: "person-add-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
+      length: daysLabel(LADDER_REGISTRATION_CLOSE_DAYS),
+      text: "Sign up and start posting and accepting matches straight away.",
+    },
+    {
+      icon: "lock-closed-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_CLOSED],
+      length: daysLabel(
+        LADDER_PLAYOFF_START_DAYS - LADDER_REGISTRATION_CLOSE_DAYS,
+      ),
+      text: `No new ${noun}s join. Keep climbing; new matches close ${daysLabel(LADDER_POSTING_CLOSE_DAYS)} before the playoffs.`,
+    },
+    {
+      icon: "git-network-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
+      length: `${playoffRounds} rounds`,
+      text: `The top ${playoffSpots} ${noun}s play a knockout, with ${daysLabel(LADDER_PLAYOFF_TIE_DAYS)} per round.`,
+    },
+    {
+      icon: "trophy-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
+      text: isPaid
+        ? "The champion is crowned. Cash is paid and CP is awarded."
+        : "The champion is crowned and CP is awarded.",
+      gold: true,
+    },
+  ];
+};
+
+const SeasonPage: React.FC<{
+  noun: "player" | "team";
+  playoffSpots: number;
+  isPaid: boolean;
+}> = ({ noun, playoffSpots, isPaid }) => {
+  const compact = useCompactScreen();
+  const phases = seasonPhases(noun, playoffSpots, isPaid);
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: "center",
+        gap: compact ? 12 : 16,
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+      }}
+    >
+      <SideHeader>
+        <PageIcon icon="calendar-outline" small />
+        <Reveal order={1}>
+          <PageTitle compact>The Season</PageTitle>
+        </Reveal>
+      </SideHeader>
+      <PhaseList>
+        {phases.map((phase, index) => (
+          <Reveal key={phase.label} order={2 + index} from="right">
+            <PhaseRow>
+              <PhaseRail>
+                <PhaseDot gold={phase.gold}>
+                  <Ionicons
+                    name={phase.icon}
+                    size={18}
+                    color={phase.gold ? "#FFC800" : "#00A2FF"}
+                  />
+                </PhaseDot>
+                {index < phases.length - 1 ? <PhaseLine /> : null}
+              </PhaseRail>
+              <PhaseBody>
+                <PhaseHeader>
+                  <PhaseLabel gold={phase.gold}>{phase.label}</PhaseLabel>
+                  {phase.length ? (
+                    <PhaseLength>
+                      <PhaseLengthText>{phase.length}</PhaseLengthText>
+                    </PhaseLength>
+                  ) : null}
+                </PhaseHeader>
+                <PhaseText>{phase.text}</PhaseText>
+              </PhaseBody>
+            </PhaseRow>
+          </Reveal>
+        ))}
+      </PhaseList>
+    </ScrollView>
+  );
+};
+
 const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
   maxPlayers,
   registeredCount,
@@ -1352,6 +1472,83 @@ const Versus = styled.Text({
   fontSize: 22,
   fontWeight: "bold",
   fontStyle: "italic",
+});
+
+const PhaseList = styled.View({
+  alignSelf: "stretch",
+});
+
+const PhaseRow = styled.View({
+  flexDirection: "row",
+  gap: 14,
+});
+
+const PhaseRail = styled.View({
+  alignItems: "center",
+});
+
+const PhaseDot = styled.View<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: gold
+      ? "rgba(255, 200, 0, 0.12)"
+      : "rgba(0, 162, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)",
+  }),
+);
+
+const PhaseLine = styled.View({
+  flex: 1,
+  width: 2,
+  minHeight: 14,
+  marginVertical: 4,
+  borderRadius: 1,
+  backgroundColor: "rgba(0, 162, 255, 0.35)",
+});
+
+const PhaseBody = styled.View({
+  flex: 1,
+  paddingTop: 7,
+  paddingBottom: 16,
+  gap: 4,
+});
+
+const PhaseHeader = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+});
+
+const PhaseLabel = styled.Text<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    color: gold ? "#FFC800" : "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+  }),
+);
+
+const PhaseLength = styled.View({
+  paddingVertical: 2,
+  paddingHorizontal: 8,
+  borderRadius: 999,
+  backgroundColor: "rgba(0, 162, 255, 0.12)",
+});
+
+const PhaseLengthText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 12,
+  fontWeight: "bold",
+});
+
+const PhaseText = styled.Text({
+  color: "#c9d6e3",
+  fontSize: 14,
+  lineHeight: 20,
 });
 
 const StepList = styled.View({
