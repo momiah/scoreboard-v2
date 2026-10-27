@@ -44,6 +44,11 @@ import FAQ from "../screens/Profile/FAQ";
 import LinkedAccounts from "../screens/Profile/LinkedAccounts";
 import Chats from "../screens/Chats";
 import CompetitionsScreen from "../screens/Competition/CompetitionScreen";
+import LadderPreRegistrations from "../screens/Home/LadderPreRegistration/LadderPreRegistrations";
+import LadderPreRegistrationSignup from "../screens/Home/LadderPreRegistration/LadderPreRegistrationSignup";
+import LadderPreRegistrationHowToPlay from "../screens/Home/LadderPreRegistration/LadderPreRegistrationHowToPlay";
+import LadderPreRegistrationRules from "../screens/Home/LadderPreRegistration/LadderPreRegistrationRules";
+import LadderPreRegistrationTerms from "../screens/Home/LadderPreRegistration/LadderPreRegistrationTerms";
 import { UserContext } from "../context/UserContext";
 import { LeagueContext } from "../context/LeagueContext";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
@@ -107,6 +112,26 @@ const HomeStack = () => {
       />
       <Stack.Screen name="TournamentSettings" component={TournamentSettings} />
       <Stack.Screen name="EditTournament" component={EditTournament} />
+      <Stack.Screen
+        name="LadderPreRegistrations"
+        component={LadderPreRegistrations}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationSignup"
+        component={LadderPreRegistrationSignup}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationHowToPlay"
+        component={LadderPreRegistrationHowToPlay}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationRules"
+        component={LadderPreRegistrationRules}
+      />
+      <Stack.Screen
+        name="LadderPreRegistrationTerms"
+        component={LadderPreRegistrationTerms}
+      />
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />

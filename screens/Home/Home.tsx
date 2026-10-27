@@ -43,8 +43,13 @@ import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
 import HomeClubsSection from "../../components/Home/HomeClubsSection";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
+import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { backfillCompetitionPrizeType } from "@/devFunctions/backfillCompetitionPrizeType";
+import {
+  createLaunchLadderPreRegistrations,
+  deleteLaunchLadderPreRegistrations,
+} from "@/devFunctions/launchLadderPreRegistrations";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
@@ -236,6 +241,33 @@ const Home = () => {
           </TouchableOpacity>
         ) : null}
 
+        {__DEV__ && currentUser ? (
+          <>
+            <TouchableOpacity
+              onPress={async () => {
+                const created = await createLaunchLadderPreRegistrations(
+                  currentUser.userId,
+                );
+                console.log("Launch pre-registrations created:", created);
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Create launch pre-registrations
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={async () => {
+                const deleted = await deleteLaunchLadderPreRegistrations();
+                console.log("Launch pre-registrations deleted:", deleted);
+              }}
+            >
+              <Text style={{ color: "white" }}>
+                Delete launch pre-registrations
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
+
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>
             Hello, {currentUser?.firstName}
@@ -245,6 +277,8 @@ const Home = () => {
             <Text style={{ color: "white" }}>Sign In</Text>
           </TouchableOpacity>
         )}
+
+        <LadderPreRegistrationBanner />
 
         <HomeLeagueSection
           loading={loading}
