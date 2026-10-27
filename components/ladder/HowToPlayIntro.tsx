@@ -1,28 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing } from "react-native";
 import styled from "styled-components/native";
-import { formatCurrency } from "@shared";
-import type { LadderPreRegistration } from "@shared/types";
+import { calculateLadderPrizePool } from "@shared";
 import { ladders } from "@/mockImages";
-import { Reveal } from "../ladder/HowToPlayReveal";
-import {
-  LADDER_PRE_REGISTRATION_COLORS as COLORS,
-  getEntrantNoun,
-  getPrizePool,
-  isCashLadder,
-} from "../../helpers/ladderPreRegistrationDisplay";
+import { formatCurrency } from "../../helpers/formatCurrency";
+import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
+import { Reveal } from "./HowToPlayReveal";
+
+const COLORS = {
+  blue: "#00A2FF",
+  gold: "#FFC800",
+  muted: "#aaa",
+};
+
+interface HowToPlayIntroProps {
+  ladderType?: string;
+  entryFee: number;
+  currencyType: string;
+  maxPlayers: number;
+}
 
 const COUNT_UP_MS = 1400;
 
-const PreRegistrationIntro: React.FC<{ option: LadderPreRegistration }> = ({
-  option,
+/** The guide's opening page: the full ladder's prize pool counts up under a Season One headline. */
+const HowToPlayIntro: React.FC<HowToPlayIntroProps> = ({
+  ladderType,
+  entryFee,
+  currencyType,
+  maxPlayers,
 }) => {
-  const cash = isCashLadder(option);
-  const pool = getPrizePool(option);
+  const cash = entryFee > 0;
+  const pool = calculateLadderPrizePool({
+    entryFee,
+    participantCount: maxPlayers,
+  });
   const target = cash ? pool.cash : pool.xp;
   const format = (amount: number) =>
     cash
-      ? formatCurrency(amount, option.currencyType)
+      ? formatCurrency(amount, currencyType)
       : `${amount.toLocaleString("en-GB")} CP`;
   const progress = useRef(new Animated.Value(0)).current;
   const [shown, setShown] = useState(0);
@@ -41,7 +56,7 @@ const PreRegistrationIntro: React.FC<{ option: LadderPreRegistration }> = ({
   }, [progress, target]);
 
   return (
-    <Container testID="pre-registration-intro">
+    <Container testID="how-to-play-intro">
       <Reveal>
         <Eyebrow>SEASON ONE</Eyebrow>
       </Reveal>
@@ -56,16 +71,14 @@ const PreRegistrationIntro: React.FC<{ option: LadderPreRegistration }> = ({
       </Reveal>
       <Reveal order={7}>
         <Tagline>
-          {`${option.maxPlayers.toLocaleString("en-GB")} ${getEntrantNoun(option)}s. One champion.`}
+          {`${maxPlayers.toLocaleString("en-GB")} ${ladderEntrantNoun(ladderType)}s. One champion.`}
         </Tagline>
       </Reveal>
       <Reveal order={8} from="pop">
         <Trophy source={ladders[0]} resizeMode="contain" />
       </Reveal>
       <PoolLabel>{cash ? "Prize pool" : "CP to be won"}</PoolLabel>
-      <PoolValue testID="pre-registration-intro-pool">
-        {format(shown)}
-      </PoolValue>
+      <PoolValue testID="how-to-play-intro-pool">{format(shown)}</PoolValue>
     </Container>
   );
 };
@@ -87,7 +100,7 @@ const Eyebrow = styled.Text({
 
 const Headline = styled.Text<{ gold?: boolean }>(
   ({ gold }: { gold?: boolean }) => ({
-    color: gold ? COLORS.prizeGold : "white",
+    color: gold ? COLORS.gold : "white",
     fontSize: 44,
     fontWeight: "bold",
     lineHeight: 50,
@@ -113,10 +126,10 @@ const PoolLabel = styled.Text({
 });
 
 const PoolValue = styled.Text({
-  color: COLORS.prizeGold,
+  color: COLORS.gold,
   fontSize: 40,
   fontWeight: "bold",
   marginTop: 4,
 });
 
-export default PreRegistrationIntro;
+export default HowToPlayIntro;

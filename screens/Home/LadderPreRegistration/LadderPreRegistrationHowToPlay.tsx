@@ -11,11 +11,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { LADDER_PLAYOFF_SIZES } from "@shared";
 import HowToPlayFlow, {
   HowToPlayButton,
-  HowToPlayAccent as Accent,
   HowToPlayButtonText,
-  type HowToPlayPageText,
 } from "../../../components/ladder/HowToPlayFlow";
-import PreRegistrationIntro from "../../../components/LadderPreRegistration/PreRegistrationIntro";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
 
 type HowToPlayRoute = RouteProp<
@@ -24,45 +21,6 @@ type HowToPlayRoute = RouteProp<
 >;
 
 const LARGEST_LADDER = Math.max(...LADDER_PLAYOFF_SIZES);
-
-const PRE_REGISTRATION_PAGE_TEXT: HowToPlayPageText = {
-  "post-game": {
-    cardIcons: ["enter-outline", "calendar-outline", "eye-off-outline"],
-    paragraphs: [
-      <>
-        {"Once you "}
-        <Accent>join the ladder</Accent>
-        {", you can enter the "}
-        <Accent blue>Match Making arena</Accent>
-        {" to post or find matches to progress in the ladder."}
-      </>,
-      <>
-        {"Choose your court and post a match. Pick a "}
-        <Accent>day and time</Accent>
-        {" that suits you, then wait for another member to accept."}
-      </>,
-      <>
-        {"You'll "}
-        <Accent>never know your opponent</Accent>
-        {" until they accept your match."}
-      </>,
-    ],
-  },
-  "accept-game": {
-    paragraphs: [
-      <>
-        {"Rather explore? Browse "}
-        <Accent>live matches</Accent>
-        {" at courts across the ladder and accept one that suits you."}
-      </>,
-      <>
-        {"Your opponent is "}
-        <Accent>hidden</Accent>
-        {" until you accept the match."}
-      </>,
-    ],
-  },
-};
 
 const LadderPreRegistrationHowToPlay: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
@@ -159,13 +117,7 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
         })
       }
       finalAction={finalAction}
-      pageText={PRE_REGISTRATION_PAGE_TEXT}
-      showLadderSize={false}
-      intro={
-        preRegistration ? (
-          <PreRegistrationIntro option={preRegistration} />
-        ) : undefined
-      }
+      variant="preRegistration"
     />
   );
 };
