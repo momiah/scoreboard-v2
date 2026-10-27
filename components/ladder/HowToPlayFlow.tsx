@@ -248,6 +248,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             title="Matchmaking, Made Simple"
             cardIcons={
               pageText?.["post-game"]?.cardIcons ?? [
+                "enter-outline",
                 "calendar-outline",
                 "eye-off-outline",
               ]
@@ -255,9 +256,12 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             paragraphs={
               pageText?.["post-game"]?.paragraphs ?? [
                 <>
-                  {"Open the "}
+                  {"Head over to the "}
                   <Accent blue>Match Making</Accent>
-                  {" tab, choose your court and post a match. Pick a "}
+                  {" tab to post or find matches to progress in the ladder."}
+                </>,
+                <>
+                  {"Choose your court and post a match. Pick a "}
                   <Accent>day and time</Accent>
                   {" that suits you, then wait for another member to accept."}
                 </>,
@@ -312,9 +316,11 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
                 <>
                   {"Rather explore? Browse "}
                   <Accent>live matches</Accent>
-                  {" at courts across the ladder in the "}
+                  {" in the "}
                   <Accent blue>Match Making</Accent>
-                  {" tab and accept one that suits you."}
+                  {
+                    " tab at courts across the ladder and accept one that suits you."
+                  }
                 </>,
                 <>
                   {"Your opponent is "}
