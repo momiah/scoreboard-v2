@@ -996,8 +996,8 @@ const seasonPhases = (
       icon: "trophy-outline",
       label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
       text: isPaid
-        ? "The champion is crowned. Cash is paid and CP is awarded."
-        : "The champion is crowned and CP is awarded.",
+        ? "The champion crowned. Cash paid. CP awarded."
+        : "The champion crowned. CP awarded.",
       gold: true,
     },
   ];
