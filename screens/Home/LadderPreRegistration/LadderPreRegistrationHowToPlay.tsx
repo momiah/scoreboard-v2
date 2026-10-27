@@ -27,7 +27,15 @@ const LARGEST_LADDER = Math.max(...LADDER_PLAYOFF_SIZES);
 
 const PRE_REGISTRATION_PAGE_TEXT: HowToPlayPageText = {
   "post-game": {
+    cardIcons: ["enter-outline", "calendar-outline", "eye-off-outline"],
     paragraphs: [
+      <>
+        {"Once you "}
+        <Accent>join the ladder</Accent>
+        {", you can enter the "}
+        <Accent blue>Match Making arena</Accent>
+        {" to post or find matches to progress in the ladder."}
+      </>,
       <>
         {"Choose your court and post a match. Pick a "}
         <Accent>day and time</Accent>
