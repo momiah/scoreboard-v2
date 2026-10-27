@@ -1,0 +1,7 @@
+appId: com.courtchamp
+---
+- runFlow: ../pick-date.yaml
+- tapOn:
+    id: "add-ladder-match-terms"
+- tapOn:
+    id: "add-ladder-match-submit"

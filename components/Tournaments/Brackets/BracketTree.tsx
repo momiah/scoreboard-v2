@@ -39,7 +39,7 @@ const CONNECTOR_STROKE = "rgba(255, 255, 255, 0.25)";
 const CONNECTOR_STROKE_WIDTH = 1;
 const FALLBACK_CARD_HEIGHT = 210;
 const CARD_GAP = 16;
-const SCROLL_TO_TOP_OFFSET = 40;
+const SCROLL_TO_TOP_OFFSET = 12;
 
 type BracketViewMode = "tree" | "list";
 
@@ -147,6 +147,7 @@ interface CardProps {
   isHighlighted: boolean;
   glowAnim: unknown;
   glowColor: string;
+  testID?: string;
 }
 
 const AnimatedBracketCard = ({
@@ -165,6 +166,7 @@ const AnimatedBracketCard = ({
   isHighlighted,
   glowAnim,
   glowColor,
+  testID,
 }: CardProps) => {
   const animatedStyle = useAnimatedStyle(() => {
     "worklet";
@@ -188,6 +190,7 @@ const AnimatedBracketCard = ({
         tournamentType={tournamentType}
         shell={isShellGame(game)}
         onPress={onPress}
+        testID={testID}
       />
       {isHighlighted && (
         <GameGlow glowAnim={glowAnim as never} color={glowColor} />
@@ -411,6 +414,7 @@ const BracketTree = ({
       <HeaderRow>
         <ViewToggleGroup>
           <ViewToggleButton
+            testID="bracket-view-tree"
             isActive={viewMode === "tree"}
             onPress={() => handleViewModePress("tree")}
           >
@@ -421,6 +425,7 @@ const BracketTree = ({
             />
           </ViewToggleButton>
           <ViewToggleButton
+            testID="bracket-view-list"
             isActive={viewMode === "list"}
             onPress={() => handleViewModePress("list")}
           >
@@ -438,6 +443,7 @@ const BracketTree = ({
             onTabPress={handleTabPress}
             scrollable
             fontSize={isSmallScreen ? 12 : 14}
+            testIDPrefix="bracket-round-tab"
           />
         </TabsWrapper>
       </HeaderRow>
@@ -461,18 +467,24 @@ const BracketTree = ({
           >
             <TreeCanvas style={{ width: canvasWidth, height: canvasHeight }}>
               <ConnectorLayer pointerEvents="none">
-                <Svg width={canvasWidth} height={canvasHeight}>
-                  {treeRounds.slice(0, -1).map((round, roundIndex) => {
-                    const pageOffsetX = roundIndex * PAGE_STRIDE;
-                    const fromX =
-                      pageOffsetX +
-                      COLUMN_GUTTER / 2 +
-                      (COLUMN_WIDTH - COLUMN_GUTTER);
-                    const toX =
-                      (roundIndex + 1) * PAGE_STRIDE + COLUMN_GUTTER / 2;
-                    return round.games.map((_, gameIndex) => {
-                      const targetIndex = Math.floor(gameIndex / 2);
-                      return (
+                {treeRounds.slice(0, -1).map((round, roundIndex) => {
+                  const fromX =
+                    roundIndex * PAGE_STRIDE +
+                    COLUMN_GUTTER / 2 +
+                    (COLUMN_WIDTH - COLUMN_GUTTER);
+                  const toX =
+                    (roundIndex + 1) * PAGE_STRIDE + COLUMN_GUTTER / 2;
+                  const svgLeft = fromX - CONNECTOR_STROKE_WIDTH;
+                  const svgWidth = toX - fromX + CONNECTOR_STROKE_WIDTH * 2;
+                  return (
+                    <Svg
+                      key={roundIndex}
+                      style={{ position: "absolute", top: 0, left: svgLeft }}
+                      width={svgWidth}
+                      height={canvasHeight}
+                      viewBox={`${svgLeft} 0 ${svgWidth} ${canvasHeight}`}
+                    >
+                      {round.games.map((_, gameIndex) => (
                         <AnimatedConnector
                           key={`${roundIndex}-${gameIndex}`}
                           fromXValue={fromX}
@@ -480,14 +492,14 @@ const BracketTree = ({
                           fromRound={roundIndex}
                           fromGame={gameIndex}
                           toRound={roundIndex + 1}
-                          toGame={targetIndex}
+                          toGame={Math.floor(gameIndex / 2)}
                           layoutsByActive={layoutsByActive}
                           scrollX={scrollX}
                         />
-                      );
-                    });
-                  })}
-                </Svg>
+                      ))}
+                    </Svg>
+                  );
+                })}
               </ConnectorLayer>
 
               {treeRounds.map((round, roundIndex) => {
@@ -512,6 +524,7 @@ const BracketTree = ({
                       isHighlighted={game.gameId === highlightedGameId}
                       glowAnim={glowAnim}
                       glowColor={glowColor}
+                      testID={`bracket-game-${game.gameId}`}
                     />
                   );
                 });
@@ -529,6 +542,7 @@ const BracketTree = ({
                   tournamentType={tournamentType}
                   shell={isShellGame(playoffGame)}
                   onPress={() => onGamePress(playoffGame)}
+                  testID={`bracket-game-${playoffGame.gameId}`}
                 />
                 {playoffGame.gameId === highlightedGameId && (
                   <GameGlow glowAnim={glowAnim} color={glowColor} />
@@ -548,6 +562,7 @@ const BracketTree = ({
                   tournamentType={tournamentType}
                   shell={isShellGame(game)}
                   onPress={() => onGamePress(game)}
+                  testID={`bracket-game-${game.gameId}`}
                 />
               </ListCardWrapper>
             ))}
@@ -563,6 +578,7 @@ const BracketTree = ({
                   tournamentType={tournamentType}
                   shell={isShellGame(playoffGame)}
                   onPress={() => onGamePress(playoffGame)}
+                  testID={`bracket-game-${playoffGame.gameId}`}
                 />
               </ListPlayoffSection>
             )}

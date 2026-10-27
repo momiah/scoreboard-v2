@@ -29,16 +29,23 @@ import {
   COLLECTION_NAMES,
   COMPETITION_TYPES,
   notificationTypes,
+  notificationSchema,
 } from "@shared";
 import {
+  GAME_VIDEO_TYPE,
   GameVideo,
   GameTeam,
   Player,
   NormalizedCompetition,
   Game,
+  LadderMatch,
 } from "@shared/types";
 import { buildCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { LADDER_FROZEN_MESSAGE, canApproveReportedGame } from "@shared/helpers";
+import { useLadderPlayFrozen } from "../hooks/useLadderPlayFrozen";
+import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { UserContext } from "../context/UserContext";
+import { LadderContext } from "../context/LadderContext";
 import GameVideoCard from "../components/Feed/GameVideoCard";
 import { useLikeVideo } from "../hooks/useLikeVideo";
 import { useGameApproval } from "../hooks/useGameApproval";
@@ -61,6 +68,9 @@ type GameScreenParams = {
     date: string;
     team1: GameTeam;
     team2: GameTeam;
+    /** Ladder games live in a match subcollection, addressed by these. */
+    ladderId?: string;
+    matchId?: string;
   };
 };
 
@@ -80,12 +90,18 @@ const GameScreen: React.FC = () => {
     date,
     team1,
     team2,
+    ladderId,
+    matchId,
   } = route.params;
 
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, sendNotification } = useContext(UserContext);
+  const { approveLadderGame } = useContext(LadderContext);
   const { likedVideoIds, handleLike, initLikedVideos } = useLikeVideo();
   const { approve, decline, loadingDecision, findGameInCompetition } =
     useGameApproval();
+
+  const isLadder = competitionType === COMPETITION_TYPES.LADDER;
+  const [ladderSubmitting, setLadderSubmitting] = useState(false);
 
   const [videos, setVideos] = useState<GameVideo[]>([]);
   const [liveGame, setLiveGame] = useState<Game | null>(null);
@@ -136,19 +152,63 @@ const GameScreen: React.FC = () => {
     liveGame?.approvalStatus === "Pending" ||
     liveGame?.approvalStatus === "pending";
 
-  const showApproval = isParticipant && !isReporter && liveGame !== null;
+  const canActAsApprover = canApproveReportedGame(
+    liveGame,
+    currentUser?.userId,
+  );
+  const showApproval =
+    isParticipant && !isReporter && canActAsApprover && liveGame !== null;
+  const hasApproved = !!liveGame?.approvers?.some(
+    (approver) => approver.userId === currentUser?.userId,
+  );
+  const ladderFrozen = useLadderPlayFrozen(
+    isLadder ? ladderId : undefined,
+    isLadder ? matchId : undefined,
+  );
   const canApprove =
-    showApproval && isPending && !approvalLimitReached && !autoApproved;
+    showApproval &&
+    !ladderFrozen &&
+    isPending &&
+    !approvalLimitReached &&
+    !autoApproved &&
+    !hasApproved;
+  const decisionPending = isLadder ? ladderSubmitting : loadingDecision;
 
   const approvalLabel = approvalLimitReached
     ? "Game approved"
     : autoApproved
       ? "Auto-approved"
-      : "Approve this game?";
+      : hasApproved
+        ? "You approved this game"
+        : ladderFrozen
+          ? LADDER_FROZEN_MESSAGE
+          : "Approve this game?";
 
   // ── Live game subscription ────────────────────────────────────────────────
   useEffect(() => {
     const db = getFirestore();
+
+    // Ladder games live in a match subcollection, not a competition doc.
+    if (isLadder) {
+      if (!ladderId || !matchId) return;
+      const matchRef = doc(db, "ladders", ladderId, "ladderMatches", matchId);
+      const unsubscribe = onSnapshot(
+        matchRef,
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            setLiveGame(null);
+            return;
+          }
+          const match = snapshot.data() as LadderMatch;
+          setLiveGame(match.games?.find((g) => g.gameId === gameId) ?? null);
+        },
+        (error) => {
+          console.error("[GameScreen] Ladder match subscription error:", error);
+        },
+      );
+      return () => unsubscribe();
+    }
+
     const competitionRef = doc(db, config.collectionName, competitionId);
 
     const unsubscribe = onSnapshot(
@@ -173,7 +233,7 @@ const GameScreen: React.FC = () => {
     );
 
     return () => unsubscribe();
-  }, [competitionId, gameId, competitionType]);
+  }, [competitionId, gameId, competitionType, isLadder, ladderId, matchId]);
 
   // ── Real-time video subscription ──────────────────────────────────────────
   useEffect(() => {
@@ -182,6 +242,7 @@ const GameScreen: React.FC = () => {
       collection(db, COLLECTION_NAMES.gameVideos),
       where("gameId", "==", gameId),
       where("videoApproved", "==", true),
+      where("videoType", "==", GAME_VIDEO_TYPE.GAME),
     );
 
     const unsubscribe = onSnapshot(
@@ -232,25 +293,80 @@ const GameScreen: React.FC = () => {
   }, []);
 
   // ── Approval handlers ─────────────────────────────────────────────────────
-  const handleApprove = useCallback(() => {
-    if (!liveGame) return;
+  const handleApprove = useCallback(async () => {
+    if (!liveGame || !currentUser?.userId) return;
+
+    if (isLadder) {
+      if (!ladderId || !matchId) return;
+      setLadderSubmitting(true);
+      const outcome = await approveLadderGame({
+        ladderId,
+        matchId,
+        gameId,
+        userId: currentUser.userId,
+        approver: {
+          userId: currentUser.userId,
+          username: currentUser.username,
+        },
+      });
+      setLadderSubmitting(false);
+      if (outcome.success) {
+        sendNotification({
+          ...notificationSchema,
+          createdAt: new Date(),
+          recipientId: liveGame.reporter,
+          senderId: currentUser.userId,
+          message: `${formatDisplayName(currentUser)} approved your game in ${competitionName}`,
+          type: notificationTypes.INFORMATION.LADDER.TYPE,
+          data: { ladderId, matchId, gameId },
+        });
+      }
+      return;
+    }
+
     approve({
       gameId,
       competitionId,
       senderId: liveGame.reporter,
       notificationType: approvalNotificationType,
     });
-  }, [approve, liveGame, gameId, competitionId, approvalNotificationType]);
+  }, [
+    approve,
+    approveLadderGame,
+    isLadder,
+    ladderId,
+    matchId,
+    currentUser,
+    competitionName,
+    sendNotification,
+    liveGame,
+    gameId,
+    competitionId,
+    approvalNotificationType,
+  ]);
 
   const handleDecline = useCallback(() => {
     if (!liveGame) return;
+
+    // ── Ladder decline (ready to implement) ──────────────────────────────────
+    // Wire this to declineLadderGame (see LadderContext) when the reject flow
+    // is built out; the decline button is disabled for ladder until then.
+    if (isLadder) return;
+
     decline({
       gameId,
       competitionId,
       senderId: liveGame.reporter,
       notificationType: approvalNotificationType,
     });
-  }, [decline, liveGame, gameId, competitionId, approvalNotificationType]);
+  }, [
+    decline,
+    isLadder,
+    liveGame,
+    gameId,
+    competitionId,
+    approvalNotificationType,
+  ]);
 
   // ── Placeholder logic ─────────────────────────────────────────────────────
   const renderPlaceholder = () => {
@@ -324,24 +440,26 @@ const GameScreen: React.FC = () => {
               </CompetitionName>
 
               {showApproval && (
-                <ApprovalContainer>
+                <ApprovalContainer testID="game-screen-approval">
                   <ApprovalLabel disabled={!canApprove}>
                     {approvalLabel}
                   </ApprovalLabel>
                   <ApprovalActions>
                     <IconButton
+                      testID="game-screen-decline"
                       variant="decline"
-                      disabled={!canApprove || loadingDecision}
+                      disabled={!canApprove || decisionPending || isLadder}
                       onPress={handleDecline}
                     >
                       <Ionicons name="close" size={15} color="white" />
                     </IconButton>
                     <IconButton
+                      testID="game-screen-approve"
                       variant="accept"
-                      disabled={!canApprove || loadingDecision}
+                      disabled={!canApprove || decisionPending}
                       onPress={handleApprove}
                     >
-                      {loadingDecision ? (
+                      {decisionPending ? (
                         <ActivityIndicator size="small" color="white" />
                       ) : (
                         <Ionicons name="checkmark" size={15} color="white" />
@@ -415,7 +533,9 @@ const GameScreen: React.FC = () => {
             competitionType as
               | typeof COMPETITION_TYPES.LEAGUE
               | typeof COMPETITION_TYPES.TOURNAMENT
+              | typeof COMPETITION_TYPES.LADDER
           }
+          matchId={matchId}
           gamescore={gamescore}
           date={date}
           teams={{

@@ -1,0 +1,45 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-seed-playoff-match${SUFFIX}-leg1Complete"
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-mock-po${SUFFIX}-opponent-offers-play-here"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*wants to play match 2 now at.*"
+      TIE: "r1-s1"
+- assertVisible:
+    id: "playoff-match-leg2"
+- assertVisible: ".*Awaiting your confirmation.*"
+- tapOn:
+    id: "playoff-match-leg1"
+- extendedWaitUntil:
+    visible:
+      id: "playoff-match-confirm-request"
+    timeout: 15000
+- assertVisible: "Your opponent wants to play match 2 here now. Are you up for it?"
+- assertNotVisible:
+    id: "play-match-two-accept"
+- tapOn:
+    id: "playoff-match-confirm-accept"
+- assertNotVisible:
+    id: "playoff-match-confirm-request"
+- runFlow: back-to-lobby.yaml
+- assertNotVisible: ".*Awaiting.*"
+- tapOn:
+    id: "playoff-match-leg2"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- assertNotVisible:
+    id: "lobby-games-locked"
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-assert-po${SUFFIX}-opponent-accepted-leg2"

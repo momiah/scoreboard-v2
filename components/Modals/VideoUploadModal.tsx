@@ -14,7 +14,8 @@ import { BlurView } from "expo-blur";
 import { File } from "expo-file-system";
 import { Video } from "react-native-compressor";
 import { COMPETITION_TYPES } from "@shared";
-import { UserProfile, Teams } from "@shared/types";
+import { GAME_VIDEO_TYPE } from "@shared/types";
+import { GameVideoType, UserProfile, Teams } from "@shared/types";
 import { useVideoUpload, PickedVideo } from "../../hooks/useVideoUpload";
 import { GameContext } from "../../context/GameContext";
 
@@ -33,7 +34,8 @@ interface VideoUploadModalProps {
   competitionName: string;
   competitionType:
     | typeof COMPETITION_TYPES.LEAGUE
-    | typeof COMPETITION_TYPES.TOURNAMENT;
+    | typeof COMPETITION_TYPES.TOURNAMENT
+    | typeof COMPETITION_TYPES.LADDER;
   gamescore: string;
   date: string;
   teams: Teams;
@@ -43,6 +45,11 @@ interface VideoUploadModalProps {
   icon?: "checkmark-circle-outline" | "videocam-outline";
   iconColor?: string;
   showAddLaterHint?: boolean;
+  /** Ladder games live in a match subcollection; required for ladder uploads. */
+  matchId?: string;
+  /** `dispute` uploads are kept out of feeds and need their own videoId. */
+  videoType?: GameVideoType;
+  videoId?: string;
 }
 
 const PROCESSING_MESSAGES = [
@@ -77,6 +84,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
   icon = "checkmark-circle-outline",
   iconColor = "#00A2FF",
   showAddLaterHint = true,
+  matchId,
+  videoType,
+  videoId,
 }) => {
   const [pickedVideo, setPickedVideo] = useState<PickedVideo | null>(null);
   const [compressedUri, setCompressedUri] = useState<string | null>(null);
@@ -126,8 +136,12 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
     if (video.fileSize && video.fileSize > 6 * 1024 * 1024 * 1024) {
       return "Video is too large. Please select a video under 6GB.";
     }
-    if (video.duration && video.duration < 180000) {
-      return "Video is too short. Please upload a full game of at least 3 minutes.";
+    const isDispute = videoType === GAME_VIDEO_TYPE.DISPUTE;
+    const minDuration = isDispute ? 60000 : 180000;
+    if (video.duration && video.duration < minDuration) {
+      return isDispute
+        ? "Clip is too short. Please upload at least 1 minute so the incident has context."
+        : "Video is too short. Please upload a full game of at least 3 minutes.";
     }
     if (video.duration && video.duration > 900000) {
       return "Video is too long. Please select a video under 15 minutes.";
@@ -295,6 +309,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       videoLength: pickedVideo.duration
         ? Math.round(pickedVideo.duration / 1000)
         : undefined,
+      ...(matchId ? { matchId } : {}),
+      ...(videoType ? { videoType } : {}),
+      ...(videoId ? { videoId } : {}),
     });
     setIsUploading(false);
     compressedUriRef.current = null;
@@ -326,7 +343,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
       <Overlay intensity={50} tint="dark">
         <PopupContent>
           {/* ── Close button ── */}
-          <CloseButton onPress={handleClose}>
+          <CloseButton testID="video-upload-modal-close" onPress={handleClose}>
             <AntDesign name="close-circle" size={30} color="red" />
           </CloseButton>
 
@@ -351,6 +368,7 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
 
           {/* ── Video picker button ── */}
           <VideoPickerButton
+            testID="video-upload-select"
             onPress={handlePickVideo}
             hasVideo={hasVideo}
             disabled={isCompressing || isUploading}
@@ -406,7 +424,9 @@ const VideoUploadModal: React.FC<VideoUploadModalProps> = ({
             </ProgressContainer>
           )}
 
-          {errorText ? <ErrorText>{errorText}</ErrorText> : null}
+          {errorText ? (
+            <ErrorText testID="video-upload-error">{errorText}</ErrorText>
+          ) : null}
 
           {/* ── Upload button ── */}
           <UploadButton

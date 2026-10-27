@@ -1,0 +1,631 @@
+import React, { useContext, useEffect, useMemo, useState } from "react";
+import { Dimensions, View } from "react-native";
+import styled from "styled-components/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
+import {
+  useNavigation,
+  NavigationProp,
+  ParamListBase,
+} from "@react-navigation/native";
+import { LADDER_STATUS, COMPETITION_TYPES, LADDER_TYPE } from "@shared";
+import type { Ladder, ScoreboardProfile, TeamStats } from "@shared/types";
+import {
+  LADDER_STATUS_LABELS,
+  calculateLadderPrizePool,
+  sortLadderTeamsByPlacement,
+} from "@shared/helpers";
+import { sortLadderParticipantsByPlacement } from "@shared/helpers/getRankInCompetition";
+import { teamMemberIds } from "../../helpers/ladderTeamMembership";
+
+import PrizeDistribution from "./PrizeDistribution";
+import PrizeContenders from "./PrizeContenders";
+import ParticipantCarousel from "./ParticipantCarousel";
+import PhaseTimeline from "./PhaseTimeline";
+import LadderHomeCourtSection from "./LadderHomeCourtSection";
+import LadderSummarySkeleton from "./LadderSummarySkeleton";
+import HeldPrizeNotice from "./HeldPrizeNotice";
+import JoinLadderModal from "../Modals/JoinLadderModal";
+import PerformanceRow from "../performance/Player/PerformanceRow";
+import { UserContext } from "../../context/UserContext";
+import { LadderContext } from "../../context/LadderContext";
+import { useLadderJoin } from "../../hooks/useLadderJoin";
+import { useLadderHomeCourt } from "../../hooks/useLadderHomeCourt";
+import { useLadderHeldPrize } from "../../hooks/useLadderHeldPrize";
+import { enrichPlayers } from "../../helpers/enrichPlayers";
+import { formatCurrency } from "../../helpers/formatCurrency";
+import { getLadderTopFourPrizes } from "../../helpers/ladderPlayoffPrizes";
+import { timeLeftToPlayoffs } from "../../helpers/ladderPhases";
+
+const TOP_CONTENDER_COUNT = 4;
+const CAROUSEL_PARTICIPANT_LIMIT = 20;
+
+const PLACEHOLDER_CONTENDERS = Array.from(
+  { length: TOP_CONTENDER_COUNT },
+  (_, index) => ({
+    userId: `placeholder-${index}`,
+    username: "",
+    numberOfWins: 0,
+  }),
+) as unknown as ScoreboardProfile[];
+
+const LADDER_TOOLTIP =
+  "Court Points (CP) — and cash on paid ladders — are shared across the top finishers.";
+
+const LadderStatsRow: React.FC<{ ladder: Ladder }> = ({ ladder }) => {
+  const isPaid = ladder.entryFee > 0;
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+  const playoffCountdown = useMemo(() => timeLeftToPlayoffs(ladder), [ladder]);
+  const beforePlayoffs =
+    ladder.status === LADDER_STATUS.REGISTRATION_OPEN ||
+    ladder.status === LADDER_STATUS.REGISTRATION_CLOSED;
+
+  return (
+    <StatsRow testID="ladder-stats-row">
+      <StatBlock>
+        <StatLabel>{isDoubles ? "Teams" : "Players"}</StatLabel>
+        <StatHeadingContainer>
+          <StatValue testID="ladder-players">
+            {ladder.participantCount} / {ladder.maxPlayers}
+          </StatValue>
+        </StatHeadingContainer>
+      </StatBlock>
+
+      <StatDivider />
+
+      <StatBlock>
+        <StatLabel>Entry Fee</StatLabel>
+        <StatHeadingContainer>
+          <StatValue testID="ladder-entry-fee">
+            {isPaid
+              ? formatCurrency(ladder.entryFee, ladder.currencyType)
+              : "Free"}
+          </StatValue>
+        </StatHeadingContainer>
+      </StatBlock>
+
+      <StatDivider />
+
+      {beforePlayoffs ? (
+        <StatBlock>
+          <StatLabel>To Playoffs</StatLabel>
+
+          <StatHeadingContainer>
+            <StatValue testID="ladder-playoff-countdown">
+              {playoffCountdown}
+            </StatValue>
+          </StatHeadingContainer>
+        </StatBlock>
+      ) : (
+        <StatBlock>
+          <StatLabel>Status</StatLabel>
+          <StatHeadingContainer>
+            <StatValue testID="ladder-status">
+              {LADDER_STATUS_LABELS[ladder.status]}
+            </StatValue>
+          </StatHeadingContainer>
+        </StatBlock>
+      )}
+    </StatsRow>
+  );
+};
+
+interface LadderSummaryProps {
+  ladder: Ladder;
+}
+
+type EnrichedPlayer = ScoreboardProfile & { XP?: number };
+
+const LadderSummary: React.FC<LadderSummaryProps> = ({ ladder }) => {
+  const { getUserById, currentUser } = useContext(UserContext);
+  const { fetchLadderParticipants, fetchLadderTeams } =
+    useContext(LadderContext);
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const isDoubles = ladder.ladderType === LADDER_TYPE.DOUBLES;
+  const [topContenders, setTopContenders] = useState<ScoreboardProfile[]>([]);
+  const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [joinVisible, setJoinVisible] = useState(false);
+
+  const isPaid = ladder.entryFee > 0;
+  const ladderId = ladder.ladderId;
+
+  useEffect(() => {
+    let active = true;
+    setParticipantsLoading(true);
+    fetchLadderParticipants(ladderId)
+      .then((list) => {
+        if (active) setParticipants(list);
+      })
+      .finally(() => {
+        if (active) setParticipantsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [ladderId, fetchLadderParticipants]);
+
+  const { mode, openJoin, membershipChecking } = useLadderJoin(ladder, () =>
+    setJoinVisible(true),
+  );
+  const {
+    homeCourt,
+    canChange: canChangeHomeCourt,
+    isEntrant,
+    loading: homeCourtLoading,
+    confirmHomeCourt,
+  } = useLadderHomeCourt(ladder);
+
+  const prizePool = useMemo(
+    () =>
+      calculateLadderPrizePool({
+        entryFee: ladder.entryFee,
+        participantCount: ladder.participantCount,
+      }),
+    [ladder.entryFee, ladder.participantCount],
+  );
+
+  const topFourPrizes = useMemo(() => getLadderTopFourPrizes(ladder), [ladder]);
+
+  const hasPrizesDistributed =
+    ladder.status === LADDER_STATUS.COMPLETED || ladder.prizesDistributed;
+  const heldPrize = useLadderHeldPrize(
+    ladder.ladderId,
+    currentUser?.userId,
+    !!ladder.prizesDistributed,
+  );
+
+  const [userSummaryRow, setUserSummaryRow] = useState<{
+    player: EnrichedPlayer;
+    rank: number;
+  } | null>(null);
+  const [userSummaryLoading, setUserSummaryLoading] = useState(true);
+
+  useEffect(() => {
+    if (participantsLoading) return;
+    const uid = currentUser?.userId;
+    const participant = uid
+      ? participants.find((p) => p.userId === uid)
+      : undefined;
+    if (!uid || !participant) {
+      setUserSummaryRow(null);
+      setUserSummaryLoading(false);
+      return;
+    }
+    let active = true;
+    setUserSummaryLoading(true);
+    const load = async () => {
+      try {
+        const [enrichedPlayer] = (await enrichPlayers(getUserById, [
+          participant,
+        ])) as EnrichedPlayer[];
+        // Rank on the raw participants (per-ladder XP = CP) via the ladder
+        // comparator; 0 means unranked (no wins).
+        const rank =
+          sortLadderParticipantsByPlacement(participants).findIndex(
+            (p) => p.userId === uid,
+          ) + 1;
+        if (active) setUserSummaryRow({ player: enrichedPlayer, rank });
+      } catch (error) {
+        console.error("Error building ladder summary row:", error);
+        if (active) setUserSummaryRow(null);
+      } finally {
+        if (active) setUserSummaryLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [participants, participantsLoading, currentUser?.userId, getUserById]);
+
+  const [userTeamRow, setUserTeamRow] = useState<{
+    team: TeamStats;
+    rank: number;
+  } | null>(null);
+  const [userTeamLoading, setUserTeamLoading] = useState(isDoubles);
+
+  useEffect(() => {
+    const uid = currentUser?.userId;
+    if (!isDoubles || !uid) {
+      setUserTeamRow(null);
+      setUserTeamLoading(false);
+      return;
+    }
+    let active = true;
+    setUserTeamLoading(true);
+    const load = async () => {
+      try {
+        const teams = await fetchLadderTeams(ladderId);
+        const valid = teams.filter((t) => t.teamKey && Array.isArray(t.team));
+        const ranked = sortLadderTeamsByPlacement(valid);
+        const idx = ranked.findIndex((t) => teamMemberIds(t).includes(uid));
+        const userTeam =
+          idx >= 0
+            ? ranked[idx]
+            : (valid.find((t) => teamMemberIds(t).includes(uid)) ?? null);
+        if (active) {
+          setUserTeamRow(userTeam ? { team: userTeam, rank: idx + 1 } : null);
+        }
+      } catch (error) {
+        console.error("Error building ladder team summary row:", error);
+        if (active) setUserTeamRow(null);
+      } finally {
+        if (active) setUserTeamLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [isDoubles, ladderId, currentUser?.userId, fetchLadderTeams]);
+
+  useEffect(() => {
+    if (participantsLoading) return;
+    let active = true;
+    const loadContenders = async () => {
+      setIsDataLoading(true);
+      // Rank raw participants (per-ladder XP = CP) with the ladder comparator,
+      // then enrich the top few for display (order preserved).
+      const ranked = sortLadderParticipantsByPlacement(participants);
+      if (ranked.length === 0) {
+        if (active) setTopContenders([]);
+      } else {
+        try {
+          const enriched = (await enrichPlayers(
+            getUserById,
+            ranked.slice(0, TOP_CONTENDER_COUNT),
+          )) as ScoreboardProfile[];
+          if (active) setTopContenders(enriched);
+        } catch (error) {
+          console.error("Error enriching ladder players:", error);
+          if (active) setTopContenders([]);
+        }
+      }
+      if (active) setIsDataLoading(false);
+    };
+    loadContenders();
+    return () => {
+      active = false;
+    };
+  }, [participants, participantsLoading, getUserById]);
+
+  const carouselParticipants = useMemo(
+    () => participants.slice(0, CAROUSEL_PARTICIPANT_LIMIT),
+    [participants],
+  );
+
+  const renderContenders = isDataLoading
+    ? PLACEHOLDER_CONTENDERS
+    : topContenders;
+
+  const summaryLoading =
+    participantsLoading ||
+    isDataLoading ||
+    (isDoubles ? userTeamLoading : userSummaryLoading) ||
+    homeCourtLoading ||
+    membershipChecking;
+
+  if (summaryLoading) {
+    return <LadderSummarySkeleton />;
+  }
+
+  return (
+    <Container testID="ladder-summary">
+      <PrizePotCard>
+        <SectionTitle>Total Prize Pool</SectionTitle>
+        {isPaid ? (
+          <PrizePotValue testID="ladder-cash-pot">
+            {formatCurrency(prizePool.cash, ladder.currencyType)}
+          </PrizePotValue>
+        ) : (
+          <PrizePotValue testID="ladder-cp-pot">
+            {prizePool.xp.toLocaleString()} CP
+          </PrizePotValue>
+        )}
+      </PrizePotCard>
+
+      {heldPrize ? <HeldPrizeNotice payout={heldPrize} /> : null}
+
+      <LadderStatsRow ladder={ladder} />
+
+      <PrizeDistribution
+        prizePool={prizePool.xp}
+        cashPool={isPaid ? prizePool.cash : undefined}
+        currencyType={ladder.currencyType}
+        placePrizes={topFourPrizes}
+        competitionType={COMPETITION_TYPES.LADDER}
+        tooltipMessage={LADDER_TOOLTIP}
+        onViewFullDistribution={() => {}}
+      />
+
+      <SectionTitleRow>
+        {hasPrizesDistributed ? (
+          <>
+            <SectionTitle>Prize Winners</SectionTitle>
+            <Ionicons name="checkmark-circle" size={20} color="green" />
+          </>
+        ) : (
+          <>
+            <SectionTitle>Top Contenders</SectionTitle>
+            <Ionicons name="hourglass-outline" size={20} color="#FF9800" />
+          </>
+        )}
+      </SectionTitleRow>
+
+      <TableContainer>
+        {!isDataLoading && renderContenders.length === 0 ? (
+          <EmptyState>
+            <EmptyStateText>
+              Top contenders will appear here once players start winning games.
+            </EmptyStateText>
+          </EmptyState>
+        ) : (
+          renderContenders.map((player, index) => (
+            <View key={player.userId} testID={`ladder-top-contender-${index}`}>
+              <PrizeContenders
+                item={player}
+                index={index}
+                isDataLoading={isDataLoading}
+                placePrizes={topFourPrizes}
+                prizePool={prizePool.xp}
+                cashPool={isPaid ? prizePool.cash : undefined}
+                currencyType={ladder.currencyType}
+                hasPrizesDistributed={hasPrizesDistributed}
+                competitionType={COMPETITION_TYPES.LADDER}
+              />
+            </View>
+          ))
+        )}
+      </TableContainer>
+
+      {isDoubles
+        ? userTeamRow && (
+            <PositionSection testID="ladder-team-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <PositionCard>
+                <PerformanceRow
+                  team={userTeamRow.team}
+                  rank={userTeamRow.rank}
+                  ladder={ladder}
+                  onPress={(team: TeamStats) =>
+                    navigation.navigate("TeamDetails", { team })
+                  }
+                />
+              </PositionCard>
+            </PositionSection>
+          )
+        : userSummaryRow && (
+            <PositionSection testID="ladder-position-summary">
+              <SectionTitle>Current Position</SectionTitle>
+              <PositionCard>
+                <PerformanceRow
+                  player={userSummaryRow.player}
+                  rank={userSummaryRow.rank}
+                  ladder={ladder}
+                  onPress={(selectedPlayer: ScoreboardProfile) =>
+                    navigation.navigate("PlayerDetails", { selectedPlayer })
+                  }
+                />
+              </PositionCard>
+            </PositionSection>
+          )}
+
+      <LadderHomeCourtSection
+        ladder={ladder}
+        homeCourt={homeCourt}
+        canChange={canChangeHomeCourt}
+        isEntrant={isEntrant}
+        confirmHomeCourt={confirmHomeCourt}
+      />
+
+      {!!ladder.description && (
+        <DescriptionSection testID="ladder-description">
+          <SectionTitle>About this Ladder</SectionTitle>
+          <DescriptionText>{ladder.description}</DescriptionText>
+        </DescriptionSection>
+      )}
+
+      <View style={{ marginTop: 20 }}>
+        <ParticipantCarousel
+          participants={carouselParticipants}
+          viewAllText="View All Participants"
+          onViewAll={() => {}}
+        />
+      </View>
+
+      <PhaseTimeline ladder={ladder} />
+
+      {mode === "join" ? (
+        <JoinNowButton
+          testID="ladder-summary-join"
+          activeOpacity={0.85}
+          onPress={openJoin}
+        >
+          <JoinNowText>Join Now</JoinNowText>
+        </JoinNowButton>
+      ) : (
+        <ParticipantButton
+          testID="ladder-summary-join"
+          disabled
+          activeOpacity={1}
+        >
+          {mode === "participant" && (
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={18}
+              color="#22c55e"
+            />
+          )}
+          <ParticipantText>
+            {mode === "participant" ? "Participant" : "Registration Closed"}
+          </ParticipantText>
+        </ParticipantButton>
+      )}
+
+      <View style={{ height: 40 }} />
+
+      {joinVisible && (
+        <JoinLadderModal
+          modalVisible={joinVisible}
+          setModalVisible={setJoinVisible}
+          ladder={ladder}
+        />
+      )}
+    </Container>
+  );
+};
+
+export default LadderSummary;
+
+const { width: screenWidth } = Dimensions.get("window");
+
+const Container = styled.ScrollView({
+  padding: 20,
+});
+
+const SectionTitle = styled.Text({
+  fontSize: 16,
+  fontWeight: "bold",
+  color: "#ffffff",
+});
+
+const JoinNowButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  paddingVertical: 15,
+  borderRadius: 12,
+  backgroundColor: "#00A2FF",
+  marginTop: 20,
+});
+
+const JoinNowText = styled.Text({
+  color: "#ffffff",
+  fontSize: 16,
+  fontWeight: "bold",
+});
+
+const ParticipantButton = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
+  paddingVertical: 15,
+  borderRadius: 12,
+  backgroundColor: "#16181B",
+  borderWidth: 2,
+  borderColor: "#272727ff",
+  marginTop: 20,
+});
+
+const ParticipantText = styled.Text({
+  color: "#cbd5e1",
+  fontSize: 16,
+  fontWeight: "bold",
+});
+
+const DescriptionSection = styled.View({
+  marginTop: 10,
+  gap: 8,
+});
+
+const DescriptionText = styled.Text({
+  fontSize: 14,
+  lineHeight: 20,
+  color: "#cccccc",
+});
+
+const SectionTitleRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  marginTop: 10,
+});
+
+const PrizePotCard = styled.View({
+  padding: 20,
+  borderRadius: 14,
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderWidth: 1,
+  borderColor: "rgba(0, 162, 255, 0.35)",
+  alignItems: "center",
+  gap: 6,
+  marginBottom: 8,
+});
+
+const PrizePotValue = styled.Text({
+  fontSize: screenWidth <= 405 ? 30 : 34,
+  fontWeight: "bold",
+  color: "#ffc800ff",
+});
+
+const TableContainer = styled.View({
+  paddingTop: 10,
+  paddingBottom: 20,
+});
+
+const EmptyState = styled.View({
+  paddingVertical: 20,
+  paddingHorizontal: 20,
+  alignItems: "center",
+  justifyContent: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.3)",
+  borderRadius: 8,
+});
+
+const EmptyStateText = styled.Text({
+  fontSize: screenWidth <= 405 ? 13 : 14,
+  color: "#aaa",
+  textAlign: "center",
+});
+
+const StatsRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: 20,
+  padding: 16,
+  borderRadius: 12,
+});
+
+const StatHeadingContainer = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 4,
+});
+
+const StatBlock = styled.View({
+  flex: 1,
+  alignItems: "center",
+  gap: 4,
+});
+
+const StatDivider = styled.View({
+  width: 1,
+  height: 40,
+  backgroundColor: "#192336",
+});
+
+const StatValue = styled.Text({
+  fontSize: screenWidth <= 405 ? 14 : 16,
+  fontWeight: "bold",
+  color: "#ffffff",
+});
+
+const StatLabel = styled.Text({
+  fontSize: 11,
+  color: "#9fb8c8",
+});
+
+const PositionSection = styled.View({
+  gap: 10,
+  marginBottom: 20,
+});
+
+const PositionCard = styled.View({
+  marginHorizontal: -20,
+  paddingHorizontal: 20,
+});

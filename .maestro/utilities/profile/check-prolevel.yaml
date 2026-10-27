@@ -1,0 +1,48 @@
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-home"
+- scrollUntilVisible:
+    element:
+      id: "maestro-seed-prolevel-${LEVEL}"
+    direction: UP
+    timeout: 90000
+    speed: 80
+- waitForAnimationToEnd
+- tapOn:
+    id: "maestro-seed-prolevel-${LEVEL}"
+- extendedWaitUntil:
+    visible: "Seeded"
+    timeout: 90000
+- tapOn: "OK"
+- tapOn:
+    id: "tab-profile"
+- tapOn:
+    id: "profile-refresh"
+- extendedWaitUntil:
+    visible:
+      id: "profile-cp"
+    timeout: 30000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      true: ${LEVEL == 0}
+    commands:
+      - assertNotVisible: "PROLevel.*"
+      - assertNotVisible:
+          id: "profile-prolevel-bar-1-on"
+- runFlow:
+    when:
+      true: ${LEVEL > 0}
+    commands:
+      - assertVisible:
+          id: "profile-prolevel-level-${LEVEL}"
+      - assertVisible: "PROLevel ${LEVEL} of 5"
+      - assertVisible:
+          id: "profile-prolevel-bar-${LEVEL}-on"
+- runFlow:
+    when:
+      true: ${LEVEL > 0 && LEVEL < 5}
+    commands:
+      - assertVisible:
+          id: "profile-prolevel-bar-${Number(LEVEL) + 1}-off"

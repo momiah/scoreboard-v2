@@ -6,6 +6,7 @@ import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
 import { LeagueProvider } from "./context/LeagueContext";
+import LadderProvider from "./context/LadderContext";
 import { NavigationContainer, CommonActions } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -23,6 +24,7 @@ import Tabs from "./navigation/tabs";
 import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
 import VideoFullscreen from "./screens/VideoFullScreen";
+import { getPlayoffTieRoute } from "./helpers/playoffTieRoute";
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();
@@ -155,15 +157,21 @@ export default function App() {
       (response) => {
         if (!navigationRef.current) return;
 
+        const tieRoute = getPlayoffTieRoute(
+          response?.notification?.request?.content?.data,
+        );
         navigationRef.current.dispatch(
           CommonActions.navigate({
             name: "Competitions",
             params: {
               state: {
-                index: 1,
+                index: tieRoute ? 2 : 1,
                 routes: [
                   { name: "CompetitionsList" },
                   { name: "Notifications" },
+                  ...(tieRoute
+                    ? [{ name: tieRoute.name, params: tieRoute.params }]
+                    : []),
                 ],
               },
             },
@@ -192,9 +200,11 @@ export default function App() {
         <PopupProvider>
           <UserProvider>
             <LeagueProvider>
-              <GameProvider>
-                <AppContent />
-              </GameProvider>
+              <LadderProvider>
+                <GameProvider>
+                  <AppContent />
+                </GameProvider>
+              </LadderProvider>
             </LeagueProvider>
           </UserProvider>
         </PopupProvider>

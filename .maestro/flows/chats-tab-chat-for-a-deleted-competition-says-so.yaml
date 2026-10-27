@@ -1,0 +1,22 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-chats-legacy"
+- tapOn:
+    id: "tab-chats"
+- extendedWaitUntil:
+    visible: ".*Chats.*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*Maestro Deleted Chat.*"
+    timeout: 15000
+- tapOn:
+    id: "chats-row-maestro-chat-deleted-competition"
+- extendedWaitUntil:
+    visible: "This chat is no longer available"
+    timeout: 15000
+- assertVisible: ".*Maestro Deleted Chat.*"

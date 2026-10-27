@@ -1,0 +1,52 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-cancel-accepted"
+- tapOn:
+    id: "tab-competitions"
+- runFlow:
+    when:
+      notVisible:
+        id: "competitions-notifications-button"
+    commands:
+      - tapOn:
+          id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*open Maestro Cancel Ladder on Schedule.*"
+    timeout: 15000
+- tapOn: ".*open Maestro Cancel Ladder on Schedule.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-cancel-match"
+    timeout: 20000
+- tapOn:
+    id: "schedule-card-maestro-cancel-match"
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- tapOn:
+    id: "match-details-tab-Chat Room"
+- extendedWaitUntil:
+    visible: "See you at the court at 6"
+    timeout: 20000
+- tapOn:
+    id: "chat-room-input"
+- inputText: "On my way, bringing the shuttles"
+- tapOn:
+    id: "chat-room-send"
+- extendedWaitUntil:
+    visible: "On my way, bringing the shuttles"
+    timeout: 15000
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-cancel-chat-delivered"

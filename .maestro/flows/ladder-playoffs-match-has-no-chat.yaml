@@ -1,0 +1,16 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/seed-stage.yaml
+    env:
+      STAGE: "leg1Complete"
+      SUFFIX: ""
+- runFlow:
+    file: ../utilities/playoffs/open-leg.yaml
+    env:
+      CARD: "playoff-match-leg1"
+- assertNotVisible: "Chat Room"
+- assertVisible:
+    id: "match-details"

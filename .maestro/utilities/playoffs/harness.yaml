@@ -1,0 +1,30 @@
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-home"
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: 50%, 25%
+          end: 50%, 85%
+          duration: 300
+- tapOn:
+    id: "maestro-harness-filter"
+    point: 98%,50%
+- eraseText: 120
+- inputText: ${BUTTON}
+- extendedWaitUntil:
+    visible:
+      id: "maestro-harness-filter-applied"
+      text: ${BUTTON}
+    timeout: 20000
+- tapOn:
+    id: "maestro-harness-filter-applied"
+- waitForAnimationToEnd
+- tapOn:
+    id: ${BUTTON}
+- extendedWaitUntil:
+    visible: "(Seeded|Mocked|Resolved|Requested)"
+    timeout: 90000
+- tapOn: "OK"

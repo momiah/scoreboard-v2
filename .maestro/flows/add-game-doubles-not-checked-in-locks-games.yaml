@@ -1,0 +1,38 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-add-game-flow-doubles-not-checked-in"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*accepted your ladder match.*"
+    timeout: 15000
+- tapOn: ".*accepted your ladder match.*"
+- extendedWaitUntil:
+    visible:
+      id: "schedule-card-maestro-add-game-flow-doubles-match"
+    timeout: 15000
+- tapOn:
+    id: "schedule-card-maestro-add-game-flow-doubles-match"
+- scrollUntilVisible:
+    element:
+      id: "lobby-games-locked"
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      id: "ladder-game-maestro-add-game-flow-doubles-match-g1"
+    direction: DOWN
+- tapOn:
+    id: "ladder-game-maestro-add-game-flow-doubles-match-g1"
+- extendedWaitUntil:
+    visible: "All players must check in to start the games"
+    timeout: 10000
+- assertNotVisible:
+    id: "add-game-score-input"

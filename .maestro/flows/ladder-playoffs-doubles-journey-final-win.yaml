@@ -1,0 +1,20 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/journey-finish-ladder.yaml
+    env:
+      SUFFIX: "-doubles"
+      LADDER: "Maestro Playoffs Doubles 256"
+      SEED: "final-leg2-win"
+      TIE: "r4-s0"
+      MATCH: "r4-s0-leg2"
+      PLACED: ".*you have placed 1st in Maestro Playoffs Doubles 256 and been awarded .* CP\\..*"
+      OPPONENT: "opponent-placed-2nd"
+      COMPANION_WINNER: "companion-winner-placed-3rd"
+      COMPANION_LOSER: "companion-loser-placed-4th"
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-assert-po-doubles-partner-placed-1st"

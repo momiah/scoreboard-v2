@@ -1,0 +1,36 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/playoffs/harness.yaml
+    env:
+      BUTTON: "maestro-seed-active-dispute"
+
+- tapOn:
+    id: "tab-competitions"
+- tapOn:
+    id: "competitions-notifications-button"
+- extendedWaitUntil:
+    visible: ".*Maestro Reject-Flow Ladder.*"
+    timeout: 15000
+- tapOn: ".*Maestro Reject-Flow Ladder.*"
+- assertVisible:
+    id: "game-approval-modal"
+
+- assertVisible:
+    id: "game-approval-accept"
+    enabled: false
+- assertVisible:
+    id: "game-approval-decline"
+    enabled: false
+
+- assertVisible:
+    id: "game-approval-disputed-link"
+- tapOn:
+    id: "game-approval-disputed-link"
+- assertVisible:
+    id: "game-dispute-screen"
+- assertVisible: ".*Dispute opened.*"
+- assertNotVisible:
+    id: "dispute-compose-submit"

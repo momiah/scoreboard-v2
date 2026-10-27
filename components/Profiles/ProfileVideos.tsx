@@ -15,7 +15,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { COLLECTION_NAMES } from "@shared";
-import { GameVideo } from "@shared/types";
+import { GAME_VIDEO_TYPE, GameVideo } from "@shared/types";
 import { UserContext } from "../../context/UserContext";
 import GameVideoCard from "../Feed/GameVideoCard";
 import { useLikeVideo } from "../../hooks/useLikeVideo";
@@ -79,6 +79,7 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
           query(
             collection(db, COLLECTION_NAMES.gameVideos),
             where("postedBy.userId", "==", userId),
+            where("videoType", "==", GAME_VIDEO_TYPE.GAME),
           ),
         );
         fetchedVideos = snap.docs
@@ -110,6 +111,7 @@ const ProfileVideos: React.FC<ProfileVideosProps> = ({
             collection(db, COLLECTION_NAMES.gameVideos),
             where("playerIds", "array-contains", userId),
             where("videoApproved", "==", true),
+            where("videoType", "==", GAME_VIDEO_TYPE.GAME),
           ),
         );
         fetchedVideos = snap.docs

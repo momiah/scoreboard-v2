@@ -1,8 +1,11 @@
 import * as admin from "firebase-admin";
 import { Notification } from "courtchamps-shared";
 
+const ALREADY_EXISTS = 6;
+
 export const sendNotification = async (
   notification: Notification,
+  options: { id?: string } = {},
 ): Promise<void> => {
   try {
     const db = admin.firestore();
@@ -17,8 +20,18 @@ export const sendNotification = async (
       .doc(recipientId)
       .collection("notifications");
 
-    const docRef = await notifRef.add(notification);
-    console.log("✅ Notification written to Firestore:", docRef.id);
+    if (options.id) {
+      try {
+        await notifRef.doc(options.id).create(notification);
+      } catch (error) {
+        if ((error as { code?: number }).code === ALREADY_EXISTS) return;
+        throw error;
+      }
+      console.log("✅ Notification written to Firestore:", options.id);
+    } else {
+      const docRef = await notifRef.add(notification);
+      console.log("✅ Notification written to Firestore:", docRef.id);
+    }
 
     const recipientDocRef = await db.collection("users").doc(recipientId).get();
     if (!recipientDocRef.exists) {

@@ -1,0 +1,300 @@
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { Dimensions, ScrollView } from "react-native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
+import type {
+  NavigationProp,
+  ParamListBase,
+  RouteProp,
+} from "@react-navigation/native";
+import styled from "styled-components/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
+import { LADDER_TYPE } from "@shared/types";
+import type { ScoreboardProfile, TeamStats } from "@shared/types";
+
+import { LADDER_STATUS } from "@shared";
+import HowToPlayButton from "../../../components/ladder/HowToPlayButton";
+import LadderSummary from "../../../components/Summary/LadderSummary";
+import LoadingOverlay from "../../../components/LoadingOverlay";
+import PlayerPerformance from "../../../components/performance/Player/PlayerPerformance";
+import TeamPerformance from "../../../components/performance/Team/TeamPerformance";
+import { LadderContext } from "../../../context/LadderContext";
+import { ccDefaultImage } from "../../../mockImages/index";
+import Matchmaking from "./tabs/Matchmaking";
+import Schedule from "./tabs/Schedule";
+import LadderPlayoffs from "../../../components/ladder/LadderPlayoffs";
+
+type LadderTab =
+  | "Summary"
+  | "Matchmaking"
+  | "Schedule"
+  | "Performance"
+  | "Playoffs";
+
+type LadderRouteParams = {
+  ladderId: string;
+  tab?: LadderTab;
+  highlightMatchId?: string;
+};
+
+const Ladder: React.FC = () => {
+  const route =
+    useRoute<RouteProp<Record<string, LadderRouteParams>, string>>();
+  const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const { ladderId, tab, highlightMatchId } = route.params;
+  const { fetchLadderById, fetchLadderParticipants, fetchLadderTeams, ladderById } =
+    useContext(LadderContext);
+
+  const [ladderLoading, setLadderLoading] = useState(true);
+  const [ladderNotFound, setLadderNotFound] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<LadderTab>(tab || "Summary");
+
+  useEffect(() => {
+    if (tab) setSelectedTab(tab);
+  }, [tab]);
+  const [participants, setParticipants] = useState<ScoreboardProfile[]>([]);
+  const [teams, setTeams] = useState<TeamStats[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const fetchData = async () => {
+        if (!ladderId) return;
+        setLadderLoading(true);
+        try {
+          const fetched = await fetchLadderById(ladderId);
+          if (!active) return;
+          setLadderNotFound(!fetched);
+
+          // Standings data comes from the ladder subcollections (League/
+          // Tournament get theirs off the competition doc). Doubles reads teams,
+          // singles reads participants — same data PlayerPerformance/
+          // TeamPerformance already render.
+          if (fetched?.ladderType === LADDER_TYPE.DOUBLES) {
+            const teamRows = await fetchLadderTeams(ladderId);
+            if (active) setTeams(teamRows);
+          } else {
+            const participantRows = await fetchLadderParticipants(ladderId);
+            if (active) setParticipants(participantRows);
+          }
+        } catch (error) {
+          console.error("Error fetching ladder data:", error);
+          if (active) setLadderNotFound(true);
+        } finally {
+          if (active) setLadderLoading(false);
+        }
+      };
+      fetchData();
+      return () => {
+        active = false;
+      };
+    }, [ladderId, fetchLadderById, fetchLadderParticipants, fetchLadderTeams]),
+  );
+
+  const performanceLabel: LadderTab = "Performance";
+  const performanceDisplay =
+    ladderById?.ladderType === LADDER_TYPE.DOUBLES
+      ? "Team Performance"
+      : "Player Performance";
+
+  const tabs: { key: LadderTab; label: string }[] = [
+    { key: "Summary", label: "Summary" },
+    { key: "Matchmaking", label: "Matchmaking" },
+    { key: "Schedule", label: "Schedule" },
+    { key: performanceLabel, label: performanceDisplay },
+    { key: "Playoffs", label: "Playoffs" },
+  ];
+
+  const renderTab = () => {
+    if (!ladderById) return null;
+    switch (selectedTab) {
+      case "Summary":
+        return <LadderSummary ladder={ladderById} />;
+      case "Matchmaking":
+        return <Matchmaking ladder={ladderById} />;
+      case "Schedule":
+        return (
+          <Schedule
+            ladder={ladderById}
+            highlightMatchId={highlightMatchId}
+            onOpenPlayoffs={() => setSelectedTab("Playoffs")}
+          />
+        );
+      case "Performance":
+        // Reuse the competition performance components directly, exactly as
+        // League/Tournament do. Doubles renders team standings; singles renders
+        // player standings (with the ladder for its per-ladder CP column).
+        return ladderById.ladderType === LADDER_TYPE.DOUBLES ? (
+          <TeamPerformance leagueTeams={teams} ladder={ladderById} />
+        ) : (
+          <PlayerPerformance playersData={participants} ladder={ladderById} />
+        );
+      case "Playoffs":
+        return <LadderPlayoffs ladder={ladderById} />;
+      default:
+        return null;
+    }
+  };
+
+  if (!ladderLoading && (ladderNotFound || !ladderById)) {
+    return (
+      <NotFound>
+        <NotFoundText>Ladder not found.</NotFoundText>
+      </NotFound>
+    );
+  }
+
+  return (
+    <Screen>
+      <LoadingOverlay visible={ladderLoading} loadingText="Ladder" />
+
+      {!ladderLoading && ladderById && (
+        <>
+          <Overview>
+            <LadderImage
+              source={
+                ladderById.image ? { uri: ladderById.image } : ccDefaultImage
+              }
+            >
+              <OverlayTop>
+                <IconButton
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    navigation.navigate("LadderMenu", { ladderId })
+                  }
+                  testID="ladder-burger"
+                >
+                  <Ionicons name="menu" size={24} color="#ffffff" />
+                </IconButton>
+              </OverlayTop>
+
+              <OverlayBottom>
+                <HowToPlayButton
+                  ladderId={ladderId}
+                  isPlayoffs={ladderById.status === LADDER_STATUS.PLAYOFFS}
+                  onPress={() =>
+                    navigation.navigate("LadderHowToPlay", {
+                      ladderId,
+                      maxPlayers: ladderById.maxPlayers,
+                      playoffs: ladderById.status === LADDER_STATUS.PLAYOFFS,
+                    })
+                  }
+                />
+              </OverlayBottom>
+            </LadderImage>
+          </Overview>
+
+          <TabsContainer>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 10 }}
+            >
+              {tabs.map((t) => (
+                <TabButton
+                  key={t.key}
+                  isSelected={selectedTab === t.key}
+                  onPress={() => setSelectedTab(t.key)}
+                  testID={`ladder-tab-${t.key}`}
+                >
+                  <TabText>{t.label}</TabText>
+                </TabButton>
+              ))}
+            </ScrollView>
+          </TabsContainer>
+
+          {renderTab()}
+        </>
+      )}
+    </Screen>
+  );
+};
+
+export default Ladder;
+
+const { width: screenWidth } = Dimensions.get("window");
+
+const Screen = styled.View({
+  flex: 1,
+  backgroundColor: "#00152B",
+});
+
+const NotFound = styled.View({
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgb(3, 16, 31)",
+});
+
+const NotFoundText = styled.Text({
+  color: "#aaa",
+  textAlign: "center",
+});
+
+const Overview = styled.View({
+  height: 200,
+  width: "100%",
+  position: "relative",
+});
+
+const LadderImage = styled.ImageBackground.attrs({
+  imageStyle: { resizeMode: "cover" },
+})({
+  width: "100%",
+  height: "100%",
+  justifyContent: "flex-end",
+});
+
+const OverlayTop = styled.View({
+  position: "absolute",
+  top: 15,
+  right: 15,
+  zIndex: 5,
+});
+
+const IconButton = styled.TouchableOpacity({
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const OverlayBottom = styled.View({
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  padding: 15,
+  marginBottom: 20,
+});
+
+const TabsContainer = styled.View({
+  width: "100%",
+  backgroundColor: "#00152B",
+  borderTopLeftRadius: 30,
+  borderTopRightRadius: 30,
+  paddingTop: 25,
+  paddingBottom: 10,
+  marginTop: -20,
+});
+
+const TabButton = styled.TouchableOpacity<{ isSelected: boolean }>(
+  ({ isSelected }: { isSelected: boolean }) => ({
+    marginHorizontal: 5,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: isSelected ? 2 : 1,
+    borderColor: isSelected ? "#00A2FF" : "white",
+  }),
+);
+
+const TabText = styled.Text({
+  color: "white",
+  fontSize: screenWidth <= 400 ? 12 : 14,
+});
+
+

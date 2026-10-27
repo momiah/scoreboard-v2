@@ -1,0 +1,33 @@
+appId: com.courtchamp
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-seed-journey${SUFFIX}-${SEED}"
+- runFlow:
+    file: open-tie-from-notification.yaml
+    env:
+      NOTIFICATION: ".*made the playoffs for ${LADDER}.*"
+      TIE: ${TIE}
+- scrollUntilVisible:
+    element:
+      id: ${CARD}
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- waitForAnimationToEnd
+- tapOn:
+    id: ${CARD}
+- extendedWaitUntil:
+    visible:
+      id: "match-details"
+    timeout: 15000
+- runFlow:
+    file: approve-last-game.yaml
+    env:
+      MATCH: ${MATCH}
+      GAME: ${GAME}
+- runFlow: open-notifications.yaml
+- extendedWaitUntil:
+    visible: ${NOTIFICATION}
+    timeout: 60000

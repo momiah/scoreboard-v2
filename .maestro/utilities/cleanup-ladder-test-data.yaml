@@ -1,0 +1,10 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- tapOn:
+    id: "maestro-cleanup-ladder-test-data"
+- extendedWaitUntil:
+    visible: "Cleaned up"
+    timeout: 60000
+- tapOn: "OK"
