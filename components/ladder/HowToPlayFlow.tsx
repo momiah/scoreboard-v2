@@ -65,7 +65,14 @@ export type HowToPlayLadder = Pick<
 export type HowToPlayTextPage = "post-game" | "accept-game";
 
 export type HowToPlayPageText = Partial<
-  Record<HowToPlayTextPage, { paragraphs: React.ReactNode[] }>
+  Record<
+    HowToPlayTextPage,
+    {
+      paragraphs: React.ReactNode[];
+      /** One icon per paragraph card, when the paragraphs differ from the default. */
+      cardIcons?: (keyof typeof Ionicons.glyphMap)[];
+    }
+  >
 >;
 
 const MATCH_STEPS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
@@ -239,7 +246,12 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             hero={<MatchmakingHero />}
             title="Matchmaking, Made Simple"
-            cardIcons={["calendar-outline", "eye-off-outline"]}
+            cardIcons={
+              pageText?.["post-game"]?.cardIcons ?? [
+                "calendar-outline",
+                "eye-off-outline",
+              ]
+            }
             paragraphs={
               pageText?.["post-game"]?.paragraphs ?? [
                 <>
@@ -289,7 +301,12 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             hero={<AcceptHero />}
             title="Accept a Match"
-            cardIcons={["map-outline", "eye-off-outline"]}
+            cardIcons={
+              pageText?.["accept-game"]?.cardIcons ?? [
+                "map-outline",
+                "eye-off-outline",
+              ]
+            }
             paragraphs={
               pageText?.["accept-game"]?.paragraphs ?? [
                 <>
