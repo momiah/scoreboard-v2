@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Easing, StyleSheet, View } from "react-native";
 import type { LayoutChangeEvent } from "react-native";
 import Svg, {
   Circle,
@@ -14,6 +14,7 @@ import Svg, {
 
 const DOT_SPACING = 10;
 const BLUE = "#00A2FF";
+const LINE_BLEED = 60;
 
 /** A faint dot grid and two sweeping lines rising from the bottom of the screen and fading out. */
 const HowToPlayBackdrop: React.FC = () => {
@@ -58,23 +59,106 @@ const HowToPlayBackdrop: React.FC = () => {
             fill="url(#dots)"
             mask="url(#fadeMask)"
           />
-          <Path
-            d={`M ${-width * 0.1} ${height * 0.7} C ${width * 0.3} ${height * 0.56}, ${width * 0.65} ${height * 0.86}, ${width * 1.1} ${height * 0.62}`}
-            stroke={BLUE}
-            strokeOpacity={0.12}
-            strokeWidth={1.5}
-            fill="none"
-          />
-          <Path
-            d={`M ${-width * 0.1} ${height * 0.82} C ${width * 0.35} ${height * 0.7}, ${width * 0.7} ${height * 0.94}, ${width * 1.1} ${height * 0.76}`}
-            stroke={BLUE}
-            strokeOpacity={0.08}
-            strokeWidth={1}
-            fill="none"
-          />
         </Svg>
       ) : null}
+      {width > 0 ? (
+        <>
+          <FloatingLine
+            width={width}
+            height={height}
+            d={`M ${-width * 0.1} ${height * 0.7} C ${width * 0.3} ${height * 0.56}, ${width * 0.65} ${height * 0.86}, ${width * 1.1} ${height * 0.62}`}
+            opacity={0.12}
+            strokeWidth={1.5}
+            drift={{ x: 18, y: 14 }}
+            duration={9000}
+          />
+          <FloatingLine
+            width={width}
+            height={height}
+            d={`M ${-width * 0.1} ${height * 0.82} C ${width * 0.35} ${height * 0.7}, ${width * 0.7} ${height * 0.94}, ${width * 1.1} ${height * 0.76}`}
+            opacity={0.08}
+            strokeWidth={1}
+            drift={{ x: -22, y: 10 }}
+            duration={12000}
+          />
+        </>
+      ) : null}
     </View>
+  );
+};
+
+interface FloatingLineProps {
+  width: number;
+  height: number;
+  d: string;
+  opacity: number;
+  strokeWidth: number;
+  drift: { x: number; y: number };
+  duration: number;
+}
+
+/** One faint line that drifts slowly back and forth. */
+const FloatingLine: React.FC<FloatingLineProps> = ({
+  width,
+  height,
+  d,
+  opacity,
+  strokeWidth,
+  drift,
+  duration,
+}) => {
+  const float = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const swing = (toValue: number) =>
+      Animated.timing(float, {
+        toValue,
+        duration: duration / 2,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: true,
+      });
+    const loop = Animated.loop(Animated.sequence([swing(1), swing(0)]));
+    loop.start();
+    return () => loop.stop();
+  }, [float, duration]);
+
+  return (
+    <Animated.View
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          transform: [
+            {
+              translateX: float.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-drift.x, drift.x],
+              }),
+            },
+            {
+              translateY: float.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-drift.y, drift.y],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <Svg
+        width={width + LINE_BLEED * 2}
+        height={height}
+        style={{ marginLeft: -LINE_BLEED }}
+      >
+        <Path
+          d={d}
+          translateX={LINE_BLEED}
+          stroke={BLUE}
+          strokeOpacity={opacity}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+      </Svg>
+    </Animated.View>
   );
 };
 
