@@ -149,6 +149,9 @@ const Signup = ({ route }) => {
         profileDetail: profileDetailSchema,
         profileImage: ccImageEndpoint,
         provider: isSocialSignup ? socialProvider : "email_password",
+        // Private by default; players can make their email public in Edit Profile
+        showEmail: false,
+        showInSearchEngines: true,
       };
 
       await setDoc(doc(db, "users", uid), profileToSave);
