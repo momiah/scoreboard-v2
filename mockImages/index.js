@@ -37,4 +37,14 @@ import courtChampsLogo from "../assets/court-champ-logo-icon.png";
 export const trophies = [trophy1, trophy2, trophy3, trophy4, trophyOutline];
 export const ladders = [ladderGold, ladderRuby, ladderSilver, ladderBronze];
 
-export { court1, court2, court3, court4, ccDefaultImage, courtChampsLogo };
+export {
+  court1,
+  court2,
+  court3,
+  court4,
+  ccDefaultImage,
+  courtChampsLogo,
+  trophyOutline,
+  medalOutline,
+  ladderGold,
+};

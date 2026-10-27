@@ -58,17 +58,25 @@ import GameScreen from "../screens/GameScreen";
 // import { getUnitId } from "../utils/getAdMobUnitId";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
-import { useNavigation } from "@react-navigation/native";
+import {
+  getFocusedRouteNameFromRoute,
+  useNavigation,
+} from "@react-navigation/native";
+import SignupIntroScreen from "../screens/Authentication/SignupIntroScreen";
+import { FORCE_SIGNUP_INTRO } from "../screens/Authentication/signupIntroFlag";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const HomeStack = () => {
+  const { currentUser } = useContext(UserContext);
+  const openSignupIntro = FORCE_SIGNUP_INTRO || !currentUser;
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="HomeMain"
+      initialRouteName={openSignupIntro ? "SignupIntro" : "HomeMain"}
     >
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
       <Stack.Screen name="Clubs" component={Clubs} />
@@ -325,7 +333,8 @@ const Tabs = () => {
   );
 
   let initialRouteName = "Profile";
-  if (!currentUser) {
+  const openSignupIntro = FORCE_SIGNUP_INTRO || !currentUser;
+  if (!currentUser || FORCE_SIGNUP_INTRO) {
     initialRouteName = "Home";
   } else if (notifications.length === 0 || hasUnreadNotifications) {
     initialRouteName = "Competitions";
@@ -350,7 +359,14 @@ const Tabs = () => {
     <>
       <Tab.Navigator
         initialRouteName={initialRouteName}
-        screenOptions={({ route }) => ({
+        screenOptions={({ route }) => {
+          const focusedRoute =
+            route.name === "Home"
+              ? (getFocusedRouteNameFromRoute(route) ??
+                (openSignupIntro ? "SignupIntro" : "HomeMain"))
+              : getFocusedRouteNameFromRoute(route);
+          const hideTabBar = focusedRoute === "SignupIntro";
+          return {
           tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarActiveTintColor: "#FFD700",
@@ -373,13 +389,16 @@ const Tabs = () => {
               return <TabIcon name={iconName} color={color} size={size} />;
             }
           },
-          tabBarStyle: {
-            borderTopWidth: 1,
-            borderTopColor: "#262626",
-          },
+          tabBarStyle: hideTabBar
+            ? { display: "none" }
+            : {
+                borderTopWidth: 1,
+                borderTopColor: "#262626",
+              },
           tabBarLabel: () => null,
           headerShown: false,
-        })}
+        };
+        }}
       >
         <Tab.Screen name="Home" component={HomeStack} />
         <Tab.Screen

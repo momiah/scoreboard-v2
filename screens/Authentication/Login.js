@@ -1,5 +1,5 @@
 import { sha256 } from "js-sha256";
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
@@ -25,10 +25,8 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   signInWithCredential,
-  GoogleAuthProvider,
   FacebookAuthProvider,
   OAuthProvider,
-  fetchSignInMethodsForEmail,
 } from "firebase/auth";
 import {
   LoginManager,
@@ -39,9 +37,7 @@ import {
 import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import * as AppleAuthentication from "expo-apple-authentication";
-import { GOOGLE_WEB_CLIENT_ID } from "@env";
+import { signInWithApple, signInWithGoogle } from "./socialAuth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -188,90 +184,32 @@ export default function Login() {
     }
   };
 
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: GOOGLE_WEB_CLIENT_ID,
+  const finishSocialSignIn = (result) => {
+    if (result.status === "cancelled") return;
+    if (result.status === "error") {
+      console.error(result.logLabel, result.logMessage);
+      Alert.alert(result.title, result.message);
+      return;
+    }
+    if (result.status === "existing") {
+      setCurrentUser(result.profile);
+      AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
+        [AppEventsLogger.AppEventParams.RegistrationMethod]: result.method,
+      });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Home" }],
+      });
+      return;
+    }
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Signup", params: result.params }],
     });
-  }, []);
+  };
 
   const handleGoogleLogin = async () => {
-    try {
-      await GoogleSignin.hasPlayServices();
-      await GoogleSignin.signOut();
-
-      const response = await GoogleSignin.signIn();
-
-      if (response.type !== "success") {
-        return;
-      }
-
-      const googleCredential = GoogleAuthProvider.credential(
-        response.data.idToken,
-      );
-      const email = response.data.user.email;
-      const existingMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (
-        existingMethods.length > 0 &&
-        !existingMethods.includes("google.com")
-      ) {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method and connect Google from your profile.",
-        );
-        return;
-      }
-
-      const userCredential = await signInWithCredential(auth, googleCredential);
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-      const userId = user.uid;
-
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userId", userId);
-      await registerForPushNotificationsAsync(userId);
-
-      const profile = await getUserById(userId);
-
-      if (profile) {
-        setCurrentUser(profile);
-
-        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: "google",
-        });
-
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Home" }],
-        });
-      } else {
-        const userData = response.data.user;
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Signup",
-              params: {
-                userName: userData.givenName,
-                userLastName: userData.familyName,
-                userEmail: userData.email,
-                userId: userId,
-                provider: "google",
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      console.error("Google Login Error:", error.message);
-      if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method.",
-        );
-      } else {
-        Alert.alert("Error", "Google sign-in failed. Please try again.");
-      }
-    }
+    finishSocialSignIn(await signInWithGoogle(getUserById));
   };
 
   const handleFacebookLogin = async () => {
@@ -361,109 +299,7 @@ export default function Login() {
   };
 
   const handleAppleLogin = async () => {
-    try {
-      const rawNonce = Math.random().toString(36).substring(2);
-      const hashedNonce = sha256(rawNonce);
-
-      const appleCredential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-        nonce: hashedNonce,
-      });
-
-      const {
-        identityToken,
-        fullName,
-        email: appleEmail,
-        user: appleUserId,
-      } = appleCredential;
-      if (!identityToken) throw new Error("No identity token");
-
-      // Apple returns name/email ONLY on first-ever sign-in. Persist it keyed by Apple user ID.
-      const storageKey = `appleUser:${appleUserId}`;
-      let cachedName = { givenName: "", familyName: "" };
-      let cachedEmail = "";
-
-      if (fullName?.givenName || appleEmail) {
-        cachedName = {
-          givenName: fullName?.givenName || "",
-          familyName: fullName?.familyName || "",
-        };
-        cachedEmail = appleEmail || "";
-        await AsyncStorage.setItem(
-          storageKey,
-          JSON.stringify({ name: cachedName, email: cachedEmail }),
-        );
-      } else {
-        const stored = await AsyncStorage.getItem(storageKey);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          cachedName = parsed.name;
-          cachedEmail = parsed.email;
-        }
-      }
-
-      const provider = new OAuthProvider("apple.com");
-      const firebaseCredential = provider.credential({
-        idToken: identityToken,
-        rawNonce: rawNonce,
-      });
-
-      const userCredential = await signInWithCredential(
-        auth,
-        firebaseCredential,
-      );
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-      const userId = user.uid;
-
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userId", userId);
-      await registerForPushNotificationsAsync(userId);
-
-      const profile = await getUserById(userId);
-
-      if (profile) {
-        setCurrentUser(profile);
-
-        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: "apple",
-        });
-
-        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Signup",
-              params: {
-                userName: cachedName.givenName,
-                userLastName: cachedName.familyName,
-                userEmail: cachedEmail || user.email || "",
-                userId: userId,
-                provider: "apple",
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      if (error.code === "ERR_REQUEST_CANCELED") {
-        return;
-      }
-      console.error("Apple Login Error:", error.message);
-      if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method.",
-        );
-      } else {
-        Alert.alert("Error", "Apple sign-in failed. Please try again.");
-      }
-    }
+    finishSocialSignIn(await signInWithApple(getUserById));
   };
 
   const onSocialLogin = (type) => {

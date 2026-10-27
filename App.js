@@ -1,7 +1,7 @@
 import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { SafeAreaView, Platform } from "react-native";
+import { SafeAreaView, Platform, View } from "react-native";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
@@ -29,7 +29,7 @@ const navigationRef = React.createRef();
 // ── Inner component — has access to UserContext ───────────────────────────────
 
 const AppContent = () => {
-  const { currentUser } = useContext(UserContext);
+  const { currentUser, authInitializing } = useContext(UserContext);
   const { pendingUploads } = usePendingUpload(currentUser?.userId);
   const {
     bottomToastVisible,
@@ -55,12 +55,16 @@ const AppContent = () => {
             type={bottomToastType}
             onHide={() => setBottomToastVisible(false)}
           />
-          <Stack.Navigator
-            screenOptions={{ headerShown: false }}
-            cardStyle={{ backgroundColor: "rgb(3, 16, 31)" }}
-          >
-            <Stack.Screen name="Tabs" component={Tabs} />
-          </Stack.Navigator>
+          {authInitializing ? (
+            <View style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }} />
+          ) : (
+            <Stack.Navigator
+              screenOptions={{ headerShown: false }}
+              cardStyle={{ backgroundColor: "rgb(3, 16, 31)" }}
+            >
+              <Stack.Screen name="Tabs" component={Tabs} />
+            </Stack.Navigator>
+          )}
         </SafeAreaView>
       </BottomSheetModalProvider>
     </NavigationContainer>

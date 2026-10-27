@@ -8,35 +8,19 @@ import {
 import { AntDesign } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import styled from "styled-components/native";
-import { auth, db } from "../../services/firebase.config";
-import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-} from "firebase/auth";
-import {
-  setDoc,
-  doc,
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-} from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
 import Popup from "../../components/popup/Popup";
 import { PopupContext } from "../../context/PopupContext";
 import { AppEventsLogger } from "react-native-fbsdk-next";
-
+import { userProfileSchema } from "@shared";
 import {
-  userProfileSchema,
-  socialMediaPlatforms,
-  profileDetailSchema,
-  notificationSchema,
-  notificationTypes,
-  ccImageEndpoint,
-} from "@shared";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
+  createCourtChampsAccount,
+  emailValidation,
+  nameValidation,
+  passwordValidation,
+  signupErrorMessage,
+  usernameValidation,
+} from "./createAccount";
 
 const Signup = ({ route }) => {
   const {
@@ -117,173 +101,38 @@ const Signup = ({ route }) => {
 
   const onSubmit = async (data) => {
     try {
-      const {
-        password,
-        city: formCity,
-        country: formCountry,
-        ...profileFields
-      } = data;
-
-      let uid = socialId;
-      if (!isSocialSignup) {
-        const { user } = await createUserWithEmailAndPassword(
-          auth,
-          data.email,
-          password,
-        );
-        uid = user.uid;
-
-        await sendEmailVerification(user);
-      }
-
-      const profileToSave = {
-        ...userProfileSchema,
-        ...profileFields,
-        usernameLower: profileFields.username.toLowerCase(),
-        location: {
-          country: formCountry,
-          city: formCity,
+      const { isSocialSignup: createdWithSocial } =
+        await createCourtChampsAccount({
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          username: data.username,
+          country: data.country,
+          city: data.city,
           countryCode: selectedCountryCode,
-        },
-        userId: uid,
-        profileDetail: profileDetailSchema,
-        profileImage: ccImageEndpoint,
-        provider: isSocialSignup ? socialProvider : "email_password",
-      };
-
-      await setDoc(doc(db, "users", uid), profileToSave);
-
-      const welcomeNotification = {
-        ...notificationSchema,
-        createdAt: new Date(),
-        message: notificationTypes.WELCOME.MESSAGE,
-        type: notificationTypes.WELCOME.TYPE,
-        recipientId: profileToSave.userId,
-        data: {
-          image: ccImageEndpoint,
-          header: notificationTypes.WELCOME.MESSAGE,
-          body:
-            "You've just joined the ultimate community for competitive players. " +
-            "Track your games, climb the ranks, and prove you're the best on the court. " +
-            "Join or create leagues now and start your journey to the top. " +
-            "Keep an eye out for exciting updates and features coming your way soon! 🏸🔥",
-          footer: "Follow us on",
-          buttons: socialMediaPlatforms,
-        },
-      };
-
-      await addDoc(
-        collection(db, "users", uid, "notifications"),
-        welcomeNotification,
-      );
-
-      // — FB App Event: Registration Complete
-      AppEventsLogger.logEvent(
-        AppEventsLogger.AppEvents.CompletedRegistration,
-        {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: isSocialSignup
-            ? socialProvider
-            : "email",
-        },
-      );
-
-      if (isSocialSignup) {
-        const user = auth.currentUser;
-        if (user) {
-          const token = await user.getIdToken();
-          await AsyncStorage.setItem("userToken", token);
-          await AsyncStorage.setItem("userId", uid);
-          await registerForPushNotificationsAsync(uid);
-          setCurrentUser(profileToSave);
-        }
-      }
+          handPreference: data.handPreference,
+          socialId,
+          socialProvider,
+          setCurrentUser,
+        });
 
       setPopupIcon("success");
-      setPopupButtonText(isSocialSignup ? "Continue" : "Login");
+      setPopupButtonText(createdWithSocial ? "Continue" : "Login");
       handleShowPopup(
-        isSocialSignup
+        createdWithSocial
           ? "Account created successfully!"
           : "Account created successfully, please verify your email and login to continue",
       );
     } catch (error) {
-      // — FB App Event: Registration Failed
       AppEventsLogger.logEvent("RegistrationFailed", {
         reason: error.code || error.message,
       });
 
-      const messages = {
-        "auth/email-already-in-use": "Email already registered",
-        "auth/weak-password": "Password is too weak",
-        "auth/invalid-email": "Invalid email address",
-      };
       setPopupIcon("error");
       setPopupButtonText("Close");
-      handleShowPopup(messages[error.code] || error.message);
+      handleShowPopup(signupErrorMessage(error));
     }
-  };
-
-  const passwordValidation = {
-    required: "Password is required",
-    minLength: {
-      value: 6,
-      message: "Password must be at least 6 characters",
-    },
-    validate: {
-      hasValidChars: (value) =>
-        /^[\w\W]*$/.test(value) || "Invalid characters in password",
-    },
-  };
-
-  const emailValidation = {
-    required: "Email is required",
-    pattern: {
-      value: /\S+@\S+\.\S+/,
-      message: "Invalid email format",
-    },
-  };
-
-  const nameValidation = {
-    required: "This field is required",
-    validate: {
-      onlyLetters: (value) =>
-        /^[a-zA-Z]+$/.test(value) ||
-        "Only letters are allowed (no spaces, numbers, or special characters)",
-    },
-  };
-
-  const checkUsernameExists = async (username) => {
-    try {
-      const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        where("usernameLower", "==", username.toLowerCase()),
-      );
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
-    } catch (error) {
-      console.error("Error checking username:", error);
-      return true;
-    }
-  };
-
-  const usernameValidation = {
-    required: "Username is required",
-    minLength: {
-      value: 4,
-      message: "Username must be at least 4 characters",
-    },
-    maxLength: {
-      value: 10,
-      message: "Username cannot exceed 10 characters",
-    },
-    validate: {
-      noSpaces: (value) => !/\s/.test(value) || "Spaces are not allowed",
-      validCharacters: (value) =>
-        /^[a-zA-Z0-9-]+$/.test(value) ||
-        "Only letters, numbers, and dashes (-) are allowed",
-      uniqueUsername: async (value) =>
-        !(await checkUsernameExists(value)) || "Username already exists",
-    },
   };
 
   return (
