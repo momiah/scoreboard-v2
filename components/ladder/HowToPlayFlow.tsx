@@ -1714,8 +1714,4 @@ const Image = styled.Image({
   height: "90%",
 });
 
-export {
-  NavButton as HowToPlayButton,
-  NavButtonText as HowToPlayButtonText,
-  Accent as HowToPlayAccent,
-};
+export { NavButton as HowToPlayButton, NavButtonText as HowToPlayButtonText };
