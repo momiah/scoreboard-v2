@@ -69,6 +69,7 @@ const LadderHowToPlay: React.FC = () => {
         onClose={() => navigation.goBack()}
         onReadRules={() => navigation.navigate("LadderRules", { ladderId })}
         finalAction={finalAction}
+        variant="liveLadder"
       />
       {ladder && joinVisible && (
         <JoinLadderModal

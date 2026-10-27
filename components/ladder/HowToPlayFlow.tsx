@@ -37,6 +37,14 @@ import type { Ladder } from "@shared/types";
 import { PulseRing, Reveal, RevealContext } from "./HowToPlayReveal";
 import HowToPlayLadderClimb from "./HowToPlayLadderClimb";
 import HowToPlayBackdrop from "./HowToPlayBackdrop";
+import HowToPlayIntro from "./HowToPlayIntro";
+import {
+  HOW_TO_PLAY_VARIANTS,
+  type HowToPlayCardText,
+  type HowToPlayRichText,
+  type HowToPlayVariant,
+  type HowToPlayVariantConfig,
+} from "./howToPlayConfig";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
 import {
@@ -62,19 +70,6 @@ export type HowToPlayLadder = Pick<
   | "playoffEntrantCount"
 >;
 
-export type HowToPlayTextPage = "post-game" | "accept-game";
-
-export type HowToPlayPageText = Partial<
-  Record<
-    HowToPlayTextPage,
-    {
-      paragraphs: React.ReactNode[];
-      /** One icon per paragraph card, when the paragraphs differ from the default. */
-      cardIcons?: (keyof typeof Ionicons.glyphMap)[];
-    }
-  >
->;
-
 const MATCH_STEPS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: "qr-code-outline", text: "Check in at the court" },
   { icon: "people-outline", text: "Play your opponent" },
@@ -89,12 +84,8 @@ interface HowToPlayFlowProps {
   onReadRules: () => void;
   /** Shown in place of Next on the last page. */
   finalAction: React.ReactNode;
-  /** Replaces a page's text, e.g. before the Match Making tab exists. */
-  pageText?: HowToPlayPageText;
-  /** Replaces the welcome page, with Next reading "Show me how". */
-  intro?: React.ReactNode;
-  /** Shows the ladder's current size and prize pool under the playoff table. */
-  showLadderSize?: boolean;
+  /** Which guide this is; its wording and pages come from howToPlayConfig. */
+  variant: HowToPlayVariant;
 }
 
 interface OnboardingPage {
@@ -109,10 +100,11 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   onClose,
   onReadRules,
   finalAction,
-  pageText,
-  intro,
-  showLadderSize = true,
+  variant,
 }) => {
+  const config: HowToPlayVariantConfig = HOW_TO_PLAY_VARIANTS[variant];
+  const { showLadderSize } = config;
+  const showIntro = config.intro && !!ladder;
   const listRef = useRef<FlatList<OnboardingPage>>(null);
   const [index, setIndex] = useState(0);
   const noun = ladderEntrantNoun(ladder?.ladderType);
@@ -229,7 +221,14 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       {
         key: "intro",
         render: () =>
-          intro ?? (
+          showIntro && ladder ? (
+            <HowToPlayIntro
+              ladderType={ladder.ladderType}
+              entryFee={ladder.entryFee ?? 0}
+              currencyType={ladder.currencyType ?? "GBP"}
+              maxPlayers={maxPlayers}
+            />
+          ) : (
             <PageBody
               image={{ uri: ccImageEndpoint }}
               title={"Welcome to the official \n Court Champs Ladder"}
@@ -246,33 +245,10 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             hero={<MatchmakingHero />}
             title="Matchmaking, Made Simple"
-            cardIcons={
-              pageText?.["post-game"]?.cardIcons ?? [
-                "enter-outline",
-                "calendar-outline",
-                "eye-off-outline",
-              ]
-            }
-            paragraphs={
-              pageText?.["post-game"]?.paragraphs ?? [
-                <>
-                  {"Head over to the "}
-                  <Accent blue>Match Making</Accent>
-                  {" tab to post or find matches to progress in the ladder."}
-                </>,
-                <>
-                  {"Choose your court and post a match. Pick a "}
-                  <Accent>day and time</Accent>
-                  {" that suits you, then wait for another member to accept."}
-                </>,
-                <>
-                  {"You'll "}
-                  <Accent>never know your opponent</Accent>
-                  {" until they accept your match."}
-                </>,
-              ]
-            }
-          />
+            paragraphs={[]}
+          >
+            <CardList cards={toCards(config.cards["post-game"])} />
+          </PageBody>
         ),
       },
       {
@@ -305,31 +281,10 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           <PageBody
             hero={<AcceptHero />}
             title="Accept a Match"
-            cardIcons={
-              pageText?.["accept-game"]?.cardIcons ?? [
-                "map-outline",
-                "eye-off-outline",
-              ]
-            }
-            paragraphs={
-              pageText?.["accept-game"]?.paragraphs ?? [
-                <>
-                  {"Rather explore? Browse "}
-                  <Accent>live matches</Accent>
-                  {" in the "}
-                  <Accent blue>Match Making</Accent>
-                  {
-                    " tab at courts across the ladder and accept one that suits you."
-                  }
-                </>,
-                <>
-                  {"Your opponent is "}
-                  <Accent>hidden</Accent>
-                  {" until you accept the match."}
-                </>,
-              ]
-            }
-          />
+            paragraphs={[]}
+          >
+            <CardList cards={toCards(config.cards["accept-game"])} />
+          </PageBody>
         ),
       },
       {
@@ -416,8 +371,8 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     [
       maxPlayers,
       onReadRules,
-      pageText,
-      intro,
+      config,
+      showIntro,
       playoffSpots,
       showLadderSize,
       ladder?.participantCount,
@@ -513,7 +468,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
             testID="how-to-play-next"
           >
             <NavButtonText>
-              {intro && index === 0 ? "Show me how" : "Next"}
+              {showIntro && index === 0 ? "Show me how" : "Next"}
             </NavButtonText>
           </NavButton>
         ) : (
@@ -589,6 +544,31 @@ const PageBody: React.FC<PageBodyProps> = ({
     </ScrollView>
   );
 };
+
+const RichText: React.FC<{ text: HowToPlayRichText }> = ({ text }) => (
+  <>
+    {text.map((run, index) =>
+      typeof run === "string" ? (
+        run
+      ) : (
+        <Accent
+          key={index}
+          blue={run.tone === "blue"}
+          gold={run.tone === "gold"}
+          red={run.tone === "red"}
+        >
+          {run.text}
+        </Accent>
+      ),
+    )}
+  </>
+);
+
+const toCards = (cards: HowToPlayCardText[]): Card[] =>
+  cards.map((card) => ({
+    icon: card.icon,
+    text: <RichText text={card.text} />,
+  }));
 
 interface Card {
   icon: keyof typeof Ionicons.glyphMap;
