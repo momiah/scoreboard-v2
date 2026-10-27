@@ -1199,7 +1199,7 @@ const AchievementMedalsPage: React.FC = () => {
       </BeatList>
       <Reveal order={2 + MEDAL_GUIDE.length}>
         <FootNote>
-          {`Losses work the same way: a losing streak, or an opponent's ${DECISIVE_WIN_LEAD}, multiplies the CP you lose.`}
+          {`Losses work a similar way: a losing streak, or an opponent's ${DECISIVE_WIN_LEAD}, multiplies the CP you lose.`}
         </FootNote>
       </Reveal>
     </ScrollView>
