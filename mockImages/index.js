@@ -13,6 +13,7 @@ import medalBronze from "./medal-bronze.png";
 import medalRuby from "./medal-ruby.png";
 import medalOutline from "./medal-outline.png";
 import ladderGold from "./gold-ladder-v2.png";
+import ladderOutline from "./ladder-outline.png";
 import ladderSilver from "./silver-ladder-v2.png";
 import ladderBronze from "./bronze-ladder-v2.png";
 import ladderRuby from "./ruby-ladder-v2.png";
@@ -47,4 +48,5 @@ export {
   trophyOutline,
   medalOutline,
   ladderGold,
+  ladderOutline,
 };

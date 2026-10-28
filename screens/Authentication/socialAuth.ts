@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import {
+  FacebookAuthProvider,
   GoogleAuthProvider,
   OAuthProvider,
   fetchSignInMethodsForEmail,
@@ -9,30 +10,37 @@ import {
 } from "firebase/auth";
 import { sha256 } from "js-sha256";
 import { Platform } from "react-native";
+import {
+  AccessToken,
+  AuthenticationToken,
+  LoginManager,
+} from "react-native-fbsdk-next";
 // @ts-expect-error GOOGLE_WEB_CLIENT_ID is defined in the .env file
 import { GOOGLE_WEB_CLIENT_ID } from "@env";
 
 import { auth } from "../../services/firebase.config";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 
+export type SocialProvider = "google" | "apple" | "facebook";
+
 export interface SocialSignupParams {
   userName: string;
   userLastName: string;
   userEmail: string;
   userId: string;
-  provider: "google" | "apple";
+  provider: SocialProvider;
 }
 
 export type SocialSignInResult =
   | { status: "cancelled" }
   | {
       status: "existing";
-      method: "google" | "apple";
+      method: SocialProvider;
       profile: Record<string, unknown>;
     }
   | {
       status: "needs-signup";
-      method: "google" | "apple";
+      method: SocialProvider;
       params: SocialSignupParams;
     }
   | {
@@ -247,6 +255,99 @@ export async function signInWithApple(
       title: "Error",
       message: "Apple sign-in failed. Please try again.",
       logLabel: "Apple Login Error:",
+      logMessage: authError.message || "",
+    };
+  }
+}
+
+export async function signInWithFacebook(
+  getUserById: ProfileLookup,
+): Promise<SocialSignInResult> {
+  try {
+    let credential;
+    if (Platform.OS === "ios") {
+      const rawNonce = Math.random().toString(36).substring(2);
+      const hashedNonce = sha256(rawNonce);
+      const result = await LoginManager.logInWithPermissions(
+        ["public_profile", "email"],
+        "limited",
+        hashedNonce,
+      );
+      if (result.isCancelled) {
+        return {
+          status: "error",
+          title: "Error",
+          message: "Facebook sign-in cancelled. Please try again.",
+          logLabel: "Facebook Login Error:",
+          logMessage: "cancelled",
+        };
+      }
+      const data = await AuthenticationToken.getAuthenticationTokenIOS();
+      if (!data) throw new Error("No access token");
+      const provider = new OAuthProvider("facebook.com");
+      credential = provider.credential({
+        idToken: data.authenticationToken,
+        rawNonce,
+      });
+    } else {
+      const result = await LoginManager.logInWithPermissions([
+        "public_profile",
+        "email",
+      ]);
+      if (result.isCancelled) {
+        return {
+          status: "error",
+          title: "Error",
+          message: "Facebook sign-in cancelled. Please try again.",
+          logLabel: "Facebook Login Error:",
+          logMessage: "cancelled",
+        };
+      }
+      const data = await AccessToken.getCurrentAccessToken();
+      if (!data) throw new Error("No access token");
+      credential = FacebookAuthProvider.credential(data.accessToken);
+    }
+
+    const userCredential = await signInWithCredential(auth, credential);
+    const user = userCredential.user;
+    const token = await user.getIdToken();
+    const userId = user.uid;
+    await rememberSession(userId, token);
+
+    const profile = await getUserById(userId);
+    if (profile) {
+      return { status: "existing", method: "facebook", profile };
+    }
+
+    const [firstName, ...rest] = (user.displayName || "").split(" ");
+    return {
+      status: "needs-signup",
+      method: "facebook",
+      params: {
+        userName: firstName || "",
+        userLastName: rest.join(" "),
+        userEmail: user.email || "",
+        userId,
+        provider: "facebook",
+      },
+    };
+  } catch (error) {
+    const authError = asAuthError(error);
+    if (authError.code === "auth/account-exists-with-different-credential") {
+      return {
+        status: "error",
+        title: "Account Already Exists",
+        message:
+          "An account with this email already exists. Please log in with your original method and link Facebook from your profile.",
+        logLabel: "Facebook Login Error:",
+        logMessage: authError.message || "",
+      };
+    }
+    return {
+      status: "error",
+      title: "Error",
+      message: "Facebook sign-in failed. Please try again.",
+      logLabel: "Facebook Login Error:",
       logMessage: authError.message || "",
     };
   }

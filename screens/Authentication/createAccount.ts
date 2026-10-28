@@ -81,12 +81,6 @@ export async function validateUsername(
   return true;
 }
 
-/** react-hook-form rules. `validate` returning `true` means the field is valid. */
-export const emailValidation = { validate: validateEmail };
-export const passwordValidation = { validate: validatePassword };
-export const nameValidation = { validate: validatePersonName };
-export const usernameValidation = { validate: validateUsername };
-
 export function splitFullName(
   fullName: string,
 ): { firstName: string; lastName: string } | { error: string } {

@@ -1,46 +1,59 @@
 import React from "react";
-import { View } from "react-native";
+import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
 import styled from "styled-components/native";
 
-import { CourtChampLogo } from "../../../assets";
-import { Reveal } from "../../ladder/HowToPlayReveal";
-import { IntroScroll } from "../introStyles";
-import { BODY } from "../SignupChrome";
+import { CourtChampLogoTrimmed } from "../../../assets";
+import { BLUE, GlowDisc } from "../SignupChrome";
 
-/** Logo asset includes transparent padding; the clip trims it while keeping contain. */
-const BrandPage: React.FC = () => (
-  <IntroScroll>
-    <Reveal from="pop">
-      <LogoFrame>
-        <Logo source={CourtChampLogo} resizeMode="contain" />
-      </LogoFrame>
-    </Reveal>
-    <Reveal order={1}>
-      <Motto>THE HOME OF COMPETITIVE RACKET SPORTS</Motto>
-    </Reveal>
-  </IntroScroll>
-);
+const LOGO_ASPECT = 1666 / 623;
 
-const LogoFrame = styled(View)({
-  width: 280,
-  height: 96,
-  overflow: "hidden",
-  alignItems: "center",
-  justifyContent: "center",
+/** Static on purpose: the brand page is the first thing people see and must never render blank. */
+const BrandPage: React.FC = () => {
+  const { width } = useWindowDimensions();
+  const logoWidth = Math.min(width - 56, 380);
+  const logoHeight = logoWidth / LOGO_ASPECT;
+
+  return (
+    <Center>
+      <View style={{ width: logoWidth, height: logoHeight }}>
+        <GlowDisc
+          size={logoHeight * 2.6}
+          color="#0a5bff"
+          opacity={0.32}
+          offsetX={-logoWidth * 0.2}
+        />
+        <Image
+          source={CourtChampLogoTrimmed}
+          resizeMode="contain"
+          style={styles.logo}
+        />
+      </View>
+      <Motto numberOfLines={1} adjustsFontSizeToFit>
+        THE HOME OF COMPETITIVE RACKET SPORTS
+      </Motto>
+    </Center>
+  );
+};
+
+const styles = StyleSheet.create({
+  logo: { width: "100%", height: "100%" },
 });
 
-const Logo = styled.Image({
-  width: 360,
-  height: 140,
+const Center = styled.View({
+  flex: 1,
+  alignItems: "center",
+  justifyContent: "center",
+  paddingHorizontal: 28,
+  gap: 26,
 });
 
 const Motto = styled.Text({
-  color: BODY,
+  color: BLUE,
   fontSize: 12,
-  fontWeight: "600",
-  letterSpacing: 1.2,
+  fontWeight: "700",
+  letterSpacing: 1.6,
   textAlign: "center",
-  paddingHorizontal: 12,
+  alignSelf: "stretch",
 });
 
 export default BrandPage;

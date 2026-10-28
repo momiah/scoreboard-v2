@@ -6,10 +6,9 @@ import { RankInformation } from "../../Modals/RankInformation";
 import MedalProgress from "../../performance/MedalProgress";
 import { PulseRing, Reveal } from "../../ladder/HowToPlayReveal";
 import { highQualityRanks, ranks } from "../../../rankingMedals/ranking/ranks";
-import { BLUE } from "../SignupChrome";
-import { IntroScroll, IntroTitle } from "../introStyles";
+import { BLUE, BODY, BRONZE, GlowDisc } from "../SignupChrome";
+import { Eyebrow, Headline, IntroScrollCompact } from "../introStyles";
 
-const BRONZE = "rgb(194, 106, 46)";
 const LEVEL_COLOURS = [
   BRONZE,
   "rgb(211, 231, 243)",
@@ -17,7 +16,7 @@ const LEVEL_COLOURS = [
   "rgb(249, 206, 40)",
 ];
 
-const HERO_SIZE = 128;
+const HERO_SIZE = 132;
 const beginnerLevels = ranks.slice(0, 4);
 const heroMedal = highQualityRanks[0]?.icon;
 
@@ -25,26 +24,39 @@ const RankPage: React.FC = () => {
   const [ranksOpen, setRanksOpen] = useState(false);
 
   return (
-    <IntroScroll>
+    <IntroScrollCompact>
       <Reveal>
-        <IntroTitle>Your rank</IntroTitle>
+        <Eyebrow>YOUR RANK</Eyebrow>
       </Reveal>
       <Reveal order={1} from="pop">
         <Hero>
-          <Glow />
+          <GlowDisc size={HERO_SIZE * 1.7} color={BRONZE} opacity={0.5} />
           <PulseRing size={HERO_SIZE} color={BRONZE} />
           <HeroMedal source={heroMedal} resizeMode="contain" />
         </Hero>
       </Reveal>
+      <Reveal order={1}>
+        <Headline>Beginner</Headline>
+      </Reveal>
       <Reveal order={2} style={fullWidth}>
         <MedalProgress xp={20} prevGameXp={null} />
+      </Reveal>
+      <Reveal order={3}>
+        <Copy>
+          Win games to earn CP. Each badge has four levels: bronze, silver,
+          ruby, then gold.
+        </Copy>
       </Reveal>
       <Reveal order={3} style={fullWidth}>
         <LevelRow>
           {beginnerLevels.map((rank, index) => (
             <Level key={rank.name}>
               <LevelMedalWrap>
-                <LevelGlow colour={LEVEL_COLOURS[index] ?? BRONZE} />
+                <GlowDisc
+                  size={72}
+                  color={LEVEL_COLOURS[index] ?? BRONZE}
+                  opacity={0.5}
+                />
                 <LevelMedal source={rank.icon} resizeMode="contain" />
               </LevelMedalWrap>
               <LevelName numberOfLines={1}>{rank.name}</LevelName>
@@ -65,7 +77,7 @@ const RankPage: React.FC = () => {
         visible={ranksOpen}
         onClose={() => setRanksOpen(false)}
       />
-    </IntroScroll>
+    </IntroScrollCompact>
   );
 };
 
@@ -78,21 +90,16 @@ const Hero = styled(View)({
   justifyContent: "center",
 });
 
-const Glow = styled.View({
-  position: "absolute",
-  width: 96,
-  height: 96,
-  borderRadius: 48,
-  backgroundColor: "rgba(194, 106, 46, 0.55)",
-  shadowColor: BRONZE,
-  shadowOpacity: 0.55,
-  shadowRadius: 22,
-  shadowOffset: { width: 0, height: 0 },
+const HeroMedal = styled.Image({
+  width: HERO_SIZE - 8,
+  height: HERO_SIZE - 8,
 });
 
-const HeroMedal = styled.Image({
-  width: 100,
-  height: 100,
+const Copy = styled.Text({
+  color: BODY,
+  fontSize: 15,
+  lineHeight: 22,
+  textAlign: "center",
 });
 
 const LevelRow = styled.View({
@@ -108,35 +115,21 @@ const Level = styled.View({
 });
 
 const LevelMedalWrap = styled.View({
-  width: 56,
-  height: 56,
+  width: 58,
+  height: 58,
   alignItems: "center",
   justifyContent: "center",
 });
 
-const LevelGlow = styled.View<{ colour: string }>(
-  ({ colour }: { colour: string }) => ({
-  position: "absolute",
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: colour,
-  opacity: 0.5,
-  shadowColor: colour,
-  shadowOpacity: 0.5,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 0 },
-}));
-
 const LevelMedal = styled.Image({
-  width: 48,
-  height: 48,
+  width: 50,
+  height: 50,
 });
 
 const LevelName = styled.Text({
   color: "#ffffff",
-  fontSize: 11,
-  fontWeight: "600",
+  fontSize: 12,
+  fontWeight: "700",
   textAlign: "center",
 });
 
@@ -147,11 +140,11 @@ const LevelCp = styled.Text({
 });
 
 const AllRanksButton = styled.TouchableOpacity({
-  marginTop: 8,
+  marginTop: 4,
   paddingVertical: 12,
   paddingHorizontal: 28,
   borderRadius: 12,
-  borderWidth: 1,
+  borderWidth: 1.5,
   borderColor: BLUE,
   backgroundColor: "transparent",
   shadowColor: BLUE,

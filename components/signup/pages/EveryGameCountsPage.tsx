@@ -1,10 +1,11 @@
 import React from "react";
 import { Dimensions } from "react-native";
+import moment from "moment";
 import styled from "styled-components/native";
 
 import { ScoreDisplay, TeamColumn } from "../../scoreboard/ScoreboardAtoms";
 import { Reveal } from "../../ladder/HowToPlayReveal";
-import { IntroScroll, IntroText, IntroTitle } from "../introStyles";
+import { Eyebrow, Headline, IntroScroll, Subtitle } from "../introStyles";
 
 const screenWidth = Dimensions.get("window").width;
 const lastMatchSize = screenWidth <= 405 ? 18 : 20;
@@ -21,12 +22,14 @@ const GAMES: SampleGame[] = [
   { key: "pending", you: 19, opponent: 21, pending: true },
 ];
 
-const sampleDate = "27-10-2026";
+const sampleDates = [0, 1].map((daysAgo) =>
+  moment().subtract(daysAgo, "days").format("DD-MM-YYYY"),
+);
 
-const gameItem = (game: SampleGame) => ({
+const gameItem = (game: SampleGame, dateIndex: number) => ({
   approvalStatus: game.pending ? "pending" : "approved",
   videoCount: 0,
-  date: sampleDate,
+  date: sampleDates[dateIndex],
   team1: {
     score: game.you,
     player1: { displayName: "You" },
@@ -40,23 +43,21 @@ const gameItem = (game: SampleGame) => ({
 const EveryGameCountsPage: React.FC = () => (
   <IntroScroll>
     <Reveal>
-      <IntroTitle>Every game counts</IntroTitle>
+      <Eyebrow>YOUR GAME</Eyebrow>
     </Reveal>
     <Reveal order={1}>
-      <IntroText>
+      <Headline>Every game counts.</Headline>
+    </Reveal>
+    <Reveal order={1}>
+      <Subtitle>
         Each competition requires you to log your score. Once your opponent
         approves it, you earn Court Points (CP).
-      </IntroText>
+      </Subtitle>
     </Reveal>
     {GAMES.map((game, index) => {
-      const item = gameItem(game);
+      const item = gameItem(game, index);
       return (
-        <Reveal
-          key={game.key}
-          order={2 + index}
-          from="right"
-          style={cardWrap}
-        >
+        <Reveal key={game.key} order={2 + index} from="right" style={cardWrap}>
           <GameCard style={{ opacity: game.pending ? 0.6 : 1 }}>
             <TeamColumn team="left" players={item.team1} leagueType="Singles" />
             <ScoreDisplay

@@ -24,7 +24,15 @@ import {
   validateUsername,
 } from "../../screens/Authentication/createAccount";
 import type { UserProfile } from "@shared/types";
-import SignupChrome, { BLUE, BODY, GOLD, MUTED } from "./SignupChrome";
+import FlowHeader from "./FlowHeader";
+import { BLUE, FIELD_BG, FIELD_BORDER, MUTED } from "./SignupChrome";
+
+const flagEmoji = (code: string | null) =>
+  code && code.length === 2
+    ? String.fromCodePoint(
+        ...[...code.toUpperCase()].map((char) => 127397 + char.charCodeAt(0)),
+      )
+    : "";
 
 type Hand = "Right" | "Left";
 type Format = "Doubles" | "Singles";
@@ -43,7 +51,7 @@ interface SignupProfileStepProps {
   initialLastName?: string;
   setCurrentUser?: (user: UserProfile) => void;
   onBack: () => void;
-  onCreated: (requiresEmailVerification: boolean) => void;
+  onCreated: (requiresEmailVerification: boolean, firstName: string) => void;
 }
 
 const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
@@ -81,7 +89,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const local = username.trim();
+    const local = username.trim().replace(/^@/, "");
     if (!local) {
       setUsernameState("idle");
       setUsernameError("");
@@ -97,7 +105,9 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
           setUsernameError("");
           return;
         }
-        setUsernameState(result === "Username already exists" ? "taken" : "idle");
+        setUsernameState(
+          result === "Username already exists" ? "taken" : "idle",
+        );
         setUsernameError(result);
       });
     }, 400);
@@ -109,7 +119,8 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
 
   const pickPhoto = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
           "Permission Required",
@@ -127,7 +138,10 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
       const fileInfo = new File(pickedUri);
       const maxSize = 5 * 1024 * 1024;
       if (fileInfo.size && fileInfo.size > maxSize) {
-        Alert.alert("File Too Large", "Please select an image smaller than 5MB.");
+        Alert.alert(
+          "File Too Large",
+          "Please select an image smaller than 5MB.",
+        );
         return;
       }
       const manipulated = await ImageManipulator.manipulateAsync(
@@ -154,7 +168,8 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
       return;
     }
     setLocationError("");
-    const usernameResult = await validateUsername(username.trim());
+    const cleanUsername = username.trim().replace(/^@/, "");
+    const usernameResult = await validateUsername(cleanUsername);
     if (usernameResult !== true) {
       setUsernameError(usernameResult);
       setUsernameState(
@@ -170,7 +185,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
         password,
         firstName: name.firstName,
         lastName: name.lastName,
-        username: username.trim(),
+        username: cleanUsername,
         country,
         city,
         countryCode,
@@ -180,7 +195,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
         socialProvider,
         setCurrentUser,
       });
-      onCreated(!created.isSocialSignup);
+      onCreated(!created.isSocialSignup, name.firstName);
     } catch (error) {
       const reason =
         typeof error === "object" && error && "code" in error
@@ -195,44 +210,55 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
     }
   };
 
+  const locationLabel =
+    city && country
+      ? `${flagEmoji(countryCode)} ${country} · ${city}`.trim()
+      : "";
+
   return (
-    <SignupChrome>
+    <>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        <FlowHeader
+          onBack={onBack}
+          rightLabel="Step 2 of 2"
+          testIDPrefix="signup-profile"
+        />
+        <ProgressTrack>
+          <ProgressFill />
+        </ProgressTrack>
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
-            paddingHorizontal: 24,
-            paddingTop: 8,
-            paddingBottom: 28,
+            paddingHorizontal: 22,
+            paddingTop: 22,
+            paddingBottom: 24,
           }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <BackButton onPress={onBack} testID="signup-profile-back">
-            <Ionicons name="chevron-back" size={26} color="#ffffff" />
-          </BackButton>
-          <StepLabel>STEP 2 OF 2</StepLabel>
+          <Eyebrow>PLAYER CARD</Eyebrow>
           <Title>Who&apos;s stepping on court?</Title>
 
-          <PhotoButton onPress={pickPhoto} testID="signup-profile-photo">
-            {photoUri ? (
-              <Photo source={{ uri: photoUri }} />
-            ) : (
-              <Ionicons name="person" size={42} color="#5c7388" />
-            )}
-            <CameraBadge>
-              <Ionicons name="camera" size={14} color="#ffffff" />
-            </CameraBadge>
-          </PhotoButton>
+          <PhotoRow>
+            <PhotoButton onPress={pickPhoto} testID="signup-profile-photo">
+              {photoUri ? (
+                <Photo source={{ uri: photoUri }} />
+              ) : (
+                <Ionicons name="camera-outline" size={30} color="#c9d6e3" />
+              )}
+            </PhotoButton>
+            <PhotoHint>Add a photo so opponents know you</PhotoHint>
+          </PhotoRow>
 
           <Label>Full name</Label>
           <Field
             value={fullName}
             onChangeText={setFullName}
             placeholder="Alex Morgan"
-            placeholderTextColor="#7f97a8"
+            placeholderTextColor="#6f8396"
             autoCapitalize="words"
             autoCorrect={false}
             testID="signup-profile-name"
@@ -240,25 +266,23 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
           {nameError ? <FieldError>{nameError}</FieldError> : null}
 
           <Label>Username</Label>
-          <UsernameRow>
-            <Field
+          <UsernameBox focused={usernameState === "available"}>
+            <UsernameAt>@</UsernameAt>
+            <UsernameInput
               value={username}
               onChangeText={setUsername}
               placeholder="username"
-              placeholderTextColor="#7f97a8"
+              placeholderTextColor="#6f8396"
               autoCapitalize="none"
               autoCorrect={false}
-              style={{ paddingRight: 44 }}
               testID="signup-profile-username"
             />
-            <UsernameMark>
-              {usernameState === "checking" ? (
-                <ActivityIndicator size="small" color={BLUE} />
-              ) : usernameState === "available" ? (
-                <Ionicons name="checkmark-circle" size={22} color="#3DDC97" />
-              ) : null}
-            </UsernameMark>
-          </UsernameRow>
+            {usernameState === "checking" ? (
+              <ActivityIndicator size="small" color={BLUE} />
+            ) : usernameState === "available" ? (
+              <Available>✓ available</Available>
+            ) : null}
+          </UsernameBox>
           {usernameError ? <FieldError>{usernameError}</FieldError> : null}
 
           <Label>Location</Label>
@@ -266,40 +290,46 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
             onPress={() => setShowCountry(true)}
             testID="signup-profile-location"
           >
-            <LocationText selected={!!(city && country)}>
-              {city && country ? `${city}, ${country}` : "City, Country"}
+            <LocationText selected={!!locationLabel}>
+              {locationLabel || "Country · City"}
             </LocationText>
-            <Ionicons name="chevron-forward" size={18} color={MUTED} />
           </LocationButton>
           {locationError ? <FieldError>{locationError}</FieldError> : null}
 
-          <Label>Handedness</Label>
-          <ChipRow>
-            {(["Right", "Left"] as Hand[]).map((option) => (
-              <Chip
-                key={option}
-                selected={hand === option}
-                onPress={() => setHand(option)}
-              >
-                <ChipText selected={hand === option}>{option}</ChipText>
-              </Chip>
-            ))}
-          </ChipRow>
+          <ChipGroups>
+            <ChipGroup>
+              <Label>Handedness</Label>
+              <ChipRow>
+                {(["Right", "Left"] as Hand[]).map((option) => (
+                  <Chip
+                    key={option}
+                    selected={hand === option}
+                    onPress={() => setHand(option)}
+                  >
+                    <ChipText selected={hand === option}>{option}</ChipText>
+                  </Chip>
+                ))}
+              </ChipRow>
+            </ChipGroup>
+            <ChipGroup>
+              <Label>Format</Label>
+              <ChipRow>
+                {(["Doubles", "Singles"] as Format[]).map((option) => (
+                  <Chip
+                    key={option}
+                    selected={format === option}
+                    onPress={() => setFormat(option)}
+                  >
+                    <ChipText selected={format === option}>{option}</ChipText>
+                  </Chip>
+                ))}
+              </ChipRow>
+            </ChipGroup>
+          </ChipGroups>
 
-          <Label>Format</Label>
-          <ChipRow>
-            {(["Doubles", "Singles"] as Format[]).map((option) => (
-              <Chip
-                key={option}
-                selected={format === option}
-                onPress={() => setFormat(option)}
-              >
-                <ChipText selected={format === option}>{option}</ChipText>
-              </Chip>
-            ))}
-          </ChipRow>
+          <Spacer />
 
-          <ContinueButton
+          <FinishButton
             onPress={onContinue}
             disabled={submitting}
             testID="signup-profile-continue"
@@ -307,9 +337,9 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
             {submitting ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <ContinueText>Continue</ContinueText>
+              <FinishText>Finish</FinishText>
             )}
-          </ContinueButton>
+          </FinishButton>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -335,90 +365,117 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
           }}
         />
       </CountrySelector>
-    </SignupChrome>
+    </>
   );
 };
 
-const BackButton = styled.TouchableOpacity({
-  width: 36,
-  height: 36,
-  justifyContent: "center",
+const ProgressTrack = styled.View({
+  height: 3,
+  marginHorizontal: 22,
+  borderRadius: 2,
+  backgroundColor: "rgba(255, 255, 255, 0.1)",
 });
 
-const StepLabel = styled.Text({
-  color: GOLD,
-  fontSize: 12,
-  fontWeight: "bold",
-  letterSpacing: 1.4,
-  marginTop: 8,
+const ProgressFill = styled.View({
+  width: "100%",
+  height: 3,
+  borderRadius: 2,
+  backgroundColor: BLUE,
+});
+
+const Eyebrow = styled.Text({
+  color: BLUE,
+  fontSize: 14,
+  fontWeight: "600",
+  letterSpacing: 2.4,
 });
 
 const Title = styled.Text({
   color: "#ffffff",
-  fontSize: 28,
+  fontSize: 30,
   fontWeight: "bold",
-  marginTop: 8,
+  lineHeight: 36,
+  marginTop: 10,
   marginBottom: 18,
+});
+
+const PhotoRow = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 16,
+  marginBottom: 8,
 });
 
 const PhotoButton = styled.TouchableOpacity({
-  alignSelf: "center",
-  width: 104,
-  height: 104,
-  borderRadius: 52,
+  width: 76,
+  height: 76,
+  borderRadius: 38,
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: "#102033",
-  borderWidth: 1,
-  borderColor: "rgb(30, 51, 72)",
-  marginBottom: 18,
+  borderWidth: 2,
+  borderStyle: "dashed",
+  borderColor: BLUE,
+  overflow: "hidden",
 });
 
 const Photo = styled.Image({
-  width: 104,
-  height: 104,
-  borderRadius: 52,
+  width: 76,
+  height: 76,
 });
 
-const CameraBadge = styled.View({
-  position: "absolute",
-  right: 2,
-  bottom: 2,
-  width: 28,
-  height: 28,
-  borderRadius: 14,
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: BLUE,
-  borderWidth: 2,
-  borderColor: "rgb(3, 16, 31)",
+const PhotoHint = styled.Text({
+  flex: 1,
+  color: MUTED,
+  fontSize: 13,
+  lineHeight: 18,
 });
 
 const Label = styled.Text({
-  color: BODY,
-  fontSize: 13,
-  marginBottom: 6,
-  marginTop: 8,
+  color: MUTED,
+  fontSize: 14,
+  marginBottom: 7,
+  marginTop: 14,
 });
 
 const Field = styled.TextInput({
-  height: 52,
-  borderRadius: 12,
+  height: 48,
+  borderRadius: 8,
   paddingHorizontal: 16,
-  backgroundColor: "#102033",
+  backgroundColor: FIELD_BG,
+  borderWidth: 1,
+  borderColor: FIELD_BORDER,
   color: "#ffffff",
-  fontSize: 16,
+  fontSize: 15,
 });
 
-const UsernameRow = styled.View({
-  justifyContent: "center",
+const UsernameBox = styled.View<{ focused: boolean }>(
+  ({ focused }: { focused: boolean }) => ({
+    height: 48,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: FIELD_BG,
+    borderWidth: 1,
+    borderColor: focused ? BLUE : FIELD_BORDER,
+  }),
+);
+
+const UsernameAt = styled.Text({
+  color: "#ffffff",
+  fontSize: 15,
 });
 
-const UsernameMark = styled.View({
-  position: "absolute",
-  right: 14,
-  height: 52,
-  justifyContent: "center",
+const UsernameInput = styled.TextInput({
+  flex: 1,
+  color: "#ffffff",
+  fontSize: 15,
+  paddingVertical: 0,
+});
+
+const Available = styled.Text({
+  color: "#4caf50",
+  fontSize: 14,
 });
 
 const FieldError = styled.Text({
@@ -428,55 +485,69 @@ const FieldError = styled.Text({
 });
 
 const LocationButton = styled.TouchableOpacity({
-  height: 52,
-  borderRadius: 12,
+  height: 48,
+  borderRadius: 8,
   paddingHorizontal: 16,
-  backgroundColor: "#102033",
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between",
+  backgroundColor: FIELD_BG,
+  borderWidth: 1,
+  borderColor: FIELD_BORDER,
+  justifyContent: "center",
 });
 
 const LocationText = styled.Text<{ selected: boolean }>(
   ({ selected }: { selected: boolean }) => ({
-  color: selected ? "#ffffff" : "#7f97a8",
-  fontSize: 16,
-}));
+    color: selected ? "#ffffff" : "#6f8396",
+    fontSize: 15,
+  }),
+);
+
+const ChipGroups = styled.View({
+  flexDirection: "row",
+  gap: 16,
+});
+
+const ChipGroup = styled.View({});
 
 const ChipRow = styled.View({
   flexDirection: "row",
-  gap: 10,
+  gap: 8,
 });
 
 const Chip = styled.TouchableOpacity<{ selected: boolean }>(
   ({ selected }: { selected: boolean }) => ({
-  flex: 1,
-  height: 44,
-  borderRadius: 22,
-  alignItems: "center",
-  justifyContent: "center",
-  borderWidth: 1,
-  borderColor: selected ? BLUE : "rgb(30, 51, 72)",
-  backgroundColor: selected ? "rgba(0, 162, 255, 0.12)" : "transparent",
-}));
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: selected ? BLUE : "transparent",
+    backgroundColor: selected ? "rgba(0, 162, 255, 0.12)" : "#1d2a3a",
+  }),
+);
 
 const ChipText = styled.Text<{ selected: boolean }>(
   ({ selected }: { selected: boolean }) => ({
-  color: selected ? BLUE : "#ffffff",
-  fontSize: 15,
-  fontWeight: "600",
-}));
+    color: selected ? BLUE : "#ffffff",
+    fontSize: 14,
+    fontWeight: "700",
+  }),
+);
 
-const ContinueButton = styled.TouchableOpacity({
-  height: 52,
-  borderRadius: 14,
+const Spacer = styled.View({
+  flex: 1,
+  minHeight: 24,
+});
+
+const FinishButton = styled.TouchableOpacity({
+  height: 50,
+  borderRadius: 10,
   alignItems: "center",
   justifyContent: "center",
   backgroundColor: BLUE,
-  marginTop: 28,
 });
 
-const ContinueText = styled.Text({
+const FinishText = styled.Text({
   color: "#ffffff",
   fontSize: 16,
   fontWeight: "bold",

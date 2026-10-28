@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { BackHandler, Dimensions, FlatList, StyleSheet } from "react-native";
+import { FlatList, StyleSheet, useWindowDimensions } from "react-native";
+import type { LayoutChangeEvent } from "react-native";
 import type {
   ListRenderItemInfo,
   NativeScrollEvent,
@@ -9,29 +10,22 @@ import styled from "styled-components/native";
 
 import {
   AchievementMedalsPage,
-  Dots,
   Dot,
+  Dots,
   NavButton,
   NavButtonText,
   NavRow,
 } from "../ladder/HowToPlayFlow";
 import { RevealContext } from "../ladder/HowToPlayReveal";
-import SignupChrome from "./SignupChrome";
+import FlowHeader from "./FlowHeader";
+import BrandPage from "./pages/BrandPage";
 import CompetitionsPage from "./pages/CompetitionsPage";
 import EveryGameCountsPage from "./pages/EveryGameCountsPage";
 import RankPage from "./pages/RankPage";
-import BrandPage from "./pages/BrandPage";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface IntroPage {
   key: string;
   render: () => React.ReactNode;
-}
-
-interface SignupIntroPagerProps {
-  onLogin: () => void;
-  onJoin: () => void;
 }
 
 const PAGES: IntroPage[] = [
@@ -42,44 +36,45 @@ const PAGES: IntroPage[] = [
   { key: "medals", render: () => <AchievementMedalsPage /> },
 ];
 
+export const INTRO_PAGE_COUNT = PAGES.length;
+
+interface SignupIntroPagerProps {
+  index: number;
+  onIndexChange: (index: number) => void;
+  onLogin: () => void;
+  onSkip: () => void;
+  onJoin: () => void;
+}
+
 const SignupIntroPager: React.FC<SignupIntroPagerProps> = ({
+  index,
+  onIndexChange,
   onLogin,
+  onSkip,
   onJoin,
 }) => {
+  const { width } = useWindowDimensions();
   const listRef = useRef<FlatList<IntroPage>>(null);
-  const [index, setIndex] = useState(0);
-  const indexRef = useRef(index);
-  indexRef.current = index;
+  const [listHeight, setListHeight] = useState(0);
   const lastIndex = PAGES.length - 1;
+  const onBrand = index === 0;
 
   const goTo = useCallback(
     (next: number) => {
       const clamped = Math.max(0, Math.min(next, lastIndex));
       listRef.current?.scrollToIndex({ index: clamped, animated: true });
-      setIndex(clamped);
+      onIndexChange(clamped);
     },
-    [lastIndex],
+    [lastIndex, onIndexChange],
   );
 
   useEffect(() => {
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
-        setIndex((current) => {
-          if (current === 0) return current;
-          const previous = current - 1;
-          listRef.current?.scrollToIndex({ index: previous, animated: true });
-          return previous;
-        });
-        return indexRef.current > 0;
-      },
-    );
-    return () => subscription.remove();
-  }, []);
+    listRef.current?.scrollToIndex({ index, animated: false });
+  }, [width, index]);
 
   const onMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const page = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    if (page !== index) setIndex(page);
+    const page = Math.round(event.nativeEvent.contentOffset.x / width);
+    if (page !== index) onIndexChange(page);
   };
 
   const renderItem = ({
@@ -87,14 +82,27 @@ const SignupIntroPager: React.FC<SignupIntroPagerProps> = ({
     index: pageIndex,
   }: ListRenderItemInfo<IntroPage>) => (
     <RevealContext.Provider value={pageIndex === index}>
-      <Page>{item.render()}</Page>
+      <Page style={{ width, height: listHeight }}>{item.render()}</Page>
     </RevealContext.Provider>
   );
 
-  const onBrand = index === 0;
-
   return (
-    <SignupChrome>
+    <>
+      {onBrand ? (
+        <FlowHeader
+          rightLabel="Log in"
+          onRightPress={onLogin}
+          testIDPrefix="signup-intro-header"
+        />
+      ) : (
+        <FlowHeader
+          onBack={() => goTo(index - 1)}
+          rightLabel="Skip"
+          onRightPress={onSkip}
+          testIDPrefix="signup-intro-header"
+        />
+      )}
+
       <FlatList
         ref={listRef}
         data={PAGES}
@@ -103,23 +111,25 @@ const SignupIntroPager: React.FC<SignupIntroPagerProps> = ({
         extraData={index}
         horizontal
         pagingEnabled
+        initialScrollIndex={index}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onMomentumEnd}
         getItemLayout={(_, itemIndex) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * itemIndex,
+          length: width,
+          offset: width * itemIndex,
           index: itemIndex,
         })}
         style={styles.list}
+        onLayout={(event: LayoutChangeEvent) =>
+          setListHeight(event.nativeEvent.layout.height)
+        }
       />
 
-      {onBrand ? null : (
-        <Dots>
-          {PAGES.map((page, pageIndex) => (
-            <Dot key={page.key} active={pageIndex === index} />
-          ))}
-        </Dots>
-      )}
+      <Dots>
+        {PAGES.map((page, pageIndex) => (
+          <Dot key={page.key} active={pageIndex === index} />
+        ))}
+      </Dots>
 
       <NavRow>
         {onBrand ? (
@@ -154,14 +164,11 @@ const SignupIntroPager: React.FC<SignupIntroPagerProps> = ({
           </NavButton>
         )}
       </NavRow>
-    </SignupChrome>
+    </>
   );
 };
 
-const Page = styled.View({
-  width: SCREEN_WIDTH,
-  flex: 1,
-});
+const Page = styled.View({});
 
 const styles = StyleSheet.create({
   list: { flex: 1 },

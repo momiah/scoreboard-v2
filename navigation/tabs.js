@@ -1,8 +1,4 @@
-import React, {
-  useContext,
-  useEffect,
-  //  useState
-} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
@@ -17,8 +13,10 @@ import EditProfile from "../screens/Profile/EditProfile";
 import Notifications from "../screens/Notifications";
 import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import Login from "../screens/Authentication/Login";
-import Signup from "../screens/Authentication/Signup";
+import Login, {
+  SignupEntry as Signup,
+} from "../screens/Authentication/AuthFlowScreen";
+import { FullScreenFlowContext } from "../components/signup/FullScreenFlowContext";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Settings/PendingInvites";
 import UserPendingInvites from "../screens/Profile/UserPendingInvites";
@@ -58,25 +56,17 @@ import GameScreen from "../screens/GameScreen";
 // import { getUnitId } from "../utils/getAdMobUnitId";
 // import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 // const BANNER_UNIT_ID = getUnitId();
-import {
-  getFocusedRouteNameFromRoute,
-  useNavigation,
-} from "@react-navigation/native";
-import SignupIntroScreen from "../screens/Authentication/SignupIntroScreen";
-import { FORCE_SIGNUP_INTRO } from "../screens/Authentication/signupIntroFlag";
+import { useNavigation } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const HomeStack = () => {
-  const { currentUser } = useContext(UserContext);
-  const openSignupIntro = FORCE_SIGNUP_INTRO || !currentUser;
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={openSignupIntro ? "SignupIntro" : "HomeMain"}
+      initialRouteName="HomeMain"
     >
-      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="HomeMain" component={Home} />
       <Stack.Screen name="Leagues" component={Leagues} />
       <Stack.Screen name="Clubs" component={Clubs} />
@@ -324,6 +314,9 @@ const Tabs = () => {
   const { clubNavigationId } = useContext(LeagueContext);
   // const [showAd, setShowAd] = useState(true);
 
+  // The sign-in flow goes full screen after "Get started"; until then the tab bar stays.
+  const [flowFullscreen, setFlowFullscreen] = useState(false);
+
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
   ).length;
@@ -333,8 +326,7 @@ const Tabs = () => {
   );
 
   let initialRouteName = "Profile";
-  const openSignupIntro = FORCE_SIGNUP_INTRO || !currentUser;
-  if (!currentUser || FORCE_SIGNUP_INTRO) {
+  if (!currentUser) {
     initialRouteName = "Home";
   } else if (notifications.length === 0 || hasUnreadNotifications) {
     initialRouteName = "Competitions";
@@ -356,17 +348,10 @@ const Tabs = () => {
   }, [clubNavigationId, navigation]);
 
   return (
-    <>
+    <FullScreenFlowContext.Provider value={setFlowFullscreen}>
       <Tab.Navigator
         initialRouteName={initialRouteName}
-        screenOptions={({ route }) => {
-          const focusedRoute =
-            route.name === "Home"
-              ? (getFocusedRouteNameFromRoute(route) ??
-                (openSignupIntro ? "SignupIntro" : "HomeMain"))
-              : getFocusedRouteNameFromRoute(route);
-          const hideTabBar = focusedRoute === "SignupIntro";
-          return {
+        screenOptions={({ route }) => ({
           tabBarActiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarInactiveBackgroundColor: "rgb(3, 16, 31)",
           tabBarActiveTintColor: "#FFD700",
@@ -389,7 +374,7 @@ const Tabs = () => {
               return <TabIcon name={iconName} color={color} size={size} />;
             }
           },
-          tabBarStyle: hideTabBar
+          tabBarStyle: flowFullscreen
             ? { display: "none" }
             : {
                 borderTopWidth: 1,
@@ -397,8 +382,7 @@ const Tabs = () => {
               },
           tabBarLabel: () => null,
           headerShown: false,
-        };
-        }}
+        })}
       >
         <Tab.Screen name="Home" component={HomeStack} />
         <Tab.Screen
@@ -451,7 +435,7 @@ const Tabs = () => {
           />
         </View>
       )} */}
-    </>
+    </FullScreenFlowContext.Provider>
   );
 };
 
