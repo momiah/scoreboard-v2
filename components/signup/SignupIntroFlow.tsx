@@ -86,6 +86,14 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
   const [step, setStep] = useState<Step>("intro");
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const lastIndex = PAGES.length - 1;
+  // Frozen while the pager is mounted: changing initialScrollIndex on a live
+  // FlatList changes which cells it keeps rendered and leaves new pages blank.
+  const restoreIndex = useRef(0);
+
+  const openAccount = () => {
+    restoreIndex.current = index;
+    setStep("account");
+  };
 
   const goTo = (next: number) => {
     const clamped = Math.max(0, Math.min(next, lastIndex));
@@ -203,7 +211,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
         <FlowHeader
           onBack={() => goTo(index - 1)}
           rightLabel="Skip"
-          onRightPress={() => setStep("account")}
+          onRightPress={openAccount}
           testIDPrefix="signup-intro-header"
         />
       )}
@@ -216,7 +224,10 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
         extraData={index}
         horizontal
         pagingEnabled
-        initialScrollIndex={index}
+        initialScrollIndex={restoreIndex.current}
+        initialNumToRender={PAGES.length}
+        windowSize={PAGES.length * 2 + 1}
+        removeClippedSubviews={false}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onMomentumEnd}
         getItemLayout={(_, i) => ({
@@ -252,11 +263,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
             <NavButtonText>{onBrand ? "Get started" : "Next"}</NavButtonText>
           </NavButton>
         ) : (
-          <NavButton
-            primary
-            onPress={() => setStep("account")}
-            testID="signup-intro-join"
-          >
+          <NavButton primary onPress={openAccount} testID="signup-intro-join">
             <NavButtonText>Join now</NavButtonText>
           </NavButton>
         )}
