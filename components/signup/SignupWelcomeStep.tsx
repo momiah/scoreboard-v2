@@ -3,7 +3,10 @@ import { ScrollView } from "react-native";
 import styled from "styled-components/native";
 
 import { highQualityRanks } from "../../rankingMedals/ranking/ranks";
-import { NavButton, NavButtonText } from "../ladder/HowToPlayFlow";
+import {
+  HowToPlayButton as NavButton,
+  HowToPlayButtonText as NavButtonText,
+} from "../ladder/HowToPlayFlow";
 import { Reveal } from "../ladder/HowToPlayReveal";
 import { BODY, BLUE, BRONZE, GOLD, GlowDisc, MUTED } from "./SignupChrome";
 

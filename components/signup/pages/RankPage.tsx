@@ -16,7 +16,7 @@ const LEVEL_COLOURS = [
   "rgb(249, 206, 40)",
 ];
 
-const HERO_SIZE = 132;
+const HERO_SIZE = 88;
 const beginnerLevels = ranks.slice(0, 4);
 const heroMedal = highQualityRanks[0]?.icon;
 
@@ -36,7 +36,7 @@ const RankPage: React.FC = () => {
         </Hero>
       </Reveal>
       <Reveal order={1}>
-        <Headline>Beginner</Headline>
+        <Headline style={{ fontSize: 28 }}>Beginner</Headline>
       </Reveal>
       <Reveal order={2} style={fullWidth}>
         <MedalProgress xp={20} prevGameXp={null} />
@@ -97,8 +97,8 @@ const HeroMedal = styled.Image({
 
 const Copy = styled.Text({
   color: BODY,
-  fontSize: 15,
-  lineHeight: 22,
+  fontSize: 14,
+  lineHeight: 20,
   textAlign: "center",
 });
 
@@ -115,15 +115,15 @@ const Level = styled.View({
 });
 
 const LevelMedalWrap = styled.View({
-  width: 58,
-  height: 58,
+  width: 46,
+  height: 46,
   alignItems: "center",
   justifyContent: "center",
 });
 
 const LevelMedal = styled.Image({
-  width: 50,
-  height: 50,
+  width: 40,
+  height: 40,
 });
 
 const LevelName = styled.Text({
@@ -141,7 +141,7 @@ const LevelCp = styled.Text({
 
 const AllRanksButton = styled.TouchableOpacity({
   marginTop: 4,
-  paddingVertical: 12,
+  paddingVertical: 10,
   paddingHorizontal: 28,
   borderRadius: 12,
   borderWidth: 1.5,

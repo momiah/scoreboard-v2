@@ -35,7 +35,6 @@ interface SignupAccountStepProps {
   onEmailAccepted: (email: string, password: string) => void;
   onSocialExisting: (profile: Record<string, unknown>, method: string) => void;
   onSocialNeedsSignup: (params: SocialSignupParams) => void;
-  bottomInset: number;
 }
 
 const ICON_SIZE = 96;
@@ -47,7 +46,6 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
   onEmailAccepted,
   onSocialExisting,
   onSocialNeedsSignup,
-  bottomInset,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -95,7 +93,7 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
           </Subline>
         </Hero>
 
-        <Sheet style={{ paddingBottom: 28 + bottomInset }}>
+        <Sheet>
           <SocialButtons
             busy={social.busy}
             onApple={() => social.run("apple")}

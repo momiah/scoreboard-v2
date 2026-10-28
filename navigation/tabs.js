@@ -1,4 +1,8 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, {
+  useContext,
+  useEffect,
+  //  useState
+} from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import Home from "../screens/Home/Home";
@@ -13,10 +17,9 @@ import EditProfile from "../screens/Profile/EditProfile";
 import Notifications from "../screens/Notifications";
 import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import Login, {
-  SignupEntry as Signup,
-} from "../screens/Authentication/AuthFlowScreen";
-import { FullScreenFlowContext } from "../components/signup/FullScreenFlowContext";
+import Login from "../screens/Authentication/Login";
+import Signup from "../screens/Authentication/Signup";
+import SignupIntroScreen from "../screens/Authentication/SignupIntroScreen";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Settings/PendingInvites";
 import UserPendingInvites from "../screens/Profile/UserPendingInvites";
@@ -133,6 +136,7 @@ const HomeStack = () => {
 
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
     </Stack.Navigator>
   );
 };
@@ -176,6 +180,7 @@ const ProfileStack = () => {
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
       <Stack.Screen name="GameScreen" component={GameScreen} />
@@ -224,6 +229,7 @@ const ChatsStack = () => {
       />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />
@@ -276,6 +282,7 @@ const CompetitionsStack = () => {
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="FAQ" component={FAQ} />
@@ -314,9 +321,6 @@ const Tabs = () => {
   const { clubNavigationId } = useContext(LeagueContext);
   // const [showAd, setShowAd] = useState(true);
 
-  // The sign-in flow goes full screen after "Get started"; until then the tab bar stays.
-  const [flowFullscreen, setFlowFullscreen] = useState(false);
-
   const unreadChats = chatSummaries.filter(
     (chat) => chat.isRead === false,
   ).length;
@@ -348,7 +352,7 @@ const Tabs = () => {
   }, [clubNavigationId, navigation]);
 
   return (
-    <FullScreenFlowContext.Provider value={setFlowFullscreen}>
+    <>
       <Tab.Navigator
         initialRouteName={initialRouteName}
         screenOptions={({ route }) => ({
@@ -374,12 +378,10 @@ const Tabs = () => {
               return <TabIcon name={iconName} color={color} size={size} />;
             }
           },
-          tabBarStyle: flowFullscreen
-            ? { display: "none" }
-            : {
-                borderTopWidth: 1,
-                borderTopColor: "#262626",
-              },
+          tabBarStyle: {
+            borderTopWidth: 1,
+            borderTopColor: "#262626",
+          },
           tabBarLabel: () => null,
           headerShown: false,
         })}
@@ -435,7 +437,7 @@ const Tabs = () => {
           />
         </View>
       )} */}
-    </FullScreenFlowContext.Provider>
+    </>
   );
 };
 

@@ -1759,8 +1759,6 @@ const Image = styled.Image({
 export {
   NavButton as HowToPlayButton,
   NavButtonText as HowToPlayButtonText,
-  NavButton,
-  NavButtonText,
   NavRow,
   Dots,
   Dot,

@@ -3,7 +3,7 @@ import { ActivityIndicator, Image, Platform } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
-import { FacebookLogo, GoogleLogo } from "../../assets";
+import { GoogleLogo } from "../../assets";
 import { BLUE, FIELD_BG, FIELD_BORDER, MUTED, SHEET } from "./SignupChrome";
 
 export const Sheet = styled.View({
@@ -99,13 +99,12 @@ const SocialLabel = styled.Text({
   fontWeight: "700",
 });
 
-export type SocialKind = "apple" | "google" | "facebook";
+export type SocialKind = "apple" | "google";
 
 interface SocialButtonsProps {
   busy: SocialKind | "email" | null;
   onApple: () => void;
   onGoogle: () => void;
-  onFacebook?: () => void;
   testIDPrefix: string;
 }
 
@@ -114,7 +113,6 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({
   busy,
   onApple,
   onGoogle,
-  onFacebook,
   testIDPrefix,
 }) => {
   const renderBody = (
@@ -161,23 +159,6 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({
           />,
         )}
       </SocialButton>
-      {onFacebook ? (
-        <SocialButton
-          onPress={onFacebook}
-          disabled={busy !== null}
-          testID={`${testIDPrefix}-facebook`}
-        >
-          {renderBody(
-            "facebook",
-            "Continue with Facebook",
-            <Image
-              source={FacebookLogo}
-              resizeMode="contain"
-              style={{ width: 20, height: 20 }}
-            />,
-          )}
-        </SocialButton>
-      ) : null}
     </>
   );
 };

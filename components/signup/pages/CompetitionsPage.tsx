@@ -2,14 +2,10 @@ import React from "react";
 import { Image, Text } from "react-native";
 import styled from "styled-components/native";
 
-import {
-  ladderOutline,
-  medalOutline,
-  trophyOutline,
-} from "../../../mockImages";
+import { ladderOutline, medalOutline, trophyOutline } from "../assets";
 import { Reveal } from "../../ladder/HowToPlayReveal";
 import { BODY, GOLD } from "../SignupChrome";
-import { Eyebrow, Headline, IntroScroll } from "../introStyles";
+import { Eyebrow, Headline, IntroScrollCompact } from "../introStyles";
 
 const CARDS: {
   key: string;
@@ -42,7 +38,7 @@ const CARDS: {
 ];
 
 const CompetitionsPage: React.FC = () => (
-  <IntroScroll>
+  <IntroScrollCompact>
     <Reveal>
       <Eyebrow>THREE WAYS TO COMPETE</Eyebrow>
     </Reveal>
@@ -68,7 +64,7 @@ const CompetitionsPage: React.FC = () => (
         </Card>
       </Reveal>
     ))}
-  </IntroScroll>
+  </IntroScrollCompact>
 );
 
 const cardStyle = { alignSelf: "stretch" as const };
@@ -77,7 +73,7 @@ const Card = styled.View({
   flexDirection: "row",
   alignItems: "center",
   gap: 14,
-  paddingVertical: 16,
+  paddingVertical: 12,
   paddingHorizontal: 14,
   borderRadius: 14,
   backgroundColor: "rgba(2, 10, 20, 0.72)",
@@ -104,8 +100,8 @@ const CardTitle = styled.Text({
 
 const CardBody = styled.Text({
   color: BODY,
-  fontSize: 13.5,
-  lineHeight: 19,
+  fontSize: 13,
+  lineHeight: 18,
 });
 
 export default CompetitionsPage;

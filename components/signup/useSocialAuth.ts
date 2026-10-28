@@ -7,7 +7,6 @@ import type {
 } from "../../screens/Authentication/socialAuth";
 import {
   signInWithApple,
-  signInWithFacebook,
   signInWithGoogle,
 } from "../../screens/Authentication/socialAuth";
 import type { SocialKind } from "./formParts";
@@ -47,12 +46,7 @@ export function useSocialAuth({
   const run = async (kind: SocialKind) => {
     setBusy(kind);
     try {
-      const signIn =
-        kind === "apple"
-          ? signInWithApple
-          : kind === "google"
-            ? signInWithGoogle
-            : signInWithFacebook;
+      const signIn = kind === "apple" ? signInWithApple : signInWithGoogle;
       handle(await signIn(getUserById));
     } finally {
       setBusy(null);

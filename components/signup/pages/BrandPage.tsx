@@ -2,8 +2,9 @@ import React from "react";
 import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
 import styled from "styled-components/native";
 
-import { CourtChampLogoTrimmed } from "../../../assets";
+import { logoTrimmed } from "../assets";
 import { BLUE, GlowDisc } from "../SignupChrome";
+import { IntroScroll } from "../introStyles";
 
 const LOGO_ASPECT = 1666 / 623;
 
@@ -14,7 +15,7 @@ const BrandPage: React.FC = () => {
   const logoHeight = logoWidth / LOGO_ASPECT;
 
   return (
-    <Center>
+    <IntroScroll scrollEnabled={false}>
       <View style={{ width: logoWidth, height: logoHeight }}>
         <GlowDisc
           size={logoHeight * 2.6}
@@ -22,29 +23,17 @@ const BrandPage: React.FC = () => {
           opacity={0.32}
           offsetX={-logoWidth * 0.2}
         />
-        <Image
-          source={CourtChampLogoTrimmed}
-          resizeMode="contain"
-          style={styles.logo}
-        />
+        <Image source={logoTrimmed} resizeMode="contain" style={styles.logo} />
       </View>
       <Motto numberOfLines={1} adjustsFontSizeToFit>
         THE HOME OF COMPETITIVE RACKET SPORTS
       </Motto>
-    </Center>
+    </IntroScroll>
   );
 };
 
 const styles = StyleSheet.create({
   logo: { width: "100%", height: "100%" },
-});
-
-const Center = styled.View({
-  flex: 1,
-  alignItems: "center",
-  justifyContent: "center",
-  paddingHorizontal: 28,
-  gap: 26,
 });
 
 const Motto = styled.Text({
@@ -54,6 +43,7 @@ const Motto = styled.Text({
   letterSpacing: 1.6,
   textAlign: "center",
   alignSelf: "stretch",
+  marginTop: 8,
 });
 
 export default BrandPage;
