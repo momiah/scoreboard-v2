@@ -1,30 +1,21 @@
 import React, { useState } from "react";
-import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from "react-native";
+import { TouchableOpacity } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
-import { CourtChampLogoIcon } from "../../assets";
 import {
   validateEmail,
   validatePassword,
 } from "../../screens/Authentication/createAccount";
 import type { SocialSignupParams } from "../../screens/Authentication/socialAuth";
-import FlowHeader from "./FlowHeader";
+import AuthLayout from "./AuthLayout";
 import {
-  Field,
-  FieldError,
+  AuthField,
   OrDivider,
   PrimaryButton,
-  PrimaryLabel,
-  Sheet,
   SocialButtons,
 } from "./formParts";
-import { BLUE, GlowDisc, MUTED } from "./SignupChrome";
+import { BLUE, MUTED } from "./SignupChrome";
 import { useSocialAuth } from "./useSocialAuth";
 import type { ProfileLookup } from "./useSocialAuth";
 
@@ -36,8 +27,6 @@ interface SignupAccountStepProps {
   onSocialExisting: (profile: Record<string, unknown>, method: string) => void;
   onSocialNeedsSignup: (params: SocialSignupParams) => void;
 }
-
-const ICON_SIZE = 96;
 
 const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
   getUserById,
@@ -68,136 +57,73 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <AuthLayout
+      title="Join Court Champs"
+      subtitle="One account for every ladder, league and tournament."
+      onBack={onBack}
+      testIDPrefix="signup-account"
     >
-      <FlowHeader onBack={onBack} testIDPrefix="signup-account" />
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Hero>
-          <IconWrap>
-            <GlowDisc size={ICON_SIZE * 2.2} color="#0a5bff" opacity={0.4} />
-            <Image
-              source={CourtChampLogoIcon}
-              resizeMode="contain"
-              style={{ width: ICON_SIZE, height: ICON_SIZE }}
-            />
-          </IconWrap>
-          <Title>Join Court Champs</Title>
-          <Subline>
-            One account for every ladder, league and tournament.
-          </Subline>
-        </Hero>
+      <SocialButtons
+        busy={social.busy}
+        onApple={() => social.run("apple")}
+        onGoogle={() => social.run("google")}
+        testIDPrefix="signup-account"
+      />
+      <OrDivider label="or use email" />
 
-        <Sheet>
-          <SocialButtons
-            busy={social.busy}
-            onApple={() => social.run("apple")}
-            onGoogle={() => social.run("google")}
-            testIDPrefix="signup-account"
-          />
-          <OrDivider />
-
-          <Field
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            testID="signup-account-email"
-          />
-          {emailError ? <FieldError>{emailError}</FieldError> : null}
-
-          <PasswordRow>
-            <Field
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Password"
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="password"
-              style={{ paddingRight: 44 }}
-              testID="signup-account-password"
-            />
-            <EyeButton onPress={() => setShowPassword((current) => !current)}>
-              <Ionicons
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color={MUTED}
-              />
-            </EyeButton>
-          </PasswordRow>
-          {passwordError ? <FieldError>{passwordError}</FieldError> : null}
-
-          <PrimaryButton
-            onPress={onCreate}
-            disabled={social.busy !== null}
-            testID="signup-account-create"
+      <AuthField
+        icon="mail-outline"
+        value={email}
+        onChangeText={setEmail}
+        placeholder="Email"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
+        error={emailError}
+        testID="signup-account-email"
+      />
+      <AuthField
+        icon="lock-closed-outline"
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Password"
+        secureTextEntry={!showPassword}
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="password"
+        error={passwordError}
+        testID="signup-account-password"
+        right={
+          <TouchableOpacity
+            onPress={() => setShowPassword((current) => !current)}
+            hitSlop={10}
           >
-            <PrimaryLabel>Create account</PrimaryLabel>
-          </PrimaryButton>
+            <Ionicons
+              name={showPassword ? "eye-off-outline" : "eye-outline"}
+              size={20}
+              color={MUTED}
+            />
+          </TouchableOpacity>
+        }
+      />
 
-          <LoginRow>
-            <LoginMuted>Already have an account? </LoginMuted>
-            <LoginLink onPress={onLogin} testID="signup-account-login">
-              <LoginLinkText>Log in</LoginLinkText>
-            </LoginLink>
-          </LoginRow>
-        </Sheet>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <PrimaryButton
+        label="Create account"
+        onPress={onCreate}
+        disabled={social.busy !== null}
+        testID="signup-account-create"
+      />
+
+      <LoginRow>
+        <LoginMuted>Already have an account? </LoginMuted>
+        <TouchableOpacity onPress={onLogin} testID="signup-account-login">
+          <LoginLink>Log in</LoginLink>
+        </TouchableOpacity>
+      </LoginRow>
+    </AuthLayout>
   );
 };
-
-const Hero = styled.View({
-  flex: 1,
-  alignItems: "center",
-  justifyContent: "center",
-  paddingHorizontal: 32,
-  paddingVertical: 16,
-  gap: 14,
-  minHeight: 220,
-});
-
-const IconWrap = styled.View({
-  width: ICON_SIZE,
-  height: ICON_SIZE,
-  alignItems: "center",
-  justifyContent: "center",
-});
-
-const Title = styled.Text({
-  color: "#ffffff",
-  fontSize: 28,
-  fontWeight: "bold",
-  textAlign: "center",
-});
-
-const Subline = styled.Text({
-  color: MUTED,
-  fontSize: 15,
-  lineHeight: 22,
-  textAlign: "center",
-  maxWidth: 280,
-});
-
-const PasswordRow = styled.View({
-  justifyContent: "center",
-});
-
-const EyeButton = styled.TouchableOpacity({
-  position: "absolute",
-  right: 14,
-  height: 48,
-  justifyContent: "center",
-});
 
 const LoginRow = styled.View({
   flexDirection: "row",
@@ -210,11 +136,10 @@ const LoginMuted = styled.Text({
   fontSize: 14,
 });
 
-const LoginLink = styled.TouchableOpacity({});
-
-const LoginLinkText = styled.Text({
+const LoginLink = styled.Text({
   color: BLUE,
   fontSize: 14,
+  fontWeight: "bold",
 });
 
 export default SignupAccountStep;

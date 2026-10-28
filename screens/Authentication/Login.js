@@ -3,22 +3,21 @@ import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   StyleSheet,
-  Image,
   Animated,
   Alert,
-  Keyboard,
   Platform,
 } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import AuthLayout from "../../components/signup/AuthLayout";
 import {
-  CourtChampLogo,
-  GoogleLogo,
-  FacebookLogo,
-  AppleLogo,
-} from "../../assets";
+  AuthField,
+  OrDivider,
+  PrimaryButton,
+  SocialButtons,
+} from "../../components/signup/formParts";
+import SignupChrome from "../../components/signup/SignupChrome";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -54,11 +53,6 @@ export default function Login() {
   const { getUserById, setCurrentUser } = useContext(UserContext);
 
   const navigation = useNavigation();
-
-  // Dismiss keyboard when tapping outside
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
 
   // Validation for Email
   const validateEmail = () => {
@@ -477,236 +471,113 @@ export default function Login() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <View style={styles.container}>
-        {/* Logo Section */}
-        <Image source={CourtChampLogo} style={styles.logo} />
+    <SignupChrome>
+      <AuthLayout
+        title="Welcome back"
+        subtitle="Log in to pick up your games and your climb."
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+        testIDPrefix="login"
+      >
+        <SocialButtons
+          compact
+          busy={null}
+          onApple={() => onSocialLogin("apple")}
+          onGoogle={() => onSocialLogin("google")}
+          onFacebook={() => onSocialLogin("facebook")}
+          testIDPrefix="login"
+        />
+        <OrDivider label="or log in with email" />
 
-        {/* Input Fields */}
-        <View style={styles.inputContainer}>
-          {/* Email Field */}
-          <Text style={styles.inputLabel}>Email</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={[styles.input, emailError && styles.inputError]}
-              placeholder="Enter your email"
-              placeholderTextColor="#B3B3B3"
-              value={email}
-              onChangeText={setEmail}
-              onBlur={validateEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            {emailError && <Text style={styles.errorText}>{emailError}</Text>}
-          </View>
+        <AuthField
+          icon="mail-outline"
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          onBlur={validateEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="off"
+          spellCheck={false}
+          error={emailError}
+          testID="login-email"
+        />
+        <AuthField
+          icon="lock-closed-outline"
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          onBlur={validatePassword}
+          secureTextEntry={!showPassword}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="off"
+          spellCheck={false}
+          error={passwordError}
+          testID="login-password"
+          right={
+            password ? (
+              <TouchableOpacity onPress={togglePasswordVisibility} hitSlop={10}>
+                <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color="#aaa"
+                  />
+                </Animated.View>
+              </TouchableOpacity>
+            ) : null
+          }
+        />
 
-          {/* Password Field */}
-          <Text style={styles.inputLabel}>Password</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={[styles.input, passwordError && styles.inputError]}
-              placeholder="Enter your password"
-              placeholderTextColor="#B3B3B3"
-              value={password}
-              onChangeText={setPassword}
-              onBlur={validatePassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={togglePasswordVisibility}
-            >
-              <Animated.Text
-                style={[styles.eyeIcon, { transform: [{ scale: iconScale }] }]}
-              >
-                {!password ? "" : showPassword ? "👁️" : "🙈"}
-              </Animated.Text>
-            </TouchableOpacity>
-            {passwordError && (
-              <Text style={styles.errorText}>{passwordError}</Text>
-            )}
-          </View>
-
-          {/* Sign-In Button */}
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Sign In</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={handleForgotPassword}>
-            <Text style={styles.forgotPassword}>Forgot password?</Text>
-            <View style={styles.underline} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Social Media Buttons */}
-        <View style={styles.socialContainer}>
-          <TouchableOpacity onPress={() => onSocialLogin("google")}>
-            <Image source={GoogleLogo} style={styles.socialIcon} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onSocialLogin("facebook")}>
-            <Image source={FacebookLogo} style={styles.socialIcon} />
-          </TouchableOpacity>
-          {Platform.OS === "ios" && (
-            <TouchableOpacity onPress={() => onSocialLogin("apple")}>
-              <Image
-                source={AppleLogo}
-                style={styles.socialIconApple}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Register Section */}
-        <TouchableOpacity>
-          <Text
-            onPress={() => {
-              navigation.navigate("SignupIntro");
-            }}
-            style={styles.registerText}
-          >
-            Register for free
-          </Text>
+        <TouchableOpacity
+          onPress={handleForgotPassword}
+          style={styles.forgotButton}
+        >
+          <Text style={styles.forgotText}>Forgot password?</Text>
         </TouchableOpacity>
-      </View>
-    </TouchableWithoutFeedback>
+
+        <PrimaryButton
+          label="Log in"
+          onPress={handleLogin}
+          testID="login-submit"
+        />
+
+        <View style={styles.registerRow}>
+          <Text style={styles.registerMuted}>New to Court Champs? </Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("SignupIntro")}
+            testID="login-register"
+          >
+            <Text style={styles.registerLink}>Create account</Text>
+          </TouchableOpacity>
+        </View>
+      </AuthLayout>
+    </SignupChrome>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: " rgb(3, 16, 31)",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-
-    // top:'10px'
+  forgotButton: {
+    alignSelf: "flex-end",
+    marginTop: -4,
   },
-  logo: {
-    width: 200,
-    height: 100,
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 40,
-  },
-  inputContainer: {
-    width: 320,
-    height: 380,
-    minWidth: 300,
-    padding: 24,
-    gap: 5,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#1E293B",
-    opacity: 1,
-    backgroundColor: "#001123",
-  },
-  inputLabel: {
-    width: "90%",
-    color: "#FFFFFF",
-    fontSize: 16,
-    marginBottom: 5,
-    textAlign: "left",
-    fontWeight: "bold",
-    height: "22px",
-  },
-  inputWrapper: {
-    position: "relative",
-    marginBottom: 10, // Space between fields
-    minHeight: 40, // Fixed height for input and error message container
-  },
-  underline: {
-    width: "46%",
-    height: 1,
-    backgroundColor: "#fff",
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#1E293B",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 5,
-    color: "#fff",
-    fontSize: 16,
-  },
-  inputError: {
-    // borderColor: "red",
-    // borderWidth: 1,
-  },
-  passwordContainer: {
-    width: "100%",
-    position: "relative",
-  },
-  eyeButton: {
-    position: "absolute",
-    right: 15,
-    top: 10,
-  },
-  eyeIcon: {
-    fontSize: 18,
-    color: "#fff",
-  },
-  errorText: {
-    width: "90%",
-    color: "red",
-    fontSize: 12,
-    marginBottom: 2,
-    textAlign: "left",
-  },
-  button: {
-    width: "272px",
-    height: 50,
-    backgroundColor: "#00A2FF",
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  forgotPassword: {
-    color: "#fff",
-
+  forgotText: {
+    color: "#00A2FF",
     fontSize: 14,
   },
-  socialContainer: {
+  registerRow: {
     flexDirection: "row",
     justifyContent: "center",
-    width: "85%",
-    marginBottom: 30,
-    marginTop: 50,
+    alignItems: "center",
   },
-  socialIcon: {
-    width: 45,
-    height: 45,
-    marginHorizontal: 20,
+  registerMuted: {
+    color: "#aaa",
+    fontSize: 14,
   },
-  socialIconApple: {
-    width: 50,
-    height: 50,
-    marginHorizontal: 20,
-    bottom: 5,
-  },
-  registerText: {
-    color: "#fff",
-    fontSize: 16,
+  registerLink: {
+    color: "#00A2FF",
+    fontSize: 14,
     fontWeight: "bold",
-    marginVertical: 30,
   },
 });

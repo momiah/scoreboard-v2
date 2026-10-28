@@ -5,7 +5,7 @@ import styled from "styled-components/native";
 import { ladderOutline, medalOutline, trophyOutline } from "../assets";
 import { Reveal } from "../../ladder/HowToPlayReveal";
 import { BODY, GOLD } from "../SignupChrome";
-import { Eyebrow, Headline, IntroScrollCompact } from "../introStyles";
+import { Eyebrow, Headline, IntroScroll } from "../introStyles";
 
 const CARDS: {
   key: string;
@@ -38,11 +38,9 @@ const CARDS: {
 ];
 
 const CompetitionsPage: React.FC = () => (
-  <IntroScrollCompact>
-    <Reveal>
+  <IntroScroll>
+    <Reveal style={titleGroup}>
       <Eyebrow>THREE WAYS TO COMPETE</Eyebrow>
-    </Reveal>
-    <Reveal order={1}>
       <Headline style={{ fontSize: 28 }}>
         Pick your <Text style={{ color: GOLD }}>battleground.</Text>
       </Headline>
@@ -64,8 +62,10 @@ const CompetitionsPage: React.FC = () => (
         </Card>
       </Reveal>
     ))}
-  </IntroScrollCompact>
+  </IntroScroll>
 );
+
+const titleGroup = { gap: 10, marginBottom: 14, alignItems: "center" as const };
 
 const cardStyle = { alignSelf: "stretch" as const };
 

@@ -1,58 +1,169 @@
-import React from "react";
-import { ActivityIndicator, Image, Platform } from "react-native";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Platform,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
+import type { TextInputProps } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
 import styled from "styled-components/native";
 
-import { GoogleLogo } from "../../assets";
-import { BLUE, FIELD_BG, FIELD_BORDER, MUTED, SHEET } from "./SignupChrome";
+import { FacebookLogo, GoogleLogo } from "../../assets";
+import { BLUE, MUTED } from "./SignupChrome";
 
-export const Sheet = styled.View({
-  backgroundColor: SHEET,
-  borderTopLeftRadius: 28,
-  borderTopRightRadius: 28,
+const GLASS = "rgba(255, 255, 255, 0.06)";
+const GLASS_BORDER = "rgba(255, 255, 255, 0.14)";
+
+/** Bottom sheet for the account and log in forms: glass panel with a glowing blue top edge. */
+export const Sheet: React.FC<{
+  children: React.ReactNode;
+  style?: React.ComponentProps<typeof View>["style"];
+}> = ({ children, style }) => (
+  <SheetBase style={style}>
+    <LinearGradient
+      pointerEvents="none"
+      colors={[
+        "rgba(0, 162, 255, 0)",
+        "rgba(0, 162, 255, 0.9)",
+        "rgba(0, 162, 255, 0)",
+      ]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.sheetEdge}
+    />
+    {children}
+  </SheetBase>
+);
+
+const SheetBase = styled.View({
+  backgroundColor: "rgba(6, 20, 38, 0.96)",
+  borderTopLeftRadius: 30,
+  borderTopRightRadius: 30,
   borderWidth: 1,
   borderBottomWidth: 0,
-  borderColor: "rgb(16, 36, 58)",
-  paddingHorizontal: 24,
-  paddingTop: 24,
+  borderColor: "rgba(0, 162, 255, 0.28)",
+  paddingHorizontal: 22,
+  paddingTop: 26,
   paddingBottom: 28,
-  gap: 12,
+  gap: 14,
+  shadowColor: BLUE,
+  shadowOpacity: 0.3,
+  shadowRadius: 24,
+  shadowOffset: { width: 0, height: -6 },
 });
 
-export const Field = styled.TextInput.attrs({
-  placeholderTextColor: "#c9d6e3",
-})({
-  height: 48,
-  borderRadius: 8,
-  paddingHorizontal: 16,
-  backgroundColor: FIELD_BG,
-  borderWidth: 1,
-  borderColor: FIELD_BORDER,
-  color: "#ffffff",
-  fontSize: 15,
-});
+interface AuthFieldProps extends TextInputProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  error?: string;
+  right?: React.ReactNode;
+}
+
+/** Dark field with a leading icon that lights up blue when focused. */
+export const AuthField: React.FC<AuthFieldProps> = ({
+  icon,
+  error,
+  right,
+  onFocus,
+  onBlur,
+  ...inputProps
+}) => {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={styles.fieldWrap}>
+      <View
+        style={[
+          styles.field,
+          focused && styles.fieldFocused,
+          !!error && styles.fieldError,
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={19}
+          color={focused ? BLUE : "#7f97a8"}
+          style={styles.fieldIcon}
+        />
+        <TextInput
+          {...inputProps}
+          placeholderTextColor="#7f97a8"
+          style={styles.fieldInput}
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+        />
+        {right}
+      </View>
+      {error ? <FieldError>{error}</FieldError> : null}
+    </View>
+  );
+};
 
 export const FieldError = styled.Text({
   color: "#ff7675",
   fontSize: 12,
-  marginTop: -6,
+  marginTop: 6,
+  marginLeft: 4,
 });
 
-export const PrimaryButton = styled.TouchableOpacity<{ disabled?: boolean }>(
-  ({ disabled }: { disabled?: boolean }) => ({
-    height: 50,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: BLUE,
-    opacity: disabled ? 0.6 : 1,
-  }),
+interface PrimaryButtonProps {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  testID?: string;
+}
+
+export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+  label,
+  onPress,
+  disabled,
+  loading,
+  testID,
+}) => (
+  <PrimaryTouch
+    onPress={onPress}
+    disabled={disabled || loading}
+    activeOpacity={0.85}
+    testID={testID}
+    style={{ opacity: disabled && !loading ? 0.6 : 1 }}
+  >
+    <LinearGradient
+      colors={["#27b9ff", "#0086ff"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.primaryFill}
+    >
+      {loading ? (
+        <ActivityIndicator color="#ffffff" />
+      ) : (
+        <PrimaryLabel>{label}</PrimaryLabel>
+      )}
+    </LinearGradient>
+  </PrimaryTouch>
 );
 
-export const PrimaryLabel = styled.Text({
+const PrimaryTouch = styled.TouchableOpacity({
+  borderRadius: 14,
+  shadowColor: BLUE,
+  shadowOpacity: 0.55,
+  shadowRadius: 14,
+  shadowOffset: { width: 0, height: 4 },
+});
+
+const PrimaryLabel = styled.Text({
   color: "#ffffff",
   fontSize: 16,
   fontWeight: "bold",
+  letterSpacing: 0.3,
 });
 
 const DividerRow = styled.View({
@@ -64,101 +175,192 @@ const DividerRow = styled.View({
 const DividerLine = styled.View({
   flex: 1,
   height: 1,
-  backgroundColor: "rgba(255, 255, 255, 0.14)",
+  backgroundColor: "rgba(255, 255, 255, 0.12)",
 });
 
 const DividerText = styled.Text({
   color: MUTED,
-  fontSize: 13,
+  fontSize: 12,
+  letterSpacing: 1.2,
+  textTransform: "uppercase",
 });
 
-export const OrDivider: React.FC = () => (
+export const OrDivider: React.FC<{ label?: string }> = ({ label = "or" }) => (
   <DividerRow>
     <DividerLine />
-    <DividerText>or</DividerText>
+    <DividerText>{label}</DividerText>
     <DividerLine />
   </DividerRow>
 );
 
-const SocialButton = styled.TouchableOpacity<{ disabled?: boolean }>(
-  ({ disabled }: { disabled?: boolean }) => ({
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    height: 48,
-    borderRadius: 10,
-    backgroundColor: "#ffffff",
-    opacity: disabled ? 0.6 : 1,
-  }),
-);
+export type SocialKind = "apple" | "google" | "facebook";
+
+interface SocialButtonProps {
+  kind: SocialKind;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  compact?: boolean;
+  testID?: string;
+}
+
+const LABELS: Record<SocialKind, string> = {
+  apple: "Continue with Apple",
+  google: "Continue with Google",
+  facebook: "Continue with Facebook",
+};
+
+const SocialButton: React.FC<SocialButtonProps> = ({
+  kind,
+  onPress,
+  disabled,
+  loading,
+  compact,
+  testID,
+}) => {
+  const icon =
+    kind === "apple" ? (
+      <Ionicons name="logo-apple" size={22} color="#ffffff" />
+    ) : (
+      <Image
+        source={kind === "google" ? GoogleLogo : FacebookLogo}
+        resizeMode="contain"
+        style={{ width: 20, height: 20 }}
+      />
+    );
+
+  return (
+    <SocialTouch
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.8}
+      accessibilityLabel={LABELS[kind]}
+      testID={testID}
+      style={{
+        flex: compact ? 1 : undefined,
+        opacity: disabled && !loading ? 0.6 : 1,
+      }}
+    >
+      {loading ? <ActivityIndicator color="#ffffff" /> : icon}
+      {compact ? null : <SocialLabel>{LABELS[kind]}</SocialLabel>}
+    </SocialTouch>
+  );
+};
+
+const SocialTouch = styled.TouchableOpacity({
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 10,
+  height: 52,
+  borderRadius: 14,
+  backgroundColor: GLASS,
+  borderWidth: 1,
+  borderColor: GLASS_BORDER,
+});
 
 const SocialLabel = styled.Text({
-  color: "#000000",
+  color: "#ffffff",
   fontSize: 15,
   fontWeight: "700",
 });
-
-export type SocialKind = "apple" | "google";
 
 interface SocialButtonsProps {
   busy: SocialKind | "email" | null;
   onApple: () => void;
   onGoogle: () => void;
+  onFacebook?: () => void;
+  compact?: boolean;
   testIDPrefix: string;
 }
 
-/** Apple sign-in only exists on iOS, so the button is hidden elsewhere. */
+/** Apple sign-in only exists on iOS, so that button is hidden elsewhere. */
 export const SocialButtons: React.FC<SocialButtonsProps> = ({
   busy,
   onApple,
   onGoogle,
+  onFacebook,
+  compact,
   testIDPrefix,
 }) => {
-  const renderBody = (
-    kind: SocialKind,
-    label: string,
-    icon: React.ReactNode,
-  ) =>
-    busy === kind ? (
-      <ActivityIndicator color="#111111" />
-    ) : (
-      <>
-        {icon}
-        <SocialLabel>{label}</SocialLabel>
-      </>
-    );
-
-  return (
+  const buttons = (
     <>
       {Platform.OS === "ios" ? (
         <SocialButton
+          kind="apple"
           onPress={onApple}
           disabled={busy !== null}
+          loading={busy === "apple"}
+          compact={compact}
           testID={`${testIDPrefix}-apple`}
-        >
-          {renderBody(
-            "apple",
-            "Continue with Apple",
-            <Ionicons name="logo-apple" size={20} color="#000000" />,
-          )}
-        </SocialButton>
+        />
       ) : null}
       <SocialButton
+        kind="google"
         onPress={onGoogle}
         disabled={busy !== null}
+        loading={busy === "google"}
+        compact={compact}
         testID={`${testIDPrefix}-google`}
-      >
-        {renderBody(
-          "google",
-          "Continue with Google",
-          <Image
-            source={GoogleLogo}
-            resizeMode="contain"
-            style={{ width: 18, height: 18 }}
-          />,
-        )}
-      </SocialButton>
+      />
+      {onFacebook ? (
+        <SocialButton
+          kind="facebook"
+          onPress={onFacebook}
+          disabled={busy !== null}
+          loading={busy === "facebook"}
+          compact={compact}
+          testID={`${testIDPrefix}-facebook`}
+        />
+      ) : null}
     </>
   );
+  return compact ? <View style={styles.socialRow}>{buttons}</View> : buttons;
 };
+
+const styles = StyleSheet.create({
+  sheetEdge: {
+    position: "absolute",
+    top: 0,
+    left: 30,
+    right: 30,
+    height: 2,
+  },
+  fieldWrap: {},
+  field: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 54,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    backgroundColor: GLASS,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  fieldFocused: {
+    borderColor: BLUE,
+    backgroundColor: "rgba(0, 162, 255, 0.08)",
+  },
+  fieldError: {
+    borderColor: "#ff7675",
+  },
+  fieldIcon: {
+    marginRight: 10,
+  },
+  fieldInput: {
+    flex: 1,
+    height: "100%",
+    color: "#ffffff",
+    fontSize: 16,
+  },
+  primaryFill: {
+    height: 54,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  socialRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+});

@@ -1762,5 +1762,4 @@ export {
   NavRow,
   Dots,
   Dot,
-  AchievementMedalsPage,
 };

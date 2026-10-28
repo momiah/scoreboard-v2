@@ -9,7 +9,6 @@ import styled from "styled-components/native";
 import type { UserProfile } from "@shared/types";
 
 import {
-  AchievementMedalsPage,
   Dot,
   Dots,
   HowToPlayButton as NavButton,
@@ -41,7 +40,6 @@ const PAGES: IntroPage[] = [
   { key: "competitions", render: () => <CompetitionsPage /> },
   { key: "compete", render: () => <EveryGameCountsPage /> },
   { key: "rank", render: () => <RankPage /> },
-  { key: "medals", render: () => <AchievementMedalsPage /> },
 ];
 
 type Step = "intro" | "account" | "profile" | "welcome";
@@ -218,6 +216,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
         extraData={index}
         horizontal
         pagingEnabled
+        initialScrollIndex={index}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onMomentumEnd}
         getItemLayout={(_, i) => ({

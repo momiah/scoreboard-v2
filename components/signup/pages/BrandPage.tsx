@@ -11,7 +11,7 @@ const LOGO_ASPECT = 1666 / 623;
 /** Static on purpose: the brand page is the first thing people see and must never render blank. */
 const BrandPage: React.FC = () => {
   const { width } = useWindowDimensions();
-  const logoWidth = Math.min(width - 56, 380);
+  const logoWidth = Math.min(width - 56, 380) * 0.75;
   const logoHeight = logoWidth / LOGO_ASPECT;
 
   return (
