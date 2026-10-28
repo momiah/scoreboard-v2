@@ -1,11 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { FlatList, StyleSheet, useWindowDimensions } from "react-native";
-import type { LayoutChangeEvent } from "react-native";
-import type {
-  ListRenderItemInfo,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-} from "react-native";
+import React, { useCallback, useEffect, useRef } from "react";
+import { Animated, StyleSheet } from "react-native";
 import styled from "styled-components/native";
 
 import {
@@ -16,7 +10,6 @@ import {
   NavButtonText,
   NavRow,
 } from "../ladder/HowToPlayFlow";
-import { RevealContext } from "../ladder/HowToPlayReveal";
 import FlowHeader from "./FlowHeader";
 import BrandPage from "./pages/BrandPage";
 import CompetitionsPage from "./pages/CompetitionsPage";
@@ -53,37 +46,14 @@ const SignupIntroPager: React.FC<SignupIntroPagerProps> = ({
   onSkip,
   onJoin,
 }) => {
-  const { width } = useWindowDimensions();
-  const listRef = useRef<FlatList<IntroPage>>(null);
-  const [listHeight, setListHeight] = useState(0);
   const lastIndex = PAGES.length - 1;
   const onBrand = index === 0;
 
   const goTo = useCallback(
     (next: number) => {
-      const clamped = Math.max(0, Math.min(next, lastIndex));
-      listRef.current?.scrollToIndex({ index: clamped, animated: true });
-      onIndexChange(clamped);
+      onIndexChange(Math.max(0, Math.min(next, lastIndex)));
     },
     [lastIndex, onIndexChange],
-  );
-
-  useEffect(() => {
-    listRef.current?.scrollToIndex({ index, animated: false });
-  }, [width, index]);
-
-  const onMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const page = Math.round(event.nativeEvent.contentOffset.x / width);
-    if (page !== index) onIndexChange(page);
-  };
-
-  const renderItem = ({
-    item,
-    index: pageIndex,
-  }: ListRenderItemInfo<IntroPage>) => (
-    <RevealContext.Provider value={pageIndex === index}>
-      <Page style={{ width, height: listHeight }}>{item.render()}</Page>
-    </RevealContext.Provider>
   );
 
   return (
@@ -103,27 +73,7 @@ const SignupIntroPager: React.FC<SignupIntroPagerProps> = ({
         />
       )}
 
-      <FlatList
-        ref={listRef}
-        data={PAGES}
-        keyExtractor={(item) => item.key}
-        renderItem={renderItem}
-        extraData={index}
-        horizontal
-        pagingEnabled
-        initialScrollIndex={index}
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onMomentumEnd}
-        getItemLayout={(_, itemIndex) => ({
-          length: width,
-          offset: width * itemIndex,
-          index: itemIndex,
-        })}
-        style={styles.list}
-        onLayout={(event: LayoutChangeEvent) =>
-          setListHeight(event.nativeEvent.layout.height)
-        }
-      />
+      <PageFade key={PAGES[index].key}>{PAGES[index].render()}</PageFade>
 
       <Dots>
         {PAGES.map((page, pageIndex) => (
@@ -168,10 +118,42 @@ const SignupIntroPager: React.FC<SignupIntroPagerProps> = ({
   );
 };
 
-const Page = styled.View({});
+/** Only the current page is mounted, so changing page can never leave the pager out of step with its state. */
+const PageFade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [progress]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.page,
+        {
+          opacity: progress,
+          transform: [
+            {
+              translateX: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [24, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+};
 
 const styles = StyleSheet.create({
-  list: { flex: 1 },
+  page: { flex: 1 },
 });
 
 export default SignupIntroPager;
