@@ -64,7 +64,7 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
 
   return (
     <AuthLayout
-      subtitle="One account for competitive racket sports."
+      subtitle="One account for every game that counts."
       brand="logo"
       cardGlow={false}
       cardTransparent
