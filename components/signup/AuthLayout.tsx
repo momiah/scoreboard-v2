@@ -9,15 +9,15 @@ import SkeletonImage from "./SkeletonImage";
 import { GlassCard } from "./formParts";
 import { GlowDisc, MUTED } from "./SignupChrome";
 
-const ICON_SIZE = 112;
-const LOGO_WIDTH = 210;
+const ICON_SIZE = 128;
+const LOGO_WIDTH = 240;
 const LOGO_ASPECT = 1666 / 623;
 const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT;
 // The glow lives inside a box exactly its own size, in the normal flow of the
 // scroll content. A glow bigger than its box gets sliced off by the ScrollView's
 // top edge, which shows up as a hard line across the screen.
-const LOGO_GLOW = 170;
-const ICON_GLOW = 220;
+const LOGO_GLOW = 140;
+const ICON_GLOW = 170;
 
 interface AuthLayoutProps {
   /** "logo" is the full Court Champs wordmark, "icon" is the crescent on its own. */
@@ -94,7 +94,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
 /** Memoised so typing in the form never re-renders the glow and logo. */
 const BrandMark = React.memo(({ brand }: { brand: "logo" | "icon" }) =>
   brand === "logo" ? (
-    <GlowBox size={LOGO_GLOW} pull={40}>
+    <GlowBox size={LOGO_GLOW} pull={25}>
       <GlowDisc
         size={LOGO_GLOW}
         color="#0a5bff"
@@ -108,7 +108,7 @@ const BrandMark = React.memo(({ brand }: { brand: "logo" | "icon" }) =>
       />
     </GlowBox>
   ) : (
-    <GlowBox size={ICON_GLOW} pull={56}>
+    <GlowBox size={ICON_GLOW} pull={21}>
       <GlowDisc size={ICON_GLOW} color="#0a5bff" opacity={0.45} />
       <SkeletonImage
         circle

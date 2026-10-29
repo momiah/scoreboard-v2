@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 14,
     paddingHorizontal: 14,
-    backgroundColor: GLASS,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
   },
