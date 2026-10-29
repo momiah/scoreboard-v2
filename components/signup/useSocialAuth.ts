@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Alert } from "react-native";
+import { useContext, useState } from "react";
 
+import { PopupContext } from "../../context/PopupContext";
 import type {
   SocialSignInResult,
   SocialSignupParams,
@@ -30,12 +30,13 @@ export function useSocialAuth({
   onNeedsSignup,
 }: Options) {
   const [busy, setBusy] = useState<SignupSocialKind | null>(null);
+  const { showBottomToast } = useContext(PopupContext);
 
   const handle = (result: SocialSignInResult) => {
     if (result.status === "cancelled") return;
     if (result.status === "error") {
       console.error(result.logLabel, result.logMessage);
-      Alert.alert(result.title, result.message);
+      showBottomToast(result.message, "error");
       return;
     }
     if (result.status === "existing") {

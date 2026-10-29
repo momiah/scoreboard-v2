@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -24,6 +23,7 @@ import {
   validateUsername,
 } from "../../screens/Authentication/createAccount";
 import type { UserProfile } from "@shared/types";
+import { PopupContext } from "../../context/PopupContext";
 import FlowHeader from "./FlowHeader";
 import {
   AuthField,
@@ -97,6 +97,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
   const [hand, setHand] = useState<Hand>("Right");
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const { showBottomToast } = useContext(PopupContext);
 
   useEffect(() => {
     const local = username.trim().replace(/^@/, "");
@@ -132,9 +133,9 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
       const permission =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert(
-          "Permission Required",
+        showBottomToast(
           "You need to allow access to your media library.",
+          "info",
         );
         return;
       }
@@ -148,10 +149,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
       const fileInfo = new File(pickedUri);
       const maxSize = 5 * 1024 * 1024;
       if (fileInfo.size && fileInfo.size > maxSize) {
-        Alert.alert(
-          "File Too Large",
-          "Please select an image smaller than 5MB.",
-        );
+        showBottomToast("Please select an image smaller than 5MB.", "error");
         return;
       }
       const manipulated = await ImageManipulator.manipulateAsync(
@@ -162,7 +160,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
       setPhotoUri(manipulated.uri);
     } catch (error) {
       console.error("Image pick error:", error);
-      Alert.alert("Error", "Unable to pick image.");
+      showBottomToast("Unable to pick image.", "error");
     }
   };
 
@@ -217,7 +215,10 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
             ? error.message
             : "unknown";
       AppEventsLogger.logEvent("RegistrationFailed", { reason });
-      Alert.alert("Could not create account", signupErrorMessage(error));
+      showBottomToast(
+        `Could not create account: ${signupErrorMessage(error)}`,
+        "error",
+      );
     } finally {
       submittingRef.current = false;
       setSubmitting(false);

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Alert,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AuthLayout from "../../components/signup/AuthLayout";
@@ -30,6 +29,7 @@ import {
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
+import { PopupContext } from "../../context/PopupContext";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -45,6 +45,7 @@ export default function Login() {
   const [iconScale] = useState(new Animated.Value(1));
 
   const { getUserById, setCurrentUser } = useContext(UserContext);
+  const { showBottomToast } = useContext(PopupContext);
 
   const navigation = useNavigation();
 
@@ -108,9 +109,9 @@ export default function Login() {
 
         if (!user.emailVerified) {
           await auth.signOut();
-          Alert.alert(
-            "Verify Email",
+          showBottomToast(
             "Please verify your email address before logging in.",
+            "info",
           );
           return;
         }
@@ -153,7 +154,7 @@ export default function Login() {
             "Network error. Check your connection and try again.",
         };
         const errorMessage = messages[error.code] || "Login failed.";
-        Alert.alert("Error", errorMessage);
+        showBottomToast(errorMessage, "error");
 
         AppEventsLogger.logEvent("LoginFailed", {
           reason: error.code || error.message,
@@ -167,7 +168,7 @@ export default function Login() {
 
   const handleForgotPassword = async () => {
     if (!cleanEmail) {
-      Alert.alert("Enter your email", "Please enter your email address first.");
+      showBottomToast("Please enter your email address first.", "info");
       return;
     }
 
@@ -184,17 +185,17 @@ export default function Login() {
           "auth/network-request-failed":
             "Network error. Check your connection and try again.",
         };
-        Alert.alert(
-          "Error",
+        showBottomToast(
           messages[error.code] || "Failed to send reset email.",
+          "error",
         );
         console.log("Password Reset Error:", error.message);
         return;
       }
     }
-    Alert.alert(
-      "Check your inbox",
+    showBottomToast(
       "If an account exists for that email, a password reset link is on its way.",
+      "success",
     );
   };
 
@@ -224,9 +225,9 @@ export default function Login() {
         existingMethods.length > 0 &&
         !existingMethods.includes("google.com")
       ) {
-        Alert.alert(
-          "Account Already Exists",
+        showBottomToast(
           "An account with this email already exists. Please log in with your original method and connect Google from your profile.",
+          "info",
         );
         return;
       }
@@ -274,12 +275,12 @@ export default function Login() {
     } catch (error) {
       console.error("Google Login Error:", error.message);
       if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
+        showBottomToast(
           "An account with this email already exists. Please log in with your original method.",
+          "info",
         );
       } else {
-        Alert.alert("Error", "Google sign-in failed. Please try again.");
+        showBottomToast("Google sign-in failed. Please try again.", "error");
       }
     }
   };
@@ -380,12 +381,12 @@ export default function Login() {
       }
       console.error("Apple Login Error:", error.message);
       if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
+        showBottomToast(
           "An account with this email already exists. Please log in with your original method.",
+          "info",
         );
       } else {
-        Alert.alert("Error", "Apple sign-in failed. Please try again.");
+        showBottomToast("Apple sign-in failed. Please try again.", "error");
       }
     }
   };
