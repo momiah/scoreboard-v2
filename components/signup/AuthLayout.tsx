@@ -1,19 +1,15 @@
 import React from "react";
-import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import styled from "styled-components/native";
 
 import { Reveal } from "../ladder/HowToPlayReveal";
 import { logoIcon, logoTrimmed } from "./assets";
 import FlowHeader from "./FlowHeader";
+import SkeletonImage from "./SkeletonImage";
 import { GlassCard } from "./formParts";
 import { GlowDisc, MUTED } from "./SignupChrome";
 
-const ICON_SIZE = 76;
+const ICON_SIZE = 112;
 const LOGO_WIDTH = 210;
 const LOGO_ASPECT = 1666 / 623;
 const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT;
@@ -21,7 +17,7 @@ const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT;
 // scroll content. A glow bigger than its box gets sliced off by the ScrollView's
 // top edge, which shows up as a hard line across the screen.
 const LOGO_GLOW = 170;
-const ICON_GLOW = 160;
+const ICON_GLOW = 220;
 
 interface AuthLayoutProps {
   /** "logo" is the full Court Champs wordmark, "icon" is the crescent on its own. */
@@ -105,19 +101,20 @@ const BrandMark = React.memo(({ brand }: { brand: "logo" | "icon" }) =>
         opacity={0.4}
         offsetX={-LOGO_WIDTH * 0.15}
       />
-      <Image
+      <SkeletonImage
         source={logoTrimmed}
-        resizeMode="contain"
-        style={{ width: LOGO_WIDTH, height: LOGO_HEIGHT }}
+        width={LOGO_WIDTH}
+        height={LOGO_HEIGHT}
       />
     </GlowBox>
   ) : (
-    <GlowBox size={ICON_GLOW} pull={36}>
+    <GlowBox size={ICON_GLOW} pull={56}>
       <GlowDisc size={ICON_GLOW} color="#0a5bff" opacity={0.45} />
-      <Image
+      <SkeletonImage
+        circle
         source={logoIcon}
-        resizeMode="contain"
-        style={{ width: ICON_SIZE, height: ICON_SIZE }}
+        width={ICON_SIZE}
+        height={ICON_SIZE}
       />
     </GlowBox>
   ),

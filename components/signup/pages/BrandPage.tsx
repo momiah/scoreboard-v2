@@ -1,10 +1,11 @@
 import React from "react";
-import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
+import { View, useWindowDimensions } from "react-native";
 import styled from "styled-components/native";
 
 import { logoTrimmed } from "../assets";
 import { BLUE, GlowDisc } from "../SignupChrome";
 import { IntroScroll } from "../introStyles";
+import SkeletonImage from "../SkeletonImage";
 
 const LOGO_ASPECT = 1666 / 623;
 
@@ -23,7 +24,11 @@ const BrandPage: React.FC = () => {
           opacity={0.32}
           offsetX={-logoWidth * 0.2}
         />
-        <Image source={logoTrimmed} resizeMode="contain" style={styles.logo} />
+        <SkeletonImage
+          source={logoTrimmed}
+          width={logoWidth}
+          height={logoHeight}
+        />
       </View>
       <Motto numberOfLines={1} adjustsFontSizeToFit>
         THE HOME OF COMPETITIVE RACKET SPORTS
@@ -31,10 +36,6 @@ const BrandPage: React.FC = () => {
     </IntroScroll>
   );
 };
-
-const styles = StyleSheet.create({
-  logo: { width: "100%", height: "100%" },
-});
 
 const Motto = styled.Text({
   color: BLUE,

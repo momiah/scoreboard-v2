@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Platform,
   StyleSheet,
   TextInput,
@@ -14,6 +13,7 @@ import styled from "styled-components/native";
 
 import { FacebookLogo, GoogleLogo } from "../../assets";
 import { BLUE, MUTED } from "./SignupChrome";
+import SkeletonImage from "./SkeletonImage";
 
 const GLASS = "rgba(255, 255, 255, 0.06)";
 const GLASS_BORDER = "rgba(255, 255, 255, 0.14)";
@@ -230,10 +230,11 @@ const SocialButton: React.FC<SocialButtonProps> = ({
     kind === "apple" ? (
       <Ionicons name="logo-apple" size={22} color="#ffffff" />
     ) : (
-      <Image
+      <SkeletonImage
+        circle
         source={kind === "google" ? GoogleLogo : FacebookLogo}
-        resizeMode="contain"
-        style={{ width: 20, height: 20 }}
+        width={20}
+        height={20}
       />
     );
 

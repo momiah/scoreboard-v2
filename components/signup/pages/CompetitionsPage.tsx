@@ -1,11 +1,12 @@
 import React from "react";
-import { Image, Text } from "react-native";
+import { Text } from "react-native";
 import styled from "styled-components/native";
 
 import { ladderOutline, medalOutline, trophyOutline } from "../assets";
 import { Reveal } from "../../ladder/HowToPlayReveal";
 import { BODY, GOLD } from "../SignupChrome";
 import { Eyebrow, Headline, IntroScroll } from "../introStyles";
+import SkeletonImage from "../SkeletonImage";
 
 const CARDS: {
   key: string;
@@ -49,10 +50,10 @@ const CompetitionsPage: React.FC = () => (
       <Reveal key={card.key} order={2 + index} from="right" style={cardStyle}>
         <Card>
           <IconSlot>
-            <Image
+            <SkeletonImage
               source={card.icon}
-              resizeMode="contain"
-              style={{ width: 48, height: card.iconHeight }}
+              width={48}
+              height={card.iconHeight}
             />
           </IconSlot>
           <CardCopy>

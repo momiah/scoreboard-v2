@@ -9,6 +9,7 @@ import { ranks } from "../../../rankingMedals/ranking/ranks";
 import { beginnerRankIcons } from "../assets";
 import { BLUE, BODY, BRONZE, GOLD, GlowDisc } from "../SignupChrome";
 import { Eyebrow, Headline } from "../introStyles";
+import SkeletonImage from "../SkeletonImage";
 
 const LEVEL_COLOURS = [
   BRONZE,
@@ -33,7 +34,12 @@ const RankPage: React.FC = () => {
         <Hero>
           <GlowDisc size={HERO_SIZE * 1.7} color={BRONZE} opacity={0.5} />
           <PulseRing size={HERO_SIZE} color={BRONZE} />
-          <HeroMedal source={heroMedal} resizeMode="contain" />
+          <SkeletonImage
+            circle
+            source={heroMedal}
+            width={HERO_SIZE - 8}
+            height={HERO_SIZE - 8}
+          />
         </Hero>
       </Reveal>
       <Reveal order={1} style={nameGroup}>
@@ -59,9 +65,11 @@ const RankPage: React.FC = () => {
                   color={LEVEL_COLOURS[index] ?? BRONZE}
                   opacity={0.5}
                 />
-                <LevelMedal
+                <SkeletonImage
+                  circle
                   source={beginnerRankIcons[index] ?? rank.icon}
-                  resizeMode="contain"
+                  width={36}
+                  height={36}
                 />
               </LevelMedalWrap>
               <LevelName numberOfLines={1}>{rank.name}</LevelName>
@@ -117,11 +125,6 @@ const Hero = styled(View)({
   justifyContent: "center",
 });
 
-const HeroMedal = styled.Image({
-  width: HERO_SIZE - 8,
-  height: HERO_SIZE - 8,
-});
-
 const LevelBadge = styled.Text({
   color: GOLD,
   fontSize: 15,
@@ -162,11 +165,6 @@ const LevelMedalWrap = styled.View({
   height: 42,
   alignItems: "center",
   justifyContent: "center",
-});
-
-const LevelMedal = styled.Image({
-  width: 36,
-  height: 36,
 });
 
 const LevelName = styled.Text({
