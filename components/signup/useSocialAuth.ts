@@ -9,7 +9,6 @@ import {
   signInWithApple,
   signInWithGoogle,
 } from "../../screens/Authentication/socialAuth";
-import type { SocialKind } from "./formParts";
 
 export type ProfileLookup = (
   userId: string,
@@ -22,12 +21,15 @@ interface Options {
 }
 
 /** Runs a provider sign-in and routes the result, so Login and Account share one path. */
+/** Sign up offers Apple and Google only. */
+export type SignupSocialKind = "apple" | "google";
+
 export function useSocialAuth({
   getUserById,
   onExisting,
   onNeedsSignup,
 }: Options) {
-  const [busy, setBusy] = useState<SocialKind | null>(null);
+  const [busy, setBusy] = useState<SignupSocialKind | null>(null);
 
   const handle = (result: SocialSignInResult) => {
     if (result.status === "cancelled") return;
@@ -43,7 +45,7 @@ export function useSocialAuth({
     onNeedsSignup(result.params);
   };
 
-  const run = async (kind: SocialKind) => {
+  const run = async (kind: SignupSocialKind) => {
     setBusy(kind);
     try {
       const signIn = kind === "apple" ? signInWithApple : signInWithGoogle;

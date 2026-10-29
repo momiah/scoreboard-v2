@@ -38,9 +38,13 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
+  const mismatch = confirm.length > 0 && confirm !== password;
+  const canCreate = confirm.length > 0 && !mismatch;
   const social = useSocialAuth({
     getUserById,
     onExisting: onSocialExisting,
@@ -52,7 +56,9 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
     const passwordResult = validatePassword(password);
     setEmailError(emailResult === true ? "" : emailResult);
     setPasswordError(passwordResult === true ? "" : passwordResult);
+    setConfirmTouched(true);
     if (emailResult !== true || passwordResult !== true) return;
+    if (!canCreate) return;
     onEmailAccepted(email.trim(), password);
   };
 
@@ -60,13 +66,23 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
     <AuthLayout
       title="Join Court Champs"
       subtitle="One account for every ladder, league and tournament."
+      brand="icon"
       onBack={onBack}
       testIDPrefix="signup-account"
+      footer={
+        <LoginRow>
+          <LoginMuted>Already have an account? </LoginMuted>
+          <TouchableOpacity onPress={onLogin} testID="signup-account-login">
+            <LoginLink>Log in</LoginLink>
+          </TouchableOpacity>
+        </LoginRow>
+      }
     >
       <SocialButtons
         busy={social.busy}
         onApple={() => social.run("apple")}
         onGoogle={() => social.run("google")}
+        compact
         testIDPrefix="signup-account"
       />
       <OrDivider label="or use email" />
@@ -108,22 +124,42 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
         }
       />
 
+      <AuthField
+        icon="lock-closed-outline"
+        value={confirm}
+        onChangeText={setConfirm}
+        onBlur={() => setConfirmTouched(true)}
+        placeholder="Confirm password"
+        secureTextEntry={!showPassword}
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="off"
+        error={
+          mismatch && (confirmTouched || confirm.length >= password.length)
+            ? "Passwords don't match"
+            : ""
+        }
+        testID="signup-account-confirm"
+      />
+
+      <Hint>At least 6 characters</Hint>
+
       <PrimaryButton
         label="Create account"
         onPress={onCreate}
-        disabled={social.busy !== null}
+        disabled={social.busy !== null || !canCreate}
         testID="signup-account-create"
       />
-
-      <LoginRow>
-        <LoginMuted>Already have an account? </LoginMuted>
-        <TouchableOpacity onPress={onLogin} testID="signup-account-login">
-          <LoginLink>Log in</LoginLink>
-        </TouchableOpacity>
-      </LoginRow>
     </AuthLayout>
   );
 };
+
+const Hint = styled.Text({
+  color: MUTED,
+  fontSize: 12,
+  marginTop: -4,
+  marginLeft: 4,
+});
 
 const LoginRow = styled.View({
   flexDirection: "row",

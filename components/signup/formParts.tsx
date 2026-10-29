@@ -18,12 +18,12 @@ import { BLUE, MUTED } from "./SignupChrome";
 const GLASS = "rgba(255, 255, 255, 0.06)";
 const GLASS_BORDER = "rgba(255, 255, 255, 0.14)";
 
-/** Bottom sheet for the account and log in forms: glass panel with a glowing blue top edge. */
-export const Sheet: React.FC<{
+/** Centered glass card for the account and log in forms, with a glowing blue top edge. */
+export const GlassCard: React.FC<{
   children: React.ReactNode;
   style?: React.ComponentProps<typeof View>["style"];
 }> = ({ children, style }) => (
-  <SheetBase style={style}>
+  <CardBase style={style}>
     <LinearGradient
       pointerEvents="none"
       colors={[
@@ -33,27 +33,25 @@ export const Sheet: React.FC<{
       ]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 0 }}
-      style={styles.sheetEdge}
+      style={styles.cardEdge}
     />
     {children}
-  </SheetBase>
+  </CardBase>
 );
 
-const SheetBase = styled.View({
-  backgroundColor: "rgba(6, 20, 38, 0.96)",
-  borderTopLeftRadius: 30,
-  borderTopRightRadius: 30,
+const CardBase = styled.View({
+  backgroundColor: "rgba(6, 20, 38, 0.94)",
+  borderRadius: 24,
   borderWidth: 1,
-  borderBottomWidth: 0,
   borderColor: "rgba(0, 162, 255, 0.28)",
-  paddingHorizontal: 22,
-  paddingTop: 26,
-  paddingBottom: 28,
-  gap: 14,
+  paddingHorizontal: 18,
+  paddingTop: 22,
+  paddingBottom: 20,
+  gap: 12,
   shadowColor: BLUE,
   shadowOpacity: 0.3,
   shadowRadius: 24,
-  shadowOffset: { width: 0, height: -6 },
+  shadowOffset: { width: 0, height: 0 },
 });
 
 interface AuthFieldProps extends TextInputProps {
@@ -252,7 +250,7 @@ const SocialTouch = styled.TouchableOpacity({
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
-  height: 52,
+  height: 50,
   borderRadius: 14,
   backgroundColor: GLASS,
   borderWidth: 1,
@@ -319,11 +317,11 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({
 };
 
 const styles = StyleSheet.create({
-  sheetEdge: {
+  cardEdge: {
     position: "absolute",
     top: 0,
-    left: 30,
-    right: 30,
+    left: 28,
+    right: 28,
     height: 2,
   },
   fieldWrap: {},

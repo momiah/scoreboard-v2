@@ -473,10 +473,22 @@ export default function Login() {
   return (
     <SignupChrome>
       <AuthLayout
+        brand="logo"
         title="Welcome back"
         subtitle="Log in to pick up your games and your climb."
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
         testIDPrefix="login"
+        footer={
+          <View style={styles.registerRow}>
+            <Text style={styles.registerMuted}>New to Court Champs? </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("SignupIntro")}
+              testID="login-register"
+            >
+              <Text style={styles.registerLink}>Create account</Text>
+            </TouchableOpacity>
+          </View>
+        }
       >
         <SocialButtons
           compact
@@ -542,16 +554,6 @@ export default function Login() {
           onPress={handleLogin}
           testID="login-submit"
         />
-
-        <View style={styles.registerRow}>
-          <Text style={styles.registerMuted}>New to Court Champs? </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("SignupIntro")}
-            testID="login-register"
-          >
-            <Text style={styles.registerLink}>Create account</Text>
-          </TouchableOpacity>
-        </View>
       </AuthLayout>
     </SignupChrome>
   );
