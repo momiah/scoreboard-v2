@@ -41,33 +41,36 @@ export default function Login() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [iconScale] = useState(new Animated.Value(1));
 
   const { getUserById, setCurrentUser } = useContext(UserContext);
 
   const navigation = useNavigation();
 
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const cleanEmail = email.trim().toLowerCase();
+
+  const emailProblem = () => {
+    if (!cleanEmail) return "Email is required.";
+    if (!EMAIL_REGEX.test(cleanEmail)) return "Enter a valid email address.";
+    return "";
+  };
+
+  const passwordProblem = () => {
+    if (!password) return "Password is required.";
+    if (password.length < 6) return "Password must be at least 6 characters.";
+    return "";
+  };
+
   // Validation for Email
   const validateEmail = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
-      setEmailError("Email is required.");
-    } else if (!emailRegex.test(email)) {
-      setEmailError("Enter a valid email address.");
-    } else {
-      setEmailError("");
-    }
+    setEmailError(emailProblem());
   };
 
   // Validation for Password
   const validatePassword = () => {
-    if (!password) {
-      setPasswordError("Password is required.");
-    } else if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters.");
-    } else {
-      setPasswordError("");
-    }
+    setPasswordError(passwordProblem());
   };
 
   // Toggle Password Visibility
@@ -88,13 +91,17 @@ export default function Login() {
 
   // Handle Login Button
   const handleLogin = async () => {
-    validateEmail();
-    validatePassword();
-    if (!emailError && !passwordError && email && password) {
+    if (submitting) return;
+    const emailIssue = emailProblem();
+    const passwordIssue = passwordProblem();
+    setEmailError(emailIssue);
+    setPasswordError(passwordIssue);
+    if (!emailIssue && !passwordIssue) {
+      setSubmitting(true);
       try {
         const userCredential = await signInWithEmailAndPassword(
           auth,
-          email,
+          cleanEmail,
           password,
         );
         const user = userCredential.user;
@@ -131,14 +138,19 @@ export default function Login() {
           routes: [{ name: "Home" }],
         });
       } catch (error) {
+        // Wrong password, unknown email and invalid credential all read the same,
+        // so the screen never reveals whether an account exists for an email.
+        const wrongCredentials = "Incorrect email or password.";
         const messages = {
-          "auth/email-already-in-use": "Email already registered",
-          "auth/weak-password": "Password is too weak",
-          "auth/invalid-email": "Invalid email address",
-          "auth/invalid-credential": "Invalid credentials",
-          "auth/user-not-found": "User not found",
-          "auth/wrong-password": "Incorrect password",
+          "auth/invalid-email": "Enter a valid email address.",
+          "auth/invalid-credential": wrongCredentials,
+          "auth/user-not-found": wrongCredentials,
+          "auth/wrong-password": wrongCredentials,
           "auth/user-disabled": "User account is disabled",
+          "auth/too-many-requests":
+            "Too many attempts. Please wait a moment and try again.",
+          "auth/network-request-failed":
+            "Network error. Check your connection and try again.",
         };
         const errorMessage = messages[error.code] || "Login failed.";
         Alert.alert("Error", errorMessage);
@@ -147,32 +159,43 @@ export default function Login() {
           reason: error.code || error.message,
           method: "email",
         });
+      } finally {
+        setSubmitting(false);
       }
     }
   };
 
   const handleForgotPassword = async () => {
-    if (!email) {
+    if (!cleanEmail) {
       Alert.alert("Enter your email", "Please enter your email address first.");
       return;
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      Alert.alert(
-        "Reset Link Sent",
-        "Check your inbox for a password reset link.",
-      );
+      await sendPasswordResetEmail(auth, cleanEmail);
     } catch (error) {
-      const messages = {
-        "auth/invalid-email": "Enter a valid email address.",
-        "auth/user-not-found": "No user found with that email.",
-      };
-      const errorMessage =
-        messages[error.code] || "Failed to send reset email.";
-      Alert.alert("Error", errorMessage);
-      console.log("Password Reset Error:", error.message);
+      // An unknown email gets the same reply as a known one, so this screen can't
+      // be used to find out who has an account.
+      if (error.code !== "auth/user-not-found") {
+        const messages = {
+          "auth/invalid-email": "Enter a valid email address.",
+          "auth/too-many-requests":
+            "Too many attempts. Please wait a moment and try again.",
+          "auth/network-request-failed":
+            "Network error. Check your connection and try again.",
+        };
+        Alert.alert(
+          "Error",
+          messages[error.code] || "Failed to send reset email.",
+        );
+        console.log("Password Reset Error:", error.message);
+        return;
+      }
     }
+    Alert.alert(
+      "Check your inbox",
+      "If an account exists for that email, a password reset link is on its way.",
+    );
   };
 
   useEffect(() => {
@@ -459,6 +482,7 @@ export default function Login() {
         <PrimaryButton
           label="Log in"
           onPress={handleLogin}
+          loading={submitting}
           testID="login-submit"
         />
       </AuthLayout>

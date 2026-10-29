@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
 } from "firebase/auth";
+import type { User } from "firebase/auth";
 import {
   addDoc,
   collection,
@@ -27,7 +28,9 @@ import { auth, db } from "../../services/firebase.config";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 import { uploadProfileImage } from "../../utils/ProfileImageUploadToFirebase";
 
-const EMAIL_PATTERN = /\S+@\S+\.\S+/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const normaliseEmail = (email: string) => email.trim().toLowerCase();
 
 export type SignupFieldError = true | string;
 
@@ -108,6 +111,11 @@ export function signupErrorMessage(error: unknown): string {
     "auth/email-already-in-use": "Email already registered",
     "auth/weak-password": "Password is too weak",
     "auth/invalid-email": "Invalid email address",
+    "auth/network-request-failed":
+      "Network error. Check your connection and try again.",
+    "auth/too-many-requests": "Too many attempts. Please try again later.",
+    "auth/operation-not-allowed": "Email sign-up is not available right now.",
+    "signup/username-taken": "Username already exists",
   };
   if (messages[code]) return messages[code];
   if (error instanceof Error && error.message) return error.message;
@@ -160,16 +168,32 @@ export async function createCourtChampsAccount(
   } = input;
 
   const isSocialSignup = !!socialId;
+  const cleanEmail = normaliseEmail(email || "");
   let uid = socialId;
+  let createdUser: User | null = null;
+
+  // Re-check right before writing: the username could have been taken since the
+  // live check on the form, and doing it first avoids orphaning a new auth user.
+  if (await checkUsernameExists(username)) {
+    throw Object.assign(new Error("Username already exists"), {
+      code: "signup/username-taken",
+    });
+  }
+
   if (!isSocialSignup) {
     if (!password) throw new Error("Password is required");
     const { user } = await createUserWithEmailAndPassword(
       auth,
-      email,
+      cleanEmail,
       password,
     );
+    createdUser = user;
     uid = user.uid;
-    await sendEmailVerification(user);
+    try {
+      await sendEmailVerification(user);
+    } catch (error) {
+      console.error("Could not send the verification email:", error);
+    }
   }
 
   if (!uid) throw new Error("Missing user id");
@@ -189,7 +213,7 @@ export async function createCourtChampsAccount(
     firstName,
     lastName,
     username,
-    email: email || "",
+    email: cleanEmail,
     handPreference,
     usernameLower: username.toLowerCase(),
     location: {
@@ -204,7 +228,16 @@ export async function createCourtChampsAccount(
     provider: isSocialSignup ? socialProvider || "" : "email_password",
   };
 
-  await setDoc(doc(db, "users", uid), profileToSave);
+  try {
+    await setDoc(doc(db, "users", uid), profileToSave);
+  } catch (error) {
+    // Without a profile document the account is unusable and the email would
+    // be blocked from retrying, so remove the half-created auth user.
+    if (createdUser) {
+      await createdUser.delete().catch(() => undefined);
+    }
+    throw error;
+  }
 
   const welcomeNotification = {
     ...notificationSchema,
@@ -225,10 +258,14 @@ export async function createCourtChampsAccount(
     },
   };
 
-  await addDoc(
-    collection(db, "users", uid, "notifications"),
-    welcomeNotification,
-  );
+  try {
+    await addDoc(
+      collection(db, "users", uid, "notifications"),
+      welcomeNotification,
+    );
+  } catch (error) {
+    console.error("Could not add the welcome notification:", error);
+  }
 
   AppEventsLogger.logEvent(AppEventsLogger.AppEvents.CompletedRegistration, {
     [AppEventsLogger.AppEventParams.RegistrationMethod]: isSocialSignup

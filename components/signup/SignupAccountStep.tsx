@@ -4,6 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
 import {
+  normaliseEmail,
   validateEmail,
   validatePassword,
 } from "../../screens/Authentication/createAccount";
@@ -52,14 +53,15 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
   });
 
   const onCreate = () => {
-    const emailResult = validateEmail(email.trim());
+    const cleanEmail = normaliseEmail(email);
+    const emailResult = validateEmail(cleanEmail);
     const passwordResult = validatePassword(password);
     setEmailError(emailResult === true ? "" : emailResult);
     setPasswordError(passwordResult === true ? "" : passwordResult);
     setConfirmTouched(true);
     if (emailResult !== true || passwordResult !== true) return;
     if (!canCreate) return;
-    onEmailAccepted(email.trim(), password);
+    onEmailAccepted(cleanEmail, password);
   };
 
   return (

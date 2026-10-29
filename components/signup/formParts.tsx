@@ -16,9 +16,9 @@ import { BLUE, MUTED } from "./SignupChrome";
 import SkeletonImage from "./SkeletonImage";
 
 // Inputs and the social buttons share this fill and border so they read as one set.
-const FIELD_FILL = "rgba(255, 255, 255, 0.04)";
-const FIELD_FILL_FOCUSED = "rgba(0, 162, 255, 0.06)";
-const FIELD_BORDER_COLOR = "rgba(255, 255, 255, 0.1)";
+export const FIELD_FILL = "rgba(255, 255, 255, 0.04)";
+export const FIELD_FILL_FOCUSED = "rgba(0, 162, 255, 0.06)";
+export const FIELD_BORDER_COLOR = "rgba(255, 255, 255, 0.1)";
 
 /** Centered glass card for the account and log in forms. `glow` adds the blue halo and top edge highlight. */
 export const GlassCard: React.FC<{

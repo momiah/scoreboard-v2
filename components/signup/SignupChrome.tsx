@@ -11,8 +11,6 @@ export const GOLD = "#FFC800";
 export const MUTED = "#aaa";
 export const BODY = "#c9d6e3";
 export const SHEET = "rgb(9, 24, 42)";
-export const FIELD_BG = "rgb(22, 24, 28)";
-export const FIELD_BORDER = "rgb(38, 42, 49)";
 export const BRONZE = "rgb(194, 106, 46)";
 
 const Background = React.memo(() => (

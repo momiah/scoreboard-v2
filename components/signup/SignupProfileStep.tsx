@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -25,7 +25,14 @@ import {
 } from "../../screens/Authentication/createAccount";
 import type { UserProfile } from "@shared/types";
 import FlowHeader from "./FlowHeader";
-import { BLUE, FIELD_BG, FIELD_BORDER, MUTED } from "./SignupChrome";
+import {
+  AuthField,
+  FIELD_BORDER_COLOR,
+  FIELD_FILL,
+  FIELD_FILL_FOCUSED,
+  PrimaryButton,
+} from "./formParts";
+import { BLUE, MUTED } from "./SignupChrome";
 
 const flagEmoji = (code: string | null) =>
   code && code.length === 2
@@ -34,12 +41,17 @@ const flagEmoji = (code: string | null) =>
       )
     : "";
 
-type Hand = "Right" | "Left";
-type Format = "Doubles" | "Singles";
+type Hand = "Left" | "Right" | "Both";
 
+const HANDS: Hand[] = ["Left", "Right", "Both"];
+
+// handPreference is a free string. The profile editor (EditProfile.js) and the
+// profile screen use Left / Right / Ambidextrous, so "Both" is stored as
+// "Ambidextrous" to keep the editor's chips selecting the saved value.
 const HAND_TO_SCHEMA: Record<Hand, string> = {
-  Right: "Right Hand",
-  Left: "Left Hand",
+  Left: "Left",
+  Right: "Right",
+  Both: "Ambidextrous",
 };
 
 interface SignupProfileStepProps {
@@ -83,10 +95,8 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
   const [showCountry, setShowCountry] = useState(false);
   const [showCity, setShowCity] = useState(false);
   const [hand, setHand] = useState<Hand>("Right");
-  // TODO: preferred format is not on UserProfile (courtchamps-shared) or the
-  // Firestore rules. Keep the choice in the UI until that schema exists.
-  const [format, setFormat] = useState<Format>("Doubles");
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     const local = username.trim().replace(/^@/, "");
@@ -157,6 +167,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
   };
 
   const onContinue = async () => {
+    if (submittingRef.current) return;
     const name = splitFullName(fullName);
     if ("error" in name) {
       setNameError(name.error);
@@ -169,17 +180,19 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
     }
     setLocationError("");
     const cleanUsername = username.trim().replace(/^@/, "");
-    const usernameResult = await validateUsername(cleanUsername);
-    if (usernameResult !== true) {
-      setUsernameError(usernameResult);
-      setUsernameState(
-        usernameResult === "Username already exists" ? "taken" : "idle",
-      );
-      return;
-    }
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
+      const usernameResult = await validateUsername(cleanUsername);
+      if (usernameResult !== true) {
+        setUsernameError(usernameResult);
+        setUsernameState(
+          usernameResult === "Username already exists" ? "taken" : "idle",
+        );
+        return;
+      }
+
       const created = await createCourtChampsAccount({
         email,
         password,
@@ -206,6 +219,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
       AppEventsLogger.logEvent("RegistrationFailed", { reason });
       Alert.alert("Could not create account", signupErrorMessage(error));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -254,11 +268,11 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
           </PhotoRow>
 
           <Label>Full name</Label>
-          <Field
+          <AuthField
+            icon="person-outline"
             value={fullName}
             onChangeText={setFullName}
             placeholder="Alex Morgan"
-            placeholderTextColor="#6f8396"
             autoCapitalize="words"
             autoCorrect={false}
             testID="signup-profile-name"
@@ -272,7 +286,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
               value={username}
               onChangeText={setUsername}
               placeholder="username"
-              placeholderTextColor="#6f8396"
+              placeholderTextColor="#7f97a8"
               autoCapitalize="none"
               autoCorrect={false}
               testID="signup-profile-username"
@@ -296,50 +310,28 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
           </LocationButton>
           {locationError ? <FieldError>{locationError}</FieldError> : null}
 
-          <ChipGroups>
-            <ChipGroup>
-              <Label>Handedness</Label>
-              <ChipRow>
-                {(["Right", "Left"] as Hand[]).map((option) => (
-                  <Chip
-                    key={option}
-                    selected={hand === option}
-                    onPress={() => setHand(option)}
-                  >
-                    <ChipText selected={hand === option}>{option}</ChipText>
-                  </Chip>
-                ))}
-              </ChipRow>
-            </ChipGroup>
-            <ChipGroup>
-              <Label>Format</Label>
-              <ChipRow>
-                {(["Doubles", "Singles"] as Format[]).map((option) => (
-                  <Chip
-                    key={option}
-                    selected={format === option}
-                    onPress={() => setFormat(option)}
-                  >
-                    <ChipText selected={format === option}>{option}</ChipText>
-                  </Chip>
-                ))}
-              </ChipRow>
-            </ChipGroup>
-          </ChipGroups>
+          <Label>Preferred hand</Label>
+          <ChipRow>
+            {HANDS.map((option) => (
+              <Chip
+                key={option}
+                selected={hand === option}
+                onPress={() => setHand(option)}
+                testID={`signup-profile-hand-${option.toLowerCase()}`}
+              >
+                <ChipText selected={hand === option}>{option}</ChipText>
+              </Chip>
+            ))}
+          </ChipRow>
 
           <Spacer />
 
-          <FinishButton
+          <PrimaryButton
+            label="Finish"
             onPress={onContinue}
-            disabled={submitting}
+            loading={submitting}
             testID="signup-profile-continue"
-          >
-            {submitting ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <FinishText>Finish</FinishText>
-            )}
-          </FinishButton>
+          />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -437,27 +429,16 @@ const Label = styled.Text({
   marginTop: 14,
 });
 
-const Field = styled.TextInput({
-  height: 48,
-  borderRadius: 8,
-  paddingHorizontal: 16,
-  backgroundColor: FIELD_BG,
-  borderWidth: 1,
-  borderColor: FIELD_BORDER,
-  color: "#ffffff",
-  fontSize: 15,
-});
-
 const UsernameBox = styled.View<{ focused: boolean }>(
   ({ focused }: { focused: boolean }) => ({
-    height: 48,
-    borderRadius: 8,
-    paddingHorizontal: 16,
+    height: 54,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: FIELD_BG,
+    backgroundColor: focused ? FIELD_FILL_FOCUSED : FIELD_FILL,
     borderWidth: 1,
-    borderColor: focused ? BLUE : FIELD_BORDER,
+    borderColor: focused ? BLUE : FIELD_BORDER_COLOR,
   }),
 );
 
@@ -485,51 +466,44 @@ const FieldError = styled.Text({
 });
 
 const LocationButton = styled.TouchableOpacity({
-  height: 48,
-  borderRadius: 8,
-  paddingHorizontal: 16,
-  backgroundColor: FIELD_BG,
+  height: 54,
+  borderRadius: 14,
+  paddingHorizontal: 14,
+  backgroundColor: FIELD_FILL,
   borderWidth: 1,
-  borderColor: FIELD_BORDER,
+  borderColor: FIELD_BORDER_COLOR,
   justifyContent: "center",
 });
 
 const LocationText = styled.Text<{ selected: boolean }>(
   ({ selected }: { selected: boolean }) => ({
-    color: selected ? "#ffffff" : "#6f8396",
+    color: selected ? "#ffffff" : "#7f97a8",
     fontSize: 15,
   }),
 );
 
-const ChipGroups = styled.View({
-  flexDirection: "row",
-  gap: 16,
-});
-
-const ChipGroup = styled.View({});
-
 const ChipRow = styled.View({
   flexDirection: "row",
-  gap: 8,
+  gap: 10,
 });
 
 const Chip = styled.TouchableOpacity<{ selected: boolean }>(
   ({ selected }: { selected: boolean }) => ({
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: 19,
+    flex: 1,
+    height: 54,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: selected ? BLUE : "transparent",
-    backgroundColor: selected ? "rgba(0, 162, 255, 0.12)" : "#1d2a3a",
+    borderColor: selected ? BLUE : FIELD_BORDER_COLOR,
+    backgroundColor: selected ? FIELD_FILL_FOCUSED : FIELD_FILL,
   }),
 );
 
 const ChipText = styled.Text<{ selected: boolean }>(
   ({ selected }: { selected: boolean }) => ({
     color: selected ? BLUE : "#ffffff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   }),
 );
@@ -537,20 +511,6 @@ const ChipText = styled.Text<{ selected: boolean }>(
 const Spacer = styled.View({
   flex: 1,
   minHeight: 24,
-});
-
-const FinishButton = styled.TouchableOpacity({
-  height: 50,
-  borderRadius: 10,
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: BLUE,
-});
-
-const FinishText = styled.Text({
-  color: "#ffffff",
-  fontSize: 16,
-  fontWeight: "bold",
 });
 
 export default SignupProfileStep;
