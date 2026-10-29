@@ -84,7 +84,7 @@ const RankPage: React.FC = () => {
 };
 
 const nameGroup = { alignItems: "center" as const, gap: 2 };
-const copyGroup = { marginTop: 0 };
+const copyGroup = { marginTop: 20 };
 const progressWrap = {
   alignSelf: "stretch" as const,
   width: "100%" as const,
@@ -143,6 +143,8 @@ const LevelRow = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
   gap: 6,
+  marginTop: 20,
+  marginBottom: 20,
 });
 
 const Level = styled.View({

@@ -52,7 +52,7 @@ const SignupWelcomeStep: React.FC<SignupWelcomeStepProps> = ({
     </Reveal>
     <Reveal order={3}>
       <RankLine>
-        Beginner · 0 CP. Play your first game to start earning.
+        Beginner · 20 CP. Play your first game to start earning.
       </RankLine>
       {requiresEmailVerification ? (
         <RankLine>
