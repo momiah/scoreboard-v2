@@ -474,6 +474,7 @@ export default function Login() {
     <SignupChrome>
       <AuthLayout
         brand="logo"
+        cardGlow={false}
         title="Welcome back"
         subtitle="Log in to pick up your games and your climb."
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}

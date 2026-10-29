@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  View,
 } from "react-native";
 import styled from "styled-components/native";
 
@@ -18,6 +17,12 @@ import { BLUE, GlowDisc, MUTED } from "./SignupChrome";
 const ICON_SIZE = 76;
 const LOGO_WIDTH = 210;
 const LOGO_ASPECT = 1666 / 623;
+const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT;
+// The glow lives inside a box exactly its own size, in the normal flow of the
+// scroll content. A glow bigger than its box gets sliced off by the ScrollView's
+// top edge, which shows up as a hard line across the screen.
+const LOGO_GLOW = 210;
+const ICON_GLOW = 160;
 
 interface AuthLayoutProps {
   /** "logo" is the full Court Champs wordmark, "icon" is the crescent on its own. */
@@ -28,6 +33,8 @@ interface AuthLayoutProps {
   testIDPrefix: string;
   /** Sits under the card, e.g. the switch between Log in and Create account. */
   footer?: React.ReactNode;
+  /** Blue halo and edge highlight on the card. */
+  cardGlow?: boolean;
   children: React.ReactNode;
 }
 
@@ -42,6 +49,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   onBack,
   testIDPrefix,
   footer,
+  cardGlow = true,
   children,
 }) => (
   <KeyboardAvoidingView
@@ -62,9 +70,9 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
     >
       <Reveal from="pop" style={{ alignItems: "center" }}>
         {brand === "logo" ? (
-          <View style={{ width: LOGO_WIDTH, height: LOGO_WIDTH / LOGO_ASPECT }}>
+          <GlowBox size={LOGO_GLOW} pull={50}>
             <GlowDisc
-              size={LOGO_WIDTH * 1.5}
+              size={LOGO_GLOW}
               color="#0a5bff"
               opacity={0.4}
               offsetX={-LOGO_WIDTH * 0.15}
@@ -72,24 +80,24 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
             <Image
               source={logoTrimmed}
               resizeMode="contain"
-              style={{ width: "100%", height: "100%" }}
+              style={{ width: LOGO_WIDTH, height: LOGO_HEIGHT }}
             />
-          </View>
+          </GlowBox>
         ) : (
-          <IconWrap>
-            <GlowDisc size={ICON_SIZE * 2.2} color="#0a5bff" opacity={0.45} />
+          <GlowBox size={ICON_GLOW} pull={36}>
+            <GlowDisc size={ICON_GLOW} color="#0a5bff" opacity={0.45} />
             <PulseRing size={ICON_SIZE * 0.95} color={BLUE} />
             <Image
               source={CourtChampLogoIcon}
               resizeMode="contain"
               style={{ width: ICON_SIZE, height: ICON_SIZE }}
             />
-          </IconWrap>
+          </GlowBox>
         )}
       </Reveal>
 
       <Reveal order={1} style={{ alignSelf: "stretch" }}>
-        <GlassCard>
+        <GlassCard glow={cardGlow}>
           <Title>{title}</Title>
           <Subline>{subtitle}</Subline>
           {children}
@@ -105,13 +113,15 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   </KeyboardAvoidingView>
 );
 
-const IconWrap = styled.View({
-  width: ICON_SIZE,
-  height: ICON_SIZE,
-  alignItems: "center",
-  justifyContent: "center",
-  marginVertical: 14,
-});
+const GlowBox = styled.View<{ size: number; pull: number }>(
+  ({ size, pull }: { size: number; pull: number }) => ({
+    width: size,
+    height: size,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: -pull,
+  }),
+);
 
 const Title = styled.Text({
   color: "#ffffff",

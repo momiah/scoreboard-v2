@@ -18,41 +18,50 @@ import { BLUE, MUTED } from "./SignupChrome";
 const GLASS = "rgba(255, 255, 255, 0.06)";
 const GLASS_BORDER = "rgba(255, 255, 255, 0.14)";
 
-/** Centered glass card for the account and log in forms, with a glowing blue top edge. */
+/** Centered glass card for the account and log in forms. `glow` adds the blue halo and top edge highlight. */
 export const GlassCard: React.FC<{
   children: React.ReactNode;
+  glow?: boolean;
   style?: React.ComponentProps<typeof View>["style"];
-}> = ({ children, style }) => (
-  <CardBase style={style}>
-    <LinearGradient
-      pointerEvents="none"
-      colors={[
-        "rgba(0, 162, 255, 0)",
-        "rgba(0, 162, 255, 0.9)",
-        "rgba(0, 162, 255, 0)",
-      ]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.cardEdge}
-    />
+}> = ({ children, glow = true, style }) => (
+  <CardBase glow={glow} style={style}>
+    {glow ? (
+      <LinearGradient
+        pointerEvents="none"
+        colors={[
+          "rgba(0, 162, 255, 0)",
+          "rgba(0, 162, 255, 0.9)",
+          "rgba(0, 162, 255, 0)",
+        ]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.cardEdge}
+      />
+    ) : null}
     {children}
   </CardBase>
 );
 
-const CardBase = styled.View({
-  backgroundColor: "rgba(6, 20, 38, 0.94)",
-  borderRadius: 24,
-  borderWidth: 1,
-  borderColor: "rgba(0, 162, 255, 0.28)",
-  paddingHorizontal: 18,
-  paddingTop: 22,
-  paddingBottom: 20,
-  gap: 12,
-  shadowColor: BLUE,
-  shadowOpacity: 0.3,
-  shadowRadius: 24,
-  shadowOffset: { width: 0, height: 0 },
-});
+const CardBase = styled.View<{ glow: boolean }>(
+  ({ glow }: { glow: boolean }) => ({
+    backgroundColor: "rgba(6, 20, 38, 0.94)",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: glow ? "rgba(0, 162, 255, 0.28)" : "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: 18,
+    paddingTop: 22,
+    paddingBottom: 20,
+    gap: 12,
+    ...(glow
+      ? {
+          shadowColor: BLUE,
+          shadowOpacity: 0.3,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: 0 },
+        }
+      : {}),
+  }),
+);
 
 interface AuthFieldProps extends TextInputProps {
   icon: keyof typeof Ionicons.glyphMap;
