@@ -17,7 +17,7 @@ const CARDS: {
   {
     key: "ladders",
     title: "Ladders",
-    body: "Official competitions run by Court Champs. Climb the table and the top players reach the playoffs for a chance to win cash prizes and CP bundles.",
+    body: "Official competitions run by Court Champs. Climb the table and the top players will playoff for a chance to win cash prizes and CP bundles.",
     icon: ladderOutline,
     iconHeight: 50,
   },

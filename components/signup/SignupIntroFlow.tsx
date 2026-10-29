@@ -264,7 +264,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
           </NavButton>
         ) : (
           <NavButton primary onPress={openAccount} testID="signup-intro-join">
-            <NavButtonText>Join now</NavButtonText>
+            <NavButtonText>Im ready</NavButtonText>
           </NavButton>
         )}
       </NavRow>

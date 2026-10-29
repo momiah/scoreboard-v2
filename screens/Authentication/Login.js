@@ -382,7 +382,7 @@ export default function Login() {
         cardGlow={false}
         align="top"
         title="Welcome back"
-        subtitle="Log in to pick up your games and your climb."
+        subtitle=""
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
         testIDPrefix="login"
         footer={
