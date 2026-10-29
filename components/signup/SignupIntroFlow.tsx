@@ -25,7 +25,7 @@ import RankPage from "./pages/RankPage";
 import SignupAccountStep from "./SignupAccountStep";
 import SignupChrome from "./SignupChrome";
 import SignupProfileStep from "./SignupProfileStep";
-import SignupWelcomeStep from "./SignupWelcomeStep";
+import AccountCreatedStep from "./AccountCreatedStep";
 import type { ProfileLookup } from "./useSocialAuth";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -197,7 +197,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
           />
         ) : null}
         {step === "welcome" ? (
-          <SignupWelcomeStep
+          <AccountCreatedStep
             firstName={draft.firstName}
             requiresEmailVerification={draft.requiresEmailVerification}
             onExplore={onExplore}

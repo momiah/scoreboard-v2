@@ -70,6 +70,22 @@ export async function checkUsernameExists(username: string): Promise<boolean> {
   }
 }
 
+// Profile documents store the sign-up email, so this still works when
+// Firebase email-enumeration protection hides fetchSignInMethodsForEmail.
+export async function checkEmailExists(email: string): Promise<boolean> {
+  try {
+    const trimmed = email.trim();
+    const values = Array.from(new Set([trimmed.toLowerCase(), trimmed]));
+    const snapshot = await getDocs(
+      query(collection(db, "users"), where("email", "in", values)),
+    );
+    return !snapshot.empty;
+  } catch (error) {
+    console.error("Error checking email:", error);
+    return false;
+  }
+}
+
 export async function validateUsername(
   value: string,
 ): Promise<SignupFieldError> {

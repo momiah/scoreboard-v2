@@ -25,6 +25,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   fetchSignInMethodsForEmail,
+  sendEmailVerification,
 } from "firebase/auth";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
@@ -108,9 +109,20 @@ export default function Login() {
         const user = userCredential.user;
 
         if (!user.emailVerified) {
+          // Resend the link so someone whose first email failed or got lost
+          // isn't locked out. Firebase rate-limits repeat sends itself.
+          let resent = false;
+          try {
+            await sendEmailVerification(user);
+            resent = true;
+          } catch (error) {
+            console.error("Could not resend the verification email:", error);
+          }
           await auth.signOut();
           showBottomToast(
-            "Please verify your email address before logging in.",
+            resent
+              ? "Please verify your email first. We've sent a new link to your inbox."
+              : "Please verify your email address before logging in.",
             "info",
           );
           return;

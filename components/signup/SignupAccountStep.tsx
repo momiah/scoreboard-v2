@@ -4,6 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
 import {
+  checkEmailExists,
   normaliseEmail,
   validateEmail,
   validatePassword,
@@ -44,6 +45,7 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmTouched, setConfirmTouched] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const mismatch = confirm.length > 0 && confirm !== password;
   const canCreate = confirm.length > 0 && !mismatch;
   const social = useSocialAuth({
@@ -52,7 +54,8 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
     onNeedsSignup: onSocialNeedsSignup,
   });
 
-  const onCreate = () => {
+  const onCreate = async () => {
+    if (checkingEmail) return;
     const cleanEmail = normaliseEmail(email);
     const emailResult = validateEmail(cleanEmail);
     const passwordResult = validatePassword(password);
@@ -61,6 +64,17 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
     setConfirmTouched(true);
     if (emailResult !== true || passwordResult !== true) return;
     if (!canCreate) return;
+    // Stop here if the email is already registered. createAccount still
+    // catches auth/email-already-in-use later in case of a race.
+    setCheckingEmail(true);
+    try {
+      if (await checkEmailExists(email)) {
+        setEmailError("Email already registered");
+        return;
+      }
+    } finally {
+      setCheckingEmail(false);
+    }
     onEmailAccepted(cleanEmail, password);
   };
 
@@ -151,6 +165,7 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
       <PrimaryButton
         label="Create account"
         onPress={onCreate}
+        loading={checkingEmail}
         disabled={social.busy !== null || !canCreate}
         testID="signup-account-create"
       />

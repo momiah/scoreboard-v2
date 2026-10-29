@@ -96,7 +96,7 @@ const RankPage: React.FC = () => {
 };
 
 const nameGroup = { alignItems: "center" as const, gap: 2 };
-const copyGroup = { marginTop: 20 };
+const copyGroup = { marginTop: 10 };
 const progressWrap = {
   alignSelf: "stretch" as const,
   width: "100%" as const,
