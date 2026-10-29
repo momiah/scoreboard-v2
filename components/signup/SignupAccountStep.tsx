@@ -66,7 +66,7 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
     <AuthLayout
       title="Join Court Champs"
       subtitle="One account for every ladder, league and tournament."
-      brand="icon"
+      brand="logo"
       cardGlow={false}
       onBack={onBack}
       testIDPrefix="signup-account"

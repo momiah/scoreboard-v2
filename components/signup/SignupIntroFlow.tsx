@@ -203,8 +203,8 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
     <SignupChrome>
       {onBrand ? (
         <FlowHeader
-          rightLabel="Log in"
-          onRightPress={onLogin}
+          rightLabel="Skip"
+          onRightPress={openAccount}
           testIDPrefix="signup-intro-header"
         />
       ) : (

@@ -378,8 +378,9 @@ export default function Login() {
   return (
     <SignupChrome>
       <AuthLayout
-        brand="logo"
+        brand="icon"
         cardGlow={false}
+        cardTransparent
         align="top"
         title="Welcome back"
         subtitle=""

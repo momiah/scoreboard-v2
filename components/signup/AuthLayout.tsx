@@ -8,11 +8,11 @@ import {
 import styled from "styled-components/native";
 
 import { CourtChampLogoIcon } from "../../assets";
-import { PulseRing, Reveal } from "../ladder/HowToPlayReveal";
+import { Reveal } from "../ladder/HowToPlayReveal";
 import { logoTrimmed } from "./assets";
 import FlowHeader from "./FlowHeader";
 import { GlassCard } from "./formParts";
-import { BLUE, GlowDisc, MUTED } from "./SignupChrome";
+import { GlowDisc, MUTED } from "./SignupChrome";
 
 const ICON_SIZE = 76;
 const LOGO_WIDTH = 210;
@@ -35,6 +35,8 @@ interface AuthLayoutProps {
   footer?: React.ReactNode;
   /** Blue halo and edge highlight on the card. */
   cardGlow?: boolean;
+  /** Drops the card's background fill, keeping its border and layout. */
+  cardTransparent?: boolean;
   /** "top" keeps the content just under the header instead of centering it. */
   align?: "center" | "top";
   children: React.ReactNode;
@@ -52,6 +54,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   testIDPrefix,
   footer,
   cardGlow = true,
+  cardTransparent = false,
   align = "center",
   children,
 }) => (
@@ -89,7 +92,6 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
         ) : (
           <GlowBox size={ICON_GLOW} pull={36}>
             <GlowDisc size={ICON_GLOW} color="#0a5bff" opacity={0.45} />
-            <PulseRing size={ICON_SIZE * 0.95} color={BLUE} />
             <Image
               source={CourtChampLogoIcon}
               resizeMode="contain"
@@ -100,7 +102,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
       </Reveal>
 
       <Reveal order={1} style={{ alignSelf: "stretch" }}>
-        <GlassCard glow={cardGlow}>
+        <GlassCard glow={cardGlow} transparent={cardTransparent}>
           <Title>{title}</Title>
           <Subline>{subtitle}</Subline>
           {children}

@@ -22,9 +22,10 @@ const GLASS_BORDER = "rgba(255, 255, 255, 0.14)";
 export const GlassCard: React.FC<{
   children: React.ReactNode;
   glow?: boolean;
+  transparent?: boolean;
   style?: React.ComponentProps<typeof View>["style"];
-}> = ({ children, glow = true, style }) => (
-  <CardBase glow={glow} style={style}>
+}> = ({ children, glow = true, transparent = false, style }) => (
+  <CardBase glow={glow} transparent={transparent} style={style}>
     {glow ? (
       <LinearGradient
         pointerEvents="none"
@@ -42,9 +43,9 @@ export const GlassCard: React.FC<{
   </CardBase>
 );
 
-const CardBase = styled.View<{ glow: boolean }>(
-  ({ glow }: { glow: boolean }) => ({
-    backgroundColor: "rgba(6, 20, 38, 0.94)",
+const CardBase = styled.View<{ glow: boolean; transparent: boolean }>(
+  ({ glow, transparent }: { glow: boolean; transparent: boolean }) => ({
+    backgroundColor: transparent ? "transparent" : "rgba(6, 20, 38, 0.94)",
     borderRadius: 24,
     borderWidth: 1,
     borderColor: glow ? "rgba(0, 162, 255, 0.28)" : "rgba(255, 255, 255, 0.1)",
