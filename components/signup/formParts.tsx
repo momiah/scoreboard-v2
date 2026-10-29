@@ -15,8 +15,10 @@ import { FacebookLogo, GoogleLogo } from "../../assets";
 import { BLUE, MUTED } from "./SignupChrome";
 import SkeletonImage from "./SkeletonImage";
 
-const GLASS = "rgba(255, 255, 255, 0.06)";
-const GLASS_BORDER = "rgba(255, 255, 255, 0.14)";
+// Inputs and the social buttons share this fill and border so they read as one set.
+const FIELD_FILL = "rgba(255, 255, 255, 0.04)";
+const FIELD_FILL_FOCUSED = "rgba(0, 162, 255, 0.06)";
+const FIELD_BORDER_COLOR = "rgba(255, 255, 255, 0.1)";
 
 /** Centered glass card for the account and log in forms. `glow` adds the blue halo and top edge highlight. */
 export const GlassCard: React.FC<{
@@ -261,11 +263,11 @@ const SocialTouch = styled.TouchableOpacity({
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
-  height: 50,
+  height: 54,
   borderRadius: 14,
-  backgroundColor: GLASS,
+  backgroundColor: FIELD_FILL,
   borderWidth: 1,
-  borderColor: GLASS_BORDER,
+  borderColor: FIELD_BORDER_COLOR,
 });
 
 const SocialLabel = styled.Text({
@@ -342,13 +344,13 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 14,
     paddingHorizontal: 14,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: FIELD_FILL,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: FIELD_BORDER_COLOR,
   },
   fieldFocused: {
     borderColor: BLUE,
-    backgroundColor: "rgba(0, 162, 255, 0.08)",
+    backgroundColor: FIELD_FILL_FOCUSED,
   },
   fieldError: {
     borderColor: "#ff7675",

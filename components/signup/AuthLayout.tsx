@@ -10,7 +10,7 @@ import { GlassCard } from "./formParts";
 import { GlowDisc, MUTED } from "./SignupChrome";
 
 const ICON_SIZE = 128;
-const LOGO_WIDTH = 240;
+const LOGO_WIDTH = 216;
 const LOGO_ASPECT = 1666 / 623;
 const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT;
 // The glow lives inside a box exactly its own size, in the normal flow of the
@@ -109,7 +109,7 @@ const BrandMark = React.memo(({ brand }: { brand: "logo" | "icon" }) =>
     </GlowBox>
   ) : (
     <GlowBox size={ICON_GLOW} pull={21}>
-      <GlowDisc size={ICON_GLOW} color="#0a5bff" opacity={0.45} />
+      <GlowDisc size={ICON_GLOW} color="#0077CC" opacity={0.45} />
       <SkeletonImage
         circle
         source={logoIcon}
