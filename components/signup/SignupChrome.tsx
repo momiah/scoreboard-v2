@@ -13,7 +13,7 @@ export const BODY = "#c9d6e3";
 export const SHEET = "rgb(9, 24, 42)";
 export const BRONZE = "rgb(194, 106, 46)";
 
-const Background = React.memo(() => (
+const BackgroundBase: React.FC = () => (
   <>
     <LinearGradient
       pointerEvents="none"
@@ -23,8 +23,8 @@ const Background = React.memo(() => (
     />
     <HowToPlayBackdrop />
   </>
-));
-Background.displayName = "SignupBackground";
+);
+const Background = React.memo(BackgroundBase);
 
 /**
  * Same backdrop the How to Play guide uses: gradient, dot grid, drifting waves.

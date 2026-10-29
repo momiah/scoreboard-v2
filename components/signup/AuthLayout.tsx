@@ -92,7 +92,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
 );
 
 /** Memoised so typing in the form never re-renders the glow and logo. */
-const BrandMark = React.memo(({ brand }: { brand: "logo" | "icon" }) =>
+const BrandMarkBase: React.FC<{ brand: "logo" | "icon" }> = ({ brand }) =>
   brand === "logo" ? (
     <GlowBox size={LOGO_GLOW} pull={25}>
       <GlowDisc
@@ -117,9 +117,8 @@ const BrandMark = React.memo(({ brand }: { brand: "logo" | "icon" }) =>
         height={ICON_SIZE}
       />
     </GlowBox>
-  ),
-);
-BrandMark.displayName = "BrandMark";
+  );
+const BrandMark = React.memo(BrandMarkBase);
 
 const GlowBox = styled.View<{ size: number; pull: number }>(
   ({ size, pull }: { size: number; pull: number }) => ({
