@@ -5,7 +5,8 @@ import styled from "styled-components/native";
 import { RankInformation } from "../../Modals/RankInformation";
 import MedalProgress from "../../performance/MedalProgress";
 import { PulseRing, Reveal } from "../../ladder/HowToPlayReveal";
-import { highQualityRanks, ranks } from "../../../rankingMedals/ranking/ranks";
+import { ranks } from "../../../rankingMedals/ranking/ranks";
+import { beginnerRankIcons } from "../assets";
 import { BLUE, BODY, BRONZE, GOLD, GlowDisc } from "../SignupChrome";
 import { Eyebrow, Headline } from "../introStyles";
 
@@ -18,7 +19,7 @@ const LEVEL_COLOURS = [
 
 const HERO_SIZE = 110;
 const beginnerLevels = ranks.slice(0, 4);
-const heroMedal = highQualityRanks[0]?.icon;
+const heroMedal = beginnerRankIcons[0];
 
 const RankPage: React.FC = () => {
   const [ranksOpen, setRanksOpen] = useState(false);
@@ -58,7 +59,10 @@ const RankPage: React.FC = () => {
                   color={LEVEL_COLOURS[index] ?? BRONZE}
                   opacity={0.5}
                 />
-                <LevelMedal source={rank.icon} resizeMode="contain" />
+                <LevelMedal
+                  source={beginnerRankIcons[index] ?? rank.icon}
+                  resizeMode="contain"
+                />
               </LevelMedalWrap>
               <LevelName numberOfLines={1}>{rank.name}</LevelName>
               <LevelCp>{rank.xp} CP</LevelCp>
@@ -198,4 +202,4 @@ const AllRanksText = styled.Text({
   fontWeight: "bold",
 });
 
-export default RankPage;
+export default React.memo(RankPage);

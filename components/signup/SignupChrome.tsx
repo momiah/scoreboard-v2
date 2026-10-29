@@ -15,11 +15,8 @@ export const FIELD_BG = "rgb(22, 24, 28)";
 export const FIELD_BORDER = "rgb(38, 42, 49)";
 export const BRONZE = "rgb(194, 106, 46)";
 
-/** Same backdrop the How to Play guide uses: gradient, dot grid, drifting waves. */
-const SignupChrome: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => (
-  <View style={styles.screen}>
+const Background = React.memo(() => (
+  <>
     <LinearGradient
       pointerEvents="none"
       colors={["rgb(3, 16, 31)", "#020b17", "#01060d"]}
@@ -27,6 +24,20 @@ const SignupChrome: React.FC<{ children: React.ReactNode }> = ({
       style={StyleSheet.absoluteFill}
     />
     <HowToPlayBackdrop />
+  </>
+));
+Background.displayName = "SignupBackground";
+
+/**
+ * Same backdrop the How to Play guide uses: gradient, dot grid, drifting waves.
+ * The backdrop is memoised so page changes and keystrokes in the children never
+ * re-render its SVG layers.
+ */
+const SignupChrome: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <View style={styles.screen}>
+    <Background />
     {children}
   </View>
 );
@@ -34,7 +45,7 @@ const SignupChrome: React.FC<{ children: React.ReactNode }> = ({
 let glowCounter = 0;
 
 /** A soft colour halo, centred in its parent. Drawn with a radial gradient so it looks the same on iOS and Android. */
-export const GlowDisc: React.FC<{
+const GlowDiscBase: React.FC<{
   size: number;
   color: string;
   opacity?: number;
@@ -60,6 +71,8 @@ export const GlowDisc: React.FC<{
     </View>
   );
 };
+
+export const GlowDisc = React.memo(GlowDiscBase);
 
 const styles = StyleSheet.create({
   screen: {

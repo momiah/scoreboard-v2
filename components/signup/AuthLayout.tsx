@@ -7,9 +7,8 @@ import {
 } from "react-native";
 import styled from "styled-components/native";
 
-import { CourtChampLogoIcon } from "../../assets";
 import { Reveal } from "../ladder/HowToPlayReveal";
-import { logoTrimmed } from "./assets";
+import { logoIcon, logoTrimmed } from "./assets";
 import FlowHeader from "./FlowHeader";
 import { GlassCard } from "./formParts";
 import { GlowDisc, MUTED } from "./SignupChrome";
@@ -27,7 +26,8 @@ const ICON_GLOW = 160;
 interface AuthLayoutProps {
   /** "logo" is the full Court Champs wordmark, "icon" is the crescent on its own. */
   brand: "logo" | "icon";
-  title: string;
+  /** Omit for a card that goes straight into the subtitle and form. */
+  title?: string;
   subtitle: string;
   onBack?: () => void;
   testIDPrefix: string;
@@ -75,35 +75,12 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
       showsVerticalScrollIndicator={false}
     >
       <Reveal from="pop" style={{ alignItems: "center" }}>
-        {brand === "logo" ? (
-          <GlowBox size={LOGO_GLOW} pull={40}>
-            <GlowDisc
-              size={LOGO_GLOW}
-              color="#0a5bff"
-              opacity={0.4}
-              offsetX={-LOGO_WIDTH * 0.15}
-            />
-            <Image
-              source={logoTrimmed}
-              resizeMode="contain"
-              style={{ width: LOGO_WIDTH, height: LOGO_HEIGHT }}
-            />
-          </GlowBox>
-        ) : (
-          <GlowBox size={ICON_GLOW} pull={36}>
-            <GlowDisc size={ICON_GLOW} color="#0a5bff" opacity={0.45} />
-            <Image
-              source={CourtChampLogoIcon}
-              resizeMode="contain"
-              style={{ width: ICON_SIZE, height: ICON_SIZE }}
-            />
-          </GlowBox>
-        )}
+        <BrandMark brand={brand} />
       </Reveal>
 
       <Reveal order={1} style={{ alignSelf: "stretch" }}>
         <GlassCard glow={cardGlow} transparent={cardTransparent}>
-          <Title>{title}</Title>
+          {title ? <Title>{title}</Title> : null}
           <Subline>{subtitle}</Subline>
           {children}
         </GlassCard>
@@ -117,6 +94,35 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
     </ScrollView>
   </KeyboardAvoidingView>
 );
+
+/** Memoised so typing in the form never re-renders the glow and logo. */
+const BrandMark = React.memo(({ brand }: { brand: "logo" | "icon" }) =>
+  brand === "logo" ? (
+    <GlowBox size={LOGO_GLOW} pull={40}>
+      <GlowDisc
+        size={LOGO_GLOW}
+        color="#0a5bff"
+        opacity={0.4}
+        offsetX={-LOGO_WIDTH * 0.15}
+      />
+      <Image
+        source={logoTrimmed}
+        resizeMode="contain"
+        style={{ width: LOGO_WIDTH, height: LOGO_HEIGHT }}
+      />
+    </GlowBox>
+  ) : (
+    <GlowBox size={ICON_GLOW} pull={36}>
+      <GlowDisc size={ICON_GLOW} color="#0a5bff" opacity={0.45} />
+      <Image
+        source={logoIcon}
+        resizeMode="contain"
+        style={{ width: ICON_SIZE, height: ICON_SIZE }}
+      />
+    </GlowBox>
+  ),
+);
+BrandMark.displayName = "BrandMark";
 
 const GlowBox = styled.View<{ size: number; pull: number }>(
   ({ size, pull }: { size: number; pull: number }) => ({

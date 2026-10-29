@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BackHandler, Dimensions, FlatList } from "react-native";
 import type {
   ListRenderItemInfo,
@@ -41,6 +41,14 @@ const PAGES: IntroPage[] = [
   { key: "compete", render: () => <EveryGameCountsPage /> },
   { key: "rank", render: () => <RankPage /> },
 ];
+
+const getItemLayout = (_: unknown, i: number) => ({
+  length: SCREEN_WIDTH,
+  offset: SCREEN_WIDTH * i,
+  index: i,
+});
+
+const keyExtractor = (item: IntroPage) => item.key;
 
 type Step = "intro" | "account" | "profile" | "welcome";
 
@@ -101,10 +109,13 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
     setIndex(clamped);
   };
 
-  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    if (page !== index) setIndex(page);
-  };
+  const onMomentumEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+      setIndex((current) => (page === current ? current : page));
+    },
+    [],
+  );
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -140,13 +151,13 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
     setStep("profile");
   };
 
-  const renderItem = ({
-    item,
-    index: pageIndex,
-  }: ListRenderItemInfo<IntroPage>) => (
-    <RevealContext.Provider value={pageIndex === index}>
-      <PageContainer>{item.render()}</PageContainer>
-    </RevealContext.Provider>
+  const renderItem = useCallback(
+    ({ item, index: pageIndex }: ListRenderItemInfo<IntroPage>) => (
+      <RevealContext.Provider value={pageIndex === index}>
+        <PageContainer>{item.render()}</PageContainer>
+      </RevealContext.Provider>
+    ),
+    [index],
   );
 
   if (step !== "intro") {
@@ -219,7 +230,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
       <FlatList
         ref={listRef}
         data={PAGES}
-        keyExtractor={(item) => item.key}
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
         extraData={index}
         horizontal
@@ -230,11 +241,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
         removeClippedSubviews={false}
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={onMomentumEnd}
-        getItemLayout={(_, i) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * i,
-          index: i,
-        })}
+        getItemLayout={getItemLayout}
       />
 
       <Dots testID="signup-intro-dots">
@@ -264,7 +271,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
           </NavButton>
         ) : (
           <NavButton primary onPress={openAccount} testID="signup-intro-join">
-            <NavButtonText>Im ready</NavButtonText>
+            <NavButtonText>{"I'm ready"}</NavButtonText>
           </NavButton>
         )}
       </NavRow>

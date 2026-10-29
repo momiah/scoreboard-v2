@@ -47,7 +47,7 @@ const CardBase = styled.View<{ glow: boolean; transparent: boolean }>(
   ({ glow, transparent }: { glow: boolean; transparent: boolean }) => ({
     backgroundColor: transparent ? "transparent" : "rgba(6, 20, 38, 0.94)",
     borderRadius: 24,
-    borderWidth: 1,
+    borderWidth: glow ? 1 : 0,
     borderColor: glow ? "rgba(0, 162, 255, 0.28)" : "rgba(255, 255, 255, 0.1)",
     paddingHorizontal: 18,
     paddingTop: 22,

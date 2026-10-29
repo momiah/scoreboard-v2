@@ -104,4 +104,4 @@ const CardBody = styled.Text({
   lineHeight: 18,
 });
 
-export default CompetitionsPage;
+export default React.memo(CompetitionsPage);

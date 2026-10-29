@@ -114,4 +114,4 @@ const LastMatchLabel = styled.Text({
   paddingLeft: 6,
 });
 
-export default EveryGameCountsPage;
+export default React.memo(EveryGameCountsPage);

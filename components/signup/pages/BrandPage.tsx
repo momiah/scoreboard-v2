@@ -46,4 +46,4 @@ const Motto = styled.Text({
   marginTop: 8,
 });
 
-export default BrandPage;
+export default React.memo(BrandPage);
