@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Animated,
   Alert,
-  Platform,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AuthLayout from "../../components/signup/AuthLayout";
@@ -25,16 +24,10 @@ import {
   sendPasswordResetEmail,
   signInWithCredential,
   GoogleAuthProvider,
-  FacebookAuthProvider,
   OAuthProvider,
   fetchSignInMethodsForEmail,
 } from "firebase/auth";
-import {
-  LoginManager,
-  AccessToken,
-  AuthenticationToken,
-  AppEventsLogger,
-} from "react-native-fbsdk-next";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
@@ -268,92 +261,6 @@ export default function Login() {
     }
   };
 
-  const handleFacebookLogin = async () => {
-    try {
-      let credential;
-      if (Platform.OS === "ios") {
-        const rawNonce = Math.random().toString(36).substring(2);
-        const hashedNonce = sha256(rawNonce);
-        const result = await LoginManager.logInWithPermissions(
-          ["public_profile", "email"],
-          "limited",
-          hashedNonce,
-        );
-        if (result.isCancelled) {
-          Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
-          return;
-        }
-        const data = await AuthenticationToken.getAuthenticationTokenIOS();
-        if (!data) throw new Error("No access token");
-        const provider = new OAuthProvider("facebook.com");
-        credential = provider.credential({
-          idToken: data.authenticationToken,
-          rawNonce: rawNonce,
-        });
-      } else {
-        const result = await LoginManager.logInWithPermissions([
-          "public_profile",
-          "email",
-        ]);
-        if (result.isCancelled) {
-          Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
-          return;
-        }
-        const data = await AccessToken.getCurrentAccessToken();
-        if (!data) throw new Error("No access token");
-        credential = FacebookAuthProvider.credential(data.accessToken);
-      }
-
-      const userCredential = await signInWithCredential(auth, credential);
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-      const userId = user.uid;
-
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userId", userId);
-      await registerForPushNotificationsAsync(userId);
-
-      const profile = await getUserById(userId);
-
-      if (profile) {
-        setCurrentUser(profile);
-
-        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: "facebook",
-        });
-
-        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-      } else {
-        const [firstName, ...rest] = (user.displayName || "").split(" ");
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Signup",
-              params: {
-                userName: firstName,
-                userLastName: rest.join(" "),
-                userEmail: user.email,
-                userId: userId,
-                provider: "facebook",
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      console.error("Facebook Login Error:", error.message);
-      if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method and link Facebook from your profile.",
-        );
-      } else {
-        Alert.alert("Error", "Facebook sign-in failed. Please try again.");
-      }
-    }
-  };
-
   const handleAppleLogin = async () => {
     try {
       const rawNonce = Math.random().toString(36).substring(2);
@@ -463,8 +370,6 @@ export default function Login() {
   const onSocialLogin = (type) => {
     if (type === "google") {
       handleGoogleLogin();
-    } else if (type === "facebook") {
-      handleFacebookLogin();
     } else if (type === "apple") {
       handleAppleLogin();
     }
@@ -475,6 +380,7 @@ export default function Login() {
       <AuthLayout
         brand="logo"
         cardGlow={false}
+        align="top"
         title="Welcome back"
         subtitle="Log in to pick up your games and your climb."
         onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
@@ -496,7 +402,6 @@ export default function Login() {
           busy={null}
           onApple={() => onSocialLogin("apple")}
           onGoogle={() => onSocialLogin("google")}
-          onFacebook={() => onSocialLogin("facebook")}
           testIDPrefix="login"
         />
         <OrDivider label="or log in with email" />

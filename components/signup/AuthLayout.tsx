@@ -21,7 +21,7 @@ const LOGO_HEIGHT = LOGO_WIDTH / LOGO_ASPECT;
 // The glow lives inside a box exactly its own size, in the normal flow of the
 // scroll content. A glow bigger than its box gets sliced off by the ScrollView's
 // top edge, which shows up as a hard line across the screen.
-const LOGO_GLOW = 210;
+const LOGO_GLOW = 170;
 const ICON_GLOW = 160;
 
 interface AuthLayoutProps {
@@ -35,6 +35,8 @@ interface AuthLayoutProps {
   footer?: React.ReactNode;
   /** Blue halo and edge highlight on the card. */
   cardGlow?: boolean;
+  /** "top" keeps the content just under the header instead of centering it. */
+  align?: "center" | "top";
   children: React.ReactNode;
 }
 
@@ -50,6 +52,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   testIDPrefix,
   footer,
   cardGlow = true,
+  align = "center",
   children,
 }) => (
   <KeyboardAvoidingView
@@ -60,7 +63,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
     <ScrollView
       contentContainerStyle={{
         flexGrow: 1,
-        justifyContent: "center",
+        justifyContent: align === "top" ? "flex-start" : "center",
         paddingHorizontal: 20,
         paddingBottom: 24,
         gap: 18,
@@ -70,7 +73,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
     >
       <Reveal from="pop" style={{ alignItems: "center" }}>
         {brand === "logo" ? (
-          <GlowBox size={LOGO_GLOW} pull={50}>
+          <GlowBox size={LOGO_GLOW} pull={40}>
             <GlowDisc
               size={LOGO_GLOW}
               color="#0a5bff"
