@@ -27,7 +27,11 @@ export const GlassCard: React.FC<{
   transparent?: boolean;
   style?: React.ComponentProps<typeof View>["style"];
 }> = ({ children, glow = true, transparent = false, style }) => (
-  <CardBase glow={glow} transparent={transparent} style={style}>
+  <CardBase
+    glow={glow}
+    transparent={transparent}
+    style={[glow ? styles.cardGlow : null, style]}
+  >
     {glow ? (
       <LinearGradient
         pointerEvents="none"
@@ -55,14 +59,6 @@ const CardBase = styled.View<{ glow: boolean; transparent: boolean }>(
     paddingTop: 22,
     paddingBottom: 20,
     gap: 12,
-    ...(glow
-      ? {
-          shadowColor: BLUE,
-          shadowOpacity: 0.3,
-          shadowRadius: 24,
-          shadowOffset: { width: 0, height: 0 },
-        }
-      : {}),
   }),
 );
 
@@ -144,7 +140,10 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
     disabled={disabled || loading}
     activeOpacity={0.85}
     testID={testID}
-    style={{ opacity: disabled && !loading ? 0.6 : 1 }}
+    style={[
+      styles.primaryShadow,
+      { opacity: disabled && !loading ? 0.6 : 1 },
+    ]}
   >
     <LinearGradient
       colors={["#27b9ff", "#0086ff"]}
@@ -163,10 +162,6 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
 const PrimaryTouch = styled.TouchableOpacity({
   borderRadius: 14,
-  shadowColor: BLUE,
-  shadowOpacity: 0.55,
-  shadowRadius: 14,
-  shadowOffset: { width: 0, height: 4 },
 });
 
 const PrimaryLabel = styled.Text({
@@ -329,7 +324,21 @@ export const SocialButtons: React.FC<SocialButtonsProps> = ({
   return compact ? <View style={styles.socialRow}>{buttons}</View> : buttons;
 };
 
+// Shadows live here, not in styled-components: its object styles drop the
+// nested shadowOffset and turn shadowOpacity into "0.55px".
 const styles = StyleSheet.create({
+  cardGlow: {
+    shadowColor: BLUE,
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  primaryShadow: {
+    shadowColor: BLUE,
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+  },
   cardEdge: {
     position: "absolute",
     top: 0,

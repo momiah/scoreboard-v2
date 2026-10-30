@@ -18,6 +18,10 @@ import {
   updateGameVideoUrl,
   checkR2VideoExists,
 } from "./videoFunctions";
+import {
+  checkEmailAvailable,
+  checkUsernameAvailable,
+} from "./signupAvailability";
 
 admin.initializeApp();
 
@@ -37,4 +41,6 @@ export {
   deleteVideo,
   onVideoReported,
   processLadderPreRegistrationLaunches,
+  checkEmailAvailable,
+  checkUsernameAvailable,
 };

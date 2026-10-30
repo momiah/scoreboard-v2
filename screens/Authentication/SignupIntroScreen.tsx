@@ -1,10 +1,19 @@
 import React, { useContext } from "react";
-import { useNavigation } from "@react-navigation/native";
-import type { NavigationProp, ParamListBase } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type {
+  NavigationProp,
+  ParamListBase,
+  RouteProp,
+} from "@react-navigation/native";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 
 import SignupIntroFlow from "../../components/signup/SignupIntroFlow";
 import { UserContext } from "../../context/UserContext";
+import type { SocialSignupParams } from "./socialAuth";
+
+type SignupIntroParams = {
+  SignupIntro: { socialSignup?: SocialSignupParams } | undefined;
+};
 
 type LoginEventNames = {
   AppEvents: { Login: string };
@@ -13,6 +22,7 @@ type LoginEventNames = {
 
 const SignupIntroScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
+  const route = useRoute<RouteProp<SignupIntroParams, "SignupIntro">>();
   const { getUserById, setCurrentUser } = useContext(UserContext);
 
   const exitToApp = () =>
@@ -42,6 +52,7 @@ const SignupIntroScreen: React.FC = () => {
       onSignedIn={onSignedIn}
       onExplore={exitToApp}
       onCreateLeague={onCreateLeague}
+      initialSocialSignup={route.params?.socialSignup}
     />
   );
 };

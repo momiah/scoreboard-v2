@@ -67,6 +67,13 @@ const emptyDraft: Draft = {
   requiresEmailVerification: false,
 };
 
+const socialDraft = (params: SocialSignupParams): Draft => ({
+  ...emptyDraft,
+  email: params.userEmail,
+  social: params,
+  firstName: params.userName,
+});
+
 interface SignupIntroFlowProps {
   getUserById: ProfileLookup;
   setCurrentUser: (user: UserProfile) => void;
@@ -74,6 +81,8 @@ interface SignupIntroFlowProps {
   onSignedIn: (profile: Record<string, unknown>, method: string) => void;
   onExplore: () => void;
   onCreateLeague: () => void;
+  /** Opens straight at the profile step for a new Google / Apple player (from Login). */
+  initialSocialSignup?: SocialSignupParams;
 }
 
 /**
@@ -88,11 +97,16 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
   onSignedIn,
   onExplore,
   onCreateLeague,
+  initialSocialSignup,
 }) => {
   const listRef = useRef<FlatList<IntroPage>>(null);
   const [index, setIndex] = useState(0);
-  const [step, setStep] = useState<Step>("intro");
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [step, setStep] = useState<Step>(
+    initialSocialSignup ? "profile" : "intro",
+  );
+  const [draft, setDraft] = useState<Draft>(() =>
+    initialSocialSignup ? socialDraft(initialSocialSignup) : emptyDraft,
+  );
   const lastIndex = PAGES.length - 1;
   // Frozen while the pager is mounted: changing initialScrollIndex on a live
   // FlatList changes which cells it keeps rendered and leaves new pages blank.
@@ -142,12 +156,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
   }, [step, index]);
 
   const startSocialSignup = (params: SocialSignupParams) => {
-    setDraft({
-      ...emptyDraft,
-      email: params.userEmail,
-      social: params,
-      firstName: params.userName,
-    });
+    setDraft(socialDraft(params));
     setStep("profile");
   };
 
@@ -182,6 +191,7 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
             password={draft.password}
             socialId={draft.social?.userId}
             socialProvider={draft.social?.provider}
+            socialIsNewUser={draft.social?.isNewUser}
             initialFirstName={draft.social?.userName}
             initialLastName={draft.social?.userLastName}
             setCurrentUser={setCurrentUser}

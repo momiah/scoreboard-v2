@@ -17,6 +17,8 @@ import {
   CountrySelector,
 } from "../Modals/CountryCitySelectionModal";
 import {
+  FULL_NAME_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
   createCourtChampsAccount,
   signupErrorMessage,
   splitFullName,
@@ -59,6 +61,7 @@ interface SignupProfileStepProps {
   password: string;
   socialId?: string;
   socialProvider?: string;
+  socialIsNewUser?: boolean;
   initialFirstName?: string;
   initialLastName?: string;
   setCurrentUser?: (user: UserProfile) => void;
@@ -71,6 +74,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
   password,
   socialId,
   socialProvider,
+  socialIsNewUser,
   initialFirstName = "",
   initialLastName = "",
   setCurrentUser,
@@ -204,6 +208,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
         photoUri,
         socialId,
         socialProvider,
+        socialIsNewUser,
         setCurrentUser,
       });
       onCreated(!created.isSocialSignup, name.firstName);
@@ -276,6 +281,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
             placeholder="Alex Morgan"
             autoCapitalize="words"
             autoCorrect={false}
+            maxLength={FULL_NAME_MAX_LENGTH}
             testID="signup-profile-name"
           />
           {nameError ? <FieldError>{nameError}</FieldError> : null}
@@ -290,6 +296,7 @@ const SignupProfileStep: React.FC<SignupProfileStepProps> = ({
               placeholderTextColor="#7f97a8"
               autoCapitalize="none"
               autoCorrect={false}
+              maxLength={USERNAME_MAX_LENGTH}
               testID="signup-profile-username"
             />
             {usernameState === "checking" ? (

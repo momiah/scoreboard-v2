@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { TouchableOpacity } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import styled from "styled-components/native";
 
+import { PopupContext } from "../../context/PopupContext";
 import {
+  EMAIL_CHECK_FAILED_MESSAGE,
+  EMAIL_MAX_LENGTH,
   checkEmailExists,
   normaliseEmail,
   validateEmail,
@@ -46,6 +49,7 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
   const [passwordError, setPasswordError] = useState("");
   const [confirmTouched, setConfirmTouched] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const { showBottomToast } = useContext(PopupContext);
   const mismatch = confirm.length > 0 && confirm !== password;
   const canCreate = confirm.length > 0 && !mismatch;
   const social = useSocialAuth({
@@ -72,6 +76,10 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
         setEmailError("Email already registered");
         return;
       }
+    } catch {
+      // Fail closed like the username check: an unknown result never passes.
+      showBottomToast(EMAIL_CHECK_FAILED_MESSAGE, "error");
+      return;
     } finally {
       setCheckingEmail(false);
     }
@@ -114,6 +122,7 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
         autoCapitalize="none"
         autoCorrect={false}
         autoComplete="email"
+        maxLength={EMAIL_MAX_LENGTH}
         error={emailError}
         testID="signup-account-email"
       />

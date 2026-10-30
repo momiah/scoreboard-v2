@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   fetchSignInMethodsForEmail,
+  getAdditionalUserInfo,
   signInWithCredential,
 } from "firebase/auth";
 import { sha256 } from "js-sha256";
@@ -21,6 +22,8 @@ export interface SocialSignupParams {
   userEmail: string;
   userId: string;
   provider: "google" | "apple";
+  /** True when this sign-in created the Firebase user (used to roll back). */
+  isNewUser: boolean;
 }
 
 export type SocialSignInResult =
@@ -116,6 +119,7 @@ export async function signInWithGoogle(
         userEmail: userData.email || "",
         userId,
         provider: "google",
+        isNewUser: getAdditionalUserInfo(userCredential)?.isNewUser ?? false,
       },
     };
   } catch (error) {
@@ -225,6 +229,7 @@ export async function signInWithApple(
         userEmail: cachedEmail || user.email || "",
         userId,
         provider: "apple",
+        isNewUser: getAdditionalUserInfo(userCredential)?.isNewUser ?? false,
       },
     };
   } catch (error) {
