@@ -86,7 +86,6 @@ const EveryGameCountsPage: React.FC = () => (
 
 const cardWrap = { alignSelf: "stretch" as const };
 
-/** Same card chrome as Scoreboard.tsx GameContainer. */
 const GameCard = styled.View({
   flexDirection: "row",
   justifyContent: "space-between",
@@ -97,7 +96,6 @@ const GameCard = styled.View({
   borderRadius: 8,
 });
 
-/** Same colours and sizes as MedalProgress's last-match line. */
 const LastMatch = styled.View({
   alignItems: "center",
 });

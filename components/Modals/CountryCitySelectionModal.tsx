@@ -274,9 +274,6 @@ export const CitySelector = ({
 /*                                   Styles                                    */
 /* -------------------------------------------------------------------------- */
 
-// iOS blurs the screen behind the modal, so no fill is needed. Android has no
-// real blur, so it gets the same solid backdrop colour the other modals use on
-// the android-build branch.
 const ANDROID_BACKDROP = "rgba(2, 13, 24, 0.9)";
 
 const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({

@@ -1,21 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { BackHandler, Dimensions, FlatList } from "react-native";
-import type {
-  ListRenderItemInfo,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-} from "react-native";
-import styled from "styled-components/native";
+import React, { useEffect, useRef, useState } from "react";
+import { BackHandler } from "react-native";
 import type { UserProfile } from "@shared/types";
 
 import {
-  Dot,
-  Dots,
-  HowToPlayButton as NavButton,
-  HowToPlayButtonText as NavButtonText,
+  NavButton,
+  NavButtonText,
   NavRow,
-} from "../ladder/HowToPlayFlow";
-import { RevealContext } from "../ladder/HowToPlayReveal";
+  PagerDots,
+  PagerList,
+  usePager,
+  type PagerPage,
+} from "../ladder/HowToPlayPager";
 import type { SocialSignupParams } from "../../screens/Authentication/socialAuth";
 import FlowHeader from "./FlowHeader";
 import BrandPage from "./pages/BrandPage";
@@ -28,27 +23,12 @@ import SignupProfileStep from "./SignupProfileStep";
 import AccountCreatedStep from "./AccountCreatedStep";
 import type { ProfileLookup } from "./useSocialAuth";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-interface IntroPage {
-  key: string;
-  render: () => React.ReactNode;
-}
-
-const PAGES: IntroPage[] = [
+const PAGES: PagerPage[] = [
   { key: "brand", render: () => <BrandPage /> },
   { key: "competitions", render: () => <CompetitionsPage /> },
   { key: "compete", render: () => <EveryGameCountsPage /> },
   { key: "rank", render: () => <RankPage /> },
 ];
-
-const getItemLayout = (_: unknown, i: number) => ({
-  length: SCREEN_WIDTH,
-  offset: SCREEN_WIDTH * i,
-  index: i,
-});
-
-const keyExtractor = (item: IntroPage) => item.key;
 
 type Step = "intro" | "account" | "profile" | "welcome";
 
@@ -85,11 +65,7 @@ interface SignupIntroFlowProps {
   initialSocialSignup?: SocialSignupParams;
 }
 
-/**
- * Same shape as HowToPlayFlow: one screen inside the stack (so the tab bar stays
- * put), the shared backdrop, a paging FlatList of pages, dots and Back / Next.
- * After the last page it carries on into the account, profile and welcome steps.
- */
+/** The intro pages, then the account, profile and welcome steps. */
 const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
   getUserById,
   setCurrentUser,
@@ -99,37 +75,20 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
   onCreateLeague,
   initialSocialSignup,
 }) => {
-  const listRef = useRef<FlatList<IntroPage>>(null);
-  const [index, setIndex] = useState(0);
+  const pager = usePager(PAGES.length);
+  const { index, lastIndex, goTo } = pager;
   const [step, setStep] = useState<Step>(
     initialSocialSignup ? "profile" : "intro",
   );
   const [draft, setDraft] = useState<Draft>(() =>
     initialSocialSignup ? socialDraft(initialSocialSignup) : emptyDraft,
   );
-  const lastIndex = PAGES.length - 1;
-  // Frozen while the pager is mounted: changing initialScrollIndex on a live
-  // FlatList changes which cells it keeps rendered and leaves new pages blank.
   const restoreIndex = useRef(0);
 
   const openAccount = () => {
     restoreIndex.current = index;
     setStep("account");
   };
-
-  const goTo = (next: number) => {
-    const clamped = Math.max(0, Math.min(next, lastIndex));
-    listRef.current?.scrollToIndex({ index: clamped, animated: true });
-    setIndex(clamped);
-  };
-
-  const onMomentumEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-      setIndex((current) => (page === current ? current : page));
-    },
-    [],
-  );
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -145,29 +104,19 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
           return true;
         }
         if (index > 0) {
-          listRef.current?.scrollToIndex({ index: index - 1, animated: true });
-          setIndex(index - 1);
+          goTo(index - 1);
           return true;
         }
         return false;
       },
     );
     return () => subscription.remove();
-  }, [step, index]);
+  }, [step, index, goTo]);
 
   const startSocialSignup = (params: SocialSignupParams) => {
     setDraft(socialDraft(params));
     setStep("profile");
   };
-
-  const renderItem = useCallback(
-    ({ item, index: pageIndex }: ListRenderItemInfo<IntroPage>) => (
-      <RevealContext.Provider value={pageIndex === index}>
-        <PageContainer>{item.render()}</PageContainer>
-      </RevealContext.Provider>
-    ),
-    [index],
-  );
 
   if (step !== "intro") {
     return (
@@ -237,28 +186,12 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
         />
       )}
 
-      <FlatList
-        ref={listRef}
-        data={PAGES}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        extraData={index}
-        horizontal
-        pagingEnabled
-        initialScrollIndex={restoreIndex.current}
-        initialNumToRender={PAGES.length}
-        windowSize={PAGES.length * 2 + 1}
-        removeClippedSubviews={false}
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onMomentumEnd}
-        getItemLayout={getItemLayout}
+      <PagerList
+        pager={pager}
+        pages={PAGES}
+        initialIndex={restoreIndex.current}
       />
-
-      <Dots testID="signup-intro-dots">
-        {PAGES.map((page, i) => (
-          <Dot key={page.key} active={i === index} />
-        ))}
-      </Dots>
+      <PagerDots pages={PAGES} index={index} testID="signup-intro-dots" />
 
       <NavRow>
         {onBrand ? (
@@ -288,10 +221,5 @@ const SignupIntroFlow: React.FC<SignupIntroFlowProps> = ({
     </SignupChrome>
   );
 };
-
-const PageContainer = styled.View({
-  width: SCREEN_WIDTH,
-  flex: 1,
-});
 
 export default SignupIntroFlow;

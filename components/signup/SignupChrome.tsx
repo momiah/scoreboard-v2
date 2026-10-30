@@ -1,41 +1,20 @@
 import React, { useRef } from "react";
 import { StyleSheet, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
-import HowToPlayBackdrop from "../ladder/HowToPlayBackdrop";
+import { HowToPlayBackground } from "../ladder/HowToPlayBackdrop";
+import { SCREEN_BG } from "../ladder/howToPlayTheme";
 
-export const SCREEN_BG = "rgb(3, 16, 31)";
-export const BLUE = "#00A2FF";
-export const GOLD = "#FFC800";
-export const MUTED = "#aaa";
-export const BODY = "#c9d6e3";
+export { BLUE, BODY, GOLD, MUTED, SCREEN_BG } from "../ladder/howToPlayTheme";
 export const SHEET = "rgb(9, 24, 42)";
 export const BRONZE = "rgb(194, 106, 46)";
 
-const BackgroundBase: React.FC = () => (
-  <>
-    <LinearGradient
-      pointerEvents="none"
-      colors={["rgb(3, 16, 31)", "#020b17", "#01060d"]}
-      locations={[0, 0.5, 1]}
-      style={StyleSheet.absoluteFill}
-    />
-    <HowToPlayBackdrop />
-  </>
-);
-const Background = React.memo(BackgroundBase);
-
-/**
- * Same backdrop the How to Play guide uses: gradient, dot grid, drifting waves.
- * The backdrop is memoised so page changes and keystrokes in the children never
- * re-render its SVG layers.
- */
+/** A sign-up screen on the How to Play background. */
 const SignupChrome: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (
   <View style={styles.screen}>
-    <Background />
+    <HowToPlayBackground />
     {children}
   </View>
 );

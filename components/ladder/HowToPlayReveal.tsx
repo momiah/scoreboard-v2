@@ -36,7 +36,7 @@ export const Reveal: React.FC<RevealProps> = ({
       duration: DURATION_MS,
       delay: order * STAGGER_MS,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
   }, [active, order, progress]);
 

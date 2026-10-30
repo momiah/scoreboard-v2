@@ -14,12 +14,7 @@ interface SkeletonImageProps {
   style?: StyleProp<ImageStyle>;
 }
 
-/**
- * An Image that shows the app's existing skeleton placeholder (CircleSkeleton /
- * ImageSkeleton, the same pattern RankInformation uses) until it has loaded, so
- * the page around it can render straight away. A failed load also clears the
- * placeholder rather than leaving it pulsing forever.
- */
+/** An Image behind a skeleton placeholder until it loads or fails. */
 const SkeletonImage: React.FC<SkeletonImageProps> = ({
   source,
   width,

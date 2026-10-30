@@ -198,7 +198,6 @@ const CompetitionsScreen = memo(() => {
     }, [currentUser?.userId]),
   );
 
-  // Signed-out users go to sign-in, same as the Home create buttons.
   const openAddCompetition = useCallback(
     () =>
       currentUser?.userId

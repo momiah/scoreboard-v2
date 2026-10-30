@@ -35,6 +35,7 @@ import {
   PrimaryButton,
 } from "./formParts";
 import { BLUE, MUTED } from "./SignupChrome";
+import { Eyebrow } from "../ladder/howToPlayTheme";
 
 const flagEmoji = (code: string | null) =>
   code && code.length === 2
@@ -381,13 +382,6 @@ const ProgressFill = styled.View({
   height: 3,
   borderRadius: 2,
   backgroundColor: BLUE,
-});
-
-const Eyebrow = styled.Text({
-  color: BLUE,
-  fontSize: 14,
-  fontWeight: "600",
-  letterSpacing: 2.4,
 });
 
 const Title = styled.Text({

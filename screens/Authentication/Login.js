@@ -208,8 +208,6 @@ export default function Login() {
     );
   };
 
-  // Same Google / Apple path as the sign-up flow: existing players go Home,
-  // new players continue on the new flow's profile step.
   const social = useSocialAuth({
     getUserById,
     onExisting: (profile, method) => {

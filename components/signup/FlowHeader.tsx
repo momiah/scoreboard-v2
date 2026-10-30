@@ -11,7 +11,7 @@ interface FlowHeaderProps {
   testIDPrefix?: string;
 }
 
-/** Chevron on the left, a quiet text action on the right. Matches the top row of every mockup. */
+/** Chevron on the left, a quiet text action on the right. */
 const FlowHeader: React.FC<FlowHeaderProps> = ({
   onBack,
   rightLabel,

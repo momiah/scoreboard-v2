@@ -1,7 +1,5 @@
-// App Check: the native SDK (react-native-firebase) attests the device and the
-// token is handed to the Firebase JS SDK, so callables such as
-// checkEmailAvailable send it. Native modules only exist in dev / EAS builds,
-// so everything is lazy and guarded: Expo Go and Jest just skip it.
+// The native modules only exist in dev and EAS builds, so they load lazily and
+// Expo Go and Jest skip App Check.
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import { getApp } from "firebase/app";
 import { CustomProvider, initializeAppCheck } from "firebase/app-check";
@@ -9,8 +7,6 @@ import { CustomProvider, initializeAppCheck } from "firebase/app-check";
 // Initialises the JS Firebase app before getApp() is used.
 import "./firebase.config";
 
-// Fallback lifetime when the token's expiry can't be read (App Check tokens
-// last 1 hour by default).
 const FALLBACK_TTL_MS = 30 * 60 * 1000;
 
 let started = false;

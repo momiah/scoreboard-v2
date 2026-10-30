@@ -259,10 +259,7 @@ export interface CreateAccountResult {
   isSocialSignup: boolean;
 }
 
-/**
- * Creates the Firebase user (unless this is a social sign-up that already
- * did) and writes the same profile document the original Signup screen writes.
- */
+/** Creates the Firebase user (unless a social sign-in already did) and the profile document. */
 export async function createCourtChampsAccount(
   input: CreateAccountInput,
 ): Promise<CreateAccountResult> {

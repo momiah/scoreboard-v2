@@ -1,6 +1,6 @@
 import styled from "styled-components/native";
 
-import { BLUE } from "./SignupChrome";
+import { Eyebrow as BaseEyebrow } from "../ladder/howToPlayTheme";
 
 export const IntroScroll = styled.ScrollView.attrs({
   contentContainerStyle: {
@@ -24,11 +24,7 @@ export const IntroScrollCompact = styled.ScrollView.attrs({
   },
 })({});
 
-export const Eyebrow = styled.Text({
-  color: BLUE,
-  fontSize: 14,
-  fontWeight: "600",
-  letterSpacing: 2.4,
+export const Eyebrow = styled(BaseEyebrow)({
   textAlign: "center",
 });
 

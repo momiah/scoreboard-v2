@@ -24,7 +24,6 @@ import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
 import { initAppCheck } from "./services/appCheck";
 
-// Attach App Check tokens to Firebase calls (no-op in Expo Go).
 initAppCheck();
 
 const Stack = createStackNavigator();

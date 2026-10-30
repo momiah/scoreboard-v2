@@ -38,10 +38,7 @@ interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
-/**
- * Shared look for Join and Log in: the brand mark, then one centered glass card
- * holding the title and the form. Must sit inside SignupChrome.
- */
+/** The brand mark over one centered glass card. Must sit inside SignupChrome. */
 const AuthLayout: React.FC<AuthLayoutProps> = ({
   brand,
   title,

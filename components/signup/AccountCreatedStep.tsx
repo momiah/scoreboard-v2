@@ -12,10 +12,10 @@ import {
   HowToPlayButtonText as NavButtonText,
 } from "../ladder/HowToPlayFlow";
 import { Reveal } from "../ladder/HowToPlayReveal";
-import { BODY, BLUE, BRONZE, GOLD, GlowDisc, MUTED } from "./SignupChrome";
+import { BODY, BRONZE, GOLD, GlowDisc, MUTED } from "./SignupChrome";
+import { Eyebrow as BaseEyebrow } from "../ladder/howToPlayTheme";
 
 const HERO_SIZE = 120;
-// How long the resend button stays faded after sign-up (and after each resend).
 const RESEND_COOLDOWN_SECONDS = 180;
 
 const ResendVerification: React.FC = () => {
@@ -171,11 +171,7 @@ const AccountCreatedStep: React.FC<AccountCreatedStepProps> = ({
   </ScrollView>
 );
 
-const Eyebrow = styled.Text({
-  color: BLUE,
-  fontSize: 14,
-  fontWeight: "600",
-  letterSpacing: 2.4,
+const Eyebrow = styled(BaseEyebrow)({
   textAlign: "center",
   marginBottom: 12,
 });

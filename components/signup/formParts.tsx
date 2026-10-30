@@ -15,7 +15,6 @@ import { FacebookLogo, GoogleLogo } from "../../assets";
 import { BLUE, MUTED } from "./SignupChrome";
 import SkeletonImage from "./SkeletonImage";
 
-// Inputs and the social buttons share this fill and border so they read as one set.
 export const FIELD_FILL = "rgba(255, 255, 255, 0.04)";
 export const FIELD_FILL_FOCUSED = "rgba(0, 162, 255, 0.06)";
 export const FIELD_BORDER_COLOR = "rgba(255, 255, 255, 0.1)";
