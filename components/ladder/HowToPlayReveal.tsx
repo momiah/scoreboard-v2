@@ -36,7 +36,7 @@ export const Reveal: React.FC<RevealProps> = ({
       duration: DURATION_MS,
       delay: order * STAGGER_MS,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   }, [active, order, progress]);
 
@@ -58,14 +58,16 @@ export const Reveal: React.FC<RevealProps> = ({
   );
 };
 
-/** A soft ring that keeps pulsing out from behind a page's icon. */
+/** A soft ring that keeps pulsing out from behind a page's icon, only while that page is on screen. */
 export const PulseRing: React.FC<{ size: number; color: string }> = ({
   size,
   color,
 }) => {
   const pulse = useRef(new Animated.Value(0)).current;
+  const active = useContext(RevealContext);
 
   useEffect(() => {
+    if (!active) return;
     const loop = Animated.loop(
       Animated.timing(pulse, {
         toValue: 1,
@@ -75,8 +77,11 @@ export const PulseRing: React.FC<{ size: number; color: string }> = ({
       }),
     );
     loop.start();
-    return () => loop.stop();
-  }, [pulse]);
+    return () => {
+      loop.stop();
+      pulse.setValue(0);
+    };
+  }, [pulse, active]);
 
   return (
     <Animated.View

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
+import { LinearGradient as GradientFill } from "expo-linear-gradient";
 import type { LayoutChangeEvent } from "react-native";
 import Svg, {
   Circle,
@@ -12,8 +13,9 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 
+import { BACKGROUND_GRADIENT, BLUE } from "./howToPlayTheme";
+
 const DOT_SPACING = 8;
-const BLUE = "#00A2FF";
 
 /** A faint dot grid and two sweeping lines rising from the bottom of the screen and fading out. */
 const HowToPlayBackdrop: React.FC = () => {
@@ -158,5 +160,20 @@ const DriftingWave: React.FC<DriftingWaveProps> = ({
     </Animated.View>
   );
 };
+
+/** The guide's full background: the darkening gradient with the dot grid and waves over it. */
+const HowToPlayBackgroundBase: React.FC = () => (
+  <>
+    <GradientFill
+      pointerEvents="none"
+      colors={[...BACKGROUND_GRADIENT.colors]}
+      locations={[...BACKGROUND_GRADIENT.locations]}
+      style={StyleSheet.absoluteFill}
+    />
+    <HowToPlayBackdrop />
+  </>
+);
+
+export const HowToPlayBackground = React.memo(HowToPlayBackgroundBase);
 
 export default HowToPlayBackdrop;

@@ -1,47 +1,34 @@
-import { sha256 } from "js-sha256";
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   StyleSheet,
-  Image,
   Animated,
-  Alert,
-  Keyboard,
-  Platform,
 } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import AuthLayout from "../../components/signup/AuthLayout";
 import {
-  CourtChampLogo,
-  GoogleLogo,
-  FacebookLogo,
-  AppleLogo,
-} from "../../assets";
+  AuthField,
+  OrDivider,
+  PrimaryButton,
+  SocialButtons,
+} from "../../components/signup/formParts";
+import SignupChrome from "../../components/signup/SignupChrome";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
-  signInWithCredential,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
-  OAuthProvider,
-  fetchSignInMethodsForEmail,
+  sendEmailVerification,
 } from "firebase/auth";
-import {
-  LoginManager,
-  AccessToken,
-  AuthenticationToken,
-  AppEventsLogger,
-} from "react-native-fbsdk-next";
+import { AppEventsLogger } from "react-native-fbsdk-next";
 import { auth } from "../../services/firebase.config";
 import { UserContext } from "../../context/UserContext";
+import { PopupContext } from "../../context/PopupContext";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
-import * as AppleAuthentication from "expo-apple-authentication";
-import { GOOGLE_WEB_CLIENT_ID } from "@env";
+import { useSocialAuth } from "../../components/signup/useSocialAuth";
+import { EMAIL_MAX_LENGTH } from "./createAccount";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -49,38 +36,40 @@ export default function Login() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [iconScale] = useState(new Animated.Value(1));
 
   const { getUserById, setCurrentUser } = useContext(UserContext);
+  const { showBottomToast } = useContext(PopupContext);
 
   const navigation = useNavigation();
 
-  // Dismiss keyboard when tapping outside
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const cleanEmail = email.trim().toLowerCase();
+
+  const emailProblem = () => {
+    if (!cleanEmail) return "Email is required.";
+    if (cleanEmail.length > EMAIL_MAX_LENGTH) {
+      return `Email must be ${EMAIL_MAX_LENGTH} characters or fewer.`;
+    }
+    if (!EMAIL_REGEX.test(cleanEmail)) return "Enter a valid email address.";
+    return "";
+  };
+
+  const passwordProblem = () => {
+    if (!password) return "Password is required.";
+    if (password.length < 6) return "Password must be at least 6 characters.";
+    return "";
   };
 
   // Validation for Email
   const validateEmail = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) {
-      setEmailError("Email is required.");
-    } else if (!emailRegex.test(email)) {
-      setEmailError("Enter a valid email address.");
-    } else {
-      setEmailError("");
-    }
+    setEmailError(emailProblem());
   };
 
   // Validation for Password
   const validatePassword = () => {
-    if (!password) {
-      setPasswordError("Password is required.");
-    } else if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters.");
-    } else {
-      setPasswordError("");
-    }
+    setPasswordError(passwordProblem());
   };
 
   // Toggle Password Visibility
@@ -101,22 +90,37 @@ export default function Login() {
 
   // Handle Login Button
   const handleLogin = async () => {
-    validateEmail();
-    validatePassword();
-    if (!emailError && !passwordError && email && password) {
+    if (submitting) return;
+    const emailIssue = emailProblem();
+    const passwordIssue = passwordProblem();
+    setEmailError(emailIssue);
+    setPasswordError(passwordIssue);
+    if (!emailIssue && !passwordIssue) {
+      setSubmitting(true);
       try {
         const userCredential = await signInWithEmailAndPassword(
           auth,
-          email,
+          cleanEmail,
           password,
         );
         const user = userCredential.user;
 
         if (!user.emailVerified) {
+          // Resend the link so someone whose first email failed or got lost
+          // isn't locked out. Firebase rate-limits repeat sends itself.
+          let resent = false;
+          try {
+            await sendEmailVerification(user);
+            resent = true;
+          } catch (error) {
+            console.error("Could not resend the verification email:", error);
+          }
           await auth.signOut();
-          Alert.alert(
-            "Verify Email",
-            "Please verify your email address before logging in.",
+          showBottomToast(
+            resent
+              ? "Please verify your email first. We've sent a new link to your inbox."
+              : "Please verify your email address before logging in.",
+            "info",
           );
           return;
         }
@@ -144,569 +148,197 @@ export default function Login() {
           routes: [{ name: "Home" }],
         });
       } catch (error) {
+        // Wrong password, unknown email and invalid credential all read the same,
+        // so the screen never reveals whether an account exists for an email.
+        const wrongCredentials = "Incorrect email or password.";
         const messages = {
-          "auth/email-already-in-use": "Email already registered",
-          "auth/weak-password": "Password is too weak",
-          "auth/invalid-email": "Invalid email address",
-          "auth/invalid-credential": "Invalid credentials",
-          "auth/user-not-found": "User not found",
-          "auth/wrong-password": "Incorrect password",
+          "auth/invalid-email": "Enter a valid email address.",
+          "auth/invalid-credential": wrongCredentials,
+          "auth/user-not-found": wrongCredentials,
+          "auth/wrong-password": wrongCredentials,
           "auth/user-disabled": "User account is disabled",
+          "auth/too-many-requests":
+            "Too many attempts. Please wait a moment and try again.",
+          "auth/network-request-failed":
+            "Network error. Check your connection and try again.",
         };
         const errorMessage = messages[error.code] || "Login failed.";
-        Alert.alert("Error", errorMessage);
+        showBottomToast(errorMessage, "error");
 
         AppEventsLogger.logEvent("LoginFailed", {
           reason: error.code || error.message,
           method: "email",
         });
+      } finally {
+        setSubmitting(false);
       }
     }
   };
 
   const handleForgotPassword = async () => {
-    if (!email) {
-      Alert.alert("Enter your email", "Please enter your email address first.");
+    if (!cleanEmail) {
+      showBottomToast("Please enter your email address first.", "info");
       return;
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      Alert.alert(
-        "Reset Link Sent",
-        "Check your inbox for a password reset link.",
-      );
+      await sendPasswordResetEmail(auth, cleanEmail);
     } catch (error) {
-      const messages = {
-        "auth/invalid-email": "Enter a valid email address.",
-        "auth/user-not-found": "No user found with that email.",
-      };
-      const errorMessage =
-        messages[error.code] || "Failed to send reset email.";
-      Alert.alert("Error", errorMessage);
-      console.log("Password Reset Error:", error.message);
-    }
-  };
-
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: GOOGLE_WEB_CLIENT_ID,
-    });
-  }, []);
-
-  const handleGoogleLogin = async () => {
-    try {
-      await GoogleSignin.hasPlayServices();
-      await GoogleSignin.signOut();
-
-      const response = await GoogleSignin.signIn();
-
-      if (response.type !== "success") {
-        return;
-      }
-
-      const googleCredential = GoogleAuthProvider.credential(
-        response.data.idToken,
-      );
-      const email = response.data.user.email;
-      const existingMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (
-        existingMethods.length > 0 &&
-        !existingMethods.includes("google.com")
-      ) {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method and connect Google from your profile.",
-        );
-        return;
-      }
-
-      const userCredential = await signInWithCredential(auth, googleCredential);
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-      const userId = user.uid;
-
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userId", userId);
-      await registerForPushNotificationsAsync(userId);
-
-      const profile = await getUserById(userId);
-
-      if (profile) {
-        setCurrentUser(profile);
-
-        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: "google",
-        });
-
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Home" }],
-        });
-      } else {
-        const userData = response.data.user;
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Signup",
-              params: {
-                userName: userData.givenName,
-                userLastName: userData.familyName,
-                userEmail: userData.email,
-                userId: userId,
-                provider: "google",
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      console.error("Google Login Error:", error.message);
-      if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method.",
-        );
-      } else {
-        Alert.alert("Error", "Google sign-in failed. Please try again.");
-      }
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      let credential;
-      if (Platform.OS === "ios") {
-        const rawNonce = Math.random().toString(36).substring(2);
-        const hashedNonce = sha256(rawNonce);
-        const result = await LoginManager.logInWithPermissions(
-          ["public_profile", "email"],
-          "limited",
-          hashedNonce,
-        );
-        if (result.isCancelled) {
-          Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
-          return;
-        }
-        const data = await AuthenticationToken.getAuthenticationTokenIOS();
-        if (!data) throw new Error("No access token");
-        const provider = new OAuthProvider("facebook.com");
-        credential = provider.credential({
-          idToken: data.authenticationToken,
-          rawNonce: rawNonce,
-        });
-      } else {
-        const result = await LoginManager.logInWithPermissions([
-          "public_profile",
-          "email",
-        ]);
-        if (result.isCancelled) {
-          Alert.alert("Error", "Facebook sign-in cancelled. Please try again.");
-          return;
-        }
-        const data = await AccessToken.getCurrentAccessToken();
-        if (!data) throw new Error("No access token");
-        credential = FacebookAuthProvider.credential(data.accessToken);
-      }
-
-      const userCredential = await signInWithCredential(auth, credential);
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-      const userId = user.uid;
-
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userId", userId);
-      await registerForPushNotificationsAsync(userId);
-
-      const profile = await getUserById(userId);
-
-      if (profile) {
-        setCurrentUser(profile);
-
-        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: "facebook",
-        });
-
-        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-      } else {
-        const [firstName, ...rest] = (user.displayName || "").split(" ");
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Signup",
-              params: {
-                userName: firstName,
-                userLastName: rest.join(" "),
-                userEmail: user.email,
-                userId: userId,
-                provider: "facebook",
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      console.error("Facebook Login Error:", error.message);
-      if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method and link Facebook from your profile.",
-        );
-      } else {
-        Alert.alert("Error", "Facebook sign-in failed. Please try again.");
-      }
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    try {
-      const rawNonce = Math.random().toString(36).substring(2);
-      const hashedNonce = sha256(rawNonce);
-
-      const appleCredential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-        nonce: hashedNonce,
-      });
-
-      const {
-        identityToken,
-        fullName,
-        email: appleEmail,
-        user: appleUserId,
-      } = appleCredential;
-      if (!identityToken) throw new Error("No identity token");
-
-      // Apple returns name/email ONLY on first-ever sign-in. Persist it keyed by Apple user ID.
-      const storageKey = `appleUser:${appleUserId}`;
-      let cachedName = { givenName: "", familyName: "" };
-      let cachedEmail = "";
-
-      if (fullName?.givenName || appleEmail) {
-        cachedName = {
-          givenName: fullName?.givenName || "",
-          familyName: fullName?.familyName || "",
+      // An unknown email gets the same reply as a known one, so this screen can't
+      // be used to find out who has an account.
+      if (error.code !== "auth/user-not-found") {
+        const messages = {
+          "auth/invalid-email": "Enter a valid email address.",
+          "auth/too-many-requests":
+            "Too many attempts. Please wait a moment and try again.",
+          "auth/network-request-failed":
+            "Network error. Check your connection and try again.",
         };
-        cachedEmail = appleEmail || "";
-        await AsyncStorage.setItem(
-          storageKey,
-          JSON.stringify({ name: cachedName, email: cachedEmail }),
+        showBottomToast(
+          messages[error.code] || "Failed to send reset email.",
+          "error",
         );
-      } else {
-        const stored = await AsyncStorage.getItem(storageKey);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          cachedName = parsed.name;
-          cachedEmail = parsed.email;
-        }
-      }
-
-      const provider = new OAuthProvider("apple.com");
-      const firebaseCredential = provider.credential({
-        idToken: identityToken,
-        rawNonce: rawNonce,
-      });
-
-      const userCredential = await signInWithCredential(
-        auth,
-        firebaseCredential,
-      );
-      const user = userCredential.user;
-      const token = await user.getIdToken();
-      const userId = user.uid;
-
-      await AsyncStorage.setItem("userToken", token);
-      await AsyncStorage.setItem("userId", userId);
-      await registerForPushNotificationsAsync(userId);
-
-      const profile = await getUserById(userId);
-
-      if (profile) {
-        setCurrentUser(profile);
-
-        AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
-          [AppEventsLogger.AppEventParams.RegistrationMethod]: "apple",
-        });
-
-        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "Signup",
-              params: {
-                userName: cachedName.givenName,
-                userLastName: cachedName.familyName,
-                userEmail: cachedEmail || user.email || "",
-                userId: userId,
-                provider: "apple",
-              },
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      if (error.code === "ERR_REQUEST_CANCELED") {
+        console.log("Password Reset Error:", error.message);
         return;
       }
-      console.error("Apple Login Error:", error.message);
-      if (error.code === "auth/account-exists-with-different-credential") {
-        Alert.alert(
-          "Account Already Exists",
-          "An account with this email already exists. Please log in with your original method.",
-        );
-      } else {
-        Alert.alert("Error", "Apple sign-in failed. Please try again.");
-      }
     }
+    showBottomToast(
+      "If an account exists for that email, a password reset link is on its way.",
+      "success",
+    );
   };
 
-  const onSocialLogin = (type) => {
-    if (type === "google") {
-      handleGoogleLogin();
-    } else if (type === "facebook") {
-      handleFacebookLogin();
-    } else if (type === "apple") {
-      handleAppleLogin();
-    }
-  };
+  const social = useSocialAuth({
+    getUserById,
+    onExisting: (profile, method) => {
+      setCurrentUser(profile);
+      AppEventsLogger.logEvent(AppEventsLogger.AppEvents.Login, {
+        [AppEventsLogger.AppEventParams.RegistrationMethod]: method,
+      });
+      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+    },
+    onNeedsSignup: (params) => {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "SignupIntro", params: { socialSignup: params } }],
+      });
+    },
+  });
 
   return (
-    <TouchableWithoutFeedback onPress={dismissKeyboard}>
-      <View style={styles.container}>
-        {/* Logo Section */}
-        <Image source={CourtChampLogo} style={styles.logo} />
-
-        {/* Input Fields */}
-        <View style={styles.inputContainer}>
-          {/* Email Field */}
-          <Text style={styles.inputLabel}>Email</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={[styles.input, emailError && styles.inputError]}
-              placeholder="Enter your email"
-              placeholderTextColor="#B3B3B3"
-              value={email}
-              onChangeText={setEmail}
-              onBlur={validateEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            {emailError && <Text style={styles.errorText}>{emailError}</Text>}
-          </View>
-
-          {/* Password Field */}
-          <Text style={styles.inputLabel}>Password</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={[styles.input, passwordError && styles.inputError]}
-              placeholder="Enter your password"
-              placeholderTextColor="#B3B3B3"
-              value={password}
-              onChangeText={setPassword}
-              onBlur={validatePassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
+    <SignupChrome>
+      <AuthLayout
+        brand="icon"
+        cardGlow={false}
+        cardTransparent
+        align="top"
+        title="Welcome back"
+        subtitle=""
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+        testIDPrefix="login"
+        footer={
+          <View style={styles.registerRow}>
+            <Text style={styles.registerMuted}>New to Court Champs? </Text>
             <TouchableOpacity
-              style={styles.eyeButton}
-              onPress={togglePasswordVisibility}
+              onPress={() => navigation.navigate("SignupIntro")}
+              testID="login-register"
             >
-              <Animated.Text
-                style={[styles.eyeIcon, { transform: [{ scale: iconScale }] }]}
-              >
-                {!password ? "" : showPassword ? "👁️" : "🙈"}
-              </Animated.Text>
+              <Text style={styles.registerLink}>Create account</Text>
             </TouchableOpacity>
-            {passwordError && (
-              <Text style={styles.errorText}>{passwordError}</Text>
-            )}
           </View>
+        }
+      >
+        <SocialButtons
+          compact
+          busy={social.busy}
+          onApple={() => social.run("apple")}
+          onGoogle={() => social.run("google")}
+          testIDPrefix="login"
+        />
+        <OrDivider label="or log in with email" />
 
-          {/* Sign-In Button */}
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Sign In</Text>
-          </TouchableOpacity>
+        <AuthField
+          icon="mail-outline"
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          onBlur={validateEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="off"
+          maxLength={EMAIL_MAX_LENGTH}
+          spellCheck={false}
+          error={emailError}
+          testID="login-email"
+        />
+        <AuthField
+          icon="lock-closed-outline"
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          onBlur={validatePassword}
+          secureTextEntry={!showPassword}
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="off"
+          spellCheck={false}
+          error={passwordError}
+          testID="login-password"
+          right={
+            password ? (
+              <TouchableOpacity onPress={togglePasswordVisibility} hitSlop={10}>
+                <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color="#aaa"
+                  />
+                </Animated.View>
+              </TouchableOpacity>
+            ) : null
+          }
+        />
 
-          <TouchableOpacity onPress={handleForgotPassword}>
-            <Text style={styles.forgotPassword}>Forgot password?</Text>
-            <View style={styles.underline} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Social Media Buttons */}
-        <View style={styles.socialContainer}>
-          <TouchableOpacity onPress={() => onSocialLogin("google")}>
-            <Image source={GoogleLogo} style={styles.socialIcon} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => onSocialLogin("facebook")}>
-            <Image source={FacebookLogo} style={styles.socialIcon} />
-          </TouchableOpacity>
-          {Platform.OS === "ios" && (
-            <TouchableOpacity onPress={() => onSocialLogin("apple")}>
-              <Image
-                source={AppleLogo}
-                style={styles.socialIconApple}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Register Section */}
-        <TouchableOpacity>
-          <Text
-            onPress={() => {
-              navigation.navigate("Signup");
-            }}
-            style={styles.registerText}
-          >
-            Register for free
-          </Text>
+        <TouchableOpacity
+          onPress={handleForgotPassword}
+          style={styles.forgotButton}
+        >
+          <Text style={styles.forgotText}>Forgot password?</Text>
         </TouchableOpacity>
-      </View>
-    </TouchableWithoutFeedback>
+
+        <PrimaryButton
+          label="Log in"
+          onPress={handleLogin}
+          loading={submitting}
+          testID="login-submit"
+        />
+      </AuthLayout>
+    </SignupChrome>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: " rgb(3, 16, 31)",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-
-    // top:'10px'
+  forgotButton: {
+    alignSelf: "flex-end",
+    marginTop: -4,
   },
-  logo: {
-    width: 200,
-    height: 100,
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 40,
-  },
-  inputContainer: {
-    width: 320,
-    height: 380,
-    minWidth: 300,
-    padding: 24,
-    gap: 5,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#1E293B",
-    opacity: 1,
-    backgroundColor: "#001123",
-  },
-  inputLabel: {
-    width: "90%",
-    color: "#FFFFFF",
-    fontSize: 16,
-    marginBottom: 5,
-    textAlign: "left",
-    fontWeight: "bold",
-    height: "22px",
-  },
-  inputWrapper: {
-    position: "relative",
-    marginBottom: 10, // Space between fields
-    minHeight: 40, // Fixed height for input and error message container
-  },
-  underline: {
-    width: "46%",
-    height: 1,
-    backgroundColor: "#fff",
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#1E293B",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 5,
-    color: "#fff",
-    fontSize: 16,
-  },
-  inputError: {
-    // borderColor: "red",
-    // borderWidth: 1,
-  },
-  passwordContainer: {
-    width: "100%",
-    position: "relative",
-  },
-  eyeButton: {
-    position: "absolute",
-    right: 15,
-    top: 10,
-  },
-  eyeIcon: {
-    fontSize: 18,
-    color: "#fff",
-  },
-  errorText: {
-    width: "90%",
-    color: "red",
-    fontSize: 12,
-    marginBottom: 2,
-    textAlign: "left",
-  },
-  button: {
-    width: "272px",
-    height: 50,
-    backgroundColor: "#00A2FF",
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  forgotPassword: {
-    color: "#fff",
-
+  forgotText: {
+    color: "#00A2FF",
     fontSize: 14,
   },
-  socialContainer: {
+  registerRow: {
     flexDirection: "row",
     justifyContent: "center",
-    width: "85%",
-    marginBottom: 30,
-    marginTop: 50,
+    alignItems: "center",
   },
-  socialIcon: {
-    width: 45,
-    height: 45,
-    marginHorizontal: 20,
+  registerMuted: {
+    color: "#aaa",
+    fontSize: 14,
   },
-  socialIconApple: {
-    width: 50,
-    height: 50,
-    marginHorizontal: 20,
-    bottom: 5,
-  },
-  registerText: {
-    color: "#fff",
-    fontSize: 16,
+  registerLink: {
+    color: "#00A2FF",
+    fontSize: 14,
     fontWeight: "bold",
-    marginVertical: 30,
   },
 });
