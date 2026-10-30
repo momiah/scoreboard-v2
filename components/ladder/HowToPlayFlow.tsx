@@ -243,14 +243,38 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
           ),
       },
       {
-        key: "post-game",
+        key: "matchmaking",
         render: () => (
           <PageBody
             hero={<MatchmakingHero />}
             title="Matchmaking, Made Simple"
             paragraphs={[]}
           >
+            <CardList cards={toCards(config.cards.matchmaking)} />
+          </PageBody>
+        ),
+      },
+      {
+        key: "post-game",
+        render: () => (
+          <PageBody
+            icon="add-circle-outline"
+            title="Post a Match"
+            paragraphs={[]}
+          >
             <CardList cards={toCards(config.cards["post-game"])} />
+          </PageBody>
+        ),
+      },
+      {
+        key: "accept-game",
+        render: () => (
+          <PageBody
+            hero={<AcceptHero />}
+            title="Accept a Match"
+            paragraphs={[]}
+          >
+            <CardList cards={toCards(config.cards["accept-game"])} />
           </PageBody>
         ),
       },
@@ -275,18 +299,6 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
                 </Reveal>
               ))}
             </StepList>
-          </PageBody>
-        ),
-      },
-      {
-        key: "accept-game",
-        render: () => (
-          <PageBody
-            hero={<AcceptHero />}
-            title="Accept a Match"
-            paragraphs={[]}
-          >
-            <CardList cards={toCards(config.cards["accept-game"])} />
           </PageBody>
         ),
       },
