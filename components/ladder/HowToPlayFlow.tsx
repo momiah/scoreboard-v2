@@ -924,6 +924,8 @@ interface SeasonPhase {
 
 const daysLabel = (days: number) => `${days} day${days === 1 ? "" : "s"}`;
 
+const dayRange = (first: number, last: number) => `Day ${first} - ${last}`;
+
 /** A ladder season's phases, timed from the day registration opens. */
 const seasonPhases = (
   noun: "player" | "team",
@@ -935,14 +937,15 @@ const seasonPhases = (
     {
       icon: "person-add-outline",
       label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
-      length: daysLabel(LADDER_REGISTRATION_CLOSE_DAYS),
+      length: dayRange(1, LADDER_REGISTRATION_CLOSE_DAYS),
       text: "Sign up and start posting and accepting matches straight away.",
     },
     {
       icon: "lock-closed-outline",
       label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_CLOSED],
-      length: daysLabel(
-        LADDER_PLAYOFF_START_DAYS - LADDER_REGISTRATION_CLOSE_DAYS,
+      length: dayRange(
+        LADDER_REGISTRATION_CLOSE_DAYS + 1,
+        LADDER_PLAYOFF_START_DAYS,
       ),
       text: `No new ${noun}s join. Keep climbing; new matches close ${daysLabel(LADDER_POSTING_CLOSE_DAYS)} before the playoffs.`,
     },
