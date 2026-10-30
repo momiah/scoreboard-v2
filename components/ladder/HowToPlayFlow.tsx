@@ -15,6 +15,7 @@ import {
   DECISIVE_WIN_MARGIN,
   DECISIVE_WIN_XP_MULTIPLIER,
   getWinStreakXpMultiplier,
+  WIN_STREAK_MEDALS,
   RANK_GAP_XP,
   LADDER_MATCH_BEST_OF_OPTIONS,
   LADDER_PLAYOFF_SIZES,
@@ -25,7 +26,7 @@ import {
   calculateLadderPrizePool,
   ccImageEndpoint,
 } from "@shared";
-import gameMedals from "@/rankingMedals";
+import { medalIcons } from "@/rankingMedals";
 import { ladders } from "@/mockImages";
 
 import type { Ladder } from "@shared/types";
@@ -1125,22 +1126,19 @@ interface MedalGuideEntry {
   boost: string;
 }
 
-const winStreakMedal = (
-  streak: number,
-  medal: ImageSourcePropType,
-): MedalGuideEntry => ({
-  medal,
+const winStreakMedal = (streak: number): MedalGuideEntry => ({
+  medal: (medalIcons as Record<string, ImageSourcePropType>)[
+    `win_streak_${streak}`
+  ],
   name: `${streak} Win Streak`,
   how: `Win ${streak} games in a row`,
   boost: `${getWinStreakXpMultiplier(streak)}×`,
 });
 
 const MEDAL_GUIDE: MedalGuideEntry[] = [
-  winStreakMedal(3, gameMedals.win_streak_3),
-  winStreakMedal(5, gameMedals.win_streak_5),
-  winStreakMedal(7, gameMedals.win_streak_7),
+  ...WIN_STREAK_MEDALS.map(({ streak }) => winStreakMedal(streak)),
   {
-    medal: gameMedals.demon_win,
+    medal: medalIcons.demon_win,
     name: "Assassin",
     how: `Win a game with a ${DECISIVE_WIN_LEAD}`,
     boost: `${DECISIVE_WIN_XP_MULTIPLIER}×`,
