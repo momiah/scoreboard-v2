@@ -80,6 +80,8 @@ export type HowToPlayLadder = Pick<
   | "playoffEntrantCount"
 >;
 
+const SCORING_DETAIL_PAGES = ["cp-boosters", "upsets"];
+
 const MATCH_STEPS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: "qr-code-outline", text: "Check in at the court" },
   { icon: "people-outline", text: "Play your opponent" },
@@ -220,179 +222,183 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   ];
 
   const regularPages: PagerPage[] = useMemo(
-    () => [
-      {
-        key: "intro",
-        render: () =>
-          showIntro && ladder ? (
-            <HowToPlayIntro
-              ladderType={ladder.ladderType}
-              entryFee={ladder.entryFee ?? 0}
-              currencyType={ladder.currencyType ?? "GBP"}
-              maxPlayers={maxPlayers}
-            />
-          ) : (
+    () =>
+      [
+        {
+          key: "intro",
+          render: () =>
+            showIntro && ladder ? (
+              <HowToPlayIntro
+                ladderType={ladder.ladderType}
+                entryFee={ladder.entryFee ?? 0}
+                currencyType={ladder.currencyType ?? "GBP"}
+                maxPlayers={maxPlayers}
+              />
+            ) : (
+              <PageBody
+                image={{ uri: ccImageEndpoint }}
+                title={"Welcome to the official \n Court Champs Ladder"}
+                paragraphs={[
+                  "Climb the ranks by playing other members.",
+                  "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
+                ]}
+              />
+            ),
+        },
+        {
+          key: "matchmaking",
+          render: () => (
             <PageBody
-              image={{ uri: ccImageEndpoint }}
-              title={"Welcome to the official \n Court Champs Ladder"}
-              paragraphs={[
-                "Climb the ranks by playing other members.",
-                "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
-              ]}
+              hero={<MatchmakingHero />}
+              title="Matchmaking, Made Simple"
+              paragraphs={[]}
+            >
+              <CardList cards={toCards(config.cards.matchmaking)} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "post-game",
+          render: () => (
+            <PageBody
+              icon="add-circle-outline"
+              title="Post a Match"
+              paragraphs={[]}
+            >
+              <CardList cards={toCards(config.cards["post-game"])} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "accept-game",
+          render: () => (
+            <PageBody
+              hero={<AcceptHero />}
+              title="Accept a Match"
+              paragraphs={[]}
+            >
+              <CardList cards={toCards(config.cards["accept-game"])} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "challenge-accepted",
+          render: () => (
+            <PageBody
+              icon="checkmark-circle-outline"
+              title="Match Accepted"
+              paragraphs={[]}
+            >
+              <StepList>
+                {MATCH_STEPS.map((step, stepIndex) => (
+                  <Reveal key={step.text} order={2 + stepIndex} from="right">
+                    <StepRow>
+                      <StepIcon>
+                        <Ionicons name={step.icon} size={22} color="#00A2FF" />
+                      </StepIcon>
+                      <StepText>{step.text}</StepText>
+                    </StepRow>
+                    {stepIndex < MATCH_STEPS.length - 1 ? <StepLine /> : null}
+                  </Reveal>
+                ))}
+              </StepList>
+            </PageBody>
+          ),
+        },
+        {
+          key: "objective",
+          render: () => (
+            <PageBody
+              hero={<ObjectiveHero />}
+              title="The Objective"
+              paragraphs={[]}
+            >
+              <ObjectiveTiles playoffSpots={playoffSpots} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "cp-boosters",
+          render: () => <AchievementMedalsPage />,
+        },
+        {
+          key: "upsets",
+          render: () => (
+            <PageBody
+              hero={<RankMattersHero />}
+              title="Rank Matters"
+              paragraphs={[]}
+            >
+              <CardList
+                cards={[
+                  {
+                    icon: "trending-up-outline",
+                    gold: true,
+                    text: (
+                      <>
+                        {"Beat a "}
+                        <Accent>higher-ranked opponent</Accent>
+                        {" and win "}
+                        <Accent
+                          gold
+                        >{`up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
+                        {"."}
+                      </>
+                    ),
+                  },
+                  {
+                    icon: "trending-down-outline",
+                    red: true,
+                    text: (
+                      <>
+                        {"Lose against a "}
+                        <Accent>lower-ranked opponent</Accent>
+                        {" and "}
+                        <Accent
+                          red
+                        >{`lose up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
+                        {"."}
+                      </>
+                    ),
+                  },
+                ]}
+              />
+              <Reveal order={4}>
+                <FootNote>
+                  The bigger the CP gap, the bigger the swing. In doubles, it
+                  compares each team&apos;s combined CP.
+                </FootNote>
+              </Reveal>
+            </PageBody>
+          ),
+        },
+        {
+          key: "season",
+          render: () => (
+            <SeasonPage
+              noun={noun}
+              playoffSpots={playoffSpots}
+              isPaid={(ladder?.entryFee ?? 0) > 0}
             />
           ),
-      },
-      {
-        key: "matchmaking",
-        render: () => (
-          <PageBody
-            hero={<MatchmakingHero />}
-            title="Matchmaking, Made Simple"
-            paragraphs={[]}
-          >
-            <CardList cards={toCards(config.cards.matchmaking)} />
-          </PageBody>
-        ),
-      },
-      {
-        key: "post-game",
-        render: () => (
-          <PageBody
-            icon="add-circle-outline"
-            title="Post a Match"
-            paragraphs={[]}
-          >
-            <CardList cards={toCards(config.cards["post-game"])} />
-          </PageBody>
-        ),
-      },
-      {
-        key: "accept-game",
-        render: () => (
-          <PageBody
-            hero={<AcceptHero />}
-            title="Accept a Match"
-            paragraphs={[]}
-          >
-            <CardList cards={toCards(config.cards["accept-game"])} />
-          </PageBody>
-        ),
-      },
-      {
-        key: "challenge-accepted",
-        render: () => (
-          <PageBody
-            icon="checkmark-circle-outline"
-            title="Match Accepted"
-            paragraphs={[]}
-          >
-            <StepList>
-              {MATCH_STEPS.map((step, stepIndex) => (
-                <Reveal key={step.text} order={2 + stepIndex} from="right">
-                  <StepRow>
-                    <StepIcon>
-                      <Ionicons name={step.icon} size={22} color="#00A2FF" />
-                    </StepIcon>
-                    <StepText>{step.text}</StepText>
-                  </StepRow>
-                  {stepIndex < MATCH_STEPS.length - 1 ? <StepLine /> : null}
-                </Reveal>
-              ))}
-            </StepList>
-          </PageBody>
-        ),
-      },
-      {
-        key: "objective",
-        render: () => (
-          <PageBody
-            hero={<ObjectiveHero />}
-            title="The Objective"
-            paragraphs={[]}
-          >
-            <ObjectiveTiles playoffSpots={playoffSpots} />
-          </PageBody>
-        ),
-      },
-      {
-        key: "cp-boosters",
-        render: () => <AchievementMedalsPage />,
-      },
-      {
-        key: "upsets",
-        render: () => (
-          <PageBody
-            hero={<RankMattersHero />}
-            title="Rank Matters"
-            paragraphs={[]}
-          >
-            <CardList
-              cards={[
-                {
-                  icon: "trending-up-outline",
-                  gold: true,
-                  text: (
-                    <>
-                      {"Beat a "}
-                      <Accent>higher-ranked opponent</Accent>
-                      {" and win "}
-                      <Accent
-                        gold
-                      >{`up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
-                      {"."}
-                    </>
-                  ),
-                },
-                {
-                  icon: "trending-down-outline",
-                  red: true,
-                  text: (
-                    <>
-                      {"Lose against a "}
-                      <Accent>lower-ranked opponent</Accent>
-                      {" and "}
-                      <Accent
-                        red
-                      >{`lose up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
-                      {"."}
-                    </>
-                  ),
-                },
-              ]}
+        },
+        {
+          key: "playoffs",
+          render: () => (
+            <PlayoffsPage
+              maxPlayers={maxPlayers}
+              registeredCount={ladder?.participantCount ?? 0}
+              entryFee={ladder?.entryFee ?? 0}
+              currencyType={ladder?.currencyType ?? "GBP"}
+              showLadderSize={showLadderSize}
             />
-            <Reveal order={4}>
-              <FootNote>
-                The bigger the CP gap, the bigger the swing. In doubles, it
-                compares each team&apos;s combined CP.
-              </FootNote>
-            </Reveal>
-          </PageBody>
-        ),
-      },
-      {
-        key: "season",
-        render: () => (
-          <SeasonPage
-            noun={noun}
-            playoffSpots={playoffSpots}
-            isPaid={(ladder?.entryFee ?? 0) > 0}
-          />
-        ),
-      },
-      {
-        key: "playoffs",
-        render: () => (
-          <PlayoffsPage
-            maxPlayers={maxPlayers}
-            registeredCount={ladder?.participantCount ?? 0}
-            entryFee={ladder?.entryFee ?? 0}
-            currencyType={ladder?.currencyType ?? "GBP"}
-            showLadderSize={showLadderSize}
-          />
-        ),
-      },
-      finalsPage,
-    ],
+          ),
+        },
+        finalsPage,
+      ].filter(
+        (page) =>
+          config.showScoringDetails || !SCORING_DETAIL_PAGES.includes(page.key),
+      ),
     [
       maxPlayers,
       onReadRules,
@@ -938,7 +944,7 @@ const seasonPhases = (
       icon: "person-add-outline",
       label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
       length: dayRange(1, LADDER_REGISTRATION_CLOSE_DAYS),
-      text: "Sign up and start posting and accepting matches straight away.",
+      text: "Sign up and start posting or accepting matches straight away.",
     },
     {
       icon: "lock-closed-outline",
