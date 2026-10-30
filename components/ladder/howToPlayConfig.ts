@@ -6,7 +6,8 @@ export type HowToPlayTone = "white" | "blue" | "gold" | "red";
 
 /** A line of guide text: plain strings, and highlighted runs in a tone. */
 export type HowToPlayRichText = (
-  string | { text: string; tone: HowToPlayTone }
+  | string
+  | { text: string; tone: HowToPlayTone }
 )[];
 
 export interface HowToPlayCardText {
@@ -96,7 +97,7 @@ export const HOW_TO_PLAY_VARIANTS = {
             { text: "join the ladder", tone: "white" },
             ", you can enter the ",
             { text: "Match Making arena", tone: "blue" },
-            " to post or find matches to progress in the ladder.",
+            " to post or find matches to progress in the competition.",
           ],
         },
         POST_A_MATCH,
