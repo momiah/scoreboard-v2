@@ -1,24 +1,15 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef } from "react";
 import {
   Animated,
-  Dimensions,
   Easing,
-  FlatList,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
 } from "react-native";
-import type {
-  ListRenderItemInfo,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  ImageSourcePropType,
-} from "react-native";
+import type { ImageSourcePropType } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 import {
   DECISIVE_WIN_MARGIN,
@@ -39,8 +30,18 @@ import { ladders } from "@/mockImages";
 
 import type { Ladder } from "@shared/types";
 import { PulseRing, Reveal, RevealContext } from "./HowToPlayReveal";
+import {
+  NavButton,
+  NavButtonText,
+  NavRow,
+  PagerDots,
+  PagerList,
+  usePager,
+  type PagerPage,
+} from "./HowToPlayPager";
 import HowToPlayLadderClimb from "./HowToPlayLadderClimb";
-import HowToPlayBackdrop from "./HowToPlayBackdrop";
+import { HowToPlayBackground } from "./HowToPlayBackdrop";
+import { SCREEN_BG } from "./howToPlayTheme";
 import HowToPlayIntro from "./HowToPlayIntro";
 import HowToPlaySeason from "./HowToPlaySeason";
 import {
@@ -57,7 +58,6 @@ import {
   type LadderPrizeRow,
 } from "../../helpers/ladderPlayoffPrizes";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const COMPACT_SCREEN_HEIGHT = 760;
 
 const useCompactScreen = () =>
@@ -93,11 +93,6 @@ interface HowToPlayFlowProps {
   variant: HowToPlayVariant;
 }
 
-interface OnboardingPage {
-  key: string;
-  render: () => React.ReactNode;
-}
-
 const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   ladder,
   maxPlayers,
@@ -110,12 +105,10 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   const config: HowToPlayVariantConfig = HOW_TO_PLAY_VARIANTS[variant];
   const { showLadderSize } = config;
   const showIntro = config.intro && !!ladder;
-  const listRef = useRef<FlatList<OnboardingPage>>(null);
-  const [index, setIndex] = useState(0);
   const noun = ladderEntrantNoun(ladder?.ladderType);
   const { playoffSpots, inTheMoney } = getLadderPlayoffStructure(maxPlayers);
 
-  const finalsPage: OnboardingPage = {
+  const finalsPage: PagerPage = {
     key: "finals",
     render: () => (
       <FinalsPage
@@ -126,7 +119,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     ),
   };
 
-  const playoffPages: OnboardingPage[] = [
+  const playoffPages: PagerPage[] = [
     {
       key: "playoffs-intro",
       render: () => (
@@ -221,7 +214,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     finalsPage,
   ];
 
-  const regularPages: OnboardingPage[] = useMemo(
+  const regularPages: PagerPage[] = useMemo(
     () => [
       {
         key: "intro",
@@ -396,38 +389,12 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     ],
   );
   const pages = playoffs ? playoffPages : regularPages;
-
-  const lastIndex = pages.length - 1;
-
-  const goTo = (next: number) => {
-    const clamped = Math.max(0, Math.min(next, lastIndex));
-    listRef.current?.scrollToIndex({ index: clamped, animated: true });
-    setIndex(clamped);
-  };
-
-  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const page = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    if (page !== index) setIndex(page);
-  };
-
-  const renderItem = ({
-    item,
-    index: pageIndex,
-  }: ListRenderItemInfo<OnboardingPage>) => (
-    <RevealContext.Provider value={pageIndex === index}>
-      <PageContainer>{item.render()}</PageContainer>
-    </RevealContext.Provider>
-  );
+  const pager = usePager(pages.length);
+  const { index, lastIndex, goTo } = pager;
 
   return (
     <Screen>
-      <LinearGradient
-        pointerEvents="none"
-        colors={["rgb(3, 16, 31)", "#020b17", "#01060d"]}
-        locations={[0, 0.5, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <HowToPlayBackdrop />
+      <HowToPlayBackground />
       <TopBar>
         <TopBarTitle>How to Play</TopBarTitle>
       </TopBar>
@@ -444,28 +411,8 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
         <AntDesign name="close-circle" size={30} color="red" />
       </TouchableOpacity>
 
-      <FlatList
-        ref={listRef}
-        data={pages}
-        keyExtractor={(item) => item.key}
-        renderItem={renderItem}
-        extraData={index}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onMomentumEnd}
-        getItemLayout={(_, i) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * i,
-          index: i,
-        })}
-      />
-
-      <Dots testID="how-to-play-dots">
-        {pages.map((page, i) => (
-          <Dot key={page.key} active={i === index} />
-        ))}
-      </Dots>
+      <PagerList pager={pager} pages={pages} />
+      <PagerDots pages={pages} index={index} testID="how-to-play-dots" />
 
       <NavRow>
         <NavButton
@@ -1528,7 +1475,7 @@ const StepText = styled.Text({
 
 const Screen = styled.View({
   flex: 1,
-  backgroundColor: "rgb(3, 16, 31)",
+  backgroundColor: SCREEN_BG,
 });
 
 const TopBar = styled.View({
@@ -1543,11 +1490,6 @@ const TopBarTitle = styled.Text({
   color: "#ffffff",
   fontSize: 18,
   fontWeight: "bold",
-});
-
-const PageContainer = styled.View({
-  width: SCREEN_WIDTH,
-  flex: 1,
 });
 
 const IconCircle = styled.View<{ gold?: boolean; size: number }>(
@@ -1682,67 +1624,6 @@ const TableCell = styled.Text<TableCellStyle>((cell: TableCellStyle) => ({
       : "normal",
   color: tableCellColor(cell),
 }));
-
-const Dots = styled.View({
-  flexDirection: "row",
-  justifyContent: "center",
-  gap: 8,
-  paddingTop: 8,
-  paddingBottom: 32,
-});
-
-const Dot = styled.View<{ active: boolean }>(
-  ({ active }: { active: boolean }) => ({
-    width: active ? 22 : 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: active ? "#00A2FF" : "#33445a",
-  }),
-);
-
-const NavRow = styled.View({
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingHorizontal: 20,
-  paddingBottom: 30,
-  gap: 12,
-});
-
-const NavButton = styled.TouchableOpacity<{
-  primary?: boolean;
-  isHidden?: boolean;
-  disabled?: boolean;
-  participant?: boolean;
-}>(
-  ({
-    primary,
-    isHidden,
-    participant,
-  }: {
-    primary?: boolean;
-    isHidden?: boolean;
-    participant?: boolean;
-  }) => ({
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 15,
-    borderRadius: 12,
-    opacity: isHidden ? 0 : 1,
-    backgroundColor: participant ? "#2b3440" : primary ? "#00A2FF" : "#1e2b3d",
-  }),
-);
-
-const NavButtonText = styled.Text<{ disabled?: boolean }>(
-  ({ disabled }: { disabled?: boolean }) => ({
-    color: disabled ? "#7f97a8" : "#ffffff",
-    fontSize: 15,
-    fontWeight: "bold",
-  }),
-);
 
 const ImageContainer = styled.View({
   width: "100%",
