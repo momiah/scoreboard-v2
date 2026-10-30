@@ -18,7 +18,6 @@ import Notifications from "../screens/Notifications";
 import AllPlayers from "../screens/Home/AllPlayers";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Login from "../screens/Authentication/Login";
-import Signup from "../screens/Authentication/Signup";
 import SignupIntroScreen from "../screens/Authentication/SignupIntroScreen";
 import EditLeague from "../screens/Home/Leagues/EditLeague";
 import PendingInvites from "../screens/Home/Settings/PendingInvites";
@@ -135,7 +134,6 @@ const HomeStack = () => {
       />
 
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
     </Stack.Navigator>
   );
@@ -179,7 +177,6 @@ const ProfileStack = () => {
       <Stack.Screen name="LinkedAccounts" component={LinkedAccounts} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="Tournament" component={Tournament} />
       <Stack.Screen name="Tournaments" component={Tournaments} />
@@ -228,7 +225,6 @@ const ChatsStack = () => {
         component={CompetitionPendingRequests}
       />
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
@@ -281,7 +277,6 @@ const CompetitionsStack = () => {
       />
       <Stack.Screen name="PendingRequests" component={PendingRequests} />
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="SignupIntro" component={SignupIntroScreen} />
       <Stack.Screen name="BulkGamePublisher" component={BulkGamePublisher} />
       <Stack.Screen name="InvitePlayer" component={InvitePlayer} />
