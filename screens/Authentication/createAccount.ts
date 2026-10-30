@@ -17,36 +17,37 @@ import {
   userProfileSchema,
 } from "@shared";
 import type { UserProfile } from "@shared/types";
+import {
+  EMAIL_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  getEmailRuleError,
+  getUsernameRuleError,
+  normaliseEmail,
+} from "@shared/helpers";
 
 import { auth, db } from "../../services/firebase.config";
 import { registerForPushNotificationsAsync } from "../../services/pushNotifications";
 import { uploadProfileImage } from "../../utils/ProfileImageUploadToFirebase";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** Longest address email standards allow (RFC 5321). */
-export const EMAIL_MAX_LENGTH = 254;
+export {
+  EMAIL_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  normaliseEmail,
+};
 export const FULL_NAME_MAX_LENGTH = 50;
 export const NAME_PART_MAX_LENGTH = 30;
-export const USERNAME_MIN_LENGTH = 4;
-export const USERNAME_MAX_LENGTH = 10;
 
 // A name word starts with a letter, then letters, combining accents,
 // hyphens, apostrophes (' or ’) and full stops. \p{L} covers every script
 // (Hermes supports Unicode property escapes).
 const NAME_WORD_PATTERN = /^\p{L}[\p{L}\p{M}'’.-]*$/u;
 
-export const normaliseEmail = (email: string) => email.trim().toLowerCase();
-
 export type SignupFieldError = true | string;
 
 export function validateEmail(email: string): SignupFieldError {
-  if (!email) return "Email is required";
-  if (email.length > EMAIL_MAX_LENGTH) {
-    return `Email must be ${EMAIL_MAX_LENGTH} characters or fewer`;
-  }
-  if (!EMAIL_PATTERN.test(email)) return "Invalid email format";
-  return true;
+  return getEmailRuleError(email) ?? true;
 }
 
 export function validatePassword(password: string): SignupFieldError {
@@ -120,23 +121,11 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 export async function validateUsername(
   rawValue: string,
 ): Promise<SignupFieldError> {
-  const value = rawValue.trim();
-  if (!value) return "Username is required";
-  if (value.length < USERNAME_MIN_LENGTH) {
-    return `Username must be at least ${USERNAME_MIN_LENGTH} characters`;
+  const ruleError = getUsernameRuleError(rawValue);
+  if (ruleError) return ruleError;
+  if (await checkUsernameExists(rawValue.trim())) {
+    return "Username already exists";
   }
-  if (value.length > USERNAME_MAX_LENGTH) {
-    return `Username cannot exceed ${USERNAME_MAX_LENGTH} characters`;
-  }
-  if (/\s/.test(value)) return "Spaces are not allowed";
-  if (!/^[a-zA-Z0-9-]+$/.test(value)) {
-    return "Only letters, numbers, and dashes (-) are allowed";
-  }
-  if (value.startsWith("-") || value.endsWith("-")) {
-    return "Username can't start or end with a dash";
-  }
-  if (value.includes("--")) return "Username can't have two dashes in a row";
-  if (await checkUsernameExists(value)) return "Username already exists";
   return true;
 }
 
