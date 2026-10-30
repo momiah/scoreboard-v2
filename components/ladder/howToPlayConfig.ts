@@ -21,6 +21,8 @@ export interface HowToPlayVariantConfig {
   intro: boolean;
   /** Shows the ladder's current size and prize pool under the playoff table. */
   showLadderSize: boolean;
+  /** Shows the Achievement Medals and Rank Matters pages. */
+  showScoringDetails: boolean;
   /** The cards on the pages whose wording differs between variants. */
   cards: Record<HowToPlayTextPage, HowToPlayCardText[]>;
 }
@@ -56,6 +58,7 @@ export const HOW_TO_PLAY_VARIANTS = {
   liveLadder: {
     intro: true,
     showLadderSize: true,
+    showScoringDetails: true,
     cards: {
       matchmaking: [
         {
@@ -86,6 +89,7 @@ export const HOW_TO_PLAY_VARIANTS = {
   preRegistration: {
     intro: true,
     showLadderSize: false,
+    showScoringDetails: false,
     cards: {
       matchmaking: [
         {
