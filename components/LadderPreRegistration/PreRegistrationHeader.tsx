@@ -26,7 +26,7 @@ const PreRegistrationHeader: React.FC<{
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={onShare}
         >
-          <Ionicons name="share-outline" size={22} color="white" />
+          <Ionicons name="share-social-outline" size={22} color="white" />
         </TouchableOpacity>
       ) : (
         <View style={{ width: 24 }} />
