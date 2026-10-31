@@ -135,3 +135,16 @@ allow those starting values on create and nothing else.
 
 Players read their own `prizePayouts` records (the app's ladder Summary shows a
 prize under review); admins read all of them.
+
+## Account strikes
+
+A player's account strikes are derived from their upheld `reports` (any
+ladder, last 12 months); nothing new is stored for them. Joining a ladder reads
+the player's own reports (`reports` where `target.userIds` contains them) and
+their `users/{uid}` profile, so rules must let a signed-in player read reports
+that name them.
+
+| Client | Write | Who | Fields |
+|---|---|---|---|
+| Website admin, Reports page | update `users/{uid}` | Admins only (`userRoles`) | `ladderBlockLiftedAt` only (lifts the ladder block: strikes upheld before it stop counting) |
+| Website admin, Reports page | approve a report on a ladder whose standings are final (including finished ladders) | Admins only | same writes as any approval (`reports`, `ladders/{ladderId}/reportCounts`, `users/{uid}.conduct`), but never a walkover |
