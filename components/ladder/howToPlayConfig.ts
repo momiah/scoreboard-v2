@@ -6,8 +6,7 @@ export type HowToPlayTone = "white" | "blue" | "gold" | "red";
 
 /** A line of guide text: plain strings, and highlighted runs in a tone. */
 export type HowToPlayRichText = (
-  | string
-  | { text: string; tone: HowToPlayTone }
+  string | { text: string; tone: HowToPlayTone }
 )[];
 
 export interface HowToPlayCardText {
@@ -15,13 +14,15 @@ export interface HowToPlayCardText {
   text: HowToPlayRichText;
 }
 
-export type HowToPlayTextPage = "post-game" | "accept-game";
+export type HowToPlayTextPage = "matchmaking" | "post-game" | "accept-game";
 
 export interface HowToPlayVariantConfig {
   /** Opens on the Season One intro with the prize pool counting up. */
   intro: boolean;
   /** Shows the ladder's current size and prize pool under the playoff table. */
   showLadderSize: boolean;
+  /** Shows the Achievement Medals and Rank Matters pages. */
+  showScoringDetails: boolean;
   /** The cards on the pages whose wording differs between variants. */
   cards: Record<HowToPlayTextPage, HowToPlayCardText[]>;
 }
@@ -57,8 +58,9 @@ export const HOW_TO_PLAY_VARIANTS = {
   liveLadder: {
     intro: true,
     showLadderSize: true,
+    showScoringDetails: true,
     cards: {
-      "post-game": [
+      matchmaking: [
         {
           icon: "enter-outline",
           text: [
@@ -67,9 +69,8 @@ export const HOW_TO_PLAY_VARIANTS = {
             " tab to post or find matches to progress in the ladder.",
           ],
         },
-        POST_A_MATCH,
-        HIDDEN_OPPONENT_POST,
       ],
+      "post-game": [POST_A_MATCH, HIDDEN_OPPONENT_POST],
       "accept-game": [
         {
           icon: "map-outline",
@@ -88,8 +89,9 @@ export const HOW_TO_PLAY_VARIANTS = {
   preRegistration: {
     intro: true,
     showLadderSize: false,
+    showScoringDetails: false,
     cards: {
-      "post-game": [
+      matchmaking: [
         {
           icon: "enter-outline",
           text: [
@@ -100,9 +102,8 @@ export const HOW_TO_PLAY_VARIANTS = {
             " to post or find matches to progress in the competition.",
           ],
         },
-        POST_A_MATCH,
-        HIDDEN_OPPONENT_POST,
       ],
+      "post-game": [POST_A_MATCH, HIDDEN_OPPONENT_POST],
       "accept-game": [
         {
           icon: "map-outline",

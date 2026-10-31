@@ -15,7 +15,7 @@ import Svg, {
 
 import { BACKGROUND_GRADIENT, BLUE } from "./howToPlayTheme";
 
-const DOT_SPACING = 8;
+const DOT_SPACING = 6;
 
 /** A faint dot grid and two sweeping lines rising from the bottom of the screen and fading out. */
 const HowToPlayBackdrop: React.FC = () => {
@@ -41,13 +41,13 @@ const HowToPlayBackdrop: React.FC = () => {
               <Circle
                 cx={DOT_SPACING / 2}
                 cy={DOT_SPACING / 2}
-                r={0.8}
+                r={0.6}
                 fill={BLUE}
               />
             </Pattern>
             <LinearGradient id="fade" x1="0" y1="1" x2="0" y2="0">
-              <Stop offset="0" stopColor="white" stopOpacity={0.3} />
-              <Stop offset="0.5" stopColor="white" stopOpacity={0.1} />
+              <Stop offset="0" stopColor="white" stopOpacity={0.24} />
+              <Stop offset="0.5" stopColor="white" stopOpacity={0.08} />
               <Stop offset="0.95" stopColor="white" stopOpacity={0} />
             </LinearGradient>
             <Mask id="fadeMask">

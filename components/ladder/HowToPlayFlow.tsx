@@ -12,6 +12,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { AntDesign } from "@expo/vector-icons";
 
 import {
+  LADDER_POSTING_CLOSE_DAYS,
+  LADDER_PLAYOFF_START_DAYS,
+  LADDER_REGISTRATION_CLOSE_DAYS,
+  LADDER_STATUS,
+  LADDER_STATUS_LABELS,
   DECISIVE_WIN_MARGIN,
   DECISIVE_WIN_XP_MULTIPLIER,
   getWinStreakXpMultiplier,
@@ -44,7 +49,6 @@ import HowToPlayLadderClimb from "./HowToPlayLadderClimb";
 import { HowToPlayBackground } from "./HowToPlayBackdrop";
 import { SCREEN_BG } from "./howToPlayTheme";
 import HowToPlayIntro from "./HowToPlayIntro";
-import HowToPlaySeason from "./HowToPlaySeason";
 import {
   HOW_TO_PLAY_VARIANTS,
   type HowToPlayCardText,
@@ -75,6 +79,8 @@ export type HowToPlayLadder = Pick<
   | "playoffBracketSize"
   | "playoffEntrantCount"
 >;
+
+const SCORING_DETAIL_PAGES = ["cp-boosters", "upsets"];
 
 const MATCH_STEPS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
   { icon: "qr-code-outline", text: "Check in at the court" },
@@ -216,167 +222,183 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   ];
 
   const regularPages: PagerPage[] = useMemo(
-    () => [
-      {
-        key: "intro",
-        render: () =>
-          showIntro && ladder ? (
-            <HowToPlayIntro
-              ladderType={ladder.ladderType}
-              entryFee={ladder.entryFee ?? 0}
-              currencyType={ladder.currencyType ?? "GBP"}
-              maxPlayers={maxPlayers}
-            />
-          ) : (
+    () =>
+      [
+        {
+          key: "intro",
+          render: () =>
+            showIntro && ladder ? (
+              <HowToPlayIntro
+                ladderType={ladder.ladderType}
+                entryFee={ladder.entryFee ?? 0}
+                currencyType={ladder.currencyType ?? "GBP"}
+                maxPlayers={maxPlayers}
+              />
+            ) : (
+              <PageBody
+                image={{ uri: ccImageEndpoint }}
+                title={"Welcome to the official \n Court Champs Ladder"}
+                paragraphs={[
+                  "Climb the ranks by playing other members.",
+                  "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
+                ]}
+              />
+            ),
+        },
+        {
+          key: "matchmaking",
+          render: () => (
             <PageBody
-              image={{ uri: ccImageEndpoint }}
-              title={"Welcome to the official \n Court Champs Ladder"}
-              paragraphs={[
-                "Climb the ranks by playing other members.",
-                "This guide covers how games work, how you earn Court Points (CP) and how the season ends.",
-              ]}
+              hero={<MatchmakingHero />}
+              title="Matchmaking, Made Simple"
+              paragraphs={[]}
+            >
+              <CardList cards={toCards(config.cards.matchmaking)} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "post-game",
+          render: () => (
+            <PageBody
+              icon="add-circle-outline"
+              title="Post a Match"
+              paragraphs={[]}
+            >
+              <CardList cards={toCards(config.cards["post-game"])} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "accept-game",
+          render: () => (
+            <PageBody
+              hero={<AcceptHero />}
+              title="Accept a Match"
+              paragraphs={[]}
+            >
+              <CardList cards={toCards(config.cards["accept-game"])} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "challenge-accepted",
+          render: () => (
+            <PageBody
+              icon="checkmark-circle-outline"
+              title="Match Accepted"
+              paragraphs={[]}
+            >
+              <StepList>
+                {MATCH_STEPS.map((step, stepIndex) => (
+                  <Reveal key={step.text} order={2 + stepIndex} from="right">
+                    <StepRow>
+                      <StepIcon>
+                        <Ionicons name={step.icon} size={22} color="#00A2FF" />
+                      </StepIcon>
+                      <StepText>{step.text}</StepText>
+                    </StepRow>
+                    {stepIndex < MATCH_STEPS.length - 1 ? <StepLine /> : null}
+                  </Reveal>
+                ))}
+              </StepList>
+            </PageBody>
+          ),
+        },
+        {
+          key: "objective",
+          render: () => (
+            <PageBody
+              hero={<ObjectiveHero />}
+              title="The Objective"
+              paragraphs={[]}
+            >
+              <ObjectiveTiles playoffSpots={playoffSpots} />
+            </PageBody>
+          ),
+        },
+        {
+          key: "cp-boosters",
+          render: () => <AchievementMedalsPage />,
+        },
+        {
+          key: "upsets",
+          render: () => (
+            <PageBody
+              hero={<RankMattersHero />}
+              title="Rank Matters"
+              paragraphs={[]}
+            >
+              <CardList
+                cards={[
+                  {
+                    icon: "trending-up-outline",
+                    gold: true,
+                    text: (
+                      <>
+                        {"Beat a "}
+                        <Accent>higher-ranked opponent</Accent>
+                        {" and win "}
+                        <Accent
+                          gold
+                        >{`up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
+                        {"."}
+                      </>
+                    ),
+                  },
+                  {
+                    icon: "trending-down-outline",
+                    red: true,
+                    text: (
+                      <>
+                        {"Lose against a "}
+                        <Accent>lower-ranked opponent</Accent>
+                        {" and "}
+                        <Accent
+                          red
+                        >{`lose up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
+                        {"."}
+                      </>
+                    ),
+                  },
+                ]}
+              />
+              <Reveal order={4}>
+                <FootNote>
+                  The bigger the CP gap, the bigger the swing. In doubles, it
+                  compares each team&apos;s combined CP.
+                </FootNote>
+              </Reveal>
+            </PageBody>
+          ),
+        },
+        {
+          key: "season",
+          render: () => (
+            <SeasonPage
+              noun={noun}
+              playoffSpots={playoffSpots}
+              isPaid={(ladder?.entryFee ?? 0) > 0}
             />
           ),
-      },
-      {
-        key: "post-game",
-        render: () => (
-          <PageBody
-            hero={<MatchmakingHero />}
-            title="Matchmaking, Made Simple"
-            paragraphs={[]}
-          >
-            <CardList cards={toCards(config.cards["post-game"])} />
-          </PageBody>
-        ),
-      },
-      {
-        key: "challenge-accepted",
-        render: () => (
-          <PageBody
-            icon="checkmark-circle-outline"
-            title="Match Accepted"
-            paragraphs={[]}
-          >
-            <StepList>
-              {MATCH_STEPS.map((step, stepIndex) => (
-                <Reveal key={step.text} order={2 + stepIndex} from="right">
-                  <StepRow>
-                    <StepIcon>
-                      <Ionicons name={step.icon} size={22} color="#00A2FF" />
-                    </StepIcon>
-                    <StepText>{step.text}</StepText>
-                  </StepRow>
-                  {stepIndex < MATCH_STEPS.length - 1 ? <StepLine /> : null}
-                </Reveal>
-              ))}
-            </StepList>
-          </PageBody>
-        ),
-      },
-      {
-        key: "accept-game",
-        render: () => (
-          <PageBody
-            hero={<AcceptHero />}
-            title="Accept a Match"
-            paragraphs={[]}
-          >
-            <CardList cards={toCards(config.cards["accept-game"])} />
-          </PageBody>
-        ),
-      },
-      {
-        key: "objective",
-        render: () => (
-          <PageBody
-            hero={<ObjectiveHero />}
-            title="The Objective"
-            paragraphs={[]}
-          >
-            <ObjectiveTiles playoffSpots={playoffSpots} />
-          </PageBody>
-        ),
-      },
-      {
-        key: "cp-boosters",
-        render: () => <AchievementMedalsPage />,
-      },
-      {
-        key: "upsets",
-        render: () => (
-          <PageBody
-            hero={<RankMattersHero />}
-            title="Rank Matters"
-            paragraphs={[]}
-          >
-            <CardList
-              cards={[
-                {
-                  icon: "trending-up-outline",
-                  gold: true,
-                  text: (
-                    <>
-                      {"Beat a "}
-                      <Accent>higher-ranked opponent</Accent>
-                      {" and win "}
-                      <Accent
-                        gold
-                      >{`up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
-                      {"."}
-                    </>
-                  ),
-                },
-                {
-                  icon: "trending-down-outline",
-                  red: true,
-                  text: (
-                    <>
-                      {"Lose against a "}
-                      <Accent>lower-ranked opponent</Accent>
-                      {" and "}
-                      <Accent
-                        red
-                      >{`lose up to ${UPSET_MAX_MULTIPLIER} your CP`}</Accent>
-                      {"."}
-                    </>
-                  ),
-                },
-              ]}
+        },
+        {
+          key: "playoffs",
+          render: () => (
+            <PlayoffsPage
+              maxPlayers={maxPlayers}
+              registeredCount={ladder?.participantCount ?? 0}
+              entryFee={ladder?.entryFee ?? 0}
+              currencyType={ladder?.currencyType ?? "GBP"}
+              showLadderSize={showLadderSize}
             />
-            <Reveal order={4}>
-              <FootNote>
-                The bigger the CP gap, the bigger the swing. In doubles, it
-                compares each team&apos;s combined CP.
-              </FootNote>
-            </Reveal>
-          </PageBody>
-        ),
-      },
-      {
-        key: "season",
-        render: () => (
-          <SeasonPage
-            noun={noun}
-            playoffSpots={playoffSpots}
-            isPaid={(ladder?.entryFee ?? 0) > 0}
-          />
-        ),
-      },
-      {
-        key: "playoffs",
-        render: () => (
-          <PlayoffsPage
-            maxPlayers={maxPlayers}
-            registeredCount={ladder?.participantCount ?? 0}
-            entryFee={ladder?.entryFee ?? 0}
-            currencyType={ladder?.currencyType ?? "GBP"}
-            showLadderSize={showLadderSize}
-          />
-        ),
-      },
-      finalsPage,
-    ],
+          ),
+        },
+        finalsPage,
+      ].filter(
+        (page) =>
+          config.showScoringDetails || !SCORING_DETAIL_PAGES.includes(page.key),
+      ),
     [
       maxPlayers,
       onReadRules,
@@ -898,18 +920,71 @@ interface PlayoffsPageProps {
   showLadderSize: boolean;
 }
 
+interface SeasonPhase {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  length?: string;
+  text: string;
+  gold?: boolean;
+}
+
+const daysLabel = (days: number) => `${days} day${days === 1 ? "" : "s"}`;
+
+const dayRange = (first: number, last: number) => `Day ${first} - ${last}`;
+
+/** A ladder season's phases, timed from the day registration opens. */
+const seasonPhases = (
+  noun: "player" | "team",
+  playoffSpots: number,
+  isPaid: boolean,
+): SeasonPhase[] => {
+  const playoffRounds = Math.log2(playoffSpots);
+  return [
+    {
+      icon: "person-add-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_OPEN],
+      length: dayRange(1, LADDER_REGISTRATION_CLOSE_DAYS),
+      text: "Sign up and start posting or accepting matches straight away.",
+    },
+    {
+      icon: "lock-closed-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.REGISTRATION_CLOSED],
+      length: dayRange(
+        LADDER_REGISTRATION_CLOSE_DAYS + 1,
+        LADDER_PLAYOFF_START_DAYS,
+      ),
+      text: `No new ${noun}s join. Keep climbing; new matches close ${daysLabel(LADDER_POSTING_CLOSE_DAYS)} before the playoffs.`,
+    },
+    {
+      icon: "git-network-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
+      length: `${playoffRounds} rounds`,
+      text: `The top ${playoffSpots} ${noun}s play a knockout, with ${daysLabel(LADDER_PLAYOFF_TIE_DAYS)} per round.`,
+    },
+    {
+      icon: "trophy-outline",
+      label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
+      text: isPaid
+        ? "The champion crowned. Cash paid. CP awarded."
+        : "The champion crowned. CP awarded.",
+      gold: true,
+    },
+  ];
+};
+
 const SeasonPage: React.FC<{
   noun: "player" | "team";
   playoffSpots: number;
   isPaid: boolean;
 }> = ({ noun, playoffSpots, isPaid }) => {
   const compact = useCompactScreen();
+  const phases = seasonPhases(noun, playoffSpots, isPaid);
   return (
     <ScrollView
       contentContainerStyle={{
         flexGrow: 1,
         justifyContent: "center",
-        gap: compact ? 18 : 26,
+        gap: compact ? 12 : 16,
         paddingHorizontal: 24,
         paddingVertical: 16,
       }}
@@ -920,11 +995,35 @@ const SeasonPage: React.FC<{
           <PageTitle compact>The Season</PageTitle>
         </Reveal>
       </SideHeader>
-      <HowToPlaySeason
-        noun={noun}
-        playoffSpots={playoffSpots}
-        isPaid={isPaid}
-      />
+      <PhaseList>
+        {phases.map((phase, index) => (
+          <Reveal key={phase.label} order={2 + index} from="right">
+            <PhaseRow>
+              <PhaseRail>
+                <PhaseDot gold={phase.gold}>
+                  <Ionicons
+                    name={phase.icon}
+                    size={18}
+                    color={phase.gold ? "#FFC800" : "#00A2FF"}
+                  />
+                </PhaseDot>
+                {index < phases.length - 1 ? <PhaseLine /> : null}
+              </PhaseRail>
+              <PhaseBody>
+                <PhaseHeader>
+                  <PhaseLabel gold={phase.gold}>{phase.label}</PhaseLabel>
+                  {phase.length ? (
+                    <PhaseLength>
+                      <PhaseLengthText>{phase.length}</PhaseLengthText>
+                    </PhaseLength>
+                  ) : null}
+                </PhaseHeader>
+                <PhaseText>{phase.text}</PhaseText>
+              </PhaseBody>
+            </PhaseRow>
+          </Reveal>
+        ))}
+      </PhaseList>
     </ScrollView>
   );
 };
@@ -1339,6 +1438,83 @@ const Versus = styled.Text({
   fontSize: 22,
   fontWeight: "bold",
   fontStyle: "italic",
+});
+
+const PhaseList = styled.View({
+  alignSelf: "stretch",
+});
+
+const PhaseRow = styled.View({
+  flexDirection: "row",
+  gap: 14,
+});
+
+const PhaseRail = styled.View({
+  alignItems: "center",
+});
+
+const PhaseDot = styled.View<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: gold
+      ? "rgba(255, 200, 0, 0.12)"
+      : "rgba(0, 162, 255, 0.12)",
+    borderWidth: 1,
+    borderColor: gold ? "rgba(255, 200, 0, 0.45)" : "rgba(0, 162, 255, 0.45)",
+  }),
+);
+
+const PhaseLine = styled.View({
+  flex: 1,
+  width: 2,
+  minHeight: 14,
+  marginVertical: 4,
+  borderRadius: 1,
+  backgroundColor: "rgba(0, 162, 255, 0.35)",
+});
+
+const PhaseBody = styled.View({
+  flex: 1,
+  paddingTop: 7,
+  paddingBottom: 16,
+  gap: 4,
+});
+
+const PhaseHeader = styled.View({
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+});
+
+const PhaseLabel = styled.Text<{ gold?: boolean }>(
+  ({ gold }: { gold?: boolean }) => ({
+    color: gold ? "#FFC800" : "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+  }),
+);
+
+const PhaseLength = styled.View({
+  paddingVertical: 2,
+  paddingHorizontal: 8,
+  borderRadius: 999,
+  backgroundColor: "rgba(0, 162, 255, 0.12)",
+});
+
+const PhaseLengthText = styled.Text({
+  color: "#00A2FF",
+  fontSize: 12,
+  fontWeight: "bold",
+});
+
+const PhaseText = styled.Text({
+  color: "#c9d6e3",
+  fontSize: 14,
+  lineHeight: 20,
 });
 
 const StepList = styled.View({
