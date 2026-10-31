@@ -19,6 +19,9 @@ const asset = (file: string) =>
 const trophy = asset("ladder-trophy.png");
 const logo = asset("court-champs-logo.png");
 
+/** Bump on any design change so chat apps and the CDN fetch the new image. */
+export const LADDER_CARD_VERSION = 3;
+
 const GENDER_LABELS: Record<string, string> = {
   Mens: "Men's",
   Womens: "Women's",

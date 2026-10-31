@@ -8,6 +8,7 @@ import {
 } from "courtchamps-shared/helpers";
 import { LADDER_PRE_REGISTRATIONS_COLLECTION } from "courtchamps-shared/types";
 import {
+  LADDER_CARD_VERSION,
   ladderCardTitle,
   renderLadderPreRegistrationCard,
 } from "./ladderPreRegistrationCard";
@@ -173,7 +174,7 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
       }
       const details = ladderPreRegistrationDetails(data);
       res.set("Content-Type", "image/png");
-      res.set("Cache-Control", "public, max-age=3600, s-maxage=86400");
+      res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
       res.send(
         renderLadderPreRegistrationCard({
           title:
@@ -218,7 +219,7 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
           title: `${asText(data?.name, "Court Champs")} · Court Champs Ladder`,
           description: prize,
           image: data
-            ? `${SITE_URL}/preview/og-image/ladder-pre-registration/${encodeURIComponent(preRegistrationId)}.png`
+            ? `${SITE_URL}/preview/og-image/ladder-pre-registration/${encodeURIComponent(preRegistrationId)}.png?v=${LADDER_CARD_VERSION}`
             : DEFAULT_IMAGE,
           url,
           type: "website",
