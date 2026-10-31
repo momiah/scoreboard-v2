@@ -46,8 +46,8 @@ const HowToPlayBackdrop: React.FC = () => {
               />
             </Pattern>
             <LinearGradient id="fade" x1="0" y1="1" x2="0" y2="0">
-              <Stop offset="0" stopColor="white" stopOpacity={0.18} />
-              <Stop offset="0.5" stopColor="white" stopOpacity={0.06} />
+              <Stop offset="0" stopColor="white" stopOpacity={0.24} />
+              <Stop offset="0.5" stopColor="white" stopOpacity={0.08} />
               <Stop offset="0.95" stopColor="white" stopOpacity={0} />
             </LinearGradient>
             <Mask id="fadeMask">
