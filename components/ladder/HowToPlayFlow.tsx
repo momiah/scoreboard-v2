@@ -98,6 +98,8 @@ interface HowToPlayFlowProps {
   finalAction: React.ReactNode;
   /** Which guide this is; its wording and pages come from howToPlayConfig. */
   variant: HowToPlayVariant;
+  /** Shows an Invite friends button on the last page. */
+  onInvite?: () => void;
 }
 
 const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
@@ -108,6 +110,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   onReadRules,
   finalAction,
   variant,
+  onInvite,
 }) => {
   const config: HowToPlayVariantConfig = HOW_TO_PLAY_VARIANTS[variant];
   const { showLadderSize } = config;
@@ -120,6 +123,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     render: () => (
       <FinalsPage
         onReadRules={onReadRules}
+        onInvite={onInvite}
         inTheMoney={inTheMoney}
         isPaid={(ladder?.entryFee ?? 0) > 0}
       />
@@ -406,6 +410,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       showIntro,
       playoffSpots,
       showLadderSize,
+      onInvite,
       ladder?.participantCount,
       ladder?.entryFee,
       ladder?.currencyType,
@@ -1134,9 +1139,10 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
 
 const FinalsPage: React.FC<{
   onReadRules: () => void;
+  onInvite?: () => void;
   inTheMoney: number;
   isPaid: boolean;
-}> = ({ onReadRules, inTheMoney, isPaid }) => {
+}> = ({ onReadRules, onInvite, inTheMoney, isPaid }) => {
   const compact = useCompactScreen();
   const [champion, ...placed] = ladders;
   const heroSize = compact ? 104 : 128;
@@ -1199,10 +1205,22 @@ const FinalsPage: React.FC<{
         ]}
       />
       <Reveal order={7} style={{ alignSelf: "stretch" }}>
-        <ReadRulesButton onPress={onReadRules}>
-          <AntDesign name="book" size={15} color="#00A2FF" />
-          <ButtonText>Read the full rules</ButtonText>
-        </ReadRulesButton>
+        <FinalsActions>
+          <ReadRulesButton onPress={onReadRules} style={{ flex: 1 }}>
+            <AntDesign name="book" size={15} color="#00A2FF" />
+            <ButtonText>Read the full rules</ButtonText>
+          </ReadRulesButton>
+          {onInvite ? (
+            <ReadRulesButton
+              onPress={onInvite}
+              style={{ flex: 1 }}
+              testID="how-to-play-invite-players"
+            >
+              <Ionicons name="share-social-outline" size={16} color="#00A2FF" />
+              <ButtonText>Invite players</ButtonText>
+            </ReadRulesButton>
+          ) : null}
+        </FinalsActions>
       </Reveal>
       <Reveal order={8}>
         <FootNote>
@@ -1745,6 +1763,11 @@ const ReadRulesButton = styled.TouchableOpacity({
   justifyContent: "center",
   flexDirection: "row",
   gap: 8,
+});
+
+const FinalsActions = styled.View({
+  flexDirection: "row",
+  gap: 10,
 });
 
 const TrophyRow = styled.View({
