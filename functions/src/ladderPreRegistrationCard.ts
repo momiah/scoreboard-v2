@@ -20,7 +20,7 @@ const trophy = asset("ladder-trophy.png");
 const logo = asset("court-champs-logo.png");
 
 /** Bump on any design change so chat apps and the CDN fetch the new image. */
-export const LADDER_CARD_VERSION = 3;
+export const LADDER_CARD_VERSION = 4;
 
 const GENDER_LABELS: Record<string, string> = {
   Mens: "Men's",
@@ -71,7 +71,6 @@ export const renderLadderPreRegistrationCard = ({
     </radialGradient>
   </defs>
   <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#bg)"/>
-  <rect x="14" y="14" width="${WIDTH - 28}" height="${HEIGHT - 28}" rx="28" fill="none" stroke="#ffc800" stroke-opacity="0.55" stroke-width="3"/>
   <circle cx="950" cy="315" r="250" fill="url(#glow)"/>
   <image href="data:image/png;base64,${trophy}" x="790" y="135" width="320" height="360" preserveAspectRatio="xMidYMid meet"/>
   <image href="data:image/png;base64,${logo}" x="80" y="48" width="190" height="71" preserveAspectRatio="xMinYMid meet"/>
