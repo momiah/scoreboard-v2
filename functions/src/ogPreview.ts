@@ -1,10 +1,17 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import {
+  COURT_CHAMPS_SITE_URL,
+  formatLadderPrizePool,
+  getLadderPreRegistrationJoinPath,
+  isCashLadder,
+} from "courtchamps-shared/helpers";
+import { LADDER_PRE_REGISTRATIONS_COLLECTION } from "courtchamps-shared/types";
 
 const DEFAULT_IMAGE =
   "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
 
-const SITE_URL = "https://courtchamps.com";
+const SITE_URL = COURT_CHAMPS_SITE_URL;
 
 // Competition IDs are built from user-entered names (see generateLeagueId), so
 // they can hold any character Firestore allows in a document ID. Reject only
@@ -37,7 +44,9 @@ const escapeHtml = (value: string): string =>
     .replace(/'/g, "&#39;");
 
 const safeImage = (value: unknown): string =>
-  typeof value === "string" && /^https?:\/\//.test(value) ? value : DEFAULT_IMAGE;
+  typeof value === "string" && /^https?:\/\//.test(value)
+    ? value
+    : DEFAULT_IMAGE;
 
 const asText = (value: unknown, fallback: string): string =>
   typeof value === "string" && value.trim() ? value : fallback;
@@ -104,7 +113,12 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
       const team1 = data?.teams?.team1;
       const team2 = data?.teams?.team2;
 
-      const formatTeam = (team: Record<string, { firstName: string; lastName: string } | undefined>) => {
+      const formatTeam = (
+        team: Record<
+          string,
+          { firstName: string; lastName: string } | undefined
+        >,
+      ) => {
         const players = [team?.player1, team?.player2]
           .filter(Boolean)
           .map((p) => `${p!.firstName} ${p!.lastName[0]}`)
@@ -120,10 +134,53 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
           image: safeImage(data?.thumbnailUrl),
           url,
           type: "video.other",
-        })
+        }),
       );
     } catch (error) {
       console.error("[ogPreview] Video error:", error);
+      res.redirect(url);
+    }
+    return;
+  }
+
+  // ── Ladder pre-registration preview ───────────────────────────────────────
+  if (parts[1] === "ladder-pre-registration") {
+    const preRegistrationId = decodeSegment(parts[2]);
+    if (!isValidDocId(preRegistrationId)) {
+      res.redirect(SITE_URL);
+      return;
+    }
+    const url = `${SITE_URL}${getLadderPreRegistrationJoinPath(preRegistrationId)}`;
+    try {
+      const doc = await admin
+        .firestore()
+        .collection(LADDER_PRE_REGISTRATIONS_COLLECTION)
+        .doc(preRegistrationId)
+        .get();
+      const data = doc.data();
+      const details = {
+        entryFee: Number(data?.entryFee ?? 0),
+        currencyType: String(data?.currencyType ?? "GBP"),
+        maxPlayers: Number(data?.maxPlayers ?? 0),
+      };
+      const prize = data
+        ? `Up to ${formatLadderPrizePool(details)} to be won. ${
+            isCashLadder(details) ? "Free to pre-register." : "Free to enter."
+          }`
+        : "Pre-register for Court Champs Ladders 🏸";
+
+      res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+      res.send(
+        renderPreview({
+          title: `${asText(data?.name, "Court Champs")} · Court Champs Ladder`,
+          description: prize,
+          image: safeImage(data?.image),
+          url,
+          type: "website",
+        }),
+      );
+    } catch (error) {
+      console.error("[ogPreview] Ladder pre-registration error:", error);
       res.redirect(url);
     }
     return;
@@ -159,12 +216,12 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
         title: asText(data?.[nameField], "Court Champs Competition"),
         description: asText(
           data?.[descField],
-          "Join this competition on Court Champs 🏸"
+          "Join this competition on Court Champs 🏸",
         ),
         image: safeImage(data?.[imageField]),
         url,
         type: "website",
-      })
+      }),
     );
   } catch (error) {
     console.error("ogPreview error:", error);

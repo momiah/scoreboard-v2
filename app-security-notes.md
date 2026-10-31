@@ -13,6 +13,7 @@ Firebase project: `scoreboard-app-29148`.
   - Consider limiting which fields a user can write on their own profile, e.g. no editing other users' stats or ranks.
 - **`signupRateLimits/{id}`:** `allow read, write: if false;`. Only the Admin SDK in Cloud Functions uses it.
 - **Signed-out sign-up no longer reads `users`:** email and username checks go through the callables below. Any rule that let signed-out clients query `users` can be removed.
+- **Public share pages:** the website's join pages read data signed out. `JoinPage` reads `leagues` and `tournaments`. The ladder pre-registration page (`/join/ladder-pre-registration/{id}`) reads `ladderPreRegistrations/{id}` and counts its `registrants`. Rules must allow signed-out reads of those, at least for open or launched pre-registrations, or the pages need to move to a callable or `ogPreview`-style function.
 - **Before writing rules:** audit every other collection the app touches (leagues, tournaments, games, gameVideos, notifications, etc.) for who reads and writes it.
 
 ## 2. Sign-up availability callables (deployed)
