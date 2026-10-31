@@ -7,7 +7,10 @@ import {
   isCashLadder,
 } from "courtchamps-shared/helpers";
 import { LADDER_PRE_REGISTRATIONS_COLLECTION } from "courtchamps-shared/types";
-import { renderLadderPreRegistrationCard } from "./ladderPreRegistrationCard";
+import {
+  ladderCardTitle,
+  renderLadderPreRegistrationCard,
+} from "./ladderPreRegistrationCard";
 
 const ladderPreRegistrationDetails = (data: admin.firestore.DocumentData) => ({
   entryFee: Number(data.entryFee ?? 0),
@@ -173,7 +176,9 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
       res.set("Cache-Control", "public, max-age=3600, s-maxage=86400");
       res.send(
         renderLadderPreRegistrationCard({
-          name: asText(data.name, "Court Champs Ladder"),
+          title:
+            ladderCardTitle(data.genderType, data.ladderType) ||
+            asText(data.name, "Court Champs Ladder"),
           prizePool: formatLadderPrizePool(details),
           cash: isCashLadder(details),
         }),
