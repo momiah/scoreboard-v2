@@ -75,7 +75,7 @@ export const renderLadderPreRegistrationCard = ({
   <text x="80" y="170" font-family="Inter" font-weight="700" font-size="28" letter-spacing="6" fill="#00A2FF">REGIONAL LADDER</text>
   <text x="80" y="240" font-family="Inter" font-weight="800" font-size="64" fill="#ffffff">${title}</text>
   <text x="80" y="300" font-family="Inter" font-weight="400" font-size="34" fill="#c9d6e3">Up to</text>
-  <text x="80" y="${296 + amountSize}" font-family="Inter" font-weight="800" font-size="${amountSize}" fill="#ffc800">${escapeXml(prizePool)}</text>
+  <text x="80" y="${296 + amountSize}" font-family="Inter" font-weight="800" font-size="${amountSize}" fill="${cash ? "#ffc800" : "#00A2FF"}">${escapeXml(prizePool)}</text>
   <text x="80" y="${344 + amountSize}" font-family="Inter" font-weight="700" font-size="38" fill="#ffffff">to be won</text>
   <rect x="80" y="${374 + amountSize}" width="${cash ? 400 : 300}" height="60" rx="30" fill="#00A2FF"/>
   <text x="${cash ? 280 : 230}" y="${414 + amountSize}" text-anchor="middle" font-family="Inter" font-weight="700" font-size="28" fill="#ffffff">${cash ? "Free to pre-register" : "Free to enter"}</text>
