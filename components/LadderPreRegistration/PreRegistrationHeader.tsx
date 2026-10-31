@@ -4,7 +4,10 @@ import { useNavigation } from "@react-navigation/native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-const PreRegistrationHeader: React.FC<{ title: string }> = ({ title }) => {
+const PreRegistrationHeader: React.FC<{
+  title: string;
+  onShare?: () => void;
+}> = ({ title, onShare }) => {
   const navigation = useNavigation();
 
   return (
@@ -16,7 +19,18 @@ const PreRegistrationHeader: React.FC<{ title: string }> = ({ title }) => {
         <Ionicons name="chevron-back" size={24} color="white" />
       </TouchableOpacity>
       <Title>{title}</Title>
-      <View style={{ width: 24 }} />
+      {onShare ? (
+        <TouchableOpacity
+          testID="ladder-pre-registration-share"
+          accessibilityLabel="Share this ladder"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={onShare}
+        >
+          <Ionicons name="share-social-outline" size={22} color="white" />
+        </TouchableOpacity>
+      ) : (
+        <View style={{ width: 24 }} />
+      )}
     </Header>
   );
 };

@@ -8,6 +8,7 @@ import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { CourtChampLogoIcon } from "../../assets";
 import { useLadderPreRegistrations } from "../../hooks/useLadderPreRegistrations";
+import { TextSkeleton } from "../Skeletons/SkeletonComponents";
 import {
   LADDER_PRE_REGISTRATION_COLORS as COLORS,
   formatPrizePool,
@@ -17,7 +18,7 @@ import {
 
 const LadderPreRegistrationBanner: React.FC = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
-  const { preRegistrations } = useLadderPreRegistrations();
+  const { loading, preRegistrations } = useLadderPreRegistrations();
   const cashOptions = preRegistrations.filter(isCashLadder);
   const hasCash = cashOptions.length > 0;
   const hasCommunity = cashOptions.length < preRegistrations.length;
@@ -39,7 +40,22 @@ const LadderPreRegistrationBanner: React.FC = () => {
       <Pill>
         <PillText>Ladders · coming soon</PillText>
       </Pill>
-      {headline ? (
+      {loading ? (
+        <>
+          <SkeletonLine style={{ marginTop: 12 }}>
+            <TextSkeleton show height={12} width={44} />
+          </SkeletonLine>
+          <SkeletonLine style={{ marginVertical: 6 }}>
+            <TextSkeleton show height={34} width={170} />
+          </SkeletonLine>
+          <SkeletonLine>
+            <TextSkeleton show height={16} width={210} />
+          </SkeletonLine>
+          <SkeletonLine style={{ marginTop: 6, marginBottom: 14 }}>
+            <TextSkeleton show height={12} width={250} />
+          </SkeletonLine>
+        </>
+      ) : headline ? (
         <>
           <UpTo>Up to</UpTo>
           <Amount>{formatPrizePool(headline)}</Amount>
@@ -59,10 +75,14 @@ const LadderPreRegistrationBanner: React.FC = () => {
           </Subtitle>
         </>
       )}
-      <Cta>
-        <CtaText>{headline ? "Pre-register now" : "See the ladders"}</CtaText>
-        <Ionicons name="arrow-forward" size={14} color={COLORS.blue} />
-      </Cta>
+      {loading ? (
+        <TextSkeleton show height={14} width={120} />
+      ) : (
+        <Cta>
+          <CtaText>{headline ? "Pre-register now" : "See the ladders"}</CtaText>
+          <Ionicons name="arrow-forward" size={14} color={COLORS.blue} />
+        </Cta>
+      )}
     </Banner>
   );
 };
@@ -125,6 +145,8 @@ const Subtitle = styled.Text({
   marginTop: 4,
   marginBottom: 12,
 });
+
+const SkeletonLine = styled.View({});
 
 const Cta = styled.View({
   flexDirection: "row",

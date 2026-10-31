@@ -274,10 +274,16 @@ export const CitySelector = ({
 /*                                   Styles                                    */
 /* -------------------------------------------------------------------------- */
 
+const ANDROID_BACKDROP = "rgba(2, 13, 24, 0.9)";
+
 const ModalContainer = styled(BlurView).attrs({ intensity: 80, tint: "dark" })({
   flex: 1,
   justifyContent: "center",
   alignItems: "center",
+  backgroundColor: Platform.select({
+    android: ANDROID_BACKDROP,
+    default: "transparent",
+  }),
 });
 
 const Wrapper = styled.View({

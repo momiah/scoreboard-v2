@@ -1,14 +1,17 @@
+import { Share } from "react-native";
 import {
-  LADDER_TYPE,
-  calculateLadderPrizePool,
   formatCurrency,
   getLadderEntryPrice,
-  getLadderPayouts,
   getLadderPlayoffStructure,
-  getPrizeType,
-  ordinalPlace,
-  prizeTypes,
 } from "@shared";
+import {
+  formatLadderPrizePool,
+  getFullLadderPrizeTable,
+  getLadderEntrantNoun,
+  getLadderPreRegistrationShareUrl,
+  getLadderPrizePoolAtSize,
+  isCashLadder,
+} from "@shared/helpers";
 import type { LadderPreRegistrationDetails } from "@shared/types";
 
 export const LADDER_PRE_REGISTRATION_COLORS = {
@@ -33,31 +36,12 @@ export const LADDER_PRE_REGISTRATION_COLORS = {
 
 type Details = LadderPreRegistrationDetails;
 
-export const isCashLadder = (details: Pick<Details, "entryFee">) =>
-  getPrizeType(details.entryFee) === prizeTypes.CASH;
-
 export const getEntrantNoun = (details: Pick<Details, "ladderType">) =>
-  details.ladderType === LADDER_TYPE.DOUBLES ? "team" : "player";
+  getLadderEntrantNoun(details.ladderType);
 
-const atSize = (details: Details, ladderSize = details.maxPlayers) => ({
-  entryFee: details.entryFee,
-  participantCount: ladderSize,
-});
-
-export const getPrizePool = (
-  details: Details,
-  ladderSize = details.maxPlayers,
-) => calculateLadderPrizePool(atSize(details, ladderSize));
-
-export const formatPrizePool = (
-  details: Details,
-  ladderSize = details.maxPlayers,
-) => {
-  const { cash, xp } = getPrizePool(details, ladderSize);
-  return isCashLadder(details)
-    ? formatCurrency(cash, details.currencyType)
-    : `${xp.toLocaleString("en-GB")} CP`;
-};
+export const getPrizePool = getLadderPrizePoolAtSize;
+export const formatPrizePool = formatLadderPrizePool;
+export { getFullLadderPrizeTable, isCashLadder };
 
 export const formatEntryFee = (details: Details) => {
   if (!isCashLadder(details)) return "Free entry";
@@ -81,25 +65,19 @@ export const getLadderSummary = (details: Details) => {
   return `${size} · Top ${inTheMoney} ${noun === "team" ? "teams " : ""}win cash`;
 };
 
-export interface PrizeTableRow {
-  fromPlace: number;
-  toPlace: number;
-  label: string;
-  cash: number;
-  cp: number;
-}
-
-export const getFullLadderPrizeTable = (details: Details): PrizeTableRow[] => {
-  const { cash, xp } = getPrizePool(details);
-  const cashPayouts = getLadderPayouts(cash, details.maxPlayers);
-  return getLadderPayouts(xp, details.maxPlayers).map((cpPayout, index) => ({
-    fromPlace: cpPayout.fromPlace,
-    toPlace: cpPayout.toPlace,
-    label:
-      cpPayout.places === 1
-        ? ordinalPlace(cpPayout.fromPlace)
-        : `${ordinalPlace(cpPayout.fromPlace)}–${ordinalPlace(cpPayout.toPlace)}`,
-    cash: cashPayouts[index]?.each ?? 0,
-    cp: cpPayout.each,
-  }));
+export const sharePreRegistration = async (
+  details: Details & { preRegistrationId: string },
+) => {
+  const url = getLadderPreRegistrationShareUrl(details.preRegistrationId);
+  const prize = isCashLadder(details)
+    ? `Up to ${formatPrizePool(details)} to be won`
+    : `${formatPrizePool(details)} to be won`;
+  try {
+    await Share.share({
+      message: `Pre-register with me for ${details.name} on Court Champs 🏸\n${prize}, and it's free to pre-register.\n\n${url}`,
+      url,
+    });
+  } catch (error) {
+    console.error("Error sharing pre-registration:", error);
+  }
 };

@@ -29,6 +29,7 @@ import {
   getFullLadderPrizeTable,
   getPlatformFeeFootnote,
   isCashLadder,
+  sharePreRegistration,
 } from "../../../helpers/ladderPreRegistrationDisplay";
 
 type SignupRoute = RouteProp<
@@ -97,7 +98,10 @@ const LadderPreRegistrationSignup: React.FC = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.screen }}>
-      <PreRegistrationHeader title={option.name} />
+      <PreRegistrationHeader
+        title={option.name}
+        onShare={() => sharePreRegistration(option)}
+      />
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <LadderDetails option={option} />
 
