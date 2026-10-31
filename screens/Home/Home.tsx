@@ -45,11 +45,6 @@ import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
-import { backfillCompetitionPrizeType } from "@/devFunctions/backfillCompetitionPrizeType";
-import {
-  createLaunchLadderPreRegistrations,
-  deleteLaunchLadderPreRegistrations,
-} from "@/devFunctions/launchLadderPreRegistrations";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 // ─── Video Feed Config ────────────────────────────────────────────────────────
@@ -229,44 +224,6 @@ const Home = () => {
         >
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
-
-        {__DEV__ ? (
-          <TouchableOpacity
-            onPress={async () => {
-              const summary = await backfillCompetitionPrizeType();
-              console.log("Prize type backfill:", summary);
-            }}
-          >
-            <Text style={{ color: "white" }}>Backfill prize types</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {__DEV__ && currentUser ? (
-          <>
-            <TouchableOpacity
-              onPress={async () => {
-                const created = await createLaunchLadderPreRegistrations(
-                  currentUser.userId,
-                );
-                console.log("Launch pre-registrations created:", created);
-              }}
-            >
-              <Text style={{ color: "white" }}>
-                Create launch pre-registrations
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={async () => {
-                const deleted = await deleteLaunchLadderPreRegistrations();
-                console.log("Launch pre-registrations deleted:", deleted);
-              }}
-            >
-              <Text style={{ color: "white" }}>
-                Delete launch pre-registrations
-              </Text>
-            </TouchableOpacity>
-          </>
-        ) : null}
 
         {currentUser ? (
           <Text style={{ color: "white", marginVertical: 10 }}>

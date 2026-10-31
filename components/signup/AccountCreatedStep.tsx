@@ -12,7 +12,7 @@ import {
   HowToPlayButtonText as NavButtonText,
 } from "../ladder/HowToPlayFlow";
 import { Reveal } from "../ladder/HowToPlayReveal";
-import { BODY, BRONZE, GOLD, GlowDisc, MUTED } from "./SignupChrome";
+import { BRONZE, GOLD, GlowDisc, MUTED } from "./SignupChrome";
 import { Eyebrow as BaseEyebrow } from "../ladder/howToPlayTheme";
 
 const HERO_SIZE = 120;
@@ -132,23 +132,6 @@ const AccountCreatedStep: React.FC<AccountCreatedStepProps> = ({
       ) : null}
     </Reveal>
 
-    <Reveal order={4}>
-      <Section>Competitions for you</Section>
-    </Reveal>
-    <Reveal order={5} from="right">
-      <Placeholder>
-        <PlaceholderText>[ PLACEHOLDER · competition card ]</PlaceholderText>
-        <PlaceholderText>
-          Future: open ladders / leagues / tournaments near the player
-        </PlaceholderText>
-      </Placeholder>
-    </Reveal>
-    <Reveal order={6} from="right">
-      <Placeholder>
-        <PlaceholderText>[ PLACEHOLDER · competition card ]</PlaceholderText>
-      </Placeholder>
-    </Reveal>
-
     <Spacer />
     <Actions>
       <NavButton
@@ -206,30 +189,6 @@ const RankLine = styled.Text({
   lineHeight: 23,
   textAlign: "center",
   marginBottom: 4,
-});
-
-const Section = styled.Text({
-  color: MUTED,
-  fontSize: 14,
-  marginTop: 20,
-  marginBottom: 10,
-});
-
-const Placeholder = styled.View({
-  padding: 16,
-  borderRadius: 14,
-  borderWidth: 1,
-  borderStyle: "dashed",
-  borderColor: "rgba(201, 214, 227, 0.35)",
-  marginBottom: 12,
-  gap: 2,
-});
-
-const PlaceholderText = styled.Text({
-  color: BODY,
-  opacity: 0.75,
-  fontSize: 13.5,
-  lineHeight: 19,
 });
 
 const Spacer = styled.View({
