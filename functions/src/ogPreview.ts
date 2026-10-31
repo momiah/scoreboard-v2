@@ -7,6 +7,13 @@ import {
   isCashLadder,
 } from "courtchamps-shared/helpers";
 import { LADDER_PRE_REGISTRATIONS_COLLECTION } from "courtchamps-shared/types";
+import { renderLadderPreRegistrationCard } from "./ladderPreRegistrationCard";
+
+const ladderPreRegistrationDetails = (data: admin.firestore.DocumentData) => ({
+  entryFee: Number(data.entryFee ?? 0),
+  currencyType: String(data.currencyType ?? "GBP"),
+  maxPlayers: Number(data.maxPlayers ?? 0),
+});
 
 const DEFAULT_IMAGE =
   "https://firebasestorage.googleapis.com/v0/b/scoreboard-app-29148.firebasestorage.app/o/court-champ-logo-icon.png?alt=media&token=226598e8-39ad-441b-a139-b7c56fcfdf6f";
@@ -143,6 +150,41 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
     return;
   }
 
+  // ── Ladder pre-registration preview image ─────────────────────────────────
+  if (parts[1] === "og-image" && parts[2] === "ladder-pre-registration") {
+    const preRegistrationId = decodeSegment(parts[3]?.replace(/\.png$/, ""));
+    if (!isValidDocId(preRegistrationId)) {
+      res.redirect(DEFAULT_IMAGE);
+      return;
+    }
+    try {
+      const doc = await admin
+        .firestore()
+        .collection(LADDER_PRE_REGISTRATIONS_COLLECTION)
+        .doc(preRegistrationId)
+        .get();
+      const data = doc.data();
+      if (!data) {
+        res.redirect(DEFAULT_IMAGE);
+        return;
+      }
+      const details = ladderPreRegistrationDetails(data);
+      res.set("Content-Type", "image/png");
+      res.set("Cache-Control", "public, max-age=3600, s-maxage=86400");
+      res.send(
+        renderLadderPreRegistrationCard({
+          name: asText(data.name, "Court Champs Ladder"),
+          prizePool: formatLadderPrizePool(details),
+          cash: isCashLadder(details),
+        }),
+      );
+    } catch (error) {
+      console.error("[ogPreview] Ladder pre-registration image error:", error);
+      res.redirect(DEFAULT_IMAGE);
+    }
+    return;
+  }
+
   // ── Ladder pre-registration preview ───────────────────────────────────────
   if (parts[1] === "ladder-pre-registration") {
     const preRegistrationId = decodeSegment(parts[2]);
@@ -158,11 +200,7 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
         .doc(preRegistrationId)
         .get();
       const data = doc.data();
-      const details = {
-        entryFee: Number(data?.entryFee ?? 0),
-        currencyType: String(data?.currencyType ?? "GBP"),
-        maxPlayers: Number(data?.maxPlayers ?? 0),
-      };
+      const details = ladderPreRegistrationDetails(data ?? {});
       const prize = data
         ? `Up to ${formatLadderPrizePool(details)} to be won. ${
             isCashLadder(details) ? "Free to pre-register." : "Free to enter."
@@ -174,7 +212,9 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
         renderPreview({
           title: `${asText(data?.name, "Court Champs")} · Court Champs Ladder`,
           description: prize,
-          image: safeImage(data?.image),
+          image: data
+            ? `${SITE_URL}/preview/og-image/ladder-pre-registration/${encodeURIComponent(preRegistrationId)}.png`
+            : DEFAULT_IMAGE,
           url,
           type: "website",
         }),
