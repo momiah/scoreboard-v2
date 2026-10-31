@@ -1,3 +1,4 @@
+import { Share } from "react-native";
 import {
   LADDER_TYPE,
   calculateLadderPrizePool,
@@ -102,4 +103,25 @@ export const getFullLadderPrizeTable = (details: Details): PrizeTableRow[] => {
     cash: cashPayouts[index]?.each ?? 0,
     cp: cpPayout.each,
   }));
+};
+
+/** The website link for a pre-registration; it forwards to the live ladder once launched. */
+export const getPreRegistrationShareLink = (preRegistrationId: string) =>
+  `https://courtchamps.com/join/ladder-pre-registration/${preRegistrationId}`;
+
+export const sharePreRegistration = async (
+  details: Details & { preRegistrationId: string },
+) => {
+  const url = getPreRegistrationShareLink(details.preRegistrationId);
+  const prize = isCashLadder(details)
+    ? `Up to ${formatPrizePool(details)} to be won`
+    : `${formatPrizePool(details)} to be won`;
+  try {
+    await Share.share({
+      message: `Pre-register with me for ${details.name} on Court Champs 🏸\n${prize}, and it's free to pre-register.\n\n${url}`,
+      url,
+    });
+  } catch (error) {
+    console.error("Error sharing pre-registration:", error);
+  }
 };
