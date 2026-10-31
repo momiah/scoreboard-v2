@@ -257,7 +257,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
               title="Matchmaking, Made Simple"
               paragraphs={[]}
             >
-              <CardList cards={toCards(config.cards.matchmaking)} />
+              <CardList cards={toCards(config.cards.matchmaking, noun)} />
             </PageBody>
           ),
         },
@@ -269,7 +269,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
               title="Post a Match"
               paragraphs={[]}
             >
-              <CardList cards={toCards(config.cards["post-game"])} />
+              <CardList cards={toCards(config.cards["post-game"], noun)} />
             </PageBody>
           ),
         },
@@ -281,7 +281,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
               title="Accept a Match"
               paragraphs={[]}
             >
-              <CardList cards={toCards(config.cards["accept-game"])} />
+              <CardList cards={toCards(config.cards["accept-game"], noun)} />
             </PageBody>
           ),
         },
@@ -407,6 +407,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       maxPlayers,
       onReadRules,
       config,
+      noun,
       showIntro,
       playoffSpots,
       showLadderSize,
@@ -535,29 +536,36 @@ const PageBody: React.FC<PageBodyProps> = ({
   );
 };
 
-const RichText: React.FC<{ text: HowToPlayRichText }> = ({ text }) => (
+const RichText: React.FC<{ text: HowToPlayRichText; noun: string }> = ({
+  text,
+  noun,
+}) => (
   <>
-    {text.map((run, index) =>
-      typeof run === "string" ? (
-        run
-      ) : (
+    {text.map((run, index) => {
+      if (typeof run === "string") return run.replace(/\{noun\}/g, noun);
+      return (
         <Accent
           key={index}
           blue={run.tone === "blue"}
           gold={run.tone === "gold"}
           red={run.tone === "red"}
         >
-          {run.text}
+          {run.text.replace(/\{noun\}/g, noun)}
         </Accent>
-      ),
-    )}
+      );
+    })}
   </>
 );
 
-const toCards = (cards: HowToPlayCardText[]): Card[] =>
+const toCards = (cards: HowToPlayCardText[], noun: string): Card[] =>
   cards.map((card) => ({
     icon: card.icon,
-    text: <RichText text={card.text} />,
+    text: (
+      <>
+        {card.title ? <Accent>{`${card.title}\n`}</Accent> : null}
+        <RichText text={card.text} noun={noun} />
+      </>
+    ),
   }));
 
 interface Card {

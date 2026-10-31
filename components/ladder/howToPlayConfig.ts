@@ -11,6 +11,9 @@ export type HowToPlayRichText = (
 
 export interface HowToPlayCardText {
   icon: HowToPlayIcon;
+  /** A bold line above the text. */
+  title?: string;
+  /** `{noun}` becomes "player" or "team" for the ladder. */
   text: HowToPlayRichText;
 }
 
@@ -45,6 +48,22 @@ const HIDDEN_OPPONENT_ACCEPT: HowToPlayCardText = {
   ],
 };
 
+const WHAT_IS_A_LADDER: HowToPlayCardText = {
+  icon: "podium-outline",
+  title: "What's a ladder?",
+  text: [
+    "A ranked competition where a large group of {noun}s compete across a wide region. When the season ends, the top {noun}s go head to head in a knockout tournament.",
+  ],
+};
+
+const WHAT_IS_MATCHMAKING: HowToPlayCardText = {
+  icon: "swap-horizontal-outline",
+  title: "What's matchmaking?",
+  text: [
+    "Matchmaking lets you schedule games with other {noun}s in the ladder, on your time and your terms.",
+  ],
+};
+
 const POST_A_MATCH: HowToPlayCardText = {
   icon: "calendar-outline",
   text: [
@@ -61,6 +80,7 @@ export const HOW_TO_PLAY_VARIANTS = {
     showScoringDetails: true,
     cards: {
       matchmaking: [
+        WHAT_IS_MATCHMAKING,
         {
           icon: "enter-outline",
           text: [
@@ -92,6 +112,8 @@ export const HOW_TO_PLAY_VARIANTS = {
     showScoringDetails: false,
     cards: {
       matchmaking: [
+        WHAT_IS_A_LADDER,
+        WHAT_IS_MATCHMAKING,
         {
           icon: "enter-outline",
           text: [
