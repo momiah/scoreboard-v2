@@ -98,6 +98,8 @@ interface HowToPlayFlowProps {
   finalAction: React.ReactNode;
   /** Which guide this is; its wording and pages come from howToPlayConfig. */
   variant: HowToPlayVariant;
+  /** Shows an Invite friends button on the last page. */
+  onInvite?: () => void;
 }
 
 const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
@@ -108,6 +110,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
   onReadRules,
   finalAction,
   variant,
+  onInvite,
 }) => {
   const config: HowToPlayVariantConfig = HOW_TO_PLAY_VARIANTS[variant];
   const { showLadderSize } = config;
@@ -120,6 +123,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
     render: () => (
       <FinalsPage
         onReadRules={onReadRules}
+        onInvite={onInvite}
         inTheMoney={inTheMoney}
         isPaid={(ladder?.entryFee ?? 0) > 0}
       />
@@ -406,6 +410,7 @@ const HowToPlayFlow: React.FC<HowToPlayFlowProps> = ({
       showIntro,
       playoffSpots,
       showLadderSize,
+      onInvite,
       ladder?.participantCount,
       ladder?.entryFee,
       ladder?.currencyType,
@@ -1134,9 +1139,10 @@ const PlayoffsPage: React.FC<PlayoffsPageProps> = ({
 
 const FinalsPage: React.FC<{
   onReadRules: () => void;
+  onInvite?: () => void;
   inTheMoney: number;
   isPaid: boolean;
-}> = ({ onReadRules, inTheMoney, isPaid }) => {
+}> = ({ onReadRules, onInvite, inTheMoney, isPaid }) => {
   const compact = useCompactScreen();
   const [champion, ...placed] = ladders;
   const heroSize = compact ? 104 : 128;
@@ -1209,6 +1215,17 @@ const FinalsPage: React.FC<{
           You can also open the rules anytime from the ladder page&apos;s menu.
         </FootNote>
       </Reveal>
+      {onInvite ? (
+        <Reveal order={9} style={{ alignSelf: "stretch" }}>
+          <ReadRulesButton
+            onPress={onInvite}
+            testID="how-to-play-invite-friends"
+          >
+            <Ionicons name="share-social-outline" size={16} color="#00A2FF" />
+            <ButtonText>Invite friends</ButtonText>
+          </ReadRulesButton>
+        </Reveal>
+      ) : null}
     </ScrollView>
   );
 };
