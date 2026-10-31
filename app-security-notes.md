@@ -29,6 +29,8 @@ Firebase project: `scoreboard-app-29148`.
   - Over the limit returns `resource-exhausted`.
 - **App Check:** if `SIGNUP_ENFORCE_APP_CHECK` is true and the request has no App Check token, it is rejected with `failed-precondition`.
   - Set in `functions/.env` (gitignored by root `.gitignore` `.env`). **Currently `false`.**
+  - **Deploying:** the setting defaults to `true` when `functions/.env` is missing. A deploy from a clean checkout or worktree switches enforcement on and rejects every sign-up check until App Check is set up. Copy `functions/.env` in before deploying, or deploy from a checkout that has it.
+  - Last deployed 31 Oct 2026 from `claude/ladder-pre-registration` (`74b2083`), with `false`.
 - **Client** (`createAccount.ts`) fails closed:
   - A username error counts as taken.
   - An email error throws `signup/email-check-failed`, shown as a toast, and sign-up stays on page 1.
@@ -42,7 +44,9 @@ Firebase project: `scoreboard-app-29148`.
   - Skipped in Expo Go.
 - **`app.json`:**
   - Plugins `@react-native-firebase/app` and `@react-native-firebase/app-check`.
-  - `expo-build-properties` with iOS `useFrameworks: static` and `forceStaticLinking [RNFBApp, RNFBAppCheck]`. **Not yet proven in an EAS build.**
+  - `expo-build-properties` with iOS `useFrameworks: static` and `forceStaticLinking [RNFBApp, RNFBAppCheck]`.
+  - **iOS:** proven in an EAS development build on 31 Oct 2026 (`8358113`, build `55a37e50`).
+  - **Android:** not built yet. `claude/ladder-pre-registration` is based on `main`, and Android only builds natively from `android-build`-based branches.
 - **To do:**
   1. In the console, register iOS `com.courtchamp` with App Attest, plus DeviceCheck (needs an Apple DeviceCheck key).
   2. Register Android `com.courtchamp` with Play Integrity: link the Play Console and add the app signing SHA-256.
