@@ -1205,27 +1205,28 @@ const FinalsPage: React.FC<{
         ]}
       />
       <Reveal order={7} style={{ alignSelf: "stretch" }}>
-        <ReadRulesButton onPress={onReadRules}>
-          <AntDesign name="book" size={15} color="#00A2FF" />
-          <ButtonText>Read the full rules</ButtonText>
-        </ReadRulesButton>
+        <FinalsActions>
+          <ReadRulesButton onPress={onReadRules} style={{ flex: 1 }}>
+            <AntDesign name="book" size={15} color="#00A2FF" />
+            <ButtonText>Read the full rules</ButtonText>
+          </ReadRulesButton>
+          {onInvite ? (
+            <ReadRulesButton
+              onPress={onInvite}
+              style={{ flex: 1 }}
+              testID="how-to-play-invite-players"
+            >
+              <Ionicons name="share-social-outline" size={16} color="#00A2FF" />
+              <ButtonText>Invite players</ButtonText>
+            </ReadRulesButton>
+          ) : null}
+        </FinalsActions>
       </Reveal>
       <Reveal order={8}>
         <FootNote>
           You can also open the rules anytime from the ladder page&apos;s menu.
         </FootNote>
       </Reveal>
-      {onInvite ? (
-        <Reveal order={9} style={{ alignSelf: "stretch" }}>
-          <ReadRulesButton
-            onPress={onInvite}
-            testID="how-to-play-invite-friends"
-          >
-            <Ionicons name="share-social-outline" size={16} color="#00A2FF" />
-            <ButtonText>Invite friends</ButtonText>
-          </ReadRulesButton>
-        </Reveal>
-      ) : null}
     </ScrollView>
   );
 };
@@ -1762,6 +1763,11 @@ const ReadRulesButton = styled.TouchableOpacity({
   justifyContent: "center",
   flexDirection: "row",
   gap: 8,
+});
+
+const FinalsActions = styled.View({
+  flexDirection: "row",
+  gap: 10,
 });
 
 const TrophyRow = styled.View({
