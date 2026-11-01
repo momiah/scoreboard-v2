@@ -69,9 +69,7 @@ export const sharePreRegistration = async (
   details: Details & { preRegistrationId: string },
 ) => {
   const url = getLadderPreRegistrationShareUrl(details.preRegistrationId);
-  const prize = isCashLadder(details)
-    ? `Up to ${formatPrizePool(details)} to be won`
-    : `${formatPrizePool(details)} to be won`;
+  const prize = `Prize pool up to ${formatPrizePool(details)}`;
   try {
     await Share.share({
       message: `Pre-register with me for ${details.name} on Court Champs 🏸\n${prize}, and it's free to pre-register.\n\n${url}`,
