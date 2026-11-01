@@ -935,6 +935,8 @@ interface PlayoffsPageProps {
 
 interface SeasonPhase {
   icon: keyof typeof Ionicons.glyphMap;
+  /** Shown in place of the icon. */
+  image?: ImageSourcePropType;
   label: string;
   length?: string;
   text: string;
@@ -976,6 +978,7 @@ const seasonPhases = (
     },
     {
       icon: "trophy-outline",
+      image: ladders[0],
       label: LADDER_STATUS_LABELS[LADDER_STATUS.COMPLETED],
       text: isPaid
         ? "The champion crowned. Cash paid. CP awarded."
@@ -1014,11 +1017,19 @@ const SeasonPage: React.FC<{
             <PhaseRow>
               <PhaseRail>
                 <PhaseDot gold={phase.gold}>
-                  <Ionicons
-                    name={phase.icon}
-                    size={18}
-                    color={phase.gold ? "#FFC800" : "#00A2FF"}
-                  />
+                  {phase.image ? (
+                    <TrophyImage
+                      source={phase.image}
+                      resizeMode="contain"
+                      size={24}
+                    />
+                  ) : (
+                    <Ionicons
+                      name={phase.icon}
+                      size={18}
+                      color={phase.gold ? "#FFC800" : "#00A2FF"}
+                    />
+                  )}
                 </PhaseDot>
                 {index < phases.length - 1 ? <PhaseLine /> : null}
               </PhaseRail>
