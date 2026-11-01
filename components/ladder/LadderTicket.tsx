@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
 import { formatCurrency, getLadderPlayoffStructure } from "@shared";
 import {
   formatLadderPrizePool,
@@ -20,6 +22,7 @@ const BODY = "#c9d6e3";
 const MUTED = "#9fb8c8";
 const NOTCH = 18;
 const DASHES = 9;
+const TEAR_OFF_WIDTH = 138;
 
 /** The Ladder fields a ticket shows; a live ladder and a pre-registration both have them. */
 export type LadderTicketDetails = Pick<
@@ -82,6 +85,7 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
       </Perforation>
 
       <TearOff cash={cash}>
+        <TearOffShine />
         <Trophy source={ladders[0]} resizeMode="contain" />
         <Entry>
           <EntryAmount cash={cash}>
@@ -109,6 +113,73 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
   );
 };
 
+const SHINE_WIDTH = 26;
+const SHINE_TRAVEL = TEAR_OFF_WIDTH + SHINE_WIDTH * 3;
+
+/** Two soft diagonal light lines that sweep across the tear-off every few seconds. */
+const TearOffShine: React.FC = () => {
+  const sweep = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sweep, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.delay(2600),
+        Animated.timing(sweep, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [sweep]);
+
+  const translateX = sweep.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-SHINE_WIDTH * 2, SHINE_TRAVEL],
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.shine,
+        { transform: [{ translateX }, { rotate: "20deg" }] },
+      ]}
+    >
+      <LinearGradient
+        colors={["transparent", "rgba(255, 255, 255, 0.16)", "transparent"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ width: SHINE_WIDTH, height: "100%" }}
+      />
+      <LinearGradient
+        colors={["transparent", "rgba(255, 255, 255, 0.1)", "transparent"]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ width: SHINE_WIDTH / 2, height: "100%", marginLeft: 8 }}
+      />
+    </Animated.View>
+  );
+};
+
+const styles = StyleSheet.create({
+  shine: {
+    position: "absolute",
+    top: -40,
+    bottom: -40,
+    left: 0,
+    flexDirection: "row",
+  },
+});
+
 /** A ticket-shaped placeholder while ladders load. */
 export const LadderTicketSkeleton: React.FC = () => (
   <SkeletonTicket>
@@ -121,8 +192,6 @@ export const LadderTicketSkeleton: React.FC = () => (
     <SkeletonTearOff />
   </SkeletonTicket>
 );
-
-const TEAR_OFF_WIDTH = 138;
 
 const Ticket = styled.TouchableOpacity<{ cash: boolean }>(
   ({ cash }: { cash: boolean }) => ({
@@ -195,6 +264,7 @@ const TearOff = styled.View<{ cash: boolean }>(
     width: TEAR_OFF_WIDTH,
     alignItems: "center",
     justifyContent: "space-between",
+    overflow: "hidden",
     paddingVertical: 14,
     paddingHorizontal: 8,
     backgroundColor: cash
