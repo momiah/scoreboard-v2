@@ -58,7 +58,7 @@ const WHAT_IS_A_LADDER: HowToPlayCardText = {
 
 const WHAT_IS_MATCHMAKING: HowToPlayCardText = {
   icon: "swap-horizontal-outline",
-  title: "What's matchmaking?",
+  title: "What's Matchmaking?",
   text: [
     "Matchmaking lets you schedule games with other {noun}s in the ladder, on your time and your terms.",
   ],

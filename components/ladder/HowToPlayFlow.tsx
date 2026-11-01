@@ -980,7 +980,7 @@ const seasonPhases = (
       icon: "git-network-outline",
       label: LADDER_STATUS_LABELS[LADDER_STATUS.PLAYOFFS],
       length: `${playoffRounds} rounds`,
-      text: `The top ${playoffSpots} ${noun}s play a knockout, with ${daysLabel(LADDER_PLAYOFF_TIE_DAYS)} per round.`,
+      text: `The top ${playoffSpots} ${noun}s play a knockout. Each round is two matches, home and away, played within ${daysLabel(LADDER_PLAYOFF_TIE_DAYS)}.`,
     },
     {
       icon: "trophy-outline",
