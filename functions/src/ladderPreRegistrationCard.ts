@@ -22,18 +22,6 @@ const logo = asset("court-champs-logo.png");
 /** Bump on any design change so chat apps and the CDN fetch the new image. */
 export const LADDER_CARD_VERSION = 5;
 
-const GENDER_LABELS: Record<string, string> = {
-  Mens: "Men's",
-  Womens: "Women's",
-  Mixed: "Mixed",
-};
-
-/** "Men's Doubles", "Women's Singles", "Mixed Doubles". */
-export const ladderCardTitle = (genderType?: string, ladderType?: string) =>
-  [GENDER_LABELS[genderType ?? ""] ?? genderType, ladderType]
-    .filter(Boolean)
-    .join(" ");
-
 const escapeXml = (value: string): string =>
   value
     .replace(/&/g, "&amp;")

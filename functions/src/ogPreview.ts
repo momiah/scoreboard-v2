@@ -3,13 +3,13 @@ import * as admin from "firebase-admin";
 import {
   COURT_CHAMPS_SITE_URL,
   formatLadderPrizePool,
+  getLadderTitle,
   getLadderPreRegistrationJoinPath,
   isCashLadder,
 } from "courtchamps-shared/helpers";
 import { LADDER_PRE_REGISTRATIONS_COLLECTION } from "courtchamps-shared/types";
 import {
   LADDER_CARD_VERSION,
-  ladderCardTitle,
   renderLadderPreRegistrationCard,
 } from "./ladderPreRegistrationCard";
 
@@ -178,8 +178,7 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
       res.send(
         renderLadderPreRegistrationCard({
           title:
-            ladderCardTitle(data.genderType, data.ladderType) ||
-            asText(data.name, "Court Champs Ladder"),
+            getLadderTitle(data) || asText(data.name, "Court Champs Ladder"),
           prizePool: formatLadderPrizePool(details),
           cash: isCashLadder(details),
         }),
