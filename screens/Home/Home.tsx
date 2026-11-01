@@ -7,7 +7,6 @@ import React, {
   useCallback,
 } from "react";
 import {
-  Alert,
   Image,
   SafeAreaView,
   Text,
@@ -45,7 +44,6 @@ import HomeClubsSection from "../../components/Home/HomeClubsSection";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
-import { backfillLadderCity } from "@/devFunctions/backfillLadderCity";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
@@ -234,21 +232,6 @@ const Home = () => {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          testID="dev-backfill-ladder-city"
-          onPress={async () => {
-            try {
-              const result = await backfillLadderCity();
-              Alert.alert("Ladder city backfill", JSON.stringify(result));
-            } catch (error) {
-              Alert.alert("Ladder city backfill failed", String(error));
-            }
-          }}
-        >
-          <Text style={{ color: "white", marginVertical: 10 }}>
-            Backfill ladder city
-          </Text>
-        </TouchableOpacity>
         <LadderPreRegistrationBanner />
 
         <HomeLeagueSection
