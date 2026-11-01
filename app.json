@@ -2,6 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
+    "scheme": "courtchamps",
     "version": "3.0.8",
     "runtimeVersion": "3.0.0",
     "orientation": "default",
@@ -18,6 +19,9 @@
       "supportsTablet": true,
       "buildNumber": "27",
       "bundleIdentifier": "com.courtchamp",
+      "associatedDomains": [
+        "applinks:courtchamps.com"
+      ],
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "FacebookAppID": "1264178202106496",
