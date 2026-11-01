@@ -570,6 +570,8 @@ const toCards = (cards: HowToPlayCardText[], noun: string): Card[] =>
 
 interface Card {
   icon: keyof typeof Ionicons.glyphMap;
+  /** Shown in place of the icon. */
+  image?: ImageSourcePropType;
   text: React.ReactNode;
   gold?: boolean;
   red?: boolean;
@@ -584,15 +586,19 @@ const CardList: React.FC<{ cards: Card[]; firstOrder?: number }> = ({
       <Reveal key={index} order={firstOrder + index} from="right">
         <Beat>
           <BeatIcon gold={card.gold} red={card.red}>
-            <Ionicons
-              name={card.icon}
-              size={18}
-              color={accentColour({
-                gold: card.gold,
-                red: card.red,
-                blue: true,
-              })}
-            />
+            {card.image ? (
+              <TrophyImage source={card.image} resizeMode="contain" size={22} />
+            ) : (
+              <Ionicons
+                name={card.icon}
+                size={18}
+                color={accentColour({
+                  gold: card.gold,
+                  red: card.red,
+                  blue: true,
+                })}
+              />
+            )}
           </BeatIcon>
           <BeatText>{card.text}</BeatText>
         </Beat>
@@ -1201,6 +1207,7 @@ const FinalsPage: React.FC<{
         cards={[
           {
             icon: "trophy-outline",
+            image: champion,
             gold: true,
             text: (
               <>
