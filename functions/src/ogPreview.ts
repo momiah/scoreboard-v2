@@ -208,7 +208,7 @@ export const ogPreview = functions.https.onRequest(async (req, res) => {
       const data = doc.data();
       const details = ladderPreRegistrationDetails(data ?? {});
       const prize = data
-        ? `Up to ${formatLadderPrizePool(details)} to be won. ${
+        ? `Prize pool up to ${formatLadderPrizePool(details)}. ${
             isCashLadder(details) ? "Free to pre-register." : "Free to enter."
           }`
         : "Pre-register for Court Champs Ladders 🏸";
