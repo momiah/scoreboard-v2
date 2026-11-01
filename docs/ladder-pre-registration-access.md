@@ -9,11 +9,12 @@ ladder branches, move these tables into it and delete this file.
 | Path | Writer | Operation | Fields / conditions |
 |---|---|---|---|
 | `ladderPreRegistrations/{preRegistrationId}` | Anyone (app) | read | Only `status == "open"` documents are listed by the app (`where("status", "==", "open")`). |
-| same | Admin (website, and the app's dev-only launch button) | create, update, delete | Any field: the advertised ladder details (`name`, `description`, `image`, `region`, `countryCode`, `ladderType`, `genderType`, `entryFee`, `currencyType`, `maxPlayers`), `status` (`open` / `closed` / `launched`), `expectedOpensAt`, `ladderId`, created/updated fields. "Create ladder from this" sets `status: "launched"` and `ladderId` in the same batch that creates the ladder. |
+| same | Admin (website, and the app's dev-only launch button) | create, update, delete | Any field: the advertised ladder details (`name`, `description`, `image`, `region`, `city`, `countryCode`, `ladderType`, `genderType`, `entryFee`, `currencyType`, `maxPlayers`), `status` (`open` / `closed` / `launched`), `expectedOpensAt`, `ladderId`, created/updated fields. "Create ladder from this" sets `status: "launched"` and `ladderId` in the same batch that creates the ladder. |
 | `ladderPreRegistrations/{preRegistrationId}/registrants/{userId}` | That player (app) | create | Doc ID = own uid. Exactly `userId` = own uid, `username` and `profileImage` = own profile's, `createdAt` = server timestamp, `notifiedAt: null`. Only while the parent's `status` is `open`. No email: the documents are readable by other players. |
 | same | That player (app) | delete | Own doc only ("Leave the list"). |
 | same | Any signed-in player (app) | read, count | All registrants of an open pre-registration: the sign-up screen shows the latest 10 avatars and "+N more". |
 | same | Admin (website) | read | All registrants, to count and export them (emails are read from `users/{uid}`). |
+| `ladders/{ladderId}` | Admin (website ladder form, and the app's dev-only "Backfill ladder city" button) | create, update | `city`: the city shown on ladder cards with the country code, e.g. "London". The backfill sets it from the most common `location.city` of the ladder's courts. |
 
 Players must not be able to: write a pre-registration document, set
 `notifiedAt` on any document (the `processLadderPreRegistrationLaunches` Cloud
