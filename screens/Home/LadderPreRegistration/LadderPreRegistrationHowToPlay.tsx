@@ -14,6 +14,7 @@ import HowToPlayFlow, {
   HowToPlayButtonText,
 } from "../../../components/ladder/HowToPlayFlow";
 import { useLadderPreRegistrations } from "../../../hooks/useLadderPreRegistrations";
+import { sharePreRegistration } from "../../../helpers/ladderPreRegistrationDisplay";
 
 type HowToPlayRoute = RouteProp<
   { LadderPreRegistrationHowToPlay: { preRegistrationId?: string } },
@@ -118,6 +119,11 @@ const LadderPreRegistrationHowToPlay: React.FC = () => {
       }
       finalAction={finalAction}
       variant="preRegistration"
+      onInvite={
+        preRegistration
+          ? () => sharePreRegistration(preRegistration)
+          : undefined
+      }
     />
   );
 };

@@ -99,7 +99,21 @@
       "expo-font",
       "@react-native-community/datetimepicker",
       "expo-apple-authentication",
-      "react-native-compressor"
+      "react-native-compressor",
+      "@react-native-firebase/app",
+      "@react-native-firebase/app-check",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "forceStaticLinking": [
+              "RNFBApp",
+              "RNFBAppCheck"
+            ]
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

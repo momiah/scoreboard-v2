@@ -6,12 +6,7 @@ import { ladders } from "@/mockImages";
 import { formatCurrency } from "../../helpers/formatCurrency";
 import { ladderEntrantNoun } from "../../helpers/ladderEntrantNoun";
 import { Reveal } from "./HowToPlayReveal";
-
-const COLORS = {
-  blue: "#00A2FF",
-  gold: "#FFC800",
-  muted: "#aaa",
-};
+import { Eyebrow, GOLD, MUTED } from "./howToPlayTheme";
 
 interface HowToPlayIntroProps {
   ladderType?: string;
@@ -58,7 +53,7 @@ const HowToPlayIntro: React.FC<HowToPlayIntroProps> = ({
   return (
     <Container testID="how-to-play-intro">
       <Reveal>
-        <Eyebrow>SEASON ONE</Eyebrow>
+        <Eyebrow style={{ marginBottom: 12 }}>SEASON ONE</Eyebrow>
       </Reveal>
       <Reveal order={1} from="right">
         <Headline>Climb.</Headline>
@@ -90,17 +85,9 @@ const Container = styled.View({
   paddingHorizontal: 24,
 });
 
-const Eyebrow = styled.Text({
-  color: COLORS.blue,
-  fontSize: 14,
-  fontWeight: "600",
-  letterSpacing: 2,
-  marginBottom: 12,
-});
-
 const Headline = styled.Text<{ gold?: boolean }>(
   ({ gold }: { gold?: boolean }) => ({
-    color: gold ? COLORS.gold : "white",
+    color: gold ? GOLD : "white",
     fontSize: 44,
     fontWeight: "bold",
     lineHeight: 50,
@@ -108,7 +95,7 @@ const Headline = styled.Text<{ gold?: boolean }>(
 );
 
 const Tagline = styled.Text({
-  color: COLORS.muted,
+  color: MUTED,
   fontSize: 15,
   marginTop: 14,
 });
@@ -120,13 +107,13 @@ const Trophy = styled.Image({
 });
 
 const PoolLabel = styled.Text({
-  color: COLORS.muted,
+  color: MUTED,
   fontSize: 14,
   marginTop: 16,
 });
 
 const PoolValue = styled.Text({
-  color: COLORS.gold,
+  color: GOLD,
   fontSize: 40,
   fontWeight: "bold",
   marginTop: 4,
