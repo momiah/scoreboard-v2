@@ -1,8 +1,17 @@
-import React, { useEffect, useRef } from "react";
-import { Animated, Easing, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import type { LayoutChangeEvent } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
+import Svg, {
+  Defs,
+  G,
+  Line,
+  LinearGradient as SvgLinearGradient,
+  Mask,
+  Rect,
+  Stop,
+} from "react-native-svg";
 import { formatCurrency, getLadderPlayoffStructure } from "@shared";
 import {
   formatLadderPrizePool,
@@ -85,7 +94,7 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
       </Perforation>
 
       <TearOff cash={cash}>
-        <TearOffShine />
+        <TearOffPinstripes />
         <Trophy source={ladders[0]} resizeMode="contain" />
         <Entry>
           <EntryAmount cash={cash}>
@@ -113,72 +122,60 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
   );
 };
 
-const SHINE_WIDTH = 26;
-const SHINE_TRAVEL = TEAR_OFF_WIDTH + SHINE_WIDTH * 3;
+const STRIPE_GAP = 9;
+/** How far right a stripe leans per point of height (about 30 degrees). */
+const STRIPE_SLANT = 0.58;
 
-/** Two soft diagonal light lines that sweep across the tear-off every few seconds. */
-const TearOffShine: React.FC = () => {
-  const sweep = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(sweep, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.delay(2600),
-        Animated.timing(sweep, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [sweep]);
-
-  const translateX = sweep.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-SHINE_WIDTH * 2, SHINE_TRAVEL],
-  });
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.shine,
-        { transform: [{ translateX }, { rotate: "20deg" }] },
-      ]}
-    >
-      <LinearGradient
-        colors={["transparent", "rgba(255, 255, 255, 0.16)", "transparent"]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={{ width: SHINE_WIDTH, height: "100%" }}
-      />
-      <LinearGradient
-        colors={["transparent", "rgba(255, 255, 255, 0.1)", "transparent"]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={{ width: SHINE_WIDTH / 2, height: "100%", marginLeft: 8 }}
-      />
-    </Animated.View>
-  );
+const stripeOffsets = (width: number, height: number) => {
+  const offsets: number[] = [];
+  for (let x = -height * STRIPE_SLANT; x < width; x += STRIPE_GAP) {
+    offsets.push(Math.round(x));
+  }
+  return offsets;
 };
 
-const styles = StyleSheet.create({
-  shine: {
-    position: "absolute",
-    top: -40,
-    bottom: -40,
-    left: 0,
-    flexDirection: "row",
-  },
-});
+/** Fine diagonal pinstripes across the tear-off, fading from the top down. */
+const TearOffPinstripes: React.FC = () => {
+  const [{ width, height }, setSize] = useState({ width: 0, height: 0 });
+  const onLayout = (event: LayoutChangeEvent) =>
+    setSize(event.nativeEvent.layout);
+
+  return (
+    <View
+      pointerEvents="none"
+      style={StyleSheet.absoluteFill}
+      onLayout={onLayout}
+    >
+      {width > 0 ? (
+        <Svg width={width} height={height}>
+          <Defs>
+            <SvgLinearGradient id="tearOffFade" x1="0" y1="0" x2="0.25" y2="1">
+              <Stop offset="0.1" stopColor="white" stopOpacity={1} />
+              <Stop offset="0.85" stopColor="white" stopOpacity={0} />
+            </SvgLinearGradient>
+            <Mask id="tearOffFadeMask">
+              <Rect width={width} height={height} fill="url(#tearOffFade)" />
+            </Mask>
+          </Defs>
+          <G mask="url(#tearOffFadeMask)">
+            {stripeOffsets(width, height).map((x) => (
+              <Line
+                key={x}
+                x1={x}
+                y1={height}
+                x2={x + height * STRIPE_SLANT}
+                y2={0}
+                stroke="white"
+                strokeOpacity={0.06}
+                strokeWidth={1}
+              />
+            ))}
+          </G>
+        </Svg>
+      ) : null}
+    </View>
+  );
+};
 
 /** A ticket-shaped placeholder while ladders load. */
 export const LadderTicketSkeleton: React.FC = () => (
