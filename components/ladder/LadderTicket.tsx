@@ -123,7 +123,7 @@ export const LadderTicketSkeleton: React.FC = () => (
   </SkeletonTicket>
 );
 
-const TEAR_OFF_WIDTH = 108;
+const TEAR_OFF_WIDTH = 138;
 
 const Ticket = styled.TouchableOpacity<{ cash: boolean }>(
   ({ cash }: { cash: boolean }) => ({
