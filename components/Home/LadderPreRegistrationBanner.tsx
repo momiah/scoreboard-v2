@@ -152,7 +152,7 @@ const LadderPreRegistrationBanner: React.FC = () => {
       <FloatingTrophy />
 
       <TopRow>
-        <Eyebrow>SEASON ONE</Eyebrow>
+        <Eyebrow>REGIONAL LADDERS</Eyebrow>
         <Chip>
           <ChipDot />
           <ChipText>
@@ -187,20 +187,20 @@ const LadderPreRegistrationBanner: React.FC = () => {
         <>
           {headline ? (
             <>
-              <PoolRow>
+              <PoolColumn>
                 <PoolLabel>Prize pool up to</PoolLabel>
                 <PrizePoolCount
                   poolText={formatPrizePool(headline)}
                   cash={hasCash}
                 />
-              </PoolRow>
-              <AvatarsRow>
+              </PoolColumn>
+              {/* <AvatarsRow>
                 <RegistrantAvatars
                   registrants={registrants}
                   total={total}
                   noun={getEntrantNoun(headline)}
                 />
-              </AvatarsRow>
+              </AvatarsRow> */}
             </>
           ) : (
             <Subtitle>
@@ -240,8 +240,8 @@ const Banner = styled.TouchableOpacity({
 
 const TrophyArea = styled.View({
   position: "absolute",
-  right: 8,
-  top: 44,
+  right: 38,
+  top: 74,
   width: TROPHY_SIZE,
   height: TROPHY_SIZE,
 });
@@ -297,12 +297,13 @@ const HeadlineText = styled.Text<{ gold?: boolean }>(
   }),
 );
 
-const PoolRow = styled.View({
-  flexDirection: "row",
+const PoolColumn = styled.View({
+  flexDirection: "column",
   alignItems: "baseline",
   flexWrap: "wrap",
   columnGap: 8,
   marginTop: 14,
+  marginBottom: 14,
 });
 
 const PoolLabel = styled.Text({

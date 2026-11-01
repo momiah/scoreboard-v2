@@ -58,11 +58,8 @@ const VIEWABILITY_CONFIG: ViewabilityConfig = {
 const Home = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
-  const {
-    fetchUpcomingLeagues,
-    fetchUpcomingTournaments,
-    fetchUpcomingClubs,
-  } = useContext(LeagueContext);
+  const { fetchUpcomingLeagues, fetchUpcomingTournaments, fetchUpcomingClubs } =
+    useContext(LeagueContext);
   const { getTopUsers, currentUser } = useContext(UserContext);
 
   // ─── Home State ─────────────────────────────────────────────────────────────
@@ -231,7 +228,7 @@ const Home = () => {
           </Text>
         ) : (
           <TouchableOpacity onPress={() => navigateTo("Login")}>
-            <Text style={{ color: "white" }}>Sign In</Text>
+            <Text style={{ color: "white", marginVertical: 10 }}>Sign In</Text>
           </TouchableOpacity>
         )}
 
@@ -258,9 +255,7 @@ const Home = () => {
           onCreatePress={() => setAddTournamentModalVisible(true)}
         />
 
-        <HomeClubsSection
-          onCreatePress={() => setAddClubModalVisible(true)}
-        />
+        <HomeClubsSection onCreatePress={() => setAddClubModalVisible(true)} />
 
         <SubHeader title="Game Videos" />
       </HeaderContainer>
