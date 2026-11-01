@@ -66,14 +66,13 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
         <Prize cash={cash} numberOfLines={1} adjustsFontSizeToFit>
           {formatLadderPrizePool(ladder)}
         </Prize>
-        <Meta numberOfLines={1}>
-          {location ? `${location} · ${size}` : size}
-        </Meta>
+
         <Meta>
           {cash
-            ? `Top ${inTheMoney} ${noun === "team" ? "teams " : ""}paid`
-            : `Top ${inTheMoney} win CP`}
+            ? `${size} · Top ${inTheMoney} ${noun === "team" ? "teams " : ""}paid`
+            : `${size} · Top ${inTheMoney} win CP`}
         </Meta>
+        <Meta numberOfLines={1}>{location ? `${location}` : ""}</Meta>
       </Stub>
 
       <Perforation>
@@ -216,7 +215,7 @@ const Entry = styled.View({
 
 const EntryAmount = styled.Text<{ cash: boolean }>(
   ({ cash }: { cash: boolean }) => ({
-    color: cash ? GOLD : BLUE,
+    color: cash ? "white" : BLUE,
     fontSize: 18,
     fontWeight: "bold",
   }),
