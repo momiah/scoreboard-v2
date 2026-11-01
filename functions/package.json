@@ -18,6 +18,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1014.0",
     "@aws-sdk/s3-request-presigner": "^3.1014.0",
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@resvg/resvg-js": "^2.6.2",
     "courtchamps-shared": "git+https://github.com/momiah/courtchamps-shared#main",
     "ffmpeg-static": "^5.3.0",
     "firebase-admin": "^12.6.0",

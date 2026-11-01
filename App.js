@@ -23,6 +23,9 @@ import Tabs from "./navigation/tabs";
 import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
 import VideoFullscreen from "./screens/VideoFullScreen";
+import { initAppCheck } from "./services/appCheck";
+
+initAppCheck();
 
 const Stack = createStackNavigator();
 const navigationRef = React.createRef();

@@ -43,6 +43,7 @@ import HomeTournamentSection from "../../components/Home/HomeTournamentSection";
 import HomeClubsSection from "../../components/Home/HomeClubsSection";
 import { GameVideo } from "@shared/types";
 import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
+import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
@@ -57,11 +58,8 @@ const VIEWABILITY_CONFIG: ViewabilityConfig = {
 const Home = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase>>();
 
-  const {
-    fetchUpcomingLeagues,
-    fetchUpcomingTournaments,
-    fetchUpcomingClubs,
-  } = useContext(LeagueContext);
+  const { fetchUpcomingLeagues, fetchUpcomingTournaments, fetchUpcomingClubs } =
+    useContext(LeagueContext);
   const { getTopUsers, currentUser } = useContext(UserContext);
 
   // ─── Home State ─────────────────────────────────────────────────────────────
@@ -230,9 +228,11 @@ const Home = () => {
           </Text>
         ) : (
           <TouchableOpacity onPress={() => navigateTo("Login")}>
-            <Text style={{ color: "white" }}>Sign In</Text>
+            <Text style={{ color: "white", marginVertical: 10 }}>Sign In</Text>
           </TouchableOpacity>
         )}
+
+        <LadderPreRegistrationBanner />
 
         <HomeLeagueSection
           loading={loading}
@@ -255,9 +255,7 @@ const Home = () => {
           onCreatePress={() => setAddTournamentModalVisible(true)}
         />
 
-        <HomeClubsSection
-          onCreatePress={() => setAddClubModalVisible(true)}
-        />
+        <HomeClubsSection onCreatePress={() => setAddClubModalVisible(true)} />
 
         <SubHeader title="Game Videos" />
       </HeaderContainer>
