@@ -20,6 +20,7 @@ import { UserContext } from "./context/UserContext";
 import { usePendingUpload } from "./hooks/usePendingUpload";
 import UploadToast from "./components/Toasts/UploadToast";
 import Tabs from "./navigation/tabs";
+import { linking } from "./navigation/linking";
 import BottomToast from "./components/Toasts/BottomToast";
 import { PopupContext } from "./context/PopupContext";
 import VideoFullscreen from "./screens/VideoFullScreen";
@@ -51,7 +52,7 @@ const AppContent = () => {
   }, [currentUser?.userId]);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <BottomSheetModalProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(3, 16, 31)" }}>
           <UploadToast pendingUploads={pendingUploads} />
