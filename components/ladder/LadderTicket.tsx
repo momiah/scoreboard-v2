@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import type { LayoutChangeEvent } from "react-native";
 import styled from "styled-components/native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
 import Svg, {
   Defs,
   G,
@@ -71,6 +72,13 @@ const LadderTicket: React.FC<LadderTicketProps> = ({
 
   return (
     <Ticket cash={cash} activeOpacity={0.85} onPress={onPress} testID={testID}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={["#0b2a4c", "#071d36", "#04142a"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       <Stub>
         <Eyebrow>REGIONAL LADDER</Eyebrow>
         <Title numberOfLines={1}>{getLadderTitle(ladder)}</Title>

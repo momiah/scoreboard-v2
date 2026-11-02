@@ -2,6 +2,7 @@
   "expo": {
     "name": "Court Champs",
     "slug": "court-champs",
+    "scheme": "courtchamps",
     "version": "3.0.9",
     "runtimeVersion": "3.0.1",
     "orientation": "portrait",
@@ -18,6 +19,9 @@
       "supportsTablet": true,
       "buildNumber": "21",
       "bundleIdentifier": "com.courtchamp",
+      "associatedDomains": [
+        "applinks:courtchamps.com"
+      ],
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "FacebookAppID": "1264178202106496",
@@ -41,6 +45,11 @@
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
             ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "courtchamps"
+            ]
           }
         ],
         "LSMinimumSystemVersion": "13.0"
@@ -60,7 +69,29 @@
       },
       "package": "com.courtchamp",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 28
+      "versionCode": 28,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/join/ladder-pre-registration/"
+            },
+            {
+              "scheme": "https",
+              "host": "courtchamps.com",
+              "pathPrefix": "/preview/ladder-pre-registration/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/court-champ-logo-adaptive-icon-small.png"
