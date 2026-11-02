@@ -252,7 +252,7 @@ const SuccessText = styled.Text({
   color: "rgba(255,255,255,0.7)",
   fontSize: 14,
   textAlign: "center",
-  lineHeight: 22,
+  lineHeight: "22px",
 });
 
 const DoneButton = styled.TouchableOpacity({

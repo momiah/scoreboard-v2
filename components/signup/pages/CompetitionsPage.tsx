@@ -102,7 +102,7 @@ const CardTitle = styled.Text({
 const CardBody = styled.Text({
   color: BODY,
   fontSize: 13,
-  lineHeight: 18,
+  lineHeight: "18px",
 });
 
 export default React.memo(CompetitionsPage);

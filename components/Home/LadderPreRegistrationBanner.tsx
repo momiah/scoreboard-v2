@@ -292,7 +292,7 @@ const HeadlineText = styled.Text<{ gold?: boolean }>(
   ({ gold }: { gold?: boolean }) => ({
     color: gold ? COLORS.prizeGold : "white",
     fontSize: 32,
-    lineHeight: 35,
+    lineHeight: "35px",
     fontWeight: "bold",
   }),
 );

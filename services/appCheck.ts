@@ -29,6 +29,11 @@ export async function initAppCheck(): Promise<boolean> {
   if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
     return false; // Expo Go has no native Firebase modules
   }
+  // Dev builds only use App Check once a debug token is registered for them
+  // in the Firebase console; until then every token request fails with 403.
+  if (__DEV__ && process.env.EXPO_PUBLIC_APP_CHECK_IN_DEV !== "true") {
+    return false;
+  }
   started = true;
   try {
     /* eslint-disable @typescript-eslint/no-require-imports */
@@ -36,8 +41,7 @@ export async function initAppCheck(): Promise<boolean> {
     const nativeAppCheck = require("@react-native-firebase/app-check");
     /* eslint-enable @typescript-eslint/no-require-imports */
 
-    const provider =
-      new nativeAppCheck.ReactNativeFirebaseAppCheckProvider();
+    const provider = new nativeAppCheck.ReactNativeFirebaseAppCheckProvider();
     provider.configure({
       apple: {
         provider: __DEV__ ? "debug" : "appAttestWithDeviceCheckFallback",

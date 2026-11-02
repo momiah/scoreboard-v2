@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
-  ScrollView,
-} from "react-native";
+import { ActivityIndicator, Alert, ScrollView } from "react-native";
+import SafeAreaView from "../../../components/SafeAreaView";
 import {
   useNavigation,
   useRoute,
@@ -335,7 +331,7 @@ const TableNote = styled.Text({
   color: COLORS.muted,
   fontSize: 11,
   marginTop: 8,
-  lineHeight: 16,
+  lineHeight: "16px",
 });
 
 const HowToPlayButton = styled.TouchableOpacity({
@@ -392,7 +388,7 @@ const CenteredMuted = styled.Text({
   textAlign: "center",
   marginTop: 10,
   marginBottom: 12,
-  lineHeight: 18,
+  lineHeight: "18px",
 });
 
 const RegisteredNotice = styled.View({

@@ -1,7 +1,8 @@
 import React, { useEffect, useContext } from "react";
 import * as Updates from "expo-updates";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { SafeAreaView, Platform } from "react-native";
+import { Platform } from "react-native";
+import SafeAreaView from "./components/SafeAreaView";
 import { GameProvider } from "./context/GameContext";
 import { UserProvider } from "./context/UserContext";
 import { PopupProvider } from "./context/PopupContext";
@@ -107,8 +108,6 @@ export default function App() {
         const userId = await AsyncStorage.getItem("userId");
         if (userId) {
           await registerForPushNotificationsAsync(userId);
-        } else {
-          console.log("App.js: No userId found in AsyncStorage");
         }
       } catch (error) {
         console.error("App.js: Error registering push notifications:", error);

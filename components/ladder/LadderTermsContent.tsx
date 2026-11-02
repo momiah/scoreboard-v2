@@ -146,7 +146,7 @@ export default LadderTermsList;
 const Intro = styled.Text({
   color: "#9fb8c8",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const TermsCard = styled.View({
