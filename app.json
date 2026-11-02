@@ -45,6 +45,11 @@
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.215867687150-vsjhsrp8rian23ceo5oq4iip42436m7d"
             ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "courtchamps"
+            ]
           }
         ],
         "LSMinimumSystemVersion": "13.0"
