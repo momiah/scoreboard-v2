@@ -1,17 +1,7 @@
-import React from "react";
-import { Platform, View } from "react-native";
-import type { ViewProps } from "react-native";
-import { SafeAreaView as InsetSafeAreaView } from "react-native-safe-area-context";
-
-/**
- * Drop-in for React Native's deprecated SafeAreaView: safe-area padding on
- * iOS, a plain View on Android, exactly as before.
- */
-const SafeAreaView: React.FC<ViewProps> = (props) =>
-  Platform.OS === "ios" ? (
-    <InsetSafeAreaView {...props} />
-  ) : (
-    <View {...props} />
-  );
+// React Native's own SafeAreaView. react-native-safe-area-context's version
+// measures insets differently and left the home-indicator area unpainted
+// under the tab bar, so this stays until the screens move to that library's
+// insets together.
+import { SafeAreaView } from "react-native";
 
 export default SafeAreaView;
