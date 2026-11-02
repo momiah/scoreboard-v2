@@ -1422,9 +1422,9 @@ const MatchupAvatar = styled.View<MatchupAvatarStyle>(
       borderStyle: glow ? "solid" : "dashed",
       borderColor: glow ?? "#33445a",
       shadowColor: glow ?? "transparent",
-      shadowOpacity: glow ? 0.9 : 0,
+      shadowOpacity: glow ? "0.9" : "0",
       shadowRadius: 12,
-      shadowOffset: { width: 0, height: 0 },
+      shadowOffset: "0px 0px",
     };
   },
 );
@@ -1558,7 +1558,7 @@ const PhaseLengthText = styled.Text({
 const PhaseText = styled.Text({
   color: "#c9d6e3",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const StepList = styled.View({
@@ -1629,7 +1629,7 @@ const BeatText = styled.Text({
   flex: 1,
   color: "#c9d6e3",
   fontSize: 15,
-  lineHeight: 21,
+  lineHeight: "21px",
 });
 
 interface AccentColour {
@@ -1744,7 +1744,7 @@ const PageTitle = styled.Text<{ compact?: boolean }>(
 const PageText = styled.Text({
   color: "#cccccc",
   fontSize: 15,
-  lineHeight: 22,
+  lineHeight: "22px",
   textAlign: "center",
 });
 
@@ -1755,7 +1755,7 @@ const Paragraphs = styled.View({
 const FootNote = styled.Text({
   color: "#7f97a8",
   fontSize: 12,
-  lineHeight: 18,
+  lineHeight: "18px",
   textAlign: "center",
 });
 

@@ -248,7 +248,7 @@ const Prize = styled.Text<{ cash: boolean }>(({ cash }: { cash: boolean }) => ({
 const Meta = styled.Text({
   color: MUTED,
   fontSize: 11,
-  lineHeight: 16,
+  lineHeight: "16px",
 });
 
 const Perforation = styled.View({

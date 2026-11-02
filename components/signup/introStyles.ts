@@ -38,6 +38,6 @@ export const Headline = styled.Text({
 export const Subtitle = styled.Text({
   color: "#b9c4cf",
   fontSize: 16,
-  lineHeight: 24,
+  lineHeight: "24px",
   textAlign: "center",
 });

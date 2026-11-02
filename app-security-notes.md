@@ -40,7 +40,7 @@ Firebase project: `scoreboard-app-29148`.
 ## 3. App Check (code in place, console setup not done)
 - **Client:** `services/appCheck.ts`, called in `App.js`.
   - react-native-firebase app and app-check 25.1.0. v26+ needs the New Architecture; the app has `newArchEnabled: false`.
-  - Debug provider in `__DEV__`. Release: iOS App Attest with DeviceCheck fallback, Android Play Integrity.
+  - Dev builds skip App Check unless `EXPO_PUBLIC_APP_CHECK_IN_DEV=true` is set, because every token request returns 403 until the console setup below is done. With the flag set they use the debug provider. Release: iOS App Attest with DeviceCheck fallback, Android Play Integrity.
   - The native token is passed to the JS SDK through `CustomProvider`.
   - Skipped in Expo Go.
 - **`app.json`:**
@@ -49,9 +49,10 @@ Firebase project: `scoreboard-app-29148`.
   - **iOS:** proven in an EAS development build on 31 Oct 2026 (`8358113`, build `55a37e50`).
   - **Android:** not built yet. `claude/ladder-pre-registration` is based on `main`, and Android only builds natively from `android-build`-based branches.
 - **To do:**
+  0. Turn on the Firebase App Check API (`firebaseappcheck.googleapis.com`) in Google Cloud for project `scoreboard-app-29148`. Until then every token request fails with `403 SERVICE_DISABLED`.
   1. In the console, register iOS `com.courtchamp` with App Attest, plus DeviceCheck (needs an Apple DeviceCheck key).
   2. Register Android `com.courtchamp` with Play Integrity: link the Play Console and add the app signing SHA-256.
-  3. Add debug tokens from development builds (shown in the Xcode/Logcat logs) under App Check → Manage debug tokens.
+  3. Add debug tokens from development builds (shown in the Xcode/Logcat logs) under App Check → Manage debug tokens. Then start Metro with `EXPO_PUBLIC_APP_CHECK_IN_DEV=true` to use App Check in a dev build.
   4. Make new EAS builds (iOS and Android). These are native changes, so an over-the-air update won't deliver them.
 - **Rollout order:**
   1. Release the app with App Check.

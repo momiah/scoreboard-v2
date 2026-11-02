@@ -94,7 +94,7 @@ const HeaderText = styled.Text({
 const BodyText = styled.Text({
   color: "#ccc",
   fontSize: 15,
-  lineHeight: 20,
+  lineHeight: "20px",
   textAlign: "center",
 });
 

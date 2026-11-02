@@ -196,8 +196,6 @@ const PlayerDetails = ({
   );
 };
 
-console.log("screenWidth", screenWidth);
-
 const Divider = styled.View({
   borderBottomColor: "#262626",
   borderBottomWidth: 1,

@@ -137,7 +137,7 @@ const Title = styled.Text({
 const Subline = styled.Text({
   color: MUTED,
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
   textAlign: "center",
   alignSelf: "center",
   maxWidth: 270,

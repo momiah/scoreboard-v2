@@ -1,5 +1,6 @@
 import React, { useState, useContext } from "react";
-import { SafeAreaView, Alert } from "react-native";
+import { Alert } from "react-native";
+import SafeAreaView from "../../../components/SafeAreaView";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../../../context/UserContext";

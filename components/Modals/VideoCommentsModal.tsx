@@ -609,7 +609,7 @@ const CommentName = styled.Text({
 const CommentText = styled.Text({
   color: "rgba(255,255,255,0.85)",
   fontSize: 13,
-  lineHeight: 18,
+  lineHeight: "18px",
 });
 
 const CommentFooter = styled.View({
