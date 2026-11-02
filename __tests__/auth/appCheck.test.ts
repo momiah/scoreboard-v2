@@ -22,7 +22,15 @@ beforeEach(() => {
   jest.clearAllMocks();
   __resetAppCheckForTests();
   constants.executionEnvironment = "standalone";
+  process.env.EXPO_PUBLIC_APP_CHECK_IN_DEV = "true";
   jest.spyOn(console, "warn").mockImplementation(() => undefined);
+});
+
+it("stays off in dev builds unless EXPO_PUBLIC_APP_CHECK_IN_DEV is true", async () => {
+  delete process.env.EXPO_PUBLIC_APP_CHECK_IN_DEV;
+  await expect(initAppCheck()).resolves.toBe(false);
+  expect(nativeAppCheck.initializeAppCheck).not.toHaveBeenCalled();
+  expect(initializeAppCheck).not.toHaveBeenCalled();
 });
 
 it("skips everything in Expo Go", async () => {

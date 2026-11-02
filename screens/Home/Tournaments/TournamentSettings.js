@@ -367,7 +367,7 @@ const PasswordSubtitle = styled.Text({
   color: "#aaa",
   fontSize: 14,
   marginBottom: 20,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const PasswordInput = styled.TextInput({

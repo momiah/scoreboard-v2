@@ -4,10 +4,10 @@ import {
   Text,
   Dimensions,
   Platform,
-  SafeAreaView,
   ActivityIndicator,
   KeyboardAvoidingView,
 } from "react-native";
+import SafeAreaView from "../../components/SafeAreaView";
 import { BlurView } from "expo-blur";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
@@ -40,7 +40,12 @@ import { formatCourtDetailsForList } from "@/helpers/formatCourtDetails";
 const { width: screenWidth } = Dimensions.get("window");
 
 // Main component
-const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId = null }) => {
+const AddTournamentModal = ({
+  modalVisible,
+  setModalVisible,
+  onSuccess,
+  clubId = null,
+}) => {
   // Context
   const { addCompetition, getCourts, addCourt } = useContext(LeagueContext);
   const { getUserById } = useContext(UserContext);
@@ -267,7 +272,10 @@ const AddTournamentModal = ({ modalVisible, setModalVisible, onSuccess, clubId =
                   label="Tournament Name"
                   name="tournamentName"
                   control={control}
-                  error={errors.tournamentName || (nameError && { message: nameError })}
+                  error={
+                    errors.tournamentName ||
+                    (nameError && { message: nameError })
+                  }
                   required
                 />
 

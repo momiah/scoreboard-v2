@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SafeAreaView, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
+import SafeAreaView from "../../../components/SafeAreaView";
 import {
   useNavigation,
   NavigationProp,

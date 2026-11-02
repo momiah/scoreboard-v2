@@ -248,7 +248,7 @@ const OptionTitle = styled.Text({
 const OptionSubtitle = styled.Text({
   fontSize: 14,
   color: "#A9A9A9",
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 export default AddCompetitionModal;

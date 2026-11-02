@@ -308,7 +308,7 @@ const EmptyText = styled.Text({
   fontSize: 15,
   textAlign: "center",
   marginTop: 50,
-  lineHeight: 22,
+  lineHeight: "22px",
 });
 
 export default CompetitionPerformance;

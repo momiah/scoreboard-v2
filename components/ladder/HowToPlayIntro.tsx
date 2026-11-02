@@ -90,7 +90,7 @@ const Headline = styled.Text<{ gold?: boolean }>(
     color: gold ? GOLD : "white",
     fontSize: 44,
     fontWeight: "bold",
-    lineHeight: 50,
+    lineHeight: "50px",
   }),
 );
 

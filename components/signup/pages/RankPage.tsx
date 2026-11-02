@@ -142,7 +142,7 @@ const LevelNumber = styled.Text({
 const Copy = styled.Text({
   color: BODY,
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
   textAlign: "center",
 });
 
@@ -189,9 +189,9 @@ const AllRanksButton = styled.TouchableOpacity({
   borderColor: BLUE,
   backgroundColor: "transparent",
   shadowColor: BLUE,
-  shadowOpacity: 0.85,
+  shadowOpacity: "0.85",
   shadowRadius: 10,
-  shadowOffset: { width: 0, height: 0 },
+  shadowOffset: "0px 0px",
 });
 
 const AllRanksText = styled.Text({

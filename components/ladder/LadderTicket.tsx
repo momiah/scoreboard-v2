@@ -203,7 +203,7 @@ const Ticket = styled.TouchableOpacity<{ cash: boolean }>(
     flexDirection: "row",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: cash ? "rgba(255, 200, 0, 0.32)" : "rgba(0, 162, 255, 0.35)",
+    borderColor: "rgba(0, 87, 137, 0.35)",
     backgroundColor: "#071d36",
     marginBottom: 12,
     overflow: "hidden",
@@ -248,7 +248,7 @@ const Prize = styled.Text<{ cash: boolean }>(({ cash }: { cash: boolean }) => ({
 const Meta = styled.Text({
   color: MUTED,
   fontSize: 11,
-  lineHeight: 16,
+  lineHeight: "16px",
 });
 
 const Perforation = styled.View({
