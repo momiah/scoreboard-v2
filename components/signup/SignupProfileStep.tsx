@@ -388,7 +388,7 @@ const Title = styled.Text({
   color: "#ffffff",
   fontSize: 30,
   fontWeight: "bold",
-  lineHeight: 36,
+  lineHeight: "36px",
   marginTop: 10,
   marginBottom: 18,
 });
@@ -421,7 +421,7 @@ const PhotoHint = styled.Text({
   flex: 1,
   color: MUTED,
   fontSize: 13,
-  lineHeight: 18,
+  lineHeight: "18px",
 });
 
 const Label = styled.Text({

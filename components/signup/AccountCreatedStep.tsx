@@ -165,7 +165,7 @@ const Title = styled.Text<{ gold?: boolean }>(
     fontSize: 36,
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: 42,
+    lineHeight: "42px",
   }),
 );
 
@@ -186,7 +186,7 @@ const Medal = styled.Image({
 const RankLine = styled.Text({
   color: MUTED,
   fontSize: 16,
-  lineHeight: 23,
+  lineHeight: "23px",
   textAlign: "center",
   marginBottom: 4,
 });

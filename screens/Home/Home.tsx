@@ -8,7 +8,6 @@ import React, {
 } from "react";
 import {
   Image,
-  SafeAreaView,
   Text,
   TouchableOpacity,
   Platform,
@@ -19,6 +18,7 @@ import {
   ViewabilityConfig,
   RefreshControl,
 } from "react-native";
+import SafeAreaView from "../../components/SafeAreaView";
 import styled from "styled-components/native";
 import { CourtChampLogo } from "../../assets";
 import TopPlayers from "../../components/TopPlayersDisplay/TopPlayers";

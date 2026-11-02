@@ -341,7 +341,7 @@ const Chevron = styled(Feather)({
 const Answer = styled.Text({
   fontSize: 14,
   color: "rgba(255,255,255,0.8)",
-  lineHeight: 20,
+  lineHeight: "20px",
   marginTop: 12,
 });
 
@@ -372,13 +372,13 @@ const BulletDot = styled.Text({
   color: "rgba(255,255,255,0.8)",
   fontSize: 14,
   marginRight: 8,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const BulletText = styled.Text({
   color: "rgba(255,255,255,0.8)",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
   flex: 1,
 });
 
