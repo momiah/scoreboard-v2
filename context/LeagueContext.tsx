@@ -35,6 +35,7 @@ import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
 import { clubFeed } from "../helpers/clubFeed";
+import { updateClubDetails } from "../helpers/clubs/updateClubDetails";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -2157,19 +2158,7 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   // ---------------------------------------------------------------------------
 
   // Update a club document (e.g. description / image edits from EditClub).
-  const updateClub = async (club: Club): Promise<void> => {
-    try {
-      if (!club?.clubId) {
-        console.error("updateClub: missing clubId");
-        return;
-      }
-      const clubRef = doc(db, COLLECTION_NAMES.clubs, club.clubId);
-      await updateDoc(clubRef, { ...club } as DocumentData);
-    } catch (error) {
-      console.error("Error updating club:", error);
-      Alert.alert("Error", "Unable to update the club.");
-    }
-  };
+  const updateClub = updateClubDetails;
 
   // Club members live in the `clubs/{clubId}/participants` subcollection.
   const fetchClubParticipants = async (clubId: string): Promise<Player[]> => {

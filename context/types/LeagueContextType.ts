@@ -20,6 +20,7 @@ import {
   TeamStats,
   GameVideo,
 } from "@shared";
+import type { ClubDetailsUpdate } from "../../helpers/clubs/updateClubDetails";
 
 interface PendingRequestCompetition {
   id: string;
@@ -167,7 +168,7 @@ export interface LeagueContextType {
     currentUser: UserProfile;
     ownerId: string;
   }) => Promise<boolean>;
-  updateClub: (club: Club) => Promise<void>;
+  updateClub: (clubId: string, fields: ClubDetailsUpdate) => Promise<void>;
   fetchClubParticipants: (clubId: string) => Promise<Player[]>;
   assignClubAdmin: (params: {
     clubId: string;
