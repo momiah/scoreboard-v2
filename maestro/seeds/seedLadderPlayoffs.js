@@ -7,6 +7,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../../services/firebase.config";
+import { buildFixtureUser } from "../fixtures/fixtureUsers";
 import {
   LADDER_CANCELLED_REASON,
   LADDER_PLAYOFF_TIES_COLLECTION,
@@ -109,14 +110,21 @@ export const maestroPlayoffFixtureUserIds = () => [
   ...doublesFixtureUserIds(),
 ];
 
-const fixtureUser = (userId, n, xp) => ({
-  userId,
-  firstName: `P${padded(n)}`,
-  lastName: "Seed",
-  username: `po_${padded(n)}`,
-  profileImage: "",
-  profileDetail: baselineProfileDetail(xp),
-});
+const fixtureUser = (userId, n, xp, court) =>
+  buildFixtureUser({
+    userId,
+    firstName: `P${padded(n)}`,
+    lastName: "Seed",
+    username: `po_${padded(n)}`,
+    profileDetail: baselineProfileDetail(xp),
+    location: {
+      city: court.location.city,
+      country: court.location.country,
+      countryCode: court.location.countryCode,
+      postCode: court.location.postCode,
+      address: court.location.address,
+    },
+  });
 
 const rankedStats = (rank, now) => ({
   competitionXP: 10000 - rank * 3,
@@ -435,6 +443,7 @@ export const seedLadderPlayoffs = async ({
           fixtureUserId(SINGLES_USER_PREFIX, fixtureNumber),
           fixtureNumber,
           xp,
+          courts[rank % courts.length],
         );
     const stats = rankedStats(rank, now);
     const homeCourt = toHomeCourt(courts[rank % courts.length]);
@@ -544,11 +553,17 @@ export const seedLadderPlayoffsDoubles = async ({
     const first =
       rank === 0
         ? testUser
-        : fixtureUser(fixtureUserId(DOUBLES_USER_PREFIX, firstN), firstN, xp);
+        : fixtureUser(
+            fixtureUserId(DOUBLES_USER_PREFIX, firstN),
+            firstN,
+            xp,
+            courts[rank % courts.length],
+          );
     const second = fixtureUser(
       fixtureUserId(DOUBLES_USER_PREFIX, secondN),
       secondN,
       xp,
+      courts[rank % courts.length],
     );
     [first, second]
       .filter((user) => user.userId !== testUser.userId)
