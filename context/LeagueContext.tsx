@@ -35,11 +35,6 @@ import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
 import { clubFeed } from "../helpers/clubFeed";
-import {
-  addClubJoinRequest,
-  getClubAdminIds,
-  resolveClubPendingEntry,
-} from "../helpers/clubs/clubPendingEntries";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -59,6 +54,11 @@ import {
   SelectedPlayers,
 } from "@shared";
 import { UserContext } from "./UserContext";
+import {
+  addClubJoinRequest,
+  getClubAdminIds,
+  resolveClubPendingEntry,
+} from "../helpers/clubs/clubPendingEntries";
 import {
   UserProfile,
   ScoreboardProfile,
