@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import {
+  Alert,
   Image,
   Text,
   TouchableOpacity,
@@ -46,6 +47,7 @@ import { useGameVideoFeed } from "@/hooks/useGameVideoFeed";
 import LadderPreRegistrationBanner from "../../components/Home/LadderPreRegistrationBanner";
 import { useLikeVideo } from "@/hooks/useLikeVideo";
 import { useFocusEffect } from "@react-navigation/native";
+import { backfillFixtureUserLocations } from "@/devFunctions/backfillFixtureUserLocations";
 // import { addPlayerToCompetition } from "@/devFunctions/addPlayerToCompetition";
 const MaestroHarness = __DEV__
   ? // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -226,6 +228,23 @@ const Home = () => {
         >
           <Text style={{ color: "white" }}>Add Player</Text>
         </TouchableOpacity> */}
+
+        {__DEV__ ? (
+          <TouchableOpacity
+            onPress={async () => {
+              try {
+                const outcome = await backfillFixtureUserLocations();
+                Alert.alert("Backfilled", JSON.stringify(outcome));
+              } catch (error) {
+                Alert.alert("Backfill failed", String(error));
+              }
+            }}
+          >
+            <Text style={{ color: "white" }}>
+              Backfill fixture user locations
+            </Text>
+          </TouchableOpacity>
+        ) : null}
 
         {MaestroHarness && currentUser ? (
           <MaestroHarness currentUser={currentUser} />
