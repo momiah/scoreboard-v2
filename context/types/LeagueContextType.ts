@@ -165,7 +165,6 @@ export interface LeagueContextType {
   requestToJoinClub: (params: {
     clubId: string;
     currentUser: UserProfile;
-    ownerId: string;
   }) => Promise<boolean>;
   updateClub: (club: Club) => Promise<void>;
   fetchClubParticipants: (clubId: string) => Promise<Player[]>;
