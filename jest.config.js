@@ -1,7 +1,7 @@
 /** Jest config: jest-expo preset so React Native components can be rendered. */
 module.exports = {
   preset: "jest-expo",
-  setupFiles: ["<rootDir>/jest.setup.js", "<rootDir>/test/jest.setup.js"],
+  setupFiles: ["<rootDir>/test/jest.setup.js", "<rootDir>/jest.setup.js"],
   moduleNameMapper: {
     "^@shared$": "<rootDir>/node_modules/courtchamps-shared/dist",
     "^@shared/(.*)$": "<rootDir>/node_modules/courtchamps-shared/dist/$1",
