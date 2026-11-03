@@ -135,21 +135,29 @@ const EditClub = () => {
 
     setIsSubmitting(true);
     try {
-      let updatedImage = selectedImage;
+      const fields = {};
+      if (data.clubDescription !== club.clubDescription) {
+        fields.clubDescription = data.clubDescription;
+      }
       if (selectedImage && selectedImage !== club.clubImage) {
-        updatedImage = await uploadClubImage(selectedImage, club.clubId);
+        const uploadedImage = await uploadClubImage(selectedImage, club.clubId);
+        if (!uploadedImage) {
+          Alert.alert(
+            "Photo upload failed",
+            "We couldn't upload your club photo. Check your connection and try again.",
+          );
+          return;
+        }
+        fields.clubImage = uploadedImage;
       }
 
-      const updatedClub = {
-        ...club,
-        clubDescription: data.clubDescription,
-        clubImage: updatedImage || club.clubImage,
-      };
-
-      await updateClub(updatedClub);
+      if (Object.keys(fields).length > 0) {
+        await updateClub(club.clubId, fields);
+      }
       handleShowPopup("Club updated!");
     } catch (err) {
       console.error("Update error:", err);
+      Alert.alert("Error", "Unable to update the club.");
     } finally {
       setIsSubmitting(false);
     }
