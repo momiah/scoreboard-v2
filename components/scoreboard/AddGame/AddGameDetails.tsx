@@ -4,7 +4,7 @@ import styled from "styled-components/native";
 import SelectPlayer from "./SelectPlayer";
 import moment from "moment";
 import Tag from "../../Tag";
-import { FixtureStatusLabel } from "../../Tournaments/Fixtures/FixturesAtoms";
+import { FixtureStatusLabel } from "../../Tournaments/Fixtures/FixtureStatusLabel";
 import { Player } from "@shared/types";
 import {
   formatScoreDigits,

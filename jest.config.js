@@ -1,20 +1,21 @@
-// Jest is used for two layers:
-//  • pure-logic helper tests (helpers/**/*.test.js) — no React, run as-is;
-//  • integration tests that render screens / exercise services with mocks.
-// The jest-expo preset gives us the React Native transform + native-module
-// mocks; babel.config.js (babel-preset-expo + the @shared module-resolver)
-// still drives the actual transform.
+/** Jest config: jest-expo preset so React Native components can be rendered. */
 module.exports = {
   preset: "jest-expo",
-  setupFiles: ["<rootDir>/test/jest.setup.js"],
+  setupFiles: ["<rootDir>/jest.setup.js", "<rootDir>/test/jest.setup.js"],
   moduleNameMapper: {
-    "^@env$": "<rootDir>/test/mocks/env.js",
     "^@shared$": "<rootDir>/node_modules/courtchamps-shared/dist",
     "^@shared/(.*)$": "<rootDir>/node_modules/courtchamps-shared/dist/$1",
     "^@/(.*)$": "<rootDir>/$1",
+    "^@env$": "<rootDir>/__mocks__/env.js",
   },
-  // Rely on the jest-expo preset's own transformIgnorePatterns (it already
-  // transforms expo-modules-core, react-native, etc.). courtchamps-shared ships
-  // compiled CJS, so it needs no transform.
-  testPathIgnorePatterns: ["/node_modules/", "/functions/", "/e2e/", "/.maestro/"],
+  transformIgnorePatterns: [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|styled-components|moti|@motify/.*|courtchamps-shared|@gorhom/.*|react-native-.*))",
+  ],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/functions/",
+    "/e2e/",
+    "/.maestro/",
+    "/__tests__/.*/testUtils\\.tsx$",
+  ],
 };

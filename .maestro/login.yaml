@@ -7,9 +7,9 @@ appId: com.courtchamp
     optional: true
 - runFlow:
     when:
-      visible: "http://localhost:8090"
+      visible: ${MAESTRO_METRO_URL}
     commands:
-      - tapOn: "http://localhost:8090"
+      - tapOn: ${MAESTRO_METRO_URL}
 - extendedWaitUntil:
     visible:
       id: "maestro-harness-unlock"
@@ -23,11 +23,13 @@ appId: com.courtchamp
       - tapOn:
           id: "home-sign-in-link"
       - tapOn:
-          id: "login-email-input"
+          id: "login-email"
       - inputText: ${MAESTRO_TEST_USER_EMAIL}
+      - tapOn: "Welcome back"
       - tapOn:
-          id: "login-password-input"
+          id: "login-password"
       - inputText: ${MAESTRO_TEST_USER_PASSWORD}
+      - tapOn: "Welcome back"
       - tapOn:
           id: "login-submit"
       - extendedWaitUntil:
@@ -40,5 +42,5 @@ appId: com.courtchamp
     delay: 150
 - extendedWaitUntil:
     visible:
-      id: "maestro-cleanup-ladder-test-data"
+      id: "maestro-cleanup-test-data"
     timeout: 30000

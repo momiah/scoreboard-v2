@@ -4,6 +4,18 @@ Maestro drives the real dev-client app on the iOS simulator (not Expo Go —
 the app relies on custom native modules for video, blur, and the date
 picker).
 
+Every feature or behaviour change ships with its Maestro coverage in the same
+PR: its flows, any seeds and harness section buttons with matching cleanup,
+and a line in the table below. A PR without them isn't ready to merge.
+
+## Flows
+
+| Feature | Flows | Seeds / harness section |
+|---|---|---|
+| Ladders (reject-game, add/approve game, cancellation, check-in, home court, court submission, join, team, report player, freeze, info, playoffs, PROLevel) | `reject-*`, `add-game-*`, `approve-game-*`, `cancel-*`, `checkin-*`, `court-*`, `home-court-*`, `join-ladder-*`, `team-*`, `report-player-*`, `dispute-*`, `disqualified-*`, `ladder-*`, `match-chat-room-*`, `profile-prolevel-*`; test plans in `docs/testing/*-test-plan.md` | `maestro/sections/ladders.tsx`, `maestro/seeds/*`, `maestro-cleanup-ladder-test-data` |
+| Chats tab | `chats-tab-*` | `maestro-seed-chats-*` in `maestro/sections/ladders.tsx` (`seedChatsTab` uses the ladder cancellation seed) |
+| Core harness | `core-harness-unlock-and-sign-out` | `maestro/sections/core.tsx` (`maestro-sign-out`), `maestro-cleanup-test-data` |
+
 ## Install
 
 ```bash
