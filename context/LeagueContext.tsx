@@ -35,10 +35,6 @@ import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
 import { clubFeed } from "../helpers/clubFeed";
-import {
-  removeClubMembership,
-  setClubAdmin,
-} from "../helpers/clubs/clubMembers";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -77,6 +73,10 @@ import {
   getOrderedApprovedGames,
   advanceBrackets,
 } from "@shared/helpers";
+import {
+  removeClubMembership,
+  setClubAdmin,
+} from "../helpers/clubs/clubMembers";
 
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
