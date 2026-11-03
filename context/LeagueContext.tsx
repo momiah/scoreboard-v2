@@ -35,6 +35,7 @@ import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
 import { clubFeed } from "../helpers/clubFeed";
+import { deleteClubAndDetach } from "../helpers/clubs/deleteClubAndDetach";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -2266,29 +2267,10 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  // Fully delete a club: its heavy subcollections (participants / feed / chat)
-  // and then the root doc. Firestore's client SDK has no recursive delete, so
-  // each subcollection is read and batch-deleted (500-op batch limit).
   const deleteClub = async (clubId: string): Promise<void> => {
     try {
-      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
-      const subcollections = ["participants", "feed", "chat"];
-
-      for (const sub of subcollections) {
-        const snap = await getDocs(
-          collection(db, COLLECTION_NAMES.clubs, clubId, sub),
-        );
-        // Chunk deletes well under the 500-write batch cap.
-        for (let i = 0; i < snap.docs.length; i += 450) {
-          const batch = writeBatch(db);
-          snap.docs
-            .slice(i, i + 450)
-            .forEach((docSnap) => batch.delete(docSnap.ref));
-          await batch.commit();
-        }
-      }
-
-      await deleteDoc(clubRef);
+      await deleteClubAndDetach(clubId);
+      await fetchUpcomingClubs();
     } catch (error) {
       console.error("Error deleting club:", error);
       throw error;
