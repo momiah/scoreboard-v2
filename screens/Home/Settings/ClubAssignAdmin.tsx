@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { FlatList, ActivityIndicator } from "react-native";
+import { Alert, FlatList, ActivityIndicator } from "react-native";
 import styled from "styled-components/native";
 import {
   useNavigation,
@@ -52,15 +52,25 @@ const ClubAssignAdmin = () => {
 
   const handleAssign = async (user: Player) => {
     if (!user.userId) return;
-    await assignClubAdmin({
-      clubId,
-      user: { userId: user.userId, username: user.username ?? "" },
-    });
+    try {
+      await assignClubAdmin({
+        clubId,
+        user: { userId: user.userId, username: user.username ?? "" },
+      });
+    } catch (error) {
+      console.error("Failed to assign club admin:", error);
+      Alert.alert("Error", "Unable to make this member an admin.");
+    }
     fetchClub();
   };
 
   const handleRevoke = async (userId: string) => {
-    await revokeClubAdmin({ clubId, userId });
+    try {
+      await revokeClubAdmin({ clubId, userId });
+    } catch (error) {
+      console.error("Failed to revoke club admin:", error);
+      Alert.alert("Error", "Unable to remove this admin.");
+    }
     fetchClub();
   };
 
