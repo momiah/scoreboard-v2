@@ -1,0 +1,8 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: harness.yaml
+    env:
+      BUTTON: "maestro-cleanup-test-data"
