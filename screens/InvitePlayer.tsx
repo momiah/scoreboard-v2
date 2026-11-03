@@ -294,12 +294,12 @@ const InvitePlayer = () => {
             },
           };
 
-          await sendNotification(payload);
-          await updatePendingInvites(
+          const invited = await updatePendingInvites(
             club.clubId,
             user.userId,
             COLLECTION_NAMES.clubs as CollectionName,
           );
+          if (invited) await sendNotification(payload);
         }
 
         handleShowPopup("Members invited successfully!");
@@ -397,12 +397,12 @@ const InvitePlayer = () => {
           },
         };
 
-        await sendNotification(payload);
-        await updatePendingInvites(
+        const invited = await updatePendingInvites(
           competition!.id,
           user.userId,
           collectionName as CollectionName,
         );
+        if (invited) await sendNotification(payload);
       }
 
       handleShowPopup("Players invited successfully!");

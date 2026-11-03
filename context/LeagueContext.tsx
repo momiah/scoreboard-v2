@@ -31,6 +31,7 @@ import {
 import { Alert } from "react-native";
 import { ccDefaultImage } from "../mockImages";
 import { db } from "../services/firebase.config";
+import { addPendingInvite } from "../helpers/addPendingInvite";
 import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
@@ -654,25 +655,13 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     collectionName: CollectionName,
   ) => {
     try {
-      const competitionRef = doc(db, collectionName, competitionId);
-      const competitionSnap = await getDoc(competitionRef);
-
-      if (competitionSnap.exists()) {
-        const competitionData = competitionSnap.data();
-        const pendingInvites = competitionData.pendingInvites || [];
-
-        // Add user to pending invites if not already present
-        await updateDoc(competitionRef, {
-          pendingInvites: [...pendingInvites, { userId }],
-        });
-
-        return true;
-      } else {
-        console.log("League does not exist");
-        return false;
-      }
+      return await addPendingInvite({
+        collectionName,
+        documentId: competitionId,
+        userId,
+      });
     } catch (error) {
-      console.error("Error checking pending invites:", error);
+      console.error("Error adding pending invite:", error);
       return false;
     }
   };
