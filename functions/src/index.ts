@@ -20,11 +20,16 @@ import { notifyOwnersToInvitePlayers } from "./notifyOwnersToInvitePlayers";
 import { transcodeVideo } from "./transcodeVideo";
 import { deleteVideo } from "./deleteVideo";
 import { onVideoReported } from "./onVideoReported";
+import { processLadderPreRegistrationLaunches } from "./processLadderPreRegistrationLaunches";
 import {
   generateR2UploadUrl,
   updateGameVideoUrl,
   checkR2VideoExists,
 } from "./videoFunctions";
+import {
+  checkEmailAvailable,
+  checkUsernameAvailable,
+} from "./signupAvailability";
 
 admin.initializeApp();
 
@@ -51,4 +56,7 @@ export {
   transcodeVideo,
   deleteVideo,
   onVideoReported,
+  processLadderPreRegistrationLaunches,
+  checkEmailAvailable,
+  checkUsernameAvailable,
 };

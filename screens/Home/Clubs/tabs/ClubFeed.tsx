@@ -253,7 +253,7 @@ const EmptyText = styled.Text({
   color: "#888",
   fontStyle: "italic",
   fontSize: 14,
-  lineHeight: 21,
+  lineHeight: "21px",
   textAlign: "center",
 });
 
@@ -310,7 +310,7 @@ const Title = styled.Text({
 const Message = styled.Text({
   color: "#cdd6e0",
   fontSize: 14,
-  lineHeight: 20,
+  lineHeight: "20px",
 });
 
 const Media = styled(Image)({
