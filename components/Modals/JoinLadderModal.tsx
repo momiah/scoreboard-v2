@@ -1,3 +1,4 @@
+import { ACCOUNT_BLOCKED_MESSAGE } from "../../helpers/accountStrikes";
 import React, { useContext, useState } from "react";
 import { Dimensions, Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -19,6 +20,7 @@ const JOIN_FAILURE_MESSAGES: Record<string, string> = {
   closed: "Registration for this ladder has closed.",
   not_open: "Registration for this ladder hasn't opened yet.",
   full: "This ladder is full.",
+  account_blocked: ACCOUNT_BLOCKED_MESSAGE,
 };
 
 interface JoinLadderModalProps {
