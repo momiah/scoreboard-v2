@@ -174,11 +174,7 @@ const ClubScreen: React.FC = () => {
     if (!club) return;
     try {
       setIsJoinRequestSending(true);
-      await requestToJoinClub({
-        clubId,
-        currentUser,
-        ownerId: club.clubOwner.userId,
-      });
+      await requestToJoinClub({ clubId, currentUser });
       await fetchClubById(clubId);
     } catch (e) {
       console.error("Error sending club join request:", e);
