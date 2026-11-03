@@ -35,7 +35,6 @@ import { LeagueContextType } from "./types/LeagueContextType";
 
 import { generateCourtId } from "../helpers/generateCourtId";
 import { clubFeed } from "../helpers/clubFeed";
-import { deleteClubAndDetach } from "../helpers/clubs/deleteClubAndDetach";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -77,6 +76,7 @@ import {
 
 import { formatDisplayName } from "@/helpers/formatDisplayName";
 import { getCompetitionConfig } from "@/helpers/getCompetitionConfig";
+import { deleteClubAndDetach } from "../helpers/clubs/deleteClubAndDetach";
 
 const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
@@ -2267,6 +2267,9 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  // Fully delete a club: its heavy subcollections (participants / feed / chat)
+  // and then the root doc. Firestore's client SDK has no recursive delete, so
+  // each subcollection is read and batch-deleted (500-op batch limit).
   const deleteClub = async (clubId: string): Promise<void> => {
     try {
       await deleteClubAndDetach(clubId);
