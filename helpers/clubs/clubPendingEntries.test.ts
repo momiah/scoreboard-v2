@@ -3,8 +3,8 @@ import { notificationTypes } from "@shared";
 import {
   addClubJoinRequest,
   getClubAdminIds,
-  resolveClubJoinRequest,
-} from "./clubJoinRequests";
+  resolveClubPendingEntry,
+} from "./clubPendingEntries";
 
 jest.mock("firebase/firestore", () => ({
   doc: jest.fn((...path) => ({ path: path.slice(1).join("/") })),
@@ -72,12 +72,13 @@ describe("addClubJoinRequest", () => {
   });
 });
 
-describe("resolveClubJoinRequest", () => {
+describe("resolveClubPendingEntry for join requests", () => {
   const resolve = (accept: boolean) =>
-    resolveClubJoinRequest({
+    resolveClubPendingEntry({
       clubId: "club-1",
-      senderId: "requester",
-      adminId: "admin2",
+      pendingKey: "pendingRequests",
+      memberId: "requester",
+      notificationOwnerId: "admin2",
       notificationId: "n1",
       accept,
       participant,
@@ -128,6 +129,47 @@ describe("resolveClubJoinRequest", () => {
     const tx = runWith(null);
 
     await expect(resolve(true)).resolves.toBe("clubMissing");
+    expect(tx.set).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveClubPendingEntry for invites", () => {
+  const resolveInvite = (accept: boolean) =>
+    resolveClubPendingEntry({
+      clubId: "club-1",
+      pendingKey: "pendingInvites",
+      memberId: "invitee",
+      notificationOwnerId: "invitee",
+      notificationId: "n2",
+      accept,
+      participant: { ...participant, userId: "invitee" },
+    });
+
+  it("accepts a pending invite and adds the member", async () => {
+    const tx = runWith({
+      ...club([]),
+      pendingInvites: [{ userId: "invitee" }],
+    });
+
+    await expect(resolveInvite(true)).resolves.toBe("accepted");
+    expect(tx.update).toHaveBeenCalledWith(
+      { path: "clubs/club-1" },
+      { pendingInvites: [] },
+    );
+    expect(tx.set).toHaveBeenCalledWith(
+      { path: "clubs/club-1/participants/invitee" },
+      { ...participant, userId: "invitee" },
+    );
+    expect(tx.update).toHaveBeenCalledWith(
+      { path: "users/invitee/notifications/n2" },
+      { isRead: true, response: notificationTypes.RESPONSE.ACCEPT },
+    );
+  });
+
+  it("does not add a member from a withdrawn invite", async () => {
+    const tx = runWith({ ...club([]), pendingInvites: [] });
+
+    await expect(resolveInvite(true)).resolves.toBe("notPending");
     expect(tx.set).not.toHaveBeenCalled();
   });
 });

@@ -37,30 +37,32 @@ export const addClubJoinRequest = async ({
     return club;
   });
 
-export type ClubJoinRequestOutcome =
+export type ClubPendingOutcome =
   "accepted" | "declined" | "notPending" | "clubMissing";
 
-export const resolveClubJoinRequest = async ({
+export const resolveClubPendingEntry = async ({
   clubId,
-  senderId,
-  adminId,
+  pendingKey,
+  memberId,
+  notificationOwnerId,
   notificationId,
   accept,
   participant,
 }: {
   clubId: string;
-  senderId: string;
-  adminId: string;
+  pendingKey: "pendingRequests" | "pendingInvites";
+  memberId: string;
+  notificationOwnerId: string;
   notificationId: string;
   accept: boolean;
   participant?: Player;
-}): Promise<ClubJoinRequestOutcome> =>
+}): Promise<ClubPendingOutcome> =>
   runTransaction(db, async (transaction) => {
     const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
     const notificationRef = doc(
       db,
       "users",
-      adminId,
+      notificationOwnerId,
       "notifications",
       notificationId,
     );
@@ -71,24 +73,22 @@ export const resolveClubJoinRequest = async ({
       return "clubMissing";
     }
 
-    const pendingRequests: PendingRequests[] =
-      clubSnap.data().pendingRequests || [];
-    if (!pendingRequests.some((request) => request.userId === senderId)) {
+    const pending: PendingRequests[] = clubSnap.data()[pendingKey] || [];
+    if (!pending.some((entry) => entry.userId === memberId)) {
       transaction.update(notificationRef, { isRead: true });
       return "notPending";
     }
 
     transaction.update(clubRef, {
-      pendingRequests: pendingRequests.filter(
-        (request) => request.userId !== senderId,
-      ),
+      [pendingKey]: pending.filter((entry) => entry.userId !== memberId),
     });
 
     if (accept) {
-      if (!participant)
-        throw new Error("resolveClubJoinRequest: no participant");
+      if (!participant) {
+        throw new Error("resolveClubPendingEntry: no participant");
+      }
       transaction.set(
-        doc(db, COLLECTION_NAMES.clubs, clubId, "participants", senderId),
+        doc(db, COLLECTION_NAMES.clubs, clubId, "participants", memberId),
         participant,
       );
     }

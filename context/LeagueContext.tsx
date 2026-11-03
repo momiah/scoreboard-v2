@@ -38,8 +38,8 @@ import { clubFeed } from "../helpers/clubFeed";
 import {
   addClubJoinRequest,
   getClubAdminIds,
-  resolveClubJoinRequest,
-} from "../helpers/clubs/clubJoinRequests";
+  resolveClubPendingEntry,
+} from "../helpers/clubs/clubPendingEntries";
 import { AppEventsLogger } from "react-native-fbsdk-next";
 import {
   scoreboardProfileSchema,
@@ -933,15 +933,6 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     notificationId: string;
   }) => {
     try {
-      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
-      const notificationDocRef = doc(
-        db,
-        "users",
-        userId,
-        "notifications",
-        notificationId,
-      );
-
       const newParticipant = await getUserById(userId);
       if (!newParticipant) {
         console.error("User not found:", userId);
@@ -955,38 +946,16 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         username: newParticipant.username,
       };
 
-      await runTransaction(db, async (transaction) => {
-        const clubDoc = await transaction.get(clubRef);
-
-        if (!clubDoc.exists()) {
-          console.error("Club does not exist or has been deleted");
-          transaction.update(notificationDocRef, { isRead: true });
-          return;
-        }
-
-        const clubData = clubDoc.data();
-        const pendingInvites = clubData.pendingInvites || [];
-
-        const updatedPending = pendingInvites.filter(
-          (inv: { userId: string }) => inv.userId !== userId,
-        );
-
-        transaction.update(clubRef, { pendingInvites: updatedPending });
-
-        const participantRef = doc(
-          db,
-          COLLECTION_NAMES.clubs,
-          clubId,
-          "participants",
-          userId,
-        );
-        transaction.set(participantRef, participantData);
-
-        transaction.update(notificationDocRef, {
-          isRead: true,
-          response: notificationTypes.RESPONSE.ACCEPT,
-        });
+      const outcome = await resolveClubPendingEntry({
+        clubId,
+        pendingKey: "pendingInvites",
+        memberId: userId,
+        notificationOwnerId: userId,
+        notificationId,
+        accept: true,
+        participant: participantData,
       });
+      if (outcome !== "accepted") return;
 
       AppEventsLogger.logEvent("JoinedClub", {
         club_id: clubId,
@@ -1000,8 +969,6 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         lastName: participantData.lastName,
         profileImage: newParticipant.profileImage,
       });
-
-      console.log("Club invite accepted successfully!");
     } catch (error) {
       console.error("Error accepting club invite:", error);
     }
@@ -1017,44 +984,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     notificationId: string;
   }) => {
     try {
-      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
-      const clubSnap = await getDoc(clubRef);
-
-      if (!clubSnap.exists()) {
-        console.error("Club does not exist or has been deleted");
-        const notificationDocRef = doc(
-          db,
-          "users",
-          userId,
-          "notifications",
-          notificationId,
-        );
-        await updateDoc(notificationDocRef, { isRead: true });
-        return;
-      }
-
-      const clubData = clubSnap.data();
-      const pendingInvites = clubData.pendingInvites || [];
-
-      const updatedPending = pendingInvites.filter(
-        (inv: { userId: string }) => inv.userId !== userId,
-      );
-
-      await updateDoc(clubRef, { pendingInvites: updatedPending });
-
-      const notificationDocRef = doc(
-        db,
-        "users",
-        userId,
-        "notifications",
+      await resolveClubPendingEntry({
+        clubId,
+        pendingKey: "pendingInvites",
+        memberId: userId,
+        notificationOwnerId: userId,
         notificationId,
-      );
-      await updateDoc(notificationDocRef, {
-        isRead: true,
-        response: notificationTypes.RESPONSE.DECLINE,
+        accept: false,
       });
-
-      console.log("Club invite declined successfully!");
     } catch (error) {
       console.error("Error declining club invite:", error);
     }
@@ -1122,10 +1059,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
         username: newParticipant.username,
       };
 
-      const outcome = await resolveClubJoinRequest({
+      const outcome = await resolveClubPendingEntry({
         clubId,
-        senderId,
-        adminId: userId,
+        pendingKey: "pendingRequests",
+        memberId: senderId,
+        notificationOwnerId: userId,
         notificationId,
         accept: true,
         participant: participantData,
@@ -1156,10 +1094,11 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     userId: string;
   }) => {
     try {
-      await resolveClubJoinRequest({
+      await resolveClubPendingEntry({
         clubId,
-        senderId,
-        adminId: userId,
+        pendingKey: "pendingRequests",
+        memberId: senderId,
+        notificationOwnerId: userId,
         notificationId,
         accept: false,
       });
