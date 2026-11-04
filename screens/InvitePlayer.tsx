@@ -533,7 +533,7 @@ const InvitePlayer = () => {
   const handleShare = async () => {
     try {
       if (isClubContext) {
-        const url = `https://courtchamps.com/join/club/${club.clubId}`;
+        const url = `https://courtchamps.com/preview/club/${encodeURIComponent(club.clubId)}`;
         await Share.share({
           message: `Join my club on Court Champs! 🏸\n\n${url}`,
           url,
