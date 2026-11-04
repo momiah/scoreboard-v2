@@ -27,11 +27,10 @@ import type { HarnessSection } from "./types";
 
 const ROUNDS = [1, 2, 3];
 
-const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
+export const useRoundRobinSeedActions = () => {
   const league = useContext(LeagueContext);
   const { sendNotification, getUserById } = useContext(UserContext);
-  const fixtureActions = useFixtureCompetitionActions();
-  const actions = {
+  return {
     getCourts: league.getCourts,
     addCompetition: league.addCompetition,
     updatePendingInvites: league.updatePendingInvites,
@@ -41,6 +40,11 @@ const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
     getUserById,
     extractPlayersWithXp,
   };
+};
+
+const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
+  const fixtureActions = useFixtureCompetitionActions();
+  const actions = useRoundRobinSeedActions();
   const testUser = currentUser;
 
   return (

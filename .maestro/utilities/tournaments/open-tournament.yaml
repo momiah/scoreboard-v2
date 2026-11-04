@@ -4,6 +4,9 @@ appId: com.courtchamp
 ---
 - tapOn:
     id: "tab-competitions"
+- tapOn:
+    id: "tab-competitions"
+- waitForAnimationToEnd
 - extendedWaitUntil:
     visible: ".*${output.tournamentName}.*"
     timeout: 30000
