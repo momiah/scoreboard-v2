@@ -1,0 +1,75 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+
+# The test user creates a club from the Clubs screen
+- scrollUntilVisible:
+    element: "Browse Clubs"
+    direction: DOWN
+- tapOn: "Browse Clubs"
+- tapOn:
+    id: "clubs-add-club"
+- tapOn:
+    id: "add-club-clubName"
+- inputText: "Maestro Flow Club"
+- pressKey: Enter
+- tapOn:
+    id: "add-club-location"
+- tapOn: "Search countries..."
+- inputText: "United Kingdom"
+- tapOn:
+    text: "United Kingdom"
+    index: 1
+- tapOn: "Search cities..."
+- inputText: "Leeds"
+- tapOn:
+    text: "Leeds"
+    index: 1
+- tapOn:
+    id: "add-club-clubDescription"
+- inputText: "Thursday nights"
+- swipe:
+    start: 50%, 30%
+    end: 50%, 45%
+- waitForAnimationToEnd
+- tapOn:
+    id: "add-club-create"
+
+# The app opens the new club: the owner is its only member
+- extendedWaitUntil:
+    visible: "Leeds, United Kingdom.*"
+    timeout: 30000
+- assertVisible: "1 MEMBER"
+- assertVisible: "OWNER"
+- assertVisible:
+    id: "club-settings-button"
+- assertVisible:
+    id: "club-invite-members"
+- assertVisible: '.*created the club "Maestro Flow Club"'
+- tapOn: "Summary"
+- assertVisible: "Thursday nights"
+
+# It shows in the Clubs list and on Home
+- runFlow: ../utilities/clubs/back.yaml
+- extendedWaitUntil:
+    visible: ".*Maestro Flow Club.*"
+    timeout: 20000
+- tapOn:
+    id: "tab-home"
+- scrollUntilVisible:
+    element: "Browse Clubs"
+    direction: DOWN
+- scrollUntilVisible:
+    element: ".*Maestro Flow Club.*"
+    direction: DOWN
+    speed: 10
+
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-cleanup"

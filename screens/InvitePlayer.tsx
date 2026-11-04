@@ -16,6 +16,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Tag from "../components/Tag";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { db } from "../services/firebase.config";
+import { sendClubInvite } from "../helpers/clubs/sendClubInvite";
 import { collection, query, getDocs } from "firebase/firestore";
 import { UserContext } from "../context/UserContext";
 import {
@@ -282,24 +283,12 @@ const InvitePlayer = () => {
       // Club context: send genuine club invites (invite/accept step).
       if (isClubContext) {
         for (const user of inviteUsers) {
-          const payload = {
-            ...notificationSchema,
-            createdAt: new Date(),
-            recipientId: user.userId,
+          await sendClubInvite({
+            club,
             senderId: currentUserId,
-            message: `You've been invited to join ${club.clubName}`,
-            type: notificationTypes.ACTION.INVITE.CLUB,
-            data: {
-              clubId: club.clubId,
-            },
-          };
-
-          const invited = await updatePendingInvites(
-            club.clubId,
-            user.userId,
-            COLLECTION_NAMES.clubs as CollectionName,
-          );
-          if (invited) await sendNotification(payload);
+            recipientId: user.userId,
+            sendNotification,
+          });
         }
 
         handleShowPopup("Members invited successfully!");
