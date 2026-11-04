@@ -361,42 +361,38 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
     competitionType: CompetitionType;
     resetDelayMs?: number;
   }) => {
+    const config =
+      COMPETITION_CONFIG[competitionType as keyof typeof COMPETITION_CONFIG];
+    if (!config) throw new Error(`Unknown competitionType: ${competitionType}`);
+
+    const {
+      collectionName,
+      idField,
+      nameField,
+      setNavigationId,
+      clearNavigationId,
+    } = config;
+
+    const documentId = data?.[idField as keyof (League & Tournament)] as string;
+    const title = data?.[nameField as keyof (League & Tournament)] as string;
+
+    if (!documentId) {
+      throw new Error(`Missing required id field "${idField}" on data.`);
+    }
+
+    const ownerId = (
+      data[config.ownerKey as keyof (League & Tournament)] as {
+        userId?: string;
+      }
+    )?.userId;
+
+    await setDoc(doc(db, collectionName, documentId), {
+      ...data,
+      participantIds: ownerId ? [ownerId] : [],
+    });
+
+    // The competition exists from here: a failed extra must not fail creation.
     try {
-      const config =
-        COMPETITION_CONFIG[competitionType as keyof typeof COMPETITION_CONFIG];
-      if (!config) {
-        console.warn("Unknown competitionType:", competitionType);
-        return;
-      }
-
-      const {
-        collectionName,
-        idField,
-        nameField,
-        setNavigationId,
-        clearNavigationId,
-      } = config;
-
-      const documentId = data?.[
-        idField as keyof (League & Tournament)
-      ] as string;
-      const title = data?.[nameField as keyof (League & Tournament)] as string;
-
-      if (!documentId) {
-        console.error(`Missing required id field "${idField}" on data.`);
-        return;
-      }
-
-      const ownerId = (
-        data[config.ownerKey as keyof (League & Tournament)] as {
-          userId?: string;
-        }
-      )?.userId;
-
-      await setDoc(doc(db, collectionName, documentId), {
-        ...data,
-        participantIds: ownerId ? [ownerId] : [],
-      });
       await createWelcomeChatMessage({
         collectionName: collectionName as CollectionName,
         documentId,
@@ -432,15 +428,14 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
             : null,
         });
       }
-
-      setNavigationId(documentId);
-
-      setTimeout(() => {
-        clearNavigationId();
-      }, resetDelayMs);
     } catch (error) {
-      console.error("Error adding competition:", error);
+      console.error("Error finishing competition setup:", error);
     }
+
+    setNavigationId(documentId);
+    setTimeout(() => {
+      clearNavigationId();
+    }, resetDelayMs);
   };
 
   const addClub = async ({
