@@ -1,0 +1,66 @@
+appId: com.courtchamp
+---
+# Steps the pre-registration guide page by page for fixture KEY (expected strings remembered first).
+- extendedWaitUntil:
+    visible:
+      id: "how-to-play-intro"
+    timeout: 15000
+- assertVisible: "SEASON ONE"
+- assertVisible:
+    id: "how-to-play-intro-pool"
+- assertVisible: ".*${output[KEY + '-entrants']}\\. One champion\\..*"
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "Matchmaking, Made Simple"
+    timeout: 10000
+- assertVisible: ".*What's a ladder\\?.*"
+- assertVisible: ".*What's Matchmaking\\?.*"
+- assertVisible: ".*a large group of ${output[KEY + '-entrants']} compete.*"
+- assertVisible: ".*with other ${output[KEY + '-entrants']} in the ladder.*"
+- assertVisible: ".*Once you join the ladder.*"
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "Post a Match"
+    timeout: 10000
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "Accept a Match"
+    timeout: 10000
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "Match Accepted"
+    timeout: 10000
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "The Objective"
+    timeout: 10000
+- assertVisible: ${output[KEY + "-objective"]}
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "The Season"
+    timeout: 10000
+- assertVisible: "Day 1 - ${MAESTRO_LADDER_REGISTRATION_CLOSE_DAYS}"
+- assertVisible: "Day ${Number(MAESTRO_LADDER_REGISTRATION_CLOSE_DAYS) + 1} - ${MAESTRO_LADDER_PLAYOFF_START_DAYS}"
+- assertVisible: ${output[KEY + "-season-rounds"]}
+- assertVisible: ".*${output[KEY + '-season-playoffs']} Each round is two matches, home and away, played within ${MAESTRO_PLAYOFF_TIE_DAYS} days\\..*"
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "The Playoffs"
+    timeout: 10000
+- assertVisible:
+    id: "how-to-play-prize-table"
+- tapOn:
+    id: "how-to-play-next"
+- extendedWaitUntil:
+    visible: "Winning the Final"
+    timeout: 10000
+- assertVisible: "Read the full rules"
+- assertVisible:
+    id: "how-to-play-invite-players"

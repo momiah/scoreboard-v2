@@ -1,0 +1,62 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 5. Cash tab: one ticket per open cash fixture with its title, pool, size and paid places, location, entry and the footnote; closed and launched fixtures aren't listed.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "cash-doubles"
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "cash-singles"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-doubles-footnote"
+      NAME: "footnote"
+- runFlow:
+    file: ../utilities/prereg/open-list.yaml
+    env:
+      TAB: "Cash"
+- runFlow:
+    file: ../utilities/prereg/assert-ticket.yaml
+    env:
+      KEY: "cash-doubles"
+      ID: "maestro-prereg-cash-doubles"
+      ACTION: "Pre-register"
+- runFlow:
+    file: ../utilities/prereg/assert-ticket.yaml
+    env:
+      KEY: "cash-singles"
+      ID: "maestro-prereg-cash-singles"
+      ACTION: "Pre-register"
+- assertNotVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-community-doubles"
+- scrollUntilVisible:
+    element:
+      text: "18\\+ only\\..*"
+    direction: DOWN
+- assertVisible: ${output.footnote}
+- assertNotVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-closed"
+- assertNotVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-launched"
+- tapOn: "Community"
+- scrollUntilVisible:
+    element:
+      text: "Community"
+    direction: UP
+- repeat:
+    times: 4
+    commands:
+      - scroll
+- assertNotVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-closed"
+- assertNotVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-launched"

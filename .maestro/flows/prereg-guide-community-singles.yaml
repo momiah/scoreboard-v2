@@ -1,0 +1,32 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 10. How to play steps through every page in order; community singles says "players" and the Season page shows the shared day ranges and home-and-away wording.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "community-singles"
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Community"
+      ID: "maestro-prereg-community-singles"
+- tapOn:
+    id: "ladder-pre-registration-how-to-play"
+- runFlow:
+    file: ../utilities/prereg/guide-pages.yaml
+    env:
+      KEY: "community-singles"
+- assertVisible:
+    id: "pre-registration-how-to-play-pre-register"
+- assertVisible: "Pre-register"
+- tapOn:
+    id: "how-to-play-back"
+- extendedWaitUntil:
+    visible: "The Playoffs"
+    timeout: 10000

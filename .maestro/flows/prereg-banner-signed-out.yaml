@@ -1,0 +1,51 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 1. Signed out, the banner headlines the biggest cash pool and its button opens the Ladders list.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-only-fixtures"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "banner-pool"
+      NAME: "pool"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-sign-out"
+- extendedWaitUntil:
+    visible:
+      id: "home-sign-in-link"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-banner"
+    direction: DOWN
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "REGIONAL LADDERS"
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Pre-registration open"
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Prize pool up to ${output.pool_re}"
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Pre-register free"
+- tapOn:
+    id: "ladder-pre-registration-banner"
+- extendedWaitUntil:
+    visible: "Ladders"
+    timeout: 15000
+- assertVisible: "Cash"
+- assertVisible: "Community"

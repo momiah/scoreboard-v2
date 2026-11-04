@@ -67,6 +67,8 @@ const MaestroHarness = ({ currentUser }: { currentUser: UserProfile }) => {
             accessibilityLabel="maestro-harness-filter"
             value={draft}
             onChangeText={onChangeFilter}
+            onFocus={() => onChangeFilter("")}
+            clearTextOnFocus
             autoCapitalize="none"
             autoCorrect={false}
             placeholder="filter"

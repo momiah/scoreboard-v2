@@ -134,13 +134,17 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
         secureTextEntry={!showPassword}
         autoCapitalize="none"
         autoCorrect={false}
-        autoComplete="password"
+        autoComplete="new-password"
+        textContentType="newPassword"
         error={passwordError}
         testID="signup-account-password"
         right={
           <TouchableOpacity
             onPress={() => setShowPassword((current) => !current)}
             hitSlop={10}
+            testID="signup-account-password-toggle"
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? "Hide password" : "Show password"}
           >
             <Ionicons
               name={showPassword ? "eye-off-outline" : "eye-outline"}
@@ -160,7 +164,8 @@ const SignupAccountStep: React.FC<SignupAccountStepProps> = ({
         secureTextEntry={!showPassword}
         autoCapitalize="none"
         autoCorrect={false}
-        autoComplete="off"
+        autoComplete="new-password"
+        textContentType="newPassword"
         error={
           mismatch && (confirmTouched || confirm.length >= password.length)
             ? "Passwords don't match"

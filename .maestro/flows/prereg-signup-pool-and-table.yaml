@@ -1,0 +1,96 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 9. The sign-up screen's pot and prize table match the shared prize helpers; registrants show, or "Be the first …" when nobody has.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "cash-doubles"
+- runFlow:
+    file: ../utilities/prereg/remember-fixture.yaml
+    env:
+      KEY: "community-singles"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-doubles-footnote"
+      NAME: "footnote"
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Cash"
+      ID: "maestro-prereg-cash-doubles"
+- assertVisible: "Maestro Manchester Men's Doubles"
+- assertVisible: "Total Prize Pool"
+- assertVisible:
+    id: "ladder-pre-registration-pot"
+    text: ${output["cash-doubles-pool"]}
+- assertVisible:
+    text: ${output["cash-doubles-registrants"]}
+    childOf:
+      id: "ladder-pre-registration-registrants"
+- assertNotVisible:
+    id: "ladder-pre-registration-registered"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-prize-table"
+    direction: DOWN
+- assertVisible: "Cash Payout"
+- assertVisible: "CP Payout"
+- assertVisible:
+    text: ${output["cash-doubles-first-place"]}
+    childOf:
+      id: "ladder-pre-registration-prize-table"
+- assertVisible:
+    text: ${output["cash-doubles-first-prize"]}
+    childOf:
+      id: "ladder-pre-registration-prize-table"
+- scrollUntilVisible:
+    element:
+      text: ${output["cash-doubles-last-place"]}
+    direction: DOWN
+- scrollUntilVisible:
+    element:
+      text: ${output.footnote.replace("18+ only. ", "")}
+    direction: DOWN
+- tapOn:
+    id: "ladder-pre-registration-back"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn: "Community"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-option-maestro-prereg-community-doubles"
+    timeout: 10000
+- runFlow:
+    file: ../utilities/prereg/open-ticket.yaml
+    env:
+      ID: "maestro-prereg-community-singles"
+- tapOn:
+    id: "ladder-pre-registration-option-maestro-prereg-community-singles"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-pot"
+      text: ${output["community-singles-pool"]}
+    timeout: 15000
+- assertVisible: "Court Points to be won"
+- assertVisible: ${output["community-singles-registrants"]}
+- assertNotVisible:
+    id: "ladder-pre-registration-registrants"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-prize-table"
+    direction: DOWN
+- assertNotVisible: "Cash Payout"
+- assertVisible:
+    text: ${output["community-singles-first-prize"]}
+    childOf:
+      id: "ladder-pre-registration-prize-table"

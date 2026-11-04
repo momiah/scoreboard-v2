@@ -1,0 +1,62 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../utilities/signup/remove-leftover-account.yaml
+onFlowComplete:
+  - runFlow: ../utilities/signup/remove-leftover-account.yaml
+---
+# 15. New account: intro → account → profile (name, username, country and city) → welcome → Home signed in; the account is then deleted through the app.
+- runFlow: ../utilities/signup/open-signup.yaml
+- tapOn:
+    id: "signup-account-password-toggle"
+- tapOn:
+    id: "signup-account-email"
+- inputText: ${MAESTRO_SIGNUP_EMAIL}
+- tapOn:
+    id: "signup-account-password"
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn:
+    id: "signup-account-confirm"
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn: "One account for every game that counts\\."
+- tapOn:
+    id: "signup-account-create"
+- extendedWaitUntil:
+    visible:
+      id: "signup-profile-name"
+    timeout: 20000
+- tapOn:
+    id: "signup-profile-name"
+- inputText: "Maestro Signup"
+- tapOn:
+    id: "signup-profile-username"
+- inputText: ${MAESTRO_SIGNUP_USERNAME}
+- hideKeyboard
+- tapOn:
+    id: "signup-profile-location"
+- tapOn: "Search countries..."
+- inputText: "United Kingdom"
+- tapOn: "United Kingdom"
+- tapOn: "Search cities..."
+- inputText: "Manchester"
+- tapOn: "Manchester"
+- assertVisible: ".*Manchester.*"
+- tapOn:
+    id: "signup-profile-hand-right"
+    optional: true
+- tapOn:
+    id: "signup-profile-continue"
+- extendedWaitUntil:
+    visible:
+      id: "signup-welcome-explore"
+    timeout: 30000
+- assertVisible:
+    id: "signup-welcome-resend"
+- tapOn:
+    id: "signup-welcome-explore"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "Hello, Maestro"
+    timeout: 30000
+- runFlow: ../utilities/signup/delete-account.yaml

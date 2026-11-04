@@ -43,6 +43,21 @@ export const getPrizePool = getLadderPrizePoolAtSize;
 export const formatPrizePool = formatLadderPrizePool;
 export { getFullLadderPrizeTable, isCashLadder };
 
+/** The pre-registration Home headlines: the biggest cash pool, or the biggest CP pool when none is cash. */
+export const getHeadlinePreRegistration = <T extends Details>(
+  preRegistrations: T[],
+): T | undefined => {
+  const cashOptions = preRegistrations.filter(isCashLadder);
+  const hasCash = cashOptions.length > 0;
+  return (hasCash ? cashOptions : preRegistrations)
+    .slice()
+    .sort((a, b) =>
+      hasCash
+        ? getPrizePool(b).cash - getPrizePool(a).cash
+        : getPrizePool(b).xp - getPrizePool(a).xp,
+    )[0];
+};
+
 export const formatEntryFee = (details: Details) => {
   if (!isCashLadder(details)) return "Free entry";
   const fee = `${formatCurrency(details.entryFee, details.currencyType)}* entry`;

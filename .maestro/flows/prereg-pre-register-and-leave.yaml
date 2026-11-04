@@ -1,0 +1,92 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 11. Pre-register at the end of the guide: the user is on the list, the count goes up by one and the ladder shows "You're in". "Leave the list" takes them off and the count goes back down.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-doubles-registrants"
+      NAME: "before"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "cash-doubles-registrants-after-join"
+      NAME: "after"
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Cash"
+      ID: "maestro-prereg-cash-doubles"
+- assertVisible: ${output.before}
+- assertNotVisible:
+    id: "ladder-pre-registration-registered"
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- tapOn:
+    id: "pre-registration-how-to-play-pre-register"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-registered"
+    timeout: 15000
+- assertVisible: "You're on the list"
+- extendedWaitUntil:
+    visible: ${output.after}
+    timeout: 15000
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- assertVisible:
+    id: "pre-registration-how-to-play-registered"
+- assertNotVisible:
+    id: "pre-registration-how-to-play-pre-register"
+- tapOn:
+    id: "how-to-play-close"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-pot"
+    timeout: 10000
+- tapOn:
+    id: "ladder-pre-registration-back"
+- runFlow:
+    file: ../utilities/prereg/open-ticket.yaml
+    env:
+      ID: "maestro-prereg-cash-doubles"
+- assertVisible:
+    text: "You're in"
+    childOf:
+      id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"
+- tapOn:
+    id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-leave"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "ladder-pre-registration-leave"
+- extendedWaitUntil:
+    visible: "Leave the list\\?"
+    timeout: 5000
+- tapOn: "Leave"
+- extendedWaitUntil:
+    notVisible:
+      id: "ladder-pre-registration-registered"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: ${output.before}
+    direction: UP
+- assertNotVisible:
+    id: "ladder-pre-registration-leave"
+- tapOn:
+    id: "ladder-pre-registration-back"
+- runFlow:
+    file: ../utilities/prereg/open-ticket.yaml
+    env:
+      ID: "maestro-prereg-cash-doubles"
+- assertVisible:
+    text: "Pre-register"
+    childOf:
+      id: "ladder-pre-registration-option-maestro-prereg-cash-doubles"

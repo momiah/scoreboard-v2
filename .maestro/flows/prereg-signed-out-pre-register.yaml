@@ -1,0 +1,66 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+# 12. Signed out, the guide's last button reads "Sign in to pre-register" and opens Login.
+# Today, signing in resets to Home rather than returning to the pre-registration,
+# so the user opens the ladder again and pre-registers from there.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: ""
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-sign-out"
+- extendedWaitUntil:
+    visible:
+      id: "home-sign-in-link"
+    timeout: 20000
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Community"
+      ID: "maestro-prereg-community-doubles"
+- assertNotVisible:
+    id: "ladder-pre-registration-leave"
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- assertVisible: "Sign in to pre-register"
+- tapOn:
+    id: "pre-registration-how-to-play-pre-register"
+- extendedWaitUntil:
+    visible:
+      id: "login-email"
+    timeout: 10000
+- tapOn:
+    id: "login-email"
+- inputText: ${MAESTRO_TEST_USER_EMAIL}
+- tapOn: "Welcome back"
+- tapOn:
+    id: "login-password"
+- inputText: ${MAESTRO_TEST_USER_PASSWORD}
+- tapOn: "Welcome back"
+- tapOn:
+    id: "login-submit"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "maestro-harness-unlock"
+    timeout: 60000
+- assertNotVisible:
+    id: "ladder-pre-registration-pot"
+- runFlow:
+    file: ../utilities/prereg/open-signup.yaml
+    env:
+      TAB: "Community"
+      ID: "maestro-prereg-community-doubles"
+- runFlow: ../utilities/prereg/guide-to-end.yaml
+- assertVisible: "Pre-register"
+- tapOn:
+    id: "pre-registration-how-to-play-pre-register"
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-registered"
+    timeout: 15000

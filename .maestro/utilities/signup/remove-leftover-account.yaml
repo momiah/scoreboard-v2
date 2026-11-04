@@ -1,0 +1,36 @@
+appId: com.courtchamp
+---
+# A failed earlier run may have left the sign-up account behind: sign in with it
+# and delete it through the app. A no-op when it doesn't exist.
+- runFlow: signed-out-home.yaml
+- tapOn:
+    id: "home-sign-in-link"
+- tapOn:
+    id: "login-email"
+- inputText: ${MAESTRO_SIGNUP_EMAIL}
+- tapOn: "Welcome back"
+- tapOn:
+    id: "login-password"
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn: "Welcome back"
+- tapOn:
+    id: "login-submit"
+- extendedWaitUntil:
+    visible: "(Not Now|Hello, .*|Incorrect email or password.*|.*couldn't sign you in.*)"
+    timeout: 20000
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- runFlow:
+    when:
+      visible: "Hello, .*"
+    commands:
+      - runFlow: delete-account.yaml
+- runFlow:
+    when:
+      visible:
+        id: "login-email"
+    commands:
+      - back
+- runFlow: signed-out-home.yaml

@@ -1,0 +1,8 @@
+appId: com.courtchamp
+---
+# From the Ladders list on tab ${TAB}: scroll to a fixture's ticket.
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-option-${ID}"
+    direction: DOWN
+    centerElement: true

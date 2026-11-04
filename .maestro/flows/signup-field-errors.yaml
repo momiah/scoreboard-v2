@@ -1,0 +1,113 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+  - runFlow:
+      file: ../utilities/prereg/seed.yaml
+      env:
+        SCENARIO: ""
+---
+# 16. The sign-up form checks its fields when Create account / Continue is tapped:
+# an invalid email, an email already in use, a short password, mismatched
+# passwords, invalid and taken usernames, a one-word name and no location each
+# show their message, and nothing is created.
+- runFlow: ../utilities/signup/signed-out-home.yaml
+- runFlow: ../utilities/signup/open-signup.yaml
+- tapOn:
+    id: "signup-account-password-toggle"
+- tapOn:
+    id: "signup-account-email"
+- inputText: "not-an-email"
+- tapOn:
+    id: "signup-account-password"
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn:
+    id: "signup-account-confirm"
+- inputText: "Different-1"
+- tapOn: "One account for every game that counts\\."
+- assertVisible: "Passwords don't match"
+- tapOn:
+    id: "signup-account-confirm"
+- eraseText: 30
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn: "One account for every game that counts\\."
+- assertNotVisible: "Passwords don't match"
+- tapOn:
+    id: "signup-account-create"
+- extendedWaitUntil:
+    visible: "Invalid email format"
+    timeout: 10000
+- tapOn:
+    id: "signup-account-email"
+- eraseText: 40
+- inputText: ${MAESTRO_TEST_USER_EMAIL}
+- tapOn: "One account for every game that counts\\."
+- tapOn:
+    id: "signup-account-create"
+- extendedWaitUntil:
+    visible: "Email already registered"
+    timeout: 20000
+- assertNotVisible:
+    id: "signup-profile-name"
+- tapOn:
+    id: "signup-account-email"
+- eraseText: 60
+- inputText: ${MAESTRO_SIGNUP_EMAIL}
+- tapOn:
+    id: "signup-account-password"
+- eraseText: 30
+- inputText: "12345"
+- tapOn:
+    id: "signup-account-confirm"
+- eraseText: 30
+- inputText: "12345"
+- tapOn: "One account for every game that counts\\."
+- tapOn:
+    id: "signup-account-create"
+- extendedWaitUntil:
+    visible: "Password must be at least 6 characters"
+    timeout: 10000
+- tapOn:
+    id: "signup-account-password"
+- eraseText: 30
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn:
+    id: "signup-account-confirm"
+- eraseText: 30
+- inputText: ${MAESTRO_SIGNUP_PASSWORD}
+- tapOn: "One account for every game that counts\\."
+- tapOn:
+    id: "signup-account-create"
+- extendedWaitUntil:
+    visible:
+      id: "signup-profile-name"
+    timeout: 20000
+- tapOn:
+    id: "signup-profile-name"
+- inputText: "Maestro"
+- tapOn:
+    id: "signup-profile-username"
+- inputText: "ab"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Username must be at least ${MAESTRO_USERNAME_MIN_LENGTH} characters"
+    timeout: 10000
+- tapOn:
+    id: "signup-profile-username"
+- eraseText: 20
+- inputText: "bad_name"
+- hideKeyboard
+- assertVisible: "Only letters, numbers, and dashes \\(-\\) are allowed"
+- tapOn:
+    id: "signup-profile-username"
+- eraseText: 20
+- inputText: "mpreg-01"
+- hideKeyboard
+- extendedWaitUntil:
+    visible: "Username already exists"
+    timeout: 15000
+- tapOn:
+    id: "signup-profile-continue"
+- assertVisible: "Enter your first and last name"
+- assertVisible: "Country and city are required"
+- assertNotVisible:
+    id: "signup-welcome-explore"

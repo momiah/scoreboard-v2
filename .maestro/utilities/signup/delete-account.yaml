@@ -1,0 +1,19 @@
+appId: com.courtchamp
+---
+# Signed in: Profile → menu → Delete Account → Delete, through the app's own deletion.
+- tapOn:
+    id: "tab-profile"
+- tapOn:
+    id: "profile-menu-button"
+- tapOn: "Delete Account"
+- extendedWaitUntil:
+    visible: "Delete Account"
+    timeout: 5000
+- tapOn: "Delete"
+- tapOn:
+    id: "tab-home"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "home-sign-in-link"
+    timeout: 30000

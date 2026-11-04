@@ -1,0 +1,29 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 3. Only community pre-registrations open: the banner headlines the biggest CP pool.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-community-only"
+- runFlow:
+    file: ../utilities/prereg/remember.yaml
+    env:
+      KEY: "banner-pool"
+      NAME: "pool"
+- assertTrue: ${output.pool.endsWith(" CP")}
+- scrollUntilVisible:
+    element:
+      id: "ladder-pre-registration-banner"
+    direction: DOWN
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Prize pool up to ${output.pool_re}"
+- runFlow:
+    file: ../utilities/prereg/assert-banner.yaml
+    env:
+      TEXT: "Pre-register free"

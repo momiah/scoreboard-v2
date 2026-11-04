@@ -1,0 +1,15 @@
+appId: com.courtchamp
+---
+# Copies every expected string the seed computed for fixture KEY into output["KEY-field"] (and "_re").
+- evalScript: ${output.fields = ["title","pool","meta","location","entry","entry-caption","registrants","share","first-place","first-prize","last-place","entrants","objective","season-rounds","season-playoffs"]}
+- repeat:
+    while:
+      true: ${output.fields.length > 0}
+    commands:
+      - evalScript: ${output.field = output.fields.shift()}
+      - copyTextFrom:
+          id: "maestro-expected-${KEY}-${output.field}"
+      - runScript:
+          file: store-copied.js
+          env:
+            NAME: ${KEY + "-" + output.field}

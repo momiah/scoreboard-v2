@@ -1,0 +1,22 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+onFlowComplete:
+  - runFlow: ../utilities/prereg/restore-live.yaml
+---
+# 8. With only community ladders open, the Cash tab says none are open and shows no footnote.
+- runFlow:
+    file: ../utilities/prereg/seed.yaml
+    env:
+      SCENARIO: "-community-only"
+- runFlow:
+    file: ../utilities/prereg/open-list.yaml
+    env:
+      TAB: "Cash"
+- extendedWaitUntil:
+    visible: "No Cash Ladders are open.*"
+    timeout: 15000
+- assertNotVisible: "18\\+ only\\..*"
+- tapOn: "Community"
+- assertVisible:
+    id: "ladder-pre-registration-option-maestro-prereg-community-doubles"

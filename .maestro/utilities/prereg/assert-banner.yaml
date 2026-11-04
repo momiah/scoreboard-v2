@@ -1,0 +1,8 @@
+appId: com.courtchamp
+---
+# The banner is one touchable, so iOS merges its text into one label; TEXT is a regex fragment it must contain.
+- extendedWaitUntil:
+    visible:
+      id: "ladder-pre-registration-banner"
+      text: ".*${TEXT}.*"
+    timeout: 15000
