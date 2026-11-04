@@ -71,6 +71,10 @@ onFlowStart:
 - tapOn:
     text: "Continue"
     optional: true
+- swipe:
+    start: 50%, 30%
+    end: 50%, 45%
+- waitForAnimationToEnd
 - tapOn: "Update"
 - extendedWaitUntil:
     visible: "Club updated!"

@@ -187,7 +187,11 @@ const EditClub = () => {
         onClose={handleClosePopup}
         type="success"
       />
-      <ScrollContainer showsVerticalScrollIndicator={false}>
+      <ScrollContainer
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Title>Edit Club</Title>
 
         <TouchableOpacity onPress={handleImagePick} disabled={isSubmitting}>
