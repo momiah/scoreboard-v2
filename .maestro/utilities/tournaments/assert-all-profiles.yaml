@@ -1,0 +1,13 @@
+# Every entrant's global profile.
+appId: com.courtchamp
+---
+- evalScript: ${output.profileKeys = Object.keys(output.ids); output.pi = 0}
+- repeat:
+    while:
+      true: ${output.pi < output.profileKeys.length}
+    commands:
+      - runFlow:
+          file: assert-profile.yaml
+          env:
+            USER: ${output.profileKeys[output.pi]}
+      - evalScript: ${output.pi = output.pi + 1}

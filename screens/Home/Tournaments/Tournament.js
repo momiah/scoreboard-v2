@@ -258,7 +258,7 @@ const Tournament = () => {
               />
               <TournamentDetailsContainer>
                 {userRole === "admin" && (
-                  <EditButton onPress={handleNavigate}>
+                  <EditButton testID="tournament-menu" onPress={handleNavigate}>
                     <Ionicons name="menu" size={25} color="white" />
                   </EditButton>
                 )}
