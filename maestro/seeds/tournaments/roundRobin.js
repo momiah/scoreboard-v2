@@ -360,6 +360,7 @@ const generateScenarioFixtures = async ({ tournamentId, scenario, testUser, owne
 
 // clubId puts the tournament in that club, as creating it from the club's
 // screen does; the club's own cleanup removes the feed events it causes.
+/** @param {{ key: string, testUser: any, actions: any, fixtureActions: any, clubId?: string | null }} args */
 export const seedScenario = async ({ key, testUser, actions, fixtureActions, clubId = null }) => {
   const scenario = RR_SCENARIOS[key];
   await deleteTournaments(

@@ -27,11 +27,10 @@ import type { HarnessSection } from "./types";
 
 const ROUNDS = [1, 2, 3];
 
-const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
+export const useRoundRobinSeedActions = () => {
   const league = useContext(LeagueContext);
   const { sendNotification, getUserById } = useContext(UserContext);
-  const fixtureActions = useFixtureCompetitionActions();
-  const actions = {
+  return {
     getCourts: league.getCourts,
     addCompetition: league.addCompetition,
     updatePendingInvites: league.updatePendingInvites,
@@ -41,6 +40,11 @@ const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
     getUserById,
     extractPlayersWithXp,
   };
+};
+
+const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
+  const fixtureActions = useFixtureCompetitionActions();
+  const actions = useRoundRobinSeedActions();
   const testUser = currentUser;
 
   return (
@@ -88,7 +92,9 @@ const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
           key={`opp-${round}`}
           id={`maestro-rr-opponent-reports-round-${round}`}
           label={`RR opp reports r${round}`}
-          run={() => opponentReportsUserGame({ round, testUser, fixtureActions })}
+          run={() =>
+            opponentReportsUserGame({ round, testUser, fixtureActions })
+          }
         />
       ))}
       <SeedButton
@@ -100,7 +106,9 @@ const RoundRobinButtons = ({ currentUser }: { currentUser: UserProfile }) => {
         id="maestro-rr-play-reverse"
         label="RR play reverse"
         run={async () => {
-          const state = JSON.parse((await expectedState({ testUser })).expected.state);
+          const state = JSON.parse(
+            (await expectedState({ testUser })).expected.state,
+          );
           const gameNumbers = Array.from(
             { length: state.numberOfGames },
             (_, i) => state.numberOfGames - i,

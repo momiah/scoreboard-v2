@@ -4,7 +4,9 @@ import { UserContext } from "../../context/UserContext";
 import { SeedButton } from "../harness/HarnessButton";
 import {
   CLUB_FIXTURE_IDS,
+  CLUB_TOURNAMENT_SCENARIO,
   cleanupClubTestData,
+  clubWinnerMessage,
   countRemovalNotices,
   findTestUserClubId,
   fixtureOwnerAcceptsRequest,
@@ -12,10 +14,18 @@ import {
   fixtureRespondToInvite,
   seedClubFixtureUsers,
   seedFixtureOwnedClub,
+  seedClubTournament,
   seedOwnedClub,
   type ClubFixtureUserId,
   type ClubServices,
 } from "../seeds/clubs/seedClubs";
+import { useFixtureCompetitionActions } from "../seeds/competitions/fixtureActions";
+import {
+  RR_SCENARIOS,
+  playToCompletion,
+  seedScenario,
+} from "../seeds/tournaments/roundRobin";
+import { useRoundRobinSeedActions } from "./tournaments";
 import type { HarnessSection, HarnessSectionProps } from "./types";
 
 const INVITE_RESPONSES: {
@@ -47,6 +57,8 @@ const useClubServices = (): ClubServices => {
 
 const ClubButtons = ({ currentUser }: HarnessSectionProps) => {
   const services = useClubServices();
+  const tournamentActions = useRoundRobinSeedActions();
+  const fixtureActions = useFixtureCompetitionActions();
   return (
     <>
       <SeedButton
@@ -149,6 +161,48 @@ const ClubButtons = ({ currentUser }: HarnessSectionProps) => {
         success="Checked"
         failure="Check failed"
         run={() => countRemovalNotices("maestroClubMember4")}
+      />
+      <SeedButton
+        id="maestro-clubs-seed-tournament"
+        label="Seed club tournament"
+        run={() =>
+          seedClubTournament({
+            services,
+            testUser: currentUser,
+            seedTournament: (clubId) =>
+              seedScenario({
+                key: CLUB_TOURNAMENT_SCENARIO,
+                testUser: currentUser,
+                actions: tournamentActions,
+                fixtureActions,
+                clubId,
+              }),
+          })
+        }
+      />
+      <SeedButton
+        id="maestro-clubs-play-tournament"
+        label="Play club tournament"
+        run={async () => {
+          const { winners } = await playToCompletion({
+            testUser: currentUser,
+            fixtureActions,
+          });
+          const firstPlace = winners.filter(
+            (winner: { place: string }) => winner.place === winners[0].place,
+          );
+          return {
+            winners,
+            expected: {
+              clubWinnerMessage: await clubWinnerMessage({
+                winnerIds: firstPlace.map(
+                  (winner: { userId: string }) => winner.userId,
+                ),
+                tournamentName: RR_SCENARIOS[CLUB_TOURNAMENT_SCENARIO].name,
+              }),
+            },
+          };
+        }}
       />
       <SeedButton
         id="maestro-clubs-olive-accepts-test-user"

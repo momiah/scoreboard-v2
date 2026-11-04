@@ -1,0 +1,59 @@
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-reset"
+
+# A round-robin tournament inside the test user's club, its entrants club members
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-seed-tournament"
+- runFlow: ../utilities/clubs/home-top.yaml
+- copyTextFrom:
+    id: "maestro-expected-clubMembers"
+- evalScript: ${output.members = maestro.copiedText}
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- assertVisible: "${output.members} MEMBERS"
+- tapOn: "Feed"
+- assertVisible: '.*created the tournament "Maestro RR Bulk Singles".*'
+- swipe:
+    from:
+      text: "Club Performance"
+    direction: LEFT
+- tapOn: "Tournaments"
+- assertVisible: ".*Maestro RR Bulk Singles.*"
+
+# Every game is reported and approved; the prize function then posts the winner
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-clubs-play-tournament"
+- runFlow: ../utilities/clubs/home-top.yaml
+- copyTextFrom:
+    id: "maestro-expected-clubWinnerMessage"
+- evalScript: ${output.winnerMessage = maestro.copiedText}
+- runFlow: ../utilities/tournaments/wait-for-prizes.yaml
+
+- runFlow:
+    file: ../utilities/clubs/open-club.yaml
+    env:
+      CLUB_NAME: "Maestro Seeded Club"
+- tapOn: "Feed"
+- extendedWaitUntil:
+    visible: ".*${output.winnerMessage}.*"
+    timeout: 20000
+- assertVisible: ".*Competition winner.*"
+
+# The round-robin cleanup restores the test user's profile from the
+# snapshot its seed took on this device, then the club cleanup runs
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-cleanup-test-data"

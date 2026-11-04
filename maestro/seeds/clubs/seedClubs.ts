@@ -263,7 +263,7 @@ const inviteAndAccept = async ({
   services: ClubServices;
   inviter: UserProfile;
   club: Pick<Club, "clubId" | "clubName">;
-  userId: ClubFixtureUserId;
+  userId: string;
 }) => {
   await sendClubInvite({
     club,
@@ -364,6 +364,60 @@ export const countRemovalNotices = async (userId: ClubFixtureUserId) => {
     ),
   ).length;
   return { userId, expected: { clubRemovalNotices: removalNotices } };
+};
+
+export const CLUB_TOURNAMENT_SCENARIO = "bulkSingles";
+
+export const seedClubTournament = async ({
+  services,
+  testUser,
+  seedTournament,
+}: {
+  services: ClubServices;
+  testUser: UserProfile;
+  seedTournament: (clubId: string) => Promise<unknown>;
+}) => {
+  const { clubId } = await seedOwnedClub({
+    services,
+    testUser,
+    withMembers: [],
+  });
+  const club = {
+    clubId,
+    clubName: `${CLUB_NAME_PREFIX} Seeded Club`,
+  };
+  const outcome = await seedTournament(clubId);
+  const tournamentSnap = await getDocs(
+    query(
+      collection(db, COLLECTION_NAMES.tournaments),
+      where("clubId", "==", clubId),
+    ),
+  );
+  const entrantIds = tournamentSnap.docs.flatMap((tournament) =>
+    (tournament.data().tournamentParticipants ?? []).map(
+      (participant: { userId: string }) => participant.userId,
+    ),
+  );
+  for (const userId of entrantIds.filter((id) => id !== testUser.userId)) {
+    await inviteAndAccept({ services, inviter: testUser, club, userId });
+  }
+  return { clubId, tournament: outcome, expected: await clubExpected(clubId) };
+};
+
+export const clubWinnerMessage = async ({
+  winnerIds,
+  tournamentName,
+}: {
+  winnerIds: string[];
+  tournamentName: string;
+}) => {
+  const usernames = await Promise.all(
+    winnerIds.map(async (userId) => {
+      const user = await getDoc(doc(db, "users", userId));
+      return (user.data()?.username as string | undefined) ?? "A player";
+    }),
+  );
+  return `${usernames.join(" / ")} won the tournament "${tournamentName}"`;
 };
 
 const deleteTestUserClubNotifications = async (
