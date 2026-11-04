@@ -136,6 +136,7 @@ const BulkScoreDisplay = ({ game, onScoresChange }: BulkScoreDisplayProps) => {
         </StaticScoreContainer>
       ) : (
         <SingleScoreInput
+          testID={`bulk-score-${game.gameNumber}`}
           keyboardType="number-pad"
           placeholder="00-00"
           placeholderTextColor="#1d3a5f"
@@ -720,6 +721,7 @@ const BulkFixturesPublisher = () => {
 
       <SubmitButtons>
         <SubmitButton
+          testID="bulk-submit"
           onPress={handleSubmitGames}
           disabled={gamesReadyToSubmit.length === 0 || publishing}
           style={{

@@ -49,13 +49,14 @@ const PlayerPerformance = ({ playersData }) => {
     return (
       <TableRow
         key={player.userId}
+        testID={`performance-row-${player.userId}`}
         onPress={() => {
           setShowPlayerDetails(true);
           setSelectedPlayer(player);
         }}
       >
         <TableCell>
-          <Rank>
+          <Rank testID={`performance-rank-${player.userId}`}>
             {index + 1}
             {index === 0
               ? "st"
@@ -72,11 +73,16 @@ const PlayerPerformance = ({ playersData }) => {
         </PlayerNameCell>
         <TableCell>
           <StatTitle>Wins</StatTitle>
-          <Stat>{player.numberOfWins}</Stat>
+          <Stat testID={`performance-wins-${player.userId}`}>
+            {player.numberOfWins}
+          </Stat>
         </TableCell>
         <TableCell>
           <StatTitle>PD</StatTitle>
-          <Stat style={{ color: pointDifference < 0 ? "red" : "green" }}>
+          <Stat
+            testID={`performance-pd-${player.userId}`}
+            style={{ color: pointDifference < 0 ? "red" : "green" }}
+          >
             {pointDifference}
           </Stat>
         </TableCell>

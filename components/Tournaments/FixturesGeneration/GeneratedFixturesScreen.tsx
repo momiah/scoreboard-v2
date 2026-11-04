@@ -102,7 +102,11 @@ export const GeneratedFixturesScreen = ({
         <BackButton onPress={onBack}>
           <BackText>Back</BackText>
         </BackButton>
-        <ConfirmButton onPress={onGenerateTournament} disabled={isGenerating}>
+        <ConfirmButton
+          testID="fixtures-confirm"
+          onPress={onGenerateTournament}
+          disabled={isGenerating}
+        >
           {isGenerating && <ActivityIndicator size="small" color="#fff" />}
           <ConfirmText>Confirm</ConfirmText>
         </ConfirmButton>

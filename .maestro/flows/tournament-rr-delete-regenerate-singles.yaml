@@ -1,0 +1,61 @@
+# Round robin, singles: the admin sees Generate Fixtures on the empty Fixtures tab,
+# generates, deletes the fixtures from Tournament Settings and generates again
+# from the empty tab. Once fixtures exist, inviting is blocked; once a game is
+# approved, the fixtures can no longer be deleted.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "gatesSingles"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Fixtures"
+- assertVisible:
+    id: "empty-state-message"
+    text: "Create your tournament fixtures to start organizing matches"
+- assertVisible:
+    id: "empty-state-generate"
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: ""
+      GENERATION: "Random"
+- runFlow:
+    file: ../utilities/tournaments/delete-fixtures.yaml
+    env:
+      BLOCKED: "false"
+- runFlow:
+    file: ../utilities/tournaments/generate-fixtures.yaml
+    env:
+      MODE: ""
+      GENERATION: "Random"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-check-fairness"
+- runFlow:
+    file: ../utilities/tournaments/open-tournament.yaml
+    env:
+      TAB: "Fixtures"
+- tapOn: "Invite Players"
+- extendedWaitUntil:
+    visible:
+      id: "invite-error"
+      text: "Cannot invite players as fixtures have been generated for this tournament."
+    timeout: 20000
+- tapOn:
+    id: "tab-home"
+- runFlow:
+    file: ../utilities/harness.yaml
+    env:
+      BUTTON: "maestro-rr-play-round-1"
+- runFlow:
+    file: ../utilities/tournaments/delete-fixtures.yaml
+    env:
+      BLOCKED: "true"

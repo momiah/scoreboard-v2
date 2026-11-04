@@ -1,0 +1,63 @@
+# Checks Player Performance (and Team Performance in doubles) against
+# output.exp: every entrant's wins, point difference and rank.
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-tournament.yaml
+    env:
+      TAB: "Player Performance"
+- evalScript: ${output.keys = Object.keys(output.exp.standings).filter((k) => k.indexOf('-') === -1); output.i = 0}
+- repeat:
+    while:
+      true: ${output.i < output.keys.length}
+    commands:
+      - evalScript: ${output.cur = output.keys[output.i]; output.row = output.exp.standings[output.cur]}
+      - scrollUntilVisible:
+          element:
+            id: "performance-wins-${output.cur}"
+      - extendedWaitUntil:
+          visible:
+            id: "performance-wins-${output.cur}"
+            text: ${output.row.wins}
+          timeout: 20000
+      - assertVisible:
+          id: "performance-pd-${output.cur}"
+          text: ${output.row.pd}
+      - assertVisible:
+          id: "performance-rank-${output.cur}"
+          text: ${output.row.rank}
+      - evalScript: ${output.i = output.i + 1}
+- runFlow:
+    when:
+      true: ${output.exp.userTeamKey !== ''}
+    commands:
+      - scrollUntilVisible:
+          element:
+            text: "Team Performance"
+          direction: RIGHT
+          centerElement: true
+          optional: true
+      - tapOn: "Team Performance"
+      - evalScript: ${output.keys = Object.keys(output.exp.standings).filter((k) => k.indexOf('-') !== -1); output.i = 0}
+      - repeat:
+          while:
+            true: ${output.i < output.keys.length}
+          commands:
+            - evalScript: ${output.cur = output.keys[output.i]; output.row = output.exp.standings[output.cur]}
+            - scrollUntilVisible:
+                element:
+                  id: "performance-wins-${output.cur}"
+            - extendedWaitUntil:
+                visible:
+                  id: "performance-wins-${output.cur}"
+                  text: ${output.row.wins}
+                timeout: 20000
+            - assertVisible:
+                id: "performance-pd-${output.cur}"
+                text: ${output.row.pd}
+            - assertVisible:
+                id: "performance-rank-${output.cur}"
+                text: ${output.row.rank}
+            - evalScript: ${output.i = output.i + 1}
+- tapOn:
+    id: "tab-home"

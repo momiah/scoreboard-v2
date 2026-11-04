@@ -702,6 +702,7 @@ const InvitePlayer = () => {
 
         {/* Search input: always shown */}
         <Input
+          testID="invite-search-input"
           placeholder={
             isClubCompetition
               ? "Filter club members…"
@@ -824,13 +825,16 @@ const InvitePlayer = () => {
 
             {renderDisclaimer()}
 
-            {displayError ? <ErrorText>{displayError}</ErrorText> : null}
+            {displayError ? (
+              <ErrorText testID="invite-error">{displayError}</ErrorText>
+            ) : null}
           </ScrollView>
         </TouchableWithoutFeedback>
       )}
 
       <BottomBar>
         <InviteButton
+          testID="invite-send"
           onPress={handleSendInvite}
           disabled={isInviteDisabled}
           style={{ opacity: isInviteDisabled ? 0.6 : 1 }}

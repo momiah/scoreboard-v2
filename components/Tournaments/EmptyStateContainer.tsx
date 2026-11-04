@@ -23,9 +23,14 @@ export const EmptyStateContainer = ({
           <AntDesign name="calendar" size={64} color="#ccc" />
         </EmptyStateIcon>
         <EmptyStateText>No {label} generated yet</EmptyStateText>
-        <EmptyStateSubtext>{emptyStateMessage}</EmptyStateSubtext>
+        <EmptyStateSubtext testID="empty-state-message">
+          {emptyStateMessage}
+        </EmptyStateSubtext>
         {userRole === "admin" && (
-          <GenerateButton onPress={handleShowGenerateFixtures}>
+          <GenerateButton
+            testID="empty-state-generate"
+            onPress={handleShowGenerateFixtures}
+          >
             <AntDesign
               name="plus"
               size={20}

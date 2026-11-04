@@ -1,0 +1,39 @@
+# The admin opens Bulk Publish Fixtures, enters every game's score from
+# output.exp and submits them all.
+appId: com.courtchamp
+---
+- runFlow:
+    file: open-tournament.yaml
+    env:
+      TAB: "Fixtures"
+- tapOn:
+    id: "tournament-menu"
+- tapOn: "Bulk Publish Fixtures"
+- extendedWaitUntil:
+    notVisible: "Loading fixtures..."
+    timeout: 30000
+- evalScript: ${output.gn = 1}
+- repeat:
+    while:
+      true: ${output.gn <= output.exp.numberOfGames}
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "bulk-score-${output.gn}"
+          centerElement: true
+      - tapOn:
+          id: "bulk-score-${output.gn}"
+      - inputText: ${output.exp.scores[output.gn].replace('-', '')}
+      - evalScript: ${output.gn = output.gn + 1}
+- hideKeyboard
+- tapOn:
+    id: "bulk-submit"
+- extendedWaitUntil:
+    visible: "Submit ${output.exp.numberOfGames} game results?"
+    timeout: 10000
+- tapOn: "Submit"
+- extendedWaitUntil:
+    visible: "Successfully submitted ${output.exp.numberOfGames} game results!"
+    timeout: 60000
+- tapOn:
+    id: "tab-home"
