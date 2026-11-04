@@ -1,19 +1,9 @@
-import {
-  League,
-  TeamStats,
-  Game,
-  ScoreboardProfile,
-  UserProfile,
-} from "courtchamps-shared/types";
+import { League, Game, UserProfile } from "courtchamps-shared/types";
 
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 
-import {
-  calculatePlayerPerformance,
-  calculateTeamPerformance,
-} from "courtchamps-shared/helpers";
-import { getUserById } from "./helpers/firebaseHelpers";
+import { applyLeagueGameResults } from "courtchamps-shared/helpers";
 import {
   getGamePlayerIds,
   isDueForAutoApproval,
@@ -30,17 +20,13 @@ export const autoApproveLeagueGames = onSchedule(
         .where("prizesDistributed", "==", false)
         .get();
 
-      const leagues = leaguesSnapshot.docs.map((doc) => ({
-        leagueId: doc.id,
-        leagueRef: doc.ref,
-        leagueData: doc.data() as League,
-      }));
+      const dueLeagueRefs = leaguesSnapshot.docs
+        .filter((doc) =>
+          ((doc.data() as League).games || []).some(isDueForAutoApproval),
+        )
+        .map((doc) => doc.ref);
 
-      await Promise.all(
-        leagues.map(({ leagueId, leagueRef, leagueData }) =>
-          processLeague(db, leagueId, leagueRef, leagueData),
-        ),
-      );
+      await Promise.all(dueLeagueRefs.map((ref) => processLeague(db, ref)));
 
       console.log("✅ Auto-approval function finished.");
     } catch (error) {
@@ -49,131 +35,89 @@ export const autoApproveLeagueGames = onSchedule(
   },
 );
 
-const processLeague = async (
+// Runs in a transaction so a user approving or reporting a game at the same
+// time is never overwritten, and a game approved meanwhile is not re-applied.
+export const processLeague = async (
   db: admin.firestore.Firestore,
-  leagueId: string,
   leagueRef: admin.firestore.DocumentReference,
-  leagueData: League,
 ) => {
-  const games = leagueData.games || [];
-
-  // ── 1. Find games due for auto-approval ──
-  const gamesDueForApproval = games
-    .map((game, index) => ({ game, index }))
-    .filter(({ game }) => {
-      if (!isDueForAutoApproval(game)) return false;
-      if (!game.result?.winner || !game.result?.loser) {
-        console.warn(`⚠️ Game ${game.gameId} missing result data, skipping`);
-        return false;
-      }
-      return true;
-    });
-
-  if (!gamesDueForApproval.length) {
-    console.log(`⏭️ No games due for auto-approval in league ${leagueId}`);
-    return;
-  }
-
-  // ── 2. Fetch users once for all players across pending games ──
-  const uniquePlayerIds = [
-    ...new Set(
-      gamesDueForApproval.flatMap(({ game }) => getGamePlayerIds(game)),
-    ),
-  ];
-  const fetchedUsers = await Promise.all(uniquePlayerIds.map(getUserById));
-  const usersById = new Map(
-    fetchedUsers
-      .filter((u): u is UserProfile => u !== null)
-      .map((u) => [u.userId, u]),
-  );
-
-  if (!usersById.size) {
-    console.warn(`⚠️ No valid users found for games in league ${leagueId}`);
-    return;
-  }
-
-  // ── 3. Iterate pending games, accumulating deltas in memory ──
-  const isDoubles = leagueData.leagueType === "Doubles";
-  const updatedGames = [...games];
-  let latestParticipants = [...(leagueData.leagueParticipants || [])];
-  let latestTeams = [...(leagueData.leagueTeams || [])];
-  const usersToUpdate = new Map<string, UserProfile>();
-
-  for (const { game, index } of gamesDueForApproval) {
-    try {
-      const approvedGame = markGameApproved(game);
-      const gamePlayerIds = getGamePlayerIds(approvedGame);
-
-      const gameParticipants = latestParticipants.filter((p) =>
-        gamePlayerIds.includes(p.userId!),
-      );
-      const gameUsers = gamePlayerIds
-        .map((id) => usersById.get(id))
-        .filter((u): u is UserProfile => !!u);
-
-      if (!gameParticipants.length || !gameUsers.length) {
-        console.warn(
-          `⚠️ Missing participants/users for game ${game.gameId} in league ${leagueId}`,
-        );
-        continue;
-      }
-
-      const { playersToUpdate, usersToUpdate: gameUsersToUpdate } =
-        calculatePlayerPerformance(approvedGame, gameParticipants, gameUsers);
-
-      const updatedParticipantsById = new Map(
-        playersToUpdate.map((p) => [p.userId!, p]),
-      );
-      latestParticipants = latestParticipants.map(
-        (p) => updatedParticipantsById.get(p.userId!) ?? p,
-      );
-
-      gameUsersToUpdate.forEach((user) => {
-        usersById.set(user.userId, user);
-        usersToUpdate.set(user.userId, user);
-      });
-
-      if (isDoubles) {
-        const teamDeltas = await calculateTeamPerformance({
-          game: approvedGame,
-          allTeams: latestTeams,
-        });
-        const teamDeltasByKey = new Map(teamDeltas.map((t) => [t.teamKey, t]));
-        latestTeams = latestTeams.map(
-          (team) => teamDeltasByKey.get(team.teamKey) ?? team,
-        );
-      }
-
-      updatedGames[index] = approvedGame;
-    } catch (error) {
-      console.error(
-        `❌ Error processing game ${game.gameId} in league ${leagueId}:`,
-        error,
-      );
-    }
-  }
-
-  // ── 4. Write everything in one batch ──
+  const leagueId = leagueRef.id;
   try {
-    const batch = db.batch();
+    const approvedCount = await db.runTransaction(async (transaction) => {
+      const leagueSnap = await transaction.get(leagueRef);
+      const league = leagueSnap.data() as League | undefined;
+      if (!league || league.prizesDistributed) return 0;
 
-    batch.update(leagueRef, {
-      games: updatedGames,
-      leagueParticipants: latestParticipants,
-      ...(isDoubles && { leagueTeams: latestTeams }),
-    });
+      const games: Game[] = league.games || [];
+      const dueGames = games.filter(isDueForAutoApproval);
+      if (!dueGames.length) return 0;
 
-    usersToUpdate.forEach((user) => {
-      batch.update(db.collection("users").doc(user.userId), {
-        profileDetail: user.profileDetail,
+      const playerIds = [...new Set(dueGames.flatMap(getGamePlayerIds))];
+      const userSnaps = playerIds.length
+        ? await transaction.getAll(
+            ...playerIds.map((id) => db.collection("users").doc(id)),
+          )
+        : [];
+      const users = userSnaps
+        .filter((snap) => snap.exists)
+        .map((snap) => snap.data() as UserProfile);
+
+      const isDoubles = league.leagueType === "Doubles";
+      let results = {
+        participants: league.leagueParticipants || [],
+        teams: league.leagueTeams || [],
+        users,
+      };
+      const changedUsers = new Map<string, UserProfile>();
+      const approvedById = new Map<string, Game>();
+
+      for (const game of dueGames) {
+        const approvedGame = markGameApproved(game);
+        try {
+          const next = await applyLeagueGameResults({
+            games: [approvedGame],
+            participants: results.participants,
+            teams: results.teams,
+            users: results.users,
+            isDoubles,
+          });
+          next.users.forEach((u) => changedUsers.set(u.userId, u));
+          results = {
+            participants: next.participants,
+            teams: next.teams,
+            users: results.users.map((u) => changedUsers.get(u.userId) ?? u),
+          };
+          approvedById.set(game.gameId, approvedGame);
+        } catch (error) {
+          console.warn(
+            `⚠️ Skipping game ${game.gameId} in league ${leagueId}:`,
+            error,
+          );
+        }
+      }
+
+      if (!approvedById.size) return 0;
+
+      transaction.update(leagueRef, {
+        games: games.map((g) => approvedById.get(g.gameId) ?? g),
+        leagueParticipants: results.participants,
+        ...(isDoubles && { leagueTeams: results.teams }),
       });
+      changedUsers.forEach((user) => {
+        transaction.update(db.collection("users").doc(user.userId), {
+          profileDetail: user.profileDetail,
+        });
+      });
+      return approvedById.size;
     });
 
-    await batch.commit();
     console.log(
-      `✅ Auto-approved ${gamesDueForApproval.length} games in league ${leagueId}`,
+      `✅ Auto-approved ${approvedCount} games in league ${leagueId}`,
     );
   } catch (error) {
-    console.error(`❌ Error committing writes for league ${leagueId}:`, error);
+    console.error(
+      `❌ Error auto-approving games in league ${leagueId}:`,
+      error,
+    );
   }
 };
