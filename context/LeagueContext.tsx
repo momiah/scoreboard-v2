@@ -88,6 +88,7 @@ import {
   approveCompetitionGame,
   findGameInCompetition,
 } from "@/helpers/approveCompetitionGame";
+import { deleteClubAndDetach } from "../helpers/clubs/deleteClubAndDetach";
 
 const LeagueContext = createContext<LeagueContextType>({} as LeagueContextType);
 
@@ -1906,24 +1907,8 @@ const LeagueProvider = ({ children }: { children: ReactNode }) => {
   // each subcollection is read and batch-deleted (500-op batch limit).
   const deleteClub = async (clubId: string): Promise<void> => {
     try {
-      const clubRef = doc(db, COLLECTION_NAMES.clubs, clubId);
-      const subcollections = ["participants", "feed", "chat"];
-
-      for (const sub of subcollections) {
-        const snap = await getDocs(
-          collection(db, COLLECTION_NAMES.clubs, clubId, sub),
-        );
-        // Chunk deletes well under the 500-write batch cap.
-        for (let i = 0; i < snap.docs.length; i += 450) {
-          const batch = writeBatch(db);
-          snap.docs
-            .slice(i, i + 450)
-            .forEach((docSnap) => batch.delete(docSnap.ref));
-          await batch.commit();
-        }
-      }
-
-      await deleteDoc(clubRef);
+      await deleteClubAndDetach(clubId);
+      await fetchUpcomingClubs();
     } catch (error) {
       console.error("Error deleting club:", error);
       throw error;

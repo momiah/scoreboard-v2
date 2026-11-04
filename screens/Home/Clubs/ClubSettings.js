@@ -106,7 +106,11 @@ const ClubSettings = () => {
 
       await deleteClub(clubId);
       setPasswordModalVisible(false);
-      navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      navigation.popToTop();
+      navigation.navigate("Tabs", {
+        screen: "Home",
+        params: { screen: "HomeMain" },
+      });
     } catch (error) {
       if (
         error.code === "auth/wrong-password" ||
