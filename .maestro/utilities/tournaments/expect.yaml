@@ -1,0 +1,10 @@
+# Reads the expected numbers for the tournament as it stands into output.exp.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-expect"
+- copyTextFrom:
+    id: "maestro-expected-state"
+- evalScript: ${output.exp = JSON.parse(maestro.copiedText)}

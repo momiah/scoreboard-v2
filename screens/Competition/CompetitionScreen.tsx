@@ -370,12 +370,15 @@ const CompetitionsHeader = memo<CompetitionsHeaderProps>(
   ({ unreadNotifications, onAddPress, onNotificationsPress }) => (
     <HeaderRow>
       <Header>
-        <AddButton onPress={onAddPress}>
+        <AddButton testID="competitions-add" onPress={onAddPress}>
           <Ionicons name="add" size={isSmallScreen ? 18 : 22} color="white" />
         </AddButton>
         <HeaderText>Competitions</HeaderText>
       </Header>
-      <NotificationButton onPress={onNotificationsPress}>
+      <NotificationButton
+        testID="competitions-notifications"
+        onPress={onNotificationsPress}
+      >
         <Ionicons name="notifications-outline" size={24} color="white" />
         {unreadNotifications > 0 && (
           <NotificationBadge>

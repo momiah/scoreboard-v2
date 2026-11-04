@@ -1,0 +1,20 @@
+# Seeds a round-robin scenario (SCENARIO, a key of RR_SCENARIOS) and keeps its
+# ids in output.ids and its name in output.tournamentName.
+appId: com.courtchamp
+---
+- runFlow:
+    file: ../harness.yaml
+    env:
+      BUTTON: "maestro-rr-seed-${SCENARIO}"
+- copyTextFrom:
+    id: "maestro-expected-ids"
+- evalScript: ${output.ids = JSON.parse(maestro.copiedText)}
+- copyTextFrom:
+    id: "maestro-expected-tournamentName"
+- evalScript: ${output.tournamentName = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-courtName"
+- evalScript: ${output.courtName = maestro.copiedText}
+- copyTextFrom:
+    id: "maestro-expected-teams"
+- evalScript: ${output.teams = JSON.parse(maestro.copiedText)}

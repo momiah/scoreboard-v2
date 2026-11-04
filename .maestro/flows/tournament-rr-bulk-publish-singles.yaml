@@ -1,0 +1,21 @@
+# Round robin, singles: the admin enters every score in Bulk Publish Fixtures and
+# publishes them at once. The standings, Team Performance and every entrant's
+# global profile match the app's helpers, the tournament completes, the prize
+# function notifies the winners and their profiles carry the prize.
+appId: com.courtchamp
+onFlowStart:
+  - runFlow: ../login.yaml
+---
+- runFlow:
+    file: ../utilities/tournaments/seed.yaml
+    env:
+      SCENARIO: "bulkSingles"
+- runFlow: ../utilities/tournaments/expect.yaml
+- assertTrue: ${output.exp.approved === 0}
+- runFlow: ../utilities/tournaments/bulk-publish.yaml
+- runFlow: ../utilities/tournaments/expect.yaml
+- assertTrue: ${output.exp.complete}
+- runFlow: ../utilities/tournaments/assert-standings.yaml
+- runFlow: ../utilities/tournaments/wait-for-prizes.yaml
+- runFlow: ../utilities/tournaments/assert-all-profiles.yaml
+- runFlow: ../utilities/tournaments/assert-prize-notification.yaml

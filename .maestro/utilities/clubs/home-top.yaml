@@ -1,0 +1,17 @@
+appId: com.courtchamp
+---
+- tapOn:
+    id: "tab-home"
+- tapOn:
+    id: "tab-home"
+- repeat:
+    times: 6
+    commands:
+      - swipe:
+          start: 50%, 25%
+          end: 50%, 85%
+          duration: 300
+- extendedWaitUntil:
+    visible:
+      id: "maestro-harness-filter"
+    timeout: 20000

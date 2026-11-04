@@ -130,6 +130,7 @@ export const CreateTeamsScreen = ({
           <BackText>Back</BackText>
         </BackButton>
         <GenerateButton
+          testID="fixtures-create-teams-generate"
           disabled={!canGenerate || isGenerating}
           onPress={onGenerateFixtures}
         >
@@ -172,7 +173,10 @@ const TeamPair = ({
   <TeamPairContainer>
     <TeamPairTitle>Team {index + 1}</TeamPairTitle>
 
-    <PlayerSelectionRow onPress={() => onPlayerSelect(index, "player1")}>
+    <PlayerSelectionRow
+      testID={`fixtures-team-${index + 1}-player1`}
+      onPress={() => onPlayerSelect(index, "player1")}
+    >
       <PlayerSlotContent>
         <PlayerSlotText playerSelected={!!team.player1}>
           {team.player1 ? formatDisplayName(team.player1) : "Select Player 1"}
@@ -181,7 +185,10 @@ const TeamPair = ({
       <AntDesign name="plus" size={20} color="#00A2FF" />
     </PlayerSelectionRow>
 
-    <PlayerSelectionRow onPress={() => onPlayerSelect(index, "player2")}>
+    <PlayerSelectionRow
+      testID={`fixtures-team-${index + 1}-player2`}
+      onPress={() => onPlayerSelect(index, "player2")}
+    >
       <PlayerSlotContent>
         <PlayerSlotText playerSelected={!!team.player2}>
           {team.player2 ? formatDisplayName(team.player2) : "Select Player 2"}

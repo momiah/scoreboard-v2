@@ -129,6 +129,7 @@ const AddCompetitionModal: React.FC<AddCompetitionModalProps> = ({
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="add-competition-tournament"
               onPress={() => handleOptionPress("tournament")}
               style={{
                 flexDirection: "row",
