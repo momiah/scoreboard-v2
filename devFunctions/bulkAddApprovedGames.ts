@@ -1,7 +1,7 @@
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, runTransaction } from "firebase/firestore";
 import { db } from "../services/firebase.config";
-import { processGamePerformance } from "../helpers/processGamePerformance";
-import { ScoreboardProfile, Game } from "@shared/types";
+import { applyLeagueGameResults, getGamePlayerIds } from "@shared/helpers";
+import { Game, League, UserProfile } from "@shared/types";
 
 interface BulkAddGamesResult {
   success: boolean;
@@ -18,116 +18,71 @@ interface BulkAddGamesResult {
   }[];
 }
 
+// All games, standings, teams and profiles are written in one transaction:
+// either every game is published or none is.
 export const bulkAddApprovedGames = async (
   gameObjects: Game[],
   leagueId: string,
 ): Promise<BulkAddGamesResult> => {
+  if (!gameObjects || gameObjects.length === 0) {
+    return { success: false, message: "No games provided" };
+  }
+  if (!leagueId) {
+    return { success: false, message: "No leagueId provided" };
+  }
+
+  const approvedGames: Game[] = gameObjects.map((game) => ({
+    ...game,
+    approvalStatus: "approved",
+    createdAt: new Date(),
+    numberOfApprovals: 1,
+    numberOfDeclines: 0,
+  }));
+
   try {
-    if (!gameObjects || gameObjects.length === 0) {
-      console.log("No games provided to add");
-      return { success: false, message: "No games provided" };
-    }
-
-    if (!leagueId) {
-      console.log("No leagueId provided");
-      return { success: false, message: "No leagueId provided" };
-    }
-
-    console.log(
-      `Starting bulk add of ${gameObjects.length} games to league: ${leagueId}`,
-    );
-
-    // Step 1: Get the league document
     const leagueRef = doc(db, "leagues", leagueId);
-    const leagueDoc = await getDoc(leagueRef);
 
-    if (!leagueDoc.exists()) {
-      console.error("League not found");
-      return { success: false, message: "League not found" };
-    }
+    await runTransaction(db, async (transaction) => {
+      const leagueSnap = await transaction.get(leagueRef);
+      if (!leagueSnap.exists()) throw new Error("League not found");
+      const league = leagueSnap.data() as League;
 
-    const leagueData = leagueDoc.data();
-    const existingGames: Game[] = leagueData.games || [];
-    let currentLeagueParticipants: ScoreboardProfile[] =
-      leagueData.leagueParticipants || [];
+      const playerIds = [...new Set(approvedGames.flatMap(getGamePlayerIds))];
+      const userSnaps = await Promise.all(
+        playerIds.map((id) => transaction.get(doc(db, "users", id))),
+      );
+      const users = userSnaps
+        .filter((snap) => snap.exists())
+        .map((snap) => snap.data() as UserProfile);
 
-    if (currentLeagueParticipants.length === 0) {
-      console.log("No participants found in the league");
-      return { success: false, message: "No participants found in league" };
-    }
+      const isDoubles = league.leagueType === "Doubles";
+      const results = await applyLeagueGameResults({
+        games: approvedGames,
+        participants: league.leagueParticipants || [],
+        teams: league.leagueTeams || [],
+        users,
+        isDoubles,
+      });
 
-    // Step 2: Process each game sequentially
-    const processedGames: Game[] = [];
-    let successfulGames = 0;
-    let failedGames = 0;
-
-    for (let i = 0; i < gameObjects.length; i++) {
-      const game = gameObjects[i];
-
-      try {
-        console.log(
-          `Processing game ${i + 1}/${gameObjects.length}: ${game.gameId}`,
-        );
-
-        const approvedGame: Game = {
-          ...game,
-          approvalStatus: "approved",
-          createdAt: new Date(),
-          numberOfApprovals: 1,
-          numberOfDeclines: 0,
-        };
-
-        // Process player and team performance updates
-        const result = await processGamePerformance({
-          game: approvedGame,
-          participants: currentLeagueParticipants,
-          competitionId: leagueId,
-          collectionName: "leagues",
+      transaction.update(leagueRef, {
+        games: [...(league.games || []), ...approvedGames],
+        leagueParticipants: results.participants,
+        ...(isDoubles && { leagueTeams: results.teams }),
+      });
+      results.users.forEach((user) => {
+        transaction.update(doc(db, "users", user.userId), {
+          profileDetail: user.profileDetail,
         });
-
-        if (!result.success) {
-          console.warn(result.message);
-          failedGames++;
-          continue;
-        }
-
-        // Update participants for next iteration
-        currentLeagueParticipants = result.updatedParticipants;
-
-        // Add the game to processed games
-        processedGames.push(approvedGame);
-        successfulGames++;
-
-        console.log(`✅ Successfully processed game ${i + 1}: ${game.gameId}`);
-      } catch (error) {
-        console.error(`❌ Failed to process game ${game.gameId}:`, error);
-        failedGames++;
-      }
-    }
-
-    // Step 3: Update the league with all the new games and final participant stats
-    const updatedGames = [...existingGames, ...processedGames];
-
-    await updateDoc(leagueRef, {
-      games: updatedGames,
-      leagueParticipants: currentLeagueParticipants,
+      });
     });
-
-    console.log(`\n=== BULK ADD GAMES SUMMARY ===`);
-    console.log(`✅ Successfully processed: ${successfulGames} games`);
-    console.log(`❌ Failed to process: ${failedGames} games`);
-    console.log(`📊 Total games in league: ${updatedGames.length}`);
-    console.log(
-      `👥 Updated ${currentLeagueParticipants.length} league participants`,
-    );
 
     return {
       success: true,
       leagueId,
       totalRequested: gameObjects.length,
-      totalSuccessful: successfulGames,
-      totalFailed: failedGames,
-      processedGames: processedGames.map((g) => ({
+      totalSuccessful: approvedGames.length,
+      totalFailed: 0,
+      processedGames: approvedGames.map((g) => ({
         gameId: g.gameId,
         gamescore: g.gamescore,
         date: g.date,
@@ -137,7 +92,8 @@ export const bulkAddApprovedGames = async (
     console.error("Error in bulkAddApprovedGames:", error);
     return {
       success: false,
-      message: "Function execution failed",
+      message:
+        error instanceof Error ? error.message : "Failed to publish games",
       error: error instanceof Error ? error.message : "Unknown error",
     };
   }

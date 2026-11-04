@@ -44,7 +44,7 @@ import {
 } from "../../../helpers/scoreInputHelpers";
 import { isShellGame } from "@shared";
 
-import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
+import { doc, increment, onSnapshot, writeBatch } from "firebase/firestore";
 import { db } from "../../../services/firebase.config";
 import { getUserById } from "../../../devFunctions/firebaseFunctions";
 import { getPlayerUserIds } from "../../../context/LeagueContext";
@@ -575,20 +575,22 @@ const BulkFixturesPublisher = () => {
                       isDoubles,
                     });
 
-                await updateDoc(tournamentRef, {
+                // One batch: the tournament write can complete the tournament,
+                // and the prize function's XP increments must not be
+                // overwritten by these whole-profileDetail writes landing later.
+                const batch = writeBatch(db);
+                usersToUpdate.forEach((user) =>
+                  batch.update(doc(db, "users", user.userId), {
+                    profileDetail: user.profileDetail,
+                  }),
+                );
+                batch.update(tournamentRef, {
                   fixtures: updatedFixtures,
                   tournamentParticipants: updatedParticipants,
                   ...(isDoubles && { tournamentTeams: updatedTeams }),
                   gamesCompleted: increment(successfulGames.length),
                 });
-
-                await Promise.all(
-                  usersToUpdate.map((user) =>
-                    updateDoc(doc(db, "users", user.userId), {
-                      profileDetail: user.profileDetail,
-                    }),
-                  ),
-                );
+                await batch.commit();
               }
 
               // ── Feedback ──

@@ -466,7 +466,6 @@ const BulkGamePublisher = () => {
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
         leagueId={leagueId}
-        leagueGames={[...existingGames, ...pendingGames]}
         leagueType={leagueType}
         leagueName={leagueName}
         onGameAdded={handleAddGameToPending}
